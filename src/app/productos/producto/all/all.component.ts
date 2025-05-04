@@ -34,20 +34,25 @@ export class AllComponent implements OnInit, AfterViewInit  {
       
       console.log(event)
 
-  // 📌 Obtener el elemento de la celda seleccionada
+  // 📌 Obtener el rectángulo de la celda seleccionada
   const cellElement = event.event.target as HTMLElement;
-  const gridElement = document.querySelector('ag-grid-angular') as HTMLElement;
+  const rect = cellElement.getBoundingClientRect();
 
-  // ✅ Calcula coordenadas basadas en la celda dentro del grid
-  const x = cellElement.offsetLeft + gridElement.offsetLeft + 'px';
-  const y = cellElement.offsetTop + gridElement.offsetTop + 'px';
+  // ✅ Definir coordenadas dinámicas
+  const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
+  const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
 
-  const button = document.getElementById('menuTrigger') as HTMLElement;
-  if (button) {
-    button.style.position = 'absolute';
-    button.style.left = x;
-    button.style.top = y;
-  }
+
+  setTimeout(() => {
+    const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
+    if (overlayPane) {
+      overlayPane.style.position = 'absolute';
+      overlayPane.style.left = x;
+      overlayPane.style.top = y;
+    }
+    this.menuTrigger.openMenu();
+  }, 0);
+
 
 
 

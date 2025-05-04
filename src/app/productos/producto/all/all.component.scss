@@ -1,10 +1,17 @@
 .mat-menu-item {
     font-size: 16px;         // 📌 Cambia el tamaño de la fuente
-    color: white !important; // 📌 Forzar color del texto
-    background-color: blue !important; // 📌 Cambia el fondo de los botones
+    color: rgb(0, 0, 0) !important; // 📌 Forzar color del texto
     border-radius: 5px;      // 📌 Bordes redondeados
+
+    
+
   }
   
   .mat-menu-item:hover {
-    background-color: darkblue !important; // 📌 Cambio de color al pasar el mouse
   }
+
+//   ::ng-deep .cdk-overlay-pane {
+  //   position: absolute !important;
+  //   left: 300px !important;  // 📌 Mueve el menú hacia la derecha
+  //  top: 100px !important;   // 📌 Mueve el menú hacia abajo
+ //  }

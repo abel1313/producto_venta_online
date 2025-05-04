@@ -27,23 +27,27 @@ var AllComponent = /** @class */ (function () {
         event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
     };
     AllComponent.prototype.abrirMenu = function (event) {
+        var _this = this;
         if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
             event.event.preventDefault(); // ✅ Bloquea el menú del navegador
             event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
             console.log(event);
-            // 📌 Obtener el elemento de la celda seleccionada
+            // 📌 Obtener el rectángulo de la celda seleccionada
             var cellElement = event.event.target;
-            var gridElement = document.querySelector('ag-grid-angular');
-            // ✅ Calcula coordenadas basadas en la celda dentro del grid
-            var x = cellElement.offsetLeft + gridElement.offsetLeft + 'px';
-            var y = cellElement.offsetTop + gridElement.offsetTop + 'px';
-            var button = document.getElementById('menuTrigger');
-            if (button) {
-                button.style.position = 'absolute';
-                button.style.left = x;
-                button.style.top = y;
-            }
-            console.log("Men\u00FA en posici\u00F3n: X=" + x + ", Y=" + y);
+            var rect = cellElement.getBoundingClientRect();
+            // ✅ Definir coordenadas dinámicas
+            var x_1 = rect.left + 'px'; // 📌 Posición horizontal según la celda seleccionada
+            var y_1 = rect.top + 'px'; // 📌 Posición vertical alineada con la celda
+            setTimeout(function () {
+                var overlayPane = document.querySelector('.cdk-overlay-pane');
+                if (overlayPane) {
+                    overlayPane.style.position = 'absolute';
+                    overlayPane.style.left = x_1;
+                    overlayPane.style.top = y_1;
+                }
+                _this.menuTrigger.openMenu();
+            }, 0);
+            console.log("Men\u00FA en posici\u00F3n: X=" + x_1 + ", Y=" + y_1);
         }
         this.filaSeleccionada = event.data; // ✅ Obtiene la fila seleccionada
         //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual

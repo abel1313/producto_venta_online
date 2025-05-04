@@ -1,1 +1,19 @@
-<p>all works!</p>
+<ag-grid-angular 
+  [rowData]="rows" 
+  [columnDefs]="columns"
+  [pagination]="true"
+  class="ag-theme-alpine"
+  style="width: 100%; height: 400px;" 
+  (contextmenu)="blockContextMenu($event)" 
+  (cellContextMenu)="abrirMenu($event)">
+</ag-grid-angular>
+
+<button mat-button [matMenuTriggerFor]="menu"> <!-- ✅ Botón que activa el menú -->
+    Opciones
+  </button>
+
+  
+<mat-menu #menu="matMenu">
+    <button mat-menu-item (click)="agregarFila()">Agregar</button>
+    <button mat-menu-item (click)="eliminarFila()">Eliminar</button>
+  </mat-menu>

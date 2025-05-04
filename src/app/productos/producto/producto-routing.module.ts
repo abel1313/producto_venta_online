@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AddComponent } from './add/add.component';
 import { AllComponent } from './all/all.component';
+import { UpdateComponent } from './update/update.component';
+import { BuscaComponent } from './busca/busca.component';
 
 const routes: Routes = [
 
@@ -9,10 +11,13 @@ const routes: Routes = [
     path: 'agregar', component: AddComponent
   },
   {
-    path: 'lista', component: AllComponent
+    path: 'update', component: UpdateComponent
   },
   {
-    path: '' ,redirectTo: 'lista', pathMatch:'full' ,
+    path: 'buscar', component: BuscaComponent
+  },
+  {
+    path: '' ,redirectTo: 'agregar', pathMatch:'full' ,
   }
 
 ];

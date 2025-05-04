@@ -1,0 +1,10 @@
+.mat-menu-item {
+    font-size: 16px;         // 📌 Cambia el tamaño de la fuente
+    color: white !important; // 📌 Forzar color del texto
+    background-color: blue !important; // 📌 Cambia el fondo de los botones
+    border-radius: 5px;      // 📌 Bordes redondeados
+  }
+  
+  .mat-menu-item:hover {
+    background-color: darkblue !important; // 📌 Cambio de color al pasar el mouse
+  }

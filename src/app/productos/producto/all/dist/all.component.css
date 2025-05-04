@@ -1,0 +1,10 @@
+.mat-menu-item {
+  font-size: 16px;
+  color: white !important;
+  background-color: blue !important;
+  border-radius: 5px;
+}
+
+.mat-menu-item:hover {
+  background-color: darkblue !important;
+}

@@ -28,9 +28,22 @@ var AllComponent = /** @class */ (function () {
     };
     AllComponent.prototype.abrirMenu = function (event) {
         if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-            console.error('seeee');
             event.event.preventDefault(); // ✅ Bloquea el menú del navegador
             event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
+            console.log(event);
+            // 📌 Obtener el elemento de la celda seleccionada
+            var cellElement = event.event.target;
+            var gridElement = document.querySelector('ag-grid-angular');
+            // ✅ Calcula coordenadas basadas en la celda dentro del grid
+            var x = cellElement.offsetLeft + gridElement.offsetLeft + 'px';
+            var y = cellElement.offsetTop + gridElement.offsetTop + 'px';
+            var button = document.getElementById('menuTrigger');
+            if (button) {
+                button.style.position = 'absolute';
+                button.style.left = x;
+                button.style.top = y;
+            }
+            console.log("Men\u00FA en posici\u00F3n: X=" + x + ", Y=" + y);
         }
         this.filaSeleccionada = event.data; // ✅ Obtiene la fila seleccionada
         //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
@@ -51,6 +64,10 @@ var AllComponent = /** @class */ (function () {
     AllComponent.prototype.ngAfterViewInit = function () {
         if (!this.menuTrigger) {
             console.error('menuTrigger no está inicializado');
+        }
+        var button = document.getElementById('menuTrigger');
+        if (button) {
+            button.setAttribute("style", "background-color: red !important;");
         }
     };
     AllComponent.prototype.ngOnInit = function () {

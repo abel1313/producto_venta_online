@@ -8,8 +8,7 @@ import { CellContextMenuEvent } from 'ag-grid-community';
   styleUrls: ['./all.component.scss']
 })
 export class AllComponent implements OnInit, AfterViewInit  {
-  @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger; // ✅ Captura el botón que activa el menú
-
+  @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   rows = [
     { name: 'Austin', gender: 'Male', company: 'Swimlane' },
     { name: 'Dany', gender: 'Male', company: 'KFC' },
@@ -30,9 +29,30 @@ export class AllComponent implements OnInit, AfterViewInit  {
   }
   abrirMenu(event: CellContextMenuEvent<any>) {
     if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-      console.error('seeee');
       event.event.preventDefault(); // ✅ Bloquea el menú del navegador
       event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
+      
+      console.log(event)
+
+  // 📌 Obtener el elemento de la celda seleccionada
+  const cellElement = event.event.target as HTMLElement;
+  const gridElement = document.querySelector('ag-grid-angular') as HTMLElement;
+
+  // ✅ Calcula coordenadas basadas en la celda dentro del grid
+  const x = cellElement.offsetLeft + gridElement.offsetLeft + 'px';
+  const y = cellElement.offsetTop + gridElement.offsetTop + 'px';
+
+  const button = document.getElementById('menuTrigger') as HTMLElement;
+  if (button) {
+    button.style.position = 'absolute';
+    button.style.left = x;
+    button.style.top = y;
+  }
+
+
+
+  console.log(`Menú en posición: X=${x}, Y=${y}`);
+
     }
 
     
@@ -43,6 +63,7 @@ export class AllComponent implements OnInit, AfterViewInit  {
     //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
 
     if (this.menuTrigger) { // ✅ Verifica que `menuTrigger` no es undefined
+      
       this.menuTrigger.openMenu();
 
     } else {
@@ -67,6 +88,14 @@ export class AllComponent implements OnInit, AfterViewInit  {
     if (!this.menuTrigger) {
       console.error('menuTrigger no está inicializado');
     }
+
+    const button = document.getElementById('menuTrigger');
+    if (button) {
+      button.setAttribute("style", "background-color: red !important;");
+    }
+  
+
+    
   }
 
   ngOnInit(): void {

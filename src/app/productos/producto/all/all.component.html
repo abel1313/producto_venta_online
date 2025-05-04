@@ -8,12 +8,15 @@
   (cellContextMenu)="abrirMenu($event)">
 </ag-grid-angular>
 
-<button mat-button [matMenuTriggerFor]="menu"> <!-- ✅ Botón que activa el menú -->
-    Opciones
-  </button>
+
+<!-- Botón INVISIBLE para activar el menú -->
+<button #menuTrigger mat-button [matMenuTriggerFor]="menu" 
+style="display: block;"  ></button>
+
 
   
 <mat-menu #menu="matMenu">
     <button mat-menu-item (click)="agregarFila()">Agregar</button>
     <button mat-menu-item (click)="eliminarFila()">Eliminar</button>
   </mat-menu>
+  

@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavbarComponent } from './navbar/navbar.component';
 import { ProductoModule } from './productos/producto/producto.module';
+import { VentaProductoModule } from './ventas/venta-producto/venta-producto.module';
 
 
 
@@ -19,7 +20,8 @@ import { ProductoModule } from './productos/producto/producto.module';
     BrowserModule,
     AppRoutingModule,
     BrowserAnimationsModule,
-    ProductoModule
+    ProductoModule,
+    VentaProductoModule
   ],
   providers: [],
   bootstrap: [AppComponent]

@@ -13,3 +13,5 @@ exports.__esModule = true;
 __exportStar(require("./codigoBarras.model"), exports);
 __exportStar(require("./idGenerico.model"), exports);
 __exportStar(require("./producto.model"), exports);
+__exportStar(require("./producto.model.dto"), exports);
+__exportStar(require("./producto.model.paginable"), exports);

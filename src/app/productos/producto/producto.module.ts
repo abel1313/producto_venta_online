@@ -11,6 +11,8 @@ import { UpdateComponent } from './update/update.component';
 import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { MatMenuModule } from '@angular/material/menu';
 import { AgGridModule } from 'ag-grid-angular';
+import { HttpClientModule } from '@angular/common/http';
+
 
 @NgModule({
   declarations: [
@@ -24,8 +26,12 @@ import { AgGridModule } from 'ag-grid-angular';
     ProductoRoutingModule,
     ReactiveFormsModule,
     AgGridModule,
-    MatMenuModule
-    
+    MatMenuModule,
+    HttpClientModule
+  ],
+  exports:[
+    AllComponent,
+    BuscaComponent,
   ]
 })
 export class ProductoModule { }

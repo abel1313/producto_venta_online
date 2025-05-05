@@ -1,3 +1,6 @@
+import { ServerAPI } from "./server";
+
 export const environment = {
-  production: true
+  production: false,
+  api_Url: ServerAPI.serverApi
 };

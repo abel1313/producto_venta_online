@@ -1,14 +1,14 @@
+"use strict";
 // This file can be replaced during build by using the `fileReplacements` array.
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
-
-import { ServerAPI } from "./server";
-
-export const environment = {
-  production: true,
-  api_Url: ServerAPI.serverApi
+exports.__esModule = true;
+exports.environment = void 0;
+var server_1 = require("./server");
+exports.environment = {
+    production: true,
+    api_Url: server_1.ServerAPI.serverApi
 };
-
 /*
  * For easier debugging in development mode, you can import the following file
  * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.

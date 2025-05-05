@@ -17,6 +17,7 @@ var busca_component_1 = require("./busca/busca.component");
 var update_component_1 = require("./update/update.component");
 var menu_1 = require("@angular/material/menu");
 var ag_grid_angular_1 = require("ag-grid-angular");
+var http_1 = require("@angular/common/http");
 var ProductoModule = /** @class */ (function () {
     function ProductoModule() {
     }
@@ -33,7 +34,12 @@ var ProductoModule = /** @class */ (function () {
                 producto_routing_module_1.ProductoRoutingModule,
                 forms_1.ReactiveFormsModule,
                 ag_grid_angular_1.AgGridModule,
-                menu_1.MatMenuModule
+                menu_1.MatMenuModule,
+                http_1.HttpClientModule
+            ],
+            exports: [
+                all_component_1.AllComponent,
+                busca_component_1.BuscaComponent,
             ]
         })
     ], ProductoModule);

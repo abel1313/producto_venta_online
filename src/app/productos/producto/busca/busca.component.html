@@ -16,6 +16,13 @@
 </div>
 <div class="row">
     <div class="col-12">
-        <app-all></app-all>
+        <app-all 
+        [buscar]="buscarProd" 
+        [paginacion]="paginacionBuscar"
+        [itemAgregar]="itemAgregar"
+        [itemEliminar]="itemEliminar"
+        [styleTableWidth]= "styleTableWidth1"
+        [styleTableheight]= "styleTableheight1"
+        ></app-all>
     </div>
 </div>

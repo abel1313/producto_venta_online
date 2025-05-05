@@ -6,7 +6,17 @@
     
 
   }
-  
+  .no-select {
+    user-select: none; /* 🚫 Evita la selección de texto */
+    -webkit-user-select: none; /* 🔹 Para Safari */
+    -moz-user-select: none; /* 🔹 Para Firefox */
+    -ms-user-select: none; /* 🔹 Para Internet Explorer */
+}
+
+.no-highlight::selection {
+    background: transparent; /* 🚫 Evita el fondo azul al seleccionar */
+}
+
   .mat-menu-item:hover {
   }
 

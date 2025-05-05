@@ -14,6 +14,7 @@ var app_component_1 = require("./app.component");
 var animations_1 = require("@angular/platform-browser/animations");
 var navbar_component_1 = require("./navbar/navbar.component");
 var producto_module_1 = require("./productos/producto/producto.module");
+var venta_producto_module_1 = require("./ventas/venta-producto/venta-producto.module");
 var AppModule = /** @class */ (function () {
     function AppModule() {
     }
@@ -27,7 +28,8 @@ var AppModule = /** @class */ (function () {
                 platform_browser_1.BrowserModule,
                 app_routing_module_1.AppRoutingModule,
                 animations_1.BrowserAnimationsModule,
-                producto_module_1.ProductoModule
+                producto_module_1.ProductoModule,
+                venta_producto_module_1.VentaProductoModule
             ],
             providers: [],
             bootstrap: [app_component_1.AppComponent]

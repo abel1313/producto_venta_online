@@ -1,26 +1,60 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { CellContextMenuEvent } from 'ag-grid-community';
+import { ProductoService } from '../../service/producto.service';
+import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
+import { AgGridAngular } from 'ag-grid-angular';
 
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
   styleUrls: ['./all.component.scss']
 })
-export class AllComponent implements OnInit, AfterViewInit  {
+export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
-  rows = [
-    { name: 'Austin', gender: 'Male', company: 'Swimlane' },
-    { name: 'Dany', gender: 'Male', company: 'KFC' },
-    { name: 'Molly', gender: 'Female', company: 'Burger King' }
-  ];
+  @ViewChild('agGrid') agGrid!: AgGridAngular;
+  @Input() buscar?: string;
+  @Input() paginacion?: IProductoPaginable<IProductoDTO[]>;
+  @Input() itemAgregar?: string;
+  @Input() itemEliminar?: string;
+  @Input() styleTableWidth?: string = '100%';
+  @Input() styleTableheight?: string = '400px';
+  gridApi: any;
+
+  paginaPrimera: number = 1;
+  paginaUltima: number = 0;
+
+
+
+
+  rows: IProductoDTO[] =  [];
+  data: IProductoDTO[] = [];
+
   columns = [
-    { field: 'name', headerName: 'Nombre' },  
-    { field: 'gender', headerName: 'Género' },  
-    { field: 'company', headerName: 'Empresa' }
+    { field: 'nombre', headerName: 'Nombre' },  
+    { field: 'precioCosto', headerName: 'Precio Costo' },  
+    { field: 'piezas', headerName: 'Piezas' },
+    { field: 'color', headerName: 'Color' },
+    { field: 'precioVenta', headerName: 'Precio Venta' },
+    { field: 'precioRebaja', headerName: 'Precio Rebaja' },
+    { field: 'descripcion', headerName: 'Descripcion' },
+    { field: 'stock', headerName: 'Stock' },
+    { field: 'marca', headerName: 'Marca' },
+    { field: 'contenido', headerName: 'Contenido' },
+    { field: 'codigoBarras', headerName: 'Codigo Barras' },
   ];
 
-  constructor() { }
+  constructor(
+    private readonly srvice: ProductoService
+  ) { 
+    console.log('desde el hijop', this.paginacion)
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['paginacion'] && this.paginacion?.t) {
+      this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
+    }
+  }
 
   filaSeleccionada: any;
   blockContextMenu(event: MouseEvent) {
@@ -81,7 +115,8 @@ export class AllComponent implements OnInit, AfterViewInit  {
   
 
   agregarFila() {
-    this.rows.push({ name: 'Nuevo Producto', gender: 'N/A', company: 'Nuevo' });
+    
+    console.log(this.filaSeleccionada ,'das')
   }
 
   eliminarFila() {
@@ -104,9 +139,53 @@ export class AllComponent implements OnInit, AfterViewInit  {
   }
 
   ngOnInit(): void {
-
-
-
+    this.getData(1);
+    document.addEventListener('click', (event: Event) => {
+      if (this.menuTrigger.menuOpen) {
+        this.menuTrigger.closeMenu();
+      }
+    });
+    
+    console.log(this.rows, 'buscando ')
   }
 
+  getData(pagina: number){
+    this.srvice.getData(pagina,10).subscribe({
+      next: (res) => {
+        console.log('Datos obtenidos:', res);
+        this.paginacion = res;
+        this.rows = this.paginacion.t;
+      },
+      error: (err) => {
+        console.error('Error en la petición:', err);
+      },
+      complete: () => {
+        console.log('Petición completada');
+      }
+    });
+  }
+
+  primeraPagina(): void{
+    this.paginaPrimera = 1;
+
+
+    this.getData(this.paginaPrimera);
+    console.error('EprimeraPagina:', this.paginaPrimera);
+  }
+  paginaAnterior(): void{
+    this.paginaPrimera = this.paginaPrimera -1;
+    this.getData(this.paginaPrimera );
+
+  }
+  siguientePagina(): void{
+    this.paginaPrimera = this.paginaPrimera +1;
+    this.getData(this.paginaPrimera );
+
+  }
+  ultimaPagina(): void{
+    this.paginaUltima = this.paginacion?.totalPaginas || 0;
+    this.paginaPrimera = this.paginacion?.totalPaginas || 0;
+    this.getData(this.paginaUltima);
+    console.error('ultimaPagina:', this.paginaUltima);
+  }
 }

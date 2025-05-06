@@ -13,44 +13,35 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
     return r;
 };
 exports.__esModule = true;
-exports.AllComponent = void 0;
+exports.TableGenericoComponent = void 0;
 var core_1 = require("@angular/core");
 var menu_1 = require("@angular/material/menu");
-var AllComponent = /** @class */ (function () {
-    function AllComponent(srvice) {
+var TableGenericoComponent = /** @class */ (function () {
+    function TableGenericoComponent(srvice) {
         this.srvice = srvice;
         this.styleTableWidth = '100%';
         this.styleTableheight = '400px';
+        this.$primeraPagina = new core_1.EventEmitter();
+        this.$siguientePagina = new core_1.EventEmitter();
+        this.$anteriorPagina = new core_1.EventEmitter();
+        this.$ultimaPagina = new core_1.EventEmitter();
         this.paginaPrimera = 1;
         this.paginaUltima = 0;
+        this.detalle = [];
         this.rows = [];
         this.data = [];
-        this.columns = [
-            { field: 'nombre', headerName: 'Nombre' },
-            { field: 'precioCosto', headerName: 'Precio Costo' },
-            { field: 'piezas', headerName: 'Piezas' },
-            { field: 'color', headerName: 'Color' },
-            { field: 'precioVenta', headerName: 'Precio Venta' },
-            { field: 'precioRebaja', headerName: 'Precio Rebaja' },
-            { field: 'descripcion', headerName: 'Descripcion' },
-            { field: 'stock', headerName: 'Stock' },
-            { field: 'marca', headerName: 'Marca' },
-            { field: 'contenido', headerName: 'Contenido' },
-            { field: 'codigoBarras', headerName: 'Codigo Barras' },
-        ];
-        this.detalle = [];
     }
-    AllComponent.prototype.ngOnChanges = function (changes) {
+    TableGenericoComponent.prototype.ngOnChanges = function (changes) {
         var _a;
         if (changes['paginacion'] && ((_a = this.paginacion) === null || _a === void 0 ? void 0 : _a.t)) {
             this.rows = __spreadArrays(this.paginacion.t); // 🔥 Actualiza `rows` cuando `paginacion` cambie
         }
     };
-    AllComponent.prototype.blockContextMenu = function (event) {
+    TableGenericoComponent.prototype.blockContextMenu = function (event) {
         event.preventDefault(); // ✅ Bloquea el menú del navegador
         event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
     };
-    AllComponent.prototype.abrirMenu = function (event) {
+    TableGenericoComponent.prototype.abrirMenu = function (event) {
         var _this = this;
         if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
             event.event.preventDefault(); // ✅ Bloquea el menú del navegador
@@ -76,44 +67,12 @@ var AllComponent = /** @class */ (function () {
         if (this.menuTrigger) { // ✅ Verifica que `menuTrigger` no es undefined
             this.menuTrigger.openMenu();
         }
-        else {
-            console.error('menuTrigger no está inicializado');
-        }
     };
-    AllComponent.prototype.agregarFila = function () {
-        var _a = this.filaSeleccionada, nombre = _a.nombre, descripcion = _a.descripcion, stock = _a.stock, precioVenta = _a.precioVenta, codigoBarras = _a.codigoBarras;
-        var cant = 1;
-        var prod = {
-            nombre: nombre,
-            descripcion: descripcion,
-            stock: stock,
-            precioVenta: precioVenta,
-            codigoBarras: codigoBarras,
-            cantidad: cant
-        };
-        // Asegurar que detalle es un array y luego agregar el nuevo producto
-        if (!Array.isArray(this.detalle)) {
-            this.detalle = [];
-        }
-        // Buscar si ya existe el producto
-        var index = this.detalle.findIndex(function (item) { return item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre; });
-        if (index !== -1) {
-            // Si existe, incrementar la cantidad y actualizar el total
-            this.detalle[index].cantidad += 1;
-        }
-        else {
-            // Si no existe, agregarlo a la lista
-            this.detalle.push(prod);
-        }
-        // Calcular el total de cada producto
-        this.detalle.forEach(function (item) { return item.total = item.cantidad * item.precioVenta; });
-        console.log(this.detalle, 'detalle actualizado');
+    TableGenericoComponent.prototype.agregarFila = function () {
     };
-    AllComponent.prototype.eliminarFila = function () {
-        var _this = this;
-        this.rows = this.rows.filter(function (row) { return row !== _this.filaSeleccionada; });
+    TableGenericoComponent.prototype.eliminarFila = function () {
     };
-    AllComponent.prototype.ngAfterViewInit = function () {
+    TableGenericoComponent.prototype.ngAfterViewInit = function () {
         if (!this.menuTrigger) {
             console.error('menuTrigger no está inicializado');
         }
@@ -122,7 +81,7 @@ var AllComponent = /** @class */ (function () {
             button.setAttribute("style", "background-color: red !important;");
         }
     };
-    AllComponent.prototype.ngOnInit = function () {
+    TableGenericoComponent.prototype.ngOnInit = function () {
         var _this = this;
         this.getData(1);
         document.addEventListener('click', function (event) {
@@ -130,13 +89,13 @@ var AllComponent = /** @class */ (function () {
                 _this.menuTrigger.closeMenu();
             }
         });
+        console.log(this.rows, 'buscando ');
     };
-    AllComponent.prototype.getData = function (pagina) {
-        var _this = this;
+    TableGenericoComponent.prototype.getData = function (pagina) {
         this.srvice.getData(pagina, 10).subscribe({
             next: function (res) {
-                _this.paginacion = res;
-                _this.rows = _this.paginacion.t;
+                //this.paginacion = res;
+                //this.rows = this.paginacion.t;
             },
             error: function (err) {
                 console.error('Error en la petición:', err);
@@ -146,57 +105,74 @@ var AllComponent = /** @class */ (function () {
             }
         });
     };
-    AllComponent.prototype.primeraPagina = function () {
+    TableGenericoComponent.prototype.primeraPagina = function () {
         this.paginaPrimera = 1;
-        this.getData(this.paginaPrimera);
+        // this.getData(this.paginaPrimera);
         console.error('EprimeraPagina:', this.paginaPrimera);
+        this.$primeraPagina.emit(this.paginaPrimera);
     };
-    AllComponent.prototype.paginaAnterior = function () {
+    TableGenericoComponent.prototype.paginaAnterior = function () {
         this.paginaPrimera = this.paginaPrimera - 1;
-        this.getData(this.paginaPrimera);
+        this.$anteriorPagina.emit(this.paginaPrimera);
     };
-    AllComponent.prototype.siguientePagina = function () {
+    TableGenericoComponent.prototype.siguientePagina = function () {
         this.paginaPrimera = this.paginaPrimera + 1;
-        this.getData(this.paginaPrimera);
+        //this.getData(this.paginaPrimera );
+        this.$siguientePagina.emit(this.paginaPrimera);
     };
-    AllComponent.prototype.ultimaPagina = function () {
-        var _a, _b;
+    TableGenericoComponent.prototype.ultimaPagina = function () {
+        var _a;
         this.paginaUltima = ((_a = this.paginacion) === null || _a === void 0 ? void 0 : _a.totalPaginas) || 0;
-        this.paginaPrimera = ((_b = this.paginacion) === null || _b === void 0 ? void 0 : _b.totalPaginas) || 0;
-        this.getData(this.paginaUltima);
+        //this.getData(this.paginaUltima);
+        this.$ultimaPagina.emit(this.paginaUltima);
         console.error('ultimaPagina:', this.paginaUltima);
     };
     __decorate([
         core_1.ViewChild(menu_1.MatMenuTrigger)
-    ], AllComponent.prototype, "menuTrigger");
+    ], TableGenericoComponent.prototype, "menuTrigger");
     __decorate([
         core_1.ViewChild('agGrid')
-    ], AllComponent.prototype, "agGrid");
+    ], TableGenericoComponent.prototype, "agGrid");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "buscar");
+    ], TableGenericoComponent.prototype, "buscar");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "paginacion");
+    ], TableGenericoComponent.prototype, "paginacion");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "itemAgregar");
+    ], TableGenericoComponent.prototype, "itemAgregar");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "itemEliminar");
+    ], TableGenericoComponent.prototype, "itemEliminar");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "styleTableWidth");
+    ], TableGenericoComponent.prototype, "styleTableWidth");
     __decorate([
         core_1.Input()
-    ], AllComponent.prototype, "styleTableheight");
-    AllComponent = __decorate([
+    ], TableGenericoComponent.prototype, "styleTableheight");
+    __decorate([
+        core_1.Input()
+    ], TableGenericoComponent.prototype, "columnas");
+    __decorate([
+        core_1.Output()
+    ], TableGenericoComponent.prototype, "$primeraPagina");
+    __decorate([
+        core_1.Output()
+    ], TableGenericoComponent.prototype, "$siguientePagina");
+    __decorate([
+        core_1.Output()
+    ], TableGenericoComponent.prototype, "$anteriorPagina");
+    __decorate([
+        core_1.Output()
+    ], TableGenericoComponent.prototype, "$ultimaPagina");
+    TableGenericoComponent = __decorate([
         core_1.Component({
-            selector: 'app-all',
-            templateUrl: './all.component.html',
-            styleUrls: ['./all.component.scss']
+            selector: 'app-table-generico',
+            templateUrl: './table-generico.component.html',
+            styleUrls: ['./table-generico.component.scss']
         })
-    ], AllComponent);
-    return AllComponent;
+    ], TableGenericoComponent);
+    return TableGenericoComponent;
 }());
-exports.AllComponent = AllComponent;
+exports.TableGenericoComponent = TableGenericoComponent;

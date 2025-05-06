@@ -22,7 +22,6 @@ var BuscaComponent = /** @class */ (function () {
     BuscaComponent.prototype.buscarProductos = function (event) {
         var texto = event.target.value.toLowerCase();
         this.buscarProd = texto;
-        console.log(texto);
         this.buscarPorNombreCodigoPostal(1, 10, this.buscarProd);
     };
     BuscaComponent.prototype.buscarPorNombreCodigoPostal = function (pagina, size, nombre) {

@@ -6,6 +6,11 @@ import { AddVentaComponent } from './add-venta/add-venta.component';
 import { BuscarVentaComponent } from './buscar-venta/buscar-venta.component';
 import { AllVentaComponent } from './all-venta/all-venta.component';
 import { ProductoModule } from 'src/app/productos/producto/producto.module';
+import { TableGenericoModule } from 'src/app/tablas/table-generico/table-generico.module';
+import { AgGridModule } from 'ag-grid-angular';
+import { MatMenuModule } from '@angular/material/menu';
+import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -17,7 +22,12 @@ import { ProductoModule } from 'src/app/productos/producto/producto.module';
   imports: [
     CommonModule,
     VentaProductoRoutingModule,
-    ProductoModule
+    ProductoModule,
+    TableGenericoModule,
+        AgGridModule,
+        MatMenuModule,
+        HttpClientModule,
+        FormsModule
   ]
 })
 export class VentaProductoModule { }

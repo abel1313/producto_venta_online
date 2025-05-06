@@ -26,7 +26,6 @@ export class BuscaComponent implements OnInit {
   buscarProductos(event: KeyboardEvent) {
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
     this.buscarProd = texto;
-    console.log(texto)
 
     this.buscarPorNombreCodigoPostal(1,10,this.buscarProd);
     

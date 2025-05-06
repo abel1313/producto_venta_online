@@ -50,11 +50,9 @@ export class AppComponent implements AfterViewInit {
     const codeReader = new BrowserQRCodeReader();
     try {
       const result = await codeReader.decodeFromImageUrl(imageUrl);
-      console.log('Código escaneado:', result.getText());
       this.resultadoCodigo = 'paso '+result.getText();
     } catch (error) {
       this.resultadoCodigo = 'error '+error;
-      console.error('No se pudo leer el código', error);
     }
   }
   

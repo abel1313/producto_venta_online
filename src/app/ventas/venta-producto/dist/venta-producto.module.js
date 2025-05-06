@@ -14,6 +14,11 @@ var add_venta_component_1 = require("./add-venta/add-venta.component");
 var buscar_venta_component_1 = require("./buscar-venta/buscar-venta.component");
 var all_venta_component_1 = require("./all-venta/all-venta.component");
 var producto_module_1 = require("src/app/productos/producto/producto.module");
+var table_generico_module_1 = require("src/app/tablas/table-generico/table-generico.module");
+var ag_grid_angular_1 = require("ag-grid-angular");
+var menu_1 = require("@angular/material/menu");
+var http_1 = require("@angular/common/http");
+var forms_1 = require("@angular/forms");
 var VentaProductoModule = /** @class */ (function () {
     function VentaProductoModule() {
     }
@@ -27,7 +32,12 @@ var VentaProductoModule = /** @class */ (function () {
             imports: [
                 common_1.CommonModule,
                 venta_producto_routing_module_1.VentaProductoRoutingModule,
-                producto_module_1.ProductoModule
+                producto_module_1.ProductoModule,
+                table_generico_module_1.TableGenericoModule,
+                ag_grid_angular_1.AgGridModule,
+                menu_1.MatMenuModule,
+                http_1.HttpClientModule,
+                forms_1.FormsModule
             ]
         })
     ], VentaProductoModule);

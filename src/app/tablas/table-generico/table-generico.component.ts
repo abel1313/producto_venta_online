@@ -1,48 +1,43 @@
-import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { CellContextMenuEvent } from 'ag-grid-community';
-import { ProductoService } from '../../service/producto.service';
-import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
 import { AgGridAngular } from 'ag-grid-angular';
+import { CellContextMenuEvent } from 'ag-grid-community';
+import { IProductoDTO, IProductoPaginable } from 'src/app/productos/producto/models';
+import { ProductoService } from 'src/app/productos/service/producto.service';
 
 @Component({
-  selector: 'app-all',
-  templateUrl: './all.component.html',
-  styleUrls: ['./all.component.scss']
+  selector: 'app-table-generico',
+  templateUrl: './table-generico.component.html',
+  styleUrls: ['./table-generico.component.scss']
 })
-export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
+export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges  {
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   @ViewChild('agGrid') agGrid!: AgGridAngular;
   @Input() buscar?: string;
-  @Input() paginacion?: IProductoPaginable<IProductoDTO[]>;
+  @Input() paginacion?: any;
   @Input() itemAgregar?: string;
   @Input() itemEliminar?: string;
   @Input() styleTableWidth?: string = '100%';
   @Input() styleTableheight?: string = '400px';
+  @Input() columnas?: any;
   gridApi: any;
+  @Output() $primeraPagina = new EventEmitter<any>();
+  @Output() $siguientePagina = new EventEmitter<any>();
+  @Output() $anteriorPagina = new EventEmitter<any>();
+  @Output() $ultimaPagina = new EventEmitter<any>();
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;
 
 
+  detalle: any[] = [];
 
 
-  rows: IProductoDTO[] =  [];
-  data: IProductoDTO[] = [];
 
-  columns = [
-    { field: 'nombre', headerName: 'Nombre' },  
-    { field: 'precioCosto', headerName: 'Precio Costo' },  
-    { field: 'piezas', headerName: 'Piezas' },
-    { field: 'color', headerName: 'Color' },
-    { field: 'precioVenta', headerName: 'Precio Venta' },
-    { field: 'precioRebaja', headerName: 'Precio Rebaja' },
-    { field: 'descripcion', headerName: 'Descripcion' },
-    { field: 'stock', headerName: 'Stock' },
-    { field: 'marca', headerName: 'Marca' },
-    { field: 'contenido', headerName: 'Contenido' },
-    { field: 'codigoBarras', headerName: 'Codigo Barras' },
-  ];
+  rows: any =  [];
+  data: any = [];
+
+
 
   constructor(
     private readonly srvice: ProductoService
@@ -64,6 +59,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
     if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
       event.event.preventDefault(); // ✅ Bloquea el menú del navegador
       event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
+      
 
 
   // 📌 Obtener el rectángulo de la celda seleccionada
@@ -86,7 +82,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   }, 0);
 
 
-
     }
 
     
@@ -100,57 +95,21 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       
       this.menuTrigger.openMenu();
 
-    } else {
-      console.error('menuTrigger no está inicializado');
-    }
-
+    } 
     
 
   }
   
 
-  detalle: any[] =[];
   agregarFila() {
     
-    
-    
-    
-    const {nombre,descripcion, stock, precioVenta, codigoBarras} = this.filaSeleccionada;
-    let cant = 1;
-    const prod = {
-      nombre,
-      descripcion,
-      stock,
-      precioVenta,
-      codigoBarras,
-      cantidad: cant
-    }
 
-  // Asegurar que detalle es un array y luego agregar el nuevo producto
-  if (!Array.isArray(this.detalle)) {
-    this.detalle = [];
-  }
 
-  // Buscar si ya existe el producto
-  const index = this.detalle.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
-
-  if (index !== -1) {
-    // Si existe, incrementar la cantidad y actualizar el total
-    this.detalle[index].cantidad += 1;
-  } else {
-    // Si no existe, agregarlo a la lista
-    this.detalle.push(prod);
-  }
-
-  // Calcular el total de cada producto
-  this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
-
-  console.log(this.detalle, 'detalle actualizado');
 
   }
 
   eliminarFila() {
-    this.rows = this.rows.filter(row => row !== this.filaSeleccionada);
+    
   }
 
   ngAfterViewInit() {
@@ -163,8 +122,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
     if (button) {
       button.setAttribute("style", "background-color: red !important;");
     }
-  
-
     
   }
 
@@ -176,13 +133,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       }
     });
     
+    console.log(this.rows, 'buscando ')
   }
 
   getData(pagina: number){
     this.srvice.getData(pagina,10).subscribe({
       next: (res) => {
-        this.paginacion = res;
-        this.rows = this.paginacion.t;
+        //this.paginacion = res;
+        //this.rows = this.paginacion.t;
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -195,25 +153,27 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
 
   primeraPagina(): void{
     this.paginaPrimera = 1;
+    
 
-
-    this.getData(this.paginaPrimera);
+   // this.getData(this.paginaPrimera);
     console.error('EprimeraPagina:', this.paginaPrimera);
+    this.$primeraPagina.emit(this.paginaPrimera);
   }
   paginaAnterior(): void{
     this.paginaPrimera = this.paginaPrimera -1;
-    this.getData(this.paginaPrimera );
+    this.$anteriorPagina.emit(this.paginaPrimera);
 
   }
   siguientePagina(): void{
     this.paginaPrimera = this.paginaPrimera +1;
-    this.getData(this.paginaPrimera );
+    //this.getData(this.paginaPrimera );
+    this.$siguientePagina.emit(this.paginaPrimera);
 
   }
   ultimaPagina(): void{
     this.paginaUltima = this.paginacion?.totalPaginas || 0;
-    this.paginaPrimera = this.paginacion?.totalPaginas || 0;
-    this.getData(this.paginaUltima);
+    //this.getData(this.paginaUltima);
+    this.$ultimaPagina.emit(this.paginaUltima);
     console.error('ultimaPagina:', this.paginaUltima);
   }
 }

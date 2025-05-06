@@ -1,6 +1,97 @@
-<app-busca
-[itemAgregar]="'agregar detalle'"
-[itemEliminar]="''"
-[styleTableWidth1]= "'100%'"
-[styleTableheight1]= "'200px'"
-></app-busca>
+
+
+<div class="row">
+    <div class="col-4 p-2">
+        <div class="input-group mb-3">
+            <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Buscar producto" 
+            aria-label="Username" 
+            aria-describedby="basic-addon1"
+            (keyup)="buscarProductos($event)"
+            >
+          </div>
+    </div>
+</div>
+
+
+
+<ag-grid-angular 
+  [rowData]="rowsBuscador" 
+  [columnDefs]="columnsBuscador"
+  [pagination]="false"
+  class="ag-theme-alpine"
+  [style]="{ width: styleTableWidthBuscador, height: styleTableheightBusador }" 
+  (contextmenu)="blockContextMenuBuscador($event)" 
+  (cellContextMenu)="abrirMenuBuscador($event)">
+</ag-grid-angular>
+
+<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == 1 || !paginacionBuscador " (click)="primeraPaginaBuscador()">⬅️ Primera</button>
+<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == 1 || !paginacionBuscador " (click)="paginaAnteriorBuscador()">◀️ Anterior</button>
+
+  <b class="no-select no-highlight" *ngIf="paginacionBuscador && paginacionBuscador.totalPaginas > 0  ">
+   pagina<b *ngIf="paginacionBuscador && paginacionBuscador.pagina > 1">s</b>  {{paginacionBuscador.pagina}} de {{paginacionBuscador.totalPaginas}}
+  </b>
+
+<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == paginacionBuscador?.totalPaginas" (click)="siguientePaginaBuscador()">▶️ Siguiente</button>
+<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == paginacionBuscador?.totalPaginas" (click)="ultimaPaginaBuscador()">➡️ Última</button>
+
+<!-- Botón INVISIBLE para activar el menú -->
+<button #menuTriggerBuscador mat-button [matMenuTriggerFor]="menu" 
+style="display: block;"  ></button>
+
+
+
+  
+<mat-menu #menu="matMenu">
+    <button  mat-menu-item (click)="agregarFilaBuscador()">Agregar</button>
+  </mat-menu>
+  
+
+
+
+  
+
+
+  <ag-grid-angular 
+  [rowData]="rowsDetalle" 
+  [columnDefs]="columnsDetalle"
+  [pagination]="false"
+  class="ag-theme-alpine"
+  [style]="{ width: styleTableWidthDetalle, height: styleTableheightDetalle }" 
+  (contextmenu)="blockContextMenuDetalle($event)" 
+  (cellContextMenu)="abrirMenuDetalle($event)">
+</ag-grid-angular>
+
+    <div class="row">
+        <div class="div col-10">
+            <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="primeraPaginaDetalle()">⬅️ Primera</button>
+<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="paginaAnteriorDetalle()">◀️ Anterior</button>
+
+  <b class="no-select no-highlight" *ngIf="paginacionDetalle && paginacionDetalle.totalPaginas > 0  ">
+   pagina<b *ngIf="paginacionDetalle && paginacionDetalle.pagina > 1">s</b>  {{paginacionDetalle.pagina}} de {{paginacionDetalle.totalPaginas}}
+  </b>
+
+<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="siguientePaginaDetalle()">▶️ Siguiente</button>
+<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="ultimaPaginaDetalle()">➡️ Última</button>
+
+        </div>
+
+        <div class="col-2">
+            <input type="text" class="input-group-sm text-center" readonly disabled [(ngModel)]="totalDetalle" >
+        </div>
+    </div>
+
+<!-- Botón INVISIBLE para activar el menú -->
+<button #menuTriggerDetalle mat-button [matMenuTriggerFor]="menu" 
+style="display: none;"  ></button>
+
+
+
+  
+<mat-menu #menu="matMenu">
+    <button  mat-menu-item (click)="eliminarFilaDetalle()">Agregar</button>
+  </mat-menu>
+  
+

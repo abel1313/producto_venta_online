@@ -98,8 +98,6 @@ var AddComponent = /** @class */ (function () {
                 producto.codigoBarras.id = 6; // ✅ Si ya está definido, solo asignamos `id`
             }
             this.productoSave = producto;
-            console.log(this.productoSave);
-            console.log(this.productoSave.codigoBarras.id);
         }
     };
     AddComponent.prototype.guardar = function () {

@@ -94,9 +94,6 @@ export class AddComponent implements OnInit {
       }
   
       this.productoSave = producto;
-
-      console.log(this.productoSave);
-      console.log(this.productoSave.codigoBarras.id);
     }
   }
 

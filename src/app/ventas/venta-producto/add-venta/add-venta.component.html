@@ -65,7 +65,7 @@ style="display: block;"  ></button>
 </ag-grid-angular>
 
     <div class="row">
-        <div class="div col-10">
+        <div class="div col-8">
             <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="primeraPaginaDetalle()">⬅️ Primera</button>
 <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="paginaAnteriorDetalle()">◀️ Anterior</button>
 
@@ -76,6 +76,11 @@ style="display: block;"  ></button>
 <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="siguientePaginaDetalle()">▶️ Siguiente</button>
 <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="ultimaPaginaDetalle()">➡️ Última</button>
 
+        </div>
+
+        <div class="col-1">
+          
+          <button class="btn btn-success" (click)="saveDetalle()">save</button>
         </div>
 
         <div class="col-2">

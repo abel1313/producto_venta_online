@@ -4,6 +4,8 @@ import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
 import { IProductoDTO, IProductoPaginable } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
+import { IUsuario, IVenta } from '../models';
+import { IDetalleVenta } from '../models/detalleVenta.mode';
 
 @Component({
   selector: 'app-add-venta',
@@ -61,7 +63,7 @@ export class AddVentaComponent implements OnInit {
       { field: 'precioVenta', headerName: 'Precio Venta' },
       { field: 'codigoBarras', headerName: 'Codigo Barras' },
       { field: 'cantidad', headerName: 'Cantidad' },
-      { field: 'total', headerName: 'subTotal' }
+      { field: 'subTotal', headerName: 'Sub total' }
 
     ];
   ngOnInit(): void {
@@ -77,49 +79,74 @@ export class AddVentaComponent implements OnInit {
   
   detalle: any[] =[];
   totalDetalle: number = 0;
+
+  usuario: IUsuario = {
+    nombre:'',
+  };
+  venta: IVenta = {
+    usuario: this.usuario,
+    totalVenta: 0,
+    
+  }
+
+
+  detalleVenta: IDetalleVenta [] = [];
+
   agregarFilaBuscador() {
     
     
     
     
     const {nombre,descripcion, stock, precioVenta, codigoBarras} = this.filaSeleccionadaBuscador;
-    let cant = 1;
-    const prod = {
-      nombre,
-      descripcion,
-      stock,
-      precioVenta,
-      codigoBarras,
-      cantidad: cant
-    }
 
-  // Asegurar que detalle es un array y luego agregar el nuevo producto
-  if (!Array.isArray(this.detalle)) {
-    this.detalle = [];
+      
+  let canti = 1;
+  const prod: IDetalleVenta = {
+    nombre,
+    descripcion,
+    stock,
+    precioVenta,
+    codigoBarras,
+    cantidad: canti,
+    subTotal: 0
   }
 
   // Buscar si ya existe el producto
-  const index = this.detalle.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
+  const index2 = this.detalleVenta.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
 
-  if (index !== -1) {
+  if (index2 !== -1) {
     // Si existe, incrementar la cantidad y actualizar el total
-    this.detalle[index].cantidad += 1;
+    this.detalleVenta[index2].cantidad += 1;
   } else {
     // Si no existe, agregarlo a la lista
-    this.detalle.push(prod);
+    this.detalleVenta.push(prod);
   }
 
-  // Calcular el total de cada producto
-  this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
+    // Calcular el total de cada producto
+    this.detalleVenta.forEach(item => item.subTotal = item.cantidad * item.precioVenta);
 
-  console.log(this.detalle, 'detalle actualizado');
+    console.log(this.detalleVenta, 'detalleVenta actualizado');
+  
+    this.rowsDetalle = [...this.detalleVenta];
+  
+    this.totalDetalle = this.rowsDetalle.reduce((sum, item) => sum + item.subTotal, 0);
+    
 
-  this.rowsDetalle = [...this.detalle];
+    console.log(this.totalDetalle, 'detalleVenta actualizado');
+  }
 
-  this.totalDetalle = this.rowsDetalle.reduce((sum, item) => sum + item.total, 0);
-
-
-
+  saveDetalle(): void{
+    this.service.saveVenta(this.detalleVenta).subscribe({
+      next: (res) => {
+        console.log(res, '------------------------------------------------ ');
+      },
+      error: (err) => {
+        console.error('Error en la petición:', err);
+      },
+      complete: () => {
+        console.log('Petición completada');
+      }
+    });
   }
 
   eliminarFilaBuscador() {

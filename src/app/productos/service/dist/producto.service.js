@@ -22,6 +22,10 @@ var ProductoService = /** @class */ (function () {
     ProductoService.prototype.getDataNombreCodigoBarra = function (page, size, buscar) {
         return this.http.get(this.url + "/buscarNombreOrCodigoBarra?size=" + size + "&page=" + page + "&nombre=" + buscar);
     };
+    // 🌐 Obtener datos
+    ProductoService.prototype.saveVenta = function (det) {
+        return this.http.post(environment_1.environment.api_Url + "/ventas/save", det);
+    };
     ProductoService = __decorate([
         core_1.Injectable({
             providedIn: 'root'

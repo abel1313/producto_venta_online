@@ -50,10 +50,18 @@ var AddVentaComponent = /** @class */ (function () {
             { field: 'precioVenta', headerName: 'Precio Venta' },
             { field: 'codigoBarras', headerName: 'Codigo Barras' },
             { field: 'cantidad', headerName: 'Cantidad' },
-            { field: 'total', headerName: 'subTotal' }
+            { field: 'subTotal', headerName: 'Sub total' }
         ];
         this.detalle = [];
         this.totalDetalle = 0;
+        this.usuario = {
+            nombre: ''
+        };
+        this.venta = {
+            usuario: this.usuario,
+            totalVenta: 0
+        };
+        this.detalleVenta = [];
     }
     AddVentaComponent.prototype.ngOnInit = function () {
         this.getDataBuscador(1);
@@ -66,34 +74,45 @@ var AddVentaComponent = /** @class */ (function () {
     };
     AddVentaComponent.prototype.agregarFilaBuscador = function () {
         var _a = this.filaSeleccionadaBuscador, nombre = _a.nombre, descripcion = _a.descripcion, stock = _a.stock, precioVenta = _a.precioVenta, codigoBarras = _a.codigoBarras;
-        var cant = 1;
+        var canti = 1;
         var prod = {
             nombre: nombre,
             descripcion: descripcion,
             stock: stock,
             precioVenta: precioVenta,
             codigoBarras: codigoBarras,
-            cantidad: cant
+            cantidad: canti,
+            subTotal: 0
         };
-        // Asegurar que detalle es un array y luego agregar el nuevo producto
-        if (!Array.isArray(this.detalle)) {
-            this.detalle = [];
-        }
         // Buscar si ya existe el producto
-        var index = this.detalle.findIndex(function (item) { return item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre; });
-        if (index !== -1) {
+        var index2 = this.detalleVenta.findIndex(function (item) { return item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre; });
+        if (index2 !== -1) {
             // Si existe, incrementar la cantidad y actualizar el total
-            this.detalle[index].cantidad += 1;
+            this.detalleVenta[index2].cantidad += 1;
         }
         else {
             // Si no existe, agregarlo a la lista
-            this.detalle.push(prod);
+            this.detalleVenta.push(prod);
         }
         // Calcular el total de cada producto
-        this.detalle.forEach(function (item) { return item.total = item.cantidad * item.precioVenta; });
-        console.log(this.detalle, 'detalle actualizado');
-        this.rowsDetalle = __spreadArrays(this.detalle);
-        this.totalDetalle = this.rowsDetalle.reduce(function (sum, item) { return sum + item.total; }, 0);
+        this.detalleVenta.forEach(function (item) { return item.subTotal = item.cantidad * item.precioVenta; });
+        console.log(this.detalleVenta, 'detalleVenta actualizado');
+        this.rowsDetalle = __spreadArrays(this.detalleVenta);
+        this.totalDetalle = this.rowsDetalle.reduce(function (sum, item) { return sum + item.subTotal; }, 0);
+        console.log(this.totalDetalle, 'detalleVenta actualizado');
+    };
+    AddVentaComponent.prototype.saveDetalle = function () {
+        this.service.saveVenta(this.detalleVenta).subscribe({
+            next: function (res) {
+                console.log(res, '------------------------------------------------ ');
+            },
+            error: function (err) {
+                console.error('Error en la petición:', err);
+            },
+            complete: function () {
+                console.log('Petición completada');
+            }
+        });
     };
     AddVentaComponent.prototype.eliminarFilaBuscador = function () {
         var _this = this;

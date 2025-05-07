@@ -1,5 +1,10 @@
-export interface IProductoDTO{
+import { IdGenerico, IProductoDTO } from "src/app/productos/producto/models";
 
+
+export interface IDetalleVenta extends IdGenerico{
+
+
+    
     nombre:string;
     descripcion:string;
     stock: number;
@@ -7,4 +12,7 @@ export interface IProductoDTO{
     codigoBarras:string;
     cantidad: number;
     subTotal: number;
+    
+    
+
 }

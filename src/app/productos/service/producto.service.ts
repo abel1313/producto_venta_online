@@ -1,3 +1,4 @@
+import { IDetalleVenta } from './../../ventas/venta-producto/models/detalleVenta.mode';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -25,4 +26,8 @@ export class ProductoService {
       return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/buscarNombreOrCodigoBarra?size=${size}&page=${page}&nombre=${buscar}`);
     }
   
+    // 🌐 Obtener datos
+    saveVenta(det: IDetalleVenta[]): Observable<any> {
+      return this.http.post(`${environment.api_Url}/ventas/save`,det);
+    }
 }

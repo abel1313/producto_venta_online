@@ -7,14 +7,14 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavbarComponent } from './navbar/navbar.component';
 import { ProductoModule } from './productos/producto/producto.module';
 import { VentaProductoModule } from './ventas/venta-producto/venta-producto.module';
+import { BuscarGenericoComponent } from './buscador/buscar-generico/buscar-generico.component';
 
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavbarComponent,
-    
+    NavbarComponent
   ],
   imports: [
     BrowserModule,

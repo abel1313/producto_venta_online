@@ -16,6 +16,7 @@ exports.__esModule = true;
 exports.AddVentaComponent = void 0;
 var core_1 = require("@angular/core");
 var menu_1 = require("@angular/material/menu");
+var sweetalert2_1 = require("sweetalert2");
 var AddVentaComponent = /** @class */ (function () {
     function AddVentaComponent(service) {
         this.service = service;
@@ -33,12 +34,12 @@ var AddVentaComponent = /** @class */ (function () {
         this.columnsBuscador = [
             { field: 'nombre', headerName: 'Nombre' },
             { field: 'precioCosto', headerName: 'Precio Costo' },
+            { field: 'stock', headerName: 'Stock' },
             { field: 'piezas', headerName: 'Piezas' },
             { field: 'color', headerName: 'Color' },
             { field: 'precioVenta', headerName: 'Precio Venta' },
             { field: 'precioRebaja', headerName: 'Precio Rebaja' },
             { field: 'descripcion', headerName: 'Descripcion' },
-            { field: 'stock', headerName: 'Stock' },
             { field: 'marca', headerName: 'Marca' },
             { field: 'contenido', headerName: 'Contenido' },
             { field: 'codigoBarras', headerName: 'Codigo Barras' }
@@ -53,7 +54,7 @@ var AddVentaComponent = /** @class */ (function () {
             { field: 'subTotal', headerName: 'Sub total' }
         ];
         this.detalle = [];
-        this.totalDetalle = 0;
+        this.totalDetalle = 'Total ';
         this.usuario = {
             nombre: ''
         };
@@ -62,6 +63,7 @@ var AddVentaComponent = /** @class */ (function () {
             totalVenta: 0
         };
         this.detalleVenta = [];
+        this.disableBoton = false;
     }
     AddVentaComponent.prototype.ngOnInit = function () {
         this.getDataBuscador(1);
@@ -98,21 +100,41 @@ var AddVentaComponent = /** @class */ (function () {
         this.detalleVenta.forEach(function (item) { return item.subTotal = item.cantidad * item.precioVenta; });
         console.log(this.detalleVenta, 'detalleVenta actualizado');
         this.rowsDetalle = __spreadArrays(this.detalleVenta);
-        this.totalDetalle = this.rowsDetalle.reduce(function (sum, item) { return sum + item.subTotal; }, 0);
+        var total = this.rowsDetalle.reduce(function (sum, item) { return sum + item.subTotal; }, 0);
+        this.totalDetalle = 'Total $ ' + total;
+        this.disableBoton = total > 0;
         console.log(this.totalDetalle, 'detalleVenta actualizado');
     };
     AddVentaComponent.prototype.saveDetalle = function () {
-        this.service.saveVenta(this.detalleVenta).subscribe({
-            next: function (res) {
-                console.log(res, '------------------------------------------------ ');
-            },
-            error: function (err) {
-                console.error('Error en la petición:', err);
-            },
-            complete: function () {
-                console.log('Petición completada');
-            }
-        });
+        if (this.disableBoton) {
+            this.service.saveVenta(this.detalleVenta).subscribe({
+                next: function (res) {
+                    console.log(res, '------------------------------------------------ ');
+                    sweetalert2_1["default"].fire({
+                        title: "Drag me!",
+                        icon: "success",
+                        draggable: true
+                    });
+                },
+                error: function (err) {
+                    sweetalert2_1["default"].fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Something went wrong!"
+                    });
+                },
+                complete: function () {
+                    console.log('Petición completada');
+                }
+            });
+        }
+        else {
+            sweetalert2_1["default"].fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Deberia ingresar productos"
+            });
+        }
     };
     AddVentaComponent.prototype.eliminarFilaBuscador = function () {
         var _this = this;

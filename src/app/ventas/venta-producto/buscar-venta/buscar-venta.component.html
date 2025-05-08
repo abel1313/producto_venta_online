@@ -1,1 +1,24 @@
-<p>buscar-venta works!</p>
+<app-buscar-generico
+($textBuscar)="obtenerTextoBuscar($event)"
+>
+
+</app-buscar-generico>
+
+
+
+
+<app-table-generico
+
+[paginacion] = "paginacion"
+[itemAgregar]= "'add'"
+[itemEliminar] = "'elim'"
+[columnas]="columnsDetalle"
+[styleTableWidth]="'100%'"
+[styleTableheight]="'300px'"
+($primeraPagina)="primeraPagina($event)"
+($siguientePagina)="sigPagina($event)"
+($anteriorPagina)="antPagina($event)"
+($ultimaPagina)="ultPagina($event)"
+>
+
+</app-table-generico>

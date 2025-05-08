@@ -6,6 +6,7 @@ import { IProductoDTO, IProductoPaginable } from 'src/app/productos/producto/mod
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IUsuario, IVenta } from '../models';
 import { IDetalleVenta } from '../models/detalleVenta.mode';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-add-venta',
@@ -44,12 +45,12 @@ export class AddVentaComponent implements OnInit {
     columnsBuscador = [
       { field: 'nombre', headerName: 'Nombre' },  
       { field: 'precioCosto', headerName: 'Precio Costo' },  
+      { field: 'stock', headerName: 'Stock' },
       { field: 'piezas', headerName: 'Piezas' },
       { field: 'color', headerName: 'Color' },
       { field: 'precioVenta', headerName: 'Precio Venta' },
       { field: 'precioRebaja', headerName: 'Precio Rebaja' },
       { field: 'descripcion', headerName: 'Descripcion' },
-      { field: 'stock', headerName: 'Stock' },
       { field: 'marca', headerName: 'Marca' },
       { field: 'contenido', headerName: 'Contenido' },
       { field: 'codigoBarras', headerName: 'Codigo Barras' }
@@ -78,7 +79,7 @@ export class AddVentaComponent implements OnInit {
   
   
   detalle: any[] =[];
-  totalDetalle: number = 0;
+  totalDetalle: string = 'Total ';
 
   usuario: IUsuario = {
     nombre:'',
@@ -129,24 +130,45 @@ export class AddVentaComponent implements OnInit {
   
     this.rowsDetalle = [...this.detalleVenta];
   
-    this.totalDetalle = this.rowsDetalle.reduce((sum, item) => sum + item.subTotal, 0);
+    const total = this.rowsDetalle.reduce((sum, item) => sum + item.subTotal, 0);
+    this.totalDetalle = 'Total $ ' + total;
     
-
+    this.disableBoton = total > 0;
     console.log(this.totalDetalle, 'detalleVenta actualizado');
   }
 
+  disableBoton: boolean = false;
+
   saveDetalle(): void{
-    this.service.saveVenta(this.detalleVenta).subscribe({
-      next: (res) => {
-        console.log(res, '------------------------------------------------ ');
-      },
-      error: (err) => {
-        console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
-      }
-    });
+    
+      if( this.disableBoton){
+        this.service.saveVenta(this.detalleVenta).subscribe({
+          next: (res) => {
+            console.log(res, '------------------------------------------------ ');
+            Swal.fire({
+              title: "Drag me!",
+              icon: "success",
+              draggable: true
+            });
+          },
+          error: (err) => {
+            Swal.fire({
+              icon: "error",
+              title: "Oops...",
+              text: "Something went wrong!"
+            });
+          },
+          complete: () => {
+            console.log('Petición completada');
+          }
+        });
+    }else{
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Deberia ingresar productos"
+      });
+    }
   }
 
   eliminarFilaBuscador() {

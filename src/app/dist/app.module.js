@@ -22,7 +22,7 @@ var AppModule = /** @class */ (function () {
         core_1.NgModule({
             declarations: [
                 app_component_1.AppComponent,
-                navbar_component_1.NavbarComponent,
+                navbar_component_1.NavbarComponent
             ],
             imports: [
                 platform_browser_1.BrowserModule,

@@ -80,11 +80,11 @@ style="display: block;"  ></button>
 
         <div class="col-1">
           
-          <button class="btn btn-success" (click)="saveDetalle()">save</button>
+          <button class="btn btn-success col-12" [disabled]="!disableBoton" (click)="saveDetalle()">save</button>
         </div>
 
         <div class="col-2">
-            <input type="text" class="input-group-sm text-center" readonly disabled [(ngModel)]="totalDetalle" >
+            <input type="text" class="input-group-sm col-12 text-center" readonly disabled [(ngModel)]="totalDetalle" >
         </div>
     </div>
 

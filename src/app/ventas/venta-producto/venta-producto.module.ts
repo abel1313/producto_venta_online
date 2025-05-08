@@ -11,6 +11,7 @@ import { AgGridModule } from 'ag-grid-angular';
 import { MatMenuModule } from '@angular/material/menu';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { BuscarGenericoComponent } from 'src/app/buscador/buscar-generico/buscar-generico.component';
 
 
 @NgModule({
@@ -18,6 +19,7 @@ import { FormsModule } from '@angular/forms';
     AddVentaComponent,
     BuscarVentaComponent,
     AllVentaComponent,
+    BuscarGenericoComponent
   ],
   imports: [
     CommonModule,
@@ -27,7 +29,8 @@ import { FormsModule } from '@angular/forms';
         AgGridModule,
         MatMenuModule,
         HttpClientModule,
-        FormsModule
+        FormsModule,
+        
   ]
 })
 export class VentaProductoModule { }

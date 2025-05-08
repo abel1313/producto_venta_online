@@ -13,7 +13,7 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges  {
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   @ViewChild('agGrid') agGrid!: AgGridAngular;
-  @Input() buscar?: string;
+
   @Input() paginacion?: any;
   @Input() itemAgregar?: string;
   @Input() itemEliminar?: string;
@@ -114,6 +114,8 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
 
   ngAfterViewInit() {
 
+    console.log(this.paginacion);
+    this.rows = this.paginacion.rows;
     if (!this.menuTrigger) {
       console.error('menuTrigger no está inicializado');
     }
@@ -126,7 +128,7 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
   }
 
   ngOnInit(): void {
-    this.getData(1);
+
     document.addEventListener('click', (event: Event) => {
       if (this.menuTrigger.menuOpen) {
         this.menuTrigger.closeMenu();
@@ -136,27 +138,10 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
     console.log(this.rows, 'buscando ')
   }
 
-  getData(pagina: number){
-    this.srvice.getData(pagina,10).subscribe({
-      next: (res) => {
-        //this.paginacion = res;
-        //this.rows = this.paginacion.t;
-      },
-      error: (err) => {
-        console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
-      }
-    });
-  }
+
 
   primeraPagina(): void{
     this.paginaPrimera = 1;
-    
-
-   // this.getData(this.paginaPrimera);
-    console.error('EprimeraPagina:', this.paginaPrimera);
     this.$primeraPagina.emit(this.paginaPrimera);
   }
   paginaAnterior(): void{
@@ -166,14 +151,11 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
   }
   siguientePagina(): void{
     this.paginaPrimera = this.paginaPrimera +1;
-    //this.getData(this.paginaPrimera );
     this.$siguientePagina.emit(this.paginaPrimera);
 
   }
   ultimaPagina(): void{
     this.paginaUltima = this.paginacion?.totalPaginas || 0;
-    //this.getData(this.paginaUltima);
     this.$ultimaPagina.emit(this.paginaUltima);
-    console.error('ultimaPagina:', this.paginaUltima);
   }
 }

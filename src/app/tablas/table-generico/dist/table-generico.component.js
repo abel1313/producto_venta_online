@@ -73,6 +73,8 @@ var TableGenericoComponent = /** @class */ (function () {
     TableGenericoComponent.prototype.eliminarFila = function () {
     };
     TableGenericoComponent.prototype.ngAfterViewInit = function () {
+        console.log(this.paginacion);
+        this.rows = this.paginacion.rows;
         if (!this.menuTrigger) {
             console.error('menuTrigger no está inicializado');
         }
@@ -83,7 +85,6 @@ var TableGenericoComponent = /** @class */ (function () {
     };
     TableGenericoComponent.prototype.ngOnInit = function () {
         var _this = this;
-        this.getData(1);
         document.addEventListener('click', function (event) {
             if (_this.menuTrigger.menuOpen) {
                 _this.menuTrigger.closeMenu();
@@ -91,24 +92,8 @@ var TableGenericoComponent = /** @class */ (function () {
         });
         console.log(this.rows, 'buscando ');
     };
-    TableGenericoComponent.prototype.getData = function (pagina) {
-        this.srvice.getData(pagina, 10).subscribe({
-            next: function (res) {
-                //this.paginacion = res;
-                //this.rows = this.paginacion.t;
-            },
-            error: function (err) {
-                console.error('Error en la petición:', err);
-            },
-            complete: function () {
-                console.log('Petición completada');
-            }
-        });
-    };
     TableGenericoComponent.prototype.primeraPagina = function () {
         this.paginaPrimera = 1;
-        // this.getData(this.paginaPrimera);
-        console.error('EprimeraPagina:', this.paginaPrimera);
         this.$primeraPagina.emit(this.paginaPrimera);
     };
     TableGenericoComponent.prototype.paginaAnterior = function () {
@@ -117,15 +102,12 @@ var TableGenericoComponent = /** @class */ (function () {
     };
     TableGenericoComponent.prototype.siguientePagina = function () {
         this.paginaPrimera = this.paginaPrimera + 1;
-        //this.getData(this.paginaPrimera );
         this.$siguientePagina.emit(this.paginaPrimera);
     };
     TableGenericoComponent.prototype.ultimaPagina = function () {
         var _a;
         this.paginaUltima = ((_a = this.paginacion) === null || _a === void 0 ? void 0 : _a.totalPaginas) || 0;
-        //this.getData(this.paginaUltima);
         this.$ultimaPagina.emit(this.paginaUltima);
-        console.error('ultimaPagina:', this.paginaUltima);
     };
     __decorate([
         core_1.ViewChild(menu_1.MatMenuTrigger)
@@ -133,9 +115,6 @@ var TableGenericoComponent = /** @class */ (function () {
     __decorate([
         core_1.ViewChild('agGrid')
     ], TableGenericoComponent.prototype, "agGrid");
-    __decorate([
-        core_1.Input()
-    ], TableGenericoComponent.prototype, "buscar");
     __decorate([
         core_1.Input()
     ], TableGenericoComponent.prototype, "paginacion");

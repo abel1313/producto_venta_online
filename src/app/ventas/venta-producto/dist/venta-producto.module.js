@@ -19,6 +19,7 @@ var ag_grid_angular_1 = require("ag-grid-angular");
 var menu_1 = require("@angular/material/menu");
 var http_1 = require("@angular/common/http");
 var forms_1 = require("@angular/forms");
+var buscar_generico_component_1 = require("src/app/buscador/buscar-generico/buscar-generico.component");
 var VentaProductoModule = /** @class */ (function () {
     function VentaProductoModule() {
     }
@@ -28,6 +29,7 @@ var VentaProductoModule = /** @class */ (function () {
                 add_venta_component_1.AddVentaComponent,
                 buscar_venta_component_1.BuscarVentaComponent,
                 all_venta_component_1.AllVentaComponent,
+                buscar_generico_component_1.BuscarGenericoComponent
             ],
             imports: [
                 common_1.CommonModule,
@@ -37,7 +39,7 @@ var VentaProductoModule = /** @class */ (function () {
                 ag_grid_angular_1.AgGridModule,
                 menu_1.MatMenuModule,
                 http_1.HttpClientModule,
-                forms_1.FormsModule
+                forms_1.FormsModule,
             ]
         })
     ], VentaProductoModule);

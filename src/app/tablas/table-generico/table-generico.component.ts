@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
@@ -40,13 +40,25 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
 
 
   constructor(
-    private readonly srvice: ProductoService
+    private readonly srvice: ProductoService,
+    private cdr: ChangeDetectorRef
   ) { 
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    
+    console.log("desde el padre en cada cabui 123 ",changes['paginacion'].currentValue )
+    
     if (changes['paginacion'] && this.paginacion?.t) {
+       console.log("dcambio " )
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
+      this.cdr.detectChanges(); // ✅ Forzar actualización de la vista
+    }
+      if (changes['paginacion'] && this.paginacion?.rows  ) {
+      this.rows = [...this.paginacion.rows]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
+       
+      this.cdr.detectChanges(); // ✅ Forzar actualización de la vista
+
     }
   }
 

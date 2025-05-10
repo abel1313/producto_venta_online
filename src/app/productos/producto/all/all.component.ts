@@ -50,6 +50,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    console.log('cambios ')
     if (changes['paginacion'] && this.paginacion?.t) {
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
@@ -183,6 +184,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
+        console.log(this.rows)
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -197,23 +199,59 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
     this.paginaPrimera = 1;
 
 
-    this.getData(this.paginaPrimera);
+    this.conOSinBuscar(this.paginaPrimera);
     console.error('EprimeraPagina:', this.paginaPrimera);
   }
   paginaAnterior(): void{
     this.paginaPrimera = this.paginaPrimera -1;
-    this.getData(this.paginaPrimera );
+    this.conOSinBuscar(this.paginaPrimera );
 
   }
   siguientePagina(): void{
     this.paginaPrimera = this.paginaPrimera +1;
-    this.getData(this.paginaPrimera );
+    this.conOSinBuscar(this.paginaPrimera );
 
   }
   ultimaPagina(): void{
     this.paginaUltima = this.paginacion?.totalPaginas || 0;
     this.paginaPrimera = this.paginacion?.totalPaginas || 0;
-    this.getData(this.paginaUltima);
+    this.conOSinBuscar(this.paginaUltima);
     console.error('ultimaPagina:', this.paginaUltima);
   }
+
+
+    conOSinBuscar(pagina: number): void{
+      if( this.buscarProd == '' ){
+        this.getData(pagina);
+      }else{
+        this.buscarProductoSinKey(pagina,this.buscarProd,);
+      }
+    }
+    buscarProductos(event: KeyboardEvent) {
+    const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    this.buscarProd = texto;
+    if(this.buscarProd == ''){
+      this.paginaPrimera = 1;
+    }
+    this.buscarProductoSinKey(this.paginaPrimera,this.buscarProd);
+  }
+
+  buscarProductoSinKey(paginaPrimera: number,buscarProd: string): void{
+    this.srvice.getDataNombreCodigoBarra(paginaPrimera,10,buscarProd)
+    .subscribe({
+        next: (res) => {
+        this.paginacion = res;
+        this.rows = this.paginacion.t;
+        console.log(this.rows)
+      },
+      error: (err) => {
+        console.error('Error en la petición:', err);
+      },
+      complete: () => {
+        console.log('Petición completada');
+      }
+    });
+  }
+
+      buscarProd:string = '';
 }

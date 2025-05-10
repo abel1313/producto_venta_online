@@ -30,4 +30,9 @@ export class ProductoService {
     saveVenta(det: IDetalleVenta[]): Observable<any> {
       return this.http.post(`${environment.api_Url}/ventas/save`,det);
     }
+
+        // 🌐 Obtener datos
+    getTotalVenta(): Observable<any> {
+      return this.http.get(`${environment.api_Url}/ventas/getTotalVentas`);
+    }
 }

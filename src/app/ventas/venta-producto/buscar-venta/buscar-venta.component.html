@@ -1,24 +1,46 @@
-<app-buscar-generico
-($textBuscar)="obtenerTextoBuscar($event)"
->
+<div class="row">
+  <div class="col-8">
+    <app-buscar-generico ($textBuscar)="obtenerTextoBuscar($event)">
+    </app-buscar-generico>
+  </div>
+  <div class="col-4">
+    <button class="btn btn-primary col-12" (click)="buscarTotalDetalle()">total</button>
+  </div>
+</div>
 
-</app-buscar-generico>
 
 
 
 
-<app-table-generico
+<div class="row">
+  <div class="col-12">
+    <ag-grid-angular 
+      [rowData]="rows" 
+      [columnDefs]="columnsDetalle" 
+      [pagination]="false" class="ag-theme-alpine"
+      [style]="{ width: styleTableWidth, height: styleTableheight }"
+      (contextmenu)="blockContextMenu($event)"
+      (cellContextMenu)="abrirMenu($event)">
+    </ag-grid-angular>
+  </div>
+</div>
+<div class="row">
+    <div class="col-10 d-flex justify-content-end">
+        <label for="label">Total </label>
+    </div>
+    <div class="col-2 d-flex justify-content-around">
+        <p>
+            {{totalVenta | currency}}
+        </p>
+    </div>
+</div>
+<!-- Botón INVISIBLE para activar el menú -->
+<button #menuTrigger mat-button [matMenuTriggerFor]="menu" style="display: none;"></button>
 
-[paginacion] = "paginacion"
-[itemAgregar]= "'add'"
-[itemEliminar] = "'elim'"
-[columnas]="columnsDetalle"
-[styleTableWidth]="'100%'"
-[styleTableheight]="'300px'"
-($primeraPagina)="primeraPagina($event)"
-($siguientePagina)="sigPagina($event)"
-($anteriorPagina)="antPagina($event)"
-($ultimaPagina)="ultPagina($event)"
->
 
-</app-table-generico>
+
+
+<mat-menu #menu="matMenu">
+  <button *ngIf="itemAgregar" mat-menu-item (click)="agregarFila()">{{itemAgregar}}</button>
+  <button *ngIf="itemEliminar" mat-menu-item (click)="eliminarFila()">{{itemEliminar}}</button>
+</mat-menu>

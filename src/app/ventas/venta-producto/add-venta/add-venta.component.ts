@@ -150,6 +150,9 @@ export class AddVentaComponent implements OnInit {
               icon: "success",
               draggable: true
             });
+            this.disableBoton = false;
+            this.detalleVenta = [];
+            this.totalDetalle = 'Total ';
           },
           error: (err) => {
             Swal.fire({

@@ -1,0 +1,43 @@
+<div class="d-flex justify-content-center p-4" >
+    <div class="col-8">
+        <div class="card" >
+
+            <div class="card-header text-center">
+               <b> {{nombreCard}}</b>
+            </div>
+            <form [formGroup]="formGastos">
+
+                <div class="row">
+                    <div class="col-6">
+                        <label for="nombre">Nombre:</label>
+                        <input id="nombre" formControlName="nombre" class="form-control">
+                        
+                        <div *ngIf="formGastos.get('nombre')?.invalid && formGastos.get('nombre')?.touched">
+                          <small class="text-danger">Campo requerido</small>
+                          <small class="text-danger" *ngIf="formGastos.get('nombre')?.errors?.['maxlength']">Máximo 10 caracteres</small>
+                        </div>
+                        
+
+                    </div>
+                    <div class="col-6">
+                        <label for="precioCosto">Precio al que se compro:</label>
+                        <input id="precioCosto" formControlName="precioCosto" class="form-control">
+                        
+                        <div *ngIf="formGastos.get('precioCosto')?.invalid && formGastos.get('precioCosto')?.touched">
+                          <small class="text-danger">Campo requerido</small>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="row p-2">
+                    <div class="col-12 d-flex justify-content-center">
+                        
+                <button type="submit" class="btn btn-success col-6 " (click)="guardar()" [disabled]="formGastos.invalid">Enviar</button>
+                    </div>
+                </div>
+              </form>
+          </div>
+    </div>
+</div>

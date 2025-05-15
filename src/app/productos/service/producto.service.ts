@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { IProductoDTO, IProductoPaginable } from '../producto/models';
+import { IGastos } from 'src/app/gastos/models';
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +21,8 @@ export class ProductoService {
       return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/getProductos2?size=${size}&page=${page}`);
     }
 
+
+
     
     // 🌐 Obtener datos
     getDataNombreCodigoBarra(page:number,size:number, buscar:string): Observable<IProductoPaginable<IProductoDTO[]>> {
@@ -34,5 +37,13 @@ export class ProductoService {
         // 🌐 Obtener datos
     getTotalVenta(): Observable<any> {
       return this.http.get(`${environment.api_Url}/ventas/getTotalVentas`);
+    }
+
+        // 🌐 Obtener datos
+    saveGasto(det: IGastos): Observable<any> {
+      return this.http.post(`${environment.api_Url}/gastos/save`,det);
+    }
+            getDataGastos(page:number,size:number): Observable<IProductoPaginable<IGastos[]>> {
+      return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/gastos/getGastos?size=${size}&page=${page}`);
     }
 }

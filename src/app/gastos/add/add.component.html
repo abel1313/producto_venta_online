@@ -9,32 +9,33 @@
 
                 <div class="row">
                     <div class="col-6">
-                        <label for="nombre">Nombre:</label>
-                        <input id="nombre" formControlName="nombre" class="form-control">
+                        <label for="descripcionGasto">Descripcion gasto:</label>
+                        <input id="descripcionGasto" formControlName="descripcionGasto" class="form-control">
                         
-                        <div *ngIf="formGastos.get('nombre')?.invalid && formGastos.get('nombre')?.touched">
+                        <div *ngIf="formGastos.get('descripcionGasto')?.invalid && formGastos.get('descripcionGasto')?.touched">
                           <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formGastos.get('nombre')?.errors?.['maxlength']">Máximo 10 caracteres</small>
+                          <small class="text-danger" *ngIf="formGastos.get('descripcionGasto')?.errors?.['maxlength']">Máximo 100 caracteres</small>
                         </div>
                         
 
                     </div>
                     <div class="col-6">
-                        <label for="precioCosto">Precio al que se compro:</label>
-                        <input id="precioCosto" formControlName="precioCosto" class="form-control">
+                        <label for="precioGasto">Precio al que se compro:</label>
+                        <input id="precioGasto" formControlName="precioGasto" class="form-control">
                         
-                        <div *ngIf="formGastos.get('precioCosto')?.invalid && formGastos.get('precioCosto')?.touched">
+                        <div *ngIf="formGastos.get('precioGasto')?.invalid && formGastos.get('precioGasto')?.touched">
                           <small class="text-danger">Campo requerido</small>
                         </div>
+                          <small class="text-danger" *ngIf="formGastos.get('precioGasto')?.errors?.['pattern']">Ingrese solo numeros</small>
                     </div>
                 </div>
 
 
 
                 <div class="row p-2">
-                    <div class="col-12 d-flex justify-content-center">
+                    <div class="col-12 d-flex justify-content-end">
                         
-                <button type="submit" class="btn btn-success col-6 " (click)="guardar()" [disabled]="formGastos.invalid">Enviar</button>
+                <button type="submit" class="btn btn-success col-6 " (click)="guardar()" [disabled]="formGastos.invalid">Guardar</button>
                     </div>
                 </div>
               </form>

@@ -11,6 +11,7 @@ import { AgGridAngular } from 'ag-grid-angular';
   styleUrls: ['./all.component.scss']
 })
 export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
+  
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   @ViewChild('agGrid') agGrid!: AgGridAngular;
   @Input() buscar?: string;

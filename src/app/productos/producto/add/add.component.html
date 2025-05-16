@@ -135,12 +135,12 @@
 
                     
                     <div class="col-8">
-                        <label for="codigoBarra">Codigo de Barra:</label>
-                        <input id="codigoBarra" formControlName="codigoBarra" class="form-control">
+                        <label for="codigoBarras">Codigo de Barra:</label>
+                        <input id="codigoBarras" formControlName="codigoBarras" class="form-control" [attr.disabled]="!habilita ? true : null">
                         
-                        <div *ngIf="formProductos.get('codigoBarra')?.invalid && formProductos.get('codigoBarra')?.touched">
+                        <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
                           <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('codigoBarra')?.errors?.['maxlength']">Máximo 10 caracteres</small>
+                          <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 10 caracteres</small>
                         </div>
                     </div>
 
@@ -158,3 +158,7 @@
           </div>
     </div>
 </div>
+
+
+
+

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { IProductoDTO, IProductoPaginable } from '../producto/models';
+import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models';
 import { IGastos } from 'src/app/gastos/models';
 
 @Injectable({
@@ -45,5 +45,11 @@ export class ProductoService {
     }
             getDataGastos(page:number,size:number): Observable<IProductoPaginable<IGastos[]>> {
       return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/gastos/getGastos?size=${size}&page=${page}`);
+    }
+
+            // 🌐 Obtener datos
+    saveProducto(det: IProducto): Observable<any> {
+      console.log(JSON.stringify(det))
+      return this.http.post(`${environment.api_Url}/productos/save`,det);
     }
 }

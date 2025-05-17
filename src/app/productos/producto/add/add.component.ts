@@ -1,22 +1,26 @@
 import { IProducto } from './../models/producto.model';
-import { Component, Input, OnInit, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductoService } from '../../service/producto.service';
 import Swal from 'sweetalert2';
+import { ArcElement, Chart, PieController } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+Chart.register(ArcElement, PieController, ChartDataLabels);
 
 @Component({
   selector: 'app-add',
   templateUrl: './add.component.html',
   styleUrls: ['./add.component.scss']
 })
-export class AddComponent implements OnInit {
+export class AddComponent implements OnInit, AfterViewInit {
 
   @Input() nombreCard: string = '';
 
   formProductos: FormGroup;
 
   productoSave: IProducto;
-habilita = false;
+  habilita = false;
   constructor(
     private readonly fb: FormBuilder,
     private readonly service: ProductoService
@@ -44,7 +48,7 @@ habilita = false;
       }
     }
 
-    
+
 
     this.formProductos = this.fb.group({
       nombre: ['sdasd', [Validators.required, Validators.maxLength(10)]],
@@ -90,8 +94,8 @@ habilita = false;
       console.log(this.formProductos.value, " -------------------- ")
       const { codigoBarras, ...productoData } = this.formProductos.value;
 
-      console.log( codigoBarras," antes de ")
-      
+      console.log(codigoBarras, " antes de ")
+
       const producto: IProducto = {
         ...productoData, // Asignamos el resto de los valores
         codigoBarras: { codigoBarra: codigoBarras } // ✅ Transformamos el código de barras en `ICodigoBarra`
@@ -101,25 +105,25 @@ habilita = false;
       if (!producto.codigoBarras) {
         producto.codigoBarras = { codigoBarras: '', id: 6 }; // ✅ Si no está definido, lo inicializamos
       }
-      
+
       const codBarr = producto.codigoBarras.codigoBarras;
       console.log("producto 123 ", codBarr)
-                this.productoSave = {
-            nombre: producto.nombre,
-            precioCosto: producto.precioCosto,
-            piezas: producto.piezas,
-            color: producto.color,
-            precioVenta: producto.precioRebaja,
-            precioRebaja: producto.precioRebaja,
-            descripcion: producto.descripcion || "",
-            stock: producto.stock,
-            marca: producto.marca,
-            contenido: producto.contenido || '',
-            codigoBarras: {
-              codigoBarras: codigoBarras,
-              id: producto.codigoBarras.id
-            }
-          }
+      this.productoSave = {
+        nombre: producto.nombre,
+        precioCosto: producto.precioCosto,
+        piezas: producto.piezas,
+        color: producto.color,
+        precioVenta: producto.precioRebaja,
+        precioRebaja: producto.precioRebaja,
+        descripcion: producto.descripcion || "",
+        stock: producto.stock,
+        marca: producto.marca,
+        contenido: producto.contenido || '',
+        codigoBarras: {
+          codigoBarras: codigoBarras,
+          id: producto.codigoBarras.id
+        }
+      }
 
       console.log(JSON.stringify(this.productoSave), " produvcto ")
     }
@@ -164,5 +168,74 @@ habilita = false;
   }
 
 
+  @ViewChild('ruletaCanvas') ruletaCanvas!: ElementRef;
+  participantes = ['Juan', 'Ana', 'Carlos', 'Luis', 'Maria'];
+  chart!: Chart;
+
+  ngAfterViewInit() {
+    Chart.register(ArcElement, PieController);
+    Chart.register(ChartDataLabels);
+
+    Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
+    setTimeout(() => {
+      this.generarRuleta();
+    }, 100);
+
+
+  }
+  generarRuleta() {
+    if (this.chart) {
+      this.chart.destroy(); // Eliminamos instancia previa para evitar errores
+    }
+
+    this.chart = new Chart(this.ruletaCanvas.nativeElement, {
+      type: 'pie',
+      data: {
+        labels: this.participantes, // Ahora mostrará los nombres correctamente
+        datasets: [{
+          data: Array(this.participantes.length).fill(1),
+          backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'],
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom'
+          },
+          datalabels: {
+            color: 'white',
+            anchor: 'center',
+            align: 'center',
+            formatter: (_, context) => {
+              return context.chart?.data?.labels?.[context.dataIndex] ?? ''; // Safe check to prevent 'undefined' errors
+            },
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
+  }
+
+iniciarRifa() {
+  const ganadorIndex = Math.floor(Math.random() * this.participantes.length);
+
+  // Calculamos el ángulo exacto del ganador
+  const anguloPorSegmento = 360 / this.participantes.length;
+  const anguloFinal = 360 - (ganadorIndex * anguloPorSegmento + anguloPorSegmento / 2); // Ajuste para alinearse con el gráfico
+
+  // Aplicamos la animación de giro
+  this.ruletaCanvas.nativeElement.style.transition = 'transform 3s ease-out';
+  this.ruletaCanvas.nativeElement.style.transform = `rotate(${360 * 5 + anguloFinal}deg)`; // Gira varias veces y se detiene en el ganador
+
+  setTimeout(() => {
+    alert("¡Ganador: " + this.participantes[ganadorIndex] + "!");
+  }, 3000);
+}
 
 }

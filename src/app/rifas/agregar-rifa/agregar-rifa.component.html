@@ -1,0 +1,41 @@
+
+<app-clientes-add
+[nombreCard]="'Agregar cliente'"
+($hideComponent)="ocultarComponente($event)"
+[hidden]="ocultarCliente"
+>
+
+</app-clientes-add>
+<div class="row" >
+  <div class="col-6">
+    <div class="ruleta-container">
+      <div class="indicador"></div> <!-- Flecha fija -->
+      <canvas #ruletaCanvas></canvas>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card">
+        <div class="card-title">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4">
+                                        <ul>
+                    <li *ngFor="let item of participantes"> {{item}}</li>
+                </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+    <div class="col-4">
+        <button class="btn btn-secondary" (click)="iniciarRifa()">Iniciar Rifa</button>
+    </div>
+
+        <div class="col-4">
+        <button class="btn btn-secondary" [disabled]="ocultarCliente && ocultarBtnParticipar " (click)="participarRifa()">Participar</button>
+    </div>
+</div>

@@ -1,0 +1,90 @@
+<div class="d-flex justify-content-center p-4">
+  <div class="col-8">
+    <div class="card">
+
+      <div class="card-header text-center">
+        <b> {{nombreCard}}</b>
+      </div>
+      <form [formGroup]="formCliente">
+
+        <div class="row">
+          <div class="col-6">
+            <label for="nombrePersona">Nombre:</label>
+            <input id="nombrePersona" formControlName="nombrePersona" class="form-control">
+
+            <div *ngIf="formCliente.get('nombrePersona')?.invalid && formCliente.get('nombrePersona')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="segundoNombre">Segundo nombre:</label>
+            <input id="segundoNombre" formControlName="segundoNombre" class="form-control">
+          </div>
+        </div>
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="apeidoPaterno">Apeido paterno:</label>
+            <input id="apeidoPaterno" formControlName="apeidoPaterno" class="form-control">
+
+            <div *ngIf="formCliente.get('apeidoPaterno')?.invalid && formCliente.get('apeidoPaterno')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="apeidoMaterno">Apeido materno:</label>
+            <input id="apeidoMaterno" formControlName="apeidoMaterno" class="form-control">
+
+            <div *ngIf="formCliente.get('apeidoMaterno')?.invalid && formCliente.get('apeidoMaterno')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="sexo">Sexo</label>
+            <select class="form-select" aria-label="Default select example" formControlName="sexo">
+              <option selected>Selecione una opcion</option>
+              <option value="Hombre">Hombre</option>
+              <option value="Mujer">Mujer</option>
+            </select>
+
+          </div>
+
+          <div class="col-6">
+            <label for="correoElectronico">Correo electronico</label>
+            <input id="correoElectronico" formControlName="correoElectronico" class="form-control">
+          </div>
+        </div>
+
+                <div class="row">
+
+          <div class="col-6">
+            <label for="numeroTelefonico">Numero Telefono</label>
+            <input id="numeroTelefonico" formControlName="numeroTelefonico" class="form-control">
+          </div>
+        </div>
+
+
+
+
+
+        <div class="row p-2">
+          <div class="col-12 d-flex justify-content-end">
+
+            <button type="submit" class="btn btn-success col-6 " (click)="guardar()"
+              [disabled]="formCliente.invalid">Guardar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

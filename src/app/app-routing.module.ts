@@ -11,12 +11,16 @@ const routes: Routes = [
     path: 'ventas',
     loadChildren: () => import('./ventas/venta-producto/venta-producto.module').then(m => m.VentaProductoModule)
   },
-    {
+  {
     path: 'gastos',
     loadChildren: () => import('./gastos/mis-gastos/mis-gastos.module').then(m => m.MisGastosModule)
   },
+    {
+    path: 'rifas',
+    loadChildren: () => import('./rifas/rifas.module').then(m => m.RifasModule)
+  },
   {
-    path:'', redirectTo:'gastos',pathMatch:'full'
+    path:'', redirectTo:'rifas',pathMatch:'full'
   }
 
   

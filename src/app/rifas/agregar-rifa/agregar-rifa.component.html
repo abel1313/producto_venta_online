@@ -19,8 +19,8 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-4">
-                                        <ul>
-                    <li *ngFor="let item of participantes"> {{item}}</li>
+                    <ul *ngIf="participantes != null && participantes.length > 0">
+                    <li *ngFor="let item of participantes"> {{item?.cliente?.nombrePersona}}</li>
                 </ul>
                     </div>
                 </div>
@@ -32,7 +32,7 @@
 
 <div class="row">
     <div class="col-4">
-        <button class="btn btn-secondary" (click)="iniciarRifa()">Iniciar Rifa</button>
+        <button class="btn btn-secondary" [disabled]="desHabilitarBotonClic" (click)="iniciarRifa()">Iniciar Rifa</button>
     </div>
 
         <div class="col-4">

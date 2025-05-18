@@ -6,6 +6,7 @@ import { environment } from 'src/environments/environment';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models';
 import { IGastos } from 'src/app/gastos/models';
 import { ICliente } from 'src/app/clietes/models';
+import { IRifa } from 'src/app/rifas/agregar-rifa/rifa/rifa.model';
 
 @Injectable({
   providedIn: 'root'
@@ -61,7 +62,12 @@ export class ProductoService {
     }
 
             // 🌐 Obtener datos
-    getClientesRifaPorHora(inicio: string, fin: string): Observable<any> {
-      return this.http.get(`${environment.api_Url}/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}`);
+    getClientesRifaPorHora(inicio: string, fin: string, palabraRifa: string): Observable<any> {
+      return this.http.get(`${environment.api_Url}/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}&palabraRifa=${palabraRifa}`);
+    }
+
+            // 🌐 Obtener datos
+    saveRifa(det: IRifa): Observable<any> {
+      return this.http.post(`${environment.api_Url}/rifa/save`,det);
     }
 }

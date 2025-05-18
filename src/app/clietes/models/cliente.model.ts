@@ -1,7 +1,8 @@
+import { IdGenerico } from "src/app/productos/producto/models";
 
 
 
-export interface ICliente{
+export interface ICliente extends IdGenerico{
   nombrePersona: string;
   segundoNombre: string;
   apeidoPaterno: string;

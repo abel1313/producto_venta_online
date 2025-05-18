@@ -29,6 +29,7 @@ export class AllComponent implements OnInit {
     paginaPrimera: number = 1;
     paginaUltima: number = 0;
   
+    totalGastos: number = 0;
   
   
   
@@ -36,9 +37,9 @@ export class AllComponent implements OnInit {
     data: IGastos[] = [];
   
     columns = [
-      { field: 'id', headerName: 'ID' },  
-      { field: 'descripcionGasto', headerName: 'Descripcion gasto' },  
-      { field: 'precioGasto', headerName: 'Precio gasto' }
+      { field: 'id', headerName: 'ID', width: 250 },  
+      { field: 'descripcionGasto', headerName: 'Descripcion gasto', width: 600 },  
+      { field: 'precioGasto', headerName: 'Precio gasto', width: 400 }
     ];
   
     constructor(
@@ -181,7 +182,8 @@ export class AllComponent implements OnInit {
         next: (res) => {
           this.paginacion = res;
           this.rows = this.paginacion.t;
-          console.log(this.paginacion)
+          this.totalGastos = this.rows.reduce((sum, item) => sum + item.precioGasto, 0);
+
         },
         error: (err) => {
           console.error('Error en la petición:', err);

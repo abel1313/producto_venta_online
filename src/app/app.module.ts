@@ -19,8 +19,8 @@ import { RouterModule } from '@angular/router';
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule,
     BrowserAnimationsModule,
+    AppRoutingModule,
     ProductoModule,
     VentaProductoModule,
     MisGastosModule,

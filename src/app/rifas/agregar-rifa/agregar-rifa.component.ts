@@ -5,7 +5,9 @@ import { Constants } from 'src/app/Constants';
 import { ICliente } from 'src/app/clietes/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IRifa } from './rifa/rifa.model';
-import { RifasModule } from '../rifas.module';
+import { WebSocketServiceService } from 'src/app/socket/web-socket-service.service';
+
+
 Chart.register(ArcElement, PieController, ChartDataLabels);
 @Component({
   selector: 'app-agregar-rifa',
@@ -19,15 +21,25 @@ export class AgregarRifaComponent implements OnInit {
   ocultarBtnParticipar: boolean = false;
 
   desHabilitarBotonClic: boolean = false;
-  clienteRida: ICliente [] = [];
+  clienteRida: ICliente[] = [];
 
   palabraRifa: string = 'Rifa';
   constructor(
-    private readonly service: ProductoService
+    private readonly service: ProductoService,
+    private readonly webSocketService: WebSocketServiceService
 
   ) { }
 
   ngOnInit(): void {
+    this.webSocketService.recibirActualizaciones((mensaje: string) => {
+      this.datos.push(mensaje); // Recibir y mostrar datos en tiempo real
+    });
+
+
+
+
+
+
 
     this.getDataRifaPorHora();
     const dataExiste = sessionStorage.getItem(Constants.DATA_CLIENTE);
@@ -61,68 +73,75 @@ export class AgregarRifaComponent implements OnInit {
       this.chart.destroy(); // Eliminamos instancia previa para evitar errores
     }
 
-    if(this.participantes != null && this.participantes.length > 0){
-          this.chart = new Chart(this.ruletaCanvas.nativeElement, {
-      type: 'pie',
-      data: {
-        labels: this.participantes.map(fil => fil.cliente?.nombrePersona), // Ahora mostrará los nombres correctamente
-        datasets: [{
-          data: Array(this.participantes.length).fill(1),
-          backgroundColor: [...colores],
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom'
-          },
-          datalabels: {
-            color: 'white',
-            anchor: 'center',
-            align: 'center',
-            formatter: (_, context) => {
-              return context.chart?.data?.labels?.[context.dataIndex] ?? ''; // Safe check to prevent 'undefined' errors
+    if (this.participantes != null && this.participantes.length > 0) {
+      this.chart = new Chart(this.ruletaCanvas.nativeElement, {
+        type: 'pie',
+        data: {
+          labels: this.participantes.map(fil => fil.cliente?.nombrePersona), // Ahora mostrará los nombres correctamente
+          datasets: [{
+            data: Array(this.participantes.length).fill(1),
+            backgroundColor: [...colores],
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
             },
-            font: {
-              size: 14,
-              weight: 'bold'
+            datalabels: {
+              color: 'white',
+              anchor: 'center',
+              align: 'center',
+              formatter: (_, context) => {
+                return context.chart?.data?.labels?.[context.dataIndex] ?? ''; // Safe check to prevent 'undefined' errors
+              },
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
             }
           }
-        }
-      },
-      plugins: [ChartDataLabels]
-    });
+        },
+        plugins: [ChartDataLabels]
+      });
     }
   }
 
   ocultarComponente(ocultar: boolean): void {
-    
+
     this.ocultarCliente = ocultar;
   }
-  iniciarRifa() {
-    this.desHabilitarBotonClic = true;
-    const ganadorIndex = Math.floor(Math.random() * this.participantes.length);
+iniciarRifa() {
+  this.desHabilitarBotonClic = true;
+  const ganadorIndex = Math.floor(Math.random() * this.participantes.length);
 
+  // 🔥 Restablecemos la ruleta antes de aplicar una nueva rotación
+  this.ruletaCanvas.nativeElement.style.transition = 'none'; // ✅ Eliminamos la animación previa
+  this.ruletaCanvas.nativeElement.style.transform = 'rotate(0deg)'; // ✅ Volvemos al estado inicial
+
+  setTimeout(() => {
     // Calculamos el ángulo exacto del ganador
     const anguloPorSegmento = 360 / this.participantes.length;
-    const anguloFinal = 360 - (ganadorIndex * anguloPorSegmento + anguloPorSegmento / 2); // Ajuste para alinearse con el gráfico
+    const anguloFinal = 360 - (ganadorIndex * anguloPorSegmento + anguloPorSegmento / 2);
 
-    // Aplicamos la animación de giro
-    this.ruletaCanvas.nativeElement.style.transition = 'transform 3s ease-out';
-    this.ruletaCanvas.nativeElement.style.transform = `rotate(${360 * 15 + anguloFinal}deg)`; // Gira varias veces y se detiene en el ganador
+    // 🔥 Aplicamos la animación de giro de manera consistente
+    this.ruletaCanvas.nativeElement.style.transition = 'transform 2s ease-out';
+    this.ruletaCanvas.nativeElement.style.transform = `rotate(${360 * 10 + anguloFinal}deg)`;
 
     setTimeout(() => {
-      alert("¡Ganador: " + this.participantes[ganadorIndex].cliente.nombrePersona + this.participantes[ganadorIndex].cliente.id + "!");
+      alert(`¡Ganador: ${this.participantes[ganadorIndex].cliente.nombrePersona}!`);
       this.desHabilitarBotonClic = false;
-    }, 3000);
-  }
+    }, 2000);
+  }, 100); // ✅ Pequeña pausa para que el reset se aplique correctamente
+}
 
-  clienteSave: IRifa [] =[];
+
+  clienteSave: IRifa[] = [];
   clienteStorage: IRifa = {
     cliente: {
-      apeidoMaterno:'',
+      apeidoMaterno: '',
       apeidoPaterno: '',
       correoElectronico: '',
       nombrePersona: '',
@@ -134,8 +153,8 @@ export class AgregarRifaComponent implements OnInit {
   };
 
   sesionRegistradaRifa: IRifa = {
-        cliente: {
-      apeidoMaterno:'',
+    cliente: {
+      apeidoMaterno: '',
       apeidoPaterno: '',
       correoElectronico: '',
       nombrePersona: '',
@@ -148,7 +167,7 @@ export class AgregarRifaComponent implements OnInit {
   participarRifa(): void {
 
     this.guardarRifa();
-    
+
 
     // Se va a gusradar el cliente
   }
@@ -158,23 +177,23 @@ export class AgregarRifaComponent implements OnInit {
 
     if (dataExiste != null) {
       this.clienteStorage = JSON.parse(sessionStorage.getItem(Constants.DATA_CLIENTE) || "");
-      
-      
-      
-        //this.participantes = [this.sesionRegistradaRifa ];
-        
-        
-        Chart.register(ArcElement, PieController);
-        Chart.register(ChartDataLabels);
 
-        Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
-        setTimeout(() => {
-          this.generarRuleta(this.obetnrColores(this.participantes.length));
-        }, 100);
-      
+
+
+      //this.participantes = [this.sesionRegistradaRifa ];
+
+
+      Chart.register(ArcElement, PieController);
+      Chart.register(ChartDataLabels);
+
+      Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
+      setTimeout(() => {
+        this.generarRuleta(this.obetnrColores(this.participantes.length));
+      }, 100);
+
     } else {
 
-     
+
       Chart.register(ArcElement, PieController);
       Chart.register(ChartDataLabels);
 
@@ -216,26 +235,37 @@ export class AgregarRifaComponent implements OnInit {
   }
 
 
-  guardarRifa(){
+  guardarRifa() {
 
-      const cliente = JSON.parse(sessionStorage.getItem(Constants.DATA_CLIENTE) || "");
-      let rifa: IRifa = {
-        cliente: cliente
-      }
-      
-        this.service.saveRifa(rifa)
+    const cliente = JSON.parse(sessionStorage.getItem(Constants.DATA_CLIENTE) || "");
+    let rifa: IRifa = {
+      cliente: cliente
+    }
+
+    this.service.saveRifa(rifa)
       .subscribe({
         next: (res) => {
           this.participantes.push(res.data);
 
-          this.participantes.forEach(fro=>console.log(fro));
-this.ocultarBtnParticipar = true;
+          this.participantes.forEach(fro => console.log(fro));
+          this.ocultarBtnParticipar = true;
           this.cargarRuletaRifa();
         }, error(erro) {
           console.log(erro)
         }
       });
   }
+  datos: string[] = [];
 
+
+    agregarDato(nuevoDato: string) {
+    this.webSocketService.enviarActualizacion(nuevoDato); // Enviar actualización a todos
+  }
+
+   mensaje: string = '';
+  enviar() {
+    this.webSocketService.enviarActualizacion(this.mensaje);
+    this.mensaje = ''; // 🔄 Limpiar el campo después de enviar
+  }
 
 }

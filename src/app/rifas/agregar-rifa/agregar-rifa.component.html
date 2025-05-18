@@ -39,3 +39,14 @@
         <button class="btn btn-secondary" [disabled]="ocultarCliente && ocultarBtnParticipar " (click)="participarRifa()">Participar</button>
     </div>
 </div>
+<input type="text" [(ngModel)]="mensaje" placeholder="Escribe un mensaje">
+<button (click)="enviar()">Enviar mensaje</button>
+
+
+<div class="row">
+  <div class="col-12">
+    <ul>
+      <li *ngFor="let item of datos">{{item}}</li>
+    </ul>
+  </div>
+</div>

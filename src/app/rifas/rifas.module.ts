@@ -6,6 +6,7 @@ import { AgregarRifaComponent } from './agregar-rifa/agregar-rifa.component';
 import { BuscarRifaComponent } from './buscar-rifa/buscar-rifa.component';
 import { MostrarRifasComponent } from './mostrar-rifas/mostrar-rifas.component';
 import { ClietesModule } from '../clietes/clietes.module';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -17,7 +18,8 @@ import { ClietesModule } from '../clietes/clietes.module';
   imports: [
     CommonModule,
     RifasRoutingModule,
-    ClietesModule
+    ClietesModule,
+    FormsModule
   ]
 })
 export class RifasModule { }

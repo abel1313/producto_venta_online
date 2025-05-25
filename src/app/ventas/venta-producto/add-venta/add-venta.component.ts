@@ -14,27 +14,27 @@ import Swal from 'sweetalert2';
   styleUrls: ['./add-venta.component.scss']
 })
 export class AddVentaComponent implements OnInit {
-    @ViewChild(MatMenuTrigger) menuTriggerBuscador!: MatMenuTrigger;
-    @ViewChild('agGrid') agGrid!: AgGridAngular;
-    rowsBuscador: any [] =[];
-    buscarProd:string = '';
-    paginacionBuscador?: IProductoPaginable<IProductoDTO[]>;
-    styleTableWidthBuscador: string = '100%';
-    styleTableheightBusador: string = '200px';
+  @ViewChild(MatMenuTrigger) menuTriggerBuscador!: MatMenuTrigger;
+  @ViewChild('agGrid') agGrid!: AgGridAngular;
+  rowsBuscador: any[] = [];
+  buscarProd: string = '';
+  paginacionBuscador?: IProductoPaginable<IProductoDTO[]>;
+  styleTableWidthBuscador: string = '100%';
+  styleTableheightBusador: string = '200px';
 
-    paginaPrimeraBuscador: number = 1;
-    paginaUltimaBuscador: number = 0;
+  paginaPrimeraBuscador: number = 1;
+  paginaUltimaBuscador: number = 0;
 
 
 
-    @ViewChild(MatMenuTrigger) menuTriggerDetalle!: MatMenuTrigger;
-    rowsDetalle: any [] =[];
-    paginacionDetalle?: IProductoPaginable<IProductoDTO[]>;
-    styleTableWidthDetalle: string = '100%';
-    styleTableheightDetalle: string = '200px';
+  @ViewChild(MatMenuTrigger) menuTriggerDetalle!: MatMenuTrigger;
+  rowsDetalle: any[] = [];
+  paginacionDetalle?: IProductoPaginable<IProductoDTO[]>;
+  styleTableWidthDetalle: string = '100%';
+  styleTableheightDetalle: string = '200px';
 
-    paginaPrimeraDetalle: number = 1;
-    paginaUltimaDetalle: number = 0;
+  paginaPrimeraDetalle: number = 1;
+  paginaUltimaDetalle: number = 0;
 
 
 
@@ -42,31 +42,31 @@ export class AddVentaComponent implements OnInit {
     private readonly service: ProductoService
   ) { }
 
-    columnsBuscador = [
-      { field: 'nombre', headerName: 'Nombre' },  
-      { field: 'codigoBarras', headerName: 'Codigo Barras' },
-      { field: 'precioVenta', headerName: 'Precio Venta' },
-      { field: 'stock', headerName: 'Stock' },
-      { field: 'piezas', headerName: 'Piezas' },
-      { field: 'color', headerName: 'Color' },
-      { field: 'precioCosto', headerName: 'Precio Costo' },  
-      { field: 'precioRebaja', headerName: 'Precio Rebaja' },
-      { field: 'descripcion', headerName: 'Descripcion' },
-      { field: 'marca', headerName: 'Marca' },
-      { field: 'contenido', headerName: 'Contenido' }
-    ];
+  columnsBuscador = [
+    { field: 'nombre', headerName: 'Nombre' },
+    { field: 'codigoBarras', headerName: 'Codigo Barras' },
+    { field: 'precioVenta', headerName: 'Precio Venta' },
+    { field: 'stock', headerName: 'Stock' },
+    { field: 'piezas', headerName: 'Piezas' },
+    { field: 'color', headerName: 'Color' },
+    { field: 'precioCosto', headerName: 'Precio Costo' },
+    { field: 'precioRebaja', headerName: 'Precio Rebaja' },
+    { field: 'descripcion', headerName: 'Descripcion' },
+    { field: 'marca', headerName: 'Marca' },
+    { field: 'contenido', headerName: 'Contenido' }
+  ];
 
 
-    columnsDetalle = [
-      { field: 'nombre', headerName: 'Nombre' },  
-      { field: 'descripcion', headerName: 'Descripcion' },  
-      { field: 'stock', headerName: 'Stock' },
-      { field: 'precioVenta', headerName: 'Precio Venta' },
-      { field: 'codigoBarras', headerName: 'Codigo Barras' },
-      { field: 'cantidad', headerName: 'Cantidad' },
-      { field: 'subTotal', headerName: 'Sub total' }
+  columnsDetalle = [
+    { field: 'nombre', headerName: 'Nombre' },
+    { field: 'descripcion', headerName: 'Descripcion' },
+    { field: 'stock', headerName: 'Stock' },
+    { field: 'precioVenta', headerName: 'Precio Venta' },
+    { field: 'codigoBarras', headerName: 'Codigo Barras' },
+    { field: 'cantidad', headerName: 'Cantidad' },
+    { field: 'subTotal', headerName: 'Sub total' }
 
-    ];
+  ];
   ngOnInit(): void {
     this.getDataBuscador(1)
   }
@@ -75,97 +75,121 @@ export class AddVentaComponent implements OnInit {
       this.rowsBuscador = [...this.paginacionBuscador.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
   }
-  
-  
-  
-  detalle: any[] =[];
+
+
+
+  detalle: any[] = [];
   totalDetalle: string = 'Total ';
 
   usuario: IUsuario = {
-    nombre:'',
+    nombre: '',
   };
   venta: IVenta = {
     usuario: this.usuario,
     totalVenta: 0,
-    
+
   }
 
 
-  detalleVenta: IDetalleVenta [] = [];
+  detalleVenta: IDetalleVenta[] = [];
 
   agregarFilaBuscador() {
-    
-    
-    
-    
-    const {nombre,descripcion, stock, precioVenta, codigoBarras} = this.filaSeleccionadaBuscador;
 
-      
-  let canti = 1;
-  const prod: IDetalleVenta = {
-    nombre,
-    descripcion,
-    stock,
-    precioVenta,
-    codigoBarras,
-    cantidad: canti,
-    subTotal: 0
-  }
+    const index = this.filaSeleccionadaBuscadorIndex || 0; // Obtener el índice del producto seleccionado
+    console.log("Índice seleccionado:", index);
 
-  // Buscar si ya existe el producto
-  const index2 = this.detalleVenta.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
+    if (index >= 0 && index < this.rowsBuscador.length) {
+      if (this.rowsBuscador[index].stock > 0) {
+        this.rowsBuscador[index].stock -= 1; // Reducir el stock correctamente
+        console.log("Stock actualizado:", this.rowsBuscador[index].stock);
 
-  if (index2 !== -1) {
-    // Si existe, incrementar la cantidad y actualizar el total
-    this.detalleVenta[index2].cantidad += 1;
-  } else {
-    // Si no existe, agregarlo a la lista
-    this.detalleVenta.push(prod);
-  }
+        // 🔥 Forzar actualización en Ag-Grid
+        this.rowsBuscador = [...this.rowsBuscador]; // Clonar el array para que Angular detecte el cambio
+
+        if( this.rowsBuscador[index].stock == 0 ){
+        this.rowsBuscador.splice(index, 1);
+
+        // 🔥 Forzar actualización en Ag-Grid
+        this.rowsBuscador = [...this.rowsBuscador]; // Clonar el array para que Angular detecte el cambio
+        }
+      } else {
+        console.warn("No hay stock disponible para este producto.");
+  // 🗑️ Eliminar la fila del array
+
+
+        return;
+      }
+    } else {
+      console.warn("Índice fuera de rango, no se pudo modificar.");
+    }
+
+    const { nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionadaBuscador;
+
+    let canti = 1;
+    const prod: IDetalleVenta = {
+      nombre,
+      descripcion,
+      stock,
+      precioVenta,
+      codigoBarras,
+      cantidad: canti,
+      subTotal: 0
+    }
+
+    // Buscar si ya existe el producto
+    const index2 = this.detalleVenta.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
+
+    if (index2 !== -1) {
+      // Si existe, incrementar la cantidad y actualizar el total
+      this.detalleVenta[index2].cantidad += 1;
+    } else {
+      // Si no existe, agregarlo a la lista
+      this.detalleVenta.push(prod);
+    }
 
     // Calcular el total de cada producto
     this.detalleVenta.forEach(item => item.subTotal = item.cantidad * item.precioVenta);
 
     console.log(this.detalleVenta, 'detalleVenta actualizado');
-  
+
     this.rowsDetalle = [...this.detalleVenta];
-  
+
     const total = this.rowsDetalle.reduce((sum, item) => sum + item.subTotal, 0);
     this.totalDetalle = 'Total $ ' + total;
-    
+
     this.disableBoton = total > 0;
     console.log(this.totalDetalle, 'detalleVenta actualizado');
   }
 
   disableBoton: boolean = false;
 
-  saveDetalle(): void{
-    
-      if( this.disableBoton){
-        this.service.saveVenta(this.detalleVenta).subscribe({
-          next: (res) => {
-            console.log(res, '------------------------------------------------ ');
-            Swal.fire({
-              title: "Drag me!",
-              icon: "success",
-              draggable: true
-            });
-            this.disableBoton = false;
-            this.detalleVenta = [];
-            this.totalDetalle = 'Total ';
-          },
-          error: (err) => {
-            Swal.fire({
-              icon: "error",
-              title: "Oops...",
-              text: "Something went wrong!"
-            });
-          },
-          complete: () => {
-            console.log('Petición completada');
-          }
-        });
-    }else{
+  saveDetalle(): void {
+
+    if (this.disableBoton) {
+      this.service.saveVenta(this.detalleVenta).subscribe({
+        next: (res) => {
+          console.log(res, '------------------------------------------------ ');
+          Swal.fire({
+            title: "Drag me!",
+            icon: "success",
+            draggable: true
+          });
+          this.disableBoton = false;
+          this.detalleVenta = [];
+          this.totalDetalle = 'Total ';
+        },
+        error: (err) => {
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Something went wrong!"
+          });
+        },
+        complete: () => {
+          console.log('Petición completada');
+        }
+      });
+    } else {
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -179,8 +203,8 @@ export class AddVentaComponent implements OnInit {
   }
 
 
-  getDataBuscador(paginaBuscador: number){
-    this.service.getData(paginaBuscador,10).subscribe({
+  getDataBuscador(paginaBuscador: number) {
+    this.service.getData(paginaBuscador, 10).subscribe({
       next: (res) => {
         this.paginacionBuscador = res;
         this.rowsBuscador = this.paginacionBuscador.t;
@@ -195,73 +219,80 @@ export class AddVentaComponent implements OnInit {
   }
 
   filaSeleccionadaBuscador: any;
+  filaSeleccionadaBuscadorIndex: any;
   blockContextMenuBuscador(event: MouseEvent) {
     event.preventDefault(); // ✅ Bloquea el menú del navegador
     event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
   }
-    abrirMenuBuscador(event: CellContextMenuEvent<any>) {
-      if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-        event.event.preventDefault(); // ✅ Bloquea el menú del navegador
-        event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
-  
-  
-    // 📌 Obtener el rectángulo de la celda seleccionada
-    const cellElement = event.event.target as HTMLElement;
-    const rect = cellElement.getBoundingClientRect();
-  
-    // ✅ Definir coordenadas dinámicas
-    const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
-    const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
-  
-  
-    setTimeout(() => {
-      const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
-      if (overlayPane) {
-        overlayPane.style.position = 'absolute';
-        overlayPane.style.left = x;
-        overlayPane.style.top = y;
-      }
-      this.menuTriggerBuscador.openMenu();
-    }, 0);
-  
-  
-  
-      }
-  
-      
-    
-      
-      this.filaSeleccionadaBuscador = event.data; // ✅ Obtiene la fila seleccionada
-      
-      //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
-  
-      if (this.menuTriggerBuscador) { // ✅ Verifica que `menuTrigger` no es undefined
-        
+  abrirMenuBuscador(event: CellContextMenuEvent<any>) {
+
+
+
+
+
+    if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
+      event.event.preventDefault(); // ✅ Bloquea el menú del navegador
+      event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
+
+
+      // 📌 Obtener el rectángulo de la celda seleccionada
+      const cellElement = event.event.target as HTMLElement;
+      const rect = cellElement.getBoundingClientRect();
+
+      // ✅ Definir coordenadas dinámicas
+      const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
+      const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
+
+
+      setTimeout(() => {
+        const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
+        if (overlayPane) {
+          overlayPane.style.position = 'absolute';
+          overlayPane.style.left = x;
+          overlayPane.style.top = y;
+        }
         this.menuTriggerBuscador.openMenu();
-  
-      } 
-  
-      
-  
+      }, 0);
+
+
+
     }
 
-  primeraPaginaBuscador(): void{
+
+
+
+    this.filaSeleccionadaBuscador = event.data; // ✅ Obtiene la fila seleccionada
+    this.filaSeleccionadaBuscadorIndex = event.rowIndex;
+
+    //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
+
+    if (this.menuTriggerBuscador) { // ✅ Verifica que `menuTrigger` no es undefined
+
+      this.menuTriggerBuscador.openMenu();
+
+    }
+
+
+
+  }
+
+  primeraPaginaBuscador(): void {
     this.paginaPrimeraBuscador = 1;
 
 
     this.getDataBuscador(this.paginaPrimeraBuscador);
   }
-  paginaAnteriorBuscador(): void{
-    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador -1;
-    this.getDataBuscador(this.paginaPrimeraBuscador );
+  paginaAnteriorBuscador(): void {
+    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador - 1;
+    this.getDataBuscador(this.paginaPrimeraBuscador);
 
   }
-  siguientePaginaBuscador(): void{
-    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador +1;
-    this.getDataBuscador(this.paginaPrimeraBuscador );
+  siguientePaginaBuscador(): void {
+    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador + 1;
+    this.getDataBuscador(this.paginaPrimeraBuscador);
 
   }
-  ultimaPaginaBuscador(): void{
+  ultimaPaginaBuscador(): void {
     this.paginaUltimaBuscador = this.paginacionBuscador?.totalPaginas || 0;
     this.paginaPrimeraBuscador = this.paginacionBuscador?.totalPaginas || 0;
     this.getDataBuscador(this.paginaUltimaBuscador);
@@ -272,14 +303,14 @@ export class AddVentaComponent implements OnInit {
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
     this.buscarProd = texto;
 
-    this.buscarPorNombreCodigoPostal(1,10,this.buscarProd);
-    
+    this.buscarPorNombreCodigoPostal(1, 10, this.buscarProd);
+
   }
 
-  
-  buscarPorNombreCodigoPostal(pagina:number,size:number,nombre:string): void{
-    
-    this.service.getDataNombreCodigoBarra(pagina,size,nombre).subscribe({
+
+  buscarPorNombreCodigoPostal(pagina: number, size: number, nombre: string): void {
+
+    this.service.getDataNombreCodigoBarra(pagina, size, nombre).subscribe({
       next: (res) => {
         this.paginacionBuscador = res;
         this.rowsBuscador = this.paginacionBuscador.t
@@ -347,9 +378,9 @@ export class AddVentaComponent implements OnInit {
       this.rowsDetalle = [...this.paginacionDetalle.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
   }
-  
-  
-  
+
+
+
 
 
   eliminarFilaDetalle() {
@@ -357,8 +388,8 @@ export class AddVentaComponent implements OnInit {
   }
 
 
-  getDataDetalle(paginaDetalle: number){
-    this.service.getData(paginaDetalle,10).subscribe({
+  getDataDetalle(paginaDetalle: number) {
+    this.service.getData(paginaDetalle, 10).subscribe({
       next: (res) => {
         this.paginacionDetalle = res;
         this.rowsDetalle = this.paginacionDetalle.t;
@@ -377,69 +408,69 @@ export class AddVentaComponent implements OnInit {
     event.preventDefault(); // ✅ Bloquea el menú del navegador
     event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
   }
-    abrirMenuDetalle(event: CellContextMenuEvent<any>) {
-      if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-        event.event.preventDefault(); // ✅ Bloquea el menú del navegador
-        event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
-  
-  
-    // 📌 Obtener el rectángulo de la celda seleccionada
-    const cellElement = event.event.target as HTMLElement;
-    const rect = cellElement.getBoundingClientRect();
-  
-    // ✅ Definir coordenadas dinámicas
-    const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
-    const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
-  
-  
-    setTimeout(() => {
-      const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
-      if (overlayPane) {
-        overlayPane.style.position = 'absolute';
-        overlayPane.style.left = x;
-        overlayPane.style.top = y;
-      }
-      this.menuTriggerDetalle.openMenu();
-    }, 0);
-  
-  
-  
-      }
-  
-      
-    
-      
-      this.filaSeleccionadaDetalle = event.data; // ✅ Obtiene la fila seleccionada
-      
-      //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
-  
-      if (this.menuTriggerDetalle) { // ✅ Verifica que `menuTrigger` no es undefined
-        
+  abrirMenuDetalle(event: CellContextMenuEvent<any>) {
+    if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
+      event.event.preventDefault(); // ✅ Bloquea el menú del navegador
+      event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
+
+
+      // 📌 Obtener el rectángulo de la celda seleccionada
+      const cellElement = event.event.target as HTMLElement;
+      const rect = cellElement.getBoundingClientRect();
+
+      // ✅ Definir coordenadas dinámicas
+      const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
+      const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
+
+
+      setTimeout(() => {
+        const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
+        if (overlayPane) {
+          overlayPane.style.position = 'absolute';
+          overlayPane.style.left = x;
+          overlayPane.style.top = y;
+        }
         this.menuTriggerDetalle.openMenu();
-  
-      } 
-  
-      
-  
+      }, 0);
+
+
+
     }
 
-  primeraPaginaDetalle(): void{
+
+
+
+    this.filaSeleccionadaDetalle = event.data; // ✅ Obtiene la fila seleccionada
+
+    //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
+
+    if (this.menuTriggerDetalle) { // ✅ Verifica que `menuTrigger` no es undefined
+
+      this.menuTriggerDetalle.openMenu();
+
+    }
+
+
+
+  }
+
+  primeraPaginaDetalle(): void {
     this.paginaPrimeraDetalle = 1;
 
 
     this.getDataDetalle(this.paginaPrimeraDetalle);
   }
-  paginaAnteriorDetalle(): void{
-    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle -1;
-    this.getDataDetalle(this.paginaPrimeraDetalle );
+  paginaAnteriorDetalle(): void {
+    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle - 1;
+    this.getDataDetalle(this.paginaPrimeraDetalle);
 
   }
-  siguientePaginaDetalle(): void{
-    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle +1;
-    this.getDataDetalle(this.paginaPrimeraDetalle );
+  siguientePaginaDetalle(): void {
+    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle + 1;
+    this.getDataDetalle(this.paginaPrimeraDetalle);
 
   }
-  ultimaPaginaDetalle(): void{
+  ultimaPaginaDetalle(): void {
     this.paginaUltimaDetalle = this.paginacionDetalle?.totalPaginas || 0;
     this.paginaPrimeraDetalle = this.paginacionDetalle?.totalPaginas || 0;
     this.getDataDetalle(this.paginaUltimaDetalle);
@@ -448,7 +479,7 @@ export class AddVentaComponent implements OnInit {
 
 
 
-  
+
 
 
 }

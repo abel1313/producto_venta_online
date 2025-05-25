@@ -14,7 +14,7 @@
                         
                         <div *ngIf="formProductos.get('nombre')?.invalid && formProductos.get('nombre')?.touched">
                           <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('nombre')?.errors?.['maxlength']">Máximo 10 caracteres</small>
+                          <small class="text-danger" *ngIf="formProductos.get('nombre')?.errors?.['maxlength']">Máximo 50 caracteres</small>
                         </div>
                         
 
@@ -79,12 +79,12 @@
 
                 <div class="row">
                     <div class="col-6">
-                        <label for="descipcion">Descipcion:</label>
-                        <input id="descipcion" formControlName="descipcion" class="form-control">
+                        <label for="descripcion">Descripcion:</label>
+                        <input id="descripcion" formControlName="descripcion" class="form-control">
                         
-                        <div *ngIf="formProductos.get('descipcion')?.invalid && formProductos.get('descipcion')?.touched">
+                        <div *ngIf="formProductos.get('descripcion')?.invalid && formProductos.get('descripcion')?.touched">
                           <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('descipcion')?.errors?.['maxlength']">Máximo 10 caracteres</small>
+                          <small class="text-danger" *ngIf="formProductos.get('descripcion')?.errors?.['maxlength']">Máximo 100 caracteres</small>
                         </div>
                         
 

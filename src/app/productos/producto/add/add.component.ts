@@ -51,13 +51,13 @@ export class AddComponent implements OnInit, AfterViewInit {
 
 
     this.formProductos = this.fb.group({
-      nombre: ['sdasd', [Validators.required, Validators.maxLength(10)]],
-      precioCosto: ['asdsd', Validators.required],
-      piezas: ['asdas', Validators.required],
+      nombre: ['sdasd', [Validators.required, Validators.maxLength(100)]],
+      precioCosto: ['10', Validators.required],
+      piezas: ['1', Validators.required],
       color: ['asdas'],
-      precioVenta: ['1001', Validators.required],
-      precioRebaja: ['101', Validators.required],
-      descipcion: ['asdas', Validators.required],
+      precioVenta: ['1', Validators.required],
+      precioRebaja: ['1', Validators.required],
+      descripcion: ['asdas', Validators.required],
       stock: ['10000', Validators.required],
       marca: ['asdas', Validators.required],
       contenidoNeto: ['asdas', Validators.required],
@@ -91,23 +91,22 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   producto(): void {
     if (this.formProductos.valid) {
-      console.log(this.formProductos.value, " -------------------- ")
       const { codigoBarras, ...productoData } = this.formProductos.value;
 
-      console.log(codigoBarras, " antes de ")
-
+      
       const producto: IProducto = {
         ...productoData, // Asignamos el resto de los valores
         codigoBarras: { codigoBarra: codigoBarras } // ✅ Transformamos el código de barras en `ICodigoBarra`
       };
-
+      
       producto.codigoBarras.id = 0;
       if (!producto.codigoBarras) {
         producto.codigoBarras = { codigoBarras: '', id: 6 }; // ✅ Si no está definido, lo inicializamos
       }
+      console.log(producto.descripcion, " antes de ")
 
       const codBarr = producto.codigoBarras.codigoBarras;
-      console.log("producto 123 ", codBarr)
+      
       this.productoSave = {
         nombre: producto.nombre,
         precioCosto: producto.precioCosto,

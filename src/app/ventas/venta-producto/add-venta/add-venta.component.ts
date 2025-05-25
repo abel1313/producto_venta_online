@@ -44,16 +44,16 @@ export class AddVentaComponent implements OnInit {
 
     columnsBuscador = [
       { field: 'nombre', headerName: 'Nombre' },  
-      { field: 'precioCosto', headerName: 'Precio Costo' },  
+      { field: 'codigoBarras', headerName: 'Codigo Barras' },
+      { field: 'precioVenta', headerName: 'Precio Venta' },
       { field: 'stock', headerName: 'Stock' },
       { field: 'piezas', headerName: 'Piezas' },
       { field: 'color', headerName: 'Color' },
-      { field: 'precioVenta', headerName: 'Precio Venta' },
+      { field: 'precioCosto', headerName: 'Precio Costo' },  
       { field: 'precioRebaja', headerName: 'Precio Rebaja' },
       { field: 'descripcion', headerName: 'Descripcion' },
       { field: 'marca', headerName: 'Marca' },
-      { field: 'contenido', headerName: 'Contenido' },
-      { field: 'codigoBarras', headerName: 'Codigo Barras' }
+      { field: 'contenido', headerName: 'Contenido' }
     ];
 
 

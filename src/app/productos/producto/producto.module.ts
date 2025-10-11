@@ -12,7 +12,9 @@ import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { MatMenuModule } from '@angular/material/menu';
 import { AgGridModule } from 'ag-grid-angular';
 import { HttpClientModule } from '@angular/common/http';
-
+import {ChangeDetectionStrategy} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
 
 @NgModule({
   declarations: [
@@ -27,7 +29,9 @@ import { HttpClientModule } from '@angular/common/http';
     ReactiveFormsModule,
     AgGridModule,
     MatMenuModule,
-    HttpClientModule
+    HttpClientModule,
+    MatCardModule,
+    MatButtonModule,
   ],
   exports:[
     AllComponent,

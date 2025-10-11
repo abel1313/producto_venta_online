@@ -1,50 +1,69 @@
 
+<div class="row p-2">
+  <div class="col-6">
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" placeholder="Buscar producto" aria-label="Username"
+        aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
+    </div>
+  </div>
+</div>
 
-  <div class="row p-2">
-    <div class="col-6">
-              <div class="input-group mb-3">
-            <input 
-            type="text" 
-            class="form-control" 
-            placeholder="Buscar producto" 
-            aria-label="Username" 
-            aria-describedby="basic-addon1"
-            (keyup)="buscarProductos($event)"
-            >
-          </div>
+<div class="container scroll-container">
+  <div class="row">
+    <div class="col-md-4 mt-2" *ngFor="let item of rows">
+
+      <mat-card class="example-card " appearance="outlined" >
+        <mat-card-header>
+          <div mat-card-avatar class="example-header-image"></div>
+          <mat-card-title>Nombre del producto <p><b>{{item.nombre}}</b></p>
+          </mat-card-title>
+          <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
+          <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
+        </mat-card-header>
+        <img mat-card-image src="https://material.angular.dev/assets/img/examples/shiba2.jpg"
+          alt="Photo of a Shiba Inu">
+        <mat-card-content>
+          <p>
+            {{item.descripcion}}
+          </p>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 
+</div>
 
-<ag-grid-angular 
-  [rowData]="rows" 
-  [columnDefs]="columns"
-  [pagination]="false"
-  class="ag-theme-alpine"
-  [style]="{ width: styleTableWidth, height: styleTableheight }" 
-  (contextmenu)="blockContextMenu($event)" 
-  (cellContextMenu)="abrirMenu($event)">
-</ag-grid-angular>
 
-<button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="primeraPagina()">⬅️ Primera</button>
-<button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="paginaAnterior()">◀️ Anterior</button>
+
+
+<ng-container *ngIf="rows == null">
+  <ag-grid-angular [rowData]="rows" [columnDefs]="columns" [pagination]="false" class="ag-theme-alpine"
+    [style]="{ width: styleTableWidth, height: styleTableheight }" (contextmenu)="blockContextMenu($event)"
+    (cellContextMenu)="abrirMenu($event)">
+  </ag-grid-angular>
+
+  <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="primeraPagina()">⬅️
+    Primera</button>
+  <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="paginaAnterior()">◀️
+    Anterior</button>
 
   <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
-   pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b>  {{paginacion.pagina}} de {{paginacion.totalPaginas}}
+    pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
   </b>
 
-<button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas" (click)="siguientePagina()">▶️ Siguiente</button>
-<button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas" (click)="ultimaPagina()">➡️ Última</button>
+  <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
+    (click)="siguientePagina()">▶️ Siguiente</button>
+  <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
+    (click)="ultimaPagina()">➡️ Última</button>
 
-<!-- Botón INVISIBLE para activar el menú -->
-<button #menuTrigger mat-button [matMenuTriggerFor]="menu" 
-style="display: block;"  ></button>
+  <!-- Botón INVISIBLE para activar el menú -->
+  <button #menuTrigger mat-button [matMenuTriggerFor]="menu" style="display: block;"></button>
 
 
 
-  
-<mat-menu #menu="matMenu">
+
+  <mat-menu #menu="matMenu">
     <button *ngIf="itemAgregar" mat-menu-item (click)="agregarFila()">{{itemAgregar}}</button>
     <button *ngIf="itemEliminar" mat-menu-item (click)="eliminarFila()">{{itemEliminar}}</button>
   </mat-menu>
-  
+</ng-container>

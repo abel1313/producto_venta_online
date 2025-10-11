@@ -4,7 +4,6 @@ import { CellContextMenuEvent } from 'ag-grid-community';
 import { ProductoService } from '../../service/producto.service';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
 import { AgGridAngular } from 'ag-grid-angular';
-
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -243,7 +242,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
         next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
-        console.log(this.rows)
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -253,6 +251,49 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       }
     });
   }
+
+    buscarProductoScroll(paginaPrimera: number): void{
+    this.srvice.getDataNombreCodigoBarra(paginaPrimera,10,"")
+    .subscribe({
+        next: (res) => {
+        this.paginacion = res;
+            this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
+      },
+      error: (err) => {
+        console.error('Error en la petición:', err);
+      },
+      complete: () => {
+        console.log('Petición completada');
+      }
+    });
+  }
+
+  onScroll(event: any): void {
+    console.log(event)
+  const element = event.target;
+  if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+    this.loadMore(); // Carga más datos
+  }
+}
+
+trackById(index: number, item: any): number {
+  return item.id;
+}
+loadMore(): void {
+  this.buscarProductoScroll(this.paginaPrimera+1);
+  // Aquí agregas más elementos a `rows`
+  // Por ejemplo, llamando a un servicio o paginando
+    console.log("dandole")
+}
+
+/**\
+ * loadMore(): void {
+  console.log('Scroll detectado, cargando más...');
+  this.servicio.getMasDatos().subscribe((nuevosItems) => {
+    this.rows = [...this.rows, ...nuevosItems];
+  });
+}
+ */
 
       buscarProd:string = '';
 }

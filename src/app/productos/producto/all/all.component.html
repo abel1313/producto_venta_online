@@ -1,4 +1,3 @@
-
 <div class="row p-2">
   <div class="col-6">
     <div class="input-group mb-3">
@@ -8,26 +7,30 @@
   </div>
 </div>
 
-<div class="container scroll-container">
-  <div class="row">
-    <div class="col-md-4 mt-2" *ngFor="let item of rows">
+<div class="container ">
 
-      <mat-card class="example-card " appearance="outlined" >
-        <mat-card-header>
-          <div mat-card-avatar class="example-header-image"></div>
-          <mat-card-title>Nombre del producto <p><b>{{item.nombre}}</b></p>
-          </mat-card-title>
-          <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
-          <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
-        </mat-card-header>
-        <img mat-card-image src="https://material.angular.dev/assets/img/examples/shiba2.jpg"
-          alt="Photo of a Shiba Inu">
-        <mat-card-content>
-          <p>
-            {{item.descripcion}}
-          </p>
-        </mat-card-content>
-      </mat-card>
+  <div class="scroll-container" 
+  (scroll)="onScroll($event)">
+    <div class="row">
+      <div class="col-md-4 mt-2" *ngFor="let item of rows">
+
+        <mat-card class="example-card " appearance="outlined">
+          <mat-card-header>
+            <div mat-card-avatar class="example-header-image"></div>
+            <mat-card-title>Nombre del producto <p><b>{{item.nombre}}</b></p>
+            </mat-card-title>
+            <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
+            <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
+          </mat-card-header>
+          <img mat-card-image src="https://material.angular.dev/assets/img/examples/shiba2.jpg"
+            alt="Photo of a Shiba Inu">
+          <mat-card-content>
+            <p>
+              {{item.descripcion}}
+            </p>
+          </mat-card-content>
+        </mat-card>
+      </div>
     </div>
   </div>
 

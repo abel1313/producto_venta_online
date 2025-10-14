@@ -184,7 +184,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
-        console.log(this.rows)
+        console.log("---------------------------------------------------")
+        console.log(this.paginacion)
       },
       error: (err) => {
         console.error('Error en la petición:', err);

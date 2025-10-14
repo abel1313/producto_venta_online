@@ -1,169 +1,185 @@
-<div class="d-flex justify-content-center p-4" >
-    <div class="col-8">
-        <div class="card" >
+<div class="d-flex justify-content-center p-4">
+  <div class="col-8">
+    <div class="card">
 
-            <div class="card-header text-center">
-               <b> {{nombreCard}}</b>
+      <div class="card-header text-center">
+        <b> {{nombreCard}}</b>
+      </div>
+      <form [formGroup]="formProductos">
+
+        <div class="row">
+          <div class="col-6">
+            <label for="nombre">Nombre:</label>
+            <input id="nombre" formControlName="nombre" class="form-control">
+
+            <div *ngIf="formProductos.get('nombre')?.invalid && formProductos.get('nombre')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('nombre')?.errors?.['maxlength']">Máximo 50
+                caracteres</small>
             </div>
-            <form [formGroup]="formProductos">
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="nombre">Nombre:</label>
-                        <input id="nombre" formControlName="nombre" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('nombre')?.invalid && formProductos.get('nombre')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('nombre')?.errors?.['maxlength']">Máximo 50 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="precioCosto">Precio al que se compro:</label>
-                        <input id="precioCosto" formControlName="precioCosto" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('precioCosto')?.invalid && formProductos.get('precioCosto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                    </div>
-                </div>
 
 
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="piezas">Piezas:</label>
-                        <input id="piezas" formControlName="piezas" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('piezas')?.invalid && formProductos.get('piezas')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('piezas')?.errors?.['maxlength']">Máximo 10 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="color">Color:</label>
-                        <input id="color" formControlName="color" class="form-control">
-                    </div>
-                </div>
-
-
-
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="precioVenta">Precio Venta:</label>
-                        <input id="precioVenta" formControlName="precioVenta" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('precioVenta')?.invalid && formProductos.get('precioVenta')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['maxlength']">Máximo 10 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="precioRebaja">Precio si hubiera descuento:</label>
-                        <input id="precioRebaja" formControlName="precioRebaja" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('precioRebaja')?.invalid && formProductos.get('precioRebaja')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                    </div>
-                </div>
-
-
-
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="descripcion">Descripcion:</label>
-                        <input id="descripcion" formControlName="descripcion" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('descripcion')?.invalid && formProductos.get('descripcion')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('descripcion')?.errors?.['maxlength']">Máximo 100 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="stock">Stock:</label>
-                        <input id="stock" formControlName="stock" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('stock')?.invalid && formProductos.get('stock')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="marca">Marca:</label>
-                        <input id="marca" formControlName="marca" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('marca')?.invalid && formProductos.get('marca')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('marca')?.errors?.['maxlength']">Máximo 10 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="contenidoNeto">Contenido Neto:</label>
-                        <input id="contenidoNeto" formControlName="contenidoNeto" class="form-control">
-                        
-                        <div *ngIf="formProductos.get('contenidoNeto')?.invalid && formProductos.get('contenidoNeto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="row">
-
-                    <div class="col-4">
-                        <label for="sinCodigo">Sin Codigo de Barra:</label>
-                            <div class="input-group-text">
-                              <input type="checkbox" formControlName="sinCodigoBarra" aria-label="Checkbox for following text input">
-                            </div>
-                    </div>
-
-                    
-                    <div class="col-8">
-                        <label for="codigoBarras">Codigo de Barra:</label>
-                        <input id="codigoBarras" formControlName="codigoBarras" class="form-control" [attr.disabled]="!habilita ? true : null">
-                        
-                        <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 10 caracteres</small>
-                        </div>
-                    </div>
-
-                </div>
-
-
-
-                <div class="row p-2">
-                    <div class="col-12 d-flex justify-content-center">
-                        
-                <button type="submit" class="btn btn-success col-6 " (click)="producto()" [disabled]="formProductos.invalid">Enviar</button>
-                    </div>
-                </div>
-              </form>
           </div>
+          <div class="col-6">
+            <label for="precioCosto">Precio al que se compro:</label>
+            <input id="precioCosto" formControlName="precioCosto" class="form-control">
+
+            <div *ngIf="formProductos.get('precioCosto')?.invalid && formProductos.get('precioCosto')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="piezas">Piezas:</label>
+            <input id="piezas" formControlName="piezas" class="form-control">
+
+            <div *ngIf="formProductos.get('piezas')?.invalid && formProductos.get('piezas')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('piezas')?.errors?.['maxlength']">Máximo 10
+                caracteres</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="color">Color:</label>
+            <input id="color" formControlName="color" class="form-control">
+          </div>
+        </div>
+
+
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="precioVenta">Precio Venta:</label>
+            <input id="precioVenta" formControlName="precioVenta" class="form-control">
+
+            <div *ngIf="formProductos.get('precioVenta')?.invalid && formProductos.get('precioVenta')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['maxlength']">Máximo 10
+                caracteres</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="precioRebaja">Precio si hubiera descuento:</label>
+            <input id="precioRebaja" formControlName="precioRebaja" class="form-control">
+
+            <div *ngIf="formProductos.get('precioRebaja')?.invalid && formProductos.get('precioRebaja')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+          </div>
+        </div>
+
+
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="descripcion">Descripcion:</label>
+            <input id="descripcion" formControlName="descripcion" class="form-control">
+
+            <div *ngIf="formProductos.get('descripcion')?.invalid && formProductos.get('descripcion')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('descripcion')?.errors?.['maxlength']">Máximo 100
+                caracteres</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="stock">Stock:</label>
+            <input id="stock" formControlName="stock" class="form-control">
+
+            <div *ngIf="formProductos.get('stock')?.invalid && formProductos.get('stock')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div class="row">
+          <div class="col-6">
+            <label for="marca">Marca:</label>
+            <input id="marca" formControlName="marca" class="form-control">
+
+            <div *ngIf="formProductos.get('marca')?.invalid && formProductos.get('marca')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('marca')?.errors?.['maxlength']">Máximo 10
+                caracteres</small>
+            </div>
+
+
+          </div>
+          <div class="col-6">
+            <label for="contenidoNeto">Contenido Neto:</label>
+            <input id="contenidoNeto" formControlName="contenidoNeto" class="form-control">
+
+            <div *ngIf="formProductos.get('contenidoNeto')?.invalid && formProductos.get('contenidoNeto')?.touched">
+              <small class="text-danger">Campo requerido</small>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="row">
+
+          <div class="col-4">
+            <label for="sinCodigo">Sin Codigo de Barra:</label>
+            <div class="input-group-text">
+              <input type="checkbox" formControlName="sinCodigoBarra" aria-label="Checkbox for following text input">
+            </div>
+          </div>
+
+
+          <div class="col-8">
+            <label for="codigoBarras">Codigo de Barra:</label>
+            <input id="codigoBarras" formControlName="codigoBarras" class="form-control"
+              [attr.disabled]="!habilita ? true : null">
+
+            <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
+              <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 10
+                caracteres</small>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
+          <p>Haz clic o arrastra una imagen aquí</p>
+          <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
+          <canvas #canvas width="600" height="400" style="border: 1px solid #ccc;"></canvas>
+        </div>
+
+
+
+        <div class="row p-2">
+          <div class="col-12 d-flex justify-content-center">
+
+            <button type="submit" class="btn btn-success col-6 " (click)="producto()"
+              [disabled]="formProductos.invalid">Enviar</button>
+          </div>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 
 
 
-<div class="ruleta-container">
-  <div class="indicador"></div> <!-- Flecha fija -->
-  <canvas #ruletaCanvas></canvas>
-</div>
-<button (click)="iniciarRifa()">Iniciar Rifa</button>
+<ng-container *ngIf="false">
+  <div class="ruleta-container">
+    <div class="indicador"></div> <!-- Flecha fija -->
+    <canvas #ruletaCanvas></canvas>
+  </div>
+  <button (click)="iniciarRifa()">Iniciar Rifa</button>
+</ng-container>

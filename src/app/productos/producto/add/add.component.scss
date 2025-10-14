@@ -35,3 +35,17 @@ canvas {
   border-right: 10px solid transparent;
   border-top: 20px solid red; /* Flecha roja apuntando hacia la ruleta */
 }
+
+
+
+.drop-zone {
+  border: 2px dashed #aaa;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.drop-zone.dragover {
+  background-color: #f0f0f0;
+}
+

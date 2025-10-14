@@ -24,7 +24,7 @@ import { RouterModule } from '@angular/router';
     ProductoModule,
     VentaProductoModule,
     MisGastosModule,
-    RouterModule
+    RouterModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

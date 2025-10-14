@@ -1,3 +1,5 @@
+import { IImagenDto } from "./imagen.dto.mode";
+
 export interface IProductoDTO{
 
     nombre:string;
@@ -7,4 +9,5 @@ export interface IProductoDTO{
     codigoBarras:string;
     cantidad: number;
     subTotal: number;
+    listImgs?: IImagenDto [];
 }

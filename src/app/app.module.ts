@@ -9,10 +9,18 @@ import { ProductoModule } from './productos/producto/producto.module';
 import { VentaProductoModule } from './ventas/venta-producto/venta-producto.module';
 import { MisGastosModule } from './gastos/mis-gastos/mis-gastos.module';
 import { RouterModule } from '@angular/router';
-
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { TokenInterceptor } from './token/TokenInterceptor ';
 
 
 @NgModule({
+    providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TokenInterceptor,
+      multi: true
+    }
+  ],
   declarations: [
     AppComponent,
     NavbarComponent
@@ -26,7 +34,6 @@ import { RouterModule } from '@angular/router';
     MisGastosModule,
     RouterModule,
   ],
-  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

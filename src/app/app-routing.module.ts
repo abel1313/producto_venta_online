@@ -2,7 +2,10 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
-
+  {
+    path: 'login',
+    loadChildren: () => import('../app/login/login.module').then(m => m.LoginModule)
+  },
   {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule)
@@ -20,7 +23,7 @@ const routes: Routes = [
     loadChildren: () => import('./rifas/rifas.module').then(m => m.RifasModule)
   },
   {
-    path:'', redirectTo:'rifas',pathMatch:'full'
+    path:'', redirectTo:'login',pathMatch:'full'
   }
 
   

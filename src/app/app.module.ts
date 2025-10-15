@@ -11,6 +11,8 @@ import { MisGastosModule } from './gastos/mis-gastos/mis-gastos.module';
 import { RouterModule } from '@angular/router';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { TokenInterceptor } from './token/TokenInterceptor ';
+import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-disponible.component';
+import { HomeComponent } from './home/home.component';
 
 
 @NgModule({
@@ -23,7 +25,9 @@ import { TokenInterceptor } from './token/TokenInterceptor ';
   ],
   declarations: [
     AppComponent,
-    NavbarComponent
+    NavbarComponent,
+    PaginaNoDisponibleComponent,
+    HomeComponent
   ],
   imports: [
     BrowserModule,

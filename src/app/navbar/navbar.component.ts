@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -6,10 +7,32 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./navbar.component.scss']
 })
 export class NavbarComponent implements OnInit {
+  roles: string[] = [];
+  isAdminUser: boolean = false;
+  usuario: string = '';
 
-  constructor() { }
+  constructor(private authService: AuthService) { }
 
   ngOnInit(): void {
+    this.authService.userRoles$.subscribe(roles => {
+      this.roles = roles;
+      this.isAdminUser = roles.includes('ROLE_ADMIN');
+    });
+    this.authService.userName$.subscribe(user => {
+      this.usuario = user;
+    });
+  }
+
+  hasRole(...allowedRoles: string[]): boolean {
+    return allowedRoles.some(role => this.roles.includes(role));
+  }
+
+  get isAnonymous(): boolean {
+    return !this.roles || this.roles.length === 0;
+  }
+
+  get username(): string | null {
+    return this.usuario;
   }
 
 }

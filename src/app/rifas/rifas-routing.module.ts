@@ -2,13 +2,14 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AgregarRifaComponent } from './agregar-rifa/agregar-rifa.component';
 import { BuscarRifaComponent } from './buscar-rifa/buscar-rifa.component';
+import { AuthGuard } from '../auth.guard';
 
 const routes: Routes = [
   {
-    path: 'agregar', component: AgregarRifaComponent
+    path: 'agregar', component: AgregarRifaComponent, canActivate: [AuthGuard]
   },
   {
-    path: 'buscar', component: BuscarRifaComponent
+    path: 'buscar', component: BuscarRifaComponent, canActivate: [AuthGuard]
   },
   {
     path: '' ,redirectTo: 'agregar', pathMatch:'full' ,

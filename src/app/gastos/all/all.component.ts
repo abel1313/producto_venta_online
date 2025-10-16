@@ -100,7 +100,7 @@ export class AllComponent implements OnInit {
         this.menuTrigger.openMenu();
   
       } else {
-        console.error('menuTrigger no está inicializado');
+        //console.error('menuTrigger no está inicializado');
       }
   
       
@@ -154,9 +154,9 @@ export class AllComponent implements OnInit {
   
     ngAfterViewInit() {
   
-      if (!this.menuTrigger) {
-        console.error('menuTrigger no está inicializado');
-      }
+    if (!this.menuTrigger) {
+      console.error('menuTrigger no está inicializado');
+    }
   
       const button = document.getElementById('menuTrigger');
       if (button) {

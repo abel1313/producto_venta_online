@@ -16,6 +16,8 @@ export class NavbarComponent implements OnInit {
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
+      console.log(this.roles, '--------------------');
+      console.log(roles);
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
     this.authService.userName$.subscribe(user => {

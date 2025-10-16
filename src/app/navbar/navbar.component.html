@@ -12,8 +12,8 @@
             Productos
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="'productos/agregar'">agregar </a></li>
-            <li><a class="dropdown-item" *ngIf="isAdminUser" [routerLink]="'productos/buscar'">buscar</a></li>
+            <li><a class="dropdown-item" *ngIf="isAdminUser" [routerLink]="'productos/agregar'">agregar </a></li>
+            <li><a class="dropdown-item" [routerLink]="'productos/buscar'">buscar</a></li>
           </ul>
         </li>
 
@@ -49,15 +49,11 @@
         </li>
 
         <li class="nav-item dropdown" *ngIf="isAnonymous">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" [routerLink]="'login'" role="button"  aria-expanded="false">
             Login
           </a>
         </li>
-        <li class="nav-item dropdown" *ngIf="!isAnonymous">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-            Bienvenido {{ username }}
-          </a>
-        </li>
+
 
         <!-- 
         <li class="nav-item dropdown">
@@ -75,6 +71,11 @@
 
 
       </ul>
+      <a class="dropdown-item d-flex justify-content-end align-items-center fw-bold "
+        *ngIf="!isAnonymous">
+        <i class="bi bi-person-circle me-2"></i> Bienvenido {{ username }}
+      </a>
+
     </div>
   </div>
 </nav>

@@ -52,11 +52,14 @@ export class BuscarVentaComponent implements OnInit {
 
 
   ngOnInit(): void {
-        document.addEventListener('click', (event: Event) => {
+
+    /**
+     *         document.addEventListener('click', (event: Event) => {
       if (this.menuTrigger.menuOpen) {
         this.menuTrigger.closeMenu();
       }
     });
+     */
     
   }
 

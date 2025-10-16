@@ -60,13 +60,16 @@ export class AgregarRifaComponent implements OnInit {
   chart!: Chart;
 
   ngAfterViewInit() {
-    Chart.register(ArcElement, PieController);
+/**
+ * 
+ *     Chart.register(ArcElement, PieController);
     Chart.register(ChartDataLabels);
 
     Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
     setTimeout(() => {
       this.generarRuleta(this.obetnrColores(this.participantes.length));
     }, 100);
+ */
 
 
   }
@@ -185,7 +188,8 @@ iniciarRifa() {
       //this.participantes = [this.sesionRegistradaRifa ];
 
 
-      Chart.register(ArcElement, PieController);
+/**
+ *       Chart.register(ArcElement, PieController);
       Chart.register(ChartDataLabels);
 
       Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
@@ -193,16 +197,20 @@ iniciarRifa() {
         this.generarRuleta(this.obetnrColores(this.participantes.length));
       }, 100);
 
+ */
     } else {
 
 
-      Chart.register(ArcElement, PieController);
+/**
+ *       Chart.register(ArcElement, PieController);
       Chart.register(ChartDataLabels);
 
       Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
       setTimeout(() => {
         this.generarRuleta(this.obetnrColores(this.participantes.length));
       }, 100);
+      
+ */
     }
   }
 

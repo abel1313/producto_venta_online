@@ -141,11 +141,13 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
 
   ngOnInit(): void {
 
-    document.addEventListener('click', (event: Event) => {
+/**
+ *     document.addEventListener('click', (event: Event) => {
       if (this.menuTrigger.menuOpen) {
         this.menuTrigger.closeMenu();
       }
     });
+ */
     
     console.log(this.rows, 'buscando ')
   }

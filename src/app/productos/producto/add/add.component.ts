@@ -216,7 +216,9 @@ export class AddComponent implements OnInit, AfterViewInit {
   chart!: Chart;
 
   ngAfterViewInit() {
-    Chart.register(ArcElement, PieController);
+
+    /**
+     *     Chart.register(ArcElement, PieController);
     Chart.register(ChartDataLabels);
 
     Chart.register(ArcElement); // Asegurar que está registrado antes de usarlo
@@ -226,6 +228,7 @@ export class AddComponent implements OnInit, AfterViewInit {
 
     this.ctx = this.canvasRef.nativeElement.getContext('2d')!;
     this.setupCanvasDrag();
+     */
 
 
   }

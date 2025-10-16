@@ -169,11 +169,14 @@ export class AllComponent implements OnInit {
   
     ngOnInit(): void {
       this.getData(1);
-      document.addEventListener('click', (event: Event) => {
+/**
+ *       document.addEventListener('click', (event: Event) => {
         if (this.menuTrigger.menuOpen) {
           this.menuTrigger.closeMenu();
         }
       });
+ * 
+ */
       
     }
   

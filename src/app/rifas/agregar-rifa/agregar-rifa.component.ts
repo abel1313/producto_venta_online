@@ -31,10 +31,12 @@ export class AgregarRifaComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.webSocketService.recibirActualizaciones((mensaje: string) => {
+/**\
+ *     this.webSocketService.recibirActualizaciones((mensaje: string) => {
       this.datos.push(mensaje); // Recibir y mostrar datos en tiempo real
     });
 
+ */
 
 
 
@@ -259,13 +261,13 @@ iniciarRifa() {
 
 
     agregarDato(nuevoDato: string) {
-    this.webSocketService.enviarActualizacion(nuevoDato); // Enviar actualización a todos
+    //this.webSocketService.enviarActualizacion(nuevoDato); // Enviar actualización a todos
   }
 
    mensaje: string = '';
   enviar() {
-    this.webSocketService.enviarActualizacion(this.mensaje);
-    this.mensaje = ''; // 🔄 Limpiar el campo después de enviar
+    //this.webSocketService.enviarActualizacion(this.mensaje);
+    //this.mensaje = ''; // 🔄 Limpiar el campo después de enviar
   }
 
 }

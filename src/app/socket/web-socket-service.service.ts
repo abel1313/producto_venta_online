@@ -7,9 +7,10 @@ import * as SockJS from 'sockjs-client';
   providedIn: 'root'
 })
 export class WebSocketServiceService {
-private client: Client;
+  //private client: Client;
     constructor() {
-    this.client = new Client({
+/**
+ *     this.client = new Client({
       brokerURL: 'ws://localhost:8081/mis-productos/ws',
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -18,8 +19,11 @@ private client: Client;
     });
 
     this.client.activate();
+ */
   }
-  enviarActualizacion(mensaje: string) {
+/**\
+ * 
+ *  enviarActualizacion(mensaje: string) {
     console.log("paso mensaje ", mensaje)
     this.client.publish({ destination: '/app/actualizar', body: mensaje });
   }
@@ -37,5 +41,7 @@ private client: Client;
   });
 
   }
+  
+ */
 
 }

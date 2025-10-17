@@ -22,8 +22,8 @@
             <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
             <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
           </mat-card-header>
-          <img mat-card-image *ngIf="item?.listImgs?.[0]?.base64" [src]="'data:image/jpg;base64,' + item?.listImgs?.[0]?.base64"
-            [alt]="item?.listImgs?.[0]?.nombreImagen ?? 'Imagen sin nombre'">
+          <img mat-card-image [src]="env + item.idProducto"
+            [alt]="item?.listImgs?.[0]?.nombreImagen ?? 'Imagen sin nombre'" >
           <mat-card-content>
             <p>
               {{item.descripcion}}

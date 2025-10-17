@@ -32,11 +32,12 @@ const routes: Routes = [
     path: 'home', component: HomeComponent
   },
   {
-    path: 'paginaNoDisponible', component: PaginaNoDisponibleComponent
+    path: '', redirectTo: 'login', pathMatch: 'full'
   },
   {
-    path: '', redirectTo: 'login', pathMatch: 'full'
-  }
+    path: '**',
+    component: PaginaNoDisponibleComponent
+  },
 
 
 

@@ -4,6 +4,7 @@ import { CellContextMenuEvent } from 'ag-grid-community';
 import { ProductoService } from '../../service/producto.service';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
 import { AgGridAngular } from 'ag-grid-angular';
+import { ServerAPI } from 'src/environments/server';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -20,6 +21,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   @Input() styleTableWidth?: string = '100%';
   @Input() styleTableheight?: string = '400px';
   gridApi: any;
+
+  public env: string = ServerAPI.serverApi+ "/imagen/";
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;

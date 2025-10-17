@@ -1,0 +1,27 @@
+.dropdown-item.text-danger {
+  transition: all 0.3s ease;
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: #f8d7da;
+  color: #a71d2a;
+  transform: scale(1.05);
+}
+
+
+.bienvenida-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to right, #0d6efd, #6610f2);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.bienvenida-banner:hover {
+  transform: scale(1.02);
+}
+

@@ -9,5 +9,6 @@ export interface IProductoDTO{
     codigoBarras:string;
     cantidad: number;
     subTotal: number;
+    idProducto: number;
     listImgs?: IImagenDto [];
 }

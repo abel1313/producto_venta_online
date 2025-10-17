@@ -40,7 +40,7 @@
     "ngx-scanner-qrcode": "^1.7.6",
     "popper.js": "^1.16.1",
     "producto-scaner": "file:",
-    "rxjs": "~7.5.0",
+    "rxjs": "^6.6.7",
     "sockjs-client": "^1.6.1",
     "sweetalert2": "^11.21.0",
     "tslib": "^2.3.0",

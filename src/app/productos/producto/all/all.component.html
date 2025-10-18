@@ -8,12 +8,9 @@
 </div>
 
 <div class="container ">
-
-  <div class="scroll-container" 
-  (scroll)="onScroll($event)">
+  <div class="scroll-container" (scroll)="onScroll($event)">
     <div class="row">
       <div class="col-md-4 mt-2" *ngFor="let item of rows">
-
         <mat-card class="example-card " appearance="outlined">
           <mat-card-header>
             <div mat-card-avatar class="example-header-image"></div>
@@ -22,14 +19,31 @@
             <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
             <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
           </mat-card-header>
-          <img mat-card-image [src]="env + item.idProducto"
-            [alt]="item?.listImgs?.[0]?.nombreImagen ?? 'Imagen sin nombre'" >
+          <img style="height: 80%;border: 1px solid rgb(37, 75, 133);" class="mx-auto img-producto" mat-card-image
+            [src]="env + item.idProducto" [alt]="item?.listImgs?.[0]?.nombreImagen ?? 'Imagen sin nombre'">
           <mat-card-content>
             <p>
               {{item.descripcion}}
             </p>
           </mat-card-content>
+          <div class="col-12" style="margin-bottom: 8px;" type="button" >
+            <button type="button" class="btn btn-secondary col-12"  (click)="addCarrito(item)">
+             <b> Agregar al carrito  <img [src]="iconImagen.iconCarrito" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
+            </button>
+            
+          </div>
+          <div class="col-12" style="margin-bottom: 8px;" type="button" >
+            <button type="button" class="btn btn-secondary col-12"  (click)="removeCarrito(item)"  [disabled]="!isProductoEnCarrito(item)">
+             <b> Eliminar del carrito  <img [src]="iconImagen.iconEliminar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
+            </button>
+            
+          </div>
+          <div class="col-6"  type="button" class="btn btn-secondary">actualizar producto
+            <img [src]="iconImagen.iconEditar" style="width: 20px; height: 20px; margin-left: 8px;" />
+          </div>
+
         </mat-card>
+
       </div>
     </div>
   </div>

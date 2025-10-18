@@ -1,3 +1,4 @@
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ButtonModule } from 'primeng/button';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -38,7 +39,8 @@ import { NbCardModule, NbStepperModule } from '@nebular/theme';
     MatButtonModule,
     NbCardModule,
     NbStepperModule,
-    ButtonModule
+    ButtonModule,
+    NzButtonModule
   ],
   exports:[
     AllComponent,

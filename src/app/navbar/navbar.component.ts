@@ -2,6 +2,7 @@ import { IconService } from './../Icon/icon.service';
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
+import { CarritoService } from '../services/carrito/carrito.service';
 
 @Component({
   selector: 'app-navbar',
@@ -13,9 +14,12 @@ export class NavbarComponent implements OnInit {
   isAdminUser: boolean = false;
   usuario: string = '';
 
+  countCarrito: number = 0;
+
   constructor(private readonly authService: AuthService,
+              public readonly iconService: IconService, 
               private readonly router: Router,
-              public readonly iconService: IconService
+              public readonly serviceCarrito: CarritoService
   ) { }
 
   ngOnInit(): void {
@@ -25,6 +29,11 @@ export class NavbarComponent implements OnInit {
     });
     this.authService.userName$.subscribe(user => {
       this.usuario = user;
+    });
+
+    this.serviceCarrito.carritoProducto$.subscribe(detalle => {
+      this.countCarrito = detalle.reduce((sum, item) => sum + item.cantidad, 0);
+      console.log(detalle, 'detalleeeeeee')
     });
   }
 
@@ -40,18 +49,19 @@ export class NavbarComponent implements OnInit {
     return this.usuario;
   }
 
-logout(): void {
-  localStorage.removeItem('token');
-  this.authService.setRolesFromToken(''); // limpia los roles y usuario
-  this.roles = [];
-  this.usuario = '';
-  this.router.navigate(['/login']); // opcional: redirige sin recargar
-}
+  logout(): void {
+    localStorage.removeItem('token');
+    this.authService.setRolesFromToken(''); // limpia los roles y usuario
+    this.roles = [];
+    this.usuario = '';
+    this.router.navigate(['/login']); // opcional: redirige sin recargar
+  }
 
 
-revisarProductosCarrito(){
-  
-}
+  revisarProductosCarrito() {
+
+  }
+
 
 
 

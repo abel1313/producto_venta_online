@@ -72,8 +72,8 @@
 
       <div class="dropdown-item d-flex justify-content-end" style="border: 1px solid red;">
         <button class="btn btn-secondary btn-sm ms-3" (click)="revisarProductosCarrito()">
-          carrito
           <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
+          carrito {{countCarrito}}
         </button>
       </div>
       

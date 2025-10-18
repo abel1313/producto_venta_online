@@ -1,3 +1,4 @@
+import { IDetalleProducto } from 'src/app/models';
 import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { CellContextMenuEvent } from 'ag-grid-community';
@@ -7,6 +8,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import { ServerAPI } from 'src/environments/server';
 import { Icon } from 'src/app/Icon';
 import { IconService } from 'src/app/Icon/icon.service';
+import { CarritoService } from 'src/app/services/carrito/carrito.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -29,9 +31,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   paginaPrimera: number = 1;
   paginaUltima: number = 0;
 
-
-
-
   rows: IProductoDTO[] = [];
   data: IProductoDTO[] = [];
 
@@ -51,6 +50,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
 
   constructor(
     private readonly srvice: ProductoService,
+    private readonly serviceCarrito: CarritoService,
     public iconImagen: IconService
   ) {
   }
@@ -115,29 +115,31 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
 
   addCarrito(producto: IProductoDTO) {
 
-    const { nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
+    const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
     let cant = 1;
     const prod = {
+      idProducto,
       nombre,
       descripcion,
       stock,
       precioVenta,
       codigoBarras,
-      cantidad: cant
+      cantidad: cant,
+      total: 0
     }
 
     // Asegurar que detalle es un array y luego agregar el nuevo producto
     if (!Array.isArray(this.detalle)) {
       this.detalle = [];
     }
-   
+
     // Buscar si ya existe el producto
     const index = this.detalle.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
 
     if (index !== -1) {
       // Si existe, incrementar la cantidad y actualizar el total
       this.detalle[index].cantidad += 1;
-   
+
     } else {
       // Si no existe, agregarlo a la lista
       this.detalle.push(prod);
@@ -146,43 +148,46 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     // Calcular el total de cada prod
     this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
 
- console.log(this.detalle, ' add')
+    this.serviceCarrito.carritoProducto.next(this.detalle);
   }
 
-removeCarrito(producto: IProductoDTO) {
-  const index = this.detalle.findIndex(item =>
-    item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
-  );
+  removeCarrito(producto: IProductoDTO) {
+    const index = this.detalle.findIndex(item =>
+      item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
+    );
 
-  if (index !== -1) {
-    if (this.detalle[index].cantidad > 1) {
-      this.detalle[index].cantidad -= 1;
-    } else {
-      this.detalle.splice(index, 1);
+    if (index !== -1) {
+      if (this.detalle[index].cantidad > 1) {
+        this.detalle[index].cantidad -= 1;
+      } else {
+        this.detalle.splice(index, 1);
+      }
+
+      this.serviceCarrito.carritoProducto.next(this.detalle);
     }
+
+    this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
+  }
+  isProductoEnCarrito(producto: IProductoDTO): boolean {
+    return this.detalle.some(item =>
+      item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
+    );
   }
 
-  this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
-  console.log(this.detalle, ' del')
-}
-isProductoEnCarrito(producto: IProductoDTO): boolean {
-  return this.detalle.some(item =>
-    item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
-  );
-}
-
-  detalle: any[] = [];
+  detalle: IDetalleProducto[] = [];
   agregarFila() {
 
-    const { nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionada;
+    const { id ,nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionada;
     let cant = 1;
     const prod = {
+      idProducto: id,
       nombre,
       descripcion,
       stock,
       precioVenta,
       codigoBarras,
-      cantidad: cant
+      cantidad: cant,
+      total: 0
     }
 
     // Asegurar que detalle es un array y luego agregar el nuevo producto

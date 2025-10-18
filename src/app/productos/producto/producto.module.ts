@@ -1,3 +1,4 @@
+import { ButtonModule } from 'primeng/button';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -36,7 +37,8 @@ import { NbCardModule, NbStepperModule } from '@nebular/theme';
     MatCardModule,
     MatButtonModule,
     NbCardModule,
-    NbStepperModule
+    NbStepperModule,
+    ButtonModule
   ],
   exports:[
     AllComponent,

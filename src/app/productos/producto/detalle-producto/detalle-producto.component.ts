@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-detalle-producto',
@@ -6,10 +7,14 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./detalle-producto.component.scss']
 })
 export class DetalleProductoComponent implements OnInit {
-
-  constructor() { }
+idProducto!: number;
+  constructor(
+    private readonly route: ActivatedRoute
+  ) { }
 
   ngOnInit(): void {
+      this.idProducto = +this.route.snapshot.paramMap.get('id')!;
+      console.log(this.idProducto)
   }
 
 }

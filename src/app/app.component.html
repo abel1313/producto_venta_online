@@ -1,15 +1,30 @@
+<nb-layout>
 
+  <nb-layout-header fixed>
+  <!-- Insert header here -->
+  </nb-layout-header>
 
-
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <app-navbar></app-navbar>
+  <nb-layout-column>
+    
+    
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <app-navbar></app-navbar>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12 border">
+                <router-outlet></router-outlet>
+            </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-12 border">
-            <router-outlet></router-outlet>
-        </div>
-    </div>
-</div>
+    
+  </nb-layout-column>
+
+  <nb-layout-footer fixed>
+  <!-- Insert footer here -->
+  </nb-layout-footer>
+
+</nb-layout>

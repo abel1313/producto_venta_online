@@ -12,12 +12,11 @@ import { NgxDatatableModule } from '@swimlane/ngx-datatable';
 import { MatMenuModule } from '@angular/material/menu';
 import { AgGridModule } from 'ag-grid-angular';
 import { HttpClientModule } from '@angular/common/http';
-import {ChangeDetectionStrategy} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
 import { DetalleProductoComponent } from './detalle-producto/detalle-producto.component';
-import {MatIconModule} from '@angular/material/icon';
-import {MatDividerModule} from '@angular/material/divider';
+import { NbCardModule, NbStepperModule } from '@nebular/theme';
+
 
 @NgModule({
   declarations: [
@@ -36,6 +35,8 @@ import {MatDividerModule} from '@angular/material/divider';
     HttpClientModule,
     MatCardModule,
     MatButtonModule,
+    NbCardModule,
+    NbStepperModule
   ],
   exports:[
     AllComponent,

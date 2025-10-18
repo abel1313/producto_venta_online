@@ -13,10 +13,12 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { TokenInterceptor } from './token/TokenInterceptor ';
 import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-disponible.component';
 import { HomeComponent } from './home/home.component';
+import { NbThemeModule, NbLayoutModule } from '@nebular/theme';
+import { NbEvaIconsModule } from '@nebular/eva-icons';
 
 
 @NgModule({
-    providers: [
+  providers: [
     {
       provide: HTTP_INTERCEPTORS,
       useClass: TokenInterceptor,
@@ -37,6 +39,10 @@ import { HomeComponent } from './home/home.component';
     VentaProductoModule,
     MisGastosModule,
     RouterModule,
+    NbThemeModule.forRoot({ name: 'dark' }),
+    NbLayoutModule,
+    NbEvaIconsModule,
+    NbThemeModule.forRoot(),
   ],
   bootstrap: [AppComponent]
 })

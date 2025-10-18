@@ -96,12 +96,11 @@ export class AddVentaComponent implements OnInit {
   agregarFilaBuscador() {
 
     const index = this.filaSeleccionadaBuscadorIndex || 0; // Obtener el índice del producto seleccionado
-    console.log("Índice seleccionado:", index);
+
 
     if (index >= 0 && index < this.rowsBuscador.length) {
       if (this.rowsBuscador[index].stock > 0) {
         this.rowsBuscador[index].stock -= 1; // Reducir el stock correctamente
-        console.log("Stock actualizado:", this.rowsBuscador[index].stock);
 
         // 🔥 Forzar actualización en Ag-Grid
         this.rowsBuscador = [...this.rowsBuscador]; // Clonar el array para que Angular detecte el cambio
@@ -150,7 +149,6 @@ export class AddVentaComponent implements OnInit {
     // Calcular el total de cada producto
     this.detalleVenta.forEach(item => item.subTotal = item.cantidad * item.precioVenta);
 
-    console.log(this.detalleVenta, 'detalleVenta actualizado');
 
     this.rowsDetalle = [...this.detalleVenta];
 
@@ -158,7 +156,6 @@ export class AddVentaComponent implements OnInit {
     this.totalDetalle = 'Total $ ' + total;
 
     this.disableBoton = total > 0;
-    console.log(this.totalDetalle, 'detalleVenta actualizado');
   }
 
   disableBoton: boolean = false;
@@ -168,7 +165,6 @@ export class AddVentaComponent implements OnInit {
     if (this.disableBoton) {
       this.service.saveVenta(this.detalleVenta).subscribe({
         next: (res) => {
-          console.log(res, '------------------------------------------------ ');
           Swal.fire({
             title: "Drag me!",
             icon: "success",

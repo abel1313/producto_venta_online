@@ -27,7 +27,6 @@ export class AuthGuard implements CanActivate {
       return false;
     }
 
-    console.log(payload, '----------------------------------------------1111')
     const roles = payload.roles || [];
 
     if (roles.includes('ROLE_ADMIN')) {

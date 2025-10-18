@@ -48,7 +48,6 @@ export class AllComponent implements OnInit {
     }
   
     ngOnChanges(changes: SimpleChanges) {
-      console.log('cambios ')
       if (changes['paginacion'] && this.paginacion?.t) {
         this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
       }
@@ -143,9 +142,7 @@ export class AllComponent implements OnInit {
   
     // Calcular el total de cada producto
     this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
-  
-    console.log(this.detalle, 'detalle actualizado');
-  
+
     }
   
     eliminarFila() {

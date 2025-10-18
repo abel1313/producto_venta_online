@@ -27,7 +27,6 @@ export class LoginFormComponent implements OnInit {
     const credentials = this.loginForm.value;
     this.http.post<any>('https://proyecto-key-1.onrender.com/mis-productos/auth/login', credentials).subscribe({
       next: (res) => {
-        console.log(res)
         localStorage.setItem('token', res.token);
         this.authService.setRolesFromToken( res.token);
         this.router.navigate(['/productos']);

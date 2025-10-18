@@ -53,7 +53,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('cambios ')
     if (changes['paginacion'] && this.paginacion?.t) {
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
@@ -149,7 +148,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   // Calcular el total de cada producto
   this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
 
-  console.log(this.detalle, 'detalle actualizado');
 
   }
 
@@ -189,8 +187,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
       next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
-        console.log("---------------------------------------------------")
-        console.log(this.paginacion)
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -275,7 +271,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges  {
   }
 
   onScroll(event: any): void {
-    console.log(event)
   const element = event.target;
   if (element.scrollHeight - element.scrollTop === element.clientHeight) {
     this.loadMore(); // Carga más datos

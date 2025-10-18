@@ -35,7 +35,6 @@ export class BuscaComponent implements OnInit {
     
     this.service.getDataNombreCodigoBarra(pagina,size,nombre).subscribe({
       next: (res) => {
-        console.log('123:', res);
         this.paginacionBuscar = res;
       },
       error: (err) => {

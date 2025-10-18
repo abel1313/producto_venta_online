@@ -109,8 +109,6 @@ export class AddComponent implements OnInit, AfterViewInit {
     // Escuchar cambios en el checkbox para modificar validación
     this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
       const codigoControl = this.formProductos.get('codigoBarras');
-
-     // console.log("existen cambios ", sinCodigo)
       this.formProductos.get('codigoBarras')?.setValue('');
       if (sinCodigo) {
         this.habilita = false;
@@ -144,7 +142,6 @@ export class AddComponent implements OnInit, AfterViewInit {
       if (!producto.codigoBarras) {
         producto.codigoBarras = { codigoBarras: '', id: 6 }; // ✅ Si no está definido, lo inicializamos
       }
-     // console.log(producto.descripcion, " antes de ")
 
       const codBarr = producto.codigoBarras.codigoBarras;
 
@@ -166,7 +163,6 @@ export class AddComponent implements OnInit, AfterViewInit {
         listImagenes: this.imagenesCargadas
       }
 
-      //console.log(JSON.stringify(this.productoSave), " produvcto ")
     }
 
     this.guardar();

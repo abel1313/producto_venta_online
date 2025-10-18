@@ -76,7 +76,6 @@ export class BuscarVentaComponent implements OnInit {
   }
 
   obtenerTextoBuscar(dato: string){
-    console.log('data ', dato )
   }
 
   primeraPagina(data: any):void{
@@ -110,10 +109,8 @@ buscarTotalDetalle(): void{
 
   ngOnChanges(changes: SimpleChanges) {
     
-    console.log("desde el padre en cada cabui 123 ",changes['paginacion'].currentValue )
     
     if (changes['paginacion'] && this.paginacion?.t) {
-       console.log("dcambio " )
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
       this.cdr.detectChanges(); // ✅ Forzar actualización de la vista
     }

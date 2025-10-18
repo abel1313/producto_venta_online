@@ -83,7 +83,7 @@ export class ClientesAddComponent implements OnInit {
             this.$hideComponent.emit(true);
         },
         error(error){
-          console.log(error)
+          //console.log(error)
         }
       });
       

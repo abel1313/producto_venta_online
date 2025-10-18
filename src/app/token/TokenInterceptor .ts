@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    console.log('➡️ Request:', req.method, req.url, req.body);
    // const token = localStorage.getItem('token');
     const token = localStorage.getItem('token');
 

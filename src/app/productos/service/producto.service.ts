@@ -51,7 +51,6 @@ export class ProductoService {
 
             // 🌐 Obtener datos
     saveProducto(det: IProducto): Observable<any> {
-      console.log(JSON.stringify(det))
       return this.http.post(`${environment.api_Url}/productos/save`,det);
     }
 

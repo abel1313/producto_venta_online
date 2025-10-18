@@ -46,11 +46,8 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    
-    console.log("desde el padre en cada cabui 123 ",changes['paginacion'].currentValue )
-    
+
     if (changes['paginacion'] && this.paginacion?.t) {
-       console.log("dcambio " )
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
       this.cdr.detectChanges(); // ✅ Forzar actualización de la vista
     }
@@ -125,8 +122,6 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
   }
 
   ngAfterViewInit() {
-
-    console.log(this.paginacion);
     this.rows = this.paginacion.rows;
     if (!this.menuTrigger) {
       console.error('menuTrigger no está inicializado');

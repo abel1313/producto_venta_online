@@ -5,6 +5,7 @@ import { AllComponent } from './all/all.component';
 import { UpdateComponent } from './update/update.component';
 import { BuscaComponent } from './busca/busca.component';
 import { AuthGuard } from 'src/app/auth.guard';
+import { DetalleProductoComponent } from './detalle-producto/detalle-producto.component';
 
 const routes: Routes = [
 
@@ -17,6 +18,7 @@ const routes: Routes = [
   {
     path: 'buscar', component: BuscaComponent
   },
+   { path: 'detalle-producto/:id', component: DetalleProductoComponent },
   {
     path: '' ,redirectTo: 'agregar', pathMatch:'full' ,
   }

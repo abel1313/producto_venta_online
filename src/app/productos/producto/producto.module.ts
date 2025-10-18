@@ -15,13 +15,17 @@ import { HttpClientModule } from '@angular/common/http';
 import {ChangeDetectionStrategy} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
+import { DetalleProductoComponent } from './detalle-producto/detalle-producto.component';
+import {MatIconModule} from '@angular/material/icon';
+import {MatDividerModule} from '@angular/material/divider';
 
 @NgModule({
   declarations: [
     AddComponent,
     AllComponent,
     BuscaComponent,
-    UpdateComponent
+    UpdateComponent,
+    DetalleProductoComponent
   ],
   imports: [
     CommonModule,

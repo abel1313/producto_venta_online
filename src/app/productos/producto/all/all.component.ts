@@ -9,6 +9,7 @@ import { ServerAPI } from 'src/environments/server';
 import { Icon } from 'src/app/Icon';
 import { IconService } from 'src/app/Icon/icon.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -49,9 +50,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   ];
 
   constructor(
+    public iconImagen: IconService,
+    private readonly router: Router,
     private readonly srvice: ProductoService,
-    private readonly serviceCarrito: CarritoService,
-    public iconImagen: IconService
+    private readonly serviceCarrito: CarritoService
   ) {
   }
 
@@ -347,6 +349,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     // Por ejemplo, llamando a un servicio o paginando
     console.log("dandole")
   }
+  irDetalleProducto(id: number) {
+    this.router.navigate(['/productos/detalle-producto', id]);
+  }
+  
 
   /**\
    * loadMore(): void {

@@ -1,3 +1,4 @@
+import { IconService } from './../Icon/icon.service';
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
@@ -12,8 +13,9 @@ export class NavbarComponent implements OnInit {
   isAdminUser: boolean = false;
   usuario: string = '';
 
-  constructor(private authService: AuthService,
-    private router: Router
+  constructor(private readonly authService: AuthService,
+              private readonly router: Router,
+              public readonly iconService: IconService
   ) { }
 
   ngOnInit(): void {
@@ -44,6 +46,11 @@ logout(): void {
   this.roles = [];
   this.usuario = '';
   this.router.navigate(['/login']); // opcional: redirige sin recargar
+}
+
+
+revisarProductosCarrito(){
+  
 }
 
 

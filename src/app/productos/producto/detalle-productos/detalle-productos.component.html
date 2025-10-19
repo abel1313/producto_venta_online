@@ -1,0 +1,33 @@
+<div class="card">
+  <p-table [value]="detalleProducto" [paginator]="true" [rows]="5" [tableStyle]="{ 'min-width': '50rem' }"
+    [rowsPerPageOptions]="[5, 10, 20]">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width:25%">Nombre</th>
+        <th style="width:25%">Descripción</th>
+        <th style="width:25%">Código de barras</th>
+        <th style="width:25%">Precio</th>
+        <th style="width:25%">Cantidad</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-detalle>
+      <tr>
+        <td>{{ detalle.nombre }}</td>
+        <td>{{ detalle.descripcion }}</td>
+        <td>{{ detalle.codigoBarras }}</td>
+        <td>{{ detalle.precioVenta }}</td>
+        <td>{{ detalle.cantidad }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <div class="row">
+    <div class="col-10 d-flex justify-content-end">
+
+    </div>
+    <div class="col-2 d-flex justify-content-center">
+      <b>{{totalProducto | currency: 'MXN'}}</b>
+    </div>
+  </div>
+</div>

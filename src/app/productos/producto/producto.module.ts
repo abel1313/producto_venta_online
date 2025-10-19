@@ -20,14 +20,16 @@ import { DetalleProductoComponent } from './detalle-producto/detalle-producto.co
 import { NbCardModule, NbStepperModule } from '@nebular/theme';
 import { CarouselModule } from 'primeng/carousel';
 import { TagModule } from 'primeng/tag';
-
+import { DetalleProductosComponent } from './detalle-productos/detalle-productos.component';
+import { TableModule } from 'primeng/table';
 @NgModule({
   declarations: [
     AddComponent,
     AllComponent,
     BuscaComponent,
     UpdateComponent,
-    DetalleProductoComponent
+    DetalleProductoComponent,
+    DetalleProductosComponent
   ],
   imports: [
     CommonModule,
@@ -43,7 +45,8 @@ import { TagModule } from 'primeng/tag';
     ButtonModule,
     NzButtonModule,
     CarouselModule,
-    TagModule
+    TagModule,
+    TableModule
   ],
   exports:[
     AllComponent,

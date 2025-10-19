@@ -29,7 +29,9 @@ export class ProductoService {
       return this.http.get<any>(`${this.urlImg}/${id}/detalle?size=${size}&page=${page}`);
     }
 
-
+    getDataGeneric<R>(id: number): Observable<R> {
+      return this.http.get<R>(`${this.url}/findById/${id}`);
+    }
 
     
     // 🌐 Obtener datos

@@ -61,6 +61,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     if (changes['paginacion'] && this.paginacion?.t) {
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
+        this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
+    this.detalle = detalle;
+  });
   }
 
   filaSeleccionada: any;
@@ -114,61 +117,29 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
 
+addCarrito(producto: IProductoDTO) {
+  const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
+  const prod = {
+    idProducto,
+    nombre,
+    descripcion,
+    stock,
+    precioVenta,
+    codigoBarras,
+    cantidad: 1,
+    total: precioVenta
+  };
 
-  addCarrito(producto: IProductoDTO) {
+  this.serviceCarrito.agregarProducto(prod);
+}
 
-    const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
-    let cant = 1;
-    const prod = {
-      idProducto,
-      nombre,
-      descripcion,
-      stock,
-      precioVenta,
-      codigoBarras,
-      cantidad: cant,
-      total: 0
-    }
-
-    // Asegurar que detalle es un array y luego agregar el nuevo producto
-    if (!Array.isArray(this.detalle)) {
-      this.detalle = [];
-    }
-
-    // Buscar si ya existe el producto
-    const index = this.detalle.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
-
-    if (index !== -1) {
-      // Si existe, incrementar la cantidad y actualizar el total
-      this.detalle[index].cantidad += 1;
-
-    } else {
-      // Si no existe, agregarlo a la lista
-      this.detalle.push(prod);
-    }
-
-    // Calcular el total de cada prod
-    this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
-
-    this.serviceCarrito.carritoProducto.next(this.detalle);
-  }
 
   removeCarrito(producto: IProductoDTO) {
     const index = this.detalle.findIndex(item =>
       item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
     );
 
-    if (index !== -1) {
-      if (this.detalle[index].cantidad > 1) {
-        this.detalle[index].cantidad -= 1;
-      } else {
-        this.detalle.splice(index, 1);
-      }
-
-      this.serviceCarrito.carritoProducto.next(this.detalle);
-    }
-
-    this.detalle.forEach(item => item.total = item.cantidad * item.precioVenta);
+      this.serviceCarrito.eliminarProducto(this.detalle[index]);
   }
   isProductoEnCarrito(producto: IProductoDTO): boolean {
     return this.detalle.some(item =>

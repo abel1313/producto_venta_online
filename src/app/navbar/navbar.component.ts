@@ -17,9 +17,9 @@ export class NavbarComponent implements OnInit {
   countCarrito: number = 0;
 
   constructor(private readonly authService: AuthService,
-              public readonly iconService: IconService, 
-              private readonly router: Router,
-              public readonly serviceCarrito: CarritoService
+    public readonly iconService: IconService,
+    private readonly router: Router,
+    public readonly serviceCarrito: CarritoService
   ) { }
 
   ngOnInit(): void {
@@ -31,10 +31,14 @@ export class NavbarComponent implements OnInit {
       this.usuario = user;
     });
 
-    this.serviceCarrito.carritoProducto$.subscribe(detalle => {
+    this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
       this.countCarrito = detalle.reduce((sum, item) => sum + item.cantidad, 0);
-      console.log(detalle, 'detalleeeeeee')
     });
+
+    window.addEventListener('storage', () => {
+      this.serviceCarrito.validarCarrito();
+    });
+
   }
 
   hasRole(...allowedRoles: string[]): boolean {
@@ -59,7 +63,7 @@ export class NavbarComponent implements OnInit {
 
 
   revisarProductosCarrito() {
-
+    this.router.navigate(['/productos/detalle-productos']);
   }
 
 

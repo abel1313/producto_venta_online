@@ -3,6 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { ProductoService } from '../../service/producto.service';
 import { IconService } from 'src/app/Icon/icon.service';
+import { IDetalleProducto } from 'src/app/models';
+import { CarritoService } from 'src/app/services/carrito/carrito.service';
 
 @Component({
   selector: 'app-detalle-producto',
@@ -16,11 +18,13 @@ export class DetalleProductoComponent implements OnInit {
   responsiveOptions: any[] | any;
 
   productoDtoImagen: ProductImagenDto[] | any;
-
+ producto: any;
   constructor(
     private readonly route: ActivatedRoute,
     private readonly service: ProductoService,
-    public readonly serviceIcon: IconService
+    public readonly serviceIcon: IconService,
+    public iconImagen: IconService,
+    private readonly serviceCarrito: CarritoService
   ) { }
 
   ngOnInit(): void {
@@ -32,6 +36,14 @@ export class DetalleProductoComponent implements OnInit {
     this.cargaInicialCompletada = true;
   });
 
+    this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
+    this.detalle = detalle;
+  });
+
+  this.service.getDataGeneric(this.idProducto).subscribe(data=>{
+    this.producto = data;
+    console.log(this.producto)
+  });
     this.service.getProductsSmall().then(data => {
       this.products = data.slice(0, 9);
     });
@@ -60,6 +72,33 @@ export class DetalleProductoComponent implements OnInit {
     ]
 
   }
+
+    detalle: IDetalleProducto[] = [];
+    isProductoEnCarrito(): boolean {
+    return this.detalle.some(item =>
+       item?.codigoBarras === this.producto?.codigoBarras && item.nombre === this.producto.nombre
+    );
+  }
+addCarrito() {
+  const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = this.producto;
+  const prod: IDetalleProducto = {
+    idProducto,
+    nombre,
+    descripcion,
+    stock,
+    precioVenta,
+    codigoBarras,
+    cantidad: 1,
+    total: precioVenta
+  };
+
+  this.serviceCarrito.agregarProducto(prod);
+}
+  
+removeCarrito() {
+  this.serviceCarrito.eliminarProducto(this.producto);
+}
+
   cargaInicialCompletada = false;
 
   currentPage = 0;

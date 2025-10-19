@@ -18,7 +18,8 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
 import { DetalleProductoComponent } from './detalle-producto/detalle-producto.component';
 import { NbCardModule, NbStepperModule } from '@nebular/theme';
-
+import { CarouselModule } from 'primeng/carousel';
+import { TagModule } from 'primeng/tag';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,9 @@ import { NbCardModule, NbStepperModule } from '@nebular/theme';
     NbCardModule,
     NbStepperModule,
     ButtonModule,
-    NzButtonModule
+    NzButtonModule,
+    CarouselModule,
+    TagModule
   ],
   exports:[
     AllComponent,

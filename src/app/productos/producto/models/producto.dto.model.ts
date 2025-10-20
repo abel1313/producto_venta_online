@@ -3,7 +3,7 @@ import { IdGenerico } from "./idGenerico.model";
 
 
 
-export interface IProductoDTO extends IdGenerico{
+export interface IProductoDTORec extends IdGenerico{
 
     nombre: string;
     precioCosto: number;

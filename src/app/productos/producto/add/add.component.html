@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-center p-4">
-  <div class="col-8">
-    <div class="card">
+  <div class="col-8" >
+    <div class="card p-3">
 
       <div class="card-header text-center">
         <b> {{nombreCard}}</b>
@@ -32,7 +32,7 @@
 
 
 
-        <div class="row">
+        <div class="row mt-2">
           <div class="col-6">
             <label for="piezas">Piezas:</label>
             <input id="piezas" formControlName="piezas" class="form-control">
@@ -54,7 +54,7 @@
 
 
 
-        <div class="row">
+        <div class="row mt-2">
           <div class="col-6">
             <label for="precioVenta">Precio Venta:</label>
             <input id="precioVenta" formControlName="precioVenta" class="form-control">
@@ -80,7 +80,7 @@
 
 
 
-        <div class="row">
+        <div class="row mt-2">
           <div class="col-6">
             <label for="descripcion">Descripcion:</label>
             <input id="descripcion" formControlName="descripcion" class="form-control">
@@ -105,7 +105,7 @@
 
 
 
-        <div class="row">
+        <div class="row mt-2">
           <div class="col-6">
             <label for="marca">Marca:</label>
             <input id="marca" formControlName="marca" class="form-control">
@@ -119,17 +119,17 @@
 
           </div>
           <div class="col-6">
-            <label for="contenidoNeto">Contenido Neto:</label>
-            <input id="contenidoNeto" formControlName="contenidoNeto" class="form-control">
+            <label for="contenido">Contenido Neto:</label>
+            <input id="contenido" formControlName="contenido" class="form-control">
 
-            <div *ngIf="formProductos.get('contenidoNeto')?.invalid && formProductos.get('contenidoNeto')?.touched">
+            <div *ngIf="formProductos.get('contenido')?.invalid && formProductos.get('contenido')?.touched">
               <small class="text-danger">Campo requerido</small>
             </div>
           </div>
         </div>
 
 
-        <div class="row">
+        <div class="row mt-2">
 
           <div class="col-4">
             <label for="sinCodigo">Sin Codigo de Barra:</label>
@@ -140,13 +140,13 @@
 
 
           <div class="col-8">
-            <label for="codigoBarras">Codigo de Barra:</label>
+            <label for="codigoBarras">Codigo de Barra: {{!habilita}}</label>
             <input id="codigoBarras" formControlName="codigoBarras" class="form-control"
-              [attr.disabled]="!habilita ? true : null">
+              >
 
             <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
               <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 10
+              <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 100
                 caracteres</small>
             </div>
           </div>
@@ -162,10 +162,10 @@
 
 
         <div class="row p-2">
-          <div class="col-12 d-flex justify-content-center">
+          <div class="col-12 d-flex justify-content-end">
 
-            <button type="submit" class="btn btn-success col-6 " (click)="producto()"
-              [disabled]="formProductos.invalid">Enviar</button>
+            <button type="submit" class="btn btn-success col-4 " (click)="producto()"
+              [disabled]="formProductos.invalid">Guardar</button>
           </div>
         </div>
       </form>
@@ -173,9 +173,7 @@
   </div>
 </div>
 
-<p-button label="Check" > </p-button>
 
-<button nz-button nzType="primary">Primary</button>
 <ng-container *ngIf="false">
   <div class="ruleta-container">
     <div class="indicador"></div> <!-- Flecha fija -->

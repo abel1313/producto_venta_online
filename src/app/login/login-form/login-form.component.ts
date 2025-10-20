@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/auth.service';
+import { AccederService } from '../acceder.service';
 
 @Component({
   selector: 'app-login-form',
@@ -15,7 +16,8 @@ export class LoginFormComponent implements OnInit {
   errorMessage: string = '';
 
   constructor(private fb: FormBuilder, private http: HttpClient, private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private readonly acceder: AccederService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -25,7 +27,7 @@ export class LoginFormComponent implements OnInit {
 
   onLogin() {
     const credentials = this.loginForm.value;
-    this.http.post<any>('https://proyecto-key-1.onrender.com/mis-productos/auth/login', credentials).subscribe({
+    this.acceder.login(credentials).subscribe({
       next: (res) => {
         localStorage.setItem('token', res.token);
         this.authService.setRolesFromToken( res.token);

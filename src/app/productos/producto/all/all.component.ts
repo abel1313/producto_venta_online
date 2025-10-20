@@ -61,9 +61,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     if (changes['paginacion'] && this.paginacion?.t) {
       this.rows = [...this.paginacion.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
     }
-        this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
-    this.detalle = detalle;
-  });
+    this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
+      this.detalle = detalle;
+    });
   }
 
   filaSeleccionada: any;
@@ -117,21 +117,21 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
 
-addCarrito(producto: IProductoDTO) {
-  const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
-  const prod = {
-    idProducto,
-    nombre,
-    descripcion,
-    stock,
-    precioVenta,
-    codigoBarras,
-    cantidad: 1,
-    total: precioVenta
-  };
+  addCarrito(producto: IProductoDTO) {
+    const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
+    const prod = {
+      idProducto,
+      nombre,
+      descripcion,
+      stock,
+      precioVenta,
+      codigoBarras,
+      cantidad: 1,
+      total: precioVenta
+    };
 
-  this.serviceCarrito.agregarProducto(prod);
-}
+    this.serviceCarrito.agregarProducto(prod);
+  }
 
 
   removeCarrito(producto: IProductoDTO) {
@@ -139,7 +139,7 @@ addCarrito(producto: IProductoDTO) {
       item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
     );
 
-      this.serviceCarrito.eliminarProducto(this.detalle[index]);
+    this.serviceCarrito.eliminarProducto(this.detalle[index]);
   }
   isProductoEnCarrito(producto: IProductoDTO): boolean {
     return this.detalle.some(item =>
@@ -150,7 +150,7 @@ addCarrito(producto: IProductoDTO) {
   detalle: IDetalleProducto[] = [];
   agregarFila() {
 
-    const { id ,nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionada;
+    const { id, nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionada;
     let cant = 1;
     const prod = {
       idProducto: id,
@@ -189,6 +189,10 @@ addCarrito(producto: IProductoDTO) {
     this.rows = this.rows.filter(row => row !== this.filaSeleccionada);
   }
 
+  updateProducto(item: any) {
+    this.router.navigate(['productos/update']);
+    this.srvice.agregarProducto(item);
+  }
   ngAfterViewInit() {
 
     if (!this.menuTrigger) {
@@ -323,7 +327,7 @@ addCarrito(producto: IProductoDTO) {
   irDetalleProducto(id: number) {
     this.router.navigate(['/productos/detalle-producto', id]);
   }
-  
+
 
   /**\
    * loadMore(): void {

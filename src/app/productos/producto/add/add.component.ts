@@ -1,3 +1,4 @@
+import { IProductoDTORec } from './../models/producto.dto.model';
 import { IProducto } from './../models/producto.model';
 import { AfterViewInit, Component, ElementRef, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -26,49 +27,23 @@ export class AddComponent implements OnInit, AfterViewInit {
   private offsetX = 0;
   private offsetY = 0;
   @Input() nombreCard: string = '';
+  @Input() productoUpdate: IProductoDTORec | null = null;
 
   formProductos: FormGroup;
 
   productoSave: IProducto;
   habilita = false;
-  productoImagen: IProductoImagen [] = [];
+  productoImagen: IProductoImagen[] = [];
   constructor(
     private readonly fb: FormBuilder,
     private readonly service: ProductoService
 
   ) {
 
-
-    /**
-     *     this.productoImagen = {
-      imagen: {
-        base64: "",
-        extension: "",
-        nombreImagen: "",
-        listProductoImanen: []
-      },
-      producto: {
-        nombre: '',
-        precioCosto: 0,
-        piezas: 0,
-        color: '',
-        precioVenta: 0,
-        precioRebaja: 0,
-        descripcion: '',
-        stock: 0,
-        marca: '',
-        contenido: '',
-        codigoBarras: {
-          codigoBarras: '',
-          id: 0
-        },
-        listProductoImanen: []
-      }
-    }
-     * 
-     */
     if (this.nombreCard == '') {
       this.nombreCard = 'Agregar Producto';
+    }else{
+
     }
 
     this.productoSave = {
@@ -92,23 +67,24 @@ export class AddComponent implements OnInit, AfterViewInit {
 
 
     this.formProductos = this.fb.group({
-      nombre: ['sdasd', [Validators.required, Validators.maxLength(100)]],
-      precioCosto: ['10', Validators.required],
-      piezas: ['1', Validators.required],
-      color: ['asdas'],
-      precioVenta: ['1', Validators.required],
-      precioRebaja: ['1', Validators.required],
-      descripcion: ['asdas', Validators.required],
-      stock: ['10000', Validators.required],
-      marca: ['asdas', Validators.required],
-      contenidoNeto: ['asdas', Validators.required],
-      codigoBarras: ['asdas', Validators.required],
+      nombre: ['', [Validators.required, Validators.maxLength(100)]],
+      precioCosto: ['', Validators.required],
+      piezas: ['', Validators.required],
+      color: [''],
+      precioVenta: ['', Validators.required],
+      precioRebaja: ['', Validators.required],
+      descripcion: ['', Validators.required],
+      stock: ['', Validators.required],
+      marca: ['', Validators.required],
+      contenido: ['', Validators.required],
+      codigoBarras: ['', [Validators.required,Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
 
     // Escuchar cambios en el checkbox para modificar validación
     this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
       const codigoControl = this.formProductos.get('codigoBarras');
+      console.log("se ejecuta esto ")
       this.formProductos.get('codigoBarras')?.setValue('');
       if (sinCodigo) {
         this.habilita = false;
@@ -170,6 +146,8 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   guardar(): void {
 
+//console.log(this.productoSave)
+  //  return
     this.service.saveProducto(this.productoSave)
       .subscribe({
         next: (save) => {
@@ -202,8 +180,9 @@ export class AddComponent implements OnInit, AfterViewInit {
         }
       });
   }
-  update(): void {
 
+  update(): void {
+    this.producto();
   }
 
 
@@ -212,6 +191,49 @@ export class AddComponent implements OnInit, AfterViewInit {
   chart!: Chart;
 
   ngAfterViewInit() {
+if (this.nombreCard === 'Actualizar Producto') {
+  this.habilita = false;
+  // Seteo de campos
+  this.formProductos.get('nombre')?.setValue(this.productoUpdate?.nombre);
+  this.formProductos.get('precioCosto')?.setValue(this.productoUpdate?.precioVenta);
+  this.formProductos.get('piezas')?.setValue(this.productoUpdate?.piezas);
+  this.formProductos.get('color')?.setValue(this.productoUpdate?.color);
+  this.formProductos.get('precioVenta')?.setValue(this.productoUpdate?.precioVenta);
+  this.formProductos.get('precioRebaja')?.setValue(this.productoUpdate?.precioRebaja);
+  this.formProductos.get('descripcion')?.setValue(this.productoUpdate?.descripcion);
+  this.formProductos.get('stock')?.setValue(this.productoUpdate?.stock);
+  this.formProductos.get('marca')?.setValue(this.productoUpdate?.marca);
+  this.formProductos.get('contenido')?.setValue(this.productoUpdate?.contenido);
+
+  // Código de barras
+  const codigoBarr = this.productoUpdate?.codigoBarras ?? '';
+  const codValid = codigoBarr == '';
+  this.formProductos.get('sinCodigoBarra')?.setValue(codValid)
+  this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
+  this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
+  const codigoControl = this.formProductos.get('codigoBarras');
+
+  console.log(codigoControl)
+  if (sinCodigo) {
+    codigoControl?.disable();
+    codigoControl?.clearValidators();
+  } else {
+     this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
+    codigoControl?.enable();
+    codigoControl?.setValidators(Validators.required);
+  }
+
+  codigoControl?.updateValueAndValidity();
+});
+ 
+
+
+    
+    
+  // Escuchar cambios en el checkbox
+
+}
+
 
     /**
      *     Chart.register(ArcElement, PieController);
@@ -243,7 +265,7 @@ export class AddComponent implements OnInit, AfterViewInit {
 
     Array.from(files).forEach((file) => this.procesarImagen(file));
   }
-  imagenesCargadas: IImagenDto [] = [];
+  imagenesCargadas: IImagenDto[] = [];
   base64Global = "";
   fileName = "";
   extension = "";

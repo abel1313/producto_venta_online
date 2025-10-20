@@ -19,10 +19,12 @@ export class DetalleProductosComponent implements OnInit {
     this.serviceCarrito.carritoDetalle$.subscribe(carrito => {
       this.detalleProducto = carrito;
       this.totalProducto = this.detalleProducto.reduce((sum, prod) => {
+          console.log(sum, 'carrrrrr')
+          console.log(prod, 'carrrrrr')
         return sum + (prod.cantidad * prod.precioVenta);
       }, 0);
 
-      console.log(this.detalleProducto, 'carrrrrr')
+    
     });
   }
 

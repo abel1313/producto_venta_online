@@ -44,9 +44,7 @@ export class DetalleProductoComponent implements OnInit {
     this.producto = data;
     console.log(this.producto)
   });
-    this.service.getProductsSmall().then(data => {
-      this.products = data.slice(0, 9);
-    });
+
 
     this.responsiveOptions = [
       {

@@ -1,6 +1,18 @@
-<nav class="navbar navbar-expand-lg bg-body-tertiary ">
+<nav class="navbar navbar-expand-lg navbar-light bg-light ">
   <div class="container-fluid">
 
+        <!-- Botón para móviles -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNavDropdown"
+      aria-controls="navbarNavDropdown"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
@@ -12,18 +24,18 @@
             Productos
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" *ngIf="isAdminUser" [routerLink]="'productos/agregar'">agregar </a></li>
-            <li><a class="dropdown-item" [routerLink]="'productos/buscar'">buscar</a></li>
+            <li><a class="dropdown-item" *ngIf="isAdminUser" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'productos/agregar'">agregar </a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'productos/buscar'">buscar</a></li>
           </ul>
         </li>
 
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
+        <li class="nav-item dropdown"  *ngIf="isAdminUser">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Ventas
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="'ventas/venta'">Venta</a></li>
-            <li><a class="dropdown-item" [routerLink]="'ventas/buscar'">buscar</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'ventas/venta'">Venta</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'ventas/buscar'">buscar</a></li>
           </ul>
         </li>
 
@@ -32,8 +44,8 @@
             Gastos
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="'gastos/agregar'">agregar</a></li>
-            <li><a class="dropdown-item" [routerLink]="'gastos/buscar'">buscar</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'gastos/agregar'">agregar</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'gastos/buscar'">buscar</a></li>
           </ul>
         </li>
 
@@ -43,13 +55,13 @@
             Rifas
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" [routerLink]="'rifas/agregar'">agregar</a></li>
-            <li><a class="dropdown-item" [routerLink]="'rifas/buscar'">buscar</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'rifas/agregar'">agregar</a></li>
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'rifas/buscar'">buscar</a></li>
           </ul>
         </li>
 
         <li class="nav-item dropdown" *ngIf="isAnonymous">
-          <a class="nav-link dropdown-toggle" [routerLink]="'login'" role="button" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'login'" role="button" aria-expanded="false">
             Login
           </a>
         </li>

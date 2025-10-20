@@ -15,7 +15,7 @@ export class AccederService {
   ) { }
 
   login(credentials: any){
-    return this.http.post<any>(`${ServerAPI.serverApi}//auth/login`, credentials);
+    return this.http.post<any>(`${ServerAPI.serverApi}/auth/login`, credentials);
   }
 
 }

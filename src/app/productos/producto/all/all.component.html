@@ -20,7 +20,7 @@
             <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
             <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
           </mat-card-header>
-          <img style="height: 80%;border: 1px solid rgb(37, 75, 133);" class="mx-auto img-producto" mat-card-image
+          <img style="height: 80%;" class="mx-auto img-producto" mat-card-image
             [src]="env + item.idProducto" [alt]="item?.listImgs?.[0]?.nombreImagen ?? 'Imagen sin nombre'"
             (click)="irDetalleProducto(item.idProducto)">
           <mat-card-content>

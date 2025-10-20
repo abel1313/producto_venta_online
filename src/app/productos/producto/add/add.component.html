@@ -156,7 +156,7 @@
         <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
           <p>Haz clic o arrastra una imagen aquí</p>
           <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
-          <canvas #canvas width="600" height="400" style="border: 1px solid #ccc;"></canvas>
+          <canvas #canvas width="600" height="400" ></canvas>
         </div>
 
 

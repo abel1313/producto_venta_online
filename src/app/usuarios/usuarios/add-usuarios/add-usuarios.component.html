@@ -1,0 +1,56 @@
+<div class="container d-flex justify-content-center align-items-center py-5">
+
+  <div class="card shadow p-4 w-100" style="max-width: 500px;">
+    <h3 class="text-center mb-4">Registro de Usuario</h3>
+
+    <form [formGroup]="formRegistro" (ngSubmit)="registrarUsuario()">
+      <div class="mb-3">
+        <label for="userName" class="form-label">Usuario</label>
+        <input type="text" id="userName" formControlName="userName" class="form-control" required>
+        <div *ngIf="formRegistro.get('userName')?.invalid && formRegistro.get('userName')?.touched">
+          <small class="text-danger" *ngIf="formRegistro.get('userName')?.errors?.['required']">Campo requerido</small>
+          <small class="text-danger" *ngIf="formRegistro.get('userName')?.errors?.['minlength']">Mínimo 4
+            caracteres</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Correo electrónico</label>
+        <input type="email" id="email" formControlName="email" class="form-control">
+        <div *ngIf="formRegistro.get('email')?.errors?.['email'] && formRegistro.get('email')?.touched">
+          <small class="text-danger">Formato de correo inválido</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input type="password" id="password" formControlName="password" class="form-control" required>
+        <div *ngIf="formRegistro.get('password')?.invalid && formRegistro.get('password')?.touched">
+          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['required']">Campo requerido</small>
+          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['minlength']">Mínimo 8
+            caracteres</small>
+          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['passwordFuerte']">
+            Debe incluir mayúscula, minúscula, número y símbolo
+          </small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
+        <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control" required>
+        <div *ngIf="formRegistro.errors?.['passwordMismatch'] && formRegistro.get('confirmPassword')?.touched">
+          <small class="text-danger">Las contraseñas no coinciden</small>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="formRegistro.invalid">Registrarse</button>
+    </form>
+    <div class="row pt-3">
+      <div class="col-12">
+        <button type="button" class="btn btn-secondary col-sm-12 col-lg-12" (click)="irAlLogin()">ir a login</button>
+      </div>
+    </div>
+  </div>
+
+
+</div>

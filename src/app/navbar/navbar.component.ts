@@ -27,6 +27,7 @@ export class NavbarComponent implements OnInit {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
+    console.log(this.roles, 'roles')
     this.authService.userName$.subscribe(user => {
       this.usuario = user;
     });

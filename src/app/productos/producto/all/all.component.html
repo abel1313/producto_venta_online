@@ -34,12 +34,12 @@
             </button>
             
           </div>
-          <div class="col-12" style="margin-bottom: 8px;" type="button" >
+          <div class="col-12" style="margin-bottom: 8px;" type="button" *ngIf="!isAnonymous" >
             <button type="button" class="btn btn-secondary col-12"  (click)="removeCarrito(item)"  [disabled]="!isProductoEnCarrito(item)">
              <b> Eliminar del carrito  <img [src]="iconImagen.iconEliminar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
             </button>
           </div>
-          <div class="col-6"  type="button" class="btn btn-secondary" (click)="updateProducto(item)">actualizar producto
+          <div class="col-6"  type="button" class="btn btn-secondary" *ngIf="!isAnonymous" (click)="updateProducto(item)">actualizar producto
             <img [src]="iconImagen.iconEditar" style="width: 20px; height: 20px; margin-left: 8px;" />
           </div>
 

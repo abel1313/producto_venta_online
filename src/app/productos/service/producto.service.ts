@@ -7,7 +7,7 @@ import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models'
 import { IGastos } from 'src/app/gastos/models';
 import { ICliente } from 'src/app/clietes/models';
 import { IRifa } from 'src/app/rifas/agregar-rifa/rifa/rifa.model';
-import { IProductoDTORec } from '../producto/models/producto.dto.model';
+import { IProductoDTOImagenes, IProductoDTORec } from '../producto/models/producto.dto.model';
 
 @Injectable({
     providedIn: 'root'
@@ -17,7 +17,7 @@ export class ProductoService {
     private readonly url: string = `${environment.api_Url}/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
 
-    public productoUpdate = new BehaviorSubject<IProductoDTORec | null>(null);
+    public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
     productoUpdate$ = this.productoUpdate.asObservable();
     constructor(
         private readonly http: HttpClient
@@ -82,7 +82,7 @@ export class ProductoService {
         return this.http.post(`${environment.api_Url}/rifa/save`, det);
     }
 
-    agregarProducto(producto: IProductoDTORec) {
+    agregarProducto(producto: IProductoDTOImagenes) {
         this.productoUpdate.next(producto);
         console.log('Carrito actualizado:', producto);
     }
@@ -91,7 +91,7 @@ export class ProductoService {
         this.productoUpdate.next(null);
     }
 
-    get obtenerProducto(): IProductoDTORec | null {
+    get obtenerProducto(): IProductoDTOImagenes | null {
         return this.productoUpdate.getValue();
     }
 }

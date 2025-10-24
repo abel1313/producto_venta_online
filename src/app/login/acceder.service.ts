@@ -14,8 +14,12 @@ export class AccederService {
     private readonly http: HttpClient
   ) { }
 
-  login(credentials: any){
+  login(credentials: any) {
     return this.http.post<any>(`${ServerAPI.serverApi}/auth/login`, credentials);
+  }
+
+  registrar(credentials: any) {
+    return this.http.post<any>(`${ServerAPI.serverApi}/auth/registrar`, credentials);
   }
 
 }

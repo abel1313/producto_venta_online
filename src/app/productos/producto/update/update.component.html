@@ -1,5 +1,26 @@
+<app-add [nombreCard]="'Actualizar Producto'" [productoUpdate]="productoActualizar"></app-add>
 
 
-<app-add [nombreCard]="'Actualizar Producto'"
-        [productoUpdate]="productoActualizar"
-          ></app-add>
+<div class="row">
+  <div class="col-4" *ngFor="let item of productoImagenesDto?.listaImagenes">
+    <nb-card accent="info" style="position: relative;">
+      <nb-card-header>
+        Nebula
+        <button
+          class="btn btn-sm btn-danger"
+          style="position: absolute; top: 5px; right: 5px;"
+          (click)="eliminarImagen(item)"
+        >
+          ×
+        </button>
+      </nb-card-header>
+      <nb-card-body>
+        <img
+          style="width: 300px; height: 400px;"
+          [src]="'data:image/' + item.extension + ';base64,' + item.base64"
+          [alt]="item.nombreImagen"
+        >
+      </nb-card-body>
+    </nb-card>
+  </div>
+</div>

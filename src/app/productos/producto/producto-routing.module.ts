@@ -18,10 +18,10 @@ const routes: Routes = [
   {
     path: 'buscar', component: BuscaComponent
   },
-   { path: 'detalle-producto/:id', component: DetalleProductoComponent },
-   { path: 'detalle-productos', component: DetalleProductosComponent },
+  { path: 'detalle-producto/:id', component: DetalleProductoComponent },
+  { path: 'detalle-productos', component: DetalleProductosComponent },
   {
-    path: '' ,redirectTo: 'agregar', pathMatch:'full' ,
+    path: '', redirectTo: 'agregar', pathMatch: 'full',
   }
 
 ];

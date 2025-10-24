@@ -8,8 +8,13 @@
     <label for="password">Contraseña</label>
     <input id="password" formControlName="password" type="password" placeholder="Contraseña" />
 
-    <button type="submit" [disabled]="loginForm.invalid">Entrar</button>
 
+  
+    
+    <button type="submit" class="mb-3" [disabled]="loginForm.invalid">Entrar</button>
+
+      <a class="mb-4"  [routerLink]="['/usuarios/registrar']">Registrar</a>
+      
     <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
   </form>
 </div>

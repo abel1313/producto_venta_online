@@ -17,3 +17,20 @@ export interface IProductoDTORec extends IdGenerico{
     contenido: string;
     codigoBarras: ICodigoBarra;
 }
+
+
+export interface IProductoDTOImagenes{
+
+    idProducto: number;
+    nombre: string;
+    precioCosto: number;
+    piezas: number;
+    color: string;
+    precioVenta: number;
+    precioRebaja: number;
+    descripcion: string;
+    stock: number;
+    marca: string;
+    contenido: string;
+    codigoBarras: ICodigoBarra;
+}

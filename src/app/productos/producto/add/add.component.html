@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-center p-4">
-  <div class="col-8" >
+  <div class="col-8">
     <div class="card p-3">
 
       <div class="card-header text-center">
@@ -22,10 +22,13 @@
           </div>
           <div class="col-6">
             <label for="precioCosto">Precio al que se compro:</label>
-            <input id="precioCosto" formControlName="precioCosto" class="form-control">
+            <input id="precioCosto" formControlName="precioCosto" class="form-control" inputmode="decimal" step="0.01">
 
             <div *ngIf="formProductos.get('precioCosto')?.invalid && formProductos.get('precioCosto')?.touched">
               <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('precioCosto')?.errors?.['pattern']">
+                Solo números con hasta 2 decimales
+              </small>
             </div>
           </div>
         </div>
@@ -35,7 +38,7 @@
         <div class="row mt-2">
           <div class="col-6">
             <label for="piezas">Piezas:</label>
-            <input id="piezas" formControlName="piezas" class="form-control">
+            <input id="piezas" formControlName="piezas" type="number" class="form-control">
 
             <div *ngIf="formProductos.get('piezas')?.invalid && formProductos.get('piezas')?.touched">
               <small class="text-danger">Campo requerido</small>
@@ -57,22 +60,28 @@
         <div class="row mt-2">
           <div class="col-6">
             <label for="precioVenta">Precio Venta:</label>
-            <input id="precioVenta" formControlName="precioVenta" class="form-control">
+            <input id="precioVenta" formControlName="precioVenta" class="form-control" inputmode="decimal" step="0.01">
 
             <div *ngIf="formProductos.get('precioVenta')?.invalid && formProductos.get('precioVenta')?.touched">
               <small class="text-danger">Campo requerido</small>
               <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['maxlength']">Máximo 10
                 caracteres</small>
+              <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['pattern']">
+                Solo números con hasta 2 decimales
+              </small>
             </div>
 
 
           </div>
           <div class="col-6">
             <label for="precioRebaja">Precio si hubiera descuento:</label>
-            <input id="precioRebaja" formControlName="precioRebaja" class="form-control">
+            <input id="precioRebaja" formControlName="precioRebaja" class="form-control" inputmode="decimal" step="0.01">
 
             <div *ngIf="formProductos.get('precioRebaja')?.invalid && formProductos.get('precioRebaja')?.touched">
               <small class="text-danger">Campo requerido</small>
+              <small class="text-danger" *ngIf="formProductos.get('precioRebaja')?.errors?.['pattern']">
+                Solo números con hasta 2 decimales
+              </small>
             </div>
           </div>
         </div>
@@ -95,7 +104,7 @@
           </div>
           <div class="col-6">
             <label for="stock">Stock:</label>
-            <input id="stock" formControlName="stock" class="form-control">
+            <input id="stock" formControlName="stock" type="number" class="form-control">
 
             <div *ngIf="formProductos.get('stock')?.invalid && formProductos.get('stock')?.touched">
               <small class="text-danger">Campo requerido</small>
@@ -141,8 +150,7 @@
 
           <div class="col-8">
             <label for="codigoBarras">Codigo de Barra: {{!habilita}}</label>
-            <input id="codigoBarras" formControlName="codigoBarras" class="form-control"
-              >
+            <input id="codigoBarras" formControlName="codigoBarras" class="form-control">
 
             <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
               <small class="text-danger">Campo requerido</small>
@@ -156,7 +164,7 @@
         <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
           <p>Haz clic o arrastra una imagen aquí</p>
           <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
-          <canvas #canvas width="600" height="400" ></canvas>
+          <canvas #canvas width="600" height="400"></canvas>
         </div>
 
 

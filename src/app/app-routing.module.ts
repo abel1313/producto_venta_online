@@ -4,17 +4,18 @@ import { AuthGuard } from './auth.guard';
 import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-disponible.component';
 import { HomeComponent } from './home/home.component';
 import { CarritoGuard } from './guards/carrito.guard';
+import { UsuariosGuard } from './auth/usuarios.guard';
 
 const routes: Routes = [
   {
     path: 'login',
     loadChildren: () => import('../app/login/login.module').then(m => m.LoginModule),
-    canActivate:[CarritoGuard]
+    canActivate: [CarritoGuard]
   },
   {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule),
-    canActivate:[CarritoGuard]
+    canActivate: [CarritoGuard]
   },
   {
     path: 'ventas',
@@ -32,16 +33,22 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
-    path: 'home', component: HomeComponent,
-    canActivate:[CarritoGuard]
+    path: 'usuarios',
+    loadChildren: () => import('./usuarios/usuarios/usuarios.module').then(m => m.UsuariosModule),
+    canActivate: [CarritoGuard]
   },
   {
-    path: '', redirectTo: 'login', pathMatch: 'full'
+    path: 'home', component: HomeComponent,
+    canActivate: [CarritoGuard]
   },
+  {
+    path: '', redirectTo: 'productos/buscar', pathMatch: 'full'
+  },
+
   {
     path: '**',
     component: PaginaNoDisponibleComponent,
-    canActivate:[CarritoGuard]
+    canActivate: [CarritoGuard]
   },
 
 

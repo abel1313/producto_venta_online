@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { IProductoDTO } from '../models';
+import { ImagenUpdateDto, IProductoDTO } from '../models';
 import { ProductoService } from '../../service/producto.service';
-import { IProductoDTORec } from '../models/producto.dto.model';
+import { IProductoDTOImagenes, IProductoDTORec } from '../models/producto.dto.model';
+import { ImagenesService } from 'src/app/imagene/imagenes.service';
+import { ProductoImagenDto } from '../models/ProductoImagenDto.model';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-update',
@@ -10,15 +13,44 @@ import { IProductoDTORec } from '../models/producto.dto.model';
 })
 export class UpdateComponent implements OnInit {
 
-  productoActualizar: IProductoDTORec | null = null;
+  productoActualizar: IProductoDTOImagenes | null = null;
+  productoImagenesDto: ProductoImagenDto | null = null;
   constructor(
-    private readonly serviceProducto: ProductoService
+    private readonly serviceProducto: ProductoService,
+    private readonly imagenService: ImagenesService
   ) { }
 
   ngOnInit(): void {
-    this.serviceProducto.productoUpdate$.subscribe(producto=>{
-    this.productoActualizar = producto;
+    this.serviceProducto.productoUpdate$.subscribe((producto) => {
+      this.productoActualizar = producto;
     });
+
+    this.imagenService.getDataGeneric<ProductoImagenDto>(this.productoActualizar?.idProducto || 0).subscribe(img => {
+      console.log(img)
+      this.productoImagenesDto = img;
+      console.log(this.productoImagenesDto, 'imgs ')
+    },
+      error => {
+        console.error(error)
+      });
+  }
+  eliminarImagen(imagen: ImagenUpdateDto): void {
+    const index = this.productoImagenesDto?.listaImagenes.indexOf(imagen) || 0;
+    console.log(index, ' index')
+    if (index > -1) {
+      this.productoImagenesDto?.listaImagenes.splice(index, 1);
+    }
+
+    this.imagenService.deleteById<any>(imagen.id).subscribe(eliminado => {
+      Swal.fire({
+        title: eliminado.data,
+        icon: "success",
+        draggable: true
+      });
+    }, error => {
+      console.error(error);
+    });
+
   }
 
 }

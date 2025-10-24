@@ -8,3 +8,5 @@ export * from './producto.model.paginable';
 export * from './producto.model.dto';
 export * from './imagen.dto.mode';
 
+export * from './ImagenUpdateDto.model'
+

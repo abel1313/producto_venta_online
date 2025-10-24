@@ -68,11 +68,11 @@ export class AddComponent implements OnInit, AfterViewInit {
 
     this.formProductos = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      precioCosto: ['', Validators.required],
+      precioCosto: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       piezas: ['', Validators.required],
       color: [''],
-      precioVenta: ['', Validators.required],
-      precioRebaja: ['', Validators.required],
+      precioVenta: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      precioRebaja: ['',[ Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       descripcion: ['', Validators.required],
       stock: ['', Validators.required],
       marca: ['', Validators.required],
@@ -116,7 +116,7 @@ export class AddComponent implements OnInit, AfterViewInit {
 
       producto.codigoBarras.id = 0;
       if (!producto.codigoBarras) {
-        producto.codigoBarras = { codigoBarras: '', id: 6 }; // ✅ Si no está definido, lo inicializamos
+        producto.codigoBarras = { codigoBarras: null, id: 6 }; // ✅ Si no está definido, lo inicializamos
       }
 
       const codBarr = producto.codigoBarras.codigoBarras;

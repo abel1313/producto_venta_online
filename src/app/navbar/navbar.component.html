@@ -59,6 +59,7 @@
             <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'rifas/buscar'">buscar</a></li>
           </ul>
         </li>
+        
 
         <li class="nav-item dropdown" *ngIf="isAnonymous">
           <a class="nav-link dropdown-toggle" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show" [routerLink]="'login'" role="button" aria-expanded="false">
@@ -77,7 +78,7 @@
         </button>
       </div>
 
-      <div class="dropdown-item  d-flex justify-content-center">
+      <div class="dropdown-item  d-flex justify-content-center" >
         <button class="btn btn-secondary btn-sm ms-3" (click)="revisarProductosCarrito()">
           <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
           carrito {{countCarrito}}

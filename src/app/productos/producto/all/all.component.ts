@@ -10,6 +10,8 @@ import { Icon } from 'src/app/Icon';
 import { IconService } from 'src/app/Icon/icon.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { Router } from '@angular/router';
+import { AccederService } from 'src/app/login/acceder.service';
+import { AuthService } from 'src/app/auth/auth.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -48,12 +50,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     { field: 'contenido', headerName: 'Contenido' },
     { field: 'codigoBarras', headerName: 'Codigo Barras' },
   ];
-
+  roles: string[] = [];
+  isAdminUser: boolean = false;
   constructor(
     public iconImagen: IconService,
     private readonly router: Router,
     private readonly srvice: ProductoService,
-    private readonly serviceCarrito: CarritoService
+    private readonly serviceCarrito: CarritoService,
+    private readonly authService: AuthService
   ) {
   }
 
@@ -64,8 +68,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
     this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
       this.detalle = detalle;
     });
+    this.authService.userRoles$.subscribe(roles => {
+      this.roles = roles;
+      this.isAdminUser = roles.includes('ROLE_ADMIN');
+    });
+    
   }
-
+  get isAnonymous(): boolean {
+    return !this.roles || this.roles.length === 0;
+  }
   filaSeleccionada: any;
   blockContextMenu(event: MouseEvent) {
     event.preventDefault(); // ✅ Bloquea el menú del navegador

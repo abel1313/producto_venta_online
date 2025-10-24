@@ -10,7 +10,7 @@ const routes: Routes = [
   {
     path: 'login',
     loadChildren: () => import('../app/login/login.module').then(m => m.LoginModule),
-    canActivate: [CarritoGuard]
+    canActivate: [CarritoGuard, UsuariosGuard]
   },
   {
     path: 'productos',
@@ -35,7 +35,7 @@ const routes: Routes = [
   {
     path: 'usuarios',
     loadChildren: () => import('./usuarios/usuarios/usuarios.module').then(m => m.UsuariosModule),
-    canActivate: [CarritoGuard]
+    canActivate: [CarritoGuard, UsuariosGuard]
   },
   {
     path: 'home', component: HomeComponent,

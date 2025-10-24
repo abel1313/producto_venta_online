@@ -13,14 +13,37 @@ export class UsuariosGuard implements CanActivate {
   canActivate(): boolean {
     const token = localStorage.getItem('token');
 
- 
-    if (token) {
-      console.log('token 123', token)
-      this.router.navigate(['/productos/buscar']);
+    // ✅ Si NO hay token, permitir acceso
+    if (!token) {
       return true;
     }
 
-    return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp * 1000;
+
+      // ✅ Si el token está expirado, permitir acceso
+      if (Date.now() > exp) {
+        localStorage.removeItem('token');
+        return true;
+      }
+
+      const roles = payload.roles || [];
+
+      // ✅ Si no hay roles o están vacíos, permitir acceso
+      if (roles.length === 0) {
+        return true;
+      }
+
+      // ❌ Si hay roles válidos, redirigir y bloquear acceso
+      this.router.navigate(['/productos/buscar']);
+      return false;
+
+    } catch (e) {
+      // ✅ Si el token es inválido, permitir acceso
+      localStorage.removeItem('token');
+      return true;
+    }
   }
   
 }

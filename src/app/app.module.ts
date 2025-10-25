@@ -29,7 +29,7 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
     AppComponent,
     NavbarComponent,
     PaginaNoDisponibleComponent,
-    HomeComponent
+    HomeComponent,
   ],
   imports: [
     BrowserModule,
@@ -42,7 +42,6 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
     NbThemeModule.forRoot({ name: 'dark' }),
     NbLayoutModule,
     NbEvaIconsModule,
-    NbThemeModule.forRoot(),
   ],
   bootstrap: [AppComponent]
 })

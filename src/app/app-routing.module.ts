@@ -33,6 +33,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
+    path: 'clientes',
+    loadChildren: () => import('./clietes/clietes.module').then(m => m.ClietesModule),
+    canActivate: [AuthGuard, CarritoGuard]
+  },
+  {
     path: 'usuarios',
     loadChildren: () => import('./usuarios/usuarios/usuarios.module').then(m => m.UsuariosModule),
     canActivate: [CarritoGuard, UsuariosGuard]

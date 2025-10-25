@@ -1,0 +1,321 @@
+<nb-card>
+    <nb-card-body>
+
+        <form [formGroup]="formDatosCliente">
+
+            <nb-stepper orientation="horizontal">
+                <nb-step [label]="labelOne">
+                    <ng-template #labelOne>Primer paso</ng-template>
+                    <h4>Step content #1</h4>
+                    <br>
+
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="nombre"
+                                    formControlName="nombrePersona" />
+                                <label for="nombre">Nombre</label>
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('nombrePersona')?.invalid && formDatosCliente.get('nombrePersona')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                    <small *ngIf="formDatosCliente.get('nombrePersona')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Solo se permiten letras sin espacios.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="segundoNombre"
+                                    formControlName="segundoNombre" />
+                                <label for="segundoNombre">Segundo nombre</label>
+                                <div>
+                                    <small *ngIf="formDatosCliente.get('segundoNombre')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Solo se permiten letras sin espacios.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="apeidoPaterno"
+                                    formControlName="apeidoPaterno" />
+                                <label for="apeidoPaterno">Apeido paterno</label>
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                    <small *ngIf="formDatosCliente.get('apeidoPaterno')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Solo se permiten letras sin espacios.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="apeidoMaterno"
+                                    formControlName="apeidoMaterno" />
+                                <label for="apeidoMaterno">Apeido materno</label>
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && formDatosCliente.get('apeidoMaterno')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                    <small *ngIf="formDatosCliente.get('apeidoMaterno')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Solo se permiten letras sin espacios.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <p-calendar class="p-calendar col-sm-12" styleClass="w-100"
+                                    formControlName="fechaNacimiento" appendTo="body"></p-calendar>
+                                <label for="fechaNacimiento">Fecha de nacimiento</label>
+                                <br />
+
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('fechaNacimiento')?.invalid && formDatosCliente.get('fechaNacimiento')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+
+                                <nb-select placeholder="Seleccione una opcion" class="col-sm-12" formControlName="sexo">
+                                    <nb-option value="Hombre">Hombre</nb-option>
+                                    <nb-option value="Mujer">Mujer</nb-option>
+                                    <nb-option value="Otro">Otro</nb-option>
+                                </nb-select>
+
+                                <div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="correo"
+                                    formControlName="correoElectronico" />
+                                <label for="correo">Correo electronico</label>
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                    <small *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Solo se permiten letras sin espacios.
+                                    </small>
+                                    <div
+                                        *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['email'] && formDatosCliente.get('correoElectronico')?.touched">
+                                        <small class="text-danger">Formato de correo inválido</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="p-float-label pt-4">
+                                <input pInputText class="col-sm-12 col-ml-12" id="numeroTelefonico"
+                                    formControlName="numeroTelefonico" />
+                                <label for="numeroTelefonico">Numero de contacto</label>
+                                <div>
+                                    <small
+                                        *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched"
+                                        class="text-danger">Campo requerido</small>
+                                    <br>
+                                    <small *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['pattern']"
+                                        class="text-danger">
+                                        Ingresa un número válido de 10 dígitos sin espacios ni símbolos.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-4">
+
+                            <div class="row">
+                                <div class="col-6 mt-4">
+                                    <button class="col-sm-12" nz-button nzType="dashed" nbButton disabled
+                                        nbStepperNext>anterior</button>
+                                </div>
+                                <div class="col-sm-6 pt-4">
+                                    <button class="col-sm-12" nz-button nzType="primary" nbButton
+                                        nbStepperNext>siguiente</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </nb-step>
+
+                <nb-step [label]="labelFour">
+                    <ng-template #labelFour>Terminado</ng-template>
+                    <h4>Terminado</h4>
+                    <br>
+                    <h4>Direcciones</h4>
+
+                    <div formArrayName="direcciones">
+                        <div *ngFor="let direccion of direcciones.controls; let i = index" [formGroupName]="i"
+                            class="border p-3">
+
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="p-float-label">
+                                        <input pInputText id="calle{{i}}" class="col-sm-12" formControlName="calle" />
+                                        <label for="calle{{i}}">Calle</label>
+                                    </div>
+                                    <div>
+                                        <small
+                                            *ngIf="direccion.get('calle')?.invalid && direccion.get('calle')?.touched"
+                                            class="text-danger">
+                                            Campo requerido
+                                        </small>
+                                        <br>
+                                    </div>
+
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-float-label">
+                                        <input pInputText id="municipio{{i}}" class="col-sm-12"
+                                            formControlName="municipio" />
+                                        <label for="municipio{{i}}">municipio</label>
+                                    </div>
+                                    <small
+                                        *ngIf="direccion.get('municipio')?.invalid && direccion.get('municipio')?.touched"
+                                        class="text-danger">
+                                        Campo requerido
+                                    </small>
+
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-float-label">
+                                        <input pInputText id="colonia{{i}}" class="col-sm-12"
+                                            formControlName="colonia" />
+                                        <label for="colonia{{i}}">Colonia</label>
+                                    </div>
+                                    <small
+                                        *ngIf="direccion.get('colonia')?.invalid && direccion.get('colonia')?.touched"
+                                        class="text-danger">
+                                        Campo requerido
+                                    </small>
+                                </div>
+                            </div>
+
+                            <br>
+                            <br>
+
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="p-float-label">
+                                        <input pInputText id="cp{{i}}" class="col-sm-12"
+                                            formControlName="codigoPostal" />
+                                        <label for="cp{{i}}">Codigo postal</label>
+                                    </div>
+
+                                    <small
+                                        *ngIf="direccion.get('codigoPostal')?.errors?.['required'] && direccion.get('codigoPostal')?.touched"
+                                        class="text-danger">
+                                        Campo requerido
+                                    </small>
+                                    <small
+                                        *ngIf="direccion.get('codigoPostal')?.errors?.['pattern'] && direccion.get('codigoPostal')?.touched"
+                                        class="text-danger">
+                                        Ingrese el código postal con 5 dígitos
+                                    </small>
+
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-float-label">
+                                        <textarea rows="5" id="referencias{{i}}" class="col-sm-12" cols="30" pTextarea
+                                            formControlName="referencias"
+                                            style="color: #000; background-color: #fff;"></textarea>
+                                        <label for="referencias{{i}}">referencias</label>
+                                    </div>
+                                </div>
+
+                            </div>
+
+
+                            <br>
+                            <br>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button nz-button nzType="default" (click)="eliminarDireccion(i)"
+                                    *ngIf="direcciones.length > 1">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón para agregar dirección -->
+                    <div class="text-end mt-3">
+                        <button nz-button nzType="dashed" (click)="agregarDireccion()">+ Agregar otra dirección</button>
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+
+
+
+                        <div class="col-sm-12">
+                            <div class="row d-flex justify-content-center">
+                                <div class="col-sm-3 mt-4">
+                                    <button class="col-sm-12" nz-button nzType="dashed" nbButton
+                                        nbStepperPrevious>anterior</button>
+
+                                </div>
+                                <div class="col-sm-3 pt-4">
+                                    <button class="col-sm-12" nz-button nzType="primary" nbButton nbStepperNext
+                                        [disabled]="!formDatosCliente.valid">guardar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </nb-step>
+            </nb-stepper>
+
+        </form>
+
+    </nb-card-body>
+</nb-card>

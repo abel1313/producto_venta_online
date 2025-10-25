@@ -10,6 +10,8 @@ import { en_US, NzI18nService, zh_CN } from 'ng-zorro-antd/i18n';
 export class MisDatosComponent implements OnInit {
   date = null;
   isEnglish = false;
+
+  
   constructor(private readonly fb: FormBuilder,
     private i18n: NzI18nService
   ) {
@@ -38,10 +40,10 @@ export class MisDatosComponent implements OnInit {
   }
   crearDireccion(): FormGroup {
     return this.fb.group({
-      calle: ['', Validators.required],
-      colonia: ['', Validators.required],
-      codigoPostal: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-      municipio: ['', Validators.required],
+      calle: ['Colonia', Validators.required],
+      colonia: ['colonia', Validators.required],
+      codigoPostal: ['51440', [Validators.required, Validators.pattern(/^\d{5}$/)]],
+      municipio: ['Muni', Validators.required],
       referencias: ['', Validators.required]
     });
   }

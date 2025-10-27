@@ -8,10 +8,10 @@ import { AuthGuard } from 'src/app/auth.guard';
 const routes: Routes = [
 
   {
-    path: 'agregar', component: AddComponent, canActivate: [AuthGuard]
+    path: 'agregar', component: AddComponent
   },
   {
-    path: 'buscar', component: AllComponent, canActivate: [AuthGuard]
+    path: 'buscar', component: AllComponent
   },
   {
     path: '' ,redirectTo: 'agregar', pathMatch:'full' ,

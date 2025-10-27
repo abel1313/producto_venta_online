@@ -6,10 +6,10 @@ import { AuthGuard } from '../auth.guard';
 
 const routes: Routes = [
   {
-    path: 'agregar', component: AgregarRifaComponent, canActivate: [AuthGuard]
+    path: 'agregar', component: AgregarRifaComponent,
   },
   {
-    path: 'buscar', component: BuscarRifaComponent, canActivate: [AuthGuard]
+    path: 'buscar', component: BuscarRifaComponent,
   },
   {
     path: '' ,redirectTo: 'agregar', pathMatch:'full' ,

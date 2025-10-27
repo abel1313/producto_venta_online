@@ -5,6 +5,8 @@ import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-di
 import { HomeComponent } from './home/home.component';
 import { CarritoGuard } from './guards/carrito.guard';
 import { UsuariosGuard } from './auth/usuarios.guard';
+import { SinRegistroGuard } from './guard/sin-registro.guard';
+import { AdminGuardGuard } from './guard/admin-guard.guard';
 
 const routes: Routes = [
   {
@@ -20,27 +22,27 @@ const routes: Routes = [
   {
     path: 'ventas',
     loadChildren: () => import('./ventas/venta-producto/venta-producto.module').then(m => m.VentaProductoModule),
-    canActivate: [AuthGuard, CarritoGuard]
+    canActivate: [AuthGuard, AdminGuardGuard,CarritoGuard]
   },
   {
     path: 'gastos',
     loadChildren: () => import('./gastos/mis-gastos/mis-gastos.module').then(m => m.MisGastosModule),
-    canActivate: [AuthGuard, CarritoGuard]
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
     path: 'rifas',
     loadChildren: () => import('./rifas/rifas.module').then(m => m.RifasModule),
-    canActivate: [AuthGuard, CarritoGuard]
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
     path: 'clientes',
     loadChildren: () => import('./clietes/clietes.module').then(m => m.ClietesModule),
-    canActivate: [AuthGuard, CarritoGuard]
+    canActivate: [CarritoGuard]
   },
   {
     path: 'usuarios',
     loadChildren: () => import('./usuarios/usuarios/usuarios.module').then(m => m.UsuariosModule),
-    canActivate: [CarritoGuard, UsuariosGuard]
+    canActivate: [CarritoGuard,AdminGuardGuard, AuthGuard, UsuariosGuard]
   },
   {
     path: 'home', component: HomeComponent,

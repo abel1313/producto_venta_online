@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable({
   providedIn: 'root'
 })
-export class AuthGuard implements CanActivate {
+export class SinRegistroGuard implements CanActivate {
   constructor(private router: Router) {}
 
   canActivate(): boolean {
@@ -16,16 +16,14 @@ export class AuthGuard implements CanActivate {
     }
 
     const payload = JSON.parse(atob(token.split('.')[1]));
-    const exp = payload.exp * 1000;
+    const roles = payload.roles || [];
 
-    if (Date.now() > exp) {
-      localStorage.removeItem('token');
-      this.router.navigate(['/login']);
-      return false;
+    if (!roles.includes('ROLE_ADMIN')) {
+      console.log("sin");
+      return true;
     }
 
-    console.log("llego final auth ", payload);
-    return true; // solo verifica que esté logueado y el token sea válido
+    this.router.navigate(['/productos/buscar']);
+    return false;
   }
-
 }

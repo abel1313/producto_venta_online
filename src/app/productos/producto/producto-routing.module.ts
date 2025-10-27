@@ -6,14 +6,15 @@ import { BuscaComponent } from './busca/busca.component';
 import { AuthGuard } from 'src/app/auth.guard';
 import { DetalleProductoComponent } from './detalle-producto/detalle-producto.component';
 import { DetalleProductosComponent } from './detalle-productos/detalle-productos.component';
+import { AdminGuardGuard } from 'src/app/guard/admin-guard.guard';
 
 const routes: Routes = [
 
   {
-    path: 'agregar', component: AddComponent, canActivate: [AuthGuard]
+    path: 'agregar', component: AddComponent, canActivate: [AuthGuard, AdminGuardGuard]
   },
   {
-    path: 'update', component: UpdateComponent, canActivate: [AuthGuard]
+    path: 'update', component: UpdateComponent, canActivate: [AuthGuard, AdminGuardGuard]
   },
   {
     path: 'buscar', component: BuscaComponent

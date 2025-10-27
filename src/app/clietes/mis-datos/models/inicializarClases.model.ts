@@ -16,6 +16,13 @@ export class InitCliente{
             numeroTelefonico: '',
             segundoNombre: '',
             sexo: '',
+            usuario: {
+                email: "",
+                enabled: false,
+                password: "",
+                rol: "",
+                username: ''
+            },
            listDirecciones: [] 
         }
     }

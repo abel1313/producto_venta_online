@@ -1,8 +1,10 @@
+import { IUsuarioDto } from './../../usuarios/usuarios/models/index.model';
 import { MensajesGenericos } from './../../swife/swal.model';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ICliente, InitCliente } from './models/index.model';
 import { ClienteService } from '../cliente.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-mis-datos',
@@ -18,7 +20,8 @@ export class MisDatosComponent implements OnInit {
   isDisabled = true;
 
   constructor(private readonly fb: FormBuilder,
-    private readonly clienteServoce: ClienteService
+    private readonly clienteServoce: ClienteService,
+    private readonly authService: AuthService
   ) {
 
     this.formDatosCliente = this.fb.group({
@@ -35,24 +38,25 @@ export class MisDatosComponent implements OnInit {
   }
   formDatosCliente: FormGroup;
 
-ngOnInit(): void {
-  const primeraDireccion = this.listDirecciones.at(0) as FormGroup;
+  ngOnInit(): void {
+    const primeraDireccion = this.listDirecciones.at(0) as FormGroup;
 
-  // Marcar como predefinida si no hay ninguna activa
-  const yaHayActiva = this.listDirecciones.controls.some(c => c.get('predefinida')?.value);
-  if (!yaHayActiva) {
-    primeraDireccion.get('predefinida')?.setValue(true, { emitEvent: false });
+    // Marcar como predefinida si no hay ninguna activa
+    const yaHayActiva = this.listDirecciones.controls.some(c => c.get('predefinida')?.value);
+    if (!yaHayActiva) {
+      primeraDireccion.get('predefinida')?.setValue(true, { emitEvent: false });
+    }
+
+    // Suscribirse a cambios
+    this.suscribirCambioPredefinida(primeraDireccion, 0);
   }
-
-  // Suscribirse a cambios
-  this.suscribirCambioPredefinida(primeraDireccion, 0);
-}
 
 
   guardarCliente() {
 
     this.datosCliente = this.formDatosCliente.value;
     const fechaRaw = this.formDatosCliente.get('fechaNacimiento')?.value;
+    console.log(fechaRaw, ' fechaRaw')
     const fecha = new Date(fechaRaw);
 
     if (fechaRaw) {
@@ -61,15 +65,28 @@ ngOnInit(): void {
         month: '2-digit',
         year: 'numeric'
       }).format(fecha);
-      this.datosCliente.fechaNacimiento = new Date(fechaFormateada);
+      this.datosCliente.fechaNacimiento = fecha;
       console.log('Fecha formateada:', this.datosCliente.fechaNacimiento);
     } else {
       console.warn('Fecha de nacimiento no seleccionada');
     }
-
-
-    console.log(this.datosCliente, ' data 1234')
     //return;
+
+
+ 
+    console.log(this.datosCliente.usuario, ' fechaRaw')
+    this.authService.userId$.subscribe(idUser => {
+    const usr = {
+      id: idUser,
+      email: "",
+      enabled: false,
+      password: "",
+      rol: "",
+      username: ''
+    }
+       this.datosCliente.usuario = usr;
+    });
+
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
 
       MensajesGenericos.mostrarMensajeSuccess(save.mensaje, save.code);

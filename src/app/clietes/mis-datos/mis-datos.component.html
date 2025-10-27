@@ -192,8 +192,8 @@
                     <br>
                     <h4>Direcciones</h4>
 
-                    <div formArrayName="direcciones">
-                        <div *ngFor="let direccion of direcciones.controls; let i = index" [formGroupName]="i"
+                    <div formArrayName="listDirecciones">
+                        <div *ngFor="let direccion of listDirecciones.controls; let i = index" [formGroupName]="i"
                             class="border p-3">
 
                             <div class="row">
@@ -202,6 +202,7 @@
                                         <input pInputText id="calle{{i}}" class="col-sm-12" formControlName="calle" />
                                         <label for="calle{{i}}">Calle</label>
                                     </div>
+
                                     <div>
                                         <small
                                             *ngIf="direccion.get('calle')?.invalid && direccion.get('calle')?.touched"
@@ -230,6 +231,7 @@
                                         <input pInputText id="colonia{{i}}" class="col-sm-12"
                                             formControlName="colonia" />
                                         <label for="colonia{{i}}">Colonia</label>
+
                                     </div>
                                     <small
                                         *ngIf="direccion.get('colonia')?.invalid && direccion.get('colonia')?.touched"
@@ -245,8 +247,8 @@
                             <div class="row">
                                 <div class="col-4">
                                     <div class="p-float-label">
-                                        <input pInputText id="cp{{i}}" class="col-sm-12"
-                                            formControlName="codigoPostal" />
+                                        <input pInputText id="cp{{i}}" class="col-sm-12" formControlName="codigoPostal"
+                                            (blur)="getCodigoPostal($event, i)" />
                                         <label for="cp{{i}}">Codigo postal</label>
                                     </div>
 
@@ -271,6 +273,15 @@
                                     </div>
                                 </div>
 
+                                <div class="col-4">
+                                    <div class="col-sm-12">
+                                        <label for="predifinida{{i}}" class="form-label d-block mb-2">Dirección
+                                            predefinida</label>
+                                        <nz-switch formControlName="predefinida" [nzId]="'predefinida' + i" ></nz-switch>
+                                    </div>
+
+                                </div>
+
                             </div>
 
 
@@ -278,7 +289,7 @@
                             <br>
                             <div class="col-md-4 d-flex align-items-end">
                                 <button nz-button nzType="default" (click)="eliminarDireccion(i)"
-                                    *ngIf="direcciones.length > 1">
+                                    *ngIf="listDirecciones.length > 1">
                                     Eliminar
                                 </button>
                             </div>
@@ -304,8 +315,8 @@
 
                                 </div>
                                 <div class="col-sm-3 pt-4">
-                                    <button class="col-sm-12" nz-button nzType="primary" nbButton nbStepperNext
-                                        [disabled]="!formDatosCliente.valid">guardar</button>
+                                    <button class="col-sm-12" nz-button nzType="primary" (click)="guardarCliente()"
+                                        nbButton nbStepperNext [disabled]="!formDatosCliente.valid">guardar</button>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,15 @@
+::ng-deep nb-autocomplete {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+::ng-deep nb-option {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+::ng-deep nb-option:hover {
+  background-color: #f0f0f0;
+}

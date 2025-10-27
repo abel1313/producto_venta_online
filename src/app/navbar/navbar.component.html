@@ -79,6 +79,16 @@
         <ul class="dropdown-menu">
           <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
               [routerLink]="'clientes/mis-datos'">Mis datos</a></li>
+
+          <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+              [routerLink]="'clientes/mis-datos'">
+                     <button class="btn btn-secondary btn-sm " (click)="logout()">
+          <i class="bi bi-box-arrow-right me-1"></i> Salir
+        </button>
+            
+            </a>
+            
+            </li>
         </ul>
 
 
@@ -88,6 +98,8 @@
 
 
 
+ 
+ 
       <div class="dropdown-item" *ngIf="!isAnonymous">
         <button class="btn btn-secondary btn-sm " (click)="logout()">
           <i class="bi bi-box-arrow-right me-1"></i> Salir

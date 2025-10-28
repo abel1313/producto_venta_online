@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { CarritoService } from '../services/carrito/carrito.service';
-import { NbMenuItem } from '@nebular/theme';
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',

@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light ">
+<nav class="navbar navbar-expand-lg " style="color: white !important;">
   <div class="container-fluid">
 
     <!-- Botón para móviles -->
@@ -72,9 +72,9 @@
       </ul>
 
 
-      <li class="nav-item dropdown" *ngIf="!isAnonymous">
+      <li class="nav-item dropdown" *ngIf="!isAnonymous" >
         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <span><i class="bi bi-person-circle "></i> Bienvenido <strong>{{ username }}</strong></span>
+          <span> Bienvenido <strong>{{ username }}</strong></span>
         </a>
         <ul class="dropdown-menu">
           <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
@@ -90,10 +90,6 @@
             
             </li>
         </ul>
-
-
-
-
       </li>
 
 
@@ -111,7 +107,7 @@
 
 
 
-      <div class="dropdown-item  d-flex justify-content-center">
+      <div class="dropdown-item  d-flex justify-content-center" *ngIf="false">
         <button class="btn btn-secondary btn-sm ms-3" (click)="revisarProductosCarrito()">
           <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
           carrito {{countCarrito}}

@@ -19,6 +19,7 @@ export class MisDatosComponent implements OnInit {
   switchValue = false;
   isDisabled = true;
 
+  idUusario: number = 0;
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService
@@ -33,22 +34,69 @@ export class MisDatosComponent implements OnInit {
       sexo: ['Hombre'],
       correoElectronico: ['abel@gmail.com', [Validators.required, Validators.email]],
       numeroTelefonico: ['7223475214', Validators.pattern(/^[0-9]{10}$/)],
-      listDirecciones: this.fb.array([this.crearDireccion()])
+      listDirecciones: this.fb.array([])
+
     });
   }
   formDatosCliente: FormGroup;
 
   ngOnInit(): void {
-    const primeraDireccion = this.listDirecciones.at(0) as FormGroup;
+    this.authService.userId$.subscribe(idUser => {
+      this.idUusario = idUser;
+    });
+    this.clienteServoce.getDataOneCliente(this.idUusario).subscribe((data: any) => {
+      // console.log(data, 'datatatatatatata')
+      if (data && data.data) {
+        this.formDatosCliente.patchValue({
+          nombrePersona: data.data.nombrePersona,
+          segundoNombre: data.data.segundoNombre,
+          apeidoPaterno: data.data.apeidoPaterno,
+          apeidoMaterno: data.data.apeidoMaterno,
+          fechaNacimiento: new Date(data.data.fechaNacimiento),
+          sexo: data.data.sexo,
+          correoElectronico: data.data.correoElectronico,
+          numeroTelefonico: data.data.numeroTelefonico,
+        });
 
-    // Marcar como predefinida si no hay ninguna activa
-    const yaHayActiva = this.listDirecciones.controls.some(c => c.get('predefinida')?.value);
-    if (!yaHayActiva) {
-      primeraDireccion.get('predefinida')?.setValue(true, { emitEvent: false });
+        if (data.data.listDirecciones && data.data.listDirecciones.length > 0) {
+          data.data.listDirecciones.forEach((dir: any, index: number) => {
+            const direccionForm = this.fb.group({
+              calle: [dir.calle, Validators.required],
+              colonia: [dir.colonia, Validators.required],
+              codigoPostal: [dir.codigoPostal, [Validators.required, Validators.pattern(/^\d{5}$/)]],
+              municipio: [dir.municipio, Validators.required],
+              referencias: [dir.referencias, Validators.required],
+              predefinida: [dir.predefinida]
+            });
+
+            this.listDirecciones.push(direccionForm);
+            this.suscribirCambioPredefinida(direccionForm, index);
+          });
+          console.log(data.data)
+
+        } else {
+          // Si no hay direcciones, agrega una vacía
+          const nueva = this.crearDireccion(true);
+          this.listDirecciones.push(nueva);
+          this.suscribirCambioPredefinida(nueva, 0);
+        }
+      }
+
+    })
+
+    if (this.listDirecciones.length > 0) {
+      const primeraDireccion = this.listDirecciones.at(0) as FormGroup;
+
+      const yaHayActiva = this.listDirecciones.controls.some(c => c.get('predefinida')?.value);
+      if (!yaHayActiva) {
+        primeraDireccion.get('predefinida')?.setValue(true, { emitEvent: false });
+      }
+
+      this.suscribirCambioPredefinida(primeraDireccion, 0);
     }
 
+
     // Suscribirse a cambios
-    this.suscribirCambioPredefinida(primeraDireccion, 0);
   }
 
 
@@ -73,18 +121,17 @@ export class MisDatosComponent implements OnInit {
     //return;
 
 
- 
-    console.log(this.datosCliente.usuario, ' fechaRaw')
+
     this.authService.userId$.subscribe(idUser => {
-    const usr = {
-      id: idUser,
-      email: "",
-      enabled: false,
-      password: "",
-      rol: "",
-      username: ''
-    }
-       this.datosCliente.usuario = usr;
+      const usr = {
+        id: idUser,
+        email: "",
+        enabled: false,
+        password: "",
+        rol: "",
+        username: ''
+      }
+      this.datosCliente.usuario = usr;
     });
 
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
@@ -115,7 +162,10 @@ export class MisDatosComponent implements OnInit {
   }
 
   agregarDireccion(): void {
-    const yaHayActiva = this.listDirecciones.controls.some(c => c.get('predefinida')?.value);
+    const yaHayActiva = this.listDirecciones.controls.some(c => {
+      return c instanceof FormGroup && c.get('predefinida')?.value;
+    });
+
     const nuevaDireccion = this.crearDireccion(!yaHayActiva); // solo si no hay activa
 
     this.listDirecciones.push(nuevaDireccion);
@@ -125,11 +175,11 @@ export class MisDatosComponent implements OnInit {
 
   crearDireccion(predefinida: boolean = false): FormGroup {
     return this.fb.group({
-      calle: ['calle', Validators.required],
-      colonia: ['colonia', Validators.required],
-      codigoPostal: ['51440', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-      municipio: ['muni', Validators.required],
-      referencias: ['ref', Validators.required],
+      calle: ['', Validators.required],
+      colonia: ['', Validators.required],
+      codigoPostal: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
+      municipio: ['', Validators.required],
+      referencias: ['', Validators.required],
       predefinida: [predefinida]
     });
   }

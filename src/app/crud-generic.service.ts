@@ -28,6 +28,7 @@ export class CrudGenericService<T> {
   getDataOne(tipoDato: number): Observable<ResponseGeneric<ICliente>> {
     return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/${this.urlModulo}/getOne/${tipoDato}`);
   }
+  
   saveData(data: T): Observable<ResponseGeneric<ICliente>> {
     return this.http.post<ResponseGeneric<ICliente>>(`${this.url}/${this.urlModulo}/save`, data);
   }

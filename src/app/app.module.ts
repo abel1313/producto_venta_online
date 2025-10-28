@@ -39,7 +39,7 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
     VentaProductoModule,
     MisGastosModule,
     RouterModule,
-    NbThemeModule.forRoot({ name: 'dark' }),
+    NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
   ],

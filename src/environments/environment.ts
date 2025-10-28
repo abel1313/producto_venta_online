@@ -2,11 +2,9 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-import { ServerAPI } from "./server";
-
 export const environment = {
-  production: true,
-  api_Url: ServerAPI.serverApi
+  production: false,
+  api_Url: "http://localhost:8081/mis-productos"
 };
 
 /*

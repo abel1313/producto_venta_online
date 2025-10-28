@@ -5,13 +5,13 @@ import { CellContextMenuEvent } from 'ag-grid-community';
 import { ProductoService } from '../../service/producto.service';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
 import { AgGridAngular } from 'ag-grid-angular';
-import { ServerAPI } from 'src/environments/server';
 import { Icon } from 'src/app/Icon';
 import { IconService } from 'src/app/Icon/icon.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { Router } from '@angular/router';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
+import { environment } from 'src/environments/environment';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -29,7 +29,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() styleTableheight?: string = '400px';
   gridApi: any;
 
-  public env: string = ServerAPI.serverApi + "/imagen/";
+  public env: string = environment.api_Url + "/imagen/";
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;

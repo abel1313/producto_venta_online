@@ -2,16 +2,16 @@ import { Observable } from 'rxjs';
 import { ResponseGeneric } from './../shared/index.mode';
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
-import { ServerAPI } from 'src/environments/server';
 import { ICliente } from './clietes/models';
 import { URL_MODULO_TOKEN } from './urls.model';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CrudGenericService<T> {
 
-  protected readonly url: string = `${ServerAPI.serverApi}`;
+  protected readonly url: string = `${environment.api_Url}`;
   constructor(
     protected readonly http: HttpClient,
       @Inject(URL_MODULO_TOKEN) private readonly urlModulo: string

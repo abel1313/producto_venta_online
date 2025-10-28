@@ -1,3 +1,4 @@
+import { LoadingInterceptor } from './loading.interceptor';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -15,6 +16,7 @@ import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-di
 import { HomeComponent } from './home/home.component';
 import { NbThemeModule, NbLayoutModule } from '@nebular/theme';
 import { NbEvaIconsModule } from '@nebular/eva-icons';
+import { LoadingComponent } from './loading/loading.component';
 
 
 @NgModule({
@@ -23,6 +25,11 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
       provide: HTTP_INTERCEPTORS,
       useClass: TokenInterceptor,
       multi: true
+    },
+        {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoadingInterceptor,
+      multi: true
     }
   ],
   declarations: [
@@ -30,6 +37,7 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
     NavbarComponent,
     PaginaNoDisponibleComponent,
     HomeComponent,
+   LoadingComponent
   ],
   imports: [
     BrowserModule,
@@ -42,6 +50,7 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
+   
   ],
   bootstrap: [AppComponent]
 })

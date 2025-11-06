@@ -12,7 +12,6 @@ export class UsuariosGuard implements CanActivate {
 
   canActivate(): boolean {
     const token = localStorage.getItem('token');
- console.log(token, 'si tiene token ')
     // ✅ Si NO hay token, permitir acceso
     if (!token) {
       return true;

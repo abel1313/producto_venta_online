@@ -46,7 +46,7 @@ const routes: Routes = [
   {
     path: 'usuarios',
     loadChildren: () => import('./usuarios/usuarios/usuarios.module').then(m => m.UsuariosModule),
-    canActivate: [CarritoGuard,AdminGuardGuard, AuthGuard, UsuariosGuard]
+    canActivate: [CarritoGuard]
   },
   {
     path: 'home', component: HomeComponent,

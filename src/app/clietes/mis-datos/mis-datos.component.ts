@@ -1,10 +1,9 @@
-import { IUsuarioDto } from './../../usuarios/usuarios/models/index.model';
-import { MensajesGenericos } from './../../swife/swal.model';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ICliente, InitCliente } from './models/index.model';
-import { ClienteService } from '../cliente.service';
 import { AuthService } from 'src/app/auth/auth.service';
+import { ClienteService } from '../cliente.service';
+import { MensajesGenericos } from './../../swife/swal.model';
+import { ICliente, InitCliente } from './models/index.model';
 
 @Component({
   selector: 'app-mis-datos',

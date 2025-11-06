@@ -26,7 +26,6 @@ export class NavbarComponent implements OnInit {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
-    console.log(this.roles, 'roles')
     this.authService.userName$.subscribe(user => {
       this.usuario = user;
     });
@@ -54,16 +53,27 @@ export class NavbarComponent implements OnInit {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
     this.authService.setRolesFromToken(''); // limpia los roles y usuario
     this.roles = [];
     this.usuario = '';
     this.router.navigate(['/login']); // opcional: redirige sin recargar
+    this.countCarrito = 0;
+    this.serviceCarrito.limpiarCarrito();
+    localStorage.removeItem('token');
   }
 
 
   revisarProductosCarrito() {
     this.router.navigate(['/productos/detalle-productos']);
+  }
+
+    regresarProducto() {
+    this.router.navigate(['/productos/buscar']);
+  }
+
+      limpiarCarrito() {
+    this.countCarrito = 0;
+    this.serviceCarrito.limpiarCarrito();
   }
 
 

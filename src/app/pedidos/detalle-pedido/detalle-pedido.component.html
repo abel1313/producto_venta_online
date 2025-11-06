@@ -1,0 +1,34 @@
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <p-button label="regresar" (onClick)="irPedido()" class="w-full" styleClass="w-full"></p-button>
+        </div>
+    </div>
+    <div class="row pt-3">
+        <div class="col-4" *ngFor="let item of this.pedido.pedido.detalles">
+            <p-card [style]="{ width: '25rem', overflow: 'hidden' }">
+                <ng-template pTemplate="header">
+                    <img alt="Card" class="w-full" [src]="env + item.producto"
+                        [alt]="item?.nombre_producto ?? 'Imagen sin nombre'" />
+                </ng-template>
+                <ng-template pTemplate="title">
+                    <p>
+                        Producto {{item?.nombre_producto}}
+                    </p>
+                    <br>
+                    <p>
+                        precio {{item?.precio_unitario | currency: '$'}}
+                    </p>
+                    <p>
+                        cantidad {{item.cantidad}}
+                    </p>
+                    <p>
+                        sub total {{item.sub_total}}
+                    </p>
+                </ng-template>
+                <br><br>
+                <p></p>
+            </p-card>
+        </div>
+    </div>
+</div>

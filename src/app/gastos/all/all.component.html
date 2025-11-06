@@ -1,59 +1,48 @@
-
-
-  <div class="row p-2">
-    <div class="col-6">
-              <div class="input-group mb-3">
-            <input 
-            type="text" 
-            class="form-control" 
-            placeholder="Buscar producto" 
-            aria-label="Username" 
-            aria-describedby="basic-addon1"
-            (keyup)="buscarProductos($event)"
-            >
-          </div>
+<div class="row p-2">
+  <div class="col-6">
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" placeholder="Buscar producto" aria-label="Username"
+        aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
     </div>
   </div>
+</div>
 
 
-<ag-grid-angular 
-  [rowData]="rows" 
-  [columnDefs]="columns"
-  [pagination]="false"
-  class="ag-theme-alpine"
-  [style]="{ width: styleTableWidth, height: styleTableheight }" 
-  (contextmenu)="blockContextMenu($event)" 
+<ag-grid-angular [rowData]="rows" [columnDefs]="columns" [pagination]="false" class="ag-theme-alpine"
+  [style]="{ width: styleTableWidth, height: styleTableheight }" (contextmenu)="blockContextMenu($event)"
   (cellContextMenu)="abrirMenu($event)">
 </ag-grid-angular>
 
 <div class="row">
   <div class="col-10">
-    <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="primeraPagina()">⬅️ Primera</button>
-<button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="paginaAnterior()">◀️ Anterior</button>
+    <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="primeraPagina()">⬅️
+      Primera</button>
+    <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="paginaAnterior()">◀️
+      Anterior</button>
 
-  <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
-   pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b>  {{paginacion.pagina}} de {{paginacion.totalPaginas}}
-  </b>
+    <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
+      pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
+    </b>
 
-<button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas" (click)="siguientePagina()">▶️ Siguiente</button>
-<button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas" (click)="ultimaPagina()">➡️ Última</button>
+    <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
+      (click)="siguientePagina()">▶️ Siguiente</button>
+    <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
+      (click)="ultimaPagina()">➡️ Última</button>
   </div>
 
-  <div class="col-2 d-flex justify-content-center" >
+  <div class="col-2 d-flex justify-content-center">
     <label for="gastos"> Total: {{totalGastos | currency:'MXN':'symbol':'1.2-2'}}</label>
   </div>
 </div>
 
 
 <!-- Botón INVISIBLE para activar el menú -->
-<button #menuTrigger mat-button [matMenuTriggerFor]="menu" 
-style="display: none;"  ></button>
+<button #menuTrigger mat-button [matMenuTriggerFor]="menu" style="display: none;"></button>
 
 
 
-  
+
 <mat-menu #menu="matMenu">
-    <button *ngIf="itemAgregar" mat-menu-item (click)="agregarFila()">{{itemAgregar}}</button>
-    <button *ngIf="itemEliminar" mat-menu-item (click)="eliminarFila()">{{itemEliminar}}</button>
-  </mat-menu>
-  
+  <button *ngIf="itemAgregar" mat-menu-item (click)="agregarFila()">{{itemAgregar}}</button>
+  <button *ngIf="itemEliminar" mat-menu-item (click)="eliminarFila()">{{itemEliminar}}</button>
+</mat-menu>

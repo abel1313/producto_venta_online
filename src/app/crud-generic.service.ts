@@ -36,7 +36,7 @@ export class CrudGenericService<T> {
     return this.http.put<ResponseGeneric<ICliente>>(`${this.url}/${this.urlModulo}/update/${tipoDato}`, data);
   }
 
- deleteData(tipoDato: number): Observable<ResponseGeneric<ICliente>> {
-    return this.http.delete<ResponseGeneric<ICliente>>(`${this.url}/${this.urlModulo}/delete/${tipoDato}`);
+ deleteData(id: number): Observable<ResponseGeneric<ICliente>> {
+    return this.http.delete<ResponseGeneric<ICliente>>(`${this.url}/${this.urlModulo}/delete/${id}`);
   }
 }

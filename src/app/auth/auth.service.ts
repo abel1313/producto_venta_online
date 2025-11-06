@@ -28,7 +28,6 @@ export class AuthService {
       this.userRoles.next(payload.roles || []);
       this.userUser.next(payload.sub || '');
       this.userId.next(payload.idUsuario || null);
-      console.log('loggggg ', payload.idUsuario)
     } catch (e) {
       this.userRoles.next([]);
       this.userUser.next('');

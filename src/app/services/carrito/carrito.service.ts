@@ -43,7 +43,6 @@ export class CarritoService {
     }
 
     this.carritoDetalle.next([...actual]);
-    console.log('Carrito actualizado:', actual);
   }
 
   eliminarProducto(producto: IDetalleProducto) {

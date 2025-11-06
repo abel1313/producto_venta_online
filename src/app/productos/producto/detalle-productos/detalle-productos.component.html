@@ -35,8 +35,8 @@
     <div class="col-10 d-flex justify-content-end">
 
     </div>
-    <div class="col-2 d-flex justify-content-center pt-3" (click)="generarPedido()">
-      <button type="button" class="btn btn-success">Generar pedido</button>
+    <div class="col-2 d-flex justify-content-center pt-3" >
+      <button type="button" class="btn btn-success" (click)="generarPedido()" [disabled]="this.detalleProducto && this.detalleProducto.length == 0" >Generar pedido</button>
     </div>
   </div>
 </div>

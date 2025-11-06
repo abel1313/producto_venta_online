@@ -29,6 +29,10 @@ const routes: Routes = [
     loadChildren: () => import('./gastos/mis-gastos/mis-gastos.module').then(m => m.MisGastosModule),
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
+    {
+    path: 'pedidos',
+    loadChildren: () => import('./pedidos/pedidos.module').then(m => m.PedidosModule)
+  },
   {
     path: 'rifas',
     loadChildren: () => import('./rifas/rifas.module').then(m => m.RifasModule),

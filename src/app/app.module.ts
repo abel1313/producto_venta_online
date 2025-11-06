@@ -37,7 +37,7 @@ import { LoadingComponent } from './loading/loading.component';
     NavbarComponent,
     PaginaNoDisponibleComponent,
     HomeComponent,
-   LoadingComponent
+   LoadingComponent,
   ],
   imports: [
     BrowserModule,

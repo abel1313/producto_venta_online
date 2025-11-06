@@ -1,0 +1,79 @@
+<div class="container" *ngIf="!mostrarDetalle">
+
+    <div class="row p-2">
+        <div class="col-6">
+            <label for="buscar-pedido">Ingrese el numero del pedido</label>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Buscar pedido" aria-label="pedido"
+                    aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="scroll-container" (scroll)="onScroll($event)">
+                <div class="row">
+                    <div class="col-6 mt-3" *ngFor="let item of pedidoGenerico">
+                        <p-card [style]="{ width: '35rem', overflow: 'hidden' }">
+                            <ng-template pTemplate="header">
+                                <img alt="Card" class="w-full"
+                                    src="https://primefaces.org/cdn/primeng/images/card-ng.jpg" />
+                            </ng-template>
+                            <ng-template pTemplate="title">Pedido {{ item.pedido.id }}</ng-template>
+
+                            <ng-template pTemplate="subtitle">
+                                <p
+                                    [ngClass]="{ 'text-success': item.pedido.estado_pedido === 'Entregado', 'text-danger': item.pedido.estado_pedido !== 'Entregado' }">
+                                    Estatus {{ item.pedido.estado_pedido }}
+                                </p>
+                            </ng-template>
+
+                            <p>Nombre cliente <b>{{item.cliente.nombreCliente}}</b></p>
+                            <p>Correo <b>{{item.cliente.correoElectronico}}</b></p>
+                            <p>Numero telefono <b>{{item.cliente.numeroTelefonico}}</b></p>
+                            <br><br>
+                            <p>{{ item.pedido.fecha_pedido | fechaEspanol }}</p>
+                            <b>Este es el total de este pedido: {{ item.pedido.detalles | totalPedido | currency: '$'
+                                }}</b>
+
+                            <ng-template pTemplate="footer">
+
+                                <div class="row">
+
+                                    <div class="col-4">
+
+                                        <button type="button" class="btn btn-secondary col-12"
+                                            (click)="irDetalle(item)">ver detalle</button>
+
+                                    </div>
+                                    <div class="col-4" *ngIf="isAdminUser ">
+                                        <button class="btn btn-success col-12"
+                                            [disabled]="item.pedido.estado_pedido == 'Entregado'"
+                                            (click)="cobrarAdmin(item)">cobrar </button>
+
+
+                                    </div>
+                                    <div class="col-4">
+
+                                        <button class="btn btn-danger col-12"
+                                            [disabled]="item.pedido.estado_pedido == 'Entregado'"
+                                            (click)="cancelarPedido(item)">cancelar
+                                            pedido</button>
+                                    </div>
+
+
+                                </div>
+
+                            </ng-template>
+                        </p-card>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item"
+    (regresarProductos)="mostrarProductos($event)"></app-detalle-pedido>

@@ -24,6 +24,17 @@
           </ul>
         </li>
 
+        <li class="nav-item dropdown" *ngIf="!isAnonymous">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Pedidos
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                [routerLink]="'pedidos/mis-pedidos'">mis pedidos</a></li>
+            
+          </ul>
+        </li>
+
         <li class="nav-item dropdown" *ngIf="isAdminUser">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             Ventas
@@ -71,8 +82,29 @@
 
       </ul>
 
+      <div class="dropdown-item d-flex ">
+        <div class="col-6">
 
-      <li class="nav-item dropdown" *ngIf="!isAnonymous" >
+        </div>
+        <div class="col-5 d-flex justify-content-end">
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary btn-sm" (click)="regresarProducto()" style="border: 1px solid;">
+              <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
+              regresar a productos
+            </button>
+          </div>
+          <button class="btn btn-secondary btn-sm" (click)="limpiarCarrito()" style="border: 1px solid;">
+            <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
+            limpiar carrito
+          </button>
+          <button class="btn btn-secondary btn-sm" (click)="revisarProductosCarrito()" style="border: 1px solid;">
+            <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
+            carrito {{countCarrito}}
+          </button>
+        </div>
+      </div>
+
+      <li class="nav-item dropdown" *ngIf="!isAnonymous">
         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <span> Bienvenido <strong>{{ username }}</strong></span>
         </a>
@@ -82,21 +114,21 @@
 
           <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
               [routerLink]="'clientes/mis-datos'">
-                     <button class="btn btn-secondary btn-sm " (click)="logout()">
-          <i class="bi bi-box-arrow-right me-1"></i> Salir
-        </button>
-            
+              <button class="btn btn-secondary btn-sm " (click)="logout()">
+                <i class="bi bi-box-arrow-right me-1"></i> Salir
+              </button>
+
             </a>
-            
-            </li>
+
+          </li>
         </ul>
       </li>
 
 
 
- 
- 
-<!--
+
+
+      <!--
       
       <div class="dropdown-item" *ngIf="!isAnonymous">
         <button class="btn btn-secondary btn-sm " (click)="logout()">
@@ -107,12 +139,7 @@
 
 
 
-      <div class="dropdown-item  d-flex justify-content-center" >
-        <button class="btn btn-secondary btn-sm ms-3" (click)="revisarProductosCarrito()">
-          <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
-          carrito {{countCarrito}}
-        </button>
-      </div>
+
 
 
     </div>

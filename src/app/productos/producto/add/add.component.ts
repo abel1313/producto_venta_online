@@ -151,6 +151,8 @@ export class AddComponent implements OnInit, AfterViewInit {
     this.service.saveProducto(this.productoSave)
       .subscribe({
         next: (save) => {
+           this.formProductos.reset();
+           this.imagenesCargadas = [];
           Swal.fire({
             title: "Se guardo Correctamente",
             icon: "success",

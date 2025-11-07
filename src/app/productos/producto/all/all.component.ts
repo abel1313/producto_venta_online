@@ -33,6 +33,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;
+  totalPaginas: number = 0;
 
   rows: IProductoDTO[] = [];
   data: IProductoDTO[] = [];
@@ -236,6 +237,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
       next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
+        this.totalPaginas = this.paginacion.totalPaginas;
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -288,9 +290,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
-    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)
+    console.log('33333333')
+    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)//no es
       .subscribe({
         next: (res) => {
+          console.log("123123123")
           this.paginacion = res;
           this.rows = this.paginacion.t;
         },
@@ -304,9 +308,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   buscarProductoScroll(paginaPrimera: number): void {
+   console.log('totalPaginas ', this.totalPaginas)
+    if( this.totalPaginas >= paginaPrimera){
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, "")
       .subscribe({
         next: (res) => {
+           console.log('paginaPrimera ', paginaPrimera)
+          this.paginaPrimera = this.paginaPrimera +1;
           this.paginacion = res;
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
         },
@@ -314,9 +322,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
           console.error('Error en la petición:', err);
         },
         complete: () => {
-          console.log('Petición completada');
+          console.log('Petición completada 1');
         }
       });
+    }
+
   }
 
   onScroll(event: any): void {
@@ -331,9 +341,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
   loadMore(): void {
     this.buscarProductoScroll(this.paginaPrimera + 1);
-    // Aquí agregas más elementos a `rows`
-    // Por ejemplo, llamando a un servicio o paginando
-    console.log("dandole")
   }
   irDetalleProducto(id: number) {
     this.router.navigate(['/productos/detalle-producto', id]);

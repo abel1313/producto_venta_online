@@ -42,10 +42,7 @@ export class AddComponent implements OnInit, AfterViewInit {
 
     if (this.nombreCard == '') {
       this.nombreCard = 'Agregar Producto';
-    }else{
-
     }
-
     this.productoSave = {
       nombre: '',
       precioCosto: 0,
@@ -146,13 +143,18 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   guardar(): void {
 
-//console.log(this.productoSave)
-  //  return
+
+    //  return
     this.service.saveProducto(this.productoSave)
       .subscribe({
         next: (save) => {
-           this.formProductos.reset();
-           this.imagenesCargadas = [];
+          //this.formProductos.reset();
+          this.imagenesCargadas = [];
+
+          const canvas = this.canvasRef.nativeElement;
+          const ctx = canvas.getContext('2d')!;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
           Swal.fire({
             title: "Se guardo Correctamente",
             icon: "success",
@@ -193,48 +195,47 @@ export class AddComponent implements OnInit, AfterViewInit {
   chart!: Chart;
 
   ngAfterViewInit() {
-if (this.nombreCard === 'Actualizar Producto') {
-  this.habilita = false;
-  // Seteo de campos
-  this.formProductos.get('nombre')?.setValue(this.productoUpdate?.nombre);
-  this.formProductos.get('precioCosto')?.setValue(this.productoUpdate?.precioVenta);
-  this.formProductos.get('piezas')?.setValue(this.productoUpdate?.piezas);
-  this.formProductos.get('color')?.setValue(this.productoUpdate?.color);
-  this.formProductos.get('precioVenta')?.setValue(this.productoUpdate?.precioVenta);
-  this.formProductos.get('precioRebaja')?.setValue(this.productoUpdate?.precioRebaja);
-  this.formProductos.get('descripcion')?.setValue(this.productoUpdate?.descripcion);
-  this.formProductos.get('stock')?.setValue(this.productoUpdate?.stock);
-  this.formProductos.get('marca')?.setValue(this.productoUpdate?.marca);
-  this.formProductos.get('contenido')?.setValue(this.productoUpdate?.contenido);
+    if (this.nombreCard === 'Actualizar Producto') {
+      this.habilita = false;
+      this.formProductos.get('nombre')?.setValue(this.productoUpdate?.nombre);
+      this.formProductos.get('precioCosto')?.setValue(this.productoUpdate?.precioVenta);
+      this.formProductos.get('piezas')?.setValue(this.productoUpdate?.piezas);
+      this.formProductos.get('color')?.setValue(this.productoUpdate?.color);
+      this.formProductos.get('precioVenta')?.setValue(this.productoUpdate?.precioVenta);
+      this.formProductos.get('precioRebaja')?.setValue(this.productoUpdate?.precioRebaja);
+      this.formProductos.get('descripcion')?.setValue(this.productoUpdate?.descripcion);
+      this.formProductos.get('stock')?.setValue(this.productoUpdate?.stock);
+      this.formProductos.get('marca')?.setValue(this.productoUpdate?.marca);
+      this.formProductos.get('contenido')?.setValue(this.productoUpdate?.contenido);
 
-  // Código de barras
-  const codigoBarr = this.productoUpdate?.codigoBarras ?? '';
-  const codValid = codigoBarr == '';
-  this.formProductos.get('sinCodigoBarra')?.setValue(codValid)
-  this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
-  this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
-  const codigoControl = this.formProductos.get('codigoBarras');
+      // Código de barras
+      const codigoBarr = this.productoUpdate?.codigoBarras ?? '';
+      const codValid = codigoBarr == '';
+      this.formProductos.get('sinCodigoBarra')?.setValue(codValid)
+      this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
+      this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
+        const codigoControl = this.formProductos.get('codigoBarras');
 
-  console.log(codigoControl)
-  if (sinCodigo) {
-    codigoControl?.disable();
-    codigoControl?.clearValidators();
-  } else {
-     this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
-    codigoControl?.enable();
-    codigoControl?.setValidators(Validators.required);
-  }
+        console.log(codigoControl)
+        if (sinCodigo) {
+          codigoControl?.disable();
+          codigoControl?.clearValidators();
+        } else {
+          this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
+          codigoControl?.enable();
+          codigoControl?.setValidators(Validators.required);
+        }
 
-  codigoControl?.updateValueAndValidity();
-});
- 
+        codigoControl?.updateValueAndValidity();
+      });
 
 
-    
-    
-  // Escuchar cambios en el checkbox
 
-}
+
+
+      // Escuchar cambios en el checkbox
+
+    }
 
 
     /**

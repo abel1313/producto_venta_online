@@ -239,7 +239,7 @@ iniciarRifa() {
 
           this.cargarRuletaRifa();
         }, error(erro) {
-          console.log(erro)
+          console.error(erro)
         }
       });
   }
@@ -256,12 +256,10 @@ iniciarRifa() {
       .subscribe({
         next: (res) => {
           this.participantes.push(res.data);
-
-          this.participantes.forEach(fro => console.log(fro));
           this.ocultarBtnParticipar = true;
           this.cargarRuletaRifa();
         }, error(erro) {
-          console.log(erro)
+          console.error(erro)
         }
       });
   }

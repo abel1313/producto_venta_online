@@ -187,9 +187,6 @@ export class AllComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error en la petición:', err);
-        },
-        complete: () => {
-          console.log('Petición completada');
         }
       });
     }
@@ -243,9 +240,6 @@ export class AllComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error en la petición:', err);
-        },
-        complete: () => {
-          console.log('Petición completada');
         }
       });
     }

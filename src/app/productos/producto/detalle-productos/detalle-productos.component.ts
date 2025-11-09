@@ -65,9 +65,6 @@ export class DetalleProductosComponent implements OnInit {
 
 
   generarPedido() {
-
-    console.log(this.isAnonymous)
-    console.log(this.roles)
     if (this.isAnonymous) {
       Swal.fire({
         title: "Generar pedido",
@@ -138,7 +135,6 @@ export class DetalleProductosComponent implements OnInit {
           }).then((result) => {
             if (result.isConfirmed) {
               this.pedidosService.saveDataPedido(this.pedidosDTO).subscribe(ped => {
-                console.log(ped, ' --------------------------------------------------------- ')
                 this.serviceCarrito.limpiarCarrito();
 
                 if (ped != null && ped.code == 200) {

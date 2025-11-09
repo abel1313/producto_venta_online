@@ -84,7 +84,6 @@ export class ProductoService {
 
     agregarProducto(producto: IProductoDTOImagenes) {
         this.productoUpdate.next(producto);
-        console.log('Carrito actualizado:', producto);
     }
 
     limpiarCarrito() {

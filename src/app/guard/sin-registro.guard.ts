@@ -19,7 +19,6 @@ export class SinRegistroGuard implements CanActivate {
     const roles = payload.roles || [];
 
     if (!roles.includes('ROLE_ADMIN')) {
-      console.log("sin");
       return true;
     }
 

@@ -42,7 +42,6 @@ export class DetalleProductoComponent implements OnInit {
 
   this.service.getDataGeneric(this.idProducto).subscribe(data=>{
     this.producto = data;
-    console.log(this.producto)
   });
 
 

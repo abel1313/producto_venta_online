@@ -149,9 +149,6 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   guardar(): void {
 
-console.log(this.productoSave)
-  
-    //  return
     this.service.saveProducto(this.productoSave)
       .subscribe({
         next: (save) => {
@@ -189,7 +186,7 @@ console.log(this.productoSave)
           }
         },
         error(error) {
-          console.log(error);
+          console.error(error);
         }
       });
   }
@@ -224,8 +221,6 @@ console.log(this.productoSave)
       this.formProductos.get('codigoBarras')?.setValue(this.productoUpdate?.codigoBarras);
       this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
         const codigoControl = this.formProductos.get('codigoBarras');
-
-        console.log(codigoControl)
         if (sinCodigo) {
           codigoControl?.disable();
           codigoControl?.clearValidators();

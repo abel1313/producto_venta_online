@@ -180,9 +180,6 @@ export class AddVentaComponent implements OnInit {
             title: "Oops...",
             text: "Something went wrong!"
           });
-        },
-        complete: () => {
-          console.log('Petición completada');
         }
       });
     } else {
@@ -207,9 +204,6 @@ export class AddVentaComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
       }
     });
   }
@@ -313,9 +307,6 @@ export class AddVentaComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
       }
     });
   }
@@ -392,9 +383,6 @@ export class AddVentaComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
       }
     });
   }

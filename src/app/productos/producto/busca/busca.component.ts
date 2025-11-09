@@ -39,9 +39,6 @@ export class BuscaComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
       }
     });
   }

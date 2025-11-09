@@ -47,7 +47,7 @@ export class MisPedidosComponent implements OnInit {
       this.buscarPedidoAdmin();
     } else {
       this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
-        // console.log(data, 'datatatatatatata')
+     
         if (data && data.data) {
           this.clienteId = data.data.id;
           this.page = 0;
@@ -76,7 +76,7 @@ export class MisPedidosComponent implements OnInit {
   };
 
   irDetalle(item: IPedidoGenerico) {
-    console.log('ir detalle')
+
     this.mostrarDetalle = true;
     this.item = item;
   }
@@ -115,7 +115,7 @@ export class MisPedidosComponent implements OnInit {
 
   cobrarAdmin(item: IPedidoGenerico) {
 
-    console.log(item)
+
     Swal.fire({
       title: "Cancelar pedido",
       icon: "error",
@@ -184,7 +184,7 @@ export class MisPedidosComponent implements OnInit {
         this.cargando = false;
 
       }, err => {
-        console.log(err);
+        console.error(err);
       });
   }
 
@@ -209,14 +209,14 @@ export class MisPedidosComponent implements OnInit {
           this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0)
             .subscribe(sus => {
               this.resposeGenericPedido = sus;
-              console.log(this.resposeGenericPedido.data?.list)
+             
 
               this.pedidoGenerico = this.resposeGenericPedido.data?.list || [];
               this.page++;
               this.cargando = false;
 
             }, err => {
-              console.log(err);
+              console.error(err);
             });
 
 
@@ -233,12 +233,10 @@ export class MisPedidosComponent implements OnInit {
   }
 
   mostrarProductos(mostrar: boolean): void {
-    console.log('regresando ')
     this.mostrarDetalle = mostrar;
   }
 
   buscarPedidoAdmin() {
-    console.log(this.buscarProd === '', "noelleva")
     this.size = 10;
     this.page = 0;
     this.pedidoService.buscarPedidoPorCliente(this.buscarProd == '' ? 'vacio' : this.buscarProd, this.size, this.page)
@@ -249,7 +247,7 @@ export class MisPedidosComponent implements OnInit {
         this.cargando = false;
 
       }, err => {
-        console.log(err);
+        console.error(err);
       });
   }
 }

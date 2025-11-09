@@ -241,9 +241,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
       },
       error: (err) => {
         console.error('Error en la petición:', err);
-      },
-      complete: () => {
-        console.log('Petición completada');
       }
     });
   }
@@ -298,9 +295,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
         },
         error: (err) => {
           console.error('Error en la petición:', err);
-        },
-        complete: () => {
-          console.log('Petición completada');
         }
       });
   }
@@ -316,9 +310,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
         },
         error: (err) => {
           console.error('Error en la petición:', err);
-        },
-        complete: () => {
-          console.log('Petición completada 1');
         }
       });
     }

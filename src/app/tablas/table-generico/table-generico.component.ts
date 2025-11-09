@@ -144,7 +144,7 @@ export class TableGenericoComponent implements OnInit, AfterViewInit, OnChanges 
     });
  */
     
-    console.log(this.rows, 'buscando ')
+
   }
 
 

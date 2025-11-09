@@ -66,7 +66,7 @@ export class AddComponent implements OnInit {
             });
         },
         error(error){
-          console.log(error)
+          console.error(error)
         }
       });
       

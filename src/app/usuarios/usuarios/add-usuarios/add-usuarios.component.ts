@@ -56,9 +56,6 @@ this.formRegistro.get('confirmPassword')?.clearValidators();
 this.formRegistro.get('password')?.updateValueAndValidity({ emitEvent: false });
 this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
 
-
-    console.log(this.formRegistro)
-    // 🔑 Escuchar cambios en password y confirmPassword
     this.formRegistro.get('password')?.valueChanges.subscribe(value => {
       this.togglePasswordValidators();
     });
@@ -167,7 +164,6 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
   }
 
   restablecerContra() {
-    console.log('console ', this.updateUser)
     const { userName, email, password } = this.formRegistro.value;
     this.updateUser.password = `${userName}123`;
     this.usuario.restablecerContra(this.updateUser, this.updateUser.id || 0).subscribe(registrado => {

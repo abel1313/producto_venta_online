@@ -31,7 +31,6 @@ export class LoginFormComponent implements OnInit {
     const credentials = this.loginForm.value;
     this.acceder.login(credentials).subscribe({
       next: (res) => {
-        console.log(res.token == '')
         if (res.token != null && res.token != '') {
           localStorage.setItem('token', res.token);
           this.authService.setRolesFromToken(res.token);

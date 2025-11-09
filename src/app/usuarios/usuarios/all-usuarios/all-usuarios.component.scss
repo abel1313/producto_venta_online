@@ -1,0 +1,62 @@
+.mat-menu-item {
+    font-size: 16px;         // 📌 Cambia el tamaño de la fuente
+    color: rgb(0, 0, 0) !important; // 📌 Forzar color del texto
+    border-radius: 5px;      // 📌 Bordes redondeados
+
+    
+
+  }
+  .no-select {
+    user-select: none; /* 🚫 Evita la selección de texto */
+    -webkit-user-select: none; /* 🔹 Para Safari */
+    -moz-user-select: none; /* 🔹 Para Firefox */
+    -ms-user-select: none; /* 🔹 Para Internet Explorer */
+}
+
+.no-highlight::selection {
+    background: transparent; /* 🚫 Evita el fondo azul al seleccionar */
+}
+
+
+//   ::ng-deep .cdk-overlay-pane {
+  //   position: absolute !important;
+  //   left: 300px !important;  // 📌 Mueve el menú hacia la derecha
+  //  top: 100px !important;   // 📌 Mueve el menú hacia abajo
+ //  }
+
+
+ .example-card {
+  max-width: 400px;
+}
+
+.example-header-image {
+  background-image: url('https://material.angular.dev/assets/img/examples/shiba1.jpg');
+  background-size: cover;
+}
+
+mat-card img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+.example-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.scroll-container {
+  height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden; /* 👈 evita el scroll horizontal */
+  padding-right: 10px;
+}
+
+.img-producto{
+  height: 80%;border: 1px solid rgb(37, 75, 133);
+}
+.espacio-img{
+  margin-bottom: 8px;
+}
+.con-style{
+  width: 20px; height: 20px; margin-left: 8px;
+}

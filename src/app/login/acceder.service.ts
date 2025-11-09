@@ -21,4 +21,6 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/auth/registrar`, credentials);
   }
 
+
+
 }

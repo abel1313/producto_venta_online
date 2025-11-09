@@ -290,11 +290,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
-    console.log('33333333')
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)//no es
       .subscribe({
         next: (res) => {
-          console.log("123123123")
           this.paginacion = res;
           this.rows = this.paginacion.t;
         },
@@ -308,12 +306,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   buscarProductoScroll(paginaPrimera: number): void {
-   console.log('totalPaginas ', this.totalPaginas)
     if( this.totalPaginas >= paginaPrimera){
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, "")
       .subscribe({
         next: (res) => {
-           console.log('paginaPrimera ', paginaPrimera)
           this.paginaPrimera = this.paginaPrimera +1;
           this.paginacion = res;
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
@@ -326,7 +322,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
         }
       });
     }
-
   }
 
   onScroll(event: any): void {

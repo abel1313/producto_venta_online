@@ -35,4 +35,9 @@ export class AuthService {
     }
   }
 
+  get isAdminService(): boolean {
+    return this.userRoles.value.includes('ROLE_ADMIN');
+  }
+
+
 }

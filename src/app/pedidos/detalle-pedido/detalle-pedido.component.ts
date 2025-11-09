@@ -14,11 +14,9 @@ public env: string = environment.api_Url + "/imagen/";
   constructor() { }
 
   ngOnInit(): void {
-    console.log(this.pedido.pedido.detalles, 'data')
   }
 
   irPedido(){
-    console.log('dando ')
     this.regresarProductos.emit(false);
   }
 }

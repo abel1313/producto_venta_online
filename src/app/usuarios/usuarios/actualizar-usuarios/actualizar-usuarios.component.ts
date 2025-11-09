@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { UsuarioService } from 'src/app/shared/usuario.service';
+import { IUsuarioDto } from '../models/usuario.dto';
 
 @Component({
   selector: 'app-actualizar-usuarios',
@@ -7,9 +9,21 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ActualizarUsuariosComponent implements OnInit {
 
-  constructor() { }
+  usuUpdate: IUsuarioDto = {
+    email: '',
+    enabled: false,
+    rol: '',
+    username: ''
+  };
+  constructor(
+    private readonly serviceUser: UsuarioService
+  ) { }
 
   ngOnInit(): void {
+
+    this.serviceUser.userUpdate$.subscribe(data=>{
+      this.usuUpdate = data;
+    });
   }
 
 }

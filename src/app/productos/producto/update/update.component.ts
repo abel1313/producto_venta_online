@@ -26,9 +26,7 @@ export class UpdateComponent implements OnInit {
     });
 
     this.imagenService.getDataGeneric<ProductoImagenDto>(this.productoActualizar?.idProducto || 0).subscribe(img => {
-      console.log(img)
       this.productoImagenesDto = img;
-      console.log(this.productoImagenesDto, 'imgs ')
     },
       error => {
         console.error(error)
@@ -36,7 +34,6 @@ export class UpdateComponent implements OnInit {
   }
   eliminarImagen(imagen: ImagenUpdateDto): void {
     const index = this.productoImagenesDto?.listaImagenes.indexOf(imagen) || 0;
-    console.log(index, ' index')
     if (index > -1) {
       this.productoImagenesDto?.listaImagenes.splice(index, 1);
     }

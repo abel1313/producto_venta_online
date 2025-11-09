@@ -1,7 +1,7 @@
 <div class="container d-flex justify-content-center align-items-center py-5">
 
   <div class="card shadow p-4 w-100" style="max-width: 500px;">
-    <h3 class="text-center mb-4">Registro de Usuario</h3>
+    <h3 class="text-center mb-4">{{textoCard}}</h3>
 
     <form [formGroup]="formRegistro" (ngSubmit)="registrarUsuario()">
       <div class="mb-3">
@@ -17,14 +17,18 @@
       <div class="mb-3">
         <label for="email" class="form-label">Correo electrónico</label>
         <input type="email" id="email" formControlName="email" class="form-control">
-        <div *ngIf="formRegistro.get('email')?.errors?.['email'] && formRegistro.get('email')?.touched">
-          <small class="text-danger">Formato de correo inválido</small>
+        <div *ngIf="formRegistro.get('email')?.invalid && formRegistro.get('email')?.touched">
+          <small class="text-danger" *ngIf="formRegistro.get('email')?.errors?.['required']">Campo requerido</small>
+          <small class="text-danger" *ngIf="formRegistro.get('email')?.errors?.['email']">Formato de correo
+            inválido</small>
+
         </div>
+
       </div>
 
       <div class="mb-3">
         <label for="password" class="form-label">Contraseña</label>
-        <input type="password" id="password" formControlName="password" class="form-control" required>
+        <input type="password" id="password" formControlName="password" class="form-control">
         <div *ngIf="formRegistro.get('password')?.invalid && formRegistro.get('password')?.touched">
           <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['required']">Campo requerido</small>
           <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['minlength']">Mínimo 8
@@ -35,17 +39,48 @@
         </div>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-3" >
         <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
-        <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control" required>
+        <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control">
         <div *ngIf="formRegistro.errors?.['passwordMismatch'] && formRegistro.get('confirmPassword')?.touched">
           <small class="text-danger">Las contraseñas no coinciden</small>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary w-100" [disabled]="formRegistro.invalid">Registrarse</button>
+
+      <div class="row" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario' ">
+        <div class="col-6">
+                <div class="flex flex-wrap gap-4 " >
+        <div class="flex items-center gap-2">
+          <nz-switch formControlName="enabled"></nz-switch>
+          <label for="size_small" class="text-sm">{{formRegistro.get('enabled')?.value ? 'Habilitado' : 'Des habilitado'}}</label>
+        </div>
+      </div>
+      
+        </div>
+        <div class="col-6">
+                <div class="mb-3" >
+        <label for="rol" class="form-label">Rol</label>
+        <input type="text" id="rol" formControlName="rol" class="form-control">
+
+      </div>
+        </div>
+      </div>
+
+
+
+<div class="row">
+  <div class="col-6">
+          <button type="submit" class="btn btn-primary w-100 mt-4" (click)="updateUserDto()" [disabled]="formRegistro.invalid">{{ this.textoCard ==
+        'Actualizar usuario' ? 'Actualizar': 'Registrarse'}}</button>
+  </div>
+  <div class="col-6" *ngIf="authService.isAdminService">
+     <button type="button" class="btn btn-secondary w-100 mt-4" (click)="restablecerContra()" >Restablecer contra</button>
+  </div>
+</div>
     </form>
-    <div class="row pt-3">
+
+    <div class="row pt-3" *ngIf="!authService.isAdminService ">
       <div class="col-12">
         <button type="button" class="btn btn-secondary col-sm-12 col-lg-12" (click)="irAlLogin()">ir a login</button>
       </div>

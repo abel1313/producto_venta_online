@@ -15,7 +15,6 @@ export class PedidosService extends CrudGenericService<IPedidos>{
    }
 
   saveDataPedido(data: IPedidosDTOPedido): Observable<ResponseGeneric<any>> {
-     console.log(  data, ' c;---------------------------------------')
     return this.http.post<ResponseGeneric<any>>(`${this.url}/pedidos/savePedido`, data);
   }
 

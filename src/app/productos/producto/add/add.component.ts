@@ -8,6 +8,7 @@ import { ArcElement, Chart, PieController } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { IProductoImagen } from '../models/productoImagen.model';
 import { IImagenDto } from '../models';
+import { AuthService } from 'src/app/auth/auth.service';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -36,8 +37,8 @@ export class AddComponent implements OnInit, AfterViewInit {
   productoImagen: IProductoImagen[] = [];
   constructor(
     private readonly fb: FormBuilder,
-    private readonly service: ProductoService
-
+    private readonly service: ProductoService,
+    public authService: AuthService
   ) {
 
     if (this.nombreCard == '') {
@@ -54,6 +55,8 @@ export class AddComponent implements OnInit, AfterViewInit {
       stock: 0,
       marca: '',
       contenido: '',
+      actualizarStock: 0,
+      eliminarStock: 0,
       codigoBarras: {
         codigoBarras: '',
         id: 0
@@ -69,19 +72,20 @@ export class AddComponent implements OnInit, AfterViewInit {
       piezas: ['', Validators.required],
       color: [''],
       precioVenta: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      precioRebaja: ['',[ Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      precioRebaja: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       descripcion: ['', Validators.required],
       stock: ['', Validators.required],
       marca: ['', Validators.required],
       contenido: ['', Validators.required],
-      codigoBarras: ['', [Validators.required,Validators.maxLength(100)]],
+      actualizarStock: ['0'],
+      eliminarStock: ['0'],
+      codigoBarras: ['', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
 
     // Escuchar cambios en el checkbox para modificar validación
     this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
       const codigoControl = this.formProductos.get('codigoBarras');
-      console.log("se ejecuta esto ")
       this.formProductos.get('codigoBarras')?.setValue('');
       if (sinCodigo) {
         this.habilita = false;
@@ -129,6 +133,8 @@ export class AddComponent implements OnInit, AfterViewInit {
         stock: producto.stock,
         marca: producto.marca,
         contenido: producto.contenido || '',
+        actualizarStock: producto.actualizarStock,
+        eliminarStock: producto.eliminarStock,
         codigoBarras: {
           codigoBarras: codigoBarras,
           id: producto.codigoBarras.id
@@ -143,7 +149,8 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   guardar(): void {
 
-
+console.log(this.productoSave)
+  
     //  return
     this.service.saveProducto(this.productoSave)
       .subscribe({
@@ -172,6 +179,8 @@ export class AddComponent implements OnInit, AfterViewInit {
             stock: 0,
             marca: '',
             contenido: '',
+            actualizarStock: 0,
+            eliminarStock: 0,
             codigoBarras: {
               codigoBarras: '',
               id: 0
@@ -228,10 +237,6 @@ export class AddComponent implements OnInit, AfterViewInit {
 
         codigoControl?.updateValueAndValidity();
       });
-
-
-
-
 
       // Escuchar cambios en el checkbox
 

@@ -17,6 +17,8 @@ export interface IProducto extends IdGenerico{
     stock: number;
     marca: string;
     contenido: string;
+    actualizarStock: number;
+    eliminarStock: number;
     codigoBarras: ICodigoBarra;
     listImagenes: IImagenDto[];
 }

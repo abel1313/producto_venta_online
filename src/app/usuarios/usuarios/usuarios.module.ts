@@ -7,8 +7,9 @@ import { AllUsuariosComponent } from './all-usuarios/all-usuarios.component';
 import { BuscarUsuariosComponent } from './buscar-usuarios/buscar-usuarios.component';
 import { ActualizarUsuariosComponent } from './actualizar-usuarios/actualizar-usuarios.component';
 import { ReactiveFormsModule } from '@angular/forms';
-
-
+import {MatCardModule} from '@angular/material/card';
+import {  RadioButtonModule } from 'primeng/radiobutton';
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
 @NgModule({
   declarations: [
     AddUsuariosComponent,
@@ -20,6 +21,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     CommonModule,
     UsuariosRoutingModule,
     ReactiveFormsModule,
+    MatCardModule,
+    NzSwitchModule
   ]
 })
 export class UsuariosModule { }

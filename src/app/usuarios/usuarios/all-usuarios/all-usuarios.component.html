@@ -1,1 +1,40 @@
-<p>all-usuarios works!</p>
+<app-buscar-usuarios
+(regresarProductos)="usuariosResponse($event)"></app-buscar-usuarios>
+
+
+
+<div class="container ">
+  <div class="scroll-container" (scroll)="onScroll($event)">
+    <div class="row">
+      <div class="col-md-4 mt-2" *ngFor="let item of rows">
+        <mat-card class="example-card " appearance="outlined">
+          <mat-card-header>
+            <div mat-card-avatar class="example-header-image"></div>
+            <mat-card-title>Nombre del usuario <p><b>{{item.username}}</b></p>
+            </mat-card-title>
+            <mat-card-subtitle>Email <b>{{item.email == '' ? 'Sin correo' : item.email }}</b> </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>
+              Rol {{item.rol}}
+            </p>
+          </mat-card-content>
+          <div class="col-12" style="margin-bottom: 8px;" type="button" >
+            <button type="button" class="btn btn-secondary col-12"  (click)="updateUsuario(item)">
+             <b> Actualizar <img [src]="iconImagen.iconEditar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
+            </button>
+            
+          </div>
+          <div class="col-12" style="margin-bottom: 8px;" type="button" >
+            <button type="button" class="btn btn-secondary col-12"  (click)="removeUsuario(item)"  >
+             <b> Eliminar <img [src]="iconImagen.iconEliminar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
+            </button>
+          </div>
+
+        </mat-card>
+
+      </div>
+    </div>
+  </div>
+
+</div>

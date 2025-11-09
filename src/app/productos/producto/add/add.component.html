@@ -112,6 +112,23 @@
           </div>
         </div>
 
+        
+        
+        <div class="row mt-2" *ngIf="authService.isAdminService && nombreCard === 'Actualizar Producto' ">
+          <div class="col-6">
+            <label for="actualizarStock">Actualizar stock: {{nombreCard}}</label>
+            <input id="actualizarStock" formControlName="actualizarStock" type="number" class="form-control">
+
+          </div>
+          <div class="col-6">
+            <label for="eliminarStock">Eliminar stock:</label>
+            <input id="eliminarStock" formControlName="eliminarStock" type="number" class="form-control">
+          </div>
+        </div>
+
+
+
+
 
 
         <div class="row mt-2">
@@ -149,7 +166,7 @@
 
 
           <div class="col-8">
-            <label for="codigoBarras">Codigo de Barra: {{!habilita}}</label>
+            <label for="codigoBarras">Codigo de Barra</label>
             <input id="codigoBarras" formControlName="codigoBarras" class="form-control">
 
             <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">

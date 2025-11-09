@@ -23,8 +23,6 @@ export class AuthGuard implements CanActivate {
       this.router.navigate(['/login']);
       return false;
     }
-
-    console.log("llego final auth ", payload);
     return true; // solo verifica que esté logueado y el token sea válido
   }
 

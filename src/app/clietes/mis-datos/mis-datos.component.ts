@@ -44,7 +44,6 @@ export class MisDatosComponent implements OnInit {
       this.idUusario = idUser;
     });
     this.clienteServoce.getDataOneCliente(this.idUusario).subscribe((data: any) => {
-      // console.log(data, 'datatatatatatata')
       if (data && data.data) {
         this.formDatosCliente.patchValue({
           nombrePersona: data.data.nombrePersona,
@@ -71,7 +70,6 @@ export class MisDatosComponent implements OnInit {
             this.listDirecciones.push(direccionForm);
             this.suscribirCambioPredefinida(direccionForm, index);
           });
-          console.log(data.data)
 
         } else {
           // Si no hay direcciones, agrega una vacía
@@ -103,7 +101,6 @@ export class MisDatosComponent implements OnInit {
 
     this.datosCliente = this.formDatosCliente.value;
     const fechaRaw = this.formDatosCliente.get('fechaNacimiento')?.value;
-    console.log(fechaRaw, ' fechaRaw')
     const fecha = new Date(fechaRaw);
 
     if (fechaRaw) {
@@ -113,9 +110,6 @@ export class MisDatosComponent implements OnInit {
         year: 'numeric'
       }).format(fecha);
       this.datosCliente.fechaNacimiento = fecha;
-      console.log('Fecha formateada:', this.datosCliente.fechaNacimiento);
-    } else {
-      console.warn('Fecha de nacimiento no seleccionada');
     }
     //return;
 
@@ -148,13 +142,13 @@ export class MisDatosComponent implements OnInit {
       const direcciones = this.formDatosCliente.get('listDirecciones') as FormArray;
       const direccion = direcciones.at(iteracion) as FormGroup;
       const calle = direccion.get('calle')?.value;
-      console.log(res);
+ 
       direccion.patchValue({
         municipio: res.codigo_postal.municipio
       });
 
     });
-    console.log(codigo)
+
   }
   get listDirecciones(): FormArray {
     return this.formDatosCliente?.get('listDirecciones') as FormArray;

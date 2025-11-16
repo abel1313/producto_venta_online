@@ -9,6 +9,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { IProductoImagen } from '../models/productoImagen.model';
 import { IImagenDto } from '../models';
 import { AuthService } from 'src/app/auth/auth.service';
+import { Router } from '@angular/router';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -38,7 +39,8 @@ export class AddComponent implements OnInit, AfterViewInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly service: ProductoService,
-    public authService: AuthService
+    public authService: AuthService,
+    private readonly router: Router
   ) {
 
     if (this.nombreCard == '') {
@@ -159,12 +161,18 @@ export class AddComponent implements OnInit, AfterViewInit {
           const ctx = canvas.getContext('2d')!;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+          let texto = 'Se guardo';
+          if (this.nombreCard == 'Actualizar Producto') {
+            texto = 'Se actualizo';
+          }
           Swal.fire({
-            title: "Se guardo Correctamente",
+            title: `${texto} Correctamente`,
             icon: "success",
             draggable: true
           });
-
+          if (this.nombreCard == 'Actualizar Producto') {
+            this.router.navigate(['/productos/buscar']);
+          }
           this.productoSave = {
             nombre: '',
             precioCosto: 0,

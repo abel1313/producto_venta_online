@@ -152,7 +152,7 @@ export class AddComponent implements OnInit, AfterViewInit {
     this.service.saveProducto(this.productoSave)
       .subscribe({
         next: (save) => {
-          //this.formProductos.reset();
+          this.formProductos.reset();
           this.imagenesCargadas = [];
 
           const canvas = this.canvasRef.nativeElement;

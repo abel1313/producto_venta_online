@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+
+import { Component, OnInit } from '@angular/core';
 import { ViewChild, AfterViewInit } from '@angular/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import { DomSanitizer } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from './auth.service';
+import { environment } from 'src/environments/environment';
+import { ITokenData } from './login/models/ITokenData.model';
 
 
 
@@ -12,17 +17,32 @@ import { DomSanitizer } from '@angular/platform-browser';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements OnInit, AfterViewInit {
   imageUrl: string | undefined;
-
+  private readonly urlRefresh: string = `${environment.api_auth}/auth/refresh`;
   resultadoCodigo: string = '';
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer,
+              private readonly http: HttpClient,
+              private readonly auth: AuthService
+  ) {}
+
 
   sanitizeImage(imageUrl: string) {
     return this.sanitizer.bypassSecurityTrustUrl(imageUrl);
   }
   
-
+  ngOnInit(): void {
+        this.http.post<ITokenData>(this.urlRefresh, {}, { withCredentials: true })
+    .subscribe({
+      next: tokenData => {
+        this.auth.setAccessToken(tokenData.accessToken);
+      },
+      error: () => {
+        // Si falla, significa que no hay refresh token válido → pedir login
+        this.auth.clearAccessToken();
+      }
+    });
+  }
   ngAfterViewInit() {
     
   }

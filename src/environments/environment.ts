@@ -4,7 +4,10 @@
 
 export const environment = {
   production: false,
-  api_Url: "http://localhost:8081/mis-productos"
+  api_Url: "http://localhost:8081/mis-productos",
+  api_auth: "http://localhost:30090/mis-productos",
+  api_productos: "http://localhost:9091/mis-productos"
+
 };
 
 /*

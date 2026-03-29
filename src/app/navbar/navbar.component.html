@@ -90,33 +90,22 @@
             Login
           </a>
         </li>
-
+        <li class="nav-item">
+          <a class="nav-link" (click)="regresarProducto()">Regresar a productos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" (click)="limpiarCarrito()">Limpiar carrito</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn btn-secondary" (click)="revisarProductosCarrito()">
+            Carrito {{countCarrito}}
+          </button>
+        </li>
       </ul>
 
-      <div class="dropdown-item d-flex ">
-        <div class="col-6">
 
-        </div>
 
-        <div class="col-5 d-flex justify-content-end">
-          <div class="d-flex justify-content-end">
-            <button class="btn btn-secondary btn-sm" (click)="regresarProducto()" style="border: 1px solid;">
-              <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
-              regresar a productos
-            </button>
-          </div>
-          <button class="btn btn-secondary btn-sm" (click)="limpiarCarrito()" style="border: 1px solid;">
-            <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
-            limpiar carrito
-          </button>
-          <button class="btn btn-secondary btn-sm" (click)="revisarProductosCarrito()" style="border: 1px solid;">
-            <img [src]="iconService.iconCarrito" alt="carrito" style="width: 20px; height: 20px;">
-            carrito {{countCarrito}}
-          </button>
-        </div>
-      </div>
 
-      
       <li class="nav-item dropdown" *ngIf="!isAnonymous">
         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <span> Bienvenido <strong>{{ username }}</strong></span>

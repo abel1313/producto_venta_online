@@ -5,9 +5,10 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from './auth.service';
+import { AuthenticateService } from './auth.service';
 import { environment } from 'src/environments/environment';
 import { ITokenData } from './login/models/ITokenData.model';
+import { AuthService } from './auth/auth.service';
 
 
 
@@ -23,7 +24,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   resultadoCodigo: string = '';
   constructor(private sanitizer: DomSanitizer,
               private readonly http: HttpClient,
-              private readonly auth: AuthService
+              private readonly auth: AuthenticateService,
+              private readonly roles: AuthService
   ) {}
 
 
@@ -36,6 +38,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     .subscribe({
       next: tokenData => {
         this.auth.setAccessToken(tokenData.accessToken);
+        this.roles.setRolesFromToken(tokenData.accessToken);
       },
       error: () => {
         // Si falla, significa que no hay refresh token válido → pedir login

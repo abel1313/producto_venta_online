@@ -4,9 +4,14 @@
 
 export const environment = {
   production: false,
+  por: 9090,
   api_Url: "http://localhost:8081/mis-productos",
   api_auth: "http://localhost:30090/mis-productos",
-  api_productos: "http://localhost:9091/mis-productos"
+  //api_auth: "http://localhost:9090/mis-productos",
+  //api_productos: "http://localhost:9091/mis-productos",
+  api_productos: "http://localhost:30091/mis-productos",
+  //api_clientes: "http://localhost:30095/mis-productos",
+  api_clientes: "http://localhost:9095/mis-productos",
 
 };
 

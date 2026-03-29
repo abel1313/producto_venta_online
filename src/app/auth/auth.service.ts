@@ -1,5 +1,7 @@
+
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { AuthenticateService } from '../auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,8 +17,9 @@ export class AuthService {
   private userId = new BehaviorSubject<number>(0);
   userId$ = this.userId.asObservable();
 
-  constructor() {
+  constructor(private readonly auth: AuthenticateService) {
     const token = localStorage.getItem('token');
+    const toke1 = auth.getAccessToken();
     if (token) {
       this.setRolesFromToken(token);
     }

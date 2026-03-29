@@ -96,7 +96,7 @@ export class DetalleProductosComponent implements OnInit {
       }
       this.clienteServoce.getDataOneCliente(this.idUsuario).subscribe((dataCliente: any) => {
 
-        if (dataCliente && dataCliente.data) {
+        if (dataCliente && dataCliente.response) {
           this.detalleProducto.forEach(fr => {
 
             const {
@@ -117,7 +117,7 @@ export class DetalleProductosComponent implements OnInit {
             }
             this.pedidosDTO.detalles.push(datosDetalle);
           });
-          this.pedidosDTO.cliente.id = dataCliente.data.id;
+          this.pedidosDTO.cliente.id = dataCliente.response.id;
 
 
 

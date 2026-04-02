@@ -4,7 +4,11 @@
 
 export const environment = {
   production: false,
-  api_Url: "http://localhost:8081/mis-productos"
+  //api_Url: "http://localhost:8083/mis-productos"
+  //api_Url: 'https://71bfb71f-e8f3-403b-bb8d-1f490a8d38bf.cfargotunnel.com/mis-productos'
+  api_Url: 'http://localhost:9091/mis-productos',
+  api_imagenes: 'http://localhost:9096/mis-productos'
+
 };
 
 /*

@@ -69,19 +69,19 @@ export class AddComponent implements OnInit, AfterViewInit {
 
 
     this.formProductos = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      precioCosto: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      piezas: ['', Validators.required],
-      color: [''],
-      precioVenta: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      precioRebaja: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
-      descripcion: ['', Validators.required],
-      stock: ['', Validators.required],
-      marca: ['', Validators.required],
-      contenido: ['', Validators.required],
+      nombre: ['prod', [Validators.required, Validators.maxLength(100)]],
+      precioCosto: ['1', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      piezas: ['1', Validators.required],
+      color: ['1'],
+      precioVenta: ['1', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      precioRebaja: ['1', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      descripcion: ['1', Validators.required],
+      stock: ['1', Validators.required],
+      marca: ['1', Validators.required],
+      contenido: ['1', Validators.required],
       actualizarStock: ['0'],
       eliminarStock: ['0'],
-      codigoBarras: ['', [Validators.required, Validators.maxLength(100)]],
+      codigoBarras: ['cod123098', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
 

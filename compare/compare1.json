@@ -1,0 +1,53 @@
+
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "usuarios-service",
+    "namespace": "default",
+    "uid": "c948c4e1-fc05-44c7-8929-09add7f244a1",
+    "resourceVersion": "528379",
+    "creationTimestamp": "2026-03-28T06:19:27Z",
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"name\":\"usuarios-service\",\"namespace\":\"default\"},\"spec\":{\"ports\":[{\"port\":80,\"targetPort\":9090}],\"selector\":{\"app\":\"usuarios\"},\"type\":\"LoadBalancer\"}}\n"
+    },
+    "finalizers": [
+      "service.kubernetes.io/load-balancer-cleanup"
+    ]
+  },
+  "spec": {
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 80,
+        "targetPort": 9090,
+        "nodePort": 31458
+      }
+    ],
+    "selector": {
+      "app": "usuarios"
+    },
+    "clusterIP": "10.100.179.19",
+    "clusterIPs": [
+      "10.100.179.19"
+    ],
+    "type": "LoadBalancer",
+    "sessionAffinity": "None",
+    "externalTrafficPolicy": "Cluster",
+    "ipFamilies": [
+      "IPv4"
+    ],
+    "ipFamilyPolicy": "SingleStack",
+    "allocateLoadBalancerNodePorts": true,
+    "internalTrafficPolicy": "Cluster"
+  },
+  "status": {
+    "loadBalancer": {
+      "ingress": [
+        {
+          "hostname": "ac948c4e1fc0544c7892909add7f244a-2010334829.us-east-1.elb.amazonaws.com"
+        }
+      ]
+    }
+  }
+}

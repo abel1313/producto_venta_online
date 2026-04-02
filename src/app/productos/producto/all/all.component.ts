@@ -29,7 +29,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() styleTableheight?: string = '400px';
   gridApi: any;
 
-  public env: string = environment.api_Url + "/imagen/";
+  public env: string = environment.api_imagenes + "/imagenes/buscarImagenProducto/";
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;
@@ -279,6 +279,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
   buscarProductos(event: KeyboardEvent) {
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    //this.paginaPrimera = 1;
     this.buscarProd = texto;
     if (this.buscarProd == '') {
       this.paginaPrimera = 1;

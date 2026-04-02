@@ -1,0 +1,54 @@
+
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "imagenes-service",
+    "namespace": "default",
+    "uid": "5081cad0-12c0-49b9-96df-745c58d65a95",
+    "resourceVersion": "2511993",
+    "creationTimestamp": "2026-04-02T06:01:42Z",
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"name\":\"imagenes-service\",\"namespace\":\"default\"},\"spec\":{\"ports\":[{\"port\":80,\"targetPort\":9096}],\"selector\":{\"app\":\"imagenes\"},\"type\":\"LoadBalancer\"}}\n"
+    },
+    "finalizers": [
+      "service.eks.amazonaws.com/resources"
+    ]
+  },
+  "spec": {
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 80,
+        "targetPort": 9096,
+        "nodePort": 31783
+      }
+    ],
+    "selector": {
+      "app": "imagenes"
+    },
+    "clusterIP": "10.100.74.135",
+    "clusterIPs": [
+      "10.100.74.135"
+    ],
+    "type": "LoadBalancer",
+    "sessionAffinity": "None",
+    "externalTrafficPolicy": "Cluster",
+    "ipFamilies": [
+      "IPv4"
+    ],
+    "ipFamilyPolicy": "SingleStack",
+    "allocateLoadBalancerNodePorts": true,
+    "loadBalancerClass": "eks.amazonaws.com/nlb",
+    "internalTrafficPolicy": "Cluster"
+  },
+  "status": {
+    "loadBalancer": {
+      "ingress": [
+        {
+          "hostname": "k8s-default-imagenes-a95040452f-532931487f46a7cb.elb.us-east-1.amazonaws.com"
+        }
+      ]
+    }
+  }
+}

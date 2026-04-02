@@ -7,6 +7,7 @@ import { CarritoGuard } from './guards/carrito.guard';
 import { UsuariosGuard } from './auth/usuarios.guard';
 import { SinRegistroGuard } from './guard/sin-registro.guard';
 import { AdminGuardGuard } from './guard/admin-guard.guard';
+import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 
 const routes: Routes = [
   {
@@ -51,6 +52,9 @@ const routes: Routes = [
   {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
+  },
+    {
+    path: 'qr', component: QrVentasJadeComponent
   },
   {
     path: '', redirectTo: 'productos/buscar', pathMatch: 'full'

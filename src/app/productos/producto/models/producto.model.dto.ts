@@ -10,5 +10,14 @@ export interface IProductoDTO{
     cantidad: number;
     subTotal: number;
     idProducto: number;
+    imagen:Imagen
     listImgs?: IImagenDto [];
+}
+
+
+export interface Imagen{
+    id: number;
+    nombreImagen: string;
+    imagen: string;
+    contentType: string;
 }

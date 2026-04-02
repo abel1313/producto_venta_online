@@ -17,8 +17,8 @@ import { HomeComponent } from './home/home.component';
 import { NbThemeModule, NbLayoutModule } from '@nebular/theme';
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { LoadingComponent } from './loading/loading.component';
-
-
+import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
+import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 @NgModule({
   providers: [
     {
@@ -38,8 +38,10 @@ import { LoadingComponent } from './loading/loading.component';
     PaginaNoDisponibleComponent,
     HomeComponent,
    LoadingComponent,
+   QrVentasJadeComponent,
   ],
   imports: [
+    QRCodeModule,
     BrowserModule,
     BrowserAnimationsModule,
     AppRoutingModule,
@@ -50,6 +52,7 @@ import { LoadingComponent } from './loading/loading.component';
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
+    
    
   ],
   bootstrap: [AppComponent]

@@ -8,7 +8,7 @@
       <form [formGroup]="formProductos">
 
         <div class="row">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="nombre">Nombre:</label>
             <input id="nombre" formControlName="nombre" class="form-control">
 
@@ -20,7 +20,7 @@
 
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="precioCosto">Precio al que se compro:</label>
             <input id="precioCosto" formControlName="precioCosto" class="form-control" inputmode="decimal" step="0.01">
 
@@ -35,8 +35,9 @@
 
 
 
+
         <div class="row mt-2">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="piezas">Piezas:</label>
             <input id="piezas" formControlName="piezas" type="number" class="form-control">
 
@@ -48,7 +49,7 @@
 
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="color">Color:</label>
             <input id="color" formControlName="color" class="form-control">
           </div>
@@ -58,7 +59,7 @@
 
 
         <div class="row mt-2">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="precioVenta">Precio Venta:</label>
             <input id="precioVenta" formControlName="precioVenta" class="form-control" inputmode="decimal" step="0.01">
 
@@ -73,7 +74,7 @@
 
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="precioRebaja">Precio si hubiera descuento:</label>
             <input id="precioRebaja" formControlName="precioRebaja" class="form-control" inputmode="decimal" step="0.01">
 
@@ -90,7 +91,7 @@
 
 
         <div class="row mt-2">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="descripcion">Descripcion:</label>
             <input id="descripcion" formControlName="descripcion" class="form-control">
 
@@ -102,7 +103,7 @@
 
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="stock">Stock:</label>
             <input id="stock" formControlName="stock" type="number" class="form-control">
 
@@ -115,12 +116,12 @@
         
         
         <div class="row mt-2" *ngIf="authService.isAdminService && nombreCard === 'Actualizar Producto' ">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="actualizarStock">Actualizar stock: {{nombreCard}}</label>
             <input id="actualizarStock" formControlName="actualizarStock" type="number" class="form-control">
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="eliminarStock">Eliminar stock:</label>
             <input id="eliminarStock" formControlName="eliminarStock" type="number" class="form-control">
           </div>
@@ -132,7 +133,7 @@
 
 
         <div class="row mt-2">
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="marca">Marca:</label>
             <input id="marca" formControlName="marca" class="form-control">
 
@@ -144,7 +145,7 @@
 
 
           </div>
-          <div class="col-6">
+          <div class="col-12 col-md-6">
             <label for="contenido">Contenido Neto:</label>
             <input id="contenido" formControlName="contenido" class="form-control">
 
@@ -157,7 +158,7 @@
 
         <div class="row mt-2">
 
-          <div class="col-4">
+          <div class="col-12 col-md-4">
             <label for="sinCodigo">Sin Codigo de Barra:</label>
             <div class="input-group-text">
               <input type="checkbox" formControlName="sinCodigoBarra" aria-label="Checkbox for following text input">
@@ -165,7 +166,7 @@
           </div>
 
 
-          <div class="col-8">
+          <div class="col-12 col-md-8">
             <label for="codigoBarras">Codigo de Barra</label>
             <input id="codigoBarras" formControlName="codigoBarras" class="form-control">
 
@@ -178,10 +179,12 @@
 
         </div>
 
+
+
         <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
           <p>Haz clic o arrastra una imagen aquí</p>
           <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
-          <canvas #canvas width="600" height="400"></canvas>
+          <canvas #canvas class="canvas-responsive"></canvas>
         </div>
 
 
@@ -189,7 +192,7 @@
         <div class="row p-2">
           <div class="col-12 d-flex justify-content-end">
 
-            <button type="submit" class="btn btn-success col-4 " (click)="producto()"
+            <button type="submit" class="btn btn-success" (click)="producto()"
               [disabled]="formProductos.invalid">Guardar</button>
           </div>
         </div>

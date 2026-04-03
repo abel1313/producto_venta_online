@@ -69,6 +69,25 @@ export class AddComponent implements OnInit, AfterViewInit {
 
 
     this.formProductos = this.fb.group({
+      nombre: ['', [Validators.required, Validators.maxLength(100)]],
+      precioCosto: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      piezas: ['', Validators.required],
+      color: [''],
+      precioVenta: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      precioRebaja: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
+      descripcion: ['', Validators.required],
+      stock: ['', Validators.required],
+      marca: ['', Validators.required],
+      contenido: ['', Validators.required],
+      actualizarStock: ['0'],
+      eliminarStock: ['0'],
+      codigoBarras: ['', [Validators.required, Validators.maxLength(100)]],
+      sinCodigoBarra: [false],
+    });
+
+/**
+ * 
+ *         this.formProductos = this.fb.group({
       nombre: ['prod', [Validators.required, Validators.maxLength(100)]],
       precioCosto: ['1', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       piezas: ['1', Validators.required],
@@ -84,7 +103,9 @@ export class AddComponent implements OnInit, AfterViewInit {
       codigoBarras: ['cod123098', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
-
+ * 
+ */
+    
     // Escuchar cambios en el checkbox para modificar validación
     this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {
       const codigoControl = this.formProductos.get('codigoBarras');

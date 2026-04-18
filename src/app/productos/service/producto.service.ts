@@ -14,7 +14,7 @@ import { IProductoDTOImagenes, IProductoDTORec } from '../producto/models/produc
 })
 export class ProductoService {
 
-    private readonly url: string = `${environment.api_Url}/productos`;
+    private readonly url: string = `${environment.api_productos}/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);

@@ -90,7 +90,17 @@
             Login
           </a>
         </li>
-
+        <li class="nav-item">
+          <a class="nav-link" (click)="regresarProducto()">Regresar a productos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" (click)="limpiarCarrito()">Limpiar carrito</a>
+        </li>
+        <li class="nav-item">
+          <button class="btn btn-secondary" (click)="revisarProductosCarrito()">
+            Carrito {{countCarrito}}
+          </button>
+        </li>
       </ul>
 
 <div class="dropdown-item">

@@ -68,7 +68,10 @@ export class AddComponent implements OnInit, AfterViewInit {
 
 
 
-    this.formProductos = this.fb.group({
+/**
+ * 
+ * 
+ *     this.formProductos = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
       precioCosto: ['', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       piezas: ['', Validators.required],
@@ -84,10 +87,9 @@ export class AddComponent implements OnInit, AfterViewInit {
       codigoBarras: ['', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
+ */
 
-/**
- * 
- *         this.formProductos = this.fb.group({
+        this.formProductos = this.fb.group({
       nombre: ['prod', [Validators.required, Validators.maxLength(100)]],
       precioCosto: ['1', [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
       piezas: ['1', Validators.required],
@@ -103,8 +105,7 @@ export class AddComponent implements OnInit, AfterViewInit {
       codigoBarras: ['cod123098', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
     });
- * 
- */
+
     
     // Escuchar cambios en el checkbox para modificar validación
     this.formProductos.get('sinCodigoBarra')?.valueChanges.subscribe((sinCodigo) => {

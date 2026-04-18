@@ -26,7 +26,7 @@ export class LoginFormComponent implements OnInit {
     private readonly acceder: AccederService
   ) {
     this.loginForm = this.fb.group({
-      nombre: ['', Validators.required],
+      userName: ['', Validators.required],
       password: ['', Validators.required]
     });
   }

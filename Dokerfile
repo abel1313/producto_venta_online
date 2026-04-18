@@ -6,4 +6,5 @@ COPY . .
 RUN npm run build --configuration production
 
 FROM nginx:alpine
-COPY --from=build /app/dist/proyecto-venta-online/ /usr/share/nginx/html
+COPY dist/ /usr/share/nginx/html
+

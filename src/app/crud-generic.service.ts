@@ -11,7 +11,7 @@ import { environment } from 'src/environments/environment';
 })
 export class CrudGenericService<T> {
 
-  protected readonly url: string = `${environment.api_clientes}`;
+  protected readonly url: string = `${environment.api_Url}`;
   constructor(
     protected readonly http: HttpClient,
       @Inject(URL_MODULO_TOKEN) private readonly urlModulo: string

@@ -20,7 +20,7 @@ import { AuthService } from './auth/auth.service';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   imageUrl: string | undefined;
-  private readonly urlRefresh: string = `${environment.api_auth}/auth/refresh`;
+  private readonly urlRefresh: string = `${environment.api_Url}/auth/refresh`;
   resultadoCodigo: string = '';
   constructor(private sanitizer: DomSanitizer,
               private readonly http: HttpClient,

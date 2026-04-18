@@ -26,7 +26,7 @@ export class TokenInterceptor implements HttpInterceptor {
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
         // Token expirado → pedir uno nuevo usando la cookie
-        return this.http.post<any>(`${environment.api_auth}/auth/refresh`, {}, { withCredentials: true })
+        return this.http.post<any>(`${environment.api_Url}/auth/refresh`, {}, { withCredentials: true })
           .pipe(
             switchMap(response => {
               this.authService.setAccessToken(response.accessToken);

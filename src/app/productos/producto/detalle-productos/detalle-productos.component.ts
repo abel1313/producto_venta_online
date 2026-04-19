@@ -96,7 +96,7 @@ export class DetalleProductosComponent implements OnInit {
       }
       this.clienteServoce.getDataOneCliente(this.idUsuario).subscribe((dataCliente: any) => {
 
-        if (dataCliente && dataCliente.response) {
+        if (dataCliente && dataCliente.data) {
           this.detalleProducto.forEach(fr => {
 
             const {

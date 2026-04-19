@@ -10,8 +10,10 @@ export class TokenInterceptor implements HttpInterceptor {
 
     constructor(private authService: AuthenticateService, private http: HttpClient) {}
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = this.authService.getAccessToken();
-
+   
+    //const token = this.authService.getAccessToken();
+    const token = localStorage.getItem('token');
+     console.log('Interceptando petición HTTP:', token);
     let authReq = req;
     if (token) {
       authReq = req.clone({

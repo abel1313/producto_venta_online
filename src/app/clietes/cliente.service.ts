@@ -21,7 +21,7 @@ export class ClienteService extends CrudGenericService<ICliente> {
       return this.http.get<any>(`${this.url}/dipomex/getCodigoPostal/${codigoPostal}`);
    }
   getDataOneCliente(idCliente: number): Observable<ResponseGeneric<ICliente>> {
-    return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/clientes/buscarClientePorIdUsuario/${idCliente}`);
+    return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/clientes/buscarPorIdCliente/${idCliente}`);
   }
 
 }

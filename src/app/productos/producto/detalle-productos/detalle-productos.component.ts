@@ -117,7 +117,7 @@ export class DetalleProductosComponent implements OnInit {
             }
             this.pedidosDTO.detalles.push(datosDetalle);
           });
-          this.pedidosDTO.cliente.id = dataCliente.response.id;
+          this.pedidosDTO.cliente.id = dataCliente.data.id;
 
 
 

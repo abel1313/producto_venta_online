@@ -34,12 +34,12 @@ export class LoginFormComponent implements OnInit {
   onLogin() {
     const credentials = this.loginForm.value;
     this.acceder.login(credentials).subscribe({
-      next: (res: IResponseGeneric<ITokenData>) => {
-        if (res != null && res.codigo == 200) {
-          localStorage.setItem('token', res.response?.accessToken || '');
-          this.authService.setRolesFromToken(res.response?.accessToken || '');
+      next: (res: any) => {
+        if (res != null) {
+          localStorage.setItem('token', res.token || '');
+          this.authService.setRolesFromToken(res.token || '');
           this.router.navigate(['/productos']);
-          this.auth.setAccessToken(res.response?.accessToken||'');
+          this.auth.setAccessToken(res.token||'');
         } else {
           Swal.fire({
             title: "Usuario o contraseña incorrectas",

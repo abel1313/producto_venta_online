@@ -25,7 +25,7 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     getData(page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/getProductos2?size=${size}&page=${page}`);
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/obtenerProductos?size=${size}&page=${page}`);
     }
 
     // 🌐 Obtener datos

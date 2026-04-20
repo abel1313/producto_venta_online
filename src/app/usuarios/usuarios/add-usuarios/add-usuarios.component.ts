@@ -101,7 +101,7 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
       this.auth.registrar({ userName, email, password }).subscribe(registrado => {
         if (registrado != null) {
           Swal.fire({
-            title: registrado.userName,
+            title: `Usuario ${userName} registrado con exito`,
             icon: "success",
             draggable: true
           });

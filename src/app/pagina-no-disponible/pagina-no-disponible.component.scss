@@ -1,0 +1,28 @@
+.container b {
+  font-size: 8vw; /* se adapta al ancho de la pantalla */
+  line-height: 1.2; /* espacio entre líneas */
+  text-align: center;
+}
+
+.container {
+  width: 90%;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-image: url('./../../assets/imagenes/venta-bolsas.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  color: white;
+  padding: 20px;
+}
+
+@media (max-width: 600px) {
+  .container b {
+    font-size: 10vw; /* más pequeño en pantallas chicas */
+  }
+}

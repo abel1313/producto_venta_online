@@ -57,3 +57,24 @@
   background-color: #f0f0f0;
 }
 
+
+.card-header b {
+  font-size: 2rem; /* tamaño base */
+}
+
+@media (max-width: 600px) {
+  .card-header b {
+    font-size: 5vw; /* se adapta al ancho de pantalla */
+  }
+  label {
+    font-size: 4vw;
+  }
+  input, button {
+    font-size: 4vw;
+  }
+}
+@media (max-width: 600px) {
+  .card {
+    padding: 1.5rem;
+  }
+}

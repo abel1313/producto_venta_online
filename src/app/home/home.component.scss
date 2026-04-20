@@ -7,3 +7,39 @@ html, body {
   height: 100%;
   overflow: hidden;
 }
+
+
+.container {
+  width: 90%;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  gap: 20px;
+  background-image: url('./../../assets/imagenes/tulipanes.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .container b {
+    font-size: 7vw; /* más pequeño en pantallas chicas */
+    line-height: 1.2; /* espacio entre líneas */
+  }
+}
+
+
+.container b:first-child {
+  font-size: 8vw; /* se adapta al ancho de pantalla */
+}
+.container b:last-child {
+  font-size: 6vw;
+}
+

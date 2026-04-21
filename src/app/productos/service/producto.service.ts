@@ -2,6 +2,7 @@ import { IDetalleVenta } from './../../ventas/venta-producto/models/detalleVenta
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models';
 import { IGastos } from 'src/app/gastos/models';
@@ -16,6 +17,7 @@ export class ProductoService {
 
     private readonly url: string = `${environment.api_Url}/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
+    private readonly microImagenes: string = `${environment.api_imagenes}/producto-imagen`;
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
     productoUpdate$ = this.productoUpdate.asObservable();
@@ -30,7 +32,9 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     getDataImg(id: number, page: number, size: number): Observable<any> {
-        return this.http.get<any>(`${this.urlImg}/${id}/detalle?size=${size}&page=${page}`);
+        return this.http.get(`${this.urlImg}/${id}/detalle?size=${size}&page=${page}`, { responseType: 'text' }).pipe(
+            map(text => JSON.parse(text.replace(/"(\w+)":\s*(\d{16,})/g, '"$1":"$2"')))
+        );
     }
 
     getDataGeneric<R>(id: number): Observable<R> {
@@ -80,6 +84,10 @@ export class ProductoService {
     // 🌐 Obtener datos
     saveRifa(det: IRifa): Observable<any> {
         return this.http.post(`${environment.api_Url}/rifa/save`, det);
+    }
+
+    deleteImagen(id: string): Observable<any> {
+        return this.http.delete(`${this.microImagenes}/${id}`);
     }
 
     agregarProducto(producto: IProductoDTOImagenes) {

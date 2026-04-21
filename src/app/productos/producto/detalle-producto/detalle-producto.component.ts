@@ -5,6 +5,7 @@ import { ProductoService } from '../../service/producto.service';
 import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-detalle-producto',
@@ -24,7 +25,8 @@ export class DetalleProductoComponent implements OnInit {
     private readonly service: ProductoService,
     public readonly serviceIcon: IconService,
     public iconImagen: IconService,
-    private readonly serviceCarrito: CarritoService
+    private readonly serviceCarrito: CarritoService,
+    private readonly confirmationService: ConfirmationService
   ) { }
 
   ngOnInit(): void {
@@ -94,6 +96,26 @@ addCarrito() {
   
 removeCarrito() {
   this.serviceCarrito.eliminarProducto(this.producto);
+}
+
+eliminarImagen(product: ProductImagenDto) {
+  this.confirmationService.confirm({
+    message: '¿Estás seguro de que deseas eliminar esta imagen?',
+    header: 'Confirmar eliminación',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Sí, eliminar',
+    rejectLabel: 'Cancelar',
+    accept: () => {
+      this.service.deleteImagen(product.idImagen!).subscribe({
+        next: () => {
+          this.productoDtoImagen = this.productoDtoImagen.filter(
+            (img: ProductImagenDto) => img.idImagen !== product.idImagen
+          );
+        },
+        error: (err) => console.error('Error al eliminar imagen', err)
+      });
+    }
+  });
 }
 
   cargaInicialCompletada = false;

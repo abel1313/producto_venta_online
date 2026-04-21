@@ -40,3 +40,103 @@
     </div>
   </div>
 </div>
+
+<!-- Buscador de Clientes -->
+<div class="card mt-4 shadow-sm">
+  <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+    <i class="pi pi-users"></i>
+    <span class="fw-semibold">Buscar clientes</span>
+  </div>
+  <div class="card-body">
+
+    <!-- Input de búsqueda -->
+    <div class="input-group mb-3">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Buscar por nombre (mínimo 3 letras)..."
+        [(ngModel)]="nombreBusqueda"
+        (input)="onInputBusqueda()"
+        (keyup.enter)="buscarClientes()"
+      />
+      <button class="btn btn-primary" type="button" (click)="buscarClientes()" [disabled]="cargandoClientes">
+        <i class="pi pi-search me-1"></i>
+        {{ cargandoClientes ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+
+    <!-- Cliente seleccionado -->
+    <div *ngIf="clienteSeleccionado" class="alert alert-success d-flex align-items-center justify-content-between mb-3" role="alert">
+      <div>
+        <i class="pi pi-check-circle me-2"></i>
+        <strong>Cliente asignado:</strong>
+        {{ clienteSeleccionado.nombrePersona }} {{ clienteSeleccionado.apeidoPaterno }} {{ clienteSeleccionado.apeidoMaterno }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado.correoElectronico }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado.numeroTelefonico }}
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-danger ms-3" (click)="limpiarClienteSeleccionado()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Tabla con paginación lazy -->
+    <p-table
+      [value]="clientes"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="sizeClientes"
+      [totalRecords]="totalClientes"
+      [rowsPerPageOptions]="[5, 10, 20]"
+      (onLazyLoad)="onLazyLoadClientes($event)"
+      [loading]="cargandoClientes"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      styleClass="p-datatable-striped p-datatable-sm p-datatable-hoverable-rows"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:5%">#</th>
+          <th style="width:19%">Nombre</th>
+          <th style="width:19%">Apellido paterno</th>
+          <th style="width:19%">Apellido materno</th>
+          <th style="width:22%">Correo electrónico</th>
+          <th style="width:12%">Teléfono</th>
+          <th style="width:4%"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-cliente>
+        <tr [class.table-success]="clienteSeleccionado?.id === cliente.id">
+          <td>{{ cliente.id }}</td>
+          <td>{{ cliente.nombrePersona }}</td>
+          <td>{{ cliente.apeidoPaterno }}</td>
+          <td>{{ cliente.apeidoMaterno }}</td>
+          <td>{{ cliente.correoElectronico }}</td>
+          <td>{{ cliente.numeroTelefonico }}</td>
+          <td>
+            <button
+              *ngIf="clienteSeleccionado?.id !== cliente.id"
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              pTooltip="Asignar al pedido"
+              tooltipPosition="left"
+              (click)="seleccionarCliente(cliente)"
+            >
+              <i class="pi pi-user-plus"></i>
+            </button>
+            <i *ngIf="clienteSeleccionado?.id === cliente.id" class="pi pi-check-circle text-success fs-5"></i>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center text-muted py-3">
+            <i class="pi pi-info-circle me-2"></i>
+            {{ nombreBusqueda ? 'No se encontraron clientes.' : 'Ingresa un nombre para buscar.' }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+  </div>
+</div>

@@ -1,10 +1,12 @@
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IDetalleProducto } from 'src/app/models';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
-import { IDetallePedidos, IDetallePedidosDTOPedido, IPedidos, IPedidosDTOPedido } from './models/index.model';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
+import { IClienteBusquedaDto, IDetallePedidos, IDetallePedidosDTOPedido, IPedidos, IPedidosDTOPedido, IPageableClientes } from './models/index.model';
 import { InitCliente } from 'src/app/clietes/mis-datos/models/inicializarClases.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { PedidosService } from 'src/app/shared/pedidos.service';
@@ -14,12 +16,26 @@ import { PedidosService } from 'src/app/shared/pedidos.service';
   templateUrl: './detalle-productos.component.html',
   styleUrls: ['./detalle-productos.component.scss']
 })
-export class DetalleProductosComponent implements OnInit {
+export class DetalleProductosComponent implements OnInit, OnDestroy {
   roles: string[] = [];
   isAdminUser: boolean = false;
   detalleProducto: IDetalleProducto[] = [];
   totalProducto: number = 0;
   idUsuario: number = 0;
+
+  // Búsqueda de clientes
+  nombreBusqueda: string = '';
+  clientes: IClienteBusquedaDto[] = [];
+  totalClientes: number = 0;
+  pageClientes: number = 0;
+  sizeClientes: number = 10;
+  cargandoClientes: boolean = false;
+  clienteSeleccionado: IClienteBusquedaDto | null = null;
+  busquedaIniciada: boolean = false;
+
+  private inputBusqueda$ = new Subject<string>();
+  private subBusqueda!: Subscription;
+
   pedido: IPedidos = {
     cliente: InitCliente.initCliente(),
     estadoPedido: 'pendiente',
@@ -61,6 +77,24 @@ export class DetalleProductosComponent implements OnInit {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
+
+    this.subBusqueda = this.inputBusqueda$.pipe(
+      filter(v => v.trim().length >= 3),
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.busquedaIniciada = true;
+      this.pageClientes = 0;
+      this.cargarClientes();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.subBusqueda?.unsubscribe();
+  }
+
+  onInputBusqueda() {
+    this.inputBusqueda$.next(this.nombreBusqueda);
   }
 
 
@@ -178,6 +212,47 @@ export class DetalleProductosComponent implements OnInit {
       });
     }
 
+  }
+
+  buscarClientes() {
+    if (!this.nombreBusqueda.trim()) return;
+    this.busquedaIniciada = true;
+    this.pageClientes = 0;
+    this.cargarClientes();
+  }
+
+  cargarClientes() {
+    this.cargandoClientes = true;
+    this.clienteServoce.buscarClientes(this.nombreBusqueda, this.pageClientes, this.sizeClientes)
+      .subscribe({
+        next: (res) => {
+          if (res?.data) {
+            this.clientes = res.data.list ?? [];
+            this.totalClientes = res.data.totalElementos ?? 0;
+          }
+          this.cargandoClientes = false;
+        },
+        error: () => {
+          this.cargandoClientes = false;
+        }
+      });
+  }
+
+  onLazyLoadClientes(event: any) {
+    if (!this.busquedaIniciada) return;
+    this.pageClientes = event.first / event.rows;
+    this.sizeClientes = event.rows;
+    this.cargarClientes();
+  }
+
+  seleccionarCliente(cliente: IClienteBusquedaDto) {
+    this.clienteSeleccionado = cliente;
+    this.pedidosDTO.cliente.id = cliente.id;
+  }
+
+  limpiarClienteSeleccionado() {
+    this.clienteSeleccionado = null;
+    this.pedidosDTO.cliente.id = 0;
   }
 
   get isAnonymous(): boolean {

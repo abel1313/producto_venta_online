@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { ProductoRoutingModule } from './producto-routing.module';
 import { AddComponent } from './add/add.component';
 import { AllComponent } from './all/all.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {MatInputModule} from '@angular/material/input';
 import { BuscaComponent } from './busca/busca.component';
 import { UpdateComponent } from './update/update.component';
@@ -22,6 +22,10 @@ import { CarouselModule } from 'primeng/carousel';
 import { TagModule } from 'primeng/tag';
 import { DetalleProductosComponent } from './detalle-productos/detalle-productos.component';
 import { TableModule } from 'primeng/table';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { PaginatorModule } from 'primeng/paginator';
 @NgModule({
   declarations: [
     AddComponent,
@@ -46,8 +50,13 @@ import { TableModule } from 'primeng/table';
     NzButtonModule,
     CarouselModule,
     TagModule,
-    TableModule
+    TableModule,
+    ConfirmDialogModule,
+    TooltipModule,
+    FormsModule,
+    PaginatorModule
   ],
+  providers: [ConfirmationService],
   exports:[
     AllComponent,
     BuscaComponent,

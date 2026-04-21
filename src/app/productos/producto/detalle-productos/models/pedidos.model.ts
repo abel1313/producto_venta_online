@@ -2,6 +2,22 @@
 import { ICliente } from "src/app/clietes/mis-datos/models/index.model";
 import { IdGenerico, IProducto } from "../../models";
 
+export interface IClienteBusquedaDto {
+  id: number;
+  nombrePersona: string;
+  apeidoPaterno: string;
+  apeidoMaterno: string;
+  correoElectronico: string;
+  numeroTelefonico: string;
+}
+
+export interface IPageableClientes {
+  list: IClienteBusquedaDto[];
+  totalPaginas: number;
+  totalElementos: number;
+  pagina: number;
+}
+
 
 export interface IPedidos extends IdGenerico{
 

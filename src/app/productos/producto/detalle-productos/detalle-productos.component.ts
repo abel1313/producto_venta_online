@@ -118,100 +118,86 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
       });
     } else {
 
-      if (this.idUsuario != 0) {
-
+      if (this.clienteSeleccionado) {
+        this.pedidosDTO.cliente.id = this.clienteSeleccionado.id;
+        this.armarYConfirmarPedido();
       } else {
-        Swal.fire({
-          title: "Usuario no encontrado",
-          icon: "error",
-          text: "El usuario no esta registrado, intente de nuevo",
-          showCancelButton: false
-        });
-      }
-      this.clienteServoce.getDataOneCliente(this.idUsuario).subscribe((dataCliente: any) => {
-
-        if (dataCliente && dataCliente.data) {
-          this.detalleProducto.forEach(fr => {
-
-            const {
-              idProducto,
-              cantidad,
-              codigoBarras,
-              precioVenta,
-              total
-            } = fr;
-
-            const datosDetalle: IDetallePedidosDTOPedido = {
-              producto: {
-                id: idProducto
-              },
-              cantidad: cantidad,
-              precioUnitario: precioVenta,
-              subTotal: total
-            }
-            this.pedidosDTO.detalles.push(datosDetalle);
-          });
-          this.pedidosDTO.cliente.id = dataCliente.data.id;
-
-
-
+        if (this.idUsuario === 0) {
           Swal.fire({
-            title: "Pedido",
-            icon: "info",
-            html: `
-        <p>Desea generar su pedido</p>
-        `,
-            showCancelButton: true,
-            confirmButtonText: "Generar pedido",
-            cancelButtonText: "Cancelar",
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33"
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.pedidosService.saveDataPedido(this.pedidosDTO).subscribe(ped => {
-                this.serviceCarrito.limpiarCarrito();
-
-                if (ped != null && ped.code == 200) {
-                  Swal.fire({
-                    title: "Pedido registrado",
-                    icon: "success",
-                    text: "Se registro su pedido con el numero de rastreo "+ ped.data.id,
-                    showCancelButton: false
-                  });
-                }
-
-              }, err => {
-                Swal.fire({
-                  title: "Error",
-                  icon: "error",
-                  text: "Ocurrio un error al guardar el pedido",
-                  showCancelButton: false
-                });
-              });
-            }
-          });
-
-
-        } else {
-          Swal.fire({
-            title: "Error",
+            title: "Usuario no encontrado",
             icon: "error",
             text: "El usuario no esta registrado, intente de nuevo",
             showCancelButton: false
           });
+          return;
         }
-
-
-      }, err => {
-        Swal.fire({
-          title: "Error",
-          icon: "error",
-          text: "Ocurrio un error ",
-          showCancelButton: false
+        this.clienteServoce.getDataOneCliente(this.idUsuario).subscribe((dataCliente: any) => {
+          if (dataCliente && dataCliente.data) {
+            this.pedidosDTO.cliente.id = dataCliente.data.id;
+            this.armarYConfirmarPedido();
+          } else {
+            Swal.fire({
+              title: "Error",
+              icon: "error",
+              text: "El usuario no esta registrado, intente de nuevo",
+              showCancelButton: false
+            });
+          }
+        }, () => {
+          Swal.fire({
+            title: "Error",
+            icon: "error",
+            text: "Ocurrio un error",
+            showCancelButton: false
+          });
         });
-      });
+      }
     }
 
+  }
+
+  private armarYConfirmarPedido() {
+    this.pedidosDTO.detalles = [];
+    this.detalleProducto.forEach(fr => {
+      this.pedidosDTO.detalles.push({
+        producto: { id: fr.idProducto },
+        cantidad: fr.cantidad,
+        precioUnitario: fr.precioVenta,
+        subTotal: fr.total
+      });
+    });
+
+    Swal.fire({
+      title: "Pedido",
+      icon: "info",
+      html: `<p>Desea generar su pedido</p>`,
+      showCancelButton: true,
+      confirmButtonText: "Generar pedido",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.pedidosService.saveDataPedido(this.pedidosDTO).subscribe(ped => {
+          this.serviceCarrito.limpiarCarrito();
+          if (ped != null && ped.code == 200) {
+            Swal.fire({
+              title: "Pedido registrado",
+              icon: "success",
+              text: "Se registro su pedido con el numero de rastreo " + ped.data.id,
+              showCancelButton: false
+            });
+          }
+        }, () => {
+          Swal.fire({
+            title: "Error",
+            icon: "error",
+            text: "Ocurrio un error al guardar el pedido",
+            showCancelButton: false
+          });
+        });
+      }
+    });
   }
 
   buscarClientes() {

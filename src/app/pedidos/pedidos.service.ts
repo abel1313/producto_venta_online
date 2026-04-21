@@ -29,6 +29,6 @@ export class PedidosService extends CrudGenericService<IPedidos> {
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {
-      return this.http.put<ResponseGeneric<IPedidoGenerico>>(`${this.url}/pedidos/update/${id}`, data);
+      return this.http.put<ResponseGeneric<IPedidoGenerico>>(`${this.url}/pedidos/confirmar/${id}`, data);
     }
 }

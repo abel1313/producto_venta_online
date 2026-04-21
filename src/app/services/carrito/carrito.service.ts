@@ -29,20 +29,27 @@ export class CarritoService {
     });
   }
 
-  agregarProducto(producto: IDetalleProducto) {
+  agregarProducto(producto: IDetalleProducto): boolean {
     const actual = this.carritoDetalle.getValue();
     const index = actual.findIndex(p => p.codigoBarras === producto.codigoBarras);
 
     if (index !== -1) {
+      if (actual[index].cantidad >= producto.stock) {
+        return false;
+      }
       actual[index].cantidad += 1;
       actual[index].total = actual[index].cantidad * actual[index].precioVenta;
     } else {
+      if (producto.stock <= 0) {
+        return false;
+      }
       producto.cantidad = 1;
       producto.total = producto.precioVenta;
       actual.push(producto);
     }
 
     this.carritoDetalle.next([...actual]);
+    return true;
   }
 
   eliminarProducto(producto: IDetalleProducto) {

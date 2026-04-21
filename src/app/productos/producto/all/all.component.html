@@ -1,7 +1,7 @@
 <div class="row p-2">
   <div class="col-6">
     <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Buscar producto 111" aria-label="Username"
+      <input type="text" class="form-control" placeholder="Buscar producto" aria-label="Username"
         aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
     </div>
   </div>
@@ -28,11 +28,24 @@
               {{item.descripcion}}
             </p>
           </mat-card-content>
-          <div class="col-12" style="margin-bottom: 8px;" type="button" >
-            <button type="button" class="btn btn-secondary col-12"  (click)="addCarrito(item)">
-             <b> Agregar al carrito  <img [src]="iconImagen.iconCarrito" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
+          <div class="col-12" style="margin-bottom: 8px;">
+            <button
+              type="button"
+              class="btn col-12"
+              [class.btn-secondary]="!stockAgotadoEnCarrito(item)"
+              [class.btn-danger]="stockAgotadoEnCarrito(item)"
+              [disabled]="stockAgotadoEnCarrito(item)"
+              (click)="addCarrito(item)"
+            >
+              <b *ngIf="!stockAgotadoEnCarrito(item)">
+                Agregar al carrito
+                <span *ngIf="cantidadEnCarrito(item) > 0">({{ cantidadEnCarrito(item) }}/{{ item.stock }})</span>
+                <img [src]="iconImagen.iconCarrito" style="width: 20px; height: 20px; margin-left: 8px;" />
+              </b>
+              <b *ngIf="stockAgotadoEnCarrito(item)">
+                Stock agotado ({{ item.stock }}/{{ item.stock }})
+              </b>
             </button>
-            
           </div>
           <div class="col-12" style="margin-bottom: 8px;" type="button" *ngIf="!isAnonymous" >
             <button type="button" class="btn btn-secondary col-12"  (click)="removeCarrito(item)"  [disabled]="!isProductoEnCarrito(item)">

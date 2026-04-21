@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { environment } from 'src/environments/environment';
+import Swal from 'sweetalert2';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -142,7 +143,23 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
       total: precioVenta
     };
 
-    this.serviceCarrito.agregarProducto(prod);
+    const agregado = this.serviceCarrito.agregarProducto(prod);
+    if (!agregado) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sin stock disponible',
+        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  }
+
+  cantidadEnCarrito(producto: IProductoDTO): number {
+    return this.detalle.find(p => p.codigoBarras === producto.codigoBarras)?.cantidad ?? 0;
+  }
+
+  stockAgotadoEnCarrito(producto: IProductoDTO): boolean {
+    return this.cantidadEnCarrito(producto) >= producto.stock;
   }
 
 

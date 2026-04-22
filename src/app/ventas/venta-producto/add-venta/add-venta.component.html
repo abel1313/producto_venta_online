@@ -1,102 +1,78 @@
+<div class="venta-layout">
 
-
-<div class="row">
-    <div class="col-4 p-2">
-        <div class="input-group mb-3">
-            <input 
-            type="text" 
-            class="form-control" 
-            placeholder="Buscar producto 000" 
-            aria-label="Username" 
-            aria-describedby="basic-addon1"
-            (keyup)="buscarProductos($event)"
-            >
-          </div>
+  <!-- ===== TABLA 1: BUSCADOR DE PRODUCTOS ===== -->
+  <div class="venta-card">
+    <div class="venta-card__header">
+      <span class="venta-card__title">Productos</span>
+      <div class="venta-card__actions">
+        <div class="input-group input-group-sm buscador-input">
+          <span class="input-group-text">🔍</span>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Buscar por nombre o código..."
+            (keyup)="buscarProductos($event)">
+        </div>
+      </div>
     </div>
+
+    <ag-grid-angular
+      [rowData]="rowsBuscador"
+      [columnDefs]="columnsBuscador"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      [suppressPaginationPanel]="false"
+      class="ag-theme-alpine venta-grid"
+      (contextmenu)="blockContextMenuBuscador($event)"
+      (cellContextMenu)="abrirMenuBuscador($event)">
+    </ag-grid-angular>
+  </div>
+
+  <!-- ===== TABLA 2: DETALLE DE VENTA ===== -->
+  <div class="venta-card mt-3">
+    <div class="venta-card__header">
+      <span class="venta-card__title">Detalle de venta</span>
+      <div class="venta-card__actions">
+        <span class="total-badge">{{ totalDetalle }}</span>
+        <button
+          class="btn btn-sm btn-success"
+          [disabled]="!disableBoton"
+          (click)="saveDetalle()">
+          💾 Guardar venta
+        </button>
+      </div>
+    </div>
+
+    <ag-grid-angular
+      [rowData]="rowsDetalle"
+      [columnDefs]="columnsDetalle"
+      [pagination]="false"
+      class="ag-theme-alpine venta-grid venta-grid--detalle"
+      (contextmenu)="blockContextMenuDetalle($event)"
+      (cellContextMenu)="abrirMenuDetalle($event)">
+    </ag-grid-angular>
+  </div>
+
 </div>
 
+<!-- ===== MENÚ CONTEXTUAL TABLA 1 ===== -->
+<div class="ctx-menu"
+  *ngIf="menuBuscadorVisible"
+  [style.left]="menuBuscadorX"
+  [style.top]="menuBuscadorY"
+  (click)="$event.stopPropagation()">
+  <button class="ctx-menu__item" (click)="agregarFilaBuscador()">
+    ➕ Agregar al detalle
+  </button>
+</div>
 
-
-<ag-grid-angular 
-  [rowData]="rowsBuscador" 
-  [columnDefs]="columnsBuscador"
-  [pagination]="false"
-  class="ag-theme-alpine"
-  [style]="{ width: styleTableWidthBuscador, height: styleTableheightBusador }" 
-  (contextmenu)="blockContextMenuBuscador($event)" 
-  (cellContextMenu)="abrirMenuBuscador($event)">
-</ag-grid-angular>
-
-<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == 1 || !paginacionBuscador " (click)="primeraPaginaBuscador()">⬅️ Primera</button>
-<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == 1 || !paginacionBuscador " (click)="paginaAnteriorBuscador()">◀️ Anterior</button>
-
-  <b class="no-select no-highlight" *ngIf="paginacionBuscador && paginacionBuscador.totalPaginas > 0  ">
-   pagina<b *ngIf="paginacionBuscador && paginacionBuscador.pagina > 1">s</b>  {{paginacionBuscador.pagina}} de {{paginacionBuscador.totalPaginas}}
-  </b>
-
-<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == paginacionBuscador?.totalPaginas" (click)="siguientePaginaBuscador()">▶️ Siguiente</button>
-<button class="btn btn-success" [disabled]="paginacionBuscador?.pagina == paginacionBuscador?.totalPaginas" (click)="ultimaPaginaBuscador()">➡️ Última</button>
-
-<!-- Botón INVISIBLE para activar el menú -->
-<button #menuTriggerBuscador mat-button [matMenuTriggerFor]="menu" 
-style="display: none;"  ></button>
-
-
-
-  
-<mat-menu #menu="matMenu">
-    <button  mat-menu-item (click)="agregarFilaBuscador()">Agregar</button>
-  </mat-menu>
-  
-
-
-
-  
-
-
-  <ag-grid-angular 
-  [rowData]="rowsDetalle" 
-  [columnDefs]="columnsDetalle"
-  [pagination]="false"
-  class="ag-theme-alpine"
-  [style]="{ width: styleTableWidthDetalle, height: styleTableheightDetalle }" 
-  (contextmenu)="blockContextMenuDetalle($event)" 
-  (cellContextMenu)="abrirMenuDetalle($event)">
-</ag-grid-angular>
-
-    <div class="row">
-        <div class="div col-8">
-            <button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="primeraPaginaDetalle()">⬅️ Primera</button>
-<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == 1 || !paginacionDetalle " (click)="paginaAnteriorDetalle()">◀️ Anterior</button>
-
-  <b class="no-select no-highlight" *ngIf="paginacionDetalle && paginacionDetalle.totalPaginas > 0  ">
-   pagina<b *ngIf="paginacionDetalle && paginacionDetalle.pagina > 1">s</b>  {{paginacionDetalle.pagina}} de {{paginacionDetalle.totalPaginas}}
-  </b>
-
-<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="siguientePaginaDetalle()">▶️ Siguiente</button>
-<button class="btn btn-success" [disabled]="paginacionDetalle?.pagina == paginacionDetalle?.totalPaginas" (click)="ultimaPaginaDetalle()">➡️ Última</button>
-
-        </div>
-
-        <div class="col-1">
-          
-          <button class="btn btn-success col-12" [disabled]="!disableBoton" (click)="saveDetalle()">save</button>
-        </div>
-
-        <div class="col-2">
-            <input type="text" class="input-group-sm col-12 text-center" readonly disabled [(ngModel)]="totalDetalle" >
-        </div>
-    </div>
-
-<!-- Botón INVISIBLE para activar el menú -->
-<button #menuTriggerDetalle mat-button [matMenuTriggerFor]="menu" 
-style="display: none;"  ></button>
-
-
-
-  
-<mat-menu #menu="matMenu">
-    <button  mat-menu-item (click)="eliminarFilaDetalle()">Agregar</button>
-  </mat-menu>
-  
-
+<!-- ===== MENÚ CONTEXTUAL TABLA 2 ===== -->
+<div class="ctx-menu"
+  *ngIf="menuDetalleVisible"
+  [style.left]="menuDetalleX"
+  [style.top]="menuDetalleY"
+  (click)="$event.stopPropagation()">
+  <button class="ctx-menu__item ctx-menu__item--danger" (click)="eliminarFilaDetalle()">
+    🗑 Eliminar del detalle
+  </button>
+</div>

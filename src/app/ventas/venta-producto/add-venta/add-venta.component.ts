@@ -1,6 +1,5 @@
-import { Component, Input, OnInit, SimpleChanges, ViewChild } from '@angular/core';
-import { MatMenuTrigger } from '@angular/material/menu';
-import { AgGridAngular } from 'ag-grid-angular';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { MaskCellRendererComponent } from './mask-cell-renderer.component';
 import { CellContextMenuEvent } from 'ag-grid-community';
 import { IProductoDTO, IProductoPaginable } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
@@ -14,456 +13,195 @@ import Swal from 'sweetalert2';
   styleUrls: ['./add-venta.component.scss']
 })
 export class AddVentaComponent implements OnInit {
-  @ViewChild(MatMenuTrigger) menuTriggerBuscador!: MatMenuTrigger;
-  @ViewChild('agGrid') agGrid!: AgGridAngular;
+
   rowsBuscador: any[] = [];
   buscarProd: string = '';
   paginacionBuscador?: IProductoPaginable<IProductoDTO[]>;
-  styleTableWidthBuscador: string = '100%';
-  styleTableheightBusador: string = '200px';
 
-  paginaPrimeraBuscador: number = 1;
-  paginaUltimaBuscador: number = 0;
-
-
-
-  @ViewChild(MatMenuTrigger) menuTriggerDetalle!: MatMenuTrigger;
   rowsDetalle: any[] = [];
-  paginacionDetalle?: IProductoPaginable<IProductoDTO[]>;
-  styleTableWidthDetalle: string = '100%';
-  styleTableheightDetalle: string = '200px';
-
-  paginaPrimeraDetalle: number = 1;
-  paginaUltimaDetalle: number = 0;
-
-
-
-  constructor(
-    private readonly service: ProductoService
-  ) { }
-
-  columnsBuscador = [
-    { field: 'nombre', headerName: 'Nombre' },
-    { field: 'codigoBarras', headerName: 'Codigo Barras' },
-    { field: 'precioVenta', headerName: 'Precio Venta' },
-    { field: 'stock', headerName: 'Stock' },
-    { field: 'piezas', headerName: 'Piezas' },
-    { field: 'color', headerName: 'Color' },
-    { field: 'precioCosto', headerName: 'Precio Costo' },
-    { field: 'precioRebaja', headerName: 'Precio Rebaja' },
-    { field: 'descripcion', headerName: 'Descripcion' },
-    { field: 'marca', headerName: 'Marca' },
-    { field: 'contenido', headerName: 'Contenido' }
-  ];
-
-
-  columnsDetalle = [
-    { field: 'nombre', headerName: 'Nombre' },
-    { field: 'descripcion', headerName: 'Descripcion' },
-    { field: 'stock', headerName: 'Stock' },
-    { field: 'precioVenta', headerName: 'Precio Venta' },
-    { field: 'codigoBarras', headerName: 'Codigo Barras' },
-    { field: 'cantidad', headerName: 'Cantidad' },
-    { field: 'subTotal', headerName: 'Sub total' }
-
-  ];
-  ngOnInit(): void {
-    this.getDataBuscador(1)
-  }
-  ngOnChangesBuscador(changes: SimpleChanges) {
-    if (changes['paginacion'] && this.paginacionBuscador?.t) {
-      this.rowsBuscador = [...this.paginacionBuscador.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
-    }
-  }
-
-
-
-  detalle: any[] = [];
-  totalDetalle: string = 'Total ';
-
-  usuario: IUsuario = {
-    nombre: '',
-  };
-  venta: IVenta = {
-    usuario: this.usuario,
-    totalVenta: 0,
-
-  }
-
-
   detalleVenta: IDetalleVenta[] = [];
-
-  agregarFilaBuscador() {
-
-    const index = this.filaSeleccionadaBuscadorIndex || 0; // Obtener el índice del producto seleccionado
-
-
-    if (index >= 0 && index < this.rowsBuscador.length) {
-      if (this.rowsBuscador[index].stock > 0) {
-        this.rowsBuscador[index].stock -= 1; // Reducir el stock correctamente
-
-        // 🔥 Forzar actualización en Ag-Grid
-        this.rowsBuscador = [...this.rowsBuscador]; // Clonar el array para que Angular detecte el cambio
-
-        if( this.rowsBuscador[index].stock == 0 ){
-        this.rowsBuscador.splice(index, 1);
-
-        // 🔥 Forzar actualización en Ag-Grid
-        this.rowsBuscador = [...this.rowsBuscador]; // Clonar el array para que Angular detecte el cambio
-        }
-      } else {
-        console.warn("No hay stock disponible para este producto.");
-  // 🗑️ Eliminar la fila del array
-
-
-        return;
-      }
-    } else {
-      console.warn("Índice fuera de rango, no se pudo modificar.");
-    }
-
-    const { nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionadaBuscador;
-
-    let canti = 1;
-    const prod: IDetalleVenta = {
-      nombre,
-      descripcion,
-      stock,
-      precioVenta,
-      codigoBarras,
-      cantidad: canti,
-      subTotal: 0
-    }
-
-    // Buscar si ya existe el producto
-    const index2 = this.detalleVenta.findIndex(item => item.codigoBarras === prod.codigoBarras && item.nombre === prod.nombre);
-
-    if (index2 !== -1) {
-      // Si existe, incrementar la cantidad y actualizar el total
-      this.detalleVenta[index2].cantidad += 1;
-    } else {
-      // Si no existe, agregarlo a la lista
-      this.detalleVenta.push(prod);
-    }
-
-    // Calcular el total de cada producto
-    this.detalleVenta.forEach(item => item.subTotal = item.cantidad * item.precioVenta);
-
-
-    this.rowsDetalle = [...this.detalleVenta];
-
-    const total = this.rowsDetalle.reduce((sum, item) => sum + item.subTotal, 0);
-    this.totalDetalle = 'Total $ ' + total;
-
-    this.disableBoton = total > 0;
-  }
-
+  totalDetalle: string = 'Total ';
   disableBoton: boolean = false;
-
-  saveDetalle(): void {
-
-    if (this.disableBoton) {
-      this.service.saveVenta(this.detalleVenta).subscribe({
-        next: (res) => {
-          Swal.fire({
-            title: "Drag me!",
-            icon: "success",
-            draggable: true
-          });
-          this.disableBoton = false;
-          this.detalleVenta = [];
-          this.totalDetalle = 'Total ';
-        },
-        error: (err) => {
-          Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: "Something went wrong!"
-          });
-        }
-      });
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Deberia ingresar productos"
-      });
-    }
-  }
-
-  eliminarFilaBuscador() {
-    this.rowsBuscador = this.rowsBuscador.filter(row => row !== this.filaSeleccionadaBuscador);
-  }
-
-
-  getDataBuscador(paginaBuscador: number) {
-    this.service.getData(paginaBuscador, 10).subscribe({
-      next: (res) => {
-        this.paginacionBuscador = res;
-        this.rowsBuscador = this.paginacionBuscador.t;
-      },
-      error: (err) => {
-        console.error('Error en la petición:', err);
-      }
-    });
-  }
 
   filaSeleccionadaBuscador: any;
   filaSeleccionadaBuscadorIndex: any;
-  blockContextMenuBuscador(event: MouseEvent) {
-    event.preventDefault(); // ✅ Bloquea el menú del navegador
-    event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
-  }
-  abrirMenuBuscador(event: CellContextMenuEvent<any>) {
+  filaSeleccionadaDetalle: any;
 
+  // ─── Menús contextuales ───────────────────────────────────────
+  menuBuscadorVisible = false;
+  menuBuscadorX = '0px';
+  menuBuscadorY = '0px';
 
+  menuDetalleVisible = false;
+  menuDetalleX = '0px';
+  menuDetalleY = '0px';
 
-
-
-    if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-      event.event.preventDefault(); // ✅ Bloquea el menú del navegador
-      event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
-
-
-      // 📌 Obtener el rectángulo de la celda seleccionada
-      const cellElement = event.event.target as HTMLElement;
-      const rect = cellElement.getBoundingClientRect();
-
-      // ✅ Definir coordenadas dinámicas
-      const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
-      const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
-
-
-      setTimeout(() => {
-        const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
-        if (overlayPane) {
-          overlayPane.style.position = 'absolute';
-          overlayPane.style.left = x;
-          overlayPane.style.top = y;
-        }
-        this.menuTriggerBuscador.openMenu();
-      }, 0);
-
-
-
-    }
-
-
-
-
-    this.filaSeleccionadaBuscador = event.data; // ✅ Obtiene la fila seleccionada
-    this.filaSeleccionadaBuscadorIndex = event.rowIndex;
-
-    //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
-
-    if (this.menuTriggerBuscador) { // ✅ Verifica que `menuTrigger` no es undefined
-
-      this.menuTriggerBuscador.openMenu();
-
-    }
-
-
-
+  @HostListener('document:click')
+  cerrarMenus() {
+    this.menuBuscadorVisible = false;
+    this.menuDetalleVisible = false;
   }
 
-  primeraPaginaBuscador(): void {
-    this.paginaPrimeraBuscador = 1;
+  // ─── Columnas ─────────────────────────────────────────────────
+  columnsBuscador = [
+    { field: 'nombre',       headerName: 'Nombre' },
+    { field: 'codigoBarras', headerName: 'Codigo Barras' },
+    { field: 'precioVenta',  headerName: 'Precio Venta' },
+    { field: 'stock',        headerName: 'Stock' },
+    { field: 'piezas',       headerName: 'Piezas' },
+    { field: 'color',        headerName: 'Color' },
+    { field: 'precioCosto',  headerName: 'Precio Costo',  cellRenderer: MaskCellRendererComponent },
+    { field: 'precioRebaja', headerName: 'Precio Rebaja', cellRenderer: MaskCellRendererComponent },
+    { field: 'descripcion',  headerName: 'Descripcion' },
+    { field: 'marca',        headerName: 'Marca' },
+    { field: 'contenido',    headerName: 'Contenido' }
+  ];
 
+  columnsDetalle = [
+    { field: 'nombre',       headerName: 'Nombre' },
+    { field: 'descripcion',  headerName: 'Descripcion' },
+    { field: 'precioVenta',  headerName: 'Precio Venta' },
+    { field: 'codigoBarras', headerName: 'Codigo Barras' },
+    { field: 'cantidad',     headerName: 'Cantidad' },
+    { field: 'subTotal',     headerName: 'Sub total' }
+  ];
 
-    this.getDataBuscador(this.paginaPrimeraBuscador);
+  constructor(private readonly service: ProductoService) {}
+
+  ngOnInit(): void {
+    this.getDataBuscador(1);
   }
-  paginaAnteriorBuscador(): void {
-    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador - 1;
-    this.getDataBuscador(this.paginaPrimeraBuscador);
 
-  }
-  siguientePaginaBuscador(): void {
-    this.paginaPrimeraBuscador = this.paginaPrimeraBuscador + 1;
-    this.getDataBuscador(this.paginaPrimeraBuscador);
+  // ─── Tabla buscador ───────────────────────────────────────────
 
+  getDataBuscador(pagina: number) {
+    this.service.getData(pagina, 10).subscribe({
+      next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },
+      error: err => console.error(err)
+    });
   }
-  ultimaPaginaBuscador(): void {
-    this.paginaUltimaBuscador = this.paginacionBuscador?.totalPaginas || 0;
-    this.paginaPrimeraBuscador = this.paginacionBuscador?.totalPaginas || 0;
-    this.getDataBuscador(this.paginaUltimaBuscador);
-  }
-
 
   buscarProductos(event: KeyboardEvent) {
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
     this.buscarProd = texto;
-
-    this.buscarPorNombreCodigoPostal(1, 10, this.buscarProd);
-
-  }
-
-
-  buscarPorNombreCodigoPostal(pagina: number, size: number, nombre: string): void {
-
-    this.service.getDataNombreCodigoBarra(pagina, size, nombre).subscribe({
-      next: (res) => {
-        this.paginacionBuscador = res;
-        this.rowsBuscador = this.paginacionBuscador.t
-      },
-      error: (err) => {
-        console.error('Error en la petición:', err);
-      }
+    this.service.getDataNombreCodigoBarra(1, 10, texto).subscribe({
+      next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },
+      error: err => console.error(err)
     });
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  ngOnChangesDetalle(changes: SimpleChanges) {
-    if (changes['paginacion'] && this.paginacionDetalle?.t) {
-      this.rowsDetalle = [...this.paginacionDetalle.t]; // 🔥 Actualiza `rows` cuando `paginacion` cambie
-    }
+  blockContextMenuBuscador(event: MouseEvent) {
+    event.preventDefault();
   }
 
+  abrirMenuBuscador(event: CellContextMenuEvent<any>) {
+    if (!(event.event instanceof MouseEvent)) return;
+    event.event.preventDefault();
+    event.event.stopPropagation();
 
+    this.filaSeleccionadaBuscador = event.data;
+    this.filaSeleccionadaBuscadorIndex = event.rowIndex;
 
+    this.menuDetalleVisible = false;
+    this.menuBuscadorX = event.event.clientX + 'px';
+    this.menuBuscadorY = event.event.clientY + 'px';
+    this.menuBuscadorVisible = true;
+  }
 
+  agregarFilaBuscador() {
+    this.menuBuscadorVisible = false;
+    const index: number = this.filaSeleccionadaBuscadorIndex ?? 0;
+
+    if (index < 0 || index >= this.rowsBuscador.length) return;
+    if (this.rowsBuscador[index].stock <= 0) {
+      Swal.fire({ icon: 'warning', title: 'Sin stock', text: 'Este producto no tiene stock disponible.' });
+      return;
+    }
+
+    this.rowsBuscador[index].stock -= 1;
+    this.rowsBuscador = [...this.rowsBuscador];
+
+    const { nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionadaBuscador;
+    const prod: IDetalleVenta = { nombre, descripcion, stock, precioVenta, codigoBarras, cantidad: 1, subTotal: 0 };
+
+    const existente = this.detalleVenta.findIndex(i => i.codigoBarras === prod.codigoBarras && i.nombre === prod.nombre);
+    if (existente !== -1) {
+      this.detalleVenta[existente].cantidad += 1;
+    } else {
+      this.detalleVenta.push(prod);
+    }
+
+    this.detalleVenta.forEach(i => i.subTotal = i.cantidad * i.precioVenta);
+    this.rowsDetalle = [...this.detalleVenta];
+    const total = this.detalleVenta.reduce((s, i) => s + i.subTotal, 0);
+    this.totalDetalle = 'Total $ ' + total.toFixed(2);
+    this.disableBoton = total > 0;
+  }
+
+  // ─── Tabla detalle ────────────────────────────────────────────
+
+  blockContextMenuDetalle(event: MouseEvent) {
+    event.preventDefault();
+  }
+
+  abrirMenuDetalle(event: CellContextMenuEvent<any>) {
+    if (!(event.event instanceof MouseEvent)) return;
+    event.event.preventDefault();
+    event.event.stopPropagation();
+
+    this.filaSeleccionadaDetalle = event.data;
+
+    this.menuBuscadorVisible = false;
+    this.menuDetalleX = event.event.clientX + 'px';
+    this.menuDetalleY = event.event.clientY + 'px';
+    this.menuDetalleVisible = true;
+  }
 
   eliminarFilaDetalle() {
-    this.rowsDetalle = this.rowsDetalle.filter(row => row !== this.filaSeleccionadaDetalle);
+    this.menuDetalleVisible = false;
+    const eliminado = this.filaSeleccionadaDetalle;
+
+    // Regresar stock a tabla 1
+    const idx = this.rowsBuscador.findIndex(r => r.codigoBarras === eliminado.codigoBarras);
+    if (idx !== -1) {
+      this.rowsBuscador[idx].stock += eliminado.cantidad;
+    } else {
+      // Si fue eliminado de la tabla porque stock llegó a 0, lo re-agrega
+      this.rowsBuscador.push({
+        nombre: eliminado.nombre,
+        descripcion: eliminado.descripcion,
+        precioVenta: eliminado.precioVenta,
+        codigoBarras: eliminado.codigoBarras,
+        stock: eliminado.cantidad
+      });
+    }
+    this.rowsBuscador = [...this.rowsBuscador];
+
+    // Quitar de detalle
+    this.detalleVenta = this.detalleVenta.filter(r => r !== eliminado);
+    this.rowsDetalle = [...this.detalleVenta];
+    const total = this.detalleVenta.reduce((s, i) => s + i.subTotal, 0);
+    this.totalDetalle = total > 0 ? 'Total $ ' + total.toFixed(2) : 'Total ';
+    this.disableBoton = total > 0;
   }
 
+  // ─── Guardar venta ────────────────────────────────────────────
 
-  getDataDetalle(paginaDetalle: number) {
-    this.service.getData(paginaDetalle, 10).subscribe({
-      next: (res) => {
-        this.paginacionDetalle = res;
-        this.rowsDetalle = this.paginacionDetalle.t;
+  saveDetalle(): void {
+    if (!this.disableBoton) {
+      Swal.fire({ icon: 'warning', title: 'Sin productos', text: 'Agrega al menos un producto.' });
+      return;
+    }
+    this.service.saveVenta(this.detalleVenta).subscribe({
+      next: () => {
+        Swal.fire({ title: 'Venta guardada correctamente', icon: 'success', draggable: true });
+        this.detalleVenta = [];
+        this.rowsDetalle  = [];
+        this.totalDetalle = 'Total ';
+        this.disableBoton = false;
+        this.getDataBuscador(1);
       },
-      error: (err) => {
-        console.error('Error en la petición:', err);
-      }
+      error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al guardar la venta.' })
     });
   }
-
-  filaSeleccionadaDetalle: any;
-  blockContextMenuDetalle(event: MouseEvent) {
-    event.preventDefault(); // ✅ Bloquea el menú del navegador
-    event.stopPropagation(); // ✅ Evita que otros eventos se propaguen
-  }
-  abrirMenuDetalle(event: CellContextMenuEvent<any>) {
-    if (event.event instanceof MouseEvent) { // ✅ Verifica que sea un evento de ratón
-      event.event.preventDefault(); // ✅ Bloquea el menú del navegador
-      event.event.stopPropagation(); // ✅ Evita que otros eventos interfieran
-
-
-      // 📌 Obtener el rectángulo de la celda seleccionada
-      const cellElement = event.event.target as HTMLElement;
-      const rect = cellElement.getBoundingClientRect();
-
-      // ✅ Definir coordenadas dinámicas
-      const x = rect.left + 'px';  // 📌 Posición horizontal según la celda seleccionada
-      const y = rect.top + 'px';   // 📌 Posición vertical alineada con la celda
-
-
-      setTimeout(() => {
-        const overlayPane = document.querySelector('.cdk-overlay-pane') as HTMLElement;
-        if (overlayPane) {
-          overlayPane.style.position = 'absolute';
-          overlayPane.style.left = x;
-          overlayPane.style.top = y;
-        }
-        this.menuTriggerDetalle.openMenu();
-      }, 0);
-
-
-
-    }
-
-
-
-
-    this.filaSeleccionadaDetalle = event.data; // ✅ Obtiene la fila seleccionada
-
-    //this.menuTrigger.openMenu(); // ✅ Abre el menú contextual
-
-    if (this.menuTriggerDetalle) { // ✅ Verifica que `menuTrigger` no es undefined
-
-      this.menuTriggerDetalle.openMenu();
-
-    }
-
-
-
-  }
-
-  primeraPaginaDetalle(): void {
-    this.paginaPrimeraDetalle = 1;
-
-
-    this.getDataDetalle(this.paginaPrimeraDetalle);
-  }
-  paginaAnteriorDetalle(): void {
-    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle - 1;
-    this.getDataDetalle(this.paginaPrimeraDetalle);
-
-  }
-  siguientePaginaDetalle(): void {
-    this.paginaPrimeraDetalle = this.paginaPrimeraDetalle + 1;
-    this.getDataDetalle(this.paginaPrimeraDetalle);
-
-  }
-  ultimaPaginaDetalle(): void {
-    this.paginaUltimaDetalle = this.paginacionDetalle?.totalPaginas || 0;
-    this.paginaPrimeraDetalle = this.paginacionDetalle?.totalPaginas || 0;
-    this.getDataDetalle(this.paginaUltimaDetalle);
-  }
-
-
-
-
-
-
-
 }

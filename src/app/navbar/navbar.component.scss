@@ -1,27 +1,164 @@
-.dropdown-item.text-danger {
-  transition: all 0.3s ease;
+/* ── CSS VARIABLES (light mode — fácil de invertir para dark) ── */
+:host {
+  --nav-bg:         #ffffff;
+  --nav-border:     #e5e7eb;
+  --nav-shadow:     0 1px 8px rgba(0,0,0,0.08);
+  --nav-text:       #374151;
+  --nav-text-hover: #6366f1;
+  --nav-active-bg:  rgba(99, 102, 241, 0.08);
+  --nav-accent:     #6366f1;          /* índigo — puedes cambiarlo */
+  --nav-accent-alt: #8b5cf6;
+
+  --dd-bg:          #ffffff;
+  --dd-border:      #e5e7eb;
+  --dd-shadow:      0 8px 24px rgba(0,0,0,0.10);
+  --dd-text:        #374151;
+  --dd-hover-bg:    rgba(99,102,241,0.07);
+  --dd-hover-text:  #4f46e5;
+
+  --btn-border:     #d1d5db;
+  --btn-text:       #6b7280;
+  --btn-hover-bg:   #f3f4f6;
+
+  --badge-bg:       #ef4444;
+  --user-name:      #6366f1;
 }
 
-.dropdown-item.text-danger:hover {
-  background-color: #f8d7da;
-  color: #a71d2a;
-  transform: scale(1.05);
+/* ── NAVBAR BASE ──────────────────────────────────── */
+nav.navbar {
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: var(--nav-shadow);
+  padding: 0 1.5rem;
+  min-height: 58px;
+  font-family: 'Poppins', sans-serif !important;
 }
 
-
-.bienvenida-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(to right, #0d6efd, #6610f2);
-  color: white;
-  padding: 10px 15px;
+/* ── LINKS PRINCIPALES ───────────────────────────── */
+.nav-link {
+  font-family: 'Poppins', sans-serif !important;
+  color: var(--nav-text) !important;
+  font-weight: 500;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 0.85rem !important;
   border-radius: 8px;
-  font-weight: bold;
-  transition: all 0.3s ease;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--nav-text-hover) !important;
+    background: var(--nav-active-bg);
+  }
+
+  &.active {
+    color: var(--nav-accent) !important;
+    font-weight: 600;
+  }
+
+  /* línea de acento bajo el link activo */
+  &.active::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: var(--nav-accent);
+    border-radius: 2px;
+    margin-top: 2px;
+  }
 }
 
-.bienvenida-banner:hover {
-  transform: scale(1.02);
+/* ── DROPDOWN MENU ───────────────────────────────── */
+.dropdown-menu {
+  font-family: 'Poppins', sans-serif !important;
+  background: var(--dd-bg);
+  border: 1px solid var(--dd-border);
+  border-radius: 12px;
+  box-shadow: var(--dd-shadow);
+  padding: 0.4rem 0;
+  min-width: 155px;
+
+  .dropdown-item {
+    font-family: 'Poppins', sans-serif !important;
+    color: var(--dd-text);
+    font-size: 0.83rem;
+    font-weight: 400;
+    padding: 0.48rem 1rem;
+    border-radius: 6px;
+    margin: 0.1rem 0.4rem;
+    width: calc(100% - 0.8rem);
+    transition: background 0.13s, color 0.13s;
+
+    &:hover {
+      background: var(--dd-hover-bg);
+      color: var(--dd-hover-text);
+    }
+
+    &.text-danger {
+      color: #ef4444 !important;
+      &:hover {
+        background: rgba(239,68,68,0.08);
+        color: #dc2626 !important;
+      }
+    }
+  }
+
+  .dropdown-divider {
+    border-color: var(--dd-border);
+    margin: 0.3rem 0;
+  }
 }
 
+/* ── BOTONES CARRITO ─────────────────────────────── */
+.btn-outline-secondary.btn-sm {
+  font-family: 'Poppins', sans-serif !important;
+  color: var(--btn-text) !important;
+  border-color: var(--btn-border) !important;
+  background: transparent !important;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 20px;
+  padding: 0.28rem 0.75rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--btn-hover-bg) !important;
+    color: var(--nav-accent) !important;
+    border-color: var(--nav-accent) !important;
+  }
+}
+
+.btn-outline-primary.btn-sm {
+  font-family: 'Poppins', sans-serif !important;
+  color: var(--nav-accent) !important;
+  border-color: var(--nav-accent) !important;
+  background: var(--nav-active-bg) !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 0.28rem 0.85rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--nav-accent) !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ── BADGE ───────────────────────────────────────── */
+.badge.bg-danger {
+  background: var(--badge-bg) !important;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.2em 0.45em;
+}
+
+/* ── NOMBRE DE USUARIO ───────────────────────────── */
+.nav-item.dropdown .nav-link strong {
+  color: var(--user-name);
+  font-weight: 600;
+}
+
+/* ── TOGGLER MÓVIL ───────────────────────────────── */
+.navbar-toggler {
+  border-color: var(--btn-border);
+}

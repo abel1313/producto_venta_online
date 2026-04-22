@@ -4,7 +4,6 @@ import { IPedidos } from '../productos/producto/detalle-productos/models/pedidos
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
-import { IPedidoQuery } from './mis-pedidos/models/IPedidoQuery.model';
 import { IPedidoGenerico } from './mis-pedidos/models/IPedidoGenerico.model';
 import { IPageable } from './mis-pedidos/models/IPageable.mode';
 
@@ -30,5 +29,9 @@ export class PedidosService extends CrudGenericService<IPedidos> {
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {
       return this.http.put<ResponseGeneric<IPedidoGenerico>>(`${this.url}/pedidos/confirmar/${id}`, data);
+    }
+
+    eliminarDetalle(pedidoId: number, productoId: number, cantidad: number = 1): Observable<ResponseGeneric<string>> {
+      return this.http.delete<ResponseGeneric<string>>(`${this.url}/pedidos/${pedidoId}/detalle/${productoId}?cantidad=${cantidad}`);
     }
 }

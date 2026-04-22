@@ -123,6 +123,21 @@
   <button class="ctx-menu__item" (click)="agregarFilaBuscador()">
     ➕ Agregar al detalle
   </button>
+  <button class="ctx-menu__item" (click)="verImagenProducto()">
+    🖼 Ver imagen
+  </button>
+</div>
+
+<!-- ===== VISOR DE IMAGEN ===== -->
+<div class="img-visor-overlay" *ngIf="mostrarVisorImagen" (click)="cerrarVisor()">
+  <div class="img-visor-box" (click)="$event.stopPropagation()">
+    <button class="img-visor-close" (click)="cerrarVisor()">✕</button>
+    <img class="img-visor-img"
+      [src]="imagenVisor"
+      [alt]="filaSeleccionadaBuscador?.nombre ?? 'Imagen'"
+      (error)="$any($event.target).src = 'assets/img/no-image.png'" />
+    <p class="img-visor-nombre">{{ filaSeleccionadaBuscador?.nombre }}</p>
+  </div>
 </div>
 
 <!-- ===== MENÚ CONTEXTUAL TABLA 2 ===== -->
@@ -131,6 +146,9 @@
   [style.left]="menuDetalleX"
   [style.top]="menuDetalleY"
   (click)="$event.stopPropagation()">
+  <button class="ctx-menu__item" (click)="verImagenDetalle()">
+    🖼 Ver imagen
+  </button>
   <button class="ctx-menu__item ctx-menu__item--danger" (click)="eliminarFilaDetalle()">
     🗑 Eliminar del detalle
   </button>

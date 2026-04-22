@@ -1,34 +1,61 @@
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <p-button label="regresar" (onClick)="irPedido()" class="w-full" styleClass="w-full"></p-button>
-        </div>
+<div class="detalle-layout">
+
+  <!-- HEADER -->
+  <div class="detalle-header">
+    <button class="btn-regresar" (click)="irPedido()">
+      ← Regresar
+    </button>
+    <div class="detalle-header__info">
+      <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
+      <span class="detalle-header__estado"
+        [class.estado--entregado]="pedido.pedido.estado_pedido === 'Entregado'"
+        [class.estado--pendiente]="pedido.pedido.estado_pedido !== 'Entregado'">
+        {{ pedido.pedido.estado_pedido }}
+      </span>
     </div>
-    <div class="row pt-3">
-        <div class="col-4" *ngFor="let item of this.pedido.pedido.detalles">
-            <p-card [style]="{ width: '25rem', overflow: 'hidden' }">
-                <ng-template pTemplate="header">
-                    <img alt="Card" class="w-full" [src]="env + item.producto"
-                        [alt]="item?.nombre_producto ?? 'Imagen sin nombre'" />
-                </ng-template>
-                <ng-template pTemplate="title">
-                    <p>
-                        Producto {{item?.nombre_producto}}
-                    </p>
-                    <br>
-                    <p>
-                        precio {{item?.precio_unitario | currency: '$'}}
-                    </p>
-                    <p>
-                        cantidad {{item.cantidad}}
-                    </p>
-                    <p>
-                        sub total {{item.sub_total}}
-                    </p>
-                </ng-template>
-                <br><br>
-                <p></p>
-            </p-card>
+    <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
+  </div>
+
+  <!-- GRID DE PRODUCTOS -->
+  <div class="detalle-grid">
+    <div class="prod-card" *ngFor="let item of pedido.pedido.detalles">
+
+      <img class="prod-card__img"
+        [src]="env + item.producto"
+        [alt]="item.nombre_producto ?? 'Producto'"
+        (error)="onImgError($event)" />
+
+      <div class="prod-card__body">
+        <p class="prod-card__nombre">{{ item.nombre_producto }}</p>
+
+        <div class="prod-card__fila">
+          <span class="prod-card__label">Precio unitario</span>
+          <span class="prod-card__valor">{{ item.precio_unitario | currency:'$' }}</span>
         </div>
+
+        <div class="prod-card__fila">
+          <span class="prod-card__label">Cantidad</span>
+          <div class="cantidad-control">
+            <button class="cantidad-btn cantidad-btn--menos"
+              (click)="reducirCantidad(item)"
+              [disabled]="eliminando.has(item)">
+              {{ eliminando.has(item) ? '…' : '−' }}
+            </button>
+            <span class="cantidad-valor">{{ item.cantidad }}</span>
+          </div>
+        </div>
+
+        <div class="prod-card__fila prod-card__fila--subtotal">
+          <span class="prod-card__label">Subtotal</span>
+          <span class="prod-card__subtotal">{{ item.sub_total | currency:'$' }}</span>
+        </div>
+      </div>
+
     </div>
+
+    <div class="detalle-vacio" *ngIf="pedido.pedido.detalles.length === 0">
+      <p>No hay productos en este pedido.</p>
+    </div>
+  </div>
+
 </div>

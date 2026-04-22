@@ -70,6 +70,33 @@ export class AddVentaComponent implements OnInit {
     { field: 'subTotal',     headerName: 'Sub total' }
   ];
 
+  // ─── Visor de imagen ─────────────────────────────────────────
+  mostrarVisorImagen = false;
+  imagenVisor = '';
+
+  verImagenProducto(): void {
+    this.menuBuscadorVisible = false;
+    this.abrirVisor(this.filaSeleccionadaBuscador);
+  }
+
+  verImagenDetalle(): void {
+    this.menuDetalleVisible = false;
+    this.abrirVisor(this.filaSeleccionadaDetalle);
+  }
+
+  private abrirVisor(fila: any): void {
+    const img = fila?.imagen;
+    this.imagenVisor = (img?.imagen && img?.contentType)
+      ? `data:${img.contentType};base64,${img.imagen}`
+      : 'assets/img/no-image.png';
+    this.mostrarVisorImagen = true;
+  }
+
+  cerrarVisor(): void {
+    this.mostrarVisorImagen = false;
+    this.imagenVisor = '';
+  }
+
   // ─── Modal de pago ───────────────────────────────────────────
   mostrarDialogoPago = false;
   opcionesEstructuradas: IOpcionPagoDto[] = [];
@@ -144,8 +171,8 @@ export class AddVentaComponent implements OnInit {
     this.rowsBuscador[index].stock -= 1;
     this.rowsBuscador = [...this.rowsBuscador];
 
-    const { nombre, descripcion, stock, precioVenta, codigoBarras } = this.filaSeleccionadaBuscador;
-    const prod: IDetalleVenta = { nombre, descripcion, stock, precioVenta, codigoBarras, cantidad: 1, subTotal: 0 };
+    const { nombre, descripcion, stock, precioVenta, codigoBarras, imagen } = this.filaSeleccionadaBuscador;
+    const prod: IDetalleVenta = { nombre, descripcion, stock, precioVenta, codigoBarras, imagen, cantidad: 1, subTotal: 0 };
 
     const existente = this.detalleVenta.findIndex(i => i.codigoBarras === prod.codigoBarras && i.nombre === prod.nombre);
     if (existente !== -1) {

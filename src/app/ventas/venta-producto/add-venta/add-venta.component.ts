@@ -5,6 +5,10 @@ import { IProductoDTO, IProductoPaginable } from 'src/app/productos/producto/mod
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IUsuario, IVenta } from '../models';
 import { IDetalleVenta } from '../models/detalleVenta.mode';
+import { PagoService } from 'src/app/pedidos/pago.service';
+import { IOpcionMesesDto, IOpcionPagoDto } from 'src/app/pedidos/mis-pedidos/models/IPago.model';
+import { IVentaDirectaRequest } from '../models/ventaDirectaRequest.model';
+import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -66,7 +70,26 @@ export class AddVentaComponent implements OnInit {
     { field: 'subTotal',     headerName: 'Sub total' }
   ];
 
-  constructor(private readonly service: ProductoService) {}
+  // ─── Modal de pago ───────────────────────────────────────────
+  mostrarDialogoPago = false;
+  opcionesEstructuradas: IOpcionPagoDto[] = [];
+  tipoPagoActivo: IOpcionPagoDto | null = null;
+  mesesSeleccionado: IOpcionMesesDto | null = null;
+  pagosYMesesId: number | null = null;
+
+  get puedeConfirmar(): boolean {
+    return this.pagosYMesesId !== null;
+  }
+
+  private usuarioId = 0;
+
+  constructor(
+    private readonly service: ProductoService,
+    private readonly pagoService: PagoService,
+    private readonly authService: AuthService
+  ) {
+    this.authService.userId$.subscribe(id => this.usuarioId = id);
+  }
 
   ngOnInit(): void {
     this.getDataBuscador(1);
@@ -185,23 +208,64 @@ export class AddVentaComponent implements OnInit {
     this.disableBoton = total > 0;
   }
 
-  // ─── Guardar venta ────────────────────────────────────────────
+  // ─── Modal de pago ───────────────────────────────────────────
 
-  saveDetalle(): void {
+  abrirDialogoPago(): void {
     if (!this.disableBoton) {
       Swal.fire({ icon: 'warning', title: 'Sin productos', text: 'Agrega al menos un producto.' });
       return;
     }
-    this.service.saveVenta(this.detalleVenta).subscribe({
+    this.resetDialogo();
+    this.pagoService.getOpcionesEstructuradas().subscribe(res => {
+      this.opcionesEstructuradas = res.data ?? [];
+      this.mostrarDialogoPago = true;
+    });
+  }
+
+  cancelarDialogoPago(): void {
+    this.mostrarDialogoPago = false;
+    this.resetDialogo();
+  }
+
+  seleccionarTipoPago(opcion: IOpcionPagoDto): void {
+    this.tipoPagoActivo = opcion;
+    this.mesesSeleccionado = null;
+    this.pagosYMesesId = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
+  }
+
+  seleccionarMeses(opcion: IOpcionMesesDto): void {
+    this.mesesSeleccionado = opcion;
+    this.pagosYMesesId = opcion.pagosYMesesId;
+  }
+
+  confirmarPago(): void {
+    this.mostrarDialogoPago = false;
+    const request: IVentaDirectaRequest = {
+      usuarioId: this.usuarioId,
+      pagosYMesesId: this.pagosYMesesId!,
+      detalles: this.detalleVenta
+    };
+    this.service.saveVenta(request).subscribe({
       next: () => {
         Swal.fire({ title: 'Venta guardada correctamente', icon: 'success', draggable: true });
         this.detalleVenta = [];
         this.rowsDetalle  = [];
         this.totalDetalle = 'Total ';
         this.disableBoton = false;
+        this.resetDialogo();
         this.getDataBuscador(1);
       },
-      error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al guardar la venta.' })
+      error: () => {
+        this.mostrarDialogoPago = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al guardar la venta.' });
+      }
     });
+  }
+
+  private resetDialogo(): void {
+    this.opcionesEstructuradas = [];
+    this.tipoPagoActivo = null;
+    this.mesesSeleccionado = null;
+    this.pagosYMesesId = null;
   }
 }

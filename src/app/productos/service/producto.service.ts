@@ -1,4 +1,4 @@
-import { IDetalleVenta } from './../../ventas/venta-producto/models/detalleVenta.mode';
+import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -48,8 +48,8 @@ export class ProductoService {
     }
 
     // 🌐 Obtener datos
-    saveVenta(det: IDetalleVenta[]): Observable<any> {
-        return this.http.post(`${environment.api_Url}/ventas/save`, det);
+    saveVenta(request: IVentaDirectaRequest): Observable<any> {
+        return this.http.post(`${environment.api_Url}/ventas/save`, request);
     }
 
     // 🌐 Obtener datos

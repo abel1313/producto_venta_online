@@ -37,7 +37,7 @@
         <button
           class="btn btn-sm btn-success"
           [disabled]="!disableBoton"
-          (click)="saveDetalle()">
+          (click)="abrirDialogoPago()">
           💾 Guardar venta
         </button>
       </div>
@@ -54,6 +54,65 @@
   </div>
 
 </div>
+
+<!-- ===== MODAL DE PAGO ===== -->
+<p-dialog
+  header="Forma de pago"
+  [(visible)]="mostrarDialogoPago"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  [closable]="true"
+  [contentStyle]="{ overflow: 'visible', padding: '1.5rem' }"
+  (onHide)="cancelarDialogoPago()">
+
+  <div class="p-fluid">
+
+    <div class="field mb-3">
+      <label class="fw-bold">Total a cobrar: {{ totalDetalle }}</label>
+    </div>
+
+    <!-- Combo 1: Forma de pago -->
+    <div class="field mb-3">
+      <label for="tipoPagoVenta">Forma de pago</label>
+      <p-dropdown
+        id="tipoPagoVenta"
+        [options]="opcionesEstructuradas"
+        [(ngModel)]="tipoPagoActivo"
+        optionLabel="formaPago"
+        placeholder="Seleccione una forma de pago"
+        (onChange)="seleccionarTipoPago(tipoPagoActivo!)"
+        appendTo="body"
+        [style]="{ width: '100%' }">
+      </p-dropdown>
+    </div>
+
+    <!-- Combo 2: Plan de meses (solo si aplica) -->
+    <div class="field mb-3" *ngIf="tipoPagoActivo?.mostrarMeses">
+      <label for="mesesVenta">Plan de pago</label>
+      <p-dropdown
+        id="mesesVenta"
+        [options]="tipoPagoActivo!.opciones"
+        [(ngModel)]="mesesSeleccionado"
+        optionLabel="descripcion"
+        placeholder="Seleccione un plan"
+        (onChange)="seleccionarMeses(mesesSeleccionado!)"
+        appendTo="body"
+        [style]="{ width: '100%' }">
+      </p-dropdown>
+    </div>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="d-flex justify-content-end gap-2">
+      <button class="btn btn-secondary" (click)="cancelarDialogoPago()">Cancelar</button>
+      <button class="btn btn-success" [disabled]="!puedeConfirmar" (click)="confirmarPago()">
+        ✅ Confirmar venta
+      </button>
+    </div>
+  </ng-template>
+
+</p-dialog>
 
 <!-- ===== MENÚ CONTEXTUAL TABLA 1 ===== -->
 <div class="ctx-menu"

@@ -14,6 +14,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BuscarGenericoComponent } from 'src/app/buscador/buscar-generico/buscar-generico.component';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
 
 
 @NgModule({
@@ -34,7 +36,8 @@ import { BuscarGenericoComponent } from 'src/app/buscador/buscar-generico/buscar
         MatButtonModule,
         HttpClientModule,
         FormsModule,
-        
+        DialogModule,
+        DropdownModule,
   ]
 })
 export class VentaProductoModule { }

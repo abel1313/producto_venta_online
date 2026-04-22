@@ -18,8 +18,7 @@ export class AuthService {
   userId$ = this.userId.asObservable();
 
   constructor(private readonly auth: AuthenticateService) {
-    const token = localStorage.getItem('token');
-    const toke1 = auth.getAccessToken();
+    const token = auth.getAccessToken();
     if (token) {
       this.setRolesFromToken(token);
     }

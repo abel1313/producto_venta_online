@@ -35,19 +35,18 @@ export class LoginFormComponent implements OnInit {
     const credentials = this.loginForm.value;
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
-        if (res != null) {
-          localStorage.setItem('token', res.token || '');
-          this.authService.setRolesFromToken(res.token || '');
-          this.router.navigate(['/productos']);
-          this.auth.setAccessToken(res.token||'');
+        const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
+        if (token) {
+          this.auth.setAccessToken(token);
+          this.authService.setRolesFromToken(token);
+          this.router.navigate(['/productos/buscar']);
         } else {
           Swal.fire({
-            title: "Usuario o contraseña incorrectas",
+            title: 'Usuario o contraseña incorrectas',
             icon: 'error',
             showConfirmButton: false
           });
         }
-
         this.errorMessage = '';
       },
       error: () => {

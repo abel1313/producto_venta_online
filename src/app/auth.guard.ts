@@ -1,29 +1,34 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { CanActivate, Router } from '@angular/router';
+import { AuthenticateService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthGuard implements CanActivate {
-  constructor(private router: Router) {}
+  constructor(
+    private readonly auth: AuthenticateService,
+    private readonly router: Router
+  ) {}
 
   canActivate(): boolean {
-    const token = localStorage.getItem('token');
+    const token = this.auth.getAccessToken();
     if (!token) {
       this.router.navigate(['/login']);
       return false;
     }
-
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const exp = payload.exp * 1000;
-
-    if (Date.now() > exp) {
-      localStorage.removeItem('token');
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (Date.now() > payload.exp * 1000) {
+        this.auth.clearAccessToken();
+        this.router.navigate(['/login']);
+        return false;
+      }
+    } catch {
+      this.auth.clearAccessToken();
       this.router.navigate(['/login']);
       return false;
     }
-    return true; // solo verifica que esté logueado y el token sea válido
+    return true;
   }
-
 }

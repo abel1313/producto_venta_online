@@ -1,6 +1,9 @@
 import { LoadingInterceptor } from './loading.interceptor';
-import { NgModule } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { AccederService } from './login/acceder.service';
+import { AuthenticateService } from './auth.service';
+import { AuthService } from './auth/auth.service';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -19,14 +22,37 @@ import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { LoadingComponent } from './loading/loading.component';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
+export function bootstrapAuth(
+  acceder: AccederService,
+  auth: AuthenticateService,
+  authService: AuthService
+): () => Promise<void> {
+  return () => new Promise<void>(resolve => {
+    acceder.refresh().subscribe({
+      next: res => {
+        auth.setAccessToken(res.accessToken);
+        authService.setRolesFromToken(res.accessToken);
+        resolve();
+      },
+      error: () => resolve()
+    });
+  });
+}
+
 @NgModule({
   providers: [
+    {
+      provide: APP_INITIALIZER,
+      useFactory: bootstrapAuth,
+      deps: [AccederService, AuthenticateService, AuthService],
+      multi: true
+    },
     {
       provide: HTTP_INTERCEPTORS,
       useClass: TokenInterceptor,
       multi: true
     },
-        {
+    {
       provide: HTTP_INTERCEPTORS,
       useClass: LoadingInterceptor,
       multi: true

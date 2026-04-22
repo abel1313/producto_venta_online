@@ -19,6 +19,14 @@ export class AccederService {
     return this.http.post<IResponseGeneric<ITokenData>>(`${environment.api_Url}/auth/login`, credentials, { withCredentials: true });
   }
 
+  refresh() {
+    return this.http.post<{ accessToken: string }>(`${environment.api_Url}/auth/refresh`, {}, { withCredentials: true });
+  }
+
+  logout() {
+    return this.http.post<void>(`${environment.api_Url}/auth/logout`, {}, { withCredentials: true });
+  }
+
   registrar(credentials: any) {
     return this.http.post<any>(`${environment.api_Url}/auth/registrar`, credentials);
   }

@@ -1,28 +1,32 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { CanActivate, Router } from '@angular/router';
+import { AuthenticateService } from '../auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SinRegistroGuard implements CanActivate {
-  constructor(private router: Router) {}
+  constructor(
+    private readonly auth: AuthenticateService,
+    private readonly router: Router
+  ) {}
 
   canActivate(): boolean {
-    const token = localStorage.getItem('token');
+    const token = this.auth.getAccessToken();
     if (!token) {
       this.router.navigate(['/login']);
       return false;
     }
 
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const roles = payload.roles || [];
-
-    if (!roles.includes('ROLE_ADMIN')) {
-      return true;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!(payload.roles || []).includes('ROLE_ADMIN')) return true;
+      this.router.navigate(['/productos/buscar']);
+      return false;
+    } catch {
+      this.auth.clearAccessToken();
+      this.router.navigate(['/login']);
+      return false;
     }
-
-    this.router.navigate(['/productos/buscar']);
-    return false;
   }
 }

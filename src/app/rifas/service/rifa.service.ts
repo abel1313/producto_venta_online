@@ -26,8 +26,8 @@ export class RifaService {
     return this.http.get<{ lista: IConcursante[] }>(`${this.url}/concursante/porRifa/${rifaId}`);
   }
 
-  getElegibles(rifaId: number): Observable<{ lista: IConcursante[] }> {
-    return this.http.get<{ lista: IConcursante[] }>(`${this.url}/concursante/elegibles/${rifaId}`);
+  getElegibles(rifaId: number): Observable<{ data: IConcursante[] }> {
+    return this.http.get<{ data: IConcursante[] }>(`${this.url}/concursante/elegibles/${rifaId}`);
   }
 
   eliminarConcursante(id: number): Observable<any> {
@@ -41,11 +41,16 @@ export class RifaService {
     );
   }
 
+  getConfiguracionesActivas(): Observable<{ data: IConfigurarRifa[] }> {
+    return this.http.get<{ data: IConfigurarRifa[] }>(`${this.url}/configurarRifa/activas`);
+  }
+
   getEstado(rifaId: number): Observable<{ data: IEstadoRifa }> {
     return this.http.get<{ data: IEstadoRifa }>(`${this.url}/ganadorRifa/estado/${rifaId}`);
   }
 
-  reiniciar(rifaId: number): Observable<any> {
-    return this.http.post(`${this.url}/ganadorRifa/reiniciar/${rifaId}`, {});
+  reiniciar(rifaId: number, completo = false): Observable<any> {
+    const params = completo ? '?completo=true' : '';
+    return this.http.post(`${this.url}/ganadorRifa/reiniciar/${rifaId}${params}`, {});
   }
 }

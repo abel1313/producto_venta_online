@@ -41,6 +41,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   sorteosRealizados: number = 0;
   eliminados: IConcursante[] = [];
 
+  // Rifas activas (para retomar)
+  rifasActivas: IConfigurarRifa[] = [];
+
   // Ruleta
   chart!: Chart;
   sorteando = false;
@@ -227,7 +230,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.rifaService.getElegibles(this.rifaConfig.id).pipe(
       switchMap(res => {
         // Guardamos elegibles pero NO tocamos el chart aún (evita que desaparezca)
-        elegibles = (res.lista ?? []).length > 0 ? res.lista : this.concursantes;
+        elegibles = (res.data ?? []).length > 0 ? res.data : this.concursantes;
         return this.rifaService.sortear(this.rifaConfig!.id!, vueltaActual, this.totalSorteos);
       })
     ).subscribe({
@@ -277,28 +280,58 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   private intentarRestaurarRifa(): void {
     const id = localStorage.getItem(this.LS_CONFIG_ID);
-    if (!id) return;
 
-    this.rifaService.getEstado(+id).subscribe({
+    if (id) {
+      this.rifaService.getEstado(+id).subscribe({
+        next: (res) => {
+          const estado = res.data;
+          if (estado.ganador) {
+            this.limpiarStorageRifa();
+            this.cargarRifasActivas();
+            return;
+          }
+          this.aplicarEstado(estado);
+          this.totalSorteos = +(localStorage.getItem(this.LS_TOTAL_SORTEOS) ?? estado.totalConcursantes ?? 1);
+        },
+        error: () => {
+          this.limpiarStorageRifa();
+          this.cargarRifasActivas();
+        },
+      });
+    } else {
+      this.cargarRifasActivas();
+    }
+  }
+
+  private cargarRifasActivas(): void {
+    this.rifaService.getConfiguracionesActivas().subscribe({
+      next: (res) => { this.rifasActivas = res.data ?? []; },
+      error: () => { this.rifasActivas = []; },
+    });
+  }
+
+  retomarRifa(config: IConfigurarRifa): void {
+    this.rifaService.getEstado(config.id!).subscribe({
       next: (res) => {
         const estado = res.data;
-
-        if (estado.ganador) {
-          this.limpiarStorageRifa();
-          return;
-        }
-
-        this.rifaConfig = estado.configurarRifa;
-        this.concursantes = estado.elegibles ?? [];
-        this.eliminados = estado.descartados ?? [];
-        this.sorteosRealizados = Math.max(0, estado.vueltaActual - 1);
-        this.totalSorteos = +(localStorage.getItem(this.LS_TOTAL_SORTEOS) ?? estado.totalConcursantes ?? 1);
-        this.paso = 'concursantes';
-        this.suscribirWebSocket();
-        setTimeout(() => this.generarRuleta(), 150);
+        this.aplicarEstado(estado);
+        this.totalSorteos = estado.totalConcursantes ?? 1;
+        localStorage.setItem(this.LS_CONFIG_ID, String(config.id));
+        localStorage.setItem(this.LS_TOTAL_SORTEOS, String(this.totalSorteos));
       },
-      error: () => this.limpiarStorageRifa(),
+      error: (e) => console.error(e),
     });
+  }
+
+  private aplicarEstado(estado: any): void {
+    this.rifaConfig = estado.configurarRifa;
+    this.concursantes = estado.elegibles ?? [];
+    this.eliminados = estado.descartados ?? [];
+    this.sorteosRealizados = Math.max(0, (estado.vueltaActual ?? 1) - 1);
+    this.ganador = estado.ganador ?? null;
+    this.paso = 'concursantes';
+    this.suscribirWebSocket();
+    setTimeout(() => this.generarRuleta(), 150);
   }
 
   private limpiarStorageRifa(): void {
@@ -306,24 +339,49 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     localStorage.removeItem(this.LS_TOTAL_SORTEOS);
   }
 
-  reiniciarRifa(): void {
+  nuevaRifa(): void {
+    this.rifaConfig = null;
+    this.productoSeleccionado = null;
+    this.concursantes = [];
+    this.eliminados = [];
+    this.sorteosRealizados = 0;
+    this.totalSorteos = 1;
+    this.ganador = null;
+    this.descartadoActual = null;
+    this.confettiPieces = [];
+    this.chart?.destroy();
+    this.wsUnsub?.();
+    this.wsUnsub = null;
+    this.limpiarStorageRifa();
+    this.configForm.reset();
+    this.paso = 'configurar';
+  }
+
+  reiniciarRifa(completo = false): void {
     if (!this.rifaConfig?.id) return;
 
-    this.rifaService.reiniciar(this.rifaConfig.id).subscribe({
+    this.rifaService.reiniciar(this.rifaConfig.id, completo).subscribe({
       next: () => {
-        this.rifaService.getEstado(this.rifaConfig!.id!).subscribe({
-          next: (res) => {
-            const estado = res.data;
-            this.concursantes = estado.elegibles ?? [];
-            this.eliminados = estado.descartados ?? [];
-            this.sorteosRealizados = 0;
-            this.ganador = null;
-            this.descartadoActual = null;
-            this.confettiPieces = [];
-            this.actualizarRuleta();
-          },
-          error: (e) => console.error(e),
-        });
+        this.sorteosRealizados = 0;
+        this.ganador = null;
+        this.descartadoActual = null;
+        this.confettiPieces = [];
+        this.eliminados = [];
+
+        if (completo) {
+          // Borra concursantes también — la ruleta queda vacía
+          this.concursantes = [];
+          this.chart?.destroy();
+        } else {
+          // Mantiene concursantes: recarga elegibles del back
+          this.rifaService.getElegibles(this.rifaConfig!.id!).subscribe({
+            next: (res) => {
+              this.concursantes = res.data ?? [];
+              this.actualizarRuleta();
+            },
+            error: (e) => console.error(e),
+          });
+        }
       },
       error: (e) => console.error(e),
     });

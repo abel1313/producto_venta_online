@@ -29,7 +29,7 @@
             <div mat-card-avatar class="example-header-image"></div>
             <mat-card-title>Nombre del producto <p><b>{{item.nombre}}</b></p>
             </mat-card-title>
-            <mat-card-subtitle>Codigo de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
+            <mat-card-subtitle>Código de barra <b>{{item.codigoBarras}}</b> </mat-card-subtitle>
             <mat-card-subtitle>Precio de <b>{{item.nombre}} {{item.precioVenta | currency}}</b> </mat-card-subtitle>
           </mat-card-header>
           <img style="height: 80%;" class="mx-auto img-producto" mat-card-image
@@ -91,7 +91,7 @@
     Anterior</button>
 
   <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
-    pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
+    Página<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
   </b>
 
   <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"

@@ -9,7 +9,7 @@
 
                 <div class="row">
                     <div class="col-6">
-                        <label for="descripcionGasto">Descripcion gasto:</label>
+                        <label for="descripcionGasto">Descripción del gasto:</label>
                         <input id="descripcionGasto" formControlName="descripcionGasto" class="form-control">
                         
                         <div *ngIf="formGastos.get('descripcionGasto')?.invalid && formGastos.get('descripcionGasto')?.touched">
@@ -20,13 +20,13 @@
 
                     </div>
                     <div class="col-6">
-                        <label for="precioGasto">Precio al que se compro:</label>
+                        <label for="precioGasto">Precio al que se compró:</label>
                         <input id="precioGasto" formControlName="precioGasto" class="form-control">
                         
                         <div *ngIf="formGastos.get('precioGasto')?.invalid && formGastos.get('precioGasto')?.touched">
                           <small class="text-danger">Campo requerido</small>
                         </div>
-                          <small class="text-danger" *ngIf="formGastos.get('precioGasto')?.errors?.['pattern']">Ingrese solo numeros</small>
+                          <small class="text-danger" *ngIf="formGastos.get('precioGasto')?.errors?.['pattern']">Ingrese solo números</small>
                     </div>
                 </div>
 

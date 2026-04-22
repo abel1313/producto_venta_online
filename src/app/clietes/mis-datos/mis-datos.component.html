@@ -48,7 +48,7 @@
                             <div class="p-float-label pt-4">
                                 <input pInputText class="col-sm-12 col-ml-12" id="apeidoPaterno"
                                     formControlName="apeidoPaterno" />
-                                <label for="apeidoPaterno">Apeido paterno</label>
+                                <label for="apeidoPaterno">Apellido paterno</label>
                                 <div>
                                     <small
                                         *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched"
@@ -74,7 +74,7 @@
                             <div class="p-float-label pt-4">
                                 <input pInputText class="col-sm-12 col-ml-12" id="apeidoMaterno"
                                     formControlName="apeidoMaterno" />
-                                <label for="apeidoMaterno">Apeido materno</label>
+                                <label for="apeidoMaterno">Apellido materno</label>
                                 <div>
                                     <small
                                         *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && formDatosCliente.get('apeidoMaterno')?.touched"
@@ -112,7 +112,7 @@
                         <div class="col-4">
                             <div class="p-float-label pt-4">
 
-                                <nb-select placeholder="Seleccione una opcion" class="col-sm-12" formControlName="sexo">
+                                <nb-select placeholder="Seleccione una opción" class="col-sm-12" formControlName="sexo">
                                     <nb-option value="Hombre">Hombre</nb-option>
                                     <nb-option value="Mujer">Mujer</nb-option>
                                     <nb-option value="Otro">Otro</nb-option>
@@ -132,7 +132,7 @@
                             <div class="p-float-label pt-4">
                                 <input pInputText class="col-sm-12 col-ml-12" id="correo"
                                     formControlName="correoElectronico" />
-                                <label for="correo">Correo electronico</label>
+                                <label for="correo">Correo electrónico</label>
                                 <div>
                                     <small
                                         *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched"
@@ -154,7 +154,7 @@
                             <div class="p-float-label pt-4">
                                 <input pInputText class="col-sm-12 col-ml-12" id="numeroTelefonico"
                                     formControlName="numeroTelefonico" />
-                                <label for="numeroTelefonico">Numero de contacto</label>
+                                <label for="numeroTelefonico">Número de contacto</label>
                                 <div>
                                     <small
                                         *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched"
@@ -217,7 +217,7 @@
                                     <div class="p-float-label">
                                         <input pInputText id="municipio{{i}}" class="col-sm-12"
                                             formControlName="municipio" />
-                                        <label for="municipio{{i}}">municipio</label>
+                                        <label for="municipio{{i}}">Municipio</label>
                                     </div>
                                     <small
                                         *ngIf="direccion.get('municipio')?.invalid && direccion.get('municipio')?.touched"
@@ -249,7 +249,7 @@
                                     <div class="p-float-label">
                                         <input pInputText id="cp{{i}}" class="col-sm-12" formControlName="codigoPostal"
                                             (blur)="getCodigoPostal($event, i)" />
-                                        <label for="cp{{i}}">Codigo postal</label>
+                                        <label for="cp{{i}}">Código postal</label>
                                     </div>
 
                                     <small
@@ -269,7 +269,7 @@
                                         <textarea rows="5" id="referencias{{i}}" class="col-sm-12" cols="30" pTextarea
                                             formControlName="referencias"
                                             style="color: #000; background-color: #fff;"></textarea>
-                                        <label for="referencias{{i}}">referencias</label>
+                                        <label for="referencias{{i}}">Referencias</label>
                                     </div>
                                 </div>
 

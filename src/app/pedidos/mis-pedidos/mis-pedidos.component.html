@@ -2,7 +2,7 @@
 
     <div class="row p-2">
         <div class="col-6">
-            <label for="buscar-pedido">Ingrese el numero del pedido</label>
+            <label for="buscar-pedido">Ingrese el número del pedido</label>
             <div class="input-group mb-3">
                 <input type="text" class="form-control" placeholder="Buscar pedido" aria-label="pedido"
                     aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
@@ -30,7 +30,7 @@
 
                             <p>Nombre cliente <b>{{item.cliente.nombreCliente}}</b></p>
                             <p>Correo <b>{{item.cliente.correoElectronico}}</b></p>
-                            <p>Numero telefono <b>{{item.cliente.numeroTelefonico}}</b></p>
+                            <p>Número de teléfono <b>{{item.cliente.numeroTelefonico}}</b></p>
                             <br><br>
                             <p>{{ item.pedido.fecha_pedido | fechaEspanol }}</p>
                             <b>Este es el total de este pedido: {{ item.pedido.detalles | totalPedido | currency: '$' }}</b>

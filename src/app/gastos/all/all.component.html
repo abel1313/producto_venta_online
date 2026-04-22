@@ -21,7 +21,7 @@
       Anterior</button>
 
     <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
-      pagina<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
+      Página<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
     </b>
 
     <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"

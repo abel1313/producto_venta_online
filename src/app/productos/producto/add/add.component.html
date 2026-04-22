@@ -21,7 +21,7 @@
 
           </div>
           <div class="col-12 col-md-6">
-            <label for="precioCosto">Precio al que se compro:</label>
+            <label for="precioCosto">Precio al que se compró:</label>
             <input id="precioCosto" formControlName="precioCosto" class="form-control" inputmode="decimal" step="0.01">
 
             <div *ngIf="formProductos.get('precioCosto')?.invalid && formProductos.get('precioCosto')?.touched">
@@ -92,7 +92,7 @@
 
         <div class="row mt-2">
           <div class="col-12 col-md-6">
-            <label for="descripcion">Descripcion:</label>
+            <label for="descripcion">Descripción:</label>
             <input id="descripcion" formControlName="descripcion" class="form-control">
 
             <div *ngIf="formProductos.get('descripcion')?.invalid && formProductos.get('descripcion')?.touched">
@@ -159,7 +159,7 @@
         <div class="row mt-2">
 
           <div class="col-12 col-md-4">
-            <label for="sinCodigo">Sin Codigo de Barra:</label>
+            <label for="sinCodigo">Sin Código de Barra:</label>
             <div class="input-group-text">
               <input type="checkbox" formControlName="sinCodigoBarra" aria-label="Checkbox for following text input">
             </div>
@@ -167,7 +167,7 @@
 
 
           <div class="col-12 col-md-8">
-            <label for="codigoBarras">Codigo de Barra</label>
+            <label for="codigoBarras">Código de Barra</label>
             <input id="codigoBarras" formControlName="codigoBarras" class="form-control">
 
             <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">

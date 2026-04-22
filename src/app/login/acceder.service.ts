@@ -20,7 +20,7 @@ export class AccederService {
   }
 
   refresh() {
-    return this.http.post<{ accessToken: string }>(`${environment.api_Url}/auth/refresh`, {}, { withCredentials: true });
+    return this.http.post<any>(`${environment.api_Url}/auth/refresh`, {}, { withCredentials: true });
   }
 
   logout() {

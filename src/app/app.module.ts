@@ -29,9 +29,12 @@ export function bootstrapAuth(
 ): () => Promise<void> {
   return () => new Promise<void>(resolve => {
     acceder.refresh().subscribe({
-      next: res => {
-        auth.setAccessToken(res.accessToken);
-        authService.setRolesFromToken(res.accessToken);
+      next: (res: any) => {
+        const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.data?.accessToken ?? res?.token ?? '';
+        if (token) {
+          auth.setAccessToken(token);
+          authService.setRolesFromToken(token);
+        }
         resolve();
       },
       error: () => resolve()

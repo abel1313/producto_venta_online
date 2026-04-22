@@ -5,6 +5,8 @@ import { ClienteService } from 'src/app/clietes/cliente.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPageable } from './models/IPageable.mode';
+import { PagoService } from '../pago.service';
+import { IOpcionMesesDto, IOpcionPagoDto } from './models/IPago.model';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -20,24 +22,31 @@ export class MisPedidosComponent implements OnInit {
   pedidoGenerico: IPedidoGenerico[] = [];
   resposeGenericPedido: ResponseGeneric<IPageable<IPedidoGenerico[]>> = {
     code: 0,
-    data: {
-      list: [],
-      totalPaginas: 0
-    },
+    data: { list: [], totalPaginas: 0 },
     lista: [],
     mensaje: ''
-  }
+  };
   idUsuario: number = 0;
   clienteId: number = 0;
-  constructor(private readonly pedidoService: PedidosService,
+
+  // --- Diálogo de cobro ---
+  mostrarDialogoCobro: boolean = false;
+  pedidoACobrar: IPedidoGenerico | null = null;
+
+  opcionesEstructuradas: IOpcionPagoDto[] = [];
+  tipoPagoActivo: IOpcionPagoDto | null = null;
+  mesesSeleccionado: IOpcionMesesDto | null = null;
+  pagosYMesesId: number | null = null;
+
+  constructor(
+    private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
-    private readonly authService: AuthService) { }
+    private readonly authService: AuthService,
+    private readonly pagoService: PagoService
+  ) {}
 
   ngOnInit(): void {
-
-    this.authService.userId$.subscribe(idUser => {
-      this.idUsuario = idUser;
-    });
+    this.authService.userId$.subscribe(idUser => { this.idUsuario = idUser; });
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
@@ -47,106 +56,108 @@ export class MisPedidosComponent implements OnInit {
       this.buscarPedidoAdmin();
     } else {
       this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
-     
         if (data && data.data) {
           this.clienteId = data.data.id;
           this.page = 0;
           this.size = 10;
-          this.cargarMasPedidos()
+          this.cargarMasPedidos();
         }
       });
     }
-
-
   }
 
   item: IPedidoGenerico = {
-    cliente: {
-      id: 0,
-      correoElectronico: '',
-      nombreCliente: '',
-      numeroTelefonico: ''
-    },
-    pedido: {
-      detalles: [],
-      estado_pedido: '',
-      fecha_pedido: '',
-      id: 0
-    }
+    cliente: { id: 0, correoElectronico: '', nombreCliente: '', numeroTelefonico: '' },
+    pedido: { detalles: [], estado_pedido: '', fecha_pedido: '', id: 0 }
   };
 
   irDetalle(item: IPedidoGenerico) {
-
     this.mostrarDetalle = true;
     this.item = item;
   }
+
   cancelarPedido(item: IPedidoGenerico) {
     Swal.fire({
-      title: "Cancelar pedido",
-      icon: "error",
-      html: `
-            <p>Desea cancelar el pedido ${item.pedido.id}</p>
-            `,
+      title: 'Cancelar pedido',
+      icon: 'error',
+      html: `<p>Desea cancelar el pedido ${item.pedido.id}</p>`,
       showCancelButton: true,
-      confirmButtonText: "Confirmar",
-      cancelButtonText: "No",
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33"
-    }).then((result) => {
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'No',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33'
+    }).then(result => {
       if (result.isConfirmed) {
-        this.pedidoService.deleteData(item.pedido.id).subscribe(dell => {
-          this.page = 0;
-          this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
-          Swal.fire({
-            title: "El pedido se cancelo correctamente",
-            icon: 'success',
-            draggable: true
-          });
-        }, err => {
-          Swal.fire({
-            title: "Ocurrio un error al eliminar el pedido, intente de nuevo",
-            icon: 'error',
-            draggable: true
-          });
-        });
+        this.pedidoService.deleteData(item.pedido.id).subscribe(
+          () => {
+            this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
+            Swal.fire({ title: 'El pedido se cancelo correctamente', icon: 'success', draggable: true });
+          },
+          () => Swal.fire({ title: 'Ocurrio un error al eliminar el pedido, intente de nuevo', icon: 'error', draggable: true })
+        );
       }
     });
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    this.pedidoACobrar = item;
+    this.resetDialogo();
 
-
-    Swal.fire({
-      title: "Cancelar pedido",
-      icon: "error",
-      html: `
-            <p>Desea cancelar el pedido ${item.pedido.id}</p>
-            `,
-      showCancelButton: true,
-      confirmButtonText: "Confirmar",
-      cancelButtonText: "No",
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        item.pedido.estado_pedido = 'confirmado';
-        this.pedidoService.updateService(item.pedido.id, item).subscribe(dell => {
-          this.page = 0;
-          this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
-          Swal.fire({
-            title: "El pedido se cancelo correctamente",
-            icon: 'success',
-            draggable: true
-          });
-        }, err => {
-          Swal.fire({
-            title: "Ocurrio un error al eliminar el pedido, intente de nuevo",
-            icon: 'error',
-            draggable: true
-          });
-        });
-      }
+    this.pagoService.getOpcionesEstructuradas().subscribe(res => {
+      this.opcionesEstructuradas = res.data ?? [];
+      this.mostrarDialogoCobro = true;
     });
+  }
+
+  seleccionarTipoPago(opcion: IOpcionPagoDto) {
+    this.tipoPagoActivo = opcion;
+    this.mesesSeleccionado = null;
+
+    if (!opcion.mostrarMeses) {
+      this.pagosYMesesId = opcion.pagosYMesesId;
+    } else {
+      this.pagosYMesesId = null;
+    }
+  }
+
+  seleccionarMeses(opcion: IOpcionMesesDto) {
+    this.mesesSeleccionado = opcion;
+    this.pagosYMesesId = opcion.pagosYMesesId;
+  }
+
+  confirmarCobro() {
+    if (!this.pedidoACobrar) return;
+
+    const item = this.pedidoACobrar;
+    item.pedido.estado_pedido = 'Entregado';
+    item.pagosYMesesId = this.pagosYMesesId ?? 0;
+    this.pedidoService.updateService(item.pedido.id, item).subscribe(
+      () => {
+        this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
+        this.mostrarDialogoCobro = false;
+        Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+      },
+      () => {
+        this.mostrarDialogoCobro = false;
+        Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', icon: 'error', draggable: true });
+      }
+    );
+  }
+
+  cancelarDialogo() {
+    this.mostrarDialogoCobro = false;
+    this.resetDialogo();
+  }
+
+  private resetDialogo() {
+    this.opcionesEstructuradas = [];
+    this.tipoPagoActivo = null;
+    this.mesesSeleccionado = null;
+    this.pagosYMesesId = null;
+  }
+
+  get puedeConfirmar(): boolean {
+    return this.pagosYMesesId !== null;
   }
 
   page = 0;
@@ -156,77 +167,56 @@ export class MisPedidosComponent implements OnInit {
   onScroll(event: any): void {
     const element = event.target;
     const atBottom = element.scrollHeight - element.scrollTop === element.clientHeight;
-
     if (atBottom && !this.cargando) {
-      if (this.isAdminUser) {
-
-      } else {
-        this.cargarMasPedidos();
-      }
+      if (!this.isAdminUser) this.cargarMasPedidos();
     }
   }
+
   totalPaginas: number = 0;
+
   cargarMasPedidos(): void {
-
     if (this.page <= this.totalPaginas) {
-
       this.cargando = true;
       this.cargarPedidosDesdeBase();
     }
   }
 
   cargarPedidosDesdeBase() {
-    this.pedidoService.getDataOnePedido(this.clienteId, this.size, this.page)
-      .subscribe(sus => {
+    this.pedidoService.getDataOnePedido(this.clienteId, this.size, this.page).subscribe(
+      sus => {
         this.resposeGenericPedido = sus;
-        this.pedidoGenerico.push(...this.resposeGenericPedido.data?.list || []);
+        this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
         this.page++;
         this.cargando = false;
-
-      }, err => {
-        console.error(err);
-      });
+      },
+      err => console.error(err)
+    );
   }
 
   buscarProductos(event: KeyboardEvent) {
-
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
     this.buscarProd = texto;
 
     if (this.isAdminUser) {
       this.buscarPedidoAdmin();
-
     } else {
-      if (this.buscarProd == '') {
-        this.cargarMasPedidos()
+      if (this.buscarProd === '') {
+        this.cargarMasPedidos();
       } else {
-
-        let pedido = 0;
-        if (!isNaN(Number(this.buscarProd))) {
-          pedido = Number(this.buscarProd);
-
+        const pedido = Number(this.buscarProd);
+        if (!isNaN(pedido) && pedido > 0) {
           this.cargando = true;
-          this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0)
-            .subscribe(sus => {
+          this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0).subscribe(
+            sus => {
               this.resposeGenericPedido = sus;
-             
-
               this.pedidoGenerico = this.resposeGenericPedido.data?.list || [];
               this.page++;
               this.cargando = false;
-
-            }, err => {
-              console.error(err);
-            });
-
-
+            },
+            err => console.error(err)
+          );
         } else {
-          Swal.fire({
-            title: 'Ingrese el numero de pedido',
-            icon: 'info',
-            draggable: false
-          });
-          return;
+          Swal.fire({ title: 'Ingrese el numero de pedido', icon: 'info', draggable: false });
         }
       }
     }
@@ -239,15 +229,12 @@ export class MisPedidosComponent implements OnInit {
   buscarPedidoAdmin() {
     this.size = 10;
     this.page = 0;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd == '' ? 'vacio' : this.buscarProd, this.size, this.page)
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd === '' ? 'vacio' : this.buscarProd, this.size, this.page)
       .subscribe(sus => {
         this.resposeGenericPedido = sus;
-        this.pedidoGenerico.push(...this.resposeGenericPedido.data?.list || []);
+        this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
         this.page++;
         this.cargando = false;
-
-      }, err => {
-        console.error(err);
-      });
+      }, err => console.error(err));
   }
 }

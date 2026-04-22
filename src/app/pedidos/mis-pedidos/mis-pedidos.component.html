@@ -23,8 +23,7 @@
                             <ng-template pTemplate="title">Pedido {{ item.pedido.id }}</ng-template>
 
                             <ng-template pTemplate="subtitle">
-                                <p
-                                    [ngClass]="{ 'text-success': item.pedido.estado_pedido === 'Entregado', 'text-danger': item.pedido.estado_pedido !== 'Entregado' }">
+                                <p [ngClass]="{ 'text-success': item.pedido.estado_pedido === 'Entregado', 'text-danger': item.pedido.estado_pedido !== 'Entregado' }">
                                     Estatus {{ item.pedido.estado_pedido }}
                                 </p>
                             </ng-template>
@@ -34,37 +33,25 @@
                             <p>Numero telefono <b>{{item.cliente.numeroTelefonico}}</b></p>
                             <br><br>
                             <p>{{ item.pedido.fecha_pedido | fechaEspanol }}</p>
-                            <b>Este es el total de este pedido: {{ item.pedido.detalles | totalPedido | currency: '$'
-                                }}</b>
+                            <b>Este es el total de este pedido: {{ item.pedido.detalles | totalPedido | currency: '$' }}</b>
 
                             <ng-template pTemplate="footer">
-
                                 <div class="row">
-
                                     <div class="col-4">
-
                                         <button type="button" class="btn btn-secondary col-12"
                                             (click)="irDetalle(item)">ver detalle</button>
-
                                     </div>
-                                    <div class="col-4" *ngIf="isAdminUser ">
+                                    <div class="col-4" *ngIf="isAdminUser">
                                         <button class="btn btn-success col-12"
                                             [disabled]="item.pedido.estado_pedido == 'Entregado'"
-                                            (click)="cobrarAdmin(item)">cobrar </button>
-
-
+                                            (click)="cobrarAdmin(item)">cobrar</button>
                                     </div>
                                     <div class="col-4">
-
                                         <button class="btn btn-danger col-12"
                                             [disabled]="item.pedido.estado_pedido == 'Entregado'"
-                                            (click)="cancelarPedido(item)">cancelar
-                                            pedido</button>
+                                            (click)="cancelarPedido(item)">cancelar pedido</button>
                                     </div>
-
-
                                 </div>
-
                             </ng-template>
                         </p-card>
                     </div>
@@ -74,6 +61,57 @@
     </div>
 
 </div>
+
+<!-- Diálogo de cobro -->
+<p-dialog header="Cobrar pedido" [(visible)]="mostrarDialogoCobro"
+    [modal]="true" [style]="{ width: '520px' }" [closable]="true"
+    [contentStyle]="{ overflow: 'visible', padding: '1.5rem' }"
+    (onHide)="cancelarDialogo()">
+
+    <div class="p-fluid" *ngIf="pedidoACobrar">
+
+        <div class="field mb-3">
+            <label><b>Pedido #{{ pedidoACobrar.pedido.id }}</b></label>
+        </div>
+
+        <!-- Combo 1: Forma de pago -->
+        <div class="field mb-3">
+            <label for="tipoPago">Forma de pago</label>
+            <p-dropdown id="tipoPago"
+                [options]="opcionesEstructuradas"
+                [(ngModel)]="tipoPagoActivo"
+                optionLabel="formaPago"
+                placeholder="Seleccione una forma de pago"
+                (onChange)="seleccionarTipoPago(tipoPagoActivo!)"
+                appendTo="body"
+                [style]="{ width: '100%' }">
+            </p-dropdown>
+        </div>
+
+        <!-- Combo 2: Plan de meses (solo si el tipo seleccionado lo requiere) -->
+        <div class="field mb-3" *ngIf="tipoPagoActivo?.mostrarMeses">
+            <label for="meses">Plan de pago</label>
+            <p-dropdown id="meses"
+                [options]="tipoPagoActivo!.opciones"
+                [(ngModel)]="mesesSeleccionado"
+                optionLabel="descripcion"
+                placeholder="Seleccione un plan"
+                (onChange)="seleccionarMeses(mesesSeleccionado!)"
+                appendTo="body"
+                [style]="{ width: '100%' }">
+            </p-dropdown>
+        </div>
+
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-secondary" (click)="cancelarDialogo()">Cancelar</button>
+            <button class="btn btn-success" [disabled]="!puedeConfirmar" (click)="confirmarCobro()">Confirmar cobro</button>
+        </div>
+    </ng-template>
+
+</p-dialog>
 
 <app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item"
     (regresarProductos)="mostrarProductos($event)"></app-detalle-pedido>

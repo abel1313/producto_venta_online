@@ -1,5 +1,5 @@
 import { IDetalleProducto } from 'src/app/models';
-import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { CellContextMenuEvent } from 'ag-grid-community';
 import { ProductoService } from '../../service/producto.service';
@@ -13,6 +13,7 @@ import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -22,6 +23,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
 
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   @ViewChild('agGrid') agGrid!: AgGridAngular;
+  @ViewChild('videoScanner') videoScanner!: ElementRef<HTMLVideoElement>;
   @Input() buscar?: string;
   @Input() paginacion?: IProductoPaginable<IProductoDTO[]>;
   @Input() itemAgregar?: string;
@@ -361,6 +363,40 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
    */
 
   buscarProd: string = '';
+
+  // --- Escáner de cámara ---
+  escaneando = false;
+  private controlesEscaner: IScannerControls | null = null;
+
+  async iniciarEscaner() {
+    this.escaneando = true;
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      const reader = new BrowserMultiFormatReader();
+      this.controlesEscaner = await reader.decodeFromVideoDevice(
+        undefined,
+        this.videoScanner.nativeElement,
+        (result, _err, controls) => {
+          if (result) {
+            const codigo = result.getText();
+            this.buscarProd = codigo;
+            this.buscarProductoSinKey(1, codigo);
+            controls.stop();
+            this.escaneando = false;
+          }
+        }
+      );
+    } catch {
+      Swal.fire({ icon: 'error', title: 'No se pudo acceder a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.' });
+      this.escaneando = false;
+    }
+  }
+
+  detenerEscaner() {
+    this.controlesEscaner?.stop();
+    this.controlesEscaner = null;
+    this.escaneando = false;
+  }
 }
 
 

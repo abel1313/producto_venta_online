@@ -1,9 +1,21 @@
 <div class="row p-2">
   <div class="col-6">
     <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Buscar producto" aria-label="Username"
-        aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
+      <input type="text" class="form-control" placeholder="Buscar producto o código de barras"
+        aria-label="buscar" [(ngModel)]="buscarProd" (keyup)="buscarProductos($event)">
+      <button class="btn btn-outline-secondary" type="button" (click)="iniciarEscaner()" title="Escanear código de barras">
+        📷
+      </button>
     </div>
+  </div>
+</div>
+
+<!-- Escáner de cámara -->
+<div class="scanner-overlay" *ngIf="escaneando">
+  <div class="scanner-box">
+    <video #videoScanner class="scanner-video" autoplay playsinline></video>
+    <div class="scanner-linea"></div>
+    <button class="btn btn-danger mt-2 w-100" (click)="detenerEscaner()">✖ Cerrar escáner</button>
   </div>
 </div>
 

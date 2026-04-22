@@ -60,3 +60,44 @@ mat-card img {
 .con-style{
   width: 20px; height: 20px; margin-left: 8px;
 }
+
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.scanner-box {
+  position: relative;
+  width: 320px;
+  background: #000;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scanner-video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.scanner-linea {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: #ff3b3b;
+  animation: scanear 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes scanear {
+  from { top: 20%; }
+  to   { top: 80%; }
+}

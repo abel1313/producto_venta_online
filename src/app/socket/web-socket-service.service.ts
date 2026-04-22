@@ -1,47 +1,55 @@
 import { Injectable } from '@angular/core';
-import { Client, Message } from '@stomp/stompjs';
-import * as SockJS from 'sockjs-client';
+// import { Client, IMessage } from '@stomp/stompjs';
+// import * as SockJS from 'sockjs-client';
+// import { environment } from 'src/environments/environment';
 
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class WebSocketServiceService {
-  //private client: Client;
-    constructor() {
-/**
- *     this.client = new Client({
-      brokerURL: 'ws://localhost:8081/mis-productos/ws',
+  // private client: Client;
+  // private connected = false;
+
+  constructor() {
+    /*
+    this.client = new Client({
+      webSocketFactory: () => new SockJS(`${environment.api_Url}/ws`),
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      webSocketFactory: () => new SockJS('http://localhost:8081/mis-productos/ws')
     });
 
+    this.client.onConnect = () => {
+      this.connected = true;
+    };
+
     this.client.activate();
- */
-  }
-/**\
- * 
- *  enviarActualizacion(mensaje: string) {
-    console.log("paso mensaje ", mensaje)
-    this.client.publish({ destination: '/app/actualizar', body: mensaje });
+    */
   }
 
-  recibirActualizaciones(callback: (mensaje: string) => void) {
-  if (!this.client || !this.client.connected) {
-    console.warn("⚠️ WebSocket aún no está conectado. Esperando...");
-    setTimeout(() => this.recibirActualizaciones(callback), 1000); // 🔥 Reintenta después de 1 segundo
-    return;
-  }
-  this.client.subscribe('/topic/ruleta', (message) => {
-    console.log(' ****************************************************** ')
-    console.log(message)
-    callback(message.body);
-  });
+  suscribirRuleta(_callback: (mensaje: any) => void): () => void {
+    /*
+    const subscribe = () => {
+      const sub = this.client.subscribe('/topic/ruleta', (message: IMessage) => {
+        try {
+          _callback(JSON.parse(message.body));
+        } catch {
+          _callback(message.body);
+        }
+      });
+      return () => sub.unsubscribe();
+    };
 
-  }
-  
- */
+    if (this.connected) {
+      return subscribe();
+    }
 
+    let unsub: () => void = () => {};
+    const original = this.client.onConnect;
+    this.client.onConnect = (frame) => {
+      original?.call(this.client, frame);
+      unsub = subscribe();
+    };
+    return () => unsub();
+    */
+    return () => {};
+  }
 }

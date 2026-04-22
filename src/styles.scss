@@ -9,29 +9,131 @@
 
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-alpine.css';
-/* ── Override Bootstrap font variable ── */
+/* ════════════════════════════════════════════════
+   SISTEMA TIPOGRÁFICO — Poppins
+   ────────────────────────────────────────────────
+   300 Light    → texto secundario, placeholders
+   400 Regular  → texto de cuerpo, labels
+   500 Medium   → botones, badges, subtítulos
+   600 SemiBold → card titles, table headers
+   700 Bold     → títulos de sección, h2-h3
+   800 ExtraBold→ títulos grandes, h1
+   ════════════════════════════════════════════════ */
+
 :root {
+  --font-base: 'Poppins', sans-serif;
+
+  /* Override Bootstrap */
   --bs-font-sans-serif: 'Poppins', sans-serif;
   --bs-body-font-family: 'Poppins', sans-serif;
+  --bs-body-font-size: 0.875rem;
+  --bs-body-font-weight: 400;
+
+  /* Override Angular Material */
+  --mdc-typography-font-family: 'Poppins', sans-serif;
 }
 
-body {
+/* Forzar fuente en todo — cubre Bootstrap, Material, PrimeNG, Nebular */
+*, *::before, *::after,
+body, html,
+input, button, select, textarea, label,
+.mat-mdc-button, .mat-mdc-form-field,
+.p-component, .p-inputtext, .p-dropdown,
+nb-card, nb-menu, nb-select {
   font-family: 'Poppins', sans-serif !important;
-  font-size: 14px;
+}
+
+/* ── BODY ─────────────────────────────────── */
+body {
+  font-size: 0.875rem;   /* 14px */
   font-weight: 400;
-  color: #1a1a2e;
+  line-height: 1.6;
+  color: #1f2937;
 }
 
-* {
-  font-family: 'Poppins', sans-serif;
+/* ── ESCALA DE TÍTULOS ────────────────────── */
+h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
 }
-
-h1, h2, h3, h4, h5, h6 {
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+h4 {
+  font-size: 1.05rem;
   font-weight: 600;
 }
+h5 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-.fw-semibold { font-weight: 600; }
-.fw-medium   { font-weight: 500; }
+/* ── CLASES DE UTILIDAD ───────────────────── */
+.text-display  { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.03em; }
+.text-title    { font-size: 1.35rem; font-weight: 700; }
+.text-subtitle { font-size: 1rem;    font-weight: 600; }
+.text-body     { font-size: 0.875rem; font-weight: 400; }
+.text-small    { font-size: 0.78rem;  font-weight: 400; }
+.text-caption  { font-size: 0.72rem;  font-weight: 300; color: #6b7280; }
+
+/* ── CARD HEADERS, TABLE HEADERS ─────────── */
+.card-header, .card-title,
+th, .ag-header-cell-text {
+  font-weight: 600 !important;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── BOTONES ──────────────────────────────── */
+.btn {
+  font-weight: 500;
+  font-size: 0.835rem;
+  letter-spacing: 0.01em;
+}
+
+/* ── LABELS ───────────────────────────────── */
+label {
+  font-weight: 500;
+  font-size: 0.83rem;
+  color: #374151;
+}
+
+/* ── INPUTS ───────────────────────────────── */
+.form-control, .form-select {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+/* ── BADGES ───────────────────────────────── */
+.badge {
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+/* ── PLACEHOLDERS más suaves ─────────────── */
+::placeholder {
+  font-weight: 300;
+  color: #9ca3af !important;
+  opacity: 1;
+}
 
 
 

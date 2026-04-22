@@ -1,61 +1,230 @@
+<!-- ── Paso 1: Configurar rifa ────────────────────────────────────── -->
+<div *ngIf="paso === 'configurar'" class="container-fluid py-3">
+  <h4 class="mb-3">Configurar Rifa</h4>
 
-<app-clientes-add
-[nombreCard]="'Agregar cliente'"
-($hideComponent)="ocultarComponente($event)"
-[hidden]="ocultarCliente"
->
-
-</app-clientes-add>
-
-
-
-
-
-<!--
-<div class="row" >
-  <div class="col-6">
-    <div class="ruleta-container">
-      <div class="indicador"></div> 
-      <canvas #ruletaCanvas></canvas>
+  <!-- Tabla de productos -->
+  <div class="card mb-3">
+    <div class="card-header fw-bold">Selecciona el producto a rifar</div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark sticky-top">
+            <tr>
+              <th>Producto</th>
+              <th>Stock</th>
+              <th>Precio</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of productos"
+                [class.table-success]="productoSeleccionado?.idProducto === p.idProducto">
+              <td>{{ p.nombre }}</td>
+              <td>{{ p.stock }}</td>
+              <td>{{ p.precioVenta | currency:'MXN' }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" (click)="seleccionarProducto(p)">
+                  {{ productoSeleccionado?.idProducto === p.idProducto ? '✓ Seleccionado' : 'Seleccionar' }}
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!productos.length">
+              <td colspan="4" class="text-center text-muted py-3">Sin productos disponibles</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-  <div class="col-6">
-    <div class="card">
-        <div class="card-title">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-4">
-                    <ul *ngIf="participantes != null && participantes.length > 0">
-                    <li *ngFor="let item of participantes"> {{item?.cliente?.nombrePersona}}</li>
-                </ul>
-                    </div>
-                </div>
-            </div>
+
+  <!-- Producto elegido y fecha límite -->
+  <div class="card" *ngIf="productoSeleccionado">
+    <div class="card-body">
+      <p class="mb-2">
+        Producto elegido: <strong>{{ productoSeleccionado.nombre }}</strong>
+      </p>
+      <form [formGroup]="configForm" (ngSubmit)="guardarConfiguracion()">
+        <div class="mb-3">
+          <label class="form-label">Fecha y hora límite</label>
+          <input type="datetime-local" class="form-control" formControlName="fechaHoraLimite">
         </div>
+        <button type="submit" class="btn btn-primary"
+                [disabled]="configForm.invalid">
+          Crear Rifa
+        </button>
+      </form>
     </div>
   </div>
 </div>
 
-
-<div class="row">
-    <div class="col-4">
-        <button class="btn btn-secondary" [disabled]="desHabilitarBotonClic" (click)="iniciarRifa()">Iniciar Rifa</button>
-    </div>
-
-        <div class="col-4">
-        <button class="btn btn-secondary" [disabled]="ocultarCliente && ocultarBtnParticipar " (click)="participarRifa()">Participar</button>
-    </div>
-</div>
-<input type="text" [(ngModel)]="mensaje" placeholder="Escribe un mensaje">
-<button (click)="enviar()">Enviar mensaje</button>
-
-
-<div class="row">
-  <div class="col-12">
-    <ul>
-      <li *ngFor="let item of datos">{{item}}</li>
-    </ul>
+<!-- ── Confetti (aparece solo cuando hay ganador) ─────────────────── -->
+<div class="confetti-container" *ngIf="confettiPieces.length > 0" aria-hidden="true">
+  <div *ngFor="let p of confettiPieces"
+       class="confetti-piece"
+       [style.left]="p.left"
+       [style.background-color]="p.color"
+       [style.animation-delay]="p.delay"
+       [style.animation-duration]="p.duration"
+       [style.width]="p.size"
+       [style.height]="p.size">
   </div>
 </div>
 
--->
+<!-- ── Paso 2: Concursantes + Ruleta ─────────────────────────────── -->
+<div *ngIf="paso === 'concursantes'" class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h4 class="mb-1">
+        Rifa activa —
+        <span class="text-primary">{{ rifaConfig?.producto?.nombre }}</span>
+      </h4>
+      <p class="text-muted small mb-0">
+        Límite: {{ rifaConfig?.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}
+      </p>
+    </div>
+    <button class="btn btn-outline-danger btn-sm" (click)="reiniciarRifa()"
+            title="Reinicia la rifa desde cero con los mismos participantes">
+      Reiniciar rifa
+    </button>
+  </div>
+
+  <div class="row g-3">
+    <!-- Columna izquierda: Ruleta -->
+    <div class="col-lg-6 d-flex flex-column align-items-center">
+      <div class="ruleta-container mb-3">
+        <div class="indicador"></div>
+        <canvas #ruletaCanvas></canvas>
+      </div>
+
+      <!-- Config de sorteos (solo antes del primer sorteo) -->
+      <div class="d-flex align-items-center gap-2 mb-3" *ngIf="sorteosRealizados === 0 && !ganador">
+        <label class="form-label mb-0 text-nowrap small">Total de sorteos:</label>
+        <input type="number" class="form-control form-control-sm" style="width: 75px;"
+               [(ngModel)]="totalSorteos" min="1" [max]="totalSorteosMax">
+        <span class="text-muted small">(el último es el ganador)</span>
+      </div>
+
+      <!-- Indicador de ronda actual (solo entre rondas, no después del ganador) -->
+      <div class="mb-2 text-center" *ngIf="sorteosRealizados > 0 && sorteosRealizados < totalSorteos && !ganador">
+        <span class="badge fs-6"
+              [class.bg-warning]="!esSorteoFinal"
+              [class.bg-success]="esSorteoFinal">
+          Ronda {{ sorteosRealizados + 1 }} de {{ totalSorteos }}
+          — {{ esSorteoFinal ? 'Ganador final' : 'Eliminación' }}
+        </span>
+      </div>
+
+      <button class="btn btn-success btn-lg px-5"
+              [disabled]="sorteando || concursantes.length < 1 || !!ganador"
+              (click)="sortear()">
+        {{ sorteando ? 'Sorteando…' : sorteoLabel }}
+      </button>
+
+      <!-- Eliminados -->
+      <div *ngIf="eliminados.length > 0" class="mt-3 w-100">
+        <p class="mb-1 fw-bold small text-muted">Eliminados:</p>
+        <div class="d-flex flex-wrap gap-1">
+          <span *ngFor="let e of eliminados" class="badge bg-danger">
+            {{ e.nombre }} {{ e.apellidoPaterno }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Descartado (visible 2.5s tras la animación) -->
+      <div *ngIf="descartadoActual" class="alert alert-warning mt-3 w-100 text-center">
+        <h6 class="mb-1">Eliminado</h6>
+        <strong>{{ descartadoActual.nombre }} {{ descartadoActual.apellidoPaterno }}</strong>
+        <div class="small text-muted">{{ descartadoActual.palabraRifa }}</div>
+      </div>
+
+      <!-- Ganador -->
+      <div *ngIf="ganador" class="alert alert-success mt-3 w-100 text-center">
+        <h5 class="mb-1">Ganador</h5>
+        <strong>{{ ganador.concursante.nombre }} {{ ganador.concursante.apellidoPaterno }}</strong>
+        <div class="small">{{ ganador.concursante.palabraRifa }} · {{ ganador.concursante.telefono }}</div>
+        <div *ngIf="ganador.producto" class="mt-1 text-muted small">Premio: {{ ganador.producto.nombre }}</div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: Form + lista -->
+    <div class="col-lg-6">
+      <!-- Formulario agregar concursante -->
+      <div class="card mb-3">
+        <div class="card-header fw-bold">Agregar concursante</div>
+        <div class="card-body">
+          <form [formGroup]="concursanteForm" (ngSubmit)="agregarConcursante()">
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <input class="form-control form-control-sm" placeholder="Nombre"
+                       formControlName="nombre">
+              </div>
+              <div class="col-6">
+                <input class="form-control form-control-sm" placeholder="Apellido paterno"
+                       formControlName="apellidoPaterno">
+              </div>
+              <div class="col-6">
+                <input class="form-control form-control-sm" placeholder="Palabra rifa"
+                       formControlName="palabraRifa">
+              </div>
+              <div class="col-6">
+                <input class="form-control form-control-sm" placeholder="Teléfono (10 dígitos)"
+                       formControlName="telefono" maxlength="10">
+              </div>
+            </div>
+
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="forzar"
+                     [(ngModel)]="forzarRegistro" [ngModelOptions]="{standalone: true}">
+              <label class="form-check-label small" for="forzar">
+                Forzar registro (ignorar fecha límite)
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm w-100"
+                    [disabled]="concursanteForm.invalid">
+              Agregar
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Lista de concursantes -->
+      <div class="card">
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+          Concursantes
+          <span class="badge bg-secondary">{{ concursantes.length }}</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-dark sticky-top">
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Palabra</th>
+                  <th>Teléfono</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of concursantes; let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>{{ c.nombre }} {{ c.apellidoPaterno }}</td>
+                  <td>{{ c.palabraRifa }}</td>
+                  <td>{{ c.telefono }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-danger"
+                            (click)="eliminarConcursante(c)">✕</button>
+                  </td>
+                </tr>
+                <tr *ngIf="!concursantes.length">
+                  <td colspan="5" class="text-center text-muted py-3">Sin concursantes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

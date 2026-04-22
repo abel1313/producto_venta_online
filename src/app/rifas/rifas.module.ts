@@ -1,12 +1,11 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { RifasRoutingModule } from './rifas-routing.module';
 import { AgregarRifaComponent } from './agregar-rifa/agregar-rifa.component';
 import { BuscarRifaComponent } from './buscar-rifa/buscar-rifa.component';
 import { MostrarRifasComponent } from './mostrar-rifas/mostrar-rifas.component';
-import { ClietesModule } from '../clietes/clietes.module';
-import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -18,8 +17,8 @@ import { FormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     RifasRoutingModule,
-    ClietesModule,
-    FormsModule
+    FormsModule,
+    ReactiveFormsModule,
   ]
 })
 export class RifasModule { }

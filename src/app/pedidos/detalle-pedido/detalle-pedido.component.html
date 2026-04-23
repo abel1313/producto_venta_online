@@ -22,7 +22,7 @@
 
       <img class="prod-card__img"
         [src]="env + item.producto"
-        [alt]="item.nombre_producto ?? 'Producto'"
+        [alt]="item.nombre_producto"
         (error)="onImgError($event)" />
 
       <div class="prod-card__body">

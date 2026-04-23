@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { IVariante, IVariantePaginable } from '../models/variante.model';
+import { IVariante, IVariantePaginable, IVarianteRequest, IVarianteResumenPaginable } from '../models/variante.model';
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
@@ -48,6 +48,12 @@ export class VarianteService {
     return this.http.get<{ data: IVariante[] }>(`${this.url}/porProducto/${productoId}`);
   }
 
+  getPorProductoPaginadoResumen(productoId: number, pagina: number, size: number): Observable<IVarianteResumenPaginable> {
+    return this.http.get<{ data: IVarianteResumenPaginable }>(
+      `${this.url}/porProducto/${productoId}/paginado/resumen?pagina=${pagina}&size=${size}`
+    ).pipe(map(res => res.data));
+  }
+
   buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVariantePaginable> {
     const { nombre, codigoBarras, pagina = 1, size = 10 } = params;
     let q = codigoBarras
@@ -58,7 +64,7 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
-  save(data: IVariante): Observable<{ data: IVariante }> {
+  save(data: IVarianteRequest): Observable<{ data: IVariante }> {
     return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, data);
   }
 

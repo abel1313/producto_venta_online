@@ -6,7 +6,7 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import Swal from 'sweetalert2';
-import { IVariante } from '../models/variante.model';
+import { IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
 
 @Component({
@@ -89,25 +89,24 @@ export class AgregarComponent implements OnInit {
     (e.currentTarget as HTMLElement).classList.remove('vf-drop--over');
     const files = e.dataTransfer?.files;
     if (!files?.length) return;
-    this.imagenesCargadas = [];
     Array.from(files).forEach(f => this.procesarImagen(f));
   }
 
   onFileSelected(e: Event): void {
-    const files = (e.target as HTMLInputElement).files;
+    const input = e.target as HTMLInputElement;
+    const files = input.files;
     if (!files?.length) return;
-    this.imagenesCargadas = [];
     Array.from(files).forEach(f => this.procesarImagen(f));
+    input.value = '';
   }
 
   private procesarImagen(file: File): void {
-    const extension = file.name.split('.').pop() ?? '';
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
       this.imagenesCargadas.push({
         base64: base64.split(',')[1],
-        extension,
+        extension: file.type,
         nombreImagen: file.name
       });
       if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(base64);
@@ -147,9 +146,9 @@ export class AgregarComponent implements OnInit {
     }
     this.guardando = true;
 
-    const payload: IVariante = {
+    const payload: IVarianteRequest = {
+      productoId: this.productoSeleccionado.idProducto,
       ...this.form.value,
-       productoId: this.productoSeleccionado.idProducto ,
       listImagenes: this.imagenesCargadas
     };
 

@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import Swal from 'sweetalert2';
-import { IVariante } from '../models/variante.model';
+import { IVariante, IVarianteResumen } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
 
 @Component({
@@ -16,7 +16,7 @@ import { VarianteService } from '../service/variante.service';
 })
 export class BuscarComponent implements OnInit {
 
-  variantes: IVariante[] = [];
+  variantes: IVarianteResumen[] = [];
   paginaActual  = 1;
   totalPaginas  = 0;
   terminoBusqueda = '';
@@ -24,12 +24,14 @@ export class BuscarComponent implements OnInit {
   isAdminUser = false;
   detalle: IDetalleProducto[] = [];
 
+  private productoId = 0;
   private busquedaSubject = new Subject<string>();
 
   constructor(
     private readonly varianteService: VarianteService,
     private readonly authService: AuthService,
     private readonly carritoService: CarritoService,
+    private readonly route: ActivatedRoute,
     readonly router: Router
   ) {}
 
@@ -42,18 +44,23 @@ export class BuscarComponent implements OnInit {
       this.detalle = d;
     });
 
-    this.busquedaSubject.pipe(
-      debounceTime(400)
-    ).subscribe((termino: string) => this.buscarPagina(termino, 1));
+    this.busquedaSubject.pipe(debounceTime(400))
+      .subscribe((termino: string) => this.buscarPagina(termino, 1));
 
-    if (this.varianteService.initialized) {
-      this.variantes    = [...this.varianteService.variantesCache];
-      this.totalPaginas = this.varianteService.totalPaginasCache;
-      this.paginaActual = this.varianteService.paginaCache;
-      return;
-    }
-
-    this.buscarPagina('', 1);
+    this.route.queryParams.subscribe(params => {
+      this.productoId = Number(params['productoId']) || 0;
+      if (this.productoId > 0) {
+        this.cargarResumen(1);
+      } else {
+        if (this.varianteService.initialized) {
+          this.variantes    = this.varianteService.variantesCache.map(v => this.mapVariante(v));
+          this.totalPaginas = this.varianteService.totalPaginasCache;
+          this.paginaActual = this.varianteService.paginaCache;
+        } else {
+          this.buscarPagina('', 1);
+        }
+      }
+    });
   }
 
   // ── Búsqueda ───────────────────────────────────────────────────────
@@ -79,7 +86,7 @@ export class BuscarComponent implements OnInit {
 
     this.varianteService.buscar(params).subscribe({
       next: res => {
-        this.variantes    = res.t ?? [];
+        this.variantes    = (res.t ?? []).map(v => this.mapVariante(v));
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         if (termino === '') this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas);
@@ -89,28 +96,59 @@ export class BuscarComponent implements OnInit {
     });
   }
 
+  private cargarResumen(pagina: number): void {
+    this.buscando = true;
+    this.varianteService.getPorProductoPaginadoResumen(this.productoId, pagina, 10).subscribe({
+      next: res => {
+        this.variantes    = res.t ?? [];
+        this.totalPaginas = res.totalPaginas;
+        this.paginaActual = pagina;
+        this.buscando = false;
+      },
+      error: () => { this.buscando = false; }
+    });
+  }
+
+  private mapVariante(v: IVariante): IVarianteResumen {
+    return {
+      id:           v.id ?? 0,
+      talla:        v.talla,
+      descripcion:  v.descripcion,
+      color:        v.color,
+      presentacion: v.presentacion,
+      stock:        v.stock,
+      marca:        v.marca,
+      contenidoNeto: v.contenidoNeto
+    };
+  }
+
   // ── Paginación ─────────────────────────────────────────────────────
 
   anteriorPagina(): void {
-    if (this.paginaActual > 1) this.buscarPagina(this.terminoBusqueda, this.paginaActual - 1);
+    if (this.paginaActual <= 1) return;
+    if (this.productoId > 0) this.cargarResumen(this.paginaActual - 1);
+    else this.buscarPagina(this.terminoBusqueda, this.paginaActual - 1);
   }
 
   siguientePagina(): void {
-    if (this.paginaActual < this.totalPaginas) this.buscarPagina(this.terminoBusqueda, this.paginaActual + 1);
+    if (this.paginaActual >= this.totalPaginas) return;
+    if (this.productoId > 0) this.cargarResumen(this.paginaActual + 1);
+    else this.buscarPagina(this.terminoBusqueda, this.paginaActual + 1);
   }
 
   // ── Carrito ────────────────────────────────────────────────────────
 
-  agregarCarrito(v: IVariante): void {
+  agregarCarrito(v: IVarianteResumen): void {
+    const label = [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Variante #${v.id}`;
     const prod: IDetalleProducto = {
-      idProducto:   v.producto?.id ?? 0,
-      nombre:       this.labelVariante(v),
+      idProducto:   v.id,
+      nombre:       label,
       descripcion:  `Talla: ${v.talla ?? '-'} | Color: ${v.color ?? '-'} | Marca: ${v.marca ?? '-'}`,
       stock:        v.stock ?? 0,
-      precioVenta:  v.producto?.precioVenta ?? 0,
-      codigoBarras: String(v.id ?? ''),
+      precioVenta:  0,
+      codigoBarras: String(v.id),
       cantidad:     1,
-      total:        v.producto?.precioVenta ?? 0
+      total:        0
     };
     const ok = this.carritoService.agregarProducto(prod);
     if (!ok) {
@@ -122,7 +160,7 @@ export class BuscarComponent implements OnInit {
     }
   }
 
-  eliminarCarrito(v: IVariante): void {
+  eliminarCarrito(v: IVarianteResumen): void {
     const found = this.detalle.find(d => d.codigoBarras === String(v.id));
     if (found) this.carritoService.eliminarProducto(found);
   }
@@ -131,20 +169,15 @@ export class BuscarComponent implements OnInit {
     this.router.navigate(['/productos/detalle-productos']);
   }
 
-  editarVariante(v: IVariante): void {
-    this.varianteService.setVarianteUpdate(v);
-    this.router.navigate(['/variantes/update']);
-  }
-
-  estaEnCarrito(v: IVariante): boolean {
+  estaEnCarrito(v: IVarianteResumen): boolean {
     return this.detalle.some(d => d.codigoBarras === String(v.id));
   }
 
-  cantidadEnCarrito(v: IVariante): number {
+  cantidadEnCarrito(v: IVarianteResumen): number {
     return this.detalle.find(d => d.codigoBarras === String(v.id))?.cantidad ?? 0;
   }
 
-  stockAgotado(v: IVariante): boolean {
+  stockAgotado(v: IVarianteResumen): boolean {
     const stock = v.stock ?? 0;
     return stock === 0 || this.cantidadEnCarrito(v) >= stock;
   }
@@ -154,10 +187,6 @@ export class BuscarComponent implements OnInit {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────
-
-  labelVariante(v: IVariante): string {
-    return [v.producto?.nombre, v.talla, v.color].filter(Boolean).join(' · ');
-  }
 
   colorHeader(color: string): string {
     const map: Record<string, string> = {
@@ -184,5 +213,11 @@ export class BuscarComponent implements OnInit {
     if (stock === 0) return 'badge bg-danger';
     if (stock <= 3)  return 'badge bg-warning text-dark';
     return 'badge bg-success';
+  }
+
+  imageSrc(base64: string | null | undefined): string | null {
+    if (!base64) return null;
+    if (base64.startsWith('data:')) return base64;
+    return `data:image/jpeg;base64,${base64}`;
   }
 }

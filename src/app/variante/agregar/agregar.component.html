@@ -121,7 +121,7 @@
         <!-- Miniaturas -->
         <div *ngIf="imagenesCargadas.length > 0" class="vf-thumbs">
           <div class="vf-thumb" *ngFor="let img of imagenesCargadas; let i = index">
-            <img [src]="'data:image/' + img.extension + ';base64,' + img.base64" [alt]="img.nombreImagen">
+            <img [src]="'data:' + img.extension + ';base64,' + img.base64" [alt]="img.nombreImagen">
             <button class="vf-thumb__del" (click)="eliminarImagen(i)">✕</button>
           </div>
           <div class="vf-thumb vf-thumb--add" (click)="fileInputRef.nativeElement.click()">

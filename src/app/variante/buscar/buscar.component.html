@@ -10,15 +10,15 @@
     </div>
 
     <div class="vb-header__actions">
-      <!-- Carrito badge (admin) -->
-      <button *ngIf="isAdminUser" class="vb-btn vb-btn--cart" (click)="verCarrito()">
+      <!-- Carrito badge -->
+      <button class="vb-btn vb-btn--cart" (click)="verCarrito()">
         🛒
         <span *ngIf="totalEnCarrito > 0" class="vb-cart-badge">{{ totalEnCarrito }}</span>
       </button>
     </div>
   </div>
 
-  <!-- Buscador -->
+  <!-- Buscador (solo cuando no hay productoId en URL) -->
   <div class="vb-search">
     <span class="vb-search__icon">🔍</span>
     <input
@@ -46,19 +46,27 @@
   <div *ngIf="!buscando && variantes.length === 0" class="vb-empty">
     <span class="vb-empty__icon">🗂️</span>
     <p class="mb-0">No se encontraron variantes</p>
-    <small class="text-muted" *ngIf="terminoBusqueda.length >= 10">
-      Prueba con otro término de búsqueda
-    </small>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="buscando" class="vb-empty">
+    <span class="spinner-border text-primary"></span>
+    <p class="mb-0 mt-2">Cargando variantes…</p>
   </div>
 
   <div class="vb-grid">
     <div class="vb-card" *ngFor="let v of variantes">
 
-      <!-- Header con color de la variante -->
+      <!-- Imagen -->
+      <div class="vb-card__img-wrap">
+        <img *ngIf="imageSrc(v.imagenBase64) as src" [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+        <div *ngIf="!v.imagenBase64" class="vb-card__img-placeholder">📦</div>
+      </div>
+
+      <!-- Header con color -->
       <div class="vb-card__header" [style.background]="colorHeader(v.color ?? '')">
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
-          <p class="vb-card__product">{{ v.producto?.nombre ?? 'Sin producto' }}</p>
           <div class="vb-card__chips">
             <span *ngIf="v.talla" class="vb-chip vb-chip--talla">{{ v.talla }}</span>
             <span *ngIf="v.color" class="vb-chip vb-chip--color">{{ v.color }}</span>
@@ -85,11 +93,17 @@
             <span class="vb-card__detail-label">Marca</span>
             <span class="vb-card__detail-val">{{ v.marca }}</span>
           </div>
-          <div class="vb-card__detail-row" *ngIf="v.producto?.precioVenta">
-            <span class="vb-card__detail-label">Precio</span>
-            <span class="vb-card__detail-val vb-card__price">
-              {{ v.producto?.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
-            </span>
+          <div class="vb-card__detail-row" *ngIf="v.presentacion">
+            <span class="vb-card__detail-label">Presentación</span>
+            <span class="vb-card__detail-val">{{ v.presentacion }}</span>
+          </div>
+          <div class="vb-card__detail-row" *ngIf="v.contenidoNeto">
+            <span class="vb-card__detail-label">Contenido neto</span>
+            <span class="vb-card__detail-val">{{ v.contenidoNeto }}</span>
+          </div>
+          <div class="vb-card__detail-row" *ngIf="v.descripcion">
+            <span class="vb-card__detail-label">Descripción</span>
+            <span class="vb-card__detail-val">{{ v.descripcion }}</span>
           </div>
         </div>
 
@@ -100,8 +114,8 @@
         </div>
       </div>
 
-      <!-- Botones admin ─────────────────────────── -->
-      <div *ngIf="isAdminUser" class="vb-card__footer">
+      <!-- Botones de carrito ─────────────────────────── -->
+      <div class="vb-card__footer">
         <button class="vb-btn-card vb-btn-card--add"
           [disabled]="stockAgotado(v)" (click)="agregarCarrito(v)"
           title="{{ stockAgotado(v) ? 'Sin stock' : 'Agregar al carrito' }}">
@@ -120,7 +134,7 @@
           <span class="vb-btn-card__label">Carrito</span>
         </button>
 
-        <button class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
+        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--edit" (click)="router.navigate(['/variantes/update'])">
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
         </button>

@@ -1,1 +1,120 @@
-<p>update-variante works!</p>
+<div class="vf-page">
+  <div class="vf-card" *ngIf="variante">
+
+    <!-- ── Header ──────────────────────────────────────────────────── -->
+    <div class="vf-card__header">
+      <div class="vf-card__header-glow"></div>
+      <span class="vf-card__header-icon">✏️</span>
+      <div>
+        <h3 class="vf-card__title">Editar Variante <span class="vf-card__id">#{{ variante.id }}</span></h3>
+        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
+      </div>
+    </div>
+
+    <div class="vf-card__body">
+
+      <!-- ── Producto ───────────────────────────────────────────── -->
+      <div class="vf-section">
+        <p class="vf-section__label">Producto <span class="vf-required">*</span></p>
+
+        <div *ngIf="!productoSeleccionado" class="vf-product-search">
+          <div class="vf-product-search__wrap">
+            <span class="vf-product-search__ico">🔍</span>
+            <input
+              class="vf-product-search__input"
+              type="text"
+              placeholder="Buscar por nombre o código de barras…"
+              [(ngModel)]="terminoProducto"
+              (keyup)="onBuscarProducto($event)"
+              autocomplete="off"
+            />
+          </div>
+          <div *ngIf="productos.length > 0" class="vf-product-search__results">
+            <div class="vf-product-search__item" *ngFor="let p of productos" (click)="seleccionarProducto(p)">
+              <span class="vf-product-search__name">{{ p.nombre }}</span>
+              <span class="vf-product-search__meta">
+                Stock {{ p.stock }} &nbsp;·&nbsp; {{ p.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="productoSeleccionado" class="vf-product-chip">
+          <span class="vf-product-chip__icon">📦</span>
+          <div class="vf-product-chip__info">
+            <strong>{{ productoSeleccionado.nombre }}</strong>
+            <small>{{ productoSeleccionado.precioVenta | currency:'MXN':'symbol':'1.2-2' }}</small>
+          </div>
+          <button class="vf-product-chip__clear" (click)="limpiarProducto()">✕</button>
+        </div>
+      </div>
+
+      <!-- ── Campos ─────────────────────────────────────────────── -->
+      <form [formGroup]="form">
+        <div class="vf-grid">
+          <div class="vf-field">
+            <label class="vf-label">Talla</label>
+            <input class="vf-input" formControlName="talla" placeholder="S, M, L, 38…">
+          </div>
+          <div class="vf-field">
+            <label class="vf-label">Color</label>
+            <input class="vf-input" formControlName="color" placeholder="negro, azul…">
+          </div>
+          <div class="vf-field">
+            <label class="vf-label">Presentación</label>
+            <input class="vf-input" formControlName="presentacion" placeholder="botella, caja…">
+          </div>
+          <div class="vf-field">
+            <label class="vf-label">Marca</label>
+            <input class="vf-input" formControlName="marca" placeholder="Nike, Levi's…">
+          </div>
+          <div class="vf-field">
+            <label class="vf-label">Stock</label>
+            <input class="vf-input" formControlName="stock" type="number" min="0">
+          </div>
+          <div class="vf-field">
+            <label class="vf-label">Contenido neto</label>
+            <input class="vf-input" formControlName="contenidoNeto" placeholder="500ml, 1kg…">
+          </div>
+          <div class="vf-field vf-field--full">
+            <label class="vf-label">Descripción</label>
+            <textarea class="vf-input vf-textarea" formControlName="descripcion" rows="2"></textarea>
+          </div>
+        </div>
+      </form>
+
+      <!-- ── Imágenes ───────────────────────────────────────────── -->
+      <div class="vf-section">
+        <p class="vf-section__label">Imágenes <span style="color:rgba(255,255,255,.4);font-weight:400;">(opcionales — reemplaza las existentes)</span></p>
+        <div class="vf-drop"
+          (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)" (click)="fileInputRef.nativeElement.click()">
+          <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
+          <div class="vf-drop__content" *ngIf="imagenesCargadas.length === 0">
+            <span class="vf-drop__icon">🖼️</span>
+            <p class="vf-drop__text">Arrastra imágenes aquí o <u>haz clic</u></p>
+          </div>
+          <canvas #canvasRef class="vf-canvas" [class.vf-canvas--visible]="imagenesCargadas.length > 0"
+            width="600" height="340">
+          </canvas>
+        </div>
+        <div *ngIf="imagenesCargadas.length > 0" class="vf-thumbs">
+          <div class="vf-thumb" *ngFor="let img of imagenesCargadas; let i = index">
+            <img [src]="'data:image/' + img.extension + ';base64,' + img.base64" [alt]="img.nombreImagen">
+            <button class="vf-thumb__del" (click)="eliminarImagen(i)">✕</button>
+          </div>
+          <div class="vf-thumb vf-thumb--add" (click)="fileInputRef.nativeElement.click()"><span>＋</span></div>
+        </div>
+      </div>
+
+      <!-- ── Botón ──────────────────────────────────────────────── -->
+      <button class="vf-btn-save" [disabled]="!productoSeleccionado || guardando" (click)="actualizar()">
+        <span *ngIf="!guardando">💾 Actualizar variante</span>
+        <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
+          <span class="spinner-border spinner-border-sm"></span> Actualizando…
+        </span>
+      </button>
+
+    </div>
+  </div>
+</div>

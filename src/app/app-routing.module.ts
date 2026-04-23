@@ -40,6 +40,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    path: 'variantes',
+    loadChildren: () => import('./variante/agregar.module').then(m => m.AgregarModule),
+    canActivate: [CarritoGuard]
+  },
+  {
     path: 'clientes',
     loadChildren: () => import('./clietes/clietes.module').then(m => m.ClietesModule),
     canActivate: [CarritoGuard]

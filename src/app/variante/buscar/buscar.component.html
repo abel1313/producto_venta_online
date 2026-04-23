@@ -1,1 +1,133 @@
-<p>buscar works!</p>
+<!-- ── Encabezado ─────────────────────────────────────────────────── -->
+<div class="vb-header">
+  <div class="vb-header__inner">
+    <div class="vb-header__title">
+      <span class="vb-header__icon">🏷️</span>
+      <div>
+        <h4 class="mb-0">Variantes</h4>
+        <small class="text-white-50">Catálogo de productos con variantes</small>
+      </div>
+    </div>
+
+    <div class="vb-header__actions">
+      <!-- Carrito badge (admin) -->
+      <button *ngIf="isAdminUser" class="vb-btn vb-btn--cart" (click)="verCarrito()">
+        🛒
+        <span *ngIf="totalEnCarrito > 0" class="vb-cart-badge">{{ totalEnCarrito }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Buscador -->
+  <div class="vb-search">
+    <span class="vb-search__icon">🔍</span>
+    <input
+      class="vb-search__input"
+      type="text"
+      placeholder="Buscar por nombre o código de barras (mín. 10 caracteres)…"
+      [(ngModel)]="terminoBusqueda"
+      (keyup)="onBuscar($event)"
+      autocomplete="off"
+    />
+    <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 10"
+          class="vb-search__hint">
+      {{ 10 - terminoBusqueda.length }} caracteres más
+    </span>
+    <span *ngIf="buscando" class="vb-search__spinner">
+      <span class="spinner-border spinner-border-sm text-light"></span>
+    </span>
+  </div>
+</div>
+
+<!-- ── Grid de cards ──────────────────────────────────────────────── -->
+<div class="vb-grid-wrap">
+
+  <!-- Sin resultados -->
+  <div *ngIf="!buscando && variantes.length === 0" class="vb-empty">
+    <span class="vb-empty__icon">🗂️</span>
+    <p class="mb-0">No se encontraron variantes</p>
+    <small class="text-muted" *ngIf="terminoBusqueda.length >= 10">
+      Prueba con otro término de búsqueda
+    </small>
+  </div>
+
+  <div class="vb-grid">
+    <div class="vb-card" *ngFor="let v of variantes">
+
+      <!-- Header con color de la variante -->
+      <div class="vb-card__header" [style.background]="colorHeader(v.color ?? '')">
+        <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
+        <div class="vb-card__header-content">
+          <p class="vb-card__product">{{ v.producto?.nombre ?? 'Sin producto' }}</p>
+          <div class="vb-card__chips">
+            <span *ngIf="v.talla" class="vb-chip vb-chip--talla">{{ v.talla }}</span>
+            <span *ngIf="v.color" class="vb-chip vb-chip--color">{{ v.color }}</span>
+            <span *ngIf="v.marca" class="vb-chip vb-chip--marca">{{ v.marca }}</span>
+          </div>
+        </div>
+        <span [class]="stockClase(v.stock ?? 0)" style="align-self: flex-start; font-size: 0.75rem;">
+          {{ (v.stock ?? 0) === 0 ? 'Agotado' : (v.stock ?? 0) + ' uds' }}
+        </span>
+      </div>
+
+      <!-- Body -->
+      <div class="vb-card__body">
+        <div class="vb-card__detail">
+          <div class="vb-card__detail-row" *ngIf="v.talla">
+            <span class="vb-card__detail-label">Talla</span>
+            <span class="vb-card__detail-val">{{ v.talla }}</span>
+          </div>
+          <div class="vb-card__detail-row" *ngIf="v.color">
+            <span class="vb-card__detail-label">Color</span>
+            <span class="vb-card__detail-val">{{ v.color }}</span>
+          </div>
+          <div class="vb-card__detail-row" *ngIf="v.marca">
+            <span class="vb-card__detail-label">Marca</span>
+            <span class="vb-card__detail-val">{{ v.marca }}</span>
+          </div>
+          <div class="vb-card__detail-row" *ngIf="v.producto?.precioVenta">
+            <span class="vb-card__detail-label">Precio</span>
+            <span class="vb-card__detail-val vb-card__price">
+              {{ v.producto?.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Cantidad en carrito -->
+        <div *ngIf="cantidadEnCarrito(v) > 0" class="vb-card__in-cart">
+          <span>🛒 {{ cantidadEnCarrito(v) }} en carrito</span>
+          <span *ngIf="(v.stock ?? 0) > 0">(máx. {{ v.stock }})</span>
+        </div>
+      </div>
+
+      <!-- Botones admin ─────────────────────────── -->
+      <div *ngIf="isAdminUser" class="vb-card__footer">
+        <button class="vb-btn-card vb-btn-card--add"
+          [disabled]="stockAgotado(v)" (click)="agregarCarrito(v)"
+          title="{{ stockAgotado(v) ? 'Sin stock' : 'Agregar al carrito' }}">
+          <span>{{ stockAgotado(v) ? '🚫' : '➕' }}</span>
+          <span class="vb-btn-card__label">{{ stockAgotado(v) ? 'Sin stock' : 'Agregar' }}</span>
+        </button>
+
+        <button class="vb-btn-card vb-btn-card--remove"
+          [disabled]="!estaEnCarrito(v)" (click)="eliminarCarrito(v)">
+          <span>➖</span>
+          <span class="vb-btn-card__label">Quitar</span>
+        </button>
+
+        <button class="vb-btn-card vb-btn-card--view" (click)="verCarrito()">
+          <span>🛒</span>
+          <span class="vb-btn-card__label">Carrito</span>
+        </button>
+
+        <button class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
+          <span>✏️</span>
+          <span class="vb-btn-card__label">Editar</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+</div>

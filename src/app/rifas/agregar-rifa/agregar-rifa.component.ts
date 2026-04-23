@@ -2,7 +2,8 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ArcElement, Chart, PieController } from 'chart.js';
-import { switchMap } from 'rxjs/operators';
+import { Subject, Subscription, EMPTY } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { WebSocketServiceService } from 'src/app/socket/web-socket-service.service';
@@ -29,7 +30,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   // Productos
   productos: IProductoDTO[] = [];
   productoSeleccionado: IProductoDTO | null = null;
+  terminoBusqueda = '';
   configForm!: FormGroup;
+
+  private busquedaSubject = new Subject<string>();
+  private busquedaSub?: Subscription;
 
   // Concursantes
   concursantes: IConcursante[] = [];
@@ -53,8 +58,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   private wsUnsub: (() => void) | null = null;
   private readonly DURACION_ANIMACION_MS = 4000;
-  private readonly LS_CONFIG_ID = 'rifa_config_id';
-  private readonly LS_TOTAL_SORTEOS = 'rifa_total_sorteos';
+  //private readonly LS_CONFIG_ID = 'rifa_config_id';
+  //private readonly LS_TOTAL_SORTEOS = 'rifa_total_sorteos';
 
   constructor(
     private readonly rifaService: RifaService,
@@ -75,11 +80,26 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       telefono: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     });
 
-    this.cargarProductos();
+    this.busquedaSub = this.busquedaSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      switchMap(termino => {
+        if (termino.length < 3) {
+          this.productos = [];
+          return EMPTY;
+        }
+        return this.productoService.getDataNombreCodigoBarra(1, 10, termino);
+      })
+    ).subscribe({
+      next: (res) => { this.productos = res.t ?? []; },
+      error: (e) => console.error(e),
+    });
+
     this.intentarRestaurarRifa();
   }
 
   ngOnDestroy(): void {
+    this.busquedaSub?.unsubscribe();
     this.wsUnsub?.();
     this.chart?.destroy();
   }
@@ -104,11 +124,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   // ── Paso 1: Configurar rifa ────────────────────────────────────────
 
-  cargarProductos(): void {
-    this.productoService.getData(1, 10).subscribe({
-      next: (res) => { this.productos = res.t ?? []; },
-      error: (e) => console.error(e),
-    });
+  onBuscar(termino: string): void {
+    this.busquedaSubject.next(termino);
   }
 
   seleccionarProducto(producto: IProductoDTO): void {
@@ -130,8 +147,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
           ...res.data,
           producto: { id: this.productoSeleccionado!.idProducto, nombre: this.productoSeleccionado!.nombre },
         };
-        localStorage.setItem(this.LS_CONFIG_ID, String(this.rifaConfig.id));
-        localStorage.setItem(this.LS_TOTAL_SORTEOS, String(this.totalSorteos));
+        //localStorage.setItem(this.LS_CONFIG_ID, String(this.rifaConfig.id));
+        //localStorage.setItem(this.LS_TOTAL_SORTEOS, String(this.totalSorteos));
         this.paso = 'concursantes';
         this.suscribirWebSocket();
       },
@@ -279,28 +296,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   // ── Persistencia / recuperación ──────────────────────────────────
 
   private intentarRestaurarRifa(): void {
-    const id = localStorage.getItem(this.LS_CONFIG_ID);
+    //const id = localStorage.getItem(this.LS_CONFIG_ID);
 
-    if (id) {
-      this.rifaService.getEstado(+id).subscribe({
-        next: (res) => {
-          const estado = res.data;
-          if (estado.ganador) {
-            this.limpiarStorageRifa();
-            this.cargarRifasActivas();
-            return;
-          }
-          this.aplicarEstado(estado);
-          this.totalSorteos = +(localStorage.getItem(this.LS_TOTAL_SORTEOS) ?? estado.totalConcursantes ?? 1);
-        },
-        error: () => {
-          this.limpiarStorageRifa();
-          this.cargarRifasActivas();
-        },
-      });
-    } else {
       this.cargarRifasActivas();
-    }
   }
 
   private cargarRifasActivas(): void {
@@ -316,8 +314,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         const estado = res.data;
         this.aplicarEstado(estado);
         this.totalSorteos = estado.totalConcursantes ?? 1;
-        localStorage.setItem(this.LS_CONFIG_ID, String(config.id));
-        localStorage.setItem(this.LS_TOTAL_SORTEOS, String(this.totalSorteos));
+        //localStorage.setItem(this.LS_CONFIG_ID, String(config.id));
+        //localStorage.setItem(this.LS_TOTAL_SORTEOS, String(this.totalSorteos));
       },
       error: (e) => console.error(e),
     });
@@ -335,8 +333,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   private limpiarStorageRifa(): void {
-    localStorage.removeItem(this.LS_CONFIG_ID);
-    localStorage.removeItem(this.LS_TOTAL_SORTEOS);
+    //localStorage.removeItem(this.LS_CONFIG_ID);
+    //localStorage.removeItem(this.LS_TOTAL_SORTEOS);
   }
 
   nuevaRifa(): void {

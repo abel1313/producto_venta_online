@@ -1,6 +1,8 @@
 import { IconService } from './../Icon/icon.service';
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
+import { AuthenticateService } from '../auth.service';
+import { AccederService } from '../login/acceder.service';
 import { Router } from '@angular/router';
 import { CarritoService } from '../services/carrito/carrito.service';
 @Component({
@@ -16,6 +18,8 @@ export class NavbarComponent implements OnInit {
   countCarrito: number = 0;
 
   constructor(private readonly authService: AuthService,
+    private readonly auth: AuthenticateService,
+    private readonly acceder: AccederService,
     public readonly iconService: IconService,
     private readonly router: Router,
     public readonly serviceCarrito: CarritoService
@@ -53,13 +57,20 @@ export class NavbarComponent implements OnInit {
   }
 
   logout(): void {
-    this.authService.setRolesFromToken(''); // limpia los roles y usuario
+    this.acceder.logout().subscribe({
+      complete: () => this.limpiarSesionLocal(),
+      error: () => this.limpiarSesionLocal(),
+    });
+  }
+
+  private limpiarSesionLocal(): void {
+    this.auth.clearAccessToken();
+    this.authService.setRolesFromToken('');
     this.roles = [];
     this.usuario = '';
-    this.router.navigate(['/login']); // opcional: redirige sin recargar
     this.countCarrito = 0;
     this.serviceCarrito.limpiarCarrito();
-    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
   }
 
 

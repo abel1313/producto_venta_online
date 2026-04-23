@@ -17,9 +17,10 @@ import { VarianteService } from '../service/variante.service';
 export class BuscarComponent implements OnInit {
 
   variantes: IVariante[] = [];
+  paginaActual  = 1;
+  totalPaginas  = 0;
   terminoBusqueda = '';
   buscando = false;
-  modoSearch = false;
   isAdminUser = false;
   detalle: IDetalleProducto[] = [];
 
@@ -42,77 +43,81 @@ export class BuscarComponent implements OnInit {
     });
 
     this.busquedaSubject.pipe(
-      debounceTime(450)
-    ).subscribe(termino => this.ejecutarBusqueda(termino as string));
+      debounceTime(400)
+    ).subscribe((termino: string) => this.buscarPagina(termino, 1));
 
     if (this.varianteService.initialized) {
-      this.variantes = [...this.varianteService.variantesCache];
+      this.variantes    = [...this.varianteService.variantesCache];
+      this.totalPaginas = this.varianteService.totalPaginasCache;
+      this.paginaActual = this.varianteService.paginaCache;
       return;
     }
 
-    this.cargarInicial();
+    this.buscarPagina('', 1);
   }
 
-  private cargarInicial(): void {
-    this.buscando = true;
-    this.varianteService.buscar({ nombre: '', pagina: 1, size: 10 }).subscribe({
-      next: res => {
-        this.variantes = res ?? [];
-        this.varianteService.setCache(res ?? [], 1, 0);
-        this.buscando = false;
-      },
-      error: () => { this.buscando = false; }
-    });
-  }
+  // ── Búsqueda ───────────────────────────────────────────────────────
 
   onBuscar(event: KeyboardEvent): void {
     const termino = (event.target as HTMLInputElement).value;
     this.terminoBusqueda = termino;
+
     if (termino.length === 0) {
-      this.modoSearch = false;
-      this.variantes = [...this.varianteService.variantesCache];
+      this.buscarPagina('', 1);
       return;
     }
-    if (termino.length < 10) return;
+    if (termino.length < 3) return;
     this.busquedaSubject.next(termino);
   }
 
-  private ejecutarBusqueda(termino: string): void {
+  private buscarPagina(termino: string, pagina: number): void {
     this.buscando = true;
-    this.modoSearch = true;
-    const esCodigoBarras = /^\d{10,}$/.test(termino);
-    const params = esCodigoBarras ? { codigoBarras: termino } : { nombre: termino };
+    const esCodigoBarras = termino.length > 0 && /^\d+$/.test(termino);
+    const params = esCodigoBarras
+      ? { codigoBarras: termino, pagina, size: 10 }
+      : { nombre: termino,      pagina, size: 10 };
+
     this.varianteService.buscar(params).subscribe({
       next: res => {
-        this.variantes = res ?? [];
+        this.variantes    = res.t ?? [];
+        this.totalPaginas = res.totalPaginas;
+        this.paginaActual = pagina;
+        if (termino === '') this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas);
         this.buscando = false;
       },
       error: () => { this.buscando = false; }
     });
+  }
+
+  // ── Paginación ─────────────────────────────────────────────────────
+
+  anteriorPagina(): void {
+    if (this.paginaActual > 1) this.buscarPagina(this.terminoBusqueda, this.paginaActual - 1);
+  }
+
+  siguientePagina(): void {
+    if (this.paginaActual < this.totalPaginas) this.buscarPagina(this.terminoBusqueda, this.paginaActual + 1);
   }
 
   // ── Carrito ────────────────────────────────────────────────────────
 
   agregarCarrito(v: IVariante): void {
     const prod: IDetalleProducto = {
-      idProducto: v.producto?.id ?? 0,
-      nombre: this.labelVariante(v),
-      descripcion: `Talla: ${v.talla ?? '-'} | Color: ${v.color ?? '-'} | Marca: ${v.marca ?? '-'}`,
-      stock: v.stock ?? 0,
-      precioVenta: v.producto?.precioVenta ?? 0,
+      idProducto:   v.producto?.id ?? 0,
+      nombre:       this.labelVariante(v),
+      descripcion:  `Talla: ${v.talla ?? '-'} | Color: ${v.color ?? '-'} | Marca: ${v.marca ?? '-'}`,
+      stock:        v.stock ?? 0,
+      precioVenta:  v.producto?.precioVenta ?? 0,
       codigoBarras: String(v.id ?? ''),
-      cantidad: 1,
-      total: v.producto?.precioVenta ?? 0
+      cantidad:     1,
+      total:        v.producto?.precioVenta ?? 0
     };
     const ok = this.carritoService.agregarProducto(prod);
     if (!ok) {
       Swal.fire({
-        icon: 'warning',
-        title: 'Sin stock',
-        text: `No hay más unidades disponibles de "${prod.nombre}".`,
-        confirmButtonColor: '#3085d6',
-        timer: 2500,
-        showConfirmButton: false
+        icon: 'warning', title: 'Sin stock',
+        text: `No hay más unidades de "${prod.nombre}".`,
+        confirmButtonColor: '#3085d6', timer: 2500, showConfirmButton: false
       });
     }
   }
@@ -151,10 +156,7 @@ export class BuscarComponent implements OnInit {
   // ── Helpers ────────────────────────────────────────────────────────
 
   labelVariante(v: IVariante): string {
-    const partes = [v.producto?.nombre];
-    if (v.talla) partes.push(v.talla);
-    if (v.color) partes.push(v.color);
-    return partes.filter(Boolean).join(' · ');
+    return [v.producto?.nombre, v.talla, v.color].filter(Boolean).join(' · ');
   }
 
   colorHeader(color: string): string {
@@ -180,7 +182,7 @@ export class BuscarComponent implements OnInit {
 
   stockClase(stock: number): string {
     if (stock === 0) return 'badge bg-danger';
-    if (stock <= 3) return 'badge bg-warning text-dark';
+    if (stock <= 3)  return 'badge bg-warning text-dark';
     return 'badge bg-success';
   }
 }

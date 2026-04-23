@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
@@ -50,9 +50,8 @@ export class AgregarComponent implements OnInit {
 
     this.busquedaSubject.pipe(
       debounceTime(350),
-      distinctUntilChanged(),
-      switchMap(t => t.length < 3 ? (this.productos = [], EMPTY)
-                                  : this.productoService.getDataNombreCodigoBarra(1, 10, t))
+      switchMap((t: string) => t.length < 3 ? (this.productos = [], EMPTY)
+                                            : this.productoService.getDataNombreCodigoBarra(1, 10, t))
     ).subscribe({ next: res => { this.productos = res.t ?? []; } });
   }
 
@@ -150,7 +149,7 @@ export class AgregarComponent implements OnInit {
 
     const payload: IVariante = {
       ...this.form.value,
-      producto: { id: this.productoSeleccionado.idProducto },
+       productoId: this.productoSeleccionado.idProducto ,
       listImagenes: this.imagenesCargadas
     };
 

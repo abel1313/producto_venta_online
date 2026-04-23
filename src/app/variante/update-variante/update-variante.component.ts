@@ -5,7 +5,7 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
@@ -70,9 +70,8 @@ export class UpdateVarianteComponent implements OnInit {
 
     this.busquedaSubject.pipe(
       debounceTime(350),
-      distinctUntilChanged(),
-      switchMap(t => t.length < 3 ? (this.productos = [], EMPTY)
-                                  : this.productoService.getDataNombreCodigoBarra(1, 10, t))
+      switchMap((t: string) => t.length < 3 ? (this.productos = [], EMPTY)
+                                            : this.productoService.getDataNombreCodigoBarra(1, 10, t))
     ).subscribe({ next: res => { this.productos = res.t ?? []; } });
   }
 

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IVariante, IVariantePaginable } from '../models/variante.model';
 
@@ -47,13 +48,14 @@ export class VarianteService {
     return this.http.get<{ data: IVariante[] }>(`${this.url}/porProducto/${productoId}`);
   }
 
-  buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVariante[]> {
+  buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVariantePaginable> {
     const { nombre, codigoBarras, pagina = 1, size = 10 } = params;
     let q = codigoBarras
       ? `codigoBarras=${encodeURIComponent(codigoBarras)}`
       : `nombre=${encodeURIComponent(nombre ?? '')}`;
     q += `&pagina=${pagina}&size=${size}`;
-    return this.http.get<IVariante[]>(`${this.url}/buscar?${q}`);
+    return this.http.get<{ data: IVariantePaginable }>(`${this.url}/buscar?${q}`)
+      .pipe(map(res => res.data));
   }
 
   save(data: IVariante): Observable<{ data: IVariante }> {

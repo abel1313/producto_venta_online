@@ -24,14 +24,14 @@
     <input
       class="vb-search__input"
       type="text"
-      placeholder="Buscar por nombre o código de barras (mín. 10 caracteres)…"
+      placeholder="Buscar por nombre o código de barras (mín. 3 caracteres)…"
       [(ngModel)]="terminoBusqueda"
       (keyup)="onBuscar($event)"
       autocomplete="off"
     />
-    <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 10"
+    <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 3"
           class="vb-search__hint">
-      {{ 10 - terminoBusqueda.length }} caracteres más
+      {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
     <span *ngIf="buscando" class="vb-search__spinner">
       <span class="spinner-border spinner-border-sm text-light"></span>
@@ -129,5 +129,15 @@
     </div>
   </div>
 
+  <!-- Paginación -->
+  <div *ngIf="totalPaginas > 1" class="vb-pagination">
+    <button class="vb-page-btn" [disabled]="paginaActual <= 1" (click)="anteriorPagina()">
+      ‹ Anterior
+    </button>
+    <span class="vb-page-info">{{ paginaActual }} / {{ totalPaginas }}</span>
+    <button class="vb-page-btn" [disabled]="paginaActual >= totalPaginas" (click)="siguientePagina()">
+      Siguiente ›
+    </button>
+  </div>
 
 </div>

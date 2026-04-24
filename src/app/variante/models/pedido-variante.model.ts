@@ -10,6 +10,7 @@ export interface IPedidoVarianteDTO {
   cliente: { id: number };
   estadoPedido: string;
   fechaPedido: string;
+  //fechaRecogida: string;
   observaciones: string;
   detalles: IPedidoVarianteDetalleDTO[];
 }

@@ -71,7 +71,7 @@
 
 <div class="row">
   <div class="col-6">
-          <button type="submit" class="btn btn-primary w-100 mt-4" (click)="updateUserDto()" [disabled]="formRegistro.invalid">{{ this.textoCard ==
+          <button type="submit" class="btn btn-primary w-100 mt-4" [disabled]="formRegistro.invalid">{{ this.textoCard ==
         'Actualizar usuario' ? 'Actualizar': 'Registrarse'}}</button>
   </div>
   <div class="col-6" *ngIf="authService.isAdminService">

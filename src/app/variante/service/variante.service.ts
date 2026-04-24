@@ -73,11 +73,11 @@ export class VarianteService {
 
   /** Crea o actualiza variante — mismo endpoint. Si data.id está presente → actualiza. */
   save(data: IVarianteRequest): Observable<{ data: IVariante }> {
-    return this.http.post<{ data: IVariante }>(`${this.url}/guardar`, data);
+    return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, data);
   }
 
   update(id: number, data: IVarianteRequest): Observable<{ data: IVariante }> {
-    return this.http.post<{ data: IVariante }>(`${this.url}/guardar`, { ...data, id });
+    return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, { ...data, id });
   }
 
   delete(id: number): Observable<any> {

@@ -87,6 +87,7 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
 }
 
   registrarUsuario() {
+    console.log(this.textoCard, " text card ");
     if(this.textoCard == 'Actualizar usuario'){
       this.updateUserDto();
     }else{

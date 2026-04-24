@@ -67,7 +67,7 @@
 </div>
 
 <!-- Buscador de Clientes -->
-<div class="card mt-4 shadow-sm">
+<div class="card mt-4 shadow-sm" *ngIf="isAdminUser">
   <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
     <i class="pi pi-users"></i>
     <span class="fw-semibold">Buscar clientes</span>

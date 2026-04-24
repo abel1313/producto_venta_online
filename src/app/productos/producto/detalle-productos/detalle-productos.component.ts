@@ -1,3 +1,4 @@
+import { UsuarioService } from './../../../shared/usuario.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IDetalleProducto } from 'src/app/models';
@@ -49,8 +50,9 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
     cliente: {
       id: 0
     },
-    estadoPedido: 'pendiente',
+    estadoPedido: 'Pendiente',
     fechaPedido: new Date(),
+    fechaRecogida: null,
     observaciones: '',
     detalles: []
   }
@@ -66,7 +68,8 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly clienteServoce: ClienteService,
     private readonly pedidosService: PedidosService,
-    private readonly productoService: ProductoService
+    private readonly productoService: ProductoService,
+    private readonly usuarioService: UsuarioService
   ) { }
 
   verImagen(detalle: IDetalleProducto): void {
@@ -129,8 +132,14 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
   }
 
 
+  existeClientePorIdUsuario: boolean = false;
   generarPedido() {
-    if (this.isAnonymous) {
+    this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe(isCliente => {
+      this.existeClientePorIdUsuario = isCliente;
+    },error => {
+      console.error('Error al buscar cliente por ID de usuario', error);
+    });
+    if (this.isAnonymous || !this.existeClientePorIdUsuario) {
       Swal.fire({
         title: "Generar pedido",
         icon: "info",
@@ -190,11 +199,13 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
   private armarYConfirmarPedido() {
     this.pedidosDTO.detalles = [];
     this.detalleProducto.forEach(fr => {
+      const esVariante = fr.varianteId != null;
       this.pedidosDTO.detalles.push({
-        producto: { id: fr.idProducto },
+        producto: { id: esVariante ? 0 : fr.idProducto },
         cantidad: fr.cantidad,
         precioUnitario: fr.precioVenta,
-        subTotal: fr.total
+        subTotal: fr.total,
+        varianteId: fr.varianteId ?? null
       });
     });
 
@@ -209,23 +220,33 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
       cancelButtonColor: "#d33"
     }).then((result) => {
       if (result.isConfirmed) {
-        this.pedidosService.saveDataPedido(this.pedidosDTO).subscribe(ped => {
-          this.serviceCarrito.limpiarCarrito();
-          if (ped != null && ped.code == 200) {
+        this.pedidosService.saveDataPedido(this.pedidosDTO).subscribe({
+          next: (ped) => {
+            if (ped?.data != null) {
+              this.serviceCarrito.limpiarCarrito();
+              Swal.fire({
+                title: "Pedido registrado",
+                icon: "success",
+                text: "Se registró su pedido con el número de rastreo " + ped.data.id,
+                showCancelButton: false
+              });
+            } else {
+              Swal.fire({
+                title: "Error",
+                icon: "error",
+                text: ped?.mensaje ?? "Ocurrió un error al guardar el pedido",
+                showCancelButton: false
+              });
+            }
+          },
+          error: () => {
             Swal.fire({
-              title: "Pedido registrado",
-              icon: "success",
-              text: "Se registro su pedido con el numero de rastreo " + ped.data.id,
+              title: "Error",
+              icon: "error",
+              text: "Ocurrió un error al guardar el pedido",
               showCancelButton: false
             });
           }
-        }, () => {
-          Swal.fire({
-            title: "Error",
-            icon: "error",
-            text: "Ocurrio un error al guardar el pedido",
-            showCancelButton: false
-          });
         });
       }
     });

@@ -10,6 +10,7 @@ import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
+import { UsuarioService } from 'src/app/shared/usuario.service';
 
 @Component({
   selector: 'app-venta-variante',
@@ -21,6 +22,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   // ── Carrito ────────────────────────────────────────────────────────
   carrito: IDetalleVariante[] = [];
   totalUnidades = 0;
+  totalImporte  = 0;
 
   // ── Búsqueda de clientes (admin) ───────────────────────────────────
   isAdminUser = false;
@@ -42,7 +44,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly authService: AuthService,
     private readonly clienteService: ClienteService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly usuarioService: UsuarioService
   ) {}
 
   ngOnInit(): void {
@@ -52,8 +55,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     this.authService.userId$.subscribe(id => { this.idUsuario = id; });
 
     this.carritoService.carrito$.subscribe(items => {
-      this.carrito      = items;
+      this.carrito       = items;
       this.totalUnidades = items.reduce((s, i) => s + i.cantidad, 0);
+      this.totalImporte  = items.reduce((s, i) => s + i.subTotal, 0);
     });
 
     this.subBusqueda = this.inputBusqueda$.pipe(
@@ -132,10 +136,27 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         Swal.fire({ icon: 'error', title: 'Usuario no encontrado', text: 'Inicia sesión e intenta de nuevo.' });
         return;
       }
-      this.clienteService.getDataOneCliente(this.idUsuario).subscribe({
+      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
         next: (res: any) => {
           if (res?.data?.id) this.armarYConfirmar(res.data.id);
-          else Swal.fire({ icon: 'error', title: 'Error', text: 'No se encontró el cliente.' });
+          else {
+                  Swal.fire({
+                    title: "Generar pedido",
+                    icon: "info",
+                    html: `
+                    <p>Para poder generar un pedido es necesario registrarse.</p>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: "Ir a registro",
+                    cancelButtonText: "Cancelar",
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33"
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      this.router.navigate(['/usuarios/registrar']);
+                    }
+                  });
+          }
         },
         error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener el cliente.' })
       });
@@ -157,10 +178,15 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       }))
     };
 
+    const total = this.totalImporte.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+
     Swal.fire({
       title: 'Confirmar pedido de variantes',
       icon: 'question',
-      html: `<p>${this.carrito.length} variante(s) — ${this.totalUnidades} unidades</p>`,
+      html: `
+        <p>${this.carrito.length} variante(s) — ${this.totalUnidades} unidad(es)</p>
+        <p class="fw-bold fs-5">Total: ${total}</p>
+      `,
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
       cancelButtonText:  'Cancelar',
@@ -170,13 +196,16 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       if (!result.isConfirmed) return;
       this.varianteService.guardarPedidoVariante(pedido).subscribe({
         next: (res: any) => {
-          const nro = res?.data?.id ?? '';
-          this.carritoService.limpiar();
-          Swal.fire({
-            icon: 'success',
-            title: 'Pedido registrado',
-            text: nro ? `Número de pedido: ${nro}` : 'El pedido fue registrado correctamente.',
-          }).then(() => this.router.navigate(['/variantes/buscar']));
+          if (res?.data != null) {
+            this.carritoService.limpiar();
+            Swal.fire({
+              icon: 'success',
+              title: 'Pedido registrado',
+              text: `Número de pedido: ${res.data.id}`,
+            }).then(() => this.router.navigate(['/variantes/buscar']));
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: res?.mensaje ?? 'No se pudo guardar el pedido.' });
+          }
         },
         error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el pedido.' })
       });

@@ -3,7 +3,10 @@
 
   <div class="card-header d-flex align-items-center justify-content-between">
     <span class="fw-bold">🏷️ Carrito de variantes</span>
-    <span class="badge bg-secondary">{{ totalUnidades }} unidad(es)</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-secondary">{{ totalUnidades }} unidad(es)</span>
+      <span class="badge bg-success fs-6">Total: {{ totalImporte | currency:'$' }}</span>
+    </div>
   </div>
 
   <!-- Tabla del carrito -->
@@ -21,7 +24,9 @@
         <th>Marca</th>
         <th>Presentación</th>
         <th>Stock orig.</th>
+        <th>Precio/pza</th>
         <th>Cantidad</th>
+        <th>Subtotal</th>
         <th></th>
       </tr>
     </ng-template>
@@ -33,7 +38,9 @@
         <td>{{ item.marca || '—' }}</td>
         <td>{{ item.presentacion || '—' }}</td>
         <td>{{ item.stock }}</td>
+        <td>{{ item.precio | currency:'$' }}</td>
         <td>{{ item.cantidad }}</td>
+        <td class="fw-semibold">{{ item.subTotal | currency:'$' }}</td>
         <td class="d-flex gap-1">
           <button type="button" class="btn btn-sm btn-outline-secondary"
             [disabled]="!item.imagenBase64" (click)="verImagen(item)" title="Ver imagen">
@@ -49,7 +56,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="7" class="text-center text-muted py-4">
+        <td colspan="9" class="text-center text-muted py-4">
           El carrito está vacío — agrega variantes desde <a routerLink="/variantes/buscar">buscar</a>.
         </td>
       </tr>

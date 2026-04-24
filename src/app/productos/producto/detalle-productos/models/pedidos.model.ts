@@ -47,6 +47,7 @@ export interface IPedidosDTOPedido extends IdGenerico{
 
     cliente: IClienteDTOPedido;
     fechaPedido: Date;
+    fechaRecogida: Date | null;
     estadoPedido: string;
     observaciones: string;
     detalles: IDetallePedidosDTOPedido[];

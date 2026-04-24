@@ -17,6 +17,9 @@ export class UsuariosGuard implements CanActivate {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
+      console.error(payload," payload");
+        console.error((payload.roles || []).length === 0," payload");
+      
       if (Date.now() > payload.exp * 1000) {
         this.auth.clearAccessToken();
         return true;

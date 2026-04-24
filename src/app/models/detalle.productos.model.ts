@@ -10,4 +10,5 @@ export interface IDetalleProducto{
     precioVenta: number;
     stock: number;
     total: number;
+    varianteId?: number | null;
 }

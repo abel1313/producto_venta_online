@@ -43,6 +43,7 @@ export interface IVarianteResumen {
   marca?: string | null;
   contenidoNeto?: string | null;
   imagenBase64?: string | null;
+  precio?: number | null;
 }
 
 export interface IVarianteResumenPaginable {

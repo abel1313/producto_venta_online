@@ -29,9 +29,14 @@ export class CarritoService {
     });
   }
 
+  private claveUnica(item: IDetalleProducto): string {
+    return item.varianteId != null ? `v_${item.varianteId}` : item.codigoBarras;
+  }
+
   agregarProducto(producto: IDetalleProducto): boolean {
     const actual = this.carritoDetalle.getValue();
-    const index = actual.findIndex(p => p.codigoBarras === producto.codigoBarras);
+    const clave = this.claveUnica(producto);
+    const index = actual.findIndex(p => this.claveUnica(p) === clave);
 
     if (index !== -1) {
       if (actual[index].cantidad >= producto.stock) {
@@ -54,7 +59,8 @@ export class CarritoService {
 
   eliminarProducto(producto: IDetalleProducto) {
     const actual = this.carritoDetalle.getValue();
-    const index = actual.findIndex(p => p.codigoBarras === producto.codigoBarras);
+    const clave = this.claveUnica(producto);
+    const index = actual.findIndex(p => this.claveUnica(p) === clave);
 
     if (index !== -1) {
       if (actual[index].cantidad > 1) {

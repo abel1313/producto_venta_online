@@ -25,16 +25,17 @@ export class CarritoVarianteService {
       actual[idx].subTotal = actual[idx].cantidad * actual[idx].precio;
     } else {
       if ((v.stock ?? 0) <= 0) return false;
+      const precio = v.precio ?? 0;
       actual.push({
-        varianteId: v.id,
+        varianteId:   v.id,
         talla:        v.talla,
         color:        v.color,
         marca:        v.marca,
         presentacion: v.presentacion,
         stock:        v.stock ?? 0,
-        precio:       0,
+        precio,
         cantidad:     1,
-        subTotal:     0,
+        subTotal:     precio,
         imagenBase64: v.imagenBase64
       });
     }

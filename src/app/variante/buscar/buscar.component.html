@@ -68,13 +68,11 @@
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
           <div class="vb-card__chips">
-            <span *ngIf="v.talla" class="vb-chip vb-chip--talla">{{ v.talla }}</span>
-            <span *ngIf="v.color" class="vb-chip vb-chip--color">{{ v.color }}</span>
-            <span *ngIf="v.marca" class="vb-chip vb-chip--marca">{{ v.marca }}</span>
+            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
           </div>
         </div>
         <span [class]="stockClase(v.stock ?? 0)" style="align-self: flex-start; font-size: 0.75rem;">
-          {{ (v.stock ?? 0) === 0 ? 'Agotado' : (v.stock ?? 0) + ' uds' }}
+          {{ (v.stock ?? 0) === 0 ? 'Agotado' : (v.stock ?? 0) + ' unidades' }}
         </span>
       </div>
 

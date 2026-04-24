@@ -35,4 +35,7 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   eliminarUsuarioDto(tipoDato: number) {
     return this.http.delete<any>(`${environment.api_Url}/usuarios/eliminarUsuarioDto/${tipoDato}`);
   }
+  buscarClientePorIdUsuario(idUsuario: number) {
+    return this.http.get<boolean>(`${environment.api_Url}/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
+  }
 }

@@ -137,6 +137,12 @@
           Carrito
           <span class="badge bg-danger ms-1" *ngIf="countCarrito > 0">{{ countCarrito }}</span>
         </button>
+
+        <button class="btn btn-outline-warning btn-sm position-relative" (click)="verCarritoVariante()"
+                *ngIf="countCarritoVariante > 0 || isAdminUser">
+          🏷️ Variantes
+          <span class="badge bg-danger ms-1" *ngIf="countCarritoVariante > 0">{{ countCarritoVariante }}</span>
+        </button>
       </div>
 
       <!-- Usuario -->

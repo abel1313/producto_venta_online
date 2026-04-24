@@ -58,4 +58,5 @@ export interface IDetallePedidosDTOPedido extends IdGenerico{
     cantidad: number;
     precioUnitario: number;
     subTotal: number;
+    varianteId?: number | null;
 }

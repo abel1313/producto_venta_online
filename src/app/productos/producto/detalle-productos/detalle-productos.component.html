@@ -3,11 +3,12 @@
     [rowsPerPageOptions]="[5, 10, 20]">
     <ng-template pTemplate="header">
       <tr>
-        <th style="width:25%">Nombre</th>
-        <th style="width:25%">Descripción</th>
-        <th style="width:25%">Código de barras</th>
-        <th style="width:25%">Precio</th>
-        <th style="width:25%">Cantidad</th>
+        <th style="width:22%">Nombre</th>
+        <th style="width:22%">Descripción</th>
+        <th style="width:20%">Código de barras</th>
+        <th style="width:15%">Precio</th>
+        <th style="width:12%">Cantidad</th>
+        <th style="width:9%">Imagen</th>
       </tr>
     </ng-template>
 
@@ -18,9 +19,33 @@
         <td>{{ detalle.codigoBarras }}</td>
         <td>{{ detalle.precioVenta }}</td>
         <td>{{ detalle.cantidad }}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+            (click)="verImagen(detalle)"
+            [disabled]="cargandoImagen"
+            title="Ver imagen del producto">
+            <span *ngIf="!cargandoImagen">🖼</span>
+            <span *ngIf="cargandoImagen" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </td>
       </tr>
     </ng-template>
   </p-table>
+
+  <!-- Visor de imagen -->
+  <div class="dp-visor-overlay" *ngIf="mostrarVisor" (click)="cerrarVisor()">
+    <div class="dp-visor-box" (click)="$event.stopPropagation()">
+      <button class="dp-visor-close" (click)="cerrarVisor()">✕</button>
+      <ng-container *ngIf="imagenVisor; else sinImagen">
+        <img class="dp-visor-img" [src]="imagenVisor" [alt]="nombreVisor"
+          (error)="$any($event.target).style.display='none'" />
+      </ng-container>
+      <ng-template #sinImagen>
+        <div class="dp-visor-noimg">📷 Sin imagen disponible</div>
+      </ng-template>
+      <p class="dp-visor-nombre">{{ nombreVisor }}</p>
+    </div>
+  </div>
 
   <div class="row">
     <div class="col-10 d-flex justify-content-end">

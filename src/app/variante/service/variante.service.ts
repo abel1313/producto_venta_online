@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { IVariante, IVariantePaginable, IVarianteRequest, IVarianteResumenPaginable } from '../models/variante.model';
+import { IVariante, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
+import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
@@ -17,17 +18,17 @@ export class VarianteService {
   clearVarianteUpdate(): void { this._varianteUpdate.next(null); }
   get varianteParaEditar(): IVariante | null { return this._varianteUpdate.getValue(); }
 
-  private _cache: IVariante[] = [];
+  private _cache: IVarianteResumen[] = [];
   private _paginaCache = 1;
   private _totalPaginasCache = 0;
   private _initialized = false;
 
-  get variantesCache(): IVariante[] { return this._cache; }
+  get variantesCache(): IVarianteResumen[] { return this._cache; }
   get paginaCache(): number { return this._paginaCache; }
   get totalPaginasCache(): number { return this._totalPaginasCache; }
   get initialized(): boolean { return this._initialized; }
 
-  setCache(variantes: IVariante[], pagina: number, totalPaginas: number): void {
+  setCache(variantes: IVarianteResumen[], pagina: number, totalPaginas: number): void {
     this._cache = variantes;
     this._paginaCache = pagina;
     this._totalPaginasCache = totalPaginas;
@@ -40,8 +41,14 @@ export class VarianteService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getPaginado(pagina: number, size: number): Observable<IVariantePaginable> {
-    return this.http.get<IVariantePaginable>(`${this.url}/paginado?pagina=${pagina}&size=${size}`);
+  getPaginado(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/paginado?pagina=${pagina}&size=${size}`)
+      .pipe(map(res => res.data));
+  }
+
+  getOne(id: number): Observable<IVariante> {
+    return this.http.get<{ data: IVariante }>(`${this.url}/getOne/${id}`)
+      .pipe(map(res => res.data));
   }
 
   getPorProducto(productoId: number): Observable<{ data: IVariante[] }> {
@@ -54,25 +61,30 @@ export class VarianteService {
     ).pipe(map(res => res.data));
   }
 
-  buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVariantePaginable> {
+  buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
     const { nombre, codigoBarras, pagina = 1, size = 10 } = params;
     let q = codigoBarras
       ? `codigoBarras=${encodeURIComponent(codigoBarras)}`
       : `nombre=${encodeURIComponent(nombre ?? '')}`;
     q += `&pagina=${pagina}&size=${size}`;
-    return this.http.get<{ data: IVariantePaginable }>(`${this.url}/buscar?${q}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar?${q}`)
       .pipe(map(res => res.data));
   }
 
+  /** Crea o actualiza variante — mismo endpoint. Si data.id está presente → actualiza. */
   save(data: IVarianteRequest): Observable<{ data: IVariante }> {
-    return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, data);
+    return this.http.post<{ data: IVariante }>(`${this.url}/guardar`, data);
   }
 
-  update(id: number, data: IVariante): Observable<{ data: IVariante }> {
-    return this.http.put<{ data: IVariante }>(`${this.url}/update/${id}`, data);
+  update(id: number, data: IVarianteRequest): Observable<{ data: IVariante }> {
+    return this.http.post<{ data: IVariante }>(`${this.url}/guardar`, { ...data, id });
   }
 
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.url}/delete`, { body: id });
+  }
+
+  guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {
+    return this.http.post<any>(`${environment.api_Url}/pedidos/savePedido`, data);
   }
 }

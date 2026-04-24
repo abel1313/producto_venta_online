@@ -3,10 +3,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
-import { IDetalleProducto } from 'src/app/models';
-import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import Swal from 'sweetalert2';
-import { IVariante, IVarianteResumen } from '../models/variante.model';
+import { IDetalleVariante } from '../models/detalle-variante.model';
+import { IVarianteResumen } from '../models/variante.model';
+import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 
 @Component({
@@ -17,12 +17,12 @@ import { VarianteService } from '../service/variante.service';
 export class BuscarComponent implements OnInit {
 
   variantes: IVarianteResumen[] = [];
-  paginaActual  = 1;
-  totalPaginas  = 0;
+  paginaActual    = 1;
+  totalPaginas    = 0;
   terminoBusqueda = '';
-  buscando = false;
-  isAdminUser = false;
-  detalle: IDetalleProducto[] = [];
+  buscando        = false;
+  isAdminUser     = false;
+  detalle: IDetalleVariante[] = [];
 
   private productoId = 0;
   private busquedaSubject = new Subject<string>();
@@ -30,7 +30,7 @@ export class BuscarComponent implements OnInit {
   constructor(
     private readonly varianteService: VarianteService,
     private readonly authService: AuthService,
-    private readonly carritoService: CarritoService,
+    private readonly carritoVariante: CarritoVarianteService,
     private readonly route: ActivatedRoute,
     readonly router: Router
   ) {}
@@ -40,9 +40,7 @@ export class BuscarComponent implements OnInit {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
 
-    this.carritoService.carritoDetalle$.subscribe(d => {
-      this.detalle = d;
-    });
+    this.carritoVariante.carrito$.subscribe(d => { this.detalle = d; });
 
     this.busquedaSubject.pipe(debounceTime(400))
       .subscribe((termino: string) => this.buscarPagina(termino, 1));
@@ -53,7 +51,7 @@ export class BuscarComponent implements OnInit {
         this.cargarResumen(1);
       } else {
         if (this.varianteService.initialized) {
-          this.variantes    = this.varianteService.variantesCache.map(v => this.mapVariante(v));
+          this.variantes    = [...this.varianteService.variantesCache];
           this.totalPaginas = this.varianteService.totalPaginasCache;
           this.paginaActual = this.varianteService.paginaCache;
         } else {
@@ -68,11 +66,7 @@ export class BuscarComponent implements OnInit {
   onBuscar(event: KeyboardEvent): void {
     const termino = (event.target as HTMLInputElement).value;
     this.terminoBusqueda = termino;
-
-    if (termino.length === 0) {
-      this.buscarPagina('', 1);
-      return;
-    }
+    if (termino.length === 0) { this.buscarPagina('', 1); return; }
     if (termino.length < 3) return;
     this.busquedaSubject.next(termino);
   }
@@ -86,7 +80,7 @@ export class BuscarComponent implements OnInit {
 
     this.varianteService.buscar(params).subscribe({
       next: res => {
-        this.variantes    = (res.t ?? []).map(v => this.mapVariante(v));
+        this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         if (termino === '') this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas);
@@ -109,19 +103,6 @@ export class BuscarComponent implements OnInit {
     });
   }
 
-  private mapVariante(v: IVariante): IVarianteResumen {
-    return {
-      id:           v.id ?? 0,
-      talla:        v.talla,
-      descripcion:  v.descripcion,
-      color:        v.color,
-      presentacion: v.presentacion,
-      stock:        v.stock,
-      marca:        v.marca,
-      contenidoNeto: v.contenidoNeto
-    };
-  }
-
   // ── Paginación ─────────────────────────────────────────────────────
 
   anteriorPagina(): void {
@@ -136,45 +117,49 @@ export class BuscarComponent implements OnInit {
     else this.buscarPagina(this.terminoBusqueda, this.paginaActual + 1);
   }
 
-  // ── Carrito ────────────────────────────────────────────────────────
+  // ── Carrito variante ───────────────────────────────────────────────
 
   agregarCarrito(v: IVarianteResumen): void {
-    const label = [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Variante #${v.id}`;
-    const prod: IDetalleProducto = {
-      idProducto:   v.id,
-      nombre:       label,
-      descripcion:  `Talla: ${v.talla ?? '-'} | Color: ${v.color ?? '-'} | Marca: ${v.marca ?? '-'}`,
-      stock:        v.stock ?? 0,
-      precioVenta:  0,
-      codigoBarras: String(v.id),
-      cantidad:     1,
-      total:        0
-    };
-    const ok = this.carritoService.agregarProducto(prod);
+    const ok = this.carritoVariante.agregar(v);
     if (!ok) {
       Swal.fire({
         icon: 'warning', title: 'Sin stock',
-        text: `No hay más unidades de "${prod.nombre}".`,
-        confirmButtonColor: '#3085d6', timer: 2500, showConfirmButton: false
+        text: `No hay más unidades disponibles.`,
+        confirmButtonColor: '#3085d6', timer: 2000, showConfirmButton: false
       });
     }
   }
 
   eliminarCarrito(v: IVarianteResumen): void {
-    const found = this.detalle.find(d => d.codigoBarras === String(v.id));
-    if (found) this.carritoService.eliminarProducto(found);
+    this.carritoVariante.eliminar(v.id);
   }
 
   verCarrito(): void {
-    this.router.navigate(['/productos/detalle-productos']);
+    this.router.navigate(['/variantes/carrito']);
+  }
+
+  editarVariante(v: IVarianteResumen): void {
+    this.varianteService.getOne(v.id).subscribe({
+      next: variante => {
+        this.varianteService.setVarianteUpdate(variante);
+        this.router.navigate(['/variantes/update']);
+      },
+      error: () => {
+        // Si falla, navega con los datos que tenemos
+        this.varianteService.setVarianteUpdate({ id: v.id, talla: v.talla, color: v.color,
+          marca: v.marca, presentacion: v.presentacion, stock: v.stock, descripcion: v.descripcion,
+          contenidoNeto: v.contenidoNeto } as any);
+        this.router.navigate(['/variantes/update']);
+      }
+    });
   }
 
   estaEnCarrito(v: IVarianteResumen): boolean {
-    return this.detalle.some(d => d.codigoBarras === String(v.id));
+    return this.carritoVariante.estaEnCarrito(v.id);
   }
 
   cantidadEnCarrito(v: IVarianteResumen): number {
-    return this.detalle.find(d => d.codigoBarras === String(v.id))?.cantidad ?? 0;
+    return this.carritoVariante.cantidadEnCarrito(v.id);
   }
 
   stockAgotado(v: IVarianteResumen): boolean {
@@ -183,7 +168,7 @@ export class BuscarComponent implements OnInit {
   }
 
   get totalEnCarrito(): number {
-    return this.detalle.reduce((s, d) => s + d.cantidad, 0);
+    return this.carritoVariante.total;
   }
 
   // ── Helpers ────────────────────────────────────────────────────────

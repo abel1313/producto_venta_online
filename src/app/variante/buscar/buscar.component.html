@@ -134,7 +134,7 @@
           <span class="vb-btn-card__label">Carrito</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--edit" (click)="router.navigate(['/variantes/update'])">
+        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
         </button>

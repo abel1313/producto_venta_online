@@ -1,0 +1,183 @@
+<!-- ══ CARRITO DE VARIANTES ══ -->
+<div class="card">
+
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span class="fw-bold">🏷️ Carrito de variantes</span>
+    <span class="badge bg-secondary">{{ totalUnidades }} unidad(es)</span>
+  </div>
+
+  <!-- Tabla del carrito -->
+  <p-table
+    [value]="carrito"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[5, 10, 20]"
+    [tableStyle]="{ 'min-width': '40rem' }">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Talla</th>
+        <th>Color</th>
+        <th>Marca</th>
+        <th>Presentación</th>
+        <th>Stock orig.</th>
+        <th>Cantidad</th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td>{{ item.talla || '—' }}</td>
+        <td>{{ item.color || '—' }}</td>
+        <td>{{ item.marca || '—' }}</td>
+        <td>{{ item.presentacion || '—' }}</td>
+        <td>{{ item.stock }}</td>
+        <td>{{ item.cantidad }}</td>
+        <td class="d-flex gap-1">
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+            [disabled]="!item.imagenBase64" (click)="verImagen(item)" title="Ver imagen">
+            🖼
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger"
+            (click)="quitarUna(item)" title="Quitar una unidad">
+            ➖
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">
+          El carrito está vacío — agrega variantes desde <a routerLink="/variantes/buscar">buscar</a>.
+        </td>
+      </tr>
+    </ng-template>
+
+  </p-table>
+
+  <!-- Total + botones -->
+  <div class="row mt-2 mb-2 px-3">
+    <div class="col d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm"
+        [disabled]="carritoVacio" (click)="limpiar()">
+        🗑 Limpiar carrito
+      </button>
+      <button type="button" class="btn btn-success btn-sm"
+        [disabled]="carritoVacio" (click)="generarPedido()">
+        📋 Generar pedido
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ BÚSQUEDA DE CLIENTES (solo admin) ══ -->
+<div class="card mt-4 shadow-sm" *ngIf="isAdminUser">
+  <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+    <i class="pi pi-users"></i>
+    <span class="fw-semibold">Asignar pedido a cliente</span>
+  </div>
+  <div class="card-body">
+
+    <!-- Input -->
+    <div class="input-group mb-3">
+      <input type="text" class="form-control"
+        placeholder="Buscar cliente por nombre (mín. 3 letras)..."
+        [(ngModel)]="nombreBusqueda"
+        (input)="onInputBusquedaCliente()"
+        (keyup.enter)="buscarClientes()" />
+      <button class="btn btn-primary" type="button"
+        (click)="buscarClientes()" [disabled]="cargandoClientes">
+        <i class="pi pi-search me-1"></i>
+        {{ cargandoClientes ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+
+    <!-- Cliente seleccionado -->
+    <div *ngIf="clienteSeleccionado"
+      class="alert alert-success d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <i class="pi pi-check-circle me-2"></i>
+        <strong>Cliente asignado:</strong>
+        {{ clienteSeleccionado.nombrePersona }}
+        {{ clienteSeleccionado.apeidoPaterno }}
+        {{ clienteSeleccionado.apeidoMaterno }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado.correoElectronico }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado.numeroTelefonico }}
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-danger ms-3" (click)="limpiarCliente()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Tabla clientes -->
+    <p-table
+      [value]="clientes"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="sizeClientes"
+      [totalRecords]="totalClientes"
+      [rowsPerPageOptions]="[5, 10, 20]"
+      (onLazyLoad)="onLazyLoadClientes($event)"
+      [loading]="cargandoClientes"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      styleClass="p-datatable-striped p-datatable-sm p-datatable-hoverable-rows">
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width:5%">#</th>
+          <th style="width:20%">Nombre</th>
+          <th style="width:20%">Ap. paterno</th>
+          <th style="width:20%">Ap. materno</th>
+          <th style="width:22%">Correo</th>
+          <th style="width:10%">Teléfono</th>
+          <th style="width:3%"></th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-cliente>
+        <tr [class.table-success]="clienteSeleccionado?.id === cliente.id">
+          <td>{{ cliente.id }}</td>
+          <td>{{ cliente.nombrePersona }}</td>
+          <td>{{ cliente.apeidoPaterno }}</td>
+          <td>{{ cliente.apeidoMaterno }}</td>
+          <td>{{ cliente.correoElectronico }}</td>
+          <td>{{ cliente.numeroTelefonico }}</td>
+          <td>
+            <button *ngIf="clienteSeleccionado?.id !== cliente.id"
+              type="button" class="btn btn-sm btn-outline-primary"
+              pTooltip="Asignar al pedido" tooltipPosition="left"
+              (click)="seleccionarCliente(cliente)">
+              <i class="pi pi-user-plus"></i>
+            </button>
+            <i *ngIf="clienteSeleccionado?.id === cliente.id"
+              class="pi pi-check-circle text-success fs-5"></i>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center text-muted py-3">
+            {{ nombreBusqueda ? 'No se encontraron clientes.' : 'Ingresa un nombre para buscar.' }}
+          </td>
+        </tr>
+      </ng-template>
+
+    </p-table>
+
+  </div>
+</div>
+
+<!-- ══ VISOR DE IMAGEN ══ -->
+<div class="img-visor-overlay" *ngIf="mostrarVisor" (click)="cerrarVisor()">
+  <div class="img-visor-box" (click)="$event.stopPropagation()">
+    <button class="img-visor-close" (click)="cerrarVisor()">✕</button>
+    <img class="img-visor-img"
+      [src]="imagenVisor" [alt]="nombreVisor"
+      (error)="$any($event.target).src='assets/img/no-image.png'" />
+    <p class="img-visor-nombre">{{ nombreVisor }}</p>
+  </div>
+</div>

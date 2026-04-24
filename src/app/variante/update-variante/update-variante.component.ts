@@ -7,7 +7,7 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { IVariante } from '../models/variante.model';
+import { IVariante, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
 
 @Component({
@@ -154,15 +154,32 @@ export class UpdateVarianteComponent implements OnInit {
     }
   }
 
+  // ── Ajuste de stock ────────────────────────────────────────────────
+
+  cantidadAjuste = 1;
+
+  get stockActual(): number {
+    return this.form?.get('stock')?.value ?? 0;
+  }
+
+  ajustarStock(tipo: 'agregar' | 'quitar'): void {
+    const cantidad = Math.max(1, Math.abs(this.cantidadAjuste ?? 1));
+    const nuevo = tipo === 'agregar'
+      ? this.stockActual + cantidad
+      : Math.max(0, this.stockActual - cantidad);
+    this.form.patchValue({ stock: nuevo });
+  }
+
   // ── Actualizar ─────────────────────────────────────────────────────
 
   actualizar(): void {
     if (!this.productoSeleccionado || !this.variante?.id) return;
     this.guardando = true;
 
-    const payload: IVariante = {
+    const payload: IVarianteRequest = {
+      id:         this.variante.id,
+      productoId: this.productoSeleccionado.idProducto,
       ...this.form.value,
-      producto: { id: this.productoSeleccionado.idProducto },
       ...(this.imagenesCargadas.length ? { listImagenes: this.imagenesCargadas } : {})
     };
 

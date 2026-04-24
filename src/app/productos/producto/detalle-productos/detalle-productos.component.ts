@@ -10,6 +10,7 @@ import { IClienteBusquedaDto, IDetallePedidos, IDetallePedidosDTOPedido, IPedido
 import { InitCliente } from 'src/app/clietes/mis-datos/models/inicializarClases.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { PedidosService } from 'src/app/shared/pedidos.service';
+import { ProductoService } from 'src/app/productos/service/producto.service';
 
 @Component({
   selector: 'app-detalle-productos',
@@ -53,13 +54,43 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
     observaciones: '',
     detalles: []
   }
+  // ── Visor de imagen ────────────────────────────────────────────────
+  mostrarVisor   = false;
+  imagenVisor    = '';
+  nombreVisor    = '';
+  cargandoImagen = false;
+
   constructor(
     private readonly serviceCarrito: CarritoService,
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly clienteServoce: ClienteService,
-    private readonly pedidosService: PedidosService
+    private readonly pedidosService: PedidosService,
+    private readonly productoService: ProductoService
   ) { }
+
+  verImagen(detalle: IDetalleProducto): void {
+    this.cargandoImagen = true;
+    this.productoService.getDataGeneric<any>(detalle.idProducto).subscribe({
+      next: (res: any) => {
+        const img = res?.data?.imagen ?? res?.imagen;
+        this.imagenVisor = (img?.imagen && img?.contentType)
+          ? `data:${img.contentType};base64,${img.imagen}`
+          : '';
+        this.nombreVisor    = detalle.nombre;
+        this.mostrarVisor   = true;
+        this.cargandoImagen = false;
+      },
+      error: () => {
+        this.imagenVisor    = '';
+        this.nombreVisor    = detalle.nombre;
+        this.mostrarVisor   = true;
+        this.cargandoImagen = false;
+      }
+    });
+  }
+
+  cerrarVisor(): void { this.mostrarVisor = false; }
 
   ngOnInit(): void {
     this.authService.userId$.subscribe(idUser => {

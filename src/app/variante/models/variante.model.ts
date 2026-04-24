@@ -1,6 +1,7 @@
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 
 export interface IVarianteRequest {
+  id?: number;           // Presente → actualiza; ausente → crea
   productoId: number;
   talla?: string;
   descripcion?: string;

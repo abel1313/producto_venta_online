@@ -13,7 +13,6 @@ export interface IDetalleVenta extends IdGenerico{
     cantidad: number;
     subTotal: number;
     imagen?: { imagen: string; contentType: string; nombreImagen: string };
-    
-    
+    varianteId?: number | null;
 
 }

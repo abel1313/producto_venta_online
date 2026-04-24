@@ -78,6 +78,25 @@ export class AllUsuariosComponent implements OnInit {
     this.serviceUser.userUpdate.next(item);
   }
 
+  initials(username: string): string {
+    return (username ?? '?').slice(0, 2).toUpperCase();
+  }
+
+  avatarColor(username: string): string {
+    const palette = [
+      'linear-gradient(135deg,#6366f1,#4f46e5)',
+      'linear-gradient(135deg,#ec4899,#db2777)',
+      'linear-gradient(135deg,#10b981,#059669)',
+      'linear-gradient(135deg,#f59e0b,#d97706)',
+      'linear-gradient(135deg,#3b82f6,#2563eb)',
+      'linear-gradient(135deg,#8b5cf6,#7c3aed)',
+      'linear-gradient(135deg,#ef4444,#dc2626)',
+      'linear-gradient(135deg,#14b8a6,#0d9488)',
+    ];
+    const idx = (username ?? '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
+    return palette[idx];
+  }
+
   removeUsuario(item: any) {
     this.serviceUser.eliminarUsuarioDto(item.id).subscribe(eliminado=>{
               Swal.fire({

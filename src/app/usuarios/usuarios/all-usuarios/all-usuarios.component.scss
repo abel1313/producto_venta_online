@@ -1,62 +1,156 @@
-.mat-menu-item {
-    font-size: 16px;         // 📌 Cambia el tamaño de la fuente
-    color: rgb(0, 0, 0) !important; // 📌 Forzar color del texto
-    border-radius: 5px;      // 📌 Bordes redondeados
+$radius: 16px;
+$transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+$shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 
-    
-
-  }
-  .no-select {
-    user-select: none; /* 🚫 Evita la selección de texto */
-    -webkit-user-select: none; /* 🔹 Para Safari */
-    -moz-user-select: none; /* 🔹 Para Firefox */
-    -ms-user-select: none; /* 🔹 Para Internet Explorer */
+// ── Wrapper ────────────────────────────────────────────────────────────────
+.au-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 3rem;
 }
 
-.no-highlight::selection {
-    background: transparent; /* 🚫 Evita el fondo azul al seleccionar */
+// ── Scroll ─────────────────────────────────────────────────────────────────
+.au-scroll {
+  height: 72vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar        { width: 6px; }
+  &::-webkit-scrollbar-track  { background: transparent; }
+  &::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 99px; }
 }
 
+// ── Grid ───────────────────────────────────────────────────────────────────
+.au-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
 
-//   ::ng-deep .cdk-overlay-pane {
-  //   position: absolute !important;
-  //   left: 300px !important;  // 📌 Mueve el menú hacia la derecha
-  //  top: 100px !important;   // 📌 Mueve el menú hacia abajo
- //  }
-
-
- .example-card {
-  max-width: 400px;
+  @media (min-width: 576px)  { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 900px)  { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 1200px) { grid-template-columns: repeat(4, 1fr); }
 }
 
-.example-header-image {
-  background-image: url('https://material.angular.dev/assets/img/examples/shiba1.jpg');
-  background-size: cover;
-}
-
-mat-card img {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-.example-card {
-  height: 100%;
+// ── Card ───────────────────────────────────────────────────────────────────
+.au-card {
+  background: #fff;
+  border-radius: $radius;
+  box-shadow: $shadow;
+  padding: 1.4rem 1.25rem 1.1rem;
   display: flex;
   flex-direction: column;
-}
-.scroll-container {
-  height: 70vh;
-  overflow-y: auto;
-  overflow-x: hidden; /* 👈 evita el scroll horizontal */
-  padding-right: 10px;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #f3f4f6;
+  transition: $transition;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  }
 }
 
-.img-producto{
-  height: 80%;border: 1px solid rgb(37, 75, 133);
+// ── Avatar ─────────────────────────────────────────────────────────────────
+.au-card__avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
-.espacio-img{
-  margin-bottom: 8px;
+
+// ── Info ───────────────────────────────────────────────────────────────────
+.au-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: center;
 }
-.con-style{
-  width: 20px; height: 20px; margin-left: 8px;
+
+.au-card__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+.au-card__email {
+  font-size: 0.78rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  word-break: break-all;
+
+  .pi { font-size: 0.72rem; }
+}
+
+.au-card__rol {
+  margin-top: 0.15rem;
+  display: inline-block;
+  padding: 0.2rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+// ── Acciones ───────────────────────────────────────────────────────────────
+.au-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.au-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: none; }
+
+  &__icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  &--edit {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    &:hover { box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45); }
+  }
+
+  &--delete {
+    background: #fef2f2;
+    color: #dc2626;
+    &:hover { background: #fee2e2; }
+  }
 }

@@ -1,40 +1,37 @@
-<app-buscar-usuarios
-(regresarProductos)="usuariosResponse($event)"></app-buscar-usuarios>
+<app-buscar-usuarios (regresarProductos)="usuariosResponse($event)"></app-buscar-usuarios>
 
+<div class="au-wrapper">
+  <div class="au-scroll" (scroll)="onScroll($event)">
+    <div class="au-grid">
 
+      <div class="au-card" *ngFor="let item of rows">
 
-<div class="container ">
-  <div class="scroll-container" (scroll)="onScroll($event)">
-    <div class="row">
-      <div class="col-md-4 mt-2" *ngFor="let item of rows">
-        <mat-card class="example-card " appearance="outlined">
-          <mat-card-header>
-            <div mat-card-avatar class="example-header-image"></div>
-            <mat-card-title>Nombre del usuario <p><b>{{item.username}}</b></p>
-            </mat-card-title>
-            <mat-card-subtitle>Email <b>{{item.email == '' ? 'Sin correo' : item.email }}</b> </mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <p>
-              Rol {{item.rol}}
-            </p>
-          </mat-card-content>
-          <div class="col-12" style="margin-bottom: 8px;" type="button" >
-            <button type="button" class="btn btn-secondary col-12"  (click)="updateUsuario(item)">
-             <b> Actualizar <img [src]="iconImagen.iconEditar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
-            </button>
-            
-          </div>
-          <div class="col-12" style="margin-bottom: 8px;" type="button" >
-            <button type="button" class="btn btn-secondary col-12"  (click)="removeUsuario(item)"  >
-             <b> Eliminar <img [src]="iconImagen.iconEliminar" style="width: 20px; height: 20px; margin-left: 8px;" /></b>
-            </button>
-          </div>
+        <div class="au-card__avatar" [style.background]="avatarColor(item.username)">
+          {{ initials(item.username) }}
+        </div>
 
-        </mat-card>
+        <div class="au-card__body">
+          <span class="au-card__name">{{ item.username }}</span>
+          <span class="au-card__email">
+            <i class="pi pi-envelope"></i>
+            {{ item.email || 'Sin correo' }}
+          </span>
+          <span class="au-card__rol">{{ item.rol }}</span>
+        </div>
+
+        <div class="au-card__actions">
+          <button class="au-btn au-btn--edit" (click)="updateUsuario(item)">
+            <img [src]="iconImagen.iconEditar" class="au-btn__icon" alt="" />
+            Actualizar
+          </button>
+          <button class="au-btn au-btn--delete" (click)="removeUsuario(item)">
+            <img [src]="iconImagen.iconEliminar" class="au-btn__icon" alt="" />
+            Eliminar
+          </button>
+        </div>
 
       </div>
+
     </div>
   </div>
-
 </div>

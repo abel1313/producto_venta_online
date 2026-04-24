@@ -1,17 +1,77 @@
-<!-- login-form.component.html -->
-<div class="login-container">
-  <h2>Inicia sesión en Bolsas Key</h2>
-  <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-    <label for="username">Usuario</label>
-    <input id="username" formControlName="userName" type="text" placeholder="Usuario" />
+<div class="login-page">
 
-    <label for="password">Contraseña</label>
-    <input id="password" formControlName="password" type="password" placeholder="Contraseña" />
+  <!-- Fondo decorativo -->
+  <div class="bg-shapes">
+    <span class="shape shape-1"></span>
+    <span class="shape shape-2"></span>
+    <span class="shape shape-3"></span>
+  </div>
 
-    <button type="submit" class="mb-3" [disabled]="loginForm.invalid">Entrar</button>
+  <!-- Tarjeta -->
+  <div class="login-card">
 
-      <a class="mb-4"  [routerLink]="['/usuarios/registrar']">Registrar</a>
-      
-    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-  </form>
+    <!-- Marca -->
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="pi pi-shopping-bag"></i>
+      </div>
+      <h1 class="brand-name">Bolsas <span>Key</span></h1>
+      <p class="brand-sub">Inicia sesión para continuar</p>
+    </div>
+
+    <!-- Formulario -->
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+
+      <!-- Usuario -->
+      <div class="field-wrap">
+        <label class="field-label" for="username">Usuario</label>
+        <div class="input-wrap">
+          <i class="pi pi-user input-icon"></i>
+          <input id="username"
+                 class="field-input"
+                 formControlName="userName"
+                 type="text"
+                 placeholder="Ingresa tu usuario"
+                 autocomplete="username">
+        </div>
+      </div>
+
+      <!-- Contraseña -->
+      <div class="field-wrap">
+        <label class="field-label" for="password">Contraseña</label>
+        <div class="input-wrap">
+          <i class="pi pi-lock input-icon"></i>
+          <input id="password"
+                 class="field-input"
+                 formControlName="password"
+                 [type]="mostrarPassword ? 'text' : 'password'"
+                 placeholder="Ingresa tu contraseña"
+                 autocomplete="current-password">
+          <button type="button" class="toggle-pass" (click)="mostrarPassword = !mostrarPassword" tabindex="-1">
+            <i class="pi" [ngClass]="mostrarPassword ? 'pi-eye-slash' : 'pi-eye'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-msg" *ngIf="errorMessage">
+        <i class="pi pi-exclamation-circle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Botón entrar -->
+      <button type="submit" class="btn-login" [disabled]="loginForm.invalid">
+        <span>Entrar</span>
+        <i class="pi pi-arrow-right"></i>
+      </button>
+
+      <!-- Registro -->
+      <p class="register-link">
+        ¿No tienes cuenta?
+        <a [routerLink]="['/usuarios/registrar']">Regístrate aquí</a>
+      </p>
+
+    </form>
+  </div>
+
 </div>

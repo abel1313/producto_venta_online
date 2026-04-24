@@ -18,6 +18,7 @@ export class LoginFormComponent implements OnInit {
 
   loginForm: FormGroup;
   errorMessage: string = '';
+  mostrarPassword = false;
 
   constructor(private fb: FormBuilder,
     private router: Router,

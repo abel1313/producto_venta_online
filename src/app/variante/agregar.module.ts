@@ -10,6 +10,8 @@ import { UpdateVarianteComponent } from './update-variante/update-variante.compo
 import { ListarVariantesComponent } from './listar-variantes/listar-variantes.component';
 import { BuscarComponent } from './buscar/buscar.component';
 import { VentaVarianteComponent } from './venta-variante/venta-variante.component';
+import { DetalleVarianteComponent } from './detalle-variante/detalle-variante.component';
+import { CarouselModule } from 'primeng/carousel';
 
 
 @NgModule({
@@ -18,7 +20,8 @@ import { VentaVarianteComponent } from './venta-variante/venta-variante.componen
     UpdateVarianteComponent,
     ListarVariantesComponent,
     BuscarComponent,
-    VentaVarianteComponent
+    VentaVarianteComponent,
+    DetalleVarianteComponent
   ],
   imports: [
     CommonModule,
@@ -26,6 +29,7 @@ import { VentaVarianteComponent } from './venta-variante/venta-variante.componen
     ReactiveFormsModule,
     AgGridModule,
     TableModule,
+    CarouselModule,
     AgregarRoutingModule
   ]
 })

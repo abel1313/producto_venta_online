@@ -58,7 +58,7 @@
     <div class="vb-card" *ngFor="let v of variantes">
 
       <!-- Imagen -->
-      <div class="vb-card__img-wrap">
+      <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <img *ngIf="imageSrc(v.imagenBase64) as src" [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
         <div *ngIf="!v.imagenBase64" class="vb-card__img-placeholder">📦</div>
       </div>
@@ -79,6 +79,12 @@
       <!-- Body -->
       <div class="vb-card__body">
         <div class="vb-card__detail">
+
+                    <div class="vb-card__detail-row" *ngIf="v.codigoBarras">
+            <span class="vb-card__detail-label">Código de barras</span>
+            <span class="vb-card__detail-val">{{ v.codigoBarras }}</span>
+          </div>
+          
           <div class="vb-card__detail-row" *ngIf="v.talla">
             <span class="vb-card__detail-label">Talla</span>
             <span class="vb-card__detail-val">{{ v.talla }}</span>

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { IVariante, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
+import { IVariante, IVarianteDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
@@ -51,8 +51,9 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
-  getPorProducto(productoId: number): Observable<{ data: IVariante[] }> {
-    return this.http.get<{ data: IVariante[] }>(`${this.url}/porProducto/${productoId}`);
+  getPorProducto(productoId: number): Observable<IVarianteDto[]> {
+    return this.http.get<{ data: IVarianteDto[] }>(`${this.url}/porProducto/${productoId}`)
+      .pipe(map(res => res.data));
   }
 
   getPorProductoPaginadoResumen(productoId: number, pagina: number, size: number): Observable<IVarianteResumenPaginable> {
@@ -82,6 +83,12 @@ export class VarianteService {
 
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.url}/delete`, { body: id });
+  }
+
+  getImagenesPaginado(id: number, pagina: number, size: number): Observable<IVarianteImagenPaginable> {
+    return this.http.get<{ data: IVarianteImagenPaginable }>(
+      `${this.url}/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
+    ).pipe(map(res => res.data));
   }
 
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {

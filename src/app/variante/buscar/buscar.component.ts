@@ -138,6 +138,10 @@ export class BuscarComponent implements OnInit {
     this.router.navigate(['/variantes/carrito']);
   }
 
+  irDetalle(v: IVarianteResumen): void {
+    this.router.navigate(['/variantes/detalle', v.id]);
+  }
+
   editarVariante(v: IVarianteResumen): void {
     this.varianteService.getOne(v.id).subscribe({
       next: variante => {

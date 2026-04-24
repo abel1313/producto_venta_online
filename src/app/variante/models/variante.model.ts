@@ -1,5 +1,18 @@
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 
+export interface IVarianteDto {
+  id: number;
+  talla?: string;
+  descripcion?: string;
+  color?: string;
+  presentacion?: string;
+  stock: number;
+  marca?: string;
+  contenidoNeto?: string;
+  precio: number;
+  codigoBarras?: string;
+}
+
 export interface IVarianteRequest {
   id?: number;           // Presente → actualiza; ausente → crea
   productoId: number;
@@ -35,6 +48,7 @@ export interface IVariantePaginable {
 
 export interface IVarianteResumen {
   id: number;
+  productoId?: number | null;
   talla?: string | null;
   descripcion?: string | null;
   color?: string | null;
@@ -44,6 +58,7 @@ export interface IVarianteResumen {
   contenidoNeto?: string | null;
   imagenBase64?: string | null;
   precio?: number | null;
+  codigoBarras?: string | null;
 }
 
 export interface IVarianteResumenPaginable {
@@ -51,4 +66,18 @@ export interface IVarianteResumenPaginable {
   totalPaginas: number;
   totalRegistros: number;
   t: IVarianteResumen[];
+}
+
+export interface IVarianteImagenDto {
+  id?: number;
+  base64: string;
+  extension: string;
+  nombreImagen: string;
+}
+
+export interface IVarianteImagenPaginable {
+  pagina: number;
+  totalPaginas: number;
+  totalRegistros: number;
+  t: IVarianteImagenDto[];
 }

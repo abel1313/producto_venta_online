@@ -1,0 +1,127 @@
+<!-- Cargando -->
+<div *ngIf="cargando" class="dv-loading">
+  <span class="spinner-border text-primary"></span>
+  <p class="mt-3 text-muted">Cargando variante…</p>
+</div>
+
+<div *ngIf="!cargando && varianteSeleccionada" class="dv-wrapper">
+
+  <!-- Botón volver -->
+  <button class="dv-back" (click)="volver()">
+    <i class="pi pi-arrow-left"></i> Volver
+  </button>
+
+  <!-- Selector de variantes -->
+  <div class="dv-variants" *ngIf="variantes.length > 1">
+    <div class="dv-variants__list">
+      <button *ngFor="let v of variantes"
+              class="dv-variant-chip"
+              [class.dv-variant-chip--active]="v.id === varianteSeleccionada.id"
+              (click)="seleccionar(v)">
+        <span *ngIf="v.talla">{{ v.talla }}</span>
+        <span *ngIf="v.talla && v.color"> · </span>
+        <span *ngIf="v.color">{{ v.color }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Encabezado -->
+  <div class="dv-header" [style.background]="colorGradient">
+    <div class="dv-header__info">
+      <div class="dv-badge-row">
+        <span *ngIf="varianteSeleccionada.talla"   class="dv-badge dv-badge--talla">{{ varianteSeleccionada.talla }}</span>
+        <span *ngIf="varianteSeleccionada.color"   class="dv-badge dv-badge--color">{{ varianteSeleccionada.color }}</span>
+        <span *ngIf="varianteSeleccionada.marca"   class="dv-badge dv-badge--marca">{{ varianteSeleccionada.marca }}</span>
+      </div>
+      <h2 class="dv-header__name">Variante #{{ varianteSeleccionada.id }}</h2>
+      <p *ngIf="varianteSeleccionada.descripcion" class="dv-header__desc">{{ varianteSeleccionada.descripcion }}</p>
+    </div>
+
+    <div class="dv-header__price-block">
+      <span class="dv-price">
+        {{ varianteSeleccionada.precio | currency:'$' }}
+      </span>
+      <span class="dv-stock"
+            [ngClass]="{
+              'dv-stock--ok':  varianteSeleccionada.stock > 3,
+              'dv-stock--low': varianteSeleccionada.stock > 0 && varianteSeleccionada.stock <= 3,
+              'dv-stock--out': varianteSeleccionada.stock === 0
+            }">
+        <i class="pi"
+           [ngClass]="varianteSeleccionada.stock === 0 ? 'pi-times-circle' : 'pi-check-circle'"></i>
+        {{ varianteSeleccionada.stock === 0 ? 'Agotado' : varianteSeleccionada.stock + ' unidades' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Carrusel -->
+  <div class="dv-carousel-wrap">
+
+    <ng-container *ngIf="displayImages.length > 0; else sinImagenes">
+      <p-carousel
+        [value]="displayImages"
+        [numVisible]="3"
+        [numScroll]="1"
+        [circular]="false"
+        [responsiveOptions]="responsiveOptions"
+        (onPage)="handlePageChange($event)"
+        styleClass="dv-carousel">
+
+        <ng-template pTemplate="item" let-img>
+          <div class="dv-slide">
+            <div class="dv-slide__img-wrap">
+              <img
+                [src]="imageSrc(img)"
+                [alt]="img.nombreImagen ?? 'Imagen variante'"
+                class="dv-slide__img"
+                (error)="$any($event.target).style.display='none'" />
+            </div>
+            <p class="dv-slide__label">{{ img.nombreImagen }}</p>
+          </div>
+        </ng-template>
+
+      </p-carousel>
+    </ng-container>
+
+    <ng-template #sinImagenes>
+      <div class="dv-no-img">
+        <i class="pi pi-image dv-no-img__icon"></i>
+        <p>Sin imágenes disponibles</p>
+      </div>
+    </ng-template>
+
+  </div>
+
+  <!-- Detalles extra -->
+  <div class="dv-details" *ngIf="varianteSeleccionada.presentacion || varianteSeleccionada.contenidoNeto || varianteSeleccionada.codigoBarras">
+    <div class="dv-details__row" *ngIf="varianteSeleccionada.presentacion">
+      <span class="dv-details__label">Presentación</span>
+      <span class="dv-details__val">{{ varianteSeleccionada.presentacion }}</span>
+    </div>
+    <div class="dv-details__row" *ngIf="varianteSeleccionada.contenidoNeto">
+      <span class="dv-details__label">Contenido neto</span>
+      <span class="dv-details__val">{{ varianteSeleccionada.contenidoNeto }}</span>
+    </div>
+    <div class="dv-details__row" *ngIf="varianteSeleccionada.codigoBarras">
+      <span class="dv-details__label">Código de barras</span>
+      <span class="dv-details__val">{{ varianteSeleccionada.codigoBarras }}</span>
+    </div>
+  </div>
+
+  <!-- Acciones carrito -->
+  <div class="dv-actions">
+    <button class="dv-btn dv-btn--add"
+            [disabled]="stockAgotado"
+            (click)="agregarCarrito()">
+      <i class="pi pi-shopping-cart"></i>
+      {{ stockAgotado ? 'Sin stock' : (cantidadEnCarrito > 0 ? 'Agregar uno más (' + cantidadEnCarrito + ')' : 'Agregar al carrito') }}
+    </button>
+    <button class="dv-btn dv-btn--remove"
+            [disabled]="!estaEnCarrito"
+            (click)="quitarCarrito()">
+      <i class="pi pi-minus"></i>
+      Quitar del carrito
+    </button>
+  </div>
+
+</div>

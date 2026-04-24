@@ -1,12 +1,300 @@
+// ── Variables ──────────────────────────────────────────────────────────────
+$radius: 16px;
+$shadow-base: 0 4px 20px rgba(0, 0, 0, 0.08);
+$shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.16);
+$transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Estados
+$entregado-from: #10b981;
+$entregado-to:   #059669;
+$pendiente-from: #f59e0b;
+$pendiente-to:   #d97706;
+$cancelado-from: #ef4444;
+$cancelado-to:   #dc2626;
+
+// ── Layout principal ───────────────────────────────────────────────────────
+.pedidos-wrapper {
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// ── Buscador ───────────────────────────────────────────────────────────────
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input-wrap {
+  position: relative;
+  max-width: 420px;
+
+  @media (max-width: 575px) { max-width: 100%; }
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.6rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  background: #fff;
+  transition: $transition;
+  outline: none;
+
+  &:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+  }
+}
+
+// ── Scroll container ────────────────────────────────────────────────────────
 .scroll-container {
   height: 80vh;
   overflow-y: auto;
-  border: 1px solid #ccc;
-  padding: 1rem;
+  padding: 0.5rem 0.25rem;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+  }
 }
 
+// ── Grid de tarjetas ────────────────────────────────────────────────────────
+.pedidos-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
 
+  @media (min-width: 576px)  { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 992px)  { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 1400px) { grid-template-columns: repeat(4, 1fr); }
+}
 
-.text-success {
-  color: green;
+// ── Tarjeta base ────────────────────────────────────────────────────────────
+.pedido-card {
+  background: #fff;
+  border-radius: $radius;
+  box-shadow: $shadow-base;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: $transition;
+  border-top: 4px solid #6366f1;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-hover;
+  }
+
+  // Estados — cambian el acento superior y degradado del header
+  &.estado-entregado {
+    border-top-color: $entregado-from;
+    .card-head { background: linear-gradient(135deg, $entregado-from, $entregado-to); }
+    .estado-badge { background: rgba(255,255,255,0.25); }
+    .total-strip { background: linear-gradient(135deg, rgba($entregado-from,0.08), rgba($entregado-to,0.12)); border-color: rgba($entregado-from,0.2); }
+    .total-amount { color: $entregado-to; }
+  }
+
+  &.estado-pendiente {
+    border-top-color: $pendiente-from;
+    .card-head { background: linear-gradient(135deg, $pendiente-from, $pendiente-to); }
+    .estado-badge { background: rgba(255,255,255,0.25); }
+    .total-strip { background: linear-gradient(135deg, rgba($pendiente-from,0.08), rgba($pendiente-to,0.12)); border-color: rgba($pendiente-from,0.2); }
+    .total-amount { color: $pendiente-to; }
+  }
+
+  &.estado-cancelado {
+    border-top-color: $cancelado-from;
+    .card-head { background: linear-gradient(135deg, $cancelado-from, $cancelado-to); }
+    .estado-badge { background: rgba(255,255,255,0.25); }
+    .total-strip { background: linear-gradient(135deg, rgba($cancelado-from,0.08), rgba($cancelado-to,0.12)); border-color: rgba($cancelado-from,0.2); }
+    .total-amount { color: $cancelado-to; }
+  }
+}
+
+// ── Cabecera ────────────────────────────────────────────────────────────────
+.card-head {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-head-left {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.order-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+}
+
+.order-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+
+  .pi { font-size: 0.85rem; }
+}
+
+// ── Cuerpo ──────────────────────────────────────────────────────────────────
+.card-body-custom {
+  padding: 1rem 1.25rem 0.75rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.info-icon {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.info-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  line-height: 1.2;
+}
+
+.info-value {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ── Strip de total ──────────────────────────────────────────────────────────
+.total-strip {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(79,70,229,0.12));
+  border: 1px solid rgba(99,102,241,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+
+.total-amount {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #4f46e5;
+  letter-spacing: -0.02em;
+}
+
+// ── Footer ──────────────────────────────────────────────────────────────────
+.card-footer-custom {
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+}
+
+// ── Botones de la tarjeta ───────────────────────────────────────────────────
+.btn-card {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: $transition;
+  white-space: nowrap;
+
+  .pi { font-size: 0.8rem; }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  &:not(:disabled):hover { transform: translateY(-1px); }
+}
+
+.btn-detalle {
+  background: #eff6ff;
+  color: #2563eb;
+  &:not(:disabled):hover { background: #dbeafe; }
+}
+
+.btn-cobrar {
+  background: #f0fdf4;
+  color: #16a34a;
+  &:not(:disabled):hover { background: #dcfce7; }
+}
+
+.btn-cancelar {
+  background: #fef2f2;
+  color: #dc2626;
+  &:not(:disabled):hover { background: #fee2e2; }
 }

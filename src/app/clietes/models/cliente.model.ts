@@ -11,4 +11,5 @@ export interface ICliente extends IdGenerico{
   sexo: string;
   correoElectronico: string;
   numeroTelefonico: string;
+  usuario?: { id: number };
 }

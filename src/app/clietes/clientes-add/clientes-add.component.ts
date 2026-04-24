@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import Swal from 'sweetalert2';
 import { ICliente } from '../models';
@@ -12,85 +14,59 @@ import { Constants } from 'src/app/Constants';
 })
 export class ClientesAddComponent implements OnInit {
 
-@Input() nombreCard: string = '';
+  @Input() nombreCard: string = '';
+  @Output() $hideComponent = new EventEmitter<boolean>();
 
-@Output() $hideComponent = new EventEmitter<boolean>();
   formCliente: FormGroup;
-
-  clienteSave: ICliente;
+  private idUsuario = 0;
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly service: ProductoService
-
+    private readonly service: ProductoService,
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {
-
-    if(this.nombreCard == ''){
-      this.nombreCard = 'Agrgar Producto';
+    if (this.nombreCard == '') {
+      this.nombreCard = 'Nuevo cliente';
     }
 
-    this.clienteSave = {
-      nombrePersona: '',
-      segundoNombre: '',
-      apeidoPaterno: '',
-      apeidoMaterno: '',
-      sexo: '',
-      correoElectronico: '',
-      numeroTelefonico: ''
-        }
-
-
     this.formCliente = this.fb.group({
-      nombrePersona: ['Raul', [Validators.required]], 
+      nombrePersona: ['', [Validators.required]],
       segundoNombre: [''],
-      apeidoPaterno: ['Rogel', Validators.required],
-      apeidoMaterno: ['Tejada', Validators.required],
-      sexo: ['Hombre'],
+      apeidoPaterno: ['', Validators.required],
+      apeidoMaterno: ['', Validators.required],
+      sexo: [''],
       correoElectronico: [''],
       numeroTelefonico: ['']
     });
+  }
 
-    
-
-   }
   ngOnInit(): void {
-
+    this.authService.userId$.subscribe(id => { this.idUsuario = id; });
   }
 
-    gastos():void{
-      if( this.formCliente.valid){
-        const { codigoBarra, ...productoData } = this.formCliente.value;
-  
-        const producto: ICliente = this.formCliente.value;
+  guardar(): void {
+    if (this.formCliente.invalid) return;
 
-    }
+    const cliente: ICliente = {
+      ...this.formCliente.value,
+      ...(this.idUsuario ? { usuario: { id: this.idUsuario } } : {})
+    };
+
+    this.service.saveCliente(cliente).subscribe({
+      next: (res) => {
+        this.formCliente.reset();
+        sessionStorage.setItem(Constants.DATA_CLIENTE, JSON.stringify(res.data));
+        this.$hideComponent.emit(true);
+        Swal.fire({ title: 'Cliente registrado correctamente', icon: 'success' }).then(() => {
+          if (this.idUsuario) this.router.navigate(['/variantes/buscar']);
+        });
+      },
+      error: () => {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar el cliente.' });
+      }
+    });
   }
 
-    guardar():void{
-      this.clienteSave = this.formCliente.value;
-      this.service.saveCliente(this.clienteSave)
-      .subscribe({
-        next:(res)=>{
-          this.formCliente.reset();
-            Swal.fire({
-              title: "Se guardo Correctamente",
-              icon: "success",
-              draggable: true
-            });
-
-            sessionStorage.setItem(Constants.DATA_CLIENTE,JSON.stringify(res.data));
-
-            this.$hideComponent.emit(true);
-        },
-        error(error){
-          //console.log(error)
-        }
-      });
-      
-      
-    }
-    update():void{
-      
-    }
-
+  update(): void {}
 }

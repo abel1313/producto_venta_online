@@ -133,29 +133,36 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       this.armarYConfirmar(this.clienteSeleccionado.id);
     } else {
       if (this.idUsuario === 0) {
-        Swal.fire({ icon: 'error', title: 'Usuario no encontrado', text: 'Inicia sesión e intenta de nuevo.' });
+        Swal.fire({
+          title: 'Generar pedido',
+          icon: 'info',
+          html: '<p>Para poder generar un pedido es necesario registrarse.</p>',
+          showCancelButton: true,
+          confirmButtonText: 'Ir a registro',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33'
+        }).then(result => {
+          if (result.isConfirmed) this.router.navigate(['/usuarios/registrar']);
+        });
         return;
       }
       this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
         next: (res: any) => {
-          if (res?.data?.id) this.armarYConfirmar(res.data.id);
+          if (res) this.armarYConfirmar(res);
           else {
-                  Swal.fire({
-                    title: "Generar pedido",
-                    icon: "info",
-                    html: `
-                    <p>Para poder generar un pedido es necesario registrarse.</p>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: "Ir a registro",
-                    cancelButtonText: "Cancelar",
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33"
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                      this.router.navigate(['/usuarios/registrar']);
-                    }
-                  });
+            Swal.fire({
+              title: 'Generar pedido',
+              icon: 'info',
+              html: '<p>Para completar tu pedido necesitas registrarte como cliente.</p>',
+              showCancelButton: true,
+              confirmButtonText: 'Registrarme como cliente',
+              cancelButtonText: 'Cancelar',
+              confirmButtonColor: '#3085d6',
+              cancelButtonColor: '#d33'
+            }).then(result => {
+              if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
+            });
           }
         },
         error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener el cliente.' })

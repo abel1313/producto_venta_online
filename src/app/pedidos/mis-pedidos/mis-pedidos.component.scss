@@ -405,6 +405,12 @@ $cancelado-to:   #dc2626;
     color: #d97706;
     border: 1px solid #fde68a;
   }
+
+  &--bloqueado {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+  }
 }
 
 .mp-terminal__actions {

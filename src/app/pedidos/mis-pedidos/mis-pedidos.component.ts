@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
 import { IPedidoGenerico } from './models/IPedidoGenerico.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
@@ -39,7 +40,8 @@ export class MisPedidosComponent implements OnInit {
   pagosYMesesId: number | null = null;
 
   // Terminal Mercado Pago
-  estadoTerminal: 'idle' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' = 'idle';
+  estadoTerminal: 'idle' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' | 'bloqueado' = 'idle';
+  errorTerminal: string | null = null;
   intentId: string | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -164,6 +166,7 @@ export class MisPedidosComponent implements OnInit {
     this.mesesSeleccionado = null;
     this.pagosYMesesId = null;
     this.estadoTerminal = 'idle';
+    this.errorTerminal = null;
     this.intentId = null;
   }
 
@@ -210,7 +213,11 @@ export class MisPedidosComponent implements OnInit {
         this.intentId = res.intentId;
         this.startPolling(res.intentId);
       },
-      error: () => { this.estadoTerminal = 'rechazado'; }
+      error: (err: HttpErrorResponse) => {
+        const msg: string = err.error?.mensaje ?? err.error?.message ?? 'Error al conectar con la terminal.';
+        this.errorTerminal = msg;
+        this.estadoTerminal = err.status === 429 ? 'bloqueado' : 'rechazado';
+      }
     });
   }
 

@@ -170,12 +170,14 @@
                 <i class="pi pi-check-circle" *ngIf="estadoTerminal === 'aprobado'"></i>
                 <i class="pi pi-times-circle" *ngIf="estadoTerminal === 'rechazado'"></i>
                 <i class="pi pi-ban"          *ngIf="estadoTerminal === 'cancelado'"></i>
+                <i class="pi pi-lock"         *ngIf="estadoTerminal === 'bloqueado'"></i>
                 <span>
                     <ng-container [ngSwitch]="estadoTerminal">
                         <ng-container *ngSwitchCase="'procesando'">Esperando respuesta en terminal…</ng-container>
                         <ng-container *ngSwitchCase="'aprobado'">Pago aprobado</ng-container>
-                        <ng-container *ngSwitchCase="'rechazado'">Pago rechazado. Intente de nuevo.</ng-container>
+                        <ng-container *ngSwitchCase="'rechazado'">{{ errorTerminal }}</ng-container>
                         <ng-container *ngSwitchCase="'cancelado'">Pago cancelado en terminal.</ng-container>
+                        <ng-container *ngSwitchCase="'bloqueado'">{{ errorTerminal }}</ng-container>
                     </ng-container>
                 </span>
             </div>
@@ -183,7 +185,7 @@
             <!-- Botones de terminal -->
             <div class="mp-terminal__actions">
                 <button class="mp-btn mp-btn--send"
-                        [disabled]="estadoTerminal === 'procesando' || estadoTerminal === 'aprobado'"
+                        [disabled]="estadoTerminal === 'procesando' || estadoTerminal === 'aprobado' || estadoTerminal === 'bloqueado'"
                         (click)="enviarATerminal()">
                     <i class="pi pi-send"></i>
                     {{ estadoTerminal === 'rechazado' || estadoTerminal === 'cancelado' ? 'Reintentar' : 'Enviar a terminal' }}

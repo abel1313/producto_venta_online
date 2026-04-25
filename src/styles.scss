@@ -43,6 +43,17 @@ nb-card, nb-menu, nb-select {
   font-family: 'Poppins', sans-serif !important;
 }
 
+/* Excepción: iconos de fuente — deben conservar su font-family propio */
+.pi, .pi::before,
+[class^="pi-"]::before, [class*=" pi-"]::before {
+  font-family: 'primeicons' !important;
+}
+
+.bi, .bi::before,
+[class^="bi-"]::before, [class*=" bi-"]::before {
+  font-family: 'bootstrap-icons' !important;
+}
+
 /* ── BODY ─────────────────────────────────── */
 body {
   font-size: 0.875rem;   /* 14px */

@@ -1,0 +1,137 @@
+<div class="hmp-wrapper">
+
+  <!-- Encabezado -->
+  <div class="hmp-header">
+    <div class="hmp-header__title">
+      <i class="pi pi-credit-card hmp-header__icon"></i>
+      <h2>Historial Mercado Pago</h2>
+    </div>
+    <a class="hmp-header__back" routerLink="/pedidos/mis-pedidos">
+      <i class="pi pi-arrow-left"></i> Mis pedidos
+    </a>
+  </div>
+
+  <!-- Tabs de modo -->
+  <div class="hmp-tabs">
+    <button *ngFor="let m of modos"
+            class="hmp-tab"
+            [class.hmp-tab--active]="modo === m.key"
+            (click)="setModo(m.key)">
+      <i class="pi {{ m.icon }}"></i>
+      <span>{{ m.label }}</span>
+    </button>
+  </div>
+
+  <!-- Filtros contextuales -->
+  <div class="hmp-filters">
+
+    <!-- Por pedido -->
+    <div class="hmp-filter-row" *ngIf="modo === 'pedido'">
+      <input class="hmp-input" type="number" placeholder="Número de pedido"
+             [(ngModel)]="filtroPedidoId" (keyup.enter)="buscar()" min="1" />
+      <button class="hmp-btn hmp-btn--search" (click)="buscar()"
+              [disabled]="!filtroPedidoId">
+        <i class="pi pi-search"></i> Buscar
+      </button>
+    </div>
+
+    <!-- Por estado -->
+    <div class="hmp-estado-chips" *ngIf="modo === 'estado'">
+      <button *ngFor="let e of estadosOpciones"
+              class="hmp-chip"
+              [class.hmp-chip--open]="e.key === 'OPEN'     && filtroEstado === 'OPEN'"
+              [class.hmp-chip--finished]="e.key === 'FINISHED' && filtroEstado === 'FINISHED'"
+              [class.hmp-chip--canceled]="e.key === 'CANCELED' && filtroEstado === 'CANCELED'"
+              [class.hmp-chip--inactive]="filtroEstado !== null && filtroEstado !== e.key"
+              (click)="setEstado(e.key)">
+        {{ e.label }}
+      </button>
+    </div>
+
+    <!-- Rango MP -->
+    <div class="hmp-filter-row" *ngIf="modo === 'mp'">
+      <div class="hmp-date-group">
+        <label class="hmp-date-label">Desde</label>
+        <input class="hmp-input" type="date" [(ngModel)]="filtroDesde" />
+      </div>
+      <div class="hmp-date-group">
+        <label class="hmp-date-label">Hasta</label>
+        <input class="hmp-input" type="date" [(ngModel)]="filtroHasta" />
+      </div>
+      <button class="hmp-btn hmp-btn--search" (click)="buscar()"
+              [disabled]="!filtroDesde || !filtroHasta">
+        <i class="pi pi-search"></i> Consultar
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Cargando -->
+  <div class="hmp-loading" *ngIf="cargando">
+    <span class="spinner-border text-primary"></span>
+    <p>Cargando historial…</p>
+  </div>
+
+  <!-- Sin resultados -->
+  <div class="hmp-empty" *ngIf="!cargando && items.length === 0 && (modo === 'todos' || filtroEstado || filtroPedidoId)">
+    <i class="pi pi-inbox hmp-empty__icon"></i>
+    <p>No hay registros para mostrar.</p>
+  </div>
+
+  <!-- Lista -->
+  <div class="hmp-list" *ngIf="!cargando && items.length > 0">
+    <div class="hmp-item" *ngFor="let item of items">
+
+      <div class="hmp-item__top">
+        <span class="hmp-item__intent" title="{{ item.intentId }}">
+          <i class="pi pi-id-card"></i> {{ intentCorto(item.intentId) }}
+        </span>
+        <span class="hmp-estado-badge hmp-estado-badge--{{ item.estado | lowercase }}">
+          <i class="pi"
+             [ngClass]="{
+               'pi-clock':        item.estado === 'OPEN',
+               'pi-check-circle': item.estado === 'FINISHED',
+               'pi-times-circle': item.estado === 'CANCELED'
+             }"></i>
+          {{ estadoLabel(item.estado) }}
+        </span>
+      </div>
+
+      <div class="hmp-item__body">
+        <div class="hmp-item__field">
+          <span class="hmp-item__label">Pedido</span>
+          <span class="hmp-item__value">#{{ item.pedidoId }}</span>
+        </div>
+        <div class="hmp-item__field" *ngIf="item.totalMonto != null">
+          <span class="hmp-item__label">Total</span>
+          <span class="hmp-item__value hmp-item__value--amount">{{ item.totalMonto | currency:'$' }}</span>
+        </div>
+        <div class="hmp-item__field" *ngIf="item.cuotas">
+          <span class="hmp-item__label">Cuotas</span>
+          <span class="hmp-item__value">{{ item.cuotas === 1 ? '1 exhibición' : item.cuotas + ' meses' }}</span>
+        </div>
+        <div class="hmp-item__field" *ngIf="item.descripcion">
+          <span class="hmp-item__label">Descripción</span>
+          <span class="hmp-item__value">{{ item.descripcion }}</span>
+        </div>
+        <div class="hmp-item__field" *ngIf="item.fechaCreacion">
+          <span class="hmp-item__label">Fecha</span>
+          <span class="hmp-item__value">{{ item.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="hmp-pagination" *ngIf="hayPaginacion">
+    <button class="hmp-page-btn" [disabled]="pagina <= 1" (click)="anterior()">
+      <i class="pi pi-chevron-left"></i>
+    </button>
+    <span class="hmp-page-info">{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="hmp-page-btn" [disabled]="pagina >= totalPaginas" (click)="siguiente()">
+      <i class="pi pi-chevron-right"></i>
+    </button>
+  </div>
+
+</div>

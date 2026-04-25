@@ -41,8 +41,16 @@
           </a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'pedidos/mis-pedidos'">mis pedidos</a></li>
-
+                [routerLink]="'pedidos/mis-pedidos'">Mis pedidos</a></li>
+            <li *ngIf="isAdminUser">
+              <hr class="dropdown-divider">
+            </li>
+            <li *ngIf="isAdminUser">
+              <a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'pedidos/historial-mp'">
+                <i class="pi pi-credit-card me-1"></i> Historial MP
+              </a>
+            </li>
           </ul>
         </li>
 

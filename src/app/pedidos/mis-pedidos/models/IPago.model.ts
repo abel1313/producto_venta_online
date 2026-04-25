@@ -39,6 +39,7 @@ export interface IPagosYMeses {
 export interface IOpcionMesesDto {
   pagosYMesesId: number;
   descripcion: string;
+  cuotas: number;
 }
 
 export interface IOpcionPagoDto {
@@ -46,5 +47,45 @@ export interface IOpcionPagoDto {
   formaPago: string;
   mostrarMeses: boolean;
   pagosYMesesId: number;
+  requiereTerminal: boolean;
   opciones: IOpcionMesesDto[];
+}
+
+export type MpEstado = 'OPEN' | 'FINISHED' | 'CANCELED';
+
+export interface IHistorialMpItem {
+  intentId: string;
+  estado: MpEstado;
+  pedidoId: number;
+  clienteId?: number;
+  cuotas?: number;
+  totalMonto?: number;
+  descripcion?: string;
+  fechaCreacion?: string;
+}
+
+export interface IHistorialMpPage {
+  list: IHistorialMpItem[];
+  totalPaginas: number;
+}
+
+export interface ITerminalIniciarRequest {
+  pedidoId: number;
+  clienteId: number;
+  pagosYMesesId: number;
+  cuotas: number;
+  totalMonto: number;
+  descripcion: string;
+}
+
+export interface ITerminalIniciarResponse {
+  intentId: string;
+  estado: string;
+  mensaje: string;
+}
+
+export interface ITerminalEstadoResponse {
+  intentId: string;
+  estado: 'OPEN' | 'FINISHED' | 'CANCELED';
+  pedidoId?: number;
 }

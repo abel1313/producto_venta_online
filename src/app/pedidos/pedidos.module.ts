@@ -1,9 +1,11 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 import { PedidosRoutingModule } from './pedidos-routing.module';
 import { MisPedidosComponent } from './mis-pedidos/mis-pedidos.component';
+import { HistorialMpComponent } from './historial-mp/historial-mp.component';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -15,6 +17,7 @@ import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.componen
 @NgModule({
   declarations: [
     MisPedidosComponent,
+    HistorialMpComponent,
     FechaEspanolPipe,
     TotalPedidoPipe,
     DetallePedidoComponent
@@ -22,6 +25,7 @@ import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.componen
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     PedidosRoutingModule,
     CardModule,
     ButtonModule,

@@ -1,5 +1,12 @@
 <div class="pedidos-wrapper" *ngIf="!mostrarDetalle">
 
+  <!-- Acceso historial MP (solo admin) -->
+  <div class="mp-access" *ngIf="isAdminUser">
+    <a class="mp-access__btn" routerLink="/pedidos/historial-mp">
+      <i class="pi pi-credit-card"></i> Historial Mercado Pago
+    </a>
+  </div>
+
   <!-- Buscador -->
   <div class="search-bar">
     <div class="search-input-wrap">
@@ -139,12 +146,66 @@
             </p-dropdown>
         </div>
 
+        <!-- Panel terminal Mercado Pago -->
+        <div class="mp-terminal" *ngIf="esTarjeta && puedeEnviarTerminal">
+
+            <div class="mp-terminal__header">
+                <i class="pi pi-credit-card mp-terminal__icon"></i>
+                <span>Terminal Mercado Pago</span>
+            </div>
+
+            <div class="mp-terminal__amount">
+                {{ totalPedido | currency:'$' }}
+                <span class="mp-terminal__plan" *ngIf="mesesSeleccionado">
+                    · {{ mesesSeleccionado.descripcion }}
+                </span>
+                <span class="mp-terminal__plan" *ngIf="!mesesSeleccionado">
+                    · 1 exhibición
+                </span>
+            </div>
+
+            <!-- Estado -->
+            <div class="mp-terminal__status" [ngClass]="'mp-terminal__status--' + estadoTerminal" *ngIf="estadoTerminal !== 'idle'">
+                <span class="spinner-border spinner-border-sm" *ngIf="estadoTerminal === 'procesando'"></span>
+                <i class="pi pi-check-circle" *ngIf="estadoTerminal === 'aprobado'"></i>
+                <i class="pi pi-times-circle" *ngIf="estadoTerminal === 'rechazado'"></i>
+                <i class="pi pi-ban"          *ngIf="estadoTerminal === 'cancelado'"></i>
+                <span>
+                    <ng-container [ngSwitch]="estadoTerminal">
+                        <ng-container *ngSwitchCase="'procesando'">Esperando respuesta en terminal…</ng-container>
+                        <ng-container *ngSwitchCase="'aprobado'">Pago aprobado</ng-container>
+                        <ng-container *ngSwitchCase="'rechazado'">Pago rechazado. Intente de nuevo.</ng-container>
+                        <ng-container *ngSwitchCase="'cancelado'">Pago cancelado en terminal.</ng-container>
+                    </ng-container>
+                </span>
+            </div>
+
+            <!-- Botones de terminal -->
+            <div class="mp-terminal__actions">
+                <button class="mp-btn mp-btn--send"
+                        [disabled]="estadoTerminal === 'procesando' || estadoTerminal === 'aprobado'"
+                        (click)="enviarATerminal()">
+                    <i class="pi pi-send"></i>
+                    {{ estadoTerminal === 'rechazado' || estadoTerminal === 'cancelado' ? 'Reintentar' : 'Enviar a terminal' }}
+                </button>
+                <button class="mp-btn mp-btn--cancel"
+                        *ngIf="estadoTerminal === 'procesando'"
+                        (click)="cancelarTerminal()">
+                    <i class="pi pi-times"></i> Cancelar
+                </button>
+            </div>
+
+        </div>
+
     </div>
 
     <ng-template pTemplate="footer">
         <div class="d-flex justify-content-end gap-2">
-            <button class="btn btn-secondary" (click)="cancelarDialogo()">Cancelar</button>
-            <button class="btn btn-success" [disabled]="!puedeConfirmar" (click)="confirmarCobro()">Confirmar cobro</button>
+            <button class="btn btn-secondary" (click)="cancelarDialogo()">Cerrar</button>
+            <button class="btn btn-success" *ngIf="!esTarjeta"
+                    [disabled]="!puedeConfirmar" (click)="confirmarCobro()">
+                Confirmar cobro
+            </button>
         </div>
     </ng-template>
 

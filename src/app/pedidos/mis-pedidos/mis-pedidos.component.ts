@@ -6,7 +6,7 @@ import { AuthService } from 'src/app/auth/auth.service';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPageable } from './models/IPageable.mode';
 import { PagoService } from '../pago.service';
-import { IOpcionMesesDto, IOpcionPagoDto } from './models/IPago.model';
+import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -37,6 +37,11 @@ export class MisPedidosComponent implements OnInit {
   tipoPagoActivo: IOpcionPagoDto | null = null;
   mesesSeleccionado: IOpcionMesesDto | null = null;
   pagosYMesesId: number | null = null;
+
+  // Terminal Mercado Pago
+  estadoTerminal: 'idle' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' = 'idle';
+  intentId: string | null = null;
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly pedidoService: PedidosService,
@@ -145,6 +150,10 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarDialogo() {
+    this.stopPolling();
+    if (this.intentId && this.estadoTerminal === 'procesando') {
+      this.pagoService.cancelarPagoTerminal(this.intentId).subscribe();
+    }
     this.mostrarDialogoCobro = false;
     this.resetDialogo();
   }
@@ -154,10 +163,90 @@ export class MisPedidosComponent implements OnInit {
     this.tipoPagoActivo = null;
     this.mesesSeleccionado = null;
     this.pagosYMesesId = null;
+    this.estadoTerminal = 'idle';
+    this.intentId = null;
+  }
+
+  get esTarjeta(): boolean {
+    if (this.tipoPagoActivo == null) return false;
+    if (this.tipoPagoActivo.requiereTerminal != null) return this.tipoPagoActivo.requiereTerminal;
+    const f = (this.tipoPagoActivo.formaPago ?? '').toLowerCase();
+    return f.includes('tarjeta') || f.includes('debito') || f.includes('débito')
+        || f.includes('credito') || f.includes('crédito')
+        || this.tipoPagoActivo.mostrarMeses;
+  }
+
+  get totalPedido(): number {
+    return (this.pedidoACobrar?.pedido.detalles ?? [])
+      .reduce((sum, d) => sum + d.sub_total, 0);
+  }
+
+  get puedeEnviarTerminal(): boolean {
+    if (!this.esTarjeta) return false;
+    if (this.tipoPagoActivo?.mostrarMeses) return this.mesesSeleccionado !== null;
+    return this.pagosYMesesId !== null;
   }
 
   get puedeConfirmar(): boolean {
+    if (this.esTarjeta) return false;
     return this.pagosYMesesId !== null;
+  }
+
+  enviarATerminal(): void {
+    if (!this.pedidoACobrar || !this.pagosYMesesId) return;
+    this.estadoTerminal = 'procesando';
+
+    const request: ITerminalIniciarRequest = {
+      pedidoId:      this.pedidoACobrar.pedido.id,
+      clienteId:     this.pedidoACobrar.cliente.id,
+      pagosYMesesId: this.pagosYMesesId,
+      cuotas:        this.mesesSeleccionado?.cuotas ?? 1,
+      totalMonto:    this.totalPedido,
+      descripcion:   `Pedido #${this.pedidoACobrar.pedido.id}`
+    };
+
+    this.pagoService.iniciarPagoTerminal(request).subscribe({
+      next: res => {
+        this.intentId = res.intentId;
+        this.startPolling(res.intentId);
+      },
+      error: () => { this.estadoTerminal = 'rechazado'; }
+    });
+  }
+
+  cancelarTerminal(): void {
+    this.stopPolling();
+    if (this.intentId) {
+      this.pagoService.cancelarPagoTerminal(this.intentId).subscribe();
+    }
+    this.estadoTerminal = 'cancelado';
+    this.intentId = null;
+  }
+
+  private startPolling(intentId: string): void {
+    this.stopPolling();
+    this.pollingInterval = setInterval(() => {
+      this.pagoService.getEstadoTerminal(intentId).subscribe({
+        next: res => {
+          if (res.estado === 'FINISHED') {
+            this.stopPolling();
+            this.estadoTerminal = 'aprobado';
+            this.confirmarCobro();
+          } else if (res.estado === 'CANCELED') {
+            this.stopPolling();
+            this.estadoTerminal = 'cancelado';
+          }
+        },
+        error: () => { this.stopPolling(); this.estadoTerminal = 'rechazado'; }
+      });
+    }, 3000);
+  }
+
+  private stopPolling(): void {
+    if (this.pollingInterval !== null) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 
   page = 0;

@@ -54,19 +54,27 @@ export interface IOpcionPagoDto {
 export type MpEstado = 'OPEN' | 'FINISHED' | 'CANCELED';
 
 export interface IHistorialMpItem {
+  id?: number;
   intentId: string;
   estado: MpEstado;
   pedidoId: number;
   clienteId?: number;
   cuotas?: number;
-  totalMonto?: number;
+  monto?: number;
   descripcion?: string;
   fechaCreacion?: string;
+  fechaUpdate?: string;
 }
 
 export interface IHistorialMpPage {
-  list: IHistorialMpItem[];
-  totalPaginas: number;
+  content: IHistorialMpItem[];
+  totalPages: number;
+}
+
+export interface IHistorialMpMpItem {
+  paymentIntentId: string;
+  status: string;
+  createdOn?: string;
 }
 
 export interface ITerminalIniciarRequest {

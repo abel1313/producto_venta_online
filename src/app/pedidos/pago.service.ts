@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
-import { IDetallePago, IHistorialMpItem, IHistorialMpPage, IPagosYMeses, ITarifaTerminal, ITipoPago, IIvaTerminal, IOpcionPagoDto, ITerminalEstadoResponse, ITerminalIniciarRequest, ITerminalIniciarResponse, MpEstado } from './mis-pedidos/models/IPago.model';
+import { IDetallePago, IHistorialMpMpItem, IHistorialMpPage, IPagosYMeses, ITarifaTerminal, ITipoPago, IIvaTerminal, IOpcionPagoDto, ITerminalEstadoResponse, ITerminalIniciarRequest, ITerminalIniciarResponse, MpEstado } from './mis-pedidos/models/IPago.model';
 
 @Injectable({ providedIn: 'root' })
 export class PagoService {
@@ -60,7 +60,7 @@ export class PagoService {
     return this.http.get<IHistorialMpPage>(`${this.url}/mp/historial/estado/${estado}?pagina=${pagina}&size=${size}`);
   }
 
-  getHistorialDirectoMp(desde: string, hasta: string): Observable<IHistorialMpItem[]> {
-    return this.http.get<IHistorialMpItem[]>(`${this.url}/mp/historial/mp?desde=${desde}&hasta=${hasta}`);
+  getHistorialDirectoMp(desde: string, hasta: string): Observable<IHistorialMpMpItem[]> {
+    return this.http.get<IHistorialMpMpItem[]>(`${this.url}/mp/historial/mp?desde=${desde}&hasta=${hasta}`);
   }
 }

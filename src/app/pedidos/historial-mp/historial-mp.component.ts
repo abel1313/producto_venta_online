@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/auth.service';
-import { IHistorialMpItem, MpEstado } from '../mis-pedidos/models/IPago.model';
+import { IHistorialMpItem, IHistorialMpMpItem, MpEstado } from '../mis-pedidos/models/IPago.model';
 import { PagoService } from '../pago.service';
 
 type Modo = 'todos' | 'pedido' | 'estado' | 'mp';
@@ -105,16 +105,25 @@ export class HistorialMpComponent implements OnInit {
       case 'mp':
         if (!this.filtroDesde || !this.filtroHasta) { this.cargando = false; return; }
         this.pagoService.getHistorialDirectoMp(this.filtroDesde, this.filtroHasta).subscribe({
-          next: items => { this.items = items ?? []; this.totalPaginas = 0; this.cargando = false; },
+          next: (items: IHistorialMpMpItem[]) => {
+            this.items = (items ?? []).map(i => ({
+              intentId:      i.paymentIntentId,
+              estado:        i.status as MpEstado,
+              pedidoId:      0,
+              fechaCreacion: i.createdOn,
+            }));
+            this.totalPaginas = 0;
+            this.cargando = false;
+          },
           error: () => { this.cargando = false; }
         });
         return;
     }
   }
 
-  private setPage(res: { list: IHistorialMpItem[]; totalPaginas: number }): void {
-    this.items = res.list ?? [];
-    this.totalPaginas = res.totalPaginas ?? 0;
+  private setPage(res: { content: IHistorialMpItem[]; totalPages: number }): void {
+    this.items = res.content ?? [];
+    this.totalPaginas = res.totalPages ?? 0;
     this.cargando = false;
   }
 

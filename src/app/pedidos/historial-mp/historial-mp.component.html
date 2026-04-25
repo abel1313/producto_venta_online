@@ -102,9 +102,9 @@
           <span class="hmp-item__label">Pedido</span>
           <span class="hmp-item__value">#{{ item.pedidoId }}</span>
         </div>
-        <div class="hmp-item__field" *ngIf="item.totalMonto != null">
+        <div class="hmp-item__field" *ngIf="item.monto != null">
           <span class="hmp-item__label">Total</span>
-          <span class="hmp-item__value hmp-item__value--amount">{{ item.totalMonto | currency:'$' }}</span>
+          <span class="hmp-item__value hmp-item__value--amount">{{ item.monto | currency:'$' }}</span>
         </div>
         <div class="hmp-item__field" *ngIf="item.cuotas">
           <span class="hmp-item__label">Cuotas</span>

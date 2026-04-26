@@ -26,7 +26,7 @@ export class AdminGuardGuard implements CanActivate {
         return false;
       }
       if ((payload.roles || []).includes('ROLE_ADMIN')) return true;
-      this.router.navigate(['/productos/buscar']);
+      this.router.navigate(['/variantes/buscar']);
       return false;
     } catch {
       this.auth.clearAccessToken();

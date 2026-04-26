@@ -9,22 +9,12 @@ import { DetalleProductosComponent } from './detalle-productos/detalle-productos
 import { AdminGuardGuard } from 'src/app/guard/admin-guard.guard';
 
 const routes: Routes = [
-
-  {
-    path: 'agregar', component: AddComponent, canActivate: [AuthGuard, AdminGuardGuard]
-  },
-  {
-    path: 'update', component: UpdateComponent, canActivate: [AuthGuard, AdminGuardGuard]
-  },
-  {
-    path: 'buscar', component: BuscaComponent
-  },
-  { path: 'detalle-producto/:id', component: DetalleProductoComponent },
-  { path: 'detalle-productos', component: DetalleProductosComponent },
-  {
-    path: '', redirectTo: 'agregar', pathMatch: 'full',
-  }
-
+  { path: 'agregar',              component: AddComponent,              canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'update',               component: UpdateComponent,           canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'buscar',               component: BuscaComponent,            canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'detalle-producto/:id', component: DetalleProductoComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'detalle-productos',    component: DetalleProductosComponent, canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: '', redirectTo: 'agregar', pathMatch: 'full' }
 ];
 
 @NgModule({

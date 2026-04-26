@@ -18,7 +18,7 @@ const routes: Routes = [
   {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule),
-    canActivate: [CarritoGuard]
+    canActivate: [CarritoGuard, AuthGuard, AdminGuardGuard]
   },
   {
     path: 'ventas',

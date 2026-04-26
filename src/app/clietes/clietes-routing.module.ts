@@ -1,21 +1,13 @@
 import { NgModule } from '@angular/core';
-import { RouterModule, Routes, CanActivate } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 import { MisDatosComponent } from './mis-datos/mis-datos.component';
 import { ClientesAddComponent } from './clientes-add/clientes-add.component';
-import { RegistrosGuard } from '../clientes/registros.guard';
 import { AuthGuard } from '../auth.guard';
-import { SinRegistroGuard } from '../guard/sin-registro.guard';
 
 const routes: Routes = [
-    {
-      path: 'agregar', component: ClientesAddComponent, canActivate: [AuthGuard]
-    },
-    {
-      path: 'mis-datos', component: MisDatosComponent, canActivate: [AuthGuard, SinRegistroGuard]
-    },
-    {
-      path: '', redirectTo: 'agregar', pathMatch: 'full',
-    }
+  { path: 'agregar',   component: ClientesAddComponent, canActivate: [AuthGuard] },
+  { path: 'mis-datos', component: MisDatosComponent,    canActivate: [AuthGuard] },
+  { path: '', redirectTo: 'agregar', pathMatch: 'full' }
 ];
 
 @NgModule({

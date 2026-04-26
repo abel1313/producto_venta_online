@@ -90,7 +90,7 @@ export class NavbarComponent implements OnInit {
   }
 
     regresarProducto() {
-    this.router.navigate(['/productos/buscar']);
+    this.router.navigate(['/variantes/buscar']);
   }
 
       limpiarCarrito() {

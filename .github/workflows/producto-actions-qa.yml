@@ -23,7 +23,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/productos-jade-service:qa
+          tags: ${{ secrets.DOCKER_USERNAME }}/front-jade-service:qa
 
       - name: Deploy to QA
         uses: appleboy/ssh-action@v1.0.0

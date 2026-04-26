@@ -24,6 +24,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/front-jade-service:qa
+          build-args: BUILD_CONFIGURATION=qa
 
       - name: Deploy to QA
         uses: appleboy/ssh-action@v1.0.0

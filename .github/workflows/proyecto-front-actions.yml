@@ -33,4 +33,4 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: sudo kubectl rollout restart deployment proyecto-key-front-deployment -n qa
+          script: sudo kubectl rollout restart deployment proyecto-key-front-deployment -n default

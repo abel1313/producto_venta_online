@@ -197,4 +197,19 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
   irAlLogin() {
     this.router.navigate(['/login']);
   }
+
+  get pwd(): string { return this.formRegistro.get('password')?.value || ''; }
+  get reqMayuscula(): boolean { return /[A-Z]/.test(this.pwd); }
+  get reqMinuscula(): boolean { return /[a-z]/.test(this.pwd); }
+  get reqNumero(): boolean { return /[0-9]/.test(this.pwd); }
+  get reqEspecial(): boolean { return /[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/.test(this.pwd); }
+  get reqLongitud(): boolean { return this.pwd.length >= 8; }
+  get pwdStrength(): number {
+    return [this.reqLongitud, this.reqMayuscula, this.reqMinuscula, this.reqNumero, this.reqEspecial].filter(r => r).length;
+  }
+  get pwdStrengthLevel(): string {
+    if (this.pwdStrength <= 2) return 'weak';
+    if (this.pwdStrength === 3) return 'medium';
+    return 'strong';
+  }
 }

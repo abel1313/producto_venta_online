@@ -1,91 +1,143 @@
-<div class="container d-flex justify-content-center align-items-center py-5">
+<div class="auth-page">
 
-  <div class="card shadow p-4 w-100" style="max-width: 500px;">
-    <h3 class="text-center mb-4">{{textoCard}}</h3>
-
-    <form [formGroup]="formRegistro" (ngSubmit)="registrarUsuario()">
-      <div class="mb-3">
-        <label for="userName" class="form-label">Usuario</label>
-        <input type="text" id="userName" formControlName="userName" class="form-control" required>
-        <div *ngIf="formRegistro.get('userName')?.invalid && formRegistro.get('userName')?.touched">
-          <small class="text-danger" *ngIf="formRegistro.get('userName')?.errors?.['required']">Campo requerido</small>
-          <small class="text-danger" *ngIf="formRegistro.get('userName')?.errors?.['minlength']">Mínimo 4
-            caracteres</small>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="email" class="form-label">Correo electrónico</label>
-        <input type="email" id="email" formControlName="email" class="form-control">
-        <div *ngIf="formRegistro.get('email')?.invalid && formRegistro.get('email')?.touched">
-          <small class="text-danger" *ngIf="formRegistro.get('email')?.errors?.['required']">Campo requerido</small>
-          <small class="text-danger" *ngIf="formRegistro.get('email')?.errors?.['email']">Formato de correo
-            inválido</small>
-
-        </div>
-
-      </div>
-
-      <div class="mb-3">
-        <label for="password" class="form-label">Contraseña</label>
-        <input type="password" id="password" formControlName="password" class="form-control">
-        <div *ngIf="formRegistro.get('password')?.invalid && formRegistro.get('password')?.touched">
-          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['required']">Campo requerido</small>
-          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['minlength']">Mínimo 8
-            caracteres</small>
-          <small class="text-danger" *ngIf="formRegistro.get('password')?.errors?.['passwordFuerte']">
-            Debe incluir mayúscula, minúscula, número y símbolo
-          </small>
-        </div>
-      </div>
-
-      <div class="mb-3" >
-        <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
-        <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control">
-        <div *ngIf="formRegistro.errors?.['passwordMismatch'] && formRegistro.get('confirmPassword')?.touched">
-          <small class="text-danger">Las contraseñas no coinciden</small>
-        </div>
-      </div>
-
-
-      <div class="row" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario' ">
-        <div class="col-6">
-                <div class="flex flex-wrap gap-4 " >
-        <div class="flex items-center gap-2">
-          <nz-switch formControlName="enabled"></nz-switch>
-          <label for="size_small" class="text-sm">{{formRegistro.get('enabled')?.value ? 'Habilitado' : 'Deshabilitado'}}</label>
-        </div>
-      </div>
-      
-        </div>
-        <div class="col-6">
-                <div class="mb-3" >
-        <label for="rol" class="form-label">Rol</label>
-        <input type="text" id="rol" formControlName="rol" class="form-control">
-
-      </div>
-        </div>
-      </div>
-
-
-
-<div class="row">
-  <div class="col-6">
-          <button type="submit" class="btn btn-primary w-100 mt-4" [disabled]="formRegistro.invalid">{{ this.textoCard ==
-        'Actualizar usuario' ? 'Actualizar': 'Registrarse'}}</button>
+  <div class="bg-shapes">
+    <span class="shape shape-1"></span>
+    <span class="shape shape-2"></span>
+    <span class="shape shape-3"></span>
   </div>
-  <div class="col-6" *ngIf="authService.isAdminService">
-     <button type="button" class="btn btn-secondary w-100 mt-4" (click)="restablecerContra()" >Restablecer contra</button>
-  </div>
-</div>
+
+  <div class="auth-card">
+
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="pi pi-user-plus"></i>
+      </div>
+      <h1 class="brand-name">Bolsas <span>Key</span></h1>
+      <p class="brand-sub">{{ textoCard === 'Actualizar usuario' ? 'Modifica los datos del usuario' : 'Crea tu cuenta para comenzar' }}</p>
+    </div>
+
+    <form [formGroup]="formRegistro" (ngSubmit)="registrarUsuario()" novalidate>
+
+      <div class="field-wrap">
+        <label class="field-label">Usuario</label>
+        <div class="input-wrap">
+          <i class="pi pi-user input-icon"></i>
+          <input class="field-input" formControlName="userName" type="text" placeholder="Nombre de usuario" autocomplete="username">
+        </div>
+        <div *ngIf="formRegistro.get('userName')?.invalid && formRegistro.get('userName')?.touched" class="field-error">
+          <i class="pi pi-exclamation-circle"></i>
+          <span *ngIf="formRegistro.get('userName')?.errors?.['required']">Campo requerido</span>
+          <span *ngIf="formRegistro.get('userName')?.errors?.['minlength']">Mínimo 4 caracteres</span>
+        </div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label">Correo electrónico</label>
+        <div class="input-wrap">
+          <i class="pi pi-envelope input-icon"></i>
+          <input class="field-input" formControlName="email" type="email" placeholder="correo@ejemplo.com" autocomplete="email">
+        </div>
+        <div *ngIf="formRegistro.get('email')?.invalid && formRegistro.get('email')?.touched" class="field-error">
+          <i class="pi pi-exclamation-circle"></i>
+          <span *ngIf="formRegistro.get('email')?.errors?.['required']">Campo requerido</span>
+          <span *ngIf="formRegistro.get('email')?.errors?.['email']">Formato de correo inválido</span>
+        </div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label">Contraseña</label>
+        <div class="input-wrap">
+          <i class="pi pi-lock input-icon"></i>
+          <input class="field-input" formControlName="password" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+        </div>
+
+        <div class="pwd-requirements" *ngIf="formRegistro.get('password')?.dirty">
+          <p class="pwd-req-title">Tu contraseña debe tener:</p>
+          <div class="pwd-req-list">
+            <div class="req-item" [class.met]="reqLongitud">
+              <i class="pi" [class.pi-check-circle]="reqLongitud" [class.pi-times-circle]="!reqLongitud"></i>
+              Mínimo 8 caracteres
+            </div>
+            <div class="req-item" [class.met]="reqMayuscula">
+              <i class="pi" [class.pi-check-circle]="reqMayuscula" [class.pi-times-circle]="!reqMayuscula"></i>
+              Una mayúscula <span class="req-example">(A, B, C…)</span>
+            </div>
+            <div class="req-item" [class.met]="reqMinuscula">
+              <i class="pi" [class.pi-check-circle]="reqMinuscula" [class.pi-times-circle]="!reqMinuscula"></i>
+              Una minúscula <span class="req-example">(a, b, c…)</span>
+            </div>
+            <div class="req-item" [class.met]="reqNumero">
+              <i class="pi" [class.pi-check-circle]="reqNumero" [class.pi-times-circle]="!reqNumero"></i>
+              Un número <span class="req-example">(0–9)</span>
+            </div>
+            <div class="req-item" [class.met]="reqEspecial">
+              <i class="pi" [class.pi-check-circle]="reqEspecial" [class.pi-times-circle]="!reqEspecial"></i>
+              Un carácter especial <span class="req-example">(! @ # $ % &amp; * - _ .)</span>
+            </div>
+          </div>
+          <div class="pwd-strength-bar">
+            <div class="pwd-strength-fill"
+              [style.width.%]="pwdStrength * 20"
+              [class.weak]="pwdStrengthLevel === 'weak'"
+              [class.medium]="pwdStrengthLevel === 'medium'"
+              [class.strong]="pwdStrengthLevel === 'strong'">
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="formRegistro.get('password')?.invalid && formRegistro.get('password')?.touched && !formRegistro.get('password')?.dirty" class="field-error">
+          <i class="pi pi-exclamation-circle"></i>
+          <span *ngIf="formRegistro.get('password')?.errors?.['required']">Campo requerido</span>
+        </div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label">Confirmar contraseña</label>
+        <div class="input-wrap">
+          <i class="pi pi-lock input-icon"></i>
+          <input class="field-input" formControlName="confirmPassword" type="password" placeholder="Repite tu contraseña" autocomplete="new-password">
+        </div>
+        <div *ngIf="formRegistro.errors?.['passwordMismatch'] && formRegistro.get('confirmPassword')?.touched" class="field-error">
+          <i class="pi pi-exclamation-circle"></i>
+          Las contraseñas no coinciden
+        </div>
+      </div>
+
+      <div class="admin-section" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario'">
+        <div class="admin-row">
+          <div class="toggle-wrap">
+            <nz-switch formControlName="enabled"></nz-switch>
+            <span class="toggle-label" [class.on]="formRegistro.get('enabled')?.value">
+              {{ formRegistro.get('enabled')?.value ? 'Habilitado' : 'Deshabilitado' }}
+            </span>
+          </div>
+          <div class="field-wrap mb-0">
+            <label class="field-label">Rol</label>
+            <div class="input-wrap">
+              <i class="pi pi-id-card input-icon"></i>
+              <input class="field-input" formControlName="rol" type="text" placeholder="Rol del usuario">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" [disabled]="formRegistro.invalid">
+        <span>{{ textoCard === 'Actualizar usuario' ? 'Actualizar' : 'Registrarse' }}</span>
+        <i class="pi" [class.pi-check]="textoCard === 'Actualizar usuario'" [class.pi-arrow-right]="textoCard !== 'Actualizar usuario'"></i>
+      </button>
+
+      <button type="button" class="btn-reset" *ngIf="authService.isAdminService" (click)="restablecerContra()">
+        <i class="pi pi-refresh"></i>
+        Restablecer contraseña
+      </button>
+
+      <p class="footer-link" *ngIf="!authService.isAdminService">
+        ¿Ya tienes cuenta?
+        <a (click)="irAlLogin()">Iniciar sesión</a>
+      </p>
+
     </form>
 
-    <div class="row pt-3" *ngIf="!authService.isAdminService ">
-      <div class="col-12">
-        <button type="button" class="btn btn-secondary col-sm-12 col-lg-12" (click)="irAlLogin()">ir a login</button>
-      </div>
-    </div>
   </div>
-
 
 </div>

@@ -6,11 +6,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Header ─────────────────────────────────────────────────────────
 .vb-header {
-  background: linear-gradient(135deg, #6200ea 0%, #7c43bd 50%, #9c27b0 100%);
+  background: linear-gradient(135deg, #2d1b4e 0%, #5b3a7e 55%, #8b5ea6 100%);
   padding: 24px 24px 0;
   border-radius: 0 0 28px 28px;
   margin-bottom: 28px;
-  box-shadow: 0 6px 24px rgba(98, 0, 234, 0.35);
+  box-shadow: 0 6px 24px rgba(45, 27, 78, 0.4);
 
   &__inner {
     display: flex;
@@ -104,6 +104,13 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   justify-content: center;
   padding: 0 4px;
+}
+
+// ── Fondo página ──────────────────────────────────────────────────
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f3edf7 0%, #fdf6ff 100%);
 }
 
 // ── Grid ───────────────────────────────────────────────────────────
@@ -318,7 +325,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   transition: $transition;
 
-  &:hover:not(:disabled) { background: #1a237e; color: white; border-color: #1a237e; }
+  &:hover:not(:disabled) { background: #5b3a7e; color: white; border-color: #5b3a7e; }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 

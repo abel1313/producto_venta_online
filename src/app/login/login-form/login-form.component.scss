@@ -1,66 +1,115 @@
-// ── Variables ──────────────────────────────────────────────────────────────
-$primary:   #6366f1;
-$primary-d: #4f46e5;
-$radius:    18px;
+$primary:    #8b1a4a;
+$primary-d:  #c2255c;
+$radius:     14px;
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-// ── Página completa ────────────────────────────────────────────────────────
-.login-page {
-  min-height: 100vh;
+// ── Layout split ───────────────────────────────────────────────────────────
+.split-page {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4f46e5 100%);
-  position: relative;
   overflow: hidden;
 }
 
-// ── Formas decorativas de fondo ────────────────────────────────────────────
-.bg-shapes {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.shape {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.12;
-  background: #fff;
-
-  &.shape-1 {
-    width: 420px; height: 420px;
-    top: -120px; right: -100px;
-  }
-  &.shape-2 {
-    width: 280px; height: 280px;
-    bottom: -80px; left: -80px;
-  }
-  &.shape-3 {
-    width: 160px; height: 160px;
-    top: 55%; left: 60%;
-  }
-}
-
-// ── Tarjeta ────────────────────────────────────────────────────────────────
-.login-card {
+// ── Panel izquierdo ────────────────────────────────────────────────────────
+.split-images {
+  width: 45%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #f9e8ef;
   position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 420px;
-  background: rgba(255, 255, 255, 0.97);
-  border-radius: $radius;
-  padding: 2.5rem 2rem;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
 
-  @media (max-width: 480px) {
-    padding: 2rem 1.25rem;
-    border-radius: 14px;
+  @media (max-width: 768px) { display: none; }
+}
+
+.img-slot {
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+
+  &--1 {
+    flex: 1.4;
+    background: linear-gradient(160deg, #c2255c 0%, #8b1a4a 60%, #5c0f31 100%);
+  }
+  &--2 {
+    flex: 1;
+    background: linear-gradient(160deg, #e91e8c 0%, #c2255c 100%);
+  }
+  &--3 {
+    flex: 1;
+    background: linear-gradient(160deg, #f06292 0%, #e91e8c 100%);
+  }
+
+  &__overlay {
+    width: 100%;
+    padding: 1rem 1.2rem;
+    background: linear-gradient(0deg, rgba(0,0,0,0.45) 0%, transparent 100%);
+    color: rgba(255,255,255,0.92);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    i { font-size: 1.4rem; }
+    span { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; }
   }
 }
 
-// ── Marca ──────────────────────────────────────────────────────────────────
+.img-slot-row {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.split-images__brand {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+
+  span:first-child {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+.split-images__tagline {
+  font-size: 0.78rem !important;
+  font-weight: 400 !important;
+  opacity: 0.85;
+}
+
+// ── Panel derecho ──────────────────────────────────────────────────────────
+.split-form {
+  flex: 1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+  box-shadow: -8px 0 32px rgba(139, 26, 74, 0.12);
+
+  @media (max-width: 768px) {
+    background: linear-gradient(160deg, #fff5f7 0%, #fde8f0 100%);
+    box-shadow: none;
+  }
+}
+
+.form-inner {
+  width: 100%;
+  max-width: 380px;
+}
+
+// ── Marca ──────────────────────────────────────────────────────────────���───
 .brand {
   text-align: center;
   margin-bottom: 2rem;
@@ -70,24 +119,21 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
   background: linear-gradient(135deg, $primary, $primary-d);
-  margin-bottom: 1rem;
-  box-shadow: 0 8px 24px rgba($primary, 0.4);
+  margin-bottom: 0.85rem;
+  box-shadow: 0 8px 20px rgba($primary, 0.35);
 
-  .pi {
-    font-size: 1.75rem;
-    color: #fff;
-  }
+  .pi { font-size: 1.6rem; color: #fff; }
 }
 
 .brand-name {
-  font-size: 1.75rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: #1f2937;
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.2rem;
   letter-spacing: -0.03em;
 
   span {
@@ -102,13 +148,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.85rem;
   color: #9ca3af;
   margin: 0;
-  font-weight: 400;
 }
 
 // ── Campos ─────────────────────────────────────────────────────────────────
-.field-wrap {
-  margin-bottom: 1.1rem;
-}
+.field-wrap { margin-bottom: 1.1rem; }
 
 .field-label {
   display: block;
@@ -120,9 +163,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 0.4rem;
 }
 
-.input-wrap {
-  position: relative;
-}
+.input-wrap { position: relative; }
 
 .input-icon {
   position: absolute;
@@ -141,7 +182,6 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   font-size: 0.88rem;
-  font-weight: 400;
   color: #1f2937;
   background: #f9fafb;
   outline: none;
@@ -154,7 +194,6 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: $primary;
     background: #fff;
     box-shadow: 0 0 0 4px rgba($primary, 0.1);
-
     ~ .input-icon { color: $primary; }
   }
 }
@@ -172,11 +211,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
   line-height: 1;
   transition: $transition;
-
   &:hover { color: $primary; }
 }
 
-// ── Error ──────────────────────────────────────────────────────────────────
+// ── Error ─────────────────────────────────────────────────────────────���────
 .error-msg {
   display: flex;
   align-items: center;
@@ -189,11 +227,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.55rem 0.85rem;
   border-radius: 8px;
   margin-bottom: 1rem;
-
   .pi { font-size: 0.9rem; }
 }
 
-// ── Botón entrar ───────────────────────────────────────────────────────────
+// ── Botón ──────────────────────────────────────────────────────────────────
 .btn-login {
   width: 100%;
   display: flex;
@@ -207,9 +244,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba($primary, 0.4);
+  box-shadow: 0 6px 20px rgba($primary, 0.35);
   transition: $transition;
   margin-top: 0.5rem;
 
@@ -217,20 +253,14 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba($primary, 0.5);
+    box-shadow: 0 10px 28px rgba($primary, 0.45);
     .pi { transform: translateX(3px); }
   }
-
   &:active:not(:disabled) { transform: translateY(0); }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
+  &:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 }
 
-// ── Link de registro ───────────────────────────────────────────────────────
+// ── Link registro ─────────────────────────────────────────────────────────��
 .register-link {
   text-align: center;
   margin: 1.2rem 0 0;
@@ -242,7 +272,6 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 600;
     text-decoration: none;
     transition: $transition;
-
     &:hover { color: $primary-d; text-decoration: underline; }
   }
 }

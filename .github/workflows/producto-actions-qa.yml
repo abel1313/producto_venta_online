@@ -1,8 +1,8 @@
-name: Build and Push Docker
+name: Build and Push Docker QA
 
 on:
   push:
-    branches: [ master ]
+    branches: [ qa ]
 
 jobs:
   docker:
@@ -23,9 +23,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/front-jade-service:latest
-            ${{ secrets.DOCKER_USERNAME }}/front-jade-service:v${{ github.run_number }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/productos-jade-service:qa
 
       - name: Deploy to QA
         uses: appleboy/ssh-action@v1.0.0

@@ -10,6 +10,7 @@ export const environment = {
   //api_Url: 'https://backend.novedades-jade.com.mx/mis-productos',
   api_Url: 'http://localhost:9091/mis-productos',
   api_imagenes: 'http://localhost:9096/mis-productos'
+  
 
 };
 

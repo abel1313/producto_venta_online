@@ -34,6 +34,11 @@ export class LoginFormComponent implements OnInit {
       userName: ['', Validators.required],
       password: ['', Validators.required]
     });
+
+    console.log("******************************************************************************************************************** ");
+    console.log("LoginFormComponent: Constructor ejecutado");
+    console.log("******************************************************************************************************************** ");
+    
   }
 
   onLogin() {

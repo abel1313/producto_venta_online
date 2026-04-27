@@ -353,18 +353,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
 
-  /**\
-   * loadMore(): void {
-    console.log('Scroll detectado, cargando más...');
-    this.servicio.getMasDatos().subscribe((nuevosItems) => {
-      this.rows = [...this.rows, ...nuevosItems];
-    });
-  }
-   */
-
   buscarProd: string = '';
 
-  // --- Escáner de cámara ---
   escaneando = false;
   private controlesEscaner: IScannerControls | null = null;
 

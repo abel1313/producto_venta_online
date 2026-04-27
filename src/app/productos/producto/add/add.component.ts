@@ -132,15 +132,7 @@ export class AddComponent implements OnInit, AfterViewInit {
   producto(): void {
     if (this.formProductos.valid) {
 
-          console.log(" ******************************************************************************** ")
-
-    console.log(this.formProductos.value , "123");
-    console.log(" ******************************************************************************** ");
-
-
-    //this.guardar();
       const { codigoBarras, ...productoData } = this.formProductos.value;
-
 
       const producto: IProducto = {
         ...productoData, // Asignamos el resto de los valores
@@ -175,11 +167,6 @@ export class AddComponent implements OnInit, AfterViewInit {
       }
 
     }
-
-    console.log(" ******************************************************************************** ")
-
-    console.log(this.productoSave);
-    console.log(" ******************************************************************************** ")
     this.guardar();
   }
 

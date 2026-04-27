@@ -22,7 +22,9 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-
+  imagenIcon1 = './../../../assets/imagenes/imagene1.jpeg';
+  imagenIcon2 = './../../../assets/imagenes/imagen2.jpeg';
+  imagenIcon3 = './../../../assets/imagenes/imagene3.jpeg';
   constructor(private readonly fb: FormBuilder,
     public readonly auth: AccederService,
     private readonly router: Router,

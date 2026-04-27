@@ -20,6 +20,10 @@ export class LoginFormComponent implements OnInit {
   errorMessage: string = '';
   mostrarPassword = false;
 
+  imagenIcon1 = './../../../assets/imagenes/imagene1.jpeg';
+  imagenIcon2 = './../../../assets/imagenes/imagen2.jpeg';
+  imagenIcon3 = './../../../assets/imagenes/imagene3.jpeg';
+
   constructor(private fb: FormBuilder,
     private router: Router,
     private authService: AuthService,

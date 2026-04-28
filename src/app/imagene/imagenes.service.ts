@@ -19,4 +19,8 @@ export class ImagenesService {
   deleteById<R>(idImagen: string): Observable<R> {
     return this.http.delete<R>(`${this.urlImg}/${idImagen}`);
   }
+
+  eliminarImagenesBatch(productoId: number, ids: string[]): Observable<{ data: string }> {
+    return this.http.delete<{ data: string }>(`${this.urlImg}/${productoId}/imagenes`, { body: ids });
+  }
 }

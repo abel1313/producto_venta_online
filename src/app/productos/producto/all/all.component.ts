@@ -363,6 +363,43 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.router.navigate(['/productos/detalle-producto', id]);
   }
 
+  verCarrito(): void {
+    this.router.navigate(['/productos/detalle-productos']);
+  }
+
+  imageSrc(item: IProductoDTO): string | null {
+    const img = (item as any).imagen;
+    if (!img?.imagen) return null;
+    return `data:${img.contentType};base64,${img.imagen}`;
+  }
+
+  colorHeader(color: string): string {
+    const map: Record<string, string> = {
+      negro:    'linear-gradient(135deg,#424242,#616161)',
+      azul:     'linear-gradient(135deg,#1e88e5,#42a5f5)',
+      rojo:     'linear-gradient(135deg,#e53935,#ef5350)',
+      blanco:   'linear-gradient(135deg,#78909c,#90a4ae)',
+      verde:    'linear-gradient(135deg,#43a047,#66bb6a)',
+      amarillo: 'linear-gradient(135deg,#fb8c00,#ffa726)',
+      gris:     'linear-gradient(135deg,#546e7a,#78909c)',
+      rosa:     'linear-gradient(135deg,#e91e63,#f06292)',
+      morado:   'linear-gradient(135deg,#7b1fa2,#ab47bc)',
+      naranja:  'linear-gradient(135deg,#f4511e,#ff7043)',
+      cafe:     'linear-gradient(135deg,#6d4c41,#8d6e63)',
+    };
+    return map[(color ?? '').toLowerCase().trim()]
+      ?? 'linear-gradient(135deg,#8b1a4a,#c2255c)';
+  }
+
+  stockClase(stock: number): string {
+    if (stock === 0) return 'badge bg-danger';
+    if (stock <= 3)  return 'badge bg-warning text-dark';
+    return 'badge bg-success';
+  }
+
+  get totalEnCarrito(): number {
+    return this.detalle.reduce((sum, item) => sum + item.cantidad, 0);
+  }
 
   buscarProd: string = '';
   private destroy$ = new Subject<void>();

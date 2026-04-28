@@ -16,6 +16,88 @@
 }
 
 
-.nb-mismo-tm{
-  height: 400px;
+.nb-mismo-tm { height: 400px; }
+
+// ── Slide marcado ─────────────────────────────────────────────────
+.dp-slide--marked {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.25);
+}
+
+// ── Overlay ───────────────────────────────────────────────────────
+.dp-del-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(239,68,68,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+// ── Botón X ───────────────────────────────────────────────────────
+.dp-del-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+  line-height: 1;
+
+  &:hover { background: rgba(239,68,68,0.85); color: #fff; transform: scale(1.12); }
+
+  &--on {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.5);
+  }
+}
+
+// ── Barra de eliminación ──────────────────────────────────────────
+.dp-delete-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-top: 16px;
+
+  &__count {
+    font-size: 0.9rem;
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  &__btn {
+    padding: 9px 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(220,38,38,0.35);
+    white-space: nowrap;
+
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(220,38,38,0.5); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
 }

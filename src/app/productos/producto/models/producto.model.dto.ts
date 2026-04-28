@@ -10,8 +10,10 @@ export interface IProductoDTO{
     cantidad: number;
     subTotal: number;
     idProducto: number;
-    imagen:Imagen
-    listImgs?: IImagenDto [];
+    imagen:Imagen;
+    listImgs?: IImagenDto[];
+    marca?: string;
+    color?: string;
 }
 
 

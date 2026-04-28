@@ -4,46 +4,63 @@
   <p-carousel [value]="productoDtoImagen" [numVisible]="3" [numScroll]="3" [circular]="false"
     [responsiveOptions]="responsiveOptions" (onPage)="handlePageChange($event)">
     <ng-template pTemplate="item" let-product>
-      <div class="border border-surface rounded-border m-2 p-4">
-        <div class="mb-4" style=" width: 100%; height: 400px;">
-          <div class="relative mx-auto ">
+      <div class="border border-surface rounded-border m-2 p-4"
+           [class.dp-slide--marked]="estaMarcada(product)">
+        <div class="mb-4" style="width: 100%; height: 400px;">
+          <div class="relative mx-auto">
 
-            <div class="mb-4"
+            <div class="mb-4 dp-img-wrap"
               style="width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; position: relative;">
               <img [src]="'data:image/'+product.extencion+';base64,' + product.image" [alt]="product.name"
-                style="max-width: 100%; max-height: 100%; object-fit: contain;" class="rounded-border" />
-              <button
-                pButton
+                style="max-width: 100%; max-height: 100%; object-fit: contain;"
+                class="rounded-border"
+                [style.opacity]="estaMarcada(product) ? '0.4' : '1'"
+                [style.filter]="estaMarcada(product) ? 'grayscale(60%)' : 'none'" />
+
+              <!-- Overlay marcada -->
+              <div *ngIf="estaMarcada(product)" class="dp-del-overlay">
+                <span>🗑️</span>
+              </div>
+
+              <!-- Botón X solo admin -->
+              <button *ngIf="isAdminUser"
                 type="button"
-                icon="pi pi-trash"
-                class="p-button-danger p-button-rounded p-button-sm"
-                style="position: absolute; top: 8px; right: 8px;"
-                (click)="eliminarImagen(product)"
-                pTooltip="Eliminar imagen"
-                tooltipPosition="left">
+                class="dp-del-btn"
+                [class.dp-del-btn--on]="estaMarcada(product)"
+                (click)="toggleMarcar(product)"
+                [title]="estaMarcada(product) ? 'Desmarcar' : 'Marcar para eliminar'">
+                ✕
               </button>
             </div>
 
-
           </div>
-
         </div>
 
         <p-tag [value]="product.inventoryStatus" [severity]="getSeverity(product.inventoryStatus)" class="absolute"
           [ngStyle]="{ 'left.px': 5, 'top.px': 5 }"></p-tag>
-        <div class="mb-4 font-medium">{{ product.name }} {{product.idImagen}} </div>
-        <div class="flex justify-between items-center">
-          <div class="mt-0 font-semibold text-xl">{{ '$' + product.price }}</div>
-          <span>
-            <p-button icon="pi pi-heart" severity="secondary"></p-button>
-          </span>
+        <div class="mb-4 font-medium"
+             [style.textDecoration]="estaMarcada(product) ? 'line-through' : 'none'"
+             [style.color]="estaMarcada(product) ? '#ef4444' : ''">
+          {{ product.name }} {{ product.idImagen }}
         </div>
 
       </div>
-
     </ng-template>
 
   </p-carousel>
+
+  <!-- Barra de eliminación por lotes (solo admin) -->
+  <div *ngIf="isAdminUser && totalMarcadas > 0" class="dp-delete-bar">
+    <span class="dp-delete-bar__count">
+      🗑️ <strong>{{ totalMarcadas }}</strong> imagen(es) marcada(s) para eliminar
+    </span>
+    <button class="dp-delete-bar__btn" [disabled]="eliminando" (click)="confirmarEliminarBatch()">
+      <span *ngIf="!eliminando">Eliminar seleccionadas</span>
+      <span *ngIf="eliminando" class="d-flex align-items-center gap-2">
+        <span class="spinner-border spinner-border-sm"></span> Eliminando…
+      </span>
+    </button>
+  </div>
 
   <span class="d-flex justify-content-end">
     <button type="button" class="btn btn-secondary" (click)="removeCarrito()" [disabled]="!isProductoEnCarrito()">

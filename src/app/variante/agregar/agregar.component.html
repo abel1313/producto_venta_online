@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <!-- ── Campos de variante ──────────────────────────────────── -->
+      <!-- ── Formulario principal ────────────────────────────────── -->
       <form [formGroup]="form">
         <div class="vf-grid">
 
@@ -96,9 +96,102 @@
         </div>
       </form>
 
+      <!-- ── Botones de modales ──────────────────────────────────── -->
+      <div class="vf-modals-row">
+        <!-- Tallas numéricas 1-50 -->
+        <button class="vf-btn-multi" type="button" (click)="abrirModalNum()">
+          <span class="vf-btn-multi__icon">🔢</span>
+          <div class="vf-btn-multi__text">
+            <span>Tallas numéricas</span>
+            <small>1 – 50</small>
+          </div>
+          <span class="vf-btn-multi__badge" *ngIf="numSeleccionados > 0">{{ numSeleccionados }}</span>
+        </button>
+
+        <!-- Tallas por letra XS–3XL -->
+        <button class="vf-btn-multi" type="button" (click)="abrirModalLetra()">
+          <span class="vf-btn-multi__icon">🔡</span>
+          <div class="vf-btn-multi__text">
+            <span>Tallas por letra</span>
+            <small>XS, S, M, L, XL…</small>
+          </div>
+          <span class="vf-btn-multi__badge vf-btn-multi__badge--letra" *ngIf="letrasSeleccionadas > 0">{{ letrasSeleccionadas }}</span>
+        </button>
+      </div>
+
+      <!-- Propagar (solo si hay extras) -->
+      <button
+        *ngIf="totalExtras > 0"
+        class="vf-btn-propagate-full"
+        type="button"
+        (click)="propagarCampos()"
+        title="Copia color, presentación, marca, contenido y descripción del formulario principal a todas las variantes extra">
+        ↓ Propagar campos del formulario principal a las {{ totalExtras }} variante(s) extra
+      </button>
+
+      <!-- ── Variantes extra ───────────────────────────────────────── -->
+      <div *ngIf="totalExtras > 0" class="vf-extras">
+        <p class="vf-section__label">
+          Variantes adicionales
+          <span class="vf-extras__count">{{ totalExtras }}</span>
+        </p>
+
+        <div class="vf-extras__scroll">
+          <div
+            class="vf-extra-card"
+            *ngFor="let extra of variantesExtras; let i = index"
+          >
+            <div class="vf-extra-card__head">
+              <span class="vf-extra-card__tag"
+                [class.vf-extra-card__tag--letra]="extra.source === 'letra'">
+                {{ extra.source === 'letra' ? '🔡' : '🔢' }} Talla {{ extraLabel(extra, i) }}
+              </span>
+              <button class="vf-extra-card__del" type="button" (click)="eliminarExtra(i)">✕</button>
+            </div>
+
+            <form [formGroup]="extra.form">
+              <div class="vf-grid">
+                <div class="vf-field">
+                  <label class="vf-label">Stock</label>
+                  <input class="vf-input" formControlName="stock" type="number" min="0" placeholder="0">
+                </div>
+
+                <div class="vf-field">
+                  <label class="vf-label">Color</label>
+                  <input class="vf-input" formControlName="color" placeholder="negro, azul…">
+                </div>
+
+                <div class="vf-field">
+                  <label class="vf-label">Presentación</label>
+                  <input class="vf-input" formControlName="presentacion" placeholder="botella, caja…">
+                </div>
+
+                <div class="vf-field">
+                  <label class="vf-label">Marca</label>
+                  <input class="vf-input" formControlName="marca" placeholder="Nike…">
+                </div>
+
+                <div class="vf-field">
+                  <label class="vf-label">Contenido neto</label>
+                  <input class="vf-input" formControlName="contenidoNeto" placeholder="500ml, 1kg…">
+                </div>
+
+                <div class="vf-field vf-field--full">
+                  <label class="vf-label">Descripción</label>
+                  <textarea class="vf-input vf-textarea" formControlName="descripcion" rows="2" placeholder="Descripción…"></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Zona de imágenes ────────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Imágenes</p>
+        <p class="vf-section__label">
+          Imágenes
+          <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todas las variantes</span>
+        </p>
 
         <div
           class="vf-drop"
@@ -118,7 +211,6 @@
           </canvas>
         </div>
 
-        <!-- Miniaturas -->
         <div *ngIf="imagenesCargadas.length > 0" class="vf-thumbs">
           <div class="vf-thumb" *ngFor="let img of imagenesCargadas; let i = index">
             <img [src]="'data:' + img.extension + ';base64,' + img.base64" [alt]="img.nombreImagen">
@@ -136,12 +228,116 @@
         [disabled]="!productoSeleccionado || guardando"
         (click)="guardar()"
       >
-        <span *ngIf="!guardando">💾 Guardar variante</span>
+        <span *ngIf="!guardando">
+          💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' variantes' : 'variante' }}
+        </span>
         <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
           <span class="spinner-border spinner-border-sm"></span> Guardando…
         </span>
       </button>
 
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- Modal — Tallas numéricas 1-50                                     -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="vf-modal-overlay" *ngIf="modalNumVisible" (click)="cerrarModalNum()">
+  <div class="vf-modal" (click)="$event.stopPropagation()">
+
+    <div class="vf-modal__header">
+      <span>🔢</span>
+      <div>
+        <h4 class="vf-modal__title">Tallas numéricas</h4>
+        <p class="vf-modal__sub">Selecciona una talla y asígnale su stock</p>
+      </div>
+      <button class="vf-modal__close" (click)="cerrarModalNum()">✕</button>
+    </div>
+
+    <div class="vf-tallas-grid">
+      <div
+        class="vf-talla-chip"
+        *ngFor="let t of tallasNum"
+        [class.vf-talla-chip--on]="t.checked"
+        (click)="t.checked = !t.checked"
+      >
+        <span class="vf-talla-chip__num">{{ t.num }}</span>
+        <input
+          *ngIf="t.checked"
+          class="vf-talla-chip__stock"
+          type="number"
+          min="0"
+          placeholder="stock"
+          [value]="t.stock"
+          (input)="onStockNumChange(t, $event)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+    </div>
+
+    <div class="vf-modal__footer">
+      <span class="vf-modal__count">
+        <strong>{{ numSeleccionados }}</strong> talla(s) seleccionada(s)
+      </span>
+      <div class="vf-modal__actions">
+        <button class="vf-btn-cancel" type="button" (click)="cerrarModalNum()">Cancelar</button>
+        <button class="vf-btn-confirm" type="button" (click)="confirmarModalNum()" [disabled]="numSeleccionados === 0">
+          Confirmar
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- Modal — Tallas por letra (XS, S, M, L, XL…)                      -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="vf-modal-overlay" *ngIf="modalLetraVisible" (click)="cerrarModalLetra()">
+  <div class="vf-modal" (click)="$event.stopPropagation()">
+
+    <div class="vf-modal__header">
+      <span>🔡</span>
+      <div>
+        <h4 class="vf-modal__title">Tallas por letra</h4>
+        <p class="vf-modal__sub">Al seleccionar una talla aparece otra igual por si necesitas más</p>
+      </div>
+      <button class="vf-modal__close" (click)="cerrarModalLetra()">✕</button>
+    </div>
+
+    <div class="vf-tallas-grid vf-tallas-grid--letras">
+      <div
+        class="vf-talla-chip vf-talla-chip--letra"
+        *ngFor="let t of tallasLetras"
+        [class.vf-talla-chip--on]="t.checked"
+        (click)="toggleLetra(t)"
+      >
+        <span class="vf-talla-chip__num">{{ t.talla }}</span>
+        <input
+          *ngIf="t.checked"
+          class="vf-talla-chip__stock"
+          type="number"
+          min="0"
+          placeholder="stock"
+          [value]="t.stock"
+          (input)="onStockLetraChange(t, $event)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+    </div>
+
+    <div class="vf-modal__footer">
+      <span class="vf-modal__count">
+        <strong>{{ letrasSeleccionadas }}</strong> seleccionada(s)
+      </span>
+      <div class="vf-modal__actions">
+        <button class="vf-btn-cancel" type="button" (click)="cerrarModalLetra()">Cancelar</button>
+        <button class="vf-btn-confirm vf-btn-confirm--letra" type="button" (click)="confirmarModalLetra()" [disabled]="letrasSeleccionadas === 0">
+          Confirmar
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

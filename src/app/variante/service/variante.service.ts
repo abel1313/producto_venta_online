@@ -72,13 +72,13 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
-  /** Crea o actualiza variante — mismo endpoint. Si data.id está presente → actualiza. */
-  save(data: IVarianteRequest): Observable<{ data: IVariante }> {
-    return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, data);
+  /** Crea/actualiza una o varias variantes en una sola petición. */
+  save(data: IVarianteRequest[]): Observable<{ data: IVariante[] }> {
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, data);
   }
 
-  update(id: number, data: IVarianteRequest): Observable<{ data: IVariante }> {
-    return this.http.post<{ data: IVariante }>(`${this.url}/guardarConImagenes`, { ...data, id });
+  update(id: number, data: IVarianteRequest): Observable<{ data: IVariante[] }> {
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, [{ ...data, id }]);
   }
 
   delete(id: number): Observable<any> {

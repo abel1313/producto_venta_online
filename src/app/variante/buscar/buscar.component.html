@@ -5,7 +5,7 @@
       <span class="vb-header__icon">🏷️</span>
       <div>
         <h4 class="mb-0">Catalogos</h4>
-        <small class="text-white-50">Catálogo de productos con Catalogos</small>
+        <small class="text-white-50">Catálogo de productos</small>
       </div>
     </div>
 
@@ -33,9 +33,6 @@
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
-    <span *ngIf="buscando" class="vb-search__spinner">
-      <span class="spinner-border spinner-border-sm text-light"></span>
-    </span>
   </div>
 </div>
 
@@ -46,12 +43,6 @@
   <div *ngIf="!buscando && variantes.length === 0" class="vb-empty">
     <span class="vb-empty__icon">🗂️</span>
     <p class="mb-0">No se encontraron variantes</p>
-  </div>
-
-  <!-- Cargando -->
-  <div *ngIf="buscando" class="vb-empty">
-    <span class="spinner-border text-primary"></span>
-    <p class="mb-0 mt-2">Cargando variantes…</p>
   </div>
 
   <div class="vb-grid">

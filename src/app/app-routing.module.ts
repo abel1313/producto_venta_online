@@ -55,6 +55,11 @@ const routes: Routes = [
     canActivate: [CarritoGuard]
   },
   {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
+    canActivate: [AuthGuard, AdminGuardGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

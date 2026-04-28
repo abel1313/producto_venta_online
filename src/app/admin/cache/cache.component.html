@@ -1,0 +1,57 @@
+<div class="ac-page">
+  <div class="ac-card">
+
+    <!-- Header -->
+    <div class="ac-card__header">
+      <div class="ac-card__header-glow"></div>
+      <span class="ac-card__header-icon">⚡</span>
+      <div>
+        <h3 class="ac-card__title">Gestión de Caché</h3>
+        <p class="ac-card__subtitle">Solo administradores · {{ cachesLimpiadas.length > 0 ? cachesLimpiadas.length + ' cachés limpiadas' : 'Servidor QA' }}</p>
+      </div>
+    </div>
+
+    <div class="ac-card__body">
+
+      <!-- Advertencia -->
+      <div class="ac-warning">
+        <span class="ac-warning__icon">⚠️</span>
+        <div class="ac-warning__text">
+          <strong>¿Qué hace esto?</strong>
+          <p>Llama a <code>DELETE /admin/cache</code> y limpia <strong>todas las cachés registradas</strong>
+            en el servidor (imágenes, productos, variantes, clientes, tipos de pago…).
+            La siguiente solicitud a cada recurso será más lenta mientras se reconstruye la caché en Redis.</p>
+        </div>
+      </div>
+
+      <!-- Endpoint info -->
+      <div class="ac-endpoint">
+        <span class="ac-endpoint__method">DELETE</span>
+        <span class="ac-endpoint__url">/mis-productos/admin/cache</span>
+      </div>
+
+      <!-- Botón limpiar -->
+      <button
+        class="ac-btn-clear"
+        [disabled]="limpiando"
+        (click)="limpiarCache()">
+        <span *ngIf="!limpiando">🗑️ Limpiar toda la caché</span>
+        <span *ngIf="limpiando" class="d-flex align-items-center gap-2 justify-content-center">
+          <span class="spinner-border spinner-border-sm"></span> Limpiando…
+        </span>
+      </button>
+
+      <!-- Resultado -->
+      <div *ngIf="cachesLimpiadas.length > 0" class="ac-result">
+        <p class="ac-result__title">
+          <span class="ac-result__check">✅</span>
+          Se limpiaron <strong>{{ cachesLimpiadas.length }}</strong> cachés correctamente
+        </p>
+        <div class="ac-result__list">
+          <span class="ac-result__chip" *ngFor="let c of cachesLimpiadas">{{ c }}</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

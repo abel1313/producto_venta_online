@@ -68,15 +68,32 @@
         styleClass="dv-carousel">
 
         <ng-template pTemplate="item" let-img>
-          <div class="dv-slide">
+          <div class="dv-slide" [class.dv-slide--marked]="estaMarcada(img)">
             <div class="dv-slide__img-wrap">
               <img
                 [src]="imageSrc(img)"
                 [alt]="img.nombreImagen ?? 'Imagen variante'"
                 class="dv-slide__img"
                 (error)="$any($event.target).style.display='none'" />
+
+              <!-- Overlay de "marcada para eliminar" -->
+              <div *ngIf="estaMarcada(img)" class="dv-slide__del-overlay">
+                <span class="dv-slide__del-overlay-icon">🗑️</span>
+              </div>
+
+              <!-- Botón X solo para admin -->
+              <button
+                *ngIf="isAdminUser"
+                class="dv-slide__del-btn"
+                [class.dv-slide__del-btn--on]="estaMarcada(img)"
+                (click)="toggleMarcar(img)"
+                [title]="estaMarcada(img) ? 'Desmarcar' : 'Marcar para eliminar'">
+                ✕
+              </button>
             </div>
-            <p class="dv-slide__label">{{ img.nombreImagen }}</p>
+            <p class="dv-slide__label" [class.dv-slide__label--marked]="estaMarcada(img)">
+              {{ img.nombreImagen }}
+            </p>
           </div>
         </ng-template>
 
@@ -90,6 +107,19 @@
       </div>
     </ng-template>
 
+  </div>
+
+  <!-- Barra de eliminación (solo admin, solo cuando hay marcadas) -->
+  <div *ngIf="isAdminUser && totalMarcadas > 0" class="dv-delete-bar">
+    <span class="dv-delete-bar__count">
+      🗑️ <strong>{{ totalMarcadas }}</strong> imagen(es) marcada(s) para eliminar
+    </span>
+    <button class="dv-delete-bar__btn" [disabled]="eliminando" (click)="confirmarEliminar()">
+      <span *ngIf="!eliminando">Eliminar seleccionadas</span>
+      <span *ngIf="eliminando" class="d-flex align-items-center gap-2">
+        <span class="spinner-border spinner-border-sm"></span> Eliminando…
+      </span>
+    </button>
   </div>
 
   <!-- Detalles extra -->

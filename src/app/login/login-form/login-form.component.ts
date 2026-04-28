@@ -1,13 +1,10 @@
-import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from 'src/app/auth/auth.service';
 import { AuthenticateService as auth } from 'src/app/auth.service';
-import { AccederService } from '../acceder.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
-import { ITokenData } from '../models/ITokenData.model';
-import { IResponseGeneric } from 'src/shared/responseGeneric.model';
+import { AccederService } from '../acceder.service';
 
 @Component({
   selector: 'app-login-form',

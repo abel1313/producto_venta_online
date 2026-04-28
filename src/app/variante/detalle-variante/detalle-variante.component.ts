@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { AuthService } from 'src/app/auth/auth.service';
+import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
@@ -25,6 +27,13 @@ export class DetalleVarianteComponent implements OnInit {
   private cargaInicialCompletada = false;
   totalPaginas = 0;
 
+  // ── Eliminación de imágenes (solo admin) ──────────────────────────
+  isAdminUser = false;
+  imagenesParaEliminar = new Set<string>();
+  eliminando = false;
+
+  get totalMarcadas(): number { return this.imagenesParaEliminar.size; }
+
   responsiveOptions = [
     { breakpoint: '1400px', numVisible: 2, numScroll: 1 },
     { breakpoint: '1199px', numVisible: 3, numScroll: 1 },
@@ -37,9 +46,14 @@ export class DetalleVarianteComponent implements OnInit {
     private readonly router: Router,
     private readonly varianteService: VarianteService,
     private readonly carritoVariante: CarritoVarianteService,
+    private readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {
+    this.authService.userRoles$.subscribe(roles => {
+      this.isAdminUser = roles.includes('ROLE_ADMIN');
+    });
+
     const params = this.route.snapshot.paramMap;
     const productoIdParam = params.get('productoId');
     const varianteIdParam = params.get('id');
@@ -74,6 +88,7 @@ export class DetalleVarianteComponent implements OnInit {
     this.paginasCargadas = new Set<number>();
     this.cargaInicialCompletada = false;
     this.totalPaginas = 0;
+    this.imagenesParaEliminar.clear();
 
     this.varianteService.getImagenesPaginado(v.id, 1, PAGE_SIZE).subscribe({
       next: res => {
@@ -188,6 +203,54 @@ export class DetalleVarianteComponent implements OnInit {
     };
     return map[(this.varianteSeleccionada?.color ?? '').toLowerCase().trim()]
       ?? 'linear-gradient(135deg,#5c6bc0,#7986cb)';
+  }
+
+  // ── Eliminación de imágenes ────────────────────────────────────────
+
+  toggleMarcar(img: IVarianteImagenDto): void {
+    if (!img.id) return;
+    if (this.imagenesParaEliminar.has(img.id)) {
+      this.imagenesParaEliminar.delete(img.id);
+    } else {
+      this.imagenesParaEliminar.add(img.id);
+    }
+  }
+
+  estaMarcada(img: IVarianteImagenDto): boolean {
+    return !!img.id && this.imagenesParaEliminar.has(img.id);
+  }
+
+  confirmarEliminar(): void {
+    if (!this.varianteSeleccionada || this.imagenesParaEliminar.size === 0) return;
+
+    Swal.fire({
+      title: `¿Eliminar ${this.imagenesParaEliminar.size} imagen(es)?`,
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      background: '#1e1b4b',
+      color: '#fff'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.eliminando = true;
+      const ids = Array.from(this.imagenesParaEliminar);
+
+      this.varianteService.eliminarImagenes(this.varianteSeleccionada!.id, ids).subscribe({
+        next: () => {
+          this.displayImages = this.displayImages.filter(img => !img.id || !this.imagenesParaEliminar.has(img.id));
+          this.imagenesParaEliminar.clear();
+          this.eliminando = false;
+          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        },
+        error: () => {
+          this.eliminando = false;
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        }
+      });
+    });
   }
 
   volver(): void { this.router.navigate(['/variantes/buscar']); }

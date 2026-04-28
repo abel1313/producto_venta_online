@@ -1,6 +1,6 @@
 
 export interface ImagenUpdateDto {
-    id: number;
+    id: string;
     base64: string;
     extension: string;
     nombreImagen: string;

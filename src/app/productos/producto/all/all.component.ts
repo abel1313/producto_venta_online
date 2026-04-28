@@ -1,25 +1,25 @@
-import { IDetalleProducto } from 'src/app/models';
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { CellContextMenuEvent } from 'ag-grid-community';
-import { ProductoService } from '../../service/producto.service';
-import { IProducto, IProductoDTO, IProductoPaginable } from '../models';
-import { AgGridAngular } from 'ag-grid-angular';
-import { Icon } from 'src/app/Icon';
-import { IconService } from 'src/app/Icon/icon.service';
-import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { Router } from '@angular/router';
-import { AccederService } from 'src/app/login/acceder.service';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { AgGridAngular } from 'ag-grid-angular';
+import { CellContextMenuEvent } from 'ag-grid-community';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
+import { IconService } from 'src/app/Icon/icon.service';
+import { IDetalleProducto } from 'src/app/models';
+import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { ProductoService } from '../../service/producto.service';
+import { IProductoDTO, IProductoPaginable } from '../models';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
   styleUrls: ['./all.component.scss']
 })
-export class AllComponent implements OnInit, AfterViewInit, OnChanges {
+export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
 
   @ViewChild(MatMenuTrigger) menuTrigger!: MatMenuTrigger;
   @ViewChild('agGrid') agGrid!: AgGridAngular;
@@ -240,23 +240,24 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   ngOnInit(): void {
-    this.getData(1);
-    /**
-     *     document.addEventListener('click', (event: Event) => {
-          if (this.menuTrigger.menuOpen) {
-            this.menuTrigger.closeMenu();
-          }
-        });
-     */
-
+    if (this.srvice.prodInitialized) {
+      // Restaurar estado previo sin nueva petición
+      this.buscarProd    = this.srvice.prodTerminoCache;
+      this.rows          = [...this.srvice.prodCache];
+      this.totalPaginas  = this.srvice.prodTotalCache;
+      this.paginaPrimera = this.srvice.prodPaginaCache;
+    } else {
+      this.getData(1);
+    }
   }
 
   getData(pagina: number) {
-    this.srvice.getData(pagina, 10).subscribe({
+    this.srvice.getData(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.paginacion = res;
         this.rows = this.paginacion.t;
         this.totalPaginas = this.paginacion.totalPaginas;
+        this.srvice.setProdCache(this.rows, pagina, this.totalPaginas, '');
       },
       error: (err) => {
         console.error('Error en la petición:', err);
@@ -307,11 +308,21 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
-    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)//no es
+    // Si el término y la página ya están en caché, no repetir la petición
+    if (
+      this.srvice.prodInitialized &&
+      this.srvice.prodTerminoCache  === buscarProd &&
+      this.srvice.prodPaginaCache   === paginaPrimera
+    ) return;
+
+    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
           this.paginacion = res;
           this.rows = this.paginacion.t;
+          this.totalPaginas = res.totalPaginas ?? 0;
+          this.srvice.setProdCache(this.rows, paginaPrimera, this.totalPaginas, buscarProd);
         },
         error: (err) => {
           console.error('Error en la petición:', err);
@@ -354,6 +365,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges {
 
 
   buscarProd: string = '';
+  private destroy$ = new Subject<void>();
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   escaneando = false;
   private controlesEscaner: IScannerControls | null = null;

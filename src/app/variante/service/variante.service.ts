@@ -22,21 +22,25 @@ export class VarianteService {
   private _paginaCache = 1;
   private _totalPaginasCache = 0;
   private _initialized = false;
+  private _terminoCache = '';
 
   get variantesCache(): IVarianteResumen[] { return this._cache; }
   get paginaCache(): number { return this._paginaCache; }
   get totalPaginasCache(): number { return this._totalPaginasCache; }
   get initialized(): boolean { return this._initialized; }
+  get terminoCache(): string { return this._terminoCache; }
 
-  setCache(variantes: IVarianteResumen[], pagina: number, totalPaginas: number): void {
+  setCache(variantes: IVarianteResumen[], pagina: number, totalPaginas: number, termino = ''): void {
     this._cache = variantes;
     this._paginaCache = pagina;
     this._totalPaginasCache = totalPaginas;
+    this._terminoCache = termino;
     this._initialized = true;
   }
 
   invalidarCache(): void {
     this._initialized = false;
+    this._terminoCache = '';
   }
 
   constructor(private readonly http: HttpClient) {}
@@ -83,6 +87,10 @@ export class VarianteService {
 
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.url}/delete`, { body: id });
+  }
+
+  eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
+    return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
   }
 
   getImagenesPaginado(id: number, pagina: number, size: number): Observable<IVarianteImagenPaginable> {

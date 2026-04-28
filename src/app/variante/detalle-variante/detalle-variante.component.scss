@@ -187,6 +187,11 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  &--marked .dv-slide__img-wrap {
+    border: 2px solid #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+  }
 }
 
 .dv-slide__img-wrap {
@@ -199,6 +204,8 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
   justify-content: center;
   border: 1px solid #f3f4f6;
+  position: relative;
+  transition: $transition;
 }
 
 .dv-slide__img {
@@ -208,6 +215,54 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   transition: $transition;
 
   &:hover { transform: scale(1.04); }
+
+  .dv-slide--marked & {
+    opacity: 0.45;
+    filter: grayscale(60%);
+  }
+}
+
+// Overlay rojo "marcada para eliminar"
+.dv-slide__del-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(239,68,68,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  pointer-events: none;
+
+  &-icon { font-size: 2.2rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35)); }
+}
+
+// Botón X sobre la imagen
+.dv-slide__del-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition;
+  z-index: 2;
+  line-height: 1;
+
+  &:hover { background: rgba(239,68,68,0.85); color: #fff; transform: scale(1.12); }
+
+  &--on {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239,68,68,0.5);
+  }
 }
 
 .dv-slide__label {
@@ -219,6 +274,50 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+
+  &--marked {
+    color: #ef4444;
+    text-decoration: line-through;
+  }
+}
+
+// ── Barra de eliminación ───────────────────────────────────────────────────
+.dv-delete-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-top: 16px;
+
+  &__count {
+    font-size: 0.9rem;
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  &__btn {
+    padding: 9px 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: $transition;
+    box-shadow: 0 4px 12px rgba(220,38,38,0.35);
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(220,38,38,0.5);
+    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
 }
 
 // Sin imágenes

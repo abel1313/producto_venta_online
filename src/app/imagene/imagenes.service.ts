@@ -16,7 +16,7 @@ export class ImagenesService {
     return this.http.get<R>(`${this.urlImg}/${idProducto}/imagenes`);
   }
 
-  deleteById<R>(idImagen: number): Observable<R> {
+  deleteById<R>(idImagen: string): Observable<R> {
     return this.http.delete<R>(`${this.urlImg}/${idImagen}`);
   }
 }

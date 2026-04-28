@@ -21,6 +21,33 @@ export class ProductoService {
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
     productoUpdate$ = this.productoUpdate.asObservable();
+
+    // ── Caché de búsqueda ──────────────────────────────────────────
+    private _prodCache: IProductoDTO[] = [];
+    private _prodPagina = 1;
+    private _prodTotal = 0;
+    private _prodTermino = '';
+    private _prodInit = false;
+
+    get prodCache(): IProductoDTO[] { return this._prodCache; }
+    get prodPaginaCache(): number { return this._prodPagina; }
+    get prodTotalCache(): number { return this._prodTotal; }
+    get prodTerminoCache(): string { return this._prodTermino; }
+    get prodInitialized(): boolean { return this._prodInit; }
+
+    setProdCache(items: IProductoDTO[], pagina: number, totalPaginas: number, termino = ''): void {
+        this._prodCache = items;
+        this._prodPagina = pagina;
+        this._prodTotal = totalPaginas;
+        this._prodTermino = termino;
+        this._prodInit = true;
+    }
+
+    invalidarProdCache(): void {
+        this._prodInit = false;
+        this._prodTermino = '';
+    }
+
     constructor(
         private readonly http: HttpClient
     ) { }

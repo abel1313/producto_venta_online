@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
@@ -14,7 +14,7 @@ import { VarianteService } from '../service/variante.service';
   templateUrl: './buscar.component.html',
   styleUrls: ['./buscar.component.scss']
 })
-export class BuscarComponent implements OnInit {
+export class BuscarComponent implements OnInit, OnDestroy {
 
   variantes: IVarianteResumen[] = [];
   paginaActual    = 1;
@@ -26,6 +26,7 @@ export class BuscarComponent implements OnInit {
 
   private productoId = 0;
   private busquedaSubject = new Subject<string>();
+  private destroy$        = new Subject<void>();
 
   constructor(
     private readonly varianteService: VarianteService,
@@ -36,29 +37,35 @@ export class BuscarComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.userRoles$.subscribe(roles => {
+    this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
 
-    this.carritoVariante.carrito$.subscribe(d => { this.detalle = d; });
+    this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
 
-    this.busquedaSubject.pipe(debounceTime(400))
+    this.busquedaSubject.pipe(debounceTime(400), takeUntil(this.destroy$))
       .subscribe((termino: string) => this.buscarPagina(termino, 1));
 
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.productoId = Number(params['productoId']) || 0;
       if (this.productoId > 0) {
         this.cargarResumen(1);
       } else {
         if (this.varianteService.initialized) {
-          this.variantes    = [...this.varianteService.variantesCache];
-          this.totalPaginas = this.varianteService.totalPaginasCache;
-          this.paginaActual = this.varianteService.paginaCache;
+          this.terminoBusqueda = this.varianteService.terminoCache;
+          this.variantes       = [...this.varianteService.variantesCache];
+          this.totalPaginas    = this.varianteService.totalPaginasCache;
+          this.paginaActual    = this.varianteService.paginaCache;
         } else {
           this.buscarPagina('', 1);
         }
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ── Búsqueda ───────────────────────────────────────────────────────
@@ -72,18 +79,25 @@ export class BuscarComponent implements OnInit {
   }
 
   private buscarPagina(termino: string, pagina: number): void {
+    // Si el término y la página ya están en caché, no repetir la petición
+    if (
+      this.varianteService.initialized &&
+      this.varianteService.terminoCache === termino &&
+      this.varianteService.paginaCache  === pagina
+    ) return;
+
     this.buscando = true;
     const esCodigoBarras = termino.length > 0 && /^\d+$/.test(termino);
     const params = esCodigoBarras
       ? { codigoBarras: termino, pagina, size: 10 }
       : { nombre: termino,      pagina, size: 10 };
 
-    this.varianteService.buscar(params).subscribe({
+    this.varianteService.buscar(params).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
-        if (termino === '') this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas);
+        this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, termino);
         this.buscando = false;
       },
       error: () => { this.buscando = false; }
@@ -92,15 +106,16 @@ export class BuscarComponent implements OnInit {
 
   private cargarResumen(pagina: number): void {
     this.buscando = true;
-    this.varianteService.getPorProductoPaginadoResumen(this.productoId, pagina, 10).subscribe({
-      next: res => {
-        this.variantes    = res.t ?? [];
-        this.totalPaginas = res.totalPaginas;
-        this.paginaActual = pagina;
-        this.buscando = false;
-      },
-      error: () => { this.buscando = false; }
-    });
+    this.varianteService.getPorProductoPaginadoResumen(this.productoId, pagina, 10)
+      .pipe(takeUntil(this.destroy$)).subscribe({
+        next: res => {
+          this.variantes    = res.t ?? [];
+          this.totalPaginas = res.totalPaginas;
+          this.paginaActual = pagina;
+          this.buscando = false;
+        },
+        error: () => { this.buscando = false; }
+      });
   }
 
   // ── Paginación ─────────────────────────────────────────────────────

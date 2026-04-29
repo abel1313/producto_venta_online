@@ -33,7 +33,7 @@ export class LoginFormComponent implements OnInit {
     });
 
     console.log("******************************************************************************************************************** ");
-    console.log("LoginFormComponent: Constructor ejecutado");
+    console.log("LoginFormComponent: Constructor ejecutado cambi humo");
     console.log("******************************************************************************************************************** ");
     
   }

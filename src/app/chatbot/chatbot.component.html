@@ -1,0 +1,70 @@
+<!-- ── Ventana del chat ─────────────────────────────────────────── -->
+<div class="cb-window" [class.cb-window--visible]="!minimizado">
+
+  <!-- Header -->
+  <div class="cb-header">
+    <div class="cb-header__avatar">🤖</div>
+    <div class="cb-header__info">
+      <span class="cb-header__name">Asistente Virtual</span>
+      <span class="cb-header__status">
+        <span class="cb-dot"></span> En línea
+      </span>
+    </div>
+    <button class="cb-header__close" (click)="toggle()" title="Minimizar">
+      <i class="pi pi-minus"></i>
+    </button>
+  </div>
+
+  <!-- Área de mensajes -->
+  <div class="cb-msgs" #msgsRef>
+    <div
+      *ngFor="let m of mensajes"
+      class="cb-row"
+      [class.cb-row--user]="m.rol === 'user'"
+      [class.cb-row--bot]="m.rol === 'assistant' || m.rol === 'typing'">
+
+      <!-- Avatar bot -->
+      <div *ngIf="m.rol !== 'user'" class="cb-avatar">🤖</div>
+
+      <!-- Burbuja -->
+      <div class="cb-burbuja"
+           [class.cb-burbuja--user]="m.rol === 'user'"
+           [class.cb-burbuja--bot]="m.rol === 'assistant'"
+           [class.cb-burbuja--typing]="m.rol === 'typing'">
+
+        <!-- Indicador de escritura -->
+        <div *ngIf="m.rol === 'typing'" class="cb-typing">
+          <span></span><span></span><span></span>
+        </div>
+
+        <p *ngIf="m.rol !== 'typing'" class="cb-burbuja__text">{{ m.contenido }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="cb-input-wrap">
+    <textarea
+      class="cb-input"
+      [(ngModel)]="inputTexto"
+      (keydown)="onKeyDown($event)"
+      placeholder="Escribe tu mensaje… (Enter para enviar)"
+      rows="1"
+      [disabled]="cargando">
+    </textarea>
+    <button
+      class="cb-send"
+      [disabled]="!inputTexto.trim() || cargando"
+      (click)="enviar()"
+      title="Enviar">
+      <i class="pi pi-send"></i>
+    </button>
+  </div>
+
+</div>
+
+<!-- ── Botón flotante ──────────────────────────────────────────── -->
+<button class="cb-fab" (click)="toggle()" [class.cb-fab--open]="!minimizado">
+  <span *ngIf="minimizado" class="cb-fab__icon">💬</span>
+  <i  *ngIf="!minimizado" class="pi pi-times cb-fab__close"></i>
+</button>

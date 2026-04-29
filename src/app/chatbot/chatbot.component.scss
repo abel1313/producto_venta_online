@@ -1,0 +1,285 @@
+$primary:   #8b1a4a;
+$primary-d: #c2255c;
+$radius:    18px;
+
+// ── Botón flotante ─────────────────────────────────────────────────
+.cb-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $primary, $primary-d);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(139,26,74,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &:hover { transform: scale(1.1); box-shadow: 0 12px 36px rgba(139,26,74,0.65); }
+
+  &--open { background: linear-gradient(135deg, #374151, #1f2937); }
+
+  &__icon { font-size: 1.7rem; line-height: 1; }
+
+  &__close { color: white; font-size: 1.1rem; }
+}
+
+// ── Ventana ────────────────────────────────────────────────────────
+.cb-window {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  width: 370px;
+  height: 530px;
+  background: #f9fafb;
+  border-radius: $radius;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10000;
+
+  // Oculto por defecto
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+
+  &--visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+
+  @media (max-width: 420px) {
+    width: calc(100vw - 24px);
+    right: 12px;
+    bottom: 90px;
+    height: 70vh;
+  }
+}
+
+// ── Header ─────────────────────────────────────────────────────────
+.cb-header {
+  background: linear-gradient(135deg, #5c0f31 0%, $primary 55%, $primary-d 100%);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.01em;
+  }
+
+  &__status {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  &__close {
+    background: rgba(255,255,255,0.14);
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+    flex-shrink: 0;
+
+    &:hover { background: rgba(255,255,255,0.28); }
+  }
+}
+
+.cb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  display: inline-block;
+  animation: cb-pulse 2s infinite;
+}
+
+@keyframes cb-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+// ── Mensajes ───────────────────────────────────────────────────────
+.cb-msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(139,26,74,0.25); border-radius: 4px; }
+}
+
+.cb-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  &--user { flex-direction: row-reverse; }
+  &--bot  { flex-direction: row; }
+}
+
+.cb-avatar {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, $primary, $primary-d);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.cb-burbuja {
+  max-width: 78%;
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  word-break: break-word;
+
+  &--user {
+    background: linear-gradient(135deg, $primary, $primary-d);
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 3px 10px rgba(139,26,74,0.3);
+  }
+
+  &--bot {
+    background: white;
+    color: #1f2937;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #f3f4f6;
+  }
+
+  &--typing {
+    background: white;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #f3f4f6;
+    padding: 12px 16px;
+  }
+
+  &__text { margin: 0; white-space: pre-wrap; }
+}
+
+// ── Indicador de escritura ─────────────────────────────────────────
+.cb-typing {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #9ca3af;
+    animation: cb-bounce 1.2s infinite;
+
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+}
+
+@keyframes cb-bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.5; }
+  40%            { transform: translateY(-6px); opacity: 1;   }
+}
+
+// ── Input ──────────────────────────────────────────────────────────
+.cb-input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 14px 14px;
+  background: white;
+  border-top: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.cb-input {
+  flex: 1;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  color: #1f2937;
+  resize: none;
+  outline: none;
+  line-height: 1.45;
+  max-height: 100px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+
+  &::placeholder { color: #9ca3af; }
+
+  &:focus { border-color: $primary-d; box-shadow: 0 0 0 3px rgba(194,37,92,0.12); }
+
+  &:disabled { background: #f9fafb; cursor: not-allowed; }
+}
+
+.cb-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, $primary, $primary-d);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(139,26,74,0.4);
+
+  &:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 6px 18px rgba(139,26,74,0.5); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+}

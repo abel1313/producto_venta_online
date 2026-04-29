@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { ProductoService } from '../../service/producto.service';
 import { IconService } from 'src/app/Icon/icon.service';
@@ -29,8 +29,11 @@ export class DetalleProductoComponent implements OnInit {
   eliminando = false;
   get totalMarcadas(): number { return this.imagenesParaEliminar.size; }
 
+  cargando = true;
+
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly service: ProductoService,
     public readonly serviceIcon: IconService,
     public iconImagen: IconService,
@@ -59,6 +62,7 @@ export class DetalleProductoComponent implements OnInit {
 
   this.service.getDataGeneric(this.idProducto).subscribe(data=>{
     this.producto = data;
+    this.cargando = false;
   });
 
 
@@ -87,8 +91,20 @@ export class DetalleProductoComponent implements OnInit {
 
   }
 
-    detalle: IDetalleProducto[] = [];
-    isProductoEnCarrito(): boolean {
+  volver(): void { this.router.navigate(['/productos/buscar']); }
+
+  get cantidadEnCarrito(): number {
+    if (!this.producto) return 0;
+    return this.detalle.find(i => i.codigoBarras === this.producto.codigoBarras)?.cantidad ?? 0;
+  }
+
+  get stockAgotado(): boolean {
+    if (!this.producto) return true;
+    return this.cantidadEnCarrito >= this.producto.stock;
+  }
+
+  detalle: IDetalleProducto[] = [];
+  isProductoEnCarrito(): boolean {
     return this.detalle.some(item =>
        item?.codigoBarras === this.producto?.codigoBarras && item.nombre === this.producto.nombre
     );

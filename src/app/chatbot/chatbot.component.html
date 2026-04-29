@@ -1,70 +1,75 @@
-<!-- ── Ventana del chat ─────────────────────────────────────────── -->
-<div class="cb-window" [class.cb-window--visible]="!minimizado">
+<ng-container *ngIf="!oculto">
 
-  <!-- Header -->
-  <div class="cb-header">
-    <div class="cb-header__avatar">🤖</div>
-    <div class="cb-header__info">
-      <span class="cb-header__name">Asistente Virtual</span>
-      <span class="cb-header__status">
-        <span class="cb-dot"></span> En línea
-      </span>
+  <!-- ── Ventana del chat ──────────────────────────────────────────── -->
+  <div class="cb-window" [class.cb-window--visible]="!minimizado">
+
+    <!-- Header -->
+    <div class="cb-header">
+      <div class="cb-header__avatar">🤖</div>
+      <div class="cb-header__info">
+        <span class="cb-header__name">Asistente Virtual</span>
+        <span class="cb-header__status">
+          <span class="cb-dot" [class.cb-dot--blocked]="inputBloqueado"></span>
+          {{ inputBloqueado ? 'En espera' : 'En línea' }}
+        </span>
+      </div>
+      <button class="cb-header__close" (click)="toggle()" title="Minimizar">
+        <i class="pi pi-minus"></i>
+      </button>
     </div>
-    <button class="cb-header__close" (click)="toggle()" title="Minimizar">
-      <i class="pi pi-minus"></i>
-    </button>
-  </div>
 
-  <!-- Área de mensajes -->
-  <div class="cb-msgs" #msgsRef>
-    <div
-      *ngFor="let m of mensajes"
-      class="cb-row"
-      [class.cb-row--user]="m.rol === 'user'"
-      [class.cb-row--bot]="m.rol === 'assistant' || m.rol === 'typing'">
+    <!-- Área de mensajes -->
+    <div class="cb-msgs" #msgsRef>
+      <div
+        *ngFor="let m of mensajes"
+        class="cb-row"
+        [class.cb-row--user]="m.rol === 'user'"
+        [class.cb-row--bot]="m.rol === 'assistant' || m.rol === 'typing'">
 
-      <!-- Avatar bot -->
-      <div *ngIf="m.rol !== 'user'" class="cb-avatar">🤖</div>
+        <div *ngIf="m.rol !== 'user'" class="cb-avatar">🤖</div>
 
-      <!-- Burbuja -->
-      <div class="cb-burbuja"
-           [class.cb-burbuja--user]="m.rol === 'user'"
-           [class.cb-burbuja--bot]="m.rol === 'assistant'"
-           [class.cb-burbuja--typing]="m.rol === 'typing'">
-
-        <!-- Indicador de escritura -->
-        <div *ngIf="m.rol === 'typing'" class="cb-typing">
-          <span></span><span></span><span></span>
+        <div class="cb-burbuja"
+             [class.cb-burbuja--user]="m.rol === 'user'"
+             [class.cb-burbuja--bot]="m.rol === 'assistant'"
+             [class.cb-burbuja--typing]="m.rol === 'typing'">
+          <div *ngIf="m.rol === 'typing'" class="cb-typing">
+            <span></span><span></span><span></span>
+          </div>
+          <p *ngIf="m.rol !== 'typing'" class="cb-burbuja__text">{{ m.contenido }}</p>
         </div>
-
-        <p *ngIf="m.rol !== 'typing'" class="cb-burbuja__text">{{ m.contenido }}</p>
       </div>
     </div>
+
+    <!-- Banner de espera (cooldown visible) -->
+    <div *ngIf="inputBloqueado" class="cb-cooldown">
+      {{ labelEspera }}
+    </div>
+
+    <!-- Input -->
+    <div class="cb-input-wrap" [class.cb-input-wrap--blocked]="inputBloqueado">
+      <textarea
+        class="cb-input"
+        [(ngModel)]="inputTexto"
+        (keydown)="onKeyDown($event)"
+        [placeholder]="inputBloqueado ? labelEspera : 'Escribe tu mensaje… (Enter para enviar)'"
+        rows="1"
+        [disabled]="cargando || inputBloqueado">
+      </textarea>
+      <button
+        class="cb-send"
+        [disabled]="!inputTexto.trim() || cargando || inputBloqueado"
+        (click)="enviar()"
+        title="Enviar">
+        <i class="pi pi-send"></i>
+      </button>
+    </div>
+
   </div>
 
-  <!-- Input -->
-  <div class="cb-input-wrap">
-    <textarea
-      class="cb-input"
-      [(ngModel)]="inputTexto"
-      (keydown)="onKeyDown($event)"
-      placeholder="Escribe tu mensaje… (Enter para enviar)"
-      rows="1"
-      [disabled]="cargando">
-    </textarea>
-    <button
-      class="cb-send"
-      [disabled]="!inputTexto.trim() || cargando"
-      (click)="enviar()"
-      title="Enviar">
-      <i class="pi pi-send"></i>
-    </button>
-  </div>
+  <!-- ── Botón flotante ─────────────────────────────────────────────── -->
+  <button class="cb-fab" (click)="toggle()" [class.cb-fab--open]="!minimizado">
+    <span *ngIf="minimizado" class="cb-fab__icon">💬</span>
+    <i  *ngIf="!minimizado" class="pi pi-times cb-fab__close"></i>
+  </button>
 
-</div>
-
-<!-- ── Botón flotante ──────────────────────────────────────────── -->
-<button class="cb-fab" (click)="toggle()" [class.cb-fab--open]="!minimizado">
-  <span *ngIf="minimizado" class="cb-fab__icon">💬</span>
-  <i  *ngIf="!minimizado" class="pi pi-times cb-fab__close"></i>
-</button>
+</ng-container>

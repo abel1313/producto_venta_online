@@ -14,7 +14,13 @@ export class ChatbotService {
 
   constructor(private readonly http: HttpClient) {}
 
-  enviar(mensaje: string, historial: IMensajeChat[]): Observable<{ respuesta: string }> {
-    return this.http.post<{ respuesta: string }>(this.url, { mensaje, historial });
+  enviar(mensaje: string, historial: IMensajeChat[]): Observable<IChatbotResponse> {
+    return this.http.post<IChatbotResponse>(this.url, { mensaje, historial });
   }
+}
+
+export interface IChatbotResponse {
+  respuesta:      string;
+  bloqueado:      boolean;
+  segundosEspera: number;
 }

@@ -11,6 +11,7 @@ import { ListarVariantesComponent } from './listar-variantes/listar-variantes.co
 import { BuscarComponent } from './buscar/buscar.component';
 import { VentaVarianteComponent } from './venta-variante/venta-variante.component';
 import { DetalleVarianteComponent } from './detalle-variante/detalle-variante.component';
+import { CargaArchivoComponent } from '../documentos/carga-archivo/carga-archivo.component';
 import { CarouselModule } from 'primeng/carousel';
 
 
@@ -21,7 +22,8 @@ import { CarouselModule } from 'primeng/carousel';
     ListarVariantesComponent,
     BuscarComponent,
     VentaVarianteComponent,
-    DetalleVarianteComponent
+    DetalleVarianteComponent,
+    CargaArchivoComponent,
   ],
   imports: [
     CommonModule,

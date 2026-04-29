@@ -102,6 +102,16 @@
                 [routerLink]="'variantes/buscar'">buscar</a></li>
             <li *ngIf="isAdminUser"><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
                 [routerLink]="'variantes/venta'">gestionar</a></li>
+            <li *ngIf="isAdminUser">
+              <hr class="dropdown-divider">
+            </li>
+            <li *ngIf="isAdminUser">
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'variantes/cargar-excel'">
+                📂 Cargar archivo
+              </a>
+            </li>
           </ul>
         </li>
         <!-- /TODO:TEMP variantes -->

@@ -7,6 +7,7 @@ import { VentaVarianteComponent } from './venta-variante/venta-variante.componen
 import { DetalleVarianteComponent } from './detalle-variante/detalle-variante.component';
 import { AuthGuard } from '../auth.guard';
 import { AdminGuardGuard } from '../guard/admin-guard.guard';
+import { CargaArchivoComponent } from '../documentos/carga-archivo/carga-archivo.component';
 
 const routes: Routes = [
   { path: 'buscar',                component: BuscarComponent },
@@ -15,6 +16,7 @@ const routes: Routes = [
   { path: 'carrito',               component: VentaVarianteComponent },
   { path: 'detalle/:id',           component: DetalleVarianteComponent },
   { path: 'detalle/producto/:productoId', component: DetalleVarianteComponent },
+  { path: 'cargar-excel', component: CargaArchivoComponent, canActivate: [AuthGuard, AdminGuardGuard] },
 ];
 
 @NgModule({

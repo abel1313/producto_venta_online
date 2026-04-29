@@ -1,0 +1,121 @@
+<div class="ca-page">
+  <div class="ca-card">
+
+    <!-- ── Header ────────────────────────────────────────────────── -->
+    <div class="ca-card__header">
+      <div class="ca-card__header-glow"></div>
+      <span class="ca-card__header-icon">📊</span>
+      <div>
+        <h3 class="ca-card__title">Cargar catálogo Excel</h3>
+        <p class="ca-card__subtitle">Solo administradores · Formatos: .xls / .xlsx</p>
+      </div>
+    </div>
+
+    <div class="ca-card__body">
+
+      <!-- ── Info de columnas ───────────────────────────────────── -->
+      <div class="ca-info">
+        <span class="ca-info__icon">ℹ️</span>
+        <div class="ca-info__text">
+          La fila 1 es la cabecera (se salta). Columnas esperadas:
+          <code>codigoBarras · nombreProducto · piezas · precioCompra · PrecioVenta · precioDescuento · descripcion · stock · color · marca · contenidoNeta</code>
+        </div>
+      </div>
+
+      <!-- ── Drop zone ──────────────────────────────────────────── -->
+      <div class="ca-drop"
+           [class.ca-drop--over]="dragOver"
+           [class.ca-drop--selected]="archivo && !formatoInvalido"
+           [class.ca-drop--error]="formatoInvalido"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)"
+           (click)="fileInputRef.nativeElement.click()">
+
+        <input #fileInput type="file" accept=".xls,.xlsx"
+               (change)="onFileSelected($event)" hidden />
+
+        <!-- Sin archivo -->
+        <ng-container *ngIf="!archivo">
+          <span class="ca-drop__icon">📂</span>
+          <p class="ca-drop__text">Arrastra tu archivo aquí o <u>haz clic</u></p>
+          <small class="ca-drop__hint">Solo .xls y .xlsx · máx. 1 archivo</small>
+        </ng-container>
+
+        <!-- Archivo inválido -->
+        <ng-container *ngIf="archivo && formatoInvalido">
+          <span class="ca-drop__icon">❌</span>
+          <p class="ca-drop__text ca-drop__text--error">Formato no permitido: .{{ extension }}</p>
+          <small class="ca-drop__hint">Solo se aceptan archivos .xls o .xlsx</small>
+        </ng-container>
+
+        <!-- Archivo válido -->
+        <ng-container *ngIf="archivo && !formatoInvalido">
+          <span class="ca-drop__icon">✅</span>
+          <div class="ca-file-info">
+            <span class="ca-file-info__badge ca-file-info__badge--{{ extension }}">
+              {{ extension.toUpperCase() }}
+            </span>
+            <span class="ca-file-info__name">{{ archivo!.name }}</span>
+            <span class="ca-file-info__size">{{ fileSize }}</span>
+          </div>
+          <small class="ca-drop__hint">Haz clic para cambiar el archivo</small>
+        </ng-container>
+
+      </div>
+
+      <!-- ── Acciones ───────────────────────────────────────────── -->
+      <div class="ca-actions">
+        <button class="ca-btn ca-btn--clear"
+                type="button"
+                *ngIf="archivo"
+                (click)="limpiar(); $event.stopPropagation()">
+          ✕ Limpiar
+        </button>
+
+        <button class="ca-btn ca-btn--upload"
+                type="button"
+                [disabled]="!archivoValido || subiendo"
+                (click)="subir()">
+          <span *ngIf="!subiendo">🚀 Subir y procesar</span>
+          <span *ngIf="subiendo" class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm"></span> Procesando…
+          </span>
+        </button>
+      </div>
+
+      <!-- ── Resultado ──────────────────────────────────────────── -->
+      <div *ngIf="resultado" class="ca-resultado">
+        <p class="ca-resultado__titulo">📋 Resultado del procesamiento</p>
+
+        <div class="ca-resultado__stats">
+          <div class="ca-stat ca-stat--ok">
+            <span class="ca-stat__num">{{ resultado.insertados }}</span>
+            <span class="ca-stat__label">Insertados</span>
+          </div>
+          <div class="ca-stat ca-stat--warn">
+            <span class="ca-stat__num">{{ resultado.omitidos }}</span>
+            <span class="ca-stat__label">Omitidos</span>
+          </div>
+          <div class="ca-stat ca-stat--err" *ngIf="tieneErrores">
+            <span class="ca-stat__num">{{ resultado.errores.length }}</span>
+            <span class="ca-stat__label">Errores</span>
+          </div>
+        </div>
+
+        <!-- Lista de errores -->
+        <div *ngIf="tieneErrores" class="ca-errores">
+          <p class="ca-errores__titulo">⚠️ Detalle de errores</p>
+          <ul class="ca-errores__list">
+            <li *ngFor="let err of resultado.errores" class="ca-errores__item">{{ err }}</li>
+          </ul>
+        </div>
+
+        <div *ngIf="!tieneErrores && resultado.insertados > 0" class="ca-success-msg">
+          ✅ Todos los productos se insertaron sin errores.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

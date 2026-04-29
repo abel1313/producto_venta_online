@@ -1,211 +1,190 @@
-<div class="d-flex justify-content-center p-4">
-  <div class="col-12 col-md-8">
-    <div class="card p-3">
+<div class="pf-page">
+  <div class="pf-card">
 
-      <div class="card-header text-center">
-        <b> {{nombreCard}}</b>
+    <!-- ── Header ────────────────────────────────────────────────── -->
+    <div class="pf-card__header">
+      <div class="pf-card__header-glow"></div>
+      <span class="pf-card__header-icon">{{ esActualizar ? '✏️' : '📦' }}</span>
+      <div>
+        <h3 class="pf-card__title">{{ nombreCard }}</h3>
+        <p class="pf-card__subtitle">Los campos con <span class="pf-required">*</span> son obligatorios</p>
       </div>
+    </div>
+
+    <div class="pf-card__body">
       <form [formGroup]="formProductos">
 
-        <div class="row">
-          <div class="col-12 col-md-6">
-            <label for="nombre">Nombre:</label>
-            <input id="nombre" formControlName="nombre" class="form-control">
-
-            <div *ngIf="formProductos.get('nombre')?.invalid && formProductos.get('nombre')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('nombre')?.errors?.['maxlength']">Máximo 50
-                caracteres</small>
-            </div>
-
-
+        <!-- ── Fila 1: Nombre + Marca ─────────────────────────── -->
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label class="pf-label">Nombre <span class="pf-required">*</span></label>
+            <input class="pf-input" [class.pf-input--error]="isInvalid('nombre')"
+                   formControlName="nombre" placeholder="Nombre del producto">
+            <small class="pf-error" *ngIf="isInvalid('nombre')">Campo requerido (máx. 100 caracteres)</small>
           </div>
-          <div class="col-12 col-md-6">
-            <label for="precioCosto">Precio al que se compró:</label>
-            <input id="precioCosto" formControlName="precioCosto" class="form-control" inputmode="decimal" step="0.01">
 
-            <div *ngIf="formProductos.get('precioCosto')?.invalid && formProductos.get('precioCosto')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('precioCosto')?.errors?.['pattern']">
-                Solo números con hasta 2 decimales
-              </small>
+          <div class="pf-field">
+            <label class="pf-label">Marca <span class="pf-required">*</span></label>
+            <input class="pf-input" [class.pf-input--error]="isInvalid('marca')"
+                   formControlName="marca" placeholder="Nike, Adidas…">
+            <small class="pf-error" *ngIf="isInvalid('marca')">Campo requerido</small>
+          </div>
+        </div>
+
+        <!-- ── Fila 2: Precio compra + Precio venta ──────────── -->
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label class="pf-label">Precio de compra <span class="pf-required">*</span></label>
+            <div class="pf-input-money">
+              <span class="pf-input-money__sym">$</span>
+              <input class="pf-input pf-input--money" [class.pf-input--error]="isInvalid('precioCosto')"
+                     formControlName="precioCosto" inputmode="decimal" placeholder="0.00">
+            </div>
+            <small class="pf-error" *ngIf="isInvalid('precioCosto')">Número válido requerido (ej. 150.00)</small>
+          </div>
+
+          <div class="pf-field">
+            <label class="pf-label">Precio de venta <span class="pf-required">*</span></label>
+            <div class="pf-input-money">
+              <span class="pf-input-money__sym">$</span>
+              <input class="pf-input pf-input--money" [class.pf-input--error]="isInvalid('precioVenta')"
+                     formControlName="precioVenta" inputmode="decimal" placeholder="0.00">
+            </div>
+            <small class="pf-error" *ngIf="isInvalid('precioVenta')">Número válido requerido</small>
+          </div>
+        </div>
+
+        <!-- ── Fila 3: Precio descuento + Stock ──────────────── -->
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label class="pf-label">
+              Precio con descuento
+              <span class="pf-hint">se copia del precio venta</span>
+            </label>
+            <div class="pf-input-money">
+              <span class="pf-input-money__sym">$</span>
+              <input class="pf-input pf-input--money"
+                     formControlName="precioRebaja" inputmode="decimal" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="pf-field">
+            <label class="pf-label">Stock <span class="pf-required">*</span></label>
+            <input class="pf-input" [class.pf-input--error]="isInvalid('stock')"
+                   formControlName="stock" type="number" min="0" placeholder="0">
+            <small class="pf-error" *ngIf="isInvalid('stock')">Campo requerido</small>
+          </div>
+        </div>
+
+        <!-- ── Descripción (ancho completo) ──────────────────── -->
+        <div class="pf-field">
+          <label class="pf-label">Descripción <span class="pf-required">*</span></label>
+          <textarea class="pf-input pf-textarea" [class.pf-input--error]="isInvalid('descripcion')"
+                    formControlName="descripcion" rows="2"
+                    placeholder="Descripción breve del producto…"></textarea>
+          <small class="pf-error" *ngIf="isInvalid('descripcion')">Campo requerido</small>
+        </div>
+
+        <!-- ── Fila 4: Color + Piezas ─────────────────────────── -->
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label class="pf-label">Color <span class="pf-optional">(opcional)</span></label>
+            <input class="pf-input" formControlName="color" placeholder="negro, azul, rojo…">
+          </div>
+
+          <div class="pf-field">
+            <label class="pf-label">Piezas <span class="pf-optional">(opcional)</span></label>
+            <input class="pf-input" formControlName="piezas" type="number" min="0" placeholder="0">
+          </div>
+        </div>
+
+        <!-- ── Contenido neto ─────────────────────────────────── -->
+        <div class="pf-grid">
+          <div class="pf-field">
+            <label class="pf-label">Contenido neto <span class="pf-optional">(opcional)</span></label>
+            <input class="pf-input" formControlName="contenido" placeholder="500ml, 1kg…">
+          </div>
+          <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
+            <label class="pf-label">Actualizar stock</label>
+            <input class="pf-input" formControlName="actualizarStock" type="number" placeholder="0">
+          </div>
+        </div>
+
+        <!-- ── Código de barras ───────────────────────────────── -->
+        <div class="pf-barcode-section">
+          <div class="pf-barcode-toggle">
+            <label class="pf-switch">
+              <input type="checkbox" formControlName="sinCodigoBarra">
+              <span class="pf-switch__track"></span>
+              <span class="pf-switch__label">
+                Generar código automático <span class="pf-hint">(basado en la fecha)</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="pf-field">
+            <label class="pf-label">
+              Código de barras
+              <span *ngIf="!sinCodigoActivo" class="pf-required">*</span>
+              <span *ngIf="sinCodigoActivo" class="pf-hint">generado automáticamente</span>
+            </label>
+            <input class="pf-input"
+                   [class.pf-input--error]="isInvalid('codigoBarras')"
+                   [class.pf-input--generated]="sinCodigoActivo"
+                   formControlName="codigoBarras"
+                   [readonly]="sinCodigoActivo"
+                   placeholder="Ingresa el código de barras">
+            <small class="pf-error" *ngIf="isInvalid('codigoBarras')">Campo requerido</small>
+          </div>
+        </div>
+
+        <!-- ── Zona de imágenes ───────────────────────────────── -->
+        <div class="pf-section">
+          <p class="pf-section__label">Imágenes del producto</p>
+
+          <div class="pf-drop"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDrop($event)"
+               (click)="fileInputRef.nativeElement.click()">
+            <input #fileInput type="file" accept="image/*" multiple
+                   (change)="onFileSelected($event)" hidden />
+            <div class="pf-drop__content" *ngIf="imagenesCargadas.length === 0">
+              <span class="pf-drop__icon">🖼️</span>
+              <p class="pf-drop__text">Arrastra imágenes o <u>haz clic</u></p>
+              <small class="pf-drop__hint">PNG, JPG, WEBP — múltiples permitidas</small>
+            </div>
+            <canvas #canvas class="pf-canvas"
+                    [class.pf-canvas--visible]="imagenesCargadas.length > 0"
+                    width="600" height="300">
+            </canvas>
+          </div>
+
+          <!-- Miniaturas -->
+          <div *ngIf="imagenesCargadas.length > 0" class="pf-thumbs">
+            <div class="pf-thumb" *ngFor="let img of imagenesCargadas; let i = index">
+              <img [src]="'data:' + img.extension + ';base64,' + img.base64" [alt]="img.nombreImagen">
+              <button class="pf-thumb__del" type="button" (click)="eliminarImagen(i)">✕</button>
+            </div>
+            <div class="pf-thumb pf-thumb--add" (click)="fileInputRef.nativeElement.click()">
+              <span>＋</span>
             </div>
           </div>
         </div>
 
+        <!-- ── Botón guardar ──────────────────────────────────── -->
+        <button type="button" class="pf-btn-save"
+                [disabled]="formProductos.invalid || guardando"
+                (click)="guardar()">
+          <span *ngIf="!guardando">
+            {{ esActualizar ? '💾 Actualizar producto' : '💾 Guardar producto' }}
+          </span>
+          <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
+            <span class="spinner-border spinner-border-sm"></span> Guardando…
+          </span>
+        </button>
 
-
-
-        <div class="row mt-2">
-          <div class="col-12 col-md-6">
-            <label for="piezas">Piezas:</label>
-            <input id="piezas" formControlName="piezas" type="number" class="form-control">
-
-            <div *ngIf="formProductos.get('piezas')?.invalid && formProductos.get('piezas')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('piezas')?.errors?.['maxlength']">Máximo 10
-                caracteres</small>
-            </div>
-
-
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="color">Color:</label>
-            <input id="color" formControlName="color" class="form-control">
-          </div>
-        </div>
-
-
-
-
-        <div class="row mt-2">
-          <div class="col-12 col-md-6">
-            <label for="precioVenta">Precio Venta:</label>
-            <input id="precioVenta" formControlName="precioVenta" class="form-control" inputmode="decimal" step="0.01">
-
-            <div *ngIf="formProductos.get('precioVenta')?.invalid && formProductos.get('precioVenta')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['maxlength']">Máximo 10
-                caracteres</small>
-              <small class="text-danger" *ngIf="formProductos.get('precioVenta')?.errors?.['pattern']">
-                Solo números con hasta 2 decimales
-              </small>
-            </div>
-
-
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="precioRebaja">Precio si hubiera descuento:</label>
-            <input id="precioRebaja" formControlName="precioRebaja" class="form-control" inputmode="decimal" step="0.01">
-
-            <div *ngIf="formProductos.get('precioRebaja')?.invalid && formProductos.get('precioRebaja')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('precioRebaja')?.errors?.['pattern']">
-                Solo números con hasta 2 decimales
-              </small>
-            </div>
-          </div>
-        </div>
-
-
-
-
-        <div class="row mt-2">
-          <div class="col-12 col-md-6">
-            <label for="descripcion">Descripción:</label>
-            <input id="descripcion" formControlName="descripcion" class="form-control">
-
-            <div *ngIf="formProductos.get('descripcion')?.invalid && formProductos.get('descripcion')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('descripcion')?.errors?.['maxlength']">Máximo 100
-                caracteres</small>
-            </div>
-
-
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="stock">Stock:</label>
-            <input id="stock" formControlName="stock" type="number" class="form-control">
-
-            <div *ngIf="formProductos.get('stock')?.invalid && formProductos.get('stock')?.touched">
-              <small class="text-danger">Campo requerido</small>
-            </div>
-          </div>
-        </div>
-
-        
-        
-        <div class="row mt-2" *ngIf="authService.isAdminService && nombreCard === 'Actualizar Producto' ">
-          <div class="col-12 col-md-6">
-            <label for="actualizarStock">Actualizar stock: {{nombreCard}}</label>
-            <input id="actualizarStock" formControlName="actualizarStock" type="number" class="form-control">
-
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="eliminarStock">Eliminar stock:</label>
-            <input id="eliminarStock" formControlName="eliminarStock" type="number" class="form-control">
-          </div>
-        </div>
-
-
-
-
-
-
-        <div class="row mt-2">
-          <div class="col-12 col-md-6">
-            <label for="marca">Marca:</label>
-            <input id="marca" formControlName="marca" class="form-control">
-
-            <div *ngIf="formProductos.get('marca')?.invalid && formProductos.get('marca')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('marca')?.errors?.['maxlength']">Máximo 10
-                caracteres</small>
-            </div>
-
-
-          </div>
-          <div class="col-12 col-md-6">
-            <label for="contenido">Contenido Neto:</label>
-            <input id="contenido" formControlName="contenido" class="form-control">
-
-            <div *ngIf="formProductos.get('contenido')?.invalid && formProductos.get('contenido')?.touched">
-              <small class="text-danger">Campo requerido</small>
-            </div>
-          </div>
-        </div>
-
-
-        <div class="row mt-2">
-
-          <div class="col-12 col-md-4">
-            <label for="sinCodigo">Sin Código de Barra:</label>
-            <div class="input-group-text">
-              <input type="checkbox" formControlName="sinCodigoBarra" aria-label="Checkbox for following text input">
-            </div>
-          </div>
-
-
-          <div class="col-12 col-md-8">
-            <label for="codigoBarras">Código de Barra</label>
-            <input id="codigoBarras" formControlName="codigoBarras" class="form-control">
-
-            <div *ngIf="formProductos.get('codigoBarras')?.invalid && formProductos.get('codigoBarras')?.touched">
-              <small class="text-danger">Campo requerido</small>
-              <small class="text-danger" *ngIf="formProductos.get('codigoBarras')?.errors?.['maxlength']">Máximo 100
-                caracteres</small>
-            </div>
-          </div>
-
-        </div>
-
-
-
-        <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
-          <p>Haz clic o arrastra una imagen aquí</p>
-          <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
-          <canvas #canvas class="canvas-responsive"></canvas>
-        </div>
-
-
-
-        <div class="row p-2">
-          <div class="col-12 d-flex justify-content-end">
-
-            <button type="submit" class="btn btn-success" (click)="producto()"
-              [disabled]="formProductos.invalid">Guardar</button>
-          </div>
-        </div>
       </form>
     </div>
   </div>
 </div>
-
-
-<ng-container *ngIf="false">
-  <div class="ruleta-container">
-    <div class="indicador"></div> <!-- Flecha fija -->
-    <canvas #ruletaCanvas></canvas>
-  </div>
-  <button (click)="iniciarRifa()">Iniciar Rifa</button>
-</ng-container>

@@ -1,0 +1,78 @@
+<div class="pi-page">
+  <div class="pi-card">
+
+    <div class="pi-card__header">
+      <div class="pi-card__header-glow"></div>
+      <span class="pi-card__header-icon">🖼️</span>
+      <div>
+        <h3 class="pi-card__title">Imágenes de presentación</h3>
+        <p class="pi-card__subtitle">Actualiza las imágenes y descripciones del login y registro</p>
+      </div>
+    </div>
+
+    <div class="pi-card__body" *ngIf="!cargando; else loader">
+
+      <!-- ── Login ─────────────────────────────────────────────── -->
+      <p class="pi-group-title">🔑 Login (3 imágenes)</p>
+      <div class="pi-grid">
+        <div class="pi-item" *ngFor="let img of login">
+          <div class="pi-item__preview">
+            <img *ngIf="img.urlImagen" [src]="img.urlImagen" [alt]="img.descripcion"
+                 (error)="$any($event.target).style.display='none'" />
+            <div *ngIf="!img.urlImagen" class="pi-item__placeholder">🖼️</div>
+            <span class="pi-item__orden">#{{ img.orden }}</span>
+            <label class="pi-item__active-toggle" title="Activo">
+              <input type="checkbox" [(ngModel)]="img.activo" />
+              {{ img.activo ? '✅' : '⬜' }}
+            </label>
+          </div>
+          <div class="pi-item__fields">
+            <input class="pi-input" [(ngModel)]="img.urlImagen" placeholder="URL de la imagen…">
+            <input class="pi-input" [(ngModel)]="img.descripcion" placeholder="Descripción (promo, colección…)">
+            <button class="pi-btn-save" [disabled]="guardandoId === img.id" (click)="guardar(img)">
+              <span *ngIf="guardandoId !== img.id">💾 Guardar</span>
+              <span *ngIf="guardandoId === img.id" class="d-flex align-items-center gap-1 justify-content-center">
+                <span class="spinner-border spinner-border-sm"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="pi-divider">
+
+      <!-- ── Registro ──────────────────────────────────────────── -->
+      <p class="pi-group-title">📝 Registro (3 imágenes)</p>
+      <div class="pi-grid">
+        <div class="pi-item" *ngFor="let img of registro">
+          <div class="pi-item__preview">
+            <img *ngIf="img.urlImagen" [src]="img.urlImagen" [alt]="img.descripcion"
+                 (error)="$any($event.target).style.display='none'" />
+            <div *ngIf="!img.urlImagen" class="pi-item__placeholder">🖼️</div>
+            <span class="pi-item__orden">#{{ img.orden }}</span>
+            <label class="pi-item__active-toggle" title="Activo">
+              <input type="checkbox" [(ngModel)]="img.activo" />
+              {{ img.activo ? '✅' : '⬜' }}
+            </label>
+          </div>
+          <div class="pi-item__fields">
+            <input class="pi-input" [(ngModel)]="img.urlImagen" placeholder="URL de la imagen…">
+            <input class="pi-input" [(ngModel)]="img.descripcion" placeholder="Descripción…">
+            <button class="pi-btn-save" [disabled]="guardandoId === img.id" (click)="guardar(img)">
+              <span *ngIf="guardandoId !== img.id">💾 Guardar</span>
+              <span *ngIf="guardandoId === img.id" class="d-flex align-items-center gap-1 justify-content-center">
+                <span class="spinner-border spinner-border-sm"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <ng-template #loader>
+      <div class="pi-loader"><span class="spinner-border text-primary"></span></div>
+    </ng-template>
+
+  </div>
+</div>

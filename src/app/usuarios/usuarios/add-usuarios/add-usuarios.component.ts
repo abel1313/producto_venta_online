@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
+import { PresentacionService, IImagenPresentacion } from 'src/app/presentacion/presentacion.service';
 
 @Component({
   selector: 'app-add-usuarios',
@@ -22,14 +23,27 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-  imagenIcon1 = './../../../assets/imagenes/imagene1.jpeg';
-  imagenIcon2 = './../../../assets/imagenes/imagen2.jpeg';
-  imagenIcon3 = './../../../assets/imagenes/imagene3.jpeg';
-  constructor(private readonly fb: FormBuilder,
-    public readonly auth: AccederService,
-    private readonly router: Router,
-    public authService: AuthService,
-    private readonly usuario: UsuarioService
+  imagenes: IImagenPresentacion[] = [];
+  private readonly FALLBACK = [
+    './../../../assets/imagenes/imagene1.jpeg',
+    './../../../assets/imagenes/imagen2.jpeg',
+    './../../../assets/imagenes/imagene3.jpeg',
+  ];
+  imgSrc(orden: number): string {
+    const img = this.imagenes.find(i => i.orden === orden && i.activo);
+    return img?.urlImagen || this.FALLBACK[orden - 1];
+  }
+  imgDesc(orden: number): string {
+    return this.imagenes.find(i => i.orden === orden)?.descripcion ?? '';
+  }
+
+  constructor(
+    private readonly fb:           FormBuilder,
+    public  readonly auth:         AccederService,
+    private readonly router:       Router,
+    public  readonly authService:  AuthService,
+    private readonly usuario:      UsuarioService,
+    private readonly presentacion: PresentacionService
   ) { }
 
   formRegistro = this.fb.group({
@@ -44,6 +58,11 @@ export class AddUsuariosComponent implements OnInit {
 
 
   ngOnInit(): void {
+    this.presentacion.getImagenesPorTipo('REGISTRO').subscribe({
+      next: imgs => { this.imagenes = imgs; },
+      error: () => {}
+    });
+
     if (this.textoCard == 'Actualizar usuario') {
       this.formRegistro.patchValue({
         userName: this.updateUser.username,

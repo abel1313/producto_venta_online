@@ -137,6 +137,21 @@
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                [routerLink]="'admin/negocio'">
+                <span>🏪</span> Negocio &amp; Contactos
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                [routerLink]="'admin/presentacion'">
+                <span>🖼️</span> Imágenes presentación
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
                 [routerLink]="'admin/cache'">
                 <span>🗑️</span> Limpiar caché
               </a>

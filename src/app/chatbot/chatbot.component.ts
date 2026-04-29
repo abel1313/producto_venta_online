@@ -1,5 +1,6 @@
-import { AfterViewChecked, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ChatbotService, IMensajeChat, IChatbotResponse } from './chatbot.service';
+import { NegocioService, INegocioEstado } from '../negocio/negocio.service';
 
 interface IBurbuja {
   rol: 'user' | 'assistant' | 'typing';
@@ -11,7 +12,7 @@ interface IBurbuja {
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss']
 })
-export class ChatbotComponent implements AfterViewChecked, OnDestroy {
+export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('msgsRef') msgsRef!: ElementRef<HTMLDivElement>;
 
   minimizado      = true;
@@ -21,14 +22,33 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
   cargando        = false;
 
   // ── Estado de bloqueo ─────────────────────────────────────────────
-  inputBloqueado   = false;   // input/botón deshabilitados temporalmente
-  oculto           = false;   // FAB + ventana ocultos (bloqueo de 6h)
-  segundosRestantes = 0;      // contador visible en el input
+  inputBloqueado    = false;
+  oculto            = false;
+  segundosRestantes = 0;
 
-  private countdownInterval: any = null;
+  // ── Estado del negocio ────────────────────────────────────────────
+  negocioCerrado  = false;
+  whatsappUrl:    string | null = null;
+  facebookUrl:    string | null = null;
+
+  private countdownInterval: any  = null;
   private pendingScroll = false;
 
-  constructor(private readonly chatbotService: ChatbotService) {}
+  constructor(
+    private readonly chatbotService: ChatbotService,
+    private readonly negocioService: NegocioService
+  ) {}
+
+  ngOnInit(): void {
+    this.negocioService.getEstado().subscribe({
+      next: (estado: INegocioEstado) => {
+        this.negocioCerrado = !estado.abierto;
+        this.whatsappUrl    = estado.whatsappUrl;
+        this.facebookUrl    = estado.facebookUrl;
+      },
+      error: () => {} // silencioso — no interrumpe el chat
+    });
+  }
 
   ngAfterViewChecked(): void {
     if (this.pendingScroll) {
@@ -96,24 +116,17 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
     }
   }
 
-  // ── Lógica de cooldown / bloqueo ──────────────────────────────────
+  // ── Cooldown / bloqueo ────────────────────────────────────────────
 
   private aplicarCooldown(segundos: number, bloqueado: boolean): void {
-    // Limpiar contador previo si hubiera
     if (this.countdownInterval) clearInterval(this.countdownInterval);
-
-    this.inputBloqueado   = true;
+    this.inputBloqueado    = true;
     this.segundosRestantes = segundos;
 
-    // Si es bloqueo total → ocultar el chat después de 3s (para que el usuario lea el mensaje)
     if (bloqueado) {
-      setTimeout(() => {
-        this.minimizado = true;
-        this.oculto     = true;
-      }, 3000);
+      setTimeout(() => { this.minimizado = true; this.oculto = true; }, 3000);
     }
 
-    // Countdown visible cada segundo
     this.countdownInterval = setInterval(() => {
       this.segundosRestantes--;
       if (this.segundosRestantes <= 0) {
@@ -121,9 +134,7 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
         this.countdownInterval = null;
         this.inputBloqueado    = false;
         this.segundosRestantes = 0;
-        if (bloqueado) {
-          this.oculto = false;   // vuelve a mostrar el FAB
-        }
+        if (bloqueado) this.oculto = false;
       }
     }, 1000);
   }
@@ -132,16 +143,10 @@ export class ChatbotComponent implements AfterViewChecked, OnDestroy {
     if (!this.inputBloqueado) return '';
     const min = Math.floor(this.segundosRestantes / 60);
     const seg = this.segundosRestantes % 60;
-    return min > 0
-      ? `⏳ Espera ${min}m ${seg}s`
-      : `⏳ Espera ${seg}s`;
+    return min > 0 ? `⏳ Espera ${min}m ${seg}s` : `⏳ Espera ${seg}s`;
   }
 
-  // ── Scroll ────────────────────────────────────────────────────────
-
   private scrollBottom(): void {
-    try {
-      this.msgsRef.nativeElement.scrollTop = this.msgsRef.nativeElement.scrollHeight;
-    } catch {}
+    try { this.msgsRef.nativeElement.scrollTop = this.msgsRef.nativeElement.scrollHeight; } catch {}
   }
 }

@@ -3,26 +3,26 @@
   <!-- ── Panel izquierdo: imágenes ── -->
   <div class="split-images">
     <div class="img-slot img-slot--1">
+      <img [src]="imgSrc(1)" alt="imagen 1" class="img-slot__icon">
       <div class="img-slot__overlay">
-        <img [src]="imagenIcon1" alt="imagen colección" class="img-slot__icon">
         <i class="pi pi-shopping-bag"></i>
-        <span>Nueva colección</span>
+        <span>{{ imgDesc(1) || 'Nueva colección' }}</span>
       </div>
     </div>
 
     <div class="img-slot-row">
       <div class="img-slot img-slot--2">
+        <img [src]="imgSrc(2)" alt="imagen 2" class="img-slot__icon">
         <div class="img-slot__overlay">
-          <img [src]="imagenIcon2" alt="imagen accesorios" class="img-slot__icon">
           <i class="pi pi-tag"></i>
-          <span></span>
+          <span>{{ imgDesc(2) }}</span>
         </div>
       </div>
       <div class="img-slot img-slot--3">
+        <img [src]="imgSrc(3)" alt="imagen 3" class="img-slot__icon">
         <div class="img-slot__overlay">
-          <img [src]="imagenIcon3" alt="imagen perfumes" class="img-slot__icon">
           <i class="pi pi-heart"></i>
-          <span></span>
+          <span>{{ imgDesc(3) }}</span>
         </div>
       </div>
     </div>

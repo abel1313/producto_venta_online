@@ -1,0 +1,75 @@
+<div class="ac-page">
+  <div class="ac-card">
+
+    <div class="ac-card__header">
+      <div class="ac-card__header-glow"></div>
+      <span class="ac-card__header-icon">🏪</span>
+      <div>
+        <h3 class="ac-card__title">Configuración del negocio</h3>
+        <p class="ac-card__subtitle">Solo administradores</p>
+      </div>
+    </div>
+
+    <div class="ac-card__body" *ngIf="!cargando; else loader">
+
+      <!-- ── Estado del negocio ────────────────────────────── -->
+      <div class="ac-section">
+        <p class="ac-section__label">Estado actual</p>
+        <div class="ac-status" [class.ac-status--open]="estado?.abierto" [class.ac-status--closed]="!estado?.abierto">
+          <span class="ac-status__dot"></span>
+          <span class="ac-status__text">{{ estado?.abierto ? 'Negocio ABIERTO' : 'Negocio CERRADO' }}</span>
+        </div>
+        <button class="ac-btn-toggle"
+                [class.ac-btn-toggle--close]="estado?.abierto"
+                [class.ac-btn-toggle--open]="!estado?.abierto"
+                (click)="toggleNegocio()">
+          {{ estado?.abierto ? '🔒 Cerrar negocio' : '🔓 Abrir negocio' }}
+        </button>
+      </div>
+
+      <hr class="ac-divider">
+
+      <!-- ── Contactos ─────────────────────────────────────── -->
+      <div class="ac-section">
+        <p class="ac-section__label">Contactos (se muestran cuando el negocio está cerrado)</p>
+
+        <form [formGroup]="form" class="ac-form">
+
+          <div class="ac-field">
+            <label class="ac-label">
+              <span class="ac-label__icon ac-label__icon--wa">📱</span>
+              WhatsApp URL
+            </label>
+            <input class="ac-input" formControlName="whatsappUrl"
+                   placeholder="https://wa.me/5215512345678?text=Hola!">
+            <small class="ac-hint">Formato: https://wa.me/52 + número sin espacios ni +</small>
+          </div>
+
+          <div class="ac-field">
+            <label class="ac-label">
+              <span class="ac-label__icon ac-label__icon--fb">📘</span>
+              Facebook URL
+            </label>
+            <input class="ac-input" formControlName="facebookUrl"
+                   placeholder="https://facebook.com/TuPagina">
+          </div>
+
+          <button class="ac-btn-save" type="button" [disabled]="guardando" (click)="guardarContactos()">
+            <span *ngIf="!guardando">💾 Guardar contactos</span>
+            <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
+              <span class="spinner-border spinner-border-sm"></span> Guardando…
+            </span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <ng-template #loader>
+      <div class="ac-loader">
+        <span class="spinner-border text-primary"></span>
+      </div>
+    </ng-template>
+
+  </div>
+</div>

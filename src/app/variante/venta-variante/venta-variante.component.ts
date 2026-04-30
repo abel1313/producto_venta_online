@@ -205,6 +205,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         next: (res: any) => {
           if (res?.data != null) {
             this.carritoService.limpiar();
+            this.varianteService.invalidarCache(); // fuerza fetch fresco con stock actualizado
             Swal.fire({
               icon: 'success',
               title: 'Pedido registrado',

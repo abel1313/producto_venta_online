@@ -12,7 +12,10 @@ import { BuscarComponent } from './buscar/buscar.component';
 import { VentaVarianteComponent } from './venta-variante/venta-variante.component';
 import { DetalleVarianteComponent } from './detalle-variante/detalle-variante.component';
 import { CargaArchivoComponent } from '../documentos/carga-archivo/carga-archivo.component';
+import { VentaDirectaComponent } from './venta-directa/venta-directa.component';
 import { CarouselModule } from 'primeng/carousel';
+import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
 
 
 @NgModule({
@@ -24,6 +27,7 @@ import { CarouselModule } from 'primeng/carousel';
     VentaVarianteComponent,
     DetalleVarianteComponent,
     CargaArchivoComponent,
+    VentaDirectaComponent,
   ],
   imports: [
     CommonModule,
@@ -32,6 +36,8 @@ import { CarouselModule } from 'primeng/carousel';
     AgGridModule,
     TableModule,
     CarouselModule,
+    DialogModule,
+    DropdownModule,
     AgregarRoutingModule
   ]
 })

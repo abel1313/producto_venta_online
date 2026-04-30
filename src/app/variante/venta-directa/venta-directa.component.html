@@ -1,0 +1,275 @@
+<!-- ── Visor de imagen ────────────────────────────────────────────── -->
+<div class="vd-visor" *ngIf="mostrarVisor" (click)="cerrarVisor()">
+  <div class="vd-visor__box" (click)="$event.stopPropagation()">
+    <button class="vd-visor__close" (click)="cerrarVisor()">✕</button>
+    <img [src]="imagenVisor" [alt]="nombreVisor" class="vd-visor__img">
+    <p class="vd-visor__nombre">{{ nombreVisor }}</p>
+  </div>
+</div>
+
+<div class="vd-wrapper">
+
+  <!-- ── Header ────────────────────────────────────────────────────── -->
+  <div class="vd-header">
+    <div class="vd-header__title">
+      <span>💰</span>
+      <div>
+        <h3 class="vd-header__name">Venta directa</h3>
+        <small class="vd-header__sub">Busca variantes, selecciona el pago y cobra</small>
+      </div>
+    </div>
+    <div class="vd-header__totals" *ngIf="lineas.length > 0">
+      <span class="vd-header__badge">{{ totalUnidades }} u.</span>
+      <span class="vd-header__total">{{ totalVenta | currency:'$' }}</span>
+    </div>
+  </div>
+
+  <div class="vd-panels">
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- Panel izquierdo — Búsqueda de variantes                  -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="vd-panel vd-panel--left">
+      <p class="vd-panel__title">🔍 Buscar variante</p>
+
+      <div class="vd-search">
+        <span class="vd-search__icon">🔍</span>
+        <input class="vd-search__input" type="text"
+               placeholder="Nombre o código de barras (mín. 3 chars)…"
+               [(ngModel)]="terminoVariante"
+               (input)="onInputVariante()"
+               autocomplete="off">
+        <span *ngIf="buscandoVariante" class="vd-search__spin">
+          <span class="spinner-border spinner-border-sm"></span>
+        </span>
+        <button *ngIf="terminoVariante" class="vd-search__clear"
+                (click)="terminoVariante = ''; resultados = []">✕</button>
+      </div>
+
+      <div class="vd-results" *ngIf="resultados.length > 0; else sinResultados">
+        <div class="vd-result-row" *ngFor="let v of resultados"
+             [class.vd-result-row--agotado]="(v.stock ?? 0) === 0">
+          <div class="vd-result-row__thumb"
+               (click)="verImagen(v.imagenBase64, labelVariante(v))"
+               [title]="v.imagenBase64 ? 'Ver imagen' : 'Sin imagen'">
+            <img *ngIf="v.imagenBase64"
+                 [src]="v.imagenBase64.startsWith('data:') ? v.imagenBase64 : 'data:image/jpeg;base64,' + v.imagenBase64"
+                 [alt]="labelVariante(v)">
+            <span *ngIf="!v.imagenBase64" class="vd-result-row__no-img">📦</span>
+          </div>
+          <div class="vd-result-row__info">
+            <span class="vd-result-row__nombre">{{ labelVariante(v) }}</span>
+            <div class="vd-result-row__meta">
+              <span class="vd-result-row__precio">{{ v.precio | currency:'$' }}</span>
+              <span class="vd-result-row__stock"
+                    [class.vd-result-row__stock--ok]="(v.stock ?? 0) > 0"
+                    [class.vd-result-row__stock--agotado]="(v.stock ?? 0) === 0">
+                {{ (v.stock ?? 0) === 0 ? 'Agotado' : v.stock + ' en stock' }}
+              </span>
+            </div>
+            <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras }}</span>
+          </div>
+          <button class="vd-btn-add"
+                  [disabled]="(v.stock ?? 0) === 0"
+                  (click)="agregarAVenta(v)" title="Agregar a la venta">
+            ➕
+          </button>
+        </div>
+      </div>
+
+      <ng-template #sinResultados>
+        <div class="vd-empty" *ngIf="terminoVariante.length >= 3 && !buscandoVariante">
+          <span>🗂️</span><p>Sin resultados</p>
+        </div>
+        <div class="vd-hint" *ngIf="terminoVariante.length < 3">
+          <span>👆 Escribe mínimo 3 caracteres</span>
+        </div>
+      </ng-template>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!-- Panel derecho — Venta                                    -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <div class="vd-panel vd-panel--right">
+
+      <!-- ── ACCIONES ARRIBA ──────────────────────────────────── -->
+      <div class="vd-actions vd-actions--top">
+        <button class="vd-btn-limpiar" type="button"
+                *ngIf="lineas.length > 0" (click)="limpiarVenta()">
+          🗑️ Limpiar
+        </button>
+        <button class="vd-btn-cobrar" type="button"
+                [disabled]="!puedeCobrar"
+                (click)="cobrar()">
+          <span *ngIf="!procesando">💰 Cobrar</span>
+          <span *ngIf="procesando" class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm"></span> Procesando…
+          </span>
+        </button>
+      </div>
+
+      <!-- ── FORMA DE PAGO ─────────────────────────────────────── -->
+      <div class="vd-pay-section">
+        <p class="vd-panel__title">
+          💳 Forma de pago
+          <span class="vd-required" *ngIf="!pagosYMesesId">*</span>
+        </p>
+
+        <div *ngIf="cargandoPagos" class="vd-hint">
+          <span class="spinner-border spinner-border-sm"></span> Cargando…
+        </div>
+
+        <p-dropdown *ngIf="!cargandoPagos"
+            [options]="opcionesEstructuradas"
+            [(ngModel)]="tipoPagoActivo"
+            optionLabel="formaPago"
+            placeholder="Selecciona forma de pago"
+            (onChange)="seleccionarTipoPago($event.value)"
+            appendTo="body"
+            [style]="{ width: '100%' }">
+        </p-dropdown>
+
+        <p-dropdown *ngIf="tipoPagoActivo?.mostrarMeses"
+            [options]="tipoPagoActivo!.opciones"
+            [(ngModel)]="mesesSeleccionado"
+            optionLabel="descripcion"
+            placeholder="Selecciona plan de pago"
+            (onChange)="seleccionarMeses($event.value)"
+            appendTo="body"
+            [style]="{ width: '100%', marginTop: '8px' }">
+        </p-dropdown>
+      </div>
+
+      <!-- ── CLIENTE ───────────────────────────────────────────── -->
+      <div class="vd-client-section">
+        <p class="vd-panel__title" style="margin-bottom:8px">
+          👤 Cliente
+          <span class="vd-optional">(opcional — sin cliente se asigna al admin)</span>
+        </p>
+
+        <div *ngIf="clienteSeleccionado" class="vd-client-chip">
+          <span class="vd-client-chip__name">
+            {{ clienteSeleccionado.nombrePersona }} {{ clienteSeleccionado.apeidoPaterno }}
+          </span>
+          <span *ngIf="clienteSeleccionado.numeroTelefonico" class="vd-client-chip__phone">
+            📱 {{ clienteSeleccionado.numeroTelefonico }}
+          </span>
+          <button class="vd-client-chip__clear" (click)="limpiarCliente()">✕</button>
+        </div>
+
+        <div *ngIf="!clienteSeleccionado" class="vd-client-search">
+          <div class="vd-search">
+            <span class="vd-search__icon">👤</span>
+            <input class="vd-search__input" type="text"
+                   placeholder="Buscar cliente por nombre…"
+                   [(ngModel)]="terminoCliente"
+                   (input)="onInputCliente()"
+                   autocomplete="off">
+            <span *ngIf="buscandoCliente" class="vd-search__spin">
+              <span class="spinner-border spinner-border-sm"></span>
+            </span>
+          </div>
+          <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
+            <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">
+              <strong>{{ c.nombrePersona }} {{ c.apeidoPaterno }}</strong>
+              <small *ngIf="c.numeroTelefonico">{{ c.numeroTelefonico }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LÍNEAS DE VENTA ───────────────────────────────────── -->
+      <p class="vd-panel__title">🧾 Artículos</p>
+
+      <div *ngIf="lineas.length > 0; else ventaVacia" class="vd-lines">
+        <div class="vd-line" *ngFor="let l of lineas; let i = index">
+          <div class="vd-line__thumb"
+               (click)="verImagen(l.variante.imagenBase64, labelVariante(l.variante))"
+               title="Ver imagen">
+            <img *ngIf="l.variante.imagenBase64"
+                 [src]="l.variante.imagenBase64.startsWith('data:') ? l.variante.imagenBase64 : 'data:image/jpeg;base64,' + l.variante.imagenBase64"
+                 [alt]="labelVariante(l.variante)">
+            <span *ngIf="!l.variante.imagenBase64" class="vd-line__no-img">📦</span>
+          </div>
+          <div class="vd-line__body">
+            <span class="vd-line__nombre">{{ labelVariante(l.variante) }}</span>
+            <div class="vd-line__controls">
+              <button class="vd-qty-btn" (click)="decrementar(l)">−</button>
+              <span class="vd-qty-val">{{ l.cantidad }}</span>
+              <button class="vd-qty-btn" [disabled]="l.cantidad >= (l.variante.stock ?? 0)" (click)="incrementar(l)">+</button>
+            </div>
+          </div>
+          <div class="vd-line__right">
+            <span class="vd-line__subtotal">{{ l.subTotal | currency:'$' }}</span>
+            <button class="vd-line__del" (click)="quitarLinea(i)">✕</button>
+          </div>
+        </div>
+
+        <div class="vd-totals">
+          <div class="vd-totals__row">
+            <span>Unidades</span><strong>{{ totalUnidades }}</strong>
+          </div>
+          <div class="vd-totals__row vd-totals__row--total">
+            <span>Total</span><strong>{{ totalVenta | currency:'$' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #ventaVacia>
+        <div class="vd-empty">
+          <span>🛒</span><p>Agrega variantes desde el buscador</p>
+        </div>
+      </ng-template>
+
+      <!-- ── PANEL TERMINAL (solo cuando requiereTerminal) ─────── -->
+      <div *ngIf="mostrarTerminal && ventaCreada" class="vd-terminal">
+        <div class="vd-terminal__header">
+          <i class="pi pi-credit-card"></i>
+          <span>Terminal Mercado Pago — Venta #{{ ventaCreada.ventaId }}</span>
+        </div>
+        <div class="vd-terminal__amount">
+          {{ ventaCreada.totalVenta | currency:'$' }}
+          <span *ngIf="ventaCreada.meses" class="vd-terminal__plan"> · {{ ventaCreada.descripcionPago }}</span>
+        </div>
+
+        <div class="vd-terminal__status" [ngClass]="'vd-terminal__status--' + estadoTerminal"
+             *ngIf="estadoTerminal !== 'idle'">
+          <span class="spinner-border spinner-border-sm" *ngIf="estadoTerminal === 'procesando'"></span>
+          <i class="pi pi-check-circle" *ngIf="estadoTerminal === 'aprobado'"></i>
+          <i class="pi pi-times-circle" *ngIf="estadoTerminal === 'rechazado'"></i>
+          <i class="pi pi-ban"          *ngIf="estadoTerminal === 'cancelado'"></i>
+          <i class="pi pi-lock"         *ngIf="estadoTerminal === 'bloqueado'"></i>
+          <span>
+            <ng-container [ngSwitch]="estadoTerminal">
+              <ng-container *ngSwitchCase="'procesando'">Esperando respuesta en terminal…</ng-container>
+              <ng-container *ngSwitchCase="'aprobado'">✅ Pago aprobado</ng-container>
+              <ng-container *ngSwitchCase="'rechazado'">{{ errorTerminal }}</ng-container>
+              <ng-container *ngSwitchCase="'cancelado'">Pago cancelado en terminal.</ng-container>
+              <ng-container *ngSwitchCase="'bloqueado'">{{ errorTerminal }}</ng-container>
+            </ng-container>
+          </span>
+        </div>
+
+        <div class="vd-terminal__actions">
+          <button class="vd-btn-terminal vd-btn-terminal--enviar"
+                  [disabled]="estadoTerminal === 'procesando' || estadoTerminal === 'aprobado' || estadoTerminal === 'bloqueado'"
+                  (click)="enviarATerminal()">
+            <i class="pi pi-send"></i>
+            {{ estadoTerminal === 'rechazado' || estadoTerminal === 'cancelado' ? 'Reintentar' : 'Enviar a terminal' }}
+          </button>
+          <button class="vd-btn-terminal vd-btn-terminal--cancelar"
+                  *ngIf="estadoTerminal === 'procesando'"
+                  (click)="cancelarTerminal()">
+            <i class="pi pi-times"></i> Cancelar
+          </button>
+          <button class="vd-btn-terminal vd-btn-terminal--cerrar"
+                  *ngIf="estadoTerminal !== 'procesando' && estadoTerminal !== 'aprobado'"
+                  (click)="cerrarTerminal()">
+            Cerrar
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

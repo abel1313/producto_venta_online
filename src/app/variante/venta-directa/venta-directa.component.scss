@@ -1,0 +1,382 @@
+$p:  #8b1a4a;
+$pd: #c2255c;
+$t:  all 0.22s ease;
+
+// ── Wrapper ────────────────────────────────────────────────────────
+.vd-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fff5f7 0%, #fde8f0 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Header ─────────────────────────────────────────────────────────
+.vd-header {
+  background: linear-gradient(135deg, #5c0f31 0%, $p 55%, $pd 100%);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(139,26,74,.3);
+
+  &__title {
+    display: flex; align-items: center; gap: 14px; font-size: 1.8rem;
+    color: white;
+  }
+  &__name { font-size: 1.2rem; font-weight: 800; margin: 0; color: #fff; }
+  &__sub  { font-size: .76rem; color: rgba(255,255,255,.7); }
+
+  &__totals { display: flex; align-items: center; gap: 12px; }
+  &__badge {
+    background: rgba(255,255,255,.2); color: #fff;
+    padding: 4px 12px; border-radius: 20px; font-size: .82rem; font-weight: 700;
+  }
+  &__total { font-size: 1.3rem; font-weight: 800; color: #fff; }
+}
+
+// ── Paneles ────────────────────────────────────────────────────────
+.vd-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.vd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+
+  &--left  { border-right: 1px solid #fde8f0; @media (max-width: 900px) { border-right: none; border-bottom: 2px solid #fde8f0; } }
+  &--right { background: #fff; }
+
+  &__title {
+    font-size: .8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #6b7280; margin: 0;
+  }
+}
+
+// ── Buscador ───────────────────────────────────────────────────────
+.vd-search {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; padding: 9px 14px;
+  transition: $t;
+
+  &:focus-within { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
+
+  &__icon  { font-size: 1rem; color: #9ca3af; flex-shrink: 0; }
+  &__input {
+    flex: 1; border: none; outline: none; font-size: .9rem; color: #1f2937; background: transparent;
+    &::placeholder { color: #d1d5db; }
+  }
+  &__spin  { flex-shrink: 0; }
+  &__clear {
+    background: none; border: none; color: #9ca3af; cursor: pointer; font-size: .8rem;
+    &:hover { color: $pd; }
+  }
+}
+
+// ── Resultados (scroll propio) ─────────────────────────────────────
+.vd-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(139,26,74,.25); border-radius: 4px; }
+}
+
+.vd-result-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid #f3f4f6;
+  border-radius: 10px; padding: 10px;
+  transition: $t;
+
+  &:hover { border-color: #fad4e4; box-shadow: 0 2px 8px rgba(139,26,74,.08); }
+
+  &--agotado { opacity: .55; }
+
+  &__thumb {
+    width: 48px; height: 48px; border-radius: 8px;
+    overflow: hidden; background: #fdf2f8; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  &__no-img { font-size: 1.4rem; }
+
+  &__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  &__nombre { font-size: .88rem; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  &__meta { display: flex; gap: 8px; align-items: center; }
+  &__precio { font-size: .85rem; font-weight: 700; color: $p; }
+  &__stock  { font-size: .72rem; font-weight: 600; padding: 1px 7px; border-radius: 20px;
+    &--ok { background: #dcfce7; color: #166534; }
+    &--agotado { background: #fee2e2; color: #991b1b; }
+  }
+  &__codigo { font-size: .7rem; color: #9ca3af; font-family: monospace; }
+}
+
+.vd-btn-add {
+  background: linear-gradient(135deg, $p, $pd); color: #fff;
+  border: none; border-radius: 8px; padding: 8px 12px;
+  cursor: pointer; font-size: 1rem; flex-shrink: 0;
+  transition: $t;
+  &:hover:not(:disabled) { transform: scale(1.08); }
+  &:disabled { opacity: .35; cursor: not-allowed; }
+}
+
+// ── Empty / Hint ───────────────────────────────────────────────────
+.vd-empty {
+  text-align: center; padding: 32px 20px; color: #9ca3af;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  span { font-size: 2.5rem; }
+  p { margin: 0; font-size: .88rem; }
+}
+.vd-hint {
+  text-align: center; padding: 20px; color: #9ca3af; font-size: .82rem;
+}
+
+// ── Líneas de venta ────────────────────────────────────────────────
+.vd-lines { display: flex; flex-direction: column; gap: 8px; }
+
+.vd-line {
+  display: flex; align-items: center; gap: 10px;
+  background: #fafafa; border: 1px solid #f3f4f6;
+  border-radius: 10px; padding: 10px;
+
+  &__thumb {
+    width: 44px; height: 44px; border-radius: 8px; overflow: hidden;
+    background: #fdf2f8; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  &__no-img { font-size: 1.3rem; }
+
+  &__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  &__nombre { font-size: .84rem; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  &__controls { display: flex; align-items: center; gap: 6px; }
+
+  &__right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  &__subtotal { font-size: .9rem; font-weight: 700; color: $p; }
+
+  &__del {
+    background: none; border: none; color: #9ca3af; cursor: pointer; font-size: .72rem;
+    &:hover { color: #dc2626; }
+  }
+}
+
+// ── Controles cantidad ─────────────────────────────────────────────
+.vd-qty-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid #e5e7eb; background: #fff;
+  cursor: pointer; font-size: 1rem; font-weight: 700; color: #374151;
+  display: flex; align-items: center; justify-content: center;
+  transition: $t;
+  &:hover:not(:disabled) { border-color: $pd; color: $pd; }
+  &:disabled { opacity: .35; cursor: not-allowed; }
+}
+.vd-qty-val { min-width: 24px; text-align: center; font-weight: 700; font-size: .9rem; }
+
+// ── Totales ────────────────────────────────────────────────────────
+.vd-totals {
+  border-top: 1px solid #f3f4f6; padding-top: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+
+  &__row {
+    display: flex; justify-content: space-between;
+    font-size: .85rem; color: #6b7280;
+    strong { color: #1f2937; }
+
+    &--total {
+      font-size: 1rem; font-weight: 700; color: #1f2937;
+      strong { color: $p; font-size: 1.1rem; }
+    }
+  }
+}
+
+// ── Sección forma de pago ──────────────────────────────────────────
+.vd-pay-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.vd-required { color: $pd; font-weight: 700; margin-left: 4px; }
+.vd-optional { font-size: .72rem; color: #9ca3af; font-weight: 400; text-transform: none; margin-left: 6px; }
+
+// ── Terminal inline ────────────────────────────────────────────────
+.vd-terminal {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__header {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; color: #374151; font-size: .9rem;
+    .pi { color: #009ee3; font-size: 1.1rem; }
+  }
+
+  &__amount {
+    font-size: 1.4rem; font-weight: 800; color: $p;
+  }
+
+  &__plan { font-size: .82rem; font-weight: 400; color: #6b7280; }
+
+  &__status {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px; font-size: .85rem;
+
+    &--procesando { background: #eff6ff; color: #1e40af; }
+    &--aprobado   { background: #dcfce7; color: #166534; }
+    &--rechazado  { background: #fee2e2; color: #991b1b; }
+    &--cancelado  { background: #f3f4f6; color: #6b7280; }
+    &--bloqueado  { background: #fef3c7; color: #92400e; }
+  }
+
+  &__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+}
+
+.vd-btn-terminal {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600; font-size: .85rem;
+  display: flex; align-items: center; gap: 6px;
+  transition: $t;
+
+  &--enviar {
+    background: #009ee3; color: #fff;
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+  &--cancelar { background: #dc2626; color: #fff; }
+  &--cerrar {
+    background: #f3f4f6; color: #6b7280;
+    &:hover { background: #e5e7eb; }
+  }
+}
+
+// ── Cliente ────────────────────────────────────────────────────────
+.vd-client-section { display: flex; flex-direction: column; gap: 8px; }
+
+.vd-client-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, rgba(139,26,74,.1), rgba(194,37,92,.06));
+  border: 1px solid rgba(194,37,92,.25); border-radius: 10px; padding: 10px 14px;
+
+  &__name  { flex: 1; font-weight: 700; color: #1f2937; font-size: .9rem; }
+  &__phone { font-size: .78rem; color: #6b7280; }
+  &__clear {
+    background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+    border-radius: 50%; width: 26px; height: 26px; color: #dc2626;
+    cursor: pointer; font-size: .7rem;
+    display: flex; align-items: center; justify-content: center;
+    &:hover { background: rgba(239,68,68,.25); }
+  }
+}
+
+.vd-client-search { position: relative; }
+
+.vd-client-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 100;
+  max-height: 220px; overflow-y: auto;
+}
+
+.vd-client-option {
+  padding: 10px 14px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+  border-bottom: 1px solid #f3f4f6; transition: $t;
+  &:last-child { border-bottom: none; }
+  &:hover { background: #fdf2f8; }
+  strong { font-size: .88rem; color: #1f2937; }
+  small  { font-size: .74rem; color: #9ca3af; }
+}
+
+// ── Acciones ───────────────────────────────────────────────────────
+.vd-actions {
+  display: flex;
+  gap: 10px;
+
+  // Variante superior — sin border-top, siempre visible
+  &--top {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+}
+
+.vd-btn-limpiar {
+  padding: 12px 18px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  background: #fff; color: #6b7280; font-weight: 600; cursor: pointer; transition: $t;
+  &:hover { border-color: #dc2626; color: #dc2626; }
+}
+
+.vd-btn-cobrar {
+  flex: 1; padding: 13px; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, $p, $pd); color: #fff;
+  font-size: .95rem; font-weight: 700; cursor: pointer; transition: $t;
+  box-shadow: 0 5px 16px rgba(139,26,74,.35);
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(139,26,74,.5); }
+  &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+}
+
+// ── Visor de imagen ────────────────────────────────────────────────
+.vd-visor {
+  position: fixed; inset: 0; background: rgba(0,0,0,.82);
+  backdrop-filter: blur(6px); z-index: 9999;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+
+  &__box {
+    position: relative; background: #fff; border-radius: 18px;
+    overflow: hidden; max-width: 500px; width: 100%;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  &__close {
+    position: absolute; top: 10px; right: 10px; z-index: 1;
+    background: rgba(0,0,0,.55); border: none; border-radius: 50%;
+    width: 30px; height: 30px; color: #fff; cursor: pointer; font-size: .8rem;
+    display: flex; align-items: center; justify-content: center;
+    &:hover { background: #dc2626; }
+  }
+  &__img    { width: 100%; max-height: 420px; object-fit: contain; display: block; }
+  &__nombre { padding: 10px 14px; font-size: .82rem; color: #6b7280; margin: 0; text-align: center; }
+}
+
+// ── Terminal MP (copiado de mis-pedidos) ───────────────────────────
+.mp-terminal {
+  border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; margin-top: 0.5rem;
+  &__header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #374151; margin-bottom: 10px; }
+  &__icon   { font-size: 1.2rem; color: #009ee3; }
+  &__amount { font-size: 1.4rem; font-weight: 800; color: $p; margin-bottom: 12px; }
+  &__plan   { font-size: .85rem; font-weight: 400; color: #6b7280; }
+  &__status { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: .85rem; margin-bottom: 12px;
+    &--procesando { background: #eff6ff; color: #1e40af; }
+    &--aprobado   { background: #dcfce7; color: #166534; }
+    &--rechazado  { background: #fee2e2; color: #991b1b; }
+    &--cancelado  { background: #f3f4f6; color: #6b7280; }
+    &--bloqueado  { background: #fef3c7; color: #92400e; }
+  }
+  &__actions { display: flex; gap: 8px; }
+}
+
+.mp-btn {
+  padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .85rem;
+  &--send   { background: #009ee3; color: #fff; &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--cancel { background: #dc2626; color: #fff; }
+}

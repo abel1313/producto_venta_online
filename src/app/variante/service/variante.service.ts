@@ -102,4 +102,30 @@ export class VarianteService {
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {
     return this.http.post<any>(`${environment.api_Url}/pedidos/savePedido`, data);
   }
+
+  saveVentaDirecta(data: IVentaDirectaRequest): Observable<IVentaDirectaResponse> {
+    return this.http.post<IVentaDirectaResponse>(`${environment.api_Url}/ventas/save`, data);
+  }
+}
+
+export interface IVentaDirectaRequest {
+  usuarioId:     number;
+  clienteId:     number;
+  pagosYMesesId: number;
+  detalles: {
+    productoId:  number;
+    varianteId:  number | null;
+    cantidad:    number;
+    precioVenta: number;
+    subTotal:    number;
+  }[];
+}
+
+export interface IVentaDirectaResponse {
+  ventaId:          number;
+  tipoPago:         string;
+  requiereTerminal: boolean;
+  totalVenta:       number;
+  meses:            string | null;
+  descripcionPago:  string;
 }

@@ -1,83 +1,233 @@
-@use 'sass:color';
-$r: #ef4444; $g: #22c55e; $p: #8b1a4a; $pd: #c2255c; $t: all 0.22s ease;
+$p:  #8b1a4a;
+$pd: #c2255c;
+$t:  all 0.25s ease;
 
-.ac-page {
-  min-height: 100vh; background: linear-gradient(160deg,#fff5f7 0%,#fde8f0 100%);
-  display: flex; justify-content: center; align-items: flex-start; padding: 36px 16px 60px;
+// ── Página ─────────────────────────────────────────────────────────
+.cn-page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #fff5f7 0%, #fde8f0 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px 60px;
 }
-.ac-card {
-  width: 100%; max-width: 600px; background: #fff; border-radius: 24px; overflow: hidden;
+
+// ── Card ───────────────────────────────────────────────────────────
+.cn-card {
+  width: 100%;
+  max-width: 680px;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
   box-shadow: 0 12px 48px rgba(139,26,74,.12);
 
   &__header {
-    position: relative; background: linear-gradient(135deg,#5c0f31 0%,$p 55%,$pd 100%);
-    padding: 28px 32px 24px; display: flex; align-items: center; gap: 18px; overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, #5c0f31 0%, $p 55%, $pd 100%);
+    padding: 26px 28px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    overflow: hidden;
   }
+
   &__header-glow {
-    position: absolute; width: 260px; height: 260px;
-    background: radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 70%);
-    top: -100px; right: -50px; pointer-events: none;
+    position: absolute; width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+    top: -90px; right: -40px; pointer-events: none;
   }
-  &__header-icon { font-size: 2.4rem; z-index:1; }
-  &__title  { font-size: 1.4rem; font-weight:800; color:#fff; margin:0; z-index:1; }
-  &__subtitle { font-size:.8rem; color:rgba(255,255,255,.7); margin:4px 0 0; z-index:1; }
-  &__body { padding: 28px 32px 36px; display:flex; flex-direction:column; gap:20px; }
+
+  &__header-icon { font-size: 2.2rem; z-index: 1; }
+  &__title  { font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0; z-index: 1; }
+  &__subtitle { font-size: .78rem; color: rgba(255,255,255,.7); margin: 3px 0 0; z-index: 1; }
+
+  &__body {
+    padding: 24px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+
+    @media (max-width: 480px) { padding: 18px 16px 28px; }
+  }
 }
 
-.ac-loader { display:flex; justify-content:center; padding:40px; }
+.cn-loader { display: flex; justify-content: center; padding: 48px; }
 
-.ac-section { display:flex; flex-direction:column; gap:12px; }
-.ac-section__label { font-size:.78rem; font-weight:700; text-transform:uppercase;
-  letter-spacing:.06em; color:#6b7280; }
-
-.ac-status {
-  display:flex; align-items:center; gap:10px; padding:14px 18px; border-radius:12px;
-  font-weight:700; font-size:.95rem;
-
-  &--open  { background:#dcfce7; border:1px solid #86efac; color:#166534;
-    .ac-status__dot { background:#22c55e; } }
-  &--closed { background:#fee2e2; border:1px solid #fca5a5; color:#991b1b;
-    .ac-status__dot { background:#ef4444; } }
-
-  &__dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+// ── Sección ────────────────────────────────────────────────────────
+.cn-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.ac-btn-toggle {
-  padding:11px 22px; border:none; border-radius:10px; font-size:.9rem; font-weight:700;
-  cursor:pointer; transition:$t; width:100%;
-
-  &--close { background: linear-gradient(135deg,#dc2626,#ef4444); color:#fff;
-    box-shadow: 0 4px 14px rgba(220,38,38,.35);
-    &:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(220,38,38,.5); } }
-  &--open  { background: linear-gradient(135deg,#15803d,#22c55e); color:#fff;
-    box-shadow: 0 4px 14px rgba(34,197,94,.35);
-    &:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(34,197,94,.5); } }
+.cn-section__label {
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #6b7280; margin: 0;
 }
 
-.ac-divider { border:none; border-top:1px solid #f3f4f6; margin:0; }
-
-.ac-form { display:flex; flex-direction:column; gap:16px; }
-.ac-field { display:flex; flex-direction:column; gap:5px; }
-
-.ac-label {
-  font-size:.78rem; font-weight:700; color:#4b5563; text-transform:uppercase;
-  letter-spacing:.03em; display:flex; align-items:center; gap:6px;
-  &__icon { font-size:1rem; }
+.cn-section__hint {
+  font-size: .8rem; color: #9ca3af; margin: -6px 0 0;
 }
 
-.ac-input {
-  border:1.5px solid #e5e7eb; border-radius:10px; padding:10px 14px;
-  font-size:.92rem; color:#1f2937; outline:none; transition:$t; background:#fafafa;
-  &::placeholder { color:#9ca3af; }
-  &:focus { border-color:$pd; background:#fff; box-shadow:0 0 0 3px rgba(194,37,92,.12); }
+.cn-divider { border: none; border-top: 1px solid #f3f4f6; margin: 0; }
+
+// ── Toggle estado (fila) ───────────────────────────────────────────
+.cn-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fafafa;
+  border: 1px solid #f3f4f6;
+  border-radius: 14px;
+  padding: 16px 20px;
 }
 
-.ac-hint { font-size:.72rem; color:#9ca3af; }
+.cn-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 
-.ac-btn-save {
-  width:100%; padding:14px; border:none; border-radius:12px;
-  background:linear-gradient(135deg,$p,$pd); color:#fff; font-size:.95rem; font-weight:700;
-  cursor:pointer; transition:$t; box-shadow:0 6px 18px rgba(139,26,74,.35);
-  &:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 26px rgba(139,26,74,.5); }
-  &:disabled { opacity:.45; cursor:not-allowed; }
+  &__status {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #dc2626;
+    transition: color .25s;
+
+    &--open { color: #16a34a; }
+  }
+
+  &__hint {
+    font-size: .76rem;
+    color: #9ca3af;
+  }
+}
+
+// ── Toggle tipo Facebook ───────────────────────────────────────────
+.cn-fb-toggle {
+  position: relative;
+  width: 60px;
+  height: 32px;
+  border-radius: 16px;
+  background: #d1d5db;
+  border: none;
+  cursor: pointer;
+  transition: background .3s ease;
+  flex-shrink: 0;
+  padding: 0;
+
+  &__thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  &--on {
+    background: #22c55e;
+    .cn-fb-toggle__thumb { transform: translateX(28px); }
+  }
+
+  &--busy { opacity: .6; cursor: not-allowed; }
+
+  &:focus-visible { outline: 3px solid rgba(34,197,94,.4); }
+}
+
+// ── Grid 2 columnas (horario) ──────────────────────────────────────
+.cn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
+}
+
+// ── Grid contactos (1 columna) ─────────────────────────────────────
+.cn-contacts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// ── Campo ──────────────────────────────────────────────────────────
+.cn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cn-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &__icon { width: 16px; height: 16px; flex-shrink: 0; }
+}
+
+.cn-input {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .92rem;
+  color: #1f2937;
+  outline: none;
+  transition: $t;
+  background: #fafafa;
+  width: 100%;
+
+  &::placeholder { color: #9ca3af; }
+
+  &:focus {
+    border-color: $pd;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(194,37,92,.12);
+  }
+
+  // Input de hora con acento diferente
+  &--time {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $p;
+    text-align: center;
+    letter-spacing: .04em;
+
+    &:focus { border-color: $pd; }
+  }
+}
+
+.cn-hint { font-size: .72rem; color: #9ca3af; }
+
+// ── Botón guardar ──────────────────────────────────────────────────
+.cn-btn {
+  border: none;
+  border-radius: 10px;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: $t;
+  padding: 12px 20px;
+  width: 100%;
+
+  &--save {
+    background: linear-gradient(135deg, $p, $pd);
+    color: #fff;
+    box-shadow: 0 5px 16px rgba(139,26,74,.32);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(139,26,74,.48);
+    }
+
+    &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  }
 }

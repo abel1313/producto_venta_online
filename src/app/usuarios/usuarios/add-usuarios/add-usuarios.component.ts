@@ -31,7 +31,8 @@ export class AddUsuariosComponent implements OnInit {
   ];
   imgSrc(orden: number): string {
     const img = this.imagenes.find(i => i.orden === orden && i.activo);
-    return img?.urlImagen || this.FALLBACK[orden - 1];
+    if (img) return this.presentacion.getImagenUrl(img.id);
+    return this.FALLBACK[orden - 1];
   }
   imgDesc(orden: number): string {
     return this.imagenes.find(i => i.orden === orden)?.descripcion ?? '';
@@ -59,7 +60,7 @@ export class AddUsuariosComponent implements OnInit {
 
   ngOnInit(): void {
     this.presentacion.getImagenesPorTipo('REGISTRO').subscribe({
-      next: imgs => { this.imagenes = imgs; },
+      next: (res: any) => { this.imagenes = res?.data ?? res ?? []; },
       error: () => {}
     });
 

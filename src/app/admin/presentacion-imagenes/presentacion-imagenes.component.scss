@@ -1,75 +1,173 @@
 $p: #8b1a4a; $pd: #c2255c; $t: all 0.22s ease;
 
 .pi-page {
-  min-height:100vh; background:linear-gradient(160deg,#fff5f7 0%,#fde8f0 100%);
-  display:flex; justify-content:center; align-items:flex-start; padding:36px 16px 60px;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #fff5f7 0%, #fde8f0 100%);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 36px 16px 60px;
 }
+
 .pi-card {
-  width:100%; max-width:900px; background:#fff; border-radius:24px; overflow:hidden;
-  box-shadow:0 12px 48px rgba(139,26,74,.12);
+  width: 100%; max-width: 960px; background: #fff;
+  border-radius: 24px; overflow: hidden;
+  box-shadow: 0 12px 48px rgba(139,26,74,.12);
 
   &__header {
-    position:relative; background:linear-gradient(135deg,#5c0f31 0%,$p 55%,$pd 100%);
-    padding:28px 32px 24px; display:flex; align-items:center; gap:18px; overflow:hidden;
+    position: relative;
+    background: linear-gradient(135deg, #5c0f31 0%, $p 55%, $pd 100%);
+    padding: 28px 32px 24px; display: flex; align-items: center; gap: 18px; overflow: hidden;
   }
   &__header-glow {
-    position:absolute; width:260px; height:260px;
-    background:radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 70%);
-    top:-100px; right:-50px; pointer-events:none;
+    position: absolute; width: 260px; height: 260px;
+    background: radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+    top: -100px; right: -50px; pointer-events: none;
   }
-  &__header-icon { font-size:2.4rem; z-index:1; }
-  &__title  { font-size:1.4rem; font-weight:800; color:#fff; margin:0; z-index:1; }
-  &__subtitle { font-size:.8rem; color:rgba(255,255,255,.7); margin:4px 0 0; z-index:1; }
-  &__body { padding:28px 32px 36px; display:flex; flex-direction:column; gap:20px; }
+  &__header-icon { font-size: 2.4rem; z-index: 1; }
+  &__title  { font-size: 1.4rem; font-weight: 800; color: #fff; margin: 0; z-index: 1; }
+  &__subtitle { font-size: .8rem; color: rgba(255,255,255,.7); margin: 4px 0 0; z-index: 1; }
+  &__body { padding: 28px 32px 36px; display: flex; flex-direction: column; gap: 20px;
+    @media (max-width: 480px) { padding: 18px 14px 28px; } }
 }
 
-.pi-loader { display:flex; justify-content:center; padding:48px; }
+.pi-loader { display: flex; justify-content: center; padding: 48px; }
 
 .pi-group-title {
-  font-size:.85rem; font-weight:700; text-transform:uppercase;
-  letter-spacing:.06em; color:#6b7280; margin:0;
+  font-size: .85rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #6b7280; margin: 0;
 }
 
 .pi-grid {
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
+// ── Card de imagen ─────────────────────────────────────────────────
 .pi-item {
-  background:#fafafa; border:1px solid #f3f4f6; border-radius:14px;
-  overflow:hidden; display:flex; flex-direction:column;
+  background: #fafafa; border: 1.5px solid #f3f4f6;
+  border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: $t;
 
+  &--changed {
+    border-color: $pd;
+    box-shadow: 0 0 0 3px rgba(194,37,92,.1);
+  }
+
+  // ── Preview ──
   &__preview {
-    position:relative; height:160px; background:#fdf2f8; overflow:hidden;
-    display:flex; align-items:center; justify-content:center;
-    img { width:100%; height:100%; object-fit:cover; }
+    position: relative; height: 170px;
+    background: #fdf2f8; overflow: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+
+    img { width: 100%; height: 100%; object-fit: cover; transition: $t; }
+
+    &:hover img { transform: scale(1.04); }
+    &:hover .pi-item__hover-overlay { opacity: 1; }
   }
-  &__placeholder { font-size:3rem; color:#e9a0bb; }
+
+  &__placeholder {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    span { font-size: 2.5rem; }
+    small { font-size: .72rem; color: #d1a0bb; font-weight: 600; }
+  }
+
   &__orden {
-    position:absolute; top:8px; left:8px; background:rgba(0,0,0,.55);
-    color:#fff; font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:20px;
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: .7rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
   }
-  &__active-toggle {
-    position:absolute; top:8px; right:8px; cursor:pointer; font-size:1rem;
-    input[type=checkbox] { display:none; }
+
+  &__badge-changed {
+    position: absolute; top: 8px; right: 8px;
+    background: $pd; color: #fff;
+    font-size: .68rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
   }
+
+  &__hover-overlay {
+    position: absolute; inset: 0;
+    background: rgba(139,26,74,.55);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .22s;
+    color: #fff; font-size: .85rem; font-weight: 700;
+    gap: 6px;
+  }
+
+  // ── Campos ──
   &__fields {
-    padding:12px; display:flex; flex-direction:column; gap:8px;
+    padding: 10px 12px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  &__filename {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    background: #fdf0f5; border: 1px solid #fbcfe8; border-radius: 8px;
+    padding: 4px 8px; font-size: .72rem; color: $p; font-weight: 600;
+    white-space: nowrap; overflow: hidden;
+    span { overflow: hidden; text-overflow: ellipsis; }
+  }
+
+  &__quitar {
+    background: none; border: none; color: #dc2626;
+    font-size: .8rem; cursor: pointer; flex-shrink: 0; padding: 0 2px;
+    &:hover { color: #b91c1c; }
+  }
+
+  &__footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
 }
 
+// ── Switch activo/inactivo ─────────────────────────────────────────
+.pi-switch {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+
+  input[type=checkbox] { display: none; }
+
+  &__track {
+    width: 34px; height: 18px; border-radius: 9px;
+    background: #d1d5db; position: relative; flex-shrink: 0;
+    transition: background .22s;
+
+    &::after {
+      content: ''; position: absolute;
+      top: 2px; left: 2px; width: 14px; height: 14px;
+      border-radius: 50%; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+      transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+    }
+  }
+
+  input:checked + &__track { background: $pd; }
+  input:checked + &__track::after { transform: translateX(16px); }
+
+  &__label { font-size: .75rem; font-weight: 600; color: #6b7280; }
+}
+
+// ── Inputs ─────────────────────────────────────────────────────────
 .pi-input {
-  border:1.5px solid #e5e7eb; border-radius:8px; padding:8px 12px;
-  font-size:.85rem; color:#1f2937; outline:none; transition:$t; background:#fff; width:100%;
-  &::placeholder { color:#9ca3af; }
-  &:focus { border-color:$pd; box-shadow:0 0 0 3px rgba(194,37,92,.12); }
+  border: 1.5px solid #e5e7eb; border-radius: 8px;
+  padding: 8px 12px; font-size: .85rem; color: #1f2937;
+  outline: none; transition: $t; background: #fff; width: 100%;
+
+  &::placeholder { color: #9ca3af; }
+  &:focus { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
 }
 
+// ── Botón guardar/subir ────────────────────────────────────────────
 .pi-btn-save {
-  width:100%; padding:9px; border:none; border-radius:8px;
-  background:linear-gradient(135deg,$p,$pd); color:#fff; font-size:.82rem; font-weight:700;
-  cursor:pointer; transition:$t;
-  &:hover:not(:disabled) { transform:translateY(-1px); }
-  &:disabled { opacity:.45; cursor:not-allowed; }
+  flex: 1; padding: 8px 10px; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, $p, $pd);
+  color: #fff; font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: $t;
+
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139,26,74,.35); }
+  &:disabled { opacity: .45; cursor: not-allowed; }
 }
 
-.pi-divider { border:none; border-top:1px solid #f3f4f6; margin:0; }
+.pi-divider { border: none; border-top: 1px solid #f3f4f6; margin: 0; }

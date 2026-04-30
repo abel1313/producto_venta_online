@@ -4,14 +4,21 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 export interface INegocioEstado {
-  abierto:      boolean;
-  whatsappUrl:  string | null;
-  facebookUrl:  string | null;
+  abierto:       boolean;
+  whatsappUrl:   string | null;
+  facebookUrl:   string | null;
+  horaApertura?: string;   // "09:00"
+  horaCierre?:   string;   // "21:00"
 }
 
 export interface IContactosRequest {
   whatsappUrl: string;
   facebookUrl: string;
+}
+
+export interface IHorarioRequest {
+  horaApertura: string;
+  horaCierre:   string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,8 +31,8 @@ export class NegocioService {
     return this.http.get<INegocioEstado>(`${this.url}/estado`);
   }
 
-  getConfig(): Observable<any> {
-    return this.http.get(`${this.url}/config`);
+  getConfig(): Observable<INegocioEstado> {
+    return this.http.get<INegocioEstado>(`${this.url}/config`);
   }
 
   abrir(): Observable<any> {
@@ -38,5 +45,9 @@ export class NegocioService {
 
   actualizarContactos(data: IContactosRequest): Observable<any> {
     return this.http.put(`${this.url}/contactos`, data);
+  }
+
+  actualizarHorario(data: IHorarioRequest): Observable<any> {
+    return this.http.put(`${this.url}/horario`, data);
   }
 }

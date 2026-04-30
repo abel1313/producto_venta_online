@@ -15,11 +15,10 @@ import { PresentacionService, IImagenPresentacion } from 'src/app/presentacion/p
 export class LoginFormComponent implements OnInit {
 
   loginForm: FormGroup;
-  errorMessage  = '';
+  errorMessage    = '';
   mostrarPassword = false;
-
   imagenes: IImagenPresentacion[] = [];
-  // fallback mientras carga o si falla el API
+
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
     './../../../assets/imagenes/imagen2.jpeg',
@@ -28,7 +27,9 @@ export class LoginFormComponent implements OnInit {
 
   imgSrc(orden: number): string {
     const img = this.imagenes.find(i => i.orden === orden && i.activo);
-    return img?.urlImagen || this.FALLBACK[orden - 1];
+    // Si hay imagen guardada → usar la URL pública /{id}/imagen
+    if (img) return this.presentacion.getImagenUrl(img.id);
+    return this.FALLBACK[orden - 1];
   }
 
   imgDesc(orden: number): string {
@@ -36,12 +37,12 @@ export class LoginFormComponent implements OnInit {
   }
 
   constructor(
-    private readonly fb:            FormBuilder,
-    private readonly router:        Router,
-    private readonly authService:   AuthService,
-    private readonly auth:          auth,
-    private readonly acceder:       AccederService,
-    private readonly presentacion:  PresentacionService
+    private readonly fb:           FormBuilder,
+    private readonly router:       Router,
+    private readonly authService:  AuthService,
+    private readonly auth:         auth,
+    private readonly acceder:      AccederService,
+    private readonly presentacion: PresentacionService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -49,7 +50,17 @@ export class LoginFormComponent implements OnInit {
     });
   }
 
-  onLogin() {
+  ngOnInit(): void {
+    this.presentacion.getImagenesPorTipo('LOGIN').subscribe({
+      next: (res: any) => {
+        // El back envuelve la lista en { data: [...] }
+        this.imagenes = res?.data ?? res ?? [];
+      },
+      error: () => {} // usa fallback si falla
+    });
+  }
+
+  onLogin(): void {
     const credentials = this.loginForm.value;
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
@@ -59,33 +70,11 @@ export class LoginFormComponent implements OnInit {
           this.authService.setRolesFromToken(token);
           this.router.navigate(['/productos/buscar']);
         } else {
-          Swal.fire({
-            title: 'Usuario o contraseña incorrectas',
-            icon: 'error',
-            showConfirmButton: false
-          });
+          Swal.fire({ title: 'Usuario o contraseña incorrectos', icon: 'error', showConfirmButton: false });
         }
         this.errorMessage = '';
       },
-      error: () => {
-        this.errorMessage = 'Usuario o contraseña incorrectos';
-      }
+      error: () => { this.errorMessage = 'Usuario o contraseña incorrectos'; }
     });
   }
-
-  ngOnInit(): void {
-    this.presentacion.getImagenesPorTipo('LOGIN').subscribe({
-  
-      
-      next: (imgs: any) => { this.imagenes = imgs.data; 
-
-          console.log("llego al entra al; login ",  imgs);
-      },
-      error: () => {
-        console.error("fallos ");
-        
-      }   // usa fallback si falla
-    });
-  }
-
 }

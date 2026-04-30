@@ -11,10 +11,13 @@ import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service'
 export class ConfigNegocioComponent implements OnInit {
 
   estado: INegocioEstado | null = null;
-  cargando    = true;
-  guardando   = false;
+  cargando         = true;
+  toggling         = false;
+  guardandoHorario = false;
+  guardandoContactos = false;
 
-  form!: FormGroup;
+  horarioForm!:   FormGroup;
+  contactosForm!: FormGroup;
 
   constructor(
     private readonly negocioService: NegocioService,
@@ -22,19 +25,28 @@ export class ConfigNegocioComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.form = this.fb.group({
+    this.horarioForm = this.fb.group({
+      horaApertura: ['09:00'],
+      horaCierre:   ['21:00']
+    });
+    this.contactosForm = this.fb.group({
       whatsappUrl: [''],
       facebookUrl: ['']
     });
-    this.cargarEstado();
+    this.cargarConfig();
   }
 
-  private cargarEstado(): void {
+  private cargarConfig(): void {
     this.cargando = true;
     this.negocioService.getConfig().subscribe({
-      next: (data: INegocioEstado) => {
-        this.estado = data;
-        this.form.patchValue({
+      next: (data: any) => {
+
+        this.estado = data.data;
+        this.horarioForm.patchValue({
+          horaApertura: data.horaApertura ?? '09:00',
+          horaCierre:   data.horaCierre   ?? '21:00'
+        });
+        this.contactosForm.patchValue({
           whatsappUrl: data.whatsappUrl ?? '',
           facebookUrl: data.facebookUrl ?? ''
         });
@@ -44,48 +56,63 @@ export class ConfigNegocioComponent implements OnInit {
     });
   }
 
+  // ── Toggle instantáneo (sin confirmación) ─────────────────────────
+
   toggleNegocio(): void {
-    if (!this.estado) return;
+    if (!this.estado || this.toggling) return;
+    this.toggling = true;
     const accion$ = this.estado.abierto
       ? this.negocioService.cerrar()
       : this.negocioService.abrir();
 
-    const label = this.estado.abierto ? 'cerrar' : 'abrir';
-
-    Swal.fire({
-      title: `¿Deseas ${label} el negocio?`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: `Sí, ${label}`,
-      cancelButtonText: 'Cancelar',
-      background: '#1e1b4b',
-      color: '#fff'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      accion$.subscribe({
-        next: () => {
-          this.estado!.abierto = !this.estado!.abierto;
-          Swal.fire({ icon: 'success', title: `Negocio ${this.estado!.abierto ? 'abierto' : 'cerrado'}`, timer: 1400, showConfirmButton: false });
-        },
-        error: () => Swal.fire({ icon: 'error', title: 'Error', timer: 1600, showConfirmButton: false })
-      });
+    accion$.subscribe({
+      next: () => {
+        this.estado!.abierto = !this.estado!.abierto;
+        this.toggling = false;
+      },
+      error: () => {
+        this.toggling = false;
+        Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1600, showConfirmButton: false });
+      }
     });
   }
 
-  guardarContactos(): void {
-    this.guardando = true;
-    this.negocioService.actualizarContactos(this.form.value).subscribe({
+  // ── Guardar horario ────────────────────────────────────────────────
+
+  guardarHorario(): void {
+    this.guardandoHorario = true;
+    this.negocioService.actualizarHorario(this.horarioForm.value).subscribe({
       next: () => {
-        this.guardando = false;
-        Swal.fire({ icon: 'success', title: '¡Contactos actualizados!', timer: 1500, showConfirmButton: false });
+        this.guardandoHorario = false;
         if (this.estado) {
-          this.estado.whatsappUrl = this.form.value.whatsappUrl;
-          this.estado.facebookUrl = this.form.value.facebookUrl;
+          this.estado.horaApertura = this.horarioForm.value.horaApertura;
+          this.estado.horaCierre   = this.horarioForm.value.horaCierre;
         }
+        Swal.fire({ icon: 'success', title: '¡Horario actualizado!', timer: 1400, showConfirmButton: false });
       },
       error: () => {
-        this.guardando = false;
-        Swal.fire({ icon: 'error', title: 'Error al guardar', timer: 1600, showConfirmButton: false });
+        this.guardandoHorario = false;
+        Swal.fire({ icon: 'error', title: 'Error al guardar horario', timer: 1600, showConfirmButton: false });
+      }
+    });
+  }
+
+  // ── Guardar contactos (request existente) ─────────────────────────
+
+  guardarContactos(): void {
+    this.guardandoContactos = true;
+    this.negocioService.actualizarContactos(this.contactosForm.value).subscribe({
+      next: () => {
+        this.guardandoContactos = false;
+        if (this.estado) {
+          this.estado.whatsappUrl = this.contactosForm.value.whatsappUrl;
+          this.estado.facebookUrl = this.contactosForm.value.facebookUrl;
+        }
+        Swal.fire({ icon: 'success', title: '¡Contactos actualizados!', timer: 1400, showConfirmButton: false });
+      },
+      error: () => {
+        this.guardandoContactos = false;
+        Swal.fire({ icon: 'error', title: 'Error al guardar contactos', timer: 1600, showConfirmButton: false });
       }
     });
   }

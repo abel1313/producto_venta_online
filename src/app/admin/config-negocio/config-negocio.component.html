@@ -1,74 +1,118 @@
-<div class="ac-page">
-  <div class="ac-card">
+<div class="cn-page">
+  <div class="cn-card">
 
-    <div class="ac-card__header">
-      <div class="ac-card__header-glow"></div>
-      <span class="ac-card__header-icon">🏪</span>
+    <!-- Header -->
+    <div class="cn-card__header">
+      <div class="cn-card__header-glow"></div>
+      <span class="cn-card__header-icon">🏪</span>
       <div>
-        <h3 class="ac-card__title">Configuración del negocio</h3>
-        <p class="ac-card__subtitle">Solo administradores</p>
+        <h3 class="cn-card__title">Configuración del negocio</h3>
+        <p class="cn-card__subtitle">Solo administradores</p>
       </div>
     </div>
 
-    <div class="ac-card__body" *ngIf="!cargando; else loader">
+    <div class="cn-card__body" *ngIf="!cargando; else loader">
 
-      <!-- ── Estado del negocio ────────────────────────────── -->
-      <div class="ac-section">
-        <p class="ac-section__label">Estado actual</p>
-        <div class="ac-status" [class.ac-status--open]="estado?.abierto" [class.ac-status--closed]="!estado?.abierto">
-          <span class="ac-status__dot"></span>
-          <span class="ac-status__text">{{ estado?.abierto ? 'Negocio ABIERTO' : 'Negocio CERRADO' }}</span>
+      <!-- ── 1. Estado del negocio (toggle tipo Facebook) ─────────── -->
+      <div class="cn-section">
+        <p class="cn-section__label">Estado del negocio</p>
+
+        <div class="cn-toggle-row">
+          <div class="cn-toggle-info">
+            <span class="cn-toggle-info__status" [class.cn-toggle-info__status--open]="estado?.abierto">
+              {{ estado?.abierto ? '🟢 Abierto' : '🔴 Cerrado' }}
+            </span>
+            <span class="cn-toggle-info__hint">
+              Toca el interruptor para {{ estado?.abierto ? 'cerrar' : 'abrir' }}
+            </span>
+          </div>
+
+          <!-- Toggle estilo Facebook -->
+          <button class="cn-fb-toggle"
+                  [class.cn-fb-toggle--on]="estado?.abierto"
+                  [class.cn-fb-toggle--busy]="toggling"
+                  [disabled]="toggling"
+                  (click)="toggleNegocio()"
+                  [title]="estado?.abierto ? 'Cerrar negocio' : 'Abrir negocio'">
+            <span class="cn-fb-toggle__thumb"></span>
+          </button>
         </div>
-        <button class="ac-btn-toggle"
-                [class.ac-btn-toggle--close]="estado?.abierto"
-                [class.ac-btn-toggle--open]="!estado?.abierto"
-                (click)="toggleNegocio()">
-          {{ estado?.abierto ? '🔒 Cerrar negocio' : '🔓 Abrir negocio' }}
+      </div>
+
+      <hr class="cn-divider">
+
+      <!-- ── 2. Horario ────────────────────────────────────────────── -->
+      <div class="cn-section">
+        <p class="cn-section__label">🕐 Horario de atención</p>
+        <p class="cn-section__hint">Por defecto: 09:00 – 21:00. Cámbialo cuando necesites.</p>
+
+        <form [formGroup]="horarioForm" class="cn-grid">
+          <div class="cn-field">
+            <label class="cn-label">Hora de apertura</label>
+            <input class="cn-input cn-input--time" type="time"
+                   formControlName="horaApertura">
+          </div>
+          <div class="cn-field">
+            <label class="cn-label">Hora de cierre</label>
+            <input class="cn-input cn-input--time" type="time"
+                   formControlName="horaCierre">
+          </div>
+        </form>
+
+        <button class="cn-btn cn-btn--save" [disabled]="guardandoHorario" (click)="guardarHorario()">
+          <span *ngIf="!guardandoHorario">💾 Guardar horario</span>
+          <span *ngIf="guardandoHorario" class="d-flex align-items-center gap-2 justify-content-center">
+            <span class="spinner-border spinner-border-sm"></span> Guardando…
+          </span>
         </button>
       </div>
 
-      <hr class="ac-divider">
+      <hr class="cn-divider">
 
-      <!-- ── Contactos ─────────────────────────────────────── -->
-      <div class="ac-section">
-        <p class="ac-section__label">Contactos (se muestran cuando el negocio está cerrado)</p>
+      <!-- ── 3. Contactos (WhatsApp / Facebook) ───────────────────── -->
+      <div class="cn-section">
+        <p class="cn-section__label">📲 Contactos de atención</p>
+        <p class="cn-section__hint">Se muestran cuando el negocio está cerrado.</p>
 
-        <form [formGroup]="form" class="ac-form">
+        <form [formGroup]="contactosForm" class="cn-contacts-grid">
 
-          <div class="ac-field">
-            <label class="ac-label">
-              <span class="ac-label__icon ac-label__icon--wa">📱</span>
+          <div class="cn-field cn-field--wa">
+            <label class="cn-label">
+              <svg class="cn-label__icon" viewBox="0 0 24 24" fill="#25d366">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
               WhatsApp URL
             </label>
-            <input class="ac-input" formControlName="whatsappUrl"
+            <input class="cn-input" formControlName="whatsappUrl"
                    placeholder="https://wa.me/5215512345678?text=Hola!">
-            <small class="ac-hint">Formato: https://wa.me/52 + número sin espacios ni +</small>
+            <small class="cn-hint">https://wa.me/52 + número sin espacios</small>
           </div>
 
-          <div class="ac-field">
-            <label class="ac-label">
-              <span class="ac-label__icon ac-label__icon--fb">📘</span>
+          <div class="cn-field cn-field--fb">
+            <label class="cn-label">
+              <svg class="cn-label__icon" viewBox="0 0 24 24" fill="#1877f2">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
               Facebook URL
             </label>
-            <input class="ac-input" formControlName="facebookUrl"
+            <input class="cn-input" formControlName="facebookUrl"
                    placeholder="https://facebook.com/TuPagina">
           </div>
 
-          <button class="ac-btn-save" type="button" [disabled]="guardando" (click)="guardarContactos()">
-            <span *ngIf="!guardando">💾 Guardar contactos</span>
-            <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
-              <span class="spinner-border spinner-border-sm"></span> Guardando…
-            </span>
-          </button>
         </form>
+
+        <button class="cn-btn cn-btn--save" [disabled]="guardandoContactos" (click)="guardarContactos()">
+          <span *ngIf="!guardandoContactos">💾 Guardar contactos</span>
+          <span *ngIf="guardandoContactos" class="d-flex align-items-center gap-2 justify-content-center">
+            <span class="spinner-border spinner-border-sm"></span> Guardando…
+          </span>
+        </button>
       </div>
 
     </div>
 
     <ng-template #loader>
-      <div class="ac-loader">
-        <span class="spinner-border text-primary"></span>
-      </div>
+      <div class="cn-loader"><span class="spinner-border text-primary"></span></div>
     </ng-template>
 
   </div>

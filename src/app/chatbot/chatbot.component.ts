@@ -41,10 +41,20 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   ngOnInit(): void {
     this.negocioService.getEstado().subscribe({
-      next: (estado: INegocioEstado) => {
+      next: (res: any) => {
+        console.log(res, "estadossss ")
+        const estado = res.data as any; 
         this.negocioCerrado = !estado.abierto;
         this.whatsappUrl    = estado.whatsappUrl;
         this.facebookUrl    = estado.facebookUrl;
+        console.log("estadossss ", estado);
+        
+        console.log(this.negocioCerrado," cerrado ");
+        console.log(this.whatsappUrl, "whats");
+        console.log(this.facebookUrl, " face");
+        
+        
+        
       },
       error: () => {} // silencioso — no interrumpe el chat
     });

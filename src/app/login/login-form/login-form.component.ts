@@ -75,8 +75,16 @@ export class LoginFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.presentacion.getImagenesPorTipo('LOGIN').subscribe({
-      next: imgs => { this.imagenes = imgs; },
-      error: () => {}   // usa fallback si falla
+  
+      
+      next: (imgs: any) => { this.imagenes = imgs.data; 
+
+          console.log("llego al entra al; login ",  imgs);
+      },
+      error: () => {
+        console.error("fallos ");
+        
+      }   // usa fallback si falla
     });
   }
 

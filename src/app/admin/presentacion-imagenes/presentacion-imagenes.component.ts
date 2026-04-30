@@ -22,7 +22,7 @@ export class PresentacionImagenesComponent implements OnInit {
   private cargar(): void {
     this.cargando = true;
     this.presentacionService.getTodasImagenes().subscribe({
-      next: imgs => { this.imagenes = imgs; this.cargando = false; },
+      next: (imgs: any) => { this.imagenes = imgs.data; this.cargando = imgs.data.activo; },
       error: ()  => { this.cargando = false; }
     });
   }

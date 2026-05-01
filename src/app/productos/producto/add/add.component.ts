@@ -86,7 +86,7 @@ export class AddComponent implements OnInit, AfterViewInit {
         ctrl.clearValidators();
       } else {
         // Limpiar para que el usuario ingrese el suyo
-        ctrl.setValue('');
+        //ctrl.setValue('');
         ctrl.setValidators([Validators.required, Validators.maxLength(100)]);
       }
       ctrl.updateValueAndValidity();

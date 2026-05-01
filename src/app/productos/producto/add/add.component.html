@@ -108,6 +108,12 @@
             <label class="pf-label">Actualizar stock</label>
             <input class="pf-input" formControlName="actualizarStock" type="number" placeholder="0">
           </div>
+
+          <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
+            <label class="pf-label">Eliminar stock</label>
+            <input class="pf-input" formControlName="eliminarStock" type="number" placeholder="0">
+          </div>
+
         </div>
 
         <!-- ── Código de barras ───────────────────────────────── -->

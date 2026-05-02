@@ -5,7 +5,7 @@
       <span class="pl-header__icon">📦</span>
       <div>
         <h4 class="mb-0">Productos</h4>
-        <small class="text-white-50">Catálogo de productos</small>
+        <small class="text-white-50">Catálogo de productos1</small>
       </div>
     </div>
     <div class="pl-header__actions">
@@ -55,7 +55,17 @@
     <div class="pl-card" *ngFor="let item of rows; trackBy: trackById">
 
       <!-- Imagen -->
+        <button *ngIf="isAdminUser"
+        type="button"
+        class="dp-slide__del-btn"
+        [class.dp-slide__del-btn--on]="estaMarcada(item)"
+        (click)="confirmarEliminarBatch(item)"
+        [title]="estaMarcada(item) ? 'Desmarcar' : 'Marcar para eliminar'">
+        ✕
+        </button>
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
+                      <!-- Botón X solo admin -->
+
         <img *ngIf="imageSrc(item) as src"
              [src]="src"
              [alt]="item.nombre"
@@ -147,6 +157,8 @@
         </button>
 
       </div>
+
+
     </div>
   </div>
 

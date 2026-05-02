@@ -128,4 +128,8 @@ export class ProductoService {
     get obtenerProducto(): IProductoDTOImagenes | null {
         return this.productoUpdate.getValue();
     }
+
+    deleteProductoPorId(id: number): Observable<any> {
+        return this.http.delete(`${this.url}/deleteBy/${id}`);
+    }
 }

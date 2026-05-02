@@ -81,6 +81,57 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   get isAnonymous(): boolean {
     return !this.roles || this.roles.length === 0;
   }
+
+    confirmarEliminarBatch(item: IProductoDTO): void {
+    
+      Swal.fire({
+        title: `¿Eliminar este producto ${item.nombre}?`,
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#ef4444',
+        background: '#1e1b4b',
+        color: '#fff'
+      }).then(result => {
+        if (!result.isConfirmed) return;
+            this.srvice.deleteProductoPorId(item.idProducto).subscribe({
+              next: () => {
+                this.srvice.getData(1, 10).subscribe({
+                  next: (res) => {                    this.paginacion = res;
+                    this.rows = this.paginacion.t;
+                    this.totalPaginas = this.paginacion.totalPaginas;
+                    this.srvice.setProdCache(this.rows, 1, this.totalPaginas, '');
+                  },
+                  error: (err) => {
+                    console.error('Error en la petición:', err);
+                  }
+                });
+                Swal.fire({ icon: 'success', title: 'El producto se elimino correctamente', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+              },
+              error: () => {
+                Swal.fire({ icon: 'error', title: 'Error al eliminar el producto', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+              }
+            });
+      });
+    }
+
+    estaMarcada(img: IProductoDTO): boolean {
+      return !!img.idProducto && this.imagenesParaEliminar.has(img.idProducto);
+    }
+
+  imagenesParaEliminar = new Set<number>();
+  toggleMarcar(img: IProductoDTO): void {
+      if (!img.idProducto) return;
+      if (this.imagenesParaEliminar.has(img.idProducto)) {
+        this.imagenesParaEliminar.delete(img.idProducto);
+      } else {
+        this.imagenesParaEliminar.add(img.idProducto);
+      }
+    }
+  
+
   filaSeleccionada: any;
   blockContextMenu(event: MouseEvent) {
     event.preventDefault(); // ✅ Bloquea el menú del navegador

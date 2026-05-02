@@ -35,3 +35,5 @@ https://primeng.org/
 
 
 #primeros cambios para este URL para ir a AWS este es el que es un micro con todos los componentes o apuntando al mismo micro, y aotro micro de imagenes
+
+RAMA dev viene de QA

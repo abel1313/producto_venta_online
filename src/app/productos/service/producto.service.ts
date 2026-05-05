@@ -132,4 +132,20 @@ export class ProductoService {
     deleteProductoPorId(id: number): Observable<any> {
         return this.http.delete(`${this.url}/deleteBy/${id}`);
     }
+
+    getNoHabilitados(page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/no-habilitados?size=${size}&page=${page}`);
+    }
+
+    getSinStock(page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/sin-stock?size=${size}&page=${page}`);
+    }
+
+    habilitarProducto(id: number, habilitar: boolean): Observable<any> {
+        return this.http.patch(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, null);
+    }
+
+    descargarReporteExcel(): Observable<Blob> {
+        return this.http.get(`${this.url}/admin/sin-variantes/reporte`, { responseType: 'blob' });
+    }
 }

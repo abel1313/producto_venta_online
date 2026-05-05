@@ -96,11 +96,40 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dp-slide__del-btn {
-  background: transparent;
-  border: none;
-  color: #c00;
-  font-size: 18px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(194, 37, 92, 0.88);
+  backdrop-filter: blur(4px);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: $transition;
+  box-shadow: 0 2px 8px rgba(194, 37, 92, 0.45);
+  padding: 0;
+  line-height: 1;
+
+  &:hover {
+    background: #ef4444;
+    transform: scale(1.14);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.55);
+    border-color: #fff;
+  }
+
+  &--on {
+    background: #ef4444;
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35);
+  }
 }
 
 
@@ -209,6 +238,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Card ───────────────────────────────────────────────────────────
 .pl-card {
+  position: relative;
   background: #fff;
   border-radius: $radius;
   box-shadow: $shadow;
@@ -340,9 +370,75 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
-  &--view   { color: #1565c0; &:hover { background: #e3f2fd; } }
-  &--detail { color: #6d28d9; &:hover { background: #f5f3ff; } }
-  &--edit   { color: $primary-d; &:hover { background: #fdf0f5; } }
+  &--view     { color: #1565c0; &:hover { background: #e3f2fd; } }
+  &--detail   { color: #6d28d9; &:hover { background: #f5f3ff; } }
+  &--edit     { color: $primary-d; &:hover { background: #fdf0f5; } }
+  &--variante { color: #0277bd; &:hover:not(:disabled) { background: #e1f5fe; } &:disabled { opacity: 0.35; cursor: not-allowed; } }
+  &--toggle   { color: #5c6bc0; &:hover { background: #ede7f6; } }
+}
+
+// ── Filtros admin ──────────────────────────────────────────────────
+.pl-filtros {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px 16px;
+  flex-wrap: wrap;
+}
+
+.pl-filtro-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: $transition;
+  white-space: nowrap;
+
+  &:hover { background: rgba(255,255,255,0.28); color: #fff; }
+
+  &--active {
+    background: rgba(255,255,255,0.92);
+    color: $primary;
+    font-weight: 700;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+}
+
+.pl-excel-btn {
+  margin-left: auto;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(46,125,50,0.7);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+  white-space: nowrap;
+
+  &:hover { background: rgba(46,125,50,0.95); transform: scale(1.03); }
+}
+
+// ── Badge habilitado ───────────────────────────────────────────────
+.pl-badge-disabled {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 9;
+  background: rgba(80,80,80,0.82);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 // ── Empty state ────────────────────────────────────────────────────

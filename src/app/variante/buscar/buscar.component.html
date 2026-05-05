@@ -18,7 +18,7 @@
     </div>
   </div>
 
-  <!-- Buscador (solo cuando no hay productoId en URL) -->
+  <!-- Buscador -->
   <div class="vb-search">
     <span class="vb-search__icon">🔍</span>
     <input
@@ -28,11 +28,20 @@
       [(ngModel)]="terminoBusqueda"
       (keyup)="onBuscar($event)"
       autocomplete="off"
+      [disabled]="filtroAdmin === 'sin-stock'"
     />
     <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 3"
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
+  </div>
+
+  <!-- Filtros solo admin -->
+  <div *ngIf="isAdminUser" class="vb-filtros">
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'todos'"
+      (click)="cambiarFiltroAdmin('todos')">Todos</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'sin-stock'"
+      (click)="cambiarFiltroAdmin('sin-stock')">Sin stock</button>
   </div>
 </div>
 
@@ -40,9 +49,13 @@
 <div class="vb-grid-wrap">
 
   <!-- Sin resultados -->
-  <div *ngIf="!buscando && variantes.length === 0" class="vb-empty">
+  <div *ngIf="!buscando && (variantes.length === 0 || sinResultados)" class="vb-empty">
     <span class="vb-empty__icon">🗂️</span>
-    <p class="mb-0">No se encontraron variantes</p>
+    <p class="mb-0">
+      {{ sinResultados && terminoBusqueda.length >= 3
+          ? 'No se encontraron variantes con "' + terminoBusqueda + '"'
+          : 'No se encontraron variantes' }}
+    </p>
   </div>
 
   <div class="vb-grid">

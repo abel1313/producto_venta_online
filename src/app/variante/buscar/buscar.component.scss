@@ -73,6 +73,37 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &__spinner { margin-left: 10px; }
 }
 
+// ── Filtros admin ──────────────────────────────────────────────────
+.vb-filtros {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 16px;
+  flex-wrap: wrap;
+}
+
+.vb-filtro-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: $transition;
+  white-space: nowrap;
+
+  &:hover { background: rgba(255,255,255,0.28); color: #fff; }
+
+  &--active {
+    background: rgba(255,255,255,0.92);
+    color: $primary;
+    font-weight: 700;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+}
+
 // ── Botón carrito header ───────────────────────────────────────────
 .vb-btn {
   border: none;

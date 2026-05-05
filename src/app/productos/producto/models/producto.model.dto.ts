@@ -14,6 +14,12 @@ export interface IProductoDTO{
     listImgs?: IImagenDto[];
     marca?: string;
     color?: string;
+    // campos extra que solo devuelve el backend cuando el token es admin
+    habilitado?: string | boolean;
+    precioCosto?: number;
+    piezas?: number;
+    precioRebaja?: number;
+    contenido?: string;
 }
 
 

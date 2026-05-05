@@ -99,6 +99,20 @@ export class VarianteService {
     ).pipe(map(res => res.data));
   }
 
+  getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
+      .pipe(map(res => res.data));
+  }
+
+  getAdminSinStock(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
+    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/admin/sin-stock?pagina=${pagina}&size=${size}`)
+      .pipe(map(res => res.data));
+  }
+
+  inicializarDesdeProducto(form: FormData): Observable<{ mensaje: string; data: any[] }> {
+    return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/inicializarDesdeProducto`, form);
+  }
+
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {
     return this.http.post<any>(`${environment.api_Url}/pedidos/savePedido`, data);
   }

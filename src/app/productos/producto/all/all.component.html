@@ -26,9 +26,23 @@
       [(ngModel)]="buscarProd"
       (keyup)="buscarProductos($event)"
       autocomplete="off"
+      [disabled]="filtroActivo !== 'todos'"
     />
     <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
+    </button>
+  </div>
+
+  <!-- Filtros admin -->
+  <div *ngIf="isAdminUser" class="pl-filtros">
+    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'todos'"
+      (click)="cambiarFiltro('todos')">Todos</button>
+    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'no-habilitados'"
+      (click)="cambiarFiltro('no-habilitados')">No habilitados</button>
+    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'sin-stock'"
+      (click)="cambiarFiltro('sin-stock')">Sin stock</button>
+    <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
+      📥 Excel sin variantes
     </button>
   </div>
 </div>
@@ -48,23 +62,27 @@
   <!-- Estado vacío -->
   <div *ngIf="rows.length === 0" class="pl-empty">
     <span class="pl-empty__icon">📦</span>
-    <p class="mb-0">No se encontraron productos</p>
+    <p class="mb-0">{{ mensajeError || 'No se encontraron productos' }}</p>
   </div>
 
   <div class="pl-grid">
     <div class="pl-card" *ngFor="let item of rows; trackBy: trackById">
 
-      <!-- Imagen -->
-        <button *ngIf="isAdminUser"
+      <!-- Botón X eliminar (solo admin) -->
+      <button *ngIf="isAdminUser"
         type="button"
         class="dp-slide__del-btn"
         [class.dp-slide__del-btn--on]="estaMarcada(item)"
         (click)="confirmarEliminarBatch(item)"
-        [title]="estaMarcada(item) ? 'Desmarcar' : 'Marcar para eliminar'">
+        title="Eliminar producto">
         ✕
-        </button>
+      </button>
+
+      <!-- Badge deshabilitado (solo admin) -->
+      <span *ngIf="isAdminUser && item.habilitado === false || isAdminUser && item.habilitado === ' '"
+        class="pl-badge-disabled">Deshabilitado</span>
+
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
-                      <!-- Botón X solo admin -->
 
         <img *ngIf="imageSrc(item) as src"
              [src]="src"
@@ -156,8 +174,20 @@
           <span class="pl-btn-card__label">Actualizar</span>
         </button>
 
-      </div>
+        <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
+          [disabled]="item.stock === 0" title="Crear variantes a partir de este producto">
+          <span>🧩</span>
+          <span class="pl-btn-card__label">Variantes</span>
+        </button>
 
+        <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--toggle"
+          [title]="item.habilitado === false || item.habilitado === ' ' ? 'Habilitar' : 'Deshabilitar'"
+          (click)="habilitarProducto(item, item.habilitado === false || item.habilitado === ' ')">
+          <span>{{ item.habilitado === false || item.habilitado === ' ' ? '🔓' : '🔒' }}</span>
+          <span class="pl-btn-card__label">{{ item.habilitado === false || item.habilitado === ' ' ? 'Habilitar' : 'Deshab.' }}</span>
+        </button>
+
+      </div>
 
     </div>
   </div>

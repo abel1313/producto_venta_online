@@ -22,6 +22,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   terminoBusqueda = '';
   buscando        = false;
   isAdminUser     = false;
+  sinResultados   = false;
+  filtroAdmin: 'todos' | 'sin-stock' = 'todos';
   detalle: IDetalleVariante[] = [];
 
   private productoId = 0;
@@ -79,7 +81,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   private buscarPagina(termino: string, pagina: number): void {
-    // Si el término y la página ya están en caché, no repetir la petición
     if (
       this.varianteService.initialized &&
       this.varianteService.terminoCache === termino &&
@@ -94,13 +95,52 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.varianteService.buscar(params).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
+        this.sinResultados = false;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, termino);
         this.buscando = false;
       },
-      error: () => { this.buscando = false; }
+      error: (err) => {
+        this.buscando = false;
+        if (err.status === 404) {
+          this.variantes    = [];
+          this.totalPaginas = 0;
+          this.sinResultados = true;
+          this.varianteService.setCache([], pagina, 0, termino);
+        }
+      }
+    });
+  }
+
+  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock'): void {
+    if (!this.isAdminUser || this.filtroAdmin === filtro) return;
+    this.filtroAdmin = filtro;
+    this.varianteService.invalidarCache();
+    this.paginaActual = 1;
+    this.sinResultados = false;
+    if (filtro === 'sin-stock') {
+      this.cargarAdminSinStock(1);
+    } else {
+      this.buscarPagina(this.terminoBusqueda, 1);
+    }
+  }
+
+  private cargarAdminSinStock(pagina: number): void {
+    this.buscando = true;
+    this.varianteService.getAdminSinStock(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        this.sinResultados = false;
+        this.variantes    = res.t ?? [];
+        this.totalPaginas = res.totalPaginas;
+        this.paginaActual = pagina;
+        this.buscando = false;
+      },
+      error: (err) => {
+        this.buscando = false;
+        if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
+      }
     });
   }
 
@@ -122,14 +162,18 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   anteriorPagina(): void {
     if (this.paginaActual <= 1) return;
-    if (this.productoId > 0) this.cargarResumen(this.paginaActual - 1);
-    else this.buscarPagina(this.terminoBusqueda, this.paginaActual - 1);
+    const p = this.paginaActual - 1;
+    if (this.productoId > 0) this.cargarResumen(p);
+    else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
+    else this.buscarPagina(this.terminoBusqueda, p);
   }
 
   siguientePagina(): void {
     if (this.paginaActual >= this.totalPaginas) return;
-    if (this.productoId > 0) this.cargarResumen(this.paginaActual + 1);
-    else this.buscarPagina(this.terminoBusqueda, this.paginaActual + 1);
+    const p = this.paginaActual + 1;
+    if (this.productoId > 0) this.cargarResumen(p);
+    else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
+    else this.buscarPagina(this.terminoBusqueda, p);
   }
 
   // ── Carrito variante ───────────────────────────────────────────────

@@ -14,6 +14,7 @@ import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
+import { VarianteService } from 'src/app/variante/service/variante.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -56,10 +57,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   ];
   roles: string[] = [];
   isAdminUser: boolean = false;
+  filtroActivo: 'todos' | 'no-habilitados' | 'sin-stock' = 'todos';
+  sinResultados = false;
+  mensajeError  = '';
+
   constructor(
     public iconImagen: IconService,
     private readonly router: Router,
     private readonly srvice: ProductoService,
+    private readonly varianteService: VarianteService,
     private readonly serviceCarrito: CarritoService,
     private readonly authService: AuthService
   ) {
@@ -305,14 +311,143 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   getData(pagina: number) {
     this.srvice.getData(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
+        this.sinResultados = false;
         this.paginacion = res;
         this.rows = this.paginacion.t;
         this.totalPaginas = this.paginacion.totalPaginas;
         this.srvice.setProdCache(this.rows, pagina, this.totalPaginas, '');
       },
       error: (err) => {
-        console.error('Error en la petición:', err);
+        if (err.status === 404) {
+          this.rows = [];
+          this.totalPaginas = 0;
+          this.sinResultados = true;
+          this.srvice.setProdCache([], pagina, 0, '');
+        } else {
+          console.error('Error en la petición:', err);
+        }
       }
+    });
+  }
+
+  cambiarFiltro(filtro: 'todos' | 'no-habilitados' | 'sin-stock'): void {
+    if (this.filtroActivo === filtro) return;
+    this.filtroActivo = filtro;
+    this.buscarProd = '';
+    this.sinResultados = false;
+    this.srvice.invalidarProdCache();
+    this.paginaPrimera = 1;
+    if (filtro === 'todos') {
+      this.getData(1);
+    } else if (filtro === 'no-habilitados') {
+      this.cargarNoHabilitados(1);
+    } else {
+      this.cargarSinStock(1);
+    }
+  }
+
+  private cargarNoHabilitados(pagina: number): void {
+    this.srvice.getNoHabilitados(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        this.sinResultados = false;
+        this.rows = res.t;
+        this.totalPaginas = res.totalPaginas;
+        this.paginaPrimera = pagina;
+      },
+      error: (err) => {
+        if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
+      }
+    });
+  }
+
+  private cargarSinStock(pagina: number): void {
+    this.srvice.getSinStock(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        this.sinResultados = false;
+        this.rows = res.t;
+        this.totalPaginas = res.totalPaginas;
+        this.paginaPrimera = pagina;
+      },
+      error: (err) => {
+        if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
+      }
+    });
+  }
+
+  habilitarProducto(item: IProductoDTO, habilitar: boolean): void {
+    this.srvice.habilitarProducto(item.idProducto, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        item.habilitado = habilitar;
+        Swal.fire({ icon: 'success', title: habilitar ? 'Producto habilitado' : 'Producto deshabilitado', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+      },
+      error: () => Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1800, showConfirmButton: false })
+    });
+  }
+
+  descargarExcel(): void {
+    this.srvice.descargarReporteExcel().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'productos_sin_variantes.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => Swal.fire({ icon: 'error', title: 'No se pudo descargar el reporte', timer: 2000, showConfirmButton: false })
+    });
+  }
+
+  async inicializarVariantes(producto: IProductoDTO): Promise<void> {
+    const { value: formValues } = await Swal.fire({
+      title: `Inicializar variantes`,
+      html: `
+        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b> — Stock disponible: <b>${producto.stock}</b></p>
+        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de variantes:</label>
+        <input id="swal-cantidad" type="number" min="1" max="${producto.stock}" value="1"
+          class="swal2-input" style="margin:0 0 12px;" />
+        <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
+          <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
+          Misma imagen para todas las variantes
+        </label>
+        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
+        <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
+      `,
+      confirmButtonText: 'Crear variantes',
+      cancelButtonText: 'Cancelar',
+      showCancelButton: true,
+      confirmButtonColor: '#8b1a4a',
+      background: '#fff',
+      preConfirm: () => {
+        const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
+        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
+        if (cantidad > producto.stock) { Swal.showValidationMessage(`El stock máximo es ${producto.stock}`); return false; }
+        return {
+          cantidadVariantes: cantidad,
+          imagenParaTodas: (document.getElementById('swal-para-todas') as HTMLInputElement).checked,
+          files: (document.getElementById('swal-imagenes') as HTMLInputElement).files
+        };
+      }
+    });
+
+    if (!formValues) return;
+
+    const form = new FormData();
+    form.append('request', JSON.stringify({
+      productoId: producto.idProducto,
+      cantidadVariantes: formValues.cantidadVariantes,
+      imagenParaTodas: formValues.imagenParaTodas
+    }));
+    if (formValues.files) {
+      Array.from(formValues.files as FileList).forEach(f => form.append('files[]', f));
+    }
+
+    this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        Swal.fire({ icon: 'success', title: `${res.data.length} variante(s) creada(s)`, timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        this.getData(this.paginaPrimera);
+      },
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.message ?? 'Intenta de nuevo', confirmButtonColor: '#8b1a4a' })
     });
   }
 
@@ -342,24 +477,26 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
 
   conOSinBuscar(pagina: number): void {
-    if (this.buscarProd == '') {
+    if (this.filtroActivo === 'no-habilitados') { this.cargarNoHabilitados(pagina); return; }
+    if (this.filtroActivo === 'sin-stock') { this.cargarSinStock(pagina); return; }
+    if (this.buscarProd === '') {
       this.getData(pagina);
     } else {
-      this.buscarProductoSinKey(pagina, this.buscarProd,);
+      this.buscarProductoSinKey(pagina, this.buscarProd);
     }
   }
   buscarProductos(event: KeyboardEvent) {
     const texto = (event.target as HTMLInputElement).value.toLowerCase();
-    //this.paginaPrimera = 1;
     this.buscarProd = texto;
-    if (this.buscarProd == '') {
-      this.paginaPrimera = 1;
+    if (this.buscarProd === '') {
+      this.paginaPrimera  = 1;
+      this.sinResultados  = false;
+      this.mensajeError   = '';
     }
     this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
   }
 
   buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
-    // Si el término y la página ya están en caché, no repetir la petición
     if (
       this.srvice.prodInitialized &&
       this.srvice.prodTerminoCache  === buscarProd &&
@@ -370,13 +507,24 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
+          this.sinResultados = false;
+          this.mensajeError  = '';
           this.paginacion = res;
           this.rows = this.paginacion.t;
           this.totalPaginas = res.totalPaginas ?? 0;
           this.srvice.setProdCache(this.rows, paginaPrimera, this.totalPaginas, buscarProd);
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          const esSinResultados = err.status === 404 || err.status === 400;
+          if (esSinResultados) {
+            this.rows = [];
+            this.totalPaginas = 0;
+            this.sinResultados = true;
+            this.mensajeError  = err.error?.message ?? 'No se encontraron productos';
+            this.srvice.setProdCache([], paginaPrimera, 0, buscarProd);
+          } else {
+            console.error('Error en la petición:', err);
+          }
         }
       });
   }

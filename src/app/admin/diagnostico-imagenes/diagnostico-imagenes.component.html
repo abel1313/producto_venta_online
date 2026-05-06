@@ -1,0 +1,269 @@
+<div class="di-page">
+  <div class="di-card">
+
+    <!-- Header -->
+    <div class="di-card__header">
+      <div class="di-card__header-glow"></div>
+      <span class="di-card__header-icon">🔍</span>
+      <div>
+        <h3 class="di-card__title">Diagnóstico de Imágenes</h3>
+        <p class="di-card__subtitle">Solo administradores · Verifica BD ↔ Microservicio</p>
+      </div>
+    </div>
+
+    <div class="di-card__body">
+
+      <!-- Tabs -->
+      <div class="di-tabs">
+        <button class="di-tab" [class.di-tab--active]="tab === 'producto'" (click)="cambiarTab('producto')">
+          📦 Producto
+        </button>
+        <button class="di-tab" [class.di-tab--active]="tab === 'variante'" (click)="cambiarTab('variante')">
+          🏷️ Variante
+        </button>
+      </div>
+
+      <!-- ═══ BÚSQUEDA PRODUCTO ═══ -->
+      <ng-container *ngIf="tab === 'producto'">
+        <div class="di-endpoint">
+          <span class="di-endpoint__method">GET</span>
+          <span class="di-endpoint__url">/productos/admin/diagnostico-imagenes/&#123;productoId&#125;</span>
+        </div>
+
+        <div class="di-search-wrap">
+          <div class="di-search-box">
+            <span class="di-search-box__icon">🔍</span>
+            <input
+              class="di-search-box__input"
+              type="text"
+              placeholder="Buscar producto por nombre o código de barras (mín. 3 chars)…"
+              [value]="terminoProducto"
+              (input)="onBuscarProducto($event)"
+              autocomplete="off" />
+            <span *ngIf="buscandoProducto" class="di-search-box__spinner">
+              <span class="spinner-border spinner-border-sm"></span>
+            </span>
+          </div>
+
+          <!-- Dropdown resultados producto -->
+          <div class="di-dropdown" *ngIf="productosEncontrados.length > 0">
+            <div
+              class="di-dropdown__item"
+              *ngFor="let p of productosEncontrados"
+              (mousedown)="$event.preventDefault(); seleccionarProducto(p)">
+              <div class="di-dropdown__main">
+                <span class="di-dropdown__name">{{ p.nombre }}</span>
+                <span class="di-dropdown__id">ID {{ p.idProducto }}</span>
+              </div>
+              <div class="di-dropdown__sub">
+                <span *ngIf="p.marca">{{ p.marca }}</span>
+                <span *ngIf="p.codigoBarras" class="di-dropdown__code">{{ p.codigoBarras }}</span>
+                <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="p.stock === 0">
+                  stock {{ p.stock }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sin resultados -->
+          <div class="di-no-results" *ngIf="!buscandoProducto && terminoProducto.length >= 3 && productosEncontrados.length === 0 && !productoSeleccionado && !resultadoProducto">
+            No se encontraron productos con "{{ terminoProducto }}"
+          </div>
+        </div>
+
+        <!-- Producto seleccionado (chip) -->
+        <div *ngIf="productoSeleccionado" class="di-selected">
+          <span class="di-selected__label">Producto seleccionado:</span>
+          <span class="di-selected__chip">
+            {{ productoSeleccionado.nombre }}
+            <span class="di-selected__id">ID {{ productoSeleccionado.idProducto }}</span>
+          </span>
+        </div>
+      </ng-container>
+
+      <!-- ═══ BÚSQUEDA VARIANTE ═══ -->
+      <ng-container *ngIf="tab === 'variante'">
+        <div class="di-endpoint">
+          <span class="di-endpoint__method">GET</span>
+          <span class="di-endpoint__url">/variantes/admin/diagnostico-imagenes/&#123;varianteId&#125;</span>
+        </div>
+
+        <div class="di-search-wrap">
+          <div class="di-search-box">
+            <span class="di-search-box__icon">🔍</span>
+            <input
+              class="di-search-box__input"
+              type="text"
+              placeholder="Buscar variante por nombre, color, talla o código (mín. 3 chars)…"
+              [value]="terminoVariante"
+              (input)="onBuscarVariante($event)"
+              autocomplete="off" />
+            <span *ngIf="buscandoVariante" class="di-search-box__spinner">
+              <span class="spinner-border spinner-border-sm"></span>
+            </span>
+          </div>
+
+          <!-- Dropdown resultados variante -->
+          <div class="di-dropdown" *ngIf="variantesEncontradas.length > 0">
+            <div
+              class="di-dropdown__item"
+              *ngFor="let v of variantesEncontradas"
+              (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
+              <div class="di-dropdown__main">
+                <span class="di-dropdown__name">{{ etiquetaVariante(v) }}</span>
+                <span class="di-dropdown__id">ID {{ v.id }}</span>
+              </div>
+              <div class="di-dropdown__sub">
+                <span *ngIf="v.codigoBarras" class="di-dropdown__code">{{ v.codigoBarras }}</span>
+                <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="(v.stock ?? 0) === 0">
+                  stock {{ v.stock ?? 0 }}
+                </span>
+                <span *ngIf="v.precio">{{ v.precio | currency:'$' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sin resultados -->
+          <div class="di-no-results" *ngIf="!buscandoVariante && terminoVariante.length >= 3 && variantesEncontradas.length === 0 && !varianteSeleccionada && !resultadoVariante">
+            No se encontraron variantes con "{{ terminoVariante }}"
+          </div>
+        </div>
+
+        <!-- Variante seleccionada (chip) -->
+        <div *ngIf="varianteSeleccionada" class="di-selected">
+          <span class="di-selected__label">Variante seleccionada:</span>
+          <span class="di-selected__chip">
+            {{ etiquetaVariante(varianteSeleccionada) }}
+            <span class="di-selected__id">ID {{ varianteSeleccionada.id }}</span>
+          </span>
+        </div>
+      </ng-container>
+
+      <!-- Cargando -->
+      <div *ngIf="cargando" class="di-loading">
+        <span class="spinner-border spinner-border-sm"></span>
+        Consultando diagnóstico…
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="error" class="di-error">
+        <span>⚠️</span> {{ error }}
+      </div>
+
+      <!-- ═══════════════ RESULTADO PRODUCTO ═══════════════ -->
+      <div *ngIf="resultadoProducto" class="di-result">
+
+        <div class="di-estado"
+             [class.di-estado--ok]="estadoProducto === 'ok'"
+             [class.di-estado--warn]="estadoProducto === 'archivo-perdido'"
+             [class.di-estado--error]="estadoProducto === 'sin-registro'">
+          <span *ngIf="estadoProducto === 'ok'">✅ Todo correcto — si no aparece, puede ser caché</span>
+          <span *ngIf="estadoProducto === 'archivo-perdido'">⚠️ BD tiene el registro pero el microservicio no tiene el archivo</span>
+          <span *ngIf="estadoProducto === 'sin-registro'">❌ Nunca se guardó imagen en la BD local</span>
+        </div>
+
+        <div class="di-grid">
+          <div class="di-field">
+            <span class="di-field__label">productoId</span>
+            <span class="di-field__value">{{ resultadoProducto.productoId }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-field__label">nombreProducto</span>
+            <span class="di-field__value">{{ resultadoProducto.nombreProducto }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-field__label">totalImagenesLocalDB</span>
+            <span class="di-badge"
+                  [class.di-badge--green]="resultadoProducto.totalImagenesLocalDB > 0"
+                  [class.di-badge--red]="resultadoProducto.totalImagenesLocalDB === 0">
+              {{ resultadoProducto.totalImagenesLocalDB }}
+            </span>
+          </div>
+          <div class="di-field">
+            <span class="di-field__label">imagenPresenteEnMicroservicio</span>
+            <span class="di-badge"
+                  [class.di-badge--green]="resultadoProducto.imagenPresenteEnMicroservicio"
+                  [class.di-badge--red]="!resultadoProducto.imagenPresenteEnMicroservicio">
+              {{ resultadoProducto.imagenPresenteEnMicroservicio }}
+            </span>
+          </div>
+          <div class="di-field di-field--full">
+            <span class="di-field__label">detalleExternoLista</span>
+            <span class="di-field__value di-field__mono">{{ resultadoProducto.detalleExternoLista }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="resultadoProducto.imagenesLocalDB.length > 0" class="di-imagenes">
+          <p class="di-imagenes__title">imagenesLocalDB ({{ resultadoProducto.imagenesLocalDB.length }})</p>
+          <div class="di-imagen-row" *ngFor="let img of resultadoProducto.imagenesLocalDB">
+            <span class="di-chip di-chip--id">#{{ img.imagenId }}</span>
+            <span class="di-chip">{{ img.nombreImagen }}</span>
+            <span class="di-chip di-chip--ext">.{{ img.extension }}</span>
+            <span class="di-chip di-chip--path">{{ img.rutaDisco }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ RESULTADO VARIANTE ═══════════════ -->
+      <div *ngIf="resultadoVariante" class="di-result">
+
+        <div class="di-estado"
+             [class.di-estado--ok]="estadoVariante === 'ok'"
+             [class.di-estado--warn]="estadoVariante === 'archivo-perdido'"
+             [class.di-estado--error]="estadoVariante === 'sin-registro'">
+          <span *ngIf="estadoVariante === 'ok'">✅ Todo correcto — si no aparece, puede ser caché</span>
+          <span *ngIf="estadoVariante === 'archivo-perdido'">⚠️ BD tiene registros pero el microservicio no tiene todos los archivos</span>
+          <span *ngIf="estadoVariante === 'sin-registro'">❌ Nunca se guardó imagen en la BD local</span>
+        </div>
+
+        <div class="di-grid">
+          <div class="di-field">
+            <span class="di-field__label">varianteId</span>
+            <span class="di-field__value">{{ resultadoVariante.varianteId }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-field__label">totalImagenesLocalDB</span>
+            <span class="di-badge"
+                  [class.di-badge--green]="resultadoVariante.totalImagenesLocalDB > 0"
+                  [class.di-badge--red]="resultadoVariante.totalImagenesLocalDB === 0">
+              {{ resultadoVariante.totalImagenesLocalDB }}
+            </span>
+          </div>
+          <div class="di-field">
+            <span class="di-field__label">consistente</span>
+            <span class="di-badge"
+                  [class.di-badge--green]="resultadoVariante.consistente"
+                  [class.di-badge--red]="!resultadoVariante.consistente">
+              {{ resultadoVariante.consistente }}
+            </span>
+          </div>
+
+          <div class="di-field di-field--full" *ngIf="resultadoVariante.idsConDatosEnMicroservicio.length > 0">
+            <span class="di-field__label">idsConDatosEnMicroservicio</span>
+            <div class="di-chips-row">
+              <span class="di-chip di-chip--green" *ngFor="let id of resultadoVariante.idsConDatosEnMicroservicio">✓ {{ id }}</span>
+            </div>
+          </div>
+
+          <div class="di-field di-field--full" *ngIf="resultadoVariante.idsSinDatosEnMicroservicio.length > 0">
+            <span class="di-field__label">idsSinDatosEnMicroservicio</span>
+            <div class="di-chips-row">
+              <span class="di-chip di-chip--red" *ngFor="let id of resultadoVariante.idsSinDatosEnMicroservicio">✗ {{ id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="resultadoVariante.imagenesLocalDB.length > 0" class="di-imagenes">
+          <p class="di-imagenes__title">imagenesLocalDB ({{ resultadoVariante.imagenesLocalDB.length }})</p>
+          <div class="di-imagen-row" *ngFor="let img of resultadoVariante.imagenesLocalDB">
+            <span class="di-chip di-chip--id">#{{ img.imagenId }}</span>
+            <span class="di-chip">{{ img.nombreImagen }}</span>
+            <span class="di-chip di-chip--ext">.{{ img.extension }}</span>
+            <span class="di-chip di-chip--path">{{ img.rutaDisco }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -110,6 +110,10 @@ export class VarianteService {
     return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/inicializarDesdeProducto`, form);
   }
 
+  diagnosticoImagenes(varianteId: number): Observable<any> {
+    return this.http.get(`${this.url}/admin/diagnostico-imagenes/${varianteId}`);
+  }
+
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {
     return this.http.post<any>(`${environment.api_Url}/pedidos/savePedido`, data);
   }

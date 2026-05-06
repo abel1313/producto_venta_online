@@ -148,4 +148,8 @@ export class ProductoService {
     descargarReporteExcel(): Observable<Blob> {
         return this.http.get(`${this.url}/admin/sin-variantes/reporte`, { responseType: 'blob' });
     }
+
+    diagnosticoImagenes(productoId: number): Observable<any> {
+        return this.http.get(`${this.url}/admin/diagnostico-imagenes/${productoId}`);
+    }
 }

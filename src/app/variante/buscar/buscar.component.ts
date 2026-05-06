@@ -27,6 +27,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   detalle: IDetalleVariante[] = [];
 
   private productoId = 0;
+  private reqId             = 0;
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
@@ -73,7 +74,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // ── Búsqueda ───────────────────────────────────────────────────────
 
   onBuscar(event: KeyboardEvent): void {
-    const termino = (event.target as HTMLInputElement).value;
+    const termino = (event.target as HTMLInputElement).value.trim();
     this.terminoBusqueda = termino;
     if (termino.length === 0) { this.buscarPagina('', 1); return; }
     if (termino.length < 3) return;
@@ -88,13 +89,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     ) return;
 
     this.buscando = true;
-    const esCodigoBarras = termino.length > 0 && /^\d+$/.test(termino);
-    const params = esCodigoBarras
-      ? { codigoBarras: termino, pagina, size: 10 }
-      : { nombre: termino,      pagina, size: 10 };
+    const id = ++this.reqId;
+    const params = { termino, pagina, size: 10 };
 
     this.varianteService.buscar(params).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
+        if (this.reqId !== id) return;
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
@@ -103,6 +103,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.buscando = false;
       },
       error: (err) => {
+        if (this.reqId !== id) return;
         this.buscando = false;
         if (err.status === 404) {
           this.variantes    = [];

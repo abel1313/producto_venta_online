@@ -142,12 +142,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   private buscarVariantes(termino: string): void {
     this.buscandoVariante = true;
-    const esCodigoBarras = /^\d+$/.test(termino);
-    const params = esCodigoBarras
-      ? { codigoBarras: termino, pagina: 1, size: 20 }
-      : { nombre: termino,      pagina: 1, size: 20 };
-
-    this.varianteService.buscar(params).subscribe({
+    this.varianteService.buscar({ termino, pagina: 1, size: 20 }).subscribe({
       next: res => { this.resultados = res.t ?? []; this.buscandoVariante = false; },
       error: ()  => { this.buscandoVariante = false; }
     });

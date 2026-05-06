@@ -74,7 +74,14 @@ export class LoginFormComponent implements OnInit {
         }
         this.errorMessage = '';
       },
-      error: () => { this.errorMessage = 'Usuario o contraseña incorrectos'; }
+      error: (error: any) => { 
+        this.errorMessage = 'Usuario o contraseña incorrectos'; 
+        if (error.status === 429) {
+          this.errorMessage = error.error ?? 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.';
+        }
+        console.log("que ror trae ", error);
+        
+      }
     });
   }
 }

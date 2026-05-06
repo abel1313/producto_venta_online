@@ -433,11 +433,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     if (!formValues) return;
 
     const form = new FormData();
-    form.append('request', JSON.stringify({
+  form.append(
+    'request',
+    new Blob([JSON.stringify({
       productoId: producto.idProducto,
       cantidadVariantes: formValues.cantidadVariantes,
       imagenParaTodas: formValues.imagenParaTodas
-    }));
+    })], { type: 'application/json' })
+  );
     if (formValues.files) {
       Array.from(formValues.files as FileList).forEach(f => form.append('files[]', f));
     }
@@ -503,10 +506,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.srvice.prodPaginaCache   === paginaPrimera
     ) return;
 
+    this.activeSearch = buscarProd;
+
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
+          if (this.activeSearch !== buscarProd) return;
           this.sinResultados = false;
           this.mensajeError  = '';
           this.paginacion = res;
@@ -515,6 +521,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           this.srvice.setProdCache(this.rows, paginaPrimera, this.totalPaginas, buscarProd);
         },
         error: (err) => {
+          if (this.activeSearch !== buscarProd) return;
           const esSinResultados = err.status === 404 || err.status === 400;
           if (esSinResultados) {
             this.rows = [];
@@ -601,6 +608,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   buscarProd: string = '';
+  private activeSearch = '';
   private destroy$ = new Subject<void>();
 
   ngOnDestroy(): void {

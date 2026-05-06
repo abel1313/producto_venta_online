@@ -66,12 +66,9 @@ export class VarianteService {
     ).pipe(map(res => res.data));
   }
 
-  buscar(params: { nombre?: string; codigoBarras?: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
-    const { nombre, codigoBarras, pagina = 1, size = 10 } = params;
-    let q = codigoBarras
-      ? `codigoBarras=${encodeURIComponent(codigoBarras)}`
-      : `nombre=${encodeURIComponent(nombre ?? '')}`;
-    q += `&pagina=${pagina}&size=${size}`;
+  buscar(params: { termino: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
+    const { termino, pagina = 1, size = 10 } = params;
+    const q = `termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`;
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar?${q}`)
       .pipe(map(res => res.data));
   }

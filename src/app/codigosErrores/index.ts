@@ -1,0 +1,1 @@
+export { CodigosErrores } from './erorr.mode';

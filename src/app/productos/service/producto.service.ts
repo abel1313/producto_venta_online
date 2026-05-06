@@ -142,7 +142,7 @@ export class ProductoService {
     }
 
     habilitarProducto(id: number, habilitar: boolean): Observable<any> {
-        return this.http.patch(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, null);
+        return this.http.put(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, {});
     }
 
     descargarReporteExcel(): Observable<Blob> {

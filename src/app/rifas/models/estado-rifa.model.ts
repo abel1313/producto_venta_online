@@ -1,26 +1,28 @@
 import { IConcursante } from './concursante.model';
-import { IConfigurarRifa, IConfigurarRifaProducto } from './configurar-rifa.model';
+import { IConfigurarRifa, IConfigurarRifaVariante, IVarianteRifaResumen } from './configurar-rifa.model';
 import { IGanadorRifa } from './ganador-rifa.model';
 
-export interface IHistorialProducto {
-  producto: { id: number; nombre: string };
-  ganador: IConcursante;
-  descartados: IConcursante[];
+export interface IHistorialVariante {
+  orden: number;
+  configurarRifaVariante: {
+    palabraClave: string;
+    variante: IVarianteRifaResumen;
+  };
+  concursanteGanador: IConcursante;
+  modoContinuacion?: string;
 }
 
 export interface IEstadoRifa {
   configurarRifa: IConfigurarRifa;
-  productoActual: IConfigurarRifaProducto | null;
+  totalConcursantes: number;
+  totalVariantes: number;
+  varianteNumeroActual: number;
+  varianteActual: IConfigurarRifaVariante | null;
   giroActual: number;
   giroGanador: number;
-  totalProductos: number;
-  productoNumeroActual: number;
   elegibles: IConcursante[];
   descartados: IConcursante[];
   ganador: IGanadorRifa | null;
   rifaTerminada: boolean;
-  historial: IHistorialProducto[];
-  // legacy
-  totalConcursantes?: number;
-  vueltaActual?: number;
+  historial: IHistorialVariante[];
 }

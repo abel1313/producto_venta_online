@@ -595,6 +595,333 @@
   &__body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 }
 
+// ── Cards de variantes ─────────────────────────────────────────────
+.rf-variantes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.rf-var-card {
+  position: relative;
+  background: #f9f8ff;
+  border: 1.5px solid #e5e0ff;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+
+  &:hover { box-shadow: 0 4px 16px rgba(124,58,237,0.18); }
+
+  &__img {
+    height: 100px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__no-img { font-size: 2rem; }
+
+  &__body { padding: 10px 12px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+
+  &__nombre { font-size: 0.88rem; font-weight: 700; color: #111827; margin: 0; }
+
+  &__meta { font-size: 0.75rem; color: #6b7280; display: flex; gap: 6px; }
+
+  &__row { display: flex; justify-content: space-between; align-items: center; }
+
+  &__stock  { font-size: 0.75rem; color: #166534; font-weight: 600; }
+  &__codigo { font-size: 0.7rem;  color: #9ca3af; font-family: monospace; }
+
+  &__clave { font-size: 0.75rem; font-weight: 700; color: #7c3aed;
+             background: #ede9fe; border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
+
+  &__giro { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+
+  &__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-top: 1px solid #e5e0ff;
+    background: rgba(255,255,255,0.6);
+  }
+
+  &__orden {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #7c3aed;
+  }
+}
+
+// ── Hover/tap modal de variante ────────────────────────────────────
+.rf-hover-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &__card {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__close {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 1rem; color: #6b7280;
+  }
+
+  &__img { width: 100%; height: 160px; object-fit: cover; border-radius: 10px; }
+
+  &__no-img {
+    height: 120px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #9ca3af;
+  }
+
+  &__nombre { font-size: 1rem; font-weight: 700; color: #111827; margin: 0; }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 4px;
+  }
+
+  &__label { color: #9ca3af; }
+
+  &__code { font-family: monospace; color: #374151; }
+}
+
+// ── Chip seleccionado ──────────────────────────────────────────────
+.rf-chip-seleccionado {
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5b21b6;
+}
+
+// ── Switch label ───────────────────────────────────────────────────
+.rf-switch-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+// ── Importar clientes ──────────────────────────────────────────────
+.rf-importar {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__title { font-size: 0.88rem; font-weight: 700; color: #166534; margin: 0; }
+}
+
+.rf-clientes-lista { display: flex; flex-direction: column; gap: 6px; }
+
+.rf-clientes-head { font-size: 0.82rem; color: #374151; }
+
+.rf-cliente-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #dcfce7;
+
+  &--vacio { background: #fffbeb; border-radius: 6px; padding: 4px 8px; }
+}
+
+.rf-badge-sin-registro {
+  font-size: 0.7rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 8px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.rf-input--sm { padding: 5px 8px; font-size: 0.82rem; }
+
+// ── Tabla de participantes ─────────────────────────────────────────
+.rf-tabla {
+  overflow-x: auto;
+  border-radius: 9px;
+  border: 1px solid #e5e7eb;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 28px 1fr 90px 90px 28px;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    align-items: center;
+    border-bottom: 1px solid #f3f4f6;
+    &:last-child { border-bottom: none; }
+  }
+
+  &__head {
+    background: #f9fafb;
+    font-weight: 700;
+    color: #374151;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
+  &__badge {
+    background: #ede9fe;
+    color: #5b21b6;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+}
+
+// ── Sección activas ────────────────────────────────────────────────
+.rf-section-title { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 8px; padding: 12px 20px 0; }
+
+.rf-activa-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid rgba(134,239,172,0.3);
+  &:last-child { border-bottom: none; }
+}
+
+.rf-activa-info { display: flex; flex-direction: column; gap: 2px; }
+.rf-activa-id   { font-weight: 700; color: #166534; font-size: 0.9rem; }
+.rf-activa-fecha { font-size: 0.78rem; color: #6b7280; }
+.rf-activa-prog  { font-size: 0.75rem; color: #7c3aed; font-weight: 600; }
+
+// ── Modos de transición ────────────────────────────────────────────
+.rf-transicion__sub {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 8px 0 4px;
+}
+
+.rf-modos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.rf-modo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: left;
+  width: 100%;
+
+  &:hover { border-color: #7c3aed; background: #f5f3ff; }
+
+  &--active { border-color: #7c3aed; background: #ede9fe; }
+
+  &__icon  { font-size: 1.2rem; }
+  &__label { font-size: 0.9rem; font-weight: 700; color: #111827; }
+  &__desc  { font-size: 0.78rem; color: #6b7280; }
+}
+
+// ── Form nuevos en transición ──────────────────────────────────────
+.rf-nuevos-form {
+  background: #f9f8ff;
+  border: 1px solid #e5e0ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__title { font-size: 0.88rem; font-weight: 700; color: #5b21b6; margin: 0; }
+}
+
+// ── Resumen variante ───────────────────────────────────────────────
+.rf-resumen__variante {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+
+.rf-resumen__var-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rf-resumen__clave {
+  font-size: 0.72rem;
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.rf-resumen__ganador { font-size: 0.88rem; color: #166534; margin: 0; }
+
+// ── Required ───────────────────────────────────────────────────────
+.rf-required { color: #ef4444; margin-left: 2px; }
+
+// ── Form participante ──────────────────────────────────────────────
+.rf-form-participante { display: flex; flex-direction: column; gap: 10px; }
+.rf-form-variante     { display: flex; flex-direction: column; gap: 12px;
+                         background: #f9f8ff; border: 1px solid #e5e0ff;
+                         border-radius: 10px; padding: 14px; }
+
 // ── Confetti ──────────────────────────────────────────────────────────
 .confetti-container {
   position: fixed;

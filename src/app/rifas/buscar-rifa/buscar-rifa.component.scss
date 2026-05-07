@@ -102,6 +102,23 @@
   }
 }
 
+// ── Barra de progreso ──────────────────────────────────────────────
+.br-progress {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+
+  &__bar {
+    height: 100%;
+    background: linear-gradient(90deg, #5b21b6, #7c3aed);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    min-width: 4px;
+  }
+}
+
 .br-btn {
   width: 100%;
   padding: 9px;

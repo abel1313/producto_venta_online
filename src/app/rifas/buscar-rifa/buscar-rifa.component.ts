@@ -11,7 +11,7 @@ import { RifaService } from '../service/rifa.service';
 export class BuscarRifaComponent implements OnInit {
 
   tab: 'hoy' | 'todas' = 'hoy';
-  rifasHoy: IConfigurarRifa[] = [];
+  rifasHoy: IConfigurarRifa[]   = [];
   rifasTodas: IConfigurarRifa[] = [];
   cargando = false;
 
@@ -20,29 +20,27 @@ export class BuscarRifaComponent implements OnInit {
     private readonly router: Router
   ) {}
 
-  ngOnInit(): void {
-    this.cargarHoy();
-  }
+  ngOnInit(): void { this.cargarHoy(); }
 
   cambiarTab(tab: 'hoy' | 'todas'): void {
     this.tab = tab;
-    if (tab === 'hoy' && this.rifasHoy.length === 0) this.cargarHoy();
-    if (tab === 'todas' && this.rifasTodas.length === 0) this.cargarTodas();
+    if (tab === 'hoy'   && this.rifasHoy.length   === 0) this.cargarHoy();
+    if (tab === 'todas' && this.rifasTodas.length  === 0) this.cargarTodas();
   }
 
   cargarHoy(): void {
     this.cargando = true;
     this.rifaService.getConfiguracionesHoy().subscribe({
-      next: res => { this.rifasHoy = res.data ?? []; this.cargando = false; },
-      error: () => { this.cargando = false; },
+      next: res => { this.rifasHoy = res; this.cargando = false; },
+      error: ()  => { this.cargando = false; }
     });
   }
 
   cargarTodas(): void {
     this.cargando = true;
     this.rifaService.getConfiguracionesActivas().subscribe({
-      next: res => { this.rifasTodas = res.data ?? []; this.cargando = false; },
-      error: () => { this.cargando = false; },
+      next: res => { this.rifasTodas = res; this.cargando = false; },
+      error: ()  => { this.cargando = false; }
     });
   }
 
@@ -52,5 +50,15 @@ export class BuscarRifaComponent implements OnInit {
 
   get rifasMostradas(): IConfigurarRifa[] {
     return this.tab === 'hoy' ? this.rifasHoy : this.rifasTodas;
+  }
+
+  progreso(r: IConfigurarRifa): string {
+    if (!r.totalVariantes) return '';
+    return `${r.variantesSorteadas ?? 0}/${r.totalVariantes} variantes`;
+  }
+
+  pct(r: IConfigurarRifa): number {
+    if (!r.totalVariantes) return 0;
+    return Math.round(((r.variantesSorteadas ?? 0) / r.totalVariantes) * 100);
   }
 }

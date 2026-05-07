@@ -59,6 +59,7 @@ export interface IVarianteResumen {
   imagenBase64?: string | null;
   precio?: number | null;
   codigoBarras?: string | null;
+  nombreProducto?: string | null;
 }
 
 export interface IVarianteResumenPaginable {

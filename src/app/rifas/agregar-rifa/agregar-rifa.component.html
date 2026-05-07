@@ -1,33 +1,30 @@
-<!-- ════════════════════════════════════════════════════════════
-     CONFETTI
-════════════════════════════════════════════════════════════ -->
+<!-- ── Confetti ──────────────────────────────────────────────────────── -->
 <div class="confetti-container" *ngIf="confettiPieces.length">
-  <div class="confetti-piece"
-       *ngFor="let p of confettiPieces"
-       [style.left]="p.left"
-       [style.background-color]="p.color"
-       [style.animation-delay]="p.delay"
-       [style.animation-duration]="p.duration"
-       [style.width]="p.size"
-       [style.height]="p.size">
-  </div>
+  <div class="confetti-piece" *ngFor="let p of confettiPieces"
+       [style.left]="p.left" [style.background-color]="p.color"
+       [style.animation-delay]="p.delay" [style.animation-duration]="p.duration"
+       [style.width]="p.size" [style.height]="p.size"></div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════
-     PASO: CONFIGURAR
-════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════ PASO: CONFIGURAR ════════════════════════ -->
 <div class="rf-page" *ngIf="paso === 'configurar'">
 
-  <!-- Rifas activas para retomar -->
+  <!-- Rifas activas -->
   <div class="rf-card rf-card--activas" *ngIf="rifasActivas.length > 0">
-    <h5 class="rf-card__title">🔄 Rifas activas — retomar</h5>
+    <h5 class="rf-section-title">🔄 Rifas activas — retomar</h5>
     <div class="rf-activa-row" *ngFor="let r of rifasActivas">
-      <span>Rifa #{{ r.id }} · {{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
-      <button class="rf-btn rf-btn--outline" (click)="retomarRifa(r)">Retomar</button>
+      <div class="rf-activa-info">
+        <span class="rf-activa-id">Rifa #{{ r.id }}</span>
+        <span class="rf-activa-fecha">{{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="r.totalVariantes" class="rf-activa-prog">
+          {{ r.variantesSorteadas }}/{{ r.totalVariantes }} variantes
+        </span>
+      </div>
+      <button class="rf-btn rf-btn--sm rf-btn--outline" (click)="retomarRifa(r)">Retomar</button>
     </div>
   </div>
 
-  <!-- ── Sección A: Datos generales ──────────────────────────────── -->
+  <!-- ── Sección A ──────────────────────────────────────────────────── -->
   <div class="rf-card">
     <div class="rf-card__head rf-card__head--purple">
       <span class="rf-card__step">A</span>
@@ -36,13 +33,11 @@
         <p class="rf-card__sub" *ngIf="rifaConfig?.id">Rifa #{{ rifaConfig!.id }} guardada ✅</p>
       </div>
     </div>
-
     <form [formGroup]="configForm" class="rf-body">
       <div class="rf-field">
         <label class="rf-label">Fecha y hora límite de registro</label>
         <input class="rf-input" type="datetime-local" formControlName="fechaHoraLimite" />
       </div>
-
       <button class="rf-btn rf-btn--primary"
               (click)="guardarConfiguracion()"
               [disabled]="configForm.invalid || savingConfig || !!rifaConfig?.id">
@@ -54,88 +49,144 @@
     </form>
   </div>
 
-  <!-- ── Sección B: Productos de la rifa ────────────────────────── -->
+  <!-- ── Sección B ──────────────────────────────────────────────────── -->
   <div class="rf-card" [class.rf-card--disabled]="!rifaConfig?.id">
     <div class="rf-card__head rf-card__head--blue">
       <span class="rf-card__step">B</span>
       <div>
-        <h4 class="rf-card__title">Productos de la rifa</h4>
-        <p class="rf-card__sub">{{ productosRifa.length }} producto(s) agregado(s)</p>
+        <h4 class="rf-card__title">Variantes a rifar</h4>
+        <p class="rf-card__sub">{{ variantesRifa.length }} variante(s) agregada(s)</p>
       </div>
       <button class="rf-btn rf-btn--sm rf-btn--outline ms-auto"
-              (click)="mostrarFormProducto = !mostrarFormProducto"
+              (click)="mostrarFormVariante = !mostrarFormVariante"
               [disabled]="!rifaConfig?.id">
-        {{ mostrarFormProducto ? '✕ Cancelar' : '+ Agregar producto' }}
+        {{ mostrarFormVariante ? '✕ Cancelar' : '+ Agregar variante' }}
       </button>
     </div>
 
     <div class="rf-body">
 
-      <!-- Lista de productos -->
-      <div class="rf-productos-lista" *ngIf="productosRifa.length > 0">
-        <div class="rf-prod-row" *ngFor="let p of productosRifa; let i = index">
-          <div class="rf-prod-orden">
-            <button class="rf-arrow-btn" (click)="moverProducto(i, -1)" [disabled]="i === 0">↑</button>
-            <span class="rf-prod-orden__num">{{ p.orden }}</span>
-            <button class="rf-arrow-btn" (click)="moverProducto(i, 1)" [disabled]="i === productosRifa.length - 1">↓</button>
+      <!-- Cards de variantes seleccionadas -->
+      <div class="rf-variantes-grid" *ngIf="variantesRifa.length > 0">
+        <div class="rf-var-card"
+             *ngFor="let v of variantesRifa; let i = index"
+             (mouseenter)="mostrarHover(v)"
+             (mouseleave)="ocultarHover()"
+             (click)="mostrarHover(varianteHover === v ? null! : v)">
+
+          <!-- imagen miniatura -->
+          <div class="rf-var-card__img">
+            <img *ngIf="imageSrcVariante(v) as src" [src]="src" alt="" />
+            <span *ngIf="!imageSrcVariante(v)" class="rf-var-card__no-img">📦</span>
           </div>
-          <div class="rf-prod-info">
-            <span class="rf-prod-nombre">{{ p.producto.nombre }}</span>
-            <span class="rf-prod-meta">Giro ganador: {{ p.giroGanador }}</span>
-            <span class="rf-prod-badge" [class.rf-prod-badge--on]="p.permitirNuevos">
-              {{ p.permitirNuevos ? '✅ Permite nuevos' : '🔒 Sin nuevos' }}
-            </span>
+
+          <div class="rf-var-card__body">
+            <p class="rf-var-card__nombre">{{ v.variante.nombreProducto }}</p>
+            <div class="rf-var-card__meta">
+              <span *ngIf="v.variante.talla">{{ v.variante.talla }}</span>
+              <span *ngIf="v.variante.color">{{ v.variante.color }}</span>
+            </div>
+            <div class="rf-var-card__row">
+              <span class="rf-var-card__stock">Stock: {{ v.variante.stock }}</span>
+              <span class="rf-var-card__codigo" *ngIf="v.variante.codigoBarras">{{ v.variante.codigoBarras }}</span>
+            </div>
+            <div class="rf-var-card__clave">🔑 {{ v.palabraClave }}</div>
+            <div class="rf-var-card__giro">Giro ganador: {{ v.giroGanador }}</div>
+          </div>
+
+          <!-- orden y acciones -->
+          <div class="rf-var-card__actions">
+            <div class="rf-var-card__orden">
+              <button class="rf-arrow-btn" (click)="moverVariante(i, -1); $event.stopPropagation()" [disabled]="i === 0">↑</button>
+              <span>{{ v.orden }}</span>
+              <button class="rf-arrow-btn" (click)="moverVariante(i, 1); $event.stopPropagation()" [disabled]="i === variantesRifa.length - 1">↓</button>
+            </div>
+            <button class="rf-del-btn" (click)="eliminarVarianteRifa(v); $event.stopPropagation()" title="Eliminar">✕</button>
           </div>
         </div>
       </div>
 
-      <!-- Form agregar producto -->
-      <div class="rf-form-producto" *ngIf="mostrarFormProducto">
+      <!-- Hover/tap modal -->
+      <div class="rf-hover-modal" *ngIf="varianteHover" (click)="ocultarHover()">
+        <div class="rf-hover-modal__card" (click)="$event.stopPropagation()">
+          <button class="rf-hover-modal__close" (click)="ocultarHover()">✕</button>
+          <img *ngIf="imageSrcVariante(varianteHover) as src" [src]="src" class="rf-hover-modal__img" />
+          <div *ngIf="!imageSrcVariante(varianteHover)" class="rf-hover-modal__no-img">📦 Sin imagen</div>
+          <h5 class="rf-hover-modal__nombre">{{ varianteHover.variante.nombreProducto }}</h5>
+          <div class="rf-hover-modal__row" *ngIf="varianteHover.variante.talla">
+            <span class="rf-hover-modal__label">Talla</span>
+            <span>{{ varianteHover.variante.talla }}</span>
+          </div>
+          <div class="rf-hover-modal__row" *ngIf="varianteHover.variante.color">
+            <span class="rf-hover-modal__label">Color</span>
+            <span>{{ varianteHover.variante.color }}</span>
+          </div>
+          <div class="rf-hover-modal__row">
+            <span class="rf-hover-modal__label">Stock</span>
+            <span>{{ varianteHover.variante.stock }}</span>
+          </div>
+          <div class="rf-hover-modal__row" *ngIf="varianteHover.variante.codigoBarras">
+            <span class="rf-hover-modal__label">Código</span>
+            <span class="rf-hover-modal__code">{{ varianteHover.variante.codigoBarras }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form agregar variante -->
+      <div class="rf-form-variante" *ngIf="mostrarFormVariante">
         <div class="rf-search-wrap">
           <div class="rf-search-box">
             <span>🔍</span>
-            <input class="rf-search-input"
-                   type="text"
-                   placeholder="Buscar producto por nombre o código…"
-                   [value]="terminoBuscaProducto"
-                   (input)="onBuscarProducto($event)"
+            <input class="rf-search-input" type="text"
+                   placeholder="Buscar variante por nombre, color, talla o código…"
+                   [value]="terminoBusca"
+                   (input)="onBuscarVariante($event)"
                    autocomplete="off" />
+            <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
           </div>
-          <div class="rf-dropdown" *ngIf="productosBusqueda.length > 0">
-            <div class="rf-dropdown__item"
-                 *ngFor="let p of productosBusqueda"
-                 (mousedown)="$event.preventDefault(); seleccionarProductoParaAgregar(p)">
-              <span class="rf-dropdown__name">{{ p.nombre }}</span>
-              <span class="rf-dropdown__meta">ID {{ p.idProducto }} · stock {{ p.stock }}</span>
+          <div class="rf-dropdown" *ngIf="variantesBusqueda.length > 0">
+            <div class="rf-dropdown__item" *ngFor="let v of variantesBusqueda"
+                 (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
+              <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
+              <span class="rf-dropdown__meta">
+                Stock {{ v.stock }}
+                <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras }}</span>
+              </span>
             </div>
           </div>
         </div>
 
-        <div class="rf-field" *ngIf="productoParaAgregar">
-          <label class="rf-label">Producto seleccionado</label>
-          <span class="rf-chip rf-chip--purple">{{ productoParaAgregar.nombre }}</span>
+        <div class="rf-chip-seleccionado" *ngIf="varianteParaAgregar">
+          ✅ {{ varianteParaAgregar.nombreProducto }} {{ varianteParaAgregar.talla }} {{ varianteParaAgregar.color }}
+          — Stock: {{ varianteParaAgregar.stock }}
         </div>
 
         <div class="rf-row">
           <div class="rf-field rf-field--flex1">
-            <label class="rf-label">¿En qué giro cae el ganador? (mín. 1)</label>
-            <input class="rf-input" type="number" min="1" [(ngModel)]="giroGanadorInput" />
+            <label class="rf-label">Palabra clave <span class="rf-required">*</span></label>
+            <input class="rf-input" type="text" placeholder="Ej. BOLSA, PANTALON…"
+                   [(ngModel)]="palabraClaveInput"
+                   (input)="palabraClaveInput = palabraClaveInput.toUpperCase()" />
           </div>
           <div class="rf-field rf-field--flex1">
-            <label class="rf-label">¿Permitir agregar participantes en este producto?</label>
-            <label class="rf-switch">
-              <input type="checkbox" [(ngModel)]="permitirNuevosInput" />
-              <span class="rf-switch__slider"></span>
-              <span class="rf-switch__label">{{ permitirNuevosInput ? 'Sí' : 'No' }}</span>
-            </label>
+            <label class="rf-label">¿En qué giro cae el ganador? <span class="rf-required">*</span></label>
+            <input class="rf-input" type="number" min="1" [(ngModel)]="giroGanadorInput" />
           </div>
         </div>
 
+        <label class="rf-switch-label">
+          <div class="rf-switch">
+            <input type="checkbox" [(ngModel)]="permitirNuevosInput" />
+            <span class="rf-switch__slider"></span>
+          </div>
+          Permitir agregar participantes nuevos durante este sorteo
+        </label>
+
         <button class="rf-btn rf-btn--primary"
-                (click)="guardarProductoRifa()"
-                [disabled]="!productoParaAgregar || giroGanadorInput < 1 || guardandoProducto">
-          <span *ngIf="!guardandoProducto">✅ Confirmar producto</span>
-          <span *ngIf="guardandoProducto" class="d-flex gap-2 align-items-center">
+                (click)="guardarVarianteRifa()"
+                [disabled]="!varianteParaAgregar || !palabraClaveInput.trim() || giroGanadorInput < 1 || guardandoVariante">
+          <span *ngIf="!guardandoVariante">✅ Confirmar variante</span>
+          <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
             <span class="spinner-border spinner-border-sm"></span> Guardando…
           </span>
         </button>
@@ -144,7 +195,7 @@
     </div>
   </div>
 
-  <!-- ── Sección C: Participantes ────────────────────────────────── -->
+  <!-- ── Sección C ──────────────────────────────────────────────────── -->
   <div class="rf-card" [class.rf-card--disabled]="!rifaConfig?.id">
     <div class="rf-card__head rf-card__head--green">
       <span class="rf-card__step">C</span>
@@ -152,16 +203,18 @@
         <h4 class="rf-card__title">Participantes</h4>
         <p class="rf-card__sub">{{ concursantes.length }} registrado(s)</p>
       </div>
-      <div class="d-flex gap-2 ms-auto">
+      <div class="d-flex gap-2 ms-auto flex-wrap">
         <button class="rf-btn rf-btn--sm rf-btn--outline"
-                (click)="verElegibles()"
-                [disabled]="!rifaConfig?.id">
+                (click)="verElegibles()" [disabled]="!rifaConfig?.id">
           👀 Ver elegibles
         </button>
         <button class="rf-btn rf-btn--sm rf-btn--outline"
-                (click)="mostrarFormConcursante = !mostrarFormConcursante"
-                [disabled]="!rifaConfig?.id">
-          {{ mostrarFormConcursante ? '✕ Cancelar' : '+ Agregar' }}
+                (click)="mostrarImportar = !mostrarImportar" [disabled]="!rifaConfig?.id">
+          📅 Importar del mes
+        </button>
+        <button class="rf-btn rf-btn--sm rf-btn--outline"
+                (click)="mostrarFormParticipante = !mostrarFormParticipante" [disabled]="!rifaConfig?.id">
+          {{ mostrarFormParticipante ? '✕ Cancelar' : '+ Agregar' }}
         </button>
       </div>
     </div>
@@ -169,7 +222,7 @@
     <div class="rf-body">
 
       <!-- Form agregar participante -->
-      <form [formGroup]="concursanteForm" class="rf-form-concursante" *ngIf="mostrarFormConcursante">
+      <form [formGroup]="concursanteForm" class="rf-form-participante" *ngIf="mostrarFormParticipante">
         <div class="rf-row">
           <div class="rf-field rf-field--flex1">
             <label class="rf-label">Nombre</label>
@@ -177,53 +230,102 @@
           </div>
           <div class="rf-field rf-field--flex1">
             <label class="rf-label">Apellido</label>
-            <input class="rf-input" formControlName="apellidoPaterno" placeholder="Apellido" />
+            <input class="rf-input" formControlName="apellidoPaterno" placeholder="Apellido paterno" />
           </div>
         </div>
         <div class="rf-row">
           <div class="rf-field rf-field--flex1">
-            <label class="rf-label">Palabra rifa</label>
-            <input class="rf-input" formControlName="palabraRifa" placeholder="Palabra rifa" />
-          </div>
-          <div class="rf-field rf-field--flex1">
             <label class="rf-label">Teléfono (10 dígitos)</label>
             <input class="rf-input" formControlName="telefono" placeholder="0000000000" />
           </div>
+          <div class="rf-field rf-field--flex1">
+            <label class="rf-label">Palabra clave <span class="rf-required">*</span></label>
+            <select class="rf-input" formControlName="palabraClave">
+              <option value="" disabled>Selecciona palabra…</option>
+              <option *ngFor="let p of palabrasClave" [value]="p">{{ p }}</option>
+            </select>
+          </div>
         </div>
-        <div class="rf-row rf-row--check">
-          <label class="rf-check-label">
-            <input type="checkbox" [(ngModel)]="forzarRegistro" [ngModelOptions]="{standalone: true}" />
-            Forzar registro (permitir duplicado)
-          </label>
+        <button class="rf-btn rf-btn--primary"
+                (click)="agregarConcursante()"
+                [disabled]="concursanteForm.invalid || guardandoConcursante">
+          <span *ngIf="!guardandoConcursante">Registrar</span>
+          <span *ngIf="guardandoConcursante" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span>
+          </span>
+        </button>
+      </form>
+
+      <!-- Importar desde pedidos del mes -->
+      <div class="rf-importar" *ngIf="mostrarImportar">
+        <h6 class="rf-importar__title">📅 Importar clientes del mes</h6>
+        <div class="rf-row">
+          <div class="rf-field rf-field--flex1">
+            <label class="rf-label">Mes</label>
+            <input class="rf-input" type="month" [(ngModel)]="mesSeleccionado" />
+          </div>
+          <div class="rf-field rf-field--flex1">
+            <label class="rf-label">Palabra clave para estos clientes</label>
+            <select class="rf-input" [(ngModel)]="palabraClaveImport">
+              <option value="" disabled>Selecciona…</option>
+              <option *ngFor="let p of palabrasClave" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+          <button class="rf-btn rf-btn--outline rf-btn--sm" style="align-self:flex-end"
+                  (click)="cargarClientesMes()" [disabled]="!mesSeleccionado || cargandoClientes">
+            <span *ngIf="!cargandoClientes">Buscar</span>
+            <span *ngIf="cargandoClientes" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+
+        <div class="rf-clientes-lista" *ngIf="clientesMes.length > 0">
+          <div class="rf-clientes-head">
+            <label class="rf-check-label">
+              <input type="checkbox" (change)="seleccionarTodosClientes()" />
+              Seleccionar todos ({{ clientesMes.length }})
+            </label>
+          </div>
+          <div class="rf-cliente-row" *ngFor="let c of clientesMes; let i = index"
+               [class.rf-cliente-row--vacio]="!c.nombre">
+            <input type="checkbox"
+                   [checked]="clientesSeleccionados.has(i)"
+                   (change)="toggleClienteSeleccionado(i)" />
+            <input class="rf-input rf-input--sm" [(ngModel)]="c.nombre" placeholder="Nombre" />
+            <input class="rf-input rf-input--sm" [(ngModel)]="c.apellidoPaterno" placeholder="Apellido" />
+            <input class="rf-input rf-input--sm" [(ngModel)]="c.telefono" placeholder="Teléfono" />
+            <span *ngIf="!c.clientePedidoId" class="rf-badge-sin-registro">Sin registro</span>
+          </div>
+
           <button class="rf-btn rf-btn--primary"
-                  (click)="agregarConcursante()"
-                  [disabled]="concursanteForm.invalid || guardandoConcursante">
-            <span *ngIf="!guardandoConcursante">Registrar</span>
-            <span *ngIf="guardandoConcursante" class="d-flex gap-2 align-items-center">
-              <span class="spinner-border spinner-border-sm"></span>
+                  (click)="importarClientes()"
+                  [disabled]="clientesSeleccionados.size === 0 || !palabraClaveImport || importando">
+            <span *ngIf="!importando">⬇️ Importar {{ clientesSeleccionados.size }} cliente(s)</span>
+            <span *ngIf="importando" class="d-flex gap-2 align-items-center">
+              <span class="spinner-border spinner-border-sm"></span> Importando…
             </span>
           </button>
         </div>
-      </form>
+      </div>
 
-      <!-- Lista elegibles cargados -->
-      <div class="rf-elegibles" *ngIf="elegibles.length > 0">
-        <p class="rf-elegibles__title">👀 Elegibles ({{ elegibles.length }})</p>
-        <div class="rf-elegible-row" *ngFor="let e of elegibles">
-          {{ e.nombre }} {{ e.apellidoPaterno }} · {{ e.palabraRifa }}
+      <!-- Elegibles cargados -->
+      <div class="rf-elegibles" *ngIf="elegiblesVista.length > 0">
+        <p class="rf-elegibles__title">👀 Elegibles ({{ elegiblesVista.length }})</p>
+        <div class="rf-elegible-row" *ngFor="let e of elegiblesVista">
+          {{ e.nombre }} {{ e.apellidoPaterno }}
+          <span class="rf-panel__word">{{ e.palabraClave }}</span>
         </div>
       </div>
 
-      <!-- Tabla concursantes -->
+      <!-- Tabla participantes -->
       <div class="rf-tabla" *ngIf="concursantes.length > 0">
         <div class="rf-tabla__row rf-tabla__head">
-          <span>#</span><span>Nombre</span><span>Palabra</span><span>Tel.</span><span></span>
+          <span>#</span><span>Nombre</span><span>Tel.</span><span>Palabra</span><span></span>
         </div>
         <div class="rf-tabla__row" *ngFor="let c of concursantes; let i = index">
           <span>{{ i + 1 }}</span>
           <span>{{ c.nombre }} {{ c.apellidoPaterno }}</span>
-          <span>{{ c.palabraRifa }}</span>
           <span>{{ c.telefono }}</span>
+          <span class="rf-tabla__badge">{{ c.palabraClave }}</span>
           <button class="rf-del-btn" (click)="eliminarConcursante(c)">✕</button>
         </div>
       </div>
@@ -232,41 +334,35 @@
     </div>
   </div>
 
-  <!-- Botón iniciar rifa -->
-  <button class="rf-btn rf-btn--start"
-          [disabled]="!puedeIrARuleta"
-          (click)="irARuleta()">
+  <!-- Botón iniciar -->
+  <button class="rf-btn rf-btn--start" [disabled]="!puedeIrARuleta" (click)="irARuleta()">
     🎡 Iniciar rifa
   </button>
 
 </div>
 
-<!-- ════════════════════════════════════════════════════════════
-     PASO: RULETA
-════════════════════════════════════════════════════════════ -->
+<!-- ═════════════════════════ PASO: RULETA ═════════════════════════ -->
 <div class="rf-page rf-ruleta" *ngIf="paso === 'ruleta'">
 
-  <!-- Header progreso de productos -->
+  <!-- Header: progreso + giro -->
   <div class="rf-ruleta__header">
     <div class="rf-progreso">
       <div class="rf-prog-chip"
-           *ngFor="let p of productosRifa; let i = index"
-           [class.rf-prog-chip--done]="i < productoNumActual - 1"
-           [class.rf-prog-chip--current]="i === productoNumActual - 1"
-           [class.rf-prog-chip--pending]="i > productoNumActual - 1">
-        <span *ngIf="i < productoNumActual - 1">✓ {{ p.producto.nombre }}</span>
-        <span *ngIf="i === productoNumActual - 1">🎯 {{ p.producto.nombre }}</span>
-        <span *ngIf="i > productoNumActual - 1">⏳ {{ p.producto.nombre }}</span>
+           *ngFor="let v of variantesRifa; let i = index"
+           [class.rf-prog-chip--done]="i < varianteNumActual - 1"
+           [class.rf-prog-chip--current]="i === varianteNumActual - 1"
+           [class.rf-prog-chip--pending]="i > varianteNumActual - 1">
+        <span *ngIf="i < varianteNumActual - 1">✓ {{ v.variante.nombreProducto }}</span>
+        <span *ngIf="i === varianteNumActual - 1">🎯 {{ v.variante.nombreProducto }}</span>
+        <span *ngIf="i > varianteNumActual - 1">⏳ {{ v.variante.nombreProducto }}</span>
       </div>
     </div>
-
     <div class="rf-giro-badge" [class.rf-giro-badge--ganador]="esGiroGanador">
       Giro {{ giroActual }} de {{ giroGanador }}
-      <span *ngIf="esGiroGanador" class="rf-giro-badge__star"> ⭐ ¡Este es el giro del ganador!</span>
+      <span *ngIf="esGiroGanador"> ⭐ ¡Giro del ganador!</span>
     </div>
   </div>
 
-  <!-- Layout -->
   <div class="rf-ruleta__layout">
 
     <!-- Izquierda: ruleta -->
@@ -277,9 +373,9 @@
       </div>
 
       <div class="rf-alert rf-alert--warn" *ngIf="descartadoActual">
-        <strong>❌ Descartado:</strong>
+        ❌ <strong>Descartado:</strong>
         {{ descartadoActual.nombre }} {{ descartadoActual.apellidoPaterno }}
-        — "{{ descartadoActual.palabraRifa }}"
+        — {{ descartadoActual.palabraClave }}
       </div>
 
       <button class="rf-btn rf-btn--sortear"
@@ -291,10 +387,9 @@
         </span>
       </button>
 
-      <button class="rf-btn rf-btn--sm rf-btn--outline"
-              *ngIf="permitirNuevosActual"
+      <button class="rf-btn rf-btn--sm rf-btn--outline" *ngIf="permitirNuevosActual"
               (click)="abrirModalParticipante()">
-        ➕ Agregar participante para este producto
+        ➕ Agregar participante para esta variante
       </button>
 
       <button class="rf-btn rf-btn--text" (click)="paso = 'configurar'">← Volver a configuración</button>
@@ -307,12 +402,11 @@
         <div class="rf-panel__list">
           <div class="rf-panel__item" *ngFor="let e of elegibles">
             {{ e.nombre }} {{ e.apellidoPaterno }}
-            <span class="rf-panel__word">{{ e.palabraRifa }}</span>
+            <span class="rf-panel__word">{{ e.palabraClave }}</span>
           </div>
           <p class="rf-empty" *ngIf="elegibles.length === 0">Sin elegibles</p>
         </div>
       </div>
-
       <div class="rf-panel" *ngIf="descartados.length > 0">
         <h5 class="rf-panel__title">❌ Descartados ({{ descartados.length }})</h5>
         <div class="rf-panel__list">
@@ -326,9 +420,7 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════
-     PASO: TRANSICIÓN
-════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════ PASO: TRANSICIÓN ═══════════════════════ -->
 <div class="rf-page rf-transicion" *ngIf="paso === 'transicion' && ganadorActual">
   <div class="rf-transicion__card">
     <div class="rf-transicion__trophy">🏆</div>
@@ -336,55 +428,104 @@
       {{ ganadorActual.concursante.nombre }} {{ ganadorActual.concursante.apellidoPaterno }}
     </h2>
     <p class="rf-transicion__producto">
-      ganó <strong>{{ ganadorActual.producto.nombre }}</strong>
+      ganó <strong>{{ ganadorActual.configurarRifaVariante.variante.nombreProducto }}</strong>
     </p>
-    <p class="rf-transicion__palabra">
-      Palabra rifa: "{{ ganadorActual.concursante.palabraRifa }}"
-    </p>
-    <div class="rf-transicion__actions">
-      <button class="rf-btn rf-btn--primary" (click)="continuarSiguienteProducto()">
-        <span *ngIf="!ganadorActual.rifaTerminada">▶ Continuar con el siguiente producto</span>
-        <span *ngIf="ganadorActual.rifaTerminada">🏁 Ver resumen final</span>
-      </button>
-    </div>
+    <p class="rf-transicion__clave">Palabra: "{{ ganadorActual.concursante.palabraClave }}"</p>
+
+    <ng-container *ngIf="!ganadorActual.rifaTerminada">
+      <p class="rf-transicion__sub">¿Con qué participantes continúa la siguiente variante?</p>
+      <div class="rf-modos">
+        <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'RESTANTES'"
+                (click)="elegirModo('RESTANTES')">
+          <span class="rf-modo-btn__icon">👥</span>
+          <span class="rf-modo-btn__label">Usar restantes</span>
+          <span class="rf-modo-btn__desc">Los que no fueron descartados ni ganadores</span>
+        </button>
+        <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'CERO'"
+                (click)="elegirModo('CERO')">
+          <span class="rf-modo-btn__icon">🔄</span>
+          <span class="rf-modo-btn__label">Todos desde cero</span>
+          <span class="rf-modo-btn__desc">Todos los participantes regresan como al inicio</span>
+        </button>
+        <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'NUEVOS'"
+                (click)="modoElegido = 'NUEVOS'; mostrarFormNuevo = true">
+          <span class="rf-modo-btn__icon">➕</span>
+          <span class="rf-modo-btn__label">Agregar nuevos</span>
+          <span class="rf-modo-btn__desc">Los restantes siguen + puedes agregar más participantes</span>
+        </button>
+      </div>
+
+      <!-- Form para nuevos participantes en modo NUEVOS -->
+      <div class="rf-nuevos-form" *ngIf="modoElegido === 'NUEVOS' && mostrarFormNuevo">
+        <h6 class="rf-nuevos-form__title">➕ Agregar participante para la siguiente variante</h6>
+        <form [formGroup]="participanteNuevoForm" class="rf-form-participante">
+          <div class="rf-row">
+            <div class="rf-field rf-field--flex1">
+              <label class="rf-label">Nombre</label>
+              <input class="rf-input" formControlName="nombre" placeholder="Nombre" />
+            </div>
+            <div class="rf-field rf-field--flex1">
+              <label class="rf-label">Apellido</label>
+              <input class="rf-input" formControlName="apellidoPaterno" placeholder="Apellido" />
+            </div>
+          </div>
+          <div class="rf-row">
+            <div class="rf-field rf-field--flex1">
+              <label class="rf-label">Teléfono</label>
+              <input class="rf-input" formControlName="telefono" placeholder="0000000000" />
+            </div>
+            <div class="rf-field rf-field--flex1">
+              <label class="rf-label">Palabra clave</label>
+              <select class="rf-input" formControlName="palabraClave">
+                <option *ngFor="let p of palabrasClave" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+          </div>
+          <button class="rf-btn rf-btn--outline rf-btn--sm"
+                  (click)="agregarParticipanteTransicion()"
+                  [disabled]="participanteNuevoForm.invalid || guardandoNuevo">
+            Registrar
+          </button>
+        </form>
+        <button class="rf-btn rf-btn--primary" style="margin-top:12px"
+                (click)="confirmarContinuar()">
+          ▶ Continuar con la siguiente variante
+        </button>
+      </div>
+    </ng-container>
+
+    <button class="rf-btn rf-btn--primary" *ngIf="ganadorActual.rifaTerminada"
+            (click)="confirmarContinuar()">
+      🏁 Ver resumen final
+    </button>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════
-     PASO: RESUMEN FINAL
-════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════════ PASO: RESUMEN ══════════════════════════ -->
 <div class="rf-page rf-resumen" *ngIf="paso === 'resumen'">
   <div class="rf-resumen__card">
     <h2 class="rf-resumen__titulo">🎉 Rifa completada</h2>
 
-    <div class="rf-resumen__producto" *ngFor="let h of historial; let i = index">
-      <h5 class="rf-resumen__prod-titulo">Producto {{ i + 1 }} — {{ h.producto.nombre }}</h5>
+    <div class="rf-resumen__variante" *ngFor="let h of historial; let i = index">
+      <h5 class="rf-resumen__var-titulo">
+        Variante {{ i + 1 }} — {{ h.configurarRifaVariante.variante.nombreProducto }}
+        <span class="rf-resumen__clave">{{ h.configurarRifaVariante.palabraClave }}</span>
+      </h5>
       <p class="rf-resumen__ganador">
-        🏆 Ganador: <strong>{{ h.ganador.nombre }} {{ h.ganador.apellidoPaterno }}</strong>
-      </p>
-      <p class="rf-resumen__descartados" *ngIf="h.descartados.length > 0">
-        ❌ Descartados:
-        <span *ngFor="let d of h.descartados; let last = last">
-          {{ d.nombre }}{{ last ? '' : ', ' }}
-        </span>
+        🏆 Ganador: <strong>{{ h.concursanteGanador.nombre }} {{ h.concursanteGanador.apellidoPaterno }}</strong>
+        <span *ngIf="h.concursanteGanador.telefono"> · {{ h.concursanteGanador.telefono }}</span>
       </p>
     </div>
 
     <div class="rf-resumen__actions">
-      <button class="rf-btn rf-btn--outline" (click)="reiniciar(false)">
-        🔄 Reiniciar (conservar participantes)
-      </button>
-      <button class="rf-btn rf-btn--danger" (click)="reiniciar(true)">
-        🗑️ Reiniciar desde cero
-      </button>
-      <button class="rf-btn rf-btn--text" (click)="nuevaRifa()">➕ Nueva rifa</button>
+      <button class="rf-btn rf-btn--outline" (click)="reiniciar(false)">🔄 Reiniciar (conservar participantes)</button>
+      <button class="rf-btn rf-btn--danger"  (click)="reiniciar(true)">🗑️ Reiniciar desde cero</button>
+      <button class="rf-btn rf-btn--text"    (click)="nuevaRifa()">➕ Nueva rifa</button>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════
-     MODAL: Agregar participante en ruleta
-════════════════════════════════════════════════════════════ -->
+<!-- ══════════════════ MODAL: participante en ruleta ═════════════ -->
 <div class="rf-modal-overlay" *ngIf="mostrarModalParticipante" (click)="cerrarModalParticipante()">
   <div class="rf-modal" (click)="$event.stopPropagation()">
     <div class="rf-modal__header">
@@ -401,20 +542,14 @@
         <input class="rf-input" formControlName="apellidoPaterno" placeholder="Apellido paterno" />
       </div>
       <div class="rf-field">
-        <label class="rf-label">Palabra rifa</label>
-        <input class="rf-input" formControlName="palabraRifa" placeholder="Palabra" />
-      </div>
-      <div class="rf-field">
-        <label class="rf-label">Teléfono (10 dígitos)</label>
+        <label class="rf-label">Teléfono</label>
         <input class="rf-input" formControlName="telefono" placeholder="0000000000" />
       </div>
       <button class="rf-btn rf-btn--primary"
               (click)="guardarParticipanteRuleta()"
               [disabled]="participanteRuletaForm.invalid || guardandoParticipanteRuleta">
         <span *ngIf="!guardandoParticipanteRuleta">Registrar</span>
-        <span *ngIf="guardandoParticipanteRuleta" class="d-flex gap-2 align-items-center">
-          <span class="spinner-border spinner-border-sm"></span>
-        </span>
+        <span *ngIf="guardandoParticipanteRuleta" class="spinner-border spinner-border-sm"></span>
       </button>
     </form>
   </div>

@@ -86,9 +86,9 @@ export class RifaService {
   }
 
   getConcursantesPorRifa(rifaId: number): Observable<IConcursante[]> {
-    return this.http.get<{ lista: IConcursante[] }>(
+    return this.http.get<{ data: IConcursante[] }>(
       `${this.url}/concursante/porRifa/${rifaId}`
-    ).pipe(map(r => r.lista ?? []));
+    ).pipe(map(r => r.data ?? []));
   }
 
   getElegibles(rifaId: number): Observable<IConcursante[]> {

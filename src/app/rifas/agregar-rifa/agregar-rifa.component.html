@@ -70,9 +70,8 @@
       <div class="rf-variantes-grid" *ngIf="variantesRifa.length > 0">
         <div class="rf-var-card"
              *ngFor="let v of variantesRifa; let i = index"
-             (mouseenter)="mostrarHover(v)"
-             (mouseleave)="ocultarHover()"
-             (click)="mostrarHover(varianteHover === v ? null! : v)">
+             (mouseenter)="iniciarHover(v)"
+             (mouseleave)="cancelarHover()">
 
           <!-- imagen miniatura -->
           <div class="rf-var-card__img">
@@ -107,9 +106,9 @@
       </div>
 
       <!-- Hover/tap modal -->
-      <div class="rf-hover-modal" *ngIf="varianteHover" (click)="ocultarHover()">
-        <div class="rf-hover-modal__card" (click)="$event.stopPropagation()">
-          <button class="rf-hover-modal__close" (click)="ocultarHover()">✕</button>
+      <div class="rf-hover-modal" *ngIf="varianteHover">
+        <div class="rf-hover-modal__card">
+          <button class="rf-hover-modal__close" (click)="cerrarHover()">✕</button>
           <img *ngIf="imageSrcVariante(varianteHover) as src" [src]="src" class="rf-hover-modal__img" />
           <div *ngIf="!imageSrcVariante(varianteHover)" class="rf-hover-modal__no-img">📦 Sin imagen</div>
           <h5 class="rf-hover-modal__nombre">{{ varianteHover.variante.nombreProducto }}</h5>
@@ -498,6 +497,10 @@
             (click)="confirmarContinuar()">
       🏁 Ver resumen final
     </button>
+
+    <button class="rf-btn rf-btn--text" (click)="router.navigate(['/rifas/buscar'])">
+      ← Volver a rifas
+    </button>
   </div>
 </div>
 
@@ -521,6 +524,7 @@
       <button class="rf-btn rf-btn--outline" (click)="reiniciar(false)">🔄 Reiniciar (conservar participantes)</button>
       <button class="rf-btn rf-btn--danger"  (click)="reiniciar(true)">🗑️ Reiniciar desde cero</button>
       <button class="rf-btn rf-btn--text"    (click)="nuevaRifa()">➕ Nueva rifa</button>
+      <button class="rf-btn rf-btn--text"    (click)="router.navigate(['/rifas/buscar'])">← Volver a rifas</button>
     </div>
   </div>
 </div>

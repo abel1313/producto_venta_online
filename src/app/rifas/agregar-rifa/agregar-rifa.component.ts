@@ -1,6 +1,7 @@
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -53,6 +54,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   // hover modal
   varianteHover: IConfigurarRifaVariante | null = null;
+  private hoverTimer: any = null;
 
   // ── Sección C — participantes ──────────────────────────────────────
   concursantes: IConcursante[] = [];
@@ -100,7 +102,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   constructor(
     private readonly rifaService: RifaService,
     private readonly webSocketService: WebSocketServiceService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -142,10 +145,17 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       next: res => { this.variantesBusqueda = res.t ?? []; this.buscandoVariante = false; }
     });
 
-    this.cargarRifasActivas();
+    // Auto-retomar si viene desde buscar-rifa
+    const retomarId = history.state?.retomarRifaId as number | undefined;
+    if (retomarId) {
+      this._retomar(retomarId);
+    } else {
+      this.cargarRifasActivas();
+    }
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.hoverTimer);
     this.busqSub?.unsubscribe();
     this.wsUnsub?.();
     this.chart?.destroy();
@@ -226,8 +236,18 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.variantesRifa.forEach((v, i) => v.orden = i + 1);
   }
 
-  mostrarHover(v: IConfigurarRifaVariante): void { this.varianteHover = v; }
-  ocultarHover(): void { this.varianteHover = null; }
+  iniciarHover(v: IConfigurarRifaVariante): void {
+    this.hoverTimer = setTimeout(() => { this.varianteHover = v; }, 3000);
+  }
+
+  cancelarHover(): void {
+    clearTimeout(this.hoverTimer);
+  }
+
+  cerrarHover(): void {
+    clearTimeout(this.hoverTimer);
+    this.varianteHover = null;
+  }
 
   private resetFormVariante(): void {
     this.mostrarFormVariante = false;
@@ -339,19 +359,44 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   retomarRifa(config: IConfigurarRifa): void {
-    this.rifaConfig = config;
-    this.rifaService.getEstado(config.id!).subscribe({
+    this._retomar(config.id!);
+  }
+
+  // Carga estado → variantes → elegibles (si vacíos) y luego muestra la pantalla correcta
+  private _retomar(rifaId: number): void {
+    this.rifaService.getEstado(rifaId).subscribe({
       next: res => {
+        this.rifaConfig = res.configurarRifa;
         this.aplicarEstado(res);
-        this.cargarVariantesRifa();
         this.cargarConcursantes();
-        if (res.rifaTerminada) {
-          this.paso = 'resumen';
-        } else {
-          this.paso = 'ruleta';
-          this.suscribirWebSocket();
-          setTimeout(() => this.generarRuleta(), 200);
-        }
+
+        // 1. Carga variantes (para los chips de progreso)
+        this.rifaService.getVariantesRifa(rifaId).subscribe({
+          next: variantes => {
+            this.variantesRifa = variantes.sort((a, b) => a.orden - b.orden);
+            this.palabrasClave  = variantes.map(v => v.palabraClave);
+
+            if (res.rifaTerminada) {
+              this.paso = 'resumen';
+              return;
+            }
+
+            this.paso = 'ruleta';
+            this.suscribirWebSocket();
+
+            // 2. Si el estado devolvió elegibles vacíos los pide explícitamente
+            if (this.elegibles.length > 0) {
+              setTimeout(() => this.generarRuleta(), 200);
+            } else {
+              this.rifaService.getElegibles(rifaId).subscribe({
+                next: elegibles => {
+                  this.elegibles = elegibles;
+                  setTimeout(() => this.generarRuleta(), 200);
+                }
+              });
+            }
+          }
+        });
       }
     });
   }
@@ -514,7 +559,12 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   get varianteActualNombre(): string {
-    return this.estado?.varianteActual?.variante?.nombreProducto ?? '—';
+    const orden = this.estado?.varianteNumeroActual;
+    if (!orden) return '—';
+    // variantesRifa viene de /porRifa que sí tiene nombreProducto en formato plano
+    return this.variantesRifa.find(v => v.orden === orden)?.variante?.nombreProducto
+      ?? this.estado?.varianteActual?.variante?.nombreProducto
+      ?? '—';
   }
 
   get giroActual(): number { return this.estado?.giroActual ?? 0; }

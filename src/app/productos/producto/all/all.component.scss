@@ -430,6 +430,13 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover { background: rgba(46,125,50,0.95); transform: scale(1.03); }
 }
 
+// ── Card deshabilitado ─────────────────────────────────────────────
+.pl-card--deshabilitado {
+  opacity: 0.6;
+  filter: grayscale(60%);
+  border: 1px solid #d1d5db;
+}
+
 // ── Badge habilitado ───────────────────────────────────────────────
 .pl-badge-disabled {
   position: absolute;

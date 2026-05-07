@@ -66,7 +66,8 @@
   </div>
 
   <div class="pl-grid">
-    <div class="pl-card" *ngFor="let item of rows; trackBy: trackById">
+    <div class="pl-card" *ngFor="let item of rows; trackBy: trackById"
+         [class.pl-card--deshabilitado]="isAdminUser && !estaHabilitado(item)">
 
       <!-- Botón X eliminar (solo admin) -->
       <button *ngIf="isAdminUser"
@@ -79,7 +80,7 @@
       </button>
 
       <!-- Badge deshabilitado (solo admin) -->
-      <span *ngIf="isAdminUser && item.habilitado === false || isAdminUser && item.habilitado === ' '"
+      <span *ngIf="isAdminUser && !estaHabilitado(item)"
         class="pl-badge-disabled">Deshabilitado</span>
 
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
@@ -181,10 +182,10 @@
         </button>
 
         <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--toggle"
-          [title]="item.habilitado === false || item.habilitado === ' ' ? 'Habilitar' : 'Deshabilitar'"
-          (click)="habilitarProducto(item, item.habilitado === false || item.habilitado === ' ')">
-          <span>{{ item.habilitado === false || item.habilitado === ' ' ? '🔓' : '🔒' }}</span>
-          <span class="pl-btn-card__label">{{ item.habilitado === false || item.habilitado === ' ' ? 'Habilitar' : 'Deshab.' }}</span>
+          [title]="estaHabilitado(item) ? 'Deshabilitar' : 'Habilitar'"
+          (click)="habilitarProducto(item, !estaHabilitado(item))">
+          <span>{{ estaHabilitado(item) ? '🔒' : '🔓' }}</span>
+          <span class="pl-btn-card__label">{{ estaHabilitado(item) ? 'Deshab.' : 'Habilitar' }}</span>
         </button>
 
       </div>

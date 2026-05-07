@@ -374,10 +374,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
+  estaHabilitado(item: IProductoDTO): boolean {
+    return item.habilitado === '1';
+  }
+
   habilitarProducto(item: IProductoDTO, habilitar: boolean): void {
     this.srvice.habilitarProducto(item.idProducto, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
-        item.habilitado = habilitar;
+        item.habilitado = habilitar ? '1' : '0';
         Swal.fire({ icon: 'success', title: habilitar ? 'Producto habilitado' : 'Producto deshabilitado', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
       },
       error: () => Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1800, showConfirmButton: false })

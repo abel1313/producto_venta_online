@@ -67,6 +67,8 @@ $accent-light: #fef3c7;
   font-size: 0.85rem;
   font-weight: 800;
   flex-shrink: 0;
+
+  &--red { background: #fee2e2; color: #991b1b; }
 }
 
 .rc-section__title {
@@ -167,6 +169,15 @@ $accent-light: #fef3c7;
     border: 1.5px solid #d1d5db;
 
     &:hover:not(:disabled) { background: #e5e7eb; }
+  }
+
+  &--danger {
+    background: linear-gradient(135deg, #991b1b, #dc2626, #ef4444);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.4); }
+    &:active:not(:disabled) { transform: translateY(0); }
   }
 
   &:disabled { opacity: 0.45; cursor: not-allowed; }

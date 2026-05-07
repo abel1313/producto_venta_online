@@ -61,10 +61,47 @@
 
       <div class="rc-divider"></div>
 
-      <!-- ═══ SECCIÓN 2: VER RESULTADO ═══ -->
+      <!-- ═══ SECCIÓN 2: LIMPIAR BD ═══ -->
       <div class="rc-section">
         <div class="rc-section__header">
-          <span class="rc-section__num">2</span>
+          <span class="rc-section__num rc-section__num--red">2</span>
+          <span class="rc-section__title">Limpiar BD</span>
+        </div>
+
+        <div class="rc-endpoint">
+          <span class="rc-endpoint__method rc-endpoint__method--post">POST</span>
+          <span class="rc-endpoint__url">/admin/reconciliacion/imagenes/limpiar-bd</span>
+        </div>
+
+        <p class="rc-hint">
+          Elimina de la BD los registros de imágenes que no tienen archivo en disco
+          (producto_imagen_copy, variante_imagen e imagenes_copy).
+          Ejecuta primero la reconciliación para identificar los faltantes.
+        </p>
+
+        <button class="rc-btn rc-btn--danger" (click)="limpiarBD()" [disabled]="limpiando">
+          <span *ngIf="!limpiando">🗑️ Limpiar BD</span>
+          <span *ngIf="limpiando" class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm"></span> Limpiando…
+          </span>
+        </button>
+
+        <div *ngIf="mensajeLimpieza" class="rc-alert rc-alert--info">
+          <span class="rc-alert__icon">✅</span>
+          <span>{{ mensajeLimpieza }}</span>
+        </div>
+        <div *ngIf="errorLimpieza" class="rc-alert rc-alert--error">
+          <span class="rc-alert__icon">⚠️</span>
+          <span>{{ errorLimpieza }}</span>
+        </div>
+      </div>
+
+      <div class="rc-divider"></div>
+
+      <!-- ═══ SECCIÓN 3: VER RESULTADO ═══ -->
+      <div class="rc-section">
+        <div class="rc-section__header">
+          <span class="rc-section__num">3</span>
           <span class="rc-section__title">Ver resultado</span>
         </div>
 
@@ -123,6 +160,11 @@
             <div class="rc-counter">
               <span class="rc-counter__value">{{ formatBytes(resultado.bytesLiberados) }}</span>
               <span class="rc-counter__label">Bytes liberados</span>
+            </div>
+            <div class="rc-counter" *ngIf="resultado.imagenesEliminadas != null"
+                 [class.rc-counter--highlight]="resultado.imagenesEliminadas > 0">
+              <span class="rc-counter__value">{{ resultado.imagenesEliminadas }}</span>
+              <span class="rc-counter__label">Imágenes eliminadas BD</span>
             </div>
           </div>
 

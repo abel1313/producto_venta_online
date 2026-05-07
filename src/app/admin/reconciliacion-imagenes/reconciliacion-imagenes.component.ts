@@ -14,6 +14,10 @@ export class ReconciliacionImagenesComponent {
   mensajeInicio: string | null = null;
   errorInicio: string | null   = null;
 
+  limpiando  = false;
+  mensajeLimpieza: string | null = null;
+  errorLimpieza: string | null   = null;
+
   cargandoResultado = false;
   resultado: IResultadoReconciliacion['data'] | null = null;
   errorResultado: string | null = null;
@@ -34,6 +38,23 @@ export class ReconciliacionImagenesComponent {
       error: () => {
         this.errorInicio = 'No se pudo iniciar la reconciliación.';
         this.iniciando   = false;
+      }
+    });
+  }
+
+  limpiarBD(): void {
+    this.limpiando      = true;
+    this.mensajeLimpieza = null;
+    this.errorLimpieza  = null;
+
+    this.adminService.limpiarBD().subscribe({
+      next: res => {
+        this.mensajeLimpieza = res.data;
+        this.limpiando       = false;
+      },
+      error: () => {
+        this.errorLimpieza = 'No se pudo ejecutar la limpieza de BD.';
+        this.limpiando     = false;
       }
     });
   }

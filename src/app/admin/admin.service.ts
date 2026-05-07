@@ -20,6 +20,7 @@ export interface IResultadoReconciliacion {
     faltantesEnDisco: string[];
     archivosEliminadosDisco: number;
     bytesLiberados: number;
+    imagenesEliminadas?: number;
   };
 }
 
@@ -44,6 +45,12 @@ export class AdminService {
   verResultadoReconciliacion(): Observable<IResultadoReconciliacion> {
     return this.http.get<IResultadoReconciliacion>(
       `${this.url}/reconciliacion/imagenes/resultado`
+    );
+  }
+
+  limpiarBD(): Observable<IReconciliacionIniciada> {
+    return this.http.post<IReconciliacionIniciada>(
+      `${this.url}/reconciliacion/imagenes/limpiar-bd`, {}
     );
   }
 }

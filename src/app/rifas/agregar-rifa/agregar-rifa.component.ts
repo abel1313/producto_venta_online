@@ -87,6 +87,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   // ── Transición — opciones ──────────────────────────────────────────
   modoElegido: ModoContinuacion | null = null;
   mostrarFormNuevo = false;
+  // Se activa al retomar cuando estamos en variante 2+ con elegibles vacíos
+  mostrarSeleccionModo = false;
   participanteNuevoForm!: FormGroup;
   guardandoNuevo = false;
 
@@ -384,10 +386,13 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
             this.paso = 'ruleta';
             this.suscribirWebSocket();
 
-            // 2. Si el estado devolvió elegibles vacíos los pide explícitamente
             if (this.elegibles.length > 0) {
               setTimeout(() => this.generarRuleta(), 200);
+            } else if ((res.varianteNumeroActual ?? 1) > 1) {
+              // Estamos en variante 2+ sin elegibles: el admin debe elegir modo de continuación
+              this.mostrarSeleccionModo = true;
             } else {
+              // Primer variante sin elegibles aún: pedir al backend
               this.rifaService.getElegibles(rifaId).subscribe({
                 next: elegibles => {
                   this.elegibles = elegibles;
@@ -402,16 +407,19 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   nuevaRifa(): void {
-    this.rifaConfig = null;
-    this.variantesRifa = [];
-    this.concursantes = [];
-    this.elegibles = [];
-    this.descartados = [];
-    this.estado = null;
-    this.ganadorActual = null;
-    this.descartadoActual = null;
-    this.confettiPieces = [];
-    this.palabrasClave = [];
+    this.rifaConfig           = null;
+    this.variantesRifa        = [];
+    this.concursantes         = [];
+    this.elegibles            = [];
+    this.descartados          = [];
+    this.estado               = null;
+    this.ganadorActual        = null;
+    this.descartadoActual     = null;
+    this.confettiPieces       = [];
+    this.palabrasClave        = [];
+    this.modoElegido          = null;
+    this.mostrarSeleccionModo = false;
+    this.mostrarFormNuevo     = false;
     this.chart?.destroy();
     this.wsUnsub?.();
     this.wsUnsub = null;
@@ -471,16 +479,26 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   confirmarContinuar(): void {
     if (!this.rifaConfig?.id || !this.modoElegido) return;
-    this.rifaService.continuarVariante(this.rifaConfig.id, this.modoElegido).subscribe({
+    const rifaId = this.rifaConfig.id;
+    this.rifaService.continuarVariante(rifaId, this.modoElegido).subscribe({
       next: res => {
+        this.aplicarEstado(res);
+        this.ganadorActual        = null;
+        this.modoElegido          = null;
+        this.mostrarFormNuevo     = false;
+        this.mostrarSeleccionModo = false;
+        this.descartados          = [];
+
         if (res.rifaTerminada) {
-          this.aplicarEstado(res);
           this.paso = 'resumen';
         } else {
-          this.aplicarEstado(res);
-          this.ganadorActual = null;
-          this.modoElegido = null;
-          this.mostrarFormNuevo = false;
+          // Recargar variantes para tener los chips actualizados
+          this.rifaService.getVariantesRifa(rifaId).subscribe({
+            next: variantes => {
+              this.variantesRifa = variantes.sort((a, b) => a.orden - b.orden);
+              this.palabrasClave  = variantes.map(v => v.palabraClave);
+            }
+          });
           this.paso = 'ruleta';
           setTimeout(() => this.generarRuleta(), 200);
         }
@@ -556,6 +574,22 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   get puedeIrARuleta(): boolean {
     return !!(this.rifaConfig?.id && this.variantesRifa.length > 0 && this.concursantes.length > 0);
+  }
+
+  // Participantes activos (no descartados) para mostrar en sección C
+  get concursantesActivos(): IConcursante[] {
+    return this.concursantes.filter(c => !c.descartado);
+  }
+
+  get concursantesDescartados(): IConcursante[] {
+    return this.concursantes.filter(c => c.descartado);
+  }
+
+  // Etiqueta de la siguiente variante (para el selector de modo)
+  get siguienteVarianteLabel(): string {
+    const orden = (this.estado?.varianteNumeroActual ?? 0) + 1;
+    return this.variantesRifa.find(v => v.orden === orden)?.palabraClave
+      ?? `Variante ${orden}`;
   }
 
   get varianteActualNombre(): string {

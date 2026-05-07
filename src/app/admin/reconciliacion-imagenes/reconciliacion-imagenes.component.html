@@ -1,0 +1,162 @@
+<div class="rc-page">
+  <div class="rc-card">
+
+    <!-- Header -->
+    <div class="rc-card__header">
+      <span class="rc-card__header-icon">🔧</span>
+      <div>
+        <h3 class="rc-card__title">Reconciliación de Imágenes</h3>
+        <p class="rc-card__subtitle">Solo administradores · Sincroniza BD local ↔ Microservicio</p>
+      </div>
+    </div>
+
+    <div class="rc-card__body">
+
+      <!-- ═══ SECCIÓN 1: INICIAR ═══ -->
+      <div class="rc-section">
+        <div class="rc-section__header">
+          <span class="rc-section__num">1</span>
+          <span class="rc-section__title">Iniciar reconciliación</span>
+        </div>
+
+        <div class="rc-endpoint">
+          <span class="rc-endpoint__method rc-endpoint__method--post">POST</span>
+          <span class="rc-endpoint__url">/admin/reconciliacion/imagenes</span>
+        </div>
+
+        <p class="rc-hint">
+          Opcional: si ingresas un ID de producto, la reconciliación aplica solo a ese producto.
+          Si lo dejas vacío, revisa todos.
+        </p>
+
+        <div class="rc-row">
+          <div class="rc-input-wrap">
+            <label class="rc-label">ID de producto (opcional)</label>
+            <input
+              class="rc-input"
+              type="number"
+              placeholder="Ej. 270 — vacío = todos"
+              [(ngModel)]="productoIdFiltro"
+              min="1" />
+          </div>
+
+          <button class="rc-btn rc-btn--primary" (click)="iniciar()" [disabled]="iniciando">
+            <span *ngIf="!iniciando">🚀 Iniciar</span>
+            <span *ngIf="iniciando" class="d-flex align-items-center gap-2">
+              <span class="spinner-border spinner-border-sm"></span> Iniciando…
+            </span>
+          </button>
+        </div>
+
+        <!-- Respuesta inicio -->
+        <div *ngIf="mensajeInicio" class="rc-alert rc-alert--info">
+          <span class="rc-alert__icon">✅</span>
+          <span>{{ mensajeInicio }}</span>
+        </div>
+        <div *ngIf="errorInicio" class="rc-alert rc-alert--error">
+          <span class="rc-alert__icon">⚠️</span>
+          <span>{{ errorInicio }}</span>
+        </div>
+      </div>
+
+      <div class="rc-divider"></div>
+
+      <!-- ═══ SECCIÓN 2: VER RESULTADO ═══ -->
+      <div class="rc-section">
+        <div class="rc-section__header">
+          <span class="rc-section__num">2</span>
+          <span class="rc-section__title">Ver resultado</span>
+        </div>
+
+        <div class="rc-endpoint">
+          <span class="rc-endpoint__method rc-endpoint__method--get">GET</span>
+          <span class="rc-endpoint__url">/admin/reconciliacion/imagenes/resultado</span>
+        </div>
+
+        <button class="rc-btn rc-btn--secondary" (click)="verResultado()" [disabled]="cargandoResultado">
+          <span *ngIf="!cargandoResultado">📋 Ver resultado</span>
+          <span *ngIf="cargandoResultado" class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm"></span> Consultando…
+          </span>
+        </button>
+
+        <div *ngIf="errorResultado" class="rc-alert rc-alert--error">
+          <span class="rc-alert__icon">⚠️</span>
+          <span>{{ errorResultado }}</span>
+        </div>
+
+        <!-- En proceso -->
+        <div *ngIf="resultado?.enProceso" class="rc-alert rc-alert--warn">
+          <span class="rc-alert__icon">⏳</span>
+          <span>Aún en proceso, intenta de nuevo en un momento.</span>
+        </div>
+
+        <!-- Resultado completo -->
+        <div *ngIf="resultado && !resultado.enProceso" class="rc-resultado">
+
+          <div class="rc-resultado__fecha">
+            Ejecutado el {{ formatFecha(resultado.ejecutadoEn) }}
+          </div>
+
+          <!-- Contadores -->
+          <div class="rc-counters">
+            <div class="rc-counter">
+              <span class="rc-counter__value">{{ resultado.productosRevisados }}</span>
+              <span class="rc-counter__label">Productos revisados</span>
+            </div>
+            <div class="rc-counter">
+              <span class="rc-counter__value">{{ resultado.variantesRevisadas }}</span>
+              <span class="rc-counter__label">Variantes revisadas</span>
+            </div>
+            <div class="rc-counter rc-counter--highlight">
+              <span class="rc-counter__value">{{ resultado.reparados.length }}</span>
+              <span class="rc-counter__label">Reparados</span>
+            </div>
+            <div class="rc-counter" [class.rc-counter--danger]="resultado.faltantesEnDisco.length > 0">
+              <span class="rc-counter__value">{{ resultado.faltantesEnDisco.length }}</span>
+              <span class="rc-counter__label">Faltantes en disco</span>
+            </div>
+            <div class="rc-counter">
+              <span class="rc-counter__value">{{ resultado.archivosEliminadosDisco }}</span>
+              <span class="rc-counter__label">Archivos eliminados</span>
+            </div>
+            <div class="rc-counter">
+              <span class="rc-counter__value">{{ formatBytes(resultado.bytesLiberados) }}</span>
+              <span class="rc-counter__label">Bytes liberados</span>
+            </div>
+          </div>
+
+          <!-- Reparados -->
+          <div *ngIf="resultado.reparados.length > 0" class="rc-lista">
+            <p class="rc-lista__title rc-lista__title--green">
+              ✅ Reparados ({{ resultado.reparados.length }})
+            </p>
+            <div class="rc-lista__item" *ngFor="let r of resultado.reparados">
+              <span class="rc-lista__dot rc-lista__dot--green"></span>
+              <code>{{ r }}</code>
+            </div>
+          </div>
+          <div *ngIf="resultado.reparados.length === 0" class="rc-lista__empty">
+            Sin elementos reparados
+          </div>
+
+          <!-- Faltantes en disco -->
+          <div *ngIf="resultado.faltantesEnDisco.length > 0" class="rc-lista">
+            <p class="rc-lista__title rc-lista__title--red">
+              ❌ Faltantes en disco ({{ resultado.faltantesEnDisco.length }})
+            </p>
+            <div class="rc-lista__item" *ngFor="let f of resultado.faltantesEnDisco">
+              <span class="rc-lista__dot rc-lista__dot--red"></span>
+              <code>{{ f }}</code>
+            </div>
+          </div>
+          <div *ngIf="resultado.faltantesEnDisco.length === 0" class="rc-lista__empty">
+            Sin faltantes en disco
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

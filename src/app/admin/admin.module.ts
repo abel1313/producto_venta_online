@@ -6,13 +6,15 @@ import { CacheComponent } from './cache/cache.component';
 import { ConfigNegocioComponent } from './config-negocio/config-negocio.component';
 import { PresentacionImagenesComponent } from './presentacion-imagenes/presentacion-imagenes.component';
 import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico-imagenes.component';
+import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 
 @NgModule({
   declarations: [
     CacheComponent,
     ConfigNegocioComponent,
     PresentacionImagenesComponent,
-    DiagnosticoImagenesComponent
+    DiagnosticoImagenesComponent,
+    ReconciliacionImagenesComponent
   ],
   imports: [
     CommonModule,

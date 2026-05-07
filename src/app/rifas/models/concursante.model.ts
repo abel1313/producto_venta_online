@@ -5,4 +5,5 @@ export interface IConcursante {
   palabraRifa: string;
   telefono: string;
   configurarRifa?: { id: number };
+  ordenDesde?: number;
 }

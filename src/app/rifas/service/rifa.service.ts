@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { IConfigurarRifa } from '../models/configurar-rifa.model';
+import { IConfigurarRifa, IConfigurarRifaProducto } from '../models/configurar-rifa.model';
 import { IConcursante } from '../models/concursante.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
@@ -13,10 +13,29 @@ export class RifaService {
 
   constructor(private readonly http: HttpClient) {}
 
+  // ── Configuración ──────────────────────────────────────────────────
   configurarRifa(data: IConfigurarRifa): Observable<{ data: IConfigurarRifa }> {
     return this.http.post<{ data: IConfigurarRifa }>(`${this.url}/configurarRifa/save`, data);
   }
 
+  getConfiguracionesActivas(): Observable<{ data: IConfigurarRifa[] }> {
+    return this.http.get<{ data: IConfigurarRifa[] }>(`${this.url}/configurarRifa/activas`);
+  }
+
+  getConfiguracionesHoy(): Observable<{ data: IConfigurarRifa[] }> {
+    return this.http.get<{ data: IConfigurarRifa[] }>(`${this.url}/configurarRifa/activas/hoy`);
+  }
+
+  // ── Productos de la rifa ───────────────────────────────────────────
+  guardarProductoRifa(data: IConfigurarRifaProducto): Observable<{ data: IConfigurarRifaProducto }> {
+    return this.http.post<{ data: IConfigurarRifaProducto }>(`${this.url}/configurarRifaProducto/save`, data);
+  }
+
+  getProductosDeRifa(rifaId: number): Observable<{ data: IConfigurarRifaProducto[] }> {
+    return this.http.get<{ data: IConfigurarRifaProducto[] }>(`${this.url}/configurarRifaProducto/porRifa/${rifaId}`);
+  }
+
+  // ── Concursantes ───────────────────────────────────────────────────
   registrarConcursante(data: IConcursante, forzar = false): Observable<{ data: IConcursante }> {
     const params = forzar ? '?forzar=true' : '';
     return this.http.post<{ data: IConcursante }>(`${this.url}/concursante/registrar${params}`, data);
@@ -34,15 +53,9 @@ export class RifaService {
     return this.http.delete(`${this.url}/concursante/delete`, { body: id });
   }
 
-  sortear(rifaId: number, vueltaActual: number, totalVueltas: number): Observable<{ data: IGanadorRifa }> {
-    return this.http.post<{ data: IGanadorRifa }>(
-      `${this.url}/ganadorRifa/sortear/${rifaId}?vueltaActual=${vueltaActual}&totalVueltas=${totalVueltas}`,
-      {}
-    );
-  }
-
-  getConfiguracionesActivas(): Observable<{ data: IConfigurarRifa[] }> {
-    return this.http.get<{ data: IConfigurarRifa[] }>(`${this.url}/configurarRifa/activas`);
+  // ── Sorteo ─────────────────────────────────────────────────────────
+  sortear(rifaId: number): Observable<{ data: IGanadorRifa }> {
+    return this.http.post<{ data: IGanadorRifa }>(`${this.url}/ganadorRifa/sortear/${rifaId}`, {});
   }
 
   getEstado(rifaId: number): Observable<{ data: IEstadoRifa }> {

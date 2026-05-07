@@ -1,1 +1,54 @@
-<p>buscar-rifa works!</p>
+<div class="br-page">
+
+  <div class="br-header">
+    <h4 class="br-header__title">🎰 Rifas</h4>
+    <div class="br-tabs">
+      <button class="br-tab" [class.br-tab--active]="tab === 'hoy'" (click)="cambiarTab('hoy')">
+        📅 Rifas de hoy
+      </button>
+      <button class="br-tab" [class.br-tab--active]="tab === 'todas'" (click)="cambiarTab('todas')">
+        📋 Todas las activas
+      </button>
+    </div>
+  </div>
+
+  <!-- Cargando -->
+  <div class="br-loading" *ngIf="cargando">
+    <span class="spinner-border spinner-border-sm"></span> Cargando…
+  </div>
+
+  <!-- Sin resultados -->
+  <div class="br-empty" *ngIf="!cargando && rifasMostradas.length === 0">
+    <span class="br-empty__icon">🎰</span>
+    <p>No hay rifas {{ tab === 'hoy' ? 'programadas para hoy' : 'activas' }}</p>
+  </div>
+
+  <!-- Lista de rifas -->
+  <div class="br-grid" *ngIf="!cargando && rifasMostradas.length > 0">
+    <div class="br-card" *ngFor="let r of rifasMostradas">
+
+      <div class="br-card__header">
+        <span class="br-card__id">Rifa #{{ r.id }}</span>
+        <span class="br-card__badge">Activa</span>
+      </div>
+
+      <div class="br-card__body">
+        <div class="br-card__row">
+          <span class="br-card__label">Fecha límite</span>
+          <span class="br-card__value">{{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="br-card__row" *ngIf="r.producto">
+          <span class="br-card__label">Producto</span>
+          <span class="br-card__value">{{ r.producto.nombre }}</span>
+        </div>
+      </div>
+
+      <div class="br-card__footer">
+        <button class="br-btn" (click)="retomarRifa(r)">
+          🎡 Retomar rifa
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

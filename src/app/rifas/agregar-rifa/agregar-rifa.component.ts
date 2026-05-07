@@ -477,6 +477,17 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     // Si es NUEVOS, se muestra el formulario inline para agregar participantes
   }
 
+  verResumenFinal(): void {
+    if (!this.rifaConfig?.id) return;
+    this.rifaService.getEstado(this.rifaConfig.id).subscribe({
+      next: res => {
+        this.aplicarEstado(res);
+        this.ganadorActual = null;
+        this.paso = 'resumen';
+      }
+    });
+  }
+
   confirmarContinuar(): void {
     if (!this.rifaConfig?.id || !this.modoElegido) return;
     const rifaId = this.rifaConfig.id;

@@ -1,0 +1,311 @@
+$t: all 0.2s ease;
+$accent: #0891b2;  // cyan — diferente al púrpura de la rifa regular
+
+.rm-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ── Stepper ────────────────────────────────────────────────────────
+.rm-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.rm-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  &__num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.88rem; font-weight: 700;
+    background: #f3f4f6; color: #9ca3af;
+    transition: $t;
+  }
+
+  &__label { font-size: 0.72rem; color: #9ca3af; white-space: nowrap; transition: $t; }
+
+  &--active &__num  { background: $accent; color: #fff; }
+  &--active &__label { color: $accent; font-weight: 700; }
+  &--done &__num    { background: #dcfce7; color: #166534; }
+  &--done &__label  { color: #166534; }
+
+  &__line {
+    flex: 1;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 8px;
+    margin-bottom: 16px;
+  }
+}
+
+// ── Card ───────────────────────────────────────────────────────────
+.rm-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+
+  &__head {
+    background: linear-gradient(135deg, #0e7490, $accent, #22d3ee);
+    padding: 20px 24px;
+    color: #fff;
+    h4 { margin: 0; font-size: 1.15rem; font-weight: 800; }
+    p  { margin: 4px 0 0; font-size: 0.82rem; opacity: 0.85; }
+  }
+
+  &__body {
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &--ruleta &__head { background: linear-gradient(135deg, #166534, #22c55e); }
+  &--ganador { border: 3px solid #fcd34d; }
+}
+
+// ── Campos ─────────────────────────────────────────────────────────
+.rm-row   { display: flex; gap: 12px; flex-wrap: wrap; }
+.rm-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+.rm-label { font-size: 0.78rem; font-weight: 600; color: #374151; }
+
+.rm-input {
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  width: 100%;
+  transition: $t;
+  &:focus { border-color: $accent; box-shadow: 0 0 0 3px rgba(8,145,178,0.1); }
+  &::placeholder { color: #9ca3af; }
+  &--sm { padding: 6px 8px; font-size: 0.82rem; }
+}
+
+// ── Botones ────────────────────────────────────────────────────────
+.rm-btn {
+  padding: 9px 18px;
+  border: none; border-radius: 9px;
+  font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: $t;
+  white-space: nowrap;
+
+  &--primary {
+    background: linear-gradient(135deg, #0e7490, $accent);
+    color: #fff;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(8,145,178,0.35); }
+  }
+  &--outline {
+    background: transparent; border: 1.5px solid #d1d5db; color: #374151;
+    &:hover:not(:disabled) { background: #f3f4f6; }
+  }
+  &--text { background: transparent; color: #6b7280; }
+  &--sm   { padding: 5px 12px; font-size: 0.8rem; }
+  &--full { width: 100%; }
+  &--sortear {
+    width: 100%; padding: 14px;
+    font-size: 1.05rem;
+    background: linear-gradient(135deg, #166534, #22c55e);
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.3);
+    &:hover:not(:disabled) { transform: translateY(-2px); }
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.rm-nav-btns {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+// ── Tabla clientes / participantes ─────────────────────────────────
+.rm-clientes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__count { font-size: 0.82rem; color: #374151; font-weight: 600; }
+}
+
+.rm-cliente-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #f3f4f6;
+
+  &--selected { background: #ecfeff; border-radius: 6px; padding: 5px 6px; }
+  &--vacio    { background: #fffbeb; }
+}
+
+.rm-badge-sin {
+  font-size: 0.7rem; background: #fef3c7; color: #92400e;
+  border-radius: 8px; padding: 2px 6px; white-space: nowrap;
+}
+
+.rm-tabla {
+  border: 1px solid #e5e7eb; border-radius: 9px; overflow: hidden;
+
+  &__head {
+    display: grid;
+    grid-template-columns: 28px 1fr 100px 28px;
+    gap: 8px; padding: 7px 12px;
+    background: #f9fafb;
+    font-size: 0.72rem; font-weight: 700; color: #374151; text-transform: uppercase;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 28px 1fr 100px 28px;
+    gap: 8px; padding: 7px 12px;
+    font-size: 0.82rem;
+    border-top: 1px solid #f3f4f6;
+    align-items: center;
+  }
+}
+
+.rm-del-btn {
+  background: transparent; border: none; cursor: pointer; color: #ef4444;
+  &:hover { color: #991b1b; }
+}
+
+.rm-empty { font-size: 0.85rem; color: #9ca3af; text-align: center; padding: 12px 0; }
+
+// ── Manual form ────────────────────────────────────────────────────
+.rm-manual-form { display: flex; flex-direction: column; gap: 10px; }
+
+// ── Variante preview ───────────────────────────────────────────────
+.rm-variante-preview {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  border-radius: 10px;
+  padding: 12px 16px;
+
+  &__img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+  &__nombre { font-size: 0.95rem; font-weight: 700; color: #0e7490; margin: 0 0 4px; }
+  &__meta { font-size: 0.8rem; color: #6b7280; margin: 0; }
+}
+
+// ── Buscador ───────────────────────────────────────────────────────
+.rm-search-wrap { position: relative; }
+
+.rm-search-box {
+  display: flex; align-items: center; gap: 8px;
+  border: 1.5px solid #d1d5db; border-radius: 9px; padding: 9px 12px;
+  &:focus-within { border-color: $accent; }
+}
+
+.rm-search-input {
+  flex: 1; border: none; outline: none; font-size: 0.92rem; color: #111827;
+  &::placeholder { color: #9ca3af; }
+}
+
+.rm-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+  background: #fff; border: 1.5px solid #a5f3fc; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1); max-height: 240px; overflow-y: auto;
+
+  &__item {
+    padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f3f4f6;
+    &:last-child { border-bottom: none; }
+    &:hover { background: #ecfeff; }
+  }
+  &__name { font-size: 0.9rem; font-weight: 600; color: #111827; display: block; }
+  &__meta { font-size: 0.75rem; color: #9ca3af; font-family: monospace; }
+}
+
+// ── Ruleta layout ──────────────────────────────────────────────────
+.rm-ruleta-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  padding: 20px 24px 24px;
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+.rm-ruleta-izq { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.rm-ruleta-der { display: flex; flex-direction: column; gap: 14px; }
+
+.rm-descartado {
+  background: #fffbeb; border: 1px solid #fcd34d;
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 0.88rem; color: #92400e; width: 100%;
+}
+
+.rm-panel {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;
+  &__title { padding: 10px 14px; font-size: 0.85rem; font-weight: 700; color: #374151; border-bottom: 1px solid #f3f4f6; margin: 0; }
+  &__item { padding: 7px 14px; font-size: 0.82rem; border-bottom: 1px solid #f9fafb; color: #374151; }
+}
+
+// ── Ganador ────────────────────────────────────────────────────────
+.rm-ganador {
+  text-align: center;
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  &__trophy  { font-size: 4rem; }
+  &__nombre  { font-size: 2rem; font-weight: 800; color: #111827; margin: 0; }
+  &__tel     { font-size: 0.95rem; color: #6b7280; margin: 0; }
+  &__premio  { font-size: 1.1rem; color: #374151; margin: 0; strong { color: #0891b2; } }
+  &__actions { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 8px; }
+}
+
+// ── Confetti ───────────────────────────────────────────────────────
+.confetti-container {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999; overflow: hidden;
+}
+.confetti-piece {
+  position: absolute; top: -20px; border-radius: 3px; opacity: 0;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+// Ruleta canvas (reutiliza el mismo estilo global)
+.ruleta-container {
+  position: relative; display: flex; justify-content: center; align-items: center;
+  canvas { width: 320px; height: 320px; display: block; }
+}
+.indicador {
+  position: absolute; top: -12px; left: 50%; z-index: 10; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 12px solid transparent; border-right: 12px solid transparent;
+  border-top: 24px solid #dc3545;
+}

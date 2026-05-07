@@ -84,10 +84,27 @@
             Rifas
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'rifas/agregar'">agregar</a></li>
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'rifas/buscar'">buscar</a></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'rifas/agregar'">
+                🎡 Rifa de variantes
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'rifas/mes'">
+                📅 Rifa mensual
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'rifas/buscar'">
+                🔍 Ver rifas activas
+              </a>
+            </li>
           </ul>
         </li>
 

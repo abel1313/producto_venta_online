@@ -341,7 +341,11 @@ export class AgregarComponent implements OnInit {
 
     this.varianteService.save(payloads).subscribe({
       next: () => this.onExito(),
-      error: () => { this.guardando = false; }
+      error: (err) => {
+        this.guardando = false;
+        const msg = err?.error?.mensaje ?? 'No se pudo guardar la variante.';
+        Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: '#dc2626' });
+      }
     });
   }
 

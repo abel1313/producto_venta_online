@@ -191,7 +191,11 @@ export class UpdateVarianteComponent implements OnInit {
         Swal.fire({ icon: 'success', title: '¡Variante actualizada!', timer: 1600, showConfirmButton: false })
           .then(() => this.router.navigate(['/variantes/buscar']));
       },
-      error: () => { this.guardando = false; }
+      error: (err) => {
+        this.guardando = false;
+        const msg = err?.error?.mensaje ?? 'No se pudo actualizar la variante.';
+        Swal.fire({ icon: 'error', title: 'Error al actualizar', text: msg, confirmButtonColor: '#dc2626' });
+      }
     });
   }
 }

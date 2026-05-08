@@ -5,16 +5,16 @@ import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
+import { VarianteService } from 'src/app/variante/service/variante.service';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
-import { VarianteService } from 'src/app/variante/service/variante.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -32,7 +32,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @Input() styleTableWidth?: string = '100%';
   @Input() styleTableheight?: string = '400px';
   gridApi: any;
-
+  private keyUpSubject = new Subject<string>();
   public env: string = environment.api_imagenes + "/imagenes/buscarImagenProducto/";
 
   paginaPrimera: number = 1;
@@ -69,6 +69,18 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly serviceCarrito: CarritoService,
     private readonly authService: AuthService
   ) {
+
+      this.keyUpSubject
+      .pipe(
+        filter(texto => texto.length > 3),   
+        debounceTime(1500),
+        distinctUntilChanged()                  
+      )
+      .subscribe(valor => {
+        console.log('Buscar en base: despues de 3 segundos', valor);
+        this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+      });
+
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -500,7 +512,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.sinResultados  = false;
       this.mensajeError   = '';
     }
-    this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+    this.keyUpSubject.next(this.buscarProd);
   }
 
   buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
@@ -509,7 +521,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.srvice.prodTerminoCache  === buscarProd &&
       this.srvice.prodPaginaCache   === paginaPrimera
     ) return;
-
+    
     this.activeSearch = buscarProd;
 
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, buscarProd)

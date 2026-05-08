@@ -468,7 +468,7 @@
       {{ ganadorActual.concursante.nombre }} {{ ganadorActual.concursante.apellidoPaterno }}
     </h2>
     <p class="rf-transicion__producto">
-      ganó <strong>{{ ganadorActual.configurarRifaVariante?.variante?.nombreProducto ?? varianteActualNombre }}</strong>
+      ganó <strong>{{ ganadorActual.configurarRifaVariante.variante.nombreProducto ?? varianteActualNombre }}</strong>
     </p>
     <p class="rf-transicion__clave">Palabra: "{{ ganadorActual.concursante.palabraClave }}"</p>
 
@@ -552,7 +552,7 @@
 
     <div class="rf-resumen__variante" *ngFor="let h of historial; let i = index">
       <h5 class="rf-resumen__var-titulo">
-        Variante {{ i + 1 }} — {{ h.configurarRifaVariante?.variante?.nombreProducto ?? h.configurarRifaVariante?.palabraClave }}
+        Variante {{ i + 1 }} — {{ h.configurarRifaVariante.variante.nombreProducto ?? h.configurarRifaVariante.palabraClave }}
         <span class="rf-resumen__clave">{{ h.configurarRifaVariante.palabraClave }}</span>
       </h5>
       <p class="rf-resumen__ganador">

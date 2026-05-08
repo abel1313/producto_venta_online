@@ -46,7 +46,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
 
-    this.busquedaSubject.pipe(debounceTime(400), takeUntil(this.destroy$))
+    this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
       .subscribe((termino: string) => this.buscarPagina(termino, 1));
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {

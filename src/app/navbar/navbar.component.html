@@ -211,12 +211,12 @@
           Productos
         </button>
 
-        <button class="btn btn-outline-secondary btn-sm" (click)="limpiarCarrito()">
+        <button class="btn btn-outline-secondary btn-sm" (click)="limpiarCarrito()" *ngIf="isAdminUser">
           <img [src]="iconService.iconLimpiar" alt="limpiar" style="width: 16px; height: 16px;">
           Limpiar
         </button>
 
-        <button class="btn btn-outline-primary btn-sm position-relative" (click)="revisarProductosCarrito()">
+        <button class="btn btn-outline-primary btn-sm position-relative" (click)="revisarProductosCarrito()" *ngIf="isAdminUser">
           <img [src]="iconService.iconCarrito" alt="carrito" style="width: 16px; height: 16px;">
           Carrito
           <span class="badge bg-danger ms-1" *ngIf="countCarrito > 0">{{ countCarrito }}</span>

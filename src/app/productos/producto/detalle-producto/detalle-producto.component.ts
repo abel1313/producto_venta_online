@@ -1,3 +1,4 @@
+import { map } from 'rxjs/operators';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IProductoDTO, IProductoPaginable } from '../models';
@@ -31,6 +32,8 @@ export class DetalleProductoComponent implements OnInit {
 
   cargando = true;
 
+  existeImagenes: boolean = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -51,6 +54,8 @@ export class DetalleProductoComponent implements OnInit {
   this.idProducto = +this.route.snapshot.paramMap.get('id')!;
   this.service.getDataImg(this.idProducto, 0, 4).subscribe(data => {
     this.productoDtoImagen = data.list;
+    this.existeImagenes = this.imagenesPorProducto();
+
     this.totalPaginas = data.totalPaginas;
     this.paginasCargadas.add(0);
     this.cargaInicialCompletada = true;
@@ -91,6 +96,37 @@ export class DetalleProductoComponent implements OnInit {
 
   }
 
+  compartirImagnesVariante(imagenes: ProductImagenDto[]) {
+    if(!this.existeImagenes) {
+      Swal.fire({ icon: 'info', title: 'No hay imágenes para compartir', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+      return;
+    }
+    Swal.fire({
+      title: 'Compartir imágenes',
+      text: '¿Deseas compartir las imágenes de este producto con sus variantes?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, compartir',
+      cancelButtonText: 'No, cancelar',
+      background: '#1e1b4b',
+      color: '#fff'
+    }).then((res) => {
+      if(!res.isConfirmed){
+        Swal.fire({ icon: 'info', title: 'Acción cancelada', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        return;
+      }
+      const compartirImagenesVarianteDto: CompartirImagenesVarianteDto = {
+        idProducto: this.idProducto
+      };
+      this.service.compartirImagenesVariante(compartirImagenesVarianteDto).subscribe((result) => {
+          Swal.fire({ icon: 'success', title: 'Imágenes compartidas exitosamente', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        // Handle the result if needed
+        }, error=>{
+          console.error('Error al compartir imágenes', error);
+          Swal.fire({ icon: 'error', title: 'Error al compartir imágenes', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });    
+        });
+    });
+  }
   volver(): void { this.router.navigate(['/productos/buscar']); }
 
   get cantidadEnCarrito(): number {
@@ -238,12 +274,17 @@ cargarPagina(pagina: number) {
       : [];
 
     this.productoDtoImagen = [...this.productoDtoImagen, ...nuevasImagenes];
+    this.existeImagenes = this.imagenesPorProducto();
   }, error => {
     this.paginasCargadas.delete(pagina); // liberar si falló
     console.error(error);
   });
 }
 
+  imagenesPorProducto(): boolean {
+    console.log(this.productoDtoImagen.map((img: ProductImagenDto) => img.image).length > 0, " imagenes del producto");
+    return (this.productoDtoImagen.map((img: ProductImagenDto) => img.image).length) > 0;
+  }
 
 
   getSeverity(status: string) {
@@ -288,4 +329,8 @@ export interface ProductImagenDto {
   inventoryStatus?: string;
   extencion?: string;
   image?: string;
+}
+
+export interface CompartirImagenesVarianteDto {
+  idProducto: number;
 }

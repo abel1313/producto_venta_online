@@ -120,7 +120,8 @@
             (click)="removeCarrito()">
       <i class="pi pi-minus"></i>
       Quitar del carrito
-    </button>
+    </button >
+    <button *ngIf="isAdminUser && existeImagenes" class="dp-btn dp-btn--remove" (click)="compartirImagnesVariante(productoDtoImagen)"> Compartir imagenes </button>
   </div>
 
 </div>

@@ -76,6 +76,7 @@ export class NavbarComponent implements OnInit {
     this.roles = [];
     this.usuario = '';
     this.countCarrito = 0;
+    this.countCarritoVariante = 0;
     this.serviceCarrito.limpiarCarrito();
     this.router.navigate(['/login']);
   }

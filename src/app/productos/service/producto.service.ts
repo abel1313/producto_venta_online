@@ -1,3 +1,4 @@
+import { CompartirImagenesVarianteDto } from './../producto/detalle-producto/detalle-producto.component';
 import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -151,5 +152,9 @@ export class ProductoService {
 
     diagnosticoImagenes(productoId: number): Observable<any> {
         return this.http.get(`${this.url}/admin/diagnostico-imagenes/${productoId}`);
+    }
+
+    compartirImagenesVariante(compartirImagenesVarianteDto: CompartirImagenesVarianteDto): Observable<any> {
+        return this.http.post(`${this.url}/compartir-imagenes-variantes`, compartirImagenesVarianteDto);
     }
 }

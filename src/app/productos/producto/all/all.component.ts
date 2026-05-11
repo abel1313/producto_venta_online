@@ -463,7 +463,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
     this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
-        Swal.fire({ icon: 'success', title: `${res.data.length} variante(s) creada(s)`, timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
         this.getData(this.paginaPrimera);
       },
       error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.message ?? 'Intenta de nuevo', confirmButtonColor: '#8b1a4a' })

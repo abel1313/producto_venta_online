@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://shop.novedades-jade.com.mx/sitemap.xml

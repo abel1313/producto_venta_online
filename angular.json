@@ -31,12 +31,13 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
+              "src/robots.txt",
+              "src/sitemap.xml",
               {
                 "glob": "_redirects",
                 "input": "src/assets",
                 "output": "/"
               }
-
             ],
             "styles": [
               "node_modules/primeng/resources/themes/lara-light-blue/theme.css",

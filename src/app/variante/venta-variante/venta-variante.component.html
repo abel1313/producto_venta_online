@@ -43,7 +43,7 @@
         <td class="fw-semibold">{{ item.subTotal | currency:'$' }}</td>
         <td class="d-flex gap-1">
           <button type="button" class="btn btn-sm btn-outline-secondary"
-            [disabled]="!item.imagenBase64" (click)="verImagen(item)" title="Ver imagen">
+            [disabled]="!item.imagenUrl" (click)="verImagen(item)" title="Ver imagen">
             🖼
           </button>
           <button type="button" class="btn btn-sm btn-outline-danger"
@@ -183,7 +183,7 @@
   <div class="img-visor-box" (click)="$event.stopPropagation()">
     <button class="img-visor-close" (click)="cerrarVisor()">✕</button>
     <img class="img-visor-img"
-      [src]="imagenVisor" [alt]="nombreVisor"
+      [src]="imagenVisor | imagenSrc | async" [alt]="nombreVisor"
       (error)="$any($event.target).src='assets/img/no-image.png'" />
     <p class="img-visor-nombre">{{ nombreVisor }}</p>
   </div>

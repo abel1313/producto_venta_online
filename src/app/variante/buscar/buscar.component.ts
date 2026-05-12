@@ -264,9 +264,4 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return 'badge bg-success';
   }
 
-  imageSrc(base64: string | null | undefined): string | null {
-    if (!base64) return null;
-    if (base64.startsWith('data:')) return base64;
-    return `data:image/jpeg;base64,${base64}`;
-  }
 }

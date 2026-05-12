@@ -589,11 +589,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.router.navigate(['/productos/detalle-productos']);
   }
 
-  imageSrc(item: IProductoDTO): string | null {
-    const img = (item as any).imagen;
-    if (!img?.imagen) return null;
-    return `data:${img.contentType};base64,${img.imagen}`;
-  }
 
   colorHeader(color: string): string {
     const map: Record<string, string> = {

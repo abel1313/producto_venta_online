@@ -16,6 +16,7 @@ import { VentaDirectaComponent } from './venta-directa/venta-directa.component';
 import { CarouselModule } from 'primeng/carousel';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { SharedModule } from '../shared/shared.module';
 
 
 @NgModule({
@@ -38,7 +39,8 @@ import { DropdownModule } from 'primeng/dropdown';
     CarouselModule,
     DialogModule,
     DropdownModule,
-    AgregarRoutingModule
+    AgregarRoutingModule,
+    SharedModule
   ]
 })
 export class AgregarModule { }

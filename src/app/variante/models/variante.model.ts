@@ -57,6 +57,7 @@ export interface IVarianteResumen {
   marca?: string | null;
   contenidoNeto?: string | null;
   imagenBase64?: string | null;
+  imagenUrl?: string | null;
   precio?: number | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;

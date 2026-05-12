@@ -85,12 +85,12 @@
 
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
 
-        <img *ngIf="imageSrc(item) as src"
+        <img *ngIf="item.imagen?.urlImagen | imagenSrc | async as src"
              [src]="src"
              [alt]="item.nombre"
              class="pl-card__img"
              (error)="$any($event.target).style.display='none'" />
-        <div *ngIf="!imageSrc(item)" class="pl-card__img-placeholder">📦</div>
+        <div *ngIf="!item.imagen?.urlImagen" class="pl-card__img-placeholder">📦</div>
       </div>
 
       <!-- Header con color + precio + stock -->

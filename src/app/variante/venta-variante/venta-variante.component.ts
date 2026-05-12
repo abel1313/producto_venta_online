@@ -227,10 +227,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   nombreVisor  = '';
 
   verImagen(item: IDetalleVariante): void {
-    if (!item.imagenBase64) return;
-    this.imagenVisor = item.imagenBase64.startsWith('data:')
-      ? item.imagenBase64
-      : `data:image/jpeg;base64,${item.imagenBase64}`;
+    if (!item.imagenUrl) return;
+    this.imagenVisor  = item.imagenUrl;
     this.nombreVisor  = this.labelItem(item);
     this.mostrarVisor = true;
   }

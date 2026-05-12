@@ -36,7 +36,8 @@ export class CarritoVarianteService {
         precio,
         cantidad:     1,
         subTotal:     precio,
-        imagenBase64: v.imagenBase64
+        imagenBase64: v.imagenBase64,
+        imagenUrl:    v.imagenUrl
       });
     }
 

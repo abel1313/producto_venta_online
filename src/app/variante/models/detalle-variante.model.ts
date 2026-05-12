@@ -10,4 +10,5 @@ export interface IDetalleVariante {
   cantidad: number;
   subTotal: number;
   imagenBase64?: string | null;
+  imagenUrl?: string | null;
 }

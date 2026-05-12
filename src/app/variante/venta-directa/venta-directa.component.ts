@@ -254,9 +254,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   // ── Visor de imagen ────────────────────────────────────────────────
 
-  verImagen(base64: string | null | undefined, nombre: string): void {
-    if (!base64) return;
-    this.imagenVisor = base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
+  verImagen(url: string | null | undefined, nombre: string): void {
+    if (!url) return;
+    this.imagenVisor = url;
     this.nombreVisor  = nombre;
     this.mostrarVisor = true;
   }

@@ -2,7 +2,7 @@
 <div class="vd-visor" *ngIf="mostrarVisor" (click)="cerrarVisor()">
   <div class="vd-visor__box" (click)="$event.stopPropagation()">
     <button class="vd-visor__close" (click)="cerrarVisor()">✕</button>
-    <img [src]="imagenVisor" [alt]="nombreVisor" class="vd-visor__img">
+    <img [src]="imagenVisor | imagenSrc | async" [alt]="nombreVisor" class="vd-visor__img">
     <p class="vd-visor__nombre">{{ nombreVisor }}</p>
   </div>
 </div>
@@ -50,12 +50,12 @@
         <div class="vd-result-row" *ngFor="let v of resultados"
              [class.vd-result-row--agotado]="(v.stock ?? 0) === 0">
           <div class="vd-result-row__thumb"
-               (click)="verImagen(v.imagenBase64, labelVariante(v))"
-               [title]="v.imagenBase64 ? 'Ver imagen' : 'Sin imagen'">
-            <img *ngIf="v.imagenBase64"
-                 [src]="v.imagenBase64.startsWith('data:') ? v.imagenBase64 : 'data:image/jpeg;base64,' + v.imagenBase64"
+               (click)="verImagen(v.imagenUrl, labelVariante(v))"
+               [title]="v.imagenUrl ? 'Ver imagen' : 'Sin imagen'">
+            <img *ngIf="v.imagenUrl | imagenSrc | async as src"
+                 [src]="src"
                  [alt]="labelVariante(v)">
-            <span *ngIf="!v.imagenBase64" class="vd-result-row__no-img">📦</span>
+            <span *ngIf="!v.imagenUrl" class="vd-result-row__no-img">📦</span>
           </div>
           <div class="vd-result-row__info">
             <span class="vd-result-row__nombre">{{ labelVariante(v) }}</span>
@@ -208,12 +208,12 @@
       <div *ngIf="lineas.length > 0; else ventaVacia" class="vd-lines">
         <div class="vd-line" *ngFor="let l of lineas; let i = index">
           <div class="vd-line__thumb"
-               (click)="verImagen(l.variante.imagenBase64, labelVariante(l.variante))"
+               (click)="verImagen(l.variante.imagenUrl, labelVariante(l.variante))"
                title="Ver imagen">
-            <img *ngIf="l.variante.imagenBase64"
-                 [src]="l.variante.imagenBase64.startsWith('data:') ? l.variante.imagenBase64 : 'data:image/jpeg;base64,' + l.variante.imagenBase64"
+            <img *ngIf="l.variante.imagenUrl | imagenSrc | async as src"
+                 [src]="src"
                  [alt]="labelVariante(l.variante)">
-            <span *ngIf="!l.variante.imagenBase64" class="vd-line__no-img">📦</span>
+            <span *ngIf="!l.variante.imagenUrl" class="vd-line__no-img">📦</span>
           </div>
           <div class="vd-line__body">
             <span class="vd-line__nombre">{{ labelVariante(l.variante) }}</span>

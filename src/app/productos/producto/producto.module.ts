@@ -26,6 +26,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { PaginatorModule } from 'primeng/paginator';
+import { SharedModule } from 'src/app/shared/shared.module';
 @NgModule({
   declarations: [
     AddComponent,
@@ -54,12 +55,14 @@ import { PaginatorModule } from 'primeng/paginator';
     ConfirmDialogModule,
     TooltipModule,
     FormsModule,
-    PaginatorModule
+    PaginatorModule,
+    SharedModule
   ],
   providers: [ConfirmationService],
   exports:[
     AllComponent,
     BuscaComponent,
+    SharedModule
   ]
 })
 export class ProductoModule { }

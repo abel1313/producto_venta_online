@@ -8,6 +8,9 @@ import { environment } from 'src/environments/environment';
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/registrar', '/auth/logout'];
 
+// Sentinel para notificar a los requests en cola que el refresh falló
+const REFRESH_FAILED = '__REFRESH_FAILED__';
+
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
 
@@ -43,14 +46,20 @@ export class TokenInterceptor implements HttpInterceptor {
 
   private handleRefresh(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.isRefreshing) {
-      // Cola el request hasta que el refresh en curso termine
+      // Requests en cola: esperan el token o el sentinel de fallo
       return this.refreshToken$.pipe(
         filter(token => token !== null),
         take(1),
-        switchMap(token => next.handle(req.clone({
-          setHeaders: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        })))
+        switchMap(token => {
+          if (token === REFRESH_FAILED) {
+            // El refresh falló — propaga el error al componente que esperaba
+            return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
+          }
+          return next.handle(req.clone({
+            setHeaders: { Authorization: `Bearer ${token}` },
+            withCredentials: true
+          }));
+        })
       );
     }
 
@@ -71,8 +80,11 @@ export class TokenInterceptor implements HttpInterceptor {
         }));
       }),
       catchError(err => {
+        // Fallo en el refresh o en el retry — desbloquea los requests en cola con el sentinel
         this.isRefreshing = false;
-        this.refreshToken$.next(null);
+        this.refreshToken$.next(REFRESH_FAILED);
+        // Resetea en el próximo tick para que un login posterior funcione normal
+        setTimeout(() => this.refreshToken$.next(null), 0);
         return throwError(() => err);
       })
     );

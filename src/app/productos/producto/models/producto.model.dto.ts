@@ -1,5 +1,3 @@
-import { IImagenDto } from "./imagen.dto.mode";
-
 export interface IProductoDTO{
 
     nombre:string;
@@ -10,8 +8,7 @@ export interface IProductoDTO{
     cantidad: number;
     subTotal: number;
     idProducto: number;
-    imagen:Imagen;
-    listImgs?: IImagenDto[];
+    imagen?: Imagen | null;
     marca?: string;
     color?: string;
     // campos extra que solo devuelve el backend cuando el token es admin
@@ -28,4 +25,5 @@ export interface Imagen{
     nombreImagen: string;
     imagen: string;
     contentType: string;
+    urlImagen?: string;
 }

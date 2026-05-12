@@ -380,3 +380,97 @@ $t:  all 0.22s ease;
   &--send   { background: #009ee3; color: #fff; &:disabled { opacity: .5; cursor: not-allowed; } }
   &--cancel { background: #dc2626; color: #fff; }
 }
+
+
+
+
+
+// ── Modal cliente sin registro ─────────────────────────────────────
+.vd-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+
+.vd-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%; max-width: 500px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  overflow: hidden;
+
+  &__header {
+    display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(135deg, #5c0f31 0%, $p 55%, $pd 100%);
+    padding: 18px 20px; color: #fff;
+  }
+  &__icon  { font-size: 1.6rem; flex-shrink: 0; }
+  &__title { font-size: 1rem; font-weight: 800; margin: 0; color: #fff; }
+  &__sub   { font-size: .74rem; color: rgba(255,255,255,.75); }
+  &__close {
+    margin-left: auto; background: rgba(255,255,255,.18); border: none;
+    border-radius: 50%; width: 30px; height: 30px; color: #fff;
+    cursor: pointer; font-size: .8rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: $t;
+    &:hover { background: rgba(220,38,38,.55); }
+  }
+
+  &__form { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  &__grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    @media (max-width: 480px) { grid-template-columns: 1fr; }
+  }
+
+  &__field {
+    display: flex; flex-direction: column; gap: 4px;
+    &--full { grid-column: 1 / -1; }
+  }
+
+  &__label {
+    font-size: .73rem; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  &__input {
+    border: 1.5px solid #e5e7eb; border-radius: 8px;
+    padding: 9px 12px; font-size: .88rem; color: #1f2937;
+    outline: none; transition: $t; width: 100%; box-sizing: border-box;
+    &:focus { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
+    &::placeholder { color: #d1d5db; }
+  }
+
+  &__error { font-size: .72rem; color: #dc2626; }
+
+  &__actions { display: flex; gap: 10px; }
+}
+
+// ── Chip cliente sin registro ──────────────────────────────────────
+.vd-client-chip--sinreg {
+  background: linear-gradient(135deg, rgba(251,191,36,.12), rgba(245,158,11,.06));
+  border-color: rgba(245,158,11,.35);
+
+  .vd-client-chip__badge {
+    background: rgba(245,158,11,.18); color: #92400e;
+    font-size: .68rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; border: 1px solid rgba(245,158,11,.3); flex-shrink: 0;
+  }
+}
+
+// ── Divider "o" ────────────────────────────────────────────────────
+.vd-client-divider {
+  display: flex; align-items: center; gap: 10px; color: #d1d5db; font-size: .78rem;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+}
+
+// ── Botón agregar sin registro ─────────────────────────────────────
+.vd-btn-sinreg {
+  width: 100%; padding: 11px; border: 1.5px dashed rgba(139,26,74,.35);
+  border-radius: 10px; background: rgba(139,26,74,.04); color: $p;
+  font-size: .88rem; font-weight: 600; cursor: pointer; transition: $t;
+  &:hover { background: rgba(139,26,74,.1); border-color: $p; }
+}

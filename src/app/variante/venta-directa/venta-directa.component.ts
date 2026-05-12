@@ -9,8 +9,9 @@ import { PagoService } from 'src/app/pedidos/pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from 'src/app/pedidos/mis-pedidos/models/IPago.model';
 import Swal from 'sweetalert2';
 import { IVarianteResumen } from '../models/variante.model';
-import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse } from '../service/variante.service';
+import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse, IClienteSinRegistro } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -24,6 +25,10 @@ interface ILineaVenta {
   styleUrls: ['./venta-directa.component.scss']
 })
 export class VentaDirectaComponent implements OnInit, OnDestroy {
+
+  modalClienteSinRegistro = false;
+  clienteForm: FormGroup;
+  clienteSinRegistroModal: IClienteSinRegistro = null as any; // Para almacenar los datos del cliente sin registro desde el modal
 
   // ── Búsqueda de variantes (panel izquierdo) ────────────────────────
   terminoVariante  = '';
@@ -76,9 +81,49 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly clienteService:  ClienteService,
     private readonly pagoService:     PagoService,
     private readonly authService:     AuthService,
-    private readonly usuarioService:  UsuarioService
-  ) {}
+    private readonly usuarioService:  UsuarioService,
+    private fb: FormBuilder
+  ) {
 
+    this.clienteForm = this.fb.group({
+      nombre_persona: ['', Validators.required],
+      segundo_nombre: [''],
+      apeido_Paterno: [''],
+      apeido_Materno: [''],
+      fecha_Nacimiento: [''],
+      sexo: [''],
+      correo_Electronico: [''],
+      numero_Telefonico: ['']
+    });
+
+  }
+
+  openModalSinRegistro() {
+    this.modalClienteSinRegistro = true;
+  }
+  closeModalModalSinRegistro() {
+    this.modalClienteSinRegistro = false;
+  }
+
+  obtenerDatosClienteSinRegistro(): void {
+    this.clienteSinRegistroModal = this.clienteForm.value;
+    this.clienteSeleccionado = null;
+    this.terminoCliente = '';
+    this.clientes = [];
+    Swal.fire({
+      icon: 'success',
+      title: 'Cliente sin registro agregado',
+      text: `${this.clienteSinRegistroModal.nombre_persona} ${this.clienteSinRegistroModal.apeido_Paterno || ''}`.trim(),
+      timer: 2000,
+      showConfirmButton: false
+    });
+    this.closeModalModalSinRegistro();
+  }
+
+  limpiarClienteSinRegistro(): void {
+    this.clienteSinRegistroModal = null as any;
+    this.clienteForm.reset();
+  }
   ngOnInit(): void {
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
@@ -272,6 +317,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       usuarioId:     this.idUsuario,
       clienteId,
       pagosYMesesId: this.pagosYMesesId!,
+      clienteSinRegistroDto: this.clienteSinRegistroModal,
       detalles: this.lineas.map(l => ({
         productoId:  l.variante.productoId ?? 0,
         varianteId:  l.variante.id,

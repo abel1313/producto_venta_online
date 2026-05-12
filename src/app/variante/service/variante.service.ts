@@ -127,6 +127,7 @@ export interface IVentaDirectaRequest {
   usuarioId:     number;
   clienteId:     number;
   pagosYMesesId: number;
+  clienteSinRegistroDto?: IClienteSinRegistro,
   detalles: {
     productoId:  number;
     varianteId:  number | null;
@@ -136,6 +137,16 @@ export interface IVentaDirectaRequest {
   }[];
 }
 
+export interface IClienteSinRegistro {
+      nombre_persona: string;
+      segundo_nombre: string;
+      apeido_Paterno: string;
+      apeido_Materno: string;
+      fecha_Nacimiento: string;
+      sexo: string;
+      correo_Electronico: string;
+      numero_Telefonico: string;
+}
 export interface IVentaDirectaResponse {
   ventaId:          number;
   tipoPago:         string;

@@ -1,4 +1,4 @@
-<!-- ── Visor de imagen ────────────────────────────────────────────── -->
+﻿<!-- ── Visor de imagen ────────────────────────────────────────────── -->
 <div class="vd-visor" *ngIf="mostrarVisor" (click)="cerrarVisor()">
   <div class="vd-visor__box" (click)="$event.stopPropagation()">
     <button class="vd-visor__close" (click)="cerrarVisor()">✕</button>
@@ -108,6 +108,8 @@
         </button>
       </div>
 
+
+
       <!-- ── FORMA DE PAGO ─────────────────────────────────────── -->
       <div class="vd-pay-section">
         <p class="vd-panel__title">
@@ -147,7 +149,20 @@
           <span class="vd-optional">(opcional — sin cliente se asigna al admin)</span>
         </p>
 
-        <div *ngIf="clienteSeleccionado" class="vd-client-chip">
+        <!-- Chip: cliente sin registro asignado -->
+        <div *ngIf="clienteSinRegistroModal" class="vd-client-chip vd-client-chip--sinreg">
+          <span class="vd-client-chip__badge">Sin registro</span>
+          <span class="vd-client-chip__name">
+            {{ clienteSinRegistroModal.nombre_persona }} {{ clienteSinRegistroModal.apeido_Paterno }}
+          </span>
+          <span *ngIf="clienteSinRegistroModal.numero_Telefonico" class="vd-client-chip__phone">
+            📱 {{ clienteSinRegistroModal.numero_Telefonico }}
+          </span>
+          <button class="vd-client-chip__clear" (click)="limpiarClienteSinRegistro()">✕</button>
+        </div>
+
+        <!-- Chip: cliente registrado -->
+        <div *ngIf="clienteSeleccionado && !clienteSinRegistroModal" class="vd-client-chip">
           <span class="vd-client-chip__name">
             {{ clienteSeleccionado.nombrePersona }} {{ clienteSeleccionado.apeidoPaterno }}
           </span>
@@ -157,25 +172,34 @@
           <button class="vd-client-chip__clear" (click)="limpiarCliente()">✕</button>
         </div>
 
-        <div *ngIf="!clienteSeleccionado" class="vd-client-search">
-          <div class="vd-search">
-            <span class="vd-search__icon">👤</span>
-            <input class="vd-search__input" type="text"
-                   placeholder="Buscar cliente por nombre…"
-                   [(ngModel)]="terminoCliente"
-                   (input)="onInputCliente()"
-                   autocomplete="off">
-            <span *ngIf="buscandoCliente" class="vd-search__spin">
-              <span class="spinner-border spinner-border-sm"></span>
-            </span>
-          </div>
-          <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
-            <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">
-              <strong>{{ c.nombrePersona }} {{ c.apeidoPaterno }}</strong>
-              <small *ngIf="c.numeroTelefonico">{{ c.numeroTelefonico }}</small>
+        <!-- Búsqueda + botón sin registro (cuando no hay ninguno asignado) -->
+        <ng-container *ngIf="!clienteSinRegistroModal && !clienteSeleccionado">
+          <div class="vd-client-search">
+            <div class="vd-search">
+              <span class="vd-search__icon">👤</span>
+              <input class="vd-search__input" type="text"
+                     placeholder="Buscar cliente por nombre…"
+                     [(ngModel)]="terminoCliente"
+                     (input)="onInputCliente()"
+                     autocomplete="off">
+              <span *ngIf="buscandoCliente" class="vd-search__spin">
+                <span class="spinner-border spinner-border-sm"></span>
+              </span>
+            </div>
+            <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
+              <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">
+                <strong>{{ c.nombrePersona }} {{ c.apeidoPaterno }}</strong>
+                <small *ngIf="c.numeroTelefonico">{{ c.numeroTelefonico }}</small>
+              </div>
             </div>
           </div>
-        </div>
+
+          <div class="vd-client-divider"><span>o</span></div>
+
+          <button class="vd-btn-sinreg" type="button" (click)="openModalSinRegistro()">
+            👤 Agregar cliente sin registro
+          </button>
+        </ng-container>
       </div>
 
       <!-- ── LÍNEAS DE VENTA ───────────────────────────────────── -->
@@ -273,3 +297,80 @@
     </div>
   </div>
 </div>
+
+
+
+
+<!-- Modal cliente sin registro -->
+<div class="vd-modal-overlay" *ngIf="modalClienteSinRegistro" (click)="closeModalModalSinRegistro()">
+  <div class="vd-modal" (click)="$event.stopPropagation()">
+
+    <div class="vd-modal__header">
+      <span class="vd-modal__icon">👤</span>
+      <div>
+        <h3 class="vd-modal__title">Cliente sin registro</h3>
+        <small class="vd-modal__sub">Datos para asignar a esta venta</small>
+      </div>
+      <button class="vd-modal__close" (click)="closeModalModalSinRegistro()">&#10005;</button>
+    </div>
+
+    <form [formGroup]="clienteForm" (ngSubmit)="obtenerDatosClienteSinRegistro()" class="vd-modal__form">
+      <div class="vd-modal__grid">
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Nombre <span class="vd-required">*</span></label>
+          <input class="vd-modal__input" formControlName="nombre_persona" type="text" placeholder="Nombre...">
+          <small class="vd-modal__error"
+                 *ngIf="clienteForm.get('nombre_persona')?.invalid && clienteForm.get('nombre_persona')?.touched">
+            Obligatorio
+          </small>
+        </div>
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Segundo nombre</label>
+          <input class="vd-modal__input" formControlName="segundo_nombre" type="text" placeholder="Segundo nombre...">
+        </div>
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Apellido paterno</label>
+          <input class="vd-modal__input" formControlName="apeido_Paterno" type="text" placeholder="Apellido paterno...">
+        </div>
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Apellido materno</label>
+          <input class="vd-modal__input" formControlName="apeido_Materno" type="text" placeholder="Apellido materno...">
+        </div>
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Fecha de nacimiento</label>
+          <input class="vd-modal__input" formControlName="fecha_Nacimiento" type="date">
+        </div>
+
+        <div class="vd-modal__field">
+          <label class="vd-modal__label">Sexo</label>
+          <input class="vd-modal__input" formControlName="sexo" type="text" placeholder="M / F...">
+        </div>
+
+        <div class="vd-modal__field vd-modal__field--full">
+          <label class="vd-modal__label">Correo electrónico</label>
+          <input class="vd-modal__input" formControlName="correo_Electronico" type="email" placeholder="correo@ejemplo.com">
+        </div>
+
+        <div class="vd-modal__field vd-modal__field--full">
+          <label class="vd-modal__label">Número telefónico</label>
+          <input class="vd-modal__input" formControlName="numero_Telefonico" type="text" placeholder="10 dígitos...">
+        </div>
+
+      </div>
+
+      <div class="vd-modal__actions">
+        <button type="button" class="vd-btn-limpiar" (click)="closeModalModalSinRegistro()">Cancelar</button>
+        <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid">
+          Guardar cliente
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+

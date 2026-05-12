@@ -20,6 +20,16 @@ export class BuscaComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    if (this.service.prodInitialized) {
+      this.paginacionBuscar = {
+        t:              this.service.prodCache,
+        totalPaginas:   this.service.prodTotalCache,
+        pagina:         this.service.prodPaginaCache,
+        totalRegistros: this.service.prodCache.length
+      };
+    } else {
+      this.buscarPorNombreCodigoPostal(1, 10, '');
+    }
   }
 
 
@@ -31,11 +41,11 @@ export class BuscaComponent implements OnInit {
     
   }
 
-  buscarPorNombreCodigoPostal(pagina:number,size:number,nombre:string): void{
-    
-    this.service.getDataNombreCodigoBarra(pagina,size,nombre).subscribe({
+  buscarPorNombreCodigoPostal(pagina: number, size: number, nombre: string): void {
+    this.service.getDataNombreCodigoBarra(pagina, size, nombre).subscribe({
       next: (res) => {
         this.paginacionBuscar = res;
+        this.service.setProdCache(res.t ?? [], pagina, res.totalPaginas ?? 0, nombre);
       },
       error: (err) => {
         console.error('Error en la petición:', err);

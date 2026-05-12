@@ -184,7 +184,24 @@ export class UpdateVarianteComponent implements OnInit {
     };
 
     this.varianteService.update(this.variante.id, payload).subscribe({
-      next: () => {
+      next: (res) => {
+        const updated = res?.data?.[0];
+        if (updated) {
+          const cache = this.varianteService.variantesCache;
+          const idx = cache.findIndex(v => v.id === updated.id);
+          if (idx !== -1) {
+            cache[idx] = {
+              ...cache[idx],
+              talla:         updated.talla         ?? cache[idx].talla,
+              color:         updated.color         ?? cache[idx].color,
+              marca:         updated.marca         ?? cache[idx].marca,
+              presentacion:  updated.presentacion  ?? cache[idx].presentacion,
+              stock:         updated.stock         ?? cache[idx].stock,
+              descripcion:   updated.descripcion   ?? cache[idx].descripcion,
+              contenidoNeto: updated.contenidoNeto ?? cache[idx].contenidoNeto,
+            };
+          }
+        }
         this.varianteService.invalidarCache();
         this.varianteService.clearVarianteUpdate();
         this.guardando = false;

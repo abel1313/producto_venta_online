@@ -155,13 +155,15 @@ export class AddComponent implements OnInit, AfterViewInit {
       next: () => {
         this.guardando = false;
         this.resetForm();
+        this.service.invalidarProdCache();
         Swal.fire({
           title: this.esActualizar ? '¡Producto actualizado!' : '¡Producto guardado!',
           icon: 'success',
           timer: 1600,
           showConfirmButton: false
+        }).then(() => {
+          if (this.esActualizar) this.router.navigate(['/productos/buscar']);
         });
-        if (this.esActualizar) this.router.navigate(['/productos/buscar']);
       },
       error: () => {
         this.guardando = false;

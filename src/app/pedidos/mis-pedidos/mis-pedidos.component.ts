@@ -85,23 +85,30 @@ export class MisPedidosComponent implements OnInit {
 
   cancelarPedido(item: IPedidoGenerico) {
     Swal.fire({
-      title: 'Cancelar pedido',
-      icon: 'error',
-      html: `<p>Desea cancelar el pedido ${item.pedido.id}</p>`,
+      title: '¿Por qué cancelas este pedido?',
+      html: `<p style="color:#6b7280;margin-bottom:4px">Pedido #${item.pedido.id}</p>`,
+      icon: 'warning',
+      input: 'radio',
+      inputOptions: {
+        NO_SE_PRESENTO: 'No se presentó',
+        CLIENTE_AVISO:  'El cliente avisó'
+      },
+      inputValue: 'NO_SE_PRESENTO',
       showCancelButton: true,
-      confirmButtonText: 'Confirmar',
-      cancelButtonText: 'No',
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33'
+      confirmButtonText: 'Cancelar pedido',
+      cancelButtonText: 'No cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6b7280',
+      inputValidator: (value) => (!value ? 'Selecciona un motivo' : null)
     }).then(result => {
       if (result.isConfirmed) {
-        this.pedidoService.deleteData(item.pedido.id).subscribe(
-          () => {
+        this.pedidoService.cancelarConMotivo(item.pedido.id, result.value).subscribe({
+          next: () => {
             this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
-            Swal.fire({ title: 'El pedido se cancelo correctamente', icon: 'success', draggable: true });
+            Swal.fire({ title: 'Pedido cancelado correctamente', icon: 'success', timer: 1600, showConfirmButton: false });
           },
-          () => Swal.fire({ title: 'Ocurrio un error al eliminar el pedido, intente de nuevo', icon: 'error', draggable: true })
-        );
+          error: () => Swal.fire({ title: 'Error al cancelar el pedido, intente de nuevo', icon: 'error' })
+        });
       }
     });
   }

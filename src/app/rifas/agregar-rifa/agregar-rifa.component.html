@@ -318,13 +318,16 @@
       <!-- Tabla participantes activos -->
       <div class="rf-tabla" *ngIf="concursantesActivos.length > 0">
         <div class="rf-tabla__row rf-tabla__head">
-          <span>#</span><span>Nombre</span><span>Tel.</span><span>Palabra</span><span></span>
+          <span>#</span><span>Nombre</span><span>Tel.</span><span>Palabra</span><span>Boletos</span><span></span>
         </div>
         <div class="rf-tabla__row" *ngFor="let c of concursantesActivos; let i = index">
           <span>{{ i + 1 }}</span>
           <span>{{ c.nombre }} {{ c.apellidoPaterno }}</span>
           <span>{{ c.telefono }}</span>
           <span class="rf-tabla__badge">{{ c.palabraClave }}</span>
+          <span class="rf-tabla__boletos" [title]="c.boletos != null ? 'Peso interno: ' + c.boletos : ''">
+            {{ c.boletosBase ?? '—' }}
+          </span>
           <button class="rf-del-btn" (click)="eliminarConcursante(c)">✕</button>
         </div>
       </div>

@@ -135,6 +135,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           configurarRifaId: rifa.id!,
           palabraClave:     this.palabraClave.trim().toUpperCase(),
           ordenDesde:       1,
+          mes:              this.mesSeleccionado,
           clientes:         clientesSelec
         }).subscribe({
           next: concursantes => {

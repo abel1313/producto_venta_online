@@ -332,6 +332,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       configurarRifaId: this.rifaConfig.id,
       palabraClave:     this.palabraClaveImport.trim().toUpperCase(),
       ordenDesde:       1,
+      mes:              this.mesSeleccionado,
       clientes
     }).subscribe({
       next: res => {

@@ -34,4 +34,8 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     eliminarDetalle(pedidoId: number, productoId: number, cantidad: number = 1): Observable<ResponseGeneric<string>> {
       return this.http.delete<ResponseGeneric<string>>(`${this.url}/pedidos/${pedidoId}/detalle/${productoId}?cantidad=${cantidad}`);
     }
+
+    cancelarConMotivo(id: number, motivo: string): Observable<any> {
+      return this.http.delete<any>(`${this.url}/pedidos/delete/${id}?motivo=${encodeURIComponent(motivo)}`);
+    }
 }

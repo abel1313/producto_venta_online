@@ -181,6 +181,14 @@
           <span class="pl-btn-card__label">Variantes</span>
         </button>
 
+        <button *ngIf="isAdminUser && item.imagen?.urlImagen"
+                class="pl-btn-card pl-btn-card--share"
+                (click)="compartirImagen(item)"
+                title="Compartir imagen">
+          <span>📤</span>
+          <span class="pl-btn-card__label">Imagen</span>
+        </button>
+
         <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--toggle"
           [title]="estaHabilitado(item) ? 'Deshabilitar' : 'Habilitar'"
           (click)="habilitarProducto(item, !estaHabilitado(item))">

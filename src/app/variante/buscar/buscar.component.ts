@@ -8,6 +8,7 @@ import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
+import { CompartirService } from 'src/app/shared/compartir.service';
 
 @Component({
   selector: 'app-buscar',
@@ -36,8 +37,18 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly carritoVariante: CarritoVarianteService,
     private readonly route: ActivatedRoute,
-    readonly router: Router
+    readonly router: Router,
+    private readonly compartirSvc: CompartirService
   ) {}
+
+  compartirImagen(v: IVarianteResumen): void {
+    if (!v.imagenUrl) return;
+    this.compartirSvc.compartirImagen({
+      titulo:    [v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · '),
+      precio:    v.precio ?? 0,
+      imagenUrl: v.imagenUrl
+    });
+  }
 
   ngOnInit(): void {
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {

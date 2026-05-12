@@ -15,6 +15,7 @@ import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
+import { CompartirService } from 'src/app/shared/compartir.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -67,7 +68,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly srvice: ProductoService,
     private readonly varianteService: VarianteService,
     private readonly serviceCarrito: CarritoService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly compartirSvc: CompartirService
   ) {
 
       this.keyUpSubject
@@ -587,6 +589,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   verCarrito(): void {
     this.router.navigate(['/productos/detalle-productos']);
+  }
+
+  compartirImagen(item: IProductoDTO): void {
+    if (!item.imagen?.urlImagen) return;
+    this.compartirSvc.compartirImagen({
+      titulo:    item.nombre,
+      precio:    item.precioVenta,
+      imagenUrl: item.imagen.urlImagen
+    });
   }
 
 

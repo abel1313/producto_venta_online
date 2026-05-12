@@ -147,6 +147,14 @@
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
         </button>
+
+        <button *ngIf="isAdminUser && v.imagenUrl"
+                class="vb-btn-card vb-btn-card--share"
+                (click)="compartirImagen(v)"
+                title="Compartir imagen">
+          <span>📤</span>
+          <span class="vb-btn-card__label">Imagen</span>
+        </button>
       </div>
 
     </div>

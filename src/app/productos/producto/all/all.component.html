@@ -50,9 +50,14 @@
 <!-- ── Scanner overlay ───────────────────────────────────────────── -->
 <div class="scanner-overlay" *ngIf="escaneando">
   <div class="scanner-box">
+    <p class="scanner-box__title">Apunta la cámara al código de barras</p>
     <video #videoScanner class="scanner-video" autoplay playsinline></video>
+    <div class="scanner-frame">
+      <span class="scanner-frame__bl"></span>
+      <span class="scanner-frame__br"></span>
+    </div>
     <div class="scanner-linea"></div>
-    <button class="btn btn-danger mt-2 w-100" (click)="detenerEscaner()">✖ Cerrar escáner</button>
+    <button class="btn btn-danger w-100" style="border-radius:8px;font-weight:600;" (click)="detenerEscaner()">✖ Cerrar escáner</button>
   </div>
 </div>
 

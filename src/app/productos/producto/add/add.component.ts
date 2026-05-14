@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -15,10 +15,12 @@ import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model
   templateUrl: './add.component.html',
   styleUrls: ['./add.component.scss']
 })
-export class AddComponent implements OnInit, AfterViewInit {
+export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
 
-  @ViewChild('canvas',     { static: false }) canvasRef!:    ElementRef<HTMLCanvasElement>;
-  @ViewChild('fileInput',  { static: false }) fileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('canvas',       { static: false }) canvasRef!:      ElementRef<HTMLCanvasElement>;
+  @ViewChild('fileInput',    { static: false }) fileInputRef!:   ElementRef<HTMLInputElement>;
+  @ViewChild('videoCamara',  { static: false }) videoCamaraRef!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvasCamara', { static: false }) canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
 
   @Input() nombreCard    = 'Agregar Producto';
   @Input() productoUpdate: IProductoDTORec | null = null;
@@ -26,6 +28,8 @@ export class AddComponent implements OnInit, AfterViewInit {
   formProductos!: FormGroup;
   imagenesCargadas: IImagenDto[] = [];
   guardando = false;
+  mostrandoCamara = false;
+  private mediaStream: MediaStream | null = null;
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -235,7 +239,13 @@ export class AddComponent implements OnInit, AfterViewInit {
     input.value = '';
   }
 
+  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+
   private procesarImagen(file: File): void {
+    if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
@@ -270,5 +280,45 @@ export class AddComponent implements OnInit, AfterViewInit {
       const canvas = this.canvasRef?.nativeElement;
       if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     }
+  }
+
+  // ── Cámara ────────────────────────────────────────────────────────
+
+  async abrirCamara(): Promise<void> {
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      this.mostrandoCamara = true;
+      await new Promise(r => setTimeout(r, 100));
+      this.videoCamaraRef.nativeElement.srcObject = this.mediaStream;
+    } catch {
+      Swal.fire({ icon: 'error', title: 'Sin acceso a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.', timer: 2500, showConfirmButton: false });
+    }
+  }
+
+  capturarFoto(): void {
+    const video  = this.videoCamaraRef?.nativeElement;
+    const canvas = this.canvasCamaraRef?.nativeElement;
+    if (!video || !canvas) return;
+
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')!.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      this.cerrarCamara();
+      this.procesarImagen(file);
+    }, 'image/jpeg', 0.92);
+  }
+
+  cerrarCamara(): void {
+    this.mediaStream?.getTracks().forEach(t => t.stop());
+    this.mediaStream = null;
+    this.mostrandoCamara = false;
+  }
+
+  ngOnDestroy(): void {
+    this.cerrarCamara();
   }
 }

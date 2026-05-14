@@ -1,26 +1,69 @@
+<!-- Formulario de actualización -->
 <app-add [nombreCard]="'Actualizar Producto'" [productoUpdate]="productoActualizar"></app-add>
 
+<!-- ── Imágenes actuales del producto ──────────────────────────────── -->
+<div class="ui-imgs">
 
-<div class="row">
-  <div class="col-4" *ngFor="let item of productoImagenesDto?.listaImagenes">
-    <nb-card accent="info" style="position: relative;">
-      <nb-card-header>
-        Nebula
-        <button
-          class="btn btn-sm btn-danger"
-          style="position: absolute; top: 5px; right: 5px;"
-          (click)="eliminarImagen(item)"
-        >
-          ×
-        </button>
-      </nb-card-header>
-      <nb-card-body>
-        <img
-          style="width: 300px; height: 400px;"
-          [src]="'data:image/' + item.extension + ';base64,' + item.base64"
-          [alt]="item.nombreImagen"
-        >
-      </nb-card-body>
-    </nb-card>
+  <div class="ui-imgs__header">
+    <span class="ui-imgs__title">🖼️ Imágenes actuales</span>
+    <span class="ui-imgs__count" *ngIf="imagenesVista.length > 0">
+      {{ imagenesVista.length }} {{ imagenesVista.length === 1 ? 'imagen' : 'imágenes' }}
+    </span>
   </div>
+
+  <!-- Cargando lista -->
+  <div *ngIf="cargandoImagenes" class="ui-imgs__loading">
+    <span class="spinner-border spinner-border-sm text-primary"></span>
+    <span>Cargando imágenes…</span>
+  </div>
+
+  <!-- Sin imágenes -->
+  <div *ngIf="!cargandoImagenes && imagenesVista.length === 0" class="ui-imgs__empty">
+    <span>📷</span>
+    <p>Este producto no tiene imágenes cargadas</p>
+  </div>
+
+  <!-- Grid de imágenes -->
+  <div *ngIf="imagenesVista.length > 0" class="ui-imgs__grid">
+    <div class="ui-img-card" *ngFor="let item of imagenesVista">
+
+      <!-- Imagen o estados -->
+      <div class="ui-img-card__wrap">
+        <ng-container *ngIf="item.cargando">
+          <div class="ui-img-card__skeleton">
+            <span class="spinner-border spinner-border-sm"></span>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="item.error && !item.cargando">
+          <div class="ui-img-card__error">
+            <span>⚠️</span>
+            <small>Sin vista previa</small>
+          </div>
+        </ng-container>
+
+        <img *ngIf="!item.cargando && !item.error && item.src"
+             [src]="item.src"
+             [alt]="item.dto.nombreImagen"
+             class="ui-img-card__img" />
+
+        <!-- Botón eliminar -->
+        <button class="ui-img-card__del"
+                type="button"
+                [disabled]="estaEliminando(item.dto.id)"
+                (click)="eliminarImagen(item)"
+                title="Eliminar imagen">
+          <span *ngIf="!estaEliminando(item.dto.id)">✕</span>
+          <span *ngIf="estaEliminando(item.dto.id)" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
+
+      <!-- Nombre del archivo -->
+      <p class="ui-img-card__name" [title]="item.dto.nombreImagen">
+        {{ item.dto.nombreImagen }}
+      </p>
+
+    </div>
+  </div>
+
 </div>

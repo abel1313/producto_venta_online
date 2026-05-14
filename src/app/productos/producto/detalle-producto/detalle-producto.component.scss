@@ -119,13 +119,14 @@ $primary-d:  #c2255c;
   background: #fff;
   border-radius: $radius;
   box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   margin-bottom: 1.25rem;
+  overflow: hidden;
 }
 
 // ── Slide ──────────────────────────────────────────────────────────
 .dp-slide {
-  padding: 0.5rem;
+  padding: 0.4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -134,11 +135,13 @@ $primary-d:  #c2255c;
     border: 2px solid #ef4444;
     box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
   }
+
+  @media (max-width: 575px) { padding: 0.25rem; }
 }
 
 .dp-slide__img-wrap {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 3;
   background: #fdf0f5;
   border-radius: 12px;
   overflow: hidden;
@@ -148,12 +151,17 @@ $primary-d:  #c2255c;
   border: 1px solid #fde8f0;
   position: relative;
   transition: $transition;
+
+  @media (max-width: 575px) {
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+  }
 }
 
 .dp-slide__img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   transition: $transition;
   &:hover { transform: scale(1.04); }
 }

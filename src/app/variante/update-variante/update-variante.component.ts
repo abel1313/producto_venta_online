@@ -9,6 +9,8 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
+// Nuevo — palabra clave para categorizar la variante
+import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 @Component({
   selector: 'app-update-variante',
@@ -32,6 +34,8 @@ export class UpdateVarianteComponent implements OnInit {
 
   // Imágenes
   imagenesCargadas: IImagenDto[] = [];
+  // Nuevo — palabra clave seleccionada vía autocomplete
+  palabraClaveSeleccionada: IPalabraClave | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -57,6 +61,11 @@ export class UpdateVarianteComponent implements OnInit {
       marca:         [this.variante.marca         ?? ''],
       contenidoNeto: [this.variante.contenidoNeto ?? ''],
     });
+
+    // Precargar palabra clave si la variante ya tenía una asignada
+    if (this.variante.palabraClave) {
+      this.palabraClaveSeleccionada = this.variante.palabraClave;
+    }
 
     if (this.variante.producto) {
       this.productoSeleccionado = {
@@ -170,6 +179,11 @@ export class UpdateVarianteComponent implements OnInit {
     this.form.patchValue({ stock: nuevo });
   }
 
+  // Nuevo — recibe la selección del autocomplete de palabra clave
+  onPalabraClaveSeleccionada(p: IPalabraClave | null): void {
+    this.palabraClaveSeleccionada = p;
+  }
+
   // ── Actualizar ─────────────────────────────────────────────────────
 
   actualizar(): void {
@@ -177,9 +191,11 @@ export class UpdateVarianteComponent implements OnInit {
     this.guardando = true;
 
     const payload: IVarianteRequest = {
-      id:         this.variante.id,
-      productoId: this.productoSeleccionado.idProducto,
+      id:             this.variante.id,
+      productoId:     this.productoSeleccionado.idProducto,
       ...this.form.value,
+      // Nuevo — ID de la palabra clave seleccionada
+      palabraClaveId: this.palabraClaveSeleccionada?.id ?? null,
       ...(this.imagenesCargadas.length ? { listImagenes: this.imagenesCargadas } : {})
     };
 

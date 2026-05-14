@@ -93,6 +93,15 @@
               placeholder="Descripción de la variante…"></textarea>
           </div>
 
+          <!-- Nuevo — categoría que se aplica a todas las variantes del lote -->
+          <div class="vf-field vf-field--full">
+            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(opcional — aplica a todas las variantes)</span></label>
+            <app-palabra-clave-autocomplete
+              [valorInicial]="palabraClaveSeleccionada"
+              (seleccionada)="onPalabraClaveSeleccionada($event)">
+            </app-palabra-clave-autocomplete>
+          </div>
+
         </div>
       </form>
 

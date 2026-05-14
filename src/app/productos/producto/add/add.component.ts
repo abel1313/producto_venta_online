@@ -7,6 +7,8 @@ import { IImagenDto } from '../models';
 import { IProducto } from '../models/producto.model';
 import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoService } from '../../service/producto.service';
+// Nuevo — palabra clave para categorizar el producto en búsquedas
+import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 @Component({
   selector: 'app-add',
@@ -24,6 +26,8 @@ export class AddComponent implements OnInit, AfterViewInit {
   formProductos!: FormGroup;
   imagenesCargadas: IImagenDto[] = [];
   guardando = false;
+  // Nuevo — palabra clave seleccionada vía autocomplete
+  palabraClaveSeleccionada: IPalabraClave | null = null;
 
   get esActualizar(): boolean { return this.nombreCard === 'Actualizar Producto'; }
 
@@ -105,9 +109,16 @@ export class AddComponent implements OnInit, AfterViewInit {
 
   // ── Carga de datos en modo actualizar ──────────────────────────────
 
+  // Nuevo — recibe la selección del autocomplete de palabra clave
+  onPalabraClaveSeleccionada(p: IPalabraClave | null): void {
+    this.palabraClaveSeleccionada = p;
+  }
+
   private cargarProductoUpdate(): void {
     const p = this.productoUpdate!;
     const tieneCodigo = !!p.codigoBarras;
+    // Precargar palabra clave si el producto ya tenía una asignada
+    if (p.palabraClave) this.palabraClaveSeleccionada = p.palabraClave;
     this.formProductos.patchValue({
       nombre:        p.nombre,
       precioCosto:   p.precioVenta,
@@ -147,7 +158,9 @@ export class AddComponent implements OnInit, AfterViewInit {
       actualizarStock:+raw.actualizarStock || 0,
       eliminarStock:  +raw.eliminarStock   || 0,
       codigoBarras:   { codigoBarras: raw.codigoBarras, id: 0 },
-      listImagenes:    this.imagenesCargadas
+      listImagenes:    this.imagenesCargadas,
+      // Nuevo — ID de la palabra clave seleccionada (null si no se eligió)
+      palabraClaveId:  this.palabraClaveSeleccionada?.id ?? null
     };
 
     this.guardando = true;

@@ -1,0 +1,34 @@
+<div class="pka-wrap">
+  <div class="pka-search" [class.pka-search--seleccionada]="seleccion">
+    <span class="pka-search__icon">🏷️</span>
+    <input class="pka-search__input"
+           type="text"
+           placeholder="Buscar categoría… (ej. bolsa)"
+           [(ngModel)]="termino"
+           (input)="onInput()"
+           autocomplete="off" />
+    <span *ngIf="buscando" class="pka-search__spin">
+      <span class="spinner-border spinner-border-sm"></span>
+    </span>
+    <button *ngIf="termino" class="pka-search__clear" type="button" (click)="limpiar()">✕</button>
+  </div>
+
+  <!-- Chip cuando hay selección -->
+  <div *ngIf="seleccion" class="pka-chip">
+    <span>🏷️ {{ seleccion.nombre }}</span>
+    <span class="pka-chip__id">ID {{ seleccion.id }}</span>
+  </div>
+
+  <!-- Dropdown de resultados -->
+  <div *ngIf="opciones.length > 0" class="pka-dropdown">
+    <div class="pka-option" *ngFor="let p of opciones" (click)="elegir(p)">
+      <span class="pka-option__nombre">{{ p.nombre }}</span>
+      <span class="pka-option__id">ID {{ p.id }}</span>
+    </div>
+  </div>
+
+  <!-- Hint si escribe menos de 2 chars -->
+  <small *ngIf="termino.length === 1" class="pka-hint">
+    Escribe al menos 2 caracteres para buscar
+  </small>
+</div>

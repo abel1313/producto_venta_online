@@ -85,6 +85,15 @@
           <small class="pf-error" *ngIf="isInvalid('descripcion')">Campo requerido</small>
         </div>
 
+        <!-- Nuevo — categoría del producto para mejorar búsquedas -->
+        <div class="pf-field">
+          <label class="pf-label">Categoría <span class="pf-optional">(opcional)</span></label>
+          <app-palabra-clave-autocomplete
+            [valorInicial]="palabraClaveSeleccionada"
+            (seleccionada)="onPalabraClaveSeleccionada($event)">
+          </app-palabra-clave-autocomplete>
+        </div>
+
         <!-- ── Fila 4: Color + Piezas ─────────────────────────── -->
         <div class="pf-grid">
           <div class="pf-field">

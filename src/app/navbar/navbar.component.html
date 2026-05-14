@@ -1,87 +1,154 @@
-<nav class="navbar navbar-expand-lg " style="color: white !important;">
+<nav class="navbar navbar-expand-lg" style="color: white !important;">
   <div class="container-fluid">
 
-    <!-- Botón para móviles -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
-      aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <!-- Botón móvil -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+            aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
+
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
       <ul class="navbar-nav me-auto">
+
+        <!-- Home — todos -->
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" [routerLink]="'home'">Home</a>
+          <a class="nav-link active" aria-current="page" [routerLink]="'home'">🏠 Home</a>
         </li>
 
+        <!-- ══ PRODUCTOS — vista cliente (variantes) — todos los logueados ══ -->
+        <li class="nav-item" *ngIf="!isAnonymous">
+          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+             [routerLink]="'variantes/buscar'">
+            🛍️ Productos
+          </a>
+        </li>
+
+        <!-- ══ PRODUCTOS ADMIN — vista completa con precio costo, estado, stock ══ -->
         <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Usuarios
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            📦 Mis productos
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'usuarios/buscar'">usuarios</a></li>
-
-          </ul>
-        </li>
-
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Productos
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" *ngIf="isAdminUser" data-bs-toggle="collapse"
-                data-bs-target=".navbar-collapse.show" [routerLink]="'productos/agregar'">agregar </a></li>
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'productos/buscar'">buscar</a></li>
-          </ul>
-        </li>
-
-        <li class="nav-item dropdown" *ngIf="!isAnonymous">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Pedidos
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'pedidos/mis-pedidos'">Mis pedidos</a></li>
-            <li *ngIf="isAdminUser">
-              <hr class="dropdown-divider">
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'productos/buscar'">
+                🔍 Ver todos
+              </a>
             </li>
-            <li *ngIf="isAdminUser">
-              <a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'pedidos/historial-mp'">
-                <i class="pi pi-credit-card me-1"></i> Historial MP
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'productos/agregar'">
+                ➕ Agregar producto
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'variantes/venta'">
+                🧩 Gestionar variantes
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'variantes/cargar-excel'">
+                📂 Cargar Excel
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'palabras-clave'">
+                🏷️ Palabras clave
               </a>
             </li>
           </ul>
         </li>
 
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Ventas
+        <!-- ══ PEDIDOS — todos los logueados ══ -->
+        <li class="nav-item dropdown" *ngIf="!isAnonymous">
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            📋 Pedidos
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'ventas/venta'">Venta</a></li>
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'ventas/buscar'">buscar</a></li>
+            <li>
+              <a class="dropdown-item" data-bs-toggle="collapse"
+                 data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'pedidos/mis-pedidos'">
+                Mis pedidos
+              </a>
+            </li>
+            <li *ngIf="isAdminUser"><hr class="dropdown-divider"></li>
+            <li *ngIf="isAdminUser">
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'pedidos/historial-mp'">
+                <i class="pi pi-credit-card"></i> Historial MP
+              </a>
+            </li>
           </ul>
         </li>
 
+        <!-- ══ VENTAS — solo admin ══ -->
         <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Gastos
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            💰 Ventas
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'gastos/agregar'">agregar</a></li>
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'gastos/buscar'">buscar</a></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'variantes/venta-directa'">
+                💰 Venta directa
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" data-bs-toggle="collapse"
+                 data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'ventas/buscar'">
+                🔍 Buscar ventas
+              </a>
+            </li>
           </ul>
         </li>
 
-
+        <!-- ══ GASTOS — solo admin ══ -->
         <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Rifas
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            💸 Gastos
+          </a>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" data-bs-toggle="collapse"
+                 data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'gastos/agregar'">
+                Agregar
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" data-bs-toggle="collapse"
+                 data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'gastos/buscar'">
+                Buscar
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- ══ RIFAS — solo admin ══ -->
+        <li class="nav-item dropdown" *ngIf="isAdminUser">
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            🎰 Rifas
           </a>
           <ul class="dropdown-menu">
             <li>
@@ -100,7 +167,8 @@
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
-              <a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
                  [routerLink]="'rifas/buscar'">
                 🔍 Ver rifas activas
               </a>
@@ -108,135 +176,128 @@
           </ul>
         </li>
 
-
-                <!-- TODO:TEMP variantes - quitar cuando esté listo -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Catalogos 🧩
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'variantes/buscar'">buscar</a></li>
-            <li *ngIf="isAdminUser"><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'variantes/venta'">gestionar</a></li>
-            <li *ngIf="isAdminUser"><a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'variantes/venta-directa'">
-                💰 Venta directa
-              </a></li>
-            <li *ngIf="isAdminUser">
-              <hr class="dropdown-divider">
-            </li>
-            <li *ngIf="isAdminUser">
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'variantes/cargar-excel'">
-                📂 Cargar archivo
-              </a>
-            </li>
-          </ul>
-        </li>
-        <!-- /TODO:TEMP variantes -->
-
+        <!-- ══ ADMIN — solo admin (absorbe Usuarios, QR y config) ══ -->
         <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            QR
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'qr'">ver QR</a></li>
-
-          </ul>
-        </li>
-        
-
-
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <a class="nav-link dropdown-toggle" href="#" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
             🛠️ Admin
           </a>
           <ul class="dropdown-menu">
+
+            <!-- Usuarios (antes era menú independiente) -->
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'admin/negocio'">
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'usuarios/buscar'">
+                <span>👥</span> Usuarios
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+
+            <!-- Configuración del negocio -->
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2"
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'admin/negocio'">
                 <span>🏪</span> Negocio &amp; Contactos
               </a>
             </li>
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'admin/presentacion'">
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'admin/presentacion'">
                 <span>🖼️</span> Imágenes presentación
               </a>
             </li>
+            <li><hr class="dropdown-divider"></li>
+
+            <!-- Herramientas técnicas -->
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'admin/diagnostico-imagenes'">
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'admin/diagnostico-imagenes'">
                 <span>🔍</span> Diagnóstico imágenes
               </a>
             </li>
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'admin/reconciliacion-imagenes'">
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'admin/reconciliacion-imagenes'">
                 <span>🔧</span> Reconciliación imágenes
               </a>
             </li>
-            <li><hr class="dropdown-divider"></li>
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2"
-                data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                [routerLink]="'admin/cache'">
+                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+                 [routerLink]="'admin/cache'">
                 <span>🗑️</span> Limpiar caché
               </a>
             </li>
           </ul>
         </li>
 
-        <li class="nav-item dropdown" *ngIf="isAnonymous">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-            [routerLink]="'login'" role="button" aria-expanded="false">
-            Login
+        <!-- QR — público, cualquiera puede escanearlo para llegar a la tienda -->
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+             [routerLink]="'qr'">
+            📱 QR
+          </a>
+        </li>
+
+        <!-- Login — solo anónimo -->
+        <li class="nav-item" *ngIf="isAnonymous">
+          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
+             [routerLink]="'login'">
+            🔑 Login
           </a>
         </li>
 
       </ul>
 
-      <!-- Botones de carrito — van antes del usuario -->
+      <!-- ── Botones de carrito ──────────────────────────────────────── -->
       <div class="d-flex align-items-center gap-2 me-3" *ngIf="!isAnonymous">
+
         <button class="btn btn-outline-secondary btn-sm" (click)="regresarProducto()">
-          <img [src]="iconService.iconRegresar" alt="regresar" style="width: 16px; height: 16px;">
+          <img [src]="iconService.iconRegresar" alt="regresar" style="width:16px;height:16px;">
           Productos
         </button>
 
-        <button class="btn btn-outline-secondary btn-sm" (click)="limpiarCarrito()" *ngIf="isAdminUser">
-          <img [src]="iconService.iconLimpiar" alt="limpiar" style="width: 16px; height: 16px;">
+        <button *ngIf="isAdminUser" class="btn btn-outline-secondary btn-sm"
+                (click)="limpiarCarrito()">
+          <img [src]="iconService.iconLimpiar" alt="limpiar" style="width:16px;height:16px;">
           Limpiar
         </button>
 
-        <button class="btn btn-outline-primary btn-sm position-relative" (click)="revisarProductosCarrito()" *ngIf="isAdminUser">
-          <img [src]="iconService.iconCarrito" alt="carrito" style="width: 16px; height: 16px;">
+        <button *ngIf="isAdminUser" class="btn btn-outline-primary btn-sm position-relative"
+                (click)="revisarProductosCarrito()">
+          <img [src]="iconService.iconCarrito" alt="carrito" style="width:16px;height:16px;">
           Carrito
           <span class="badge bg-danger ms-1" *ngIf="countCarrito > 0">{{ countCarrito }}</span>
         </button>
 
-        <button class="btn btn-outline-warning btn-sm position-relative" (click)="verCarritoVariante()"
-                *ngIf="countCarritoVariante > 0">
+        <button *ngIf="countCarritoVariante > 0"
+                class="btn btn-outline-warning btn-sm position-relative"
+                (click)="verCarritoVariante()">
           🏷️ Variantes
-          <span class="badge bg-danger ms-1" *ngIf="countCarritoVariante > 0">{{ countCarritoVariante }}</span>
+          <span class="badge bg-danger ms-1">{{ countCarritoVariante }}</span>
         </button>
+
       </div>
 
-      <!-- Usuario -->
+      <!-- ── Usuario logueado ──────────────────────────────────────────── -->
       <div class="nav-item dropdown" *ngIf="!isAnonymous">
-        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" role="button"
+           data-bs-toggle="dropdown" aria-expanded="false">
           Bienvenido <strong>{{ username }}</strong>
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-              [routerLink]="'clientes/mis-datos'">Mis datos</a></li>
+          <li>
+            <a class="dropdown-item" data-bs-toggle="collapse"
+               data-bs-target=".navbar-collapse.show"
+               [routerLink]="'clientes/mis-datos'">
+              Mis datos
+            </a>
+          </li>
           <li><hr class="dropdown-divider"></li>
           <li>
             <button class="dropdown-item text-danger" (click)="logout()">
@@ -246,16 +307,6 @@
         </ul>
       </div>
 
-
-
-
-
-
-
-
     </div>
-
   </div>
-
-
 </nav>

@@ -1,0 +1,55 @@
+$p:  #8b1a4a;
+$pd: #c2255c;
+$t:  all 0.2s ease;
+
+.pka-wrap { position: relative; display: flex; flex-direction: column; gap: 6px; }
+
+.pka-search {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; padding: 9px 12px; transition: $t;
+
+  &:focus-within        { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
+  &--seleccionada       { border-color: rgba(139,26,74,.4); background: #fff5f7; }
+
+  &__icon  { font-size: .95rem; flex-shrink: 0; }
+  &__input {
+    flex: 1; border: none; outline: none;
+    font-size: .88rem; color: #1f2937; background: transparent;
+    &::placeholder { color: #d1d5db; }
+  }
+  &__spin  { flex-shrink: 0; }
+  &__clear {
+    background: none; border: none; color: #9ca3af;
+    cursor: pointer; font-size: .78rem;
+    &:hover { color: $pd; }
+  }
+}
+
+.pka-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(139,26,74,.08); border: 1px solid rgba(139,26,74,.2);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: .82rem; font-weight: 600; color: $p;
+
+  &__id { font-size: .72rem; color: #9ca3af; font-weight: 400; }
+}
+
+.pka-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12); overflow: hidden;
+}
+
+.pka-option {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; cursor: pointer; transition: $t;
+  border-bottom: 1px solid #f3f4f6;
+  &:last-child { border-bottom: none; }
+  &:hover { background: #fff5f7; }
+
+  &__nombre { font-size: .88rem; font-weight: 600; color: #1f2937; }
+  &__id     { font-size: .72rem; color: #9ca3af; }
+}
+
+.pka-hint { font-size: .74rem; color: #9ca3af; padding-left: 4px; }

@@ -105,6 +105,14 @@
             <label class="vf-label">Descripción</label>
             <textarea class="vf-input vf-textarea" formControlName="descripcion" rows="2"></textarea>
           </div>
+          <!-- Nuevo — categoría de la variante para mejorar búsquedas -->
+          <div class="vf-field vf-field--full">
+            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(opcional)</span></label>
+            <app-palabra-clave-autocomplete
+              [valorInicial]="palabraClaveSeleccionada"
+              (seleccionada)="onPalabraClaveSeleccionada($event)">
+            </app-palabra-clave-autocomplete>
+          </div>
         </div>
       </form>
 

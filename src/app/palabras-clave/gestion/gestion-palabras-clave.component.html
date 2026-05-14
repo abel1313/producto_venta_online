@@ -1,0 +1,54 @@
+<div class="pk-wrap">
+
+  <div class="pk-header">
+    <h4 class="pk-header__title">🏷️ Catálogo de palabras clave</h4>
+    <small class="pk-header__sub">Categorías usadas para mejorar la búsqueda de productos y variantes</small>
+  </div>
+
+  <!-- Formulario agregar / editar -->
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
+    <div class="pk-form__field">
+      <input class="pk-input"
+             formControlName="nombre"
+             type="text"
+             [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nueva palabra clave…'"
+             autocomplete="off"
+             maxlength="80" />
+      <small class="pk-error" *ngIf="ctrl?.invalid && ctrl?.touched">
+        El nombre es obligatorio
+      </small>
+    </div>
+
+    <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
+      <span *ngIf="!guardando">{{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}</span>
+      <span *ngIf="guardando" class="d-flex gap-2 align-items-center">
+        <span class="spinner-border spinner-border-sm"></span> Guardando…
+      </span>
+    </button>
+
+    <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
+      ✕ Cancelar
+    </button>
+  </form>
+
+  <!-- Lista -->
+  <div *ngIf="cargando" class="pk-hint">
+    <span class="spinner-border spinner-border-sm"></span> Cargando…
+  </div>
+
+  <div *ngIf="!cargando && palabras.length === 0" class="pk-empty">
+    Sin palabras clave — agrega la primera arriba
+  </div>
+
+  <div class="pk-list" *ngIf="!cargando && palabras.length > 0">
+    <div class="pk-item" *ngFor="let p of palabras"
+         [class.pk-item--editando]="editandoId === p.id">
+      <span class="pk-item__nombre">{{ p.nombre }}</span>
+      <div class="pk-item__actions">
+        <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(p)" title="Editar">✏️</button>
+        <button class="pk-btn pk-btn--del"  (click)="eliminar(p)"       title="Eliminar">🗑️</button>
+      </div>
+    </div>
+  </div>
+
+</div>

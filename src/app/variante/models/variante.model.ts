@@ -24,6 +24,8 @@ export interface IVarianteRequest {
   marca?: string;
   contenidoNeto?: string;
   listImagenes?: IImagenDto[];
+  // Nuevo campo — ID de la palabra clave para categorizar la variante en búsquedas
+  palabraClaveId?: number | null;
 }
 
 export interface IVariante {
@@ -37,6 +39,8 @@ export interface IVariante {
   marca?: string;
   contenidoNeto?: string;
   listImagenes?: IImagenDto[];
+  // Palabra clave asignada — para precargar el autocomplete al editar
+  palabraClave?: { id: number; nombre: string } | null;
 }
 
 export interface IVariantePaginable {

@@ -60,6 +60,12 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard]
   },
   {
+    // Gestión del catálogo de palabras clave — solo admin
+    path: 'palabras-clave',
+    loadChildren: () => import('./palabras-clave/palabras-clave.module').then(m => m.PalabrasClave),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

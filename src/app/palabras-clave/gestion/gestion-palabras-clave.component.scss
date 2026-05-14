@@ -1,0 +1,72 @@
+$p:  #8b1a4a;
+$pd: #c2255c;
+$t:  all 0.2s ease;
+
+.pk-wrap {
+  max-width: 560px;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.pk-header {
+  &__title { font-size: 1.1rem; font-weight: 800; color: #1f2937; margin: 0; }
+  &__sub   { font-size: .78rem; color: #9ca3af; }
+}
+
+.pk-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+
+  &__field { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 4px; }
+}
+
+.pk-input {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: .9rem; color: #1f2937; outline: none;
+  transition: $t; box-sizing: border-box;
+  &:focus { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
+}
+
+.pk-error { font-size: .72rem; color: #dc2626; }
+
+.pk-btn {
+  padding: 10px 16px; border: none; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: .85rem;
+  transition: $t; white-space: nowrap;
+
+  &--save   { background: linear-gradient(135deg, $p, $pd); color: #fff;
+               &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--cancel { background: #f3f4f6; color: #6b7280;
+               &:hover { background: #e5e7eb; } }
+  &--edit   { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
+  &--del    { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer;
+               &:hover { filter: brightness(0.8); } }
+}
+
+.pk-hint  { color: #9ca3af; font-size: .84rem; }
+.pk-empty { color: #9ca3af; font-size: .84rem; text-align: center; padding: 24px 0; }
+
+.pk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pk-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; padding: 10px 14px;
+  transition: $t;
+
+  &:hover       { border-color: #fad4e4; }
+  &--editando   { border-color: $pd; background: #fff5f7; }
+
+  &__nombre  { font-size: .9rem; color: #1f2937; font-weight: 600; }
+  &__actions { display: flex; gap: 4px; }
+}

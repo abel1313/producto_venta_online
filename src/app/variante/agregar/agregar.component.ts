@@ -8,6 +8,8 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import Swal from 'sweetalert2';
 import { IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
+// Nuevo — palabra clave para categorizar todas las variantes del lote
+import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 interface TallaNumeral {
   num: number;
@@ -49,6 +51,8 @@ export class AgregarComponent implements OnInit {
 
   // Imágenes (compartidas con todas las variantes)
   imagenesCargadas: IImagenDto[] = [];
+  // Nuevo — palabra clave que se aplica a todo el lote de variantes
+  palabraClaveSeleccionada: IPalabraClave | null = null;
 
   // ── Modal tallas numéricas (1-50) ─────────────────────────────────
   modalNumVisible = false;
@@ -326,15 +330,18 @@ export class AgregarComponent implements OnInit {
 
     const productoId = this.productoSeleccionado.idProducto;
 
+    const palabraClaveId = this.palabraClaveSeleccionada?.id ?? null;
+
     // Una sola petición con todas las variantes como lista
     const payloads: IVarianteRequest[] = [
-      // Formulario principal — lleva las imágenes
-      { productoId, ...this.form.value, listImagenes: this.imagenesCargadas },
-      // Variantes extra — sin imágenes para no duplicar el base64
+      // Formulario principal — lleva las imágenes y la palabra clave
+      { productoId, ...this.form.value, palabraClaveId, listImagenes: this.imagenesCargadas },
+      // Variantes extra — misma palabra clave, sin imágenes para no duplicar el base64
       ...this.variantesExtras.map(e => ({
         productoId,
         ...e.form.value,
         talla: e.talla,
+        palabraClaveId,
         listImagenes: []
       }))
     ];
@@ -347,6 +354,11 @@ export class AgregarComponent implements OnInit {
         Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: '#dc2626' });
       }
     });
+  }
+
+  // Nuevo — recibe la selección del autocomplete de palabra clave
+  onPalabraClaveSeleccionada(p: IPalabraClave | null): void {
+    this.palabraClaveSeleccionada = p;
   }
 
   private onExito(): void {
@@ -364,10 +376,11 @@ export class AgregarComponent implements OnInit {
 
   private resetForm(): void {
     this.form.reset();
-    this.productoSeleccionado = null;
-    this.terminoProducto = '';
-    this.imagenesCargadas = [];
-    this.variantesExtras = [];
+    this.productoSeleccionado  = null;
+    this.terminoProducto       = '';
+    this.imagenesCargadas      = [];
+    this.variantesExtras       = [];
+    this.palabraClaveSeleccionada = null; // Nuevo — limpia la selección de palabra clave
     this.tallasNum.forEach(t => { t.checked = false; t.stock = 0; });
     this.tallasLetras = [];
     if (this.canvasRef) {

@@ -16,6 +16,11 @@
     </div>
   </div>
 
+  <!-- Botón escáner solo en móvil (encima del buscador) -->
+  <button class="pl-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroActivo !== 'todos'">
+    📷 Escanear código de barras
+  </button>
+
   <!-- Buscador -->
   <div class="pl-search">
     <span class="pl-search__icon">🔍</span>

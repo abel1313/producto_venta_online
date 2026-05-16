@@ -18,6 +18,11 @@
     </div>
   </div>
 
+  <!-- Botón escáner solo en móvil (encima del buscador) -->
+  <button class="vb-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroAdmin === 'sin-stock'">
+    📷 Escanear código de barras
+  </button>
+
   <!-- Buscador -->
   <div class="vb-search">
     <span class="vb-search__icon">🔍</span>

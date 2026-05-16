@@ -96,6 +96,10 @@ export class VarianteService {
     ).pipe(map(res => res.data));
   }
 
+  setPrincipalVariante(imagenId: string): Observable<any> {
+    return this.http.put<any>(`${this.url}/imagenes/${imagenId}/principal`, null);
+  }
+
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
       .pipe(map(res => res.data));

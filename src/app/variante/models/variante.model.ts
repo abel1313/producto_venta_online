@@ -14,7 +14,7 @@ export interface IVarianteDto {
 }
 
 export interface IVarianteRequest {
-  id?: number;           // Presente → actualiza; ausente → crea
+  id?: number;
   productoId: number;
   talla?: string;
   descripcion?: string;
@@ -24,8 +24,8 @@ export interface IVarianteRequest {
   marca?: string;
   contenidoNeto?: string;
   listImagenes?: IImagenDto[];
-  // Nuevo campo — ID de la palabra clave para categorizar la variante en búsquedas
   palabraClaveId?: number | null;
+  imagenPrincipalId?: string | null;
 }
 
 export interface IVariante {
@@ -80,6 +80,7 @@ export interface IVarianteImagenDto {
   extension: string;
   nombreImagen: string;
   urlImagen?: string | null;
+  principal?: boolean;
 }
 
 export interface IVarianteImagenPaginable {

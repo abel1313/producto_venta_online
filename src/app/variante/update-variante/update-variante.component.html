@@ -116,9 +116,64 @@
         </div>
       </form>
 
-      <!-- ── Imágenes ───────────────────────────────────────────── -->
+      <!-- ── Imágenes existentes ───────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Imágenes <span style="color:rgba(255,255,255,.4);font-weight:400;">(opcionales — reemplaza las existentes)</span></p>
+        <p class="vf-section__label">Imágenes actuales</p>
+
+        <div *ngIf="cargandoImagenesExistentes" class="vf-existing-imgs__loading">
+          <span class="spinner-border spinner-border-sm"></span>
+          <span>Cargando imágenes…</span>
+        </div>
+
+        <div *ngIf="!cargandoImagenesExistentes && imagenesExistentes.length === 0" class="vf-existing-imgs__empty">
+          <span>📷</span>
+          <p>Sin imágenes cargadas</p>
+        </div>
+
+        <div *ngIf="imagenesExistentes.length > 0" class="vf-existing-imgs__grid">
+          <div class="vf-existing-img-card" *ngFor="let img of imagenesExistentes"
+               [class.vf-existing-img-card--principal]="img.principal">
+
+            <div class="vf-existing-img-card__wrap">
+              <img *ngIf="img.urlImagen | imagenSrc | async as src"
+                   [src]="src"
+                   [alt]="img.nombreImagen"
+                   class="vf-existing-img-card__img"
+                   (error)="$any($event.target).style.display='none'" />
+
+              <!-- Badge principal -->
+              <span *ngIf="img.principal" class="vf-existing-img-card__badge">⭐ Principal</span>
+
+              <!-- Botón set principal -->
+              <button class="vf-existing-img-card__star"
+                      type="button"
+                      [class.vf-existing-img-card__star--active]="img.principal"
+                      [disabled]="img.principal || cambiandoPrincipal.has(img.id!)"
+                      (click)="setPrincipalVariante(img)"
+                      [title]="img.principal ? 'Imagen principal' : 'Establecer como principal'">
+                <span *ngIf="!cambiandoPrincipal.has(img.id!)">{{ img.principal ? '⭐' : '☆' }}</span>
+                <span *ngIf="cambiandoPrincipal.has(img.id!)" class="spinner-border spinner-border-sm"></span>
+              </button>
+
+              <!-- Botón eliminar -->
+              <button class="vf-existing-img-card__del"
+                      type="button"
+                      [disabled]="eliminandoExistente.has(img.id!)"
+                      (click)="eliminarImagenExistente(img)"
+                      title="Eliminar imagen">
+                <span *ngIf="!eliminandoExistente.has(img.id!)">✕</span>
+                <span *ngIf="eliminandoExistente.has(img.id!)" class="spinner-border spinner-border-sm"></span>
+              </button>
+            </div>
+
+            <p class="vf-existing-img-card__name" [title]="img.nombreImagen">{{ img.nombreImagen }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Imágenes nuevas ────────────────────────────────────── -->
+      <div class="vf-section">
+        <p class="vf-section__label">Agregar imágenes <span style="color:rgba(255,255,255,.4);font-weight:400;">(opcionales)</span></p>
 
         <!-- Input galería (oculto) -->
         <input #fileInput type="file" accept="image/jpeg,image/png,image/gif" multiple

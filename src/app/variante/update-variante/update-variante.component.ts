@@ -7,7 +7,7 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { IVariante, IVarianteRequest } from '../models/variante.model';
+import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
 // Nuevo — palabra clave para categorizar la variante
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
@@ -34,11 +34,19 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   productoSeleccionado: IProductoDTO | null = null;
   private busquedaSubject = new Subject<string>();
 
-  // Imágenes
+  // Imágenes nuevas a subir
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
   private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+
+  // Imágenes existentes de la variante
+  imagenesExistentes: IVarianteImagenDto[] = [];
+  cargandoImagenesExistentes = false;
+  eliminandoExistente = new Set<string>();
+  cambiandoPrincipal = new Set<string>();
+  imagenPrincipalId: string | null = null;
+
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -80,6 +88,10 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         stock:       0,
       } as IProductoDTO;
       this.terminoProducto = this.variante.producto.nombre ?? '';
+    }
+
+    if (this.variante.id) {
+      this.cargarImagenesExistentes(this.variante.id);
     }
 
     this.busquedaSubject.pipe(
@@ -207,6 +219,58 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── Imágenes existentes ───────────────────────────────────────────
+
+  private cargarImagenesExistentes(varianteId: number): void {
+    this.cargandoImagenesExistentes = true;
+    this.varianteService.getImagenesPaginado(varianteId, 1, 50).subscribe({
+      next: res => {
+        this.imagenesExistentes = res.t ?? [];
+        const principal = this.imagenesExistentes.find(i => i.principal);
+        if (principal?.id) this.imagenPrincipalId = principal.id;
+        this.cargandoImagenesExistentes = false;
+      },
+      error: () => { this.cargandoImagenesExistentes = false; }
+    });
+  }
+
+  eliminarImagenExistente(img: IVarianteImagenDto): void {
+    if (!img.id || this.eliminandoExistente.has(img.id)) return;
+
+    Swal.fire({
+      title: '¿Eliminar imagen?',
+      text: img.nombreImagen,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      background: '#1e1b4b',
+      color: '#fff'
+    }).then(result => {
+      if (!result.isConfirmed || !img.id || !this.variante?.id) return;
+      this.eliminandoExistente.add(img.id);
+
+      this.varianteService.eliminarImagenes(this.variante!.id!, [img.id]).subscribe({
+        next: () => {
+          this.imagenesExistentes = this.imagenesExistentes.filter(i => i.id !== img.id);
+          this.eliminandoExistente.delete(img.id!);
+        },
+        error: () => {
+          this.eliminandoExistente.delete(img.id!);
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        }
+      });
+    });
+  }
+
+  setPrincipalVariante(img: IVarianteImagenDto): void {
+    if (!img.id || img.principal) return;
+    this.imagenesExistentes.forEach(i => i.principal = false);
+    img.principal = true;
+    this.imagenPrincipalId = img.id;
+  }
+
   // ── Ajuste de stock ────────────────────────────────────────────────
 
   cantidadAjuste = 1;
@@ -235,11 +299,11 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.guardando = true;
 
     const payload: IVarianteRequest = {
-      id:             this.variante.id,
-      productoId:     this.productoSeleccionado.idProducto,
+      id:                this.variante.id,
+      productoId:        this.productoSeleccionado.idProducto,
       ...this.form.value,
-      // Nuevo — ID de la palabra clave seleccionada
-      palabraClaveId: this.palabraClaveSeleccionada?.id ?? null,
+      palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
+      imagenPrincipalId: this.imagenPrincipalId,
       ...(this.imagenesCargadas.length ? { listImagenes: this.imagenesCargadas } : {})
     };
 

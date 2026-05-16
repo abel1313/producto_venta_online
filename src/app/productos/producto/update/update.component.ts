@@ -24,6 +24,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
   imagenesVista: ImagenVista[] = [];
   cargandoImagenes = false;
   eliminando = new Set<string>();
+  cambiandoPrincipal = new Set<string>();
 
   private objectUrls: string[] = [];
 
@@ -56,6 +57,11 @@ export class UpdateComponent implements OnInit, OnDestroy {
           cargando: true,
           error: false
         }));
+
+        const principal = data.listaImagenes.find(dto => dto.principal);
+        if (principal && this.productoActualizar) {
+          this.productoActualizar.imagenPrincipalId = principal.id;
+        }
 
         this.imagenesVista.forEach((item, i) => {
           this.imagenService.getImagenFile(item.dto.id).subscribe({
@@ -110,6 +116,15 @@ export class UpdateComponent implements OnInit, OnDestroy {
 
   estaEliminando(id: string): boolean {
     return this.eliminando.has(id);
+  }
+
+  setPrincipal(item: ImagenVista): void {
+    if (item.dto.principal) return;
+    this.imagenesVista.forEach(v => v.dto.principal = false);
+    item.dto.principal = true;
+    if (this.productoActualizar) {
+      this.productoActualizar.imagenPrincipalId = item.dto.id;
+    }
   }
 
   ngOnDestroy(): void {

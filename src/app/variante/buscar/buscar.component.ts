@@ -1,7 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
@@ -17,6 +18,8 @@ import { CompartirService } from 'src/app/shared/compartir.service';
 })
 export class BuscarComponent implements OnInit, OnDestroy {
 
+  @ViewChild('videoScanner') videoScanner!: ElementRef<HTMLVideoElement>;
+
   variantes: IVarianteResumen[] = [];
   paginaActual    = 1;
   totalPaginas    = 0;
@@ -26,6 +29,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   sinResultados   = false;
   filtroAdmin: 'todos' | 'sin-stock' = 'todos';
   detalle: IDetalleVariante[] = [];
+  escaneando      = false;
+  private controlesEscaner: IScannerControls | null = null;
 
   private productoId = 0;
   private reqId             = 0;
@@ -273,6 +278,38 @@ export class BuscarComponent implements OnInit, OnDestroy {
     if (stock === 0) return 'badge bg-danger';
     if (stock <= 3)  return 'badge bg-warning text-dark';
     return 'badge bg-success';
+  }
+
+  // ── Escáner de código de barras ────────────────────────────────────
+
+  async iniciarEscaner(): Promise<void> {
+    this.escaneando = true;
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      const reader = new BrowserMultiFormatReader();
+      this.controlesEscaner = await reader.decodeFromVideoDevice(
+        undefined,
+        this.videoScanner.nativeElement,
+        (result, _err, controls) => {
+          if (result) {
+            const codigo = result.getText();
+            this.terminoBusqueda = codigo;
+            this.buscarPagina(codigo, 1);
+            controls.stop();
+            this.escaneando = false;
+          }
+        }
+      );
+    } catch {
+      Swal.fire({ icon: 'error', title: 'No se pudo acceder a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.' });
+      this.escaneando = false;
+    }
+  }
+
+  detenerEscaner(): void {
+    this.controlesEscaner?.stop();
+    this.controlesEscaner = null;
+    this.escaneando = false;
   }
 
 }

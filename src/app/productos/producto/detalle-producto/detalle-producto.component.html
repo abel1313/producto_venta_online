@@ -54,7 +54,7 @@
           <div class="dp-slide" [class.dp-slide--marked]="estaMarcada(img)">
             <div class="dp-slide__img-wrap">
               <img
-                [src]="'data:image/' + img.extencion + ';base64,' + img.image"
+                [src]="getImgSrc(img)"
                 [alt]="img.name ?? 'Imagen producto'"
                 class="dp-slide__img"
                 [style.opacity]="estaMarcada(img) ? '0.4' : '1'"

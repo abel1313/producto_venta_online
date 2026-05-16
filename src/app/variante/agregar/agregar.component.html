@@ -202,6 +202,22 @@
           <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todas las variantes</span>
         </p>
 
+        <!-- Input galería (oculto) -->
+        <input #fileInput type="file" accept="image/jpeg,image/png,image/gif" multiple
+               (change)="onFileSelected($event)" hidden />
+
+        <!-- Botones elegir / tomar -->
+        <div class="vf-img-actions">
+          <button type="button" class="vf-img-btn vf-img-btn--gallery"
+                  (click)="fileInputRef.nativeElement.click()">
+            🖼️ Elegir foto
+          </button>
+          <button type="button" class="vf-img-btn vf-img-btn--camera"
+                  (click)="abrirCamara()">
+            📷 Tomar foto
+          </button>
+        </div>
+
         <div
           class="vf-drop"
           (dragover)="onDragOver($event)"
@@ -209,11 +225,10 @@
           (drop)="onDrop($event)"
           (click)="fileInputRef.nativeElement.click()"
         >
-          <input #fileInput type="file" accept="image/*" multiple (change)="onFileSelected($event)" hidden />
           <div class="vf-drop__content" *ngIf="imagenesCargadas.length === 0">
             <span class="vf-drop__icon">🖼️</span>
-            <p class="vf-drop__text">Arrastra imágenes aquí o <u>haz clic</u></p>
-            <small class="vf-drop__hint">PNG, JPG, WEBP — múltiples permitidas</small>
+            <p class="vf-drop__text">Arrastra o <u>haz clic</u> aquí</p>
+            <small class="vf-drop__hint">Solo JPG, PNG o GIF</small>
           </div>
           <canvas #canvasRef class="vf-canvas" [class.vf-canvas--visible]="imagenesCargadas.length > 0"
             width="600" height="340">
@@ -245,6 +260,19 @@
         </span>
       </button>
 
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal cámara ─────────────────────────────────────────────── -->
+<div class="cam-overlay" *ngIf="mostrandoCamara">
+  <div class="cam-box">
+    <p class="cam-box__title">📷 Tomar foto</p>
+    <video #videoCamara class="cam-video" autoplay playsinline muted></video>
+    <canvas #canvasCamara hidden></canvas>
+    <div class="cam-actions">
+      <button type="button" class="cam-btn cam-btn--capture" (click)="capturarFoto()">⬤ Capturar</button>
+      <button type="button" class="cam-btn cam-btn--cancel" (click)="cerrarCamara()">✖ Cancelar</button>
     </div>
   </div>
 </div>

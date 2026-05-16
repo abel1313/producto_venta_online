@@ -1,5 +1,7 @@
 $r: 20px;
 $t: all 0.22s ease;
+$primary:   #8b1a4a;
+$primary-d: #c2255c;
 
 .vf-page {
   min-height: 100vh;
@@ -189,4 +191,94 @@ $t: all 0.22s ease;
   font-size: 0.82rem;
   color: rgba(255,255,255,0.6);
   strong { color: #2dd4bf; font-size: 1rem; }
+}
+
+// ── Botones imagen (galería / cámara) ──────────────────────────────
+.vf-img-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.vf-img-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $t;
+
+  &--gallery {
+    background: rgba(194,37,92,0.15);
+    color: $primary-d;
+    &:hover { background: rgba(194,37,92,0.25); }
+  }
+
+  &--camera {
+    background: $primary;
+    color: #fff;
+    &:hover { background: $primary-d; }
+  }
+}
+
+// ── Modal cámara ───────────────────────────────────────────────────
+.cam-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.cam-box {
+  width: min(400px, 94vw);
+  background: #111;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+
+  &__title {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0;
+  }
+}
+
+.cam-video {
+  width: 100%;
+  max-height: 58dvh;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  background: #000;
+}
+
+.cam-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.cam-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: $t;
+
+  &--capture { background: $primary; color: #fff; font-size: 1.1rem; &:hover { background: $primary-d; } }
+  &--cancel  { background: #333; color: #ccc; &:hover { background: #444; } }
 }

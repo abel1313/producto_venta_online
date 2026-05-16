@@ -265,8 +265,22 @@ cargarPagina(pagina: number) {
 }
 
   imagenesPorProducto(): boolean {
-    console.log(this.productoDtoImagen.map((img: ProductImagenDto) => img.image).length > 0, " imagenes del producto");
     return (this.productoDtoImagen.map((img: ProductImagenDto) => img.image).length) > 0;
+  }
+
+  getImgSrc(img: ProductImagenDto): string {
+    if (!img.image) return '';
+    const clean = img.image.replace(/\s+/g, '');
+    const ext = this.detectarMime(clean);
+    return `data:image/${ext};base64,${clean}`;
+  }
+
+  private detectarMime(b64: string): string {
+    if (b64.startsWith('iVBORw0KGgo')) return 'png';
+    if (b64.startsWith('/9j/')) return 'jpeg';
+    if (b64.startsWith('R0lGOD')) return 'gif';
+    if (b64.startsWith('UklGR')) return 'webp';
+    return 'jpeg';
   }
 
 

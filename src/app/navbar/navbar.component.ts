@@ -6,6 +6,9 @@ import { AccederService } from '../login/acceder.service';
 import { Router } from '@angular/router';
 import { CarritoService } from '../services/carrito/carrito.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
+import { ImagenVersionService } from '../services/imagen-version/imagen-version.service';
+import { ThemeService } from '../services/theme/theme.service';
+
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
@@ -13,19 +16,27 @@ import { CarritoVarianteService } from '../variante/service/carrito-variante.ser
 })
 export class NavbarComponent implements OnInit {
   roles: string[] = [];
-  isAdminUser: boolean = false;
-  usuario: string = '';
+  isAdminUser = false;
+  usuario = '';
 
-  countCarrito: number = 0;
-  countCarritoVariante: number = 0;
+  countCarrito = 0;
+  countCarritoVariante = 0;
 
-  constructor(private readonly authService: AuthService,
+  // Sidebar state
+  isExpanded = false;
+  openGroup: string | null = null;
+  isMobileOpen = false;
+
+  constructor(
+    private readonly authService: AuthService,
     private readonly auth: AuthenticateService,
     private readonly acceder: AccederService,
     public readonly iconService: IconService,
     private readonly router: Router,
     public readonly serviceCarrito: CarritoService,
-    private readonly carritoVariante: CarritoVarianteService
+    private readonly carritoVariante: CarritoVarianteService,
+    public readonly imagenVersion: ImagenVersionService,
+    public readonly themeService: ThemeService,
   ) { }
 
   ngOnInit(): void {
@@ -33,9 +44,7 @@ export class NavbarComponent implements OnInit {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
-    this.authService.userName$.subscribe(user => {
-      this.usuario = user;
-    });
+    this.authService.userName$.subscribe(user => { this.usuario = user; });
 
     this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
       this.countCarrito = detalle.reduce((sum, item) => sum + item.cantidad, 0);
@@ -48,7 +57,6 @@ export class NavbarComponent implements OnInit {
     window.addEventListener('storage', () => {
       this.serviceCarrito.validarCarrito();
     });
-
   }
 
   hasRole(...allowedRoles: string[]): boolean {
@@ -59,10 +67,33 @@ export class NavbarComponent implements OnInit {
     return !this.roles || this.roles.length === 0;
   }
 
-  get username(): string | null {
-    return this.usuario;
+  get username(): string { return this.usuario; }
+
+  // ── Sidebar expand/collapse (desktop hover) ────────────────────────
+  onMouseEnter(): void { this.isExpanded = true; }
+
+  onMouseLeave(): void {
+    this.isExpanded = false;
+    this.openGroup = null;
   }
 
+  // ── Accordion ──────────────────────────────────────────────────────
+  toggleGroup(name: string): void {
+    if (!this.isExpanded && !this.isMobileOpen) {
+      this.isExpanded = true;
+    }
+    this.openGroup = this.openGroup === name ? null : name;
+  }
+
+  // ── Mobile ─────────────────────────────────────────────────────────
+  toggleMobile(): void { this.isMobileOpen = !this.isMobileOpen; }
+
+  closeMobile(): void {
+    this.isMobileOpen = false;
+    this.openGroup = null;
+  }
+
+  // ── Auth ───────────────────────────────────────────────────────────
   logout(): void {
     this.acceder.logout().subscribe({
       complete: () => this.limpiarSesionLocal(),
@@ -78,28 +109,22 @@ export class NavbarComponent implements OnInit {
     this.countCarrito = 0;
     this.countCarritoVariante = 0;
     this.serviceCarrito.limpiarCarrito();
+    this.closeMobile();
     this.router.navigate(['/login']);
   }
 
-
-  revisarProductosCarrito() {
-    this.router.navigate(['/productos/detalle-productos']);
-  }
-
-  verCarritoVariante() {
-    this.router.navigate(['/variantes/carrito']);
-  }
-
-    regresarProducto() {
-    this.router.navigate(['/variantes/buscar']);
-  }
-
-      limpiarCarrito() {
+  // ── Carrito ────────────────────────────────────────────────────────
+  revisarProductosCarrito(): void { this.router.navigate(['/productos/detalle-productos']); }
+  verCarritoVariante(): void { this.router.navigate(['/variantes/carrito']); }
+  regresarProducto(): void { this.router.navigate(['/variantes/buscar']); }
+  limpiarCarrito(): void {
     this.countCarrito = 0;
     this.serviceCarrito.limpiarCarrito();
   }
 
+  // ── IMG version toggle ─────────────────────────────────────────────
+  toggleImagenVersion(): void { this.imagenVersion.toggle(); }
 
-
-
+  // ── Tema claro/oscuro ──────────────────────────────────────────────
+  toggleTheme(): void { this.themeService.toggle(); }
 }

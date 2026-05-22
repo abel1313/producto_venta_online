@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
-import { PresentacionService, IImagenPresentacion, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
+import { PresentacionService, IImagenPresentacion, IImagenPresentacionV2Dto, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
+import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
 
 interface IArchivoPendiente {
   base64:    string;   // sin prefijo data:
@@ -20,22 +21,29 @@ export class PresentacionImagenesComponent implements OnInit {
   cargando     = true;
   guardandoId: number | null = null;
 
-  // Archivos seleccionados pero aún no guardados (key = img.id)
   pendientes = new Map<number, IArchivoPendiente>();
 
-  constructor(private readonly presentacionService: PresentacionService) {}
+  constructor(
+    private readonly presentacionService:  PresentacionService,
+    private readonly imagenVersionService: ImagenVersionService
+  ) {}
 
   ngOnInit(): void { this.cargar(); }
 
   private cargar(): void {
     this.cargando = true;
-    this.presentacionService.getTodasImagenes().subscribe({
-      next: (res: any) => {
-        this.imagenes = res?.data ?? res ?? [];
-        this.cargando = false;
-      },
-      error: () => { this.cargando = false; }
-    });
+
+    if (this.imagenVersionService.useV2) {
+      this.presentacionService.getTodasImagenesV2().subscribe({
+        next: imgs => { this.imagenes = imgs as any[]; this.cargando = false; },
+        error: () => { this.cargando = false; }
+      });
+    } else {
+      this.presentacionService.getTodasImagenes().subscribe({
+        next: (res: any) => { this.imagenes = res?.data ?? res ?? []; this.cargando = false; },
+        error: () => { this.cargando = false; }
+      });
+    }
   }
 
   get login():    IImagenPresentacion[] { return this.imagenes.filter(i => i.tipo === 'LOGIN'); }
@@ -44,8 +52,9 @@ export class PresentacionImagenesComponent implements OnInit {
   // ── URL de imagen guardada en el servidor ─────────────────────────
   imagenSrc(img: IImagenPresentacion): string {
     const p = this.pendientes.get(img.id);
-    if (p) return p.preview;                              // preview local antes de guardar
-    return this.presentacionService.getImagenUrl(img.id); // URL pública /{id}/imagen
+    if (p) return p.preview;
+    if (this.imagenVersionService.useV2) return this.presentacionService.getImagenUrlV2(img.id);
+    return this.presentacionService.getImagenUrl(img.id);
   }
 
   tieneImagen(img: IImagenPresentacion): boolean {
@@ -92,12 +101,15 @@ export class PresentacionImagenesComponent implements OnInit {
       ...(p ? { base64: p.base64, extension: p.extension, nombreImagen: p.nombre } : {})
     };
 
-    this.presentacionService.actualizarImagen(img.id, request).subscribe({
+    const peticion$ = this.imagenVersionService.useV2
+      ? this.presentacionService.actualizarImagenV2(img.id, request)
+      : this.presentacionService.actualizarImagen(img.id, request);
+
+    peticion$.subscribe({
       next: (res: any) => {
         this.guardandoId = null;
         this.pendientes.delete(img.id);
-        // Actualizar el nombreArchivo con el que devuelve el backend
-        const updated = res?.data ?? res;
+        const updated: IImagenPresentacionV2Dto | any = res?.data ?? res;
         if (updated?.nombreArchivo) img.nombreArchivo = updated.nombreArchivo;
         Swal.fire({ icon: 'success', title: '¡Imagen actualizada!', timer: 1300, showConfirmButton: false });
       },

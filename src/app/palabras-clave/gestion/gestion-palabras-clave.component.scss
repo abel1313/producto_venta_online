@@ -30,7 +30,7 @@ $t:  all 0.2s ease;
   border: 1.5px solid #e5e7eb; border-radius: 10px;
   font-size: .9rem; color: #1f2937; outline: none;
   transition: $t; box-sizing: border-box;
-  &:focus { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
+  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
 }
 
 .pk-error { font-size: .72rem; color: #dc2626; }
@@ -65,7 +65,7 @@ $t:  all 0.2s ease;
   transition: $t;
 
   &:hover       { border-color: #fad4e4; }
-  &--editando   { border-color: $pd; background: #fff5f7; }
+  &--editando   { border-color: var(--app-accent); background: var(--app-accent-soft); }
 
   &__nombre  { font-size: .9rem; color: #1f2937; font-weight: 600; }
   &__actions { display: flex; gap: 4px; }

@@ -9,8 +9,8 @@ $t:  all 0.2s ease;
   background: #fff; border: 1.5px solid #e5e7eb;
   border-radius: 10px; padding: 9px 12px; transition: $t;
 
-  &:focus-within        { border-color: $pd; box-shadow: 0 0 0 3px rgba(194,37,92,.12); }
-  &--seleccionada       { border-color: rgba(139,26,74,.4); background: #fff5f7; }
+  &:focus-within        { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+  &--seleccionada       { border-color: rgba(99,102,241,.4); background: var(--app-accent-soft); }
 
   &__icon  { font-size: .95rem; flex-shrink: 0; }
   &__input {
@@ -22,15 +22,15 @@ $t:  all 0.2s ease;
   &__clear {
     background: none; border: none; color: #9ca3af;
     cursor: pointer; font-size: .78rem;
-    &:hover { color: $pd; }
+    &:hover { color: var(--app-accent); }
   }
 }
 
 .pka-chip {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(139,26,74,.08); border: 1px solid rgba(139,26,74,.2);
+  background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2);
   border-radius: 20px; padding: 4px 12px;
-  font-size: .82rem; font-weight: 600; color: $p;
+  font-size: .82rem; font-weight: 600; color: var(--app-accent);
 
   &__id { font-size: .72rem; color: #9ca3af; font-weight: 400; }
 }

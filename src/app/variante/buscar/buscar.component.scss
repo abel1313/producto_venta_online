@@ -8,11 +8,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Header ─────────────────────────────────────────────────────────
 .vb-header {
-  background: linear-gradient(135deg, #5c0f31 0%, #8b1a4a 55%, #c2255c 100%);
+  background: var(--header-brand);
   padding: 24px 24px 0;
   border-radius: 0 0 28px 28px;
   margin-bottom: 28px;
-  box-shadow: 0 6px 24px rgba(139, 26, 74, 0.4);
+  box-shadow: 0 6px 24px var(--header-brand-shadow);
 
   &__inner {
     display: flex;
@@ -58,7 +58,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
     border: none;
     outline: none;
-    color: white;
+    color: var(--input-text);
     font-size: 0.95rem;
     &::placeholder { color: rgba(255, 255, 255, 0.65); }
   }
@@ -97,7 +97,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &--active {
     background: rgba(255,255,255,0.92);
-    color: $primary;
+    color: var(--app-accent);
     font-weight: 700;
     border-color: transparent;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
@@ -146,23 +146,28 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 :host {
   display: block;
   min-height: 100vh;
-  background: linear-gradient(180deg, #fff5f7 0%, #fde8f0 100%);
+  background: var(--page-bg);
 }
 
-// ── Grid ───────────────────────────────────────────────────────────
-.vb-grid-wrap { padding: 0 20px 32px; }
+// ── Grid — centrado con espacio lateral para anuncios ─────────────
+.vb-grid-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px 32px;
+}
 
 .vb-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 22px;
 }
 
 // ── Card ───────────────────────────────────────────────────────────
 .vb-card {
-  background: #fff;
-  border-radius: $radius;
-  box-shadow: $shadow;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -174,7 +179,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     height: 180px;
     overflow: hidden;
-    background: #fdf0f5;
+    background: var(--form-section-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -243,19 +248,19 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.88rem;
   }
 
-  &__detail-label { color: #9ca3af; font-weight: 500; }
+  &__detail-label { color: var(--app-text-muted); font-weight: 500; }
 
-  &__detail-val { font-weight: 600; color: #1f2937; }
+  &__detail-val { font-weight: 600; color: var(--card-text); }
 
-  &__price { color: $primary; font-size: 1rem; }
+  &__price { color: var(--app-accent); font-size: 1rem; }
 
   &__in-cart {
     margin-top: 10px;
-    background: #fdf0f5;
+    background: var(--form-section-bg);
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 0.82rem;
-    color: $primary;
+    color: var(--app-accent);
     font-weight: 600;
     display: flex;
     justify-content: space-between;
@@ -264,7 +269,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &__footer {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    border-top: 1px solid #fde8f0;
+    border-top: 1px solid var(--card-border);
   }
 }
 
@@ -309,22 +314,22 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--remove {
-    color: $primary;
-    border-left: 1px solid #fde8f0;
-    border-right: 1px solid #fde8f0;
-    &:hover:not(:disabled) { background: #fdf0f5; }
+    color: #ef4444;
+    border-left: 1px solid var(--card-border);
+    border-right: 1px solid var(--card-border);
+    &:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
   &--view {
-    color: #1565c0;
-    &:hover { background: #e3f2fd; }
+    color: var(--app-accent);
+    &:hover { background: var(--app-accent-soft); }
   }
 
   &--edit {
-    color: $primary-d;
-    border-left: 1px solid #fde8f0;
-    &:hover { background: #fdf0f5; }
+    color: var(--app-accent);
+    border-left: 1px solid var(--card-border);
+    &:hover { background: var(--app-accent-soft); }
   }
 }
 
@@ -332,7 +337,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-empty {
   text-align: center;
   padding: 64px 20px;
-  color: #9ca3af;
+  color: var(--app-text-muted);
 
   &__icon {
     font-size: 3.5rem;
@@ -351,23 +356,23 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .vb-page-btn {
-  background: white;
-  border: 1px solid #fad4e4;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 8px 18px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: $primary;
+  color: var(--app-accent);
   cursor: pointer;
   transition: $transition;
 
-  &:hover:not(:disabled) { background: $primary; color: white; border-color: $primary; }
+  &:hover:not(:disabled) { background: var(--app-accent); color: white; border-color: var(--app-accent); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 .vb-page-info {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--app-text-muted);
   font-weight: 600;
   min-width: 70px;
   text-align: center;

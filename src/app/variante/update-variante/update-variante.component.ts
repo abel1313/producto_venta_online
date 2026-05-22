@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
@@ -7,9 +7,9 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { IVariante, IVarianteRequest } from '../models/variante.model';
+import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
-// Nuevo — palabra clave para categorizar la variante
+import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 @Component({
@@ -17,10 +17,12 @@ import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model
   templateUrl: './update-variante.component.html',
   styleUrls: ['./update-variante.component.scss']
 })
-export class UpdateVarianteComponent implements OnInit {
+export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
-  @ViewChild('canvasRef') canvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('canvasRef')    canvasRef!:       ElementRef<HTMLCanvasElement>;
+  @ViewChild('fileInput')    fileInputRef!:    ElementRef<HTMLInputElement>;
+  @ViewChild('videoCamara')  videoCamaraRef!:  ElementRef<HTMLVideoElement>;
+  @ViewChild('canvasCamara') canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
 
   form!: FormGroup;
   guardando = false;
@@ -32,8 +34,19 @@ export class UpdateVarianteComponent implements OnInit {
   productoSeleccionado: IProductoDTO | null = null;
   private busquedaSubject = new Subject<string>();
 
-  // Imágenes
+  // Imágenes nuevas a subir
   imagenesCargadas: IImagenDto[] = [];
+  mostrandoCamara = false;
+  private mediaStream: MediaStream | null = null;
+  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+
+  // Imágenes existentes de la variante
+  imagenesExistentes: IVarianteImagenDto[] = [];
+  cargandoImagenesExistentes = false;
+  eliminandoExistente = new Set<string>();
+  cambiandoPrincipal = new Set<string>();
+  imagenPrincipalId: string | null = null;
+
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -41,7 +54,8 @@ export class UpdateVarianteComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly varianteService: VarianteService,
     private readonly productoService: ProductoService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly imagenVersionService: ImagenVersionService
   ) {}
 
   ngOnInit(): void {
@@ -75,6 +89,10 @@ export class UpdateVarianteComponent implements OnInit {
         stock:       0,
       } as IProductoDTO;
       this.terminoProducto = this.variante.producto.nombre ?? '';
+    }
+
+    if (this.variante.id) {
+      this.cargarImagenesExistentes(this.variante.id);
     }
 
     this.busquedaSubject.pipe(
@@ -130,15 +148,54 @@ export class UpdateVarianteComponent implements OnInit {
   }
 
   private procesarImagen(file: File): void {
-    const extension = file.name.split('.').pop() ?? '';
+    if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      this.imagenesCargadas.push({ base64: base64.split(',')[1], extension, nombreImagen: file.name });
+      this.imagenesCargadas.push({ base64: base64.split(',')[1], extension: file.type, nombreImagen: file.name });
       if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(base64);
     };
     reader.readAsDataURL(file);
   }
+
+  // ── Cámara ────────────────────────────────────────────────────────
+
+  async abrirCamara(): Promise<void> {
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      this.mostrandoCamara = true;
+      await new Promise(r => setTimeout(r, 100));
+      this.videoCamaraRef.nativeElement.srcObject = this.mediaStream;
+    } catch {
+      Swal.fire({ icon: 'error', title: 'Sin acceso a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.', timer: 2500, showConfirmButton: false });
+    }
+  }
+
+  capturarFoto(): void {
+    const video  = this.videoCamaraRef?.nativeElement;
+    const canvas = this.canvasCamaraRef?.nativeElement;
+    if (!video || !canvas) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')!.drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      this.cerrarCamara();
+      this.procesarImagen(file);
+    }, 'image/jpeg', 0.92);
+  }
+
+  cerrarCamara(): void {
+    this.mediaStream?.getTracks().forEach(t => t.stop());
+    this.mediaStream = null;
+    this.mostrandoCamara = false;
+  }
+
+  ngOnDestroy(): void { this.cerrarCamara(); }
 
   private mostrarEnCanvas(src: string): void {
     const img = new Image();
@@ -161,6 +218,62 @@ export class UpdateVarianteComponent implements OnInit {
       const ctx = this.canvasRef.nativeElement.getContext('2d')!;
       ctx.clearRect(0, 0, this.canvasRef.nativeElement.width, this.canvasRef.nativeElement.height);
     }
+  }
+
+  // ── Imágenes existentes ───────────────────────────────────────────
+
+  private cargarImagenesExistentes(varianteId: number): void {
+    this.cargandoImagenesExistentes = true;
+    this.varianteService.getImagenesPaginado(varianteId, 1, 50).subscribe({
+      next: res => {
+        this.imagenesExistentes = res.t ?? [];
+        const principal = this.imagenesExistentes.find(i => i.principal);
+        if (principal?.id) this.imagenPrincipalId = principal.id;
+        this.cargandoImagenesExistentes = false;
+      },
+      error: () => { this.cargandoImagenesExistentes = false; }
+    });
+  }
+
+  eliminarImagenExistente(img: IVarianteImagenDto): void {
+    if (!img.id || this.eliminandoExistente.has(img.id)) return;
+
+    Swal.fire({
+      title: '¿Eliminar imagen?',
+      text: img.nombreImagen,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+      background: '#1e1b4b',
+      color: '#fff'
+    }).then(result => {
+      if (!result.isConfirmed || !img.id || !this.variante?.id) return;
+      this.eliminandoExistente.add(img.id);
+
+      const eliminar$ = this.imagenVersionService.useV2
+        ? this.varianteService.eliminarImagenesV2(this.variante!.id!, [img.id])
+        : this.varianteService.eliminarImagenes(this.variante!.id!, [img.id]);
+
+      eliminar$.subscribe({
+        next: () => {
+          this.imagenesExistentes = this.imagenesExistentes.filter(i => i.id !== img.id);
+          this.eliminandoExistente.delete(img.id!);
+        },
+        error: () => {
+          this.eliminandoExistente.delete(img.id!);
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        }
+      });
+    });
+  }
+
+  setPrincipalVariante(img: IVarianteImagenDto): void {
+    if (!img.id || img.principal) return;
+    this.imagenesExistentes.forEach(i => i.principal = false);
+    img.principal = true;
+    this.imagenPrincipalId = img.id;
   }
 
   // ── Ajuste de stock ────────────────────────────────────────────────
@@ -191,11 +304,11 @@ export class UpdateVarianteComponent implements OnInit {
     this.guardando = true;
 
     const payload: IVarianteRequest = {
-      id:             this.variante.id,
-      productoId:     this.productoSeleccionado.idProducto,
+      id:                this.variante.id,
+      productoId:        this.productoSeleccionado.idProducto,
       ...this.form.value,
-      // Nuevo — ID de la palabra clave seleccionada
-      palabraClaveId: this.palabraClaveSeleccionada?.id ?? null,
+      palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
+      imagenPrincipalId: this.imagenPrincipalId,
       ...(this.imagenesCargadas.length ? { listImagenes: this.imagenesCargadas } : {})
     };
 

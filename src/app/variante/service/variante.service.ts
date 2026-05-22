@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { IVariante, IVarianteDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
+import { IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
@@ -90,10 +90,36 @@ export class VarianteService {
     return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
   }
 
+  eliminarImagenesV2(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
+    return this.http.delete<{ data: string }>(`${this.url}/v2/${varianteId}/imagenes`, { body: imageIds });
+  }
+
+  eliminarTodasImagenesVariantes(varianteIds: number[]): Observable<{ data: string }> {
+    return this.http.delete<{ data: string }>(`${this.url}/imagenes`, { body: varianteIds });
+  }
+
+  eliminarTodasImagenesVariantesV2(varianteIds: number[]): Observable<{ data: string }> {
+    return this.http.delete<{ data: string }>(`${this.url}/v2/imagenes`, { body: varianteIds });
+  }
+
   getImagenesPaginado(id: number, pagina: number, size: number): Observable<IVarianteImagenPaginable> {
     return this.http.get<{ data: IVarianteImagenPaginable }>(
       `${this.url}/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
     ).pipe(map(res => res.data));
+  }
+
+  getImagenesVariante(varianteId: number): Observable<IVarianteImagenDto[]> {
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/imagenes/${varianteId}`)
+      .pipe(map(res => res?.data ?? []));
+  }
+
+  getImagenesVarianteV2(varianteId: number): Observable<IVarianteImagenDto[]> {
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v2/imagenes/${varianteId}`)
+      .pipe(map(res => res?.data ?? []));
+  }
+
+  setPrincipalVariante(imagenId: string): Observable<any> {
+    return this.http.put<any>(`${this.url}/imagenes/${imagenId}/principal`, null);
   }
 
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {

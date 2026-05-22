@@ -9,11 +9,15 @@ export class LoadingService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
 
+  private count = 0;
+
   show() {
+    this.count++;
     this.loadingSubject.next(true);
   }
 
   hide() {
-    this.loadingSubject.next(false);
+    if (this.count > 0) this.count--;
+    if (this.count === 0) this.loadingSubject.next(false);
   }
 }

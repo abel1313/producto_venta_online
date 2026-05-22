@@ -63,7 +63,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
         if (nuevoId && nuevoId !== this.idProductoCargado) {
           this.idProductoCargado = nuevoId;
           this.resetCarrusel();
-          this.cargarPagina(1, nuevoId);
+          this.cargarPagina(0, nuevoId);  // base-0 interno, igual que detalle-producto
         }
       });
   }
@@ -78,15 +78,16 @@ export class UpdateComponent implements OnInit, OnDestroy {
   }
 
   private cargarPagina(pagina: number, productoId?: number): void {
-    const id = productoId ?? this.productoActualizar?.id;
+    const id = productoId ?? this.idProductoCargado;
     if (!id || this.paginasCargadas.has(pagina)) return;
     this.paginasCargadas.add(pagina);
 
-    if (pagina === 1) this.cargandoImagenes = true;
+    if (pagina === 0) this.cargandoImagenes = true;
 
-    this.serviceProducto.getImagenesProducto(id, pagina, PAGE_SIZE).subscribe({
+    // API es base-1, internamente usamos base-0 igual que detalle-producto
+    this.serviceProducto.getImagenesProducto(id, pagina + 1, PAGE_SIZE).subscribe({
       next: (data: ProductoImagenPaginadaDto) => {
-        if (pagina === 1) {
+        if (pagina === 0) {
           this.cargandoImagenes       = false;
           this.totalPaginas           = data.totalPaginas ?? 1;
           this.cargaInicialCompletada = true;
@@ -125,12 +126,19 @@ export class UpdateComponent implements OnInit, OnDestroy {
     });
   }
 
-  handlePageChange(_event: any): void {
+  handlePageChange(event: any): void {
     if (!this.cargaInicialCompletada) return;
     if (this.paginasCargadas.size >= this.totalPaginas) return;
 
-    for (let p = 1; p <= this.totalPaginas; p++) {
-      if (!this.paginasCargadas.has(p)) { this.cargarPagina(p); break; }
+    const puntoSeleccionado = event.page; // base-0, igual que detalle-producto
+
+    if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado < this.totalPaginas) {
+      this.cargarPagina(puntoSeleccionado);
+      return;
+    }
+
+    for (let i = 0; i < this.totalPaginas; i++) {
+      if (!this.paginasCargadas.has(i)) { this.cargarPagina(i); break; }
     }
   }
 

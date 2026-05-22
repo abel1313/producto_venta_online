@@ -125,15 +125,9 @@ export class UpdateComponent implements OnInit, OnDestroy {
     });
   }
 
-  handlePageChange(event: any): void {
+  handlePageChange(_event: any): void {
     if (!this.cargaInicialCompletada) return;
     if (this.paginasCargadas.size >= this.totalPaginas) return;
-
-    const puntoSeleccionado = event.page + 1;
-    if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado <= this.totalPaginas) {
-      this.cargarPagina(puntoSeleccionado);
-      return;
-    }
 
     for (let p = 1; p <= this.totalPaginas; p++) {
       if (!this.paginasCargadas.has(p)) { this.cargarPagina(p); break; }

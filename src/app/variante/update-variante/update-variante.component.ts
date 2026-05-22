@@ -47,8 +47,19 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   cambiandoPrincipal = new Set<string>();
   imagenPrincipalId: string | null = null;
 
+  private paginasCargadas      = new Set<number>();
+  private cargaInicialCompletada = false;
+  totalPaginasImagenes           = 0;
+
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
+
+  responsiveOptions = [
+    { breakpoint: '1400px', numVisible: 4, numScroll: 1 },
+    { breakpoint: '1199px', numVisible: 3, numScroll: 1 },
+    { breakpoint: '767px',  numVisible: 2, numScroll: 1 },
+    { breakpoint: '575px',  numVisible: 1, numScroll: 1 },
+  ];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -220,19 +231,60 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
+  volver(): void { this.router.navigate(['/variantes/buscar']); }
+
   // ── Imágenes existentes ───────────────────────────────────────────
 
   private cargarImagenesExistentes(varianteId: number): void {
-    this.cargandoImagenesExistentes = true;
-    this.varianteService.getImagenesPaginado(varianteId, 1, 50).subscribe({
+    this.imagenesExistentes   = [];
+    this.paginasCargadas      = new Set<number>();
+    this.cargaInicialCompletada = false;
+    this.totalPaginasImagenes = 0;
+    this.cargarPaginaImagenes(0, varianteId);
+  }
+
+  private cargarPaginaImagenes(pagina: number, varianteId?: number): void {
+    const id = varianteId ?? this.variante?.id;
+    if (!id || this.paginasCargadas.has(pagina)) return;
+    this.paginasCargadas.add(pagina);
+
+    if (pagina === 0) this.cargandoImagenesExistentes = true;
+
+    this.varianteService.getImagenesPaginado(id, pagina + 1, 8).subscribe({
       next: res => {
-        this.imagenesExistentes = res.t ?? [];
-        const principal = this.imagenesExistentes.find(i => i.principal);
-        if (principal?.id) this.imagenPrincipalId = principal.id;
-        this.cargandoImagenesExistentes = false;
+        if (pagina === 0) {
+          this.cargandoImagenesExistentes  = false;
+          this.totalPaginasImagenes        = res.totalPaginas ?? 1;
+          this.cargaInicialCompletada      = true;
+          const principal = (res.t ?? []).find(i => i.principal);
+          if (principal?.id) this.imagenPrincipalId = principal.id;
+        }
+        const nuevas = (res.t ?? []).filter(
+          img => !this.imagenesExistentes.some(e => e.id === img.id)
+        );
+        this.imagenesExistentes = [...this.imagenesExistentes, ...nuevas];
       },
-      error: () => { this.cargandoImagenesExistentes = false; }
+      error: () => {
+        if (pagina === 0) this.cargandoImagenesExistentes = false;
+        this.paginasCargadas.delete(pagina);
+      }
     });
+  }
+
+  handlePageChangeImagenes(event: any): void {
+    if (!this.cargaInicialCompletada) return;
+    if (this.paginasCargadas.size >= this.totalPaginasImagenes) return;
+
+    const puntoSeleccionado = event.page;
+
+    if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado < this.totalPaginasImagenes) {
+      this.cargarPaginaImagenes(puntoSeleccionado);
+      return;
+    }
+
+    for (let i = 0; i < this.totalPaginasImagenes; i++) {
+      if (!this.paginasCargadas.has(i)) { this.cargarPaginaImagenes(i); break; }
+    }
   }
 
   eliminarImagenExistente(img: IVarianteImagenDto): void {

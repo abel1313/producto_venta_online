@@ -64,10 +64,10 @@ export class ImagenesService {
   }
 
   eliminarImagenesBatch(productoId: number, ids: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.urlImg}/${productoId}/imagenes`, { body: ids });
+    return this.http.delete<{ data: string }>(`${this.urlImg}/v2/${productoId}/imagenes`, { body: ids });
   }
 
   setPrincipalProducto(imagenId: string): Observable<any> {
-    return this.http.put<any>(`${environment.api_Url}/producto-imagen/${imagenId}/principal`, null);
+    return this.http.put<any>(`${environment.api_imagenes}/producto-imagen/${imagenId}/principal`, null);
   }
 }

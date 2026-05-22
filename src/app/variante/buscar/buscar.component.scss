@@ -281,9 +281,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &__footer {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
     border-top: 1px solid var(--card-border);
+    > * { flex: 1 0 50px; }
   }
 }
 
@@ -344,6 +345,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--app-accent);
     border-left: 1px solid var(--card-border);
     &:hover { background: var(--app-accent-soft); }
+  }
+
+  &--share {
+    color: #0891b2;
+    border-left: 1px solid var(--card-border);
+    &:hover { background: rgba(8,145,178,0.08); }
   }
 }
 

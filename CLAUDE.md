@@ -155,23 +155,24 @@ Para invocar: escribir `/angular-developer` o `/code-quality` en el chat.
 
 ---
 
-### ✅ MIGRACIÓN 1 — GET imágenes de detalle de producto
+### ✅ MIGRACIÓN 1 — GET imágenes de detalle de producto (2026-05-22: migrado a micro, listar permanente)
 
-| | v1 (deprecated) | v2 (✅ conectado) |
+| | v1 (deprecated) | final (✅ permanente) |
 |---|---|---|
-| **Endpoint** | `GET /imagen/{id}/detalle?page=&size=` | `GET /imagen/v2/{id}/detalle?page=&size=` |
-| **Servicio** | `ProductoService.getDataImg()` | `ProductoService.getDataImgV2()` |
-| **Diferencia** | Lanza error si no hay imagen | Devuelve 204 → front muestra vacío sin crash |
+| **Endpoint** | `GET /imagen/{id}/detalle` (proyecto-key) ❌ | `GET /producto-imagen/listar/{id}?pagina=&size=` (micro 9096) |
+| **Servicio** | `ProductoService.getDataImg()` / `getDataImgV2()` — sin uso | `ProductoService.getImagenesProducto()` |
+| **Response** | `{ list: [], totalPaginas }` con base64 embebido | `{ listaImagenes: [], totalPaginas, pagina, totalImagenes }` con `urlImagen` |
+| **Imagen** | `getImgSrc(img)` convertía base64 | `<img [src]="img.urlImagen">` — browser carga directo |
 
-**Para que se ejecute el v2, el usuario tiene que:**
-1. Iniciar sesión como **admin**
-2. En el sidebar hacer clic en `🧪 IMG v1` → se pone amarillo (`IMG v2 activo`)
-3. Ir a `Mis productos` → `Ver todos` → clic en el ícono de detalle de cualquier producto
-4. Angular navega a `/productos/detalle/{id}` → `ngOnInit` llama automáticamente al endpoint
+**Estado:** `DetalleProductoComponent` usa `getImagenesProducto()` (mismo que `UpdateComponent`). `ImagenVersionService` eliminado del componente. `getDataImgV2` ya no se invoca desde ningún componente.
+
+**Cómo llegar:**
+- `Mis productos` → `Ver todos` → clic en el ícono de detalle de cualquier producto
+- Angular navega a `/productos/detalle/{id}` → `ngOnInit` llama `getImagenesProducto(id, 1, 8)`
 
 **Archivos involucrados:**
 - `src/app/productos/producto/detalle-producto/detalle-producto.component.ts` → `ngOnInit()` y `cargarPagina()`
-- `src/app/productos/service/producto.service.ts` → `getDataImg()` / `getDataImgV2()`
+- `src/app/productos/service/producto.service.ts` → `getImagenesProducto()`
 
 ---
 
@@ -212,18 +213,30 @@ Para invocar: escribir `/angular-developer` o `/code-quality` en el chat.
 
 ---
 
-### ⏳ MIGRACIÓN 4 — DELETE lote de imágenes de producto (pendiente)
+### ✅ MIGRACIÓN 4 — DELETE lote de imágenes de producto (2026-05-22)
 
-| | v1 | v2 (pendiente) |
+| | v1 (deprecated) | v2 (✅ final) |
 |---|---|---|
-| **Endpoint** | `DELETE /imagen/{productoId}/imagenes` (body: ids[]) | `DELETE /imagen/v2/{productoId}/imagenes` |
-| **Servicio actual** | `ImagenesService.eliminarImagenesBatch()` | — (no implementado aún) |
+| **Endpoint** | `DELETE /imagen/{productoId}/imagenes` | `DELETE /imagen/v2/{productoId}/imagenes` |
+| **Servicio** | `ImagenesService.eliminarImagenesBatch()` | mismo servicio, URL actualizada |
 
-**Para que se ejecute (CUANDO SE IMPLEMENTE):**
-1. Activar toggle `🧪 IMG v2`
-2. `Mis productos` → `Ver todos` → clic en nombre del producto → marcar varias imágenes con `✕` → "Eliminar seleccionadas" → confirmar
+**Cómo llegar:** `Mis productos` → `Ver todos` → clic en nombre del producto → marcar imágenes con `✕` → "Eliminar seleccionadas" → confirmar
 
-**Archivo a modificar:** `src/app/productos/producto/detalle-producto/detalle-producto.component.ts` → `confirmarEliminarBatch()`
+**Archivo modificado:** `src/app/imagene/imagenes.service.ts` → `eliminarImagenesBatch()`
+
+---
+
+### ✅ MIGRACIÓN 4b — PUT marcar imagen principal de producto (2026-05-22)
+
+| | antes | final (✅) |
+|---|---|---|
+| **Endpoint** | `PUT /producto-imagen/{id}/principal` (proyecto-key 9091) | mismo path → **micro 9096** |
+| **Servicio** | `ImagenesService.setPrincipalProducto()` — URL corregida a `api_imagenes` | ✅ |
+| **UpdateComponent** | `setPrincipal()` solo actualizaba estado local | ✅ ahora llama la API + revierte si falla |
+
+**Archivos modificados:**
+- `src/app/imagene/imagenes.service.ts` → URL de `api_Url` → `api_imagenes`
+- `src/app/productos/producto/update/update.component.ts` → `setPrincipal()` agrega llamada HTTP
 
 ---
 
@@ -316,9 +329,26 @@ Implementado con `:host-context(body.theme-dark)` y `:host-context(body.theme-li
 **Archivo:** `src/app/productos/producto/update/update.component.ts` + `.html`
 
 - **Botón "Mis productos"** agregado arriba del formulario → navega a `/productos/buscar`
-- **Imágenes:** carga la lista via `GET /imagen/{productoId}/imagenes`, luego por cada imagen llama `GET /imagen/file/{id}` con `responseType: blob` → convierte a ObjectURL → `<img [src]>`
-- **Si el archivo no existe en disco:** en vez de mostrar "⚠️ Sin vista previa" (placeholder feo), la tarjeta se elimina silenciosamente de la lista → solo se muestran imágenes que sí tienen archivo
-- **Binario:** el front SÍ maneja binary correctamente via `HttpClient blob`. Si no muestra imagen es problema del back (archivo inexistente), no del front
+- **Imágenes:** carga via `GET /producto-imagen/listar/{id}` (micro 9096), luego por cada imagen `GET {urlImagen}` como blob → ObjectURL → `<img [src]>`
+- **Carrusel:** `p-carousel` debajo del formulario — lazy loading paginado (8 por página), botones ⭐ principal y ✕ eliminar por slide
+
+### UpdateVarianteComponent — Variantes → Editar
+**Archivo:** `src/app/variante/update-variante/update-variante.component.ts` + `.html`
+
+- **Carrusel de imágenes existentes** (2026-05-22): sección "Imágenes actuales" movida AL FINAL, fuera del card del formulario, como `p-carousel` igual al patrón de `UpdateComponent`
+- **Orden de la página:** producto → campos → categoría → subir nuevas imágenes → botón Actualizar → **carrusel imágenes existentes**
+- **Carrusel:** `p-carousel` con `numVisible=3`, responsive (2 en tablet, 1 en móvil), cada slide tiene botón ⭐ principal y ✕ eliminar
+- **Imágenes:** se muestran con `img.urlImagen | imagenSrc | async` (mismo patrón que buscar variantes)
+- **Categoría:** selector `app-palabra-clave-autocomplete` ya presente en el form
+
+### BuscarComponent — Variantes → Buscar
+**Archivo:** `src/app/variante/buscar/buscar.component.html` + `.scss`
+
+- **Botón compartir 📤** (2026-05-22): ya estaba en el template pero `vb-btn-card--share` sin estilos y footer con grid fijo de 4 columnas. Correcciones:
+  - Footer cambiado a `display: flex` para adaptarse a cualquier número de botones
+  - Agregado `&--share { color: #0891b2 }` en SCSS
+  - Botón visible solo para **admin** cuando la variante tiene `imagenUrl`
+  - Funciona igual que `AllComponent` (productos/buscar): llama a `CompartirService` con título, precio e imagen
 
 ### ⚠️ CONTEXTO ARQUITECTURA — MUY IMPORTANTE
 - **`ImagenesService.urlImg`** apunta a `environment.api_Url/imagen` = **proyecto-key** (puerto 9091)

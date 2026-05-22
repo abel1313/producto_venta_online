@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ImagenUpdateDto } from '../models';
 import { ProductoService } from '../../service/producto.service';
+import { ImagenesService } from 'src/app/imagene/imagenes.service';
 import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoImagenPaginadaDto } from '../models/ProductoImagenDto.model';
 import Swal from 'sweetalert2';
@@ -50,6 +51,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
     private readonly serviceProducto: ProductoService,
     private readonly router:          Router,
     private readonly sanitizer:       DomSanitizer,
+    private readonly imagenesService: ImagenesService,
   ) {}
 
   volver(): void { this.router.navigate(['/productos/buscar']); }
@@ -184,6 +186,9 @@ export class UpdateComponent implements OnInit, OnDestroy {
     if (this.productoActualizar) {
       this.productoActualizar.imagenPrincipalId = item.dto.id;
     }
+    this.imagenesService.setPrincipalProducto(item.dto.id).subscribe({
+      error: () => { item.dto.principal = false; }
+    });
   }
 
   ngOnDestroy(): void {

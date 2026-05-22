@@ -76,9 +76,11 @@ export interface IVarianteResumenPaginable {
 
 export interface IVarianteImagenDto {
   id?: string;
-  base64: string;
+  base64: string | null;
   extension: string;
   nombreImagen: string;
+  urlImagen?: string | null;
+  principal?: boolean;
 }
 
 export interface IVarianteImagenPaginable {

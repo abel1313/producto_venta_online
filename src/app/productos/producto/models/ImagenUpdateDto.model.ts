@@ -5,4 +5,5 @@ export interface ImagenUpdateDto {
     extension: string;
     nombreImagen: string;
     base64?: string | null;
+    principal?: boolean;
 }

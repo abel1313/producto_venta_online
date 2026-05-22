@@ -18,6 +18,7 @@ export interface IProductoDTORec extends IdGenerico{
     codigoBarras: ICodigoBarra;
     // Palabra clave asignada — para precargar el autocomplete al editar
     palabraClave?: { id: number; nombre: string } | null;
+    imagenPrincipalId?: string | null;
 }
 
 

@@ -137,9 +137,20 @@ export class DetalleVarianteComponent implements OnInit {
   }
 
   imageSrc(img: IVarianteImagenDto): string {
+    if (img?.urlImagen) return img.urlImagen;
     if (!img?.base64) return '';
     if (img.base64.startsWith('data:')) return img.base64;
-    return `data:${img.extension};base64,${img.base64}`;
+    return `data:${img.extension};base64,${img.base64.replace(/\s+/g, '')}`;
+  }
+
+  get variantesChips(): IVarianteDto[] {
+    const seen = new Set<string>();
+    return this.variantes.filter(v => {
+      const key = `${v.talla ?? ''}|${v.color ?? ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   // ── Carrito ────────────────────────────────────────────────────────────────

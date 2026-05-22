@@ -260,6 +260,40 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   to   { top: 78%; }
 }
 
+// ── Botón escáner móvil ────────────────────────────────────────────
+.pl-scan-mobile {
+  display: none;
+}
+
+@media (max-width: 576px) {
+  .pl-scan-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 16px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.28); }
+    &:disabled { opacity: 0.35; cursor: not-allowed; }
+  }
+
+  .pl-search__scan { display: none; }
+
+  .pl-search__input {
+    font-size: 0.82rem;
+    &::placeholder { font-size: 0.82rem; }
+  }
+}
+
 @media (max-width: 400px) {
   .scanner-box {
     width: 96vw;

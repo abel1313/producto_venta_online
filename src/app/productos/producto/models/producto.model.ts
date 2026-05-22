@@ -21,6 +21,6 @@ export interface IProducto extends IdGenerico{
     eliminarStock: number;
     codigoBarras: ICodigoBarra;
     listImagenes: IImagenDto[];
-    // Nuevo campo — ID de la palabra clave del catálogo para categorizar el producto
     palabraClaveId?: number | null;
+    imagenPrincipalId?: string | null;
 }

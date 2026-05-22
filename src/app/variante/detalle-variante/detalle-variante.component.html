@@ -12,9 +12,9 @@
   </button>
 
   <!-- Selector de variantes -->
-  <div class="dv-variants" *ngIf="variantes.length > 1">
+  <div class="dv-variants" *ngIf="variantesChips.length > 1">
     <div class="dv-variants__list">
-      <button *ngFor="let v of variantes"
+      <button *ngFor="let v of variantesChips"
               class="dv-variant-chip"
               [class.dv-variant-chip--active]="v.id === varianteSeleccionada.id"
               (click)="seleccionar(v)">
@@ -70,8 +70,8 @@
         <ng-template pTemplate="item" let-img>
           <div class="dv-slide" [class.dv-slide--marked]="estaMarcada(img)">
             <div class="dv-slide__img-wrap">
-              <img
-                [src]="imageSrc(img)"
+              <img *ngIf="img.urlImagen | imagenSrc | async as src"
+                [src]="src"
                 [alt]="img.nombreImagen ?? 'Imagen variante'"
                 class="dv-slide__img"
                 (error)="$any($event.target).style.display='none'" />

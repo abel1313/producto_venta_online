@@ -162,9 +162,9 @@ export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
       actualizarStock:+raw.actualizarStock || 0,
       eliminarStock:  +raw.eliminarStock   || 0,
       codigoBarras:   { codigoBarras: raw.codigoBarras, id: 0 },
-      listImagenes:    this.imagenesCargadas,
-      // Nuevo — ID de la palabra clave seleccionada (null si no se eligió)
-      palabraClaveId:  this.palabraClaveSeleccionada?.id ?? null
+      listImagenes:      this.imagenesCargadas,
+      palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
+      imagenPrincipalId: this.productoUpdate?.imagenPrincipalId ?? null
     };
 
     this.guardando = true;

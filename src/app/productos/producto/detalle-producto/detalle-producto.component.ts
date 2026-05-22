@@ -9,6 +9,7 @@ import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ImagenesService } from 'src/app/imagene/imagenes.service';
+import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -44,6 +45,7 @@ export class DetalleProductoComponent implements OnInit {
     private readonly confirmationService: ConfirmationService,
     private readonly authService: AuthService,
     private readonly imagenesService: ImagenesService,
+    private readonly imagenVersion: ImagenVersionService,
   ) { }
 
   ngOnInit(): void {
@@ -52,10 +54,20 @@ export class DetalleProductoComponent implements OnInit {
     });
 
   this.idProducto = +this.route.snapshot.paramMap.get('id')!;
-  this.service.getDataImg(this.idProducto, 0, 4).subscribe(data => {
+  const img$ = this.imagenVersion.useV2
+    ? this.service.getDataImgV2(this.idProducto, 0, 4)
+    : this.service.getDataImg(this.idProducto, 0, 4);
+
+  img$.subscribe(data => {
+    if (!data) {
+      // v2 devolvió 204: sin imágenes, la app sigue funcionando
+      this.productoDtoImagen = [];
+      this.existeImagenes = false;
+      this.cargaInicialCompletada = true;
+      return;
+    }
     this.productoDtoImagen = data.list;
     this.existeImagenes = this.imagenesPorProducto();
-
     this.totalPaginas = data.totalPaginas;
     this.paginasCargadas.add(0);
     this.cargaInicialCompletada = true;
@@ -221,21 +233,17 @@ toggleMarcar(img: ProductImagenDto): void {
   paginasValidas: number[] = [];
   paginasCargadas = new Set<number>();
 
-handlePageChange(event: any) {
+handlePageChange(event: any): void {
   if (!this.cargaInicialCompletada) return;
-
-  const puntoSeleccionado = event.page;
-
-  // Si ya cargaste todas las páginas, no hay nada más que hacer
   if (this.paginasCargadas.size >= this.totalPaginas) return;
 
-  // Si el punto seleccionado coincide con una página válida aún no cargada
+  const puntoSeleccionado = event.page; // API base-0
+
   if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado < this.totalPaginas) {
     this.cargarPagina(puntoSeleccionado);
     return;
   }
 
-  // Si el punto seleccionado es mayor que las páginas válidas, busca la siguiente página no cargada
   for (let i = 0; i < this.totalPaginas; i++) {
     if (!this.paginasCargadas.has(i)) {
       this.cargarPagina(i);
@@ -249,17 +257,19 @@ handlePageChange(event: any) {
 cargarPagina(pagina: number) {
   this.paginasCargadas.add(pagina);
 
-  this.service.getDataImg(this.idProducto, pagina, 4).subscribe(data => {
-    const nuevasImagenes = Array.isArray(data.list)
-      ? data.list.filter((nueva: ProductImagenDto) =>
-          !this.productoDtoImagen.some((existente: ProductImagenDto) => existente.idImagen === nueva.idImagen)
-        )
-      : [];
+  const img$ = this.imagenVersion.useV2
+    ? this.service.getDataImgV2(this.idProducto, pagina, 4)
+    : this.service.getDataImg(this.idProducto, pagina, 4);
 
-    this.productoDtoImagen = [...this.productoDtoImagen, ...nuevasImagenes];
+  img$.subscribe(data => {
+    if (!data) {
+      return;
+    }
+    const nuevas = Array.isArray(data.list) ? data.list : [];
+    this.productoDtoImagen = [...this.productoDtoImagen, ...nuevas];
     this.existeImagenes = this.imagenesPorProducto();
   }, error => {
-    this.paginasCargadas.delete(pagina); // liberar si falló
+    this.paginasCargadas.delete(pagina);
     console.error(error);
   });
 }

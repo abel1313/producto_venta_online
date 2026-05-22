@@ -66,16 +66,17 @@ export class TokenInterceptor implements HttpInterceptor {
     this.isRefreshing = true;
     this.refreshToken$.next(null);
 
-    return this.http.post<{ accessToken: string }>(
+    return this.http.post<any>(
       `${environment.api_Url}/auth/refresh`, {}, { withCredentials: true }
     ).pipe(
       switchMap(response => {
+        const token: string = response?.response?.accessToken ?? response?.accessToken ?? response?.data?.accessToken ?? response?.token ?? '';
         this.isRefreshing = false;
-        this.authService.setAccessToken(response.accessToken);
-        this.authRoles.setRolesFromToken(response.accessToken);
-        this.refreshToken$.next(response.accessToken);
+        this.authService.setAccessToken(token);
+        this.authRoles.setRolesFromToken(token);
+        this.refreshToken$.next(token);
         return next.handle(req.clone({
-          setHeaders: { Authorization: `Bearer ${response.accessToken}` },
+          setHeaders: { Authorization: `Bearer ${token}` },
           withCredentials: true
         }));
       }),

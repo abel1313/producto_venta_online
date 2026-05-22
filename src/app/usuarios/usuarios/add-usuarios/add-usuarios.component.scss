@@ -197,10 +197,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   &::placeholder { color: #d1d5db; }
 
   &:focus {
-    border-color: $primary;
+    border-color: var(--app-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba($primary, 0.1);
-    ~ .input-icon { color: $primary; }
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    ~ .input-icon { color: var(--app-accent); }
   }
 }
 
@@ -227,7 +227,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .pwd-req-title {
   font-size: 0.7rem;
   font-weight: 700;
-  color: $primary;
+  color: var(--app-accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0 0 0.45rem;
@@ -287,6 +287,66 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 .toggle-wrap { display: flex; align-items: center; gap: 0.75rem; }
 
+// ── TEMA OSCURO ───────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .split-form {
+    background: rgba(13, 17, 23, 0.97);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+
+    @media (max-width: 768px) { background: #0d1117; }
+  }
+
+  .brand-name  { color: #f1f5f9; }
+  .brand-sub   { color: #64748b; }
+  .field-label { color: #94a3b8; }
+
+  .field-input {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+
+    &::placeholder { color: #475569; }
+    &:focus {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--app-accent);
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+    }
+  }
+
+  .input-icon  { color: #64748b; }
+  .toggle-pass { color: #64748b; &:hover { color: var(--app-accent); } }
+
+  .admin-section {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .error-msg {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #fca5a5;
+  }
+
+  .register-link { color: #64748b; }
+  .pwd-strength-bar { background: rgba(255, 255, 255, 0.1); }
+}
+
+// ── TEMA CLARO ────────────────────────────────────────────────────────────
+:host-context(body.theme-light) {
+  .split-form   { background: #ffffff; }
+  .brand-name   { color: #1f2937; }
+  .field-label  { color: #374151; }
+
+  .field-input {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #1f2937;
+    &::placeholder { color: #d1d5db; }
+  }
+
+  .admin-section { background: #f9fafb; border-color: #e5e7eb; }
+}
+
 .toggle-label {
   font-size: 0.85rem;
   color: #9ca3af;
@@ -343,9 +403,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 0.6rem;
 
   &:hover {
-    border-color: $primary;
-    color: $primary;
-    background: rgba($primary, 0.04);
+    border-color: var(--app-accent);
+    color: var(--app-accent);
+    background: var(--app-accent-soft);
   }
 }
 
@@ -357,12 +417,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: #9ca3af;
 
   a {
-    color: $primary;
+    color: var(--app-accent);
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
     transition: $transition;
-    &:hover { color: $primary-d; text-decoration: underline; }
+    &:hover { color: var(--app-accent); text-decoration: underline; }
   }
 }
 

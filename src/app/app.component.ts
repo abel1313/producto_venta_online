@@ -9,6 +9,7 @@ import { AuthenticateService } from './auth.service';
 import { environment } from 'src/environments/environment';
 import { ITokenData } from './login/models/ITokenData.model';
 import { AuthService } from './auth/auth.service';
+import { ThemeService } from './services/theme/theme.service';
 
 
 
@@ -25,8 +26,11 @@ export class AppComponent implements OnInit, AfterViewInit {
   constructor(private sanitizer: DomSanitizer,
               private readonly http: HttpClient,
               private readonly auth: AuthenticateService,
-              private readonly roles: AuthService
-  ) {}
+              private readonly roles: AuthService,
+              private readonly themeService: ThemeService,
+  ) {
+    this.themeService.init(); // aplica la clase al body antes de pintar la vista
+  }
 
 
   sanitizeImage(imageUrl: string) {
@@ -34,7 +38,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
   
   ngOnInit(): void {
-        this.http.post<ITokenData>(this.urlRefresh, {}, { withCredentials: true })
+    this.http.post<ITokenData>(this.urlRefresh, {}, { withCredentials: true })
     .subscribe({
       next: tokenData => {
         this.auth.setAccessToken(tokenData.accessToken);

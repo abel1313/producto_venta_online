@@ -27,9 +27,8 @@ export class BuscaComponent implements OnInit {
         pagina:         this.service.prodPaginaCache,
         totalRegistros: this.service.prodCache.length
       };
-    } else {
-      this.buscarPorNombreCodigoPostal(1, 10, '');
     }
+    // Sin cache → AllComponent maneja la carga inicial con obtenerProductos
   }
 
 

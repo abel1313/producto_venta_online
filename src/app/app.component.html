@@ -1,38 +1,10 @@
 <nb-layout>
-
-  <nb-layout-header fixed class="" >
-    <div class="container-fluid">
-
-          <app-navbar></app-navbar>
-
-
-    </div>
-  </nb-layout-header>
   <nb-layout-column>
-
-
-
-    <div class="container">
-      <!--
-        <div class="row">
-            <div class="col-12">
-                <app-navbar></app-navbar>
-            </div>
-        </div>        
--->
-      <div class="row">
-        <div class="col-12 border">
-          <router-outlet></router-outlet>
-        </div>
-      </div>
+    <app-navbar></app-navbar>
+    <div class="page-content">
+      <router-outlet></router-outlet>
     </div>
-
   </nb-layout-column>
-
-  <nb-layout-footer fixed>
-    <!-- Insert footer here -->
-  </nb-layout-footer>
-
 </nb-layout>
 
 <app-loading></app-loading>

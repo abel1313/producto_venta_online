@@ -2,8 +2,8 @@ import { CompartirImagenesVarianteDto } from './../producto/detalle-producto/det
 import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models';
 import { IGastos } from 'src/app/gastos/models';
@@ -70,6 +70,30 @@ export class ProductoService {
     }
 
 
+    /**
+     * GET /imagen/v2/{id}/detalle — nuevo endpoint.
+     * Devuelve 204 (null) si el producto no tiene imágenes en disco en vez de lanzar error.
+     * El front NO crashea; solo se loguea el aviso.
+     */
+    getDataImgV2(id: number, page: number, size: number): Observable<any | null> {
+        return this.http.get(
+            `${this.urlImg}/v2/${id}/detalle?size=${size}&page=${page}`,
+            { observe: 'response', responseType: 'text' }
+        ).pipe(
+            map(response => {
+                if (response.status === 204) {
+                    console.log(`[imagen-v2] productoId=${id} — sin imágenes en disco`);
+                    return null;
+                }
+                return JSON.parse(response.body!.replace(/"(\w+)":\s*(\d{16,})/g, '"$1":"$2"'));
+            }),
+            catchError(err => {
+                console.error(`[imagen-v2] Error al obtener imágenes del productoId=${id}`, err);
+                return of(null);
+            })
+        );
+    }
+
     // 🌐 Obtener datos
     getDataNombreCodigoBarra(page: number, size: number, buscar: string): Observable<IProductoPaginable<IProductoDTO[]>> {
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/buscarNombreOrCodigoBarra?size=${size}&page=${page}&nombre=${buscar}`);
@@ -116,6 +140,20 @@ export class ProductoService {
 
     deleteImagen(id: string): Observable<any> {
         return this.http.delete(`${this.microImagenes}/${id}`);
+    }
+
+    getImagenesProducto(productoId: number, pagina = 1, size = 8): Observable<any> {
+        return this.http.get(`${this.microImagenes}/listar/${productoId}?pagina=${pagina}&size=${size}`);
+    }
+
+    getImagenFileMicro(url: string, mimeType = 'image/jpeg'): Observable<string> {
+        return this.http.get(url, { responseType: 'blob', observe: 'response' })
+            .pipe(map(response => {
+                if (response.status === 204 || !response.body) throw new Error('sin-imagen');
+                // El back devuelve application/octet-stream — se fuerza el MIME type real
+                const typedBlob = new Blob([response.body], { type: mimeType });
+                return URL.createObjectURL(typedBlob);
+            }));
     }
 
     agregarProducto(producto: IProductoDTOImagenes) {

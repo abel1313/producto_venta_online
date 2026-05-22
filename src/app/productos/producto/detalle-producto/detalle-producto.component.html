@@ -53,8 +53,8 @@
         <ng-template pTemplate="item" let-img>
           <div class="dp-slide" [class.dp-slide--marked]="estaMarcada(img)">
             <div class="dp-slide__img-wrap">
-              <img
-                [src]="img.urlImagen ?? ''"
+              <img *ngIf="img.urlImagen | imagenSrc | async as src"
+                [src]="src"
                 [alt]="img.nombreImagen ?? 'Imagen producto'"
                 class="dp-slide__img"
                 [style.opacity]="estaMarcada(img) ? '0.4' : '1'"

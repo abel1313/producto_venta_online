@@ -208,7 +208,7 @@
 
           <div class="vf-slide__wrap" [class.vf-slide__wrap--principal]="img.principal">
 
-            <ng-container *ngIf="img.urlImagen | imagenSrc | async as src">
+            <ng-container *ngIf="imageSrc(img) | imagenSrc | async as src">
               <img [src]="src" [alt]="img.nombreImagen" class="vf-slide__img"
                    (error)="$any($event.target).style.display='none'" />
             </ng-container>

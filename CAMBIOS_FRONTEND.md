@@ -928,3 +928,146 @@ Content-Type: application/json
 - **204 No Content**: no hay imagen disponible, no es un error
 - **RabbitMQ — No aplica**: lectura síncrona, no hay eventos
 - **RabbitMQ — TODO**: hay una oportunidad de usar Rabbit aquí pero aún no está implementado
+## CAMBIOS DE BACKEND — 2026-05-22 — Acciones requeridas en el front
+
+> Estos cambios ya están aplicados en el backend (rama `dev`). El front debe actualizar los componentes indicados.
+
+---
+
+### CAMBIO A — Listado de variantes: `imagenUrl` ahora siempre viene poblada
+
+**Endpoint afectado:** `GET /mis-productos/variantes/buscar?termino=&pagina=1&size=10`
+
+**Qué cambió en el back:**
+Antes el back verificaba contra el microservicio de imágenes si el archivo existía en disco antes de incluir la URL. Si esa verificación fallaba (error de red, micro lento) la `imagenUrl` llegaba `null` aunque la variante tuviera imagen. Ahora el back asigna la URL directamente desde la base de datos, sin verificación extra.
+
+**Comportamiento nuevo:**
+- Si la variante tiene imágenes → `imagenUrl` siempre viene con valor
+- Si la variante NO tiene ninguna imagen asignada → `imagenUrl` es `null`
+- Si el archivo ya no existe en disco → el micro devuelve `204 No Content` al hacer `GET imagenes/file/{id}` (el `<img>` no muestra nada, no explota)
+- La imagen seleccionada es la marcada como **principal**; si ninguna lo es, la de **id más bajo**
+
+**Response (no cambia la estructura, cambia el valor):**
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 3,
+    "totalRegistros": 25,
+    "t": [
+      {
+        "id": 5,
+        "talla": "M",
+        "descripcion": "Pantalón slim",
+        "color": "Azul",
+        "stock": 10,
+        "marca": "Marca X",
+        "imagenBase64": null,
+        "imagenUrl": "http://localhost:9096/mis-productos/imagenes/file/7305237692097776164",
+        "precio": 99.99,
+        "codigoBarras": "1234567890",
+        "nombreProducto": "Jeans Slim"
+      }
+    ]
+  }
+}
+```
+
+**Acción requerida en el front:**
+```html
+<!-- Antes: el front no mostraba nada porque imagenUrl llegaba null -->
+<!-- Ahora: usar directo como src -->
+<img [src]="variante.imagenUrl" *ngIf="variante.imagenUrl" />
+```
+
+- **No usar** `imagenBase64` — siempre es `null`
+- **No filtrar** por `principal` — el back ya eligió la imagen correcta
+- La lista de variantes está en `response.data.t` (no `data.content` ni `data.items`)
+
+**Componentes que deben actualizarse:**
+- Cualquier componente que liste variantes con imagen (catálogo, búsqueda, etc.)
+
+---
+
+### CAMBIO B — Listado de productos: `urlImagen` ahora apunta directo a los bytes
+
+**Endpoints afectados:**
+- `GET /mis-productos/productos/obtenerProductos?page=1&size=10`
+- `GET /mis-productos/productos/buscarNombreOrCodigoBarra?nombre=...&page=1&size=10`
+
+**Qué cambió en el back:**
+Antes `producto.imagen.urlImagen` apuntaba a `buscarImagenProducto/{productoId}` que devuelve un **JSON** (no bytes). El front tenía que llamar ese endpoint, extraer el `id` del JSON y luego llamar `/imagenes/file/{id}` para obtener los bytes.
+
+Ahora `producto.imagen.urlImagen` apunta directamente a `/imagenes/file/{imagenId}` — **devuelve bytes**, se puede usar directo como `src` del `<img>`.
+
+**Valor anterior de `urlImagen`:**
+```
+http://localhost:9096/mis-productos/producto-imagen/buscarImagenProducto/265
+→ devolvía JSON: { id, imagen (base64), urlImagen (filename), contentType }
+```
+
+**Valor nuevo de `urlImagen`:**
+```
+http://localhost:9096/mis-productos/imagenes/file/7305237692097776164
+→ devuelve bytes directos (Content-Type: image/jpeg)
+```
+
+**Response de `obtenerProductos` (estructura no cambia, cambia el valor de `urlImagen`):**
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 5,
+    "totalRegistros": 48,
+    "t": [
+      {
+        "idProducto": 265,
+        "nombre": "Great Jeans",
+        "color": "Azul",
+        "precioVenta": 150.0,
+        "descripcion": "...",
+        "codigoBarras": "...",
+        "stock": 10,
+        "imagen": {
+          "urlImagen": "http://localhost:9096/mis-productos/imagenes/file/7305237692097776164"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Acción requerida en el front:**
+```html
+<!-- Antes: llamar buscarImagenProducto, extraer id, luego llamar /imagenes/file/{id} -->
+<!-- Ahora: usar directo -->
+<img [src]="producto.imagen?.urlImagen" *ngIf="producto.imagen?.urlImagen" />
+```
+
+- Si el producto **no tiene imagen asignada** → `imagen.urlImagen` es `null` (o `imagen` puede ser un objeto con `urlImagen: null`)
+- Si el archivo no existe en disco → micro devuelve `204`, el `<img>` no muestra nada
+- **Eliminar** toda lógica que llame `buscarImagenProducto` para obtener la imagen del listado
+
+**Componentes que deben actualizarse:**
+- Componente de listado/catálogo de productos
+- Componente de búsqueda de productos
+- Cualquier componente que use `obtenerProductos` o `buscarNombreOrCodigoBarra` y muestre imagen
+
+---
+
+### Resumen de acciones — tabla rápida
+
+| Componente | Qué cambiar |
+|---|---|
+| Listado/catálogo de variantes | Usar `variante.imagenUrl` directo en `<img [src]>`. No filtrar por principal. |
+| Listado/catálogo de productos | Usar `producto.imagen.urlImagen` directo en `<img [src]>`. Eliminar la llamada intermedia a `buscarImagenProducto`. |
+| Búsqueda de productos (`buscarNombreOrCodigoBarra`) | Igual que listado de productos — misma estructura de response. |
+
+---
+
+### Lo que NO cambia
+
+- Endpoints de detalle de imágenes de variante: `GET /variantes/v2/imagenes/{varianteId}` — sin cambios
+- Endpoints de imágenes de producto en detalle: `GET /producto-imagen/listar/{productoId}` — sin cambios
+- Endpoints de eliminación y marcado de principal — sin cambios
+- Estructura general del response (`data.t`, `data.pagina`, etc.) — sin cambios

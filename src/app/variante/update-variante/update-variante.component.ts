@@ -233,6 +233,13 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
   volver(): void { this.router.navigate(['/variantes/buscar']); }
 
+  imageSrc(img: IVarianteImagenDto): string {
+    if (img?.urlImagen) return img.urlImagen;
+    if (!img?.base64) return '';
+    if (img.base64.startsWith('data:')) return img.base64;
+    return `data:${img.extension};base64,${img.base64.replace(/\s+/g, '')}`;
+  }
+
   // ── Imágenes existentes ───────────────────────────────────────────
 
   private cargarImagenesExistentes(varianteId: number): void {

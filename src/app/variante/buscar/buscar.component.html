@@ -87,7 +87,9 @@
 
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
-        <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+        <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+          <img [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+        </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
       </div>
 

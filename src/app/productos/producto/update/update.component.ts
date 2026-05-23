@@ -65,7 +65,19 @@ export class UpdateComponent implements OnInit, OnDestroy {
         if (nuevoId && nuevoId !== this.idProductoCargado) {
           this.idProductoCargado = nuevoId;
           this.resetCarrusel();
-          this.cargarPagina(0, nuevoId);  // base-0 interno, igual que detalle-producto
+          this.cargarPagina(0, nuevoId);
+          // Fetch full product to get palabraClave (not included in list endpoint)
+          this.serviceProducto.getDataGeneric<any>(nuevoId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (res: any) => {
+                const full = res?.data ?? res;
+                if (full?.palabraClave !== undefined && this.productoActualizar) {
+                  this.productoActualizar = { ...this.productoActualizar, palabraClave: full.palabraClave ?? null };
+                }
+              },
+              error: () => {}
+            });
         }
       });
   }

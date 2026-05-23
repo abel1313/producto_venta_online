@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -15,7 +15,7 @@ import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model
   templateUrl: './add.component.html',
   styleUrls: ['./add.component.scss']
 })
-export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
+export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
 
   @ViewChild('canvas',       { static: false }) canvasRef!:      ElementRef<HTMLCanvasElement>;
   @ViewChild('fileInput',    { static: false }) fileInputRef!:   ElementRef<HTMLInputElement>;
@@ -30,6 +30,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
   guardando = false;
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
+  private formReady = false;
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -48,10 +49,16 @@ export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
     this.buildForm();
     this.initPrecioVenta();
     this.initCodigoBarra();
+    this.formReady = true;
+    if (this.esActualizar && this.productoUpdate) {
+      this.cargarProductoUpdate();
+    }
   }
 
-  ngAfterViewInit(): void {
-    if (this.esActualizar && this.productoUpdate) {
+  ngAfterViewInit(): void {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['productoUpdate'] && this.productoUpdate && this.esActualizar && this.formReady) {
       this.cargarProductoUpdate();
     }
   }

@@ -5,7 +5,7 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, switchMap } from 'rxjs/operators';
+import { debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
@@ -27,6 +27,9 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   form!: FormGroup;
   guardando = false;
   variante: IVariante | null = null;
+
+  private idVarianteCargado: number | null = null;
+  private destroy$ = new Subject<void>();
 
   // Búsqueda de producto
   terminoProducto = '';
@@ -70,41 +73,70 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.variante = this.varianteService.varianteParaEditar;
+    // Suscribirse al observable para detectar cambios de variante (mismo patrón que UpdateComponent de productos)
+    this.varianteService.varianteUpdate$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(variante => {
+        if (!variante) {
+          if (!this.variante) {
+            this.router.navigate(['/variantes/buscar']);
+          }
+          return;
+        }
 
-    if (!this.variante) {
-      this.router.navigate(['/variantes/buscar']);
-      return;
-    }
+        const nuevoId = variante.id ?? null;
 
-    this.form = this.fb.group({
-      talla:         [this.variante.talla         ?? ''],
-      color:         [this.variante.color         ?? ''],
-      presentacion:  [this.variante.presentacion  ?? ''],
-      stock:         [this.variante.stock         ?? null],
-      descripcion:   [this.variante.descripcion   ?? ''],
-      marca:         [this.variante.marca         ?? ''],
-      contenidoNeto: [this.variante.contenidoNeto ?? ''],
-    });
+        // Inicializar el formulario solo la primera vez o cuando cambia la variante
+        if (nuevoId && nuevoId !== this.idVarianteCargado) {
+          this.idVarianteCargado = nuevoId;
+          this.variante = variante;
 
-    // Precargar palabra clave si la variante ya tenía una asignada
-    if (this.variante.palabraClave) {
-      this.palabraClaveSeleccionada = this.variante.palabraClave;
-    }
+          this.form = this.fb.group({
+            talla:         [variante.talla         ?? ''],
+            color:         [variante.color         ?? ''],
+            presentacion:  [variante.presentacion  ?? ''],
+            stock:         [variante.stock         ?? null],
+            descripcion:   [variante.descripcion   ?? ''],
+            marca:         [variante.marca         ?? ''],
+            contenidoNeto: [variante.contenidoNeto ?? ''],
+          });
 
-    if (this.variante.producto) {
-      this.productoSeleccionado = {
-        idProducto:  this.variante.producto.id,
-        nombre:      this.variante.producto.nombre ?? '',
-        precioVenta: this.variante.producto.precioVenta ?? 0,
-        stock:       0,
-      } as IProductoDTO;
-      this.terminoProducto = this.variante.producto.nombre ?? '';
-    }
+          // Precargar producto seleccionado
+          if (variante.producto) {
+            this.productoSeleccionado = {
+              idProducto:  variante.producto.id,
+              nombre:      variante.producto.nombre ?? '',
+              precioVenta: variante.producto.precioVenta ?? 0,
+              stock:       0,
+            } as IProductoDTO;
+            this.terminoProducto = variante.producto.nombre ?? '';
+          }
 
-    if (this.variante.id) {
-      this.cargarImagenesExistentes(this.variante.id);
-    }
+          // Cargar imágenes existentes
+          this.cargarImagenesExistentes(nuevoId);
+
+          // Llamar a getOne para obtener la variante completa con palabraClave
+          // (el objeto del BehaviorSubject puede venir del fallback sin palabraClave)
+          this.varianteService.getOne(nuevoId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (full: IVariante) => {
+                if (full?.palabraClave !== undefined) {
+                  this.variante = { ...this.variante!, palabraClave: full.palabraClave ?? null };
+                  this.palabraClaveSeleccionada = full.palabraClave
+                    ? { id: full.palabraClave.id, nombre: full.palabraClave.nombre }
+                    : null;
+                }
+              },
+              error: () => {
+                // Si falla getOne, usar palabraClave del objeto original si existía
+                if (variante.palabraClave) {
+                  this.palabraClaveSeleccionada = variante.palabraClave;
+                }
+              }
+            });
+        }
+      });
 
     this.busquedaSubject.pipe(
       debounceTime(350),
@@ -206,7 +238,11 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.mostrandoCamara = false;
   }
 
-  ngOnDestroy(): void { this.cerrarCamara(); }
+  ngOnDestroy(): void {
+    this.cerrarCamara();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   private mostrarEnCanvas(src: string): void {
     const img = new Image();

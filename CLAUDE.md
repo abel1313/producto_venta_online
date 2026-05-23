@@ -34,6 +34,41 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 
 ---
 
+## BUG FIX — CATEGORÍA (palabraClave) NO PRECARGADA AL EDITAR VARIANTE (2026-05-23)
+
+**Síntoma:** al abrir `variantes/update`, el campo de categoría (autocomplete) aparece vacío aunque la variante tenía categoría asignada. Ocurre cuando `editarVariante()` en `BuscarComponent` entra al bloque `error` y manda un objeto manual sin `palabraClave`, o cuando el objeto de la grilla no la incluye.
+
+**Causa raíz:**
+`UpdateVarianteComponent.ngOnInit()` leía el snapshot del BehaviorSubject con `varianteParaEditar` (getter) — solo una vez. Si el objeto venía incompleto (sin `palabraClave`), el autocomplete se quedaba vacío para siempre.
+
+**Fix:**
+`UpdateVarianteComponent.ngOnInit()`: se suscribe al observable `varianteUpdate$` en vez de leer el snapshot. Cuando detecta un ID nuevo, llama a `getOne(id)` para obtener la variante completa con `palabraClave`. Con la respuesta, actualiza `this.variante` (spread) y asigna `palabraClaveSeleccionada`. Angular propaga el cambio al `[valorInicial]` del autocomplete hijo → setter del hijo ejecuta → campo precargado.
+
+Se agregaron `idVarianteCargado` y `destroy$` para evitar re-inicializaciones duplicadas y limpiar suscripciones al destruir.
+
+**Archivos modificados:**
+- `src/app/variante/update-variante/update-variante.component.ts` → `ngOnInit()` suscripción al observable + llamada a `getOne`, `ngOnDestroy()` completa `destroy$`
+
+---
+
+## BUG FIX — CATEGORÍA (palabraClave) NO PRECARGADA AL EDITAR PRODUCTO (2026-05-23)
+
+**Síntoma:** al abrir `productos/update`, el campo de categoría (autocomplete) aparece vacío aunque el producto tenía categoría asignada.
+
+**Causa raíz (dos partes):**
+1. `AllComponent.updateProducto(item)` pasa un `IProductoDTO` de la grilla al BehaviorSubject — ese tipo NO tiene `palabraClave`.
+2. `AddComponent.ngAfterViewInit()` solo se ejecuta UNA VEZ. Si `productoActualizar` cambia después (por llamada async), el form ya no se recarga.
+
+**Fix:**
+- `UpdateComponent.ngOnInit()`: después de recibir el ID del producto via BehaviorSubject, llama a `getDataGeneric(id)` para obtener el producto completo incluyendo `palabraClave`. Actualiza `productoActualizar` con un nuevo objeto (spread) para disparar el change detection del hijo.
+- `AddComponent`: agrega `ngOnChanges` para reaccionar a cambios en `[productoUpdate]` cuando el formulario ya está construido (`formReady`). La carga inicial ahora se hace en `ngOnInit` (cuando form está listo) en vez de `ngAfterViewInit`.
+
+**Archivos modificados:**
+- `src/app/productos/producto/update/update.component.ts` → `ngOnInit()` agrega llamada a `getDataGeneric`
+- `src/app/productos/producto/add/add.component.ts` → agrega `ngOnChanges`, `formReady`, mueve lógica de `ngAfterViewInit` a `ngOnInit`
+
+---
+
 ## FIXES DE ESTILOS — PENDIENTES Y REALIZADOS
 
 ### ✅ Ya corregidos

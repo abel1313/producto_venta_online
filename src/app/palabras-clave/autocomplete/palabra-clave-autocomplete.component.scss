@@ -53,3 +53,23 @@ $t:  all 0.2s ease;
 }
 
 .pka-hint { font-size: .74rem; color: #9ca3af; padding-left: 4px; }
+
+:host-context(body.theme-dark) {
+  .pka-search {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+    &--seleccionada { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); }
+    &__input { color: #e2e8f0; &::placeholder { color: rgba(255,255,255,0.3); } }
+    &__clear { color: #9ca3af; &:hover { color: var(--app-accent); } }
+  }
+  .pka-dropdown {
+    background: #1e1b3a;
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .pka-option {
+    border-color: rgba(255,255,255,0.05);
+    &__nombre { color: #e2e8f0; }
+    &:hover { background: rgba(99,102,241,0.12); }
+  }
+}

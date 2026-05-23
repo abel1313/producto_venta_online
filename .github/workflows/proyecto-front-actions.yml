@@ -27,7 +27,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/front-jade-service:latest
             ${{ secrets.DOCKER_USERNAME }}/front-jade-service:v${{ github.run_number }}
 
-      - name: Deploy to QA
+      - name: Deploy to Production
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}

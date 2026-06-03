@@ -38,7 +38,8 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
-  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  private readonly MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
   // Imágenes existentes de la variante
   imagenesExistentes: IVarianteImagenDto[] = [];
@@ -148,16 +149,55 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
   private procesarImagen(file: File): void {
     if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
-      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG, GIF ni WebP.`, timer: 2500, showConfirmButton: false });
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const base64 = reader.result as string;
-      this.imagenesCargadas.push({ base64: base64.split(',')[1], extension: file.type, nombreImagen: file.name });
-      if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(base64);
+      const dataUrl = reader.result as string;
+      if (file.size > this.MAX_SIZE_BYTES) {
+        this.comprimirImagen(dataUrl, file.name, file.type);
+      } else {
+        this.agregarImagenCargada(dataUrl, file.type, file.name);
+      }
     };
     reader.readAsDataURL(file);
+  }
+
+  private comprimirImagen(dataUrl: string, nombre: string, tipo: string): void {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const MAX_DIM = 1920;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+        else                { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      const mimeOut = tipo === 'image/png' ? 'image/jpeg' : tipo;
+      let quality = 0.85;
+      const intentar = () => {
+        const compressed = canvas.toDataURL(mimeOut, quality);
+        const bytes = Math.round((compressed.length - compressed.indexOf(',') - 1) * 3 / 4);
+        if (bytes <= this.MAX_SIZE_BYTES || quality <= 0.2) {
+          const nombreFinal = tipo === 'image/png' ? nombre.replace(/\.png$/i, '.jpg') : nombre;
+          this.agregarImagenCargada(compressed, mimeOut, nombreFinal);
+        } else {
+          quality = Math.round((quality - 0.1) * 10) / 10;
+          intentar();
+        }
+      };
+      intentar();
+    };
+    img.src = dataUrl;
+  }
+
+  private agregarImagenCargada(dataUrl: string, tipo: string, nombre: string): void {
+    this.imagenesCargadas.push({ base64: dataUrl.split(',')[1], extension: tipo, nombreImagen: nombre });
+    if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(dataUrl);
   }
 
   // ── Cámara ────────────────────────────────────────────────────────

@@ -54,7 +54,6 @@ export class TokenInterceptor implements HttpInterceptor {
         take(1),
         switchMap(token => {
           if (token === REFRESH_FAILED) {
-            // El refresh falló — propaga el error al componente que esperaba
             return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
           }
           return next.handle(req.clone({
@@ -73,7 +72,13 @@ export class TokenInterceptor implements HttpInterceptor {
     ).pipe(
       timeout(10_000),
       switchMap(response => {
-        const token: string = response?.response?.accessToken ?? response?.accessToken ?? response?.data?.accessToken ?? response?.token ?? '';
+        const token: string = response?.response?.accessToken
+          ?? response?.accessToken
+          ?? response?.data?.accessToken
+          ?? response?.token
+          ?? '';
+
+        // Si el back respondió 200 pero sin token — tratar como fallo
         if (!token) {
           this.isRefreshing = false;
           this.authService.clearAccessToken();
@@ -82,6 +87,7 @@ export class TokenInterceptor implements HttpInterceptor {
           this.router.navigate(['/login']);
           return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Token vacío en refresh' }));
         }
+
         this.isRefreshing = false;
         this.authService.setAccessToken(token);
         this.authRoles.setRolesFromToken(token);
@@ -92,12 +98,14 @@ export class TokenInterceptor implements HttpInterceptor {
         }));
       }),
       catchError(err => {
+        // Refresh token expirado (401/403), timeout u otro error de red
+        // → limpiar sesión y redirigir al login automáticamente
         this.isRefreshing = false;
         this.authService.clearAccessToken();
         this.refreshToken$.next(REFRESH_FAILED);
         setTimeout(() => this.refreshToken$.next(null), 0);
         const finalErr = err instanceof TimeoutError
-          ? new HttpErrorResponse({ status: 0, statusText: 'Refresh timeout' })
+          ? new HttpErrorResponse({ status: 0, statusText: 'Refresh timeout — sesión expirada' })
           : err;
         this.router.navigate(['/login']);
         return throwError(() => finalErr);

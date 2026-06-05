@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { Observable, throwError, BehaviorSubject, TimeoutError } from 'rxjs';
 import { AuthenticateService } from '../auth.service';
 import { AuthService } from '../auth/auth.service';
-import { catchError, switchMap, filter, take } from 'rxjs/operators';
+import { catchError, switchMap, filter, take, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { Router } from '@angular/router';
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/registrar', '/auth/logout'];
 
@@ -20,7 +21,8 @@ export class TokenInterceptor implements HttpInterceptor {
   constructor(
     private readonly authService: AuthenticateService,
     private readonly authRoles: AuthService,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly router: Router
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -52,7 +54,6 @@ export class TokenInterceptor implements HttpInterceptor {
         take(1),
         switchMap(token => {
           if (token === REFRESH_FAILED) {
-            // El refresh falló — propaga el error al componente que esperaba
             return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
           }
           return next.handle(req.clone({
@@ -69,8 +70,24 @@ export class TokenInterceptor implements HttpInterceptor {
     return this.http.post<any>(
       `${environment.api_Url}/auth/refresh`, {}, { withCredentials: true }
     ).pipe(
+      timeout(10_000),
       switchMap(response => {
-        const token: string = response?.response?.accessToken ?? response?.accessToken ?? response?.data?.accessToken ?? response?.token ?? '';
+        const token: string = response?.response?.accessToken
+          ?? response?.accessToken
+          ?? response?.data?.accessToken
+          ?? response?.token
+          ?? '';
+
+        // Si el back respondió 200 pero sin token — tratar como fallo
+        if (!token) {
+          this.isRefreshing = false;
+          this.authService.clearAccessToken();
+          this.refreshToken$.next(REFRESH_FAILED);
+          setTimeout(() => this.refreshToken$.next(null), 0);
+          this.router.navigate(['/login']);
+          return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Token vacío en refresh' }));
+        }
+
         this.isRefreshing = false;
         this.authService.setAccessToken(token);
         this.authRoles.setRolesFromToken(token);
@@ -81,12 +98,17 @@ export class TokenInterceptor implements HttpInterceptor {
         }));
       }),
       catchError(err => {
-        // Fallo en el refresh o en el retry — desbloquea los requests en cola con el sentinel
+        // Refresh token expirado (401/403), timeout u otro error de red
+        // → limpiar sesión y redirigir al login automáticamente
         this.isRefreshing = false;
+        this.authService.clearAccessToken();
         this.refreshToken$.next(REFRESH_FAILED);
-        // Resetea en el próximo tick para que un login posterior funcione normal
         setTimeout(() => this.refreshToken$.next(null), 0);
-        return throwError(() => err);
+        const finalErr = err instanceof TimeoutError
+          ? new HttpErrorResponse({ status: 0, statusText: 'Refresh timeout — sesión expirada' })
+          : err;
+        this.router.navigate(['/login']);
+        return throwError(() => finalErr);
       })
     );
   }

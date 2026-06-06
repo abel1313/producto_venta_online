@@ -156,11 +156,13 @@ removeCarrito() {
 
 toggleMarcar(img: ImagenUpdateDto): void {
     if (!img.id) return;
-    if (this.imagenesParaEliminar.has(img.id)) {
-      this.imagenesParaEliminar.delete(img.id);
+    const next = new Set(this.imagenesParaEliminar);
+    if (next.has(img.id)) {
+      next.delete(img.id);
     } else {
-      this.imagenesParaEliminar.add(img.id);
+      next.add(img.id);
     }
+    this.imagenesParaEliminar = next;
   }
 
   estaMarcada(img: ImagenUpdateDto): boolean {
@@ -185,11 +187,9 @@ toggleMarcar(img: ImagenUpdateDto): void {
       const ids = Array.from(this.imagenesParaEliminar);
       this.imagenesService.eliminarImagenesBatch(this.idProducto, ids).subscribe({
         next: () => {
-          this.productoDtoImagen = this.productoDtoImagen.filter(
-            (img: ImagenUpdateDto) => !img.id || !this.imagenesParaEliminar.has(img.id)
-          );
-          this.imagenesParaEliminar.clear();
+          this.imagenesParaEliminar = new Set();
           this.eliminando = false;
+          this.recargarImagenes();
           Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
         },
         error: () => {
@@ -264,6 +264,23 @@ cargarPagina(pagina: number) {
 
   imagenesPorProducto(): boolean {
     return this.productoDtoImagen.length > 0;
+  }
+
+  private recargarImagenes(): void {
+    this.productoDtoImagen = [];
+    this.paginasCargadas = new Set<number>();
+    this.totalPaginas = 0;
+    this.service.getImagenesProducto(this.idProducto, 1, 8).subscribe({
+      next: (data: ProductoImagenPaginadaDto) => {
+        this.productoDtoImagen = data.listaImagenes ?? [];
+        this.totalPaginas = data.totalPaginas ?? 1;
+        this.paginasCargadas.add(0);
+        this.existeImagenes = this.imagenesPorProducto();
+      },
+      error: () => {
+        this.existeImagenes = false;
+      }
+    });
   }
 
 

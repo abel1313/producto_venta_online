@@ -90,8 +90,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // ── Búsqueda ───────────────────────────────────────────────────────
 
   onBuscar(event: KeyboardEvent): void {
-    const termino = (event.target as HTMLInputElement).value.trim();
-    this.terminoBusqueda = termino;
+    const valor = (event.target as HTMLInputElement).value;
+    this.terminoBusqueda = valor;
+    const termino = valor.trim();
     if (termino.length === 0) { this.buscarPagina('', 1); return; }
     if (termino.length < 3) return;
     this.busquedaSubject.next(termino);

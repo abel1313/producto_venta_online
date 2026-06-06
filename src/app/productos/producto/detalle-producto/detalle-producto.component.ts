@@ -187,9 +187,19 @@ toggleMarcar(img: ImagenUpdateDto): void {
       const ids = Array.from(this.imagenesParaEliminar);
       this.imagenesService.eliminarImagenesBatch(this.idProducto, ids).subscribe({
         next: () => {
+          const eliminadas = new Set(this.imagenesParaEliminar);
+          this.productoDtoImagen = this.productoDtoImagen.filter(
+            (img: ImagenUpdateDto) => !img.id || !eliminadas.has(img.id)
+          );
           this.imagenesParaEliminar = new Set();
           this.eliminando = false;
-          this.recargarImagenes();
+          this.existeImagenes = this.imagenesPorProducto();
+          // Si quedan páginas sin cargar, traer la siguiente para llenar huecos
+          if (this.paginasCargadas.size < this.totalPaginas) {
+            for (let i = 0; i < this.totalPaginas; i++) {
+              if (!this.paginasCargadas.has(i)) { this.cargarPagina(i); break; }
+            }
+          }
           Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
         },
         error: () => {

@@ -332,7 +332,7 @@ export class MisPedidosComponent implements OnInit {
   buscarPedidoAdmin() {
     this.size = 10;
     this.page = 0;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd === '' ? 'vacio' : this.buscarProd, this.size, this.page)
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page)
       .subscribe(sus => {
         this.resposeGenericPedido = sus;
         this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));

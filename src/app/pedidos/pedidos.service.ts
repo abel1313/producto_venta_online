@@ -24,7 +24,8 @@ export class PedidosService extends CrudGenericService<IPedidos> {
   }
 
     buscarPedidoPorCliente(buscar: string, size: number, page: number): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
-    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/pedidos/buscarClientePedido/${buscar}?size=${size}&page=${page}`);
+    const query = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
+    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/pedidos/buscarClientePedido?size=${size}&page=${page}${query}`);
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {

@@ -57,8 +57,7 @@ $t:         all 0.22s ease;
   border-radius: 20px;
 }
 
-// ── Estados vacío / cargando ───────────────────────────────────────
-.ui-imgs__loading,
+// ── Estado vacío ────────────────────────────────────────────────────
 .ui-imgs__empty {
   display: flex;
   flex-direction: column;
@@ -74,12 +73,6 @@ $t:         all 0.22s ease;
 
   span { font-size: 2rem; }
   p { margin: 0; }
-}
-
-.ui-imgs__loading {
-  flex-direction: row;
-  padding: 20px;
-  font-size: 0.88rem;
 }
 
 // ── Grid responsive ────────────────────────────────────────────────

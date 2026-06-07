@@ -8,10 +8,6 @@
     </div>
   </div>
 
-  <div class="br-loading" *ngIf="cargando">
-    <span class="spinner-border spinner-border-sm"></span> Cargando…
-  </div>
-
   <div class="br-empty" *ngIf="!cargando && rifasMostradas.length === 0">
     <span class="br-empty__icon">🎰</span>
     <p>No hay rifas {{ tab === 'hoy' ? 'programadas para hoy' : 'activas' }}</p>

@@ -30,8 +30,6 @@ export class DetalleProductoComponent implements OnInit {
   eliminando = false;
   get totalMarcadas(): number { return this.imagenesParaEliminar.size; }
 
-  cargando = true;
-
   existeImagenes: boolean = false;
 
   constructor(
@@ -73,7 +71,6 @@ export class DetalleProductoComponent implements OnInit {
 
   this.service.getDataGeneric(this.idProducto).subscribe(data=>{
     this.producto = data;
-    this.cargando = false;
   });
 
 

@@ -56,6 +56,8 @@ export class AgregarComponent implements OnInit, OnDestroy {
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
   private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+  private readonly DIMENSION_MAX = 1280;
+  private readonly CALIDAD_JPEG = 0.8;
   // Nuevo — palabra clave que se aplica a todo el lote de variantes
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -294,15 +296,33 @@ export class AgregarComponent implements OnInit, OnDestroy {
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const base64 = reader.result as string;
-      this.imagenesCargadas.push({
-        base64: base64.split(',')[1],
-        extension: file.type,
-        nombreImagen: file.name
-      });
-      if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(base64);
+      const original = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const comprimido = this.comprimirImagen(img);
+        this.imagenesCargadas.push({
+          base64: comprimido.split(',')[1],
+          extension: 'image/jpeg',
+          nombreImagen: file.name
+        });
+        if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(comprimido);
+      };
+      img.src = original;
     };
     reader.readAsDataURL(file);
+  }
+
+  // Redimensiona al máximo de DIMENSION_MAX y reencoda como JPEG para evitar
+  // 413 Request Entity Too Large al mandar varias fotos de cámara (3-8 MB c/u) en base64
+  private comprimirImagen(img: HTMLImageElement): string {
+    const escala = Math.min(1, this.DIMENSION_MAX / Math.max(img.width, img.height));
+    const w = Math.round(img.width * escala);
+    const h = Math.round(img.height * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', this.CALIDAD_JPEG);
   }
 
   // ── Cámara ────────────────────────────────────────────────────────

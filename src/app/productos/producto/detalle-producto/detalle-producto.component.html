@@ -1,12 +1,6 @@
 <p-confirmDialog></p-confirmDialog>
 
-<!-- ── Cargando ──────────────────────────────────────────────────── -->
-<div *ngIf="cargando" class="dp-loading">
-  <span class="spinner-border text-primary"></span>
-  <p class="mt-3 text-muted">Cargando producto…</p>
-</div>
-
-<div *ngIf="!cargando && producto" class="dp-wrapper">
+<div *ngIf="producto" class="dp-wrapper">
 
   <!-- ── Botón volver ──────────────────────────────────────────── -->
   <button class="dp-back" (click)="volver()">

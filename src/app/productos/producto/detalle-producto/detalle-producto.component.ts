@@ -26,7 +26,7 @@ export class DetalleProductoComponent implements OnInit {
   producto: any;
   // ── Eliminación por lotes (solo admin) ───────────────────────────
   isAdminUser = false;
-  imagenesParaEliminar = new Set<string>();
+  imagenesParaEliminar = new Set<ImagenUpdateDto>();
   eliminando = false;
   get totalMarcadas(): number { return this.imagenesParaEliminar.size; }
 
@@ -155,18 +155,17 @@ removeCarrito() {
 }
 
 toggleMarcar(img: ImagenUpdateDto): void {
-    if (!img.id) return;
     const next = new Set(this.imagenesParaEliminar);
-    if (next.has(img.id)) {
-      next.delete(img.id);
+    if (next.has(img)) {
+      next.delete(img);
     } else {
-      next.add(img.id);
+      next.add(img);
     }
     this.imagenesParaEliminar = next;
   }
 
   estaMarcada(img: ImagenUpdateDto): boolean {
-    return !!img.id && this.imagenesParaEliminar.has(img.id);
+    return this.imagenesParaEliminar.has(img);
   }
 
   confirmarEliminarBatch(): void {
@@ -184,12 +183,15 @@ toggleMarcar(img: ImagenUpdateDto): void {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;
-      const ids = Array.from(this.imagenesParaEliminar);
+      const marcadas = Array.from(this.imagenesParaEliminar);
+      const ids = Array.from(new Set(
+        marcadas.map(img => img?.id).filter((id): id is string => !!id)
+      ));
       this.imagenesService.eliminarImagenesBatch(this.idProducto, ids).subscribe({
         next: () => {
-          const eliminadas = new Set(this.imagenesParaEliminar);
+          const marcadasEliminadas = new Set(this.imagenesParaEliminar);
           this.productoDtoImagen = this.productoDtoImagen.filter(
-            (img: ImagenUpdateDto) => !img.id || !eliminadas.has(img.id)
+            img => !marcadasEliminadas.has(img)
           );
           this.imagenesParaEliminar = new Set();
           this.eliminando = false;
@@ -274,23 +276,6 @@ cargarPagina(pagina: number) {
 
   imagenesPorProducto(): boolean {
     return this.productoDtoImagen.length > 0;
-  }
-
-  private recargarImagenes(): void {
-    this.productoDtoImagen = [];
-    this.paginasCargadas = new Set<number>();
-    this.totalPaginas = 0;
-    this.service.getImagenesProducto(this.idProducto, 1, 8).subscribe({
-      next: (data: ProductoImagenPaginadaDto) => {
-        this.productoDtoImagen = data.listaImagenes ?? [];
-        this.totalPaginas = data.totalPaginas ?? 1;
-        this.paginasCargadas.add(0);
-        this.existeImagenes = this.imagenesPorProducto();
-      },
-      error: () => {
-        this.existeImagenes = false;
-      }
-    });
   }
 
 

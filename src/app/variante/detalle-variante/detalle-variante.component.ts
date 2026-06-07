@@ -21,7 +21,6 @@ export class DetalleVarianteComponent implements OnInit {
   productoId!: number;
   variantes: IVarianteDto[] = [];
   varianteSeleccionada: IVarianteDto | null = null;
-  cargando = true;
 
   displayImages: IVarianteImagenDto[] = [];
   private paginasCargadas = new Set<number>();
@@ -78,9 +77,8 @@ export class DetalleVarianteComponent implements OnInit {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
-        this.cargando = false;
       },
-      error: () => { this.cargando = false; }
+      error: () => {}
     });
   }
 

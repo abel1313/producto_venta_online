@@ -16,12 +16,6 @@
     </span>
   </div>
 
-  <!-- Spinner primera carga -->
-  <div *ngIf="cargandoImagenes" class="ui-imgs__loading">
-    <span class="spinner-border spinner-border-sm text-primary"></span>
-    <span>Cargando imágenes…</span>
-  </div>
-
   <!-- Sin imágenes -->
   <div *ngIf="!cargandoImagenes && displayImages.length === 0" class="ui-imgs__empty">
     <span>📷</span>

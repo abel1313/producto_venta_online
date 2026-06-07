@@ -44,15 +44,6 @@
   &:hover:not(&--active) { color: var(--app-text); }
 }
 
-.br-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--app-text-muted);
-  font-size: 0.88rem;
-  padding: 20px 0;
-}
-
 .br-empty {
   text-align: center;
   padding: 48px 16px;

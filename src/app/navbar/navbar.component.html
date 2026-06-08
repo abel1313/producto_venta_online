@@ -151,14 +151,6 @@
       <span class="sb-label">{{ themeService.isDark ? 'Modo claro' : 'Modo oscuro' }}</span>
     </button>
 
-    <!-- Toggle IMG v1/v2 (admin, solo para pruebas) -->
-    <button class="sb-item sb-item--test" *ngIf="isAdminUser"
-            [class.sb-item--v2]="imagenVersion.useV2"
-            (click)="toggleImagenVersion()">
-      <span class="sb-icon">🧪</span>
-      <span class="sb-label">IMG {{ imagenVersion.useV2 ? 'v2 (activo)' : 'v1' }}</span>
-    </button>
-
   </nav>
 
   <!-- ── Footer: carrito + usuario ─────────────────────────────── -->

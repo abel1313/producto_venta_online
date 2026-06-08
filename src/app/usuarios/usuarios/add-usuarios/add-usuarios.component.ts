@@ -8,8 +8,7 @@ import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
-import { PresentacionService, IImagenPresentacion, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
-import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
+import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 
 @Component({
   selector: 'app-add-usuarios',
@@ -24,7 +23,6 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-  imagenes: IImagenPresentacion[] = [];
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -32,17 +30,12 @@ export class AddUsuariosComponent implements OnInit {
     './../../../assets/imagenes/imagene3.jpeg',
   ];
   imgSrc(orden: number): string {
-    if (this.imagenVersionService.useV2) {
-      const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
-      if (img) return this.presentacion.getImagenUrlV2(img.id);
-      return this.FALLBACK[orden - 1];
-    }
-    const img = this.imagenes.find(i => i.orden === orden && i.activo);
-    if (img) return this.presentacion.getImagenUrl(img.id);
+    const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
+    if (img) return this.presentacion.getImagenUrlV2(img.id);
     return this.FALLBACK[orden - 1];
   }
   imgDesc(orden: number): string {
-    return this.imagenes.find(i => i.orden === orden)?.descripcion ?? '';
+    return this.imagenesV2.find(i => i.orden === orden)?.descripcion ?? '';
   }
 
   constructor(
@@ -51,8 +44,7 @@ export class AddUsuariosComponent implements OnInit {
     private readonly router:               Router,
     public  readonly authService:          AuthService,
     private readonly usuario:              UsuarioService,
-    private readonly presentacion:         PresentacionService,
-    private readonly imagenVersionService: ImagenVersionService
+    private readonly presentacion:         PresentacionService
   ) { }
 
   formRegistro = this.fb.group({
@@ -67,17 +59,10 @@ export class AddUsuariosComponent implements OnInit {
 
 
   ngOnInit(): void {
-    if (this.imagenVersionService.useV2) {
-      this.presentacion.getImagenesPorTipoV2('REGISTRO').subscribe({
-        next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
-        error: () => {}
-      });
-    } else {
-      this.presentacion.getImagenesPorTipo('REGISTRO').subscribe({
-        next: (res: any) => { this.imagenes = res?.data ?? res ?? []; },
-        error: () => {}
-      });
-    }
+    this.presentacion.getImagenesPorTipoV2('REGISTRO').subscribe({
+      next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
+      error: () => {}
+    });
 
     if (this.textoCard == 'Actualizar usuario') {
       this.formRegistro.patchValue({

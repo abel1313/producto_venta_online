@@ -5,8 +5,7 @@ import { AuthenticateService as auth } from 'src/app/auth.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { AccederService } from '../acceder.service';
-import { PresentacionService, IImagenPresentacion, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
-import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
+import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 
 @Component({
   selector: 'app-login-form',
@@ -18,7 +17,6 @@ export class LoginFormComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage    = '';
   mostrarPassword = false;
-  imagenes: IImagenPresentacion[] = [];
   imagenesV2: IImagenPresentacionV2Dto[] = [];
 
   private readonly FALLBACK = [
@@ -28,18 +26,13 @@ export class LoginFormComponent implements OnInit {
   ];
 
   imgSrc(orden: number): string {
-    if (this.imagenVersionService.useV2) {
-      const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
-      if (img) return this.presentacion.getImagenUrlV2(img.id);
-      return this.FALLBACK[orden - 1];
-    }
-    const img = this.imagenes.find(i => i.orden === orden && i.activo);
-    if (img) return this.presentacion.getImagenUrl(img.id);
+    const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
+    if (img) return this.presentacion.getImagenUrlV2(img.id);
     return this.FALLBACK[orden - 1];
   }
 
   imgDesc(orden: number): string {
-    return this.imagenes.find(i => i.orden === orden)?.descripcion ?? '';
+    return this.imagenesV2.find(i => i.orden === orden)?.descripcion ?? '';
   }
 
   constructor(
@@ -48,8 +41,7 @@ export class LoginFormComponent implements OnInit {
     private readonly authService:          AuthService,
     private readonly auth:                 auth,
     private readonly acceder:              AccederService,
-    private readonly presentacion:         PresentacionService,
-    private readonly imagenVersionService: ImagenVersionService
+    private readonly presentacion:         PresentacionService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -58,20 +50,10 @@ export class LoginFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.imagenVersionService.useV2) {
-      this.presentacion.getImagenesPorTipoV2('LOGIN').subscribe({
-        next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
-        error: () => {}
-      });
-    } else {
-      this.presentacion.getImagenesPorTipo('LOGIN').subscribe({
-        next: (res: any) => {
-          // El back envuelve la lista en { data: [...] }
-          this.imagenes = res?.data ?? res ?? [];
-        },
-        error: () => {} // usa fallback si falla
-      });
-    }
+    this.presentacion.getImagenesPorTipoV2('LOGIN').subscribe({
+      next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
+      error: () => {}
+    });
   }
 
   onLogin(): void {

@@ -6,7 +6,6 @@ import { AccederService } from '../login/acceder.service';
 import { Router } from '@angular/router';
 import { CarritoService } from '../services/carrito/carrito.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
-import { ImagenVersionService } from '../services/imagen-version/imagen-version.service';
 import { ThemeService } from '../services/theme/theme.service';
 
 @Component({
@@ -35,7 +34,6 @@ export class NavbarComponent implements OnInit {
     private readonly router: Router,
     public readonly serviceCarrito: CarritoService,
     private readonly carritoVariante: CarritoVarianteService,
-    public readonly imagenVersion: ImagenVersionService,
     public readonly themeService: ThemeService,
   ) { }
 
@@ -121,9 +119,6 @@ export class NavbarComponent implements OnInit {
     this.countCarrito = 0;
     this.serviceCarrito.limpiarCarrito();
   }
-
-  // ── IMG version toggle ─────────────────────────────────────────────
-  toggleImagenVersion(): void { this.imagenVersion.toggle(); }
 
   // ── Tema claro/oscuro ──────────────────────────────────────────────
   toggleTheme(): void { this.themeService.toggle(); }

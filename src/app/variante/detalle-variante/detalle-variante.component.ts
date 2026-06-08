@@ -7,7 +7,6 @@ import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
-import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
 
 const PAGE_SIZE = 4;
 
@@ -47,7 +46,6 @@ export class DetalleVarianteComponent implements OnInit {
     private readonly varianteService: VarianteService,
     private readonly carritoVariante: CarritoVarianteService,
     private readonly authService: AuthService,
-    private readonly imagenVersionService: ImagenVersionService,
   ) {}
 
   ngOnInit(): void {
@@ -249,11 +247,7 @@ export class DetalleVarianteComponent implements OnInit {
       this.eliminando = true;
       const ids = Array.from(this.imagenesParaEliminar);
 
-      const eliminar$ = this.imagenVersionService.useV2
-        ? this.varianteService.eliminarImagenesV2(this.varianteSeleccionada!.id, ids)
-        : this.varianteService.eliminarImagenes(this.varianteSeleccionada!.id, ids);
-
-      eliminar$.subscribe({
+      this.varianteService.eliminarImagenesV2(this.varianteSeleccionada!.id, ids).subscribe({
         next: () => {
           this.displayImages = this.displayImages.filter(img => !img.id || !this.imagenesParaEliminar.has(img.id));
           this.imagenesParaEliminar.clear();

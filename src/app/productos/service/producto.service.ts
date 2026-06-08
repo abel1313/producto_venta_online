@@ -18,7 +18,7 @@ export class ProductoService {
 
     private readonly url: string = `${environment.api_Url}/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
-    private readonly microImagenes: string = `${environment.api_imagenes}/producto-imagen`;
+    private readonly microImagenes: string = `${environment.api_imagenes}/v1/producto-imagen`;
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
     productoUpdate$ = this.productoUpdate.asObservable();

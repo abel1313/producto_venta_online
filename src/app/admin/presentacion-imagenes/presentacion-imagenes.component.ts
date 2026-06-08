@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
-import { PresentacionService, IImagenPresentacion, IImagenPresentacionV2Dto, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
-import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
+import { PresentacionService, IImagenPresentacionV2Dto, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
 
 interface IArchivoPendiente {
   base64:    string;   // sin prefijo data:
@@ -17,53 +16,44 @@ interface IArchivoPendiente {
 })
 export class PresentacionImagenesComponent implements OnInit {
 
-  imagenes:    IImagenPresentacion[] = [];
+  imagenes:    IImagenPresentacionV2Dto[] = [];
   guardandoId: number | null = null;
 
   pendientes = new Map<number, IArchivoPendiente>();
 
   constructor(
-    private readonly presentacionService:  PresentacionService,
-    private readonly imagenVersionService: ImagenVersionService
+    private readonly presentacionService: PresentacionService
   ) {}
 
   ngOnInit(): void { this.cargar(); }
 
   private cargar(): void {
-    if (this.imagenVersionService.useV2) {
-      this.presentacionService.getTodasImagenesV2().subscribe({
-        next: imgs => { this.imagenes = imgs as any[]; },
-        error: () => {}
-      });
-    } else {
-      this.presentacionService.getTodasImagenes().subscribe({
-        next: (res: any) => { this.imagenes = res?.data ?? res ?? []; },
-        error: () => {}
-      });
-    }
+    this.presentacionService.getTodasImagenesV2().subscribe({
+      next: imgs => { this.imagenes = imgs; },
+      error: () => {}
+    });
   }
 
-  get login():    IImagenPresentacion[] { return this.imagenes.filter(i => i.tipo === 'LOGIN'); }
-  get registro(): IImagenPresentacion[] { return this.imagenes.filter(i => i.tipo === 'REGISTRO'); }
+  get login():    IImagenPresentacionV2Dto[] { return this.imagenes.filter(i => i.tipo === 'LOGIN'); }
+  get registro(): IImagenPresentacionV2Dto[] { return this.imagenes.filter(i => i.tipo === 'REGISTRO'); }
 
   // ── URL de imagen guardada en el servidor ─────────────────────────
-  imagenSrc(img: IImagenPresentacion): string {
+  imagenSrc(img: IImagenPresentacionV2Dto): string {
     const p = this.pendientes.get(img.id);
     if (p) return p.preview;
-    if (this.imagenVersionService.useV2) return this.presentacionService.getImagenUrlV2(img.id);
-    return this.presentacionService.getImagenUrl(img.id);
+    return this.presentacionService.getImagenUrlV2(img.id);
   }
 
-  tieneImagen(img: IImagenPresentacion): boolean {
+  tieneImagen(img: IImagenPresentacionV2Dto): boolean {
     return !!this.pendientes.get(img.id) || img.id > 0;
   }
 
-  tienePendiente(img: IImagenPresentacion): boolean {
+  tienePendiente(img: IImagenPresentacionV2Dto): boolean {
     return this.pendientes.has(img.id);
   }
 
   // ── Selección de archivo ──────────────────────────────────────────
-  seleccionarArchivo(img: IImagenPresentacion, event: Event): void {
+  seleccionarArchivo(img: IImagenPresentacionV2Dto, event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
@@ -83,12 +73,12 @@ export class PresentacionImagenesComponent implements OnInit {
     (event.target as HTMLInputElement).value = '';
   }
 
-  quitarPendiente(img: IImagenPresentacion): void {
+  quitarPendiente(img: IImagenPresentacionV2Dto): void {
     this.pendientes.delete(img.id);
   }
 
   // ── Guardar ───────────────────────────────────────────────────────
-  guardar(img: IImagenPresentacion): void {
+  guardar(img: IImagenPresentacionV2Dto): void {
     this.guardandoId = img.id;
     const p = this.pendientes.get(img.id);
 
@@ -98,16 +88,11 @@ export class PresentacionImagenesComponent implements OnInit {
       ...(p ? { base64: p.base64, extension: p.extension, nombreImagen: p.nombre } : {})
     };
 
-    const peticion$ = this.imagenVersionService.useV2
-      ? this.presentacionService.actualizarImagenV2(img.id, request)
-      : this.presentacionService.actualizarImagen(img.id, request);
-
-    peticion$.subscribe({
-      next: (res: any) => {
+    this.presentacionService.actualizarImagenV2(img.id, request).subscribe({
+      next: (updated: IImagenPresentacionV2Dto) => {
         this.guardandoId = null;
         this.pendientes.delete(img.id);
-        const updated: IImagenPresentacionV2Dto | any = res?.data ?? res;
-        if (updated?.nombreArchivo) img.nombreArchivo = updated.nombreArchivo;
+        if (updated?.urlImagen) img.urlImagen = updated.urlImagen;
         Swal.fire({ icon: 'success', title: '¡Imagen actualizada!', timer: 1300, showConfirmButton: false });
       },
       error: () => {

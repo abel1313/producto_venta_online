@@ -9,7 +9,6 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
-import { ImagenVersionService } from 'src/app/services/imagen-version/imagen-version.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 @Component({
@@ -67,8 +66,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly varianteService: VarianteService,
     private readonly productoService: ProductoService,
-    private readonly router: Router,
-    private readonly imagenVersionService: ImagenVersionService
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -331,9 +329,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       if (!result.isConfirmed || !img.id || !this.variante?.id) return;
       this.eliminandoExistente.add(img.id);
 
-      const eliminar$ = this.imagenVersionService.useV2
-        ? this.varianteService.eliminarImagenesV2(this.variante!.id!, [img.id])
-        : this.varianteService.eliminarImagenes(this.variante!.id!, [img.id]);
+      const eliminar$ = this.varianteService.eliminarImagenesV2(this.variante!.id!, [img.id]);
 
       eliminar$.subscribe({
         next: () => {

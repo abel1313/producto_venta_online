@@ -6,6 +6,11 @@
 >
 > Los endpoints con v1/v2 están sujetos al toggle `🧪 IMG v1/v2` del sidebar (solo admin).
 > Los que están **SIN USO** aparecen al final de cada sección.
+>
+> ⚠️ **CAMBIO PLANEADO (pendiente — solo documentado, NO implementado todavía):** todas las URLs de
+> este documento (Sección A y Sección B, sin excepción) van a llevar el segmento `/v1/` justo
+> después de `/mis-productos`. Ver detalle completo en **"CAMBIO PLANEADO — VERSIONADO UNIFICADO `/v1/`"**
+> al final de este archivo.
 
 ---
 
@@ -237,9 +242,86 @@
 
 ---
 
+## ⚠️ CAMBIO PLANEADO — VERSIONADO UNIFICADO `/v1/` (pendiente — solo documentado, NO implementado)
+
+> El back va a estandarizar TODAS las URLs (proyecto-key 9091 y micro-imágenes 9096) agregando
+> el segmento `/v1/` justo después de `/mis-productos`. Esto reemplaza el esquema actual donde
+> unos endpoints no tenían versión (los `@Deprecated`) y otros ya usaban `/v2/`.
+> **Por ahora esto es solo para documentar — el front actualizará las URLs cuando el back confirme
+> que ya está desplegado.**
+
+### Regla general (aplica a TODO el inventario de este documento)
+
+```
+Antes:   http://localhost:9096/mis-productos/imagenes/file/{imagenId}
+Después: http://localhost:9096/mis-productos/v1/imagenes/file/{imagenId}
+
+Antes:   http://localhost:9091/mis-productos/productos/obtenerProductos
+Después: http://localhost:9091/mis-productos/v1/productos/obtenerProductos
+```
+
+Es decir: a CADA URL listada en la Sección A y la Sección B (sin excepción, tengan o no
+versión hoy) se le inserta `/v1/` inmediatamente después de `/mis-productos`.
+
+### Qué pasa específicamente con los endpoints que HOY dicen `v2`
+
+Los que actualmente tienen `/v2/` en su path **pierden el "v2"** — se convierten en la nueva
+base `/v1/` (siguiendo la regla general de arriba). Su contraparte `@Deprecated` (la versión
+sin número que hace lo mismo de forma vieja) **se elimina** — deja de existir.
+
+| Endpoint actual `v2` | Pasa a ser (`/v1/` unificado) | Qué pasa con el `@Deprecated` equivalente |
+|---|---|---|
+| `GET /imagen/v2/{id}/detalle?page=&size=` | `GET /v1/imagen/{id}/detalle?page=&size=` | `GET /imagen/{id}/detalle` se elimina |
+| `DELETE /variantes/v2/{varianteId}/imagenes` | `DELETE /v1/variantes/{varianteId}/imagenes` | `DELETE /variantes/{varianteId}/imagenes` se elimina |
+| `GET /presentacion/v2/imagenes?tipo=` | `GET /v1/presentacion/imagenes?tipo=` | `GET /presentacion/imagenes?tipo=` se elimina |
+| `GET /presentacion/v2/imagenes/{id}/imagen` | `GET /v1/presentacion/imagenes/{id}/imagen` | `GET /presentacion/imagenes/{id}/imagen` se elimina |
+| `GET /presentacion/v2/imagenes/todas` | `GET /v1/presentacion/imagenes/todas` | `GET /presentacion/imagenes/todas` se elimina |
+| `PUT /presentacion/v2/imagenes/{id}` | `PUT /v1/presentacion/imagenes/{id}` | `PUT /presentacion/imagenes/{id}` se elimina |
+| `GET /imagen/v2/{productoId}` *(sin uso en front)* | `GET /v1/imagen/{productoId}` | — (no tiene deprecated equivalente) |
+| `DELETE /variantes/v2/imagenes` *(sin uso en front)* | `DELETE /v1/variantes/imagenes` | — |
+| `GET /variantes/v2/imagenes/{varianteId}` *(sin uso en front)* | `GET /v1/variantes/imagenes/{varianteId}` | — |
+
+### Endpoints del micro de imágenes con migración `v2` PLANEADA (todavía ni siquiera conectados al front — ver CLAUDE.md "Migraciones 5/6")
+
+Estos cuatro estaban anotados como "deprecated → v2 pendiente" en CLAUDE.md. Con el cambio
+unificado, su destino final es directamente `/v1/...` (el paso intermedio por `v2` ya no aplica):
+
+| Antes (`@Deprecated`) | Se planeaba | Destino final unificado |
+|---|---|---|
+| `DELETE /imagen/{idImagen}` | `DELETE /imagen/v2/{idImagen}` | `DELETE /v1/imagen/{idImagen}` |
+| `DELETE /imagen/{productoId}/imagenes` | `DELETE /imagen/v2/{productoId}/imagenes` | `DELETE /v1/imagen/{productoId}/imagenes` |
+| `DELETE /imagen/producto` | `DELETE /imagen/v2/producto` | `DELETE /v1/imagen/producto` |
+| `GET /imagen/cache/imagen/limpiar` | `GET /imagen/v2/cache/limpiar` | `GET /v1/imagen/cache/limpiar` |
+
+### Para TODOS los demás endpoints (los que hoy no tienen versión y no son parte de una migración)
+
+Simplemente se les agrega `/v1/` después de `/mis-productos`, sin ningún otro cambio de
+nombre ni de comportamiento. Ejemplos representativos (la regla aplica igual a cada fila
+de la Sección A y la Sección B de este documento):
+
+- `POST /auth/login` → `POST /v1/auth/login`
+- `GET /productos/findById/{id}` → `GET /v1/productos/findById/{id}`
+- `GET /variantes/paginado?pagina=&size=` → `GET /v1/variantes/paginado?pagina=&size=`
+- `GET /pedidos/findPedido/{id}?size=&page=` → `GET /v1/pedidos/findPedido/{id}?size=&page=`
+- `GET /producto-imagen/listar/{productoId}` → `GET /v1/producto-imagen/listar/{productoId}`
+- `DELETE /admin/cache` → `DELETE /v1/admin/cache`
+
+### Acción pendiente del front (cuando el back confirme el despliegue)
+
+1. Agregar `/v1` a las constantes base de los `environment` (o a cada servicio que arma la URL)
+2. Quitar el toggle `🧪 IMG v1/v2` del sidebar — deja de tener sentido porque ya no hay dos
+   versiones convivientes, solo existe `/v1/`
+3. Simplificar los servicios que hoy eligen entre URL v1/v2 según `ImagenVersionService.useV2`
+   (`ProductoService`, `ImagenesService`, `PresentacionService`, `VarianteService`) — usan
+   siempre la única URL `/v1/...`
+
+---
+
 ## ENDPOINTS SIN USO EN EL FRONT
 
 > Métodos creados en los servicios pero que ningún componente invoca actualmente.
+> **Candidatos a eliminar** del back (y de los servicios del front) en una limpieza posterior —
+> por ahora solo quedan anotados aquí para revisión, no se tocan todavía.
 
 ### Proyecto-Key
 

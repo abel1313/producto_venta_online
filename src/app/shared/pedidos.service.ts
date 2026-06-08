@@ -11,11 +11,11 @@ import { Observable } from 'rxjs';
 export class PedidosService extends CrudGenericService<IPedidos>{
 
   constructor(httpClient: HttpClient) {
-    super(httpClient, 'pedidos');
+    super(httpClient, 'v1/pedidos');
    }
 
   saveDataPedido(data: IPedidosDTOPedido): Observable<ResponseGeneric<any>> {
-    return this.http.post<ResponseGeneric<any>>(`${this.url}/mis-productos/pedidos/savePedido`, data);
+    return this.http.post<ResponseGeneric<any>>(`${this.url}/mis-productos/v1/pedidos/savePedido`, data);
   }
 
 }

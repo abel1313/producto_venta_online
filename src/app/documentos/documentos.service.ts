@@ -11,7 +11,7 @@ export interface ICargaExcelResponse {
 
 @Injectable({ providedIn: 'root' })
 export class DocumentosService {
-  private readonly url = `${environment.api_Url}/documentos/productos`;
+  private readonly url = `${environment.api_Url}/v1/documentos/productos`;
 
   constructor(private readonly http: HttpClient) {}
 

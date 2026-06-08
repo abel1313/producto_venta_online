@@ -10,7 +10,7 @@ export interface IMensajeChat {
 
 @Injectable({ providedIn: 'root' })
 export class ChatbotService {
-  private readonly url = `${environment.api_Url}/chatbot/mensaje`;
+  private readonly url = `${environment.api_Url}/v1/chatbot/mensaje`;
 
   constructor(private readonly http: HttpClient) {}
 

@@ -10,6 +10,46 @@ Host base local de ambos servicios: `http://localhost:<puerto>/mis-productos/...
 
 ---
 
+## 0. Resto de controladores de proyecto-key — prefijo `/v1/` agregado al path base — 2026-06-08
+
+A diferencia de `ImageneController`/`ImagenPresentacionController`/`VarianteController` (que ya tenían pares `v2`/deprecado y se versionaron por método, ver sección 1), el resto de controladores **no tenía versión** en su `@RequestMapping` base. Se les agregó el prefijo `/v1/` directamente al path del controlador (sin crear una versión deprecada paralela, porque no existía nada que mantener compatible):
+
+| Controlador | Antes | Ahora |
+|---|---|---|
+| `AdminController` | `/admin` | `/v1/admin` |
+| `AdminReconciliacionController` | `/admin/reconciliacion/imagenes` | `/v1/admin/reconciliacion/imagenes` |
+| `AuthController` | `/auth` | `/v1/auth` |
+| `ChatbotController` | `/chatbot` | `/v1/chatbot` |
+| `ClienteControllerImpl` | `clientes` | `/v1/clientes` |
+| `ConcursanteControllerImpl` | `concursante` | `/v1/concursante` |
+| `ConfigurarRifaControllerImpl` | `configurarRifa` | `/v1/configurarRifa` |
+| `ConfigurarRifaVarianteController` | `/configurarRifaVariante` | `/v1/configurarRifaVariante` |
+| `DopoMexController` | `dipomex` | `/v1/dipomex` |
+| `GanadorRifaControllerImpl` | `ganadorRifa` | `/v1/ganadorRifa` |
+| `GastosControllerImpl` | `gastos` | `/v1/gastos` |
+| `MercadoPagoController` | `/mp` | `/v1/mp` |
+| `NegocioController` | `/negocio` | `/v1/negocio` |
+| `PagosCatalogoController` | `pagos` | `/v1/pagos` |
+| `PalabraClaveController` | `palabras-clave` | `/v1/palabras-clave` |
+| `PedidoController` | `pedidos` | `/v1/pedidos` |
+| `ProductosControllerImpl` | `productos` | `/v1/productos` |
+| `PruebaControllerImpl` | `productos-eje/` | `/v1/productos-eje/` |
+| `RifaControllerImpl` | `rifa` | `/v1/rifa` |
+| `SubirDocumentosController` | `/documentos` | `/v1/documentos` |
+| `UsuarioController` | `usuarios` | `/v1/usuarios` |
+| `VentaControllerImpl` | `ventas` | `/v1/ventas` |
+
+⚠️ **No son rutas paralelas/compatibles**: el `@RequestMapping` se reemplazó, así que las URLs viejas (sin `/v1/`) dejan de existir (404). El front debe actualizar TODAS las llamadas a estos controladores agregando `/v1/` antes del segmento del recurso, ej: `http://localhost:9091/mis-productos/auth/login` → `http://localhost:9091/mis-productos/v1/auth/login`.
+
+**Ajustes adicionales necesarios para que esto funcione (ya aplicados):**
+- `SecurityConfig.java`: todos los `requestMatchers` que apuntaban a `/admin/**`, `/auth/**`, `/productos/**`, `/usuarios/**`, etc. se actualizaron a `/v1/admin/**`, `/v1/auth/**`, `/v1/productos/**`, `/v1/usuarios/**`, etc. (si no se actualizaban, las reglas de seguridad dejaban de coincidir con las URLs nuevas y todo caía en `anyRequest().authenticated()`, rompiendo tanto los endpoints públicos como los protegidos). De paso se agregó `/v1/configurarRifaVariante/**` al grupo de rifas (antes no calzaba con `/configurarRifa/**` y quedaba sin proteger explícitamente).
+- `AuthController.java`: el path de la cookie `refreshToken` (`agregarRefreshCookie` / `limpiarRefreshCookie`) se actualizó de `${contextPath}/auth` a `${contextPath}/v1/auth`. Si no se actualizaba, el navegador no habría enviado la cookie en `/v1/auth/refresh` (el path de la cookie ya no coincidía con el path del endpoint) y el refresh del token habría fallado.
+- `OpenApiConfig.java`: se corrigió la descripción del esquema de seguridad Bearer para referenciar `/v1/auth/login` en lugar de `/auth/login`.
+
+`ImageneController`, `ImagenPresentacionController` y `VarianteController` **no se tocaron** en este paso: ya tienen su propio versionado por método (`/imagen/v1/...`, `/presentacion/v1/...`, `/variantes/...` con sub-rutas `v1`/`v3`, ver secciones 1 y siguientes), y agregarles `/v1/` al path base hubiera duplicado el prefijo (`/v1/imagen/v1/...`).
+
+---
+
 ## 1. proyecto-key — `http://localhost:9091/mis-productos/...`
 
 Estos endpoints YA EXISTÍAN como pares "antiguo sin versión" + "v2". Se renombraron así:
@@ -46,17 +86,30 @@ Estos endpoints YA EXISTÍAN como pares "antiguo sin versión" + "v2". Se renomb
 | 14 | DELETE | `http://localhost:9091/mis-productos/variantes/v1/imagenes` | `http://localhost:9091/mis-productos/variantes/v3/imagenes` |
 | 15 | DELETE | `http://localhost:9091/mis-productos/variantes/v1/{varianteId}/imagenes` | `http://localhost:9091/mis-productos/variantes/v3/{varianteId}/imagenes` |
 
-#### Endpoints de `VarianteController` que NO cambiaron (sin versión, no formaban par v2/deprecado)
+#### ⚠️ Pendientes detectados — `VarianteController` tenía endpoints SIN versionar (corregido 2026-06-08)
 
-| Método | URL (sin cambios) |
-|---|---|
-| GET | `http://localhost:9091/mis-productos/variantes/buscar` |
-| GET | `http://localhost:9091/mis-productos/variantes/porProducto/{productoId}` |
-| POST | `http://localhost:9091/mis-productos/variantes/guardarConImagenes` |
-| POST | `http://localhost:9091/mis-productos/variantes/inicializarDesdeProducto` |
-| GET | `http://localhost:9091/mis-productos/variantes/imagenes/{varianteId}/paginado` |
-| PUT | `http://localhost:9091/mis-productos/variantes/imagenes/{varianteImagenId}/principal` |
-| GET | `http://localhost:9091/mis-productos/variantes/admin/diagnostico-imagenes/{varianteId}` |
+Al revisar el avance, estos endpoints de `VarianteController` **no tenían ninguna versión** (no formaban parte de un par v2/deprecado, simplemente nunca se les agregó `/v1/`). Quedaban "sueltos" mientras el resto del controlador ya usaba `v1`/`v3`. Se les agregó el prefijo `/v1/` directamente (renombrado, igual que en la sección 0 — **no son rutas paralelas, las viejas dejan de existir**):
+
+| # | Método | URL VIEJA (ya NO existe, 404) | URL NUEVA (front debe usar) |
+|---|---|---|---|
+| 16 | GET | `.../variantes/buscar` | `.../variantes/v1/buscar` |
+| 17 | GET | `.../variantes/porProducto/{productoId}` | `.../variantes/v1/porProducto/{productoId}` |
+| 18 | GET | `.../variantes/porProducto/{productoId}/paginado` | `.../variantes/v1/porProducto/{productoId}/paginado` |
+| 19 | GET | `.../variantes/porProducto/{productoId}/paginado/resumen` | `.../variantes/v1/porProducto/{productoId}/paginado/resumen` |
+| 20 | POST | `.../variantes/guardarConImagenes` | `.../variantes/v1/guardarConImagenes` |
+| 21 | POST | `.../variantes/inicializarDesdeProducto` | `.../variantes/v1/inicializarDesdeProducto` |
+| 22 | GET | `.../variantes/imagenes/{varianteId}/paginado` | `.../variantes/v1/imagenes/{varianteId}/paginado` |
+| 23 | PUT | `.../variantes/imagenes/{varianteImagenId}/principal` | `.../variantes/v1/imagenes/{varianteImagenId}/principal` |
+| 24 | GET | `.../variantes/admin/sin-stock` | `.../variantes/v1/admin/sin-stock` |
+| 25 | GET | `.../variantes/admin/diagnostico-imagenes/{varianteId}` | `.../variantes/v1/admin/diagnostico-imagenes/{varianteId}` |
+
+(prefijo de host completo: `http://localhost:9091/mis-productos`)
+
+Ajuste relacionado en `SecurityConfig.java`: el matcher `GET /variantes/admin/**` (ADMIN-only) se amplió a `GET /variantes/admin/**, /variantes/v1/admin/**` para seguir protegiendo `sin-stock` y `diagnostico-imagenes` ahora que viven bajo `/v1/admin/...` (si no se agregaba, esas rutas hubieran caído en el matcher público `GET /variantes/**`).
+
+#### Controladores SIN endpoints — no requieren versionado
+
+`LotesProductosControllerImpl` (`@RequestMapping(name = "lote-producto")`) está vacío, sin métodos HTTP — no expone ningún endpoint, por lo tanto no aplica agregarle `/v1/`. Se deja documentado para que quede claro que no es un pendiente, sino un controlador sin implementar.
 
 ---
 
@@ -120,3 +173,11 @@ Ahora: http://localhost:9091/mis-productos/imagen/v1/file/{imagenId}
 | **micro_imagenes** (`dev` → `qa`, commits `9ab81d9`/`cda95dc`/merge `79ef11e`) | `CacheController.java`, `ImagenController.java`, `ProductoImagenController.java`, `SecurityConfig.java`, `ProductoImagenService.java` |
 
 Todos los `urlImagen` / `imagenUrl` que devuelven los listados (productos, variantes, presentación) **ya se generan con `/v1/` desde el backend** — el front no construye esas URLs, solo las consume tal cual llegan.
+
+---
+
+## 5. Estado del front — revisión 2026-06-08 ✅ COMPLETO
+
+Se revisó el front completo (todos los servicios que construyen URLs vía `environment.api_Url`/`environment.api_imagenes`) contra las secciones 0 y 1 (incluida la tabla de endpoints #16-25 de `VarianteController` agregada al final). **Ya no quedan llamadas sin `/v1/` hacia los controladores listados** — se actualizaron `AdminService`, `AccederService`, `AppComponent`, `TokenInterceptor`, `ChatbotService`, `ClienteService`, `RifaService`, `NegocioService`, `PagoService`, `PalabraClaveService`, `DocumentosService`, `ProductoService`, `VarianteService`, `UsuarioService` y ambos `PedidosService`. Detalle completo en `bugs/CAMBIOS_FRONT.md` → sección "SESIÓN 2026-06-08 — Fase 2: prefijo `/v1/` en TODOS los demás controladores".
+
+`LotesProductosControllerImpl` y `PruebaControllerImpl` confirmados sin uso en el front — no requieren cambios.

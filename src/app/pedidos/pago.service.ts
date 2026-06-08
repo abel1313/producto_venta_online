@@ -13,54 +13,54 @@ export class PagoService {
   constructor(private readonly http: HttpClient) {}
 
   getTiposPago(): Observable<ResponseGeneric<ITipoPago[]>> {
-    return this.http.get<ResponseGeneric<ITipoPago[]>>(`${this.url}/pagos/tipos-pago`);
+    return this.http.get<ResponseGeneric<ITipoPago[]>>(`${this.url}/v1/pagos/tipos-pago`);
   }
 
   getTarifas(): Observable<ResponseGeneric<ITarifaTerminal[]>> {
-    return this.http.get<ResponseGeneric<ITarifaTerminal[]>>(`${this.url}/pagos/tarifas`);
+    return this.http.get<ResponseGeneric<ITarifaTerminal[]>>(`${this.url}/v1/pagos/tarifas`);
   }
 
   getIva(): Observable<ResponseGeneric<IIvaTerminal[]>> {
-    return this.http.get<ResponseGeneric<IIvaTerminal[]>>(`${this.url}/pagos/iva`);
+    return this.http.get<ResponseGeneric<IIvaTerminal[]>>(`${this.url}/v1/pagos/iva`);
   }
 
   getOpciones(): Observable<ResponseGeneric<IDetallePago[]>> {
-    return this.http.get<ResponseGeneric<IDetallePago[]>>(`${this.url}/pagos/opciones`);
+    return this.http.get<ResponseGeneric<IDetallePago[]>>(`${this.url}/v1/pagos/opciones`);
   }
 
   getOpcionesPorTipo(tipoPagoId: number): Observable<ResponseGeneric<IPagosYMeses[]>> {
-    return this.http.get<ResponseGeneric<IPagosYMeses[]>>(`${this.url}/pagos/opciones-por-tipo/${tipoPagoId}`);
+    return this.http.get<ResponseGeneric<IPagosYMeses[]>>(`${this.url}/v1/pagos/opciones-por-tipo/${tipoPagoId}`);
   }
 
   getOpcionesEstructuradas(): Observable<ResponseGeneric<IOpcionPagoDto[]>> {
-    return this.http.get<ResponseGeneric<IOpcionPagoDto[]>>(`${this.url}/pagos/opciones-estructuradas`);
+    return this.http.get<ResponseGeneric<IOpcionPagoDto[]>>(`${this.url}/v1/pagos/opciones-estructuradas`);
   }
 
   iniciarPagoTerminal(request: ITerminalIniciarRequest): Observable<ITerminalIniciarResponse> {
-    return this.http.post<ITerminalIniciarResponse>(`${this.url}/mp/iniciar`, request);
+    return this.http.post<ITerminalIniciarResponse>(`${this.url}/v1/mp/iniciar`, request);
   }
 
   getEstadoTerminal(intentId: string): Observable<ITerminalEstadoResponse> {
-    return this.http.get<ITerminalEstadoResponse>(`${this.url}/mp/estado/${intentId}`);
+    return this.http.get<ITerminalEstadoResponse>(`${this.url}/v1/mp/estado/${intentId}`);
   }
 
   cancelarPagoTerminal(intentId: string): Observable<{ mensaje: string }> {
-    return this.http.delete<{ mensaje: string }>(`${this.url}/mp/cancelar/${intentId}`);
+    return this.http.delete<{ mensaje: string }>(`${this.url}/v1/mp/cancelar/${intentId}`);
   }
 
   getHistorial(pagina: number, size: number): Observable<IHistorialMpPage> {
-    return this.http.get<IHistorialMpPage>(`${this.url}/mp/historial?pagina=${pagina}&size=${size}`);
+    return this.http.get<IHistorialMpPage>(`${this.url}/v1/mp/historial?pagina=${pagina}&size=${size}`);
   }
 
   getHistorialPorPedido(pedidoId: number, pagina: number, size: number): Observable<IHistorialMpPage> {
-    return this.http.get<IHistorialMpPage>(`${this.url}/mp/historial/pedido/${pedidoId}?pagina=${pagina}&size=${size}`);
+    return this.http.get<IHistorialMpPage>(`${this.url}/v1/mp/historial/pedido/${pedidoId}?pagina=${pagina}&size=${size}`);
   }
 
   getHistorialPorEstado(estado: MpEstado, pagina: number, size: number): Observable<IHistorialMpPage> {
-    return this.http.get<IHistorialMpPage>(`${this.url}/mp/historial/estado/${estado}?pagina=${pagina}&size=${size}`);
+    return this.http.get<IHistorialMpPage>(`${this.url}/v1/mp/historial/estado/${estado}?pagina=${pagina}&size=${size}`);
   }
 
   getHistorialDirectoMp(desde: string, hasta: string): Observable<IHistorialMpMpItem[]> {
-    return this.http.get<IHistorialMpMpItem[]>(`${this.url}/mp/historial/mp?desde=${desde}&hasta=${hasta}`);
+    return this.http.get<IHistorialMpMpItem[]>(`${this.url}/v1/mp/historial/mp?desde=${desde}&hasta=${hasta}`);
   }
 }

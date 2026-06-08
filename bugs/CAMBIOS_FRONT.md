@@ -1732,3 +1732,35 @@ Como el back colapsó la dualidad v1(deprecated)/v2 en una sola versión activa 
 **Compilación verificada:** `npx tsc --noEmit -p tsconfig.app.json` sin errores.
 
 **Nota:** `ImagenesService.getImagenV2()` y `ProductoService.getDataImgV2()` quedan como código muerto (sin invocadores) apuntando a `/imagen/v2/...` — siguen documentados como "sin uso" desde antes; no se tocaron porque no afectan en runtime.
+
+---
+
+## SESIÓN 2026-06-08 — Fase 2: prefijo `/v1/` en TODOS los demás controladores (breaking rename, no paralelo)
+
+**Contexto:** además de `ImageneController`/`ImagenPresentacionController`/`VarianteController` (ya arreglados arriba), el back agregó `/v1/` directamente al `@RequestMapping` BASE de otros 21 controladores de proyecto-key — **renombrado, no ruta paralela**: las URLs viejas devuelven 404. Documentado en `ENDPOINTS_MIGRACION_V1.md` sección 0. Además, `VarianteController` tenía 10 endpoints sueltos sin versionar (`buscar`, `porProducto/*`, `guardarConImagenes`, `inicializarDesdeProducto`, `imagenes/{id}/paginado`, `imagenes/{id}/principal`, `admin/sin-stock`, `admin/diagnostico-imagenes/{id}`) que también recibieron `/v1/` (sección 1, tabla #16-25).
+
+**Fix — se agregó `/v1/` en cada servicio del front que construye URLs hacia estos controladores:**
+
+| Servicio / archivo | Cambio |
+|---|---|
+| `AdminService` | base `/admin` → `/v1/admin` (cubre también `AdminReconciliacionController`, cuyo nuevo path `/v1/admin/reconciliacion/imagenes` ya calza con el mismo prefijo) |
+| `AccederService` | base `/productos` → `/v1/productos`; `login/refresh/logout/registrar` → `/v1/auth/...` |
+| `AppComponent.urlRefresh` / `TokenInterceptor.handleRefresh` | `/auth/refresh` → `/v1/auth/refresh` |
+| `ChatbotService` | `/chatbot/mensaje` → `/v1/chatbot/mensaje` |
+| `ClienteService` | `super(http,'clientes')` → `super(http,'v1/clientes')`; `getCodigoPostal` → `/v1/dipomex/...` |
+| `RifaService` | `configurarRifa*`, `configurarRifaVariante*`, `concursante*`, `ganadorRifa*` → `/v1/...`; `buscarVariante` → `/variantes/v1/buscar` (sub-ruta de VarianteController, no prefijo de base) |
+| `NegocioService` | base `/negocio` → `/v1/negocio` |
+| `PagoService` | `/pagos/...` → `/v1/pagos/...`; `/mp/...` → `/v1/mp/...` |
+| `PalabraClaveService` | base `/palabras-clave` → `/v1/palabras-clave` |
+| `DocumentosService` | base `/documentos/productos` → `/v1/documentos/productos` |
+| `ProductoService` | base `/productos` → `/v1/productos`; `saveVenta`/`getTotalVenta` → `/v1/ventas/...`; `saveGasto`/`getDataGastos` → `/v1/gastos/...`; `saveCliente` → `/v1/clientes/save`; `getClientesRifaPorHora`/`saveRifa` → `/v1/rifa/...` |
+| `VarianteService` | `getPorProducto`, `getPorProductoPaginadoResumen`, `buscar`, `save`/`update` (`guardarConImagenes`), `getImagenesPaginado`, `setPrincipalVariante`, `getAdminSinStock`, `inicializarDesdeProducto`, `diagnosticoImagenes` → `/v1/...`; `guardarPedidoVariante` → `/v1/pedidos/savePedido`; `saveVentaDirecta` → `/v1/ventas/save` |
+| `UsuarioService` | `super(httpClient,'usuarios')` → `super(httpClient,'v1/usuarios')`; `getDataPage`/`restablecerContra`/`eliminarUsuarioDto`/`buscarClientePorIdUsuario` → `/v1/usuarios/...` |
+| `PedidosService` (`pedidos/pedidos.service.ts`) | `super(http,'pedidos')` → `super(http,'v1/pedidos')`; todas las llamadas custom `/pedidos/...` → `/v1/pedidos/...` |
+| `PedidosService` (`shared/pedidos.service.ts`) | `super(httpClient,'pedidos')` → `super(httpClient,'v1/pedidos')`; `saveDataPedido` → `/mis-productos/v1/pedidos/savePedido` |
+
+**No se tocó:** `LotesProductosControllerImpl` (controlador vacío, sin endpoints — confirmado en el doc) y `PruebaControllerImpl` (`/productos-eje/`, sin invocadores en el front).
+
+**Código muerto detectado (no se tocó porque no afecta runtime):** `ProductoService.getDataImg`/`getDataImgV2` (apuntan a `/imagen/{id}/detalle` deprecated/v2, sin invocadores — reemplazados por `getImagenesProducto`); `VarianteService.eliminarImagenes`/`eliminarTodasImagenesVariantes`/`getImagenesVariante` (versiones `v1`-ahora-`v3` deprecadas, sin invocadores — reemplazadas por las `*V2`).
+
+**Compilación verificada:** `npx tsc --noEmit -p tsconfig.app.json` sin errores.

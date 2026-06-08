@@ -21,7 +21,7 @@ import { ThemeService } from './services/theme/theme.service';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   imageUrl: string | undefined;
-  private readonly urlRefresh: string = `${environment.api_Url}/auth/refresh`;
+  private readonly urlRefresh: string = `${environment.api_Url}/v1/auth/refresh`;
   resultadoCodigo: string = '';
   constructor(private sanitizer: DomSanitizer,
               private readonly http: HttpClient,

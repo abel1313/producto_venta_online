@@ -26,7 +26,7 @@ export interface IResultadoReconciliacion {
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private readonly url = `${environment.api_Url}/admin`;
+  private readonly url = `${environment.api_Url}/v1/admin`;
 
   constructor(private readonly http: HttpClient) {}
 

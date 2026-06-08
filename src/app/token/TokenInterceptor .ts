@@ -68,7 +68,7 @@ export class TokenInterceptor implements HttpInterceptor {
     this.refreshToken$.next(null);
 
     return this.http.post<any>(
-      `${environment.api_Url}/auth/refresh`, {}, { withCredentials: true }
+      `${environment.api_Url}/v1/auth/refresh`, {}, { withCredentials: true }
     ).pipe(
       timeout(10_000),
       switchMap(response => {

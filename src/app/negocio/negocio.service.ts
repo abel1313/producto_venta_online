@@ -23,7 +23,7 @@ export interface IHorarioRequest {
 
 @Injectable({ providedIn: 'root' })
 export class NegocioService {
-  private readonly url = `${environment.api_Url}/negocio`;
+  private readonly url = `${environment.api_Url}/v1/negocio`;
 
   constructor(private readonly http: HttpClient) {}
 

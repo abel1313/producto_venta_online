@@ -9,26 +9,26 @@ import { IResponseGeneric } from 'src/shared/responseGeneric.model';
 })
 export class AccederService {
 
-  private readonly url: string = `${environment.api_Url}/productos`;
+  private readonly url: string = `${environment.api_Url}/v1/productos`;
   private readonly urlImg: string = `${environment.api_Url}/imagen`;
   constructor(
     private readonly http: HttpClient
   ) { }
 
   login(credentials: IUsuarioDto) {
-    return this.http.post<IResponseGeneric<ITokenData>>(`${environment.api_Url}/auth/login`, credentials, { withCredentials: true });
+    return this.http.post<IResponseGeneric<ITokenData>>(`${environment.api_Url}/v1/auth/login`, credentials, { withCredentials: true });
   }
 
   refresh() {
-    return this.http.post<any>(`${environment.api_Url}/auth/refresh`, {}, { withCredentials: true });
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/refresh`, {}, { withCredentials: true });
   }
 
   logout() {
-    return this.http.post<void>(`${environment.api_Url}/auth/logout`, {}, { withCredentials: true });
+    return this.http.post<void>(`${environment.api_Url}/v1/auth/logout`, {}, { withCredentials: true });
   }
 
   registrar(credentials: any) {
-    return this.http.post<any>(`${environment.api_Url}/auth/registrar`, credentials);
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/registrar`, credentials);
   }
 
 

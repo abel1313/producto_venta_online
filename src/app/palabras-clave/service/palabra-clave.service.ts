@@ -8,7 +8,7 @@ import { IPalabraClave, IPalabraClaveRequest, IPalabrasClavePaginable } from '..
 @Injectable({ providedIn: 'root' })
 export class PalabraClaveService {
 
-  private readonly url = `${environment.api_Url}/palabras-clave`;
+  private readonly url = `${environment.api_Url}/v1/palabras-clave`;
 
   constructor(private readonly http: HttpClient) {}
 

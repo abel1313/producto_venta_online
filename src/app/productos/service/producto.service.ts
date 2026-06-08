@@ -16,7 +16,7 @@ import { IProductoDTOImagenes, IProductoDTORec } from '../producto/models/produc
 })
 export class ProductoService {
 
-    private readonly url: string = `${environment.api_Url}/productos`;
+    private readonly url: string = `${environment.api_Url}/v1/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
     private readonly microImagenes: string = `${environment.api_imagenes}/v1/producto-imagen`;
 
@@ -101,41 +101,41 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     saveVenta(request: IVentaDirectaRequest): Observable<any> {
-        return this.http.post(`${environment.api_Url}/ventas/save`, request);
+        return this.http.post(`${environment.api_Url}/v1/ventas/save`, request);
     }
 
     // 🌐 Obtener datos
     getTotalVenta(): Observable<any> {
-        return this.http.get(`${environment.api_Url}/ventas/getTotalVentas`);
+        return this.http.get(`${environment.api_Url}/v1/ventas/getTotalVentas`);
     }
 
     // 🌐 Obtener datos
     saveGasto(det: IGastos): Observable<any> {
-        return this.http.post(`${environment.api_Url}/gastos/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/gastos/save`, det);
     }
     getDataGastos(page: number, size: number): Observable<IProductoPaginable<IGastos[]>> {
-        return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/gastos/getGastos?size=${size}&page=${page}`);
+        return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/v1/gastos/getGastos?size=${size}&page=${page}`);
     }
 
     // 🌐 Obtener datos
     saveProducto(det: IProducto): Observable<any> {
-        return this.http.post(`${environment.api_Url}/productos/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/productos/save`, det);
     }
 
 
     // 🌐 Obtener datos
     saveCliente(det: ICliente): Observable<any> {
-        return this.http.post(`${environment.api_Url}/clientes/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/clientes/save`, det);
     }
 
     // 🌐 Obtener datos
     getClientesRifaPorHora(inicio: string, fin: string, palabraRifa: string): Observable<any> {
-        return this.http.get(`${environment.api_Url}/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}&palabraRifa=${palabraRifa}`);
+        return this.http.get(`${environment.api_Url}/v1/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}&palabraRifa=${palabraRifa}`);
     }
 
     // 🌐 Obtener datos
     saveRifa(det: IRifa): Observable<any> {
-        return this.http.post(`${environment.api_Url}/rifa/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/rifa/save`, det);
     }
 
     deleteImagen(id: string): Observable<any> {

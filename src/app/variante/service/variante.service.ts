@@ -56,30 +56,30 @@ export class VarianteService {
   }
 
   getPorProducto(productoId: number): Observable<IVarianteDto[]> {
-    return this.http.get<{ data: IVarianteDto[] }>(`${this.url}/porProducto/${productoId}`)
+    return this.http.get<{ data: IVarianteDto[] }>(`${this.url}/v1/porProducto/${productoId}`)
       .pipe(map(res => res.data));
   }
 
   getPorProductoPaginadoResumen(productoId: number, pagina: number, size: number): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ data: IVarianteResumenPaginable }>(
-      `${this.url}/porProducto/${productoId}/paginado/resumen?pagina=${pagina}&size=${size}`
+      `${this.url}/v1/porProducto/${productoId}/paginado/resumen?pagina=${pagina}&size=${size}`
     ).pipe(map(res => res.data));
   }
 
   buscar(params: { termino: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
     const { termino, pagina = 1, size = 10 } = params;
     const q = `termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`;
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar?${q}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/buscar?${q}`)
       .pipe(map(res => res.data));
   }
 
   /** Crea/actualiza una o varias variantes en una sola petición. */
   save(data: IVarianteRequest[]): Observable<{ data: IVariante[] }> {
-    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, data);
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/v1/guardarConImagenes`, data);
   }
 
   update(id: number, data: IVarianteRequest): Observable<{ data: IVariante[] }> {
-    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, [{ ...data, id }]);
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/v1/guardarConImagenes`, [{ ...data, id }]);
   }
 
   delete(id: number): Observable<any> {
@@ -104,7 +104,7 @@ export class VarianteService {
 
   getImagenesPaginado(id: number, pagina: number, size: number): Observable<IVarianteImagenPaginable> {
     return this.http.get<{ data: IVarianteImagenPaginable }>(
-      `${this.url}/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
+      `${this.url}/v1/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
     ).pipe(map(res => res.data));
   }
 
@@ -119,7 +119,7 @@ export class VarianteService {
   }
 
   setPrincipalVariante(imagenId: string): Observable<any> {
-    return this.http.put<any>(`${this.url}/imagenes/${imagenId}/principal`, null);
+    return this.http.put<any>(`${this.url}/v1/imagenes/${imagenId}/principal`, null);
   }
 
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
@@ -128,24 +128,24 @@ export class VarianteService {
   }
 
   getAdminSinStock(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/admin/sin-stock?pagina=${pagina}&size=${size}`)
+    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/sin-stock?pagina=${pagina}&size=${size}`)
       .pipe(map(res => res.data));
   }
 
   inicializarDesdeProducto(form: FormData): Observable<{ mensaje: string; data: any[] }> {
-    return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/inicializarDesdeProducto`, form);
+    return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/v1/inicializarDesdeProducto`, form);
   }
 
   diagnosticoImagenes(varianteId: number): Observable<any> {
-    return this.http.get(`${this.url}/admin/diagnostico-imagenes/${varianteId}`);
+    return this.http.get(`${this.url}/v1/admin/diagnostico-imagenes/${varianteId}`);
   }
 
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {
-    return this.http.post<any>(`${environment.api_Url}/pedidos/savePedido`, data);
+    return this.http.post<any>(`${environment.api_Url}/v1/pedidos/savePedido`, data);
   }
 
   saveVentaDirecta(data: IVentaDirectaRequest): Observable<IVentaDirectaResponse> {
-    return this.http.post<IVentaDirectaResponse>(`${environment.api_Url}/ventas/save`, data);
+    return this.http.post<IVentaDirectaResponse>(`${environment.api_Url}/v1/ventas/save`, data);
   }
 }
 

@@ -11,7 +11,6 @@ import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service'
 export class ConfigNegocioComponent implements OnInit {
 
   estado: INegocioEstado | null = null;
-  cargando         = true;
   toggling         = false;
   guardandoHorario = false;
   guardandoContactos = false;
@@ -37,7 +36,6 @@ export class ConfigNegocioComponent implements OnInit {
   }
 
   private cargarConfig(): void {
-    this.cargando = true;
     this.negocioService.getConfig().subscribe({
       next: (data: any) => {
 
@@ -50,9 +48,8 @@ export class ConfigNegocioComponent implements OnInit {
           whatsappUrl: data.whatsappUrl ?? '',
           facebookUrl: data.facebookUrl ?? ''
         });
-        this.cargando = false;
       },
-      error: () => { this.cargando = false; }
+      error: () => {}
     });
   }
 

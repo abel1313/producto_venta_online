@@ -18,7 +18,6 @@ interface IArchivoPendiente {
 export class PresentacionImagenesComponent implements OnInit {
 
   imagenes:    IImagenPresentacion[] = [];
-  cargando     = true;
   guardandoId: number | null = null;
 
   pendientes = new Map<number, IArchivoPendiente>();
@@ -31,17 +30,15 @@ export class PresentacionImagenesComponent implements OnInit {
   ngOnInit(): void { this.cargar(); }
 
   private cargar(): void {
-    this.cargando = true;
-
     if (this.imagenVersionService.useV2) {
       this.presentacionService.getTodasImagenesV2().subscribe({
-        next: imgs => { this.imagenes = imgs as any[]; this.cargando = false; },
-        error: () => { this.cargando = false; }
+        next: imgs => { this.imagenes = imgs as any[]; },
+        error: () => {}
       });
     } else {
       this.presentacionService.getTodasImagenes().subscribe({
-        next: (res: any) => { this.imagenes = res?.data ?? res ?? []; this.cargando = false; },
-        error: () => { this.cargando = false; }
+        next: (res: any) => { this.imagenes = res?.data ?? res ?? []; },
+        error: () => {}
       });
     }
   }

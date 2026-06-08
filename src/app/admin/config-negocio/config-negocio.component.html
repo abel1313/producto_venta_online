@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="cn-card__body" *ngIf="!cargando; else loader">
+    <div class="cn-card__body">
 
       <!-- ── 1. Estado del negocio (toggle tipo Facebook) ─────────── -->
       <div class="cn-section">
@@ -110,10 +110,6 @@
       </div>
 
     </div>
-
-    <ng-template #loader>
-      <div class="cn-loader"><span class="spinner-border text-primary"></span></div>
-    </ng-template>
 
   </div>
 </div>

@@ -185,12 +185,6 @@ $accent-light: #ede9fe;
   }
 }
 
-// ── Loading ────────────────────────────────────────────────────────
-.di-loading {
-  display: flex; align-items: center; gap: 10px;
-  color: var(--card-text-muted); font-size: 0.88rem;
-}
-
 // ── Error ──────────────────────────────────────────────────────────
 .di-error {
   display: flex; align-items: center; gap: 10px;

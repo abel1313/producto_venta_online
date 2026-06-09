@@ -187,7 +187,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   private buscarVariantes(termino: string): void {
     this.buscandoVariante = true;
-    this.varianteService.buscar({ termino, pagina: 1, size: 20 }).subscribe({
+    this.varianteService.buscar({ termino, pagina: 1, size: 10 }).subscribe({
       next: res => { this.resultados = res.t ?? []; this.buscandoVariante = false; },
       error: ()  => { this.buscandoVariante = false; }
     });

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
-import { PresentacionService, IImagenPresentacion, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
+import { PresentacionService, IImagenPresentacionV2Dto, IImagenUpdateRequest } from 'src/app/presentacion/presentacion.service';
 
 interface IArchivoPendiente {
   base64:    string;   // sin prefijo data:
@@ -16,48 +16,44 @@ interface IArchivoPendiente {
 })
 export class PresentacionImagenesComponent implements OnInit {
 
-  imagenes:    IImagenPresentacion[] = [];
-  cargando     = true;
+  imagenes:    IImagenPresentacionV2Dto[] = [];
   guardandoId: number | null = null;
 
-  // Archivos seleccionados pero aún no guardados (key = img.id)
   pendientes = new Map<number, IArchivoPendiente>();
 
-  constructor(private readonly presentacionService: PresentacionService) {}
+  constructor(
+    private readonly presentacionService: PresentacionService
+  ) {}
 
   ngOnInit(): void { this.cargar(); }
 
   private cargar(): void {
-    this.cargando = true;
-    this.presentacionService.getTodasImagenes().subscribe({
-      next: (res: any) => {
-        this.imagenes = res?.data ?? res ?? [];
-        this.cargando = false;
-      },
-      error: () => { this.cargando = false; }
+    this.presentacionService.getTodasImagenesV2().subscribe({
+      next: imgs => { this.imagenes = imgs; },
+      error: () => {}
     });
   }
 
-  get login():    IImagenPresentacion[] { return this.imagenes.filter(i => i.tipo === 'LOGIN'); }
-  get registro(): IImagenPresentacion[] { return this.imagenes.filter(i => i.tipo === 'REGISTRO'); }
+  get login():    IImagenPresentacionV2Dto[] { return this.imagenes.filter(i => i.tipo === 'LOGIN'); }
+  get registro(): IImagenPresentacionV2Dto[] { return this.imagenes.filter(i => i.tipo === 'REGISTRO'); }
 
   // ── URL de imagen guardada en el servidor ─────────────────────────
-  imagenSrc(img: IImagenPresentacion): string {
+  imagenSrc(img: IImagenPresentacionV2Dto): string {
     const p = this.pendientes.get(img.id);
-    if (p) return p.preview;                              // preview local antes de guardar
-    return this.presentacionService.getImagenUrl(img.id); // URL pública /{id}/imagen
+    if (p) return p.preview;
+    return this.presentacionService.getImagenUrlV2(img.id);
   }
 
-  tieneImagen(img: IImagenPresentacion): boolean {
+  tieneImagen(img: IImagenPresentacionV2Dto): boolean {
     return !!this.pendientes.get(img.id) || img.id > 0;
   }
 
-  tienePendiente(img: IImagenPresentacion): boolean {
+  tienePendiente(img: IImagenPresentacionV2Dto): boolean {
     return this.pendientes.has(img.id);
   }
 
   // ── Selección de archivo ──────────────────────────────────────────
-  seleccionarArchivo(img: IImagenPresentacion, event: Event): void {
+  seleccionarArchivo(img: IImagenPresentacionV2Dto, event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
 
@@ -77,12 +73,12 @@ export class PresentacionImagenesComponent implements OnInit {
     (event.target as HTMLInputElement).value = '';
   }
 
-  quitarPendiente(img: IImagenPresentacion): void {
+  quitarPendiente(img: IImagenPresentacionV2Dto): void {
     this.pendientes.delete(img.id);
   }
 
   // ── Guardar ───────────────────────────────────────────────────────
-  guardar(img: IImagenPresentacion): void {
+  guardar(img: IImagenPresentacionV2Dto): void {
     this.guardandoId = img.id;
     const p = this.pendientes.get(img.id);
 
@@ -92,13 +88,11 @@ export class PresentacionImagenesComponent implements OnInit {
       ...(p ? { base64: p.base64, extension: p.extension, nombreImagen: p.nombre } : {})
     };
 
-    this.presentacionService.actualizarImagen(img.id, request).subscribe({
-      next: (res: any) => {
+    this.presentacionService.actualizarImagenV2(img.id, request).subscribe({
+      next: (updated: IImagenPresentacionV2Dto) => {
         this.guardandoId = null;
         this.pendientes.delete(img.id);
-        // Actualizar el nombreArchivo con el que devuelve el backend
-        const updated = res?.data ?? res;
-        if (updated?.nombreArchivo) img.nombreArchivo = updated.nombreArchivo;
+        if (updated?.urlImagen) img.urlImagen = updated.urlImagen;
         Swal.fire({ icon: 'success', title: '¡Imagen actualizada!', timer: 1300, showConfirmButton: false });
       },
       error: () => {

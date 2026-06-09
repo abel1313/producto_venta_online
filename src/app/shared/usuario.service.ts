@@ -21,21 +21,21 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   userUpdate$ = this.userUpdate.asObservable();
 
   constructor(httpClient: HttpClient) {
-    super(httpClient, 'usuarios');
+    super(httpClient, 'v1/usuarios');
   }
 
 
   getDataPage(page: number, size: number, buscar: string): Observable<ResponseGeneric<IUsuarioDto>> {
-    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}`);
+    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/v1/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}`);
   }
 
   restablecerContra(data: any, tipoDato: number) {
-    return this.http.put<any>(`${environment.api_Url}/usuarios/updateUsuario/${tipoDato}`, data);
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/updateUsuario/${tipoDato}`, data);
   }
   eliminarUsuarioDto(tipoDato: number) {
-    return this.http.delete<any>(`${environment.api_Url}/usuarios/eliminarUsuarioDto/${tipoDato}`);
+    return this.http.delete<any>(`${environment.api_Url}/v1/usuarios/eliminarUsuarioDto/${tipoDato}`);
   }
   buscarClientePorIdUsuario(idUsuario: number) {
-    return this.http.get<boolean>(`${environment.api_Url}/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
+    return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
   }
 }

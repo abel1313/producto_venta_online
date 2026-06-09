@@ -66,12 +66,6 @@
 
   </div>
 
-  <!-- Cargando -->
-  <div class="hmp-loading" *ngIf="cargando">
-    <span class="spinner-border text-primary"></span>
-    <p>Cargando historial…</p>
-  </div>
-
   <!-- Sin resultados -->
   <div class="hmp-empty" *ngIf="!cargando && items.length === 0 && (modo === 'todos' || filtroEstado || filtroPedidoId)">
     <i class="pi pi-inbox hmp-empty__icon"></i>

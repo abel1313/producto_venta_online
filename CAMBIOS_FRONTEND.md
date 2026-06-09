@@ -1,293 +1,1073 @@
-# Cambios Frontend — Registro de implementaciones
+# Cambios de API para Frontend — Migración a micro_imagenes
 
-Documento de referencia de todos los cambios realizados en el frontend.
-Cada sección indica qué se cambió, en qué archivos y qué endpoints consume.
+## Regla general
+- **proyecto-key (9091):** solo maneja lógica de negocio (productos, variantes, pedidos, etc.)
+- **micro_imagenes (9096):** todo lo relacionado con archivos de imagen
+
+Los endpoints deprecados en proyecto-key siguen funcionando pero el front debe apuntar a los nuevos.
+Los endpoints que dicen `✅ micro_imagenes (9096)` el front los llama **directamente al micro**.
+Los endpoints que dicen `✅ proyecto-key (9091)` no pudieron moverse al micro (mezclan datos de negocio).
 
 ---
 
-## 1. Catálogo de palabras clave (nueva feature)
+## ENDPOINTS MIGRADOS
 
-### Qué se hizo
-CRUD completo para el catálogo de categorías. Se puede gestionar desde `/palabras-clave` (solo admin).
-El autocomplete se integró en los formularios de producto y variante para asignar la categoría al guardar.
+---
 
-### Archivos nuevos
-| Archivo | Descripción |
+### 1. Imagen principal de un producto en el listado
+
+> El front **no necesita llamar a este endpoint directamente**. El response de `GET /productos/obtenerProductos` ya incluye el campo `urlImagen` que apunta al micro. El front solo hace `<img [src]="producto.imagen.urlImagen">`.
+
+**`urlImagen` que viene en el listado de productos:**
+```
+http://localhost:9096/mis-productos/producto-imagen/buscarImagenProducto/{productoId}
+```
+
+**Response al llamar esa URL (micro_imagenes 9096):**
+```
+Content-Type: image/jpeg
+Body: <bytes binarios>
+```
+
+---
+
+### 2. Detalle paginado de imágenes de un producto
+
+#### Version anterior — `GET /imagen/{productoId}/detalle` ❌ Deprecated
+
+| | |
 |---|---|
-| `src/app/palabras-clave/models/palabra-clave.model.ts` | Interfaces: `IPalabraClave`, `IPalabraClaveRequest`, `IPalabrasClavePaginable` |
-| `src/app/palabras-clave/service/palabra-clave.service.ts` | Servicio CRUD completo |
-| `src/app/palabras-clave/gestion/gestion-palabras-clave.component.ts` | Componente admin: lista, agrega, edita, elimina palabras clave |
-| `src/app/palabras-clave/gestion/gestion-palabras-clave.component.html` | Template del CRUD |
-| `src/app/palabras-clave/gestion/gestion-palabras-clave.component.scss` | Estilos del CRUD |
-| `src/app/palabras-clave/autocomplete/palabra-clave-autocomplete.component.ts` | Autocomplete reutilizable para formularios |
-| `src/app/palabras-clave/autocomplete/palabra-clave-autocomplete.component.html` | Template del autocomplete |
-| `src/app/palabras-clave/autocomplete/palabra-clave-autocomplete.component.scss` | Estilos del autocomplete |
-| `src/app/palabras-clave/palabras-clave.module.ts` | Módulo lazy — ruta `/palabras-clave` |
+| **Controlador** | `ImageneController` — `proyecto-key` — método `getDetalle()` |
+| **Path param** | `productoId` (Integer) |
+| **Query params** | `page` (int), `size` (int) |
+| **Response 200** | `PageableDto` → lista de items: `{ idProducto, idImagen, name, price, inventoryStatus, extencion, image (bytes) }` |
+| **RabbitMQ** | No aplica — lectura síncrona |
+| **Acción front** | Sin cambio — sigue funcionando igual |
 
-### Archivos modificados
-| Archivo | Qué cambió |
+**Flujo interno:**
+```
+Front → proyecto-key ImageneController.getDetalle()
+            └─► IImagenService.findImagenPrincipalPorProductoIds()
+                      └─► consulta BD local (nombre, precio, stock, imagenId)
+                      └─► por cada imagen: lee bytes del DISCO LOCAL de proyecto-key
+```
+
+---
+
+#### Version nueva — `GET /imagen/v2/{productoId}/detalle` ✅ Usar esta — **proyecto-key (9091)** — se queda aquí
+
+> Este endpoint **no puede moverse al micro** porque mezcla datos del producto (nombre, precio, stock) con bytes de imagen.
+
+| | |
 |---|---|
-| `src/app/app-routing.module.ts` | Ruta lazy `/palabras-clave` con guard admin |
-| `src/app/shared/shared.module.ts` | Declara y exporta `PalabraClaveAutocompleteComponent` |
-| `src/app/productos/producto/models/producto.model.ts` | `+palabraClaveId?: number | null` en `IProducto` |
-| `src/app/productos/producto/models/producto.dto.model.ts` | `+palabraClave?` en `IProductoDTORec` para precarga al editar |
-| `src/app/variante/models/variante.model.ts` | `+palabraClaveId?` en `IVarianteRequest` y `+palabraClave?` en `IVariante` |
-| `src/app/productos/producto/add/add.component.ts` | `palabraClaveSeleccionada`, `onPalabraClaveSeleccionada()`, `palabraClaveId` en payload |
-| `src/app/productos/producto/add/add.component.html` | `<app-palabra-clave-autocomplete>` después del campo Descripción |
-| `src/app/variante/update-variante/update-variante.component.ts` | Mismo patrón + precarga al editar |
-| `src/app/variante/update-variante/update-variante.component.html` | `<app-palabra-clave-autocomplete>` en el form |
-| `src/app/variante/agregar/agregar.component.ts` | `palabraClaveId` en todos los payloads del lote, limpieza en `resetForm()` |
-| `src/app/variante/agregar/agregar.component.html` | `<app-palabra-clave-autocomplete>` con nota "aplica a todas las variantes" |
+| **Controlador** | `ImageneController` — `proyecto-key` — método `getDetalleV2()` |
+| **Path param** | `productoId` (Integer) — mismo que antes |
+| **Query params** | `page` (int), `size` (int) — mismos que antes |
+| **Response 200** | Misma estructura: `PageableDto` → lista de `{ idProducto, idImagen, name, price, inventoryStatus, extencion, image (bytes) }` |
+| **RabbitMQ** | No aplica — lectura síncrona |
+| **Acción front** | Cambiar URL de `/imagen/{id}/detalle` a `/imagen/v2/{id}/detalle` |
 
-### Endpoints que consume
+**Diferencia clave con la versión anterior:**
+- `name`, `price`, `inventoryStatus`, `extencion` → siguen saliendo de la **BD local de proyecto-key** (el micro no tiene datos del producto)
+- `image` (bytes) → ahora vienen del **microservicio de imágenes** en vez del disco local
+- Si una imagen no existe en el micro → ese item llega con `image: null` + log en servidor (antes también podía ser null pero sin aviso)
 
-| Método | Endpoint | Usado en | Descripción |
+**Flujo interno:**
+```
+Front → proyecto-key ImageneController.getDetalleV2()
+            └─► IImagenService.findImagenPrincipalPorProductoIdsV2()
+                      └─► consulta BD local (nombre, precio, stock, imagenId) ← igual que antes
+                      └─► por cada imagen: ImagenPort.getOne(imagenId)
+                                └─► HTTP → microservicio de imágenes → bytes del DISCO DEL MICRO
+```
+
+---
+
+### 3. Obtener bytes de imagen por ID de imagen
+
+#### Version anterior — `GET /imagen/file/{imagenId}` ❌ Deprecated
+
+| | |
+|---|---|
+| **Controlador** | `ImageneController` — `proyecto-key` — método `getImagenByImagenId()` |
+| **Path param** | `imagenId` (Long) — ID de la imagen |
+| **Response 200** | `byte[]` con header `Content-Type` |
+| **Response error** | HTTP 500 si el archivo no existe en disco local |
+| **RabbitMQ** | No aplica |
+| **Acción front** | Sin cambio — sigue funcionando si el archivo está en disco local |
+
+**Flujo interno:**
+```
+Front → proyecto-key ImageneController.getImagenByImagenId()
+            └─► IImagenService.findByImagenId()
+                      └─► busca en imagenes_copy → lee bytes del DISCO LOCAL de proyecto-key
+```
+
+---
+
+#### Version nueva — `GET /imagenes/file/{imagenId}` ✅ Usar esta — **micro_imagenes (9096)**
+
+| | |
+|---|---|
+| **Micro** | `micro_imagenes` — `ImagenController.getImagenBytes()` |
+| **Path param** | `imagenId` (Long) — mismo que antes |
+| **Response 200** | `byte[]` con header `Content-Type` |
+| **Response sin imagen** | HTTP 204 No Content (antes daba 500) |
+| **Acción front** | Cambiar URL a `GET http://localhost:9096/mis-productos/imagenes/file/{imagenId}` |
+
+**Request:**
+```
+GET http://localhost:9096/mis-productos/imagenes/file/123
+```
+
+**Response 200:**
+```
+Content-Type: image/jpeg   (o image/png, image/gif)
+Body: <bytes binarios>
+```
+
+**Response 204:** sin body — imagen no encontrada en disco.
+
+**Diferencia clave:** el front llama directo al micro — proyecto-key ya no intermedia. Los bytes vienen del disco del micro.
+
+**Flujo:**
+```
+Front → GET /mis-productos/imagenes/file/{imagenId}   ← micro_imagenes directo
+            └─► imagenes_copy (BD compartida) → obtiene nombre de archivo
+            └─► lee bytes del DISCO DEL MICRO
+            ← byte[] + Content-Type
+```
+
+---
+
+### 4. Listado de imágenes de un producto (metadata + URLs)
+
+#### Version anterior — `GET /imagen/{idProducto}/imagenes` ❌ Deprecated
+
+| | |
+|---|---|
+| **Controlador** | `ImageneController` — `proyecto-key` — método `getImagenesPorProductoId()` |
+| **Path param** | `idProducto` (Integer) |
+| **Response 200** | `ProductoImagenDto` → `{ productoId, listaImagenes: [{ id, extension, nombreImagen, urlImagen, principal }] }` |
+| **urlImagen apunta a** | `GET /imagen/file/{imagenId}` — disco local |
+| **RabbitMQ** | No aplica |
+| **Acción front** | Sin cambio — sigue funcionando |
+
+---
+
+#### Version nueva — `GET /producto-imagen/listar/{productoId}` ✅ Usar esta — **micro_imagenes (9096)**
+
+| | |
+|---|---|
+| **Micro** | `micro_imagenes` — `ProductoImagenController.listarImagenesProducto()` |
+| **Path param** | `productoId` (Integer) — mismo que antes |
+| **Response 200** | Misma estructura — `{ productoId, listaImagenes: [{id, extension, nombreImagen, urlImagen, principal}] }` |
+| **urlImagen apunta a** | `GET /mis-productos/imagenes/file/{imagenId}` — micro_imagenes |
+| **Acción front** | Cambiar URL a `GET http://localhost:9096/mis-productos/producto-imagen/listar/{productoId}` |
+
+**Request:**
+```
+GET http://localhost:9096/mis-productos/producto-imagen/listar/10
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{
+  "productoId": 10,
+  "listaImagenes": [
+    { "id": 123, "extension": "jpg", "nombreImagen": "foto.jpg", "urlImagen": "/mis-productos/imagenes/file/123", "principal": true },
+    { "id": 124, "extension": "png", "nombreImagen": "foto2.png", "urlImagen": "/mis-productos/imagenes/file/124", "principal": false }
+  ]
+}
+```
+
+**Diferencia clave:** el front llama directo al micro. La `urlImagen` ya apunta al endpoint de bytes del micro — el front no cambia cómo procesa la respuesta, solo la URL del request.
+
+**Flujo:**
+```
+Front → GET /mis-productos/producto-imagen/listar/{productoId}   ← micro_imagenes directo
+            └─► JOIN producto_imagen_copy + imagenes_copy (BD compartida)
+            └─► urlImagen = /mis-productos/imagenes/file/{id}
+            ← { productoId, listaImagenes:[...] }
+```
+
+---
+
+### 5. Eliminar imagen por ID
+
+#### Versión anterior — `DELETE /imagen/{idImagen}` ❌ Deprecated (proyecto-key)
+
+Solo borraba de la BD local — el archivo quedaba en disco del micro.
+
+#### Versión final — `DELETE /producto-imagen/{id}` ✅ Usar esta — **micro_imagenes (9096)**
+
+> `{id}` = el ID de la imagen (Long) — el mismo valor que antes se mandaba a proyecto-key.
+
+**Request:**
+```
+DELETE http://localhost:9096/mis-productos/producto-imagen/123
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{ "response": {} }
+```
+
+**Diferencia clave:** el front llama directo al micro. Borra el archivo del disco, el registro de `imagenes_copy` y la relación de `producto_imagen_copy` — todo en una sola llamada. Ya no pasa por proyecto-key.
+
+**Flujo:**
+```
+Front → DELETE /mis-productos/producto-imagen/{imagenId}   ← micro_imagenes directo
+            └─► busca relación por imagenId en producto_imagen_copy
+            └─► borra archivo del disco del micro
+            └─► borra registro de imagenes_copy
+            └─► borra relación de producto_imagen_copy
+            ← 200 OK
+```
+
+---
+
+### 6. Eliminar imágenes específicas de un producto — **proyecto-key (9091)** — se queda aquí
+
+> No puede moverse al micro porque necesita verificar `variante_imagen` que es tabla de proyecto-key.
+
+| | `DELETE /imagen/{productoId}/imagenes` ❌ Deprecated | `DELETE /imagen/v2/{productoId}/imagenes` ✅ Usar esta |
+|---|---|---|
+| **URL completa** | `http://localhost:9091/mis-productos/imagen/{id}/imagenes` | `http://localhost:9091/mis-productos/imagen/v2/{id}/imagenes` |
+| **Body** | `[imagenId1, imagenId2, ...]` (Long[]) | mismo |
+| **Response** | HTTP 200 `{ message }` | HTTP 200 `{ message }` — mismo |
+
+---
+
+### 7. Eliminar todas las imágenes de varios productos — **proyecto-key (9091)** — se queda aquí
+
+> Misma razón que el punto 6.
+
+| | `DELETE /imagen/producto` ❌ Deprecated | `DELETE /imagen/v2/producto` ✅ Usar esta |
+|---|---|---|
+| **URL completa** | `http://localhost:9091/mis-productos/imagen/producto` | `http://localhost:9091/mis-productos/imagen/v2/producto` |
+| **Body** | `[productoId1, productoId2, ...]` (Integer[]) | mismo |
+| **Response** | HTTP 200 `{ message }` | HTTP 200 `{ message }` — mismo |
+
+---
+
+### 8. Limpiar caché de imágenes
+
+| | `GET /imagen/cache/imagen/limpiar` ❌ Deprecated | `GET /imagen/v2/cache/limpiar` ✅ Usar esta |
+|---|---|---|
+| **Controlador** | `ImageneController` — `limpiarTodaLaCacheDeImagenes()` | `ImageneController` — `limpiarCacheImagenesV2()` |
+| **Response** | void | HTTP 204 No Content |
+| **Diferencia** | Solo evicta caché `imagenes` | Evicta `imagenes`, `detalleImagen`, `detalle`, `detalle-v2`, `buscarImagenIdCache` |
+| **RabbitMQ** | No aplica | TODO: publicar evento para invalidar caché en todos los nodos |
+| **Acción front** | Sin cambio | Cambiar URL a `/imagen/v2/cache/limpiar` |
+
+---
+
+## ENDPOINTS MIGRADOS (continuación)
+
+---
+
+### 9. Imágenes activas de presentación por tipo (LOGIN / REGISTRO)
+
+#### Versión anterior — `GET /presentacion/imagenes?tipo=LOGIN` ❌ Deprecated
+
+| | |
+|---|---|
+| **Controlador** | `ImagenPresentacionController` — `getImagenes()` |
+| **Query param** | `tipo` (String: `LOGIN` \| `REGISTRO`) |
+| **Response 200** | `ResponseGeneric<List<ImagenPresentacion>>` — entidad directa con `nombreArchivo` (ruta de disco interno) |
+| **RabbitMQ** | No aplica |
+| **Acción front** | Sin cambio — sigue funcionando |
+
+**Request:**
+```
+GET /mis-productos/presentacion/imagenes?tipo=LOGIN
+```
+
+**Response 200:**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": [
+    {
+      "id": 1,
+      "tipo": "LOGIN",
+      "orden": 1,
+      "nombreArchivo": "uuid_banner.jpg",
+      "extension": "jpg",
+      "nombreOriginal": "banner.jpg",
+      "descripcion": "Banner principal de login",
+      "activo": true,
+      "actualizadoEn": "2026-05-21T10:00:00"
+    }
+  ],
+  "lista": null
+}
+```
+
+**Flujo interno:**
+```
+Front → getImagenes()
+    └─► ImagenPresentacionService.getImagenesPorTipo()
+              └─► IImagenPresentacionRepository.findByTipoAndActivoOrderByOrden()
+                        └─► BD local → devuelve entidad con nombreArchivo (disco local)
+```
+
+---
+
+#### Versión nueva — `GET /presentacion/v2/imagenes?tipo=LOGIN` ✅ Usar esta
+
+| | |
+|---|---|
+| **Controlador** | `ImagenPresentacionController` — `getImagenesV2()` |
+| **Query param** | `tipo` (String: `LOGIN` \| `REGISTRO`) — mismo que antes |
+| **Response 200** | `ResponseGeneric<List<ImagenPresentacionDto>>` — DTO con `urlImagen` calculada |
+| **Response sin datos** | HTTP 200 con `data: []` (lista vacía) |
+| **Cache** | `@Cacheable("presentacion-imagenes")` por `tipo` |
+| **RabbitMQ** | **NO aplica** — lectura síncrona. TODO: cuando se implemente `PUT /presentacion/v2/imagenes/{id}`, publicar evento `cache.evict.presentacion` en `exchange.imagenes` para invalidar caché en todos los nodos |
+| **Acción front** | Cambiar URL a `/presentacion/v2/imagenes?tipo=...` y usar `urlImagen` del DTO para cargar la imagen |
+
+**Request:**
+```
+GET /mis-productos/presentacion/v2/imagenes?tipo=LOGIN
+```
+
+**Response 200:**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": [
+    {
+      "id": 1,
+      "tipo": "LOGIN",
+      "orden": 1,
+      "extension": "jpg",
+      "nombreOriginal": "banner.jpg",
+      "descripcion": "Banner principal de login",
+      "activo": true,
+      "actualizadoEn": "2026-05-21T10:00:00",
+      "urlImagen": "/presentacion/v2/imagenes/1/imagen"
+    }
+  ],
+  "lista": null
+}
+```
+
+**Diferencia clave con la versión anterior:**
+- Ya **no expone** `nombreArchivo` (ruta de disco interno)
+- Agrega `urlImagen` → apunta a `GET /presentacion/v2/imagenes/{id}/imagen` (bytes desde el micro)
+- La respuesta se cachea — menor carga en BD en producción
+
+**Flujo interno:**
+```
+Front → getImagenesV2()
+    └─► ImagenPresentacionService.getImagenesPorTipoV2()   ← @Cacheable("presentacion-imagenes")
+              └─► IImagenPresentacionRepository.findByTipoAndActivoOrderByOrden()
+                        └─► BD local → mapea a ImagenPresentacionDto con urlImagen calculada
+```
+
+---
+
+---
+
+### 10. Bytes de imagen de presentación por ID
+
+#### Versión anterior — `GET /presentacion/imagenes/{id}/imagen` ❌ Deprecated
+
+| | |
+|---|---|
+| **Controlador** | `ImagenPresentacionController` — `getImagen()` |
+| **Path param** | `id` (Integer) — ID de la `ImagenPresentacion` |
+| **Response 200** | `byte[]` con header `Content-Type: image/jpeg \| image/png \| ...` |
+| **Response error** | HTTP 500 si el archivo no existe en disco |
+| **RabbitMQ** | No aplica |
+| **Acción front** | Sin cambio — sigue funcionando |
+
+**Request:**
+```
+GET /mis-productos/presentacion/imagenes/1/imagen
+```
+
+**Response 200:**
+```
+Content-Type: image/jpeg   (o image/png, image/gif)
+Body: <bytes binarios — usar directamente como src de <img> o blob>
+```
+
+**Response 500:** archivo no encontrado en disco.
+
+---
+
+#### Versión nueva — `GET /presentacion/v2/imagenes/{id}/imagen` ✅ Usar esta
+
+| | |
+|---|---|
+| **Path param** | `id` (Integer) — mismo que antes |
+| **Acción front** | Si ya usas `GET /presentacion/v2/imagenes?tipo=...`, el campo `urlImagen` de cada item ya apunta a esta URL — sin cambio adicional. Solo actualizar si tenías la URL hardcodeada. |
+
+**Request:**
+```
+GET /mis-productos/presentacion/v2/imagenes/1/imagen
+```
+
+**Response 200:**
+```
+Content-Type: image/jpeg   (o image/png, image/gif según la imagen)
+Body: <bytes binarios — usar directamente como src de <img> o blob>
+```
+
+**Response 204:** sin body — imagen no encontrada (ya no explota con 500).
+
+**Diferencia clave:** igual que v1 pero devuelve **204** en vez de **500** cuando no existe el archivo.
+
+---
+
+---
+
+### 11. Listar todas las imágenes de presentación (ADMIN)
+
+#### Versión anterior — `GET /presentacion/imagenes/todas` ❌ Deprecated
+
+**Request:**
+```
+GET /mis-productos/presentacion/imagenes/todas
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "tipo": "LOGIN",
+      "orden": 1,
+      "nombreArchivo": "uuid_banner.jpg",
+      "extension": "jpg",
+      "nombreOriginal": "banner.jpg",
+      "descripcion": "Banner principal",
+      "activo": true,
+      "actualizadoEn": "2026-05-21T10:00:00"
+    }
+  ]
+}
+```
+
+---
+
+#### Versión nueva — `GET /presentacion/v2/imagenes/todas` ✅ Usar esta
+
+**Request:**
+```
+GET /mis-productos/presentacion/v2/imagenes/todas
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "tipo": "LOGIN",
+      "orden": 1,
+      "extension": "jpg",
+      "nombreOriginal": "banner.jpg",
+      "descripcion": "Banner principal",
+      "activo": true,
+      "actualizadoEn": "2026-05-21T10:00:00",
+      "urlImagen": "/presentacion/v2/imagenes/1/imagen"
+    }
+  ]
+}
+```
+
+**Diferencia clave:** ya no expone `nombreArchivo` (ruta interna del servidor). Usar `urlImagen` para mostrar la imagen.
+
+---
+
+### 12. Actualizar imagen de presentación (ADMIN)
+
+#### Versión anterior — `PUT /presentacion/imagenes/{id}` ❌ Deprecated
+
+**Request:**
+```
+PUT /mis-productos/presentacion/imagenes/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "base64": "<bytes[]>",
+  "extension": "jpg",
+  "nombreImagen": "banner.jpg",
+  "descripcion": "Banner principal",
+  "activo": true
+}
+```
+
+> `base64` es opcional — si no se envía, solo se actualizan `descripcion` y `activo`.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": 1,
+    "tipo": "LOGIN",
+    "orden": 1,
+    "nombreArchivo": "uuid_banner.jpg",
+    "extension": "jpg",
+    "nombreOriginal": "banner.jpg",
+    "descripcion": "Banner principal",
+    "activo": true,
+    "actualizadoEn": "2026-05-21T10:00:00"
+  }
+}
+```
+
+---
+
+#### Versión nueva — `PUT /presentacion/v2/imagenes/{id}` ✅ Usar esta
+
+**Request:** igual que v1 — mismo body, mismo token ADMIN.
+
+```
+PUT /mis-productos/presentacion/v2/imagenes/1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "base64": "<bytes[]>",
+  "extension": "jpg",
+  "nombreImagen": "banner.jpg",
+  "descripcion": "Banner principal",
+  "activo": true
+}
+```
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": 1,
+    "tipo": "LOGIN",
+    "orden": 1,
+    "extension": "jpg",
+    "nombreOriginal": "banner.jpg",
+    "descripcion": "Banner principal",
+    "activo": true,
+    "actualizadoEn": "2026-05-21T10:00:00",
+    "urlImagen": "/presentacion/v2/imagenes/1/imagen"
+  }
+}
+```
+
+**Diferencia clave:**
+- Ya no devuelve `nombreArchivo` (ruta interna del servidor)
+- **Invalida automáticamente el caché** `presentacion-imagenes` — el próximo `GET /presentacion/v2/imagenes?tipo=...` devuelve datos frescos
+- RabbitMQ: TODO para invalidar caché en multi-nodo (por ahora se invalida solo el nodo que recibe el PUT)
+
+---
+
+### 13. Imágenes de una variante por ID
+
+#### Versión anterior — `GET /variantes/imagenes/{varianteId}` ❌ Deprecated
+
+**Request:**
+```
+GET /mis-productos/variantes/imagenes/5
+```
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "extension": "jpg",
+      "nombreImagen": "foto.jpg",
+      "urlImagen": "http://micro-imagenes/imagenes/123",
+      "principal": true
+    }
+  ]
+}
+```
+
+> Puede devolver `urlImagen` con URLs rotas si el archivo ya no existe en el micro.
+
+---
+
+#### Versión nueva — `GET /variantes/v2/imagenes/{varianteId}` ✅ Usar esta
+
+**Request:**
+```
+GET /mis-productos/variantes/v2/imagenes/5
+```
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "extension": "jpg",
+      "nombreImagen": "foto.jpg",
+      "urlImagen": "http://micro-imagenes/imagenes/123",
+      "principal": true
+    }
+  ]
+}
+```
+
+**Response 200 sin imágenes:** `{ "data": [] }`
+
+**Diferencia clave:** antes de responder verifica en el micro cuáles archivos existen — solo devuelve imágenes con archivo real. Nunca devuelve URLs rotas.
+
+---
+
+### 14. Eliminar todas las imágenes de varias variantes (ADMIN)
+
+| | `DELETE /variantes/imagenes` ❌ Deprecated | `DELETE /variantes/v2/imagenes` ✅ Usar esta |
+|---|---|---|
+| **Auth** | Bearer token ADMIN | igual |
+| **Body** | `[varianteId1, varianteId2, ...]` (Integer[]) | igual |
+| **Response 200** | `{ "data": "Imágenes eliminadas correctamente" }` | igual |
+| **Diferencia** | misma lógica | misma lógica — solo cambia la URL |
+
+**Request:**
+```
+DELETE /mis-productos/variantes/v2/imagenes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+[1, 2, 3]
+```
+
+**Response 200:**
+```json
+{ "data": "Imágenes eliminadas correctamente" }
+```
+
+---
+
+### 15. Eliminar imágenes específicas de una variante (ADMIN)
+
+| | `DELETE /variantes/{varianteId}/imagenes` ❌ Deprecated | `DELETE /variantes/v2/{varianteId}/imagenes` ✅ Usar esta |
+|---|---|---|
+| **Auth** | Bearer token ADMIN | igual |
+| **Path param** | `varianteId` (Integer) | igual |
+| **Body** | `[imagenId1, imagenId2, ...]` (Long[]) | igual |
+| **Response 200** | `{ "data": "Imágenes eliminadas correctamente" }` | igual |
+| **Diferencia** | misma lógica | misma lógica — solo cambia la URL |
+
+**Request:**
+```
+DELETE /mis-productos/variantes/v2/5/imagenes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+[123, 456]
+```
+
+**Response 200:**
+```json
+{ "data": "Imágenes eliminadas correctamente" }
+```
+
+> Ambos DELETEs ya eliminaban de BD local **y** del micro en la versión anterior. El cambio es solo la URL.
+
+## PENDIENTES DE MIGRAR
+
+---
+
+## CAMBIOS ADICIONALES EN MICRO_IMAGENES
+
+---
+
+### 16. Listar imágenes de un producto — ahora paginado
+
+**Endpoint:** `GET /producto-imagen/listar/{productoId}` — **micro_imagenes (9096)**
+
+> Este endpoint ya se documentó en el punto 4. Ahora se le agregó paginación.
+
+**Request:**
+```
+GET http://localhost:9096/mis-productos/producto-imagen/listar/265?pagina=1&size=8
+Authorization: Bearer <token>
+```
+
+| Param | Tipo | Obligatorio | Default | Descripción |
+|---|---|---|---|---|
+| `pagina` | Integer | No | `1` | Número de página (empieza en 1) |
+| `size` | Integer | No | `8` | Imágenes por página |
+
+**Response 200:**
+```json
+{
+  "productoId": 265,
+  "listaImagenes": [
+    {
+      "id": 123,
+      "extension": "image/jpeg",
+      "nombreImagen": "foto.jpg",
+      "urlImagen": "http://localhost:9096/mis-productos/imagenes/file/123",
+      "principal": true
+    }
+  ],
+  "pagina": 1,
+  "totalPaginas": 3,
+  "totalImagenes": 20
+}
+```
+
+**Cómo navegar páginas desde el front:**
+```
+Primera página:   GET .../listar/265?pagina=1&size=8
+Segunda página:   GET .../listar/265?pagina=2&size=8
+Última página:    GET .../listar/265?pagina={totalPaginas}&size=8
+```
+
+**Diferencia clave:** antes devolvía todas las imágenes sin límite. Ahora devuelve 8 por página. Usar `totalPaginas` para renderizar los botones de paginación. Si no se mandan params, devuelve la primera página con 8 imágenes.
+
+---
+
+### 17. DetalleProductoComponent — imágenes del producto con URL en lugar de bytes
+
+#### Versión anterior — `GET /imagen/{productoId}/detalle` ❌ Deprecated (proyecto-key 9091)
+
+Devolvía bytes embebidos en el response (pesado, lento).
+
+**Request:**
+```
+GET http://localhost:9091/mis-productos/imagen/265/detalle?size=4&page=0
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{
+  "list": [
+    {
+      "idProducto": 265,
+      "idImagen": 123,
+      "name": "prod",
+      "price": 1.0,
+      "inventoryStatus": "INSTOCK",
+      "extencion": "jpg",
+      "image": "/9j/4AAQSkZJRgAB..."
+    }
+  ],
+  "totalPaginas": 3
+}
+```
+
+---
+
+#### Versión nueva — `GET /producto-imagen/listar/{productoId}` ✅ Usar esta — **micro_imagenes (9096)**
+
+Devuelve URLs — el front carga cada imagen con `<img [src]="imagen.urlImagen">`.
+
+**Request:**
+```
+GET http://localhost:9096/mis-productos/producto-imagen/listar/265?pagina=1&size=8
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{
+  "productoId": 265,
+  "listaImagenes": [
+    {
+      "id": "3855830153700593542",
+      "extension": "image/jpeg",
+      "nombreImagen": "foto.jpg",
+      "urlImagen": "http://localhost:9096/mis-productos/imagenes/file/3855830153700593542",
+      "principal": true
+    },
+    {
+      "id": "7565125362907238017",
+      "extension": "image/jpeg",
+      "nombreImagen": "foto2.jpg",
+      "urlImagen": "http://localhost:9096/mis-productos/imagenes/file/7565125362907238017",
+      "principal": false
+    }
+  ],
+  "pagina": 1,
+  "totalPaginas": 2,
+  "totalImagenes": 10
+}
+```
+
+**Cómo mostrar cada imagen en el front:**
+```html
+<img [src]="imagen.urlImagen" />
+```
+
+**Cómo navegar páginas:**
+```
+GET .../listar/265?pagina=1&size=8   ← primera página
+GET .../listar/265?pagina=2&size=8   ← siguiente página
+```
+
+**Diferencia clave:**
+- Ya no vienen bytes embebidos (`image: "base64..."`) — el front usa `urlImagen` directamente
+- El campo `id` es **string** (no number) — JS no puede representar estos IDs como Number sin perder precisión
+- `principal: true` indica cuál es la imagen principal del producto
+
+---
+
+### 18. DetalleProductoComponent — eliminar imágenes
+
+#### Versión anterior — `DELETE /imagen/{productoId}/imagenes` ❌ Deprecated (proyecto-key 9091)
+
+**Request:**
+```
+DELETE http://localhost:9091/mis-productos/imagen/265/imagenes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+["3855830153700593542", "7565125362907238017"]
+```
+
+**Response 200:**
+```json
+{ "data": "Imágenes eliminadas correctamente" }
+```
+
+---
+
+#### Versión nueva — `DELETE /imagen/v2/{productoId}/imagenes` ✅ Usar esta (proyecto-key 9091)
+
+**Request:**
+```
+DELETE http://localhost:9091/mis-productos/imagen/v2/265/imagenes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+["3855830153700593542", "7565125362907238017"]
+```
+
+**Response 200:**
+```json
+{ "data": "Imágenes eliminadas correctamente" }
+```
+
+**Diferencia clave:** verifica si la imagen es compartida con otras variantes antes de borrarla del disco — si la comparte, solo borra la relación del producto sin borrar el archivo.
+
+> **Nota:** los IDs se mandan como strings (igual que vienen del `listar`).
+
+---
+
+---
+
+## RESUMEN POR COMPONENTE
+
+> Referencia rápida para el equipo de front — qué endpoint usa cada componente.
+
+---
+
+### UpdateComponent (editar producto)
+
+| Acción | Método | URL | Body / Params |
 |---|---|---|---|
-| `GET` | `/palabras-clave/buscar?nombre=&pagina=&size=` | `PalabraClaveService.buscar()` | Autocomplete mientras el admin escribe |
-| `GET` | `/palabras-clave/getAll?page=&size=` | `PalabraClaveService.getAll()` | Cargar lista completa en la pantalla CRUD |
-| `GET` | `/palabras-clave/getOne/{id}` | `PalabraClaveService.getOne()` | Obtener una por ID |
-| `POST` | `/palabras-clave/save` | `PalabraClaveService.save()` | Crear nueva palabra clave |
-| `PUT` | `/palabras-clave/update/{id}` | `PalabraClaveService.update()` | Editar nombre |
-| `DELETE` | `/palabras-clave/delete` body: `id` | `PalabraClaveService.delete()` | Eliminar del catálogo |
-| `POST` | `/productos/save` | `add.component.ts guardar()` | Ahora incluye `palabraClaveId` en el body |
-| `PUT` | `/productos/update` | `add.component.ts guardar()` | Ahora incluye `palabraClaveId` en el body |
-| `POST` | `/variantes/guardarConImagenes` | `update-variante.component.ts actualizar()` y `agregar.component.ts guardar()` | Ahora incluye `palabraClaveId` por variante |
+| Listar imágenes del producto | GET | `http://localhost:9096/mis-productos/producto-imagen/listar/{productoId}?pagina=1&size=8` | — |
+| Ver bytes de una imagen | GET | `http://localhost:9096/mis-productos/imagenes/file/{imagenId}` | — |
+| Eliminar una imagen | DELETE | `http://localhost:9096/mis-productos/producto-imagen/{imagenId}` | — |
+| Marcar imagen como principal | PUT | `http://localhost:9096/mis-productos/producto-imagen/{id}/principal` | — |
+
+> `imagenId` viene del campo `id` (string) del response de `listar`.
 
 ---
 
-## 2. Imágenes de productos — cambio a URL
+### DetalleProductoComponent (detalle y carrusel del producto)
 
-### Qué se hizo
-El backend dejó de devolver bytes (`imagen: string` en base64 en el JSON del listado).
-Ahora devuelve solo la URL al microservicio de imágenes (`urlImagen`).
-El frontend la consume vía `HttpClient` (con JWT) para que el interceptor agregue el token.
-
-### Archivos nuevos
-| Archivo | Descripción |
-|---|---|
-| `src/app/productos/producto/pipes/imagen-src.pipe.ts` | Pipe `imagenSrc` — llama al endpoint de imagen con JWT y devuelve `data:image/...;base64,...` |
-| `src/app/shared/shared.module.ts` | Declara y exporta el pipe (compartido con variantes) |
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/productos/producto/models/producto.model.dto.ts` | `+urlImagen?` en `Imagen`, `imagen` → opcional, quitó `listImgs` |
-| `src/app/productos/producto/all/all.component.ts` | Eliminó método `imageSrc()` que construía base64 manual |
-| `src/app/productos/producto/all/all.component.html` | `<img>` ahora usa `item.imagen?.urlImagen | imagenSrc | async` |
-| `src/app/productos/producto/producto.module.ts` | Importa/exporta `SharedModule` en vez del pipe directo |
-
-### Endpoints que consume
-
-| Método | Endpoint | Usado en | Descripción |
+| Acción | Método | URL | Body / Params |
 |---|---|---|---|
-| `GET` | `/productos/buscarNombreOrCodigoBarra?size=&page=&nombre=` | `ProductoService.getDataNombreCodigoBarra()` | Listado de productos con `urlImagen` en el objeto `imagen` |
-| `GET` | `{urlImagen}` (ej. `http://microservicio/buscarImagenProducto/265`) | `ImagenSrcPipe.transform()` | Obtiene el JSON `{ imagen, contentType }` del microservicio. Responde con base64 |
+| Listar imágenes del producto | GET | `http://localhost:9096/mis-productos/producto-imagen/listar/{productoId}?pagina=1&size=8` | — |
+| Ver bytes de una imagen | GET | usar `urlImagen` del response de `listar` directamente en `<img [src]>` | — |
+| Eliminar imágenes seleccionadas (batch) | DELETE | `http://localhost:9091/mis-productos/imagen/v2/{productoId}/imagenes` | `["imagenId1", "imagenId2"]` |
 
 ---
 
-## 3. Imágenes de variantes — cambio a URL
+### LoginFormComponent / AddUsuariosComponent (imágenes de login/registro)
 
-### Qué se hizo
-Mismo cambio que productos. `imagenBase64` en `IVarianteResumen` ahora viene `null`.
-El backend agrega el campo nuevo `imagenUrl` con la URL al microservicio.
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/variante/models/variante.model.ts` | `+imagenUrl?` en `IVarianteResumen` |
-| `src/app/variante/models/detalle-variante.model.ts` | `+imagenUrl?` en `IDetalleVariante` |
-| `src/app/variante/service/carrito-variante.service.ts` | Propaga `imagenUrl` al agregar al carrito |
-| `src/app/variante/buscar/buscar.component.ts` | Eliminó método `imageSrc()` |
-| `src/app/variante/buscar/buscar.component.html` | `<img>` usa `v.imagenUrl | imagenSrc | async` |
-| `src/app/variante/venta-variante/venta-variante.component.ts` | `verImagen()` usa `imagenUrl` |
-| `src/app/variante/venta-variante/venta-variante.component.html` | Botón y visor usan `imagenUrl | imagenSrc | async` |
-| `src/app/variante/venta-directa/venta-directa.component.ts` | `verImagen()` simplificado a URL directa |
-| `src/app/variante/venta-directa/venta-directa.component.html` | Resultados y líneas usan `imagenUrl | imagenSrc | async` |
-| `src/app/variante/agregar.module.ts` | Importa `SharedModule` para acceder al pipe |
-
-### Endpoints que consume
-
-| Método | Endpoint | Usado en | Descripción |
+| Acción | Método | URL | Body / Params |
 |---|---|---|---|
-| `GET` | `/variantes/buscar?termino=&pagina=&size=` | `VarianteService.buscar()` | Devuelve `imagenUrl` por variante |
-| `GET` | `{imagenUrl}` (ej. `http://microservicio/imagenes?ids=12345`) | `ImagenSrcPipe.transform()` | Obtiene el array `[{ imagen, contentType }]`. Responde con base64 del primer elemento |
+| Listar imágenes por tipo | GET | `http://localhost:9091/mis-productos/presentacion/v2/imagenes?tipo=LOGIN` | — |
+| Ver bytes de una imagen | GET | usar `urlImagen` del response directamente en `<img [src]>` | — |
 
 ---
 
-## 4. Modal cliente sin registro — venta directa
+### PresentacionImagenesComponent (admin — imágenes de presentación)
 
-### Qué se hizo
-Rediseño del modal `modalClienteSinRegistro` en la pantalla de venta directa.
-Nuevo diseño con header degradado, grid de 2 columnas, mismo estilo que el resto de la app.
-Cuando se guarda, aparece un chip similar al del cliente registrado.
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/variante/venta-directa/venta-directa.component.html` | Modal rediseñado, chip de cliente sin registro, botón "o" entre buscador y modal |
-| `src/app/variante/venta-directa/venta-directa.component.scss` | Clases `.vd-modal-*`, `.vd-client-chip--sinreg`, `.vd-client-divider`, `.vd-btn-sinreg` |
-| `src/app/variante/venta-directa/venta-directa.component.ts` | `obtenerDatosClienteSinRegistro()` corregido, `limpiarClienteSinRegistro()` agregado |
-
-### Endpoints que consume
-| Método | Endpoint | Usado en | Descripción |
+| Acción | Método | URL | Body / Params |
 |---|---|---|---|
-| `POST` | `/variantes/saveVentaDirecta` (o equivalente) | `cobrar()` | El body ya incluía `clienteSinRegistroDto` con los datos del modal |
+| Listar todas (activas e inactivas) | GET | `http://localhost:9091/mis-productos/presentacion/v2/imagenes/todas` | Bearer token ADMIN |
+| Actualizar imagen/descripción | PUT | `http://localhost:9091/mis-productos/presentacion/v2/imagenes/{id}` | `{ base64, extension, nombreImagen, descripcion, activo }` |
 
 ---
 
-## 5. Cancelar pedido — selector de motivo
+### DetalleVarianteComponent / UpdateVarianteComponent (imágenes de variante)
 
-### Qué se hizo
-Al cancelar un pedido, ahora aparece un selector de radio con el motivo.
-El motivo se manda como query param al endpoint.
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/pedidos/pedidos.service.ts` | Nuevo método `cancelarConMotivo(id, motivo)` |
-| `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` | `cancelarPedido()` muestra radio con opciones antes de confirmar |
-
-### Endpoints que consume
-| Método | Endpoint | Usado en | Descripción |
+| Acción | Método | URL | Body / Params |
 |---|---|---|---|
-| `DELETE` | `/pedidos/delete/{id}?motivo=NO_SE_PRESENTO` | `PedidosService.cancelarConMotivo()` | Motivos posibles: `NO_SE_PRESENTO`, `CLIENTE_AVISO`. Default backend: `NO_SE_PRESENTO` |
+| Listar imágenes de variante | GET | `http://localhost:9091/mis-productos/variantes/v2/imagenes/{varianteId}` | — |
+| Eliminar imágenes específicas | DELETE | `http://localhost:9091/mis-productos/variantes/v2/{varianteId}/imagenes` | `[imagenId1, imagenId2]` |
+| Marcar imagen como principal | PUT | `http://localhost:9091/mis-productos/variantes/imagenes/{imagenId}/principal` | — |
 
 ---
 
-## 6. Importar clientes a la rifa — campo `mes` y `sinRegistro`
+## GLOSARIO
 
-### Qué se hizo
-El request de importar clientes ahora incluye el campo `mes` (requerido para calcular boletos).
-`IClientePedido` ahora tiene `sinRegistro: boolean` que viene en el response de `clientesPorMes`.
-`IConcursante` tiene `boletosBase` y `boletos` — se muestra `boletosBase` en la tabla.
+- **@Deprecated**: el endpoint original, sin tocar, sigue funcionando
+- **v2**: el endpoint nuevo que delega al microservicio de imágenes
+- **204 No Content**: no hay imagen disponible, no es un error
+- **RabbitMQ — No aplica**: lectura síncrona, no hay eventos
+- **RabbitMQ — TODO**: hay una oportunidad de usar Rabbit aquí pero aún no está implementado
+## CAMBIOS DE BACKEND — 2026-05-22 — Acciones requeridas en el front
 
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/rifas/models/concursante.model.ts` | `+sinRegistro` en `IClientePedido`, `+mes` en request, `+boletosBase`, `+boletos` en `IConcursante` |
-| `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` | `importarClientes()` incluye `mes: this.mesSeleccionado` |
-| `src/app/rifas/agregar-rifa/agregar-rifa.component.html` | Columna Boletos en tabla de participantes (muestra `boletosBase`) |
-| `src/app/rifas/rifa-mes/rifa-mes.component.ts` | `crearRifaEImportar()` incluye `mes` en el request |
-
-### Endpoints que consume
-| Método | Endpoint | Usado en | Descripción |
-|---|---|---|---|
-| `GET` | `/concursante/clientesPorMes?mes=` | `RifaService.getClientesPorMes()` | Ahora el response incluye `sinRegistro: boolean` por cliente |
-| `POST` | `/concursante/importarDePedidos` | `RifaService.importarDePedidos()` | Body ahora incluye `mes: "2026-05"` y `sinRegistro` por cliente |
+> Estos cambios ya están aplicados en el backend (rama `dev`). El front debe actualizar los componentes indicados.
 
 ---
 
-## 7. Token interceptor — fix de requests colgados
+### CAMBIO A — Listado de variantes: `imagenUrl` ahora siempre viene poblada
 
-### Qué se hizo
-Cuando el refresh del token fallaba, los requests en cola esperaban indefinidamente.
-Se agregó el sentinel `REFRESH_FAILED` para notificarles y que lancen error al componente.
+**Endpoint afectado:** `GET /mis-productos/variantes/buscar?termino=&pagina=1&size=10`
 
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/token/TokenInterceptor .ts` | `handleRefresh()`: emite `REFRESH_FAILED` al BehaviorSubject cuando el refresh falla. Los requests en cola lo detectan y lanzan `HttpErrorResponse 401` |
+**Qué cambió en el back:**
+Antes el back verificaba contra el microservicio de imágenes si el archivo existía en disco antes de incluir la URL. Si esa verificación fallaba (error de red, micro lento) la `imagenUrl` llegaba `null` aunque la variante tuviera imagen. Ahora el back asigna la URL directamente desde la base de datos, sin verificación extra.
 
-### Endpoints que consume
-| Método | Endpoint | Usado en | Descripción |
-|---|---|---|---|
-| `POST` | `/auth/refresh` | `TokenInterceptor.handleRefresh()` | Renueva el access token usando el refresh token en cookie |
+**Comportamiento nuevo:**
+- Si la variante tiene imágenes → `imagenUrl` siempre viene con valor
+- Si la variante NO tiene ninguna imagen asignada → `imagenUrl` es `null`
+- Si el archivo ya no existe en disco → el micro devuelve `204 No Content` al hacer `GET imagenes/file/{id}` (el `<img>` no muestra nada, no explota)
+- La imagen seleccionada es la marcada como **principal**; si ninguna lo es, la de **id más bajo**
 
----
+**Response (no cambia la estructura, cambia el valor):**
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 3,
+    "totalRegistros": 25,
+    "t": [
+      {
+        "id": 5,
+        "talla": "M",
+        "descripcion": "Pantalón slim",
+        "color": "Azul",
+        "stock": 10,
+        "marca": "Marca X",
+        "imagenBase64": null,
+        "imagenUrl": "http://localhost:9096/mis-productos/imagenes/file/7305237692097776164",
+        "precio": 99.99,
+        "codigoBarras": "1234567890",
+        "nombreProducto": "Jeans Slim"
+      }
+    ]
+  }
+}
+```
 
-## 8. Compartir imágenes (solo admin)
+**Acción requerida en el front:**
+```html
+<!-- Antes: el front no mostraba nada porque imagenUrl llegaba null -->
+<!-- Ahora: usar directo como src -->
+<img [src]="variante.imagenUrl" *ngIf="variante.imagenUrl" />
+```
 
-### Qué se hizo
-Botón `📤 Imagen` visible solo para admin en las tarjetas de producto y variante.
-Comparte solo la imagen (sin URL de la tienda para no exponer datos de admin).
-- **Móvil**: Web Share API con el archivo de imagen
-- **Desktop**: muestra la imagen en un Swal, admin copia/comparte
+- **No usar** `imagenBase64` — siempre es `null`
+- **No filtrar** por `principal` — el back ya eligió la imagen correcta
+- La lista de variantes está en `response.data.t` (no `data.content` ni `data.items`)
 
-### Archivos nuevos
-| Archivo | Descripción |
-|---|---|
-| `src/app/shared/compartir.service.ts` | Servicio de compartir: fetch imagen con JWT → Web Share API (móvil) o Swal con preview (desktop) |
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/variante/buscar/buscar.component.ts` | `compartirImagen(v)` — solo admin, solo imagen |
-| `src/app/variante/buscar/buscar.component.html` | Botón `📤 Imagen` con `*ngIf="isAdminUser && v.imagenUrl"` |
-| `src/app/productos/producto/all/all.component.ts` | `compartirImagen(item)` — mismo patrón |
-| `src/app/productos/producto/all/all.component.html` | Botón `📤 Imagen` con `*ngIf="isAdminUser && item.imagen?.urlImagen"` |
-
-### Endpoints que consume
-| Método | Endpoint | Usado en | Descripción |
-|---|---|---|---|
-| `GET` | `{imagenUrl}` del producto/variante | `CompartirService.fetchBlob()` | Obtiene la imagen con JWT → la convierte a File para compartir |
-
----
-
-## 9. SEO básico
-
-### Qué se hizo
-Mejoras de SEO sin SSR: meta tags, Open Graph, sitemap y robots.txt.
-
-### Archivos modificados / creados
-| Archivo | Qué cambió |
-|---|---|
-| `src/index.html` | `lang="es"`, `<title>` descriptivo, `meta description/keywords`, Open Graph, Twitter Card, canonical |
-| `src/robots.txt` | Nuevo — permite indexación, apunta al sitemap |
-| `src/sitemap.xml` | Nuevo — rutas públicas del sitio |
-| `angular.json` | `robots.txt` y `sitemap.xml` agregados a assets |
-
-### Nota
-Sin SSR, Google puede indexar SPAs pero con más lentitud.
-Para previews en WhatsApp/Facebook se necesita SSR (`ng add @nguniversal/express-engine` para Angular 14).
+**Componentes que deben actualizarse:**
+- Cualquier componente que liste variantes con imagen (catálogo, búsqueda, etc.)
 
 ---
 
-## 10. Correcciones de caché en listas
+### CAMBIO B — Listado de productos: `urlImagen` ahora apunta directo a los bytes
 
-### Qué se hizo
-Las listas no refrescaban después de actualizar producto o variante.
+**Endpoints afectados:**
+- `GET /mis-productos/productos/obtenerProductos?page=1&size=10`
+- `GET /mis-productos/productos/buscarNombreOrCodigoBarra?nombre=...&page=1&size=10`
 
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/productos/producto/add/add.component.ts` | Agrega `invalidarProdCache()` y mueve `navigate` dentro del `.then()` del Swal |
-| `src/app/productos/producto/busca/busca.component.ts` | `ngOnInit` ahora carga la lista inicial (antes estaba vacío). `buscarPorNombreCodigoPostal` llama `setProdCache` |
-| `src/app/variante/update-variante/update-variante.component.ts` | `next: (res)` usa la respuesta para actualizar el caché local antes de invalidar |
+**Qué cambió en el back:**
+Antes `producto.imagen.urlImagen` apuntaba a `buscarImagenProducto/{productoId}` que devuelve un **JSON** (no bytes). El front tenía que llamar ese endpoint, extraer el `id` del JSON y luego llamar `/imagenes/file/{id}` para obtener los bytes.
 
-### Endpoints que consume
-Los mismos de buscar — no cambian. Solo cambia cuándo se invalida el caché local del servicio.
+Ahora `producto.imagen.urlImagen` apunta directamente a `/imagenes/file/{imagenId}` — **devuelve bytes**, se puede usar directo como `src` del `<img>`.
+
+**Valor anterior de `urlImagen`:**
+```
+http://localhost:9096/mis-productos/producto-imagen/buscarImagenProducto/265
+→ devolvía JSON: { id, imagen (base64), urlImagen (filename), contentType }
+```
+
+**Valor nuevo de `urlImagen`:**
+```
+http://localhost:9096/mis-productos/imagenes/file/7305237692097776164
+→ devuelve bytes directos (Content-Type: image/jpeg)
+```
+
+**Response de `obtenerProductos` (estructura no cambia, cambia el valor de `urlImagen`):**
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 5,
+    "totalRegistros": 48,
+    "t": [
+      {
+        "idProducto": 265,
+        "nombre": "Great Jeans",
+        "color": "Azul",
+        "precioVenta": 150.0,
+        "descripcion": "...",
+        "codigoBarras": "...",
+        "stock": 10,
+        "imagen": {
+          "urlImagen": "http://localhost:9096/mis-productos/imagenes/file/7305237692097776164"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Acción requerida en el front:**
+```html
+<!-- Antes: llamar buscarImagenProducto, extraer id, luego llamar /imagenes/file/{id} -->
+<!-- Ahora: usar directo -->
+<img [src]="producto.imagen?.urlImagen" *ngIf="producto.imagen?.urlImagen" />
+```
+
+- Si el producto **no tiene imagen asignada** → `imagen.urlImagen` es `null` (o `imagen` puede ser un objeto con `urlImagen: null`)
+- Si el archivo no existe en disco → micro devuelve `204`, el `<img>` no muestra nada
+- **Eliminar** toda lógica que llame `buscarImagenProducto` para obtener la imagen del listado
+
+**Componentes que deben actualizarse:**
+- Componente de listado/catálogo de productos
+- Componente de búsqueda de productos
+- Cualquier componente que use `obtenerProductos` o `buscarNombreOrCodigoBarra` y muestre imagen
 
 ---
 
-## 11. Reorganización del menú (navbar)
+### Resumen de acciones — tabla rápida
 
-### Qué se hizo
-Menú reorganizado con lógica clara: público vs admin.
-
-| Antes | Después |
+| Componente | Qué cambiar |
 |---|---|
-| "Usuarios" standalone | Dentro de 🛠️ Admin |
-| "QR" standalone dentro de Admin | Link público visible para todos |
-| "Catalogos 🧩" mezclaba todo | Separado en "🛍️ Productos" (público) y "📦 Mis productos" (admin) |
-| Sin palabras clave | 🏷️ Palabras clave en "📦 Mis productos" (admin) |
-| Venta directa en Catálogos | Dentro de 💰 Ventas |
-
-### Archivos modificados
-| Archivo | Qué cambió |
-|---|---|
-| `src/app/navbar/navbar.component.html` | Estructura completa reorganizada |
+| Listado/catálogo de variantes | Usar `variante.imagenUrl` directo en `<img [src]>`. No filtrar por principal. |
+| Listado/catálogo de productos | Usar `producto.imagen.urlImagen` directo en `<img [src]>`. Eliminar la llamada intermedia a `buscarImagenProducto`. |
+| Búsqueda de productos (`buscarNombreOrCodigoBarra`) | Igual que listado de productos — misma estructura de response. |
 
 ---
 
-## 12. Fix carpetas `dist` fantasma dentro de `src/`
+### Lo que NO cambia
 
-### Causa
-Alguien ejecutó `tsc` directamente desde subdirectorios en vez de usar `ng serve`/`ng build`.
-Como `tsconfig.json` tiene `"outDir": "./dist"`, se crearon carpetas `dist/` anidadas en cada componente.
-
-### Solución aplicada
-- Se eliminaron todas las carpetas `dist/` dentro de `src/` con PowerShell
-- El `.gitignore` ya tenía `**/dist/` — no se subirán a git
-
-### Regla
-**Nunca correr `tsc` directo.** Siempre usar `ng serve` o `ng build`.
+- Endpoints de detalle de imágenes de variante: `GET /variantes/v2/imagenes/{varianteId}` — sin cambios
+- Endpoints de imágenes de producto en detalle: `GET /producto-imagen/listar/{productoId}` — sin cambios
+- Endpoints de eliminación y marcado de principal — sin cambios
+- Estructura general del response (`data.t`, `data.pagina`, etc.) — sin cambios

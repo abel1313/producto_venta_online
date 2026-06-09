@@ -59,14 +59,14 @@ $radius:    18px;
   background: linear-gradient(135deg, $primary, $primary-d);
   border: none;
   cursor: pointer;
-  box-shadow: 0 8px 28px rgba(139,26,74,0.55);
+  box-shadow: 0 8px 28px rgba(99,102,241,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10001;
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  &:hover { transform: scale(1.1); box-shadow: 0 12px 36px rgba(139,26,74,0.65); }
+  &:hover { transform: scale(1.1); box-shadow: 0 12px 36px rgba(99,102,241,0.65); }
 
   &--open { background: linear-gradient(135deg, #374151, #1f2937); }
 
@@ -82,9 +82,9 @@ $radius:    18px;
   right: 24px;
   width: 370px;
   height: 530px;
-  background: #f9fafb;
+  background: var(--card-bg);
   border-radius: $radius;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+  box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -112,7 +112,7 @@ $radius:    18px;
 
 // ── Header ─────────────────────────────────────────────────────────
 .cb-header {
-  background: linear-gradient(135deg, #5c0f31 0%, $primary 55%, $primary-d 100%);
+  background: var(--header-brand);
   padding: 16px 18px;
   display: flex;
   align-items: center;
@@ -194,13 +194,14 @@ $radius:    18px;
   flex: 1;
   overflow-y: auto;
   padding: 16px 14px;
+  background: var(--card-bg);
   display: flex;
   flex-direction: column;
   gap: 10px;
   scroll-behavior: smooth;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(139,26,74,0.25); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 4px; }
 }
 
 .cb-row {
@@ -240,18 +241,18 @@ $radius:    18px;
   }
 
   &--bot {
-    background: white;
-    color: #1f2937;
+    background: var(--form-section-bg);
+    color: var(--card-text);
     border-bottom-left-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--card-border);
   }
 
   &--typing {
-    background: white;
+    background: var(--form-section-bg);
     border-bottom-left-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--card-border);
     padding: 12px 16px;
   }
 
@@ -299,24 +300,25 @@ $radius:    18px;
   align-items: flex-end;
   gap: 8px;
   padding: 10px 14px 14px;
-  background: white;
-  border-top: 1px solid #f3f4f6;
+  background: var(--form-bg);
+  border-top: 1px solid var(--card-border);
   flex-shrink: 0;
   transition: background 0.25s;
 
   &--blocked {
-    background: #fffbeb;
-    border-top-color: #fde68a;
+    background: rgba(251,191,36,0.06);
+    border-top-color: rgba(251,191,36,0.2);
   }
 }
 
 .cb-input {
   flex: 1;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid var(--input-border);
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 0.88rem;
-  color: #1f2937;
+  color: var(--input-text);
+  background: var(--input-bg);
   resize: none;
   outline: none;
   line-height: 1.45;
@@ -324,11 +326,11 @@ $radius:    18px;
   transition: border-color 0.2s;
   font-family: inherit;
 
-  &::placeholder { color: #9ca3af; }
+  &::placeholder { color: var(--input-placeholder); }
 
-  &:focus { border-color: $primary-d; box-shadow: 0 0 0 3px rgba(194,37,92,0.12); }
+  &:focus { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
 
-  &:disabled { background: #f9fafb; cursor: not-allowed; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
 .cb-send {
@@ -345,8 +347,19 @@ $radius:    18px;
   font-size: 0.95rem;
   flex-shrink: 0;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(139,26,74,0.4);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.4);
 
-  &:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 6px 18px rgba(139,26,74,0.5); }
+  &:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 6px 18px rgba(99,102,241,0.5); }
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+}
+
+// ── FAB dark mode: índigo en vez de rosa ──────────
+:host-context(body.theme-dark) {
+  .cb-fab {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    box-shadow: 0 8px 28px rgba(99,102,241,0.5);
+    &:hover { box-shadow: 0 12px 36px rgba(99,102,241,0.65); }
+    &--open { background: linear-gradient(135deg, #374151, #1f2937); }
+  }
+  .cb-msgs { &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
 }

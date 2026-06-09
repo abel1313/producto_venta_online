@@ -20,7 +20,6 @@ export class DetalleVarianteComponent implements OnInit {
   productoId!: number;
   variantes: IVarianteDto[] = [];
   varianteSeleccionada: IVarianteDto | null = null;
-  cargando = true;
 
   displayImages: IVarianteImagenDto[] = [];
   private paginasCargadas = new Set<number>();
@@ -76,9 +75,8 @@ export class DetalleVarianteComponent implements OnInit {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
-        this.cargando = false;
       },
-      error: () => { this.cargando = false; }
+      error: () => {}
     });
   }
 
@@ -249,7 +247,7 @@ export class DetalleVarianteComponent implements OnInit {
       this.eliminando = true;
       const ids = Array.from(this.imagenesParaEliminar);
 
-      this.varianteService.eliminarImagenes(this.varianteSeleccionada!.id, ids).subscribe({
+      this.varianteService.eliminarImagenesV2(this.varianteSeleccionada!.id, ids).subscribe({
         next: () => {
           this.displayImages = this.displayImages.filter(img => !img.id || !this.imagenesParaEliminar.has(img.id));
           this.imagenesParaEliminar.clear();

@@ -171,68 +171,6 @@ Actualizar ese archivo cuando se agregue o conecte un endpoint nuevo.
 
 ---
 
-## CAMBIOS DE BACK — IMPACTO EN FRONT (2026-05-26)
-
-### CAMBIO C — Paginación limitada a máximo 10 registros por página
-
-**Endpoints afectados:**
-- `GET /mis-productos/productos/obtenerProductos?size=X&page=X`
-- `GET /mis-productos/productos/buscarNombreOrCodigoBarra?size=X&page=X&nombre=X`
-- `GET /mis-productos/variantes/buscar?size=X&pagina=X`
-- `GET /mis-productos/variantes/porProducto/{id}/paginado/resumen?size=X&pagina=X`
-- `GET /mis-productos/clientes/buscar?size=X&page=X&nombre=X`
-
-**Qué cambió:** el backend capea `size` en 10 automáticamente.
-
-**Estado front:** ✅ Corregido. `venta-directa.component.ts` tenía `size: 20` → cambiado a `size: 10`. El resto ya usaba `size=10`.
-
-**Cómo llegar (venta-directa):** Sidebar → Venta directa → campo de búsqueda de variante.
-
----
-
-### CAMBIO D — Validación de imágenes en uploads (400 Bad Request)
-
-**Endpoints afectados:**
-- `POST /mis-productos/variantes/guardarConImagenes`
-- `POST /mis-productos/variantes/inicializarDesdeProducto`
-
-**Reglas del back:** tamaño máximo 10 MB por imagen. Tipos permitidos: `image/jpeg`, `image/png`, `image/gif`, `image/webp`.
-
-**Response 400:** `{ "mensaje": "Archivo 'foto.bmp' supera 10 MB" }` o `{ "mensaje": "Tipo no permitido: image/bmp" }`
-
-**Estado front:** ✅ Corregido.
-- `agregar.component.ts`, `update-variante.component.ts`, `add.component.ts` (productos): agregado `image/webp` a `TIPOS_PERMITIDOS`. Si la imagen supera 10 MB, se comprime automáticamente con Canvas API (reduce dimensiones a máx 1920px y baja calidad JPEG desde 0.85 hasta 0.2 hasta caber). PNG se convierte a JPEG para poder comprimir. El usuario no recibe error — la imagen se sube reducida.
-- `all.component.ts` (inicializarDesdeProducto): corregido `err?.error?.message` → `err?.error?.mensaje ?? err?.error?.message`.
-- Los demás componentes (`agregar`, `update-variante`) ya leían `err?.error?.mensaje` correctamente.
-
-**Cómo llegar:**
-- Agregar variante: Sidebar → Variantes → Agregar → sección imágenes
-- Editar variante: Sidebar → Variantes → Buscar → Editar → sección imágenes
-- Agregar producto: Sidebar → Mis productos → Agregar → sección imágenes
-- Crear variantes desde producto: Sidebar → Mis productos → Ver todos → botón "Variantes" en una card
-
----
-
-### CAMBIO E — buscarClientePorIdUsuario requiere autenticación
-
-**Endpoint afectado:** `GET /mis-productos/usuarios/buscarClientePorIdUsuario/{idUsuario}`
-
-**Qué cambió:** era público, ahora requiere JWT. El usuario solo puede consultar su propio ID; otro ID devuelve 403.
-
-**Estado front:** ✅ Sin cambios necesarios. El `TokenInterceptor` ya agrega el Bearer token a todos los requests no-auth automáticamente.
-
-**Componentes que lo usan:**
-- `detalle-productos.component.ts` → `generarPedido()` — al generar pedido desde el catálogo
-- `venta-variante.component.ts` → al confirmar venta de variantes
-- `venta-directa.component.ts` → al ejecutar venta directa sin cliente seleccionado
-
-**Cómo llegar:**
-- Detalle productos: Sidebar → Catálogo → seleccionar producto → botón Generar Pedido
-- Venta variante: Sidebar → Variantes → Carrito → Confirmar
-- Venta directa: Sidebar → Venta directa → Confirmar venta
-
----
-
 ## SKILLS QUE SE USAN EN ESTE PROYECTO
 
 | Skill | Cuándo usarla |
@@ -439,10 +377,8 @@ Implementado con `:host-context(body.theme-dark)` y `:host-context(body.theme-li
 - **Categoría:** selector `app-palabra-clave-autocomplete` ya presente en el form
 
 ### BuscarComponent — Variantes → Buscar
-**Archivo:** `src/app/variante/buscar/buscar.component.html` + `.scss` + `.ts`
+**Archivo:** `src/app/variante/buscar/buscar.component.html` + `.scss`
 
-- **Fix buscador espacios (2026-06-03):** `onBuscar()` hacía `.trim()` antes de asignar a `terminoBusqueda` — esto eliminaba el espacio al final mientras el usuario escribía, impidiendo buscar con 2 palabras. Fix: se guarda el valor original en `terminoBusqueda` y solo se trimea para enviar al servicio.
-- **Fix imágenes (2026-06-03):** el `<img>` usaba `[src]="v.imagenUrl"` directo. Cambiado a `v.imagenUrl | imagenSrc | async` para hacer el fetch HTTP igual que los demás componentes de variantes.
 - **Botón compartir 📤** (2026-05-22): ya estaba en el template pero `vb-btn-card--share` sin estilos y footer con grid fijo de 4 columnas. Correcciones:
   - Footer cambiado a `display: flex` para adaptarse a cualquier número de botones
   - Agregado `&--share { color: #0891b2 }` en SCSS

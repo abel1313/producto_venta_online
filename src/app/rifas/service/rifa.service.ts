@@ -28,127 +28,127 @@ export class RifaService {
   // ── 1. Buscar variante ─────────────────────────────────────────────
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
-      `${this.url}/variantes/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+      `${this.url}/variantes/v1/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 
   // ── 2. Crear sesión de rifa ────────────────────────────────────────
   configurarRifa(data: { fechaHoraLimite: string; activa: boolean }): Observable<IConfigurarRifa> {
     return this.http.post<{ code: number; data: IConfigurarRifa }>(
-      `${this.url}/configurarRifa/save`, data
+      `${this.url}/v1/configurarRifa/save`, data
     ).pipe(map(r => r.data));
   }
 
   // ── 3. Agregar variante a la rifa ──────────────────────────────────
   guardarVarianteRifa(data: IConfigurarRifaVarianteRequest): Observable<IConfigurarRifaVariante> {
     return this.http.post<{ code: number; data: IConfigurarRifaVariante }>(
-      `${this.url}/configurarRifaVariante/save`, data
+      `${this.url}/v1/configurarRifaVariante/save`, data
     ).pipe(map(r => r.data));
   }
 
   // ── 4. Listar variantes de la rifa ─────────────────────────────────
   getVariantesRifa(rifaId: number): Observable<IConfigurarRifaVariante[]> {
     return this.http.get<{ code: number; data: IConfigurarRifaVariante[] }>(
-      `${this.url}/configurarRifaVariante/porRifa/${rifaId}`
+      `${this.url}/v1/configurarRifaVariante/porRifa/${rifaId}`
     ).pipe(map(r => r.data));
   }
 
   // ── 5. Palabras clave disponibles ──────────────────────────────────
   getPalabrasClave(rifaId: number): Observable<string[]> {
     return this.http.get<{ code: number; data: string[] }>(
-      `${this.url}/configurarRifaVariante/palabrasClave/${rifaId}`
+      `${this.url}/v1/configurarRifaVariante/palabrasClave/${rifaId}`
     ).pipe(map(r => r.data));
   }
 
   // ── 6. Eliminar variante de la rifa ────────────────────────────────
   eliminarVarianteRifa(id: number): Observable<string> {
     return this.http.delete<{ code: number; data: string }>(
-      `${this.url}/configurarRifaVariante/${id}`
+      `${this.url}/v1/configurarRifaVariante/${id}`
     ).pipe(map(r => r.data));
   }
 
   // ── 7. Actualizar palabraClave ─────────────────────────────────────
   actualizarPalabraClave(id: number, palabraClave: string): Observable<IConfigurarRifaVariante> {
     return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
-      `${this.url}/configurarRifaVariante/${id}/palabraClave`, { palabraClave }
+      `${this.url}/v1/configurarRifaVariante/${id}/palabraClave`, { palabraClave }
     ).pipe(map(r => r.data));
   }
 
   // ── 8. Agregar participante ────────────────────────────────────────
   registrarConcursante(data: IConcursante): Observable<IConcursante> {
     return this.http.post<{ code: number; data: IConcursante }>(
-      `${this.url}/concursante/registrar`, data
+      `${this.url}/v1/concursante/registrar`, data
     ).pipe(map(r => r.data));
   }
 
   eliminarConcursante(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/concursante/delete`, { body: id });
+    return this.http.delete(`${this.url}/v1/concursante/delete`, { body: id });
   }
 
   getConcursantesPorRifa(rifaId: number): Observable<IConcursante[]> {
     return this.http.get<{ data: IConcursante[] }>(
-      `${this.url}/concursante/porRifa/${rifaId}`
+      `${this.url}/v1/concursante/porRifa/${rifaId}`
     ).pipe(map(r => r.data ?? []));
   }
 
   getElegibles(rifaId: number): Observable<IConcursante[]> {
     return this.http.get<{ code: number; data: IConcursante[] }>(
-      `${this.url}/concursante/elegibles/${rifaId}`
+      `${this.url}/v1/concursante/elegibles/${rifaId}`
     ).pipe(map(r => r.data ?? []));
   }
 
   // ── 9. Clientes del mes ────────────────────────────────────────────
   getClientesPorMes(mes: string): Observable<IClientePedido[]> {
     return this.http.get<{ code: number; data: IClientePedido[] }>(
-      `${this.url}/concursante/clientesPorMes?mes=${mes}`
+      `${this.url}/v1/concursante/clientesPorMes?mes=${mes}`
     ).pipe(map(r => r.data ?? []));
   }
 
   // ── 10. Importar desde pedidos ─────────────────────────────────────
   importarDePedidos(data: IImportarDePedidosRequest): Observable<IConcursante[]> {
     return this.http.post<{ code: number; data: IConcursante[] }>(
-      `${this.url}/concursante/importarDePedidos`, data
+      `${this.url}/v1/concursante/importarDePedidos`, data
     ).pipe(map(r => r.data ?? []));
   }
 
   // ── 11. Estado del sorteo ──────────────────────────────────────────
   getEstado(rifaId: number): Observable<IEstadoRifa> {
     return this.http.get<{ code: number; data: IEstadoRifa }>(
-      `${this.url}/ganadorRifa/estado/${rifaId}`
+      `${this.url}/v1/ganadorRifa/estado/${rifaId}`
     ).pipe(map(r => r.data));
   }
 
   // ── 12. Girar la ruleta ────────────────────────────────────────────
   sortear(rifaId: number): Observable<IGanadorRifa> {
     return this.http.post<{ code: number; data: IGanadorRifa }>(
-      `${this.url}/ganadorRifa/sortear/${rifaId}`, {}
+      `${this.url}/v1/ganadorRifa/sortear/${rifaId}`, {}
     ).pipe(map(r => r.data));
   }
 
   // ── 13. Continuar a la siguiente variante ──────────────────────────
   continuarVariante(rifaId: number, modo: ModoContinuacion): Observable<IEstadoRifa> {
     return this.http.post<{ code: number; data: IEstadoRifa }>(
-      `${this.url}/ganadorRifa/continuarVariante/${rifaId}?modo=${modo}`, {}
+      `${this.url}/v1/ganadorRifa/continuarVariante/${rifaId}?modo=${modo}`, {}
     ).pipe(map(r => r.data));
   }
 
   // ── 14. Reiniciar ──────────────────────────────────────────────────
   reiniciar(rifaId: number, completo = false): Observable<string> {
     return this.http.post<{ code: number; data: string }>(
-      `${this.url}/ganadorRifa/reiniciar/${rifaId}?completo=${completo}`, {}
+      `${this.url}/v1/ganadorRifa/reiniciar/${rifaId}?completo=${completo}`, {}
     ).pipe(map(r => r.data));
   }
 
   // ── 15. Rifas activas ──────────────────────────────────────────────
   getConfiguracionesActivas(): Observable<IConfigurarRifa[]> {
     return this.http.get<{ code: number; data: IConfigurarRifa[] }>(
-      `${this.url}/configurarRifa/activas`
+      `${this.url}/v1/configurarRifa/activas`
     ).pipe(map(r => r.data ?? []));
   }
 
   getConfiguracionesHoy(): Observable<IConfigurarRifa[]> {
     return this.http.get<{ code: number; data: IConfigurarRifa[] }>(
-      `${this.url}/configurarRifa/activas/hoy`
+      `${this.url}/v1/configurarRifa/activas/hoy`
     ).pipe(map(r => r.data ?? []));
   }
 }

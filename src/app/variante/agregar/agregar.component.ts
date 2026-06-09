@@ -55,8 +55,9 @@ export class AgregarComponent implements OnInit, OnDestroy {
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
-  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  private readonly MAX_SIZE_BYTES = 10 * 1024 * 1024;
+  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+  private readonly DIMENSION_MAX = 1280;
+  private readonly CALIDAD_JPEG = 0.8;
   // Nuevo — palabra clave que se aplica a todo el lote de variantes
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -290,57 +291,38 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   private procesarImagen(file: File): void {
     if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
-      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG, GIF ni WebP.`, timer: 2500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (file.size > this.MAX_SIZE_BYTES) {
-        this.comprimirImagen(dataUrl, file.name, file.type);
-      } else {
-        this.agregarImagenCargada(dataUrl, file.type, file.name);
-      }
+      const original = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const comprimido = this.comprimirImagen(img);
+        this.imagenesCargadas.push({
+          base64: comprimido.split(',')[1],
+          extension: 'image/jpeg',
+          nombreImagen: file.name
+        });
+        if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(comprimido);
+      };
+      img.src = original;
     };
     reader.readAsDataURL(file);
   }
 
-  private comprimirImagen(dataUrl: string, nombre: string, tipo: string): void {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let { width, height } = img;
-      // Reducir dimensiones si son muy grandes (max 1920px en el lado mayor)
-      const MAX_DIM = 1920;
-      if (width > MAX_DIM || height > MAX_DIM) {
-        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
-        else                { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
-      }
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      // Comprimir con calidad decreciente hasta caber en 10 MB
-      const mimeOut = tipo === 'image/png' ? 'image/jpeg' : tipo;
-      let quality = 0.85;
-      const intentar = () => {
-        const compressed = canvas.toDataURL(mimeOut, quality);
-        const bytes = Math.round((compressed.length - compressed.indexOf(',') - 1) * 3 / 4);
-        if (bytes <= this.MAX_SIZE_BYTES || quality <= 0.2) {
-          const nombreFinal = tipo === 'image/png' ? nombre.replace(/\.png$/i, '.jpg') : nombre;
-          this.agregarImagenCargada(compressed, mimeOut, nombreFinal);
-        } else {
-          quality = Math.round((quality - 0.1) * 10) / 10;
-          intentar();
-        }
-      };
-      intentar();
-    };
-    img.src = dataUrl;
-  }
-
-  private agregarImagenCargada(dataUrl: string, tipo: string, nombre: string): void {
-    this.imagenesCargadas.push({ base64: dataUrl.split(',')[1], extension: tipo, nombreImagen: nombre });
-    if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(dataUrl);
+  // Redimensiona al máximo de DIMENSION_MAX y reencoda como JPEG para evitar
+  // 413 Request Entity Too Large al mandar varias fotos de cámara (3-8 MB c/u) en base64
+  private comprimirImagen(img: HTMLImageElement): string {
+    const escala = Math.min(1, this.DIMENSION_MAX / Math.max(img.width, img.height));
+    const w = Math.round(img.width * escala);
+    const h = Math.round(img.height * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', this.CALIDAD_JPEG);
   }
 
   // ── Cámara ────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
-.br-page {
+﻿.br-page {
   max-width: 800px;
   margin: 0 auto;
   padding: 24px 16px 48px;
+  background: var(--page-bg);
 }
 
 .br-header {
@@ -12,13 +13,13 @@
   gap: 12px;
   margin-bottom: 20px;
 
-  &__title { font-size: 1.3rem; font-weight: 800; color: #111827; margin: 0; }
+  &__title { font-size: 1.3rem; font-weight: 800; color: var(--app-text); margin: 0; }
 }
 
 .br-tabs {
   display: flex;
   gap: 6px;
-  background: #f3f4f6;
+  background: var(--form-section-bg);
   border-radius: 10px;
   padding: 4px;
 }
@@ -28,35 +29,26 @@
   border: none;
   border-radius: 7px;
   background: transparent;
-  color: #6b7280;
+  color: var(--app-text-muted);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s;
 
   &--active {
-    background: #fff;
+    background: var(--card-bg);
     color: #5b21b6;
     box-shadow: 0 2px 8px rgba(124,58,237,0.15);
   }
 
-  &:hover:not(&--active) { color: #374151; }
-}
-
-.br-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #6b7280;
-  font-size: 0.88rem;
-  padding: 20px 0;
+  &:hover:not(&--active) { color: var(--app-text); }
 }
 
 .br-empty {
   text-align: center;
   padding: 48px 16px;
   &__icon { font-size: 3rem; display: block; margin-bottom: 12px; }
-  p { color: #6b7280; font-size: 0.95rem; }
+  p { color: var(--app-text-muted); font-size: 0.95rem; }
 }
 
 .br-grid {
@@ -66,9 +58,10 @@
 }
 
 .br-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: var(--card-bg);
+  border-radius: var(--card-radius, 12px);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   overflow: hidden;
 
   &__header {
@@ -93,19 +86,19 @@
   &__body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 
   &__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  &__label { font-size: 0.75rem; color: #9ca3af; }
-  &__value { font-size: 0.88rem; font-weight: 600; color: #111827; }
+  &__label { font-size: 0.75rem; color: var(--card-text-muted); }
+  &__value { font-size: 0.88rem; font-weight: 600; color: var(--card-text); }
 
   &__footer {
     padding: 10px 16px;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--card-border);
   }
 }
 
-// ── Barra de progreso ──────────────────────────────────────────────
+// -- Barra de progreso
 .br-progress {
   height: 6px;
-  background: #e5e7eb;
+  background: var(--form-section-bg);
   border-radius: 3px;
   overflow: hidden;
   margin-top: 4px;

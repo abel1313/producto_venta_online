@@ -1,20 +1,21 @@
-.venta-layout {
+﻿.venta-layout {
   padding: 1rem;
+  background: var(--page-bg);
 }
 
 .venta-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  box-shadow: var(--card-shadow);
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.65rem 1rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: var(--form-section-bg);
+    border-bottom: 1px solid var(--card-border);
     gap: 0.75rem;
     flex-wrap: wrap;
   }
@@ -22,6 +23,7 @@
   &__title {
     font-weight: 600;
     font-size: 0.95rem;
+    color: var(--card-text);
   }
 
   &__actions {
@@ -56,10 +58,10 @@
 .ctx-menu {
   position: fixed;
   z-index: 9999;
-  background: #fff;
-  border: 1px solid #dee2e6;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--card-shadow);
   min-width: 180px;
   overflow: hidden;
 
@@ -72,15 +74,15 @@
     text-align: left;
     cursor: pointer;
     font-size: 0.875rem;
-    color: #212529;
+    color: var(--card-text);
 
     &:hover {
-      background: #f0f4ff;
+      background: var(--form-section-bg);
     }
 
     &--danger {
       color: #dc3545;
-      &:hover { background: #fff5f5; }
+      &:hover { background: rgba(220, 53, 69, 0.08); }
     }
   }
 }
@@ -104,7 +106,8 @@
 
 .img-visor-box {
   position: relative;
-  background: #fff;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 1rem;
   max-width: 90vw;
@@ -120,7 +123,7 @@
   position: absolute;
   top: .5rem;
   right: .6rem;
-  background: #f5f5f5;
+  background: var(--form-section-bg);
   border: none;
   border-radius: 50%;
   width: 30px;
@@ -130,11 +133,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #555;
+  color: var(--card-text-muted);
   transition: background .15s;
 
   &:hover {
-    background: #ffcdd2;
+    background: rgba(198, 40, 40, 0.15);
     color: #c62828;
   }
 }
@@ -149,7 +152,7 @@
 .img-visor-nombre {
   font-size: .9rem;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--card-text);
   margin: 0;
   text-align: center;
 }

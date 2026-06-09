@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
-import { PresentacionService, IImagenPresentacion } from 'src/app/presentacion/presentacion.service';
+import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 
 @Component({
   selector: 'app-add-usuarios',
@@ -23,28 +23,28 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-  imagenes: IImagenPresentacion[] = [];
+  imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
     './../../../assets/imagenes/imagen2.jpeg',
     './../../../assets/imagenes/imagene3.jpeg',
   ];
   imgSrc(orden: number): string {
-    const img = this.imagenes.find(i => i.orden === orden && i.activo);
-    if (img) return this.presentacion.getImagenUrl(img.id);
+    const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
+    if (img) return this.presentacion.getImagenUrlV2(img.id);
     return this.FALLBACK[orden - 1];
   }
   imgDesc(orden: number): string {
-    return this.imagenes.find(i => i.orden === orden)?.descripcion ?? '';
+    return this.imagenesV2.find(i => i.orden === orden)?.descripcion ?? '';
   }
 
   constructor(
-    private readonly fb:           FormBuilder,
-    public  readonly auth:         AccederService,
-    private readonly router:       Router,
-    public  readonly authService:  AuthService,
-    private readonly usuario:      UsuarioService,
-    private readonly presentacion: PresentacionService
+    private readonly fb:                   FormBuilder,
+    public  readonly auth:                 AccederService,
+    private readonly router:               Router,
+    public  readonly authService:          AuthService,
+    private readonly usuario:              UsuarioService,
+    private readonly presentacion:         PresentacionService
   ) { }
 
   formRegistro = this.fb.group({
@@ -59,8 +59,8 @@ export class AddUsuariosComponent implements OnInit {
 
 
   ngOnInit(): void {
-    this.presentacion.getImagenesPorTipo('REGISTRO').subscribe({
-      next: (res: any) => { this.imagenes = res?.data ?? res ?? []; },
+    this.presentacion.getImagenesPorTipoV2('REGISTRO').subscribe({
+      next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
       error: () => {}
     });
 

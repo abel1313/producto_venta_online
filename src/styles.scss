@@ -54,12 +54,104 @@ nb-card, nb-menu, nb-select {
   font-family: 'bootstrap-icons' !important;
 }
 
+/* ════════════════════════════════════════════════
+   TEMA CLARO (6:00 – 18:59)
+   ════════════════════════════════════════════════ */
+body.theme-light {
+  /* ── Base ── */
+  --app-bg:            #f1f5f9;
+  --app-surface:       #ffffff;
+  --app-surface-2:     #f8fafc;
+  --app-text:          #1e293b;
+  --app-text-muted:    #64748b;
+  --app-border:        #e2e8f0;
+  --app-accent:        #6366f1;
+  --app-accent-soft:   rgba(99,102,241,0.08);
+  --app-shadow:        0 1px 4px rgba(0,0,0,0.08);
+
+  /* ── Página (fondo principal) ── */
+  --page-bg:           #f1f5f9;
+
+  /* ── Cards / paneles ── */
+  --card-bg:           #ffffff;
+  --card-text:         #1e293b;
+  --card-text-muted:   #64748b;
+  --card-border:       #e2e8f0;
+  --card-shadow:       0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+  --card-radius:       14px;
+
+  /* ── Inputs / buscadores / textareas ── */
+  --input-bg:          #ffffff;
+  --input-text:        #1e293b;
+  --input-border:      #cbd5e1;
+  --input-placeholder: #9ca3af;
+  --input-focus-border: #6366f1;
+  --input-focus-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+
+  /* ── Formularios de guardado/actualización ── */
+  --form-bg:           #ffffff;
+  --form-section-bg:   #f8fafc;
+
+  /* ── Cabeceras en light — índigo para que no haya rojo ── */
+  --header-brand:      linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6366f1 100%);
+  --header-brand-shadow: rgba(99,102,241,0.35);
+}
+
+/* ════════════════════════════════════════════════
+   TEMA OSCURO (19:00 – 5:59)
+   ════════════════════════════════════════════════ */
+body.theme-dark {
+  /* ── Base ── */
+  --app-bg:            #0d1117;
+  --app-surface:       rgba(255,255,255,0.04);
+  --app-surface-2:     rgba(255,255,255,0.07);
+  --app-text:          #e2e8f0;
+  --app-text-muted:    #94a3b8;
+  --app-border:        rgba(255,255,255,0.08);
+  --app-accent:        #818cf8;
+  --app-accent-soft:   rgba(129,140,248,0.12);
+  --app-shadow:        0 1px 4px rgba(0,0,0,0.35);
+
+  /* ── Página (fondo principal) ── */
+  --page-bg:           #0d1117;
+
+  /* ── Cards / paneles ── */
+  --card-bg:           rgba(255,255,255,0.05);
+  --card-text:         #f1f5f9;
+  --card-text-muted:   #94a3b8;
+  --card-border:       rgba(255,255,255,0.08);
+  --card-shadow:       0 4px 20px rgba(0,0,0,0.4);
+  --card-radius:       14px;
+
+  /* ── Inputs / buscadores / textareas ── */
+  --input-bg:          rgba(255,255,255,0.07);
+  --input-text:        #f1f5f9;
+  --input-border:      rgba(255,255,255,0.12);
+  --input-placeholder: #64748b;
+  --input-focus-border: #818cf8;
+  --input-focus-shadow: 0 0 0 3px rgba(129,140,248,0.2);
+
+  /* ── Formularios de guardado/actualización ── */
+  --form-bg:           rgba(255,255,255,0.04);
+  --form-section-bg:   rgba(255,255,255,0.03);
+
+  /* ── Cabeceras de marca — oscuras para no quemar los ojos ── */
+  --header-brand:      linear-gradient(135deg, #1a0610 0%, #2d0a20 55%, #3f0d2d 100%);
+  --header-brand-shadow: rgba(0,0,0,0.5);
+}
+
+/* ── Transición suave al cambiar de tema ──── */
+body {
+  background:  var(--app-bg, #f1f5f9);
+  color:       var(--app-text, #1e293b);
+  transition:  background 0.35s ease, color 0.35s ease;
+}
+
 /* ── BODY ─────────────────────────────────── */
 body {
-  font-size: 0.875rem;   /* 14px */
+  font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.6;
-  color: #1f2937;
 }
 
 /* ── ESCALA DE TÍTULOS ────────────────────── */
@@ -144,6 +236,330 @@ label {
   font-weight: 300;
   color: #9ca3af !important;
   opacity: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TEMA OSCURO — glassmorphism combinando con el sidebar
+   ════════════════════════════════════════════════════════════ */
+body.theme-dark {
+
+  /* ── Tipografía general ────────────────── */
+  color: #e2e8f0;
+  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #e2e8f0; }
+
+  /* ── Bootstrap cards ───────────────────── */
+  .card {
+    background: rgba(255,255,255,0.05) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+  }
+  .card-header {
+    background: rgba(255,255,255,0.06) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    color: #f1f5f9 !important;
+  }
+  .card-body { color: #e2e8f0 !important; }
+  .card-title { color: #f8fafc !important; }
+
+  /* ── Nebular cards ─────────────────────── */
+  nb-card {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    backdrop-filter: blur(12px);
+    color: #e2e8f0 !important;
+  }
+  nb-card-header {
+    background: rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    color: #f8fafc !important;
+  }
+  nb-card-body { color: #e2e8f0 !important; }
+
+  /* ── Bootstrap tables ──────────────────── */
+  .table {
+    color: #e2e8f0 !important;
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255,255,255,0.03);
+    --bs-table-hover-bg: rgba(255,255,255,0.06);
+    --bs-table-border-color: rgba(255,255,255,0.08);
+  }
+  .table thead th {
+    background: rgba(255,255,255,0.06) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+  .table td, .table th { border-color: rgba(255,255,255,0.07) !important; }
+
+  /* ── Bootstrap forms ───────────────────── */
+  .form-control, .form-select {
+    background: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: #e2e8f0 !important;
+    &:focus {
+      background: rgba(255,255,255,0.1) !important;
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.25) !important;
+    }
+    &::placeholder { color: #64748b !important; }
+  }
+  .input-group-text {
+    background: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: #94a3b8 !important;
+  }
+  label { color: #94a3b8 !important; }
+
+  /* ── Bootstrap modals ──────────────────── */
+  .modal-content {
+    background: rgba(13,17,23,0.95) !important;
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: #e2e8f0 !important;
+  }
+  .modal-header {
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    color: #f1f5f9 !important;
+  }
+  .modal-footer { border-top: 1px solid rgba(255,255,255,0.08) !important; }
+  .btn-close { filter: invert(1); }
+
+  /* ── Bootstrap dropdowns ───────────────── */
+  .dropdown-menu {
+    background: rgba(13,17,23,0.95) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    color: #e2e8f0 !important;
+  }
+  .dropdown-item {
+    color: #cbd5e1 !important;
+    &:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+  }
+  .dropdown-divider { border-color: rgba(255,255,255,0.08) !important; }
+
+  /* ── PrimeNG ───────────────────────────── */
+  .p-card {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    color: #e2e8f0 !important;
+  }
+  .p-datatable .p-datatable-thead > tr > th {
+    background: rgba(255,255,255,0.06) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+  .p-datatable .p-datatable-tbody > tr {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+    &:hover { background: rgba(255,255,255,0.05) !important; }
+  }
+  .p-datatable .p-datatable-tbody > tr > td { border-color: rgba(255,255,255,0.06) !important; }
+  .p-inputtext {
+    background: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: #e2e8f0 !important;
+  }
+  .p-dropdown {
+    background: rgba(255,255,255,0.07) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: #e2e8f0 !important;
+  }
+  .p-dropdown-panel {
+    background: rgba(13,17,23,0.97) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .p-dropdown-item { color: #cbd5e1 !important; &:hover { background: rgba(99,102,241,0.15) !important; } }
+  .p-dialog .p-dialog-header {
+    background: rgba(13,17,23,0.97) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    color: #f1f5f9 !important;
+  }
+  .p-dialog .p-dialog-content {
+    background: rgba(13,17,23,0.95) !important;
+    color: #e2e8f0 !important;
+  }
+  .p-dialog .p-dialog-footer {
+    background: rgba(13,17,23,0.97) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+  }
+
+  /* ── AG Grid ────────────────────────────── */
+  .ag-theme-alpine {
+    --ag-background-color:       rgba(255,255,255,0.04);
+    --ag-header-background-color: rgba(255,255,255,0.07);
+    --ag-odd-row-background-color: rgba(255,255,255,0.02);
+    --ag-row-hover-color:        rgba(255,255,255,0.06);
+    --ag-border-color:           rgba(255,255,255,0.08);
+    --ag-foreground-color:       #e2e8f0;
+    --ag-header-foreground-color: #94a3b8;
+  }
+
+  /* ── Bootstrap alerts ──────────────────── */
+  .alert {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* ── Badges neutros ────────────────────── */
+  .badge.bg-light { background: rgba(255,255,255,0.12) !important; color: #e2e8f0 !important; }
+  .text-muted { color: #64748b !important; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   TEMA CLARO — blanco limpio con acento índigo
+   ════════════════════════════════════════════════════════════ */
+body.theme-light {
+
+  /* ── Tipografía ────────────────────────── */
+  color: #1e293b;
+  h1, h2, h3, h4, h5, h6 { color: #0f172a; }
+  p, span, label, td, th, li { color: #334155; }
+
+  /* ── Bootstrap cards ───────────────────── */
+  .card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+    border-radius: 14px !important;
+  }
+  .card-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+  .card-title { color: #0f172a !important; font-weight: 700 !important; }
+
+  /* ── Nebular cards ─────────────────────── */
+  nb-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+    border-radius: 14px !important;
+  }
+  nb-card-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+  nb-card-body { color: #334155 !important; }
+
+  /* ── Bootstrap tables ──────────────────── */
+  .table {
+    color: #334155 !important;
+    --bs-table-bg: #ffffff;
+    --bs-table-striped-bg: #f8fafc;
+    --bs-table-hover-bg: #f1f5f9;
+    --bs-table-border-color: #e2e8f0;
+  }
+  .table thead th {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* ── Bootstrap forms ───────────────────── */
+  .form-control, .form-select {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+    &:focus {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+    }
+  }
+  .input-group-text {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+  }
+  label { color: #374151 !important; }
+
+  /* ── Bootstrap modals ──────────────────── */
+  .modal-content {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+    color: #1e293b !important;
+  }
+  .modal-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+  .modal-footer { border-top: 1px solid #e2e8f0 !important; }
+
+  /* ── Bootstrap dropdowns ───────────────── */
+  .dropdown-menu {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+    border-radius: 12px !important;
+  }
+  .dropdown-item {
+    color: #334155 !important;
+    &:hover { background: #f1f5f9 !important; color: #6366f1 !important; }
+  }
+
+  /* ── PrimeNG ───────────────────────────── */
+  .p-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+  }
+  .p-datatable .p-datatable-thead > tr > th {
+    background: #f8fafc !important;
+    color: #64748b !important;
+    border-color: #e2e8f0 !important;
+  }
+  .p-datatable .p-datatable-tbody > tr {
+    background: #ffffff !important;
+    color: #334155 !important;
+    &:hover { background: #f8fafc !important; }
+  }
+  .p-datatable .p-datatable-tbody > tr > td { border-color: #f1f5f9 !important; }
+  .p-inputtext {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+  }
+  .p-dropdown {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+  }
+  .p-dropdown-panel {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+  }
+  .p-dropdown-item { color: #334155 !important; &:hover { background: #f1f5f9 !important; color: #6366f1 !important; } }
+  .p-dialog .p-dialog-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+  .p-dialog .p-dialog-content { background: #ffffff !important; color: #334155 !important; }
+  .p-dialog .p-dialog-footer { background: #f8fafc !important; border-top: 1px solid #e2e8f0 !important; }
+
+  /* ── AG Grid ────────────────────────────── */
+  .ag-theme-alpine {
+    --ag-background-color:        #ffffff;
+    --ag-header-background-color: #f8fafc;
+    --ag-odd-row-background-color: #fafafa;
+    --ag-row-hover-color:         #f1f5f9;
+    --ag-border-color:            #e2e8f0;
+    --ag-foreground-color:        #334155;
+    --ag-header-foreground-color: #64748b;
+  }
+
+  /* ── Badges y texto ────────────────────── */
+  .text-muted { color: #64748b !important; }
 }
 
 

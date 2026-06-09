@@ -1,7 +1,7 @@
-import { map } from 'rxjs/operators';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { IProductoDTO, IProductoPaginable } from '../models';
+import { IProductoDTO, IProductoPaginable, ImagenUpdateDto } from '../models';
+import { ProductoImagenPaginadaDto } from '../models/ProductoImagenDto.model';
 import { ProductoService } from '../../service/producto.service';
 import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
@@ -22,15 +22,13 @@ export class DetalleProductoComponent implements OnInit {
   paginacion?: IProductoPaginable<IProductoDTO[]>;
   responsiveOptions: any[] | any;
 
-  productoDtoImagen: ProductImagenDto[] | any;
- producto: any;
+  productoDtoImagen: ImagenUpdateDto[] = [];
+  producto: any;
   // ── Eliminación por lotes (solo admin) ───────────────────────────
   isAdminUser = false;
-  imagenesParaEliminar = new Set<string>();
+  imagenesParaEliminar = new Set<ImagenUpdateDto>();
   eliminando = false;
   get totalMarcadas(): number { return this.imagenesParaEliminar.size; }
-
-  cargando = true;
 
   existeImagenes: boolean = false;
 
@@ -52,13 +50,19 @@ export class DetalleProductoComponent implements OnInit {
     });
 
   this.idProducto = +this.route.snapshot.paramMap.get('id')!;
-  this.service.getDataImg(this.idProducto, 0, 4).subscribe(data => {
-    this.productoDtoImagen = data.list;
-    this.existeImagenes = this.imagenesPorProducto();
-
-    this.totalPaginas = data.totalPaginas;
-    this.paginasCargadas.add(0);
-    this.cargaInicialCompletada = true;
+  this.service.getImagenesProducto(this.idProducto, 1, 8).subscribe({
+    next: (data: ProductoImagenPaginadaDto) => {
+      this.productoDtoImagen = data.listaImagenes ?? [];
+      this.existeImagenes = this.imagenesPorProducto();
+      this.totalPaginas = data.totalPaginas ?? 1;
+      this.paginasCargadas.add(0);
+      this.cargaInicialCompletada = true;
+    },
+    error: () => {
+      this.productoDtoImagen = [];
+      this.existeImagenes = false;
+      this.cargaInicialCompletada = true;
+    }
   });
 
     this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
@@ -67,7 +71,6 @@ export class DetalleProductoComponent implements OnInit {
 
   this.service.getDataGeneric(this.idProducto).subscribe(data=>{
     this.producto = data;
-    this.cargando = false;
   });
 
 
@@ -79,7 +82,7 @@ export class DetalleProductoComponent implements OnInit {
 
   }
 
-  compartirImagnesVariante(imagenes: ProductImagenDto[]) {
+  compartirImagnesVariante(imagenes: ImagenUpdateDto[]) {
     if(!this.existeImagenes) {
       Swal.fire({ icon: 'info', title: 'No hay imágenes para compartir', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
       return;
@@ -148,17 +151,18 @@ removeCarrito() {
   this.serviceCarrito.eliminarProducto(this.producto);
 }
 
-toggleMarcar(img: ProductImagenDto): void {
-    if (!img.idImagen) return;
-    if (this.imagenesParaEliminar.has(img.idImagen)) {
-      this.imagenesParaEliminar.delete(img.idImagen);
+toggleMarcar(img: ImagenUpdateDto): void {
+    const next = new Set(this.imagenesParaEliminar);
+    if (next.has(img)) {
+      next.delete(img);
     } else {
-      this.imagenesParaEliminar.add(img.idImagen);
+      next.add(img);
     }
+    this.imagenesParaEliminar = next;
   }
 
-  estaMarcada(img: ProductImagenDto): boolean {
-    return !!img.idImagen && this.imagenesParaEliminar.has(img.idImagen);
+  estaMarcada(img: ImagenUpdateDto): boolean {
+    return this.imagenesParaEliminar.has(img);
   }
 
   confirmarEliminarBatch(): void {
@@ -176,14 +180,25 @@ toggleMarcar(img: ProductImagenDto): void {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;
-      const ids = Array.from(this.imagenesParaEliminar);
+      const marcadas = Array.from(this.imagenesParaEliminar);
+      const ids = Array.from(new Set(
+        marcadas.map(img => img?.id).filter((id): id is string => !!id)
+      ));
       this.imagenesService.eliminarImagenesBatch(this.idProducto, ids).subscribe({
         next: () => {
+          const marcadasEliminadas = new Set(this.imagenesParaEliminar);
           this.productoDtoImagen = this.productoDtoImagen.filter(
-            (img: ProductImagenDto) => !img.idImagen || !this.imagenesParaEliminar.has(img.idImagen)
+            img => !marcadasEliminadas.has(img)
           );
-          this.imagenesParaEliminar.clear();
+          this.imagenesParaEliminar = new Set();
           this.eliminando = false;
+          this.existeImagenes = this.imagenesPorProducto();
+          // Si quedan páginas sin cargar, traer la siguiente para llenar huecos
+          if (this.paginasCargadas.size < this.totalPaginas) {
+            for (let i = 0; i < this.totalPaginas; i++) {
+              if (!this.paginasCargadas.has(i)) { this.cargarPagina(i); break; }
+            }
+          }
           Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
         },
         error: () => {
@@ -194,7 +209,7 @@ toggleMarcar(img: ProductImagenDto): void {
     });
   }
 
-  eliminarImagen(product: ProductImagenDto) {
+  eliminarImagen(product: ImagenUpdateDto) {
   this.confirmationService.confirm({
     message: '¿Estás seguro de que deseas eliminar esta imagen?',
     header: 'Confirmar eliminación',
@@ -202,10 +217,10 @@ toggleMarcar(img: ProductImagenDto): void {
     acceptLabel: 'Sí, eliminar',
     rejectLabel: 'Cancelar',
     accept: () => {
-      this.service.deleteImagen(product.idImagen!).subscribe({
+      this.service.deleteImagen(product.id!).subscribe({
         next: () => {
           this.productoDtoImagen = this.productoDtoImagen.filter(
-            (img: ProductImagenDto) => img.idImagen !== product.idImagen
+            (img: ImagenUpdateDto) => img.id !== product.id
           );
         },
         error: (err) => console.error('Error al eliminar imagen', err)
@@ -221,21 +236,17 @@ toggleMarcar(img: ProductImagenDto): void {
   paginasValidas: number[] = [];
   paginasCargadas = new Set<number>();
 
-handlePageChange(event: any) {
+handlePageChange(event: any): void {
   if (!this.cargaInicialCompletada) return;
-
-  const puntoSeleccionado = event.page;
-
-  // Si ya cargaste todas las páginas, no hay nada más que hacer
   if (this.paginasCargadas.size >= this.totalPaginas) return;
 
-  // Si el punto seleccionado coincide con una página válida aún no cargada
+  const puntoSeleccionado = event.page; // API base-0
+
   if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado < this.totalPaginas) {
     this.cargarPagina(puntoSeleccionado);
     return;
   }
 
-  // Si el punto seleccionado es mayor que las páginas válidas, busca la siguiente página no cargada
   for (let i = 0; i < this.totalPaginas; i++) {
     if (!this.paginasCargadas.has(i)) {
       this.cargarPagina(i);
@@ -248,39 +259,20 @@ handlePageChange(event: any) {
 
 cargarPagina(pagina: number) {
   this.paginasCargadas.add(pagina);
-
-  this.service.getDataImg(this.idProducto, pagina, 4).subscribe(data => {
-    const nuevasImagenes = Array.isArray(data.list)
-      ? data.list.filter((nueva: ProductImagenDto) =>
-          !this.productoDtoImagen.some((existente: ProductImagenDto) => existente.idImagen === nueva.idImagen)
-        )
-      : [];
-
-    this.productoDtoImagen = [...this.productoDtoImagen, ...nuevasImagenes];
-    this.existeImagenes = this.imagenesPorProducto();
-  }, error => {
-    this.paginasCargadas.delete(pagina); // liberar si falló
-    console.error(error);
+  this.service.getImagenesProducto(this.idProducto, pagina + 1, 8).subscribe({
+    next: (data: ProductoImagenPaginadaDto) => {
+      const nuevas = data.listaImagenes ?? [];
+      this.productoDtoImagen = [...this.productoDtoImagen, ...nuevas];
+      this.existeImagenes = this.imagenesPorProducto();
+    },
+    error: () => {
+      this.paginasCargadas.delete(pagina);
+    }
   });
 }
 
   imagenesPorProducto(): boolean {
-    return (this.productoDtoImagen.map((img: ProductImagenDto) => img.image).length) > 0;
-  }
-
-  getImgSrc(img: ProductImagenDto): string {
-    if (!img.image) return '';
-    const clean = img.image.replace(/\s+/g, '');
-    const ext = this.detectarMime(clean);
-    return `data:image/${ext};base64,${clean}`;
-  }
-
-  private detectarMime(b64: string): string {
-    if (b64.startsWith('iVBORw0KGgo')) return 'png';
-    if (b64.startsWith('/9j/')) return 'jpeg';
-    if (b64.startsWith('R0lGOD')) return 'gif';
-    if (b64.startsWith('UklGR')) return 'webp';
-    return 'jpeg';
+    return this.productoDtoImagen.length > 0;
   }
 
 

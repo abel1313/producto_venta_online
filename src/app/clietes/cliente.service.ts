@@ -14,20 +14,20 @@ export class ClienteService extends CrudGenericService<ICliente> {
   constructor(
     http: HttpClient
   ) {
-    super(http, 'clientes');
+    super(http, 'v1/clientes');
    }
 
 
    getCodigoPostal(codigoPostal: string){
-      return this.http.get<any>(`${this.url}/dipomex/getCodigoPostal/${codigoPostal}`);
+      return this.http.get<any>(`${this.url}/v1/dipomex/getCodigoPostal/${codigoPostal}`);
    }
   getDataOneCliente(idCliente: number): Observable<ResponseGeneric<ICliente>> {
-    return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/clientes/buscarPorIdCliente/${idCliente}`);
+    return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/v1/clientes/buscarPorIdCliente/${idCliente}`);
   }
 
   buscarClientes(nombre: string, page: number, size: number): Observable<ResponseGeneric<IPageableClientes>> {
     return this.http.get<ResponseGeneric<IPageableClientes>>(
-      `${this.url}/clientes/buscar?nombre=${encodeURIComponent(nombre)}&page=${page}&size=${size}`
+      `${this.url}/v1/clientes/buscar?nombre=${encodeURIComponent(nombre)}&page=${page}&size=${size}`
     );
   }
 

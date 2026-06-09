@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -16,9 +16,36 @@ export class ImagenesService {
 
   constructor(private readonly http: HttpClient) { }
 
-  /** Lista de imágenes de un producto. Cada imagen trae urlImagen (relativa) para cargarla. */
+  /**
+   * GET /imagen/{idProducto}/imagenes  — @Deprecated en el back.
+   * El front NO migra aún; sigue funcionando. Lanza error si no hay imagen.
+   */
   getDataGeneric<R>(idProducto: number): Observable<R> {
     return this.http.get<R>(`${this.urlImg}/${idProducto}/imagenes`);
+  }
+
+  /**
+   * GET /imagen/v2/{productoId}  — nuevo endpoint.
+   * Devuelve null (HTTP 204) si el producto no tiene imágenes en disco → la app NO crashea.
+   * Usar cuando el toggle IMG v2 está activo en el sidebar (solo admin).
+   */
+  getImagenV2<R>(productoId: number): Observable<R | null> {
+    return this.http.get<R>(
+      `${this.urlImg}/v2/${productoId}`,
+      { observe: 'response' }
+    ).pipe(
+      map(response => {
+        if (response.status === 204) {
+          console.log(`[imagen-v2] productoId=${productoId} — sin imágenes en disco`);
+          return null;
+        }
+        return response.body;
+      }),
+      catchError(err => {
+        console.error(`[imagen-v2] Error al obtener imágenes productoId=${productoId}`, err);
+        return of(null);
+      })
+    );
   }
 
   /**
@@ -37,10 +64,10 @@ export class ImagenesService {
   }
 
   eliminarImagenesBatch(productoId: number, ids: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.urlImg}/${productoId}/imagenes`, { body: ids });
+    return this.http.delete<{ data: string }>(`${this.urlImg}/v1/${productoId}/imagenes`, { body: ids });
   }
 
   setPrincipalProducto(imagenId: string): Observable<any> {
-    return this.http.put<any>(`${environment.api_Url}/producto-imagen/${imagenId}/principal`, null);
+    return this.http.put<any>(`${environment.api_imagenes}/v1/producto-imagen/${imagenId}/principal`, null);
   }
 }

@@ -2,8 +2,8 @@ import { CompartirImagenesVarianteDto } from './../producto/detalle-producto/det
 import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IProducto, IProductoDTO, IProductoPaginable } from '../producto/models';
 import { IGastos } from 'src/app/gastos/models';
@@ -16,9 +16,9 @@ import { IProductoDTOImagenes, IProductoDTORec } from '../producto/models/produc
 })
 export class ProductoService {
 
-    private readonly url: string = `${environment.api_Url}/productos`;
+    private readonly url: string = `${environment.api_Url}/v1/productos`;
     private readonly urlImg: string = `${environment.api_Url}/imagen`;
-    private readonly microImagenes: string = `${environment.api_imagenes}/producto-imagen`;
+    private readonly microImagenes: string = `${environment.api_imagenes}/v1/producto-imagen`;
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
     productoUpdate$ = this.productoUpdate.asObservable();
@@ -70,6 +70,30 @@ export class ProductoService {
     }
 
 
+    /**
+     * GET /imagen/v2/{id}/detalle — nuevo endpoint.
+     * Devuelve 204 (null) si el producto no tiene imágenes en disco en vez de lanzar error.
+     * El front NO crashea; solo se loguea el aviso.
+     */
+    getDataImgV2(id: number, page: number, size: number): Observable<any | null> {
+        return this.http.get(
+            `${this.urlImg}/v2/${id}/detalle?size=${size}&page=${page}`,
+            { observe: 'response', responseType: 'text' }
+        ).pipe(
+            map(response => {
+                if (response.status === 204) {
+                    console.log(`[imagen-v2] productoId=${id} — sin imágenes en disco`);
+                    return null;
+                }
+                return JSON.parse(response.body!.replace(/"(\w+)":\s*(\d{16,})/g, '"$1":"$2"'));
+            }),
+            catchError(err => {
+                console.error(`[imagen-v2] Error al obtener imágenes del productoId=${id}`, err);
+                return of(null);
+            })
+        );
+    }
+
     // 🌐 Obtener datos
     getDataNombreCodigoBarra(page: number, size: number, buscar: string): Observable<IProductoPaginable<IProductoDTO[]>> {
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/buscarNombreOrCodigoBarra?size=${size}&page=${page}&nombre=${encodeURIComponent(buscar)}`);
@@ -77,45 +101,59 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     saveVenta(request: IVentaDirectaRequest): Observable<any> {
-        return this.http.post(`${environment.api_Url}/ventas/save`, request);
+        return this.http.post(`${environment.api_Url}/v1/ventas/save`, request);
     }
 
     // 🌐 Obtener datos
     getTotalVenta(): Observable<any> {
-        return this.http.get(`${environment.api_Url}/ventas/getTotalVentas`);
+        return this.http.get(`${environment.api_Url}/v1/ventas/getTotalVentas`);
     }
 
     // 🌐 Obtener datos
     saveGasto(det: IGastos): Observable<any> {
-        return this.http.post(`${environment.api_Url}/gastos/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/gastos/save`, det);
     }
     getDataGastos(page: number, size: number): Observable<IProductoPaginable<IGastos[]>> {
-        return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/gastos/getGastos?size=${size}&page=${page}`);
+        return this.http.get<IProductoPaginable<IGastos[]>>(`${environment.api_Url}/v1/gastos/getGastos?size=${size}&page=${page}`);
     }
 
     // 🌐 Obtener datos
     saveProducto(det: IProducto): Observable<any> {
-        return this.http.post(`${environment.api_Url}/productos/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/productos/save`, det);
     }
 
 
     // 🌐 Obtener datos
     saveCliente(det: ICliente): Observable<any> {
-        return this.http.post(`${environment.api_Url}/clientes/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/clientes/save`, det);
     }
 
     // 🌐 Obtener datos
     getClientesRifaPorHora(inicio: string, fin: string, palabraRifa: string): Observable<any> {
-        return this.http.get(`${environment.api_Url}/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}&palabraRifa=${palabraRifa}`);
+        return this.http.get(`${environment.api_Url}/v1/rifa/getRifasPorHora?inicio=${inicio}&fin=${fin}&palabraRifa=${palabraRifa}`);
     }
 
     // 🌐 Obtener datos
     saveRifa(det: IRifa): Observable<any> {
-        return this.http.post(`${environment.api_Url}/rifa/save`, det);
+        return this.http.post(`${environment.api_Url}/v1/rifa/save`, det);
     }
 
     deleteImagen(id: string): Observable<any> {
         return this.http.delete(`${this.microImagenes}/${id}`);
+    }
+
+    getImagenesProducto(productoId: number, pagina = 1, size = 8): Observable<any> {
+        return this.http.get(`${this.microImagenes}/listar/${productoId}?pagina=${pagina}&size=${size}`);
+    }
+
+    getImagenFileMicro(url: string, mimeType = 'image/jpeg'): Observable<string> {
+        return this.http.get(url, { responseType: 'blob', observe: 'response' })
+            .pipe(map(response => {
+                if (response.status === 204 || !response.body) throw new Error('sin-imagen');
+                // El back devuelve application/octet-stream — se fuerza el MIME type real
+                const typedBlob = new Blob([response.body], { type: mimeType });
+                return URL.createObjectURL(typedBlob);
+            }));
     }
 
     agregarProducto(producto: IProductoDTOImagenes) {

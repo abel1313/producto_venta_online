@@ -117,10 +117,6 @@
           <span class="vd-required" *ngIf="!pagosYMesesId">*</span>
         </p>
 
-        <div *ngIf="cargandoPagos" class="vd-hint">
-          <span class="spinner-border spinner-border-sm"></span> Cargando…
-        </div>
-
         <p-dropdown *ngIf="!cargandoPagos"
             [options]="opcionesEstructuradas"
             [(ngModel)]="tipoPagoActivo"

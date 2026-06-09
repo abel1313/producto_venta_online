@@ -1,45 +1,75 @@
-
-
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-
-.container {
-  width: 90%;
+.home {
+  position: relative;
+  width: 100%;
   min-height: 100vh;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 20px;
-  gap: 20px;
   background-image: url('./../../assets/imagenes/tulipanes.jpg');
   background-size: cover;
   background-position: center;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  color: white;
-}
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 
-@media (max-width: 600px) {
-  .container b {
-    font-size: 7vw; /* más pequeño en pantallas chicas */
-    line-height: 1.2; /* espacio entre líneas */
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(0, 0, 0, 0.45) 100%
+    );
+  }
+
+  &__tagline {
+    position: relative;
+    z-index: 1;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.6rem, 5vw, 4rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    margin: 0;
+    padding: clamp(24px, 6vh, 64px) 24px 0;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.5);
+  }
+
+  &__divider {
+    position: relative;
+    z-index: 1;
+    width: 72px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 2px;
+    margin-top: clamp(12px, 3vh, 28px);
+  }
+
+  &__brand-box {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(16px, 4vh, 40px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
+    padding: clamp(14px, 3vw, 24px) clamp(24px, 6vw, 56px);
+  }
+
+  &__brand {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(3rem, 11vw, 8rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.05;
+    margin: 0;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 40px rgba(0,0,0,0.3);
+
+    span {
+      font-weight: 300;
+      opacity: 0.85;
+    }
   }
 }
-
-
-.container b:first-child {
-  font-size: 8vw; /* se adapta al ancho de pantalla */
-}
-.container b:last-child {
-  font-size: 6vw;
-}
-

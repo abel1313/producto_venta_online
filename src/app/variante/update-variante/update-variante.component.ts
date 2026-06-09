@@ -5,11 +5,10 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, switchMap } from 'rxjs/operators';
+import { debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
-// Nuevo — palabra clave para categorizar la variante
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 @Component({
@@ -28,6 +27,9 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   guardando = false;
   variante: IVariante | null = null;
 
+  private idVarianteCargado: number | null = null;
+  private destroy$ = new Subject<void>();
+
   // Búsqueda de producto
   terminoProducto = '';
   productos: IProductoDTO[] = [];
@@ -38,8 +40,9 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
-  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  private readonly MAX_SIZE_BYTES = 10 * 1024 * 1024;
+  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+  private readonly DIMENSION_MAX = 1280;
+  private readonly CALIDAD_JPEG = 0.8;
 
   // Imágenes existentes de la variante
   imagenesExistentes: IVarianteImagenDto[] = [];
@@ -48,8 +51,19 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   cambiandoPrincipal = new Set<string>();
   imagenPrincipalId: string | null = null;
 
+  private paginasCargadas      = new Set<number>();
+  private cargaInicialCompletada = false;
+  totalPaginasImagenes           = 0;
+
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
+
+  responsiveOptions = [
+    { breakpoint: '1400px', numVisible: 4, numScroll: 1 },
+    { breakpoint: '1199px', numVisible: 3, numScroll: 1 },
+    { breakpoint: '767px',  numVisible: 2, numScroll: 1 },
+    { breakpoint: '575px',  numVisible: 1, numScroll: 1 },
+  ];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -59,41 +73,70 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.variante = this.varianteService.varianteParaEditar;
+    // Suscribirse al observable para detectar cambios de variante (mismo patrón que UpdateComponent de productos)
+    this.varianteService.varianteUpdate$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(variante => {
+        if (!variante) {
+          if (!this.variante) {
+            this.router.navigate(['/variantes/buscar']);
+          }
+          return;
+        }
 
-    if (!this.variante) {
-      this.router.navigate(['/variantes/buscar']);
-      return;
-    }
+        const nuevoId = variante.id ?? null;
 
-    this.form = this.fb.group({
-      talla:         [this.variante.talla         ?? ''],
-      color:         [this.variante.color         ?? ''],
-      presentacion:  [this.variante.presentacion  ?? ''],
-      stock:         [this.variante.stock         ?? null],
-      descripcion:   [this.variante.descripcion   ?? ''],
-      marca:         [this.variante.marca         ?? ''],
-      contenidoNeto: [this.variante.contenidoNeto ?? ''],
-    });
+        // Inicializar el formulario solo la primera vez o cuando cambia la variante
+        if (nuevoId && nuevoId !== this.idVarianteCargado) {
+          this.idVarianteCargado = nuevoId;
+          this.variante = variante;
 
-    // Precargar palabra clave si la variante ya tenía una asignada
-    if (this.variante.palabraClave) {
-      this.palabraClaveSeleccionada = this.variante.palabraClave;
-    }
+          this.form = this.fb.group({
+            talla:         [variante.talla         ?? ''],
+            color:         [variante.color         ?? ''],
+            presentacion:  [variante.presentacion  ?? ''],
+            stock:         [variante.stock         ?? null],
+            descripcion:   [variante.descripcion   ?? ''],
+            marca:         [variante.marca         ?? ''],
+            contenidoNeto: [variante.contenidoNeto ?? ''],
+          });
 
-    if (this.variante.producto) {
-      this.productoSeleccionado = {
-        idProducto:  this.variante.producto.id,
-        nombre:      this.variante.producto.nombre ?? '',
-        precioVenta: this.variante.producto.precioVenta ?? 0,
-        stock:       0,
-      } as IProductoDTO;
-      this.terminoProducto = this.variante.producto.nombre ?? '';
-    }
+          // Precargar producto seleccionado
+          if (variante.producto) {
+            this.productoSeleccionado = {
+              idProducto:  variante.producto.id,
+              nombre:      variante.producto.nombre ?? '',
+              precioVenta: variante.producto.precioVenta ?? 0,
+              stock:       0,
+            } as IProductoDTO;
+            this.terminoProducto = variante.producto.nombre ?? '';
+          }
 
-    if (this.variante.id) {
-      this.cargarImagenesExistentes(this.variante.id);
-    }
+          // Cargar imágenes existentes
+          this.cargarImagenesExistentes(nuevoId);
+
+          // Llamar a getOne para obtener la variante completa con palabraClave
+          // (el objeto del BehaviorSubject puede venir del fallback sin palabraClave)
+          this.varianteService.getOne(nuevoId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (full: IVariante) => {
+                if (full?.palabraClave !== undefined) {
+                  this.variante = { ...this.variante!, palabraClave: full.palabraClave ?? null };
+                  this.palabraClaveSeleccionada = full.palabraClave
+                    ? { id: full.palabraClave.id, nombre: full.palabraClave.nombre }
+                    : null;
+                }
+              },
+              error: () => {
+                // Si falla getOne, usar palabraClave del objeto original si existía
+                if (variante.palabraClave) {
+                  this.palabraClaveSeleccionada = variante.palabraClave;
+                }
+              }
+            });
+        }
+      });
 
     this.busquedaSubject.pipe(
       debounceTime(350),
@@ -149,55 +192,34 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
   private procesarImagen(file: File): void {
     if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
-      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG, GIF ni WebP.`, timer: 2500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (file.size > this.MAX_SIZE_BYTES) {
-        this.comprimirImagen(dataUrl, file.name, file.type);
-      } else {
-        this.agregarImagenCargada(dataUrl, file.type, file.name);
-      }
+      const original = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const comprimido = this.comprimirImagen(img);
+        this.imagenesCargadas.push({ base64: comprimido.split(',')[1], extension: 'image/jpeg', nombreImagen: file.name });
+        if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(comprimido);
+      };
+      img.src = original;
     };
     reader.readAsDataURL(file);
   }
 
-  private comprimirImagen(dataUrl: string, nombre: string, tipo: string): void {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let { width, height } = img;
-      const MAX_DIM = 1920;
-      if (width > MAX_DIM || height > MAX_DIM) {
-        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
-        else                { width  = Math.round(width  * MAX_DIM / height); height = MAX_DIM; }
-      }
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      const mimeOut = tipo === 'image/png' ? 'image/jpeg' : tipo;
-      let quality = 0.85;
-      const intentar = () => {
-        const compressed = canvas.toDataURL(mimeOut, quality);
-        const bytes = Math.round((compressed.length - compressed.indexOf(',') - 1) * 3 / 4);
-        if (bytes <= this.MAX_SIZE_BYTES || quality <= 0.2) {
-          const nombreFinal = tipo === 'image/png' ? nombre.replace(/\.png$/i, '.jpg') : nombre;
-          this.agregarImagenCargada(compressed, mimeOut, nombreFinal);
-        } else {
-          quality = Math.round((quality - 0.1) * 10) / 10;
-          intentar();
-        }
-      };
-      intentar();
-    };
-    img.src = dataUrl;
-  }
-
-  private agregarImagenCargada(dataUrl: string, tipo: string, nombre: string): void {
-    this.imagenesCargadas.push({ base64: dataUrl.split(',')[1], extension: tipo, nombreImagen: nombre });
-    if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(dataUrl);
+  // Redimensiona al máximo de DIMENSION_MAX y reencoda como JPEG para evitar
+  // 413 Request Entity Too Large al mandar varias fotos de cámara (3-8 MB c/u) en base64
+  private comprimirImagen(img: HTMLImageElement): string {
+    const escala = Math.min(1, this.DIMENSION_MAX / Math.max(img.width, img.height));
+    const w = Math.round(img.width * escala);
+    const h = Math.round(img.height * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', this.CALIDAD_JPEG);
   }
 
   // ── Cámara ────────────────────────────────────────────────────────
@@ -234,7 +256,11 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.mostrandoCamara = false;
   }
 
-  ngOnDestroy(): void { this.cerrarCamara(); }
+  ngOnDestroy(): void {
+    this.cerrarCamara();
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   private mostrarEnCanvas(src: string): void {
     const img = new Image();
@@ -259,19 +285,67 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
+  volver(): void { this.router.navigate(['/variantes/buscar']); }
+
+  imageSrc(img: IVarianteImagenDto): string {
+    if (img?.urlImagen) return img.urlImagen;
+    if (!img?.base64) return '';
+    if (img.base64.startsWith('data:')) return img.base64;
+    return `data:${img.extension};base64,${img.base64.replace(/\s+/g, '')}`;
+  }
+
   // ── Imágenes existentes ───────────────────────────────────────────
 
   private cargarImagenesExistentes(varianteId: number): void {
-    this.cargandoImagenesExistentes = true;
-    this.varianteService.getImagenesPaginado(varianteId, 1, 50).subscribe({
+    this.imagenesExistentes   = [];
+    this.paginasCargadas      = new Set<number>();
+    this.cargaInicialCompletada = false;
+    this.totalPaginasImagenes = 0;
+    this.cargarPaginaImagenes(0, varianteId);
+  }
+
+  private cargarPaginaImagenes(pagina: number, varianteId?: number): void {
+    const id = varianteId ?? this.variante?.id;
+    if (!id || this.paginasCargadas.has(pagina)) return;
+    this.paginasCargadas.add(pagina);
+
+    if (pagina === 0) this.cargandoImagenesExistentes = true;
+
+    this.varianteService.getImagenesPaginado(id, pagina + 1, 8).subscribe({
       next: res => {
-        this.imagenesExistentes = res.t ?? [];
-        const principal = this.imagenesExistentes.find(i => i.principal);
-        if (principal?.id) this.imagenPrincipalId = principal.id;
-        this.cargandoImagenesExistentes = false;
+        if (pagina === 0) {
+          this.cargandoImagenesExistentes  = false;
+          this.totalPaginasImagenes        = res.totalPaginas ?? 1;
+          this.cargaInicialCompletada      = true;
+          const principal = (res.t ?? []).find(i => i.principal);
+          if (principal?.id) this.imagenPrincipalId = principal.id;
+        }
+        const nuevas = (res.t ?? []).filter(
+          img => !this.imagenesExistentes.some(e => e.id === img.id)
+        );
+        this.imagenesExistentes = [...this.imagenesExistentes, ...nuevas];
       },
-      error: () => { this.cargandoImagenesExistentes = false; }
+      error: () => {
+        if (pagina === 0) this.cargandoImagenesExistentes = false;
+        this.paginasCargadas.delete(pagina);
+      }
     });
+  }
+
+  handlePageChangeImagenes(event: any): void {
+    if (!this.cargaInicialCompletada) return;
+    if (this.paginasCargadas.size >= this.totalPaginasImagenes) return;
+
+    const puntoSeleccionado = event.page;
+
+    if (!this.paginasCargadas.has(puntoSeleccionado) && puntoSeleccionado < this.totalPaginasImagenes) {
+      this.cargarPaginaImagenes(puntoSeleccionado);
+      return;
+    }
+
+    for (let i = 0; i < this.totalPaginasImagenes; i++) {
+      if (!this.paginasCargadas.has(i)) { this.cargarPaginaImagenes(i); break; }
+    }
   }
 
   eliminarImagenExistente(img: IVarianteImagenDto): void {
@@ -291,7 +365,9 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       if (!result.isConfirmed || !img.id || !this.variante?.id) return;
       this.eliminandoExistente.add(img.id);
 
-      this.varianteService.eliminarImagenes(this.variante!.id!, [img.id]).subscribe({
+      const eliminar$ = this.varianteService.eliminarImagenesV2(this.variante!.id!, [img.id]);
+
+      eliminar$.subscribe({
         next: () => {
           this.imagenesExistentes = this.imagenesExistentes.filter(i => i.id !== img.id);
           this.eliminandoExistente.delete(img.id!);

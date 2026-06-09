@@ -1,10 +1,4 @@
-<!-- Cargando -->
-<div *ngIf="cargando" class="dv-loading">
-  <span class="spinner-border text-primary"></span>
-  <p class="mt-3 text-muted">Cargando variante…</p>
-</div>
-
-<div *ngIf="!cargando && varianteSeleccionada" class="dv-wrapper">
+<div *ngIf="varianteSeleccionada" class="dv-wrapper">
 
   <!-- Botón volver -->
   <button class="dv-back" (click)="volver()">
@@ -70,7 +64,7 @@
         <ng-template pTemplate="item" let-img>
           <div class="dv-slide" [class.dv-slide--marked]="estaMarcada(img)">
             <div class="dv-slide__img-wrap">
-              <img *ngIf="img.urlImagen | imagenSrc | async as src"
+              <img *ngIf="imageSrc(img) | imagenSrc | async as src"
                 [src]="src"
                 [alt]="img.nombreImagen ?? 'Imagen variante'"
                 class="dv-slide__img"

@@ -10,7 +10,7 @@
       </div>
     </div>
 
-    <div class="pi-card__body" *ngIf="!cargando; else loader">
+    <div class="pi-card__body">
 
       <!-- ── Template reutilizable por grupo ────────────────────── -->
       <ng-template #tarjetas let-lista="lista">
@@ -96,10 +96,6 @@
       <ng-container *ngTemplateOutlet="tarjetas; context: { lista: registro }"></ng-container>
 
     </div>
-
-    <ng-template #loader>
-      <div class="pi-loader"><span class="spinner-border text-primary"></span></div>
-    </ng-template>
 
   </div>
 </div>

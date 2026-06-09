@@ -184,10 +184,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   &::placeholder { color: #d1d5db; }
 
   &:focus {
-    border-color: $primary;
+    border-color: var(--app-accent);
     background: #fff;
-    box-shadow: 0 0 0 4px rgba($primary, 0.1);
-    ~ .input-icon { color: $primary; }
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
+    ~ .input-icon { color: var(--app-accent); }
   }
 }
 
@@ -204,7 +204,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
   line-height: 1;
   transition: $transition;
-  &:hover { color: $primary; }
+  &:hover { color: var(--app-accent); }
 }
 
 // ── Error ─────────────────────────────────────────────────────────────���────
@@ -261,11 +261,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: #9ca3af;
 
   a {
-    color: $primary;
+    color: var(--app-accent);
     font-weight: 600;
     text-decoration: none;
     transition: $transition;
-    &:hover { color: $primary-d; text-decoration: underline; }
+    &:hover { color: var(--app-accent); text-decoration: underline; }
   }
 }
 
@@ -276,4 +276,65 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+// ── TEMA OSCURO ───────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .split-form {
+    background: rgba(13, 17, 23, 0.97);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
+
+    @media (max-width: 768px) {
+      background: #0d1117;
+    }
+  }
+
+  .brand-name { color: #f1f5f9; }
+  .brand-sub  { color: #64748b; }
+
+  .field-label { color: #94a3b8; }
+
+  .field-input {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+
+    &::placeholder { color: #475569; }
+
+    &:focus {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--app-accent);
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+    }
+  }
+
+  .input-icon   { color: #64748b; }
+  .toggle-pass  { color: #64748b; &:hover { color: var(--app-accent); } }
+
+  .error-msg {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #fca5a5;
+  }
+
+  .register-link { color: #64748b; }
+}
+
+// ── TEMA CLARO (explícito para asegurar que no haya restos del dark) ──────
+:host-context(body.theme-light) {
+  .split-form {
+    background: #ffffff;
+    box-shadow: -8px 0 32px rgba(139, 26, 74, 0.12);
+  }
+
+  .brand-name { color: #1f2937; }
+  .field-label { color: #374151; }
+
+  .field-input {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #1f2937;
+
+    &::placeholder { color: #d1d5db; }
+  }
 }

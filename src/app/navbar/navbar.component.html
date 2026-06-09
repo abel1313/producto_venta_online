@@ -1,312 +1,202 @@
-<nav class="navbar navbar-expand-lg" style="color: white !important;">
-  <div class="container-fluid">
+<!-- ── Hamburger (solo móvil) ─────────────────────────────────── -->
+<button class="sb-hamburger" (click)="toggleMobile()" aria-label="Abrir menú">
+  <i class="bi bi-list"></i>
+</button>
 
-    <!-- Botón móvil -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-            data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
-            aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+<!-- ── Backdrop (móvil) ──────────────────────────────────────── -->
+<div class="sb-backdrop" [class.visible]="isMobileOpen" (click)="closeMobile()"></div>
+
+<!-- ══════════════════════ SIDEBAR ══════════════════════════════ -->
+<aside class="sidebar"
+       [class.expanded]="isExpanded"
+       [class.mobile-open]="isMobileOpen"
+       (mouseenter)="onMouseEnter()"
+       (mouseleave)="onMouseLeave()">
+
+  <!-- Brand -->
+  <div class="sb-brand">
+    <span class="sb-brand-icon">🛍️</span>
+    <span class="sb-brand-text">Novedades Jade</span>
+  </div>
+
+  <!-- ── Navegación principal ──────────────────────────────────── -->
+  <nav class="sb-nav">
+
+    <!-- Home -->
+    <a class="sb-item" routerLink="home" routerLinkActive="sb-item--active"
+       [routerLinkActiveOptions]="{exact:true}" (click)="closeMobile()">
+      <span class="sb-icon">🏠</span>
+      <span class="sb-label">Home</span>
+    </a>
+
+    <!-- Productos (usuarios logueados) -->
+    <a class="sb-item" *ngIf="!isAnonymous"
+       routerLink="variantes/buscar" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🛍️</span>
+      <span class="sb-label">Productos</span>
+    </a>
+
+    <!-- Mis productos (admin) — accordion -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'misproductos'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('misproductos')">
+        <span class="sb-icon">📦</span>
+        <span class="sb-label">Mis productos</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="productos/buscar" (click)="closeMobile()">🔍 Ver todos</a>
+        <a class="sb-subitem" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar producto</a>
+        <a class="sb-subitem" routerLink="variantes/venta" (click)="closeMobile()">🧩 Gestionar variantes</a>
+        <a class="sb-subitem" routerLink="variantes/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
+        <a class="sb-subitem" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Palabras clave</a>
+      </div>
+    </div>
+
+    <!-- Pedidos — accordion -->
+    <div class="sb-group" *ngIf="!isAnonymous"
+         [class.sb-group--open]="openGroup === 'pedidos'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('pedidos')">
+        <span class="sb-icon">📋</span>
+        <span class="sb-label">Pedidos</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
+        <a class="sb-subitem" *ngIf="isAdminUser"
+           routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
+      </div>
+    </div>
+
+    <!-- Ventas (admin) — accordion -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'ventas'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('ventas')">
+        <span class="sb-icon">💰</span>
+        <span class="sb-label">Ventas</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="variantes/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
+        <a class="sb-subitem" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
+      </div>
+    </div>
+
+    <!-- Gastos (admin) — accordion -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'gastos'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('gastos')">
+        <span class="sb-icon">💸</span>
+        <span class="sb-label">Gastos</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="gastos/agregar" (click)="closeMobile()">Agregar</a>
+        <a class="sb-subitem" routerLink="gastos/buscar" (click)="closeMobile()">Buscar</a>
+      </div>
+    </div>
+
+    <!-- Rifas (admin) — accordion -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'rifas'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('rifas')">
+        <span class="sb-icon">🎰</span>
+        <span class="sb-label">Rifas</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de variantes</a>
+        <a class="sb-subitem" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
+        <a class="sb-subitem" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
+      </div>
+    </div>
+
+    <!-- Admin (admin) — accordion -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'admin'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('admin')">
+        <span class="sb-icon">🛠️</span>
+        <span class="sb-label">Admin</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
+        <a class="sb-subitem" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
+        <a class="sb-subitem" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
+        <a class="sb-subitem" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
+        <a class="sb-subitem" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
+        <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+      </div>
+    </div>
+
+    <!-- QR -->
+    <a class="sb-item" routerLink="qr" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">📱</span>
+      <span class="sb-label">QR</span>
+    </a>
+
+    <!-- Login (anónimo) -->
+    <a class="sb-item" *ngIf="isAnonymous"
+       routerLink="login" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🔑</span>
+      <span class="sb-label">Login</span>
+    </a>
+
+    <!-- Toggle Dark / Light -->
+    <button class="sb-item sb-item--theme" (click)="toggleTheme()">
+      <span class="sb-icon">{{ themeService.isDark ? '☀️' : '🌙' }}</span>
+      <span class="sb-label">{{ themeService.isDark ? 'Modo claro' : 'Modo oscuro' }}</span>
     </button>
 
-    <div class="collapse navbar-collapse" id="navbarNavDropdown">
-      <ul class="navbar-nav me-auto">
+  </nav>
 
-        <!-- Home — todos -->
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" [routerLink]="'home'">🏠 Home</a>
-        </li>
+  <!-- ── Footer: carrito + usuario ─────────────────────────────── -->
+  <div class="sb-footer" *ngIf="!isAnonymous">
 
-        <!-- ══ PRODUCTOS — vista cliente (variantes) — todos los logueados ══ -->
-        <li class="nav-item" *ngIf="!isAnonymous">
-          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-             [routerLink]="'variantes/buscar'">
-            🛍️ Productos
-          </a>
-        </li>
+    <!-- Botones de carrito -->
+    <div class="sb-cart-row" *ngIf="isAdminUser || countCarritoVariante > 0">
 
-        <!-- ══ PRODUCTOS ADMIN — vista completa con precio costo, estado, stock ══ -->
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            📦 Mis productos
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'productos/buscar'">
-                🔍 Ver todos
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'productos/agregar'">
-                ➕ Agregar producto
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'variantes/venta'">
-                🧩 Gestionar variantes
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'variantes/cargar-excel'">
-                📂 Cargar Excel
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'palabras-clave'">
-                🏷️ Palabras clave
-              </a>
-            </li>
-          </ul>
-        </li>
+      <button class="sb-cart-btn" (click)="regresarProducto()" title="Ir a productos">
+        <img [src]="iconService.iconRegresar" alt="" class="sb-cart-icon">
+        <span class="sb-label">Productos</span>
+      </button>
 
-        <!-- ══ PEDIDOS — todos los logueados ══ -->
-        <li class="nav-item dropdown" *ngIf="!isAnonymous">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            📋 Pedidos
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a class="dropdown-item" data-bs-toggle="collapse"
-                 data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'pedidos/mis-pedidos'">
-                Mis pedidos
-              </a>
-            </li>
-            <li *ngIf="isAdminUser"><hr class="dropdown-divider"></li>
-            <li *ngIf="isAdminUser">
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'pedidos/historial-mp'">
-                <i class="pi pi-credit-card"></i> Historial MP
-              </a>
-            </li>
-          </ul>
-        </li>
+      <button *ngIf="isAdminUser" class="sb-cart-btn" (click)="limpiarCarrito()" title="Limpiar carrito">
+        <img [src]="iconService.iconLimpiar" alt="" class="sb-cart-icon">
+        <span class="sb-label">Limpiar</span>
+      </button>
 
-        <!-- ══ VENTAS — solo admin ══ -->
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            💰 Ventas
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'variantes/venta-directa'">
-                💰 Venta directa
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" data-bs-toggle="collapse"
-                 data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'ventas/buscar'">
-                🔍 Buscar ventas
-              </a>
-            </li>
-          </ul>
-        </li>
+      <button *ngIf="isAdminUser" class="sb-cart-btn sb-cart-btn--primary"
+              (click)="revisarProductosCarrito()" title="Ver carrito">
+        <img [src]="iconService.iconCarrito" alt="" class="sb-cart-icon">
+        <span class="sb-label">Carrito</span>
+        <span class="sb-badge" *ngIf="countCarrito > 0">{{ countCarrito }}</span>
+      </button>
 
-        <!-- ══ GASTOS — solo admin ══ -->
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            💸 Gastos
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a class="dropdown-item" data-bs-toggle="collapse"
-                 data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'gastos/agregar'">
-                Agregar
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" data-bs-toggle="collapse"
-                 data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'gastos/buscar'">
-                Buscar
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- ══ RIFAS — solo admin ══ -->
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            🎰 Rifas
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'rifas/agregar'">
-                🎡 Rifa de variantes
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'rifas/mes'">
-                📅 Rifa mensual
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'rifas/buscar'">
-                🔍 Ver rifas activas
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- ══ ADMIN — solo admin (absorbe Usuarios, QR y config) ══ -->
-        <li class="nav-item dropdown" *ngIf="isAdminUser">
-          <a class="nav-link dropdown-toggle" href="#" role="button"
-             data-bs-toggle="dropdown" aria-expanded="false">
-            🛠️ Admin
-          </a>
-          <ul class="dropdown-menu">
-
-            <!-- Usuarios (antes era menú independiente) -->
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'usuarios/buscar'">
-                <span>👥</span> Usuarios
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-
-            <!-- Configuración del negocio -->
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'admin/negocio'">
-                <span>🏪</span> Negocio &amp; Contactos
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'admin/presentacion'">
-                <span>🖼️</span> Imágenes presentación
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-
-            <!-- Herramientas técnicas -->
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'admin/diagnostico-imagenes'">
-                <span>🔍</span> Diagnóstico imágenes
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'admin/reconciliacion-imagenes'">
-                <span>🔧</span> Reconciliación imágenes
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item d-flex align-items-center gap-2"
-                 data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-                 [routerLink]="'admin/cache'">
-                <span>🗑️</span> Limpiar caché
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- QR — público, cualquiera puede escanearlo para llegar a la tienda -->
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-             [routerLink]="'qr'">
-            📱 QR
-          </a>
-        </li>
-
-        <!-- Login — solo anónimo -->
-        <li class="nav-item" *ngIf="isAnonymous">
-          <a class="nav-link" data-bs-toggle="collapse" data-bs-target=".navbar-collapse.show"
-             [routerLink]="'login'">
-            🔑 Login
-          </a>
-        </li>
-
-      </ul>
-
-      <!-- ── Botones de carrito ──────────────────────────────────────── -->
-      <div class="d-flex align-items-center gap-2 me-3" *ngIf="!isAnonymous">
-
-        <button class="btn btn-outline-secondary btn-sm" (click)="regresarProducto()">
-          <img [src]="iconService.iconRegresar" alt="regresar" style="width:16px;height:16px;">
-          Productos
-        </button>
-
-        <button *ngIf="isAdminUser" class="btn btn-outline-secondary btn-sm"
-                (click)="limpiarCarrito()">
-          <img [src]="iconService.iconLimpiar" alt="limpiar" style="width:16px;height:16px;">
-          Limpiar
-        </button>
-
-        <button *ngIf="isAdminUser" class="btn btn-outline-primary btn-sm position-relative"
-                (click)="revisarProductosCarrito()">
-          <img [src]="iconService.iconCarrito" alt="carrito" style="width:16px;height:16px;">
-          Carrito
-          <span class="badge bg-danger ms-1" *ngIf="countCarrito > 0">{{ countCarrito }}</span>
-        </button>
-
-        <button *ngIf="countCarritoVariante > 0"
-                class="btn btn-outline-warning btn-sm position-relative"
-                (click)="verCarritoVariante()">
-          🏷️ Variantes
-          <span class="badge bg-danger ms-1">{{ countCarritoVariante }}</span>
-        </button>
-
-      </div>
-
-      <!-- ── Usuario logueado ──────────────────────────────────────────── -->
-      <div class="nav-item dropdown" *ngIf="!isAnonymous">
-        <a class="nav-link dropdown-toggle" href="#" role="button"
-           data-bs-toggle="dropdown" aria-expanded="false">
-          Bienvenido <strong>{{ username }}</strong>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <a class="dropdown-item" data-bs-toggle="collapse"
-               data-bs-target=".navbar-collapse.show"
-               [routerLink]="'clientes/mis-datos'">
-              Mis datos
-            </a>
-          </li>
-          <li><hr class="dropdown-divider"></li>
-          <li>
-            <button class="dropdown-item text-danger" (click)="logout()">
-              <i class="bi bi-box-arrow-right me-1"></i> Salir
-            </button>
-          </li>
-        </ul>
-      </div>
+      <button *ngIf="countCarritoVariante > 0" class="sb-cart-btn sb-cart-btn--warn"
+              (click)="verCarritoVariante()" title="Variantes en carrito">
+        <span class="sb-icon">🏷️</span>
+        <span class="sb-label">Variantes</span>
+        <span class="sb-badge">{{ countCarritoVariante }}</span>
+      </button>
 
     </div>
+
+    <!-- Usuario -->
+    <div class="sb-user">
+      <div class="sb-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+      <div class="sb-user-info">
+        <span class="sb-username">{{ username }}</span>
+        <div class="sb-user-actions">
+          <a class="sb-user-link" routerLink="clientes/mis-datos" (click)="closeMobile()">Mis datos</a>
+          <button class="sb-logout" (click)="logout()">Salir</button>
+        </div>
+      </div>
+    </div>
+
   </div>
-</nav>
+
+</aside>

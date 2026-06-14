@@ -2,7 +2,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ArcElement, Chart, PieController } from 'chart.js';
-import { IClientePedido } from '../models/concursante.model';
+import { IClientePedido, IOmitidoYaRegistrado } from '../models/concursante.model';
 import { IConcursante } from '../models/concursante.model';
 import { IConfigurarRifa, IConfigurarRifaVariante, IConfigurarRifaVarianteRequest } from '../models/configurar-rifa.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
@@ -23,6 +23,7 @@ type PasoMes = 'mes' | 'participantes' | 'variante' | 'ruleta' | 'ganador';
 export class RifaMesComponent implements OnInit, OnDestroy {
 
   @ViewChild('ruletaCanvas') ruletaCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('searchWrapVariante') searchWrapVariante?: ElementRef<HTMLElement>;
 
   paso: PasoMes = 'mes';
 
@@ -30,7 +31,9 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   mesSeleccionado = '';
   fechaHoraLimite = '';
   palabraClave    = 'RIFA';
+  esPrueba = true;
   cargandoClientes = false;
+  creandoRifa = false;
   clientesMes: IClientePedido[] = [];
   clientesSeleccionados = new Set<number>();
 
@@ -40,6 +43,10 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   guardandoConcursante = false;
   manualForm!: FormGroup;
   mostrarManual = false;
+  omitidosImport: IOmitidoYaRegistrado[] = [];
+  omitidosSinNombre: IClientePedido[] = [];
+  errorConcursante: string | null = null;
+  cambiandoModoPrueba = false;
 
   // ── Paso 3: Variante ───────────────────────────────────────────────
   terminoBusca = '';
@@ -55,6 +62,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
   // ── Paso 4: Ruleta ─────────────────────────────────────────────────
   elegibles: IConcursante[] = [];
+  descartados: IConcursante[] = [];
   sorteando = false;
   descartadoActual: IConcursante | null = null;
   ganador: IGanadorRifa | null = null;
@@ -99,11 +107,15 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   cargarClientes(): void {
     if (!this.mesSeleccionado) return;
     this.cargandoClientes = true;
+    this.errorConcursante = null;
     this.clientesMes = [];
     this.clientesSeleccionados.clear();
     this.rifaService.getClientesPorMes(this.mesSeleccionado).subscribe({
       next: res => { this.clientesMes = res; this.cargandoClientes = false; },
-      error: ()  => { this.cargandoClientes = false; }
+      error: err => {
+        this.cargandoClientes = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los clientes del mes.';
+      }
     });
   }
 
@@ -124,9 +136,17 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   // ── Crear rifa e importar participantes ───────────────────────────
 
   crearRifaEImportar(): void {
-    if (!this.mesSeleccionado || !this.fechaHoraLimite || !this.palabraClave.trim()) return;
+    if (!this.mesSeleccionado || !this.fechaHoraLimite || !this.palabraClave.trim() || this.creandoRifa) return;
+    this.creandoRifa = true;
+    this.errorConcursante = null;
 
-    this.rifaService.configurarRifa({ fechaHoraLimite: this.fechaHoraLimite, activa: true }).subscribe({
+    this.rifaService.configurarRifa({
+      fechaHoraLimite: this.fechaHoraLimite,
+      activa: true,
+      tipo: 'MENSUAL',
+      mesReferencia: this.mesSeleccionado,
+      esPrueba: this.esPrueba
+    }).subscribe({
       next: rifa => {
         this.rifaConfig = rifa;
         const clientesSelec = [...this.clientesSeleccionados].map(i => this.clientesMes[i]);
@@ -138,11 +158,87 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           mes:              this.mesSeleccionado,
           clientes:         clientesSelec
         }).subscribe({
-          next: concursantes => {
-            this.concursantes = concursantes;
+          next: res => {
+            this.concursantes = res.importados;
+            this.omitidosImport = res.omitidosYaRegistrados ?? [];
+            this.omitidosSinNombre = res.omitidosSinNombre ?? [];
+            this.creandoRifa = false;
             this.paso = 'participantes';
+          },
+          error: err => {
+            this.creandoRifa = false;
+            this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron importar los participantes.';
           }
         });
+      },
+      error: err => {
+        this.creandoRifa = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo crear la rifa.';
+      }
+    });
+  }
+
+  cerrarOmitidosImport(): void {
+    this.omitidosImport = [];
+  }
+
+  get omitidosNombres(): string {
+    return this.omitidosImport.map(o => o.nombre).join(', ');
+  }
+
+  cerrarOmitidosSinNombre(): void {
+    this.omitidosSinNombre = [];
+  }
+
+  toggleModoPrueba(): void {
+    if (!this.rifaConfig?.id || this.cambiandoModoPrueba) return;
+    const rifaId = this.rifaConfig.id;
+    const nuevoValor = !this.rifaConfig.esPrueba;
+
+    if (!nuevoValor) {
+      const confirmado = confirm(
+        '¿Deseas pasar esta rifa al modo REAL?\n\n' +
+        'Se restablecerán los descartes (los mismos participantes vuelven a estar ' +
+        'disponibles) y se borrarán los giros de prueba. El sorteo comenzará desde ' +
+        'cero con los mismos participantes.'
+      );
+      if (!confirmado) return;
+    }
+
+    this.cambiandoModoPrueba = true;
+    this.errorConcursante = null;
+    this.rifaService.setEsPrueba(rifaId, nuevoValor).subscribe({
+      next: res => {
+        this.rifaConfig = res;
+        this.rifaService.getConcursantesPorRifa(rifaId).subscribe({
+          next: concursantes => { this.concursantes = concursantes; }
+        });
+
+        if (!nuevoValor && this.varianteRifa) {
+          // El back ya reactivó descartados y limpió los giros de prueba —
+          // resincronizamos elegibles y reiniciamos la ruleta para el sorteo real.
+          this.ganador = null;
+          this.descartadoActual = null;
+          this.descartados = [];
+          this.rifaService.getElegibles(rifaId).subscribe({
+            next: elegibles => {
+              this.elegibles = elegibles;
+              this.cambiandoModoPrueba = false;
+              this.paso = 'ruleta';
+              setTimeout(() => this.actualizarRuleta(), 200);
+            },
+            error: err => {
+              this.cambiandoModoPrueba = false;
+              this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+            }
+          });
+        } else {
+          this.cambiandoModoPrueba = false;
+        }
+      },
+      error: err => {
+        this.cambiandoModoPrueba = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cambiar el modo de prueba.';
       }
     });
   }
@@ -152,6 +248,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   agregarManual(): void {
     if (this.manualForm.invalid || !this.rifaConfig?.id) return;
     this.guardandoConcursante = true;
+    this.errorConcursante = null;
 
     const data: IConcursante = {
       ...this.manualForm.value,
@@ -167,14 +264,22 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         this.guardandoConcursante = false;
         this.mostrarManual = false;
       },
-      error: () => { this.guardandoConcursante = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.guardandoConcursante = false;
+      }
     });
   }
 
   eliminarConcursante(c: IConcursante): void {
     if (!c.id) return;
+    this.errorConcursante = null;
     this.rifaService.eliminarConcursante(c.id).subscribe({
-      next: () => { this.concursantes = this.concursantes.filter(x => x.id !== c.id); }
+      next: () => { this.concursantes = this.concursantes.filter(x => x.id !== c.id); },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje
+          ?? 'No se puede eliminar: el concursante ya participó en un sorteo';
+      }
     });
   }
 
@@ -194,9 +299,24 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.variantesBusqueda = [];
   }
 
+  // El dropdown se posiciona como `fixed` (vía getBoundingClientRect) para no
+  // quedar recortado por el `overflow: hidden` de `.rm-card`.
+  get dropdownStyleVariante(): { [key: string]: string | number } {
+    const el = this.searchWrapVariante?.nativeElement;
+    if (!el) return {};
+    const r = el.getBoundingClientRect();
+    return {
+      position: 'fixed',
+      'top.px': r.bottom + 4,
+      'left.px': r.left,
+      'width.px': r.width
+    };
+  }
+
   guardarVariante(): void {
-    if (!this.varianteSeleccionada || !this.rifaConfig?.id || this.giroGanador < 1) return;
+    if (!this.varianteSeleccionada || !this.rifaConfig?.id || this.giroGanador < 1 || this.guardandoVariante) return;
     this.guardandoVariante = true;
+    this.errorConcursante = null;
 
     const req: IConfigurarRifaVarianteRequest = {
       configurarRifaId: this.rifaConfig.id,
@@ -209,18 +329,50 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
     this.rifaService.guardarVarianteRifa(req).subscribe({
       next: res => {
-        this.varianteRifa   = res;
-        this.guardandoVariante = false;
-        // Cargar elegibles y pasar a la ruleta
-        this.rifaService.getElegibles(this.rifaConfig!.id!).subscribe({
-          next: elegibles => {
-            this.elegibles = elegibles;
-            this.paso = 'ruleta';
-            setTimeout(() => this.generarRuleta(), 200);
-          }
-        });
+        this.varianteRifa = res;
+        const rifaId = this.rifaConfig!.id!;
+
+        // guardandoVariante sigue en true hasta que termine TODO el flujo (incluye
+        // reiniciar + getElegibles) — evita que un segundo clic reenvíe la misma
+        // palabraClave (ya guardada) mientras esta llamada sigue en vuelo.
+        const cargarElegibles = () => {
+          this.rifaService.getElegibles(rifaId).subscribe({
+            next: elegibles => {
+              this.elegibles = elegibles;
+              this.descartados = [];
+              this.guardandoVariante = false;
+              this.paso = 'ruleta';
+              setTimeout(() => this.generarRuleta(), 200);
+            },
+            error: err => {
+              this.guardandoVariante = false;
+              this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+            }
+          });
+        };
+
+        if (this.rifaConfig?.esPrueba) {
+          // En modo prueba, (re)confirmar el premio reinicia el sorteo
+          // (descartado=false para todos, sin borrar concursantes) para poder
+          // repetir la prueba con los mismos concursantes sin pasar antes por
+          // "🔄 Reiniciar (mismos participantes)".
+          this.ganador = null;
+          this.descartadoActual = null;
+          this.rifaService.reiniciar(rifaId, false).subscribe({
+            next: () => cargarElegibles(),
+            error: err => {
+              this.guardandoVariante = false;
+              this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+            }
+          });
+        } else {
+          cargarElegibles();
+        }
       },
-      error: () => { this.guardandoVariante = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo guardar el premio.';
+        this.guardandoVariante = false;
+      }
     });
   }
 
@@ -230,6 +382,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     if (!this.rifaConfig?.id || this.sorteando || this.elegibles.length === 0) return;
     this.sorteando = true;
     this.descartadoActual = null;
+    this.errorConcursante = null;
 
     this.rifaService.sortear(this.rifaConfig.id).subscribe({
       next: resultado => {
@@ -243,6 +396,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
               setTimeout(() => {
                 this.descartadoActual = null;
                 this.elegibles = this.elegibles.filter(c => c.id !== resultado.concursante.id);
+                this.descartados = [...this.descartados, resultado.concursante];
                 this.actualizarRuleta();
               }, 2500);
             } else {
@@ -253,23 +407,48 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           });
         }, 100);
       },
-      error: () => { this.sorteando = false; }
+      error: err => {
+        this.sorteando = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo realizar el sorteo.';
+      }
     });
   }
 
   reiniciar(): void {
     if (!this.rifaConfig?.id) return;
+    this.errorConcursante = null;
     this.rifaService.reiniciar(this.rifaConfig.id, false).subscribe({
       next: () => {
         this.ganador = null;
         this.descartadoActual = null;
+        this.descartados = [];
         this.rifaService.getElegibles(this.rifaConfig!.id!).subscribe({
           next: elegibles => {
             this.elegibles = elegibles;
             this.paso = 'ruleta';
-            this.actualizarRuleta();
+            setTimeout(() => this.actualizarRuleta(), 200);
           }
         });
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+      }
+    });
+  }
+
+  volverASorteo(): void {
+    if (!this.rifaConfig?.id) return;
+    this.errorConcursante = null;
+    this.rifaService.getElegibles(this.rifaConfig.id).subscribe({
+      next: elegibles => {
+        this.elegibles = elegibles;
+        this.ganador = null;
+        this.descartadoActual = null;
+        this.paso = 'ruleta';
+        setTimeout(() => this.actualizarRuleta(), 200);
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
       }
     });
   }
@@ -279,6 +458,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.rifaConfig = null;
     this.concursantes = [];
     this.elegibles = [];
+    this.descartados = [];
     this.ganador = null;
     this.descartadoActual = null;
     this.varianteRifa = null;
@@ -286,8 +466,13 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.clientesMes = [];
     this.clientesSeleccionados.clear();
     this.confettiPieces = [];
+    this.omitidosImport = [];
+    this.omitidosSinNombre = [];
     this.mesSeleccionado = '';
     this.fechaHoraLimite = '';
+    this.esPrueba = true;
+    this.cambiandoModoPrueba = false;
+    this.errorConcursante = null;
     this.terminoBusca = '';
     this.chart?.destroy();
   }
@@ -297,6 +482,11 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   imageSrc(v: IVarianteResumen | null): string | null {
     if (!v?.imagenBase64) return null;
     return v.imagenBase64.startsWith('data:') ? v.imagenBase64 : `data:image/jpeg;base64,${v.imagenBase64}`;
+  }
+
+  nombreCompleto(c?: { nombre?: string | null; apellidoPaterno?: string | null } | null): string {
+    if (!c) return '';
+    return [c.nombre, c.apellidoPaterno].filter(p => !!p).join(' ');
   }
 
   private actualizarRuleta(): void {
@@ -313,7 +503,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.elegibles.map(c => `${c.nombre} ${c.apellidoPaterno}`),
+        labels: this.elegibles.map(c => this.nombreCompleto(c)),
         datasets: [{
           data: Array(this.elegibles.length).fill(1),
           backgroundColor: this.elegibles.map(() => this.colorAleatorio())

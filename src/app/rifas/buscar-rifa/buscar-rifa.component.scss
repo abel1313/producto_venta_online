@@ -51,6 +51,60 @@
   p { color: var(--app-text-muted); font-size: 0.95rem; }
 }
 
+// -- Filtro de búsqueda
+.br-filtro {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 12px);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+  }
+}
+
+.br-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.br-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.br-input {
+  padding: 8px 10px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg, var(--card-bg));
+  color: var(--app-text);
+  font-size: 0.85rem;
+
+  &::placeholder { color: var(--input-placeholder); }
+}
+
+.br-btn--filtro {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg,#5b21b6,#7c3aed);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,58,237,0.3); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
 .br-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -74,6 +128,14 @@
 
   &__id { font-size: 0.9rem; font-weight: 700; color: #fff; }
 
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   &__badge {
     font-size: 0.7rem;
     background: rgba(255,255,255,0.2);
@@ -81,6 +143,9 @@
     padding: 2px 8px;
     border-radius: 10px;
     font-weight: 600;
+    white-space: nowrap;
+
+    &--prueba { background: rgba(252, 211, 77, 0.35); }
   }
 
   &__body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }

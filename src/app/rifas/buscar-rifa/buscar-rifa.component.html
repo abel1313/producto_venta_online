@@ -3,14 +3,47 @@
   <div class="br-header">
     <h4 class="br-header__title">🎰 Rifas</h4>
     <div class="br-tabs">
-      <button class="br-tab" [class.br-tab--active]="tab === 'hoy'"   (click)="cambiarTab('hoy')">📅 Rifas de hoy</button>
-      <button class="br-tab" [class.br-tab--active]="tab === 'todas'" (click)="cambiarTab('todas')">📋 Todas las activas</button>
+      <button class="br-tab" [class.br-tab--active]="tab === 'hoy'"    (click)="cambiarTab('hoy')">📅 Rifas de hoy</button>
+      <button class="br-tab" [class.br-tab--active]="tab === 'todas'"  (click)="cambiarTab('todas')">📋 Todas las activas</button>
+      <button class="br-tab" [class.br-tab--active]="tab === 'buscar'" (click)="cambiarTab('buscar')">🔎 Buscar</button>
+    </div>
+  </div>
+
+  <!-- ════════ FILTRO DE BÚSQUEDA ════════ -->
+  <div class="br-filtro" *ngIf="tab === 'buscar'">
+    <div class="br-filtro__row">
+      <div class="br-field">
+        <label class="br-label">Tipo</label>
+        <select class="br-input" [(ngModel)]="filtroTipo">
+          <option value="">Todos</option>
+          <option value="MENSUAL">Mensual</option>
+          <option value="DIARIA">Diaria</option>
+        </select>
+      </div>
+      <div class="br-field" *ngIf="filtroTipo === 'MENSUAL'">
+        <label class="br-label">Mes de referencia</label>
+        <input class="br-input" type="month" [(ngModel)]="filtroMesReferencia" />
+      </div>
+      <div class="br-field">
+        <label class="br-label">Desde</label>
+        <input class="br-input" type="date" [(ngModel)]="filtroDesde" />
+      </div>
+      <div class="br-field">
+        <label class="br-label">Hasta</label>
+        <input class="br-input" type="date" [(ngModel)]="filtroHasta" />
+      </div>
+      <button class="br-btn br-btn--filtro" (click)="buscarPorFiltro()" [disabled]="buscando">
+        <span *ngIf="!buscando">Buscar</span>
+        <span *ngIf="buscando" class="spinner-border spinner-border-sm"></span>
+      </button>
     </div>
   </div>
 
   <div class="br-empty" *ngIf="!cargando && rifasMostradas.length === 0">
     <span class="br-empty__icon">🎰</span>
-    <p>No hay rifas {{ tab === 'hoy' ? 'programadas para hoy' : 'activas' }}</p>
+    <p *ngIf="tab === 'hoy'">No hay rifas programadas para hoy</p>
+    <p *ngIf="tab === 'todas'">No hay rifas activas</p>
+    <p *ngIf="tab === 'buscar'">{{ busquedaRealizada ? 'No se encontraron rifas con esos filtros' : 'Define un filtro y presiona Buscar' }}</p>
   </div>
 
   <div class="br-grid" *ngIf="!cargando && rifasMostradas.length > 0">
@@ -18,7 +51,12 @@
 
       <div class="br-card__header">
         <span class="br-card__id">Rifa #{{ r.id }}</span>
-        <span class="br-card__badge">Activa</span>
+        <div class="br-card__badges">
+          <span class="br-card__badge" *ngIf="r.tipo === 'DIARIA'">☀️ Diaria</span>
+          <span class="br-card__badge" *ngIf="r.tipo === 'MENSUAL'">📅 Mensual{{ r.mesReferencia ? ' · ' + r.mesReferencia : '' }}</span>
+          <span class="br-card__badge br-card__badge--prueba" *ngIf="r.esPrueba">🧪 Prueba</span>
+          <span class="br-card__badge">Activa</span>
+        </div>
       </div>
 
       <div class="br-card__body">

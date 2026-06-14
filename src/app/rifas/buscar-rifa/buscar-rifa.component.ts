@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IConfigurarRifa } from '../models/configurar-rifa.model';
+import { IConfigurarRifa, TipoRifa } from '../models/configurar-rifa.model';
 import { RifaService } from '../service/rifa.service';
 
 @Component({
@@ -10,10 +10,19 @@ import { RifaService } from '../service/rifa.service';
 })
 export class BuscarRifaComponent implements OnInit {
 
-  tab: 'hoy' | 'todas' = 'hoy';
-  rifasHoy: IConfigurarRifa[]   = [];
-  rifasTodas: IConfigurarRifa[] = [];
+  tab: 'hoy' | 'todas' | 'buscar' = 'hoy';
+  rifasHoy: IConfigurarRifa[]     = [];
+  rifasTodas: IConfigurarRifa[]   = [];
+  rifasBuscadas: IConfigurarRifa[] = [];
   cargando = false;
+  buscando = false;
+
+  // ── Filtro de búsqueda (tab "buscar") ──────────────────────────────
+  filtroTipo: TipoRifa | '' = '';
+  filtroMesReferencia = '';
+  filtroDesde = '';
+  filtroHasta = '';
+  busquedaRealizada = false;
 
   constructor(
     private readonly rifaService: RifaService,
@@ -22,7 +31,7 @@ export class BuscarRifaComponent implements OnInit {
 
   ngOnInit(): void { this.cargarHoy(); }
 
-  cambiarTab(tab: 'hoy' | 'todas'): void {
+  cambiarTab(tab: 'hoy' | 'todas' | 'buscar'): void {
     this.tab = tab;
     if (tab === 'hoy'   && this.rifasHoy.length   === 0) this.cargarHoy();
     if (tab === 'todas' && this.rifasTodas.length  === 0) this.cargarTodas();
@@ -44,12 +53,29 @@ export class BuscarRifaComponent implements OnInit {
     });
   }
 
+  buscarPorFiltro(): void {
+    this.cargando = true;
+    this.buscando = true;
+    this.busquedaRealizada = true;
+    this.rifaService.buscarConfiguraciones({
+      tipo: this.filtroTipo || undefined,
+      mesReferencia: this.filtroMesReferencia || undefined,
+      desde: this.filtroDesde || undefined,
+      hasta: this.filtroHasta || undefined
+    }).subscribe({
+      next: res => { this.rifasBuscadas = res; this.cargando = false; this.buscando = false; },
+      error: ()  => { this.cargando = false; this.buscando = false; }
+    });
+  }
+
   retomarRifa(r: IConfigurarRifa): void {
     this.router.navigate(['/rifas/agregar'], { state: { retomarRifaId: r.id } });
   }
 
   get rifasMostradas(): IConfigurarRifa[] {
-    return this.tab === 'hoy' ? this.rifasHoy : this.rifasTodas;
+    if (this.tab === 'hoy') return this.rifasHoy;
+    if (this.tab === 'todas') return this.rifasTodas;
+    return this.rifasBuscadas;
   }
 
   progreso(r: IConfigurarRifa): string {

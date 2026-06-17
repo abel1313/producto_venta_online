@@ -29,10 +29,17 @@ export class ChatAdminComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit(): void {
     this.subs.push(
       this.adminChatService.sesiones$.subscribe(sesiones => {
+        const anterior = this.sesiones;
         this.sesiones = sesiones;
         if (this.sesionActiva) {
           this.sesionActiva = sesiones.find(s => s.sesionId === this.sesionActiva!.sesionId) ?? null;
         }
+        // sonido si alguna sesión aumentó sus noLeidos
+        const hayNuevo = sesiones.some(s => {
+          const prev = anterior.find(a => a.sesionId === s.sesionId);
+          return s.noLeidos > 0 && (!prev || s.noLeidos > prev.noLeidos);
+        });
+        if (hayNuevo) this.playNotificationSound();
       }),
       this.adminChatService.conectado$.subscribe(c => { this.conectado = c; }),
       this.adminChatService.error$.subscribe(e => { this.errorConexion = e; })
@@ -78,6 +85,21 @@ export class ChatAdminComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.sesionActiva?.sesionId === sesion.sesionId) {
       this.sesionActiva = null;
     }
+  }
+
+  private playNotificationSound(): void {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch { /* autoplay policy bloqueado — sin sonido, sin crash */ }
   }
 
   formatHora(timestamp: string): string {

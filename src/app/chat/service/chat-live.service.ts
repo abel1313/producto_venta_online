@@ -130,7 +130,7 @@ export class ChatLiveService implements OnDestroy {
         if (evento.tipo === 'SESION_CERRADA') {
           this.sesionCerrada$.next();
         } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
-          this.agregarMensaje('ADMIN', evento.contenido, evento.timestamp);
+          this.agregarMensaje('ADMIN', evento.contenido, evento.timestamp ?? undefined);
         }
       }
     );

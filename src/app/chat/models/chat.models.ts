@@ -21,9 +21,9 @@ export interface ChatConexionResponse {
 
 export interface EventoUsuario {
   tipo: 'MENSAJE' | 'SESION_CERRADA';
-  remitente?: 'ADMIN';
-  contenido?: string;
-  timestamp?: string;
+  remitente?: 'ADMIN' | null;
+  contenido?: string | null;
+  timestamp?: string | null;
 }
 
 export interface EventoAdmin {

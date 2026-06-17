@@ -2245,26 +2245,29 @@ Lo siguiente ya estaba bien implementado y no requiere ninguna acción:
 
 ---
 
-## ⚠️ PENDIENTE — Mensajes de chat no se muestran en el front (2026-06-17)
+## ✅ FIX — Historial de chat admin no cargaba (2026-06-17)
 
-**Síntoma:** al abrir el chat (ruta `/chat` para el usuario o `/admin/chat` para el admin), los mensajes no aparecen en pantalla. El flujo WebSocket conecta pero los mensajes no se renderizan.
+**Causa raíz:** `GET /v1/chat/admin/historial/{sesionId}` devuelve `ResponseGeneric<List<ChatMensaje>>` envuelto — `{ code, mensaje, data: [...], lista }` — NO un array plano. El front lo tipaba como `MensajeHistorial[]` directo, así que `response.body` era el objeto wrapper y `filter(h => !!h.contenido)` descartaba todo (el campo `contenido` no existe en el wrapper).
 
-**Estado:** pendiente de investigar. No se ha revisado si el problema está en:
-- El componente `ChatUsuarioComponent` (template o lógica de suscripción)
-- El servicio `ChatLiveService` (binding del array `mensajes$`)
-- El componente `ChatAdminComponent` (renderizado de historial o mensajes RT)
-- Algún problema de autenticación que impide recibir mensajes del broker
+**Fix en `src/app/chat/service/chat-admin.service.ts`:**
+```typescript
+// Antes — lee el body como array directo → vacío siempre
+this.http.get<MensajeHistorial[]>(..., { observe: 'response' })
+  .subscribe({ next: response => {
+    const historial = response.status === 204 || !response.body ? [] : response.body;
+  }})
 
-**Para revisar:**
-1. Abrir `/chat` con un usuario logueado y `/admin/chat` con admin en paralelo
-2. Enviar un mensaje desde el usuario
-3. Verificar en DevTools → Network → WS si el frame llega al front
-4. Verificar en consola si hay errores al procesar el frame
-5. Revisar `ChatLiveService.mensajes$` y cómo se suscribe `ChatUsuarioComponent`
-6. Revisar `ChatAdminService.sesiones$` y cómo construye `SesionUI.mensajes[]`
+// Después — lee response.data del wrapper
+this.http.get<ApiResponse<MensajeHistorial[]>>(...)
+  .subscribe({ next: res => {
+    const historial = res?.data ?? [];
+  }})
+```
 
-**Archivos a revisar:**
-- `src/app/chat/chat-usuario/chat-usuario.component.ts` + `.html`
-- `src/app/chat/service/chat-live.service.ts`
-- `src/app/admin/chat-admin/chat-admin.component.ts` + `.html`
-- `src/app/chat/service/chat-admin.service.ts`
+**Campos del back confirmados (ChatMensaje.java):**
+- `remitente` → `"USUARIO"` o `"ADMIN"` — exacto
+- `contenido` → string — exacto
+- `timestamp` → `LocalDateTime`, serializa como `"2026-06-17T10:00:00"` — exacto
+- `id` y `sesionId` → `@JsonIgnore`, no aparecen en el JSON
+
+**Verificado con `ng build --configuration=development` sin errores.**

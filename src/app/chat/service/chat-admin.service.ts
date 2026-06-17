@@ -5,6 +5,7 @@ import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { environment } from 'src/environments/environment';
 import {
+  ApiResponse,
   EventoAdmin,
   SesionActiva,
   MensajeHistorial,
@@ -79,13 +80,12 @@ export class ChatAdminService implements OnDestroy {
   }
 
   cargarHistorial(sesionId: string): void {
-    this.http.get<MensajeHistorial[]>(
-      `${this.baseUrl}/historial/${sesionId}`,
-      { observe: 'response' }
+    this.http.get<ApiResponse<MensajeHistorial[]>>(
+      `${this.baseUrl}/historial/${sesionId}`
     ).subscribe({
-      next: response => {
-        const historial: MensajeHistorial[] =
-          response.status === 204 || !response.body ? [] : response.body;
+      next: res => {
+        // El back devuelve ResponseGeneric: { code, mensaje, data: [...] }
+        const historial: MensajeHistorial[] = res?.data ?? [];
         this.actualizarSesion(sesionId, s => {
           const base = historial
             .filter(h => !!h.contenido)

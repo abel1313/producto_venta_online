@@ -1778,4 +1778,11 @@ desde sesiones anteriores — no requirieron cambios.
    puede usar `|| '…'` como fallback visual, pero el servicio no debe agregar ese mensaje al
    array si `contenido` es null/vacío.
 
+7. **`GET /v1/chat/admin/historial/{sesionId}` devuelve `ResponseGeneric` envuelto — NO array plano.**
+   El back usa `ResponseGeneric<List<ChatMensaje>>` → `{ code, mensaje, data: [...], lista }`.
+   El front debe leer `res?.data ?? []`, NO `response.body` directamente. Documentar en
+   `CAMBIOS_FRONT.md` si el endpoint usa wrapper o no — la regla general del proyecto es que
+   casi todos los endpoints REST de este back usan `ResponseGeneric`, salvo casos puntuales
+   donde se confirmó explícitamente que devuelve array plano (ej: `sesiones` del chat admin).
+
 Ncesito que preguntes todas tus dudas para que tengas las cosas claras y cuando tengas las cosas claras y lanses agentes o hagas cambios ya no estes pregunte y pregunte

@@ -33,7 +33,11 @@ export class ChatAdminService implements OnDestroy {
     if (this.client?.active) return;
 
     this.client = new Client({
-      webSocketFactory: () => new (SockJS as any)(`${environment.api_Url}/ws`),
+      webSocketFactory: () => new (SockJS as any)(
+        `${environment.api_Url}/ws`,
+        null,
+        { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }
+      ),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => this.onConnect(),
@@ -82,12 +86,19 @@ export class ChatAdminService implements OnDestroy {
       next: response => {
         const historial: MensajeHistorial[] =
           response.status === 204 || !response.body ? [] : response.body;
-        this.actualizarSesion(sesionId, s => ({
-          ...s,
-          mensajes: historial.map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp })),
-          noLeidos: 0
-        }));
-      }
+        this.actualizarSesion(sesionId, s => {
+          const base = historial.map(h => ({
+            remitente: h.remitente,
+            contenido: h.contenido ?? (h as any).mensaje ?? '',
+            timestamp: h.timestamp
+          }));
+          // conservar mensajes RT que llegaron DESPUÉS del snapshot del historial
+          const ultimoTs = base.length ? base[base.length - 1].timestamp : null;
+          const rt = ultimoTs ? s.mensajes.filter(m => m.timestamp > ultimoTs) : [];
+          return { ...s, mensajes: [...base, ...rt], noLeidos: 0 };
+        });
+      },
+      error: () => { /* historial no disponible — mantener lo que hay */ }
     });
   }
 

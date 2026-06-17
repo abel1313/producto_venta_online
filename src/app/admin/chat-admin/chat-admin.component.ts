@@ -55,9 +55,7 @@ export class ChatAdminComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.sesionActiva = sesion;
     this.prevMsgCount = 0;
     this.adminChatService.marcarLeido(sesion.sesionId);
-    if (!sesion.mensajes.length) {
-      this.adminChatService.cargarHistorial(sesion.sesionId);
-    }
+    this.adminChatService.cargarHistorial(sesion.sesionId);
   }
 
   responder(): void {

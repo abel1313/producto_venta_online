@@ -32,7 +32,11 @@ export class ChatLiveService implements OnDestroy {
     window.addEventListener('online',  this.onOnline);
 
     this.client = new Client({
-      webSocketFactory: () => new (SockJS as any)(`${environment.api_Url}/ws`),
+      webSocketFactory: () => new (SockJS as any)(
+        `${environment.api_Url}/ws`,
+        null,
+        { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }
+      ),
       reconnectDelay: 15000,
       onConnect: () => this.onConnect(),
       onDisconnect: () => {

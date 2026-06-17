@@ -859,6 +859,61 @@ de `setEsPrueba(false)` por consistencia de UX. NO se replicó el resync de
 
 ---
 
+## FIX CHAT ADMIN — HISTORIAL Y SESIONES NO CARGABAN (2026-06-17)
+
+**Síntoma:** al entrar al panel `/admin/chat`, el listado de sesiones activas aparecía vacío aunque
+hubiera sesiones abiertas. Al seleccionar una sesión, el historial no se cargaba.
+
+**Causa raíz:** `ChatAdminService.cargarSesiones()` y `cargarHistorial()` tipaban la respuesta como
+`ApiResponse<T>` y hacían `map(r => r.data)`. Pero `GET /v1/chat/admin/sesiones` y
+`GET /v1/chat/admin/historial/{sesionId}` devuelven un **array plano**, no envuelto. Por eso
+`r.data` era `undefined` → `sesiones$.next([])` → panel vacío.
+
+**Fix en `src/app/chat/service/chat-admin.service.ts`:**
+- `cargarSesiones()`: tipo cambiado a `SesionActiva[]`, eliminado `map(r => r.data)`.
+- `cargarHistorial()`: tipo cambiado a `MensajeHistorial[]`, usa `observe: 'response'` para
+  manejar 204 (sesión sin mensajes → array vacío en vez de error).
+- Eliminados imports de `ApiResponse` y `map` que quedaron sin uso.
+
+**Archivos modificados:** `src/app/chat/service/chat-admin.service.ts`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX CHAT ADMIN — HISTORIAL NO CARGA + SOCKJS IFRAME + MERGE RT (2026-06-17)
+
+> Segunda ronda de fixes tras comprobar en vivo que el historial seguía sin mostrarse.
+
+### 1. Historial bloqueado por guard incorrecto
+`ChatAdminComponent.seleccionarSesion()` tenía `if (!sesion.mensajes.length) cargarHistorial()`.
+Si el usuario envió mensajes antes de que el admin hiciera clic, `mensajes.length > 0` y el
+historial nunca se cargaba. Fix: quitar el guard — siempre llamar `cargarHistorial()` al seleccionar.
+
+### 2. SockJS intentaba transport iframe — bloqueado por servidor
+El servidor devuelve `X-Frame-Options: deny` y `404` en `/ws/iframe.html`. SockJS intentaba ese
+fallback causando errores en consola y posibles fallos de conexión.
+Fix: configurar SockJS con `{ transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }` en
+ambos servicios para omitir los transportes basados en iframe.
+
+### 3. Historial sobrescribía mensajes en tiempo real
+`cargarHistorial()` reemplazaba el array `mensajes` con solo el snapshot histórico, perdiendo
+mensajes WebSocket que ya habían llegado mientras se hacía el GET.
+Fix: merge inteligente — historial forma la base; se conservan mensajes RT (`m.timestamp > ultimoTs`).
+
+### 4. Fallback para `contenido` nulo
+`cargarHistorial()` ahora mapea `h.contenido ?? (h as any).mensaje ?? ''` por si el back envía
+el campo con nombre distinto (`mensaje` en vez de `contenido`).
+
+**Archivos modificados:**
+- `src/app/admin/chat-admin/chat-admin.component.ts` → quita guard en `seleccionarSesion()`
+- `src/app/chat/service/chat-admin.service.ts` → `cargarHistorial()` merge + fallback + error handler; SockJS transports
+- `src/app/chat/service/chat-live.service.ts` → SockJS transports
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## LECCIONES APRENDIDAS — MÓDULO RIFAS (errores recurrentes a evitar)
 
 > Registro de patrones que ya causaron bugs en este módulo. Antes de tocar `AgregarRifaComponent`

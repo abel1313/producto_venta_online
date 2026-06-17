@@ -4,7 +4,7 @@ import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
-import { ApiResponse, EstadoConexion, EventoUsuario, MensajeHistorial, MensajeUI } from '../models/chat.models';
+import { ApiResponse, EstadoConexion, EventoUsuario, HistorialPaginado, MensajeUI } from '../models/chat.models';
 
 const SESION_KEY = 'chatSesionId';
 
@@ -104,21 +104,21 @@ export class ChatLiveService implements OnDestroy {
   }
 
   private cargarHistorial(sesionId: string): void {
-    this.http.get<ApiResponse<MensajeHistorial[]>>(
-      `${this.historialUrl}/${sesionId}`
+    this.http.get<ApiResponse<HistorialPaginado>>(
+      `${this.historialUrl}/${sesionId}?pagina=0&size=20`
     ).subscribe({
       next: res => {
-        const historial = res?.data ?? [];
-        const base: MensajeUI[] = historial
+        const paginado = res?.data;
+        if (!paginado) return;
+        const base: MensajeUI[] = (paginado.mensajes ?? [])
           .filter(h => !!h.contenido)
           .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
         if (!base.length) return;
-        // Conservar mensajes RT que llegaron después del último mensaje del historial
         const ultimoTs = base[base.length - 1].timestamp;
         const rt = this.mensajes$.value.filter(m => m.timestamp > ultimoTs && !!m.contenido);
         this.mensajes$.next([...base, ...rt]);
       },
-      error: () => { /* 403 = sesionId expirado → no hacer nada, el WS seguirá sin historial */ }
+      error: () => { /* 403 = sesionId expirado → WS continúa sin historial */ }
     });
   }
 

@@ -79,6 +79,11 @@ export class ChatAdminComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
+  cargarMasAntiguos(): void {
+    if (!this.sesionActiva) return;
+    this.adminChatService.cargarMasAntiguos(this.sesionActiva.sesionId);
+  }
+
   cerrarSesion(sesion: SesionUI): void {
     if (!confirm(`¿Cerrar el chat de ${sesion.nombreUsuario}?`)) return;
     this.adminChatService.cerrarSesion(sesion.sesionId);

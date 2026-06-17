@@ -1649,5 +1649,133 @@ Front → ImageneController.getDetalleV2()
 `ImagenVersionService.toggle()` → cambia entre v1 y v2  
 El estado es en memoria (se resetea al recargar la página), diseñado solo para pruebas en sesión.
 
+---
+
+## FIX CHAT ADMIN — NOTIFICACIONES + REFINAMIENTO `contenido` (2026-06-17)
+
+> Segunda y tercera ronda de fixes en el módulo chat, tras comprobar en vivo que historial no
+> cargaba y que el panel admin no daba feedback de mensajes nuevos.
+
+### 1. Sonido de notificación al recibir mensaje nuevo
+`ChatAdminComponent.ngOnInit()` ahora trackea el array `sesiones` anterior. Cuando detecta que
+alguna sesión aumentó su `noLeidos`, llama `playNotificationSound()` — Web Audio API (oscilador
+880 Hz, 300ms, decaimiento exponencial). Sin archivo externo, wrapped en `try/catch` para no
+crashear si el navegador bloquea autoplay.
+
+```typescript
+private playNotificationSound(): void {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+  } catch { /* autoplay bloqueado — sin sonido, sin crash */ }
+}
+```
+
+### 2. Highlight de sesiones con mensajes no leídos
+`chat-admin.component.html`: clase `.ca-session-item--unread` cuando `s.noLeidos > 0` y la
+sesión no está activa. `chat-admin.component.scss`: borde rojo + nombre en bold/rojo, en dark
+y light mode.
+
+### 3. Refactoring del campo `contenido` — eliminar fallback especulativo
+En la sesión anterior se agregó `h.contenido ?? (h as any).mensaje ?? ''` asumiendo que el
+back podría mandar el campo con el nombre `mensaje`. **El back confirmó que el campo siempre
+es `contenido`** (`ChatEventoAdmin.builder().tipo("MENSAJE").contenido(request.getContenido())`).
+Los eventos `NUEVA_SESION` tienen `contenido: null` por diseño — no tienen mensaje aún.
+
+Fix: `cargarHistorial()` filtra con `!!h.contenido` antes de mapear; el STOMP handler de
+mensajes RT usa `evento.contenido` directo (sin fallback). El template usa `msg.contenido || '…'`
+solo como guard visual para el caso `NUEVA_SESION` que llega al front sin mensaje.
+
+**Archivos modificados:**
+- `src/app/admin/chat-admin/chat-admin.component.ts` → `playNotificationSound()`, tracking de `anterior` en `sesiones$`
+- `src/app/admin/chat-admin/chat-admin.component.html` → `[class.ca-session-item--unread]`, `|| '…'`
+- `src/app/admin/chat-admin/chat-admin.component.scss` → `.ca-session-item--unread` light/dark
+- `src/app/chat/service/chat-admin.service.ts` → `cargarHistorial()` filter `!!h.contenido`, STOMP handler `evento.contenido` directo
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX CHAT ADMIN — MIGRACIÓN v2→v1 EN SERVICIOS DE IMÁGENES (2026-06-17)
+
+**Contexto:** el backend renombró todas las rutas `/v2/` a `/v1/` (nueva versión estable).
+Las rutas viejas pasaron a `/v3/` (deprecated). El front tenía dos servicios con URLs
+hardcodeadas con `/v2/` que devolvían 404.
+
+**Fix:**
+- `src/app/imagene/imagenes.service.ts` → `getImagenV2()`: `${urlImg}/v2/${productoId}` → `${urlImg}/v1/${productoId}`
+- `src/app/productos/service/producto.service.ts` → `getDataImgV2()`: `${urlImg}/v2/${id}/detalle` → `${urlImg}/v1/${id}/detalle`
+
+**Nota:** otros servicios (`VarianteService`, `PresentacionService`) ya usaban `/v1/` correctamente
+desde sesiones anteriores — no requirieron cambios.
+
+**Dead code eliminado:**
+- `src/app/productos/producto/all/all.component.ts` → `public env: string = environment.api_imagenes + "/imagenes/buscarImagenProducto/"` (propiedad legacy de AG Grid renderer, never used) + import `environment` que quedó sin uso. El template ya usaba `item.imagen?.urlImagen | imagenSrc`.
+
+**Archivos modificados:**
+- `src/app/imagene/imagenes.service.ts`
+- `src/app/productos/service/producto.service.ts`
+- `src/app/productos/producto/all/all.component.ts`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## LECCIONES APRENDIDAS — MÓDULO CHAT
+
+> Patrones que causaron bugs en este módulo. Revisar antes de tocar `chat-admin.service.ts`,
+> `chat-live.service.ts`, `ChatAdminComponent` o `ChatUsuarioComponent`.
+
+1. **No asumir el nombre del campo de un evento WebSocket — confirmarlo con el backend antes
+   de escribir fallbacks.** Se agregó `h.contenido ?? (h as any).mensaje ?? ''` porque no
+   había certeza del nombre. El backend tenía `contenido` desde siempre
+   (`ChatEventoAdmin.contenido`). El fallback solo añadía ruido y enmascaraba otros bugs.
+   Regla: pedir el modelo Java/Kotlin del evento antes de mapear en TypeScript, no después.
+
+2. **No usar guards de `if (!array.length)` para decidir si cargar datos remotos** — puede
+   haber datos en memoria de otra fuente (WebSocket) y el guard cortocircuita la carga REST.
+   `seleccionarSesion()` tenía `if (!sesion.mensajes.length) cargarHistorial()`: si el usuario
+   mandó mensajes antes de que el admin hiciera clic, `mensajes.length > 0` y el historial
+   NUNCA se cargaba. Fix: siempre llamar `cargarHistorial()` al seleccionar una sesión — el
+   merge por timestamp se encarga de no duplicar mensajes.
+
+3. **SockJS intenta transporte iframe por defecto — bloqueado en servidores con `X-Frame-Options: deny`.**
+   El servidor devuelve 404 en `/ws/iframe.html` y SockJS lanzaba errores de consola que podían
+   interferir con la conexión. Fix estándar para cualquier conexión SockJS nueva en este proyecto:
+   ```typescript
+   webSocketFactory: () => new (SockJS as any)(url, null, {
+     transports: ['websocket', 'xhr-streaming', 'xhr-polling']
+   })
+   ```
+   Aplicar en ambos servicios (`chat-admin.service.ts` y `chat-live.service.ts`) y en cualquier
+   otro cliente SockJS que se agregue.
+
+4. **Al reemplazar datos de REST que se solapan con datos en tiempo real (WebSocket), siempre
+   hacer merge por timestamp, no reemplazar el array completo.** `cargarHistorial()` hacía
+   `s.mensajes = historialDelRest` — borraba mensajes WebSocket que ya habían llegado mientras
+   el GET estaba en vuelo. Patrón correcto:
+   ```typescript
+   const ultimoTs = base[base.length - 1]?.timestamp ?? null;
+   const rt = ultimoTs ? s.mensajes.filter(m => m.timestamp > ultimoTs) : [];
+   return { ...s, mensajes: [...base, ...rt] };
+   ```
+   Aplica a cualquier componente donde REST + WebSocket alimentan la misma lista.
+
+5. **Cuando el backend renombra rutas versionadas (`/v2/` → `/v1/`), hacer grep de la versión
+   vieja en TODOS los servicios del proyecto** — no solo en el servicio más obvio. En esta sesión
+   había DOS servicios con `/v2/` hardcodeado (`imagenes.service.ts` y `producto.service.ts`).
+   Comando de búsqueda: grep por `/v2/` en `src/app/**/*.ts`.
+
+6. **Los eventos `NUEVA_SESION` llegan con `contenido: null` por diseño** — no son un bug. El
+   campo `contenido` solo tiene valor en eventos de tipo `MENSAJE`. El handler STOMP debe
+   filtrar por `evento.tipo === 'MENSAJE' && evento.contenido` antes de procesar. El template
+   puede usar `|| '…'` como fallback visual, pero el servicio no debe agregar ese mensaje al
+   array si `contenido` es null/vacío.
 
 Ncesito que preguntes todas tus dudas para que tengas las cosas claras y cuando tengas las cosas claras y lanses agentes o hagas cambios ya no estes pregunte y pregunte

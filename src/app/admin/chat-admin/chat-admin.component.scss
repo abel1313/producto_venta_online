@@ -353,6 +353,25 @@
   .ca-sidebar { width: 100%; min-width: unset; max-height: 200px; }
 }
 
+// Light mode — suaviza avatares y botones índigo
+:host-context(body.theme-light) {
+  .ca-session-item__avatar,
+  .ca-chat__avatar {
+    background: #818cf8;
+  }
+
+  .ca-session-item--active {
+    background: rgba(99,102,241,0.06);
+    border-left-color: #818cf8;
+  }
+
+  .ca-btn--enviar {
+    background: #6366f1;
+    &:hover:not(:disabled) { background: #4f46e5; }
+    &:disabled { background: #c7d2fe; }
+  }
+}
+
 // Dark mode
 :host-context(body.theme-dark) {
   .ca-sidebar {

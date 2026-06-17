@@ -1,7 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { environment } from 'src/environments/environment';
@@ -9,8 +8,7 @@ import {
   EventoAdmin,
   SesionActiva,
   MensajeHistorial,
-  MensajeUI,
-  ApiResponse
+  MensajeUI
 } from '../models/chat.models';
 
 export interface SesionUI extends SesionActiva {
@@ -63,10 +61,9 @@ export class ChatAdminService implements OnDestroy {
   }
 
   private cargarSesiones(): void {
-    this.http.get<ApiResponse<SesionActiva[]>>(`${this.baseUrl}/sesiones`).pipe(
-      map(r => r.data)
-    ).subscribe({
+    this.http.get<SesionActiva[]>(`${this.baseUrl}/sesiones`).subscribe({
       next: sesiones => {
+        if (!sesiones) return;
         const actuales = this.sesiones$.value;
         const nuevas: SesionUI[] = sesiones.map(s => {
           const existente = actuales.find(a => a.sesionId === s.sesionId);
@@ -78,10 +75,13 @@ export class ChatAdminService implements OnDestroy {
   }
 
   cargarHistorial(sesionId: string): void {
-    this.http.get<ApiResponse<MensajeHistorial[]>>(`${this.baseUrl}/historial/${sesionId}`).pipe(
-      map(r => r.data)
+    this.http.get<MensajeHistorial[]>(
+      `${this.baseUrl}/historial/${sesionId}`,
+      { observe: 'response' }
     ).subscribe({
-      next: historial => {
+      next: response => {
+        const historial: MensajeHistorial[] =
+          response.status === 204 || !response.body ? [] : response.body;
         this.actualizarSesion(sesionId, s => ({
           ...s,
           mensajes: historial.map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp })),

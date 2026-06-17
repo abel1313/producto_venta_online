@@ -71,13 +71,13 @@ export class ProductoService {
 
 
     /**
-     * GET /imagen/v2/{id}/detalle — nuevo endpoint.
+     * GET /imagen/v1/{id}/detalle
      * Devuelve 204 (null) si el producto no tiene imágenes en disco en vez de lanzar error.
      * El front NO crashea; solo se loguea el aviso.
      */
     getDataImgV2(id: number, page: number, size: number): Observable<any | null> {
         return this.http.get(
-            `${this.urlImg}/v2/${id}/detalle?size=${size}&page=${page}`,
+            `${this.urlImg}/v1/${id}/detalle?size=${size}&page=${page}`,
             { observe: 'response', responseType: 'text' }
         ).pipe(
             map(response => {

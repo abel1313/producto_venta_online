@@ -81,6 +81,13 @@
     border-left: 3px solid #6366f1;
   }
 
+  &--unread {
+    background: rgba(239,68,68,0.06);
+    border-left: 3px solid #ef4444;
+
+    .ca-session-item__name { color: #dc2626; font-weight: 700; }
+  }
+
   &__avatar {
     width: 38px;
     height: 38px;
@@ -362,6 +369,8 @@
     border-color: rgba(255,255,255,0.06);
     &:hover { background: rgba(255,255,255,0.04); }
     &--active { background: rgba(99,102,241,0.12); }
+    &--unread { background: rgba(239,68,68,0.1); border-left-color: #f87171; }
+    &--unread &__name { color: #f87171; font-weight: 700; }
     &__name { color: #e2e8f0; }
   }
 

@@ -20,6 +20,7 @@
     <div *ngFor="let s of sesiones"
          class="ca-session-item"
          [class.ca-session-item--active]="sesionActiva?.sesionId === s.sesionId"
+         [class.ca-session-item--unread]="s.noLeidos > 0 && sesionActiva?.sesionId !== s.sesionId"
          (click)="seleccionarSesion(s)">
 
       <div class="ca-session-item__avatar">

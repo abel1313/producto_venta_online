@@ -2242,3 +2242,29 @@ Lo siguiente ya estaba bien implementado y no requiere ninguna acción:
 | Imágenes de productos y variantes usando `urlImagen` directa del response | ✅ correcto |
 | Interceptor maneja 401 (token expirado) y 403 (sin permiso) correctamente | ✅ correcto |
 | `omitidosSinNombre?.` con optional chaining | ✅ correcto |
+
+---
+
+## ⚠️ PENDIENTE — Mensajes de chat no se muestran en el front (2026-06-17)
+
+**Síntoma:** al abrir el chat (ruta `/chat` para el usuario o `/admin/chat` para el admin), los mensajes no aparecen en pantalla. El flujo WebSocket conecta pero los mensajes no se renderizan.
+
+**Estado:** pendiente de investigar. No se ha revisado si el problema está en:
+- El componente `ChatUsuarioComponent` (template o lógica de suscripción)
+- El servicio `ChatLiveService` (binding del array `mensajes$`)
+- El componente `ChatAdminComponent` (renderizado de historial o mensajes RT)
+- Algún problema de autenticación que impide recibir mensajes del broker
+
+**Para revisar:**
+1. Abrir `/chat` con un usuario logueado y `/admin/chat` con admin en paralelo
+2. Enviar un mensaje desde el usuario
+3. Verificar en DevTools → Network → WS si el frame llega al front
+4. Verificar en consola si hay errores al procesar el frame
+5. Revisar `ChatLiveService.mensajes$` y cómo se suscribe `ChatUsuarioComponent`
+6. Revisar `ChatAdminService.sesiones$` y cómo construye `SesionUI.mensajes[]`
+
+**Archivos a revisar:**
+- `src/app/chat/chat-usuario/chat-usuario.component.ts` + `.html`
+- `src/app/chat/service/chat-live.service.ts`
+- `src/app/admin/chat-admin/chat-admin.component.ts` + `.html`
+- `src/app/chat/service/chat-admin.service.ts`

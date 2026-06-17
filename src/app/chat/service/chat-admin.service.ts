@@ -53,13 +53,9 @@ export class ChatAdminService implements OnDestroy {
       const evento: EventoAdmin = JSON.parse(frame.body);
       if (evento.tipo === 'NUEVA_SESION') {
         this.agregarSesion(evento);
-      } else if (evento.tipo === 'MENSAJE') {
-        // back puede enviar el texto en 'contenido' o en 'mensaje'
-        const contenido = evento.contenido ?? (evento as any).mensaje ?? null;
-        if (contenido) {
-          this.agregarMensajeEnSesion(evento.sesionId, 'USUARIO', contenido, evento.timestamp);
-          this.incrementarNoLeidos(evento.sesionId);
-        }
+      } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
+        this.agregarMensajeEnSesion(evento.sesionId, 'USUARIO', evento.contenido, evento.timestamp);
+        this.incrementarNoLeidos(evento.sesionId);
       }
     });
 
@@ -92,12 +88,12 @@ export class ChatAdminService implements OnDestroy {
           response.status === 204 || !response.body ? [] : response.body;
         this.actualizarSesion(sesionId, s => {
           const base = historial
+            .filter(h => !!h.contenido)
             .map(h => ({
               remitente: h.remitente,
-              contenido: h.contenido ?? (h as any).mensaje ?? '',
+              contenido: h.contenido,
               timestamp: h.timestamp
-            }))
-            .filter(m => !!m.contenido);   // descartar filas con contenido vacío/null
+            }));
           // conservar mensajes RT que llegaron DESPUÉS del snapshot del historial
           const ultimoTs = base.length ? base[base.length - 1].timestamp : null;
           const rt = ultimoTs ? s.mensajes.filter(m => m.timestamp > ultimoTs && !!m.contenido) : [];

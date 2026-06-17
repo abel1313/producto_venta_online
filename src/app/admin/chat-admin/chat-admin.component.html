@@ -63,7 +63,7 @@
              class="ca-bubble"
              [class.ca-bubble--usuario]="msg.remitente === 'USUARIO'"
              [class.ca-bubble--admin]="msg.remitente === 'ADMIN'">
-          <div class="ca-bubble__text">{{ msg.contenido }}</div>
+          <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
           <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
         </div>
       </div>

@@ -285,6 +285,22 @@
   }
 }
 
+// Light mode — suaviza el header y los elementos índigo
+:host-context(body.theme-light) {
+  .cu-header {
+    background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  }
+
+  .cu-bubble--usuario .cu-bubble__text {
+    background: #6366f1;
+  }
+
+  .cu-btn--enviar {
+    background: #6366f1;
+    &:hover:not(:disabled) { background: #4f46e5; }
+  }
+}
+
 // Dark mode
 :host-context(body.theme-dark) {
   .cu-card {

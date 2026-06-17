@@ -7,6 +7,7 @@ import { ConfigNegocioComponent } from './config-negocio/config-negocio.componen
 import { PresentacionImagenesComponent } from './presentacion-imagenes/presentacion-imagenes.component';
 import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico-imagenes.component';
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
+import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 
 @NgModule({
   declarations: [
@@ -14,7 +15,8 @@ import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/recon
     ConfigNegocioComponent,
     PresentacionImagenesComponent,
     DiagnosticoImagenesComponent,
-    ReconciliacionImagenesComponent
+    ReconciliacionImagenesComponent,
+    ChatAdminComponent
   ],
   imports: [
     CommonModule,

@@ -94,10 +94,7 @@
       🗑️ <strong>{{ totalMarcadas }}</strong> imagen(es) marcada(s) para eliminar
     </span>
     <button class="dp-delete-bar__btn" [disabled]="eliminando" (click)="confirmarEliminarBatch()">
-      <span *ngIf="!eliminando">Eliminar seleccionadas</span>
-      <span *ngIf="eliminando" class="d-flex align-items-center gap-2">
-        <span class="spinner-border spinner-border-sm"></span> Eliminando…
-      </span>
+      Eliminar seleccionadas
     </button>
   </div>
 

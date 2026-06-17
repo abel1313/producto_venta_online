@@ -127,8 +127,17 @@
         <a class="sb-subitem" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
         <a class="sb-subitem" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
         <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+        <a class="sb-subitem" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
       </div>
     </div>
+
+    <!-- Chat (usuarios logueados) -->
+    <a class="sb-item" *ngIf="!isAnonymous && !isAdminUser"
+       routerLink="chat" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">💬</span>
+      <span class="sb-label">Chat</span>
+    </a>
 
     <!-- QR -->
     <a class="sb-item" routerLink="qr" routerLinkActive="sb-item--active"

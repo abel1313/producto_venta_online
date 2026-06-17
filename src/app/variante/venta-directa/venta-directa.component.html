@@ -39,9 +39,6 @@
                [(ngModel)]="terminoVariante"
                (input)="onInputVariante()"
                autocomplete="off">
-        <span *ngIf="buscandoVariante" class="vd-search__spin">
-          <span class="spinner-border spinner-border-sm"></span>
-        </span>
         <button *ngIf="terminoVariante" class="vd-search__clear"
                 (click)="terminoVariante = ''; resultados = []">✕</button>
       </div>
@@ -101,10 +98,7 @@
         <button class="vd-btn-cobrar" type="button"
                 [disabled]="!puedeCobrar"
                 (click)="cobrar()">
-          <span *ngIf="!procesando">💰 Cobrar</span>
-          <span *ngIf="procesando" class="d-flex align-items-center gap-2">
-            <span class="spinner-border spinner-border-sm"></span> Procesando…
-          </span>
+          💰 Cobrar
         </button>
       </div>
 
@@ -178,9 +172,6 @@
                      [(ngModel)]="terminoCliente"
                      (input)="onInputCliente()"
                      autocomplete="off">
-              <span *ngIf="buscandoCliente" class="vd-search__spin">
-                <span class="spinner-border spinner-border-sm"></span>
-              </span>
             </div>
             <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
               <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">
@@ -254,7 +245,6 @@
 
         <div class="vd-terminal__status" [ngClass]="'vd-terminal__status--' + estadoTerminal"
              *ngIf="estadoTerminal !== 'idle'">
-          <span class="spinner-border spinner-border-sm" *ngIf="estadoTerminal === 'procesando'"></span>
           <i class="pi pi-check-circle" *ngIf="estadoTerminal === 'aprobado'"></i>
           <i class="pi pi-times-circle" *ngIf="estadoTerminal === 'rechazado'"></i>
           <i class="pi pi-ban"          *ngIf="estadoTerminal === 'cancelado'"></i>

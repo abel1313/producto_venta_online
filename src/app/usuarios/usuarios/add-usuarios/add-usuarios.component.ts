@@ -122,13 +122,12 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
       const { userName, email, password } = this.formRegistro.value;
       this.auth.registrar({ userName, email, password }).subscribe(registrado => {
         if (registrado != null) {
+          this.formRegistro.reset();
           Swal.fire({
             title: `Usuario ${userName} registrado con exito`,
             icon: "success",
             draggable: true
-          });
-          this.formRegistro.reset();
-          this.router.navigate(['/login']);
+          }).then(() => this.router.navigate(['/login']));
         } else {
           Swal.fire({
             icon: "error",
@@ -136,7 +135,6 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
             text: "Ocurrio un error al registrarse"
           });
         }
-
       },
         errr => {
           Swal.fire({
@@ -160,13 +158,12 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
 
     this.usuario.restablecerContra(this.updateUser, this.updateUser.id || 0).subscribe(registrado => {
       if (registrado != null) {
+        this.formRegistro.reset();
         Swal.fire({
           title: `Se restablecio la contrasena de ${userName}`,
           icon: "success",
           draggable: true
-        });
-        this.formRegistro.reset();
-        this.router.navigate(['/login']);
+        }).then(() => this.router.navigate(['/login']));
       } else {
         Swal.fire({
           icon: "error",
@@ -174,7 +171,6 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
           text: "Ocurrio un error al registrarse"
         });
       }
-
     },
       errr => {
         Swal.fire({
@@ -190,13 +186,12 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
     this.updateUser.password = `${userName}123`;
     this.usuario.restablecerContra(this.updateUser, this.updateUser.id || 0).subscribe(registrado => {
       if (registrado != null) {
+        this.formRegistro.reset();
         Swal.fire({
           title: `Se restablecio la contrasena de ${userName}`,
           icon: "success",
           draggable: true
-        });
-        this.formRegistro.reset();
-        this.router.navigate(['/login']);
+        }).then(() => this.router.navigate(['/login']));
       } else {
         Swal.fire({
           icon: "error",
@@ -204,7 +199,6 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
           text: "Ocurrio un error al registrarse"
         });
       }
-
     },
       errr => {
         Swal.fire({

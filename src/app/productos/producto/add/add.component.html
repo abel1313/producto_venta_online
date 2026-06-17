@@ -205,12 +205,7 @@
         <button type="button" class="pf-btn-save"
                 [disabled]="formProductos.invalid || guardando"
                 (click)="guardar()">
-          <span *ngIf="!guardando">
-            {{ esActualizar ? '💾 Actualizar producto' : '💾 Guardar producto' }}
-          </span>
-          <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
-            <span class="spinner-border spinner-border-sm"></span> Guardando…
-          </span>
+          {{ esActualizar ? '💾 Actualizar producto' : '💾 Guardar producto' }}
         </button>
 
       </form>

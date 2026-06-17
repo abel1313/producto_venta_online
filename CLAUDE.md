@@ -34,6 +34,49 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 
 ---
 
+## FIX — ELIMINACIÓN DE SPINNERS LOCALES EN COMPONENTES (2026-06-14)
+
+**Criterio:** solo debe existir el spinner global del `LoadingInterceptor` (overlay pantalla completa, `app-loading`). Todos los `spinner-border` locales dentro de componentes fueron eliminados.
+
+**Qué se quitó y dónde:**
+
+| Archivo HTML | Qué se eliminó |
+|---|---|
+| `productos/producto/add/add.component.html` | spinner "Guardando…" en botón guardar |
+| `variante/agregar/agregar.component.html` | spinner "Guardando…" en botón guardar |
+| `variante/update-variante/update-variante.component.html` | spinner "Actualizando…" + spinners por imagen (⭐ principal y ✕ eliminar) |
+| `palabras-clave/gestion/gestion-palabras-clave.component.html` | spinner "Guardando…" en botón |
+| `palabras-clave/autocomplete/palabra-clave-autocomplete.component.html` | spinner inline de búsqueda mientras escribe |
+| `admin/cache/cache.component.html` | spinner "Limpiando…" en botón |
+| `admin/config-negocio/config-negocio.component.html` | spinners "Guardando…" en botones de horario y contactos |
+| `admin/presentacion-imagenes/presentacion-imagenes.component.html` | spinner por imagen al guardar |
+| `admin/reconciliacion-imagenes/reconciliacion-imagenes.component.html` | spinners "Iniciando…", "Limpiando…", "Consultando…" |
+| `admin/diagnostico-imagenes/diagnostico-imagenes.component.html` | spinners inline de búsqueda (producto y variante) |
+| `documentos/carga-archivo/carga-archivo.component.html` | spinner "Procesando…" en botón subir |
+| `pedidos/mis-pedidos/mis-pedidos.component.html` | spinner de estado terminal "procesando" |
+| `productos/producto/detalle-producto/detalle-producto.component.html` | spinner "Eliminando…" en botón |
+| `productos/producto/detalle-productos/detalle-productos.component.html` | spinner en botón "Ver imagen" |
+| `productos/producto/update/update.component.html` | skeleton cargando blob de imagen + spinner ✕ eliminar por imagen |
+| `variante/detalle-variante/detalle-variante.component.html` | spinner "Eliminando…" en botón |
+| `variante/venta-directa/venta-directa.component.html` | spinners de búsqueda variante/cliente + "Procesando…" cobrar + estado terminal |
+
+**Patrón que se usaba (ya NO existe en los archivos anteriores):**
+```html
+<span *ngIf="!flag">Texto botón</span>
+<span *ngIf="flag"><span class="spinner-border spinner-border-sm"></span> Cargando…</span>
+```
+**Patrón que quedó (simplificado):**
+```html
+Texto botón
+```
+Los botones conservan `[disabled]="flag"` para evitar doble clic — el feedback visual viene del overlay global.
+
+**EXCEPCIÓN — módulo rifas (`src/app/rifas/`):** los `spinner-border-sm` dentro de botones de acción de rifas (`guardandoVariante`, `creandoRifa`, `cambiandoModoPrueba`) se conservan intencionalmente. El flujo de rifas tiene pasos donde el overlay global ya no está visible (el usuario está en un paso posterior del wizard) y el spinner del botón es la única indicación de que algo está en curso.
+
+**Verificado con `ng build --configuration=development` — sin errores.**
+
+---
+
 ## BUG FIX — CATEGORÍA (palabraClave) NO PRECARGADA AL EDITAR VARIANTE (2026-05-23)
 
 **Síntoma:** al abrir `variantes/update`, el campo de categoría (autocomplete) aparece vacío aunque la variante tenía categoría asignada. Ocurre cuando `editarVariante()` en `BuscarComponent` entra al bloque `error` y manda un objeto manual sin `palabraClave`, o cuando el objeto de la grilla no la incluye.
@@ -778,6 +821,41 @@ de `setEsPrueba(false)` por consistencia de UX. NO se replicó el resync de
 - `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `toggleModoPrueba()` (solo el `confirm()`)
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## MÓDULO CHAT EN VIVO (2026-06-16)
+
+> Implementación de chat en tiempo real STOMP/WebSocket según `CHAT_FRONT_DEVELOPER.md`.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/chat/models/chat.models.ts` | Interfaces TypeScript de todos los payloads |
+| `src/app/chat/service/chat-live.service.ts` | Servicio visitante — gestiona conexión STOMP/SockJS, publica mensajes, expone `mensajes$`, `conectado$`, `sesionCerrada$`, `error$` |
+| `src/app/chat/service/chat-admin.service.ts` | Servicio admin — gestiona conexión con JWT, lista de `SesionUI[]`, carga de historial REST, respuesta y cierre de sesiones |
+| `src/app/chat/chat-usuario/chat-usuario.component.*` | Pantalla de chat para usuarios logueados, ruta `/chat` |
+| `src/app/chat/chat-routing.module.ts` | Routing del módulo chat |
+| `src/app/chat/chat.module.ts` | Módulo lazy-loaded del chat visitante |
+| `src/app/admin/chat-admin/chat-admin.component.*` | Panel admin de chats activos, ruta `/admin/chat` |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `{ path: 'chat', loadChildren: ChatModule, canActivate: [AuthGuard] }` |
+| `src/app/admin/admin-routing.module.ts` | `{ path: 'chat', component: ChatAdminComponent }` |
+| `src/app/admin/admin.module.ts` | Declaración de `ChatAdminComponent` |
+| `src/app/navbar/navbar.component.html` | Link "💬 Chat" para usuarios no-admin; link "💬 Chat en vivo" en submenu Admin |
+
+### Arquitectura
+
+- **Visitante:** ruta `/chat` → `ChatUsuarioComponent` → `ChatLiveService` (singleton). El nombre de usuario viene de `AuthService.userName$` (JWT `sub`). La sesión existe solo en memoria, no en localStorage.
+- **Admin:** ruta `/admin/chat` → `ChatAdminComponent` → `ChatAdminService`. Conecta con JWT en `connectHeaders`. Panel split: lista de sesiones activas a la izquierda, historial del chat seleccionado a la derecha. Badge de mensajes no leídos se maneja 100% en el front.
+- **WebSocket:** `${environment.api_Url}/ws` vía SockJS. Biblioteca `@stomp/stompjs` (ya instalada como `@stomp/ng2-stompjs` v8).
+
+**Verificado con `ng build --configuration=development` sin errores.**
 
 ---
 

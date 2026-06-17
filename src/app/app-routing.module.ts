@@ -40,6 +40,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    path: 'chat',
+    loadChildren: () => import('./chat/chat.module').then(m => m.ChatModule),
+    canActivate: [AuthGuard, CarritoGuard]
+  },
+  {
     path: 'variantes',
     loadChildren: () => import('./variante/agregar.module').then(m => m.AgregarModule),
     canActivate: [CarritoGuard]

@@ -38,13 +38,8 @@
 
         <div class="ui-slide__wrap" [class.ui-slide__wrap--principal]="item.dto.principal">
 
-          <!-- Cargando blob -->
-          <div *ngIf="item.cargando" class="ui-slide__skeleton">
-            <span class="spinner-border spinner-border-sm"></span>
-          </div>
-
           <!-- Imagen -->
-          <img *ngIf="!item.cargando && item.src"
+          <img *ngIf="item.src"
                [src]="item.src"
                [alt]="item.dto.nombreImagen"
                class="ui-slide__img" />
@@ -68,8 +63,7 @@
                   [disabled]="estaEliminando(item.dto.id)"
                   (click)="eliminarImagen(item)"
                   title="Eliminar imagen">
-            <span *ngIf="!estaEliminando(item.dto.id)">✕</span>
-            <span *ngIf="estaEliminando(item.dto.id)" class="spinner-border spinner-border-sm"></span>
+            ✕
           </button>
 
         </div>

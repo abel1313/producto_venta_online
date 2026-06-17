@@ -20,10 +20,12 @@ Se normalizó el versionado de URLs en **ambos** backends (proyecto-key 9091 y m
 
 ### Tabla de cambios — proyecto-key (9091)
 
-| Antes (front lo usa) | Ahora |
-|---|---|
-| `imagen/v2/{productoId}` | `imagen/v1/{productoId}` |
-| `imagen/v2/{productoId}/detalle` | `imagen/v1/{productoId}/detalle` |
+> ✅ `imagenes.service.ts` y `producto.service.ts` ya actualizados (2026-06-17)
+
+| Antes (front lo usa) | Ahora | Estado |
+|---|---|---|
+| `imagen/v2/{productoId}` | `imagen/v1/{productoId}` | ✅ `imagenes.service.ts` |
+| `imagen/v2/{productoId}/detalle` | `imagen/v1/{productoId}/detalle` | ✅ `producto.service.ts` |
 | `imagen/v2/file/{imagenId}` | `imagen/v1/file/{imagenId}` |
 | `imagen/v2/{idProducto}/imagenes` | `imagen/v1/{idProducto}/imagenes` |
 | `imagen/v2/{idImagen}` (DELETE) | `imagen/v1/{idImagen}` (DELETE) |
@@ -2105,3 +2107,138 @@ y se devuelven en un nuevo arreglo `omitidosSinNombre`, igual que ya pasaba con
 "N participante(s) sin registro no se importaron porque no tienen nombre". Si la UI permite
 agregar filas de "cliente sin registro" a mano, idealmente exigir `nombre` antes de enviar para
 que no terminen en este arreglo.
+
+---
+
+## CHAT EN VIVO — Panel Admin (acción requerida en el front) — 2026-06-17
+
+### Problema actual
+Cuando el admin selecciona una sesión en el panel, **solo ve los mensajes nuevos** que llegan en tiempo real (WebSocket). Los mensajes anteriores de esa sesión no aparecen porque el front no los está cargando.
+
+### Endpoint de historial (ya existe en el backend)
+
+**Request:**
+```
+GET /mis-productos/v1/chat/admin/historial/{sesionId}
+Authorization: Bearer <token admin>
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "sesionId": "f1d0db6f-496f-4000-9dd1-234efdc51f06",
+    "remitente": "USUARIO",
+    "contenido": "Hola, tengo una pregunta",
+    "timestamp": "2026-06-17T10:00:00"
+  },
+  {
+    "id": 2,
+    "sesionId": "f1d0db6f-496f-4000-9dd1-234efdc51f06",
+    "remitente": "ADMIN",
+    "contenido": "Claro, ¿en qué te ayudo?",
+    "timestamp": "2026-06-17T10:00:05"
+  }
+]
+```
+
+- `remitente` es `"USUARIO"` o `"ADMIN"`
+- Los mensajes vienen ordenados por timestamp ascendente
+- 204 si la sesión no tiene mensajes aún
+
+**Acción para el front — PENDIENTE:** Cuando el admin hace clic en una sesión del listado, llamar este endpoint y renderizar los mensajes antes de empezar a recibir los nuevos por WebSocket. Así el admin ve la conversación completa.
+
+---
+
+### Endpoint de sesiones activas (para el listado del panel)
+
+**Request:**
+```
+GET /mis-productos/v1/chat/admin/sesiones
+Authorization: Bearer <token admin>
+```
+
+**Response:**
+```json
+[
+  {
+    "sesionId": "f1d0db6f-496f-4000-9dd1-234efdc51f06",
+    "nombreUsuario": "chat",
+    "fechaInicio": "2026-06-17T10:00:00",
+    "ultimaActividad": "2026-06-17T10:02:00",
+    "ultimoMensaje": "Hola, tengo una pregunta"
+  }
+]
+```
+
+---
+
+### Endpoint para cerrar sesión manualmente
+
+**Request:**
+```
+POST /mis-productos/v1/chat/admin/cerrar/{sesionId}
+Authorization: Bearer <token admin>
+```
+
+**Response:** 204 No Content
+
+---
+
+### Comportamiento del email de notificación
+
+El backend manda email al admin en el **primer mensaje de cada sesión**, sin importar si el admin está en el panel o no.
+
+- Visitante se conecta → sin email
+- Visitante manda primer mensaje → email con el contenido del mensaje
+- Visitante manda más mensajes en la misma sesión → sin email (ya fue notificado)
+- Sesión expira por inactividad (5 min) → visitante manda nuevo mensaje → nueva sesión → nuevo email
+
+El front **no necesita hacer nada especial** para controlar los emails. Solo asegurarse de que el visitante llame `/chat.conectar` para crear sesión antes de mandar mensajes.
+
+---
+
+### Notificación en el panel cuando el admin ESTÁ en la app — ✅ IMPLEMENTADO (2026-06-17)
+
+Cuando el admin está en el panel y llega un mensaje de un visitante, el backend publica el evento por WebSocket en `/topic/chat.admin`.
+
+**Lo que se implementó:**
+- Sonido beep via Web Audio API al llegar mensaje en sesión no activa (sin archivo externo)
+- Highlight rojo en la sesión del listado con clase `ca-session-item--unread`, se quita al hacer clic
+- Eliminada propiedad `env.buscarImagenProducto` (URL deprecada, no se usaba en templates)
+
+El campo del mensaje en el evento es `contenido` (no `mensaje`):
+```json
+{
+  "tipo": "MENSAJE",
+  "sesionId": "f1d0db6f-...",
+  "nombreUsuario": "Juan",
+  "contenido": "Hola, tengo una pregunta",
+  "timestamp": "2026-06-17T10:00:05"
+}
+```
+
+**Para eventos `NUEVA_SESION`**, `contenido` viene `null` — es correcto, no hay mensaje aún.
+
+---
+
+### Protección anti-bot
+
+El backend limita los emails a uno por sesión. Si un bot manda mensajes continuamente dentro de la misma sesión, solo llega 1 email. Si crea sesiones nuevas continuamente, puede generar emails repetidos — se puede agregar rate limiting por IP en una iteración futura si se detecta el problema.
+
+**Timeout de sesión:** 5 minutos de inactividad → la sesión se cierra y el cliente recibe `{ "tipo": "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`.
+
+---
+
+### Confirmado correcto por el front — sin cambios requeridos (2026-06-17)
+
+Lo siguiente ya estaba bien implementado y no requiere ninguna acción:
+
+| Ítem | Estado |
+|---|---|
+| `buscarClientePedido` con query params | ✅ correcto |
+| micro_imagenes con prefijo `/v1/` | ✅ correcto |
+| Imágenes de productos y variantes usando `urlImagen` directa del response | ✅ correcto |
+| Interceptor maneja 401 (token expirado) y 403 (sin permiso) correctamente | ✅ correcto |
+| `omitidosSinNombre?.` con optional chaining | ✅ correcto |

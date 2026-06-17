@@ -1727,6 +1727,39 @@ desde sesiones anteriores — no requirieron cambios.
 
 ---
 
+## FIX CHAT — SESIONES VACÍAS + HISTORIAL CLIENTE + PERSISTENCIA sesionId (2026-06-17)
+
+> Dos bugs confirmados tras revisar `CAMBIOS_FRONT.md` actualizado por el backend.
+
+### 1. Panel admin mostraba 0 sesiones aunque hubiera chats activos
+`ChatAdminService.cargarSesiones()` tipaba el response de `GET /v1/chat/admin/sesiones` como
+`SesionActiva[]` (array plano). El backend devuelve `ResponseGeneric<List<SesionActiva>>`
+envuelto: `{ code, mensaje, data: [...] }`. Como `SesionActiva[]` no tiene campo `data`,
+`sesiones.map(...)` operaba sobre `undefined` y el `BehaviorSubject` quedaba en `[]`.
+
+**Fix:** cambiar a `ApiResponse<SesionActiva[]>` y leer `res?.data ?? []`.
+
+### 2. Historial del cliente no persistía al recargar la página
+`ChatLiveService` guardaba `sesionId` solo en memoria — al recargar se perdía y el usuario
+iniciaba una sesión nueva sin ver la conversación anterior.
+
+**Fix:**
+- Guardar `sesionId` en `sessionStorage` cuando se recibe por primera vez en `onConnect()`
+- En `conectar()`, recuperar `sesionId` de `sessionStorage` si existe
+- En `onConnect()`, si hay `sesionId`, llamar `cargarHistorial(sesionId)` antes de re-suscribir
+  al canal WebSocket → `GET /v1/chat/historial/{sesionId}` (nuevo endpoint público sin token)
+- Al desconectar (`desconectar()`), limpiar `sessionStorage.removeItem(SESION_KEY)`
+- `cargarHistorial()` hace merge por timestamp igual que el admin — conserva mensajes RT
+  que llegaron antes de que el REST respondiera
+
+**Archivos modificados:**
+- `src/app/chat/service/chat-admin.service.ts` → `cargarSesiones()` usa `ApiResponse<SesionActiva[]>`
+- `src/app/chat/service/chat-live.service.ts` → `sessionStorage`, `cargarHistorial()`, inyecta `HttpClient`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## LECCIONES APRENDIDAS — MÓDULO CHAT
 
 > Patrones que causaron bugs en este módulo. Revisar antes de tocar `chat-admin.service.ts`,
@@ -1778,11 +1811,12 @@ desde sesiones anteriores — no requirieron cambios.
    puede usar `|| '…'` como fallback visual, pero el servicio no debe agregar ese mensaje al
    array si `contenido` es null/vacío.
 
-7. **`GET /v1/chat/admin/historial/{sesionId}` devuelve `ResponseGeneric` envuelto — NO array plano.**
-   El back usa `ResponseGeneric<List<ChatMensaje>>` → `{ code, mensaje, data: [...], lista }`.
-   El front debe leer `res?.data ?? []`, NO `response.body` directamente. Documentar en
-   `CAMBIOS_FRONT.md` si el endpoint usa wrapper o no — la regla general del proyecto es que
-   casi todos los endpoints REST de este back usan `ResponseGeneric`, salvo casos puntuales
-   donde se confirmó explícitamente que devuelve array plano (ej: `sesiones` del chat admin).
+7. **TODOS los endpoints REST del módulo chat usan `ResponseGeneric` — leer siempre `res?.data ?? []`.**
+   Tanto `GET /v1/chat/admin/historial/{sesionId}` como `GET /v1/chat/admin/sesiones` devuelven
+   `{ code, mensaje, data: [...], lista }`. Al tiparlo como el array directamente (`http.get<SesionActiva[]>`)
+   el campo `data` no existe en `SesionActiva[]`, así que el guard `if (!sesiones)` o el `map()` opera
+   sobre `undefined` → panel vacío. Regla: ante cualquier endpoint nuevo del chat (o del proyecto en
+   general), asumir `ApiResponse<T>` y leer `res?.data ?? []` salvo confirmación explícita de que el
+   back devuelve el array/objeto raíz directamente.
 
 Ncesito que preguntes todas tus dudas para que tengas las cosas claras y cuando tengas las cosas claras y lanses agentes o hagas cambios ya no estes pregunte y pregunte

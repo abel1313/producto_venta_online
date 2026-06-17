@@ -77,10 +77,7 @@
                 type="button"
                 [disabled]="!archivoValido || subiendo"
                 (click)="subir()">
-          <span *ngIf="!subiendo">🚀 Subir y procesar</span>
-          <span *ngIf="subiendo" class="d-flex align-items-center gap-2">
-            <span class="spinner-border spinner-border-sm"></span> Procesando…
-          </span>
+          🚀 Subir y procesar
         </button>
       </div>
 

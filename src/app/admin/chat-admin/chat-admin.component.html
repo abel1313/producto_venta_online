@@ -1,0 +1,101 @@
+<div class="ca-wrapper">
+
+  <!-- Barra lateral: lista de sesiones -->
+  <aside class="ca-sidebar">
+    <div class="ca-sidebar__header">
+      <i class="pi pi-comments"></i>
+      <span>Chats activos</span>
+      <span class="ca-dot" [class.ca-dot--online]="conectado" [title]="conectado ? 'Conectado' : 'Sin conexión'"></span>
+    </div>
+
+    <div *ngIf="errorConexion" class="ca-alert ca-alert--error">
+      ⚠️ {{ errorConexion }}
+    </div>
+
+    <div *ngIf="sesiones.length === 0" class="ca-empty-sidebar">
+      <i class="pi pi-inbox"></i>
+      <p>Sin chats activos</p>
+    </div>
+
+    <div *ngFor="let s of sesiones"
+         class="ca-session-item"
+         [class.ca-session-item--active]="sesionActiva?.sesionId === s.sesionId"
+         (click)="seleccionarSesion(s)">
+
+      <div class="ca-session-item__avatar">
+        {{ s.nombreUsuario.charAt(0).toUpperCase() }}
+      </div>
+      <div class="ca-session-item__info">
+        <span class="ca-session-item__name">{{ s.nombreUsuario }}</span>
+        <span class="ca-session-item__last">{{ s.ultimoMensaje || 'Sin mensajes aún' }}</span>
+      </div>
+      <div class="ca-session-item__actions">
+        <span *ngIf="s.noLeidos > 0" class="ca-badge">{{ s.noLeidos }}</span>
+        <button class="ca-btn-close" (click)="cerrarSesion(s); $event.stopPropagation()" title="Cerrar sesión">✕</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Panel de chat -->
+  <main class="ca-chat" [class.ca-chat--empty]="!sesionActiva">
+
+    <ng-container *ngIf="sesionActiva; else sinSeleccion">
+
+      <!-- Header del chat activo -->
+      <div class="ca-chat__header">
+        <div class="ca-chat__avatar">{{ sesionActiva.nombreUsuario.charAt(0).toUpperCase() }}</div>
+        <div class="ca-chat__info">
+          <span class="ca-chat__name">{{ sesionActiva.nombreUsuario }}</span>
+          <span class="ca-chat__since">Desde {{ formatHora(sesionActiva.fechaInicio) }}</span>
+        </div>
+        <button class="ca-btn ca-btn--cerrar" (click)="cerrarSesion(sesionActiva!)">
+          <i class="pi pi-times"></i> Cerrar chat
+        </button>
+      </div>
+
+      <!-- Mensajes -->
+      <div class="ca-chat__messages" #mensajesContainer>
+        <div *ngIf="sesionActiva.mensajes.length === 0" class="ca-chat__empty">
+          <p>Cargando historial…</p>
+        </div>
+
+        <div *ngFor="let msg of sesionActiva.mensajes"
+             class="ca-bubble"
+             [class.ca-bubble--usuario]="msg.remitente === 'USUARIO'"
+             [class.ca-bubble--admin]="msg.remitente === 'ADMIN'">
+          <div class="ca-bubble__text">{{ msg.contenido }}</div>
+          <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+        </div>
+      </div>
+
+      <!-- Input respuesta -->
+      <div class="ca-chat__input-area">
+        <textarea
+          class="ca-input"
+          rows="1"
+          placeholder="Escribe tu respuesta…"
+          [(ngModel)]="textoRespuesta"
+          (keydown)="onKeydown($event)"
+          [disabled]="!conectado"
+          maxlength="2000">
+        </textarea>
+        <button
+          class="ca-btn ca-btn--enviar"
+          [disabled]="!textoRespuesta.trim() || !conectado"
+          (click)="responder()">
+          <i class="pi pi-send"></i> Enviar
+        </button>
+      </div>
+
+    </ng-container>
+
+    <ng-template #sinSeleccion>
+      <div class="ca-chat__placeholder">
+        <i class="pi pi-comments ca-chat__placeholder-icon"></i>
+        <p>Selecciona un chat para responder</p>
+      </div>
+    </ng-template>
+
+  </main>
+
+</div>

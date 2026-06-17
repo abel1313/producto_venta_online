@@ -164,10 +164,7 @@
       <!-- ── Botón ──────────────────────────────────────────────────
            Modal cámara se coloca fuera del card más abajo         -->
       <button class="vf-btn-save" [disabled]="!productoSeleccionado || guardando" (click)="actualizar()">
-        <span *ngIf="!guardando">💾 Actualizar variante</span>
-        <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
-          <span class="spinner-border spinner-border-sm"></span> Actualizando…
-        </span>
+        💾 Actualizar variante
       </button>
 
     </div>
@@ -216,8 +213,7 @@
                     [disabled]="img.principal || cambiandoPrincipal.has(img.id!)"
                     (click)="setPrincipalVariante(img)"
                     [title]="img.principal ? 'Imagen principal' : 'Marcar como principal'">
-              <span *ngIf="!cambiandoPrincipal.has(img.id!)">{{ img.principal ? '⭐' : '☆' }}</span>
-              <span *ngIf="cambiandoPrincipal.has(img.id!)" class="spinner-border spinner-border-sm"></span>
+              {{ img.principal ? '⭐' : '☆' }}
             </button>
 
             <button class="vf-slide__del"
@@ -225,8 +221,7 @@
                     [disabled]="eliminandoExistente.has(img.id!)"
                     (click)="eliminarImagenExistente(img)"
                     title="Eliminar imagen">
-              <span *ngIf="!eliminandoExistente.has(img.id!)">✕</span>
-              <span *ngIf="eliminandoExistente.has(img.id!)" class="spinner-border spinner-border-sm"></span>
+              ✕
             </button>
 
           </div>

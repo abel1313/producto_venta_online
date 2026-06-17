@@ -20,10 +20,7 @@
     </div>
 
     <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
-      <span *ngIf="!guardando">{{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}</span>
-      <span *ngIf="guardando" class="d-flex gap-2 align-items-center">
-        <span class="spinner-border spinner-border-sm"></span> Guardando…
-      </span>
+      {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
     </button>
 
     <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">

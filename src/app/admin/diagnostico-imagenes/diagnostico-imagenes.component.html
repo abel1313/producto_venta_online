@@ -40,9 +40,6 @@
               [value]="terminoProducto"
               (input)="onBuscarProducto($event)"
               autocomplete="off" />
-            <span *ngIf="buscandoProducto" class="di-search-box__spinner">
-              <span class="spinner-border spinner-border-sm"></span>
-            </span>
           </div>
 
           <!-- Dropdown resultados producto -->
@@ -98,9 +95,6 @@
               [value]="terminoVariante"
               (input)="onBuscarVariante($event)"
               autocomplete="off" />
-            <span *ngIf="buscandoVariante" class="di-search-box__spinner">
-              <span class="spinner-border spinner-border-sm"></span>
-            </span>
           </div>
 
           <!-- Dropdown resultados variante -->

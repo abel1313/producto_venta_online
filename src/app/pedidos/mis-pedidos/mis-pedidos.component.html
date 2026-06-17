@@ -166,7 +166,6 @@
 
             <!-- Estado -->
             <div class="mp-terminal__status" [ngClass]="'mp-terminal__status--' + estadoTerminal" *ngIf="estadoTerminal !== 'idle'">
-                <span class="spinner-border spinner-border-sm" *ngIf="estadoTerminal === 'procesando'"></span>
                 <i class="pi pi-check-circle" *ngIf="estadoTerminal === 'aprobado'"></i>
                 <i class="pi pi-times-circle" *ngIf="estadoTerminal === 'rechazado'"></i>
                 <i class="pi pi-ban"          *ngIf="estadoTerminal === 'cancelado'"></i>

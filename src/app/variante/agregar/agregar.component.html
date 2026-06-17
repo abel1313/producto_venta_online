@@ -252,12 +252,7 @@
         [disabled]="!productoSeleccionado || guardando"
         (click)="guardar()"
       >
-        <span *ngIf="!guardando">
-          💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' variantes' : 'variante' }}
-        </span>
-        <span *ngIf="guardando" class="d-flex align-items-center gap-2 justify-content-center">
-          <span class="spinner-border spinner-border-sm"></span> Guardando…
-        </span>
+        💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' variantes' : 'variante' }}
       </button>
 
     </div>

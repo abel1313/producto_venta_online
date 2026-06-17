@@ -1,0 +1,90 @@
+<div class="cu-page">
+
+  <div class="cu-card">
+    <!-- Header -->
+    <div class="cu-header">
+      <i class="pi pi-comments cu-header__icon"></i>
+      <div class="cu-header__info">
+        <span class="cu-header__title">Chat con soporte</span>
+        <span class="cu-header__status" [class.cu-header__status--online]="conectado">
+          {{ conectado ? 'En línea' : 'Conectando…' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Banner de estado de conexión estilo YouTube -->
+    <div *ngIf="estadoConexion !== 'conectado'"
+         class="cu-conexion-banner"
+         [ngClass]="estadoConexion">
+      <ng-container [ngSwitch]="estadoConexion">
+        <ng-container *ngSwitchCase="'reconectando'">
+          <span class="cu-conexion-spinner"></span>
+          <span>Reconectando...</span>
+        </ng-container>
+        <ng-container *ngSwitchCase="'sin-internet'">
+          <span>Sin conexión a internet</span>
+        </ng-container>
+        <ng-container *ngSwitchCase="'restaurado'">
+          <span>✓ Conexión restaurada</span>
+        </ng-container>
+      </ng-container>
+    </div>
+
+    <!-- Error de conexión -->
+    <div *ngIf="errorConexion" class="cu-alert cu-alert--error">
+      ⚠️ {{ errorConexion }}
+      <button class="cu-alert__close" (click)="errorConexion = null">✕</button>
+    </div>
+
+    <!-- Sesión cerrada por el admin -->
+    <div *ngIf="sesionCerrada" class="cu-alert cu-alert--info">
+      La sesión fue cerrada por el administrador.
+      <button class="cu-btn cu-btn--reiniciar" (click)="reiniciar()">Iniciar nuevo chat</button>
+    </div>
+
+    <!-- Área de mensajes -->
+    <div class="cu-messages" #mensajesContainer>
+
+      <div *ngIf="mensajes.length === 0 && conectado" class="cu-empty">
+        <i class="pi pi-comments cu-empty__icon"></i>
+        <p>¡Hola! Escribe tu mensaje y te atendemos.</p>
+      </div>
+
+      <div *ngIf="!conectado && mensajes.length === 0" class="cu-empty">
+        <span class="cu-spinner"></span>
+        <p>Conectando con el chat…</p>
+      </div>
+
+      <div *ngFor="let msg of mensajes"
+           class="cu-bubble"
+           [class.cu-bubble--usuario]="msg.remitente === 'USUARIO'"
+           [class.cu-bubble--admin]="msg.remitente === 'ADMIN'">
+        <div class="cu-bubble__text">{{ msg.contenido }}</div>
+        <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+      </div>
+
+    </div>
+
+    <!-- Input -->
+    <div class="cu-input-area" [class.cu-input-area--disabled]="estadoConexion !== 'conectado' || sesionCerrada">
+      <textarea
+        class="cu-input"
+        rows="1"
+        placeholder="Escribe tu mensaje…"
+        [(ngModel)]="textoMensaje"
+        (keydown)="onKeydown($event)"
+        [disabled]="estadoConexion !== 'conectado' || sesionCerrada"
+        maxlength="1000">
+      </textarea>
+      <button
+        class="cu-btn cu-btn--enviar"
+        [disabled]="!textoMensaje.trim() || estadoConexion !== 'conectado' || sesionCerrada"
+        [title]="estadoConexion === 'reconectando' ? 'Reconectando...' : ''"
+        (click)="enviar()">
+        <i class="pi pi-send"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div>

@@ -95,9 +95,8 @@ export class ChatLiveService implements OnDestroy {
         const evento: EventoUsuario = JSON.parse(msg.body);
         if (evento.tipo === 'SESION_CERRADA') {
           this.sesionCerrada$.next();
-        } else if (evento.tipo === 'MENSAJE') {
-          const contenido = evento.contenido ?? (evento as any).mensaje ?? null;
-          if (contenido) this.agregarMensaje('ADMIN', contenido, evento.timestamp);
+        } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
+          this.agregarMensaje('ADMIN', evento.contenido, evento.timestamp);
         }
       }
     );

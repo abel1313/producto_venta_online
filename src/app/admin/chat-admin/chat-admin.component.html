@@ -57,6 +57,7 @@
       <!-- Mensajes -->
       <div class="ca-chat__messages" #mensajesContainer>
         <div *ngIf="sesionActiva.mensajes.length === 0" class="ca-chat__empty">
+          <i class="pi pi-inbox" style="font-size:2rem;opacity:0.3;"></i>
           <p>Cargando historial…</p>
         </div>
 
@@ -64,8 +65,24 @@
              class="ca-bubble"
              [class.ca-bubble--usuario]="msg.remitente === 'USUARIO'"
              [class.ca-bubble--admin]="msg.remitente === 'ADMIN'">
-          <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
-          <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+
+          <!-- Mensaje del usuario (cliente) -->
+          <ng-container *ngIf="msg.remitente === 'USUARIO'">
+            <div class="ca-bubble__avatar">{{ sesionActiva.nombreUsuario.charAt(0).toUpperCase() }}</div>
+            <div class="ca-bubble__body">
+              <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
+              <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+            </div>
+          </ng-container>
+
+          <!-- Mensaje del admin -->
+          <ng-container *ngIf="msg.remitente === 'ADMIN'">
+            <div class="ca-bubble__body">
+              <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
+              <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+            </div>
+          </ng-container>
+
         </div>
       </div>
 

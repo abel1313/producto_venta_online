@@ -37,6 +37,7 @@ export interface EventoAdmin {
 export interface SesionActiva {
   sesionId: string;
   nombreUsuario: string;
+  estado: 'ACTIVA' | 'CERRADA';
   fechaInicio: string;
   ultimaActividad: string;
   ultimoMensaje: string | null;
@@ -46,6 +47,14 @@ export interface MensajeHistorial {
   remitente: 'USUARIO' | 'ADMIN';
   contenido: string;
   timestamp: string;
+}
+
+export interface HistorialPaginado {
+  mensajes: MensajeHistorial[];
+  pagina: number;
+  totalPaginas: number;
+  totalMensajes: number;
+  hayMasAntiguos: boolean;
 }
 
 export interface ApiResponse<T> {

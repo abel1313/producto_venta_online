@@ -21,6 +21,7 @@
          class="ca-session-item"
          [class.ca-session-item--active]="sesionActiva?.sesionId === s.sesionId"
          [class.ca-session-item--unread]="s.noLeidos > 0 && sesionActiva?.sesionId !== s.sesionId"
+         [class.ca-session-item--cerrada]="s.estado === 'CERRADA'"
          (click)="seleccionarSesion(s)">
 
       <div class="ca-session-item__avatar">
@@ -31,8 +32,11 @@
         <span class="ca-session-item__last">{{ s.ultimoMensaje || 'Sin mensajes aún' }}</span>
       </div>
       <div class="ca-session-item__actions">
+        <span class="ca-estado-dot"
+              [class.ca-estado-dot--activa]="s.estado === 'ACTIVA'"
+              [title]="s.estado === 'ACTIVA' ? 'Activa' : 'Cerrada'"></span>
         <span *ngIf="s.noLeidos > 0" class="ca-badge">{{ s.noLeidos }}</span>
-        <button class="ca-btn-close" (click)="cerrarSesion(s); $event.stopPropagation()" title="Cerrar sesión">✕</button>
+        <button *ngIf="s.estado === 'ACTIVA'" class="ca-btn-close" (click)="cerrarSesion(s); $event.stopPropagation()" title="Cerrar sesión">✕</button>
       </div>
     </div>
   </aside>
@@ -54,8 +58,19 @@
         </button>
       </div>
 
+      <!-- Banner sesión cerrada -->
+      <div *ngIf="sesionActiva.estado === 'CERRADA'" class="ca-banner-cerrada">
+        🔒 Esta sesión está cerrada — solo lectura
+      </div>
+
       <!-- Mensajes -->
       <div class="ca-chat__messages" #mensajesContainer>
+        <div *ngIf="sesionActiva.hayMasAntiguos" class="ca-cargar-mas">
+          <button class="ca-btn ca-btn--cargar-mas" (click)="cargarMasAntiguos()">
+            ↑ Cargar mensajes anteriores
+          </button>
+        </div>
+
         <div *ngIf="sesionActiva.mensajes.length === 0" class="ca-chat__empty">
           <i class="pi pi-inbox" style="font-size:2rem;opacity:0.3;"></i>
           <p>Cargando historial…</p>
@@ -87,19 +102,19 @@
       </div>
 
       <!-- Input respuesta -->
-      <div class="ca-chat__input-area">
+      <div class="ca-chat__input-area" [class.ca-chat__input-area--disabled]="sesionActiva.estado === 'CERRADA'">
         <textarea
           class="ca-input"
           rows="1"
-          placeholder="Escribe tu respuesta…"
+          [placeholder]="sesionActiva.estado === 'CERRADA' ? 'Sesión cerrada — no se puede responder' : 'Escribe tu respuesta…'"
           [(ngModel)]="textoRespuesta"
           (keydown)="onKeydown($event)"
-          [disabled]="!conectado"
+          [disabled]="!conectado || sesionActiva.estado === 'CERRADA'"
           maxlength="2000">
         </textarea>
         <button
           class="ca-btn ca-btn--enviar"
-          [disabled]="!textoRespuesta.trim() || !conectado"
+          [disabled]="!textoRespuesta.trim() || !conectado || sesionActiva.estado === 'CERRADA'"
           (click)="responder()">
           <i class="pi pi-send"></i> Enviar
         </button>

@@ -7,14 +7,16 @@ import { environment } from 'src/environments/environment';
 import {
   ApiResponse,
   EventoAdmin,
+  HistorialPaginado,
   SesionActiva,
-  MensajeHistorial,
   MensajeUI
 } from '../models/chat.models';
 
 export interface SesionUI extends SesionActiva {
   mensajes: MensajeUI[];
   noLeidos: number;
+  hayMasAntiguos: boolean;
+  paginaHistorial: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -72,36 +74,43 @@ export class ChatAdminService implements OnDestroy {
         const actuales = this.sesiones$.value;
         const nuevas: SesionUI[] = sesiones.map(s => {
           const existente = actuales.find(a => a.sesionId === s.sesionId);
-          return existente ?? { ...s, mensajes: [], noLeidos: 0 };
+          return existente ?? { ...s, mensajes: [], noLeidos: 0, hayMasAntiguos: false, paginaHistorial: 0 };
         });
         this.sesiones$.next(nuevas);
       }
     });
   }
 
-  cargarHistorial(sesionId: string): void {
-    this.http.get<ApiResponse<MensajeHistorial[]>>(
-      `${this.baseUrl}/historial/${sesionId}`
+  cargarHistorial(sesionId: string, pagina = 0): void {
+    this.http.get<ApiResponse<HistorialPaginado>>(
+      `${this.baseUrl}/historial/${sesionId}?pagina=${pagina}&size=20`
     ).subscribe({
       next: res => {
-        // El back devuelve ResponseGeneric: { code, mensaje, data: [...] }
-        const historial: MensajeHistorial[] = res?.data ?? [];
+        const paginado = res?.data;
+        if (!paginado) return;
+        const base: MensajeUI[] = (paginado.mensajes ?? [])
+          .filter(h => !!h.contenido)
+          .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
         this.actualizarSesion(sesionId, s => {
-          const base = historial
-            .filter(h => !!h.contenido)
-            .map(h => ({
-              remitente: h.remitente,
-              contenido: h.contenido,
-              timestamp: h.timestamp
-            }));
-          // conservar mensajes RT que llegaron DESPUÉS del snapshot del historial
-          const ultimoTs = base.length ? base[base.length - 1].timestamp : null;
-          const rt = ultimoTs ? s.mensajes.filter(m => m.timestamp > ultimoTs && !!m.contenido) : [];
-          return { ...s, mensajes: [...base, ...rt], noLeidos: 0 };
+          if (pagina === 0) {
+            // Carga inicial: base + mensajes RT que llegaron después
+            const ultimoTs = base.length ? base[base.length - 1].timestamp : null;
+            const rt = ultimoTs ? s.mensajes.filter(m => m.timestamp > ultimoTs && !!m.contenido) : [];
+            return { ...s, mensajes: [...base, ...rt], noLeidos: 0, hayMasAntiguos: paginado.hayMasAntiguos, paginaHistorial: 0 };
+          } else {
+            // Páginas anteriores: prepend (más antiguos arriba)
+            return { ...s, mensajes: [...base, ...s.mensajes], hayMasAntiguos: paginado.hayMasAntiguos, paginaHistorial: pagina };
+          }
         });
       },
-      error: () => { /* historial no disponible — mantener lo que hay */ }
+      error: () => { /* historial no disponible */ }
     });
+  }
+
+  cargarMasAntiguos(sesionId: string): void {
+    const sesion = this.sesiones$.value.find(s => s.sesionId === sesionId);
+    if (!sesion?.hayMasAntiguos) return;
+    this.cargarHistorial(sesionId, sesion.paginaHistorial + 1);
   }
 
   responder(sesionId: string, contenido: string): void {
@@ -132,11 +141,14 @@ export class ChatAdminService implements OnDestroy {
     const nueva: SesionUI = {
       sesionId: evento.sesionId,
       nombreUsuario: evento.nombreUsuario,
+      estado: 'ACTIVA',
       fechaInicio: new Date().toISOString(),
       ultimaActividad: new Date().toISOString(),
       ultimoMensaje: null,
       mensajes: [],
-      noLeidos: 0
+      noLeidos: 0,
+      hayMasAntiguos: false,
+      paginaHistorial: 0
     };
     this.sesiones$.next([...actual, nueva]);
   }

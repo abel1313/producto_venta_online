@@ -66,9 +66,9 @@ export class ChatAdminService implements OnDestroy {
   }
 
   private cargarSesiones(): void {
-    this.http.get<SesionActiva[]>(`${this.baseUrl}/sesiones`).subscribe({
-      next: sesiones => {
-        if (!sesiones) return;
+    this.http.get<ApiResponse<SesionActiva[]>>(`${this.baseUrl}/sesiones`).subscribe({
+      next: res => {
+        const sesiones = res?.data ?? [];
         const actuales = this.sesiones$.value;
         const nuevas: SesionUI[] = sesiones.map(s => {
           const existente = actuales.find(a => a.sesionId === s.sesionId);

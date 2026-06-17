@@ -59,7 +59,7 @@
            class="cu-bubble"
            [class.cu-bubble--usuario]="msg.remitente === 'USUARIO'"
            [class.cu-bubble--admin]="msg.remitente === 'ADMIN'">
-        <div class="cu-bubble__text">{{ msg.contenido }}</div>
+        <div class="cu-bubble__text">{{ msg.contenido || '…' }}</div>
         <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
       </div>
 

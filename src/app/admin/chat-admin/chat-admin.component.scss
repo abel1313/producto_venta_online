@@ -232,7 +232,8 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    background: linear-gradient(180deg, #f0f4ff 0%, #f8f9ff 100%);
   }
 
   &__empty {
@@ -240,6 +241,10 @@
     text-align: center;
     padding: 40px;
     font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
   &__input-area {
@@ -252,45 +257,86 @@
 }
 
 // Burbujas
+@keyframes ca-bubbleIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .ca-bubble {
-  max-width: 75%;
+  max-width: 78%;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: flex-end;
+  gap: 8px;
+  animation: ca-bubbleIn 0.2s ease;
 
-  &--usuario {
-    align-self: flex-start;
-    align-items: flex-start;
-
-    .ca-bubble__text {
-      background: var(--form-section-bg, #f1f5f9);
-      color: var(--app-text, #1e293b);
-      border-radius: 16px 16px 16px 4px;
-    }
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
-  &--admin {
-    align-self: flex-end;
-    align-items: flex-end;
-
-    .ca-bubble__text {
-      background: #6366f1;
-      color: #fff;
-      border-radius: 16px 16px 4px 16px;
-    }
+  &__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.25);
   }
 
   &__text {
     padding: 10px 14px;
     font-size: 0.875rem;
-    line-height: 1.4;
+    line-height: 1.45;
     word-break: break-word;
+    border-radius: 16px;
+    position: relative;
   }
 
   &__time {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #94a3b8;
     padding: 0 4px;
+  }
+
+  // Mensaje del usuario/cliente (izquierda)
+  &--usuario {
+    align-self: flex-start;
+
+    .ca-bubble__body { align-items: flex-start; }
+
+    .ca-bubble__text {
+      background: #fff;
+      color: var(--app-text, #1e293b);
+      border-radius: 4px 16px 16px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e8ecf4;
+    }
+
+    .ca-bubble__time { text-align: left; }
+  }
+
+  // Mensaje del admin (derecha)
+  &--admin {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+
+    .ca-bubble__body { align-items: flex-end; }
+
+    .ca-bubble__text {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: #fff;
+      border-radius: 16px 4px 16px 16px;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+    }
+
+    .ca-bubble__time { text-align: right; }
   }
 }
 
@@ -405,9 +451,15 @@
     &__name { color: #e2e8f0; }
   }
 
+  .ca-chat__messages {
+    background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, rgba(30,41,59,0.3) 100%);
+  }
+
   .ca-bubble--usuario .ca-bubble__text {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.07);
     color: #e2e8f0;
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: none;
   }
 
   .ca-input {

@@ -1,18 +1,22 @@
 <div class="cu-page">
 
   <div class="cu-card">
+
     <!-- Header -->
     <div class="cu-header">
-      <i class="pi pi-comments cu-header__icon"></i>
+      <div class="cu-header__avatar">
+        <i class="pi pi-headphones"></i>
+      </div>
       <div class="cu-header__info">
         <span class="cu-header__title">Chat con soporte</span>
         <span class="cu-header__status" [class.cu-header__status--online]="conectado">
-          {{ conectado ? 'En línea' : 'Conectando…' }}
+          <span class="cu-header__dot" [class.cu-header__dot--online]="conectado"></span>
+          {{ conectado ? 'En línea ahora' : 'Conectando…' }}
         </span>
       </div>
     </div>
 
-    <!-- Banner de estado de conexión estilo YouTube -->
+    <!-- Banner de estado de conexión -->
     <div *ngIf="estadoConexion !== 'conectado'"
          class="cu-conexion-banner"
          [ngClass]="estadoConexion">
@@ -46,8 +50,11 @@
     <div class="cu-messages" #mensajesContainer>
 
       <div *ngIf="mensajes.length === 0 && conectado" class="cu-empty">
-        <i class="pi pi-comments cu-empty__icon"></i>
-        <p>¡Hola! Escribe tu mensaje y te atendemos.</p>
+        <div class="cu-empty__avatar">
+          <i class="pi pi-headphones"></i>
+        </div>
+        <p class="cu-empty__greeting">¡Hola! 👋</p>
+        <p class="cu-empty__sub">Estamos aquí para ayudarte. Escribe tu primer mensaje.</p>
       </div>
 
       <div *ngIf="!conectado && mensajes.length === 0" class="cu-empty">
@@ -59,8 +66,24 @@
            class="cu-bubble"
            [class.cu-bubble--usuario]="msg.remitente === 'USUARIO'"
            [class.cu-bubble--admin]="msg.remitente === 'ADMIN'">
-        <div class="cu-bubble__text">{{ msg.contenido || '…' }}</div>
-        <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+
+        <!-- Mensajes del admin: avatar + burbuja -->
+        <ng-container *ngIf="msg.remitente === 'ADMIN'">
+          <div class="cu-bubble__avatar">S</div>
+          <div class="cu-bubble__body">
+            <div class="cu-bubble__text">{{ msg.contenido || '…' }}</div>
+            <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+          </div>
+        </ng-container>
+
+        <!-- Mensajes del usuario: burbuja -->
+        <ng-container *ngIf="msg.remitente === 'USUARIO'">
+          <div class="cu-bubble__body">
+            <div class="cu-bubble__text">{{ msg.contenido || '…' }}</div>
+            <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+          </div>
+        </ng-container>
+
       </div>
 
     </div>
@@ -79,7 +102,6 @@
       <button
         class="cu-btn cu-btn--enviar"
         [disabled]="!textoMensaje.trim() || estadoConexion !== 'conectado' || sesionCerrada"
-        [title]="estadoConexion === 'reconectando' ? 'Reconectando...' : ''"
         (click)="enviar()">
         <i class="pi pi-send"></i>
       </button>

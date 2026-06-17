@@ -12,12 +12,12 @@
   max-width: 680px;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  box-shadow: 0 8px 40px rgba(99,102,241,0.14), 0 2px 8px rgba(0,0,0,0.07);
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, #e2e8f0);
-  min-height: 520px;
+  min-height: 540px;
 }
 
 // Header
@@ -25,63 +25,74 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 14px 20px;
   background: var(--header-brand, #4f46e5);
   color: #fff;
 
-  &__icon {
-    font-size: 1.5rem;
+  &__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
   }
 
   &__info {
     display: flex;
     flex-direction: column;
+    gap: 2px;
+    flex: 1;
   }
 
   &__title {
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 0.975rem;
+    letter-spacing: 0.01em;
   }
 
   &__status {
-    font-size: 0.75rem;
-    opacity: 0.75;
+    font-size: 0.73rem;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    &--online { opacity: 1; }
+  }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    flex-shrink: 0;
 
     &--online {
-      opacity: 1;
-      &::before {
-        content: '● ';
-        color: #4ade80;
-      }
+      background: #4ade80;
+      box-shadow: 0 0 0 2px rgba(74,222,128,0.35);
     }
   }
 }
 
-// Banner de conexión estilo YouTube
+// Banner de conexión
 .cu-conexion-banner {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 9px 16px;
   font-size: 0.8rem;
   font-weight: 500;
   animation: cu-slideDown 0.3s ease;
 
-  &.reconectando {
-    background: #f9a825;
-    color: #333;
-  }
-
-  &.sin-internet {
-    background: #d32f2f;
-    color: #fff;
-  }
-
-  &.restaurado {
-    background: #388e3c;
-    color: #fff;
-  }
+  &.reconectando { background: #f9a825; color: #333; }
+  &.sin-internet  { background: #d32f2f; color: #fff; }
+  &.restaurado    { background: #388e3c; color: #fff; }
 }
 
 @keyframes cu-slideDown {
@@ -92,7 +103,7 @@
 .cu-conexion-spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(0,0,0,0.2);
   border-top-color: #333;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -133,35 +144,64 @@
   }
 }
 
-// Mensajes
+// Área de mensajes
 .cu-messages {
   flex: 1;
   overflow-y: auto;
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-height: 300px;
   max-height: 60vh;
+  background: linear-gradient(180deg, #f0f4ff 0%, #f8f9ff 100%);
 }
 
+// Estado vacío
 .cu-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: #94a3b8;
-  gap: 10px;
+  gap: 8px;
   padding: 40px 20px;
   text-align: center;
 
-  &__icon {
-    font-size: 2.5rem;
-    opacity: 0.4;
+  &__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 4px;
+    box-shadow: 0 4px 18px rgba(99,102,241,0.3);
   }
 
-  p { margin: 0; font-size: 0.9rem; }
+  &__greeting {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+  }
+
+  &__sub {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #64748b;
+    max-width: 240px;
+  }
+
+  // estado conectando
+  p:not(.cu-empty__greeting):not(.cu-empty__sub) {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #94a3b8;
+  }
 }
 
 .cu-spinner {
@@ -177,46 +217,87 @@
   to { transform: rotate(360deg); }
 }
 
-// Burbujas
+// ── Burbujas ──────────────────────────────────────────────────
+@keyframes cu-bubbleIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .cu-bubble {
-  max-width: 75%;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 80%;
+  animation: cu-bubbleIn 0.2s ease;
 
-  &--usuario {
-    align-self: flex-end;
-    align-items: flex-end;
-
-    .cu-bubble__text {
-      background: #6366f1;
-      color: #fff;
-      border-radius: 16px 16px 4px 16px;
-    }
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
-  &--admin {
-    align-self: flex-start;
-    align-items: flex-start;
-
-    .cu-bubble__text {
-      background: var(--form-section-bg, #f1f5f9);
-      color: var(--app-text, #1e293b);
-      border-radius: 16px 16px 16px 4px;
-    }
+  &__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.3);
   }
 
   &__text {
     padding: 10px 14px;
     font-size: 0.9rem;
-    line-height: 1.4;
+    line-height: 1.45;
     word-break: break-word;
+    border-radius: 16px;
+    position: relative;
   }
 
   &__time {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #94a3b8;
     padding: 0 4px;
+  }
+
+  // Mensajes del admin (izquierda)
+  &--admin {
+    align-self: flex-start;
+
+    .cu-bubble__body { align-items: flex-start; }
+
+    .cu-bubble__text {
+      background: #fff;
+      color: var(--app-text, #1e293b);
+      border-radius: 4px 16px 16px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e8ecf4;
+    }
+
+    .cu-bubble__time { text-align: left; }
+  }
+
+  // Mensajes del usuario (derecha)
+  &--usuario {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+
+    .cu-bubble__body { align-items: flex-end; }
+
+    .cu-bubble__text {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: #fff;
+      border-radius: 16px 4px 16px 16px;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+    }
+
+    .cu-bubble__time { text-align: right; }
   }
 }
 
@@ -228,51 +309,59 @@
   border-top: 1px solid var(--card-border, #e2e8f0);
   background: var(--card-bg, #fff);
 
-  &--disabled {
-    opacity: 0.6;
-  }
+  &--disabled { opacity: 0.6; }
 }
 
 .cu-input {
   flex: 1;
   resize: none;
-  border: 1px solid var(--card-border, #cbd5e1);
-  border-radius: 10px;
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  border-radius: 12px;
   padding: 10px 14px;
   font-size: 0.9rem;
   background: var(--form-section-bg, #f8fafc);
   color: var(--app-text, #1e293b);
   outline: none;
   line-height: 1.4;
+  transition: border-color 0.15s, box-shadow 0.15s;
 
   &:focus {
     border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
   }
 
-  &:disabled {
-    cursor: not-allowed;
-  }
+  &:disabled { cursor: not-allowed; }
 }
 
 // Botones
 .cu-btn {
   border: none;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 500;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
 
   &--enviar {
-    padding: 0 16px;
-    background: #6366f1;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #818cf8);
     color: #fff;
-    transition: background 0.2s;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+    flex-shrink: 0;
 
-    &:hover:not(:disabled) { background: #4f46e5; }
-    &:disabled { background: #c7d2fe; cursor: not-allowed; }
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(99,102,241,0.45);
+    }
+    &:active:not(:disabled) { transform: scale(0.96); }
+    &:disabled { background: #c7d2fe; box-shadow: none; cursor: not-allowed; }
 
-    .pi { font-size: 1rem; }
+    .pi { font-size: 1.05rem; }
   }
 
   &--reiniciar {
@@ -280,28 +369,20 @@
     background: #3b82f6;
     color: #fff;
     margin-left: auto;
+    border-radius: 8px;
 
     &:hover { background: #2563eb; }
   }
 }
 
-// Light mode — suaviza el header y los elementos índigo
+// ── Light mode ────────────────────────────────────────────────
 :host-context(body.theme-light) {
   .cu-header {
     background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
   }
-
-  .cu-bubble--usuario .cu-bubble__text {
-    background: #6366f1;
-  }
-
-  .cu-btn--enviar {
-    background: #6366f1;
-    &:hover:not(:disabled) { background: #4f46e5; }
-  }
 }
 
-// Dark mode
+// ── Dark mode ─────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .cu-card {
     background: rgba(255,255,255,0.04);
@@ -309,12 +390,14 @@
   }
 
   .cu-messages {
-    background: transparent;
+    background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, rgba(30,41,59,0.3) 100%);
   }
 
   .cu-bubble--admin .cu-bubble__text {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.07);
     color: #e2e8f0;
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: none;
   }
 
   .cu-input-area {
@@ -327,6 +410,9 @@
     border-color: rgba(255,255,255,0.12);
     color: #e2e8f0;
   }
+
+  .cu-empty__greeting { color: #e2e8f0; }
+  .cu-empty__sub { color: #94a3b8; }
 
   .cu-alert--info {
     background: rgba(59,130,246,0.15);

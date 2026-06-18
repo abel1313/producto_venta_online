@@ -570,50 +570,20 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ── Modo luz — glassmorphism claro (el fondo va en __content) ─────
+// ── Modo luz — glassmorphism ──────────────────────────────────────
 :host-context(body.theme-light) {
-  // Gradiente sutil solo en la zona del header para que el vidrio sea visible
-  .pl-header {
-    background: linear-gradient(160deg, #c7d2fe 0%, transparent 220px);
-  }
-
   .pl-header__content {
-    background: rgba(255, 255, 255, 0.50);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.09);
-    border: 1px solid rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.60);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow:
+      0 8px 32px rgba(99, 102, 241, 0.14),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.80);
+    border: 1px solid rgba(99, 102, 241, 0.20);
   }
   .pl-header__inner        { color: #1e293b; }
   .pl-header__title h4     { color: #1e293b; }
   .pl-header__title small  { color: #64748b; }
-
-  .pl-btn--cart {
-    background: rgba(0, 0, 0, 0.06);
-    color: #1e293b;
-    &:hover { background: rgba(0, 0, 0, 0.12); }
-  }
-
-  .pl-search {
-    background: rgba(255, 255, 255, 0.50);
-    border: 1px solid rgba(0, 0, 0, 0.12);
-  }
-  .pl-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
-  .pl-search__scan {
-    background: rgba(255, 255, 255, 0.55);
-    &:hover { background: rgba(255, 255, 255, 0.75); }
-  }
-
-  .pl-filtro-btn {
-    border: 1px solid rgba(0, 0, 0, 0.14);
-    background: rgba(255, 255, 255, 0.45);
-    color: #475569;
-    &:hover { background: rgba(255, 255, 255, 0.70); color: #1e293b; }
-    &--active {
-      background: rgba(99, 102, 241, 0.12);
-      color: var(--app-accent);
-      border-color: transparent;
-    }
-  }
 
   .pl-btn--cart {
     background: rgba(0, 0, 0, 0.07);
@@ -621,15 +591,37 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover { background: rgba(0, 0, 0, 0.13); }
   }
 
-  .pl-scan-mobile {
-    background: rgba(255, 255, 255, 0.45);
+  .pl-search {
+    background: rgba(255, 255, 255, 0.40);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+  }
+  .pl-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
+  .pl-search__scan {
+    background: rgba(255, 255, 255, 0.50);
+    &:hover { background: rgba(255, 255, 255, 0.75); }
+  }
+
+  .pl-filtro-btn {
     border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+    &--active {
+      background: rgba(99, 102, 241, 0.14);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
+  }
+
+  .pl-scan-mobile {
+    background: rgba(255, 255, 255, 0.40);
+    border: 1px solid rgba(0, 0, 0, 0.10);
     color: #1e293b;
-    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.65); }
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.60); }
   }
 }
 
-// ── Modo oscuro — glassmorphism oscuro (el fondo va en __content) ─
+// ── Modo oscuro — glassmorphism oscuro ────────────────────────────
 :host-context(body.theme-dark) {
   .pl-header__content {
     background: rgba(15, 15, 25, 0.72);

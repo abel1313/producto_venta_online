@@ -1760,7 +1760,10 @@ iniciaba una sesión nueva sin ver la conversación anterior.
 
 ---
 
-## FIX CHAT — `clienteId` COMO FUENTE PRIMARIA DE HISTORIAL (2026-06-18)
+## ~~FIX CHAT — `clienteId` COMO FUENTE PRIMARIA DE HISTORIAL (2026-06-18)~~
+
+> **⚠️ OBSOLETO — reemplazado por la sección "REESCRITURA `chat-live.service.ts`" más abajo.**
+> El `clienteId` ya no existe en el código. Este registro se conserva solo para entender la cadena de decisiones.
 
 **Síntoma:** al abrir `/chat` en QA con un usuario autenticado, el historial no cargaba aunque
 hubiera mensajes en la BD. El backend veía la request al endpoint `/historial/usuario/{id}` pero
@@ -1857,4 +1860,54 @@ vinculado, se puede plantear migrar la prioridad a `usuarioId` (más robusto cro
    general), asumir `ApiResponse<T>` y leer `res?.data ?? []` salvo confirmación explícita de que el
    back devuelve el array/objeto raíz directamente.
 
-Ncesito que preguntes todas tus dudas para que tengas las cosas claras y cuando tengas las cosas claras y lanses agentes o hagas cambios ya no estes pregunte y pregunte
+8. **No mantener fallbacks de identificadores viejos (`clienteId`) una vez que el backend publica un spec definitivo con el identificador canónico (`usuarioId`).** La sección "clienteId como fuente primaria" fue un parche temporal para cubrir sesiones pre-`usuarioId`. Pero el backend nunca tuvo un endpoint de historial por `clienteId` — esas sesiones antiguas simplemente no son recuperables por `usuarioId` porque no estaban vinculadas en BD. La solución correcta no es mantener el fallback sino aceptar que las sesiones anteriores a la migración se pierden (comportamiento esperado) y adoptar el identificador nuevo de forma limpia. **Regla:** cuando el backend publica un spec (`CHAT_EN_VIVO.md`), adoptarlo completo sin capas de compatibilidad que no tienen soporte en el back.
+
+9. **Cuando el servidor QA no refleja los cambios del front, el problema casi siempre es que el bundle no se ha reconstruido — no que el código esté mal.** El backend reportó "no recibo `usuarioId` en el WS payload" cuando el código nuevo ya lo incluía incondicionalmente. El bundle del servidor QA era el antiguo. Diagnóstico rápido: cambiar un texto visible en la UI (ej. el título del chat) o agregar `version` al `environment.qa.ts` → si el browser no muestra el cambio, el servidor sigue con el bundle viejo. No invertir tiempo en depuración de código cuando la causa puede ser un deploy pendiente.
+
+---
+
+## FIX CHAT — REESCRITURA `chat-live.service.ts` + REFACTOR `ChatUsuarioComponent` (2026-06-18)
+
+> El backend publicó su spec definitivo en `CHAT_EN_VIVO.md`. La lógica de `clienteId`/localStorage
+> que se había agregado en sesiones anteriores no tenía soporte en el back (no hay endpoint
+> `/historial/clienteId/{id}`). Se reescribió el servicio del cliente alineado al spec.
+
+**⚠️ NOTA:** La sección anterior "FIX CHAT — `clienteId` COMO FUENTE PRIMARIA DE HISTORIAL" quedó
+**obsoleta y reemplazada** por esta reescritura. El `clienteId` ya no existe en ningún archivo.
+
+### `chat-live.service.ts` — reescritura completa
+
+- `clienteId` eliminado por completo. Sin `localStorage`. El chat es **exclusivo para usuarios autenticados** — si `usuarioId` es null/undefined, `conectar()` no hace nada.
+- Flujo en `conectar()`: **primero** `cargarHistorial(0)` → REST devuelve mensajes previos → **después** `activarStomp()` → WebSocket listo. Así el historial aparece antes de que el WS esté conectado.
+- `historialBase = ${environment.api_Url}/v1/chat/historial/usuario` → `GET /{usuarioId}?pagina=N&size=20`
+- Response: `ApiResponse<HistorialPaginado>` — siempre leer `res?.data`.
+- `iniciarNuevaSesion()` publica `{ tempId, nombreUsuario, usuarioId }` incondicionalmente — `usuarioId` siempre está porque `conectar()` ya validó que existe.
+- `sesionId` persiste en `sessionStorage` (se pierde al cerrar pestaña — correcto por diseño, la sesión WS expira de todos modos en 5 min de inactividad).
+- `cargarMasAntiguos()` llama al mismo endpoint con `pagina + 1` y hace prepend.
+- `desconectar()` limpia `sessionStorage` (no hay `localStorage` que limpiar).
+
+### `chat-usuario.component.ts` — simplificado
+
+- `sesionCerrada` renombrado a `sesionExpirada` — aviso informativo, **NO bloquea el input**.
+- `reiniciar()` eliminado — cuando la sesión expira, el siguiente `enviarMensaje()` detecta `!sesionId` y reconecta solo (`cargarHistorial(0)` + `iniciarNuevaSesion()`).
+- `enviar()` solo bloquea en `estadoConexion === 'sin-internet' | 'reconectando'`.
+- Al enviar: `sesionExpirada = false` se limpia automáticamente.
+
+### `chat-usuario.component.html`
+
+- Eliminado botón "Iniciar nuevo chat".
+- Banner de sesión cerrada → aviso no bloqueante: "⏱ La sesión expiró por inactividad. Escribe un mensaje para continuar."
+- Input y botón solo `[disabled]` en `sin-internet` o `reconectando`.
+- Título cambiado a **"Chat con soporte v2"** como indicador visual de deploy (saber si el bundle nuevo está activo en QA).
+
+### `environment.qa.ts`
+
+- Agregado `version: '2026-06-18'` como smoke change para forzar rebuild del bundle en el servidor QA.
+
+**Archivos modificados:**
+- `src/app/chat/service/chat-live.service.ts` → reescritura completa
+- `src/app/chat/chat-usuario/chat-usuario.component.ts` → `sesionExpirada`, sin `reiniciar()`
+- `src/app/chat/chat-usuario/chat-usuario.component.html` → sin botón reiniciar, aviso no bloqueante, título "v2"
+- `src/environments/environment.qa.ts` → `version: '2026-06-18'`
+
+**Verificado con `ng build --configuration=development` sin errores.**

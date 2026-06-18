@@ -33,17 +33,48 @@ export class ChatLiveService implements OnDestroy {
   conectar(nombre: string): void {
     if (this.client?.active) return;
 
-    // Recuperar sesión anterior si existe
-    const sesionGuardada = sessionStorage.getItem(SESION_KEY);
-    if (sesionGuardada && !this.sesionId) {
-      this.sesionId = sesionGuardada;
-    }
-
     this.nombreUsuario = nombre || 'Visitante';
 
     window.addEventListener('offline', this.onOffline);
     window.addEventListener('online',  this.onOnline);
 
+    const sesionGuardada = sessionStorage.getItem(SESION_KEY);
+
+    if (sesionGuardada) {
+      // Paso 1: cargar historial ANTES de conectar el WebSocket (patrón backend)
+      this.sesionId = sesionGuardada;
+      this.http.get<ApiResponse<HistorialPaginado>>(
+        `${this.historialUrl}/${sesionGuardada}?pagina=0&size=20`
+      ).subscribe({
+        next: res => {
+          const paginado = res?.data;
+          if (paginado) {
+            const base: MensajeUI[] = (paginado.mensajes ?? [])
+              .filter(h => !!h.contenido)
+              .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
+            if (base.length) this.mensajes$.next(base);
+          }
+          // Paso 2: conectar WebSocket usando el sesionId existente
+          this.activarStomp();
+        },
+        error: (err) => {
+          if (err.status === 403) {
+            // sesionId expirado → limpiar y empezar sesión nueva
+            sessionStorage.removeItem(SESION_KEY);
+            this.sesionId = null;
+            this.mensajes$.next([]);
+          }
+          // En cualquier error de historial, conectar igual (403 → sesión nueva, otros → reconectar)
+          this.activarStomp();
+        }
+      });
+    } else {
+      // Primera vez: conectar directamente sin historial
+      this.activarStomp();
+    }
+  }
+
+  private activarStomp(): void {
     this.client = new Client({
       webSocketFactory: () => new (SockJS as any)(
         `${environment.api_Url}/ws`,
@@ -73,15 +104,15 @@ export class ChatLiveService implements OnDestroy {
   }
 
   private onConnect(): void {
-    // Reconexión: sesión ya existe → re-suscribir y cargar historial
+    // Reconexión con sesión existente: solo re-suscribir al canal
+    // (el historial ya se cargó en conectar() antes de activar STOMP)
     if (this.sesionId) {
       this.suscribirseAlCanal(this.sesionId);
-      this.cargarHistorial(this.sesionId);
       this.marcarRestaurado();
       return;
     }
 
-    // Primera conexión: pedir sesión nueva
+    // Primera conexión: solicitar sesión nueva al backend
     const tempId = crypto.randomUUID();
 
     const subInicio = this.client.subscribe(
@@ -100,25 +131,6 @@ export class ChatLiveService implements OnDestroy {
     this.client.publish({
       destination: '/app/chat.conectar',
       body: JSON.stringify({ tempId, nombreUsuario: this.nombreUsuario })
-    });
-  }
-
-  private cargarHistorial(sesionId: string): void {
-    this.http.get<ApiResponse<HistorialPaginado>>(
-      `${this.historialUrl}/${sesionId}?pagina=0&size=20`
-    ).subscribe({
-      next: res => {
-        const paginado = res?.data;
-        if (!paginado) return;
-        const base: MensajeUI[] = (paginado.mensajes ?? [])
-          .filter(h => !!h.contenido)
-          .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
-        if (!base.length) return;
-        const ultimoTs = base[base.length - 1].timestamp;
-        const rt = this.mensajes$.value.filter(m => m.timestamp > ultimoTs && !!m.contenido);
-        this.mensajes$.next([...base, ...rt]);
-      },
-      error: () => { /* 403 = sesionId expirado → WS continúa sin historial */ }
     });
   }
 

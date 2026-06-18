@@ -7,17 +7,21 @@ $shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
 $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Header ─────────────────────────────────────────────────────────
+// El fondo/sombra van en __content (centrado) — las orillas del .vb-header
+// quedan libres para mostrar banners de promociones a los lados.
 .vb-header {
+  padding: 16px 20px 0;  // breathing room en los lados — el fondo NO toca los bordes
+  margin-bottom: 28px;
+
   &__content {
     max-width: 860px;
     margin: 0 auto;
     width: 100%;
+    background: var(--header-brand);
+    padding: 24px 24px 0;
+    border-radius: 24px;
+    box-shadow: 0 6px 24px var(--header-brand-shadow);
   }
-  background: var(--header-brand);
-  padding: 24px 24px 0;
-  border-radius: 0 0 28px 28px;
-  margin-bottom: 28px;
-  box-shadow: 0 6px 24px var(--header-brand-shadow);
 
   &__inner {
     display: flex;
@@ -530,26 +534,26 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .scanner-video { max-height: 55dvh; }
 }
 
-// ── Modo luz — header glassmorphism, texto oscuro ─────────────────
+// ── Modo luz — glassmorphism claro (el fondo va en __content) ─────
 :host-context(body.theme-light) {
-  .vb-header {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  .vb-header__content {
+    background: rgba(255, 255, 255, 0.55);  // 55% — se nota la transparencia
+    backdrop-filter: blur(20px);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.60);
   }
   .vb-header__inner        { color: #1e293b; }
   .vb-header__title h4     { color: #1e293b; }
   .vb-header__title small  { color: #64748b; }
 
   .vb-btn--cart {
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.07);
     color: #1e293b;
-    &:hover { background: rgba(0, 0, 0, 0.12); }
+    &:hover { background: rgba(0, 0, 0, 0.13); }
   }
 
   .vb-search {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.50);
     border: 1px solid rgba(0, 0, 0, 0.12);
   }
   .vb-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
@@ -557,9 +561,9 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .vb-filtro-btn {
     border: 1px solid rgba(0, 0, 0, 0.14);
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.45);
     color: #475569;
-    &:hover { background: rgba(0, 0, 0, 0.10); color: #1e293b; }
+    &:hover { background: rgba(255, 255, 255, 0.70); color: #1e293b; }
     &--active {
       background: rgba(99, 102, 241, 0.12);
       color: var(--app-accent);
@@ -568,15 +572,19 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .vb-scan-mobile {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.45);
     border: 1px solid rgba(0, 0, 0, 0.12);
     color: #1e293b;
-    &:hover:not(:disabled) { background: rgba(0, 0, 0, 0.10); }
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.65); }
   }
 }
 
-// ── Modo oscuro — antracita ────────────────────────────────────────
+// ── Modo oscuro — glassmorphism oscuro (el fondo va en __content) ─
 :host-context(body.theme-dark) {
-  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
-  --header-brand-shadow: rgba(0, 0, 0, 0.55);
+  .vb-header__content {
+    background: rgba(15, 15, 25, 0.72);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.50);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
 }

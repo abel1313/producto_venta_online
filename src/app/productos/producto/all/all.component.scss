@@ -14,17 +14,20 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Header ─────────────────────────────────────────────────────────
+// El fondo/sombra van en __content (centrado) — las orillas del .pl-header
+// quedan libres para mostrar banners de promociones a los lados.
 .pl-header {
-  background: var(--header-brand);
-  padding: 16px 24px 0;
-  border-radius: 0 0 24px 24px;
+  padding: 16px 20px 0;  // breathing room lateral — el fondo NO toca los bordes
   margin-bottom: 28px;
-  box-shadow: 0 6px 24px var(--header-brand-shadow);
 
   &__content {
     max-width: 860px;
     margin: 0 auto;
     width: 100%;
+    background: var(--header-brand);
+    padding: 16px 24px 0;
+    border-radius: 24px;
+    box-shadow: 0 6px 24px var(--header-brand-shadow);
   }
 
   &__inner {
@@ -567,13 +570,13 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ── Modo luz — header glassmorphism, texto oscuro ─────────────────
+// ── Modo luz — glassmorphism claro (el fondo va en __content) ─────
 :host-context(body.theme-light) {
-  .pl-header {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  .pl-header__content {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.60);
   }
   .pl-header__inner        { color: #1e293b; }
   .pl-header__title h4     { color: #1e293b; }
@@ -586,20 +589,20 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pl-search {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.50);
     border: 1px solid rgba(0, 0, 0, 0.12);
   }
   .pl-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
   .pl-search__scan {
-    background: rgba(0, 0, 0, 0.07);
-    &:hover { background: rgba(0, 0, 0, 0.14); }
+    background: rgba(255, 255, 255, 0.55);
+    &:hover { background: rgba(255, 255, 255, 0.75); }
   }
 
   .pl-filtro-btn {
     border: 1px solid rgba(0, 0, 0, 0.14);
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.45);
     color: #475569;
-    &:hover { background: rgba(0, 0, 0, 0.10); color: #1e293b; }
+    &:hover { background: rgba(255, 255, 255, 0.70); color: #1e293b; }
     &--active {
       background: rgba(99, 102, 241, 0.12);
       color: var(--app-accent);
@@ -607,20 +610,26 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .pl-excel-btn {
-    border-color: rgba(46, 125, 50, 0.3);
+  .pl-btn--cart {
+    background: rgba(0, 0, 0, 0.07);
+    color: #1e293b;
+    &:hover { background: rgba(0, 0, 0, 0.13); }
   }
 
   .pl-scan-mobile {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.45);
     border: 1px solid rgba(0, 0, 0, 0.12);
     color: #1e293b;
-    &:hover:not(:disabled) { background: rgba(0, 0, 0, 0.10); }
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.65); }
   }
 }
 
-// ── Modo oscuro — antracita ────────────────────────────────────────
+// ── Modo oscuro — glassmorphism oscuro (el fondo va en __content) ─
 :host-context(body.theme-dark) {
-  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
-  --header-brand-shadow: rgba(0, 0, 0, 0.55);
+  .pl-header__content {
+    background: rgba(15, 15, 25, 0.72);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.50);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
 }

@@ -1760,6 +1760,44 @@ iniciaba una sesión nueva sin ver la conversación anterior.
 
 ---
 
+## FIX CHAT — `clienteId` COMO FUENTE PRIMARIA DE HISTORIAL (2026-06-18)
+
+**Síntoma:** al abrir `/chat` en QA con un usuario autenticado, el historial no cargaba aunque
+hubiera mensajes en la BD. El backend veía la request al endpoint `/historial/usuario/{id}` pero
+devolvía vacío.
+
+**Causa raíz:** cuando `usuarioId` estaba disponible, el front llamaba `/historial/usuario/{id}`.
+Pero las sesiones anteriores se crearon ANTES de que incluyéramos `usuarioId` en el payload de
+`/app/chat.conectar`, así que el backend no las tenía vinculadas a ese `usuarioId` — el endpoint
+devolvía array vacío aunque hubiera mensajes bajo el mismo `clienteId`.
+
+**Fix:** `chat-live.service.ts` → `conectar()` y `cargarMasAntiguos()`:
+- Antes: `usuarioId` era el criterio primario (si logueado → `/historial/usuario/{id}`)
+- Ahora: `clienteId` es siempre el criterio primario (cubre todas las sesiones del browser,
+  incluyendo las previas a la implementación de `usuarioId`)
+- `usuarioId` queda como fallback solo si localStorage fue borrado y `clienteId` es null
+
+**Nota importante — `clienteId` y cross-browser:** `clienteId` es un UUID generado una sola vez
+por browser (`localStorage['chat_cliente_id']`). Si el usuario abre el chat en otro browser,
+modo incógnito, o limpia el localStorage, el nuevo UUID no tiene historial en la BD — no hay
+forma de recuperar los mensajes del UUID anterior sin conocerlo. Esta es la limitante del
+enfoque `clienteId`-first. Para el futuro, cuando todos los mensajes nuevos ya tengan `usuarioId`
+vinculado, se puede plantear migrar la prioridad a `usuarioId` (más robusto cross-browser).
+
+**URL QA — sin duplicación de path:**
+- `environment.qa.ts` → `api_Url: 'https://qa.backend.novedades-jade.com.mx/mis-productos'`
+- `historialBase` = `${api_Url}/v1/chat/historial` → solo UN `/mis-productos/v1/` en la URL
+- El path duplicado `/mis-productos/v1/mis-productos/v1/` no lo genera nuestro código — si el
+  backend lo observa en Network tab, el build del QA server no está usando el código actual
+  (necesita rebuild de la rama `qa`).
+
+**Archivos modificados:**
+- `src/app/chat/service/chat-live.service.ts` → `conectar()` y `cargarMasAntiguos()`, prioridad `clienteId`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## LECCIONES APRENDIDAS — MÓDULO CHAT
 
 > Patrones que causaron bugs en este módulo. Revisar antes de tocar `chat-admin.service.ts`,

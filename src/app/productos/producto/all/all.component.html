@@ -1,54 +1,58 @@
 <!-- ── Header ─────────────────────────────────────────────────────── -->
 <div class="pl-header">
-  <div class="pl-header__inner">
-    <div class="pl-header__title">
-      <span class="pl-header__icon">📦</span>
-      <div>
-        <h4 class="mb-0">Productos</h4>
-        <small class="text-white-50">Catálogo de productos</small>
+  <div class="pl-header__content">
+
+    <div class="pl-header__inner">
+      <div class="pl-header__title">
+        <span class="pl-header__icon">📦</span>
+        <div>
+          <h4 class="mb-0">Productos</h4>
+          <small class="text-white-50">Catálogo de productos</small>
+        </div>
+      </div>
+      <div class="pl-header__actions">
+        <button class="pl-btn pl-btn--cart" (click)="verCarrito()">
+          🛒
+          <span *ngIf="totalEnCarrito > 0" class="pl-cart-badge">{{ totalEnCarrito }}</span>
+        </button>
       </div>
     </div>
-    <div class="pl-header__actions">
-      <button class="pl-btn pl-btn--cart" (click)="verCarrito()">
-        🛒
-        <span *ngIf="totalEnCarrito > 0" class="pl-cart-badge">{{ totalEnCarrito }}</span>
+
+    <!-- Botón escáner solo en móvil (encima del buscador) -->
+    <button class="pl-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroActivo !== 'todos'">
+      📷 Escanear código de barras
+    </button>
+
+    <!-- Buscador -->
+    <div class="pl-search">
+      <span class="pl-search__icon">🔍</span>
+      <input
+        class="pl-search__input"
+        type="text"
+        placeholder="Buscar por nombre o código de barras…"
+        [(ngModel)]="buscarProd"
+        (keyup)="buscarProductos($event)"
+        autocomplete="off"
+        [disabled]="filtroActivo !== 'todos'"
+      />
+      <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
+        📷
       </button>
     </div>
-  </div>
 
-  <!-- Botón escáner solo en móvil (encima del buscador) -->
-  <button class="pl-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroActivo !== 'todos'">
-    📷 Escanear código de barras
-  </button>
+    <!-- Filtros admin -->
+    <div *ngIf="isAdminUser" class="pl-filtros">
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'todos'"
+        (click)="cambiarFiltro('todos')">Todos</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'no-habilitados'"
+        (click)="cambiarFiltro('no-habilitados')">No habilitados</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'sin-stock'"
+        (click)="cambiarFiltro('sin-stock')">Sin stock</button>
+      <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
+        📥 Excel sin variantes
+      </button>
+    </div>
 
-  <!-- Buscador -->
-  <div class="pl-search">
-    <span class="pl-search__icon">🔍</span>
-    <input
-      class="pl-search__input"
-      type="text"
-      placeholder="Buscar por nombre o código de barras…"
-      [(ngModel)]="buscarProd"
-      (keyup)="buscarProductos($event)"
-      autocomplete="off"
-      [disabled]="filtroActivo !== 'todos'"
-    />
-    <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
-      📷
-    </button>
-  </div>
-
-  <!-- Filtros admin -->
-  <div *ngIf="isAdminUser" class="pl-filtros">
-    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'todos'"
-      (click)="cambiarFiltro('todos')">Todos</button>
-    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'no-habilitados'"
-      (click)="cambiarFiltro('no-habilitados')">No habilitados</button>
-    <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'sin-stock'"
-      (click)="cambiarFiltro('sin-stock')">Sin stock</button>
-    <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
-      📥 Excel sin variantes
-    </button>
   </div>
 </div>
 

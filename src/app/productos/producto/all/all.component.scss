@@ -13,19 +13,33 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--page-bg);
 }
 
+// ── Preview color — OPCIÓN A: Slate/Carbon
+// Reemplaza var(--header-brand) solo en este componente mientras el usuario elige color.
+// Una vez aprobado, mover el valor a --header-brand en styles.scss y quitar este bloque.
+:host {
+  --header-brand:        linear-gradient(135deg, #1e293b 0%, #334155 55%, #475569 100%);
+  --header-brand-shadow: rgba(30,41,59,0.35);
+}
+
 // ── Header ─────────────────────────────────────────────────────────
 .pl-header {
   background: var(--header-brand);
-  padding: 24px 24px 0;
-  border-radius: 0 0 28px 28px;
+  padding: 16px 24px 0;
+  border-radius: 0 0 24px 24px;
   margin-bottom: 28px;
   box-shadow: 0 6px 24px var(--header-brand-shadow);
+
+  &__content {
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+  }
 
   &__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     color: white;
   }
 

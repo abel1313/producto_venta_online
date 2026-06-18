@@ -13,14 +13,6 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--page-bg);
 }
 
-// ── Preview color — OPCIÓN A: Slate/Carbon
-// Reemplaza var(--header-brand) solo en este componente mientras el usuario elige color.
-// Una vez aprobado, mover el valor a --header-brand en styles.scss y quitar este bloque.
-:host {
-  --header-brand:        linear-gradient(135deg, #1e293b 0%, #334155 55%, #475569 100%);
-  --header-brand-shadow: rgba(30,41,59,0.35);
-}
-
 // ── Header ─────────────────────────────────────────────────────────
 .pl-header {
   background: var(--header-brand);
@@ -573,4 +565,62 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: block;
     margin-bottom: 14px;
   }
+}
+
+// ── Modo luz — header glassmorphism, texto oscuro ─────────────────
+:host-context(body.theme-light) {
+  .pl-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .pl-header__inner        { color: #1e293b; }
+  .pl-header__title h4     { color: #1e293b; }
+  .pl-header__title small  { color: #64748b; }
+
+  .pl-btn--cart {
+    background: rgba(0, 0, 0, 0.06);
+    color: #1e293b;
+    &:hover { background: rgba(0, 0, 0, 0.12); }
+  }
+
+  .pl-search {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+  .pl-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
+  .pl-search__scan {
+    background: rgba(0, 0, 0, 0.07);
+    &:hover { background: rgba(0, 0, 0, 0.14); }
+  }
+
+  .pl-filtro-btn {
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    background: rgba(0, 0, 0, 0.05);
+    color: #475569;
+    &:hover { background: rgba(0, 0, 0, 0.10); color: #1e293b; }
+    &--active {
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
+  }
+
+  .pl-excel-btn {
+    border-color: rgba(46, 125, 50, 0.3);
+  }
+
+  .pl-scan-mobile {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #1e293b;
+    &:hover:not(:disabled) { background: rgba(0, 0, 0, 0.10); }
+  }
+}
+
+// ── Modo oscuro — antracita ────────────────────────────────────────
+:host-context(body.theme-dark) {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(0, 0, 0, 0.55);
 }

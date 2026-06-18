@@ -1,9 +1,3 @@
-// PREVIEW — OPCIÓN B: Azul marino
-:host {
-  --header-brand:        linear-gradient(135deg, #0f2557 0%, #1d4ed8 55%, #2563eb 100%);
-  --header-brand-shadow: rgba(29,78,216,0.35);
-}
-
 // ── Variables ──────────────────────────────────────────────────────
 $primary:    #8b1a4a;
 $primary-d:  #c2255c;
@@ -534,4 +528,55 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 @media (max-width: 400px) {
   .scanner-box { width: 96vw; padding: 10px; }
   .scanner-video { max-height: 55dvh; }
+}
+
+// ── Modo luz — header glassmorphism, texto oscuro ─────────────────
+:host-context(body.theme-light) {
+  .vb-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .vb-header__inner        { color: #1e293b; }
+  .vb-header__title h4     { color: #1e293b; }
+  .vb-header__title small  { color: #64748b; }
+
+  .vb-btn--cart {
+    background: rgba(0, 0, 0, 0.06);
+    color: #1e293b;
+    &:hover { background: rgba(0, 0, 0, 0.12); }
+  }
+
+  .vb-search {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+  .vb-search__input::placeholder { color: rgba(0, 0, 0, 0.42); }
+  .vb-search__hint               { color: rgba(0, 0, 0, 0.45); }
+
+  .vb-filtro-btn {
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    background: rgba(0, 0, 0, 0.05);
+    color: #475569;
+    &:hover { background: rgba(0, 0, 0, 0.10); color: #1e293b; }
+    &--active {
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
+  }
+
+  .vb-scan-mobile {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #1e293b;
+    &:hover:not(:disabled) { background: rgba(0, 0, 0, 0.10); }
+  }
+}
+
+// ── Modo oscuro — antracita ────────────────────────────────────────
+:host-context(body.theme-dark) {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(0, 0, 0, 0.55);
 }

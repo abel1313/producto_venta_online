@@ -134,6 +134,53 @@ productos** que el usuario verá al navegar por el sistema.
 
 ---
 
+## DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE (✅ aprobado)
+
+### Light mode — glassmorphism
+```scss
+:host-context(body.theme-light) {
+  .<prefix>-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  // Texto oscuro
+  .<prefix>-header__title h4    { color: #1e293b; }
+  .<prefix>-header__title small { color: #64748b; }
+  .<prefix>-header__inner       { color: #1e293b; }
+  // Botón carrito
+  .<prefix>-btn--cart { background: rgba(0,0,0,0.06); color: #1e293b; }
+  // Buscador
+  .<prefix>-search { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); }
+  .<prefix>-search__input::placeholder { color: rgba(0,0,0,0.42); }
+  // Filtros admin
+  .<prefix>-filtro-btn { border: 1px solid rgba(0,0,0,0.14); background: rgba(0,0,0,0.05); color: #475569; }
+  .<prefix>-filtro-btn--active { background: rgba(99,102,241,0.12); color: var(--app-accent); }
+  // Botón scan móvil
+  .<prefix>-scan-mobile { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); color: #1e293b; }
+}
+```
+
+### Dark mode — antracita
+```scss
+:host-context(body.theme-dark) {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(0, 0, 0, 0.55);
+}
+```
+
+### Componentes donde ya está aplicado
+- `productos/all` → `all.component.scss` ✅
+- `variante/buscar` → `buscar.component.scss` ✅
+
+### Para CADA componente nuevo que tenga header/buscador
+1. Agregar los dos bloques `:host-context` al final de su SCSS
+2. Ajustar el prefijo de clase (ej. `rf-` para rifas, `ca-` para carga-archivo, etc.)
+3. Si tiene formulario interno (no buscador), el header usa `var(--header-brand)` directamente — solo agregar el bloque `theme-dark` con antracita
+
+---
+
 ## FIXES DE ESTILOS — PENDIENTES Y REALIZADOS
 
 ### ✅ Ya corregidos

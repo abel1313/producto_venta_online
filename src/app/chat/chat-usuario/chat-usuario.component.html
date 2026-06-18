@@ -34,16 +34,16 @@
       </ng-container>
     </div>
 
+    <!-- Aviso sesión expirada (no bloquea el input) -->
+    <div *ngIf="sesionExpirada" class="cu-alert cu-alert--info">
+      ⏱ La sesión expiró por inactividad. Escribe un mensaje para continuar.
+      <button class="cu-alert__close" (click)="sesionExpirada = false">✕</button>
+    </div>
+
     <!-- Error de conexión -->
     <div *ngIf="errorConexion" class="cu-alert cu-alert--error">
       ⚠️ {{ errorConexion }}
       <button class="cu-alert__close" (click)="errorConexion = null">✕</button>
-    </div>
-
-    <!-- Sesión cerrada por el admin -->
-    <div *ngIf="sesionCerrada" class="cu-alert cu-alert--info">
-      La sesión fue cerrada por el administrador.
-      <button class="cu-btn cu-btn--reiniciar" (click)="reiniciar()">Iniciar nuevo chat</button>
     </div>
 
     <!-- Área de mensajes -->
@@ -99,19 +99,20 @@
     </div>
 
     <!-- Input -->
-    <div class="cu-input-area" [class.cu-input-area--disabled]="estadoConexion !== 'conectado' || sesionCerrada">
+    <div class="cu-input-area"
+         [class.cu-input-area--disabled]="estadoConexion === 'sin-internet' || estadoConexion === 'reconectando'">
       <textarea
         class="cu-input"
         rows="1"
         placeholder="Escribe tu mensaje…"
         [(ngModel)]="textoMensaje"
         (keydown)="onKeydown($event)"
-        [disabled]="estadoConexion !== 'conectado' || sesionCerrada"
+        [disabled]="estadoConexion === 'sin-internet' || estadoConexion === 'reconectando'"
         maxlength="1000">
       </textarea>
       <button
         class="cu-btn cu-btn--enviar"
-        [disabled]="!textoMensaje.trim() || estadoConexion !== 'conectado' || sesionCerrada"
+        [disabled]="!textoMensaje.trim() || estadoConexion === 'sin-internet' || estadoConexion === 'reconectando'"
         (click)="enviar()">
         <i class="pi pi-send"></i>
       </button>

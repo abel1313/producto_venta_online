@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { skip, take } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ChatLiveService } from '../service/chat-live.service';
 import { EstadoConexion, MensajeUI } from '../models/chat.models';
@@ -20,8 +20,12 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
   textoMensaje = '';
   errorConexion: string | null = null;
   estadoConexion: EstadoConexion = 'reconectando';
+  hayMasAntiguos = false;
+  cargandoMas = false;
 
   private subs: Subscription[] = [];
+  private cargarMasSub: Subscription | null = null;
+  private prevMsgCount = 0;
 
   constructor(
     public chatService: ChatLiveService,
@@ -34,7 +38,8 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
       this.chatService.conectado$.subscribe(c => { this.conectado = c; }),
       this.chatService.sesionCerrada$.subscribe(() => { this.sesionCerrada = true; }),
       this.chatService.error$.subscribe(e => { this.errorConexion = e; }),
-      this.chatService.estadoConexion$.subscribe(s => { this.estadoConexion = s; })
+      this.chatService.estadoConexion$.subscribe(s => { this.estadoConexion = s; }),
+      this.chatService.hayMasAntiguos$.subscribe(v => { this.hayMasAntiguos = v; })
     );
 
     this.authService.userName$.pipe(take(1)).subscribe(nombre => {
@@ -43,12 +48,43 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
   }
 
   ngAfterViewChecked(): void {
-    this.scrollAlFinal();
+    const count = this.mensajes.length;
+    if (count > this.prevMsgCount && !this.cargandoMas) {
+      this.scrollAlFinal();
+    }
+    this.prevMsgCount = count;
   }
 
   private scrollAlFinal(): void {
     const el = this.mensajesContainer?.nativeElement;
     if (el) el.scrollTop = el.scrollHeight;
+  }
+
+  onScroll(): void {
+    const el = this.mensajesContainer?.nativeElement;
+    if (!el || this.cargandoMas || !this.hayMasAntiguos) return;
+    if (el.scrollTop <= 50) {
+      this.cargarMasAntiguos();
+    }
+  }
+
+  cargarMasAntiguos(): void {
+    if (this.cargandoMas || !this.hayMasAntiguos) return;
+    const el = this.mensajesContainer?.nativeElement;
+    const scrollHeightAntes = el?.scrollHeight ?? 0;
+    this.cargandoMas = true;
+
+    // Esperar la siguiente emisión de mensajes$ (el servicio prependeará los mensajes antiguos)
+    this.cargarMasSub?.unsubscribe();
+    this.cargarMasSub = this.chatService.mensajes$.pipe(skip(1), take(1)).subscribe(() => {
+      // Esperar que Angular actualice el DOM antes de restaurar la posición
+      setTimeout(() => {
+        if (el) el.scrollTop = el.scrollHeight - scrollHeightAntes;
+        this.cargandoMas = false;
+      }, 0);
+    });
+
+    this.chatService.cargarMasAntiguos();
   }
 
   enviar(): void {
@@ -68,6 +104,9 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
   reiniciar(): void {
     this.sesionCerrada = false;
     this.errorConexion = null;
+    this.hayMasAntiguos = false;
+    this.cargandoMas = false;
+    this.prevMsgCount = 0;
     this.chatService.desconectar();
     this.authService.userName$.pipe(take(1)).subscribe(nombre => {
       this.chatService.conectar(nombre || 'Visitante');
@@ -80,5 +119,6 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
 
   ngOnDestroy(): void {
     this.subs.forEach(s => s.unsubscribe());
+    this.cargarMasSub?.unsubscribe();
   }
 }

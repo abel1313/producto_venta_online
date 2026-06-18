@@ -47,7 +47,17 @@
     </div>
 
     <!-- Área de mensajes -->
-    <div class="cu-messages" #mensajesContainer>
+    <div class="cu-messages" #mensajesContainer (scroll)="onScroll()">
+
+      <!-- Cargar mensajes anteriores -->
+      <div *ngIf="hayMasAntiguos || cargandoMas" class="cu-load-more">
+        <span *ngIf="cargandoMas" class="cu-load-more__spinner"></span>
+        <button *ngIf="hayMasAntiguos && !cargandoMas"
+                class="cu-load-more__btn"
+                (click)="cargarMasAntiguos()">
+          ↑ Ver mensajes anteriores
+        </button>
+      </div>
 
       <div *ngIf="mensajes.length === 0 && conectado" class="cu-empty">
         <div class="cu-empty__avatar">

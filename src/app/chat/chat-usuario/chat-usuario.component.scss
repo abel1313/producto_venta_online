@@ -375,6 +375,37 @@
   }
 }
 
+// Cargar mensajes anteriores
+.cu-load-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0 8px;
+
+  &__btn {
+    padding: 5px 16px;
+    background: rgba(99,102,241,0.08);
+    color: #6366f1;
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: rgba(99,102,241,0.15); }
+  }
+
+  &__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(99,102,241,0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
 // ── Light mode ────────────────────────────────────────────────
 :host-context(body.theme-light) {
   .cu-header {
@@ -424,5 +455,13 @@
     background: rgba(239,68,68,0.15);
     color: #fca5a5;
     border-color: rgba(239,68,68,0.3);
+  }
+
+  .cu-load-more__btn {
+    background: rgba(99,102,241,0.12);
+    border-color: rgba(99,102,241,0.25);
+    color: #a5b4fc;
+
+    &:hover { background: rgba(99,102,241,0.2); }
   }
 }

@@ -1,3 +1,9 @@
+// PREVIEW — OPCIÓN D: Gris antracita puro
+:host {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(24,24,27,0.35);
+}
+
 $primary:   #8b1a4a;
 $primary-d: #c2255c;
 $t: all 0.22s ease;

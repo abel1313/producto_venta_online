@@ -112,6 +112,28 @@ Se agregaron `idVarianteCargado` y `destroy$` para evitar re-inicializaciones du
 
 ---
 
+## REGLA — ESPACIO LATERAL RESERVADO PARA PROMOCIONES
+
+**En TODOS los componentes**, los lados izquierdo y derecho del header/buscador deben quedar
+**completamente vacíos**. Esos espacios están reservados para **banners de promociones de
+productos** que el usuario verá al navegar por el sistema.
+
+**Implementación obligatoria:**
+- El contenido del header siempre va dentro de un wrapper interno con `max-width: 860px` y
+  `margin: 0 auto` — nunca full-width hasta los bordes de la pantalla.
+- Nombre del wrapper: `.<prefijo>-header__content` (ej. `pl-header__content`, `vb-header__content`).
+- No agregar `padding` lateral al `.vb-header` / `.pl-header` externo más allá del necesario
+  para el color de fondo — el espacio libre en los laterales es intencional.
+
+**Estado actual:**
+- `productos/all` → ✅ `.pl-header__content` (max-width: 860px)
+- `variante/buscar` → ✅ `.vb-header__content` (max-width: 860px)
+- Formularios centrados (`variante/agregar`, `productos/add`) → ✅ ya tienen `max-width` en su card
+
+**Verificar este patrón** al agregar cualquier componente nuevo con buscador o header de pantalla completa.
+
+---
+
 ## FIXES DE ESTILOS — PENDIENTES Y REALIZADOS
 
 ### ✅ Ya corregidos

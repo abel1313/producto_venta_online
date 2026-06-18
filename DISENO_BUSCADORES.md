@@ -97,15 +97,26 @@ El mismo fix hay que aplicar a:
 
 ---
 
+## Regla de espacio lateral — PARA TODOS LOS COMPONENTES
+
+> Los lados izquierdo y derecho del header/buscador deben quedar **vacíos**.
+> Esos espacios están reservados para **banners de promociones de productos** que el usuario
+> verá al navegar. Por eso el contenido del header siempre va centrado con `max-width` y
+> `margin: 0 auto` — nunca full-width.
+
+---
+
 ## Estado de aprobación
 
-| Componente | Layout fix | Color aprobado |
-|---|---|---|
-| `productos/all` | ✅ Aplicado | ⏳ Pendiente aprobación (preview Opción A) |
-| `variante/buscar` | ⏳ Pendiente | ⏳ Pendiente |
-| `usuarios/buscar-usuarios` | ⏳ Rediseño completo pendiente | ⏳ Pendiente |
+| Componente | Layout fix | Color preview | Para aprobar |
+|---|---|---|---|
+| `productos/all` | ✅ Aplicado | ✅ **Opción A** (Slate/Carbon) | ⏳ en revisión |
+| `variante/buscar` | ✅ Aplicado (`vb-header__content`) | ✅ **Opción B** (Azul marino) | ⏳ en revisión |
+| `variante/agregar` | N/A (card centrada) | ✅ **Opción C** (Verde esmeralda) | ⏳ en revisión |
+| `productos/add` | N/A (card centrada) | ✅ **Opción D** (Antracita) | ⏳ en revisión |
+| `usuarios/buscar-usuarios` | ⏳ Rediseño completo pendiente | ⏳ Pendiente color aprobado | ⏳ |
 
 > **Instrucción:** cuando el usuario apruebe la opción de color, cambiar `--header-brand` y
-> `--header-brand-shadow` en `styles.scss` con los valores de esa opción y eliminar el
-> override local de `all.component.scss`. Luego aplicar el layout fix al resto de componentes.
+> `--header-brand-shadow` en `styles.scss` con los valores de esa opción, y eliminar todos
+> los overrides `:host { --header-brand }` de los archivos `.scss` individuales.
 

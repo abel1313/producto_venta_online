@@ -1,3 +1,9 @@
+// PREVIEW — OPCIÓN B: Azul marino
+:host {
+  --header-brand:        linear-gradient(135deg, #0f2557 0%, #1d4ed8 55%, #2563eb 100%);
+  --header-brand-shadow: rgba(29,78,216,0.35);
+}
+
 // ── Variables ──────────────────────────────────────────────────────
 $primary:    #8b1a4a;
 $primary-d:  #c2255c;
@@ -8,6 +14,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Header ─────────────────────────────────────────────────────────
 .vb-header {
+  &__content {
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+  }
   background: var(--header-brand);
   padding: 24px 24px 0;
   border-radius: 0 0 28px 28px;

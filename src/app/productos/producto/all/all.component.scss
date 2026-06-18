@@ -572,11 +572,16 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Modo luz — glassmorphism claro (el fondo va en __content) ─────
 :host-context(body.theme-light) {
+  // Gradiente sutil solo en la zona del header para que el vidrio sea visible
+  .pl-header {
+    background: linear-gradient(160deg, #c7d2fe 0%, transparent 220px);
+  }
+
   .pl-header__content {
-    background: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.50);
     backdrop-filter: blur(20px);
     box-shadow: 0 6px 28px rgba(0, 0, 0, 0.09);
-    border: 1px solid rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.65);
   }
   .pl-header__inner        { color: #1e293b; }
   .pl-header__title h4     { color: #1e293b; }

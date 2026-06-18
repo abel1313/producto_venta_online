@@ -16,7 +16,7 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
 
   mensajes: MensajeUI[] = [];
   conectado = false;
-  sesionCerrada = false;
+  sesionExpirada = false; // aviso informativo — no bloquea el input
   textoMensaje = '';
   errorConexion: string | null = null;
   estadoConexion: EstadoConexion = 'reconectando';
@@ -36,7 +36,7 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
     this.subs.push(
       this.chatService.mensajes$.subscribe(m => { this.mensajes = m; }),
       this.chatService.conectado$.subscribe(c => { this.conectado = c; }),
-      this.chatService.sesionCerrada$.subscribe(() => { this.sesionCerrada = true; }),
+      this.chatService.sesionCerrada$.subscribe(() => { this.sesionExpirada = true; }),
       this.chatService.error$.subscribe(e => { this.errorConexion = e; }),
       this.chatService.estadoConexion$.subscribe(s => { this.estadoConexion = s; }),
       this.chatService.hayMasAntiguos$.subscribe(v => { this.hayMasAntiguos = v; })
@@ -45,7 +45,7 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
     combineLatest([this.authService.userName$, this.authService.userId$])
       .pipe(take(1))
       .subscribe(([nombre, userId]) => {
-        this.chatService.conectar(nombre || 'Visitante', userId || null);
+        this.chatService.conectar(nombre || '', userId || null);
       });
   }
 
@@ -65,9 +65,7 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
   onScroll(): void {
     const el = this.mensajesContainer?.nativeElement;
     if (!el || this.cargandoMas || !this.hayMasAntiguos) return;
-    if (el.scrollTop <= 50) {
-      this.cargarMasAntiguos();
-    }
+    if (el.scrollTop <= 50) this.cargarMasAntiguos();
   }
 
   cargarMasAntiguos(): void {
@@ -89,7 +87,9 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
 
   enviar(): void {
     const texto = this.textoMensaje.trim();
-    if (!texto || this.estadoConexion !== 'conectado' || this.sesionCerrada) return;
+    if (!texto || this.estadoConexion === 'sin-internet' || this.estadoConexion === 'reconectando') return;
+    // Si la sesión expiró, el servicio reconecta automáticamente y no envía el mensaje en este intento
+    this.sesionExpirada = false;
     this.chatService.enviarMensaje(texto);
     this.textoMensaje = '';
   }
@@ -99,20 +99,6 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
       event.preventDefault();
       this.enviar();
     }
-  }
-
-  reiniciar(): void {
-    this.sesionCerrada = false;
-    this.errorConexion = null;
-    this.hayMasAntiguos = false;
-    this.cargandoMas = false;
-    this.prevMsgCount = 0;
-    this.chatService.desconectar();
-    combineLatest([this.authService.userName$, this.authService.userId$])
-      .pipe(take(1))
-      .subscribe(([nombre, userId]) => {
-        this.chatService.conectar(nombre || 'Visitante', userId || null);
-      });
   }
 
   formatHora(timestamp: string): string {

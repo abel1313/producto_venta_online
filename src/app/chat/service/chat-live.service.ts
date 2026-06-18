@@ -41,8 +41,14 @@ export class ChatLiveService implements OnDestroy {
     this.nombreUsuario = nombre || '';
     this.usuarioId = usuarioId;
 
-    const sesionGuardada = sessionStorage.getItem(SESION_KEY);
-    if (sesionGuardada) this.sesionId = sesionGuardada;
+    // Siempre arrancar con sesión limpia: el sessionStorage puede tener un
+    // sesionId de una sesión CERRADA en el back (expiró por inactividad mientras
+    // el tab estaba cerrado). El historial se recupera por usuarioId vía REST,
+    // no por sesionId — así que descartar el sesionId viejo es seguro.
+    // Para reconexiones mid-session (caída de red dentro de la misma tab),
+    // this.sesionId ya está en memoria → onConnect() lo reutiliza sin problema.
+    sessionStorage.removeItem(SESION_KEY);
+    this.sesionId = null;
 
     window.addEventListener('offline', this.onOffline);
     window.addEventListener('online',  this.onOnline);

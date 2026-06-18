@@ -2429,3 +2429,321 @@ Lo siguiente ya estaba bien implementado y no requiere ninguna acción:
 | Imágenes de productos y variantes usando `urlImagen` directa del response | ✅ correcto |
 | Interceptor maneja 401 (token expirado) y 403 (sin permiso) correctamente | ✅ correcto |
 | `omitidosSinNombre?.` con optional chaining | ✅ correcto |
+
+---
+
+## CHAT EN VIVO — Referencia completa para el front (2026-06-18)
+
+> **Por qué no aparecen los mensajes al recargar la página**
+>
+> Se confirmó en BD que los mensajes SÍ se guardan correctamente. El problema es que el componente del chat **no está llamando al endpoint de historial al inicializar (`ngOnInit`)**.
+> Al recargar la página la conexión WebSocket se reinicia (nueva sesión) y si el front no consulta el historial antes de conectar, la pantalla arranca vacía aunque existan mensajes previos en la BD.
+> La sesión más reciente en BD tiene `cliente_id = e8ea8611-ca0a-48e1-8619-d754923e2885` con mensajes de USUARIO y ADMIN guardados — el backend funciona. Solo falta que el front haga el `GET /historial/cliente/{clienteId}` al iniciar.
+
+---
+
+### Mapa completo de endpoints de chat
+
+#### 1. WebSocket — conectar nueva sesión
+
+**Cuándo usarlo:** al montar el componente de chat (ngOnInit), antes de enviar mensajes. Genera el `sesionId` que identifica esta sesión.
+
+**Suscribirse primero en:**
+```
+/topic/chat.inicio.{tempId}
+```
+
+**Publicar en:**
+```
+/app/chat.conectar
+```
+
+**Payload:**
+```json
+{
+  "tempId": "uuid-generado-en-el-front",
+  "nombreUsuario": "Juan",
+  "clienteId": "uuid-de-localStorage",
+  "usuarioId": 42
+}
+```
+- `tempId`: UUID que el front genera en el momento para recibir la respuesta (no se guarda)
+- `clienteId`: UUID guardado en `localStorage` — se crea la primera vez y persiste siempre (usuarios anónimos o como fallback)
+- `usuarioId`: el `id` del usuario autenticado (Integer) — enviar `null` si no está logueado
+
+**Response que llega en `/topic/chat.inicio.{tempId}`:**
+```json
+{ "sesionId": "94bb63c0-a3fe-4d7c-b4a9-ecd2a72c871c" }
+```
+→ Guardar `sesionId` en `sessionStorage`. Se usa para enviar mensajes y recibir respuestas del admin.
+
+---
+
+#### 2. WebSocket — enviar mensaje del cliente
+
+**Cuándo usarlo:** cuando el usuario escribe y presiona enviar.
+
+**Publicar en:**
+```
+/app/chat.mensaje
+```
+
+**Payload:**
+```json
+{ "sesionId": "uuid-de-sessionStorage", "contenido": "Hola, tengo una pregunta" }
+```
+
+**No hay response directo.** El admin recibe el mensaje en `/topic/chat.admin`. Si la sesión está expirada el mensaje se descarta — el front debe reconectar primero.
+
+---
+
+#### 3. WebSocket — recibir eventos del backend (canal del cliente)
+
+**Suscribirse en:**
+```
+/topic/chat.usuario.{sesionId}
+```
+
+**Evento: mensaje del admin**
+```json
+{ "tipo": "MENSAJE", "remitente": "ADMIN", "contenido": "Hola, ¿en qué te ayudo?", "timestamp": "2026-06-18T02:35:47" }
+```
+
+**Evento: sesión expirada** (5 min sin actividad)
+```json
+{ "tipo": "SESION_CERRADA" }
+```
+→ Al recibir `SESION_CERRADA`: limpiar `sesionId` de sessionStorage y limpiar la lista de mensajes del componente. La próxima vez que el usuario envíe un mensaje, reconectar (`/app/chat.conectar`) y luego cargar historial.
+
+---
+
+#### 4. REST — historial del cliente por `clienteId` (usuarios anónimos o fallback)
+
+**Cuándo usarlo:** en `ngOnInit`, ANTES de conectar el WebSocket. Carga todos los mensajes de todas las sesiones anteriores.
+
+**Request:**
+```
+GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=0&size=20
+```
+Sin token. `clienteId` viene de `localStorage.getItem('chat_cliente_id')`.
+
+**Response:** `ResponseGeneric` — leer `response.data`:
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "mensajes": [
+      { "remitente": "USUARIO", "contenido": "Hola", "timestamp": "2026-06-18T02:35:16" },
+      { "remitente": "ADMIN",   "contenido": "Como estas", "timestamp": "2026-06-18T02:35:47" }
+    ],
+    "pagina": 0,
+    "totalPaginas": 1,
+    "totalMensajes": 2,
+    "hayMasAntiguos": false
+  }
+}
+```
+→ Leer: `(response as any).data.mensajes` — **NO** `response as any[]`.
+
+**Scroll hacia arriba — cargar más antiguos:**
+```
+GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=1&size=20
+```
+Cuando `hayMasAntiguos === true`, al hacer scroll al tope cargar `pagina + 1` y **prepend** al array actual:
+```typescript
+this.mensajes = [...nuevosMensajes, ...this.mensajes];
+```
+
+---
+
+#### 5. REST — historial del cliente por `usuarioId` (usuarios registrados)
+
+**Cuándo usarlo:** igual que el anterior, pero cuando el usuario está autenticado. Tiene la ventaja de ser robusto aunque el `localStorage` se borre.
+
+**Request:**
+```
+GET /mis-productos/v1/chat/historial/usuario/{usuarioId}?pagina=0&size=20
+```
+Sin token. `usuarioId` es el `id` Integer del usuario autenticado.
+
+**Response:** mismo formato que el endpoint por `clienteId` (ver arriba).
+
+---
+
+#### 6. REST — historial de una sesión específica (para el panel admin)
+
+**Cuándo usarlo:** en el panel admin, cuando el admin hace clic en una sesión del listado para ver su historial.
+
+**Request:**
+```
+GET /mis-productos/v1/chat/admin/historial/{sesionId}?pagina=0&size=20
+Authorization: Bearer <token admin>
+```
+
+**Response:** mismo formato paginado que los anteriores.
+
+---
+
+#### 7. REST — listado de sesiones para el panel admin
+
+**Cuándo usarlo:** al cargar el panel de admin, para ver todas las sesiones de las últimas 24 h (activas y cerradas).
+
+**Request:**
+```
+GET /mis-productos/v1/chat/admin/sesiones
+Authorization: Bearer <token admin>
+```
+
+**Response:** `ResponseGeneric` — leer `response.data`:
+```json
+{
+  "data": [
+    {
+      "sesionId": "94bb63c0-...",
+      "nombreUsuario": "chat",
+      "estado": "ACTIVA",
+      "fechaInicio": "2026-06-18T02:35:07",
+      "ultimaActividad": "2026-06-18T02:35:47",
+      "ultimoMensaje": "Como estas"
+    }
+  ]
+}
+```
+→ Leer: `(response as any).data` — **NO** `response as any[]`.
+- `estado` puede ser `"ACTIVA"` o `"CERRADA"`
+
+---
+
+#### 8. REST — cerrar sesión manualmente (panel admin)
+
+**Cuándo usarlo:** botón "Cerrar sesión" en el panel admin.
+
+**Request:**
+```
+POST /mis-productos/v1/chat/admin/cerrar/{sesionId}
+Authorization: Bearer <token admin>
+```
+**Response:** 204 No Content.
+
+---
+
+#### 9. WebSocket — panel admin (recibir eventos y responder)
+
+**Suscribirse en** (para recibir mensajes de todos los clientes):
+```
+/topic/chat.admin
+```
+
+**Eventos posibles:**
+
+Nueva sesión conectada:
+```json
+{ "tipo": "NUEVA_SESION", "sesionId": "...", "nombreUsuario": "Juan", "contenido": null, "timestamp": null }
+```
+
+Mensaje del cliente:
+```json
+{ "tipo": "MENSAJE", "sesionId": "...", "nombreUsuario": "Juan", "contenido": "Hola", "timestamp": "2026-06-18T02:35:16" }
+```
+
+**Publicar para responder al cliente:**
+```
+/app/chat.admin.responder
+```
+```json
+{ "sesionId": "uuid-del-cliente", "contenido": "Hola, ¿en qué te ayudo?" }
+```
+
+**Publicar para marcar que el admin está en el panel** (suspende emails):
+```
+/app/chat.admin.conectado
+```
+Sin payload.
+
+---
+
+### Flujo completo del componente de chat del cliente — código de referencia
+
+```typescript
+// localStorage: persiste entre sesiones y recargas
+if (!localStorage.getItem('chat_cliente_id'))
+  localStorage.setItem('chat_cliente_id', crypto.randomUUID());
+const clienteId = localStorage.getItem('chat_cliente_id');
+
+// usuarioId si el usuario está autenticado (Integer), null si no
+const usuarioId = this.authService.getCurrentUser()?.id ?? null;
+
+ngOnInit() {
+  // PASO 1: cargar historial ANTES de conectar el WebSocket
+  const url = usuarioId
+    ? `/mis-productos/v1/chat/historial/usuario/${usuarioId}?pagina=0&size=20`
+    : `/mis-productos/v1/chat/historial/cliente/${clienteId}?pagina=0&size=20`;
+
+  this.http.get(url).subscribe(res => {
+    this.mensajes      = (res as any).data?.mensajes     ?? [];
+    this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
+    this.paginaActual  = 0;
+  });
+
+  // PASO 2: conectar WebSocket
+  this.conectarWebSocket();
+}
+
+conectarWebSocket() {
+  const tempId = crypto.randomUUID();
+  // suscribirse ANTES de publicar
+  this.stompClient.subscribe(`/topic/chat.inicio.${tempId}`, frame => {
+    const data = JSON.parse(frame.body);
+    this.sesionId = data.sesionId;
+    sessionStorage.setItem('chat_sesion_id', this.sesionId);
+
+    // suscribirse al canal de respuestas del admin
+    this.stompClient.subscribe(`/topic/chat.usuario.${this.sesionId}`, frame2 => {
+      const evento = JSON.parse(frame2.body);
+      if (evento.tipo === 'MENSAJE') {
+        this.mensajes = [...this.mensajes, evento];
+      } else if (evento.tipo === 'SESION_CERRADA') {
+        sessionStorage.removeItem('chat_sesion_id');
+        this.sesionId = null;
+        // NO limpiar this.mensajes aquí — dejarlos visibles
+        // Al siguiente envío reconectar y recargar historial
+      }
+    });
+  });
+
+  this.stompClient.publish({
+    destination: '/app/chat.conectar',
+    body: JSON.stringify({ tempId, nombreUsuario: this.nombre, clienteId, usuarioId })
+  });
+}
+
+cargarMasAntiguos() {
+  if (!this.hayMasAntiguos) return;
+  this.paginaActual++;
+  const url = usuarioId
+    ? `/mis-productos/v1/chat/historial/usuario/${usuarioId}?pagina=${this.paginaActual}&size=20`
+    : `/mis-productos/v1/chat/historial/cliente/${clienteId}?pagina=${this.paginaActual}&size=20`;
+
+  this.http.get(url).subscribe(res => {
+    const antiguos = (res as any).data?.mensajes ?? [];
+    this.mensajes = [...antiguos, ...this.mensajes]; // prepend
+    this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
+  });
+}
+
+enviarMensaje(contenido: string) {
+  if (!this.sesionId) {
+    // sesión expirada → reconectar primero
+    this.conectarWebSocket();
+    // esperar a tener sesionId antes de enviar
+    return;
+  }
+  this.stompClient.publish({
+    destination: '/app/chat.mensaje',
+    body: JSON.stringify({ sesionId: this.sesionId, contenido })
+  });
+  // agregar el mensaje optimistamente al array local
+  this.mensajes = [...this.mensajes, { remitente: 'USUARIO', contenido, timestamp: new Date().toISOString() }];
+}
+```

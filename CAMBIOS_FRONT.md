@@ -2115,88 +2115,198 @@ que no terminen en este arreglo.
 ### Problema actual
 Cuando el admin selecciona una sesión en el panel, **solo ve los mensajes nuevos** que llegan en tiempo real (WebSocket). Los mensajes anteriores de esa sesión no aparecen porque el front no los está cargando.
 
-### Endpoint de historial (ya existe en el backend)
+### Endpoints de historial — paginado tipo Messenger (scroll hacia arriba carga más)
 
-**Request:**
+Ambos endpoints (admin y cliente) aceptan `pagina` y `size`. La carga inicial trae los últimos 20 mensajes. Cuando el usuario hace scroll arriba se pide la siguiente página.
+
+#### Admin
 ```
-GET /mis-productos/v1/chat/admin/historial/{sesionId}
+GET /mis-productos/v1/chat/admin/historial/{sesionId}?pagina=0&size=20
 Authorization: Bearer <token admin>
 ```
 
-**Response:** envuelto en `ResponseGeneric` — leer `response.data`:
+#### Cliente (público)
+```
+GET /mis-productos/v1/chat/historial/{sesionId}?pagina=0&size=20
+```
+
+| Param | Default | Descripción |
+|---|---|---|
+| `pagina` | `0` | Página a cargar. `0` = mensajes más recientes |
+| `size` | `20` | Mensajes por página |
+
+**Response** — leer `response.data`:
 ```json
 {
-  "mensaje": "La peticion fue exitosa",
   "code": 200,
-  "data": [
-    {
-      "remitente": "USUARIO",
-      "contenido": "Hola, tengo una pregunta",
-      "timestamp": "2026-06-17T10:00:00"
-    },
-    {
-      "remitente": "ADMIN",
-      "contenido": "Claro, ¿en qué te ayudo?",
-      "timestamp": "2026-06-17T10:00:05"
-    }
-  ],
-  "lista": null
+  "data": {
+    "mensajes": [
+      { "remitente": "USUARIO", "contenido": "Hola, tengo una pregunta", "timestamp": "2026-06-17T10:00:00" },
+      { "remitente": "ADMIN",   "contenido": "Claro, ¿en qué te ayudo?", "timestamp": "2026-06-17T10:00:05" }
+    ],
+    "pagina": 0,
+    "totalPaginas": 3,
+    "totalMensajes": 45,
+    "hayMasAntiguos": true
+  }
 }
 ```
 
-- `id` y `sesionId` **no aparecen** en el JSON (`@JsonIgnore` en la entidad)
-- `remitente` es `"USUARIO"` o `"ADMIN"` — exactamente esos valores
-- `contenido` y `timestamp` son exactamente esos nombres de campo
-- Los mensajes vienen ordenados por timestamp ascendente
-- 204 si la sesión no tiene mensajes aún
+- `mensajes` viene ordenado **cronológico ascendente** (el más antiguo primero) — listo para renderizar de arriba a abajo
+- `hayMasAntiguos: true` → mostrar botón/spinner de "cargar más" al inicio del scroll
+- `id` y `sesionId` no aparecen en cada mensaje (`@JsonIgnore`)
+- `remitente` es exactamente `"USUARIO"` o `"ADMIN"`
+- El endpoint de cliente devuelve **403** si el `sesionId` no existe en BD
 
-**⚠️ Error frecuente:** el response **no es un array plano** — es un objeto con `data`. Si el front lee `response` directamente como array, el `filter(h => !!h.contenido)` descarta todo silenciosamente.
-
+**Flujo scroll tipo Messenger:**
 ```typescript
-// ❌ Incorrecto
-this.historial = response as any[];
+// Carga inicial (mensajes más recientes)
+cargarHistorial(sesionId, pagina = 0) {
+  GET .../historial/{sesionId}?pagina=0&size=20
+  this.mensajes = res.data.mensajes;        // renderizar
+  this.hayMasAntiguos = res.data.hayMasAntiguos;
+}
 
-// ✅ Correcto
-this.historial = (response as any).data ?? [];
+// Usuario hace scroll arriba → cargar página siguiente
+cargarMasAntiguos() {
+  if (!this.hayMasAntiguos) return;
+  GET .../historial/{sesionId}?pagina={paginaActual + 1}&size=20
+  this.mensajes = [...res.data.mensajes, ...this.mensajes]; // prepend
+  this.hayMasAntiguos = res.data.hayMasAntiguos;
+}
 ```
 
 **Acción para el front — PENDIENTE:** Llamar este endpoint en DOS lugares:
-1. **Panel admin:** cuando el admin hace clic en una sesión del listado, cargar el historial antes de recibir mensajes nuevos por WebSocket.
-2. **Chat del cliente/visitante:** cuando el usuario abre o recarga el chat y tiene un `sesionId` guardado (localStorage/sessionStorage), cargar el historial para mostrar la conversación previa.
-
-Para el admin usar el endpoint con token (`/admin/historial/{sesionId}`). Para el cliente usar el endpoint público (ver sección siguiente).
+1. **Panel admin:** cuando el admin hace clic en una sesión, cargar `pagina=0` y renderizar antes de recibir eventos WebSocket.
+2. **Chat del cliente:** al inicializar, usar el endpoint por `clienteId` (ver sección siguiente) para ver TODA la historia entre sesiones.
 
 ---
 
-### Endpoint de historial para el cliente/visitante (🆕 nuevo endpoint)
+### Historial completo del cliente a través de sesiones — `clienteId` persistente
 
-**Request:** público, no requiere token — el `sesionId` actúa como token implícito:
-```
-GET /mis-productos/v1/chat/historial/{sesionId}
+El `sesionId` cambia cada vez que la sesión expira (5 min de inactividad). Para que el cliente vea mensajes de sesiones anteriores, el front genera un `clienteId` fijo guardado en `localStorage`.
+
+**Generar y guardar el `clienteId` una sola vez:**
+```typescript
+if (!localStorage.getItem('chat_cliente_id')) {
+  localStorage.setItem('chat_cliente_id', crypto.randomUUID());
+}
+const clienteId = localStorage.getItem('chat_cliente_id');
 ```
 
-**Response:** misma estructura que el historial de admin:
+**Enviarlo al conectar** — payload de `/app/chat.conectar`:
+```json
+{ "tempId": "uuid-temporal", "nombreUsuario": "Juan", "clienteId": "uuid-persistente" }
+```
+
+**Endpoint de historial completo** — todas las sesiones del cliente:
+```
+GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=0&size=20
+```
+Público, sin token. Devuelve mensajes de **todas las sesiones** vinculadas a ese `clienteId` ordenados cronológicamente. Mismo formato de response que el historial por `sesionId` (`{ mensajes, pagina, totalPaginas, totalMensajes, hayMasAntiguos }`).
+
+**Flujo correcto al inicializar el chat del cliente:**
+```typescript
+ngOnInit() {
+  // 1. clienteId persiste en localStorage entre sesiones y recargas
+  if (!localStorage.getItem('chat_cliente_id'))
+    localStorage.setItem('chat_cliente_id', crypto.randomUUID());
+  this.clienteId = localStorage.getItem('chat_cliente_id');
+
+  // 2. Cargar toda la historia del cliente (todas las sesiones pasadas)
+  this.http.get(`/v1/chat/historial/cliente/${this.clienteId}?pagina=0&size=20`)
+    .subscribe(res => {
+      this.mensajes = res.data.mensajes ?? [];
+      this.hayMasAntiguos = res.data.hayMasAntiguos;
+    });
+
+  // 3. Conectar WebSocket mandando clienteId para vincular la nueva sesión
+  this.conectarWebSocket();
+}
+```
+
+> **Resumen de storage:**
+> - `clienteId` → **`localStorage`** — persiste aunque se cierre el navegador, une todas las sesiones (usuarios anónimos)
+> - `sesionId` → **`sessionStorage`** — solo dura la pestaña, identifica la sesión WebSocket activa
+
+---
+
+### Historial por usuario registrado — `usuarioId` (vinculado a la cuenta)
+
+Para usuarios que tienen cuenta en el sistema, se puede vincular la sesión de chat a su `usuarioId` real (Integer) en lugar de un UUID anónimo. Esto permite recuperar todos sus mensajes históricos de forma confiable.
+
+**Enviar `usuarioId` al conectar** — payload de `\app\chat.conectar`:
+```json
+{
+  "tempId": "uuid-temporal",
+  "nombreUsuario": "Juan",
+  "clienteId": "uuid-persistente-localStorage",
+  "usuarioId": 42
+}
+```
+- `usuarioId` es opcional (null si el usuario no está autenticado → solo se usa `clienteId`)
+- `usuarioId` es el `id` (Integer) del usuario en `usuario_modificacion`
+
+**Endpoint de historial por usuarioId** — todas las sesiones del usuario registrado:
+```
+GET /mis-productos/v1/chat/historial/usuario/{usuarioId}?pagina=0&size=20
+```
+Público, sin token. Devuelve mensajes de **todas las sesiones** vinculadas a ese `usuarioId`, mismo formato que historial por sesión.
+
+**Response:** igual al historial paginado:
 ```json
 {
   "mensaje": "La peticion fue exitosa",
   "code": 200,
-  "data": [
-    { "remitente": "USUARIO", "contenido": "Hola", "timestamp": "2026-06-17T10:00:00" },
-    { "remitente": "ADMIN",   "contenido": "¿En qué te ayudo?", "timestamp": "2026-06-17T10:00:05" }
-  ],
-  "lista": null
+  "data": {
+    "mensajes": [ { "remitente": "USUARIO", "contenido": "Hola", "timestamp": "2026-06-17T10:00:00" } ],
+    "pagina": 0,
+    "totalPaginas": 3,
+    "totalMensajes": 45,
+    "hayMasAntiguos": true
+  }
 }
 ```
 
-**Seguridad:** el endpoint valida que el `sesionId` exista en BD. Si no existe devuelve **403** — así un UUID inventado o ya expirado no devuelve datos. Solo funciona con un `sesionId` real generado por el backend en `/chat.conectar`.
-
-**Cuándo llamarlo desde el cliente:** al inicializar el componente de chat, si el front tiene un `sesionId` guardado en `sessionStorage`, llamar este endpoint y renderizar los mensajes antes de suscribirse al WebSocket. Así el visitante ve su conversación completa aunque haya recargado la página.
-
+**Flujo recomendado para usuario autenticado:**
 ```typescript
-// ✅ Correcto
-this.historial = (response as any).data ?? [];
-// Si llega 403 → sesionId inválido → iniciar nueva sesión
+ngOnInit() {
+  // usuarioId viene del token decodificado o del perfil del usuario autenticado
+  this.usuarioId = this.authService.getCurrentUser()?.id ?? null;
+
+  // Cargar historial del usuario (todas sus sesiones pasadas)
+  if (this.usuarioId) {
+    this.http.get(`/v1/chat/historial/usuario/${this.usuarioId}?pagina=0&size=20`)
+      .subscribe(res => {
+        this.mensajes = (res as any).data?.mensajes ?? [];
+        this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
+      });
+  } else {
+    // usuario anónimo: usar clienteId de localStorage
+    const clienteId = localStorage.getItem('chat_cliente_id');
+    if (clienteId) {
+      this.http.get(`/v1/chat/historial/cliente/${clienteId}?pagina=0&size=20`)
+        .subscribe(res => {
+          this.mensajes = (res as any).data?.mensajes ?? [];
+          this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
+        });
+    }
+  }
+
+  // Conectar WebSocket
+  this.conectarWebSocket();
+}
 ```
+
+**UX de expiración de sesión (SESION_CERRADA):**
+1. Recibir `{ tipo: "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`
+2. Limpiar `mensajes` del componente (y `sesionId` de sessionStorage)
+3. Cuando el usuario envía el siguiente mensaje:
+   - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
+   - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
+   - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
+
+---
 
 ---
 
@@ -2217,21 +2327,36 @@ Authorization: Bearer <token admin>
     {
       "sesionId": "f1d0db6f-496f-4000-9dd1-234efdc51f06",
       "nombreUsuario": "chat",
+      "estado": "ACTIVA",
       "fechaInicio": "2026-06-17T10:00:00",
       "ultimaActividad": "2026-06-17T10:02:00",
       "ultimoMensaje": "Hola, tengo una pregunta"
+    },
+    {
+      "sesionId": "37cb781e-f39f-4fa4-b825-52a7f0b9ab0c",
+      "nombreUsuario": "Visitante",
+      "estado": "CERRADA",
+      "fechaInicio": "2026-06-17T09:00:00",
+      "ultimaActividad": "2026-06-17T09:05:00",
+      "ultimoMensaje": "Buen dia"
     }
   ],
   "lista": null
 }
 ```
 
-- `ultimoMensaje` puede ser `null` si la sesión aún no tiene mensajes
-- Todos los campos de fecha son strings con formato `"yyyy-MM-dd'T'HH:mm:ss"`
+- Devuelve **todas las sesiones de las últimas 24 horas** (ACTIVA y CERRADA), ordenadas por `ultimaActividad` descendente
+- Campo nuevo `estado`: `"ACTIVA"` o `"CERRADA"` — mostrar indicador visual (ej. punto verde / gris)
+- `ultimoMensaje` puede ser `null` si el usuario conectó pero no envió ningún mensaje
+- El admin puede hacer clic en cualquier sesión para ver el historial — incluso las cerradas
+- `estado === 'CERRADA'` → solo lectura (no tiene sentido responder, la sesión ya expiró)
 
 ```typescript
 // ✅ Correcto
 this.sesiones = (response as any).data ?? [];
+// Indicador visual sugerido:
+// sesion.estado === 'ACTIVA'  → punto verde, puede responder
+// sesion.estado === 'CERRADA' → punto gris, solo ver historial
 ```
 
 ---

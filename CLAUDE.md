@@ -1980,6 +1980,11 @@ Para reconexiones mid-session (caída de red), `this.sesionId` ya está en memor
 - **`sudo kubectl` falla:** el usuario SSH no tiene passwordless sudo → en el VPS: `echo "ubuntu ALL=(ALL) NOPASSWD: /usr/bin/kubectl" | sudo tee /etc/sudoers.d/kubectl-access`
 - **Build Docker falla por memoria:** `ng build` con `--configuration=qa` puede requerir más RAM de la disponible en el runner — poco probable con GitHub-hosted runners (7GB), más común en self-hosted
 
+### ⏳ PENDIENTE — Diagnosticar por qué el workflow no corre automáticamente
+
+El workflow está bien configurado pero no dispara el deploy al hacer push a `qa`.
+Para investigar: **GitHub → repositorio → pestaña Actions → "Build and Push Docker QA"** → ver el último run y en qué step falló. Verificar también que los 5 secrets estén configurados en Settings → Secrets and variables → Actions.
+
 ### Workaround mientras no hay CI/CD automático
 
 Después de hacer `git push origin qa`, entrar al VPS y correr:

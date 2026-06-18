@@ -1864,6 +1864,8 @@ vinculado, se puede plantear migrar la prioridad a `usuarioId` (más robusto cro
 
 9. **Cuando el servidor QA no refleja los cambios del front, el problema casi siempre es que el bundle no se ha reconstruido — no que el código esté mal.** El backend reportó "no recibo `usuarioId` en el WS payload" cuando el código nuevo ya lo incluía incondicionalmente. El bundle del servidor QA era el antiguo. Diagnóstico rápido: cambiar un texto visible en la UI (ej. el título del chat) o agregar `version` al `environment.qa.ts` → si el browser no muestra el cambio, el servidor sigue con el bundle viejo. No invertir tiempo en depuración de código cuando la causa puede ser un deploy pendiente.
 
+10. **`sessionStorage` puede quedar con un `sesionId` muerto si la sesión WS expiró mientras el tab estaba cerrado.** El evento `SESION_CERRADA` que limpia sessionStorage nunca llega si el front no estaba conectado. Al arrancar el componente, el código cargaba ese `sesionId` muerto en `this.sesionId`, y `onConnect()` lo reutilizaba brincando `iniciarNuevaSesion()` — por eso `/app/chat.conectar` nunca se publicaba y todos los mensajes se descartaban en el back. Fix: limpiar sessionStorage y `this.sesionId` al inicio de `conectar()`, no depender de que `SESION_CERRADA` siempre llega a tiempo.
+
 ---
 
 ## FIX CHAT — REESCRITURA `chat-live.service.ts` + REFACTOR `ChatUsuarioComponent` (2026-06-18)
@@ -1911,3 +1913,76 @@ vinculado, se puede plantear migrar la prioridad a `usuarioId` (más robusto cro
 - `src/environments/environment.qa.ts` → `version: '2026-06-18'`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX CHAT — `sesionId` DE SESSIONSTORAGE BLOQUEABA `chat.conectar` (2026-06-18)
+
+**Síntoma confirmado en logs de QA:**
+```
+[WS] /chat.mensaje recibido — sesionId=2e46efe3-..., contenido=...
+[WS] Sesión inactiva o inexistente: 2e46efe3-... — mensaje descartado
+```
+`/chat.conectar` nunca aparecía en los logs. El front enviaba mensajes con un `sesionId` de una sesión CERRADA — llegaban al back pero se descartaban silenciosamente.
+
+**Causa raíz:** `conectar()` leía `sesionId` de `sessionStorage` y lo asignaba a `this.sesionId`. En `onConnect()`, al ver `this.sesionId !== null`, brincaba directo a `suscribirseAlCanal()` sin llamar nunca `iniciarNuevaSesion()`. La sesión en sessionStorage estaba CERRADA en el back (expiró por inactividad mientras el tab estaba cerrado), pero el front no lo sabía y nunca publicaba `/app/chat.conectar`.
+
+**Fix en `conectar()`:**
+```typescript
+// Siempre arrancar con sesión limpia
+sessionStorage.removeItem(SESION_KEY);
+this.sesionId = null;
+```
+Para reconexiones mid-session (caída de red), `this.sesionId` ya está en memoria → `onConnect()` lo reutiliza correctamente sin necesitar sessionStorage.
+
+**Archivos modificados:**
+- `src/app/chat/service/chat-live.service.ts` → `conectar()` limpia sessionStorage al inicio
+
+**Verificado en QA:** tras redespliegue + hard refresh, el back mostró:
+```
+[WS] /chat.conectar recibido — tempId=..., nombreUsuario=..., usuarioId=66
+```
+
+---
+
+## CI/CD — ESTADO Y CONFIGURACIÓN DEL PIPELINE QA (2026-06-18)
+
+### Archivos de workflow
+
+| Archivo | Dispara en | Qué hace |
+|---|---|---|
+| `.github/workflows/producto-actions-qa.yml` | `push` a rama `qa` | Build Docker `--configuration=qa` → push a Docker Hub como `front-jade-service:qa` → SSH al VPS → `kubectl rollout restart ... -n qa` |
+| `.github/workflows/proyecto-front-actions.yml` | `push` a rama `master` | Build Docker `--configuration=production` → push como `front-jade-service:latest` → SSH → restart en namespace `default` |
+
+### Secrets requeridos en GitHub
+
+**Settings → Secrets and variables → Actions** del repositorio:
+
+| Secret | Qué es |
+|---|---|
+| `DOCKER_USERNAME` | Usuario de Docker Hub |
+| `DOCKER_PASSWORD` | Token de acceso de Docker Hub (no la contraseña) |
+| `VPS_HOST` | IP o hostname del servidor VPS de QA |
+| `VPS_USER` | Usuario SSH del VPS (probablemente `ubuntu`) |
+| `VPS_SSH_KEY` | Clave privada SSH completa (el VPS debe tener la pública en `~/.ssh/authorized_keys`) |
+
+### Cómo verificar qué falló
+
+1. Ir a **GitHub → repositorio → pestaña Actions**
+2. Filtrar por rama `qa` o buscar el workflow "Build and Push Docker QA"
+3. Clic en el último run → ver qué step falló (Build, Login, Push o Deploy SSH)
+4. El log de cada step muestra el error exacto
+
+### Causas más comunes de fallo
+
+- **SSH falla:** el secret `VPS_SSH_KEY` expiró o el IP del VPS cambió → actualizar el secret
+- **Docker push falla:** `DOCKER_PASSWORD` es la contraseña de cuenta en vez de un Access Token — Docker Hub requiere un token generado en hub.docker.com → Account Settings → Security → New Access Token
+- **`sudo kubectl` falla:** el usuario SSH no tiene passwordless sudo → en el VPS: `echo "ubuntu ALL=(ALL) NOPASSWD: /usr/bin/kubectl" | sudo tee /etc/sudoers.d/kubectl-access`
+- **Build Docker falla por memoria:** `ng build` con `--configuration=qa` puede requerir más RAM de la disponible en el runner — poco probable con GitHub-hosted runners (7GB), más común en self-hosted
+
+### Workaround mientras no hay CI/CD automático
+
+Después de hacer `git push origin qa`, entrar al VPS y correr:
+```bash
+kubectl rollout restart deployment proyecto-key-front-deployment -n qa
+```

@@ -56,9 +56,18 @@ export class ChatLiveService implements OnDestroy {
     window.addEventListener('online',  this.onOnline);
 
     // Paso 1: cargar historial completo del usuario/cliente ANTES de conectar el WebSocket
-    const historialUrl = this.usuarioId
-      ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=0&size=20`
-      : `${this.historialBase}/cliente/${this.clienteId}?pagina=0&size=20`;
+    // clienteId cubre todas las sesiones del navegador (incluyendo las previas a usuarioId).
+    // usuarioId solo como fallback si localStorage fue borrado.
+    const historialUrl = this.clienteId
+      ? `${this.historialBase}/cliente/${this.clienteId}?pagina=0&size=20`
+      : this.usuarioId
+        ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=0&size=20`
+        : null;
+
+    if (!historialUrl) {
+      this.activarStomp();
+      return;
+    }
 
     this.http.get<ApiResponse<HistorialPaginado>>(historialUrl).subscribe({
       next: res => {
@@ -180,9 +189,13 @@ export class ChatLiveService implements OnDestroy {
     if (!this.hayMasAntiguos$.value || this.cargandoMasFlag) return;
     this.cargandoMasFlag = true;
 
-    const url = this.usuarioId
-      ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=${this.paginaActual + 1}&size=20`
-      : `${this.historialBase}/cliente/${this.clienteId}?pagina=${this.paginaActual + 1}&size=20`;
+    const url = this.clienteId
+      ? `${this.historialBase}/cliente/${this.clienteId}?pagina=${this.paginaActual + 1}&size=20`
+      : this.usuarioId
+        ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=${this.paginaActual + 1}&size=20`
+        : null;
+
+    if (!url) { this.cargandoMasFlag = false; return; }
 
     this.http.get<ApiResponse<HistorialPaginado>>(url).subscribe({
       next: res => {

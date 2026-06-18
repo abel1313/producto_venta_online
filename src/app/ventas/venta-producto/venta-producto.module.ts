@@ -11,7 +11,6 @@ import { TableGenericoModule } from 'src/app/tablas/table-generico/table-generic
 import { AgGridModule } from 'ag-grid-angular';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
-import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BuscarGenericoComponent } from 'src/app/buscador/buscar-generico/buscar-generico.component';
 import { DialogModule } from 'primeng/dialog';
@@ -34,7 +33,6 @@ import { DropdownModule } from 'primeng/dropdown';
         AgGridModule,
         MatMenuModule,
         MatButtonModule,
-        HttpClientModule,
         FormsModule,
         DialogModule,
         DropdownModule,

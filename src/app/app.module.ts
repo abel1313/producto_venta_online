@@ -13,7 +13,7 @@ import { ProductoModule } from './productos/producto/producto.module';
 import { VentaProductoModule } from './ventas/venta-producto/venta-producto.module';
 import { MisGastosModule } from './gastos/mis-gastos/mis-gastos.module';
 import { RouterModule } from '@angular/router';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { TokenInterceptor } from './token/TokenInterceptor ';
 import { PaginaNoDisponibleComponent } from './pagina-no-disponible/pagina-no-disponible.component';
 import { HomeComponent } from './home/home.component';
@@ -77,6 +77,7 @@ export function bootstrapAuth(
     FormsModule,
     BrowserModule,
     BrowserAnimationsModule,
+    HttpClientModule,
     AppRoutingModule,
     ProductoModule,
     VentaProductoModule,
@@ -85,8 +86,6 @@ export function bootstrapAuth(
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
-    
-   
   ],
   bootstrap: [AppComponent]
 })

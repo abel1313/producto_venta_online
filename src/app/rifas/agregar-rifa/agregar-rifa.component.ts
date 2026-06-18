@@ -6,12 +6,14 @@ import { ArcElement, Chart, PieController } from 'chart.js';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { WebSocketServiceService } from 'src/app/socket/web-socket-service.service';
-import { IConfigurarRifa, IConfigurarRifaVariante } from '../models/configurar-rifa.model';
-import { IConcursante, IClientePedido } from '../models/concursante.model';
+import { IConfigurarRifa, IConfigurarRifaVariante, TipoRifa } from '../models/configurar-rifa.model';
+import { IConcursante, IClientePedido, IOmitidoYaRegistrado } from '../models/concursante.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa, IHistorialVariante } from '../models/estado-rifa.model';
 import { RifaService, ModoContinuacion } from '../service/rifa.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
+import { ClienteService } from 'src/app/clietes/cliente.service';
+import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -25,6 +27,8 @@ type Paso = 'configurar' | 'ruleta' | 'transicion' | 'resumen';
 export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   @ViewChild('ruletaCanvas') ruletaCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('searchWrapVariante') searchWrapVariante?: ElementRef<HTMLElement>;
+  @ViewChild('searchWrapCliente') searchWrapCliente?: ElementRef<HTMLElement>;
 
   paso: Paso = 'configurar';
 
@@ -33,6 +37,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   rifaConfig: IConfigurarRifa | null = null;
   savingConfig = false;
   rifasActivas: IConfigurarRifa[] = [];
+  cambiandoModoPrueba = false;
 
   // ── Sección B — variantes ──────────────────────────────────────────
   variantesRifa: IConfigurarRifaVariante[] = [];
@@ -71,9 +76,23 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   cargandoClientes = false;
   palabraClaveImport = '';
   importando = false;
+  omitidosImport: IOmitidoYaRegistrado[] = [];
+  omitidosSinNombre: IClientePedido[] = [];
 
   // elegibles al presionar "ver elegibles"
   elegiblesVista: IConcursante[] = [];
+
+  // edición / errores de concursante
+  errorConcursante: string | null = null;
+  editandoConcursanteId: number | null = null;
+  editConcursanteForm!: FormGroup;
+
+  // ── Rifa diaria — búsqueda de cliente registrado ────────────────────
+  terminoBuscaCliente = '';
+  clientesBusqueda: IClienteBusquedaDto[] = [];
+  buscandoCliente = false;
+  private busqClienteSubject = new Subject<string>();
+  private busqClienteSub?: Subscription;
 
   // ── Ruleta ─────────────────────────────────────────────────────────
   estado: IEstadoRifa | null = null;
@@ -104,6 +123,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   constructor(
     private readonly rifaService: RifaService,
     private readonly webSocketService: WebSocketServiceService,
+    private readonly clienteService: ClienteService,
     private readonly fb: FormBuilder,
     readonly router: Router
   ) {}
@@ -111,9 +131,19 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.configForm = this.fb.group({
       fechaHoraLimite: ['', Validators.required],
+      tipo:            ['MENSUAL' as TipoRifa, Validators.required],
+      mesReferencia:   [''],
+      esPrueba:        [false],
     });
 
     this.concursanteForm = this.fb.group({
+      nombre:          ['', Validators.required],
+      apellidoPaterno: ['', Validators.required],
+      telefono:        ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      palabraClave:    ['', Validators.required],
+    });
+
+    this.editConcursanteForm = this.fb.group({
       nombre:          ['', Validators.required],
       apellidoPaterno: ['', Validators.required],
       telefono:        ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
@@ -147,6 +177,20 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       next: res => { this.variantesBusqueda = res.t ?? []; this.buscandoVariante = false; }
     });
 
+    this.busqClienteSub = this.busqClienteSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      switchMap(t => {
+        if (t.length < 3) { this.clientesBusqueda = []; return EMPTY; }
+        this.buscandoCliente = true;
+        return this.clienteService.buscarClientes(t, 0, 10).pipe(
+          catchError(() => { this.buscandoCliente = false; return EMPTY; })
+        );
+      })
+    ).subscribe({
+      next: res => { this.clientesBusqueda = res?.data?.list ?? []; this.buscandoCliente = false; }
+    });
+
     // Auto-retomar si viene desde buscar-rifa
     const retomarId = history.state?.retomarRifaId as number | undefined;
     if (retomarId) {
@@ -159,6 +203,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     clearTimeout(this.hoverTimer);
     this.busqSub?.unsubscribe();
+    this.busqClienteSub?.unsubscribe();
     this.wsUnsub?.();
     this.chart?.destroy();
   }
@@ -168,9 +213,14 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   guardarConfiguracion(): void {
     if (this.configForm.invalid) return;
     this.savingConfig = true;
+    this.errorConcursante = null;
+    const tipo: TipoRifa = this.configForm.value.tipo;
     this.rifaService.configurarRifa({
       fechaHoraLimite: this.configForm.value.fechaHoraLimite,
-      activa: true
+      activa: true,
+      tipo,
+      mesReferencia: tipo === 'MENSUAL' ? (this.configForm.value.mesReferencia || null) : null,
+      esPrueba: !!this.configForm.value.esPrueba
     }).subscribe({
       next: res => {
         this.rifaConfig = res;
@@ -178,7 +228,42 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.cargarVariantesRifa();
         this.cargarConcursantes();
       },
-      error: () => { this.savingConfig = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo guardar la configuración de la rifa.';
+        this.savingConfig = false;
+      }
+    });
+  }
+
+  // ── Modo prueba ────────────────────────────────────────────────────
+
+  toggleModoPrueba(): void {
+    if (!this.rifaConfig?.id || this.cambiandoModoPrueba) return;
+    const nuevoValor = !this.rifaConfig.esPrueba;
+
+    if (!nuevoValor) {
+      const confirmado = confirm(
+        '¿Deseas pasar esta rifa al modo REAL?\n\n' +
+        'Se restablecerán los descartes (los mismos participantes vuelven a estar ' +
+        'disponibles) y se borrarán los giros de prueba. El sorteo comenzará desde ' +
+        'cero con los mismos participantes.'
+      );
+      if (!confirmado) return;
+    }
+
+    this.cambiandoModoPrueba = true;
+    this.errorConcursante = null;
+    this.rifaService.setEsPrueba(this.rifaConfig.id, nuevoValor).subscribe({
+      next: res => {
+        this.rifaConfig = res;
+        this.cambiandoModoPrueba = false;
+        // Al pasar a real, el back limpia giros de demo y reactiva descartados
+        this.cargarConcursantes();
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cambiar el modo de prueba.';
+        this.cambiandoModoPrueba = false;
+      }
     });
   }
 
@@ -198,9 +283,32 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.variantesBusqueda = [];
   }
 
+  // Los dropdowns se posicionan como `fixed` (vía getBoundingClientRect) para no
+  // quedar recortados por el `overflow: hidden` de `.rf-card`.
+  get dropdownStyleVariante(): { [key: string]: string | number } {
+    return this.dropdownStyleFor(this.searchWrapVariante);
+  }
+
+  get dropdownStyleCliente(): { [key: string]: string | number } {
+    return this.dropdownStyleFor(this.searchWrapCliente);
+  }
+
+  private dropdownStyleFor(ref?: ElementRef<HTMLElement>): { [key: string]: string | number } {
+    const el = ref?.nativeElement;
+    if (!el) return {};
+    const r = el.getBoundingClientRect();
+    return {
+      position: 'fixed',
+      'top.px': r.bottom + 4,
+      'left.px': r.left,
+      'width.px': r.width
+    };
+  }
+
   guardarVarianteRifa(): void {
-    if (!this.varianteParaAgregar || !this.rifaConfig?.id || !this.palabraClaveInput.trim() || this.giroGanadorInput < 1) return;
+    if (!this.varianteParaAgregar || !this.rifaConfig?.id || !this.palabraClaveInput.trim() || this.giroGanadorInput < 1 || this.guardandoVariante) return;
     this.guardandoVariante = true;
+    this.errorConcursante = null;
 
     this.rifaService.guardarVarianteRifa({
       configurarRifaId: this.rifaConfig.id,
@@ -216,17 +324,24 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.resetFormVariante();
         this.guardandoVariante = false;
       },
-      error: () => { this.guardandoVariante = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el premio.';
+        this.guardandoVariante = false;
+      }
     });
   }
 
   eliminarVarianteRifa(v: IConfigurarRifaVariante): void {
     if (!v.id) return;
+    this.errorConcursante = null;
     this.rifaService.eliminarVarianteRifa(v.id).subscribe({
       next: () => {
         this.variantesRifa = this.variantesRifa.filter(x => x.id !== v.id);
         this.variantesRifa.forEach((x, i) => x.orden = i + 1);
         this.palabrasClave = this.variantesRifa.map(x => x.palabraClave);
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo eliminar el premio.';
       }
     });
   }
@@ -266,6 +381,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   agregarConcursante(): void {
     if (this.concursanteForm.invalid || !this.rifaConfig?.id) return;
     this.guardandoConcursante = true;
+    this.errorConcursante = null;
 
     const data: IConcursante = {
       ...this.concursanteForm.value,
@@ -279,22 +395,89 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.concursanteForm.reset();
         this.guardandoConcursante = false;
       },
-      error: () => { this.guardandoConcursante = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.guardandoConcursante = false;
+      }
     });
   }
 
   eliminarConcursante(c: IConcursante): void {
     if (!c.id) return;
+    this.errorConcursante = null;
     this.rifaService.eliminarConcursante(c.id).subscribe({
-      next: () => { this.concursantes = this.concursantes.filter(x => x.id !== c.id); }
+      next: () => { this.concursantes = this.concursantes.filter(x => x.id !== c.id); },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje
+          ?? 'No se puede eliminar: el concursante ya participó en un sorteo';
+      }
+    });
+  }
+
+  // ── Edición de participante ─────────────────────────────────────────
+
+  iniciarEdicion(c: IConcursante): void {
+    this.errorConcursante = null;
+    this.editandoConcursanteId = c.id ?? null;
+    this.editConcursanteForm.setValue({
+      nombre:          c.nombre,
+      apellidoPaterno: c.apellidoPaterno,
+      telefono:        c.telefono,
+      palabraClave:    c.palabraClave ?? ''
+    });
+  }
+
+  cancelarEdicion(): void {
+    this.editandoConcursanteId = null;
+  }
+
+  guardarEdicionConcursante(c: IConcursante): void {
+    if (!c.id || this.editConcursanteForm.invalid) return;
+    this.errorConcursante = null;
+    const cambios = {
+      ...this.editConcursanteForm.value,
+      palabraClave: (this.editConcursanteForm.value.palabraClave as string).toUpperCase()
+    };
+    this.rifaService.actualizarConcursante(c.id, cambios).subscribe({
+      next: res => {
+        const idx = this.concursantes.findIndex(x => x.id === c.id);
+        if (idx >= 0) this.concursantes[idx] = { ...this.concursantes[idx], ...res };
+        this.editandoConcursanteId = null;
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo actualizar el participante.';
+      }
     });
   }
 
   verElegibles(): void {
     if (!this.rifaConfig?.id) return;
+    this.errorConcursante = null;
     this.rifaService.getElegibles(this.rifaConfig.id).subscribe({
-      next: res => { this.elegiblesVista = res; }
+      next: res => { this.elegiblesVista = res; },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+      }
     });
+  }
+
+  // ── Rifa diaria — búsqueda de cliente registrado ────────────────────
+
+  onBuscarCliente(event: Event): void {
+    const t = (event.target as HTMLInputElement).value;
+    this.terminoBuscaCliente = t;
+    if (t.length < 3) this.clientesBusqueda = [];
+    this.busqClienteSubject.next(t);
+  }
+
+  seleccionarCliente(c: IClienteBusquedaDto): void {
+    this.concursanteForm.patchValue({
+      nombre:          c.nombrePersona,
+      apellidoPaterno: c.apeidoPaterno,
+      telefono:        c.numeroTelefonico
+    });
+    this.terminoBuscaCliente = `${c.nombrePersona} ${c.apeidoPaterno}`.trim();
+    this.clientesBusqueda = [];
   }
 
   // ── Importar desde pedidos ──────────────────────────────────────────
@@ -302,11 +485,15 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   cargarClientesMes(): void {
     if (!this.mesSeleccionado) return;
     this.cargandoClientes = true;
+    this.errorConcursante = null;
     this.clientesMes = [];
     this.clientesSeleccionados.clear();
     this.rifaService.getClientesPorMes(this.mesSeleccionado).subscribe({
       next: res => { this.clientesMes = res; this.cargandoClientes = false; },
-      error: () => { this.cargandoClientes = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los clientes del mes.';
+        this.cargandoClientes = false;
+      }
     });
   }
 
@@ -325,6 +512,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   importarClientes(): void {
     if (!this.rifaConfig?.id || !this.palabraClaveImport.trim() || this.clientesSeleccionados.size === 0) return;
     this.importando = true;
+    this.errorConcursante = null;
 
     const clientes = [...this.clientesSeleccionados].map(i => this.clientesMes[i]);
 
@@ -336,15 +524,32 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       clientes
     }).subscribe({
       next: res => {
-        this.concursantes.push(...res);
+        this.concursantes.push(...res.importados);
+        this.omitidosImport = res.omitidosYaRegistrados ?? [];
+        this.omitidosSinNombre = res.omitidosSinNombre ?? [];
         this.importando = false;
         this.mostrarImportar = false;
         this.clientesMes = [];
         this.clientesSeleccionados.clear();
         this.palabraClaveImport = '';
       },
-      error: () => { this.importando = false; }
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron importar los participantes.';
+        this.importando = false;
+      }
     });
+  }
+
+  cerrarOmitidosImport(): void {
+    this.omitidosImport = [];
+  }
+
+  get omitidosNombres(): string {
+    return this.omitidosImport.map(o => o.nombre).join(', ');
+  }
+
+  cerrarOmitidosSinNombre(): void {
+    this.omitidosSinNombre = [];
   }
 
   // ── Navegación ─────────────────────────────────────────────────────
@@ -421,10 +626,17 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.modoElegido          = null;
     this.mostrarSeleccionModo = false;
     this.mostrarFormNuevo     = false;
+    this.omitidosImport       = [];
+    this.omitidosSinNombre    = [];
+    this.errorConcursante     = null;
+    this.editandoConcursanteId = null;
+    this.clientesBusqueda     = [];
+    this.terminoBuscaCliente  = '';
+    this.cambiandoModoPrueba  = false;
     this.chart?.destroy();
     this.wsUnsub?.();
     this.wsUnsub = null;
-    this.configForm.reset();
+    this.configForm.reset({ fechaHoraLimite: '', tipo: 'MENSUAL', mesReferencia: '', esPrueba: false });
     this.concursanteForm.reset();
     this.paso = 'configurar';
     this.cargarRifasActivas();
@@ -436,6 +648,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     if (!this.rifaConfig?.id || this.sorteando) return;
     this.sorteando = true;
     this.descartadoActual = null;
+    this.errorConcursante = null;
 
     this.rifaService.sortear(this.rifaConfig.id).subscribe({
       next: resultado => {
@@ -464,7 +677,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
           });
         }, 100);
       },
-      error: () => { this.sorteando = false; }
+      error: err => {
+        this.sorteando = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo realizar el sorteo.';
+      }
     });
   }
 
@@ -480,11 +696,15 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   verResumenFinal(): void {
     if (!this.rifaConfig?.id) return;
+    this.errorConcursante = null;
     this.rifaService.getEstado(this.rifaConfig.id).subscribe({
       next: res => {
         this.aplicarEstado(res);
         this.ganadorActual = null;
         this.paso = 'resumen';
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cargar el resumen.';
       }
     });
   }
@@ -492,6 +712,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   confirmarContinuar(): void {
     if (!this.rifaConfig?.id || !this.modoElegido) return;
     const rifaId = this.rifaConfig.id;
+    this.errorConcursante = null;
     this.rifaService.continuarVariante(rifaId, this.modoElegido).subscribe({
       next: res => {
         this.aplicarEstado(res);
@@ -514,6 +735,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
           this.paso = 'ruleta';
           setTimeout(() => this.generarRuleta(), 200);
         }
+      },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo continuar con la siguiente variante.';
       }
     });
   }
@@ -521,6 +745,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   agregarParticipanteTransicion(): void {
     if (this.participanteNuevoForm.invalid || !this.rifaConfig?.id || !this.estado?.varianteActual) return;
     this.guardandoNuevo = true;
+    this.errorConcursante = null;
 
     const data: IConcursante = {
       ...this.participanteNuevoForm.value,
@@ -533,7 +758,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.participanteNuevoForm.reset();
         this.guardandoNuevo = false;
       },
-      error: () => { this.guardandoNuevo = false; }
+      error: err => {
+        this.guardandoNuevo = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+      }
     });
   }
 
@@ -554,6 +782,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   guardarParticipanteRuleta(): void {
     if (this.participanteRuletaForm.invalid || !this.rifaConfig?.id || !this.estado?.varianteActual) return;
     this.guardandoParticipanteRuleta = true;
+    this.errorConcursante = null;
 
     const data: IConcursante = {
       ...this.participanteRuletaForm.value,
@@ -569,7 +798,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.guardandoParticipanteRuleta = false;
         this.mostrarModalParticipante = false;
       },
-      error: () => { this.guardandoParticipanteRuleta = false; }
+      error: err => {
+        this.guardandoParticipanteRuleta = false;
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+      }
     });
   }
 
@@ -577,8 +809,12 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   reiniciar(completo: boolean): void {
     if (!this.rifaConfig?.id) return;
+    this.errorConcursante = null;
     this.rifaService.reiniciar(this.rifaConfig.id, completo).subscribe({
-      next: () => { this.nuevaRifa(); }
+      next: () => { this.nuevaRifa(); },
+      error: err => {
+        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+      }
     });
   }
 
@@ -595,6 +831,19 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   get concursantesDescartados(): IConcursante[] {
     return this.concursantes.filter(c => c.descartado);
+  }
+
+  // Participantes "normales" vs agregados durante el modo prueba
+  get concursantesParticipantes(): IConcursante[] {
+    return this.concursantesActivos.filter(c => !c.agregadoEnPrueba);
+  }
+
+  get concursantesEnPrueba(): IConcursante[] {
+    return this.concursantesActivos.filter(c => c.agregadoEnPrueba);
+  }
+
+  get esRifaDiaria(): boolean {
+    return (this.rifaConfig?.tipo ?? this.configForm?.value?.tipo) === 'DIARIA';
   }
 
   // Etiqueta de la siguiente variante (para el selector de modo)
@@ -625,6 +874,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     const b64 = v.variante?.imagenBase64;
     if (!b64) return null;
     return b64.startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`;
+  }
+
+  nombreCompleto(c?: { nombre?: string | null; apellidoPaterno?: string | null } | null): string {
+    if (!c) return '';
+    return [c.nombre, c.apellidoPaterno].filter(p => !!p).join(' ');
   }
 
   // ── Privados ───────────────────────────────────────────────────────
@@ -674,7 +928,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.elegibles.map(c => `${c.nombre} ${c.apellidoPaterno}`),
+        labels: this.elegibles.map(c => this.nombreCompleto(c)),
         datasets: [{
           data: Array(this.elegibles.length).fill(1),
           backgroundColor: this.elegibles.map(() => this.colorAleatorio())

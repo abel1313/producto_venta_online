@@ -6,7 +6,7 @@ export interface IHistorialVariante {
   orden: number;
   configurarRifaVariante: {
     palabraClave: string;
-    variante: IVarianteRifaResumen;
+    variante?: IVarianteRifaResumen;
   };
   concursanteGanador: IConcursante;
   modoContinuacion?: string;

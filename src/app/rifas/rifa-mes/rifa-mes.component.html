@@ -35,6 +35,11 @@
     </div>
     <div class="rm-card__body">
 
+      <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
+        <span>⚠️ {{ errorConcursante }}</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+      </div>
+
       <div class="rm-row">
         <div class="rm-field">
           <label class="rm-label">Mes a importar</label>
@@ -51,6 +56,11 @@
                  (input)="palabraClave = palabraClave.toUpperCase()" />
         </div>
       </div>
+
+      <label class="rm-checkbox-label">
+        <input type="checkbox" [(ngModel)]="esPrueba" />
+        Crear como rifa de prueba
+      </label>
 
       <button class="rm-btn rm-btn--outline"
               (click)="cargarClientes()"
@@ -85,8 +95,11 @@
 
         <button class="rm-btn rm-btn--primary rm-btn--full"
                 (click)="crearRifaEImportar()"
-                [disabled]="clientesSeleccionados.size === 0 || !fechaHoraLimite || !palabraClave.trim()">
-          ✅ Crear rifa e importar {{ clientesSeleccionados.size }} participantes
+                [disabled]="clientesSeleccionados.size === 0 || !fechaHoraLimite || !palabraClave.trim() || creandoRifa">
+          <span *ngIf="!creandoRifa">✅ Crear rifa e importar {{ clientesSeleccionados.size }} participantes</span>
+          <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span> Creando…
+          </span>
         </button>
       </div>
 
@@ -97,9 +110,37 @@
   <div class="rm-card" *ngIf="paso === 'participantes'">
     <div class="rm-card__head">
       <h4>👥 Participantes ({{ concursantes.length }})</h4>
-      <p>Rifa #{{ rifaConfig?.id }} · Palabra clave: <strong>{{ palabraClave }}</strong></p>
+      <p>Rifa #{{ rifaConfig?.id }} · Palabra clave: <strong>{{ palabraClave }}</strong>
+        <span *ngIf="!rifaConfig?.esPrueba" class="rm-badge-real">✅ Sorteo real</span>
+        <span *ngIf="rifaConfig?.esPrueba" class="rm-badge-prueba">🧪 Prueba</span>
+      </p>
     </div>
     <div class="rm-card__body">
+
+      <div class="rm-alert rm-alert--warn" *ngIf="rifaConfig?.esPrueba" style="display:flex; align-items:center; gap:10px;">
+        <span>⚠️ Esta rifa es de prueba. Los participantes y giros no cuentan para el sorteo real.</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto"
+                (click)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba">
+          <span *ngIf="!cambiandoModoPrueba">Pasar a sorteo real</span>
+          <span *ngIf="cambiandoModoPrueba" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
+
+      <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
+        <span>⚠️ {{ errorConcursante }}</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+      </div>
+
+      <div class="rm-alert rm-alert--warn" *ngIf="omitidosImport.length > 0" style="display:flex; align-items:center; gap:10px;">
+        <span>ℹ️ {{ omitidosImport.length }} cliente(s) ya estaban registrados y no se importaron de nuevo:
+        {{ omitidosNombres }}</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="cerrarOmitidosImport()">✕</button>
+      </div>
+
+      <div class="rm-alert rm-alert--warn" *ngIf="omitidosSinNombre.length > 0" style="display:flex; align-items:center; gap:10px;">
+        <span>ℹ️ {{ omitidosSinNombre.length }} participante(s) sin registro no se importaron porque no tienen nombre.</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="cerrarOmitidosSinNombre()">✕</button>
+      </div>
 
       <!-- Lista de participantes importados -->
       <div class="rm-tabla">
@@ -108,7 +149,7 @@
         </div>
         <div class="rm-tabla__row" *ngFor="let c of concursantes; let i = index">
           <span>{{ i + 1 }}</span>
-          <span>{{ c.nombre }} {{ c.apellidoPaterno }}</span>
+          <span>{{ nombreCompleto(c) }}</span>
           <span>{{ c.telefono }}</span>
           <button class="rm-del-btn" (click)="eliminarConcursante(c)">✕</button>
         </div>
@@ -146,6 +187,9 @@
 
       <div class="rm-nav-btns">
         <button class="rm-btn rm-btn--text" (click)="paso = 'mes'">← Volver</button>
+        <button class="rm-btn rm-btn--outline" *ngIf="varianteRifa" (click)="volverASorteo()">
+          🎡 Volver al sorteo →
+        </button>
         <button class="rm-btn rm-btn--primary"
                 [disabled]="concursantes.length === 0"
                 (click)="paso = 'variante'">
@@ -163,8 +207,13 @@
     </div>
     <div class="rm-card__body">
 
+      <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
+        <span>⚠️ {{ errorConcursante }}</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+      </div>
+
       <!-- Buscador de variante -->
-      <div class="rm-search-wrap">
+      <div class="rm-search-wrap" #searchWrapVariante>
         <div class="rm-search-box">
           <span>🔍</span>
           <input class="rm-search-input" type="text"
@@ -174,7 +223,7 @@
                  autocomplete="off" />
           <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
         </div>
-        <div class="rm-dropdown" *ngIf="variantesBusqueda.length > 0">
+        <div class="rm-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
           <div class="rm-dropdown__item"
                *ngFor="let v of variantesBusqueda"
                (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
@@ -224,6 +273,17 @@
       <h4>🎡 Sorteo · {{ concursantes.length }} participantes</h4>
       <p *ngIf="varianteRifa">Premio: <strong>{{ varianteSeleccionada?.nombreProducto }}</strong> · Giro ganador: {{ varianteRifa.giroGanador }}</p>
     </div>
+    <div class="rm-nav-btns" style="padding: 0 24px;">
+      <button class="rm-btn rm-btn--text" (click)="paso = 'participantes'">← Ver participantes</button>
+      <label class="rm-checkbox-label">
+        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        🧪 Es de prueba
+      </label>
+    </div>
+    <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="margin: 0 24px; display:flex; align-items:center; gap:10px;">
+      <span>⚠️ {{ errorConcursante }}</span>
+      <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+    </div>
     <div class="rm-ruleta-layout">
 
       <div class="rm-ruleta-izq">
@@ -233,7 +293,7 @@
         </div>
 
         <div class="rm-descartado" *ngIf="descartadoActual">
-          ❌ Descartado: <strong>{{ descartadoActual.nombre }} {{ descartadoActual.apellidoPaterno }}</strong>
+          ❌ Descartado: <strong>{{ nombreCompleto(descartadoActual) }}</strong>
         </div>
 
         <button class="rm-btn rm-btn--sortear"
@@ -250,9 +310,15 @@
         <div class="rm-panel">
           <h5 class="rm-panel__title">🟢 Elegibles ({{ elegibles.length }})</h5>
           <div class="rm-panel__item" *ngFor="let e of elegibles">
-            {{ e.nombre }} {{ e.apellidoPaterno }}
+            {{ nombreCompleto(e) }}
           </div>
           <p class="rm-empty" *ngIf="elegibles.length === 0">Sin elegibles</p>
+        </div>
+        <div class="rm-panel" *ngIf="descartados.length > 0">
+          <h5 class="rm-panel__title">❌ Descartados ({{ descartados.length }})</h5>
+          <div class="rm-panel__item rm-panel__item--elim" *ngFor="let d of descartados">
+            {{ nombreCompleto(d) }}
+          </div>
         </div>
       </div>
 
@@ -263,14 +329,26 @@
   <div class="rm-card rm-card--ganador" *ngIf="paso === 'ganador' && ganador">
     <div class="rm-ganador">
       <div class="rm-ganador__trophy">🏆</div>
-      <h2 class="rm-ganador__nombre">{{ ganador.concursante.nombre }} {{ ganador.concursante.apellidoPaterno }}</h2>
+      <h2 class="rm-ganador__nombre">{{ nombreCompleto(ganador.concursante) }}</h2>
       <p class="rm-ganador__tel">{{ ganador.concursante.telefono }}</p>
       <p class="rm-ganador__premio">
         ganó <strong>{{ varianteSeleccionada?.nombreProducto }}</strong>
         <span *ngIf="varianteSeleccionada?.talla"> · Talla {{ varianteSeleccionada?.talla }}</span>
       </p>
+
+      <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px; max-width: 460px;">
+        <span>⚠️ {{ errorConcursante }}</span>
+        <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+      </div>
+
+      <label class="rm-checkbox-label">
+        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        🧪 Es de prueba
+      </label>
+
       <div class="rm-ganador__actions">
         <button class="rm-btn rm-btn--outline" (click)="reiniciar()">🔄 Reiniciar (mismos participantes)</button>
+        <button class="rm-btn rm-btn--text" (click)="paso = 'participantes'">👥 Ver participantes</button>
         <button class="rm-btn rm-btn--text" (click)="nueva()">➕ Nueva rifa mensual</button>
       </div>
     </div>

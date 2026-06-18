@@ -10,6 +10,19 @@ export interface IConcursante {
   descartado?: boolean;
   boletosBase?: number;
   boletos?: number;
+  agregadoEnPrueba?: boolean;
+}
+
+// Response de /v1/concursante/importarDePedidos
+export interface IOmitidoYaRegistrado {
+  clientePedidoId: number | null;
+  nombre: string;
+}
+
+export interface IImportarDePedidosResponse {
+  importados: IConcursante[];
+  omitidosYaRegistrados: IOmitidoYaRegistrado[];
+  omitidosSinNombre: IClientePedido[];
 }
 
 // Cliente que viene del endpoint /concursante/clientesPorMes

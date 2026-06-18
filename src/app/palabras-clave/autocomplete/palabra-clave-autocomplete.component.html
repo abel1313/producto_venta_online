@@ -7,9 +7,6 @@
            [(ngModel)]="termino"
            (input)="onInput()"
            autocomplete="off" />
-    <span *ngIf="buscando" class="pka-search__spin">
-      <span class="spinner-border spinner-border-sm"></span>
-    </span>
     <button *ngIf="termino" class="pka-search__clear" type="button" (click)="limpiar()">✕</button>
   </div>
 

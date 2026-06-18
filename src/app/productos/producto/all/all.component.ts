@@ -11,7 +11,6 @@ import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
-import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
@@ -34,7 +33,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @Input() styleTableheight?: string = '400px';
   gridApi: any;
   private keyUpSubject = new Subject<string>();
-  public env: string = environment.api_imagenes + "/imagenes/buscarImagenProducto/";
 
   paginaPrimera: number = 1;
   paginaUltima: number = 0;

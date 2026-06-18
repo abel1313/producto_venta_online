@@ -25,13 +25,13 @@ export class ImagenesService {
   }
 
   /**
-   * GET /imagen/v2/{productoId}  — nuevo endpoint.
+   * GET /imagen/v1/{productoId}
    * Devuelve null (HTTP 204) si el producto no tiene imágenes en disco → la app NO crashea.
    * Usar cuando el toggle IMG v2 está activo en el sidebar (solo admin).
    */
   getImagenV2<R>(productoId: number): Observable<R | null> {
     return this.http.get<R>(
-      `${this.urlImg}/v2/${productoId}`,
+      `${this.urlImg}/v1/${productoId}`,
       { observe: 'response' }
     ).pipe(
       map(response => {

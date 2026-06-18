@@ -5,13 +5,16 @@ import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
   IConfigurarRifa,
+  IConfigurarRifaRequest,
   IConfigurarRifaVariante,
-  IConfigurarRifaVarianteRequest
+  IConfigurarRifaVarianteRequest,
+  TipoRifa
 } from '../models/configurar-rifa.model';
 import {
   IConcursante,
   IClientePedido,
-  IImportarDePedidosRequest
+  IImportarDePedidosRequest,
+  IImportarDePedidosResponse
 } from '../models/concursante.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
@@ -33,10 +36,29 @@ export class RifaService {
   }
 
   // ── 2. Crear sesión de rifa ────────────────────────────────────────
-  configurarRifa(data: { fechaHoraLimite: string; activa: boolean }): Observable<IConfigurarRifa> {
+  configurarRifa(data: IConfigurarRifaRequest): Observable<IConfigurarRifa> {
     return this.http.post<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/save`, data
     ).pipe(map(r => r.data));
+  }
+
+  // ── 2b. Activar/desactivar modo prueba ─────────────────────────────
+  setEsPrueba(rifaId: number, esPrueba: boolean): Observable<IConfigurarRifa> {
+    return this.http.put<{ code: number; data: IConfigurarRifa }>(
+      `${this.url}/v1/configurarRifa/${rifaId}/esPrueba`, { esPrueba }
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 2c. Buscar rifas por tipo/mes/rango de fechas ──────────────────
+  buscarConfiguraciones(params: { tipo?: TipoRifa; mesReferencia?: string; desde?: string; hasta?: string }): Observable<IConfigurarRifa[]> {
+    const query = new URLSearchParams();
+    if (params.tipo) query.set('tipo', params.tipo);
+    if (params.mesReferencia) query.set('mesReferencia', params.mesReferencia);
+    if (params.desde) query.set('desde', params.desde);
+    if (params.hasta) query.set('hasta', params.hasta);
+    return this.http.get<{ code: number; data: IConfigurarRifa[] }>(
+      `${this.url}/v1/configurarRifa/buscar?${query.toString()}`
+    ).pipe(map(r => r.data ?? []));
   }
 
   // ── 3. Agregar variante a la rifa ──────────────────────────────────
@@ -82,7 +104,14 @@ export class RifaService {
   }
 
   eliminarConcursante(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/v1/concursante/delete`, { body: id });
+    return this.http.delete(`${this.url}/v1/concursante/${id}`);
+  }
+
+  // ── 8b. Editar participante (campos parciales) ─────────────────────
+  actualizarConcursante(id: number, data: Partial<IConcursante>): Observable<IConcursante> {
+    return this.http.put<{ code: number; data: IConcursante }>(
+      `${this.url}/v1/concursante/${id}`, data
+    ).pipe(map(r => r.data));
   }
 
   getConcursantesPorRifa(rifaId: number): Observable<IConcursante[]> {
@@ -105,10 +134,10 @@ export class RifaService {
   }
 
   // ── 10. Importar desde pedidos ─────────────────────────────────────
-  importarDePedidos(data: IImportarDePedidosRequest): Observable<IConcursante[]> {
-    return this.http.post<{ code: number; data: IConcursante[] }>(
+  importarDePedidos(data: IImportarDePedidosRequest): Observable<IImportarDePedidosResponse> {
+    return this.http.post<{ code: number; data: IImportarDePedidosResponse }>(
       `${this.url}/v1/concursante/importarDePedidos`, data
-    ).pipe(map(r => r.data ?? []));
+    ).pipe(map(r => r.data ?? { importados: [], omitidosYaRegistrados: [], omitidosSinNombre: [] }));
   }
 
   // ── 11. Estado del sorteo ──────────────────────────────────────────

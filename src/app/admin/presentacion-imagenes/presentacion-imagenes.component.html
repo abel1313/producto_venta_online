@@ -70,13 +70,7 @@
                 <button class="pi-btn-save"
                         [disabled]="guardandoId === img.id"
                         (click)="guardar(img)">
-                  <span *ngIf="guardandoId !== img.id">
-                    {{ tienePendiente(img) ? '🚀 Subir' : '💾 Guardar' }}
-                  </span>
-                  <span *ngIf="guardandoId === img.id"
-                        class="d-flex align-items-center gap-1 justify-content-center">
-                    <span class="spinner-border spinner-border-sm"></span>
-                  </span>
+                  {{ tienePendiente(img) ? '🚀 Subir' : '💾 Guardar' }}
                 </button>
               </div>
 

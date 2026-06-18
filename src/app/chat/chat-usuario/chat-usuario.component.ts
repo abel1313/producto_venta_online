@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest } from 'rxjs';
 import { skip, take } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ChatLiveService } from '../service/chat-live.service';
@@ -42,9 +42,11 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
       this.chatService.hayMasAntiguos$.subscribe(v => { this.hayMasAntiguos = v; })
     );
 
-    this.authService.userName$.pipe(take(1)).subscribe(nombre => {
-      this.chatService.conectar(nombre || 'Visitante');
-    });
+    combineLatest([this.authService.userName$, this.authService.userId$])
+      .pipe(take(1))
+      .subscribe(([nombre, userId]) => {
+        this.chatService.conectar(nombre || 'Visitante', userId || null);
+      });
   }
 
   ngAfterViewChecked(): void {
@@ -74,10 +76,8 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
     const scrollHeightAntes = el?.scrollHeight ?? 0;
     this.cargandoMas = true;
 
-    // Esperar la siguiente emisión de mensajes$ (el servicio prependeará los mensajes antiguos)
     this.cargarMasSub?.unsubscribe();
     this.cargarMasSub = this.chatService.mensajes$.pipe(skip(1), take(1)).subscribe(() => {
-      // Esperar que Angular actualice el DOM antes de restaurar la posición
       setTimeout(() => {
         if (el) el.scrollTop = el.scrollHeight - scrollHeightAntes;
         this.cargandoMas = false;
@@ -108,9 +108,11 @@ export class ChatUsuarioComponent implements OnInit, OnDestroy, AfterViewChecked
     this.cargandoMas = false;
     this.prevMsgCount = 0;
     this.chatService.desconectar();
-    this.authService.userName$.pipe(take(1)).subscribe(nombre => {
-      this.chatService.conectar(nombre || 'Visitante');
-    });
+    combineLatest([this.authService.userName$, this.authService.userId$])
+      .pipe(take(1))
+      .subscribe(([nombre, userId]) => {
+        this.chatService.conectar(nombre || 'Visitante', userId || null);
+      });
   }
 
   formatHora(timestamp: string): string {

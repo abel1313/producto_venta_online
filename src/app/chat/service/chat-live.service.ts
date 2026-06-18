@@ -6,7 +6,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { ApiResponse, EstadoConexion, EventoUsuario, HistorialPaginado, MensajeUI } from '../models/chat.models';
 
-const SESION_KEY = 'chatSesionId';
+const SESION_KEY  = 'chatSesionId';
+const CLIENTE_KEY = 'chat_cliente_id';
 
 @Injectable({ providedIn: 'root' })
 export class ChatLiveService implements OnDestroy {
@@ -14,69 +15,70 @@ export class ChatLiveService implements OnDestroy {
   private client!: Client;
 
   sesionId: string | null = null;
+  private usuarioId: number | null = null;
+  private clienteId: string | null = null;
 
-  private readonly historialUrl = `${environment.api_Url}/v1/chat/historial`;
+  private readonly historialBase = `${environment.api_Url}/v1/chat/historial`;
 
-  readonly mensajes$ = new BehaviorSubject<MensajeUI[]>([]);
-  readonly conectado$ = new BehaviorSubject<boolean>(false);
-  readonly sesionCerrada$ = new Subject<void>();
-  readonly error$ = new Subject<string>();
-  readonly estadoConexion$ = new BehaviorSubject<EstadoConexion>('reconectando');
-  readonly hayMasAntiguos$ = new BehaviorSubject<boolean>(false);
+  readonly mensajes$        = new BehaviorSubject<MensajeUI[]>([]);
+  readonly conectado$       = new BehaviorSubject<boolean>(false);
+  readonly sesionCerrada$   = new Subject<void>();
+  readonly error$           = new Subject<string>();
+  readonly estadoConexion$  = new BehaviorSubject<EstadoConexion>('reconectando');
+  readonly hayMasAntiguos$  = new BehaviorSubject<boolean>(false);
 
-  private paginaActual = 0;
+  private paginaActual    = 0;
   private cargandoMasFlag = false;
-  private nombreUsuario = 'Visitante';
+  private nombreUsuario   = 'Visitante';
   private timeoutRestaurado: any;
   private onOffline = () => this.estadoConexion$.next('sin-internet');
   private onOnline  = () => this.estadoConexion$.next('reconectando');
 
   constructor(private http: HttpClient) {}
 
-  conectar(nombre: string): void {
+  conectar(nombre: string, usuarioId?: number | null): void {
     if (this.client?.active) return;
 
     this.nombreUsuario = nombre || 'Visitante';
+    this.usuarioId = usuarioId ?? null;
+
+    // clienteId persiste entre sesiones y recargas (une toda la historia del usuario anónimo)
+    if (!localStorage.getItem(CLIENTE_KEY)) {
+      localStorage.setItem(CLIENTE_KEY, crypto.randomUUID());
+    }
+    this.clienteId = localStorage.getItem(CLIENTE_KEY)!;
+
+    // sesionId en sessionStorage → re-suscribir al canal WS si existe
+    const sesionGuardada = sessionStorage.getItem(SESION_KEY);
+    if (sesionGuardada) this.sesionId = sesionGuardada;
 
     window.addEventListener('offline', this.onOffline);
     window.addEventListener('online',  this.onOnline);
 
-    const sesionGuardada = sessionStorage.getItem(SESION_KEY);
+    // Paso 1: cargar historial completo del usuario/cliente ANTES de conectar el WebSocket
+    const historialUrl = this.usuarioId
+      ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=0&size=20`
+      : `${this.historialBase}/cliente/${this.clienteId}?pagina=0&size=20`;
 
-    if (sesionGuardada) {
-      // Paso 1: cargar historial ANTES de conectar el WebSocket (patrón backend)
-      this.sesionId = sesionGuardada;
-      this.http.get<ApiResponse<HistorialPaginado>>(
-        `${this.historialUrl}/${sesionGuardada}?pagina=0&size=20`
-      ).subscribe({
-        next: res => {
-          const paginado = res?.data;
-          if (paginado) {
-            const base: MensajeUI[] = (paginado.mensajes ?? [])
-              .filter(h => !!h.contenido)
-              .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
-            if (base.length) this.mensajes$.next(base);
-            this.hayMasAntiguos$.next(paginado.hayMasAntiguos ?? false);
-            this.paginaActual = 0;
-          }
-          // Paso 2: conectar WebSocket usando el sesionId existente
-          this.activarStomp();
-        },
-        error: (err) => {
-          if (err.status === 403) {
-            // sesionId expirado → limpiar y empezar sesión nueva
-            sessionStorage.removeItem(SESION_KEY);
-            this.sesionId = null;
-            this.mensajes$.next([]);
-          }
-          // En cualquier error de historial, conectar igual (403 → sesión nueva, otros → reconectar)
-          this.activarStomp();
+    this.http.get<ApiResponse<HistorialPaginado>>(historialUrl).subscribe({
+      next: res => {
+        const paginado = res?.data;
+        if (paginado) {
+          const base: MensajeUI[] = (paginado.mensajes ?? [])
+            .filter(h => !!h.contenido)
+            .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
+          if (base.length) this.mensajes$.next(base);
+          this.hayMasAntiguos$.next(paginado.hayMasAntiguos ?? false);
+          this.paginaActual = 0;
         }
-      });
-    } else {
-      // Primera vez: conectar directamente sin historial
-      this.activarStomp();
-    }
+        // Paso 2: conectar WebSocket con sesionId existente o pedir sesión nueva
+        this.activarStomp();
+      },
+      error: () => {
+        // Si falla el historial, conectar igual (puede ser primera visita o error de red)
+        this.activarStomp();
+      }
+    });
   }
 
   private activarStomp(): void {
@@ -87,20 +89,14 @@ export class ChatLiveService implements OnDestroy {
         { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }
       ),
       reconnectDelay: 15000,
-      onConnect: () => this.onConnect(),
-      onDisconnect: () => {
-        this.conectado$.next(false);
-      },
+      onConnect:       () => this.onConnect(),
+      onDisconnect:    () => { this.conectado$.next(false); },
       onWebSocketClose: () => {
-        if (this.estadoConexion$.value !== 'sin-internet') {
-          this.estadoConexion$.next('reconectando');
-        }
+        if (this.estadoConexion$.value !== 'sin-internet') this.estadoConexion$.next('reconectando');
         this.conectado$.next(false);
       },
       onWebSocketError: () => {
-        if (this.estadoConexion$.value !== 'sin-internet') {
-          this.estadoConexion$.next('reconectando');
-        }
+        if (this.estadoConexion$.value !== 'sin-internet') this.estadoConexion$.next('reconectando');
       },
       onStompError: () => this.error$.next('Error de conexión con el chat.')
     });
@@ -109,15 +105,14 @@ export class ChatLiveService implements OnDestroy {
   }
 
   private onConnect(): void {
-    // Reconexión con sesión existente: solo re-suscribir al canal
-    // (el historial ya se cargó en conectar() antes de activar STOMP)
+    // Reconexión con sesión existente: solo re-suscribir al canal WS
     if (this.sesionId) {
       this.suscribirseAlCanal(this.sesionId);
       this.marcarRestaurado();
       return;
     }
 
-    // Primera conexión: solicitar sesión nueva al backend
+    // Primera conexión: pedir sesión nueva al backend
     const tempId = crypto.randomUUID();
 
     const subInicio = this.client.subscribe(
@@ -133,9 +128,16 @@ export class ChatLiveService implements OnDestroy {
       }
     );
 
+    const payload: Record<string, any> = {
+      tempId,
+      nombreUsuario: this.nombreUsuario,
+      clienteId:     this.clienteId
+    };
+    if (this.usuarioId) payload['usuarioId'] = this.usuarioId;
+
     this.client.publish({
       destination: '/app/chat.conectar',
-      body: JSON.stringify({ tempId, nombreUsuario: this.nombreUsuario })
+      body: JSON.stringify(payload)
     });
   }
 
@@ -145,6 +147,9 @@ export class ChatLiveService implements OnDestroy {
       msg => {
         const evento: EventoUsuario = JSON.parse(msg.body);
         if (evento.tipo === 'SESION_CERRADA') {
+          // La sesión expiró — limpiar solo el sesionId (clienteId en localStorage persiste)
+          this.sesionId = null;
+          sessionStorage.removeItem(SESION_KEY);
           this.sesionCerrada$.next();
         } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
           this.agregarMensaje('ADMIN', evento.contenido, evento.timestamp ?? undefined);
@@ -172,11 +177,14 @@ export class ChatLiveService implements OnDestroy {
   }
 
   cargarMasAntiguos(): void {
-    if (!this.sesionId || !this.hayMasAntiguos$.value || this.cargandoMasFlag) return;
+    if (!this.hayMasAntiguos$.value || this.cargandoMasFlag) return;
     this.cargandoMasFlag = true;
-    this.http.get<ApiResponse<HistorialPaginado>>(
-      `${this.historialUrl}/${this.sesionId}?pagina=${this.paginaActual + 1}&size=20`
-    ).subscribe({
+
+    const url = this.usuarioId
+      ? `${this.historialBase}/usuario/${this.usuarioId}?pagina=${this.paginaActual + 1}&size=20`
+      : `${this.historialBase}/cliente/${this.clienteId}?pagina=${this.paginaActual + 1}&size=20`;
+
+    this.http.get<ApiResponse<HistorialPaginado>>(url).subscribe({
       next: res => {
         const paginado = res?.data;
         if (paginado) {
@@ -201,8 +209,7 @@ export class ChatLiveService implements OnDestroy {
     timestamp?: string
   ): void {
     const ts = timestamp ?? new Date().toISOString().slice(0, 19);
-    const actual = this.mensajes$.value;
-    this.mensajes$.next([...actual, { remitente, contenido, timestamp: ts }]);
+    this.mensajes$.next([...this.mensajes$.value, { remitente, contenido, timestamp: ts }]);
   }
 
   desconectar(): void {
@@ -212,12 +219,15 @@ export class ChatLiveService implements OnDestroy {
     if (this.client?.active) this.client.deactivate();
     this.sesionId = null;
     sessionStorage.removeItem(SESION_KEY);
+    // clienteId en localStorage NO se limpia — persiste entre sesiones
     this.mensajes$.next([]);
     this.conectado$.next(false);
     this.estadoConexion$.next('reconectando');
     this.hayMasAntiguos$.next(false);
-    this.paginaActual = 0;
+    this.paginaActual    = 0;
     this.cargandoMasFlag = false;
+    this.usuarioId  = null;
+    this.clienteId  = null;
   }
 
   ngOnDestroy(): void {

@@ -22,7 +22,10 @@ export class ChatLiveService implements OnDestroy {
   readonly sesionCerrada$ = new Subject<void>();
   readonly error$ = new Subject<string>();
   readonly estadoConexion$ = new BehaviorSubject<EstadoConexion>('reconectando');
+  readonly hayMasAntiguos$ = new BehaviorSubject<boolean>(false);
 
+  private paginaActual = 0;
+  private cargandoMasFlag = false;
   private nombreUsuario = 'Visitante';
   private timeoutRestaurado: any;
   private onOffline = () => this.estadoConexion$.next('sin-internet');
@@ -53,6 +56,8 @@ export class ChatLiveService implements OnDestroy {
               .filter(h => !!h.contenido)
               .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
             if (base.length) this.mensajes$.next(base);
+            this.hayMasAntiguos$.next(paginado.hayMasAntiguos ?? false);
+            this.paginaActual = 0;
           }
           // Paso 2: conectar WebSocket usando el sesionId existente
           this.activarStomp();
@@ -166,6 +171,30 @@ export class ChatLiveService implements OnDestroy {
     this.agregarMensaje('USUARIO', contenido);
   }
 
+  cargarMasAntiguos(): void {
+    if (!this.sesionId || !this.hayMasAntiguos$.value || this.cargandoMasFlag) return;
+    this.cargandoMasFlag = true;
+    this.http.get<ApiResponse<HistorialPaginado>>(
+      `${this.historialUrl}/${this.sesionId}?pagina=${this.paginaActual + 1}&size=20`
+    ).subscribe({
+      next: res => {
+        const paginado = res?.data;
+        if (paginado) {
+          const antiguos: MensajeUI[] = (paginado.mensajes ?? [])
+            .filter(h => !!h.contenido)
+            .map(h => ({ remitente: h.remitente, contenido: h.contenido, timestamp: h.timestamp }));
+          if (antiguos.length) {
+            this.mensajes$.next([...antiguos, ...this.mensajes$.value]);
+          }
+          this.hayMasAntiguos$.next(paginado.hayMasAntiguos ?? false);
+          this.paginaActual++;
+        }
+        this.cargandoMasFlag = false;
+      },
+      error: () => { this.cargandoMasFlag = false; }
+    });
+  }
+
   private agregarMensaje(
     remitente: 'USUARIO' | 'ADMIN',
     contenido: string,
@@ -186,6 +215,9 @@ export class ChatLiveService implements OnDestroy {
     this.mensajes$.next([]);
     this.conectado$.next(false);
     this.estadoConexion$.next('reconectando');
+    this.hayMasAntiguos$.next(false);
+    this.paginaActual = 0;
+    this.cargandoMasFlag = false;
   }
 
   ngOnDestroy(): void {

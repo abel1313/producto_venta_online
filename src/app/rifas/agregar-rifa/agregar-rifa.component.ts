@@ -2,6 +2,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import Swal from 'sweetalert2';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -37,8 +38,23 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   rifaConfig: IConfigurarRifa | null = null;
   savingConfig = false;
   editandoConfig = false;
-  rifasActivas: IConfigurarRifa[] = [];
   cambiandoModoPrueba = false;
+
+  // ── Lightbox de imagen ────────────────────────────────────────────
+  imagenModal: string | null = null;
+  // ── Modal detalle de variante (ruleta) ────────────────────────────
+  varianteModal: IConfigurarRifaVariante | null = null;
+
+  // ── Multi-rifa wizard ───────────────────────────────────────────────
+  rifasAnteriores: Array<{
+    rifa: IConfigurarRifa;
+    totalVariantes: number;
+    totalConcursantes: number;
+  }> = [];
+  mostrarCopiarAnterior = false;
+  palabraClaveCopia = '';
+  rifaOrigenId: number | null = null;
+  copiandoDeRifa = false;
 
   // ── Sección B — variantes ──────────────────────────────────────────
   variantesRifa: IConfigurarRifaVariante[] = [];
@@ -95,6 +111,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   private busqClienteSubject = new Subject<string>();
   private busqClienteSub?: Subscription;
 
+  // ── Modo wizard: false = editando config, true = en sorteo ────────────
+  modoSorteo = false;
+
   // ── Ruleta ─────────────────────────────────────────────────────────
   estado: IEstadoRifa | null = null;
   elegibles: IConcursante[] = [];
@@ -117,6 +136,24 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   participanteRuletaForm!: FormGroup;
   guardandoParticipanteRuleta = false;
 
+  // ── Fecha/hora límite — dos campos separados ──────────────────────
+  fechaLimFecha = '';
+  fechaLimHora  = '23:59';
+  readonly horasDisponibles: { value: string; label: string }[] = (() => {
+    const opts: { value: string; label: string }[] = [];
+    for (let h = 0; h < 24; h++) {
+      for (const m of [0, 30]) {
+        const v = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        let label = v;
+        if (v === '00:00') label = '00:00 — Media noche';
+        else if (v === '12:00') label = '12:00 — Mediodía';
+        opts.push({ value: v, label });
+      }
+    }
+    opts.push({ value: '23:59', label: '23:59 — Fin del día' });
+    return opts;
+  })();
+
   private chart!: Chart;
   private wsUnsub: (() => void) | null = null;
   private readonly DURACION_ANIMACION_MS = 4000;
@@ -131,10 +168,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.configForm = this.fb.group({
-      fechaHoraLimite: ['', Validators.required],
       tipo:            ['DIARIA' as TipoRifa, Validators.required],
       mesReferencia:   [''],
-      esPrueba:        [false],
+      esPrueba:        [true],
     });
 
     this.concursanteForm = this.fb.group({
@@ -196,9 +232,23 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     const retomarId = history.state?.retomarRifaId as number | undefined;
     if (retomarId) {
       this._retomar(retomarId);
-    } else {
-      this.cargarRifasActivas();
     }
+
+    // Cargar todas las rifas DIARIA de hoy → mostrar como wizard anteriores
+    const hoy = new Date().toISOString().slice(0, 10);
+    this.rifaService.buscarConfiguraciones({ tipo: 'DIARIA', desde: hoy, hasta: hoy }).subscribe({
+      next: rifas => {
+        for (const r of rifas) {
+          if (r.id === retomarId) continue; // la activa ya está en rifaConfig
+          if (this.rifasAnteriores.some(a => a.rifa.id === r.id)) continue; // ya en memoria
+          this.rifasAnteriores.push({
+            rifa: r,
+            totalVariantes: r.totalVariantes ?? 0,
+            totalConcursantes: 0
+          });
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -212,12 +262,12 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   // ── Sección A ──────────────────────────────────────────────────────
 
   guardarConfiguracion(): void {
-    if (this.configForm.invalid) return;
+    if (this.configForm.invalid || !this.fechaLimFecha || !this.fechaLimHora) return;
     this.savingConfig = true;
     this.errorConcursante = null;
     const tipo: TipoRifa = this.configForm.value.tipo;
     this.rifaService.configurarRifa({
-      fechaHoraLimite: this.configForm.value.fechaHoraLimite,
+      fechaHoraLimite: `${this.fechaLimFecha}T${this.fechaLimHora}`,
       activa: true,
       tipo,
       mesReferencia: tipo === 'MENSUAL' ? (this.configForm.value.mesReferencia || null) : null,
@@ -237,11 +287,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   actualizarConfiguracion(): void {
-    if (!this.rifaConfig?.id || this.configForm.get('fechaHoraLimite')?.invalid) return;
+    if (!this.rifaConfig?.id || !this.fechaLimFecha || !this.fechaLimHora) return;
     this.savingConfig = true;
     this.errorConcursante = null;
     this.rifaService.actualizarConfiguracion(this.rifaConfig.id, {
-      fechaHoraLimite: this.configForm.value.fechaHoraLimite,
+      fechaHoraLimite: `${this.fechaLimFecha}T${this.fechaLimHora}`,
     }).subscribe({
       next: res => {
         this.rifaConfig = res;
@@ -261,30 +311,36 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     if (!this.rifaConfig?.id || this.cambiandoModoPrueba) return;
     const nuevoValor = !this.rifaConfig.esPrueba;
 
+    const ejecutar = () => {
+      this.cambiandoModoPrueba = true;
+      this.errorConcursante = null;
+      this.rifaService.setEsPrueba(this.rifaConfig!.id!, nuevoValor).subscribe({
+        next: res => {
+          this.rifaConfig = res;
+          this.cambiandoModoPrueba = false;
+          this.cargarConcursantes();
+        },
+        error: err => {
+          this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cambiar el modo de prueba.';
+          this.cambiandoModoPrueba = false;
+        }
+      });
+    };
+
     if (!nuevoValor) {
-      const confirmado = confirm(
-        '¿Deseas pasar esta rifa al modo REAL?\n\n' +
-        'Se restablecerán los descartes (los mismos participantes vuelven a estar ' +
-        'disponibles) y se borrarán los giros de prueba. El sorteo comenzará desde ' +
-        'cero con los mismos participantes.'
-      );
-      if (!confirmado) return;
+      Swal.fire({
+        icon: 'warning',
+        title: '¿Pasar a sorteo real?',
+        html: 'Se restablecerán los descartes y se borrarán los giros de prueba.<br>El sorteo comenzará desde cero con los mismos participantes.',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, pasar a real',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#4f46e5',
+      }).then(result => { if (result.isConfirmed) ejecutar(); });
+      return;
     }
 
-    this.cambiandoModoPrueba = true;
-    this.errorConcursante = null;
-    this.rifaService.setEsPrueba(this.rifaConfig.id, nuevoValor).subscribe({
-      next: res => {
-        this.rifaConfig = res;
-        this.cambiandoModoPrueba = false;
-        // Al pasar a real, el back limpia giros de demo y reactiva descartados
-        this.cargarConcursantes();
-      },
-      error: err => {
-        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cambiar el modo de prueba.';
-        this.cambiandoModoPrueba = false;
-      }
-    });
+    ejecutar();
   }
 
   // ── Sección B ──────────────────────────────────────────────────────
@@ -576,6 +632,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   irARuleta(): void {
     if (!this.rifaConfig?.id) return;
+    this.modoSorteo = true;
     this.rifaService.getEstado(this.rifaConfig.id).subscribe({
       next: res => {
         this.aplicarEstado(res);
@@ -586,14 +643,6 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     });
   }
 
-  retomarRifa(config: IConfigurarRifa): void {
-    if (config.tipo === 'MENSUAL') {
-      this.router.navigate(['/rifas/mes'], { state: { retomarRifaId: config.id } });
-      return;
-    }
-    this._retomar(config.id!);
-  }
-
   // Carga estado → variantes → elegibles (si vacíos) y luego muestra la pantalla correcta
   private _retomar(rifaId: number): void {
     this.rifaService.getEstado(rifaId).subscribe({
@@ -601,11 +650,13 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.rifaConfig = res.configurarRifa;
         // Rellenar el form con los valores guardados para que Sección A
         // no aparezca vacía al retomar (configForm nunca se patchea solo).
+        const fl = (res.configurarRifa.fechaHoraLimite ?? '').replace(' ', 'T').slice(0, 16);
+        this.fechaLimFecha = fl.split('T')[0] ?? '';
+        this.fechaLimHora  = fl.split('T')[1]?.substring(0, 5) ?? '';
         this.configForm.patchValue({
-          fechaHoraLimite: (res.configurarRifa.fechaHoraLimite ?? '').replace(' ', 'T').slice(0, 16),
-          tipo:            res.configurarRifa.tipo            ?? 'DIARIA',
-          mesReferencia:   res.configurarRifa.mesReferencia   ?? '',
-          esPrueba:        !!res.configurarRifa.esPrueba,
+          tipo:          res.configurarRifa.tipo          ?? 'DIARIA',
+          mesReferencia: res.configurarRifa.mesReferencia ?? '',
+          esPrueba:      !!res.configurarRifa.esPrueba,
         });
         this.aplicarEstado(res);
         this.cargarConcursantes();
@@ -623,7 +674,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
             // Rifa incompleta: sin variantes (premios) o sin concursantes → volver a
             // configurar para que el admin pueda completar Secciones B y C antes del sorteo.
-            if (variantes.length === 0 || res.totalConcursantes === 0) {
+            if (variantes.length === 0 || res.totalConcursantes === 0 || !this.modoSorteo) {
+              // Sin premios/participantes → config obligatorio.
+              // Si modoSorteo=false (retomar antes de ir al sorteo) → siempre config.
               this.paso = 'configurar';
               return;
             }
@@ -652,6 +705,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   nuevaRifa(): void {
+    this.modoSorteo           = false;
     this.rifaConfig           = null;
     this.variantesRifa        = [];
     this.concursantes         = [];
@@ -672,55 +726,81 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.clientesBusqueda     = [];
     this.terminoBuscaCliente  = '';
     this.cambiandoModoPrueba  = false;
+    this.rifasAnteriores      = [];
+    this.mostrarCopiarAnterior = false;
+    this.palabraClaveCopia    = '';
+    this.rifaOrigenId         = null;
+    this.copiandoDeRifa       = false;
     this.chart?.destroy();
     this.wsUnsub?.();
     this.wsUnsub = null;
-    this.configForm.reset({ fechaHoraLimite: '', tipo: 'DIARIA', mesReferencia: '', esPrueba: false });
+    this.fechaLimFecha = '';
+    this.fechaLimHora  = '23:59';
+    this.configForm.reset({ tipo: 'DIARIA', mesReferencia: '', esPrueba: true });
     this.concursanteForm.reset();
     this.paso = 'configurar';
-    this.cargarRifasActivas();
+  }
+
+  quitarDelWizard(idx: number): void {
+    this.rifasAnteriores.splice(idx, 1);
   }
 
   // ── Ruleta ─────────────────────────────────────────────────────────
 
   sortear(): void {
     if (!this.rifaConfig?.id || this.sorteando) return;
-    this.sorteando = true;
-    this.descartadoActual = null;
-    this.errorConcursante = null;
 
-    this.rifaService.sortear(this.rifaConfig.id).subscribe({
-      next: resultado => {
-        const idx = this.elegibles.findIndex(c => c.id === resultado.concursante.id);
-        setTimeout(() => {
-          this.girarAnimacionHacia(idx >= 0 ? idx : 0, () => {
-            this.sorteando = false;
+    const ejecutar = () => {
+      this.sorteando = true;
+      this.descartadoActual = null;
+      this.errorConcursante = null;
+      this.rifaService.sortear(this.rifaConfig!.id!).subscribe({
+        next: resultado => {
+          const idx = this.elegibles.findIndex(c => c.id === resultado.concursante.id);
+          setTimeout(() => {
+            this.girarAnimacionHacia(idx >= 0 ? idx : 0, () => {
+              this.sorteando = false;
 
-            if (resultado.descartado) {
-              this.descartadoActual = resultado.concursante;
-              this.descartados.push(resultado.concursante);
-              setTimeout(() => {
-                this.descartadoActual = null;
-                this.elegibles = this.elegibles.filter(c => c.id !== resultado.concursante.id);
-                this.actualizarRuleta();
-                // Actualiza giroActual desde el backend
-                this.rifaService.getEstado(this.rifaConfig!.id!).subscribe({
-                  next: est => { if (this.estado) this.estado.giroActual = est.giroActual; }
-                });
-              }, 2500);
-            } else {
-              this.ganadorActual = resultado;
-              this.lanzarConfetti();
-              this.paso = 'transicion';
-            }
-          });
-        }, 100);
-      },
-      error: err => {
-        this.sorteando = false;
-        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo realizar el sorteo.';
-      }
-    });
+              if (resultado.descartado) {
+                this.descartadoActual = resultado.concursante;
+                this.descartados.push(resultado.concursante);
+                setTimeout(() => {
+                  this.descartadoActual = null;
+                  this.elegibles = this.elegibles.filter(c => c.id !== resultado.concursante.id);
+                  this.actualizarRuleta();
+                  this.rifaService.getEstado(this.rifaConfig!.id!).subscribe({
+                    next: est => { if (this.estado) this.estado.giroActual = est.giroActual; }
+                  });
+                }, 2500);
+              } else {
+                this.ganadorActual = resultado;
+                this.lanzarConfetti();
+                this.paso = 'transicion';
+              }
+            });
+          }, 100);
+        },
+        error: err => {
+          this.sorteando = false;
+          this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo realizar el sorteo.';
+        }
+      });
+    };
+
+    if (this.rifaConfig.esPrueba) {
+      Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Esta rifa es de PRUEBA',
+        text: 'Los resultados no son definitivos.',
+        confirmButtonText: 'Entendido — continuar',
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#4f46e5',
+      }).then(result => { if (result.isConfirmed) ejecutar(); });
+      return;
+    }
+
+    ejecutar();
   }
 
   // ── Transición ─────────────────────────────────────────────────────
@@ -848,9 +928,18 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   reiniciar(completo: boolean): void {
     if (!this.rifaConfig?.id) return;
+    const rifaId = this.rifaConfig.id;
     this.errorConcursante = null;
-    this.rifaService.reiniciar(this.rifaConfig.id, completo).subscribe({
-      next: () => { this.nuevaRifa(); },
+    this.rifaService.reiniciar(rifaId, completo).subscribe({
+      next: () => {
+        if (completo) {
+          this.nuevaRifa();
+        } else {
+          // Conservar participantes → recargar estado completo de la rifa
+          // (reiniciar el back limpió giros/descartados, _retomar los trae frescos)
+          this._retomar(rifaId);
+        }
+      },
       error: err => {
         this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo reiniciar el sorteo.';
       }
@@ -861,6 +950,14 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
   get puedeIrARuleta(): boolean {
     return !!(this.rifaConfig?.id && this.variantesRifa.length > 0 && this.concursantes.length > 0);
+  }
+
+  get puedeReiniciar(): boolean {
+    return !(this.rifaConfig?.tipo === 'DIARIA' && !this.rifaConfig?.activa);
+  }
+
+  get puedeAgregarOtraRifa(): boolean {
+    return !!(this.rifaConfig?.id && this.variantesRifa.length > 0);
   }
 
   // Participantes activos (no descartados) para mostrar en sección C
@@ -909,6 +1006,84 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   get totalVariantes(): number { return this.estado?.totalVariantes ?? this.variantesRifa.length; }
   get historial(): IHistorialVariante[] { return this.estado?.historial ?? []; }
 
+  // ── Multi-rifa wizard ──────────────────────────────────────────────
+
+  agregarOtraRifa(): void {
+    if (!this.rifaConfig?.id) return;
+    this.modoSorteo = false;
+    this.rifasAnteriores.push({
+      rifa: { ...this.rifaConfig },
+      totalVariantes: this.variantesRifa.length,
+      totalConcursantes: this.concursantes.length
+    });
+    this.rifaConfig           = null;
+    this.variantesRifa        = [];
+    this.concursantes         = [];
+    this.elegibles            = [];
+    this.descartados          = [];
+    this.estado               = null;
+    this.ganadorActual        = null;
+    this.descartadoActual     = null;
+    this.confettiPieces       = [];
+    this.palabrasClave        = [];
+    this.modoElegido          = null;
+    this.mostrarSeleccionModo = false;
+    this.mostrarFormNuevo     = false;
+    this.omitidosImport       = [];
+    this.omitidosSinNombre    = [];
+    this.errorConcursante     = null;
+    this.editandoConcursanteId = null;
+    this.cambiandoModoPrueba  = false;
+    this.mostrarCopiarAnterior = false;
+    this.palabraClaveCopia    = '';
+    this.rifaOrigenId         = null;
+    this.copiandoDeRifa       = false;
+    this.chart?.destroy();
+    this.wsUnsub?.();
+    this.wsUnsub = null;
+    this.fechaLimFecha = '';
+    this.fechaLimHora  = '23:59';
+    this.configForm.reset({ tipo: 'DIARIA', mesReferencia: '', esPrueba: true });
+    this.concursanteForm.reset();
+    this.paso = 'configurar';
+  }
+
+  editarRifaAnterior(idx: number): void {
+    const ante = this.rifasAnteriores[idx];
+    if (!ante?.rifa?.id) return;
+    if (this.rifaConfig?.id) {
+      this.rifasAnteriores[idx] = {
+        rifa: { ...this.rifaConfig },
+        totalVariantes: this.variantesRifa.length,
+        totalConcursantes: this.concursantes.length
+      };
+    } else {
+      this.rifasAnteriores.splice(idx, 1);
+    }
+    this._retomar(ante.rifa.id);
+  }
+
+  copiarDeRifaAnterior(): void {
+    if (!this.rifaConfig?.id || !this.rifaOrigenId || !this.palabraClaveCopia.trim() || this.copiandoDeRifa) return;
+    this.copiandoDeRifa = true;
+    this.errorConcursante = null;
+    this.rifaService.copiarDeRifa({
+      rifaOrigenId:  this.rifaOrigenId,
+      rifaDestinoId: this.rifaConfig.id,
+      palabraClave:  this.palabraClaveCopia.trim().toUpperCase()
+    }).subscribe({
+      next: copiados => {
+        this.concursantes.push(...copiados);
+        this.palabraClaveCopia = '';
+        this.copiandoDeRifa = false;
+      },
+      error: err => {
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron copiar los participantes.';
+        this.copiandoDeRifa = false;
+      }
+    });
+  }
+
   imageSrcVariante(v: IConfigurarRifaVariante): string | null {
     const b64 = v.variante?.imagenBase64;
     if (!b64) return null;
@@ -921,13 +1096,6 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   // ── Privados ───────────────────────────────────────────────────────
-
-  private cargarRifasActivas(): void {
-    this.rifaService.getConfiguracionesActivas().subscribe({
-      next: res => { this.rifasActivas = res; },
-      error: () => { this.rifasActivas = []; }
-    });
-  }
 
   private cargarVariantesRifa(): void {
     if (!this.rifaConfig?.id) return;

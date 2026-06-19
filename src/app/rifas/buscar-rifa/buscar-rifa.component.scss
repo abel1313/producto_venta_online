@@ -190,6 +190,197 @@
   &:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
 }
 
+// ── Selector DIARIA/MENSUAL ────────────────────────────────────────
+.br-tipo-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--form-section-bg);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.br-tipo-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &--active {
+    background: var(--card-bg);
+    color: var(--app-accent);
+    box-shadow: 0 2px 8px rgba(59,130,246,0.18);
+  }
+
+  &:hover:not(&--active) { color: var(--app-text); }
+}
+
+// ── Header de card con colores de estado ───────────────────────────
+.br-card__header {
+  background: linear-gradient(135deg, rgba(15,37,87,0.88) 0%, rgba(29,78,216,0.72) 100%);
+
+  &--activa    { background: linear-gradient(135deg, #166534, #15803d); }
+  &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
+  &--vencida   { background: linear-gradient(135deg, #7f1d1d, #b91c1c); }
+}
+
+// ── Badges de estado ───────────────────────────────────────────────
+.br-badge--activa    { background: rgba(134,239,172,0.3); }
+.br-badge--completada { background: rgba(148,163,184,0.3); }
+.br-badge--vencida   { background: rgba(252,165,165,0.3); }
+
+// ── Botones del footer ─────────────────────────────────────────────
+.br-card__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.br-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+
+  &--primary {
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: #fff !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
+  }
+
+  &--secondary {
+    background: var(--form-section-bg);
+    color: var(--app-text);
+    border: 1px solid var(--card-border);
+    &:hover:not(:disabled) { background: var(--card-border); }
+  }
+
+  &--recover {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: #fff !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168,85,247,0.35); }
+  }
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+}
+
+// ── Detalle overlay ────────────────────────────────────────────────
+.br-detalle-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.br-detalle {
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.35);
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--app-text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__close {
+    border: none;
+    background: transparent;
+    color: var(--app-text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    &:hover { background: var(--form-section-bg); color: var(--app-text); }
+  }
+
+  &__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    color: var(--app-text);
+  }
+
+  &__label { color: var(--app-text-muted); font-weight: 600; }
+}
+
+// ── Historial de ganadores ─────────────────────────────────────────
+.br-historial {
+  margin-top: 8px;
+
+  &__title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--app-text);
+    margin: 0 0 8px;
+  }
+}
+
+.br-hist-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+  &:last-child { border-bottom: none; }
+}
+
+.br-hist-num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--app-text-muted);
+  min-width: 20px;
+  padding-top: 2px;
+}
+
+.br-hist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.br-hist-premio {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.br-hist-ganador {
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+}
+
 // ── Tema DÍA ───────────────────────────────────────────────────────
 :host-context(body.theme-light) {
   // Tab activo: texto índigo, fondo card

@@ -348,9 +348,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           this.estadoTerminal  = 'idle';
         }
       },
-      error: () => {
+      error: (err) => {
         this.procesando = false;
-        Swal.fire({ icon: 'error', title: 'Error al procesar la venta.' });
+        Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo procesar la venta.' });
       }
     });
   }

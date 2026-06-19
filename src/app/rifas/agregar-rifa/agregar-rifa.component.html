@@ -6,23 +6,27 @@
        [style.width]="p.size" [style.height]="p.size"></div>
 </div>
 
-<!-- ════════════════════════ PASO: CONFIGURAR ════════════════════════ -->
-<div class="rf-page" *ngIf="paso === 'configurar'">
 
-  <!-- Rifas activas -->
-  <div class="rf-card rf-card--activas" *ngIf="rifasActivas.length > 0">
-    <h5 class="rf-section-title">🔄 Rifas activas — retomar</h5>
-    <div class="rf-activa-row" *ngFor="let r of rifasActivas">
-      <div class="rf-activa-info">
-        <span class="rf-activa-id">Rifa #{{ r.id }}</span>
-        <span class="rf-activa-fecha">{{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
-        <span *ngIf="r.totalVariantes" class="rf-activa-prog">
-          {{ r.variantesSorteadas }}/{{ r.totalVariantes }} variantes
-        </span>
+<!-- ══════════════════════════ ACORDEÓN DE RIFAS ══════════════════════════ -->
+<div class="rf-acordeon">
+
+  <!-- ─── PANEL ACTIVO (expandido) ─── -->
+  <div class="rf-acord-item rf-acord-item--open">
+
+    <div class="rf-acord-hdr rf-acord-hdr--active">
+      <div class="rf-acord-hdr__left">
+        <span class="rf-acord-hdr__id">{{ rifaConfig?.id ? ('Rifa #' + rifaConfig!.id) : '✨ Nueva rifa' }}</span>
+        <span class="rf-badge-prueba" *ngIf="rifaConfig?.esPrueba">🧪 Prueba</span>
+        <span class="rf-acord-hdr__cnt" *ngIf="rifaConfig?.id">{{ variantesRifa.length }} premios · {{ concursantes.length }} part.</span>
       </div>
-      <button class="rf-btn rf-btn--sm rf-btn--outline" (click)="retomarRifa(r)">Retomar</button>
+      <span class="rf-acord-hdr__pill rf-acord-hdr__pill--config" *ngIf="paso === 'configurar'">▼ Configuración</span>
+      <span class="rf-acord-hdr__pill" *ngIf="paso !== 'configurar'">▼ Sorteo activo</span>
     </div>
-  </div>
+
+    <div class="rf-acord-body">
+
+<!-- ════════════════════════ PASO: CONFIGURAR ════════════════════════ -->
+<div *ngIf="paso === 'configurar'">
 
   <!-- ── Sección A ──────────────────────────────────────────────────── -->
   <div class="rf-card">
@@ -49,7 +53,12 @@
     <form [formGroup]="configForm" class="rf-body">
       <div class="rf-field">
         <label class="rf-label">Fecha y hora límite de registro</label>
-        <input class="rf-input" type="datetime-local" formControlName="fechaHoraLimite" />
+        <div class="rf-fecha-hora-wrap">
+          <input class="rf-input" type="date" [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}" />
+          <select class="rf-input rf-input--hora" [(ngModel)]="fechaLimHora" [ngModelOptions]="{standalone:true}">
+            <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+          </select>
+        </div>
       </div>
 
       <label class="rf-switch-label" *ngIf="!rifaConfig?.id">
@@ -78,7 +87,12 @@
 
       <div *ngIf="rifaConfig?.id && editandoConfig" class="rf-edit-config">
         <label class="rf-label">Nueva fecha y hora límite</label>
-        <input class="rf-input" type="datetime-local" formControlName="fechaHoraLimite" />
+        <div class="rf-fecha-hora-wrap">
+          <input class="rf-input" type="date" [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}" />
+          <select class="rf-input rf-input--hora" [(ngModel)]="fechaLimHora" [ngModelOptions]="{standalone:true}">
+            <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+          </select>
+        </div>
         <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
           <span>⚠️ {{ errorConcursante }}</span>
           <button class="rf-btn rf-btn--sm rf-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
@@ -120,9 +134,11 @@
              (mouseleave)="cancelarHover()">
 
           <!-- imagen miniatura -->
-          <div class="rf-var-card__img">
+          <div class="rf-var-card__img" [class.rf-var-card__img--clickable]="!!imageSrcVariante(v)"
+               (click)="imageSrcVariante(v) ? imagenModal = imageSrcVariante(v) : null">
             <img *ngIf="imageSrcVariante(v) as src" [src]="src" alt="" />
             <span *ngIf="!imageSrcVariante(v)" class="rf-var-card__no-img">📦</span>
+            <span *ngIf="imageSrcVariante(v)" class="rf-var-card__img-hint">🔍</span>
           </div>
 
           <div class="rf-var-card__body">
@@ -266,10 +282,45 @@
                 (click)="mostrarFormParticipante = !mostrarFormParticipante" [disabled]="!rifaConfig?.id">
           {{ mostrarFormParticipante ? '✕ Cancelar' : '+ Agregar' }}
         </button>
+        <button class="rf-btn rf-btn--sm rf-btn--outline" *ngIf="rifasAnteriores.length > 0"
+                (click)="mostrarCopiarAnterior = !mostrarCopiarAnterior" [disabled]="!rifaConfig?.id">
+          {{ mostrarCopiarAnterior ? '✕' : '📋 Copiar de otra rifa' }}
+        </button>
       </div>
     </div>
 
     <div class="rf-body">
+
+      <!-- Copiar participantes de rifa anterior -->
+      <div class="rf-importar" *ngIf="mostrarCopiarAnterior && rifasAnteriores.length > 0 && rifaConfig?.id">
+        <h6 class="rf-importar__title">📋 Copiar participantes de una rifa anterior</h6>
+        <div class="rf-row">
+          <div class="rf-field rf-field--flex1">
+            <label class="rf-label">Rifa origen</label>
+            <select class="rf-input" [(ngModel)]="rifaOrigenId">
+              <option [ngValue]="null" disabled>Selecciona rifa…</option>
+              <option *ngFor="let a of rifasAnteriores; let i = index" [ngValue]="a.rifa.id">
+                Rifa {{ i + 1 }} — {{ a.rifa.tipo }} ({{ a.totalConcursantes }} participantes)
+              </option>
+            </select>
+          </div>
+          <div class="rf-field rf-field--flex1">
+            <label class="rf-label">Palabra clave destino</label>
+            <select class="rf-input" [(ngModel)]="palabraClaveCopia" *ngIf="palabrasClave.length > 0">
+              <option value="" disabled>Selecciona…</option>
+              <option *ngFor="let p of palabrasClave" [value]="p">{{ p }}</option>
+            </select>
+            <input *ngIf="palabrasClave.length === 0" class="rf-input" type="text" [(ngModel)]="palabraClaveCopia"
+                   placeholder="Ej. B" (input)="palabraClaveCopia = palabraClaveCopia.toUpperCase()" />
+          </div>
+          <button class="rf-btn rf-btn--outline rf-btn--sm" style="align-self:flex-end"
+                  (click)="copiarDeRifaAnterior()"
+                  [disabled]="!rifaOrigenId || !palabraClaveCopia.trim() || copiandoDeRifa">
+            <span *ngIf="!copiandoDeRifa">📋 Copiar</span>
+            <span *ngIf="copiandoDeRifa" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
 
       <!-- Errores de eliminación / participación previa -->
       <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
@@ -290,8 +341,13 @@
         <button class="rf-btn rf-btn--sm rf-btn--outline" style="margin-left:auto" (click)="cerrarOmitidosSinNombre()">✕</button>
       </div>
 
+      <!-- Aviso: sin premios no se puede registrar participantes -->
+      <div class="rf-alert rf-alert--warn" *ngIf="mostrarFormParticipante && palabrasClave.length === 0">
+        ⚠️ Primero configura al menos un premio en la Sección B antes de registrar participantes.
+      </div>
+
       <!-- Form agregar participante -->
-      <form [formGroup]="concursanteForm" class="rf-form-participante" *ngIf="mostrarFormParticipante">
+      <form [formGroup]="concursanteForm" class="rf-form-participante" *ngIf="mostrarFormParticipante && palabrasClave.length > 0">
 
         <!-- Rifa diaria: buscar cliente registrado para pre-llenar el formulario -->
         <div class="rf-search-wrap" *ngIf="esRifaDiaria" #searchWrapCliente>
@@ -536,10 +592,14 @@
     </div>
   </div>
 
-  <!-- Botón iniciar -->
+  <!-- Botón ir al sorteo + agregar otra rifa -->
   <div class="rf-iniciar-wrap">
     <button class="rf-btn rf-btn--start" [disabled]="!puedeIrARuleta" (click)="irARuleta()">
-      🎡 Iniciar rifa
+      🎡 Ir al sorteo
+    </button>
+    <button class="rf-btn rf-btn--secondary rf-btn--add-rifa" *ngIf="puedeAgregarOtraRifa"
+            (click)="agregarOtraRifa()">
+      ➕ Agregar otra rifa al wizard
     </button>
     <p class="rf-iniciar-hint" *ngIf="!puedeIrARuleta">
       Completa Sección B (agrega al menos 1 variante) y Sección C (al menos 1 participante) para continuar.
@@ -548,8 +608,8 @@
 
 </div>
 
-<!-- ═════════════════════════ PASO: RULETA ═════════════════════════ -->
-<div class="rf-page rf-ruleta" *ngIf="paso === 'ruleta'">
+      <!-- ═════════════════════════ PASO: RULETA ═════════════════════════ -->
+      <div class="rf-ruleta" *ngIf="paso === 'ruleta'">
 
   <!-- Header: progreso + giro -->
   <div class="rf-ruleta__header">
@@ -573,7 +633,7 @@
   <!-- Control modo prueba -->
   <div class="rf-prueba-control" *ngIf="rifaConfig">
     <label class="rf-check-label">
-      <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+      <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
       🧪 Es de prueba
     </label>
     <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
@@ -646,6 +706,23 @@
 
     <!-- Derecha: panel -->
     <div class="rf-ruleta__right">
+
+      <!-- Imagen del premio actual -->
+      <ng-container *ngIf="estado?.varianteActual as vActual">
+        <div class="rf-premio-img-wrap" *ngIf="imageSrcVariante(vActual) as src"
+             (click)="varianteModal = vActual" style="cursor:pointer">
+          <img [src]="src" alt="Premio" class="rf-premio-img" />
+          <span class="rf-premio-img__hint">🔍 Ver detalles</span>
+          <p class="rf-premio-img__label">🎁 {{ vActual.variante?.nombreProducto ?? vActual.palabraClave }}</p>
+        </div>
+        <div class="rf-premio-img-wrap rf-premio-img-wrap--empty" *ngIf="!imageSrcVariante(vActual)"
+             (click)="varianteModal = vActual" style="cursor:pointer">
+          <div class="rf-premio-img__placeholder">📦</div>
+          <span class="rf-premio-img__hint">🔍 Ver detalles</span>
+          <p class="rf-premio-img__label">🎁 {{ vActual.variante?.nombreProducto ?? vActual.palabraClave }}</p>
+        </div>
+      </ng-container>
+
       <div class="rf-panel">
         <h5 class="rf-panel__title">🟢 Elegibles ({{ elegibles.length }})</h5>
         <div class="rf-panel__list">
@@ -669,8 +746,8 @@
   </div>
 </div>
 
-<!-- ══════════════════════ PASO: TRANSICIÓN ═══════════════════════ -->
-<div class="rf-page rf-transicion" *ngIf="paso === 'transicion' && ganadorActual">
+      <!-- ══════════════════════ PASO: TRANSICIÓN ═══════════════════════ -->
+      <div class="rf-transicion" *ngIf="paso === 'transicion' && ganadorActual">
   <div class="rf-transicion__card">
 
     <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
@@ -681,7 +758,7 @@
     <!-- Control modo prueba -->
     <div class="rf-prueba-control" *ngIf="rifaConfig">
       <label class="rf-check-label">
-        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
       <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
@@ -770,8 +847,8 @@
   </div>
 </div>
 
-<!-- ══════════════════════ PASO: RESUMEN ══════════════════════════ -->
-<div class="rf-page rf-resumen" *ngIf="paso === 'resumen'">
+      <!-- ══════════════════════ PASO: RESUMEN ══════════════════════════ -->
+      <div class="rf-resumen" *ngIf="paso === 'resumen'">
   <div class="rf-resumen__card">
 
     <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
@@ -795,7 +872,7 @@
     <!-- Control modo prueba -->
     <div class="rf-prueba-control" *ngIf="rifaConfig" style="justify-content:center; margin-bottom:4px;">
       <label class="rf-check-label">
-        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
       <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
@@ -803,13 +880,37 @@
     </div>
 
     <div class="rf-resumen__actions">
-      <button class="rf-btn rf-btn--outline" (click)="reiniciar(false)">🔄 Reiniciar (conservar participantes)</button>
-      <button class="rf-btn rf-btn--danger"  (click)="reiniciar(true)">🗑️ Reiniciar desde cero</button>
+      <button class="rf-btn rf-btn--outline" *ngIf="puedeReiniciar" (click)="reiniciar(false)">🔄 Reiniciar (conservar participantes)</button>
+      <button class="rf-btn rf-btn--danger"  *ngIf="puedeReiniciar" (click)="reiniciar(true)">🗑️ Reiniciar desde cero</button>
       <button class="rf-btn rf-btn--text"    (click)="nuevaRifa()">➕ Nueva rifa</button>
       <button class="rf-btn rf-btn--text"    (click)="router.navigate(['/rifas/buscar'])">← Volver a rifas</button>
     </div>
   </div>
 </div>
+
+    </div><!-- /rf-acord-body -->
+  </div><!-- /rf-acord-item--open -->
+
+  <!-- ─── RIFAS ANTERIORES (colapsadas — clic para expandir) ─── -->
+  <div class="rf-acord-item"
+       *ngFor="let a of rifasAnteriores; let i = index"
+       (click)="editarRifaAnterior(i)">
+    <div class="rf-acord-hdr">
+      <div class="rf-acord-hdr__left">
+        <span class="rf-acord-hdr__id">Rifa #{{ a.rifa.id }}</span>
+        <span class="rf-badge-prueba" *ngIf="a.rifa.esPrueba">🧪</span>
+        <span class="rf-acord-hdr__cnt">{{ a.totalVariantes }} premios · {{ a.totalConcursantes }} part.</span>
+      </div>
+      <div class="rf-acord-hdr__right">
+        <span class="rf-acord-hdr__cta">{{ modoSorteo ? '🎡 Ver sorteo ►' : '📋 Ver config ►' }}</span>
+        <button class="rf-acord-hdr__quitar"
+                (click)="$event.stopPropagation(); quitarDelWizard(i)"
+                title="Quitar del wizard">✕</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /rf-acordeon -->
 
 <!-- ══════════════════ MODAL: participante en ruleta ═════════════ -->
 <div class="rf-modal-overlay" *ngIf="mostrarModalParticipante" (click)="cerrarModalParticipante()">
@@ -843,5 +944,76 @@
         <span *ngIf="guardandoParticipanteRuleta" class="spinner-border spinner-border-sm"></span>
       </button>
     </form>
+  </div>
+</div>
+
+<!-- ── Lightbox de imagen ──────────────────────────────────────────────── -->
+<div class="rf-img-modal-overlay" *ngIf="imagenModal" (click)="imagenModal = null">
+  <div class="rf-img-modal" (click)="$event.stopPropagation()">
+    <button class="rf-img-modal__close" (click)="imagenModal = null">✕</button>
+    <img [src]="imagenModal" alt="Imagen ampliada" class="rf-img-modal__img" />
+  </div>
+</div>
+
+<!-- ── Modal detalle de variante (ruleta) ─────────────────────────────── -->
+<div class="rf-var-modal-overlay" *ngIf="varianteModal" (click)="varianteModal = null">
+  <div class="rf-var-modal" (click)="$event.stopPropagation()">
+    <div class="rf-var-modal__header">
+      <h5 class="rf-var-modal__title">
+        🎁 {{ varianteModal.variante?.nombreProducto ?? varianteModal.palabraClave }}
+      </h5>
+      <button class="rf-var-modal__close" (click)="varianteModal = null">✕</button>
+    </div>
+
+    <div class="rf-var-modal__body">
+      <!-- Imagen grande -->
+      <div class="rf-var-modal__img-wrap" *ngIf="imageSrcVariante(varianteModal) as src">
+        <img [src]="src" alt="Premio" class="rf-var-modal__img" />
+      </div>
+      <div class="rf-var-modal__img-wrap rf-var-modal__img-wrap--empty" *ngIf="!imageSrcVariante(varianteModal)">
+        <span style="font-size:5rem">📦</span>
+        <p style="color:var(--app-text-muted); margin-top:8px">Sin imagen</p>
+      </div>
+
+      <!-- Datos -->
+      <div class="rf-var-modal__datos">
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.nombreProducto">
+          <span class="rf-var-modal__lbl">Producto</span>
+          <span class="rf-var-modal__val">{{ varianteModal.variante!.nombreProducto }}</span>
+        </div>
+        <div class="rf-var-modal__row">
+          <span class="rf-var-modal__lbl">Premio (clave)</span>
+          <span class="rf-var-modal__val rf-var-modal__val--accent">{{ varianteModal.palabraClave }}</span>
+        </div>
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.talla">
+          <span class="rf-var-modal__lbl">Talla</span>
+          <span class="rf-var-modal__val">{{ varianteModal.variante!.talla }}</span>
+        </div>
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.color">
+          <span class="rf-var-modal__lbl">Color</span>
+          <span class="rf-var-modal__val">{{ varianteModal.variante!.color }}</span>
+        </div>
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.precio">
+          <span class="rf-var-modal__lbl">Precio</span>
+          <span class="rf-var-modal__val">$ {{ varianteModal.variante!.precio | number:'1.2-2' }}</span>
+        </div>
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.stock">
+          <span class="rf-var-modal__lbl">Stock</span>
+          <span class="rf-var-modal__val">{{ varianteModal.variante!.stock }}</span>
+        </div>
+        <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.codigoBarras">
+          <span class="rf-var-modal__lbl">Código</span>
+          <span class="rf-var-modal__val" style="font-family:monospace; font-size:0.82rem">{{ varianteModal.variante!.codigoBarras }}</span>
+        </div>
+        <div class="rf-var-modal__row">
+          <span class="rf-var-modal__lbl">Giro ganador</span>
+          <span class="rf-var-modal__val">{{ varianteModal.giroGanador }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rf-var-modal__footer">
+      <button class="rf-btn rf-btn--sm rf-btn--outline" (click)="varianteModal = null">Cerrar</button>
+    </div>
   </div>
 </div>

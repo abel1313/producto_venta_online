@@ -83,6 +83,10 @@ $accent: #3b82f6;  // azul — botones primarios en rifa-mes
 .rm-row   { display: flex; gap: 12px; flex-wrap: wrap; }
 .rm-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
 .rm-label { font-size: 0.78rem; font-weight: 600; color: var(--app-text-muted); }
+.rm-fecha-hora-wrap {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  .rm-hora-hint { font-size: 0.76rem; color: var(--app-text-muted); white-space: nowrap; }
+}
 
 .rm-input {
   padding: 9px 12px;
@@ -96,7 +100,8 @@ $accent: #3b82f6;  // azul — botones primarios en rifa-mes
   transition: $t;
   &:focus { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
   &::placeholder { color: var(--input-placeholder); }
-  &--sm { padding: 6px 8px; font-size: 0.82rem; }
+  &--sm   { padding: 6px 8px; font-size: 0.82rem; }
+  &--hora { width: 90px; flex-shrink: 0; }
 }
 
 // -- Botones

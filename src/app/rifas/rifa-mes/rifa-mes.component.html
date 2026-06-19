@@ -49,7 +49,12 @@
           </div>
           <div class="rm-field">
             <label class="rm-label">Fecha límite de la rifa</label>
-            <input class="rm-input" type="datetime-local" [(ngModel)]="fechaHoraLimite" />
+            <div class="rm-fecha-hora-wrap">
+              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
+                <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+              </select>
+            </div>
           </div>
           <div class="rm-field">
             <label class="rm-label">Palabra clave de la rifa</label>
@@ -126,7 +131,12 @@
           </div>
           <div class="rm-field">
             <label class="rm-label">Nueva fecha límite</label>
-            <input class="rm-input" type="datetime-local" [(ngModel)]="fechaHoraLimite" />
+            <div class="rm-fecha-hora-wrap">
+              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
+                <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
@@ -316,7 +326,7 @@
     <div class="rm-nav-btns" style="padding: 0 24px;">
       <button class="rm-btn rm-btn--text" (click)="paso = 'participantes'">← Ver participantes</button>
       <label class="rm-checkbox-label">
-        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig?.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
     </div>
@@ -382,7 +392,7 @@
       </div>
 
       <label class="rm-checkbox-label">
-        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig?.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
 

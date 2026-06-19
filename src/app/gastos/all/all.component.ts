@@ -5,6 +5,7 @@ import { IProductoPaginable } from 'src/app/productos/producto/models';
 import { IGastos } from '../models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { CellContextMenuEvent } from 'ag-grid-community';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-all',
@@ -186,11 +187,11 @@ export class AllComponent implements OnInit {
 
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al cargar gastos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de gastos.' });
         }
       });
     }
-  
+
     primeraPagina(): void{
       this.paginaPrimera = 1;
   
@@ -239,11 +240,11 @@ export class AllComponent implements OnInit {
 
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el gasto.' });
         }
       });
     }
-  
+
         buscarProd:string = '';
   }
   

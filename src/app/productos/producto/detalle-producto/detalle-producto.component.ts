@@ -223,7 +223,7 @@ toggleMarcar(img: ImagenUpdateDto): void {
             (img: ImagenUpdateDto) => img.id !== product.id
           );
         },
-        error: (err) => console.error('Error al eliminar imagen', err)
+        error: (err) => Swal.fire({ icon: 'error', title: 'Error al eliminar imagen', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo eliminar la imagen.' })
       });
     }
   });

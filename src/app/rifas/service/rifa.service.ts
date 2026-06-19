@@ -175,6 +175,13 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
+  // ── 15b. Copiar concursantes de una rifa origen a una rifa destino ─
+  copiarDeRifa(data: { rifaOrigenId: number; rifaDestinoId: number; palabraClave: string }): Observable<IConcursante[]> {
+    return this.http.post<{ code: number; data: IConcursante[] }>(
+      `${this.url}/v1/concursante/copiarDeRifa`, data
+    ).pipe(map(r => r.data ?? []));
+  }
+
   // ── 15. Rifas activas ──────────────────────────────────────────────
   getConfiguracionesActivas(): Observable<IConfigurarRifa[]> {
     return this.http.get<{ code: number; data: IConfigurarRifa[] }>(

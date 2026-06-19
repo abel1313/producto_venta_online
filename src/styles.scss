@@ -697,3 +697,13 @@ body.theme-dark {
     small           { color: #94a3b8 !important; }
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   FORMATO 24 HORAS — inputs datetime-local y time
+   Oculta el campo AM/PM en Chrome/Edge (webkit). Al ocultarlo,
+   el campo de horas cambia automáticamente a rango 0–23.
+   ════════════════════════════════════════════════════════════ */
+input[type="datetime-local"]::-webkit-datetime-edit-ampm-field,
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+  display: none;
+}

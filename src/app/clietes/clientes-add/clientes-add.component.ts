@@ -62,8 +62,8 @@ export class ClientesAddComponent implements OnInit {
           if (this.idUsuario) this.router.navigate(['/variantes/buscar']);
         });
       },
-      error: () => {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar el cliente.' });
+      error: (err) => {
+        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo registrar el cliente.' });
       }
     });
   }

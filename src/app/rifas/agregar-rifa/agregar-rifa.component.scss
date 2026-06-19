@@ -632,7 +632,26 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
     img { width: 100%; height: 100%; object-fit: cover; }
+
+    &--clickable {
+      cursor: zoom-in;
+      &:hover .rf-var-card__img-hint { opacity: 1; }
+    }
+  }
+
+  &__img-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(0,0,0,0.35);
+    opacity: 0;
+    transition: opacity 0.18s;
+    pointer-events: none;
   }
 
   &__no-img { font-size: 2rem; }
@@ -896,6 +915,15 @@
 
 .rf-input--sm { padding: 5px 8px; font-size: 0.82rem; }
 
+.rf-fecha-hora-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  .rf-input--hora { width: 90px; flex-shrink: 0; }
+  .rf-hora-hint { font-size: 0.76rem; color: var(--app-text-muted); white-space: nowrap; }
+}
+
 // ── Tabla de participantes ─────────────────────────────────────────
 .rf-tabla {
   overflow-x: auto;
@@ -1147,4 +1175,352 @@
   50%  { transform: translateY(50vh)  rotate(360deg) scaleX(-1);  opacity: 1; }
   90%  { opacity: 1; }
   100% { transform: translateY(110vh) rotate(720deg) scaleX(1);   opacity: 0; }
+}
+
+// ── Imagen del premio en ruleta ────────────────────────────────────────
+.rf-premio-img-wrap {
+  background: var(--form-section-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.18s;
+
+  &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); }
+
+  &--empty { &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); } }
+}
+
+.rf-premio-img__hint {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--app-text-muted);
+  padding: 4px 0;
+  opacity: 0;
+  transition: opacity 0.18s;
+  .rf-premio-img-wrap:hover & { opacity: 1; }
+}
+
+.rf-premio-img {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  transition: transform 0.18s;
+  .rf-premio-img-wrap:hover & { transform: scale(1.03); }
+}
+
+.rf-premio-img__placeholder {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.rf-premio-img__label {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--app-text);
+  border-top: 1px solid var(--card-border);
+  background: var(--card-bg);
+}
+
+// ── Botón secundario para agregar otra rifa en el wizard ───────────────
+.rf-btn--secondary {
+  background: var(--form-section-bg);
+  color: var(--app-text);
+  border: 1.5px solid var(--card-border);
+
+  &:hover:not(:disabled) {
+    background: var(--card-bg);
+    border-color: var(--app-accent);
+    color: var(--app-accent);
+  }
+}
+
+.rf-btn--add-rifa {
+  font-size: 0.88rem;
+  padding: 10px 20px;
+}
+
+// ── Acordeón de rifas (reemplaza el tab bar) ───────────────────────────
+.rf-acordeon {
+  max-width: 860px;
+  margin: 0 auto 32px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.rf-acord-item {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+
+  // Item colapsado: cursor pointer, hover sutil
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(.rf-acord-item--open) { background: var(--form-section-bg); }
+
+  // Item expandido: no es clickable en el header (ya está activo)
+  &--open { cursor: default; }
+}
+
+.rf-acord-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  gap: 12px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  &__id {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+
+  &__cnt {
+    font-size: 0.78rem;
+    color: var(--app-text-muted);
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__cta {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--app-accent);
+  }
+
+  &__pill {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--app-accent);
+    background: rgba(99,102,241,0.1);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  &__quitar {
+    background: transparent;
+    border: none;
+    color: var(--app-text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    &:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+  }
+
+  // Header del panel activo (expandido)
+  &--active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(79,70,229,0.05) 100%);
+    border-bottom: 1px solid rgba(99,102,241,0.2);
+    cursor: default;
+  }
+}
+
+.rf-acord-body {
+  padding: 0;
+  // El contenido interno (rf-ruleta, rf-transicion, rf-resumen) ya tiene su propio padding
+}
+
+// ── Lightbox de imagen ──────────────────────────────────────────────────
+.rf-img-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  cursor: zoom-out;
+}
+
+.rf-img-modal {
+  position: relative;
+  max-width: min(90vw, 640px);
+  max-height: 90vh;
+
+  &__close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    transition: background 0.15s;
+    &:hover { background: rgba(239,68,68,0.85); }
+  }
+
+  &__img {
+    display: block;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 10px;
+    object-fit: contain;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+}
+
+// ── Modal detalle de variante (ruleta) ──────────────────────────────────
+.rf-var-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.rf-var-modal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--card-border);
+    flex-shrink: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--app-text);
+    flex: 1;
+    padding-right: 12px;
+  }
+
+  &__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--form-section-bg);
+    color: var(--app-text-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+    &:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+  }
+
+  &__body {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  &__img-wrap {
+    width: 100%;
+    background: var(--form-section-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-height: 260px;
+    overflow: hidden;
+
+    &--empty {
+      height: 160px;
+      flex-direction: column;
+    }
+  }
+
+  &__img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+  }
+
+  &__datos {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--card-border);
+    padding-bottom: 8px;
+    &:last-child { border-bottom: none; padding-bottom: 0; }
+  }
+
+  &__lbl {
+    color: var(--app-text-muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  &__val {
+    color: var(--app-text);
+    font-weight: 500;
+    text-align: right;
+    &--accent { color: var(--app-accent); font-weight: 700; }
+  }
+
+  &__footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
 }

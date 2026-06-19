@@ -182,9 +182,9 @@ export class AddComponent implements OnInit, AfterViewInit, OnDestroy {
           if (this.esActualizar) this.router.navigate(['/productos/buscar']);
         });
       },
-      error: () => {
+      error: (err) => {
         this.guardando = false;
-        Swal.fire({ icon: 'error', title: 'Error al guardar', timer: 2000, showConfirmButton: false });
+        Swal.fire({ icon: 'error', title: 'Error al guardar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el producto.', timer: 2000, showConfirmButton: false });
       }
     });
   }

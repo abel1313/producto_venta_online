@@ -121,7 +121,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
                     this.srvice.setProdCache(this.rows, 1, this.totalPaginas, '');
                   },
                   error: (err) => {
-                    console.error('Error en la petición:', err);
+                    Swal.fire({ icon: 'error', title: 'Error al recargar productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo recargar la lista.' });
                   }
                 });
                 Swal.fire({ icon: 'success', title: 'El producto se elimino correctamente', timer: 1500, showConfirmButton: false});
@@ -559,7 +559,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al cargar más productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar más productos.' });
         }
       });
     }

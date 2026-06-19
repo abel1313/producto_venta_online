@@ -31,7 +31,7 @@
       <div>
         <h4 class="rf-card__title">Datos generales</h4>
         <p class="rf-card__sub" *ngIf="rifaConfig?.id">
-          Rifa #{{ rifaConfig!.id }} guardada ✅ — {{ rifaConfig!.tipo === 'DIARIA' ? 'Diaria' : 'Mensual' }}
+          Rifa #{{ rifaConfig!.id }} guardada ✅ — Variante
         </p>
       </div>
     </div>
@@ -47,19 +47,6 @@
     </div>
 
     <form [formGroup]="configForm" class="rf-body">
-      <div class="rf-row">
-        <div class="rf-field rf-field--flex1">
-          <label class="rf-label">Tipo de rifa</label>
-          <select class="rf-input" formControlName="tipo">
-            <option value="MENSUAL">Mensual</option>
-            <option value="DIARIA">Diaria</option>
-          </select>
-        </div>
-        <div class="rf-field rf-field--flex1" *ngIf="configForm.value.tipo === 'MENSUAL'">
-          <label class="rf-label">Mes de referencia (de qué mes salen los compradores)</label>
-          <input class="rf-input" type="month" formControlName="mesReferencia" />
-        </div>
-      </div>
       <div class="rf-field">
         <label class="rf-label">Fecha y hora límite de registro</label>
         <input class="rf-input" type="datetime-local" formControlName="fechaHoraLimite" />
@@ -73,14 +60,38 @@
         Crear como rifa de prueba (demo antes del sorteo real)
       </label>
 
-      <button class="rf-btn rf-btn--primary"
+      <button *ngIf="!rifaConfig?.id" class="rf-btn rf-btn--primary"
               (click)="guardarConfiguracion()"
-              [disabled]="configForm.invalid || savingConfig || !!rifaConfig?.id">
-        <span *ngIf="!savingConfig">{{ rifaConfig?.id ? '✅ Guardado' : '💾 Guardar configuración' }}</span>
+              [disabled]="configForm.invalid || savingConfig">
+        <span *ngIf="!savingConfig">💾 Guardar configuración</span>
         <span *ngIf="savingConfig" class="d-flex gap-2 align-items-center">
           <span class="spinner-border spinner-border-sm"></span> Guardando…
         </span>
       </button>
+      <div *ngIf="rifaConfig?.id" class="rf-saved-badge">
+        ✅ Configuración guardada — Rifa #{{ rifaConfig!.id }}
+        <button class="rf-btn rf-btn--sm rf-btn--secondary" style="margin-left:auto"
+                (click)="editandoConfig = !editandoConfig">
+          {{ editandoConfig ? '✕ Cancelar' : '✏️ Editar fecha' }}
+        </button>
+      </div>
+
+      <div *ngIf="rifaConfig?.id && editandoConfig" class="rf-edit-config">
+        <label class="rf-label">Nueva fecha y hora límite</label>
+        <input class="rf-input" type="datetime-local" formControlName="fechaHoraLimite" />
+        <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+          <span>⚠️ {{ errorConcursante }}</span>
+          <button class="rf-btn rf-btn--sm rf-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+        </div>
+        <button class="rf-btn rf-btn--primary" style="margin-top:8px"
+                (click)="actualizarConfiguracion()"
+                [disabled]="!configForm.get('fechaHoraLimite')?.value || savingConfig">
+          <span *ngIf="!savingConfig">💾 Guardar cambios</span>
+          <span *ngIf="savingConfig" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span> Guardando…
+          </span>
+        </button>
+      </div>
     </form>
   </div>
 
@@ -526,9 +537,14 @@
   </div>
 
   <!-- Botón iniciar -->
-  <button class="rf-btn rf-btn--start" [disabled]="!puedeIrARuleta" (click)="irARuleta()">
-    🎡 Iniciar rifa
-  </button>
+  <div class="rf-iniciar-wrap">
+    <button class="rf-btn rf-btn--start" [disabled]="!puedeIrARuleta" (click)="irARuleta()">
+      🎡 Iniciar rifa
+    </button>
+    <p class="rf-iniciar-hint" *ngIf="!puedeIrARuleta">
+      Completa Sección B (agrega al menos 1 variante) y Sección C (al menos 1 participante) para continuar.
+    </p>
+  </div>
 
 </div>
 
@@ -552,6 +568,16 @@
       Giro {{ giroActual }} de {{ giroGanador }}
       <span *ngIf="esGiroGanador"> ⭐ ¡Giro del ganador!</span>
     </div>
+  </div>
+
+  <!-- Control modo prueba -->
+  <div class="rf-prueba-control" *ngIf="rifaConfig">
+    <label class="rf-check-label">
+      <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+      🧪 Es de prueba
+    </label>
+    <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
+    <span *ngIf="rifaConfig.esPrueba" class="rf-badge-prueba">🧪 Modo prueba</span>
   </div>
 
   <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="margin: 0 24px; display:flex; align-items:center; gap:10px;">
@@ -650,6 +676,16 @@
     <div class="rf-alert rf-alert--warn" *ngIf="errorConcursante" style="display:flex; align-items:center; gap:10px;">
       <span>⚠️ {{ errorConcursante }}</span>
       <button class="rf-btn rf-btn--sm rf-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+    </div>
+
+    <!-- Control modo prueba -->
+    <div class="rf-prueba-control" *ngIf="rifaConfig">
+      <label class="rf-check-label">
+        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        🧪 Es de prueba
+      </label>
+      <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
+      <span *ngIf="rifaConfig.esPrueba" class="rf-badge-prueba">🧪 Modo prueba</span>
     </div>
 
     <div class="rf-transicion__trophy">🏆</div>
@@ -754,6 +790,16 @@
         🏆 Ganador: <strong>{{ nombreCompleto(h.concursanteGanador) }}</strong>
         <span *ngIf="h.concursanteGanador?.telefono"> · {{ h.concursanteGanador.telefono }}</span>
       </p>
+    </div>
+
+    <!-- Control modo prueba -->
+    <div class="rf-prueba-control" *ngIf="rifaConfig" style="justify-content:center; margin-bottom:4px;">
+      <label class="rf-check-label">
+        <input type="checkbox" [checked]="!!rifaConfig.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        🧪 Es de prueba
+      </label>
+      <span *ngIf="!rifaConfig.esPrueba" class="rf-badge-real">✅ Sorteo real</span>
+      <span *ngIf="rifaConfig.esPrueba" class="rf-badge-prueba">🧪 Modo prueba</span>
     </div>
 
     <div class="rf-resumen__actions">

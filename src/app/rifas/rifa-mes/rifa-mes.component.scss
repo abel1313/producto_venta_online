@@ -1,5 +1,5 @@
 ﻿$t: all 0.2s ease;
-$accent: #0891b2;  // cyan
+$accent: #3b82f6;  // azul — botones primarios en rifa-mes
 
 .rm-page {
   max-width: 860px;
@@ -41,7 +41,7 @@ $accent: #0891b2;  // cyan
   &__label { font-size: 0.72rem; color: var(--card-text-muted); white-space: nowrap; transition: $t; }
 
   &--active &__num  { background: $accent; color: #fff; }
-  &--active &__label { color: $accent; font-weight: 700; }
+  &--active &__label { color: #1e40af; font-weight: 700; }
   &--done &__num    { background: rgba(22, 101, 52, 0.15); color: #166534; }
   &--done &__label  { color: #166534; }
 
@@ -63,7 +63,7 @@ $accent: #0891b2;  // cyan
   overflow: hidden;
 
   &__head {
-    background: linear-gradient(135deg, #0e7490, $accent, #22d3ee);
+    // Fondo lo aplica la regla global de glassmorphism en styles.scss
     padding: 20px 24px;
     color: #fff;
     h4 { margin: 0; font-size: 1.15rem; font-weight: 800; }
@@ -76,8 +76,6 @@ $accent: #0891b2;  // cyan
     flex-direction: column;
     gap: 16px;
   }
-
-  &--ruleta &__head { background: linear-gradient(135deg, #166534, #22c55e); }
   &--ganador { border: 3px solid #fcd34d; }
 }
 
@@ -110,9 +108,9 @@ $accent: #0891b2;  // cyan
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #0e7490, $accent);
-    color: #fff;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(8,145,178,0.35); }
+    background: linear-gradient(135deg, #1e40af, $accent);
+    color: #fff !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(59,130,246,0.40); }
   }
   &--outline {
     background: transparent; border: 1.5px solid var(--input-border); color: var(--app-text);
@@ -164,7 +162,7 @@ $accent: #0891b2;  // cyan
   padding: 5px 0;
   border-bottom: 1px solid var(--card-border);
 
-  &--selected { background: rgba(8, 145, 178, 0.08); border-radius: 6px; padding: 5px 6px; }
+  &--selected { background: rgba(99, 102, 241, 0.08); border-radius: 6px; padding: 5px 6px; }
   &--vacio    { background: rgba(252, 211, 77, 0.08); }
 }
 
@@ -185,7 +183,7 @@ $accent: #0891b2;  // cyan
   vertical-align: middle;
 }
 .rm-badge-real   { background: rgba(34, 197, 94, 0.18); color: #166534; }
-.rm-badge-prueba { background: #ede9fe; color: #5b21b6; }
+.rm-badge-prueba { background: rgba(99,102,241,0.12); color: var(--app-accent); }
 
 .rm-checkbox-label {
   display: flex;
@@ -194,6 +192,31 @@ $accent: #0891b2;  // cyan
   font-size: 0.85rem;
   color: var(--app-text);
   cursor: pointer;
+}
+
+.rm-saved-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.30);
+}
+
+.rm-edit-config {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 10px;
+  margin-top: 4px;
 }
 
 .rm-tabla {
@@ -350,4 +373,48 @@ $accent: #0891b2;  // cyan
   width: 0; height: 0;
   border-left: 12px solid transparent; border-right: 12px solid transparent;
   border-top: 24px solid #dc3545;
+}
+
+// ── Tema DÍA ───────────────────────────────────────────────────────
+:host-context(body.theme-light) {
+  .rm-step--active .rm-step__num   { background: #2563eb; }
+  .rm-step--active .rm-step__label { color: #2563eb; }
+  // Botón outline dentro del card head: borde visible sobre blanco
+  .rm-card__head .rm-btn--outline {
+    border-color: rgba(0, 0, 0, 0.18);
+    color: #1e293b;
+  }
+}
+
+// ── Tema NOCHE — ajustes completos ────────────────────────────────
+:host-context(body.theme-dark) {
+  // Texto en heads de card (glassmorphism oscuro)
+  .rm-card__head h4, .rm-card__head p { color: #f1f5f9; }
+
+  // Botones PRIMARY en noche: azul visible sobre fondo oscuro
+  .rm-btn--primary {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: #fff;
+  }
+
+  // Botones OUTLINE en noche: borde casi invisible por defecto → reforzar
+  .rm-btn--outline {
+    border-color: rgba(255, 255, 255, 0.32);
+    color: #e2e8f0;
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+  }
+
+  // Card ganador: borde amarillo fijo → versión oscura
+  .rm-card--ganador { border-color: rgba(252, 211, 77, 0.45); }
+
+  // Badges
+  .rm-badge-real   { background: rgba(34,197,94,0.12); color: #4ade80; }
+
+  // Saved/edit config
+  .rm-saved-badge { background: rgba(34,197,94,0.10); color: #4ade80; border-color: rgba(74,222,128,0.20); }
+  .rm-edit-config { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.22); }
+
+  // Stepper: paso completado
+  .rm-step--done .rm-step__num   { background: rgba(34,197,94,0.18); color: #4ade80; }
+  .rm-step--done .rm-step__label { color: #4ade80; }
 }

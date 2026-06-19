@@ -119,18 +119,33 @@ Se agregaron `idVarianteCargado` y `destroy$` para evitar re-inicializaciones du
 productos** que el usuario verá al navegar por el sistema.
 
 **Implementación obligatoria:**
-- El contenido del header siempre va dentro de un wrapper interno con `max-width: 860px` y
-  `margin: 0 auto` — nunca full-width hasta los bordes de la pantalla.
+- El contenido del header siempre va dentro de un wrapper interno con `max-width: 1120px` y
+  `margin: 0 auto` — mismo ancho que el grid de cards para que queden alineados.
 - Nombre del wrapper: `.<prefijo>-header__content` (ej. `pl-header__content`, `vb-header__content`).
 - No agregar `padding` lateral al `.vb-header` / `.pl-header` externo más allá del necesario
   para el color de fondo — el espacio libre en los laterales es intencional.
 
 **Estado actual:**
-- `productos/all` → ✅ `.pl-header__content` (max-width: 860px)
-- `variante/buscar` → ✅ `.vb-header__content` (max-width: 860px)
+- `productos/all` → ✅ `.pl-header__content` (max-width: 1120px — alineado con grid de cards)
+- `variante/buscar` → ✅ `.vb-header__content` (max-width: 1120px — alineado con grid de cards)
 - Formularios centrados (`variante/agregar`, `productos/add`) → ✅ ya tienen `max-width` en su card
 
 **Verificar este patrón** al agregar cualquier componente nuevo con buscador o header de pantalla completa.
+
+### REGLA — TIRA DE COLOR EN CARDS (`.xx-card__header`)
+
+La tira donde aparece el precio/stock en las cards de catálogo **NO debe cambiar de color por producto**.
+Todas las cards deben tener el **mismo color azul marino semi-transparente**:
+
+```scss
+/* Pegar en .<prefix>-card__header dentro del componente buscador */
+background: linear-gradient(135deg, rgba(15, 37, 87, 0.88) 0%, rgba(29, 78, 216, 0.72) 100%);
+backdrop-filter: blur(6px);
+```
+
+- **No usar** `[style.background]="colorHeader(item.color)"` ni ningún binding dinámico de color
+- El texto y chips dentro deben ser blancos (`color: white`)
+- Aplica a: `productos/all` ✅, `variante/buscar` ✅ (pendiente aplicar si tiene tira de color)
 
 ---
 
@@ -888,6 +903,53 @@ de `setEsPrueba(false)` por consistencia de UX. NO se replicó el resync de
 **Archivos modificados:**
 - `src/app/rifas/rifa-mes/rifa-mes.component.ts` → `toggleModoPrueba()`
 - `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `toggleModoPrueba()` (solo el `confirm()`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX MÓDULO RIFAS — EDITAR CONFIGURACIÓN AL RETOMAR (2026-06-19)
+
+> El backend implementó `PUT /v1/configurarRifa/{id}` (campos opcionales: `fechaHoraLimite`, `tipo`, `mesReferencia`).
+> El front ahora permite actualizar la fecha límite de una rifa ya creada, sin crear un duplicado.
+
+### Problema resuelto
+
+**`AgregarRifaComponent`:** al retomar una rifa con `_retomar()`, el form se precargaba con `fechaHoraLimite` pero el usuario no tenía forma de guardar cambios — el botón "Guardar configuración" solo existe cuando `!rifaConfig?.id`. El valor modificado en el UI se perdía al salir.
+
+**`RifaMesComponent`:** si el usuario volvía al "Paso 1: Mes" (botón "← Volver") con `rifaConfig` ya cargada, el botón "Crear rifa e importar" seguía visible y podía crear una rifa DUPLICADA.
+
+### Fix
+
+**`rifa.service.ts`:** nuevo método `actualizarConfiguracion(id, patch)` → `PUT /v1/configurarRifa/{id}`.
+
+**`agregar-rifa.component.ts`:**
+- Nuevo campo `editandoConfig = false`
+- Nuevo método `actualizarConfiguracion()` que llama el PUT con `fechaHoraLimite`
+
+**`agregar-rifa.component.html`:** el `rf-saved-badge` ahora tiene botón "✏️ Editar fecha". Al abrirse, muestra campo de fecha + botón "💾 Guardar cambios" + error alert.
+
+**`agregar-rifa.component.scss`:** nueva clase `.rf-edit-config` (panel índigo sutil).
+
+**`rifa-mes.component.ts`:**
+- Nuevos campos `editandoConfig = false`, `savingConfigEdit = false`
+- Nuevo método `actualizarConfiguracion()` — actualiza `fechaHoraLimite` y `mesReferencia`
+- `nueva()` resetea ambos campos
+
+**`rifa-mes.component.html`:** Paso 1 ahora tiene dos modos:
+- Sin `rifaConfig?.id`: flujo de creación normal (sin cambio)
+- Con `rifaConfig?.id`: badge "Rifa #X" + botón "✏️ Editar fecha / mes" + botón "→ Continuar". El form de creación y el botón "Crear rifa e importar" están ocultos — previene crear duplicados al volver al Paso 1.
+
+**`rifa-mes.component.scss`:** nuevas clases `.rm-saved-badge` y `.rm-edit-config` con variantes dark mode.
+
+**Archivos modificados:**
+- `src/app/rifas/service/rifa.service.ts` → `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `editandoConfig`, `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → edit badge en Sección A
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → `.rf-edit-config`
+- `src/app/rifas/rifa-mes/rifa-mes.component.ts` → `editandoConfig`, `savingConfigEdit`, `actualizarConfiguracion()`, `nueva()`
+- `src/app/rifas/rifa-mes/rifa-mes.component.html` → Paso 1 con modo crear/editar
+- `src/app/rifas/rifa-mes/rifa-mes.component.scss` → `.rm-saved-badge`, `.rm-edit-config`, dark mode
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 

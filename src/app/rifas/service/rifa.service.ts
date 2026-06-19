@@ -42,7 +42,14 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
-  // ── 2b. Activar/desactivar modo prueba ─────────────────────────────
+  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia) ────────
+  actualizarConfiguracion(id: number, patch: { fechaHoraLimite?: string; tipo?: TipoRifa; mesReferencia?: string | null }): Observable<IConfigurarRifa> {
+    return this.http.put<{ code: number; data: IConfigurarRifa }>(
+      `${this.url}/v1/configurarRifa/${id}`, patch
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 2c. Activar/desactivar modo prueba ─────────────────────────────
   setEsPrueba(rifaId: number, esPrueba: boolean): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${rifaId}/esPrueba`, { esPrueba }

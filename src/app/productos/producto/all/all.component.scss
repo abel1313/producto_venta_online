@@ -21,7 +21,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 28px;
 
   &__content {
-    max-width: 860px;
+    max-width: 1120px;
     margin: 0 auto;
     width: 100%;
     background: var(--header-brand);
@@ -384,6 +384,8 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
+    background: linear-gradient(135deg, rgba(15, 37, 87, 0.88) 0%, rgba(29, 78, 216, 0.72) 100%);
+    backdrop-filter: blur(6px);
   }
 
   &__header-content { flex: 1; min-width: 0; }

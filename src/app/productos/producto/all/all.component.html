@@ -29,7 +29,7 @@
       <input
         class="pl-search__input"
         type="text"
-        placeholder="Buscar por nombre o código de barras…"
+        placeholder="Buscar por nombre 111 o código de barras…"
         [(ngModel)]="buscarProd"
         (keyup)="buscarProductos($event)"
         autocomplete="off"
@@ -108,7 +108,7 @@
       </div>
 
       <!-- Header con color + precio + stock -->
-      <div class="pl-card__header" [style.background]="colorHeader(item.color || '')">
+      <div class="pl-card__header">
         <div class="pl-card__header-content">
           <div class="pl-card__chips">
             <span *ngIf="item.precioVenta" class="pl-chip">

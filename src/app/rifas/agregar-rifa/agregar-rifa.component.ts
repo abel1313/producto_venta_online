@@ -36,6 +36,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   configForm!: FormGroup;
   rifaConfig: IConfigurarRifa | null = null;
   savingConfig = false;
+  editandoConfig = false;
   rifasActivas: IConfigurarRifa[] = [];
   cambiandoModoPrueba = false;
 
@@ -131,7 +132,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.configForm = this.fb.group({
       fechaHoraLimite: ['', Validators.required],
-      tipo:            ['MENSUAL' as TipoRifa, Validators.required],
+      tipo:            ['DIARIA' as TipoRifa, Validators.required],
       mesReferencia:   [''],
       esPrueba:        [false],
     });
@@ -229,7 +230,26 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.cargarConcursantes();
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo guardar la configuración de la rifa.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la configuración de la rifa.';
+        this.savingConfig = false;
+      }
+    });
+  }
+
+  actualizarConfiguracion(): void {
+    if (!this.rifaConfig?.id || this.configForm.get('fechaHoraLimite')?.invalid) return;
+    this.savingConfig = true;
+    this.errorConcursante = null;
+    this.rifaService.actualizarConfiguracion(this.rifaConfig.id, {
+      fechaHoraLimite: this.configForm.value.fechaHoraLimite,
+    }).subscribe({
+      next: res => {
+        this.rifaConfig = res;
+        this.savingConfig = false;
+        this.editandoConfig = false;
+      },
+      error: err => {
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo actualizar la configuración.';
         this.savingConfig = false;
       }
     });
@@ -261,7 +281,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.cargarConcursantes();
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cambiar el modo de prueba.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cambiar el modo de prueba.';
         this.cambiandoModoPrueba = false;
       }
     });
@@ -325,7 +345,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.guardandoVariante = false;
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el premio.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo agregar el premio.';
         this.guardandoVariante = false;
       }
     });
@@ -341,7 +361,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.palabrasClave = this.variantesRifa.map(x => x.palabraClave);
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo eliminar el premio.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo eliminar el premio.';
       }
     });
   }
@@ -396,7 +416,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.guardandoConcursante = false;
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo agregar el participante.';
         this.guardandoConcursante = false;
       }
     });
@@ -445,7 +465,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.editandoConcursanteId = null;
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo actualizar el participante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo actualizar el participante.';
       }
     });
   }
@@ -456,7 +476,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.rifaService.getElegibles(this.rifaConfig.id).subscribe({
       next: res => { this.elegiblesVista = res; },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los elegibles.';
       }
     });
   }
@@ -491,7 +511,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.rifaService.getClientesPorMes(this.mesSeleccionado).subscribe({
       next: res => { this.clientesMes = res; this.cargandoClientes = false; },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los clientes del mes.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los clientes del mes.';
         this.cargandoClientes = false;
       }
     });
@@ -534,7 +554,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.palabraClaveImport = '';
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron importar los participantes.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron importar los participantes.';
         this.importando = false;
       }
     });
@@ -567,6 +587,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   }
 
   retomarRifa(config: IConfigurarRifa): void {
+    if (config.tipo === 'MENSUAL') {
+      this.router.navigate(['/rifas/mes'], { state: { retomarRifaId: config.id } });
+      return;
+    }
     this._retomar(config.id!);
   }
 
@@ -575,6 +599,14 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.rifaService.getEstado(rifaId).subscribe({
       next: res => {
         this.rifaConfig = res.configurarRifa;
+        // Rellenar el form con los valores guardados para que Sección A
+        // no aparezca vacía al retomar (configForm nunca se patchea solo).
+        this.configForm.patchValue({
+          fechaHoraLimite: (res.configurarRifa.fechaHoraLimite ?? '').replace(' ', 'T').slice(0, 16),
+          tipo:            res.configurarRifa.tipo            ?? 'DIARIA',
+          mesReferencia:   res.configurarRifa.mesReferencia   ?? '',
+          esPrueba:        !!res.configurarRifa.esPrueba,
+        });
         this.aplicarEstado(res);
         this.cargarConcursantes();
 
@@ -586,6 +618,13 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
             if (res.rifaTerminada) {
               this.paso = 'resumen';
+              return;
+            }
+
+            // Rifa incompleta: sin variantes (premios) o sin concursantes → volver a
+            // configurar para que el admin pueda completar Secciones B y C antes del sorteo.
+            if (variantes.length === 0 || res.totalConcursantes === 0) {
+              this.paso = 'configurar';
               return;
             }
 
@@ -636,7 +675,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
     this.wsUnsub?.();
     this.wsUnsub = null;
-    this.configForm.reset({ fechaHoraLimite: '', tipo: 'MENSUAL', mesReferencia: '', esPrueba: false });
+    this.configForm.reset({ fechaHoraLimite: '', tipo: 'DIARIA', mesReferencia: '', esPrueba: false });
     this.concursanteForm.reset();
     this.paso = 'configurar';
     this.cargarRifasActivas();
@@ -679,7 +718,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.sorteando = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo realizar el sorteo.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo realizar el sorteo.';
       }
     });
   }
@@ -704,7 +743,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         this.paso = 'resumen';
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cargar el resumen.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el resumen.';
       }
     });
   }
@@ -737,7 +776,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         }
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo continuar con la siguiente variante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo continuar con la siguiente variante.';
       }
     });
   }
@@ -760,7 +799,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.guardandoNuevo = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo agregar el participante.';
       }
     });
   }
@@ -800,7 +839,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.guardandoParticipanteRuleta = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo agregar el participante.';
       }
     });
   }
@@ -813,7 +852,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.rifaService.reiniciar(this.rifaConfig.id, completo).subscribe({
       next: () => { this.nuevaRifa(); },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo reiniciar el sorteo.';
       }
     });
   }

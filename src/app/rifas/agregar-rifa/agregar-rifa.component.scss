@@ -52,9 +52,8 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    &--purple { background: linear-gradient(135deg,#5b21b6,#7c3aed); color: #fff; }
-    &--blue   { background: linear-gradient(135deg,#1d4ed8,#3b82f6); color: #fff; }
-    &--green  { background: linear-gradient(135deg,#166534,#22c55e); color: #fff; }
+    // Los colores de fondo los aplica la regla global de glassmorphism en styles.scss
+    &--purple, &--blue, &--green { color: #fff; }
   }
 
   &__step {
@@ -141,9 +140,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg,#5b21b6,#7c3aed);
-    color: #fff;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,58,237,0.35); }
+    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+    color: #fff !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.40); }
   }
 
   &--outline {
@@ -164,13 +163,14 @@
   &--sm { padding: 6px 12px; font-size: 0.8rem; }
 
   &--start {
-    align-self: center;
-    padding: 14px 36px;
+    width: 100%;
+    padding: 16px 36px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg,#166534,#22c55e);
-    color: #fff;
-    box-shadow: 0 8px 24px rgba(34,197,94,0.35);
-    &:hover:not(:disabled) { transform: translateY(-2px); }
+    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+    color: #fff !important;
+    box-shadow: 0 8px 24px rgba(59,130,246,0.35);
+    border-radius: 12px;
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(59,130,246,0.45); }
   }
 
   &--sortear {
@@ -193,7 +193,7 @@
   border-radius: 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  &--purple { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+  &--purple { background: rgba(99,102,241,0.12); color: var(--app-accent); border: 1px solid rgba(99,102,241,0.28); }
 }
 
 // ── Switch ─────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@
   }
 
   input:checked ~ &__slider {
-    background: #7c3aed;
+    background: var(--app-accent);
     &::after { transform: translateX(18px); }
   }
 
@@ -296,7 +296,7 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  &__num { font-size: 0.8rem; font-weight: 700; color: #7c3aed; width: 20px; text-align: center; }
+  &__num { font-size: 0.8rem; font-weight: 700; color: var(--app-accent); width: 20px; text-align: center; }
 }
 
 .rf-arrow-btn {
@@ -306,7 +306,7 @@
   font-size: 0.9rem;
   color: var(--app-text-muted);
   padding: 0 4px;
-  &:hover:not(:disabled) { color: #7c3aed; }
+  &:hover:not(:disabled) { color: var(--app-accent); }
   &:disabled { opacity: 0.25; }
 }
 
@@ -436,7 +436,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   &--done    { background: rgba(22, 101, 52, 0.12); color: #166534; }
-  &--current { background: #7c3aed; color: #fff; }
+  &--current { background: #2563eb; color: #fff; }
   &--pending { background: var(--form-section-bg); color: var(--card-text-muted); }
 }
 
@@ -623,7 +623,7 @@
   display: flex;
   flex-direction: column;
 
-  &:hover { box-shadow: 0 4px 16px rgba(124,58,237,0.18); }
+  &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); }
 
   &__img {
     height: 100px;
@@ -648,7 +648,7 @@
   &__stock  { font-size: 0.75rem; color: #166534; font-weight: 600; }
   &__codigo { font-size: 0.7rem;  color: var(--card-text-muted); font-family: monospace; }
 
-  &__clave { font-size: 0.75rem; font-weight: 700; color: #7c3aed;
+  &__clave { font-size: 0.75rem; font-weight: 700; color: var(--app-accent);
              background: #ede9fe; border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
 
   &__giro { font-size: 0.72rem; color: var(--card-text-muted); margin-top: 2px; }
@@ -668,7 +668,7 @@
     gap: 4px;
     font-size: 0.78rem;
     font-weight: 700;
-    color: #7c3aed;
+    color: var(--app-accent);
   }
 }
 
@@ -732,13 +732,13 @@
 
 // ── Chip seleccionado ──────────────────────────────────────────────
 .rf-chip-seleccionado {
-  background: #ede9fe;
-  border: 1px solid #c4b5fd;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
   border-radius: 10px;
   padding: 8px 14px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #5b21b6;
+  color: #1e40af;
 }
 
 // ── Switch label ───────────────────────────────────────────────────
@@ -767,6 +767,112 @@
 .rf-clientes-lista { display: flex; flex-direction: column; gap: 6px; }
 
 .rf-clientes-head { font-size: 0.82rem; color: var(--app-text-muted); }
+
+// ── Wrapper del botón Iniciar rifa ────────────────────────────────
+.rf-iniciar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rf-iniciar-hint {
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+// ── Badge "ya guardado" en Sección A ──────────────────────────────
+.rf-saved-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.30);
+
+  &__hint {
+    font-weight: 500;
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+}
+
+.rf-edit-config {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+// ── Tema DÍA — ajustes que el glassmorphism global no cubre ────────
+:host-context(body.theme-light) {
+  // Círculo de paso (A/B/C): invisible sobre fondo blanco → tinte índigo
+  .rf-card__step {
+    background: rgba(99, 102, 241, 0.16);
+    color: var(--app-accent);
+  }
+  // Botón outline dentro del head del card: borde visible sobre blanco
+  .rf-card__head .rf-btn--outline {
+    border-color: rgba(0, 0, 0, 0.18);
+    color: #1e293b;
+  }
+}
+
+// ── Tema NOCHE — ajustes completos ────────────────────────────────
+:host-context(body.theme-dark) {
+  // Círculo de paso: texto blanco
+  .rf-card__step { color: #f1f5f9; }
+
+  // Botones PRIMARY en noche: azul visible sobre fondo oscuro
+  .rf-btn--primary {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+    color: #fff !important;
+  }
+
+  // Botones OUTLINE en noche: --input-border es rgba(255,255,255,0.12) = invisible
+  .rf-btn--outline {
+    border-color: rgba(255, 255, 255, 0.32);
+    color: #e2e8f0;
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+  }
+
+  // Cards con fondo verde fijo → versión oscura del mismo color
+  .rf-card--activas {
+    background: rgba(34, 197, 94, 0.07);
+    border-color: rgba(134, 239, 172, 0.20);
+  }
+  .rf-activa-row {
+    color: #4ade80;
+    border-bottom-color: rgba(134, 239, 172, 0.15);
+  }
+
+  // Sección "Importar clientes del mes" (fondo verde fijo)
+  .rf-importar {
+    background: rgba(34, 197, 94, 0.07);
+    border-color: rgba(134, 239, 172, 0.20);
+    &__title { color: #4ade80; }
+  }
+
+  // Badge "ya guardado"
+  .rf-saved-badge {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border-color: rgba(134, 239, 172, 0.25);
+  }
+
+  // Chip "ya registrado en rifa" (verde semántico)
+  .rf-prod-badge--on { background: rgba(34,197,94,0.18); color: #4ade80; }
+}
 
 .rf-cliente-row {
   display: grid;
@@ -842,7 +948,7 @@
 .rf-activa-info { display: flex; flex-direction: column; gap: 2px; }
 .rf-activa-id   { font-weight: 700; color: #166534; font-size: 0.9rem; }
 .rf-activa-fecha { font-size: 0.78rem; color: var(--card-text-muted); }
-.rf-activa-prog  { font-size: 0.75rem; color: #7c3aed; font-weight: 600; }
+.rf-activa-prog  { font-size: 0.75rem; color: var(--app-accent); font-weight: 600; }
 
 // ── Modos de transición ────────────────────────────────────────────
 .rf-transicion__sub {
@@ -872,9 +978,9 @@
   text-align: left;
   width: 100%;
 
-  &:hover { border-color: #7c3aed; background: var(--form-section-bg); }
+  &:hover { border-color: var(--app-accent); background: var(--form-section-bg); }
 
-  &--active { border-color: #7c3aed; background: var(--form-section-bg); }
+  &--active { border-color: var(--app-accent); background: var(--form-section-bg); }
 
   &__icon  { font-size: 1.2rem; }
   &__label { font-size: 0.9rem; font-weight: 700; color: var(--card-text); }
@@ -973,6 +1079,48 @@
 .rf-form-variante     { display: flex; flex-direction: column; gap: 12px;
                          background: var(--form-section-bg); border: 1px solid var(--card-border);
                          border-radius: 10px; padding: 14px; }
+
+// ── Control modo prueba (visible en ruleta / transición / resumen) ──
+.rf-prueba-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 24px;
+  flex-wrap: wrap;
+}
+
+.rf-badge-real {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rf-badge-prueba {
+  background: rgba(252, 211, 77, 0.18);
+  color: #92400e;
+  border: 1px solid rgba(252, 211, 77, 0.5);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+:host-context(body.theme-dark) {
+  .rf-badge-real {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.25);
+  }
+  .rf-badge-prueba {
+    background: rgba(252, 211, 77, 0.12);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.25);
+  }
+}
 
 // ── Confetti ──────────────────────────────────────────────────────────
 .confetti-container {

@@ -34,6 +34,8 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   esPrueba = true;
   cargandoClientes = false;
   creandoRifa = false;
+  editandoConfig = false;
+  savingConfigEdit = false;
   clientesMes: IClientePedido[] = [];
   clientesSeleccionados = new Set<number>();
 
@@ -82,6 +84,10 @@ export class RifaMesComponent implements OnInit, OnDestroy {
       telefono:        ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     });
 
+    // Auto-retomar si viene desde buscar-rifa con state.retomarRifaId
+    const retomarId = history.state?.retomarRifaId as number | undefined;
+    if (retomarId) { this._retomar(retomarId); }
+
     this.busqSub = this.busqSubject.pipe(
       debounceTime(400),
       distinctUntilChanged(),
@@ -102,6 +108,51 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
   }
 
+  // ── Retomar rifa existente ─────────────────────────────────────────
+  private _retomar(rifaId: number): void {
+    this.rifaService.getEstado(rifaId).subscribe({
+      next: res => {
+        const cfg         = res.configurarRifa;
+        this.rifaConfig   = cfg;
+        this.mesSeleccionado = cfg.mesReferencia ?? '';
+        this.fechaHoraLimite = (cfg.fechaHoraLimite ?? '').replace(' ', 'T').slice(0, 16);
+        this.esPrueba     = !!cfg.esPrueba;
+        this.varianteRifa = res.varianteActual;
+        this.elegibles    = res.elegibles ?? [];
+        this.descartados  = res.descartados ?? [];
+        this.ganador      = res.ganador;
+
+        this.rifaService.getConcursantesPorRifa(rifaId).subscribe({
+          next: concursantes => {
+            this.concursantes = concursantes;
+
+            if (res.ganador && res.rifaTerminada) {
+              this.paso = 'ganador';
+              return;
+            }
+            if (this.varianteRifa && this.elegibles.length > 0) {
+              this.paso = 'ruleta';
+              setTimeout(() => this.generarRuleta(), 200);
+            } else if (this.varianteRifa) {
+              // Variante guardada pero sin elegibles → participantes para revisar
+              this.paso = 'participantes';
+            } else if (concursantes.length > 0) {
+              // Hay participantes pero falta elegir el premio
+              this.paso = 'variante';
+            } else {
+              // Solo config guardada, sin participantes aún
+              this.paso = 'participantes';
+            }
+          },
+          error: () => { this.paso = 'participantes'; }
+        });
+      },
+      error: err => {
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la rifa.';
+      }
+    });
+  }
+
   // ── Paso 1: cargar clientes del mes ───────────────────────────────
 
   cargarClientes(): void {
@@ -114,7 +165,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
       next: res => { this.clientesMes = res; this.cargandoClientes = false; },
       error: err => {
         this.cargandoClientes = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los clientes del mes.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los clientes del mes.';
       }
     });
   }
@@ -167,13 +218,33 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           },
           error: err => {
             this.creandoRifa = false;
-            this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron importar los participantes.';
+            this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron importar los participantes.';
           }
         });
       },
       error: err => {
         this.creandoRifa = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo crear la rifa.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo crear la rifa.';
+      }
+    });
+  }
+
+  actualizarConfiguracion(): void {
+    if (!this.rifaConfig?.id || !this.fechaHoraLimite) return;
+    this.savingConfigEdit = true;
+    this.errorConcursante = null;
+    this.rifaService.actualizarConfiguracion(this.rifaConfig.id, {
+      fechaHoraLimite: this.fechaHoraLimite,
+      mesReferencia: this.mesSeleccionado || null,
+    }).subscribe({
+      next: res => {
+        this.rifaConfig = res;
+        this.savingConfigEdit = false;
+        this.editandoConfig = false;
+      },
+      error: err => {
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo actualizar la configuración.';
+        this.savingConfigEdit = false;
       }
     });
   }
@@ -229,7 +300,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
             },
             error: err => {
               this.cambiandoModoPrueba = false;
-              this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+              this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los elegibles.';
             }
           });
         } else {
@@ -238,7 +309,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.cambiandoModoPrueba = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo cambiar el modo de prueba.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cambiar el modo de prueba.';
       }
     });
   }
@@ -265,7 +336,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         this.mostrarManual = false;
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo agregar el participante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo agregar el participante.';
         this.guardandoConcursante = false;
       }
     });
@@ -346,7 +417,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
             },
             error: err => {
               this.guardandoVariante = false;
-              this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+              this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los elegibles.';
             }
           });
         };
@@ -362,7 +433,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
             next: () => cargarElegibles(),
             error: err => {
               this.guardandoVariante = false;
-              this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+              this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo reiniciar el sorteo.';
             }
           });
         } else {
@@ -370,7 +441,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         }
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo guardar el premio.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el premio.';
         this.guardandoVariante = false;
       }
     });
@@ -409,7 +480,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.sorteando = false;
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo realizar el sorteo.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo realizar el sorteo.';
       }
     });
   }
@@ -431,7 +502,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         });
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudo reiniciar el sorteo.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo reiniciar el sorteo.';
       }
     });
   }
@@ -448,7 +519,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         setTimeout(() => this.actualizarRuleta(), 200);
       },
       error: err => {
-        this.errorConcursante = err?.error?.mensaje ?? 'No se pudieron cargar los elegibles.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los elegibles.';
       }
     });
   }
@@ -472,6 +543,8 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.fechaHoraLimite = '';
     this.esPrueba = true;
     this.cambiandoModoPrueba = false;
+    this.editandoConfig = false;
+    this.savingConfigEdit = false;
     this.errorConcursante = null;
     this.terminoBusca = '';
     this.chart?.destroy();

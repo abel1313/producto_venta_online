@@ -69,7 +69,10 @@ export class BuscarRifaComponent implements OnInit {
   }
 
   retomarRifa(r: IConfigurarRifa): void {
-    this.router.navigate(['/rifas/agregar'], { state: { retomarRifaId: r.id } });
+    // Las rifas MENSUAL se manejan en el wizard de /rifas/mes.
+    // Las DIARIA y multi-variante van al componente de /rifas/agregar.
+    const ruta = r.tipo === 'MENSUAL' ? '/rifas/mes' : '/rifas/agregar';
+    this.router.navigate([ruta], { state: { retomarRifaId: r.id } });
   }
 
   get rifasMostradas(): IConfigurarRifa[] {

@@ -112,6 +112,90 @@ Se agregaron `idVarianteCargado` y `destroy$` para evitar re-inicializaciones du
 
 ---
 
+## REGLA — ESPACIO LATERAL RESERVADO PARA PROMOCIONES
+
+**En TODOS los componentes**, los lados izquierdo y derecho del header/buscador deben quedar
+**completamente vacíos**. Esos espacios están reservados para **banners de promociones de
+productos** que el usuario verá al navegar por el sistema.
+
+**Implementación obligatoria:**
+- El contenido del header siempre va dentro de un wrapper interno con `max-width: 1120px` y
+  `margin: 0 auto` — mismo ancho que el grid de cards para que queden alineados.
+- Nombre del wrapper: `.<prefijo>-header__content` (ej. `pl-header__content`, `vb-header__content`).
+- No agregar `padding` lateral al `.vb-header` / `.pl-header` externo más allá del necesario
+  para el color de fondo — el espacio libre en los laterales es intencional.
+
+**Estado actual:**
+- `productos/all` → ✅ `.pl-header__content` (max-width: 1120px — alineado con grid de cards)
+- `variante/buscar` → ✅ `.vb-header__content` (max-width: 1120px — alineado con grid de cards)
+- Formularios centrados (`variante/agregar`, `productos/add`) → ✅ ya tienen `max-width` en su card
+
+**Verificar este patrón** al agregar cualquier componente nuevo con buscador o header de pantalla completa.
+
+### REGLA — TIRA DE COLOR EN CARDS (`.xx-card__header`)
+
+La tira donde aparece el precio/stock en las cards de catálogo **NO debe cambiar de color por producto**.
+Todas las cards deben tener el **mismo color azul marino semi-transparente**:
+
+```scss
+/* Pegar en .<prefix>-card__header dentro del componente buscador */
+background: linear-gradient(135deg, rgba(15, 37, 87, 0.88) 0%, rgba(29, 78, 216, 0.72) 100%);
+backdrop-filter: blur(6px);
+```
+
+- **No usar** `[style.background]="colorHeader(item.color)"` ni ningún binding dinámico de color
+- El texto y chips dentro deben ser blancos (`color: white`)
+- Aplica a: `productos/all` ✅, `variante/buscar` ✅ (pendiente aplicar si tiene tira de color)
+
+---
+
+## DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE (✅ aprobado)
+
+### Light mode — glassmorphism
+```scss
+:host-context(body.theme-light) {
+  .<prefix>-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  // Texto oscuro
+  .<prefix>-header__title h4    { color: #1e293b; }
+  .<prefix>-header__title small { color: #64748b; }
+  .<prefix>-header__inner       { color: #1e293b; }
+  // Botón carrito
+  .<prefix>-btn--cart { background: rgba(0,0,0,0.06); color: #1e293b; }
+  // Buscador
+  .<prefix>-search { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); }
+  .<prefix>-search__input::placeholder { color: rgba(0,0,0,0.42); }
+  // Filtros admin
+  .<prefix>-filtro-btn { border: 1px solid rgba(0,0,0,0.14); background: rgba(0,0,0,0.05); color: #475569; }
+  .<prefix>-filtro-btn--active { background: rgba(99,102,241,0.12); color: var(--app-accent); }
+  // Botón scan móvil
+  .<prefix>-scan-mobile { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); color: #1e293b; }
+}
+```
+
+### Dark mode — antracita
+```scss
+:host-context(body.theme-dark) {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(0, 0, 0, 0.55);
+}
+```
+
+### Componentes donde ya está aplicado
+- `productos/all` → `all.component.scss` ✅
+- `variante/buscar` → `buscar.component.scss` ✅
+
+### Para CADA componente nuevo que tenga header/buscador
+1. Agregar los dos bloques `:host-context` al final de su SCSS
+2. Ajustar el prefijo de clase (ej. `rf-` para rifas, `ca-` para carga-archivo, etc.)
+3. Si tiene formulario interno (no buscador), el header usa `var(--header-brand)` directamente — solo agregar el bloque `theme-dark` con antracita
+
+---
+
 ## FIXES DE ESTILOS — PENDIENTES Y REALIZADOS
 
 ### ✅ Ya corregidos
@@ -824,6 +908,269 @@ de `setEsPrueba(false)` por consistencia de UX. NO se replicó el resync de
 
 ---
 
+## FIX MÓDULO RIFAS — EDITAR CONFIGURACIÓN AL RETOMAR (2026-06-19)
+
+> El backend implementó `PUT /v1/configurarRifa/{id}` (campos opcionales: `fechaHoraLimite`, `tipo`, `mesReferencia`).
+> El front ahora permite actualizar la fecha límite de una rifa ya creada, sin crear un duplicado.
+
+### Problema resuelto
+
+**`AgregarRifaComponent`:** al retomar una rifa con `_retomar()`, el form se precargaba con `fechaHoraLimite` pero el usuario no tenía forma de guardar cambios — el botón "Guardar configuración" solo existe cuando `!rifaConfig?.id`. El valor modificado en el UI se perdía al salir.
+
+**`RifaMesComponent`:** si el usuario volvía al "Paso 1: Mes" (botón "← Volver") con `rifaConfig` ya cargada, el botón "Crear rifa e importar" seguía visible y podía crear una rifa DUPLICADA.
+
+### Fix
+
+**`rifa.service.ts`:** nuevo método `actualizarConfiguracion(id, patch)` → `PUT /v1/configurarRifa/{id}`.
+
+**`agregar-rifa.component.ts`:**
+- Nuevo campo `editandoConfig = false`
+- Nuevo método `actualizarConfiguracion()` que llama el PUT con `fechaHoraLimite`
+
+**`agregar-rifa.component.html`:** el `rf-saved-badge` ahora tiene botón "✏️ Editar fecha". Al abrirse, muestra campo de fecha + botón "💾 Guardar cambios" + error alert.
+
+**`agregar-rifa.component.scss`:** nueva clase `.rf-edit-config` (panel índigo sutil).
+
+**`rifa-mes.component.ts`:**
+- Nuevos campos `editandoConfig = false`, `savingConfigEdit = false`
+- Nuevo método `actualizarConfiguracion()` — actualiza `fechaHoraLimite` y `mesReferencia`
+- `nueva()` resetea ambos campos
+
+**`rifa-mes.component.html`:** Paso 1 ahora tiene dos modos:
+- Sin `rifaConfig?.id`: flujo de creación normal (sin cambio)
+- Con `rifaConfig?.id`: badge "Rifa #X" + botón "✏️ Editar fecha / mes" + botón "→ Continuar". El form de creación y el botón "Crear rifa e importar" están ocultos — previene crear duplicados al volver al Paso 1.
+
+**`rifa-mes.component.scss`:** nuevas clases `.rm-saved-badge` y `.rm-edit-config` con variantes dark mode.
+
+**Archivos modificados:**
+- `src/app/rifas/service/rifa.service.ts` → `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `editandoConfig`, `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → edit badge en Sección A
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → `.rf-edit-config`
+- `src/app/rifas/rifa-mes/rifa-mes.component.ts` → `editandoConfig`, `savingConfigEdit`, `actualizarConfiguracion()`, `nueva()`
+- `src/app/rifas/rifa-mes/rifa-mes.component.html` → Paso 1 con modo crear/editar
+- `src/app/rifas/rifa-mes/rifa-mes.component.scss` → `.rm-saved-badge`, `.rm-edit-config`, dark mode
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX MÓDULO RIFAS — CHECKBOX "ES DE PRUEBA" + SWAL EN LUGAR DE `confirm()` (2026-06-19)
+
+**Síntoma:** al llegar al Paso 4 (Ruleta) o Paso 5 (Ganador) con una rifa `esPrueba=true`, el checkbox "🧪 Es de prueba" ya venía marcado (correcto). Pero al dar clic para desmarcarlo (pasar a sorteo real), el browser mostraba el diálogo nativo `confirm()` con la leyenda "localhost:4200 dice: ..." — visualmente feo y fuera de lugar.
+
+**Causa secundaria:** con Swal asíncrono, el checkbox podía parpadear brevemente (el browser lo desmarca visualmente antes de que Swal responda) porque el binding era `(change)`. Usando `(click)` + `$event.preventDefault()` el browser no cambia el estado visual del checkbox; solo lo cambia Angular cuando `rifaConfig.esPrueba` efectivamente cambia.
+
+**Fix:**
+- `agregar-rifa.component.ts` y `rifa-mes.component.ts`: `import Swal from 'sweetalert2'`; en `toggleModoPrueba()`, se reemplazó el `confirm()` sincrónico por `Swal.fire({ icon: 'warning', title: '¿Pasar a sorteo real?', ... }).then(result => { if (result.isConfirmed) ejecutar(); })`. La lógica del API call se extrajo a una función `ejecutar()` interna.
+- `agregar-rifa.component.html`: 3 checkboxes `(change)` → `(click)="$event.preventDefault(); toggleModoPrueba()"`.
+- `rifa-mes.component.html`: 2 checkboxes `(change)` → `(click)="$event.preventDefault(); toggleModoPrueba()"`.
+
+**UX resultante:** checkbox siempre refleja `rifaConfig.esPrueba` (checked = prueba, unchecked = real). Al intentar desmarcarlo, aparece Swal de confirmación sin que el checkbox cambie. Si confirma → API → `rifaConfig.esPrueba = false` → Angular re-renderiza el checkbox como unchecked.
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → import Swal, `toggleModoPrueba()` con Swal
+- `src/app/rifas/rifa-mes/rifa-mes.component.ts` → import Swal, `toggleModoPrueba()` con Swal
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → 3 checkboxes `(click)` + preventDefault
+- `src/app/rifas/rifa-mes/rifa-mes.component.html` → 2 checkboxes `(click)` + preventDefault
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO RIFAS — SELECT `palabraClave` VACÍO EN SECCIÓN C (2026-06-19)
+
+**Síntoma:** en `/rifas/agregar`, Sección C "Participantes", al hacer clic en "+ Agregar" el select de "Palabra clave" aparecía vacío (solo el placeholder deshabilitado "Selecciona palabra…").
+
+**Causa:** `palabrasClave: string[]` se puebla desde `variantesRifa.map(v => v.palabraClave)`. Si el usuario no ha configurado ningún premio en Sección B (rifa nueva o retomada sin premios), el array es `[]` y el select no tiene opciones. El usuario no tenía forma de saber POR QUÉ estaba vacío.
+
+**Fix:** en `agregar-rifa.component.html`, cuando `mostrarFormParticipante && palabrasClave.length === 0` se muestra un aviso `⚠️ Primero configura al menos un premio en la Sección B...` en vez del formulario. El formulario solo se muestra cuando `palabrasClave.length > 0`.
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → guard `palabrasClave.length > 0` en el `<form>` de participantes
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX GLOBAL — MANEJADORES DE ERROR SIN MENSAJE DEL BACKEND (2026-06-19)
+
+**Problema:** múltiples componentes tenían manejadores `error` que:
+- (a) Solo llamaban `console.error` — el usuario no veía ningún feedback
+- (b) Llamaban `Swal.fire` pero sin leer `err?.error?.mensaje` del backend — el mensaje de regla de negocio se perdía
+
+**Patrón aplicado en todos los casos:**
+```typescript
+error: (err) => {
+  Swal.fire({ icon: 'error', title: 'Título', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Fallback.' });
+}
+```
+- `err?.error?.mensaje` → Proyecto-Key (9091) usa `mensaje` en español
+- `err?.error?.message` → Spring Boot `BasicErrorController` (404s) y Micro Imágenes (9096) usan `message` en inglés
+
+**Archivos modificados:**
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/gastos/all/all.component.ts` | + import Swal; `console.error` → Swal en `getData()` y `buscarProductoSinKey()` |
+| `src/app/productos/producto/busca/busca.component.ts` | + import Swal; `console.error` → Swal en `buscarPorNombreCodigoPostal()` |
+| `src/app/usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts` | + import Swal; `console.error` → Swal en `buscarProductoSinKey()` |
+| `src/app/usuarios/usuarios/all-usuarios/all-usuarios.component.ts` | `console.error` → Swal (ya tenía import) |
+| `src/app/productos/producto/all/all.component.ts` | `console.error` → Swal en reload después de eliminar + infinite scroll |
+| `src/app/productos/producto/detalle-producto/detalle-producto.component.ts` | `console.error` → Swal en `eliminarImagen()` |
+| `src/app/ventas/venta-producto/add-venta/add-venta.component.ts` | `console.error` → Swal en `getDataBuscador()` y `buscarProductos()` |
+| `src/app/pedidos/historial-mp/historial-mp.component.ts` | + import Swal; `error: () => { this.cargando = false; }` → + Swal en los 4 casos del switch |
+| `src/app/admin/cache/cache.component.ts` | Swal sin `text` → + `text: err?.error?.mensaje` |
+| `src/app/admin/config-negocio/config-negocio.component.ts` | `error: () => {}` → Swal en carga inicial; + `text: err?.error?.mensaje` en toggle/horario/contactos |
+| `src/app/documentos/carga-archivo/carga-archivo.component.ts` | Swal sin `text` → + `text: err?.error?.mensaje` en `subir()` |
+| `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` | `error: ()` → `error: (err)` + backend msg en `eliminarDetalle()` |
+| `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` | `error: ()` → `error: (err)` + backend msg en `cancelarConMotivo()` |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `error: ()` → `error: (err)` + backend msg en `cobrar()` |
+| `src/app/clietes/clientes-add/clientes-add.component.ts` | `error: ()` → `error: (err)` + backend msg en `saveCliente()` |
+| `src/app/productos/producto/add/add.component.ts` | `error: ()` → `error: (err)` + backend msg en `guardar()` |
+| `src/app/palabras-clave/gestion/gestion-palabras-clave.component.ts` | `error: () => { this.cargando = false; }` → + Swal en `cargar()` |
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX GLOBAL — `throwError` EN RXJS 6 + NORMALIZACIÓN DE BODY EN `TokenInterceptor` (2026-06-19)
+
+**Causa raíz 1 — RxJS 6 no acepta factory functions en `throwError`:**
+El proyecto usa RxJS **6.6.7**. En RxJS 6, `throwError(() => valor)` tira LA FUNCIÓN misma como error — no llama la factory. En RxJS 7+ sí la llama. El `TokenInterceptor` usaba `throwError(() => error)` (sintaxis de RxJS 7), así que TODOS los componentes del proyecto recibían una función vacía como `err` en vez del `HttpErrorResponse`. Resultado: `err.status`, `err.error`, `err.error.mensaje` — todos `undefined` — siempre se mostraba el mensaje de fallback.
+
+**Fix 1:** cambiar todos los `throwError(() => x)` → `throwError(x)` (valor directo, RxJS 6 API).
+
+**Causa raíz 2 — body de error como string si backend omite Content-Type:**
+Si el backend no envía `Content-Type: application/json` en respuestas de error, Angular no parsea el body — `err.error` llega como string `'{"mensaje":"..."}'` y `err.error.mensaje` es `undefined`.
+
+**Fix 2:** `TokenInterceptor.intercept()` — si `err.error` es string y parsea como JSON válido, se crea un nuevo `HttpErrorResponse` con el body ya como objeto:
+```typescript
+if (error.error && typeof error.error === 'string') {
+  try {
+    const parsed = JSON.parse(error.error);
+    normalizedError = new HttpErrorResponse({ error: parsed, headers, status, statusText, url });
+  } catch { /* no es JSON válido — dejar como estaba */ }
+}
+```
+
+**Nota sobre `requests.js:1 POST ... 400 (Bad Request)` en consola:** es comportamiento automático del navegador para cualquier respuesta 4xx/5xx — no es código nuestro, no se puede suprimir, es normal.
+
+**Archivo modificado:** `src/app/token/TokenInterceptor .ts` → todos los `throwError(() => x)` → `throwError(x)` + normalización de body antes del check 401.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO RIFAS — RIFA DIARIA: WIZARD MULTI-RIFA + SWAL PRUEBA + BUSCAR REDISEÑADO (2026-06-19)
+
+> Solo para rifa DIARIA (`AgregarRifaComponent`). `RifaMesComponent` sin tocar.
+
+### 1. Quitar "Rifas activas — retomar" de `AgregarRifaComponent`
+Lista de retomar eliminada del componente — ese flujo queda centralizado en `buscar-rifa`. El campo `rifasActivas` y el método `cargarRifasActivas()` fueron removidos. `retomarRifa()` también eliminado (ya no era necesario).
+
+### 2. Wizard multi-rifa (+ Agregar otra rifa)
+Cuando el admin termina de configurar premios y participantes de una rifa (Secciones B y C completas), aparece el botón **"➕ Agregar otra rifa"** encima del botón "🎡 Iniciar rifa". Al pulsarlo:
+- La rifa actual queda guardada en `rifasAnteriores[]` (colapsada como un resumen al tope de la página)
+- Los formularios se limpian para la siguiente rifa
+- Cada entrada colapsada tiene un botón **"✏️ Editar"** → `editarRifaAnterior(idx)` → recarga esa rifa con `_retomar()`, swapeando si había una activa
+- Botón **"📋 Copiar de otra rifa"** en el header de Sección C → `copiarDeRifaAnterior()` → `POST /v1/concursante/copiarDeRifa` (nuevo método en `RifaService`)
+
+### 3. Swal antes de `sortear()` cuando `esPrueba=true`
+`sortear()` ahora extrae la lógica HTTP a `ejecutar()`. Si `rifaConfig.esPrueba === true`, primero muestra un Swal de advertencia ("⚠️ Esta rifa es de PRUEBA — Los resultados no son definitivos"). Solo llama `ejecutar()` si el usuario confirma.
+
+### 4. Ocultar reiniciar en DIARIA vencida
+Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los dos botones de reiniciar en el paso resumen llevan `*ngIf="puedeReiniciar"`.
+
+### 5. `buscar-rifa` — rediseño completo
+- Reemplaza sistema de 3 tabs (hoy/todas/buscar) por selector **☀️ Diaria / 📅 Mensual**
+- DIARIA: filtro por día (default: hoy) → `buscar?tipo=DIARIA&desde=X&hasta=X`
+- MENSUAL: filtro por mes (default: mes actual) → `buscar?tipo=MENSUAL&mesReferencia=X`
+- Badges dinámicos: `badgeEstado()` → 🟢 Activa / ⚫ Completada / 🔴 Vencida + colores de header de card
+- Botones condicionales: **"🎡 Ir a ejecución"** solo si `activa=true`; **"📋 Ver detalle"** siempre; **"🔄 Recuperar"** solo si `tipo=MENSUAL && !activa`
+- Panel de detalle (overlay modal) con historial de ganadores → `getEstado(id)`
+
+**Archivos modificados:**
+- `src/app/rifas/service/rifa.service.ts` → `copiarDeRifa()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → remove `rifasActivas`/`cargarRifasActivas`/`retomarRifa`; add multi-rifa wizard; Swal en `sortear()`; `puedeReiniciar` + `puedeAgregarOtraRifa`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → multi-rifa UI; `*ngIf="puedeReiniciar"` en botones resumen
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.ts` → reescritura completa
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.html` → reescritura completa
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.scss` → nuevas clases de badges, botones, detalle overlay, historial
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## REFACTOR MÓDULO RIFAS — ACORDEÓN UNIFICADO EN `AgregarRifaComponent` (2026-06-19)
+
+> `RifaMesComponent` sin tocar en ningún momento.
+
+### Arquitectura anterior vs nueva
+
+**Antes:** tab-bar (`rf-tabs`) con 4 pestañas — Configurar / Ruleta / Transición / Resumen. Configurar estaba FUERA del acordeón. Al retomar, los datos cargaban en el form superior.
+
+**Ahora:** acordeón único (`rf-acordeon`) que engloba TODO el contenido — configuración Y sorteo. El panel activo siempre está expandido; los demás (`rifasAnteriores`) aparecen colapsados debajo.
+
+### Flujo 1 — Crear rifas nuevas
+1. Form activo arriba (Sección A: tipo/fecha/palabra/prueba, Sección B: premios, Sección C: participantes)
+2. "Guardar configuración" → guarda en backend
+3. "➕ Agregar otra rifa" → rifa actual colapsa a acordeón; form se limpia
+4. Repetir para más rifas
+5. "🎡 Ir al sorteo" → modo sorteo; `modoSorteo = true`
+
+### Flujo 2 — Modo sorteo
+- Panel activo muestra la ruleta canvas + premio + elegibles
+- Rifas anteriores colapsadas con CTA "🎡 Ver sorteo ►"
+- Clic en colapsada → carga esa rifa con `_retomar()` → va directo a `paso='ruleta'` (porque `modoSorteo=true`)
+
+### Flujo 3 — Retomar (desde `buscar-rifa`)
+- Rifas existentes cargan en el acordeón (panel activo = la primera)
+- `modoSorteo = false` → `_retomar()` fuerza `paso='configurar'` aunque la rifa esté completa
+- Config precompletada editable antes de ir al sorteo
+- CTA de colapsadas: "📋 Ver config ►" mientras `modoSorteo=false`
+
+### Flag `modoSorteo`
+| Valor | Quién lo establece | Efecto en `_retomar()` |
+|---|---|---|
+| `false` (default) | `nuevaRifa()`, `agregarOtraRifa()` | fuerza `paso='configurar'` siempre |
+| `true` | `irARuleta()` | permite `paso='ruleta'` si rifa completa |
+
+### Estructura HTML (acordeón)
+```
+<div class="rf-acordeon">
+  <div class="rf-acord-item rf-acord-item--open">   ← panel activo (siempre abierto)
+    <div class="rf-acord-hdr rf-acord-hdr--active">
+      [título: "✨ Nueva rifa" o "Rifa #ID" + badge prueba + pill estado]
+    </div>
+    <div class="rf-acord-body">
+      <div *ngIf="paso === 'configurar'">     ← Secciones A, B, C + botones
+      <div *ngIf="paso === 'ruleta'">         ← canvas + elegibles + descartados
+      <div *ngIf="paso === 'transicion'">     ← pantalla ganador en vivo
+      <div *ngIf="paso === 'resumen'">        ← resumen final
+    </div>
+  </div>
+  <div *ngFor="let a of rifasAnteriores">    ← colapsadas, clic → editarRifaAnterior(i)
+</div>
+```
+
+### SCSS nuevo (reemplaza `rf-tabs`)
+- `.rf-acordeon`: contenedor con `border-radius: 14px`, `overflow: hidden`, `border: 1.5px solid var(--card-border)`
+- `.rf-acord-item`: fila colapsada; hover suave con `var(--form-section-bg)`
+- `.rf-acord-item--open`: panel activo, `cursor: default`
+- `.rf-acord-hdr`: flex con pill de estado y CTA condicional por `modoSorteo`
+- `.rf-acord-hdr--active`: fondo índigo sutil, `border-bottom: 1px solid rgba(99,102,241,0.2)`
+- `.rf-btn--secondary` / `.rf-btn--add-rifa`: botón "Agregar otra rifa"
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → elimina `rf-tabs`, todo dentro de `rf-acordeon`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `modoSorteo` field; `irARuleta()` lo activa; `_retomar()` lo respeta; `nuevaRifa()` + `agregarOtraRifa()` lo resetean a `false`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → reemplaza bloque `rf-tabs` con clases `rf-acordeon`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## MÓDULO CHAT EN VIVO (2026-06-16)
 
 > Implementación de chat en tiempo real STOMP/WebSocket según `CHAT_FRONT_DEVELOPER.md`.
@@ -911,6 +1258,30 @@ el campo con nombre distinto (`mensaje` en vez de `contenido`).
 - `src/app/chat/service/chat-live.service.ts` → SockJS transports
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## LECCIONES APRENDIDAS — GLOBALES
+
+### L-G1 — `throwError(() => valor)` no funciona en RxJS 6 (2026-06-19)
+
+**Síntoma:** todos los manejadores `error: (err) => { ... }` en el proyecto reciben una **función** como `err` en vez de un `HttpErrorResponse`. `err.status`, `err.error`, `err.error.mensaje` son todos `undefined`. Siempre se muestra el mensaje de fallback aunque el backend mande un error específico.
+
+**Causa:** el proyecto usa **RxJS 6.6.7**. En RxJS 6, `throwError(valor)` tira el valor directamente. Si se pasa una arrow function (`throwError(() => valor)`), tira LA FUNCIÓN como error — nunca la llama. En RxJS 7+ sí se llama la factory.
+
+**Cómo detectarlo:** `console.log(err)` en cualquier error handler muestra algo como `() => normalizedError` (la representación string de la función).
+
+**Fix:** usar siempre `throwError(valor)` sin factory wrapper. Aplica a TODO el código del proyecto, especialmente en interceptores.
+
+```typescript
+// ❌ RxJS 7 (no funciona en RxJS 6)
+return throwError(() => error);
+
+// ✅ RxJS 6 correcto
+return throwError(error);
+```
+
+**Dónde aplica:** `src/app/token/TokenInterceptor .ts` — ya corregido. Si se agrega un interceptor nuevo o un `throwError` en cualquier servicio, usar la sintaxis de RxJS 6.
 
 ---
 

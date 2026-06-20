@@ -1,8 +1,26 @@
-<div class="row p-2">
-  <div class="col-6">
-    <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Buscar Usuario" aria-label="Username"
-        aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
+<div class="bu-header">
+  <div class="bu-header__content">
+
+    <div class="bu-header__inner">
+      <div class="bu-header__title">
+        <span class="bu-header__icon">👥</span>
+        <div>
+          <h4 class="mb-0">Usuarios</h4>
+          <small>Gestión de usuarios del sistema</small>
+        </div>
+      </div>
     </div>
+
+    <div class="bu-search">
+      <span class="bu-search__icon">🔍</span>
+      <input
+        class="bu-search__input"
+        type="text"
+        placeholder="Buscar por usuario o correo…"
+        (keyup)="buscarProductos($event)"
+        autocomplete="off"
+      />
+    </div>
+
   </div>
 </div>

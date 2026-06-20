@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChange
 import { IProductoPaginable } from 'src/app/productos/producto/models';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { IUsuarioDto } from '../models/usuario.dto';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-buscar-usuarios',
@@ -35,7 +36,7 @@ paginaPrimera: number = 1;
           this.regresarProductos.emit(res);
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el usuario.' });
         }
       });
   }

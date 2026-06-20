@@ -1,0 +1,199 @@
+.ga-page    { min-height: 100vh; background: var(--page-bg); }
+.ga-content { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+
+.ga-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header-brand);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+
+  &__content {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    h4    { margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; }
+    small { color: rgba(255,255,255,0.65); font-size: 0.78rem; }
+  }
+}
+
+:host-context(body.theme-light) .ga-header {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+
+  .ga-header__title {
+    h4    { color: #1e293b; }
+    small { color: #64748b; }
+  }
+}
+
+.ga-form-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.ga-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+
+  &:last-of-type { margin-bottom: 0; }
+}
+
+.ga-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 160px;
+
+  &--wide { flex: 1; min-width: 260px; }
+
+  &__error { font-size: 0.75rem; color: #ef4444; margin-top: 2px; }
+}
+
+.ga-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+
+  &--opt { font-weight: 400; color: var(--app-text-muted); opacity: 0.7; }
+}
+
+.ga-input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--input-border, var(--card-border));
+  border-radius: 9px;
+  background: var(--input-bg, var(--card-bg));
+  color: var(--app-text);
+  font-size: 0.9rem;
+
+  &:focus { outline: none; border-color: var(--app-accent); }
+}
+
+.ga-select { cursor: pointer; }
+
+// ── CUSTOM DROPDOWN ───────────────────────────────────────────────────────────
+.ga-custom-select { position: relative; }
+
+.ga-select-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  gap: 8px;
+
+  &--open { border-color: var(--app-accent); }
+}
+
+.ga-select-caret {
+  font-size: 0.8rem;
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.ga-select-btn--open .ga-select-caret { transform: rotate(180deg); }
+
+.ga-select-opts {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 9px;
+  z-index: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.ga-select-opt {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: var(--app-text);
+  font-size: 0.88rem;
+  transition: background 0.12s;
+
+  &:hover           { background: var(--form-section-bg); }
+  &--active         { color: var(--app-accent); font-weight: 700; background: var(--app-accent-soft); }
+}
+
+:host-context(body.theme-dark) {
+  .ga-input, .ga-select {
+    color-scheme: dark;
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.22);
+    &::placeholder { color: #64748b; }
+  }
+}
+
+:host-context(body.theme-light) {
+  .ga-input, .ga-select {
+    color-scheme: light;
+    color: #1e293b;
+    background: #ffffff;
+    border-color: #cbd5e1;
+    &::placeholder { color: #9ca3af; }
+  }
+}
+
+.ga-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  gap: 10px;
+
+  &__right { display: flex; gap: 10px; margin-left: auto; }
+}
+
+.ga-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &--primary {
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: #fff !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+    &:disabled             { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  &--ghost {
+    background: var(--form-section-bg);
+    color: var(--app-text);
+    border: 1.5px solid var(--card-border);
+    &:hover { background: var(--card-border); }
+  }
+
+  &--danger {
+    background: transparent;
+    color: #ef4444;
+    border: 1.5px solid #ef4444;
+    &:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
+    &:disabled             { opacity: 0.45; cursor: not-allowed; }
+  }
+}

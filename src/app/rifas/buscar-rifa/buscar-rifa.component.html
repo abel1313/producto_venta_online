@@ -1,61 +1,54 @@
 <div class="br-page">
 
+  <!-- ── Header + selector DIARIA/MENSUAL ─────────────────────────── -->
   <div class="br-header">
     <h4 class="br-header__title">🎰 Rifas</h4>
-    <div class="br-tabs">
-      <button class="br-tab" [class.br-tab--active]="tab === 'hoy'"    (click)="cambiarTab('hoy')">📅 Rifas de hoy</button>
-      <button class="br-tab" [class.br-tab--active]="tab === 'todas'"  (click)="cambiarTab('todas')">📋 Todas las activas</button>
-      <button class="br-tab" [class.br-tab--active]="tab === 'buscar'" (click)="cambiarTab('buscar')">🔎 Buscar</button>
+    <div class="br-tipo-tabs">
+      <button class="br-tipo-btn" [class.br-tipo-btn--active]="tipo === 'DIARIA'"
+              (click)="cambiarTipo('DIARIA')">☀️ Diaria</button>
+      <button class="br-tipo-btn" [class.br-tipo-btn--active]="tipo === 'MENSUAL'"
+              (click)="cambiarTipo('MENSUAL')">📅 Mensual</button>
     </div>
   </div>
 
-  <!-- ════════ FILTRO DE BÚSQUEDA ════════ -->
-  <div class="br-filtro" *ngIf="tab === 'buscar'">
+  <!-- ── Filtro de fecha ──────────────────────────────────────────── -->
+  <div class="br-filtro">
     <div class="br-filtro__row">
-      <div class="br-field">
-        <label class="br-label">Tipo</label>
-        <select class="br-input" [(ngModel)]="filtroTipo">
-          <option value="">Todos</option>
-          <option value="MENSUAL">Mensual</option>
-          <option value="DIARIA">Diaria</option>
-        </select>
+      <div class="br-field" *ngIf="tipo === 'DIARIA'">
+        <label class="br-label">Día</label>
+        <input class="br-input" type="date" [(ngModel)]="diaFiltro" (change)="buscar()" />
       </div>
-      <div class="br-field" *ngIf="filtroTipo === 'MENSUAL'">
-        <label class="br-label">Mes de referencia</label>
-        <input class="br-input" type="month" [(ngModel)]="filtroMesReferencia" />
+      <div class="br-field" *ngIf="tipo === 'MENSUAL'">
+        <label class="br-label">Mes</label>
+        <input class="br-input" type="month" [(ngModel)]="mesFiltro" (change)="buscar()" />
       </div>
-      <div class="br-field">
-        <label class="br-label">Desde</label>
-        <input class="br-input" type="date" [(ngModel)]="filtroDesde" />
-      </div>
-      <div class="br-field">
-        <label class="br-label">Hasta</label>
-        <input class="br-input" type="date" [(ngModel)]="filtroHasta" />
-      </div>
-      <button class="br-btn br-btn--filtro" (click)="buscarPorFiltro()" [disabled]="buscando">
-        <span *ngIf="!buscando">Buscar</span>
-        <span *ngIf="buscando" class="spinner-border spinner-border-sm"></span>
+      <button class="br-btn--filtro" (click)="buscar()" [disabled]="cargando">
+        <span *ngIf="!cargando">🔍 Buscar</span>
+        <span *ngIf="cargando" class="spinner-border spinner-border-sm"></span>
       </button>
     </div>
   </div>
 
-  <div class="br-empty" *ngIf="!cargando && rifasMostradas.length === 0">
+  <!-- ── Sin resultados ──────────────────────────────────────────── -->
+  <div class="br-empty" *ngIf="!cargando && busquedaRealizada && rifas.length === 0">
     <span class="br-empty__icon">🎰</span>
-    <p *ngIf="tab === 'hoy'">No hay rifas programadas para hoy</p>
-    <p *ngIf="tab === 'todas'">No hay rifas activas</p>
-    <p *ngIf="tab === 'buscar'">{{ busquedaRealizada ? 'No se encontraron rifas con esos filtros' : 'Define un filtro y presiona Buscar' }}</p>
+    <p>No se encontraron rifas {{ tipo === 'DIARIA' ? 'para ese día' : 'para ese mes' }}</p>
   </div>
 
-  <div class="br-grid" *ngIf="!cargando && rifasMostradas.length > 0">
-    <div class="br-card" *ngFor="let r of rifasMostradas">
+  <!-- ── Grid de rifas ────────────────────────────────────────────── -->
+  <div class="br-grid" *ngIf="!cargando && rifas.length > 0">
+    <div class="br-card" *ngFor="let r of rifas">
 
-      <div class="br-card__header">
+      <div class="br-card__header"
+           [class.br-card__header--activa]="r.activa"
+           [class.br-card__header--completada]="!r.activa && r.totalVariantes && (r.variantesSorteadas ?? 0) >= r.totalVariantes"
+           [class.br-card__header--vencida]="!r.activa && !(r.totalVariantes && (r.variantesSorteadas ?? 0) >= r.totalVariantes)">
         <span class="br-card__id">Rifa #{{ r.id }}</span>
         <div class="br-card__badges">
           <span class="br-card__badge" *ngIf="r.tipo === 'DIARIA'">☀️ Diaria</span>
           <span class="br-card__badge" *ngIf="r.tipo === 'MENSUAL'">📅 Mensual{{ r.mesReferencia ? ' · ' + r.mesReferencia : '' }}</span>
           <span class="br-card__badge br-card__badge--prueba" *ngIf="r.esPrueba">🧪 Prueba</span>
-          <span class="br-card__badge">Activa</span>
+          <span class="br-card__badge" [ngClass]="badgeEstado(r).css">{{ badgeEstado(r).label }}</span>
         </div>
       </div>
 
@@ -64,8 +57,6 @@
           <span class="br-card__label">Fecha límite</span>
           <span class="br-card__value">{{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
-
-        <!-- Progreso de variantes -->
         <div class="br-card__row" *ngIf="r.totalVariantes">
           <span class="br-card__label">Variantes</span>
           <span class="br-card__value">{{ progreso(r) }}</span>
@@ -76,7 +67,62 @@
       </div>
 
       <div class="br-card__footer">
-        <button class="br-btn" (click)="retomarRifa(r)">🎡 Retomar rifa</button>
+        <div class="br-card__btns">
+          <button class="br-btn br-btn--primary" *ngIf="r.activa" (click)="irAEjecucion(r)">
+            🎡 Ir a ejecución
+          </button>
+          <button class="br-btn br-btn--secondary" (click)="verDetalle(r)" [disabled]="cargandoDetalle">
+            <span *ngIf="!(cargandoDetalle && rifaDetalle === null)">📋 Ver detalle</span>
+            <span *ngIf="cargandoDetalle && rifaDetalle === null" class="spinner-border spinner-border-sm"></span>
+          </button>
+          <button class="br-btn br-btn--recover" *ngIf="!r.activa && r.tipo === 'MENSUAL'"
+                  (click)="recuperarRifa(r)" [disabled]="recuperando !== null">
+            <span *ngIf="recuperando !== r.id">🔄 Recuperar</span>
+            <span *ngIf="recuperando === r.id" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Detalle expandido ─────────────────────────────────────────── -->
+  <div class="br-detalle-overlay" *ngIf="rifaDetalle" (click)="cerrarDetalle()">
+    <div class="br-detalle" (click)="$event.stopPropagation()">
+      <div class="br-detalle__header">
+        <h5 class="br-detalle__title">
+          📋 Rifa #{{ rifaDetalle.configurarRifa.id }} — {{ rifaDetalle.configurarRifa.tipo }}
+          <span *ngIf="rifaDetalle.configurarRifa.esPrueba" class="br-card__badge br-card__badge--prueba" style="vertical-align:middle">🧪 Prueba</span>
+        </h5>
+        <button class="br-detalle__close" (click)="cerrarDetalle()">✕</button>
+      </div>
+      <div class="br-detalle__body">
+        <div class="br-detalle__row">
+          <span class="br-detalle__label">Fecha límite</span>
+          <span>{{ rifaDetalle.configurarRifa.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="br-detalle__row">
+          <span class="br-detalle__label">Participantes</span>
+          <span>{{ rifaDetalle.totalConcursantes }}</span>
+        </div>
+        <div class="br-detalle__row">
+          <span class="br-detalle__label">Variantes</span>
+          <span>{{ rifaDetalle.totalVariantes }}</span>
+        </div>
+
+        <div class="br-historial" *ngIf="rifaDetalle.historial.length">
+          <h6 class="br-historial__title">🏆 Ganadores</h6>
+          <div class="br-hist-row" *ngFor="let h of rifaDetalle.historial; let i = index">
+            <span class="br-hist-num">{{ i + 1 }}</span>
+            <div class="br-hist-info">
+              <span class="br-hist-premio">{{ h.configurarRifaVariante.variante?.nombreProducto ?? h.configurarRifaVariante.palabraClave }}</span>
+              <span class="br-hist-ganador">🏆 {{ nombreCompleto(h.concursanteGanador) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <p *ngIf="!rifaDetalle.historial.length" style="text-align:center; padding:16px 0; color:var(--app-text-muted); font-size:0.9rem">
+          Sin ganadores declarados aún
+        </p>
       </div>
     </div>
   </div>

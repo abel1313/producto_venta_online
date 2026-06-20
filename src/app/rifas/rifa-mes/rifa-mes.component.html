@@ -40,65 +40,115 @@
         <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
       </div>
 
-      <div class="rm-row">
-        <div class="rm-field">
-          <label class="rm-label">Mes a importar</label>
-          <input class="rm-input" type="month" [(ngModel)]="mesSeleccionado" />
-        </div>
-        <div class="rm-field">
-          <label class="rm-label">Fecha límite de la rifa</label>
-          <input class="rm-input" type="datetime-local" [(ngModel)]="fechaHoraLimite" />
-        </div>
-        <div class="rm-field">
-          <label class="rm-label">Palabra clave de la rifa</label>
-          <input class="rm-input" type="text" [(ngModel)]="palabraClave"
-                 placeholder="Ej. ENERO26"
-                 (input)="palabraClave = palabraClave.toUpperCase()" />
-        </div>
-      </div>
-
-      <label class="rm-checkbox-label">
-        <input type="checkbox" [(ngModel)]="esPrueba" />
-        Crear como rifa de prueba
-      </label>
-
-      <button class="rm-btn rm-btn--outline"
-              (click)="cargarClientes()"
-              [disabled]="!mesSeleccionado || cargandoClientes">
-        <span *ngIf="!cargandoClientes">🔍 Cargar clientes del mes</span>
-        <span *ngIf="cargandoClientes" class="d-flex gap-2 align-items-center">
-          <span class="spinner-border spinner-border-sm"></span> Cargando…
-        </span>
-      </button>
-
-      <!-- Tabla de clientes -->
-      <div class="rm-clientes" *ngIf="clientesMes.length > 0">
-        <div class="rm-clientes__header">
-          <span class="rm-clientes__count">{{ clientesMes.length }} clientes encontrados · {{ clientesSeleccionados.size }} seleccionados</span>
-          <div class="d-flex gap-2">
-            <button class="rm-btn rm-btn--sm rm-btn--outline" (click)="seleccionarTodos()">Todos</button>
-            <button class="rm-btn rm-btn--sm rm-btn--outline" (click)="deseleccionarTodos()">Ninguno</button>
+      <!-- ── Modo crear (rifa nueva) ── -->
+      <ng-container *ngIf="!rifaConfig?.id">
+        <div class="rm-row">
+          <div class="rm-field">
+            <label class="rm-label">Mes a importar</label>
+            <input class="rm-input" type="month" [(ngModel)]="mesSeleccionado" />
+          </div>
+          <div class="rm-field">
+            <label class="rm-label">Fecha límite de la rifa</label>
+            <div class="rm-fecha-hora-wrap">
+              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
+                <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="rm-field">
+            <label class="rm-label">Palabra clave de la rifa</label>
+            <input class="rm-input" type="text" [(ngModel)]="palabraClave"
+                   placeholder="Ej. ENERO26"
+                   (input)="palabraClave = palabraClave.toUpperCase()" />
           </div>
         </div>
 
-        <div class="rm-cliente-row" *ngFor="let c of clientesMes; let i = index"
-             [class.rm-cliente-row--selected]="clientesSeleccionados.has(i)"
-             [class.rm-cliente-row--vacio]="!c.nombre">
-          <input type="checkbox"
-                 [checked]="clientesSeleccionados.has(i)"
-                 (change)="toggleCliente(i)" />
-          <input class="rm-input rm-input--sm" [(ngModel)]="c.nombre" placeholder="Nombre" />
-          <input class="rm-input rm-input--sm" [(ngModel)]="c.apellidoPaterno" placeholder="Apellido" />
-          <input class="rm-input rm-input--sm" [(ngModel)]="c.telefono" placeholder="Teléfono" />
-          <span class="rm-badge-sin" *ngIf="!c.clientePedidoId">Sin registro</span>
-        </div>
+        <label class="rm-checkbox-label">
+          <input type="checkbox" [(ngModel)]="esPrueba" />
+          Crear como rifa de prueba
+        </label>
 
-        <button class="rm-btn rm-btn--primary rm-btn--full"
-                (click)="crearRifaEImportar()"
-                [disabled]="clientesSeleccionados.size === 0 || !fechaHoraLimite || !palabraClave.trim() || creandoRifa">
-          <span *ngIf="!creandoRifa">✅ Crear rifa e importar {{ clientesSeleccionados.size }} participantes</span>
-          <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Creando…
+        <button class="rm-btn rm-btn--outline"
+                (click)="cargarClientes()"
+                [disabled]="!mesSeleccionado || cargandoClientes">
+          <span *ngIf="!cargandoClientes">🔍 Cargar clientes del mes</span>
+          <span *ngIf="cargandoClientes" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span> Cargando…
+          </span>
+        </button>
+
+        <!-- Tabla de clientes -->
+        <div class="rm-clientes" *ngIf="clientesMes.length > 0">
+          <div class="rm-clientes__header">
+            <span class="rm-clientes__count">{{ clientesMes.length }} clientes encontrados · {{ clientesSeleccionados.size }} seleccionados</span>
+            <div class="d-flex gap-2">
+              <button class="rm-btn rm-btn--sm rm-btn--outline" (click)="seleccionarTodos()">Todos</button>
+              <button class="rm-btn rm-btn--sm rm-btn--outline" (click)="deseleccionarTodos()">Ninguno</button>
+            </div>
+          </div>
+
+          <div class="rm-cliente-row" *ngFor="let c of clientesMes; let i = index"
+               [class.rm-cliente-row--selected]="clientesSeleccionados.has(i)"
+               [class.rm-cliente-row--vacio]="!c.nombre">
+            <input type="checkbox"
+                   [checked]="clientesSeleccionados.has(i)"
+                   (change)="toggleCliente(i)" />
+            <input class="rm-input rm-input--sm" [(ngModel)]="c.nombre" placeholder="Nombre" />
+            <input class="rm-input rm-input--sm" [(ngModel)]="c.apellidoPaterno" placeholder="Apellido" />
+            <input class="rm-input rm-input--sm" [(ngModel)]="c.telefono" placeholder="Teléfono" />
+            <span class="rm-badge-sin" *ngIf="!c.clientePedidoId">Sin registro</span>
+          </div>
+
+          <button class="rm-btn rm-btn--primary rm-btn--full"
+                  (click)="crearRifaEImportar()"
+                  [disabled]="clientesSeleccionados.size === 0 || !fechaHoraLimite || !palabraClave.trim() || creandoRifa">
+            <span *ngIf="!creandoRifa">✅ Crear rifa e importar {{ clientesSeleccionados.size }} participantes</span>
+            <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
+              <span class="spinner-border spinner-border-sm"></span> Creando…
+            </span>
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- ── Modo editar (rifa ya guardada, el usuario volvió al Paso 1) ── -->
+      <div *ngIf="rifaConfig?.id" class="rm-saved-badge">
+        ✅ Rifa #{{ rifaConfig!.id }} — {{ rifaConfig!.mesReferencia ?? mesSeleccionado }}
+        <button class="rm-btn rm-btn--sm rm-btn--secondary" style="margin-left:auto"
+                (click)="editandoConfig = !editandoConfig">
+          {{ editandoConfig ? '✕ Cancelar' : '✏️ Editar fecha / mes' }}
+        </button>
+        <button class="rm-btn rm-btn--sm rm-btn--primary" (click)="paso = 'participantes'">
+          → Continuar
+        </button>
+      </div>
+
+      <div *ngIf="rifaConfig?.id && editandoConfig" class="rm-edit-config">
+        <div class="rm-row">
+          <div class="rm-field">
+            <label class="rm-label">Mes de referencia</label>
+            <input class="rm-input" type="month" [(ngModel)]="mesSeleccionado" />
+          </div>
+          <div class="rm-field">
+            <label class="rm-label">Nueva fecha límite</label>
+            <div class="rm-fecha-hora-wrap">
+              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
+                <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="rm-alert rm-alert--warn" *ngIf="errorConcursante" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+          <span>⚠️ {{ errorConcursante }}</span>
+          <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
+        </div>
+        <button class="rm-btn rm-btn--primary" style="margin-top:8px"
+                (click)="actualizarConfiguracion()"
+                [disabled]="!fechaHoraLimite || savingConfigEdit">
+          <span *ngIf="!savingConfigEdit">💾 Guardar cambios</span>
+          <span *ngIf="savingConfigEdit" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span> Guardando…
           </span>
         </button>
       </div>
@@ -276,7 +326,7 @@
     <div class="rm-nav-btns" style="padding: 0 24px;">
       <button class="rm-btn rm-btn--text" (click)="paso = 'participantes'">← Ver participantes</button>
       <label class="rm-checkbox-label">
-        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig?.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
     </div>
@@ -342,7 +392,7 @@
       </div>
 
       <label class="rm-checkbox-label">
-        <input type="checkbox" [checked]="rifaConfig?.esPrueba" (change)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
+        <input type="checkbox" [checked]="!!rifaConfig?.esPrueba" (click)="$event.preventDefault(); toggleModoPrueba()" [disabled]="cambiandoModoPrueba" />
         🧪 Es de prueba
       </label>
 

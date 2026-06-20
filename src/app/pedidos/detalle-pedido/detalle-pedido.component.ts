@@ -40,9 +40,9 @@ export class DetallePedidoComponent implements OnInit {
         }
         this.eliminando.delete(item);
       },
-      error: () => {
+      error: (err) => {
         this.eliminando.delete(item);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el producto.' });
+        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo eliminar el producto.' });
       }
     });
   }

@@ -1,44 +1,113 @@
-<div class="d-flex justify-content-center p-4" >
-    <div class="col-8">
-        <div class="card" >
+<div class="ga-page">
 
-            <div class="card-header text-center">
-               <b> {{nombreCard}}</b>
-            </div>
-            <form [formGroup]="formGastos">
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="descripcionGasto">Descripción del gasto:</label>
-                        <input id="descripcionGasto" formControlName="descripcionGasto" class="form-control">
-                        
-                        <div *ngIf="formGastos.get('descripcionGasto')?.invalid && formGastos.get('descripcionGasto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formGastos.get('descripcionGasto')?.errors?.['maxlength']">Máximo 100 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="precioGasto">Precio al que se compró:</label>
-                        <input id="precioGasto" formControlName="precioGasto" class="form-control">
-                        
-                        <div *ngIf="formGastos.get('precioGasto')?.invalid && formGastos.get('precioGasto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                          <small class="text-danger" *ngIf="formGastos.get('precioGasto')?.errors?.['pattern']">Ingrese solo números</small>
-                    </div>
-                </div>
-
-
-
-                <div class="row p-2">
-                    <div class="col-12 d-flex justify-content-end">
-                        
-                <button type="submit" class="btn btn-success col-6 " (click)="guardar()" [disabled]="formGastos.invalid">Guardar</button>
-                    </div>
-                </div>
-              </form>
-          </div>
+  <!-- ── HEADER ── -->
+  <div class="ga-header">
+    <div class="ga-header__content">
+      <div class="ga-header__title">
+        <h4>{{ titulo }}</h4>
+        <small>Módulo de gastos y ventas</small>
+      </div>
+      <button class="ga-btn ga-btn--ghost" (click)="cancelar()">← Volver al listado</button>
     </div>
+  </div>
+
+  <!-- ── FORMULARIO ── -->
+  <div class="ga-content">
+    <div class="ga-form-card">
+
+      <form [formGroup]="gastoForm">
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Descripción *</label>
+            <input class="ga-input" formControlName="descripcion"
+                   placeholder="Ej. Surtido de bolsas noviembre" />
+            <small class="ga-field__error"
+                   *ngIf="gastoForm.get('descripcion')?.invalid && gastoForm.get('descripcion')?.touched">
+              Campo requerido
+            </small>
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field">
+            <label class="ga-label">Monto * ($)</label>
+            <input class="ga-input" type="number" formControlName="monto"
+                   placeholder="0.00" min="0.01" />
+            <small class="ga-field__error"
+                   *ngIf="gastoForm.get('monto')?.invalid && gastoForm.get('monto')?.touched">
+              Ingresa un monto mayor a 0
+            </small>
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Fecha *</label>
+            <input class="ga-input" type="date" formControlName="fecha" />
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Categoría *</label>
+            <!-- Custom dropdown — evita el widget nativo del OS que no respeta dark mode -->
+            <div class="ga-custom-select">
+              <button type="button"
+                      class="ga-input ga-select-btn"
+                      [class.ga-select-btn--open]="categDropdownOpen"
+                      (click)="toggleCategDropdown($event)">
+                <span>{{ categoriaActual }}</span>
+                <span class="ga-select-caret">▾</span>
+              </button>
+              <div class="ga-select-opts" *ngIf="categDropdownOpen">
+                <div *ngFor="let c of categorias"
+                     class="ga-select-opt"
+                     [class.ga-select-opt--active]="gastoForm.get('categoria')?.value === c"
+                     (click)="selectCategoria(c)">
+                  {{ categoriaLabels[c] }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Proveedor <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="proveedor"
+                   placeholder="Nombre del proveedor" />
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Comprobante <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="comprobante"
+                   placeholder="FAC-001" />
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Notas <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="notas"
+                   placeholder="Observaciones adicionales" />
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Botones -->
+      <div class="ga-form-actions">
+        <button class="ga-btn ga-btn--danger"
+                *ngIf="esEdicion"
+                [disabled]="eliminando"
+                (click)="eliminar()">
+          🗑️ {{ eliminando ? 'Eliminando…' : 'Eliminar gasto' }}
+        </button>
+        <div class="ga-form-actions__right">
+          <button class="ga-btn ga-btn--ghost" (click)="cancelar()">Cancelar</button>
+          <button class="ga-btn ga-btn--primary"
+                  [disabled]="gastoForm.invalid || guardando"
+                  (click)="guardar()">
+            💾 {{ guardando ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Guardar gasto') }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>

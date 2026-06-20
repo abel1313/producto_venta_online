@@ -1,44 +1,5 @@
-<div class="d-flex justify-content-center p-4" >
-    <div class="col-8">
-        <div class="card" >
-
-            <div class="card-header text-center">
-               <b> {{nombreCard}}</b>
-            </div>
-            <form [formGroup]="formGastos">
-
-                <div class="row">
-                    <div class="col-6">
-                        <label for="descripcionGasto">Descripción del gasto:</label>
-                        <input id="descripcionGasto" formControlName="descripcionGasto" class="form-control">
-                        
-                        <div *ngIf="formGastos.get('descripcionGasto')?.invalid && formGastos.get('descripcionGasto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                          <small class="text-danger" *ngIf="formGastos.get('descripcionGasto')?.errors?.['maxlength']">Máximo 100 caracteres</small>
-                        </div>
-                        
-
-                    </div>
-                    <div class="col-6">
-                        <label for="precioGasto">Precio al que se compró:</label>
-                        <input id="precioGasto" formControlName="precioGasto" class="form-control">
-                        
-                        <div *ngIf="formGastos.get('precioGasto')?.invalid && formGastos.get('precioGasto')?.touched">
-                          <small class="text-danger">Campo requerido</small>
-                        </div>
-                          <small class="text-danger" *ngIf="formGastos.get('precioGasto')?.errors?.['pattern']">Ingrese solo números</small>
-                    </div>
-                </div>
-
-
-
-                <div class="row p-2">
-                    <div class="col-12 d-flex justify-content-end">
-                        
-                <button type="submit" class="btn btn-success col-6 " (click)="guardar()" [disabled]="formGastos.invalid">Guardar</button>
-                    </div>
-                </div>
-              </form>
-          </div>
-    </div>
+<div class="ga-page">
+  <div class="ga-content" style="padding-top:48px;text-align:center;color:var(--app-text-muted)">
+    <p>Usa la pestaña <strong>📋 Gastos</strong> para agregar un gasto.</p>
+  </div>
 </div>

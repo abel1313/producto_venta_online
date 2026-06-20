@@ -1,48 +1,390 @@
-<div class="row p-2">
-  <div class="col-6">
-    <div class="input-group mb-3">
-      <input type="text" class="form-control" placeholder="Buscar producto..." aria-label="Username"
-        aria-describedby="basic-addon1" (keyup)="buscarProductos($event)">
+<div class="ga-page">
+
+  <!-- ── HEADER ── -->
+  <div class="ga-header">
+    <div class="ga-header__content">
+      <div class="ga-header__title">
+        <h4>💰 Gastos y Ventas</h4>
+        <small>Control financiero del negocio</small>
+      </div>
+
+      <div class="ga-tabs">
+        <button class="ga-tab" [class.ga-tab--active]="tab === 'gastos'"  (click)="cambiarTab('gastos')">📋 Gastos</button>
+        <button class="ga-tab" [class.ga-tab--active]="tab === 'ventas'"  (click)="cambiarTab('ventas')">🛍️ Ventas</button>
+        <button class="ga-tab" [class.ga-tab--active]="tab === 'reporte'" (click)="cambiarTab('reporte')">📊 Reporte</button>
+      </div>
+
+      <button *ngIf="tab === 'gastos' && !mostrarFormGasto"
+              class="ga-btn ga-btn--add"
+              (click)="abrirAgregarGasto()">
+        ➕ Agregar gasto
+      </button>
     </div>
   </div>
-</div>
 
+  <!-- ── CONTENT ── -->
+  <div class="ga-content">
 
-<ag-grid-angular [rowData]="rows" [columnDefs]="columns" [pagination]="false" class="ag-theme-alpine"
-  [style]="{ width: styleTableWidth, height: styleTableheight }" (contextmenu)="blockContextMenu($event)"
-  (cellContextMenu)="abrirMenu($event)">
-</ag-grid-angular>
+    <!-- ════════════════════════════════════════════ TAB GASTOS ═══ -->
+    <ng-container *ngIf="tab === 'gastos'">
 
-<div class="row">
-  <div class="col-10">
-    <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="primeraPagina()">⬅️
-      Primera</button>
-    <button class="btn btn-success" [disabled]="paginacion?.pagina == 1 || !paginacion " (click)="paginaAnterior()">◀️
-      Anterior</button>
+      <!-- Form inline -->
+      <div *ngIf="mostrarFormGasto" class="ga-form-panel">
+        <div class="ga-form-panel__header">
+          <span class="ga-form-panel__titulo">{{ gastoEditando ? '✏️ Editar gasto' : '➕ Nuevo gasto' }}</span>
+          <button class="ga-form-panel__close" (click)="cancelarForm()" title="Cerrar">✕</button>
+        </div>
+        <div class="ga-form-panel__body">
+          <form [formGroup]="gastoForm">
+            <div class="ga-form-row">
+              <div class="ga-field ga-field--wide">
+                <label class="ga-label">Descripción *</label>
+                <input class="ga-input" formControlName="descripcion" placeholder="Ej. Surtido de bolsas noviembre" />
+              </div>
+              <div class="ga-field">
+                <label class="ga-label">Monto * ($)</label>
+                <input class="ga-input" type="number" formControlName="monto" placeholder="0.00" min="0.01" />
+              </div>
+              <div class="ga-field">
+                <label class="ga-label">Fecha *</label>
+                <input class="ga-input" type="date" formControlName="fecha" />
+              </div>
+            </div>
+            <div class="ga-form-row">
+              <div class="ga-field">
+                <label class="ga-label">Categoría *</label>
+                <select class="ga-input ga-select" formControlName="categoria">
+                  <option *ngFor="let c of categorias" [value]="c">{{ categoriaLabels[c] }}</option>
+                </select>
+              </div>
+              <div class="ga-field ga-field--wide">
+                <label class="ga-label">Proveedor</label>
+                <input class="ga-input" formControlName="proveedor" placeholder="Nombre del proveedor" />
+              </div>
+              <div class="ga-field">
+                <label class="ga-label">Comprobante</label>
+                <input class="ga-input" formControlName="comprobante" placeholder="FAC-001" />
+              </div>
+            </div>
+            <div class="ga-form-row">
+              <div class="ga-field ga-field--wide">
+                <label class="ga-label">Notas</label>
+                <input class="ga-input" formControlName="notas" placeholder="Observaciones opcionales" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="ga-form-panel__footer">
+          <button class="ga-btn ga-btn--ghost" (click)="cancelarForm()">Cancelar</button>
+          <button class="ga-btn ga-btn--primary"
+                  (click)="guardarGasto()"
+                  [disabled]="gastoForm.invalid || guardandoGasto">
+            {{ guardandoGasto ? 'Guardando…' : (gastoEditando ? '💾 Actualizar' : '💾 Guardar') }}
+          </button>
+        </div>
+      </div>
 
-    <b class="no-select no-highlight" *ngIf="paginacion && paginacion.totalPaginas > 0  ">
-      Página<b *ngIf="paginacion && paginacion.pagina > 1">s</b> {{paginacion.pagina}} de {{paginacion.totalPaginas}}
-    </b>
+      <!-- Filtros -->
+      <div class="ga-filtros">
+        <div class="ga-filtros__row">
+          <div class="ga-toggle-modo">
+            <button class="ga-toggle-btn" [class.ga-toggle-btn--active]="!modoRangoG" (click)="modoRangoG = false">Día</button>
+            <button class="ga-toggle-btn" [class.ga-toggle-btn--active]="modoRangoG"  (click)="modoRangoG = true">Rango</button>
+          </div>
 
-    <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
-      (click)="siguientePagina()">▶️ Siguiente</button>
-    <button class="btn btn-success" [disabled]="paginacion?.pagina == paginacion?.totalPaginas"
-      (click)="ultimaPagina()">➡️ Última</button>
-  </div>
+          <ng-container *ngIf="!modoRangoG">
+            <div class="ga-field">
+              <label class="ga-label">Fecha</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroFechaG" />
+            </div>
+          </ng-container>
 
-  <div class="col-2 d-flex justify-content-center">
-    <label for="gastos"> Total: {{totalGastos | currency:'MXN':'symbol':'1.2-2'}}</label>
-  </div>
-</div>
+          <ng-container *ngIf="modoRangoG">
+            <div class="ga-field">
+              <label class="ga-label">Desde</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroInicioG" />
+            </div>
+            <div class="ga-field">
+              <label class="ga-label">Hasta</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroFinG" />
+            </div>
+          </ng-container>
 
+          <div class="ga-field">
+            <label class="ga-label">Categoría</label>
+            <select class="ga-input ga-select" [(ngModel)]="filtroCategoria">
+              <option value="">Todas</option>
+              <option *ngFor="let c of categorias" [value]="c">{{ categoriaLabels[c] }}</option>
+            </select>
+          </div>
 
-<!-- Botón INVISIBLE para activar el menú -->
-<button #menuTrigger mat-button [matMenuTriggerFor]="menu" style="display: none;"></button>
+          <button class="ga-btn ga-btn--primary" style="align-self:flex-end" (click)="cargarGastos(0)">
+            🔍 Buscar
+          </button>
+        </div>
+      </div>
 
+      <!-- Spinner -->
+      <div *ngIf="cargandoGastos" class="ga-spinner-wrap">
+        <div class="spinner-border" style="color:var(--app-accent)" role="status">
+          <span class="visually-hidden">Cargando…</span>
+        </div>
+      </div>
 
+      <!-- Empty state -->
+      <div *ngIf="!cargandoGastos && gastos.length === 0" class="ga-empty">
+        <span class="ga-empty__icon">📋</span>
+        <p>No se encontraron gastos para los filtros seleccionados.</p>
+      </div>
 
+      <!-- Tabla gastos -->
+      <ng-container *ngIf="!cargandoGastos && gastos.length > 0">
+        <div class="ga-tabla-wrap">
+          <table class="ga-tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Categoría</th>
+                <th>Descripción / Notas</th>
+                <th>Proveedor</th>
+                <th class="ga-tabla__num">Monto</th>
+                <th class="ga-tabla__actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let g of gastos" [class.ga-tabla__row--elim]="eliminandoId === g.id">
+                <td class="ga-tabla__fecha">{{ g.fecha }}</td>
+                <td>
+                  <span class="ga-badge"
+                        [class.ga-badge--inventario]="g.categoria === 'INVENTARIO'"
+                        [class.ga-badge--operativo]="g.categoria === 'OPERATIVO'"
+                        [class.ga-badge--servicios]="g.categoria === 'SERVICIOS'"
+                        [class.ga-badge--otros]="g.categoria === 'OTROS'">
+                    {{ categoriaLabels[g.categoria] }}
+                  </span>
+                </td>
+                <td>
+                  <div class="ga-tabla__desc">{{ g.descripcion }}</div>
+                  <div *ngIf="g.notas" class="ga-tabla__notas">{{ g.notas }}</div>
+                  <div *ngIf="g.comprobante" class="ga-tabla__muted">📄 {{ g.comprobante }}</div>
+                </td>
+                <td class="ga-tabla__muted">{{ g.proveedor || '—' }}</td>
+                <td class="ga-tabla__monto">{{ g.monto | currency:'MXN':'symbol':'1.2-2' }}</td>
+                <td class="ga-tabla__actions">
+                  <button class="ga-icon-btn ga-icon-btn--edit" (click)="editarGasto(g)" title="Editar">✏️</button>
+                  <button class="ga-icon-btn ga-icon-btn--del"
+                          (click)="confirmarEliminar(g)"
+                          [disabled]="!!eliminandoId"
+                          title="Eliminar">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-<mat-menu #menu="matMenu">
-  <button *ngIf="itemAgregar" mat-menu-item (click)="agregarFila()">{{itemAgregar}}</button>
-  <button *ngIf="itemEliminar" mat-menu-item (click)="eliminarFila()">{{itemEliminar}}</button>
-</mat-menu>
+        <!-- Pie gastos -->
+        <div class="ga-pie">
+          <div class="ga-pie__total">
+            Total página: <strong>{{ totalGastosFiltrados | currency:'MXN':'symbol':'1.2-2' }}</strong>
+            <span class="ga-pie__registros" *ngIf="gastosPaginado">({{ gastosPaginado.totalRegistros }} registros)</span>
+          </div>
+          <div class="ga-paginacion" *ngIf="gastosPaginado && gastosPaginado.totalPaginas > 1">
+            <button class="ga-pag-btn" (click)="cargarGastos(0)"                             [disabled]="pagGastos === 0">⬅ Primera</button>
+            <button class="ga-pag-btn" (click)="cargarGastos(pagGastos - 1)"                 [disabled]="pagGastos === 0">◀ Anterior</button>
+            <span class="ga-pag-info">{{ pagGastos + 1 }} / {{ gastosPaginado.totalPaginas }}</span>
+            <button class="ga-pag-btn" (click)="cargarGastos(pagGastos + 1)"                 [disabled]="pagGastos >= gastosPaginado.totalPaginas - 1">Siguiente ▶</button>
+            <button class="ga-pag-btn" (click)="cargarGastos(gastosPaginado.totalPaginas - 1)" [disabled]="pagGastos >= gastosPaginado.totalPaginas - 1">Última ➡</button>
+          </div>
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <!-- ════════════════════════════════════════════ TAB VENTAS ═══ -->
+    <ng-container *ngIf="tab === 'ventas'">
+
+      <!-- Filtros ventas -->
+      <div class="ga-filtros">
+        <div class="ga-filtros__row">
+          <div class="ga-toggle-modo">
+            <button class="ga-toggle-btn" [class.ga-toggle-btn--active]="!modoRangoV" (click)="modoRangoV = false">Día</button>
+            <button class="ga-toggle-btn" [class.ga-toggle-btn--active]="modoRangoV"  (click)="modoRangoV = true">Rango</button>
+          </div>
+
+          <ng-container *ngIf="!modoRangoV">
+            <div class="ga-field">
+              <label class="ga-label">Fecha</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroFechaV" />
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="modoRangoV">
+            <div class="ga-field">
+              <label class="ga-label">Desde</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroInicioV" />
+            </div>
+            <div class="ga-field">
+              <label class="ga-label">Hasta</label>
+              <input class="ga-input" type="date" [(ngModel)]="filtroFinV" />
+            </div>
+          </ng-container>
+
+          <button class="ga-btn ga-btn--primary" style="align-self:flex-end" (click)="cargarVentas(0)">
+            🔍 Buscar
+          </button>
+        </div>
+      </div>
+
+      <!-- Spinner -->
+      <div *ngIf="cargandoVentas" class="ga-spinner-wrap">
+        <div class="spinner-border" style="color:var(--app-accent)" role="status">
+          <span class="visually-hidden">Cargando…</span>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!cargandoVentas && ventas.length === 0" class="ga-empty">
+        <span class="ga-empty__icon">🛍️</span>
+        <p>No se encontraron ventas para los filtros seleccionados.</p>
+      </div>
+
+      <!-- Tabla ventas -->
+      <ng-container *ngIf="!cargandoVentas && ventas.length > 0">
+        <div class="ga-tabla-wrap">
+          <table class="ga-tabla">
+            <thead>
+              <tr>
+                <th class="ga-tabla__id">#ID</th>
+                <th>Cliente</th>
+                <th class="ga-tabla__num">Total venta</th>
+                <th class="ga-tabla__num">Ganancia</th>
+                <th>Estado</th>
+                <th>Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of ventas">
+                <td class="ga-tabla__id">{{ v.id }}</td>
+                <td class="ga-tabla__desc">{{ nombreCliente(v) }}</td>
+                <td class="ga-tabla__monto">{{ v.totalVenta | currency:'MXN':'symbol':'1.2-2' }}</td>
+                <td class="ga-tabla__ganancia">{{ v.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
+                <td>
+                  <span class="ga-badge ga-badge--sm"
+                        [class.ga-badge--estado-entregado]="v.estadoVenta === 'Entregado'"
+                        [class.ga-badge--estado]="v.estadoVenta !== 'Entregado'">
+                    {{ v.estadoVenta }}
+                  </span>
+                </td>
+                <td class="ga-tabla__fecha">{{ v.fechaVenta | date:'HH:mm' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pie ventas -->
+        <div class="ga-pie">
+          <div class="ga-pie__total">
+            Total: <strong>{{ totalVentasFiltradas | currency:'MXN':'symbol':'1.2-2' }}</strong>
+            &nbsp;|&nbsp; Ganancia: <strong style="color:#16a34a">{{ totalGananciaFiltrada | currency:'MXN':'symbol':'1.2-2' }}</strong>
+            <span class="ga-pie__registros" *ngIf="ventasPaginado">({{ ventasPaginado.totalRegistros }} ventas)</span>
+          </div>
+          <div class="ga-paginacion" *ngIf="ventasPaginado && ventasPaginado.totalPaginas > 1">
+            <button class="ga-pag-btn" (click)="cargarVentas(0)"                              [disabled]="pagVentas === 0">⬅ Primera</button>
+            <button class="ga-pag-btn" (click)="cargarVentas(pagVentas - 1)"                  [disabled]="pagVentas === 0">◀ Anterior</button>
+            <span class="ga-pag-info">{{ pagVentas + 1 }} / {{ ventasPaginado.totalPaginas }}</span>
+            <button class="ga-pag-btn" (click)="cargarVentas(pagVentas + 1)"                  [disabled]="pagVentas >= ventasPaginado.totalPaginas - 1">Siguiente ▶</button>
+            <button class="ga-pag-btn" (click)="cargarVentas(ventasPaginado.totalPaginas - 1)" [disabled]="pagVentas >= ventasPaginado.totalPaginas - 1">Última ➡</button>
+          </div>
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <!-- ════════════════════════════════════════════ TAB REPORTE ══ -->
+    <ng-container *ngIf="tab === 'reporte'">
+
+      <!-- Filtros reporte -->
+      <div class="ga-filtros">
+        <div class="ga-filtros__row">
+          <div class="ga-field">
+            <label class="ga-label">Desde</label>
+            <input class="ga-input" type="date" [(ngModel)]="reporteInicio" />
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Hasta</label>
+            <input class="ga-input" type="date" [(ngModel)]="reporteFin" />
+          </div>
+          <button class="ga-btn ga-btn--primary" style="align-self:flex-end" (click)="cargarReporte()">
+            📊 Ver reporte
+          </button>
+        </div>
+      </div>
+
+      <!-- Spinner -->
+      <div *ngIf="cargandoReporte" class="ga-spinner-wrap">
+        <div class="spinner-border" style="color:var(--app-accent)" role="status">
+          <span class="visually-hidden">Cargando…</span>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!cargandoReporte && !reporte" class="ga-empty">
+        <span class="ga-empty__icon">📊</span>
+        <p>Selecciona un rango de fechas y presiona "Ver reporte" para generar el análisis.</p>
+      </div>
+
+      <!-- Reporte -->
+      <div *ngIf="!cargandoReporte && reporte" class="ga-reporte">
+
+        <!-- Sección ventas -->
+        <div class="ga-reporte__seccion">
+          <p class="ga-reporte__titulo">📈 Ventas ({{ reporte!.fechaInicio }} — {{ reporte!.fechaFin }})</p>
+          <div class="ga-reporte__fila">
+            <span class="ga-reporte__label">Ventas brutas</span>
+            <span class="ga-reporte__valor ga-reporte__valor--pos">{{ reporte!.totalVentas | currency:'MXN':'symbol':'1.2-2' }}</span>
+          </div>
+          <div class="ga-reporte__fila">
+            <span class="ga-reporte__label">Ganancia por producto</span>
+            <span class="ga-reporte__valor ga-reporte__valor--pos">{{ reporte!.totalGananciaProductos | currency:'MXN':'symbol':'1.2-2' }}</span>
+          </div>
+          <div class="ga-reporte__fila ga-reporte__fila--total">
+            <span class="ga-reporte__label">Total transacciones</span>
+            <span class="ga-reporte__valor">{{ reporte!.totalTransacciones }}</span>
+          </div>
+        </div>
+
+        <!-- Sección gastos -->
+        <div class="ga-reporte__seccion">
+          <p class="ga-reporte__titulo">📉 Gastos por categoría</p>
+          <div *ngFor="let cat of categoriaKeysReporte" class="ga-reporte__fila">
+            <span class="ga-reporte__label">
+              <span class="ga-badge ga-badge--sm"
+                    [class.ga-badge--inventario]="cat === 'INVENTARIO'"
+                    [class.ga-badge--operativo]="cat === 'OPERATIVO'"
+                    [class.ga-badge--servicios]="cat === 'SERVICIOS'"
+                    [class.ga-badge--otros]="cat === 'OTROS'">
+                {{ categoriaLabels[cat] }}
+              </span>
+            </span>
+            <span class="ga-reporte__valor ga-reporte__valor--neg">{{ reporte!.gastosPorCategoria[cat] | currency:'MXN':'symbol':'1.2-2' }}</span>
+          </div>
+          <div class="ga-reporte__fila ga-reporte__fila--total">
+            <span class="ga-reporte__label">Total gastos</span>
+            <span class="ga-reporte__valor ga-reporte__valor--neg">{{ reporte!.totalGastos | currency:'MXN':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <!-- Ganancia neta -->
+        <div class="ga-reporte__neta" [class.ga-reporte__neta--neg]="reporte!.gananciaNeta < 0">
+          <p class="ga-reporte__neta-label">Ganancia neta del período</p>
+          <div class="ga-reporte__neta-valor">{{ reporte!.gananciaNeta | currency:'MXN':'symbol':'1.2-2' }}</div>
+          <p class="ga-reporte__neta-nota" *ngIf="reporte!.gananciaNeta < 0">
+            ⚠️ Los gastos superan la ganancia por productos en este período.
+          </p>
+          <p class="ga-reporte__neta-nota" *ngIf="reporte!.gananciaNeta >= 0">
+            ✅ El negocio fue rentable en este período.
+          </p>
+        </div>
+      </div>
+    </ng-container>
+
+  </div><!-- /ga-content -->
+</div><!-- /ga-page -->

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -34,6 +34,7 @@ export class AllComponent implements OnInit {
   filtroFinG      = '';
   filtroCategoria = '';
   pagGastos       = 0;
+  catDropdownOpen = false;
 
   get totalGastosFiltrados(): number {
     return this.gastos.reduce((s, g) => s + (g.monto ?? 0), 0);
@@ -70,8 +71,32 @@ export class AllComponent implements OnInit {
 
   constructor(
     private readonly gastosService: GastosService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly elRef: ElementRef
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: Event): void {
+    if (!this.elRef.nativeElement.contains(e.target as Node)) {
+      this.catDropdownOpen = false;
+    }
+  }
+
+  toggleCatDropdown(e: Event): void {
+    e.stopPropagation();
+    this.catDropdownOpen = !this.catDropdownOpen;
+  }
+
+  selectCategoriafiltro(val: string): void {
+    this.filtroCategoria = val;
+    this.catDropdownOpen = false;
+  }
+
+  get categoriaFiltroLabel(): string {
+    return this.filtroCategoria
+      ? this.categoriaLabels[this.filtroCategoria as CategoriaGasto]
+      : 'Todas';
+  }
 
   ngOnInit(): void {
     this.cargarGastos();

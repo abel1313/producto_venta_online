@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
-import { CATEGORIA_LABELS, CATEGORIAS, IGasto } from '../models/IGastos.model';
+import { CATEGORIA_LABELS, CATEGORIAS, CategoriaGasto, IGasto } from '../models/IGastos.model';
 import { GastosService } from '../service/gastos.service';
 
 @Component({
@@ -20,14 +20,28 @@ export class AddComponent implements OnInit {
   guardando  = false;
   eliminando = false;
 
+  categDropdownOpen = false;
+
   get esEdicion(): boolean { return !!this.gastoEditando?.id; }
   get titulo():    string  { return this.esEdicion ? '✏️ Editar gasto' : '➕ Nuevo gasto'; }
+  get categoriaActual(): string {
+    const v = this.gastoForm?.get('categoria')?.value;
+    return v ? this.categoriaLabels[v as CategoriaGasto] : 'Seleccionar…';
+  }
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly gastosService: GastosService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly elRef: ElementRef
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: Event): void {
+    if (!this.elRef.nativeElement.contains(e.target as Node)) {
+      this.categDropdownOpen = false;
+    }
+  }
 
   ngOnInit(): void {
     this.gastoEditando = this.gastosService['_gastoEditar'].getValue();
@@ -46,6 +60,16 @@ export class AddComponent implements OnInit {
       comprobante: [g?.comprobante ?? ''],
       notas:       [g?.notas       ?? '']
     });
+  }
+
+  toggleCategDropdown(e: Event): void {
+    e.stopPropagation();
+    this.categDropdownOpen = !this.categDropdownOpen;
+  }
+
+  selectCategoria(c: CategoriaGasto): void {
+    this.gastoForm.get('categoria')!.setValue(c);
+    this.categDropdownOpen = false;
   }
 
   guardar(): void {

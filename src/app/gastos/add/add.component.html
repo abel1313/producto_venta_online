@@ -45,9 +45,24 @@
           </div>
           <div class="ga-field">
             <label class="ga-label">Categoría *</label>
-            <select class="ga-input ga-select" formControlName="categoria">
-              <option *ngFor="let c of categorias" [value]="c">{{ categoriaLabels[c] }}</option>
-            </select>
+            <!-- Custom dropdown — evita el widget nativo del OS que no respeta dark mode -->
+            <div class="ga-custom-select">
+              <button type="button"
+                      class="ga-input ga-select-btn"
+                      [class.ga-select-btn--open]="categDropdownOpen"
+                      (click)="toggleCategDropdown($event)">
+                <span>{{ categoriaActual }}</span>
+                <span class="ga-select-caret">▾</span>
+              </button>
+              <div class="ga-select-opts" *ngIf="categDropdownOpen">
+                <div *ngFor="let c of categorias"
+                     class="ga-select-opt"
+                     [class.ga-select-opt--active]="gastoForm.get('categoria')?.value === c"
+                     (click)="selectCategoria(c)">
+                  {{ categoriaLabels[c] }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

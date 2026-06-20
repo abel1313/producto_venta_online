@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   CATEGORIA_LABELS, CATEGORIAS, CategoriaGasto,
@@ -116,17 +117,17 @@ export class AllComponent implements OnInit {
     }
     if (this.filtroCategoria) params.categoria = this.filtroCategoria;
 
-    this.gastosService.buscarGastos(params).subscribe({
-      next: res => {
-        this.gastosPaginado = res;
-        this.gastos         = res.t ?? [];
-        this.cargandoGastos = false;
-      },
-      error: err => {
-        this.cargandoGastos = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar los gastos.' });
-      }
-    });
+    this.gastosService.buscarGastos(params)
+      .pipe(finalize(() => this.cargandoGastos = false))
+      .subscribe({
+        next: res => {
+          this.gastosPaginado = res ?? null;
+          this.gastos         = res?.t ?? [];
+        },
+        error: err => {
+          Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar los gastos.' });
+        }
+      });
   }
 
   // ── Eliminar ──────────────────────────────────────────────────────
@@ -167,17 +168,17 @@ export class AllComponent implements OnInit {
     } else {
       if (this.filtroFechaV)  params.fecha = this.filtroFechaV;
     }
-    this.gastosService.buscarVentas(params).subscribe({
-      next: res => {
-        this.ventasPaginado = res;
-        this.ventas         = res.t ?? [];
-        this.cargandoVentas = false;
-      },
-      error: err => {
-        this.cargandoVentas = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar las ventas.' });
-      }
-    });
+    this.gastosService.buscarVentas(params)
+      .pipe(finalize(() => this.cargandoVentas = false))
+      .subscribe({
+        next: res => {
+          this.ventasPaginado = res ?? null;
+          this.ventas         = res?.t ?? [];
+        },
+        error: err => {
+          Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar las ventas.' });
+        }
+      });
   }
 
   nombreCliente(v: IVenta): string {
@@ -187,12 +188,13 @@ export class AllComponent implements OnInit {
   // ── Reporte ───────────────────────────────────────────────────────
   cargarReporte(): void {
     this.cargandoReporte = true;
-    this.gastosService.getReporte(this.reporteInicio, this.reporteFin).subscribe({
-      next: res => { this.reporte = res; this.cargandoReporte = false; },
-      error: err => {
-        this.cargandoReporte = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el reporte.' });
-      }
-    });
+    this.gastosService.getReporte(this.reporteInicio, this.reporteFin)
+      .pipe(finalize(() => this.cargandoReporte = false))
+      .subscribe({
+        next: res => { this.reporte = res ?? null; },
+        error: err => {
+          Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el reporte.' });
+        }
+      });
   }
 }

@@ -417,6 +417,12 @@
 
 .ga-spinner-wrap { text-align: center; padding: 48px; }
 
+.ga-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 // ── DARK MODE ────────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .ga-badge--inventario       { background: rgba(99, 102, 241, 0.25);  color: #a5b4fc; }

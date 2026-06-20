@@ -13,12 +13,6 @@
         <button class="ga-tab" [class.ga-tab--active]="tab === 'ventas'"  (click)="cambiarTab('ventas')">🛍️ Ventas</button>
         <button class="ga-tab" [class.ga-tab--active]="tab === 'reporte'" (click)="cambiarTab('reporte')">📊 Reporte</button>
       </div>
-
-      <button *ngIf="tab === 'gastos' && !mostrarFormGasto"
-              class="ga-btn ga-btn--add"
-              (click)="abrirAgregarGasto()">
-        ➕ Agregar gasto
-      </button>
     </div>
   </div>
 
@@ -28,60 +22,9 @@
     <!-- ════════════════════════════════════════════ TAB GASTOS ═══ -->
     <ng-container *ngIf="tab === 'gastos'">
 
-      <!-- Form inline -->
-      <div *ngIf="mostrarFormGasto" class="ga-form-panel">
-        <div class="ga-form-panel__header">
-          <span class="ga-form-panel__titulo">{{ gastoEditando ? '✏️ Editar gasto' : '➕ Nuevo gasto' }}</span>
-          <button class="ga-form-panel__close" (click)="cancelarForm()" title="Cerrar">✕</button>
-        </div>
-        <div class="ga-form-panel__body">
-          <form [formGroup]="gastoForm">
-            <div class="ga-form-row">
-              <div class="ga-field ga-field--wide">
-                <label class="ga-label">Descripción *</label>
-                <input class="ga-input" formControlName="descripcion" placeholder="Ej. Surtido de bolsas noviembre" />
-              </div>
-              <div class="ga-field">
-                <label class="ga-label">Monto * ($)</label>
-                <input class="ga-input" type="number" formControlName="monto" placeholder="0.00" min="0.01" />
-              </div>
-              <div class="ga-field">
-                <label class="ga-label">Fecha *</label>
-                <input class="ga-input" type="date" formControlName="fecha" />
-              </div>
-            </div>
-            <div class="ga-form-row">
-              <div class="ga-field">
-                <label class="ga-label">Categoría *</label>
-                <select class="ga-input ga-select" formControlName="categoria">
-                  <option *ngFor="let c of categorias" [value]="c">{{ categoriaLabels[c] }}</option>
-                </select>
-              </div>
-              <div class="ga-field ga-field--wide">
-                <label class="ga-label">Proveedor</label>
-                <input class="ga-input" formControlName="proveedor" placeholder="Nombre del proveedor" />
-              </div>
-              <div class="ga-field">
-                <label class="ga-label">Comprobante</label>
-                <input class="ga-input" formControlName="comprobante" placeholder="FAC-001" />
-              </div>
-            </div>
-            <div class="ga-form-row">
-              <div class="ga-field ga-field--wide">
-                <label class="ga-label">Notas</label>
-                <input class="ga-input" formControlName="notas" placeholder="Observaciones opcionales" />
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="ga-form-panel__footer">
-          <button class="ga-btn ga-btn--ghost" (click)="cancelarForm()">Cancelar</button>
-          <button class="ga-btn ga-btn--primary"
-                  (click)="guardarGasto()"
-                  [disabled]="gastoForm.invalid || guardandoGasto">
-            {{ guardandoGasto ? 'Guardando…' : (gastoEditando ? '💾 Actualizar' : '💾 Guardar') }}
-          </button>
-        </div>
+      <!-- Toolbar -->
+      <div class="ga-toolbar">
+        <button class="ga-btn ga-btn--add" (click)="nuevoGasto()">➕ Agregar gasto</button>
       </div>
 
       <!-- Filtros -->
@@ -134,7 +77,7 @@
       <!-- Empty state -->
       <div *ngIf="!cargandoGastos && gastos.length === 0" class="ga-empty">
         <span class="ga-empty__icon">📋</span>
-        <p>No se encontraron gastos para los filtros seleccionados.</p>
+        <p>No se encontraron gastos. Usa el botón <strong>➕ Agregar gasto</strong> para registrar uno.</p>
       </div>
 
       <!-- Tabla gastos -->
@@ -328,13 +271,12 @@
       <!-- Empty state -->
       <div *ngIf="!cargandoReporte && !reporte" class="ga-empty">
         <span class="ga-empty__icon">📊</span>
-        <p>Selecciona un rango de fechas y presiona "Ver reporte" para generar el análisis.</p>
+        <p>Selecciona un rango de fechas y presiona "Ver reporte".</p>
       </div>
 
       <!-- Reporte -->
       <div *ngIf="!cargandoReporte && reporte" class="ga-reporte">
 
-        <!-- Sección ventas -->
         <div class="ga-reporte__seccion">
           <p class="ga-reporte__titulo">📈 Ventas ({{ reporte!.fechaInicio }} — {{ reporte!.fechaFin }})</p>
           <div class="ga-reporte__fila">
@@ -351,7 +293,6 @@
           </div>
         </div>
 
-        <!-- Sección gastos -->
         <div class="ga-reporte__seccion">
           <p class="ga-reporte__titulo">📉 Gastos por categoría</p>
           <div *ngFor="let cat of categoriaKeysReporte" class="ga-reporte__fila">
@@ -372,12 +313,11 @@
           </div>
         </div>
 
-        <!-- Ganancia neta -->
         <div class="ga-reporte__neta" [class.ga-reporte__neta--neg]="reporte!.gananciaNeta < 0">
           <p class="ga-reporte__neta-label">Ganancia neta del período</p>
           <div class="ga-reporte__neta-valor">{{ reporte!.gananciaNeta | currency:'MXN':'symbol':'1.2-2' }}</div>
           <p class="ga-reporte__neta-nota" *ngIf="reporte!.gananciaNeta < 0">
-            ⚠️ Los gastos superan la ganancia por productos en este período.
+            ⚠️ Los gastos superan la ganancia en este período.
           </p>
           <p class="ga-reporte__neta-nota" *ngIf="reporte!.gananciaNeta >= 0">
             ✅ El negocio fue rentable en este período.

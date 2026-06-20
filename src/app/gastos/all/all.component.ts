@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import {
   CATEGORIA_LABELS, CATEGORIAS, CategoriaGasto,
@@ -25,6 +25,7 @@ export class AllComponent implements OnInit {
   gastos: IGasto[]                        = [];
   gastosPaginado: IPaginadoGasto | null   = null;
   cargandoGastos                          = false;
+  eliminandoId: number | null             = null;
 
   modoRangoG      = false;
   filtroFechaG    = this.hoy();
@@ -32,12 +33,6 @@ export class AllComponent implements OnInit {
   filtroFinG      = '';
   filtroCategoria = '';
   pagGastos       = 0;
-
-  mostrarFormGasto             = false;
-  gastoEditando: IGasto | null = null;
-  guardandoGasto               = false;
-  eliminandoId: number | null  = null;
-  gastoForm!: FormGroup;
 
   get totalGastosFiltrados(): number {
     return this.gastos.reduce((s, g) => s + (g.monto ?? 0), 0);
@@ -74,11 +69,10 @@ export class AllComponent implements OnInit {
 
   constructor(
     private readonly gastosService: GastosService,
-    private readonly fb: FormBuilder
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.buildForm();
     this.cargarGastos();
   }
 
@@ -91,23 +85,22 @@ export class AllComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   }
 
-  private buildForm(gasto?: IGasto): void {
-    this.gastoForm = this.fb.group({
-      descripcion:  [gasto?.descripcion  ?? '',           Validators.required],
-      monto:        [gasto?.monto        ?? '',           [Validators.required, Validators.min(0.01)]],
-      fecha:        [gasto?.fecha        ?? this.hoy(),   Validators.required],
-      categoria:    [gasto?.categoria    ?? 'INVENTARIO', Validators.required],
-      proveedor:    [gasto?.proveedor    ?? ''],
-      comprobante:  [gasto?.comprobante  ?? ''],
-      notas:        [gasto?.notas        ?? '']
-    });
-  }
-
   // ── Tab navigation ────────────────────────────────────────────────
   cambiarTab(t: Tab): void {
     this.tab = t;
     if (t === 'ventas'  && !this.ventas.length)  this.cargarVentas();
     if (t === 'reporte' && !this.reporte)         this.cargarReporte();
+  }
+
+  // ── Navegación al form ────────────────────────────────────────────
+  nuevoGasto(): void {
+    this.gastosService.setGastoEditar(null);
+    this.router.navigate(['gastos/agregar']);
+  }
+
+  editarGasto(g: IGasto): void {
+    this.gastosService.setGastoEditar(g);
+    this.router.navigate(['gastos/agregar']);
   }
 
   // ── Gastos — búsqueda ─────────────────────────────────────────────
@@ -136,57 +129,7 @@ export class AllComponent implements OnInit {
     });
   }
 
-  // ── Gastos — form ─────────────────────────────────────────────────
-  abrirAgregarGasto(): void {
-    this.gastoEditando = null;
-    this.buildForm();
-    this.mostrarFormGasto = true;
-  }
-
-  editarGasto(g: IGasto): void {
-    this.gastoEditando = g;
-    this.buildForm(g);
-    this.mostrarFormGasto = true;
-  }
-
-  cancelarForm(): void {
-    this.mostrarFormGasto = false;
-    this.gastoEditando    = null;
-  }
-
-  guardarGasto(): void {
-    if (this.gastoForm.invalid || this.guardandoGasto) return;
-    this.guardandoGasto = true;
-    const val = this.gastoForm.value;
-    const body: Partial<IGasto> = {
-      descripcion:  val.descripcion,
-      monto:        +val.monto,
-      fecha:        val.fecha,
-      categoria:    val.categoria,
-      proveedor:    val.proveedor   || null,
-      comprobante:  val.comprobante || null,
-      notas:        val.notas       || null
-    };
-
-    const isEdit = !!this.gastoEditando?.id;
-    const op = isEdit
-      ? this.gastosService.updateGasto(this.gastoEditando!.id!, body)
-      : this.gastosService.saveGasto(body);
-
-    op.subscribe({
-      next: () => {
-        this.guardandoGasto = false;
-        this.cancelarForm();
-        this.cargarGastos(this.pagGastos);
-        Swal.fire({ icon: 'success', title: isEdit ? 'Gasto actualizado' : 'Gasto guardado', timer: 1500, showConfirmButton: false });
-      },
-      error: err => {
-        this.guardandoGasto = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el gasto.' });
-      }
-    });
-  }
-
+  // ── Eliminar ──────────────────────────────────────────────────────
   confirmarEliminar(g: IGasto): void {
     if (!g.id || this.eliminandoId) return;
     Swal.fire({

@@ -1,5 +1,98 @@
 <div class="ga-page">
-  <div class="ga-content" style="padding-top:48px;text-align:center;color:var(--app-text-muted)">
-    <p>Usa la pestaña <strong>📋 Gastos</strong> para agregar un gasto.</p>
+
+  <!-- ── HEADER ── -->
+  <div class="ga-header">
+    <div class="ga-header__content">
+      <div class="ga-header__title">
+        <h4>{{ titulo }}</h4>
+        <small>Módulo de gastos y ventas</small>
+      </div>
+      <button class="ga-btn ga-btn--ghost" (click)="cancelar()">← Volver al listado</button>
+    </div>
   </div>
+
+  <!-- ── FORMULARIO ── -->
+  <div class="ga-content">
+    <div class="ga-form-card">
+
+      <form [formGroup]="gastoForm">
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Descripción *</label>
+            <input class="ga-input" formControlName="descripcion"
+                   placeholder="Ej. Surtido de bolsas noviembre" />
+            <small class="ga-field__error"
+                   *ngIf="gastoForm.get('descripcion')?.invalid && gastoForm.get('descripcion')?.touched">
+              Campo requerido
+            </small>
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field">
+            <label class="ga-label">Monto * ($)</label>
+            <input class="ga-input" type="number" formControlName="monto"
+                   placeholder="0.00" min="0.01" />
+            <small class="ga-field__error"
+                   *ngIf="gastoForm.get('monto')?.invalid && gastoForm.get('monto')?.touched">
+              Ingresa un monto mayor a 0
+            </small>
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Fecha *</label>
+            <input class="ga-input" type="date" formControlName="fecha" />
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Categoría *</label>
+            <select class="ga-input ga-select" formControlName="categoria">
+              <option *ngFor="let c of categorias" [value]="c">{{ categoriaLabels[c] }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Proveedor <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="proveedor"
+                   placeholder="Nombre del proveedor" />
+          </div>
+          <div class="ga-field">
+            <label class="ga-label">Comprobante <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="comprobante"
+                   placeholder="FAC-001" />
+          </div>
+        </div>
+
+        <div class="ga-form-row">
+          <div class="ga-field ga-field--wide">
+            <label class="ga-label">Notas <span class="ga-label--opt">(opcional)</span></label>
+            <input class="ga-input" formControlName="notas"
+                   placeholder="Observaciones adicionales" />
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Botones -->
+      <div class="ga-form-actions">
+        <button class="ga-btn ga-btn--danger"
+                *ngIf="esEdicion"
+                [disabled]="eliminando"
+                (click)="eliminar()">
+          🗑️ {{ eliminando ? 'Eliminando…' : 'Eliminar gasto' }}
+        </button>
+        <div class="ga-form-actions__right">
+          <button class="ga-btn ga-btn--ghost" (click)="cancelar()">Cancelar</button>
+          <button class="ga-btn ga-btn--primary"
+                  [disabled]="gastoForm.invalid || guardando"
+                  (click)="guardar()">
+            💾 {{ guardando ? 'Guardando…' : (esEdicion ? 'Actualizar' : 'Guardar gasto') }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>

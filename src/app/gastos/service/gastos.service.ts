@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IGasto, IGastoReporte, IPaginadoGasto, IPaginadoVenta } from '../models/IGastos.model';
@@ -8,6 +8,11 @@ import { IGasto, IGastoReporte, IPaginadoGasto, IPaginadoVenta } from '../models
 @Injectable({ providedIn: 'root' })
 export class GastosService {
   private readonly base = `${environment.api_Url}/v1`;
+
+  private readonly _gastoEditar = new BehaviorSubject<IGasto | null>(null);
+  readonly gastoEditar$ = this._gastoEditar.asObservable();
+
+  setGastoEditar(g: IGasto | null): void { this._gastoEditar.next(g); }
 
   constructor(private readonly http: HttpClient) {}
 

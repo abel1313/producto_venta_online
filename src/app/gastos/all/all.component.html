@@ -67,13 +67,6 @@
         </div>
       </div>
 
-      <!-- Spinner -->
-      <div *ngIf="cargandoGastos" class="ga-spinner-wrap">
-        <div class="spinner-border" style="color:var(--app-accent)" role="status">
-          <span class="visually-hidden">Cargando…</span>
-        </div>
-      </div>
-
       <!-- Empty state -->
       <div *ngIf="!cargandoGastos && gastos.length === 0" class="ga-empty">
         <span class="ga-empty__icon">📋</span>
@@ -177,13 +170,6 @@
         </div>
       </div>
 
-      <!-- Spinner -->
-      <div *ngIf="cargandoVentas" class="ga-spinner-wrap">
-        <div class="spinner-border" style="color:var(--app-accent)" role="status">
-          <span class="visually-hidden">Cargando…</span>
-        </div>
-      </div>
-
       <!-- Empty state -->
       <div *ngIf="!cargandoVentas && ventas.length === 0" class="ga-empty">
         <span class="ga-empty__icon">🛍️</span>
@@ -258,13 +244,6 @@
           <button class="ga-btn ga-btn--primary" style="align-self:flex-end" (click)="cargarReporte()">
             📊 Ver reporte
           </button>
-        </div>
-      </div>
-
-      <!-- Spinner -->
-      <div *ngIf="cargandoReporte" class="ga-spinner-wrap">
-        <div class="spinner-border" style="color:var(--app-accent)" role="status">
-          <span class="visually-hidden">Cargando…</span>
         </div>
       </div>
 

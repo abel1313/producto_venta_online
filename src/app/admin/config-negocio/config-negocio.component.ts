@@ -49,7 +49,7 @@ export class ConfigNegocioComponent implements OnInit {
           facebookUrl: data.facebookUrl ?? ''
         });
       },
-      error: () => {}
+      error: (err) => { Swal.fire({ icon: 'error', title: 'Error al cargar configuración', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la configuración del negocio.', timer: 2000, showConfirmButton: false }); }
     });
   }
 
@@ -67,9 +67,9 @@ export class ConfigNegocioComponent implements OnInit {
         this.estado!.abierto = !this.estado!.abierto;
         this.toggling = false;
       },
-      error: () => {
+      error: (err) => {
         this.toggling = false;
-        Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1600, showConfirmButton: false });
+        Swal.fire({ icon: 'error', title: 'Error al cambiar estado', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cambiar el estado del negocio.', timer: 1600, showConfirmButton: false });
       }
     });
   }
@@ -87,9 +87,9 @@ export class ConfigNegocioComponent implements OnInit {
         }
         Swal.fire({ icon: 'success', title: '¡Horario actualizado!', timer: 1400, showConfirmButton: false });
       },
-      error: () => {
+      error: (err) => {
         this.guardandoHorario = false;
-        Swal.fire({ icon: 'error', title: 'Error al guardar horario', timer: 1600, showConfirmButton: false });
+        Swal.fire({ icon: 'error', title: 'Error al guardar horario', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el horario.', timer: 1600, showConfirmButton: false });
       }
     });
   }
@@ -107,9 +107,9 @@ export class ConfigNegocioComponent implements OnInit {
         }
         Swal.fire({ icon: 'success', title: '¡Contactos actualizados!', timer: 1400, showConfirmButton: false });
       },
-      error: () => {
+      error: (err) => {
         this.guardandoContactos = false;
-        Swal.fire({ icon: 'error', title: 'Error al guardar contactos', timer: 1600, showConfirmButton: false });
+        Swal.fire({ icon: 'error', title: 'Error al guardar contactos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar los contactos.', timer: 1600, showConfirmButton: false });
       }
     });
   }

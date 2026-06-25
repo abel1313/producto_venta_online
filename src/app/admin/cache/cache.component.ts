@@ -42,11 +42,12 @@ export class CacheComponent {
             color: '#fff'
           });
         },
-        error: () => {
+        error: (err) => {
           this.limpiando = false;
           Swal.fire({
             icon: 'error',
             title: 'Error al limpiar la caché',
+            text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo limpiar la caché.',
             timer: 2000,
             showConfirmButton: false,
             background: '#1e1b4b',

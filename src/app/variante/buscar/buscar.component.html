@@ -1,5 +1,6 @@
 <!-- ── Encabezado ─────────────────────────────────────────────────── -->
 <div class="vb-header">
+  <div class="vb-header__content">
   <div class="vb-header__inner">
     <div class="vb-header__title">
       <span class="vb-header__icon">🏷️</span>
@@ -65,8 +66,9 @@
       (click)="cambiarFiltroAdmin('todos')">Todos</button>
     <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'sin-stock'"
       (click)="cambiarFiltroAdmin('sin-stock')">Sin stock</button>
-      
+
   </div>
+  </div><!-- /vb-header__content -->
 </div>
 
 <!-- ── Grid de cards ──────────────────────────────────────────────── -->

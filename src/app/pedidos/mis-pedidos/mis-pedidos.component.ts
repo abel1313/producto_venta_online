@@ -107,7 +107,7 @@ export class MisPedidosComponent implements OnInit {
             this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
             Swal.fire({ title: 'Pedido cancelado correctamente', icon: 'success', timer: 1600, showConfirmButton: false });
           },
-          error: () => Swal.fire({ title: 'Error al cancelar el pedido, intente de nuevo', icon: 'error' })
+          error: (err) => Swal.fire({ title: 'Error al cancelar el pedido', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cancelar el pedido.', icon: 'error' })
         });
       }
     });

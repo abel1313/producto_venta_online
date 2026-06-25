@@ -42,7 +42,14 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
-  // ── 2b. Activar/desactivar modo prueba ─────────────────────────────
+  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia) ────────
+  actualizarConfiguracion(id: number, patch: { fechaHoraLimite?: string; tipo?: TipoRifa; mesReferencia?: string | null }): Observable<IConfigurarRifa> {
+    return this.http.put<{ code: number; data: IConfigurarRifa }>(
+      `${this.url}/v1/configurarRifa/${id}`, patch
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 2c. Activar/desactivar modo prueba ─────────────────────────────
   setEsPrueba(rifaId: number, esPrueba: boolean): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${rifaId}/esPrueba`, { esPrueba }
@@ -166,6 +173,13 @@ export class RifaService {
     return this.http.post<{ code: number; data: string }>(
       `${this.url}/v1/ganadorRifa/reiniciar/${rifaId}?completo=${completo}`, {}
     ).pipe(map(r => r.data));
+  }
+
+  // ── 15b. Copiar concursantes de una rifa origen a una rifa destino ─
+  copiarDeRifa(data: { rifaOrigenId: number; rifaDestinoId: number; palabraClave: string }): Observable<IConcursante[]> {
+    return this.http.post<{ code: number; data: IConcursante[] }>(
+      `${this.url}/v1/concursante/copiarDeRifa`, data
+    ).pipe(map(r => r.data ?? []));
   }
 
   // ── 15. Rifas activas ──────────────────────────────────────────────

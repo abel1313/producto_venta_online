@@ -37,7 +37,7 @@ export class GestionPalabrasClave implements OnInit {
     this.cargando = true;
     this.svc.getAll().subscribe({
       next: data => { this.palabras = data; this.cargando = false; },
-      error: ()   => { this.cargando = false; }
+      error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar categorías', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de categorías.', timer: 2000, showConfirmButton: false }); }
     });
   }
 

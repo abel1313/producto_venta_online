@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject, TimeoutError } from 'rxjs';
 import { AuthenticateService } from '../auth.service';
 import { AuthService } from '../auth/auth.service';
@@ -38,10 +38,27 @@ export class TokenInterceptor implements HttpInterceptor {
 
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        // RxJS 6: throwError(valor) — NO usar throwError(() => valor), en RxJS 6 tira
+        // la función misma como error en vez de llamarla.
+        // Si el body llegó como string (backend sin Content-Type: application/json),
+        // intentar parsearlo para que err.error.mensaje sea accesible en los componentes.
+        let normalizedError = error;
+        if (error.error && typeof error.error === 'string') {
+          try {
+            const parsed = JSON.parse(error.error);
+            normalizedError = new HttpErrorResponse({
+              error: parsed,
+              headers: error.headers,
+              status: error.status,
+              statusText: error.statusText,
+              url: error.url ?? undefined,
+            });
+          } catch { /* no es JSON válido — dejar como estaba */ }
+        }
+        if (normalizedError.status === 401) {
           return this.handleRefresh(req, next);
         }
-        return throwError(() => error);
+        return throwError(normalizedError);
       })
     );
   }
@@ -54,7 +71,7 @@ export class TokenInterceptor implements HttpInterceptor {
         take(1),
         switchMap(token => {
           if (token === REFRESH_FAILED) {
-            return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
+            return throwError(new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
           }
           return next.handle(req.clone({
             setHeaders: { Authorization: `Bearer ${token}` },
@@ -85,7 +102,7 @@ export class TokenInterceptor implements HttpInterceptor {
           this.refreshToken$.next(REFRESH_FAILED);
           setTimeout(() => this.refreshToken$.next(null), 0);
           this.router.navigate(['/login']);
-          return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Token vacío en refresh' }));
+          return throwError(new HttpErrorResponse({ status: 401, statusText: 'Token vacío en refresh' }));
         }
 
         this.isRefreshing = false;
@@ -108,7 +125,7 @@ export class TokenInterceptor implements HttpInterceptor {
           ? new HttpErrorResponse({ status: 0, statusText: 'Refresh timeout — sesión expirada' })
           : err;
         this.router.navigate(['/login']);
-        return throwError(() => finalErr);
+        return throwError(finalErr);
       })
     );
   }

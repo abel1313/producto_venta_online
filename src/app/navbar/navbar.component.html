@@ -66,6 +66,8 @@
         <a class="sb-subitem" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
         <a class="sb-subitem" *ngIf="isAdminUser"
            routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
+        <a class="sb-subitem" *ngIf="isAdminUser"
+           routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
       </div>
     </div>
 

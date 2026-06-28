@@ -24,6 +24,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   totalUnidades = 0;
   totalImporte  = 0;
 
+  // ── Tipo de pedido (admin) ─────────────────────────────────────────
+  tipoPedido: 'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
+
   // ── Búsqueda de clientes (admin) ───────────────────────────────────
   isAdminUser = false;
   idUsuario   = 0;
@@ -171,9 +174,11 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   private armarYConfirmar(clienteId: number): void {
+    const esCreditoPedido = this.isAdminUser && this.tipoPedido !== 'NORMAL';
     const pedido: IPedidoVarianteDTO = {
       cliente:       { id: clienteId },
-      estadoPedido:  'Pendiente',
+      tipoPedido:    this.isAdminUser ? this.tipoPedido : 'NORMAL',
+      estadoPedido:  esCreditoPedido ? this.tipoPedido : 'Pendiente',
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
       detalles: this.carrito.map(d => ({

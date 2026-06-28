@@ -8,6 +8,7 @@ export interface IPedidoVarianteDetalleDTO {
 
 export interface IPedidoVarianteDTO {
   cliente: { id: number };
+  tipoPedido?: 'NORMAL' | 'APARTADO' | 'FIADO';
   estadoPedido: string;
   fechaPedido: string;
   //fechaRecogida: string;

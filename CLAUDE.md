@@ -1171,6 +1171,31 @@ Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los
 
 ---
 
+## FIX MÓDULO ABONOS — RENOMBRAR FIADO + SOLO EFECTIVO + SWAL CON LINK (2026-06-28)
+
+**Cambios tras prueba en vivo:**
+
+1. **"Fiado" → "Ir pagando"** en `venta-variante.component.html` — label más claro para el cliente
+2. **"Normal" → "Venta total"** — idem
+3. **Solo EFECTIVO para crédito:**
+   - `venta-variante.component.html`: aviso ⚠️ "Solo se acepta efectivo para esta modalidad" visible cuando APARTADO o IR PAGANDO
+   - `abonos.component.ts`: `metodos: MetodoPago[]` reducido a `['EFECTIVO']` (eliminados TRANSFERENCIA y TARJETA)
+   - `abonos.component.html`: botón de método de pago fijo "💵 Efectivo" (disabled) + texto hint debajo
+4. **Swal post-pedido con link a `/abonos`:**
+   - Cuando se guarda un pedido APARTADO o IR PAGANDO (`esCreditoPedido = true`), en vez de navegar directo a `/variantes/buscar`, se muestra Swal con botón "💳 Ir a Créditos / Abonos" que navega a `/abonos`
+   - Si el admin cierra el Swal sin confirmar → navega a `/variantes/buscar` (mismo comportamiento anterior)
+
+**Archivos modificados:**
+- `src/app/variante/venta-variante/venta-variante.component.html` → labels, aviso efectivo
+- `src/app/variante/venta-variante/venta-variante.component.ts` → Swal diferenciado para crédito
+- `src/app/abonos/abonos.component.ts` → `metodos = ['EFECTIVO']`
+- `src/app/abonos/abonos.component.html` → botón fijo Efectivo + hint
+- `src/app/abonos/abonos.component.scss` → `.ab-hint`, `&[disabled]` en `.ab-metodo-btn`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## MÓDULO ABONOS — CRÉDITOS (APARTADO / FIADO) (2026-06-27)
 
 > Implementación según `ABONOS_FRONT.md`. Backend: `proyecto-key (9091)`. Solo admin.

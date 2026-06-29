@@ -210,12 +210,31 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         next: (res: any) => {
           if (res?.data != null) {
             this.carritoService.limpiar();
-            this.varianteService.invalidarCache(); // fuerza fetch fresco con stock actualizado
-            Swal.fire({
-              icon: 'success',
-              title: 'Pedido registrado',
-              text: `Número de pedido: ${res.data.id}`,
-            }).then(() => this.router.navigate(['/variantes/buscar']));
+            this.varianteService.invalidarCache();
+            if (esCreditoPedido) {
+              const label = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
+              Swal.fire({
+                icon: 'success',
+                title: 'Pedido registrado',
+                html: `
+                  <p>Pedido #${res.data.id} registrado como <strong>${label}</strong>.</p>
+                  <p>Puedes agregar los abonos desde <strong>Créditos / Abonos</strong>.</p>
+                `,
+                confirmButtonText: '💳 Ir a Créditos / Abonos',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#6366f1'
+              }).then(r => {
+                if (r.isConfirmed) this.router.navigate(['/abonos']);
+                else this.router.navigate(['/variantes/buscar']);
+              });
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Pedido registrado',
+                text: `Número de pedido: ${res.data.id}`,
+              }).then(() => this.router.navigate(['/variantes/buscar']));
+            }
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: res?.mensaje ?? 'No se pudo guardar el pedido.' });
           }

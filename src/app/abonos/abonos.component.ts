@@ -35,7 +35,7 @@ export class AbonosComponent implements OnInit {
     nota:       ''
   };
 
-  readonly metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA'];
+  readonly metodos: MetodoPago[] = ['EFECTIVO'];
 
   // ── Detalle expandible (estado de cuenta) ─────────────────────────
   expandidoId: number | null = null;

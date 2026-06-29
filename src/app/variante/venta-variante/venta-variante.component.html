@@ -87,14 +87,13 @@
     <span class="fw-semibold">Tipo de pedido</span>
   </div>
   <div class="card-body py-2 d-flex gap-3 flex-wrap align-items-center">
-    <div class="form-check form-check-inline" *ngFor="let t of [['NORMAL','📋 Normal'],['APARTADO','📦 Apartado'],['FIADO','🤝 Fiado']]">
+    <div class="form-check form-check-inline" *ngFor="let t of [['NORMAL','💵 Venta total'],['APARTADO','📦 Apartado'],['FIADO','🤝 Ir pagando']]">
       <input class="form-check-input" type="radio" [id]="'tipo-' + t[0]"
              [value]="t[0]" [(ngModel)]="tipoPedido">
       <label class="form-check-label" [for]="'tipo-' + t[0]">{{ t[1] }}</label>
     </div>
-    <small class="text-muted" *ngIf="tipoPedido !== 'NORMAL'">
-      El pedido se registrará como <strong>{{ tipoPedido }}</strong> — podrás agregar abonos desde
-      <a routerLink="/abonos">💳 Créditos / Abonos</a>.
+    <small class="text-warning fw-semibold" *ngIf="tipoPedido !== 'NORMAL'">
+      💵 Solo se acepta efectivo para esta modalidad
     </small>
   </div>
 </div>

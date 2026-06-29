@@ -193,12 +193,9 @@
     <div class="ab-field">
       <label class="ab-label">Método de pago</label>
       <div class="ab-metodos">
-        <button *ngFor="let m of metodos" class="ab-metodo-btn"
-                [class.ab-metodo-btn--active]="abonoForm.metodoPago === m"
-                (click)="abonoForm.metodoPago = m">
-          {{ m === 'EFECTIVO' ? '💵 Efectivo' : m === 'TRANSFERENCIA' ? '🏦 Transferencia' : '💳 Tarjeta' }}
-        </button>
+        <button class="ab-metodo-btn ab-metodo-btn--active" disabled>💵 Efectivo</button>
       </div>
+      <small class="ab-hint">Los abonos de crédito solo se registran en efectivo</small>
     </div>
 
     <div class="ab-field">

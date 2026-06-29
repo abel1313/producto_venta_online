@@ -1171,6 +1171,70 @@ Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los
 
 ---
 
+## MÓDULO ABONOS — CRÉDITOS (APARTADO / FIADO) (2026-06-27)
+
+> Implementación según `ABONOS_FRONT.md`. Backend: `proyecto-key (9091)`. Solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/abonos/models/abono.model.ts` | Interfaces: `AbonoRequest`, `AbonoResponse`, `EstadoCuenta`, `PedidoPagado`, `MetodoPago`, `TipoPedidoAbono` |
+| `src/app/abonos/service/abono.service.ts` | 4 endpoints: `registrarAbono()`, `obtenerAbonos()`, `reporteEstadoCuenta()`, `reportePagados()` |
+| `src/app/abonos/abonos.component.ts` | Componente principal con dos tabs + modal de abono |
+| `src/app/abonos/abonos.component.html` | UI: cards de cuentas por cobrar, modal, historial expandible, tab de liquidados |
+| `src/app/abonos/abonos.component.scss` | Estilos con variables CSS (`--card-bg`, `--app-text`, etc.) + dark/light mode |
+| `src/app/abonos/abonos.module.ts` | Módulo lazy (`CommonModule` + `FormsModule`) |
+| `src/app/abonos/abonos-routing.module.ts` | Ruta raíz `''` → `AbonosComponent`, guards: `AuthGuard` + `AdminGuardGuard` |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `{ path: 'abonos', loadChildren: AbonosModule }` con guards admin |
+| `src/app/navbar/navbar.component.html` | Link "💳 Créditos / Abonos" → `/abonos` dentro del accordion "Pedidos" (solo `*ngIf="isAdminUser"`) |
+| `src/app/variante/models/pedido-variante.model.ts` | Campo opcional `tipoPedido?: 'NORMAL' \| 'APARTADO' \| 'FIADO'` en `IPedidoVarianteDTO` |
+| `src/app/variante/venta-variante/venta-variante.component.ts` | Campo `tipoPedido = 'NORMAL'`; `armarYConfirmar()` ahora incluye `tipoPedido` y ajusta `estadoPedido` si es crédito |
+| `src/app/variante/venta-variante/venta-variante.component.html` | Selector radio NORMAL/APARTADO/FIADO visible solo para admin, con aviso de link a `/abonos` |
+
+### Endpoints conectados
+
+| Método | URL | Método servicio |
+|---|---|---|
+| `POST` | `/v1/abonos/{pedidoId}` | `registrarAbono()` |
+| `GET` | `/v1/abonos/{pedidoId}` | `obtenerAbonos()` |
+| `GET` | `/v1/abonos/reporte/estado-cuenta` | `reporteEstadoCuenta()` |
+| `GET` | `/v1/abonos/reporte/pagados` | `reportePagados()` |
+| `POST` | `/v1/pedidos/savePedido` | ya existía — ahora envía `tipoPedido` |
+
+### Flujo de uso
+
+1. Admin va a **"Venta de variantes"** (`/variantes/venta`) → elige tipo APARTADO o FIADO → genera el pedido
+2. Admin va a **"💳 Créditos / Abonos"** (`/abonos`) desde el sidebar (accordion Pedidos)
+3. Tab "Cuentas por cobrar": lista de pedidos APARTADO/FIADO con saldo pendiente
+4. Botón "+ Abono" → modal (monto, método, fecha, nota) → `POST /v1/abonos/{id}`
+5. Si `saldo <= 0` tras el abono → mensaje "¡Pedido liquidado!" + se quita de la lista automáticamente
+6. Tab "Liquidados": lista read-only de pedidos ya pagados con historial de abonos expandible
+
+### Comportamiento del modal de abono
+
+- Validación local: `monto > 0` obligatorio
+- Métodos de pago: botones toggle (EFECTIVO / TRANSFERENCIA / TARJETA)
+- Al guardar: actualiza locales `totalPagado` y `saldo` sin recargar toda la lista
+- Si el backend responde `400` (`err?.error?.mensaje`) → Swal de error con el mensaje del back
+- Botón deshabilitado mientras `registrando = true` (guard de doble submit, patrón Lección #9)
+
+### Lecciones / errores a no repetir
+
+- **`FormsModule` en el módulo**: `abonos.module.ts` importa `FormsModule` porque el modal usa `[(ngModel)]`. Sin él, los inputs del modal no funcionan.
+- **Guard de admin en la ruta**: `abonos-routing.module.ts` usa `canActivate: [AuthGuard, AdminGuardGuard]`. Sin ambos guards cualquier usuario podría acceder a `/abonos`.
+- **`tipoPedido` en `estadoPedido`**: para APARTADO/FIADO el backend espera que `estadoPedido` tenga el MISMO valor que `tipoPedido` (no `'Pendiente'`). El código en `armarYConfirmar()` usa `esCreditoPedido ? this.tipoPedido : 'Pendiente'`.
+- **Actualización local vs recarga**: el abono actualiza `totalPagado`/`saldo` localmente en el objeto del array. Si el backend cambia la lógica de cálculo de saldo, podría haber divergencia — en ese caso cambiar a recargar la lista completa con `cargarCuenta()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## MÓDULO CHAT EN VIVO (2026-06-16)
 
 > Implementación de chat en tiempo real STOMP/WebSocket según `CHAT_FRONT_DEVELOPER.md`.

@@ -260,6 +260,7 @@ $accent: #3b82f6;  // azul — botones primarios en rifa-mes
   font-size: 0.85rem;
   margin-bottom: 10px;
   &--warn { background: rgba(252, 211, 77, 0.12); border: 1px solid rgba(252, 211, 77, 0.4); color: #92400e; }
+  &--info { background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--app-text); }
 }
 
 // -- Manual form

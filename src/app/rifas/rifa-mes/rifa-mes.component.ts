@@ -34,8 +34,9 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   fechaLimHora     = '23:59';
   palabraClave     = 'RIFA';
   esPrueba         = true;
-  cargandoClientes = false;
-  creandoRifa      = false;
+  cargandoClientes  = false;
+  clientesCargados  = false;
+  creandoRifa       = false;
   editandoConfig   = false;
   savingConfigEdit = false;
   clientesMes: IClientePedido[] = [];
@@ -180,12 +181,17 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
   cargarClientes(): void {
     if (!this.mesSeleccionado) return;
-    this.cargandoClientes = true;
-    this.errorConcursante = null;
+    this.cargandoClientes  = true;
+    this.clientesCargados  = false;
+    this.errorConcursante  = null;
     this.clientesMes = [];
     this.clientesSeleccionados.clear();
     this.rifaService.getClientesPorMes(this.mesSeleccionado).subscribe({
-      next: res => { this.clientesMes = res; this.cargandoClientes = false; },
+      next: res => {
+        this.clientesMes      = res;
+        this.cargandoClientes = false;
+        this.clientesCargados = true;
+      },
       error: err => {
         this.cargandoClientes = false;
         this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudieron cargar los clientes del mes.';
@@ -225,6 +231,14 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         this.rifaConfig = rifa;
         const clientesSelec = [...this.clientesSeleccionados].map(i => this.clientesMes[i]);
 
+        // Sin clientes seleccionados → ir directo a Paso 2 para agregar manualmente
+        if (!clientesSelec.length) {
+          this.concursantes  = [];
+          this.creandoRifa   = false;
+          this.paso          = 'participantes';
+          return;
+        }
+
         this.rifaService.importarDePedidos({
           configurarRifaId: rifa.id!,
           palabraClave:     this.palabraClave.trim().toUpperCase(),
@@ -233,11 +247,11 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           clientes:         clientesSelec
         }).subscribe({
           next: res => {
-            this.concursantes = res.importados;
-            this.omitidosImport = res.omitidosYaRegistrados ?? [];
+            this.concursantes      = res.importados;
+            this.omitidosImport    = res.omitidosYaRegistrados ?? [];
             this.omitidosSinNombre = res.omitidosSinNombre ?? [];
-            this.creandoRifa = false;
-            this.paso = 'participantes';
+            this.creandoRifa       = false;
+            this.paso              = 'participantes';
           },
           error: err => {
             this.creandoRifa = false;
@@ -561,7 +575,8 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.descartadoActual = null;
     this.varianteRifa = null;
     this.varianteSeleccionada = null;
-    this.clientesMes = [];
+    this.clientesMes      = [];
+    this.clientesCargados = false;
     this.clientesSeleccionados.clear();
     this.confettiPieces = [];
     this.omitidosImport = [];

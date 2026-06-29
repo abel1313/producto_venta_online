@@ -78,6 +78,21 @@
           </span>
         </button>
 
+        <!-- Sin clientes ese mes → permitir avanzar igual -->
+        <div class="rm-alert rm-alert--info" *ngIf="clientesCargados && !clientesMes.length">
+          ℹ️ No se encontraron clientes con pedidos en ese mes.
+          Puedes crear la rifa de todas formas y agregar los participantes manualmente en el siguiente paso.
+        </div>
+        <button class="rm-btn rm-btn--primary rm-btn--full"
+                *ngIf="clientesCargados && !clientesMes.length"
+                (click)="crearRifaEImportar()"
+                [disabled]="!fechaHoraLimite || !palabraClave.trim() || creandoRifa">
+          <span *ngIf="!creandoRifa">✅ Crear rifa sin importar</span>
+          <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
+            <span class="spinner-border spinner-border-sm"></span> Creando…
+          </span>
+        </button>
+
         <!-- Tabla de clientes -->
         <div class="rm-clientes" *ngIf="clientesMes.length > 0">
           <div class="rm-clientes__header">

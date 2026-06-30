@@ -66,7 +66,7 @@
 
   <!-- Total + botones -->
   <div class="row mt-2 mb-2 px-3">
-    <div class="col d-flex justify-content-end gap-2">
+    <div class="col d-flex justify-content-end gap-2 flex-wrap">
       <button type="button" class="btn btn-outline-secondary btn-sm"
         [disabled]="carritoVacio" (click)="limpiar()">
         🗑 Limpiar carrito
@@ -74,6 +74,10 @@
       <button type="button" class="btn btn-success btn-sm"
         [disabled]="carritoVacio" (click)="generarPedido()">
         📋 Generar pedido
+      </button>
+      <button type="button" class="btn btn-primary btn-sm"
+        *ngIf="isAdminUser" [disabled]="carritoVacio" (click)="irAVentaDirecta()">
+        💰 Cobrar ahora (Venta Directa)
       </button>
     </div>
   </div>
@@ -92,8 +96,8 @@
              [value]="t[0]" [(ngModel)]="tipoPedido">
       <label class="form-check-label" [for]="'tipo-' + t[0]">{{ t[1] }}</label>
     </div>
-    <small class="text-warning fw-semibold" *ngIf="tipoPedido !== 'NORMAL'">
-      💵 Solo se acepta efectivo para esta modalidad
+    <small class="text-muted" *ngIf="tipoPedido !== 'NORMAL'">
+      ℹ️ Los abonos pueden ser en efectivo, transferencia o tarjeta — sin meses
     </small>
   </div>
 </div>

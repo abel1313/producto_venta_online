@@ -65,6 +65,8 @@
     font-weight: 700;
     padding: 0.05rem 0.45rem;
     line-height: 1.4;
+
+    &--cancel { background: #dc2626; }
   }
 }
 
@@ -101,11 +103,13 @@
 
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  &--reload  { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--abono   { background: #6366f1; color: #fff; }
-  &--detalle { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--cancel  { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--save    { background: #6366f1; color: #fff; min-width: 140px; }
+  &--reload     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--abono      { background: #6366f1; color: #fff; }
+  &--cancelar   { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
+  &--transferir { background: rgba(8,145,178,0.1); color: #0891b2; border: 1px solid rgba(8,145,178,0.3); }
+  &--detalle    { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--cancel     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--save       { background: #6366f1; color: #fff; min-width: 140px; }
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────
@@ -122,7 +126,8 @@
   padding: 1rem 1.1rem;
   transition: box-shadow 0.15s;
 
-  &--pagado { opacity: 0.9; }
+  &--pagado    { opacity: 0.9; }
+  &--cancelado { opacity: 0.85; border-color: rgba(239,68,68,0.25); }
 
   &__hdr {
     display: flex;
@@ -167,9 +172,10 @@
   font-size: 0.72rem;
   font-weight: 700;
 
-  &--apartado { background: rgba(99,102,241,0.15); color: #6366f1; }
-  &--fiado    { background: rgba(234,179,8,0.15);  color: #ca8a04; }
-  &--pagado   { background: rgba(34,197,94,0.15);  color: #16a34a; }
+  &--apartado  { background: rgba(99,102,241,0.15); color: #6366f1; }
+  &--fiado     { background: rgba(234,179,8,0.15);  color: #ca8a04; }
+  &--pagado    { background: rgba(34,197,94,0.15);  color: #16a34a; }
+  &--cancelado { background: rgba(239,68,68,0.12);  color: #dc2626; }
 }
 
 // ── Montos ────────────────────────────────────────────────────────────
@@ -181,6 +187,7 @@
   &__val   { font-size: 0.92rem; font-weight: 700; color: var(--app-text); }
   &__val--ok    { color: #16a34a; }
   &__val--saldo { color: #ef4444; }
+  &__val--favor { color: #0891b2; }
 }
 
 // ── Progreso ──────────────────────────────────────────────────────────
@@ -390,6 +397,87 @@
   font-size: 0.72rem;
   color: var(--app-text);
   opacity: 0.6;
+}
+
+// ── Motivo cancelación ────────────────────────────────────────────────
+.ab-motivo {
+  font-size: 0.78rem;
+  color: var(--app-text);
+  opacity: 0.7;
+  margin-top: 0.5rem;
+  font-style: italic;
+
+  &__label { font-weight: 700; font-style: normal; }
+}
+
+// ── Modal wide (transferencia) ────────────────────────────────────────
+.ab-modal--wide {
+  width: min(540px, calc(100vw - 2rem));
+}
+
+// ── Búsqueda en modal de transferencia ───────────────────────────────
+.ab-transfer-search {
+  position: relative;
+}
+
+.ab-transfer-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ab-transfer-item {
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--card-border);
+  transition: background 0.12s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--form-section-bg); }
+
+  &--loading { color: var(--app-text); opacity: 0.55; cursor: default; font-style: italic; font-size: 0.82rem; }
+
+  &__nombre { display: block; font-weight: 600; font-size: 0.88rem; color: var(--app-text); }
+  &__info   { display: block; font-size: 0.75rem; color: var(--app-text); opacity: 0.65; margin-top: 0.15rem; }
+}
+
+// ── Resumen de transferencia ──────────────────────────────────────────
+.ab-transfer-resumen {
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--app-text);
+
+    &--total {
+      border-top: 1px solid var(--card-border);
+      padding-top: 0.4rem;
+      margin-top: 0.1rem;
+      font-weight: 700;
+    }
+  }
+}
+
+// ── Hint warn ─────────────────────────────────────────────────────────
+.ab-hint--warn {
+  color: #f59e0b;
 }
 
 // ── Dark mode ────────────────────────────────────────────────────────

@@ -108,10 +108,11 @@
       <div class="vd-pay-section">
         <p class="vd-panel__title">
           💳 Forma de pago
-          <span class="vd-required" *ngIf="!pagosYMesesId">*</span>
+          <span class="vd-required" *ngIf="!pagosYMesesId && !esCredito">*</span>
         </p>
 
-        <p-dropdown *ngIf="!cargandoPagos"
+        <!-- Pago al contado -->
+        <p-dropdown *ngIf="!cargandoPagos && !esCredito"
             [options]="opcionesEstructuradas"
             [(ngModel)]="tipoPagoActivo"
             optionLabel="formaPago"
@@ -121,7 +122,7 @@
             [style]="{ width: '100%' }">
         </p-dropdown>
 
-        <p-dropdown *ngIf="tipoPagoActivo?.mostrarMeses"
+        <p-dropdown *ngIf="tipoPagoActivo?.mostrarMeses && !esCredito"
             [options]="tipoPagoActivo!.opciones"
             [(ngModel)]="mesesSeleccionado"
             optionLabel="descripcion"
@@ -130,6 +131,39 @@
             appendTo="body"
             [style]="{ width: '100%', marginTop: '8px' }">
         </p-dropdown>
+
+        <!-- Crédito — APARTADO / IR PAGANDO -->
+        <div class="vd-credit-divider"><span>o pago en parcialidades</span></div>
+
+        <div class="vd-credit-btns">
+          <button class="vd-btn-credit"
+                  [class.vd-btn-credit--active]="tipoPedido === 'APARTADO'"
+                  type="button"
+                  (click)="seleccionarCredito('APARTADO')">
+            📦 Apartado
+          </button>
+          <button class="vd-btn-credit"
+                  [class.vd-btn-credit--active]="tipoPedido === 'FIADO'"
+                  type="button"
+                  (click)="seleccionarCredito('FIADO')">
+            💳 Ir pagando
+          </button>
+        </div>
+
+        <!-- Observaciones cuando hay crédito -->
+        <ng-container *ngIf="esCredito">
+          <div class="vd-observaciones">
+            <label class="vd-panel__title" style="display:block;margin-bottom:6px">📝 Observaciones <span class="vd-optional">(opcional)</span></label>
+            <textarea class="vd-observaciones__input"
+                      [(ngModel)]="observaciones"
+                      rows="2"
+                      placeholder="Acuerdo de pago, fecha de enganche, etc.…">
+            </textarea>
+          </div>
+          <div class="vd-credit-info">
+            ℹ️ El pago de cada abono puede ser en <strong>efectivo, transferencia o tarjeta</strong> — sin pagos a meses.
+          </div>
+        </ng-container>
       </div>
 
       <!-- ── CLIENTE ───────────────────────────────────────────── -->

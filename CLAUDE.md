@@ -32,6 +32,12 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 - Si es un endpoint nuevo → anotarlo en "RESUMEN DE MIGRACIÓN"
 - Si es un cambio de layout → anotarlo en la sección del componente afectado
 
+## REGLA — `DOCUMENTO_BACK_VENTAS_CREDITO.md`
+
+Los cambios del módulo de crédito/abonos (ventas, pedidos, abonos, cancelar, transferir) se documentan **al final** de `DOCUMENTO_BACK_VENTAS_CREDITO.md` como secciones numeradas.
+
+**Antes de escribir en ese archivo**, listar primero al usuario qué secciones se van a agregar y esperar confirmación. No hacer cambios directos sin anunciar primero el contenido.
+
 ---
 
 ## FIX — ELIMINACIÓN DE SPINNERS LOCALES EN COMPONENTES (2026-06-14)
@@ -1168,6 +1174,119 @@ Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los
 - `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → reemplaza bloque `rf-tabs` con clases `rf-acordeon`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT CARRITO → VENTA DIRECTA PARA ADMIN (2026-06-30)
+
+> Flujo 3 de `REQUERIMIENTO_BACK_VENTA_DIRECTA_CREDITO.md` — cambio solo de front, sin tocar back.
+
+**Comportamiento:** cuando el admin está en `/variantes/carrito`, aparece un nuevo botón
+**"💰 Cobrar ahora (Venta Directa)"** junto a "📋 Generar pedido". Al pulsarlo navega a
+`/variantes/venta-directa` y los items del carrito se pre-cargan automáticamente como líneas
+de venta. Al confirmar la venta, el carrito se limpia solo.
+
+**Regla:** la pre-carga solo ocurre si `isAdminUser === true` y `lineas` está vacío — no
+sobrescribe una venta directa que el admin ya esté armando manualmente.
+
+**Archivos modificados:**
+- `src/app/variante/venta-variante/venta-variante.component.ts` → `irAVentaDirecta()`
+- `src/app/variante/venta-variante/venta-variante.component.html` → botón "💰 Cobrar ahora"
+- `src/app/variante/venta-directa/venta-directa.component.ts` → inyecta `CarritoVarianteService`;
+  `ngOnInit` pre-carga items del carrito; `limpiarTodo()` limpia el carrito si vino de ahí.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT VENTA DIRECTA — CRÉDITO (APARTADO / IR PAGANDO) EN TODOS LOS PAGOS (2026-06-30)
+
+> Backend ya implementado (ver `REQUERIMIENTO_BACK_VENTA_DIRECTA_CREDITO.md`).
+> `POST /v1/ventas/save` acepta `tipoPedido: APARTADO|FIADO` → crea solo Pedido y devuelve `pedidoId`.
+
+**Cambios realizados:**
+
+1. **`abono.model.ts`** → `AbonoRequest.usuarioId?: number` (requerido por back al liquidar); nueva interfaz `AbonoRegistrarResponse { estadoPedido, saldoRestante }`.
+2. **`abono.service.ts`** → `registrarAbono()` ahora retorna `Observable<ResponseGeneric<AbonoRegistrarResponse>>`.
+3. **`abonos.component.ts`** → inyecta `AuthService` para obtener `idUsuario`; envía `usuarioId` en el body; usa `res.data.estadoPedido === 'PAGADO'` y `res.data.saldoRestante` para actualizar el estado local.
+4. **`variante.service.ts`** → `IVentaDirectaRequest`: `pagosYMesesId?` (opcional), `tipoPedido?`, `observaciones?`. `IVentaDirectaResponse`: `pedidoId: number | null`, `ventaId: number | null`, `tipoPago/descripcionPago` nullable.
+5. **`venta-directa.component.ts`** → inyecta `Router`; campo `tipoPedido: 'NORMAL'|'APARTADO'|'FIADO'`; getter `esCredito`; `puedeCobrar` acepta crédito sin `pagosYMesesId`; `seleccionarCredito()` activa/desactiva; `ejecutarVenta()` envía `tipoPedido`/`observaciones` (sin `pagosYMesesId` en crédito), maneja `res.pedidoId` → Swal + navigate `/abonos`.
+6. **`venta-directa.component.html`** → botones "📦 Apartado" / "💳 Ir pagando" debajo del dropdown de pago; textarea observaciones; aviso "solo efectivo"; dropdown meses oculto cuando crédito.
+7. **`venta-directa.component.scss`** → `.vd-credit-divider`, `.vd-credit-btns`, `.vd-btn-credit`, `.vd-btn-credit--active`, `.vd-observaciones`, `.vd-credit-info`.
+
+**Flujo crédito:** Admin selecciona APARTADO o IR PAGANDO (botones toggle) → `pagosYMesesId` no se envía → back crea Pedido y devuelve `pedidoId` → Swal "✅ Apartado/Ir pagando registrado" con botón "💳 Ir a Créditos / Abonos" → navega a `/abonos`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO ABONOS — CANCELAR, TRANSFERIR Y TAB CANCELADOS (2026-06-30)
+
+> Flujos G, H e I documentados en `DOCUMENTO_BACK_VENTAS_CREDITO.md` secciones 12-17.
+> Backend implementó 3 endpoints nuevos. El front los conecta aquí.
+
+### Flujo completo de crédito (APARTADO / IR PAGANDO)
+
+**Hay 3 formas de registrar un pedido en crédito:**
+1. **Venta Directa** (`/variantes/venta-directa`) — admin busca variantes, elige "📦 Apartado" o "💳 Ir pagando" → `POST /v1/ventas/save` con `tipoPedido` → devuelve `pedidoId` → Swal con link a `/abonos`
+2. **Carrito → Venta Directa** (`/variantes/carrito` → "💰 Cobrar ahora") — mismo endpoint, el carrito se pre-carga automáticamente
+3. **Carrito normal** (`/variantes/venta`) — admin elige APARTADO/FIADO → `POST /v1/pedidos/savePedido` con `tipoPedido` → devuelve pedido
+
+**A partir de aquí todos convergen en `/abonos`:**
+
+| Tab | Endpoint | Qué muestra |
+|---|---|---|
+| 📋 Cuentas por cobrar | `GET /v1/abonos/reporte/estado-cuenta` | Pedidos con saldo pendiente |
+| ✅ Liquidados | `GET /v1/abonos/reporte/pagados` | Pedidos ya pagados |
+| ✖ Cancelados | `GET /v1/abonos/reporte/cancelados` | Pedidos cancelados |
+
+**Flujo G — Cancelar APARTADO** (cliente no terminó de pagar):
+- Botón "✖ Cancelar" en cada card de "Cuentas por cobrar"
+- Swal diferenciado: APARTADO → "Se devolverá el stock" / FIADO → "La deuda quedará registrada"
+- `PUT /v1/abonos/{pedidoId}/cancelar` con `{ motivo?: string }` (texto libre, máx. 30 chars)
+- APARTADO: stock se devuelve + saldo a favor visible en tab "Cancelados"
+- FIADO: stock NO se devuelve + deuda pendiente visible en tab "Cancelados"
+
+**Flujo I — Transferir saldo** (solo APARTADO cancelado con `saldoAFavor > 0`):
+- Botón "↪ Aplicar a otro producto" en tab Cancelados (solo si `puedeTransferir === true`)
+- Modal con buscador de variantes (debounce 400ms, mismo `GET /v1/variantes/buscar`)
+- Precio precargado del buscador pero editable; muestra "⚠ precio editado manualmente" si cambia
+- Calcula `totalNuevo` y `saldoPendiente` en tiempo real
+- `POST /v1/abonos/{pedidoIdOrigen}/transferir` → crea nuevo pedido APARTADO con el saldo ya aplicado
+- Si `estadoNuevoPedido === 'PAGADO'` → el pedido queda liquidado en el mismo call
+
+### Interfaces nuevas (`abono.model.ts`)
+`CancelarAbonoRequest`, `CancelarAbonoResponse`, `TransferirAbonoRequest`, `TransferirAbonoResponse`, `ReporteCancelado`
+
+### Métodos nuevos (`abono.service.ts`)
+`cancelar(pedidoId, body)`, `transferir(pedidoIdOrigen, body)`, `reporteCancelados()`
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/abonos/models/abono.model.ts` | +5 interfaces; `AbonoResponse` ahora tiene `estadoPedido?` y `saldoRestante?` opcionales |
+| `src/app/abonos/service/abono.service.ts` | +3 métodos: `cancelar`, `transferir`, `reporteCancelados` |
+| `src/app/abonos/abonos.component.ts` | Tab `cancelados`; `cancelarPedido()`; modal transferencia con `abrirModalTransferencia()`, `seleccionarVarianteTransferencia()`, `aplicarTransferencia()`; inyecta `VarianteService` para búsqueda debounce |
+| `src/app/abonos/abonos.component.html` | Tab "✖ Cancelados" con cards de cancelados; botón "✖ Cancelar" en cuentas por cobrar; modal de transferencia completo |
+| `src/app/abonos/abonos.component.scss` | `.ab-badge--cancelado`, `.ab-card--cancelado`, `.ab-btn--cancelar`, `.ab-btn--transferir`, `.ab-monto__val--favor`, `.ab-transfer-search`, `.ab-transfer-dropdown`, `.ab-transfer-resumen`, `.ab-hint--warn` |
+
+### Fix en registrarAbono (D-4)
+Al liquidar un pedido (`estadoPedido === 'PAGADO'`) ahora se hace `cargarCuenta()` (reload del server) en vez de filtrar el array local — evita desfase si otro abono llegó en paralelo.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX BUSCADOR PRODUCTOS — MÍNIMO 3 CARACTERES (2026-06-30)
+
+**Síntoma:** en `/productos/buscar`, escribir exactamente 3 caracteres no disparaba la búsqueda. Requería 4+.
+
+**Causa:** `all.component.ts` line 75 usaba `filter(texto => texto.length > 3)` (estrictamente mayor).
+
+**Fix:** cambiado a `filter(texto => texto.length >= 3)` — consistente con todos los demás buscadores del proyecto (`/variantes/buscar` usa `termino.length < 3` como guard).
+
+**Archivo modificado:** `src/app/productos/producto/all/all.component.ts` → pipe del `keyUpSubject`
 
 ---
 

@@ -218,6 +218,50 @@ $t:  all 0.22s ease;
 .vd-required { color: var(--app-accent); font-weight: 700; margin-left: 4px; }
 .vd-optional { font-size: .72rem; color: #9ca3af; font-weight: 400; text-transform: none; margin-left: 6px; }
 
+// ── Crédito ────────────────────────────────────────────────────────
+.vd-credit-divider {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 2px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
+  span { font-size: .7rem; color: #9ca3af; white-space: nowrap; }
+}
+
+.vd-credit-btns {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+
+.vd-btn-credit {
+  padding: 10px 8px; border-radius: 10px; font-size: .82rem; font-weight: 700;
+  cursor: pointer; border: 1.5px solid var(--card-border);
+  background: var(--card-bg); color: var(--app-text);
+  transition: all 0.18s ease;
+
+  &:hover { border-color: var(--app-accent); color: var(--app-accent); }
+
+  &--active {
+    background: rgba(79,70,229,.13);
+    border-color: var(--app-accent);
+    color: var(--app-accent);
+    box-shadow: 0 0 0 2px rgba(79,70,229,.18);
+  }
+}
+
+.vd-observaciones {
+  &__input {
+    width: 100%; resize: vertical; min-height: 52px;
+    padding: 8px 12px; border-radius: 8px;
+    border: 1.5px solid var(--input-border); background: var(--input-bg);
+    color: var(--input-text); font-size: .88rem;
+    &::placeholder { color: var(--input-placeholder); }
+    &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  }
+}
+
+.vd-credit-info {
+  font-size: .78rem; color: #d97706;
+  background: rgba(217,119,6,.1); border: 1px solid rgba(217,119,6,.25);
+  border-radius: 8px; padding: 7px 12px;
+}
+
 // ── Terminal inline ────────────────────────────────────────────────
 .vd-terminal {
   border: 1.5px solid var(--input-border);

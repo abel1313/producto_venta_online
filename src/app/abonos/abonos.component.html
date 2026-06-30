@@ -15,6 +15,10 @@
         <button class="ab-tab" [class.ab-tab--active]="tab === 'pagados'" (click)="cambiarTab('pagados')">
           ✅ Liquidados
         </button>
+        <button class="ab-tab" [class.ab-tab--active]="tab === 'cancelados'" (click)="cambiarTab('cancelados')">
+          ✖ Cancelados
+          <span class="ab-tab__badge ab-tab__badge--cancel" *ngIf="cancelados.length">{{ cancelados.length }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -29,17 +33,14 @@
       </span>
     </div>
 
-    <!-- Lista vacía -->
     <div class="ab-empty" *ngIf="!cargandoCuenta && !estadoCuenta.length">
       <span class="ab-empty__icon">🎉</span>
       <p>Sin cuentas pendientes</p>
     </div>
 
-    <!-- Cards -->
     <div class="ab-cards" *ngIf="estadoCuenta.length">
       <div class="ab-card" *ngFor="let ec of estadoCuenta">
 
-        <!-- Card header -->
         <div class="ab-card__hdr">
           <div class="ab-card__info">
             <span class="ab-badge" [class.ab-badge--apartado]="ec.tipoPedido === 'APARTADO'"
@@ -51,14 +52,14 @@
             <span class="ab-card__tel" *ngIf="ec.telefono">📞 {{ ec.telefono }}</span>
           </div>
           <div class="ab-card__actions">
-            <button class="ab-btn ab-btn--abono" (click)="abrirModal(ec)">+ Abono</button>
-            <button class="ab-btn ab-btn--detalle" (click)="toggleDetalle(ec.pedidoId)">
+            <button class="ab-btn ab-btn--abono"   (click)="abrirModal(ec)">+ Abono</button>
+            <button class="ab-btn ab-btn--cancelar" (click)="cancelarPedido(ec)">✖ Cancelar</button>
+            <button class="ab-btn ab-btn--detalle"  (click)="toggleDetalle(ec.pedidoId)">
               {{ expandidoId === ec.pedidoId ? '▲ Ocultar' : '▼ Historial' }}
             </button>
           </div>
         </div>
 
-        <!-- Montos -->
         <div class="ab-card__montos">
           <div class="ab-monto">
             <span class="ab-monto__label">Total</span>
@@ -78,13 +79,11 @@
           </div>
         </div>
 
-        <!-- Barra de progreso -->
         <div class="ab-progress">
           <div class="ab-progress__bar" [style.width.%]="porcentajePagado(ec)"></div>
         </div>
         <div class="ab-progress__label">{{ porcentajePagado(ec) }}% pagado</div>
 
-        <!-- Historial de abonos expandible -->
         <div class="ab-historial" *ngIf="expandidoId === ec.pedidoId">
           <p class="ab-historial__titulo">Historial de abonos ({{ ec.abonos.length }})</p>
           <div class="ab-historial__empty" *ngIf="!ec.abonos.length">Sin abonos registrados</div>
@@ -163,6 +162,88 @@
     </div>
   </div>
 
+  <!-- ══════════════ TAB: CANCELADOS ════════════════════════════════ -->
+  <div class="ab-body" *ngIf="tab === 'cancelados'">
+
+    <div class="ab-toolbar">
+      <button class="ab-btn ab-btn--reload" (click)="cargarCancelados()">🔄 Recargar</button>
+      <span class="ab-toolbar__info" *ngIf="cancelados.length">
+        {{ cancelados.length }} pedido(s) cancelado(s)
+      </span>
+    </div>
+
+    <div class="ab-empty" *ngIf="!cargandoCancelados && !cancelados.length">
+      <span class="ab-empty__icon">📂</span>
+      <p>Sin pedidos cancelados</p>
+    </div>
+
+    <div class="ab-cards" *ngIf="cancelados.length">
+      <div class="ab-card ab-card--cancelado" *ngFor="let c of cancelados">
+
+        <div class="ab-card__hdr">
+          <div class="ab-card__info">
+            <span class="ab-badge ab-badge--cancelado">✖ Cancelado</span>
+            <span class="ab-badge" [class.ab-badge--apartado]="c.tipoPedido === 'APARTADO'"
+                                   [class.ab-badge--fiado]="c.tipoPedido === 'FIADO'">
+              {{ c.tipoPedido === 'APARTADO' ? '📦 Apartado' : '🤝 Fiado' }}
+            </span>
+            <span class="ab-card__id">#{{ c.pedidoId }}</span>
+            <span class="ab-card__cliente">{{ c.cliente }}</span>
+            <span class="ab-card__tel" *ngIf="c.telefono">📞 {{ c.telefono }}</span>
+          </div>
+          <div class="ab-card__actions">
+            <button class="ab-btn ab-btn--transferir" *ngIf="c.puedeTransferir"
+                    (click)="abrirModalTransferencia(c)">
+              ↪ Aplicar a otro producto
+            </button>
+            <button class="ab-btn ab-btn--detalle" (click)="toggleDetalleCancelado(c.pedidoId)">
+              {{ expandidoCanceladoId === c.pedidoId ? '▲ Ocultar' : '▼ Historial' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="ab-card__montos">
+          <div class="ab-monto">
+            <span class="ab-monto__label">Total pedido</span>
+            <span class="ab-monto__val">${{ c.totalPedido | number:'1.2-2' }}</span>
+          </div>
+          <div class="ab-monto">
+            <span class="ab-monto__label">Pagado</span>
+            <span class="ab-monto__val ab-monto__val--ok">${{ c.totalPagado | number:'1.2-2' }}</span>
+          </div>
+          <div class="ab-monto" *ngIf="c.saldoAFavor > 0">
+            <span class="ab-monto__label">Saldo a favor</span>
+            <span class="ab-monto__val ab-monto__val--favor">${{ c.saldoAFavor | number:'1.2-2' }}</span>
+          </div>
+          <div class="ab-monto" *ngIf="c.deudaPendiente > 0">
+            <span class="ab-monto__label">Deuda pendiente</span>
+            <span class="ab-monto__val ab-monto__val--saldo">${{ c.deudaPendiente | number:'1.2-2' }}</span>
+          </div>
+          <div class="ab-monto">
+            <span class="ab-monto__label">Cancelado</span>
+            <span class="ab-monto__val">{{ c.fechaCancelacion ?? '—' }}</span>
+          </div>
+        </div>
+
+        <div class="ab-motivo" *ngIf="c.motivo">
+          <span class="ab-motivo__label">Motivo:</span> {{ c.motivo }}
+        </div>
+
+        <div class="ab-historial" *ngIf="expandidoCanceladoId === c.pedidoId">
+          <p class="ab-historial__titulo">Historial de abonos ({{ c.abonos.length }})</p>
+          <div class="ab-historial__empty" *ngIf="!c.abonos.length">Sin abonos registrados</div>
+          <div class="ab-abono-row" *ngFor="let a of c.abonos">
+            <span class="ab-abono-row__fecha">{{ a.fechaPago }}</span>
+            <span class="ab-abono-row__metodo">{{ a.metodoPago }}</span>
+            <span class="ab-abono-row__monto">${{ a.monto | number:'1.2-2' }}</span>
+            <span class="ab-abono-row__nota" *ngIf="a.nota">{{ a.nota }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════ MODAL: REGISTRAR ABONO ══════════════════════════ -->
@@ -193,9 +274,15 @@
     <div class="ab-field">
       <label class="ab-label">Método de pago</label>
       <div class="ab-metodos">
-        <button class="ab-metodo-btn ab-metodo-btn--active" disabled>💵 Efectivo</button>
+        <button *ngFor="let m of metodos"
+                class="ab-metodo-btn"
+                [class.ab-metodo-btn--active]="abonoForm.metodoPago === m"
+                type="button"
+                (click)="abonoForm.metodoPago = m">
+          {{ m === 'EFECTIVO' ? '💵 Efectivo' : m === 'TRANSFERENCIA' ? '🏦 Transferencia' : '💳 Tarjeta' }}
+        </button>
       </div>
-      <small class="ab-hint">Los abonos de crédito solo se registran en efectivo</small>
+      <small class="ab-hint">Los abonos no incluyen pagos a meses</small>
     </div>
 
     <div class="ab-field">
@@ -204,8 +291,11 @@
     </div>
 
     <div class="ab-field">
-      <label class="ab-label">Nota (opcional)</label>
-      <input class="ab-input" type="text" [(ngModel)]="abonoForm.nota" placeholder="Ej: primer abono">
+      <label class="ab-label">
+        {{ abonoForm.metodoPago === 'TRANSFERENCIA' ? 'Número de referencia (opcional)' : 'Nota (opcional)' }}
+      </label>
+      <input class="ab-input" type="text" [(ngModel)]="abonoForm.nota"
+             [placeholder]="abonoForm.metodoPago === 'TRANSFERENCIA' ? 'Ej: 123456789' : 'Ej: primer abono'">
     </div>
 
   </div>
@@ -215,6 +305,98 @@
     <button class="ab-btn ab-btn--save" [disabled]="registrando || !abonoForm.monto || abonoForm.monto <= 0"
             (click)="registrarAbono()">
       Registrar abono
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL: TRANSFERIR SALDO ════════════════════════════ -->
+<div class="ab-overlay" *ngIf="modalTransferenciaAbierto" (click)="cerrarModalTransferencia()"></div>
+
+<div class="ab-modal ab-modal--wide" *ngIf="modalTransferenciaAbierto">
+  <div class="ab-modal__hdr">
+    <h5>↪ Aplicar saldo a otro producto</h5>
+    <button class="ab-modal__close" (click)="cerrarModalTransferencia()">✕</button>
+  </div>
+
+  <div class="ab-modal__info" *ngIf="pedidoCancelado">
+    <span>Pedido cancelado <strong>#{{ pedidoCancelado.pedidoId }}</strong></span>
+    <span>{{ pedidoCancelado.cliente }}</span>
+    <span>Saldo disponible: <strong class="ab-modal__ok">${{ pedidoCancelado.saldoAFavor | number:'1.2-2' }}</strong></span>
+  </div>
+
+  <div class="ab-modal__body">
+
+    <!-- Búsqueda de variante -->
+    <div class="ab-field">
+      <label class="ab-label">Buscar variante</label>
+      <div class="ab-transfer-search">
+        <input class="ab-input" type="text" [(ngModel)]="terminoTransferencia"
+               (input)="onInputTransferencia()" placeholder="Nombre, código o descripción..."
+               autocomplete="off">
+        <div class="ab-transfer-dropdown" *ngIf="resultadosTransferencia.length">
+          <div class="ab-transfer-item" *ngFor="let v of resultadosTransferencia"
+               (click)="seleccionarVarianteTransferencia(v)">
+            <span class="ab-transfer-item__nombre">{{ v.nombreProducto }}</span>
+            <span class="ab-transfer-item__info">
+              {{ v.talla ? 'T.' + v.talla : '' }} {{ v.color ?? '' }}
+              — Stock: {{ v.stock ?? 0 }}
+              — ${{ v.precio | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+        <div class="ab-transfer-dropdown" *ngIf="buscandoTransferencia && !resultadosTransferencia.length">
+          <div class="ab-transfer-item ab-transfer-item--loading">Buscando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle si variante elegida -->
+    <ng-container *ngIf="varianteElegida">
+
+      <div class="ab-field">
+        <label class="ab-label">Precio unitario</label>
+        <input class="ab-input" type="number" min="0.01" step="0.01"
+               [(ngModel)]="precioEditable">
+        <small class="ab-hint ab-hint--warn" *ngIf="precioEditado">
+          ⚠ Precio editado manualmente (original: ${{ precioOriginal | number:'1.2-2' }})
+        </small>
+      </div>
+
+      <div class="ab-field">
+        <label class="ab-label">Cantidad</label>
+        <input class="ab-input" type="number" min="1" step="1"
+               [(ngModel)]="cantidadTransferir">
+      </div>
+
+      <div class="ab-transfer-resumen">
+        <div class="ab-transfer-resumen__row">
+          <span>Total nuevo pedido</span>
+          <strong>${{ totalNuevo | number:'1.2-2' }}</strong>
+        </div>
+        <div class="ab-transfer-resumen__row">
+          <span>Saldo disponible</span>
+          <strong class="ab-modal__ok">${{ (pedidoCancelado?.saldoAFavor ?? 0) | number:'1.2-2' }}</strong>
+        </div>
+        <div class="ab-transfer-resumen__row ab-transfer-resumen__row--total">
+          <span>Saldo pendiente a pagar</span>
+          <strong [class.ab-modal__ok]="saldoPendienteTransfer === 0"
+                  [class.ab-modal__saldo]="saldoPendienteTransfer > 0">
+            ${{ saldoPendienteTransfer | number:'1.2-2' }}
+            <span *ngIf="saldoPendienteTransfer === 0"> ✅ Queda liquidado</span>
+          </strong>
+        </div>
+      </div>
+
+    </ng-container>
+
+  </div>
+
+  <div class="ab-modal__footer">
+    <button class="ab-btn ab-btn--cancel" (click)="cerrarModalTransferencia()">Cancelar</button>
+    <button class="ab-btn ab-btn--save"
+            [disabled]="transfiriendo || !varianteElegida || precioEditable <= 0 || cantidadTransferir < 1"
+            (click)="aplicarTransferencia()">
+      Aplicar transferencia
     </button>
   </div>
 </div>

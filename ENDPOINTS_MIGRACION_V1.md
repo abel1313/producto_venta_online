@@ -330,11 +330,33 @@ Detalle completo de payloads en `CHAT_FRONT_DEVELOPER.md` / `CHAT_EN_VIVO_FRONT.
 | DELETE | `/v1/gastos/{id}` |
 | GET | `/v1/gastos/reporte` |
 
-### `ImagenPresentacionController` / `ImageneController` / `VarianteController`
+### `ImagenPresentacionController` / `ImageneController`
 
-Ya cubiertos en la sección 1 de este documento — sin cambios adicionales detectados en esta auditoría,
-salvo que se reconfirma que **ningún endpoint sin versión (ni v1 ni v3) sigue existiendo**: todo
-método activo tiene `/v1/` y el viejo `@Deprecated` tiene `/v3/`.
+Ya cubiertos en la sección 1 de este documento — sin cambios adicionales.
+
+### `VarianteController` — 🆕 hueco real encontrado y corregido 2026-07-01
+
+`VarianteController` extiende `AbstractController`, pero su `@RequestMapping` de clase es
+`"variantes"` (sin `/v1/`). Sus métodos propios sí llevan `/v1/` a mano, pero los 5 métodos
+**heredados** de `AbstractController` (`getAll`, `getOne/{tipoDato}`, `save`, `update/{tipoDato}`,
+`delete`) no estaban sobreescritos, así que quedaban expuestos sin versión:
+`/variantes/getAll`, `/variantes/save`, `/variantes/getOne/{tipoDato}`,
+`/variantes/update/{tipoDato}`, `/variantes/delete`.
+
+Se agregaron 5 métodos nuevos en `VarianteController.java` que delegan al `super.*` correspondiente,
+con `/v1/`, **sin quitar los viejos** (mismo patrón v1/v3 del resto del archivo — el front debe
+migrar a estos, los viejos siguen vivos por compatibilidad):
+
+| Antes (sigue vivo, migrar) | Ahora (usar este) |
+|---|---|
+| GET `/variantes/getAll?page=&size=` | GET `/variantes/v1/getAll?page=&size=` |
+| GET `/variantes/getOne/{tipoDato}` | GET `/variantes/v1/getOne/{tipoDato}` |
+| POST `/variantes/save` | POST `/variantes/v1/save` |
+| PUT `/variantes/update/{tipoDato}` | PUT `/variantes/v1/update/{tipoDato}` |
+| DELETE `/variantes/delete` | DELETE `/variantes/v1/delete` |
+
+`SecurityConfig.java` no necesitó cambios — los matchers ya usan wildcard (`/variantes/**`), cubren
+las rutas nuevas con el mismo nivel de protección que las viejas.
 
 ### `LotesProductosControllerImpl` — sin endpoints (confirmado, ver sección 1)
 
@@ -460,7 +482,10 @@ método activo tiene `/v1/` y el viejo `@Deprecated` tiene `/v3/`.
 
 ### Resumen de hallazgos de esta auditoría
 
-1. **Nada quedó sin `/v1/` en algún punto de la URL** — confirmado para los 29 controladores.
+1. **`VarianteController` sí tenía un hueco real:** los 5 métodos heredados de `AbstractController`
+   (`getAll`, `getOne`, `save`, `update`, `delete`) no llevaban `/v1/` porque la clase no tiene el
+   prefijo. Corregido 2026-07-01 (ver arriba) — ahora los 29 controladores tienen `/v1/` en
+   TODOS sus endpoints activos, viejos y nuevos coexistiendo (viejos por compatibilidad).
 2. **Faltaban del documento por completo:** `AbonoController`, `ChatAdminController`,
    `ChatWebSocketController` (creados después de 2026-06-09) — ya agregados arriba.
 3. **Endpoint nuevo de hoy agregado:** `GET /v1/negocio/contactos`.
@@ -471,39 +496,3 @@ método activo tiene `/v1/` y el viejo `@Deprecated` tiene `/v3/`.
    coordinación con front).
 5. **`CLAUDE.md`** describe los endpoints de `VarianteController` sin el `/v1/` — desactualizado,
    pendiente de corregir.
-
----
-
-## 6. PENDIENTES FRONT — URLs sin `/v1/` detectadas en auditoría 2026-07-01
-
-> Fixes a aplicar en el front según el mapa de esta auditoría. Los marcados ✅ ya se aplicaron.
-
-### Fixes confirmados (aplicados)
-
-| Archivo | Método | URL vieja | URL correcta | Estado |
-|---|---|---|---|---|
-| `chatbot.service.ts` | `getImagenVariante` | `/variantes/imagenes/{id}` | `/variantes/v1/imagenes/{id}` | ✅ |
-| `imagenes.service.ts` | `getDataGeneric` | `/imagen/{id}/imagenes` | `/imagen/v1/{id}/imagenes` | ✅ |
-| `imagenes.service.ts` | `getImagenFile` | `/imagen/file/{id}` | `/imagen/v1/file/{id}` | ✅ |
-| `imagenes.service.ts` | `deleteById` | `/imagen/{id}` | `/imagen/v1/{id}` | ✅ |
-| `variante.service.ts` | `getImagenesVariante` | `/variantes/imagenes/{id}` | `/variantes/v1/imagenes/{id}` | ✅ |
-| `variante.service.ts` | `eliminarImagenes` | `/variantes/{id}/imagenes` | `/variantes/v1/{id}/imagenes` | ✅ |
-| `variante.service.ts` | `eliminarTodasImagenesVariantes` | `/variantes/imagenes` | `/variantes/v1/imagenes` | ✅ |
-| `presentacion.service.ts` | `getImagenesPorTipo` | `/presentacion/imagenes?tipo=` | `/presentacion/v1/imagenes?tipo=` | ✅ |
-| `presentacion.service.ts` | `getTodasImagenes` | `/presentacion/imagenes/todas` | `/presentacion/v1/imagenes/todas` | ✅ |
-| `presentacion.service.ts` | `actualizarImagen` | `/presentacion/imagenes/{id}` | `/presentacion/v1/imagenes/{id}` | ✅ |
-| `presentacion.service.ts` | `getImagenUrl` | `/presentacion/imagenes/{id}/imagen` | `/presentacion/v1/imagenes/{id}/imagen` | ✅ |
-| `producto.service.ts` | `getDataImg` | `/imagen/{id}/detalle` | `/imagen/v1/{id}/detalle` | ✅ |
-
-### ⚠️ Pendiente de confirmación del back — AbstractController en VarianteController
-
-`VarianteController` hereda de `AbstractController` 4 métodos cuya URL base es `/variantes` (sin `/v1/` propio). El doc de migración no los menciona. **¿Siguen en la ruta sin versión o les agregaron `/v1/` también?**
-
-| Método front | URL actual | ¿Cambió? |
-|---|---|---|
-| `getPaginado` | `/variantes/paginado` | ❓ |
-| `getOne` | `/variantes/getOne/{id}` | ❓ |
-| `getAll` | `/variantes/getAll` | ❓ |
-| `delete` | `/variantes/delete` | ❓ |
-
-Actualizar esta tabla cuando el back confirme.

@@ -51,7 +51,7 @@ export class VarianteService {
   }
 
   getOne(id: number): Observable<IVariante> {
-    return this.http.get<{ data: IVariante }>(`${this.url}/getOne/${id}`)
+    return this.http.get<{ data: IVariante }>(`${this.url}/v1/getOne/${id}`)
       .pipe(map(res => res.data));
   }
 
@@ -83,7 +83,7 @@ export class VarianteService {
   }
 
   delete(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/delete`, { body: id });
+    return this.http.delete(`${this.url}/v1/delete`, { body: id });
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
@@ -123,7 +123,7 @@ export class VarianteService {
   }
 
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/getAll?page=${page}&size=${size}`)
       .pipe(map(res => res.data));
   }
 

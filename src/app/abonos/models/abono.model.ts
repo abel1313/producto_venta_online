@@ -1,24 +1,59 @@
 export type MetodoPago = 'EFECTIVO' | 'TRANSFERENCIA' | 'TARJETA';
 export type TipoPedidoAbono = 'APARTADO' | 'FIADO' | 'NORMAL';
 
+export interface INotificacionRequest {
+  enviarCorreo?:   boolean;
+  enviarWhatsapp?: boolean;
+  correo?:         string;
+  ticketHtml?:     string;
+  ticketTexto?:    string;
+}
+
 export interface AbonoRequest {
-  monto: number;
-  usuarioId?: number;
-  fechaPago?: string;
-  metodoPago?: MetodoPago;
-  nota?: string;
-  montoDado?: number;
+  monto:          number;
+  usuarioId?:     number;
+  fechaPago?:     string;
+  metodoPago?:    MetodoPago;
+  nota?:          string;
+  montoDado?:     number;
+  notificacion?:  INotificacionRequest;
 }
 
 export interface AbonoResponse {
-  id: number;
-  monto: number;
-  fechaPago: string;
-  metodoPago: string;
-  nota: string | null;
+  id:               number;
+  monto:            number;
+  fechaPago:        string;
+  metodoPago:       string;
+  nota:             string | null;
   // Solo presentes en POST (registrar abono); ausentes en GET (historial)
-  estadoPedido?: string | null;
-  saldoRestante?: number | null;
+  estadoPedido?:    string | null;
+  saldoRestante?:   number | null;
+  correoEnviado?:   boolean;
+  whatsappEnviado?: boolean;
+  erroresEnvio?:    string[];
+}
+
+export interface PedidoDetalleResponse {
+  pedidoId:        number;
+  tipoPedido:      string;
+  estadoPedido:    string;
+  totalPedido:     number;
+  totalPagado:     number;
+  saldoPendiente:  number;
+  fechaPedido:     string;
+  clienteNombre:   string;
+  clienteTelefono: string;
+  detalles:        PedidoDetalleItem[];
+}
+
+export interface PedidoDetalleItem {
+  varianteId:     number;
+  productoNombre: string;
+  talla:          string | null;
+  color:          string | null;
+  cantidad:       number;
+  precioUnitario: number;
+  subTotal:       number;
 }
 
 export interface EstadoCuenta {
@@ -46,7 +81,8 @@ export interface PedidoPagado {
 }
 
 export interface CancelarAbonoRequest {
-  motivo?: string;
+  motivo?:       string;
+  notificacion?: INotificacionRequest;
 }
 
 export interface CancelarAbonoResponse {

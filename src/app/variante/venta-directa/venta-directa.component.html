@@ -102,7 +102,17 @@
         </button>
       </div>
 
-
+      <!-- ── TICKET — enviar por correo ───────────────────────────── -->
+      <div class="vd-ticket-checks" *ngIf="lineas.length > 0">
+        <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
+          🧾 Enviar ticket al cliente
+        </p>
+        <label class="vd-check-label" [class.vd-check-label--disabled]="!correoDisponible">
+          <input type="checkbox" [(ngModel)]="enviarCorreo" [disabled]="!correoDisponible">
+          📧 Correo electrónico
+          <span *ngIf="!correoDisponible" class="vd-check-hint">(sin correo registrado)</span>
+        </label>
+      </div>
 
       <!-- ── FORMA DE PAGO ─────────────────────────────────────── -->
       <div class="vd-pay-section">

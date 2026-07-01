@@ -7,9 +7,12 @@ import { IVarianteResumen } from '../variante/models/variante.model';
 import { VarianteService } from '../variante/service/variante.service';
 import {
   AbonoRequest, CancelarAbonoRequest, EstadoCuenta, MetodoPago,
-  PedidoPagado, ReporteCancelado, TransferirAbonoRequest
+  PedidoPagado, PedidoDetalleResponse, ReporteCancelado, TransferirAbonoRequest
 } from './models/abono.model';
 import { AbonoService } from './service/abono.service';
+import { PedidosService } from '../pedidos/pedidos.service';
+import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
+import { NegocioService } from '../negocio/negocio.service';
 
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
@@ -72,6 +75,16 @@ export class AbonosComponent implements OnInit, OnDestroy {
   expandidoPagadoId: number | null   = null;
   expandidoCanceladoId: number | null = null;
 
+  // ── Ticket ────────────────────────────────────────────────────────
+  enviarCorreo     = false;
+  correoDisponible = false;
+  correoManual     = '';
+  private detalleActual: PedidoDetalleResponse | null = null;
+  // QR contactos del negocio
+  private qrTienda    = window.location.origin;
+  private qrWhatsapp: string | null = null;
+  private qrFacebook: string | null = null;
+
   // ── Usuario ───────────────────────────────────────────────────────
   idUsuario = 0;
   private destroy$ = new Subject<void>();
@@ -79,7 +92,9 @@ export class AbonosComponent implements OnInit, OnDestroy {
   constructor(
     private readonly abonoService:    AbonoService,
     private readonly authService:     AuthService,
-    private readonly varianteService: VarianteService
+    private readonly varianteService: VarianteService,
+    private readonly pedidosService:  PedidosService,
+    private readonly negocioService:  NegocioService
   ) {}
 
   ngOnInit(): void {
@@ -96,6 +111,12 @@ export class AbonosComponent implements OnInit, OnDestroy {
         next: res => { this.resultadosTransferencia = res.t ?? []; this.buscandoTransferencia = false; },
         error: ()  => { this.buscandoTransferencia = false; }
       });
+    });
+
+    // Cargar URLs de contacto del negocio para QR en ticket (silencioso si falla)
+    this.negocioService.getContactosPublicos().subscribe({
+      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; },
+      error: () => {}
     });
   }
 
@@ -168,10 +189,45 @@ export class AbonosComponent implements OnInit, OnDestroy {
       const motivo = (document.getElementById('swal-motivo') as HTMLInputElement)?.value?.trim() || undefined;
       this.abonoService.cancelar(pedido.pedidoId, { motivo }).subscribe({
         next: res => {
-          const stockMsg = res?.data?.stockDevuelto ? ' El stock fue devuelto — el buscador de variantes mostrará el dato actualizado.' : '';
-          Swal.fire({ icon: 'success', title: 'Cancelado', text: (res?.data?.mensaje ?? 'Pedido cancelado.') + stockMsg, timer: 3500, showConfirmButton: false });
+          const data     = res?.data;
+          const stockMsg = data?.stockDevuelto ? ' El stock fue devuelto.' : '';
           this.cargarCuenta();
           this.cancelados = [];
+
+          // Intentar obtener detalle para ticket D
+          this.pedidosService.getDetallePedido(pedido.pedidoId).subscribe({
+            next: detRes => {
+              const det = detRes?.data;
+              const htmlTicket = det ? generarHtmlTicket({
+                tipo:      'cancelacion',
+                numero:    pedido.pedidoId,
+                cliente:   pedido.cliente,
+                articulos: det.detalles.map(d => ({ cantidad: d.cantidad, productoNombre: d.productoNombre, talla: d.talla, subTotal: d.subTotal })),
+                total:     pedido.totalPedido,
+                metodoPago: 'N/A',
+                motivo:    motivo ?? null,
+                qrTienda:   this.qrTienda,
+                qrWhatsapp: this.qrWhatsapp,
+                qrFacebook: this.qrFacebook
+              }) : null;
+
+              Swal.fire({
+                icon:               'success',
+                title:              'Cancelado',
+                html:               `<p style="margin:0">${(data?.mensaje ?? 'Pedido cancelado.') + stockMsg}</p>`,
+                showConfirmButton:  !!htmlTicket,
+                confirmButtonText:  '🖨️ Imprimir ticket',
+                showCancelButton:   !!htmlTicket,
+                cancelButtonText:   'Cerrar',
+                timer:              htmlTicket ? undefined : 3500
+              }).then(result => {
+                if (result.isConfirmed && htmlTicket) imprimirTicket(htmlTicket);
+              });
+            },
+            error: () => {
+              Swal.fire({ icon: 'success', title: 'Cancelado', text: (data?.mensaje ?? 'Pedido cancelado.') + stockMsg, timer: 3500, showConfirmButton: false });
+            }
+          });
         },
         error: err => {
           Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cancelar el pedido.' });
@@ -186,7 +242,17 @@ export class AbonosComponent implements OnInit, OnDestroy {
     this.pedidoSeleccionado = ec;
     this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
+    this.detalleActual = null;
+    // EstadoCuenta no expone email — correo siempre deshabilitado hasta que el back lo incluya
+    this.correoDisponible = false;
+    this.enviarCorreo     = false;
+    this.correoManual     = '';
     this.modalAbierto = true;
+    // Pre-cargar artículos para ticket (silencioso si falla)
+    this.pedidosService.getDetallePedido(ec.pedidoId).subscribe({
+      next: res => { this.detalleActual = res?.data ?? null; },
+      error: () => {}
+    });
   }
 
   cerrarModal(): void {
@@ -202,42 +268,129 @@ export class AbonosComponent implements OnInit, OnDestroy {
     }
 
     this.registrando = true;
+    const montoDadoEfectivo = this.abonoForm.metodoPago === 'EFECTIVO' && this.montoDado > 0 ? this.montoDado : undefined;
+
     const body: AbonoRequest = {
       monto:      this.abonoForm.monto,
       usuarioId:  this.idUsuario,
       fechaPago:  this.abonoForm.fechaPago  || undefined,
       metodoPago: this.abonoForm.metodoPago || undefined,
       nota:       this.abonoForm.nota       || undefined,
-      montoDado:  this.abonoForm.metodoPago === 'EFECTIVO' && this.montoDado > 0 ? this.montoDado : undefined
+      montoDado:  montoDadoEfectivo
     };
 
-    this.abonoService.registrarAbono(this.pedidoSeleccionado.pedidoId, body)
+    // Generar notificacion (ticket) para correo si aplica y hay detalle disponible
+    if ((this.enviarCorreo || this.correoManual) && this.detalleActual) {
+      const tempTicket = this.buildTicketData(body, 'abono', this.pedidoSeleccionado);
+      tempTicket.qrTienda   = this.qrTienda;
+      tempTicket.qrWhatsapp = this.qrWhatsapp;
+      tempTicket.qrFacebook = this.qrFacebook;
+      body.notificacion = {
+        enviarCorreo: true,
+        correo:       this.correoManual || undefined,
+        ticketHtml:   generarHtmlTicket(tempTicket)
+      };
+    }
+
+    // Capturar para el Swal de éxito (el modal se cierra antes)
+    const pedidoSnap         = this.pedidoSeleccionado;
+    const cambioSnap         = this.cambio;
+    const detalleSnap        = this.detalleActual;
+    const montoDadoSnap      = montoDadoEfectivo ?? 0;
+    const metodoPagoSnap     = this.abonoForm.metodoPago ?? 'EFECTIVO';
+
+    this.abonoService.registrarAbono(pedidoSnap.pedidoId, body)
       .pipe(finalize(() => this.registrando = false))
       .subscribe({
         next: res => {
-          const data   = res?.data;
-          const pedido = this.pedidoSeleccionado!;
+          const data = res?.data;
 
-          pedido.saldo       = data?.saldoRestante ?? +(pedido.saldo - body.monto).toFixed(2);
-          pedido.totalPagado = +(pedido.totalPedido - pedido.saldo).toFixed(2);
-          if (data) pedido.abonos.push(data);
+          pedidoSnap.saldo       = data?.saldoRestante ?? +(pedidoSnap.saldo - body.monto).toFixed(2);
+          pedidoSnap.totalPagado = +(pedidoSnap.totalPedido - pedidoSnap.saldo).toFixed(2);
+          if (data) pedidoSnap.abonos.push(data);
 
-          const cambioMostrar = this.cambio;
+          const esLiquidado = data?.estadoPedido === 'PAGADO' || pedidoSnap.saldo <= 0;
+          const tipo: 'abono' | 'liquidado' = esLiquidado ? 'liquidado' : 'abono';
           this.cerrarModal();
+          if (esLiquidado) this.cargarCuenta();
 
-          if (data?.estadoPedido === 'PAGADO' || pedido.saldo <= 0) {
-            const txtCambio = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
-            Swal.fire({ icon: 'success', title: '¡Pedido liquidado!', text: `El pedido #${pedido.pedidoId} de ${pedido.cliente} ha sido liquidado.${txtCambio}`, timer: 4000, showConfirmButton: false });
-            this.cargarCuenta();
-          } else {
-            const txtCambio = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
-            Swal.fire({ icon: 'success', title: 'Abono registrado', text: `Saldo restante: $${pedido.saldo.toFixed(2)}.${txtCambio}`, timer: 2500, showConfirmButton: false });
-          }
+          // Construir ticket de impresión si tenemos los artículos
+          const htmlTicket = detalleSnap
+            ? generarHtmlTicket({ ...this.buildTicketDataFromDetalle(body, tipo, pedidoSnap, detalleSnap, montoDadoSnap, cambioSnap, metodoPagoSnap), qrTienda: this.qrTienda, qrWhatsapp: this.qrWhatsapp, qrFacebook: this.qrFacebook })
+            : null;
+
+          const txtCambio = cambioSnap > 0 ? ` Cambio al cliente: $${cambioSnap.toFixed(2)}.` : '';
+          const titulo = esLiquidado ? '¡Pedido liquidado!' : 'Abono registrado';
+          const texto  = esLiquidado
+            ? `El pedido #${pedidoSnap.pedidoId} de ${pedidoSnap.cliente} ha sido liquidado.${txtCambio}`
+            : `Saldo restante: $${pedidoSnap.saldo.toFixed(2)}.${txtCambio}`;
+
+          // Envío de correo/WhatsApp — mostrar resultado si el back lo confirmó
+          const lineasEnvio: string[] = [];
+          if (data?.correoEnviado    === true)  lineasEnvio.push('✅ Correo enviado al cliente');
+          if (data?.whatsappEnviado  === true)  lineasEnvio.push('✅ WhatsApp enviado al cliente');
+          if (data?.erroresEnvio?.length)       lineasEnvio.push(...data.erroresEnvio.map(e => `⚠️ ${e}`));
+
+          Swal.fire({
+            icon:               'success',
+            title:              titulo,
+            html:               `<p style="margin:0 0 8px">${texto}</p>${lineasEnvio.map(l => `<p style="margin:0">${l}</p>`).join('')}`,
+            showConfirmButton:  !!htmlTicket,
+            confirmButtonText:  '🖨️ Imprimir ticket',
+            showCancelButton:   !!htmlTicket,
+            cancelButtonText:   'Cerrar',
+            timer:              htmlTicket ? undefined : (esLiquidado ? 4000 : 2500)
+          }).then(result => {
+            if (result.isConfirmed && htmlTicket) imprimirTicket(htmlTicket);
+          });
         },
         error: err => {
           Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo registrar el abono.' });
         }
       });
+  }
+
+  private buildTicketData(
+    body: AbonoRequest,
+    tipo: 'abono' | 'liquidado',
+    pedido: EstadoCuenta
+  ): ITicketData {
+    const det = this.detalleActual!;
+    return this.buildTicketDataFromDetalle(
+      body, tipo, pedido, det,
+      body.montoDado ?? 0,
+      body.montoDado ? +(body.montoDado - body.monto).toFixed(2) : 0,
+      body.metodoPago ?? 'EFECTIVO'
+    );
+  }
+
+  private buildTicketDataFromDetalle(
+    body: AbonoRequest,
+    tipo: 'abono' | 'liquidado',
+    pedido: EstadoCuenta,
+    detalle: PedidoDetalleResponse,
+    montoDado: number,
+    cambio: number,
+    metodoPago: string
+  ): ITicketData {
+    return {
+      tipo,
+      numero:         pedido.pedidoId,
+      cliente:        pedido.cliente,
+      articulos:      detalle.detalles.map(d => ({
+        cantidad:       d.cantidad,
+        productoNombre: d.productoNombre,
+        talla:          d.talla,
+        subTotal:       d.subTotal
+      })) as ITicketArticulo[],
+      total:          pedido.totalPedido,
+      totalPagado:    tipo === 'liquidado' ? pedido.totalPedido : pedido.totalPagado,
+      saldoPendiente: tipo === 'liquidado' ? 0 : pedido.saldo,
+      abonoHoy:       body.monto,
+      metodoPago:     metodoPago,
+      montoDado:      montoDado > 0 ? montoDado : null,
+      cambio:         cambio > 0 ? cambio : null
+    };
   }
 
   // ── Modal transferencia ───────────────────────────────────────────

@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPedidoGenerico } from './mis-pedidos/models/IPedidoGenerico.model';
 import { IPageable } from './mis-pedidos/models/IPageable.mode';
+import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 
 @Injectable({
   providedIn: 'root'
@@ -38,5 +39,9 @@ export class PedidosService extends CrudGenericService<IPedidos> {
 
     cancelarConMotivo(id: number, motivo: string): Observable<any> {
       return this.http.delete<any>(`${this.url}/v1/pedidos/delete/${id}?motivo=${encodeURIComponent(motivo)}`);
+    }
+
+    getDetallePedido(pedidoId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.get<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/detalle`);
     }
 }

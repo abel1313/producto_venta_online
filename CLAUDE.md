@@ -2791,3 +2791,84 @@ agregar un cliente para la rifa.
 | `src/app/chatbot/chatbot.component.scss` | +`.cb-cards-row`, `.cb-cards-spacer`, `.cb-cards-wrap`, `.cb-cards-grid`, `.cb-card` (BEM), `.cb-btn-add`, `.cb-btn-remove`, `.cb-btn-mas`; dark mode al final |
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT TICKETS / COMPROBANTES — IMPRIMIR + ENVIAR CORREO/WHATSAPP (2026-07-01)
+
+> Spec en `CAMBIOS_FRONT.md`. Aplica a Venta Directa y Abonos (abono parcial, liquidación, cancelación).
+
+### Flujo
+
+1. **Antes de cobrar:** checkboxes "📧 Correo" y "📱 WhatsApp" visibles si el cliente tiene los datos registrados. Si no los tiene, el checkbox aparece deshabilitado con hint "(sin correo registrado)".
+2. **Al cobrar:** si algún checkbox está marcado, se incluye `enviarCorreo`/`enviarWhatsapp` + `ticketHtml`/`ticketTexto` en el request al backend. El backend maneja el envío real.
+3. **Después de cobrar:** Swal de éxito tiene botón "🖨️ Imprimir ticket" (confirmButton) + "Cerrar" (cancelButton). Al confirmar, se abre popup con el ticket y se auto-imprime.
+
+### Tipos de ticket
+
+| Tipo | Cuándo |
+|---|---|
+| `venta` | Venta directa al contado (EFECTIVO/TRANSFERENCIA/TARJETA) |
+| `abono` | Pago parcial en `/abonos` — muestra saldo restante |
+| `liquidado` | Abono que liquida totalmente — muestra "LIQUIDADO" |
+| `cancelacion` | Cancelación de APARTADO/FIADO en `/abonos` |
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/shared/ticket.util.ts` | `ITicketData`, `ITicketArticulo`, `generarHtmlTicket()`, `generarTextoWhatsapp()`, `imprimirTicket()` |
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/abonos/models/abono.model.ts` | `AbonoRequest` + campos ticket; `AbonoResponse` + `correoEnviado/whatsappEnviado/erroresEnvio`; nuevas interfaces `PedidoDetalleResponse`, `PedidoDetalleItem` |
+| `src/app/pedidos/pedidos.service.ts` | + `getDetallePedido(pedidoId)` → `GET /v1/pedidos/{id}/detalle` |
+| `src/app/abonos/abonos.component.ts` | `abrirModal()` pre-carga `detalleActual`; `registrarAbono()` genera ticket y muestra Swal con 🖨️; `cancelarPedido()` muestra Swal con 🖨️; `correoDisponible`/`whatsappDisponible` de `EstadoCuenta.telefono` (correo siempre false — sin campo en modelo) |
+| `src/app/abonos/abonos.component.html` | Checkboxes correo/WhatsApp en el modal, antes del footer |
+| `src/app/abonos/abonos.component.scss` | `.ab-ticket-checks`, `.ab-check-label`, `.ab-check-hint` |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `enviarCorreo/enviarWhatsapp`; getters `correoDisponible`, `whatsappDisponible`, `nombreClienteTicket`; `actualizarCheckboxesTicket()`; `ejecutarVenta()` genera ticket antes de `limpiarTodo()` y muestra Swal con 🖨️ |
+| `src/app/variante/venta-directa/venta-directa.component.html` | Sección `.vd-ticket-checks` con checkboxes correo/WhatsApp, visible cuando `lineas.length > 0` |
+| `src/app/variante/venta-directa/venta-directa.component.scss` | `.vd-ticket-checks`, `.vd-check-label`, `.vd-check-hint` |
+
+### Dudas anotadas en `CAMBIOS_FRONT.md`
+
+- `EstadoCuenta` no tiene `correoElectronico` — correo siempre deshabilitado en modal de abono hasta que el back lo incluya en ese modelo
+- `GET /v1/pedidos/{id}/detalle` — se llama al abrir el modal; si falla, el abono sigue funcionando pero sin botón de impresión
+- Crédito (APARTADO/IR PAGANDO) en venta directa: cuando `res.pedidoId` existe y no hay `res.ventaId`, no se genera ticket de venta — solo se muestra el Swal normal de "Apartado registrado". Ticket de abono se genera en `/abonos` cuando se registra el primer pago.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX TICKETS — CORREO MANUAL + QR DINÁMICOS + WHATSAPP EN PAUSA (2026-07-01)
+
+> Refinamiento del FEAT TICKETS de la sesión anterior, según spec de usuario y `PLAN_MEJORAS.md`.
+
+### Decisiones implementadas
+
+**WhatsApp EN PAUSA:** `enviarWhatsapp`, `ticketTexto`, eliminados de todos los flujos de envío. La función `generarTextoWhatsapp()` sigue en `ticket.util.ts` como utilidad futura, pero nada la llama.
+
+**`enviarCorreo` nunca auto-marcado:** `actualizarCheckboxesTicket()` siempre pone `this.enviarCorreo = false`. El admin activa manualmente si quiere enviar.
+
+**Correo manual (cliente sin correo):** en Venta Directa, Swal `input: 'email'` antes del POST cuando el cliente no tiene correo registrado. En `/abonos`, campo `<input type="email">` inline en el modal. El correo va en `notificacion.correo` del request.
+
+**QR dinámicos desde negocio:** `GET /v1/negocio/contactos` → `{ whatsappUrl, facebookUrl }` en `ngOnInit()`. `qrWhatsapp` y `qrFacebook` solo si la URL existe. `qrTienda` siempre (`window.location.origin`).
+
+**`notificacion.correo` en el request:** campo opcional que el back usa como destino en lugar del correo registrado del cliente (D-02 de `PLAN_MEJORAS.md` confirmado ✅).
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/negocio/negocio.service.ts` | +`IContactosPublicos`; +`getContactosPublicos()` → `GET /v1/negocio/contactos` |
+| `src/app/abonos/models/abono.model.ts` | `INotificacionRequest.correo?: string`; eliminado `enviarWhatsapp`/`ticketTexto` |
+| `src/app/variante/service/variante.service.ts` | `IVentaDirectaRequest.notificacion` solo tiene `enviarCorreo`, `correo?`, `ticketHtml`; quitados `enviarWhatsapp`/`ticketTexto` |
+| `src/app/shared/ticket.util.ts` | `ITicketData` + campos `qrTienda?`, `qrWhatsapp?`, `qrFacebook?`; `generarHtmlTicket()` con sección QR via `api.qrserver.com`; CSS en `imprimirTicket()` |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `correoManual`, `qrX` fields, `NegocioService`; nuevo `pedirCorreoManualYCobrar()`; QR en ticket; `limpiarTodo()` resetea `correoManual` |
+| `src/app/abonos/abonos.component.ts` | `correoManual`, `qrX` fields, `NegocioService`; QR en tickets; `abrirModal()` resetea `correoManual`; eliminados `enviarWhatsapp`/`whatsappDisponible` |
+| `src/app/abonos/abonos.component.html` | Si cliente tiene correo → checkbox `enviarCorreo`; si no → `<input email>` manual `.ab-input-correo` |
+| `src/app/abonos/abonos.component.scss` | +`.ab-correo-manual`, `.ab-input-correo` |
+
+**Verificado con `ng build --configuration=development` sin errores.**

@@ -2734,3 +2734,24 @@ Después de hacer `git push origin qa`, entrar al VPS y correr:
 ```bash
 kubectl rollout restart deployment proyecto-key-front-deployment -n qa
 ```
+
+---
+
+## FIX VENTA DIRECTA — SWAL "¿AGREGAR CLIENTE?" ANTES DE COBRAR SIN CLIENTE (2026-07-01)
+
+**Requerimiento:** cuando el admin pulsa "Cobrar" sin haber seleccionado ningún cliente, en vez de
+registrar la venta directamente con el admin como cliente, mostrar un Swal preguntando si quiere
+agregar un cliente para la rifa.
+
+**Flujo implementado:**
+- Sin cliente seleccionado → Swal `question` "¿Agregar cliente para la rifa?" con dos botones:
+  - **"Sí, agregar cliente"** → `cobrarPendiente = true` + `openModalSinRegistro()` — abre el modal de cliente sin registro. Al confirmar el formulario, `obtenerDatosClienteSinRegistro()` detecta `cobrarPendiente = true`, cierra el modal, resetea el flag y llama `ejecutarVenta(0)` directamente (sin Swal de "cliente agregado").
+  - **"No, cobrar sin cliente"** → `ejecutarVentaConAdmin()` — extrae la lógica de buscar el cliente del admin (antes estaba inline en `cobrar()`). Si el admin no tiene perfil de cliente, muestra Swal de advertencia.
+- Si ya hay `clienteSinRegistroModal` o `clienteSeleccionado` → flujo normal sin Swal (sin cambios).
+
+**Campo `cobrarPendiente`:** `private cobrarPendiente = false`. Se resetea en `closeModalModalSinRegistro()` y `limpiarTodo()`.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `cobrar()` con Swal; nuevo `ejecutarVentaConAdmin()`; `obtenerDatosClienteSinRegistro()` con rama `cobrarPendiente`; `closeModalModalSinRegistro()` y `limpiarTodo()` resetean el flag
+
+**Verificado con `ng build --configuration=development` sin errores.**

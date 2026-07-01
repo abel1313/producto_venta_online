@@ -218,6 +218,125 @@ $t:  all 0.22s ease;
 .vd-required { color: var(--app-accent); font-weight: 700; margin-left: 4px; }
 .vd-optional { font-size: .72rem; color: #9ca3af; font-weight: 400; text-transform: none; margin-left: 6px; }
 
+// ── Crédito ────────────────────────────────────────────────────────
+.vd-credit-divider {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 2px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
+  span { font-size: .7rem; color: #9ca3af; white-space: nowrap; }
+}
+
+.vd-credit-btns {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+
+.vd-btn-credit {
+  padding: 10px 8px; border-radius: 10px; font-size: .82rem; font-weight: 700;
+  cursor: pointer; border: 1.5px solid var(--card-border);
+  background: var(--card-bg); color: var(--app-text);
+  transition: all 0.18s ease;
+
+  &:hover { border-color: var(--app-accent); color: var(--app-accent); }
+
+  &--active {
+    background: rgba(79,70,229,.13);
+    border-color: var(--app-accent);
+    color: var(--app-accent);
+    box-shadow: 0 0 0 2px rgba(79,70,229,.18);
+  }
+}
+
+.vd-observaciones {
+  &__input {
+    width: 100%; resize: vertical; min-height: 52px;
+    padding: 8px 12px; border-radius: 8px;
+    border: 1.5px solid var(--input-border); background: var(--input-bg);
+    color: var(--input-text); font-size: .88rem;
+    &::placeholder { color: var(--input-placeholder); }
+    &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  }
+}
+
+.vd-credit-info {
+  font-size: .78rem; color: #d97706;
+  background: rgba(217,119,6,.1); border: 1px solid rgba(217,119,6,.25);
+  border-radius: 8px; padding: 7px 12px; margin-top: 8px;
+}
+
+// ── Métodos de pago en modo crédito ───────────────────────────────
+.vd-metodo-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.vd-metodo-btn {
+  flex: 1;
+  min-width: 80px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--app-text);
+  transition: all 0.15s;
+
+  &--active {
+    background: rgba(99,102,241,0.15);
+    border-color: #6366f1;
+    color: #6366f1;
+    font-weight: 700;
+  }
+}
+
+.vd-monto-input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--app-text);
+  box-sizing: border-box;
+
+  &:focus { outline: none; border-color: #6366f1; }
+}
+
+.vd-cambio {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+
+  strong { font-weight: 700; }
+
+  &--warn {
+    background: rgba(239, 68, 68, 0.10);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+}
+
+:host-context(body.theme-dark) {
+  .vd-cambio {
+    background: rgba(74, 222, 128, 0.22);
+    color: #86efac;
+    border-color: rgba(74, 222, 128, 0.5);
+    font-weight: 600;
+
+    &--warn {
+      background: rgba(252, 165, 165, 0.2);
+      color: #fca5a5;
+      border-color: rgba(252, 165, 165, 0.5);
+    }
+  }
+}
+
 // ── Terminal inline ────────────────────────────────────────────────
 .vd-terminal {
   border: 1.5px solid var(--input-border);

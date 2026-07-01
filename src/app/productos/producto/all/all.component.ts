@@ -72,7 +72,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
       this.keyUpSubject
       .pipe(
-        filter(texto => texto.length > 3),   
+        filter(texto => texto.length >= 3),
         debounceTime(1500),
         distinctUntilChanged()                  
       )
@@ -109,9 +109,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ef4444',
-        background: '#1e1b4b',
-        color: '#fff'
+        confirmButtonColor: '#ef4444'
       }).then(result => {
         if (!result.isConfirmed) return;
             this.srvice.deleteProductoPorId(item.idProducto).subscribe({
@@ -123,13 +121,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
                     this.srvice.setProdCache(this.rows, 1, this.totalPaginas, '');
                   },
                   error: (err) => {
-                    console.error('Error en la petición:', err);
+                    Swal.fire({ icon: 'error', title: 'Error al recargar productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo recargar la lista.' });
                   }
                 });
-                Swal.fire({ icon: 'success', title: 'El producto se elimino correctamente', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+                Swal.fire({ icon: 'success', title: 'El producto se elimino correctamente', timer: 1500, showConfirmButton: false});
               },
               error: () => {
-                Swal.fire({ icon: 'error', title: 'Error al eliminar el producto', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+                Swal.fire({ icon: 'error', title: 'Error al eliminar el producto', timer: 2000, showConfirmButton: false});
               }
             });
       });
@@ -220,7 +218,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         icon: 'warning',
         title: 'Sin stock disponible',
         text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,
-        confirmButtonColor: '#3085d6'
+        confirmButtonColor: '#4f46e5'
       });
     }
   }
@@ -394,7 +392,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.srvice.habilitarProducto(item.idProducto, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         item.habilitado = habilitar ? '1' : '0';
-        Swal.fire({ icon: 'success', title: habilitar ? 'Producto habilitado' : 'Producto deshabilitado', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        Swal.fire({ icon: 'success', title: habilitar ? 'Producto habilitado' : 'Producto deshabilitado', timer: 1500, showConfirmButton: false});
       },
       error: () => Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1800, showConfirmButton: false })
     });
@@ -432,8 +430,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       confirmButtonText: 'Crear variantes',
       cancelButtonText: 'Cancelar',
       showCancelButton: true,
-      confirmButtonColor: '#8b1a4a',
-      background: '#fff',
+      confirmButtonColor: '#4f46e5',
       preConfirm: () => {
         const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
         if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
@@ -463,10 +460,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
     this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
-        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false});
         this.getData(this.paginaPrimera);
       },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo', confirmButtonColor: '#8b1a4a' })
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
     });
   }
 
@@ -562,7 +559,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al cargar más productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar más productos.' });
         }
       });
     }

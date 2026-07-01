@@ -66,6 +66,8 @@
         <a class="sb-subitem" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
         <a class="sb-subitem" *ngIf="isAdminUser"
            routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
+        <a class="sb-subitem" *ngIf="isAdminUser"
+           routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
       </div>
     </div>
 
@@ -83,19 +85,11 @@
       </div>
     </div>
 
-    <!-- Gastos (admin) — accordion -->
-    <div class="sb-group" *ngIf="isAdminUser"
-         [class.sb-group--open]="openGroup === 'gastos'">
-      <button class="sb-item sb-item--toggle" (click)="toggleGroup('gastos')">
-        <span class="sb-icon">💸</span>
-        <span class="sb-label">Gastos</span>
-        <span class="sb-chevron">›</span>
-      </button>
-      <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="gastos/agregar" (click)="closeMobile()">Agregar</a>
-        <a class="sb-subitem" routerLink="gastos/buscar" (click)="closeMobile()">Buscar</a>
-      </div>
-    </div>
+    <!-- Gastos (admin) — link directo -->
+    <a class="sb-item" *ngIf="isAdminUser" routerLink="gastos/buscar" routerLinkActive="sb-item--active" (click)="closeMobile()">
+      <span class="sb-icon">💸</span>
+      <span class="sb-label">Gastos y Ventas</span>
+    </a>
 
     <!-- Rifas (admin) — accordion -->
     <div class="sb-group" *ngIf="isAdminUser"

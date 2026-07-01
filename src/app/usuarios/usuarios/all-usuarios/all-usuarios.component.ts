@@ -61,7 +61,7 @@ export class AllUsuariosComponent implements OnInit {
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
         },
         error: (err) => {
-          console.error('Error en la petición:', err);
+          Swal.fire({ icon: 'error', title: 'Error al cargar usuarios', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de usuarios.' });
         }
       });
   }

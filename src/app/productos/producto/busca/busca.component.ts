@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-busca',
@@ -47,7 +48,7 @@ export class BuscaComponent implements OnInit {
         this.service.setProdCache(res.t ?? [], pagina, res.totalPaginas ?? 0, nombre);
       },
       error: (err) => {
-        console.error('Error en la petición:', err);
+        Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el producto.' });
       }
     });
   }

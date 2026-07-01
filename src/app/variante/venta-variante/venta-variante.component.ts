@@ -24,6 +24,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   totalUnidades = 0;
   totalImporte  = 0;
 
+  // ── Tipo de pedido (admin) ─────────────────────────────────────────
+  tipoPedido: 'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
+
   // ── Búsqueda de clientes (admin) ───────────────────────────────────
   isAdminUser = false;
   idUsuario   = 0;
@@ -171,9 +174,11 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   private armarYConfirmar(clienteId: number): void {
+    const esCreditoPedido = this.isAdminUser && this.tipoPedido !== 'NORMAL';
     const pedido: IPedidoVarianteDTO = {
       cliente:       { id: clienteId },
-      estadoPedido:  'Pendiente',
+      tipoPedido:    this.isAdminUser ? this.tipoPedido : 'NORMAL',
+      estadoPedido:  esCreditoPedido ? this.tipoPedido : 'Pendiente',
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
       detalles: this.carrito.map(d => ({
@@ -205,12 +210,31 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         next: (res: any) => {
           if (res?.data != null) {
             this.carritoService.limpiar();
-            this.varianteService.invalidarCache(); // fuerza fetch fresco con stock actualizado
-            Swal.fire({
-              icon: 'success',
-              title: 'Pedido registrado',
-              text: `Número de pedido: ${res.data.id}`,
-            }).then(() => this.router.navigate(['/variantes/buscar']));
+            this.varianteService.invalidarCache();
+            if (esCreditoPedido) {
+              const label = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
+              Swal.fire({
+                icon: 'success',
+                title: 'Pedido registrado',
+                html: `
+                  <p>Pedido #${res.data.id} registrado como <strong>${label}</strong>.</p>
+                  <p>Puedes agregar los abonos desde <strong>Créditos / Abonos</strong>.</p>
+                `,
+                confirmButtonText: '💳 Ir a Créditos / Abonos',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#6366f1'
+              }).then(r => {
+                if (r.isConfirmed) this.router.navigate(['/abonos']);
+                else this.router.navigate(['/variantes/buscar']);
+              });
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Pedido registrado',
+                text: `Número de pedido: ${res.data.id}`,
+              }).then(() => this.router.navigate(['/variantes/buscar']));
+            }
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: res?.mensaje ?? 'No se pudo guardar el pedido.' });
           }
@@ -218,6 +242,12 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el pedido.' })
       });
     });
+  }
+
+  // ── Ir a Venta Directa (admin) ────────────────────────────────────
+
+  irAVentaDirecta(): void {
+    this.router.navigate(['/variantes/venta-directa']);
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────

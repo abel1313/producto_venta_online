@@ -88,9 +88,9 @@ export class CargaArchivoComponent {
         this.resultado = res;
         this.subiendo  = false;
       },
-      error: () => {
+      error: (err) => {
         this.subiendo = false;
-        Swal.fire({ icon: 'error', title: 'Error al procesar el archivo', timer: 2200, showConfirmButton: false });
+        Swal.fire({ icon: 'error', title: 'Error al procesar el archivo', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo procesar el archivo.', timer: 2200, showConfirmButton: false });
       }
     });
   }

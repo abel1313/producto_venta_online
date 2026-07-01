@@ -1,3 +1,9 @@
+// PREVIEW — OPCIÓN C: Verde esmeralda
+:host {
+  --header-brand:        linear-gradient(135deg, #064e3b 0%, #059669 55%, #10b981 100%);
+  --header-brand-shadow: rgba(5,150,105,0.35);
+}
+
 $r: 20px;
 $t: all 0.22s ease;
 $primary: #c2255c;

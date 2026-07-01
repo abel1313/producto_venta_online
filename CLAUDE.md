@@ -32,6 +32,12 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 - Si es un endpoint nuevo → anotarlo en "RESUMEN DE MIGRACIÓN"
 - Si es un cambio de layout → anotarlo en la sección del componente afectado
 
+## REGLA — `DOCUMENTO_BACK_VENTAS_CREDITO.md`
+
+Los cambios del módulo de crédito/abonos (ventas, pedidos, abonos, cancelar, transferir) se documentan **al final** de `DOCUMENTO_BACK_VENTAS_CREDITO.md` como secciones numeradas.
+
+**Antes de escribir en ese archivo**, listar primero al usuario qué secciones se van a agregar y esperar confirmación. No hacer cambios directos sin anunciar primero el contenido.
+
 ---
 
 ## FIX — ELIMINACIÓN DE SPINNERS LOCALES EN COMPONENTES (2026-06-14)
@@ -109,6 +115,90 @@ Se agregaron `idVarianteCargado` y `destroy$` para evitar re-inicializaciones du
 **Archivos modificados:**
 - `src/app/productos/producto/update/update.component.ts` → `ngOnInit()` agrega llamada a `getDataGeneric`
 - `src/app/productos/producto/add/add.component.ts` → agrega `ngOnChanges`, `formReady`, mueve lógica de `ngAfterViewInit` a `ngOnInit`
+
+---
+
+## REGLA — ESPACIO LATERAL RESERVADO PARA PROMOCIONES
+
+**En TODOS los componentes**, los lados izquierdo y derecho del header/buscador deben quedar
+**completamente vacíos**. Esos espacios están reservados para **banners de promociones de
+productos** que el usuario verá al navegar por el sistema.
+
+**Implementación obligatoria:**
+- El contenido del header siempre va dentro de un wrapper interno con `max-width: 1120px` y
+  `margin: 0 auto` — mismo ancho que el grid de cards para que queden alineados.
+- Nombre del wrapper: `.<prefijo>-header__content` (ej. `pl-header__content`, `vb-header__content`).
+- No agregar `padding` lateral al `.vb-header` / `.pl-header` externo más allá del necesario
+  para el color de fondo — el espacio libre en los laterales es intencional.
+
+**Estado actual:**
+- `productos/all` → ✅ `.pl-header__content` (max-width: 1120px — alineado con grid de cards)
+- `variante/buscar` → ✅ `.vb-header__content` (max-width: 1120px — alineado con grid de cards)
+- Formularios centrados (`variante/agregar`, `productos/add`) → ✅ ya tienen `max-width` en su card
+
+**Verificar este patrón** al agregar cualquier componente nuevo con buscador o header de pantalla completa.
+
+### REGLA — TIRA DE COLOR EN CARDS (`.xx-card__header`)
+
+La tira donde aparece el precio/stock en las cards de catálogo **NO debe cambiar de color por producto**.
+Todas las cards deben tener el **mismo color azul marino semi-transparente**:
+
+```scss
+/* Pegar en .<prefix>-card__header dentro del componente buscador */
+background: linear-gradient(135deg, rgba(15, 37, 87, 0.88) 0%, rgba(29, 78, 216, 0.72) 100%);
+backdrop-filter: blur(6px);
+```
+
+- **No usar** `[style.background]="colorHeader(item.color)"` ni ningún binding dinámico de color
+- El texto y chips dentro deben ser blancos (`color: white`)
+- Aplica a: `productos/all` ✅, `variante/buscar` ✅ (pendiente aplicar si tiene tira de color)
+
+---
+
+## DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE (✅ aprobado)
+
+### Light mode — glassmorphism
+```scss
+:host-context(body.theme-light) {
+  .<prefix>-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  // Texto oscuro
+  .<prefix>-header__title h4    { color: #1e293b; }
+  .<prefix>-header__title small { color: #64748b; }
+  .<prefix>-header__inner       { color: #1e293b; }
+  // Botón carrito
+  .<prefix>-btn--cart { background: rgba(0,0,0,0.06); color: #1e293b; }
+  // Buscador
+  .<prefix>-search { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); }
+  .<prefix>-search__input::placeholder { color: rgba(0,0,0,0.42); }
+  // Filtros admin
+  .<prefix>-filtro-btn { border: 1px solid rgba(0,0,0,0.14); background: rgba(0,0,0,0.05); color: #475569; }
+  .<prefix>-filtro-btn--active { background: rgba(99,102,241,0.12); color: var(--app-accent); }
+  // Botón scan móvil
+  .<prefix>-scan-mobile { background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); color: #1e293b; }
+}
+```
+
+### Dark mode — antracita
+```scss
+:host-context(body.theme-dark) {
+  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+  --header-brand-shadow: rgba(0, 0, 0, 0.55);
+}
+```
+
+### Componentes donde ya está aplicado
+- `productos/all` → `all.component.scss` ✅
+- `variante/buscar` → `buscar.component.scss` ✅
+
+### Para CADA componente nuevo que tenga header/buscador
+1. Agregar los dos bloques `:host-context` al final de su SCSS
+2. Ajustar el prefijo de clase (ej. `rf-` para rifas, `ca-` para carga-archivo, etc.)
+3. Si tiene formulario interno (no buscador), el header usa `var(--header-brand)` directamente — solo agregar el bloque `theme-dark` con antracita
 
 ---
 
@@ -824,6 +914,635 @@ de `setEsPrueba(false)` por consistencia de UX. NO se replicó el resync de
 
 ---
 
+## FIX MÓDULO RIFAS — EDITAR CONFIGURACIÓN AL RETOMAR (2026-06-19)
+
+> El backend implementó `PUT /v1/configurarRifa/{id}` (campos opcionales: `fechaHoraLimite`, `tipo`, `mesReferencia`).
+> El front ahora permite actualizar la fecha límite de una rifa ya creada, sin crear un duplicado.
+
+### Problema resuelto
+
+**`AgregarRifaComponent`:** al retomar una rifa con `_retomar()`, el form se precargaba con `fechaHoraLimite` pero el usuario no tenía forma de guardar cambios — el botón "Guardar configuración" solo existe cuando `!rifaConfig?.id`. El valor modificado en el UI se perdía al salir.
+
+**`RifaMesComponent`:** si el usuario volvía al "Paso 1: Mes" (botón "← Volver") con `rifaConfig` ya cargada, el botón "Crear rifa e importar" seguía visible y podía crear una rifa DUPLICADA.
+
+### Fix
+
+**`rifa.service.ts`:** nuevo método `actualizarConfiguracion(id, patch)` → `PUT /v1/configurarRifa/{id}`.
+
+**`agregar-rifa.component.ts`:**
+- Nuevo campo `editandoConfig = false`
+- Nuevo método `actualizarConfiguracion()` que llama el PUT con `fechaHoraLimite`
+
+**`agregar-rifa.component.html`:** el `rf-saved-badge` ahora tiene botón "✏️ Editar fecha". Al abrirse, muestra campo de fecha + botón "💾 Guardar cambios" + error alert.
+
+**`agregar-rifa.component.scss`:** nueva clase `.rf-edit-config` (panel índigo sutil).
+
+**`rifa-mes.component.ts`:**
+- Nuevos campos `editandoConfig = false`, `savingConfigEdit = false`
+- Nuevo método `actualizarConfiguracion()` — actualiza `fechaHoraLimite` y `mesReferencia`
+- `nueva()` resetea ambos campos
+
+**`rifa-mes.component.html`:** Paso 1 ahora tiene dos modos:
+- Sin `rifaConfig?.id`: flujo de creación normal (sin cambio)
+- Con `rifaConfig?.id`: badge "Rifa #X" + botón "✏️ Editar fecha / mes" + botón "→ Continuar". El form de creación y el botón "Crear rifa e importar" están ocultos — previene crear duplicados al volver al Paso 1.
+
+**`rifa-mes.component.scss`:** nuevas clases `.rm-saved-badge` y `.rm-edit-config` con variantes dark mode.
+
+**Archivos modificados:**
+- `src/app/rifas/service/rifa.service.ts` → `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `editandoConfig`, `actualizarConfiguracion()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → edit badge en Sección A
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → `.rf-edit-config`
+- `src/app/rifas/rifa-mes/rifa-mes.component.ts` → `editandoConfig`, `savingConfigEdit`, `actualizarConfiguracion()`, `nueva()`
+- `src/app/rifas/rifa-mes/rifa-mes.component.html` → Paso 1 con modo crear/editar
+- `src/app/rifas/rifa-mes/rifa-mes.component.scss` → `.rm-saved-badge`, `.rm-edit-config`, dark mode
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX MÓDULO RIFAS — CHECKBOX "ES DE PRUEBA" + SWAL EN LUGAR DE `confirm()` (2026-06-19)
+
+**Síntoma:** al llegar al Paso 4 (Ruleta) o Paso 5 (Ganador) con una rifa `esPrueba=true`, el checkbox "🧪 Es de prueba" ya venía marcado (correcto). Pero al dar clic para desmarcarlo (pasar a sorteo real), el browser mostraba el diálogo nativo `confirm()` con la leyenda "localhost:4200 dice: ..." — visualmente feo y fuera de lugar.
+
+**Causa secundaria:** con Swal asíncrono, el checkbox podía parpadear brevemente (el browser lo desmarca visualmente antes de que Swal responda) porque el binding era `(change)`. Usando `(click)` + `$event.preventDefault()` el browser no cambia el estado visual del checkbox; solo lo cambia Angular cuando `rifaConfig.esPrueba` efectivamente cambia.
+
+**Fix:**
+- `agregar-rifa.component.ts` y `rifa-mes.component.ts`: `import Swal from 'sweetalert2'`; en `toggleModoPrueba()`, se reemplazó el `confirm()` sincrónico por `Swal.fire({ icon: 'warning', title: '¿Pasar a sorteo real?', ... }).then(result => { if (result.isConfirmed) ejecutar(); })`. La lógica del API call se extrajo a una función `ejecutar()` interna.
+- `agregar-rifa.component.html`: 3 checkboxes `(change)` → `(click)="$event.preventDefault(); toggleModoPrueba()"`.
+- `rifa-mes.component.html`: 2 checkboxes `(change)` → `(click)="$event.preventDefault(); toggleModoPrueba()"`.
+
+**UX resultante:** checkbox siempre refleja `rifaConfig.esPrueba` (checked = prueba, unchecked = real). Al intentar desmarcarlo, aparece Swal de confirmación sin que el checkbox cambie. Si confirma → API → `rifaConfig.esPrueba = false` → Angular re-renderiza el checkbox como unchecked.
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → import Swal, `toggleModoPrueba()` con Swal
+- `src/app/rifas/rifa-mes/rifa-mes.component.ts` → import Swal, `toggleModoPrueba()` con Swal
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → 3 checkboxes `(click)` + preventDefault
+- `src/app/rifas/rifa-mes/rifa-mes.component.html` → 2 checkboxes `(click)` + preventDefault
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO RIFAS — SELECT `palabraClave` VACÍO EN SECCIÓN C (2026-06-19)
+
+**Síntoma:** en `/rifas/agregar`, Sección C "Participantes", al hacer clic en "+ Agregar" el select de "Palabra clave" aparecía vacío (solo el placeholder deshabilitado "Selecciona palabra…").
+
+**Causa:** `palabrasClave: string[]` se puebla desde `variantesRifa.map(v => v.palabraClave)`. Si el usuario no ha configurado ningún premio en Sección B (rifa nueva o retomada sin premios), el array es `[]` y el select no tiene opciones. El usuario no tenía forma de saber POR QUÉ estaba vacío.
+
+**Fix:** en `agregar-rifa.component.html`, cuando `mostrarFormParticipante && palabrasClave.length === 0` se muestra un aviso `⚠️ Primero configura al menos un premio en la Sección B...` en vez del formulario. El formulario solo se muestra cuando `palabrasClave.length > 0`.
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → guard `palabrasClave.length > 0` en el `<form>` de participantes
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX GLOBAL — MANEJADORES DE ERROR SIN MENSAJE DEL BACKEND (2026-06-19)
+
+**Problema:** múltiples componentes tenían manejadores `error` que:
+- (a) Solo llamaban `console.error` — el usuario no veía ningún feedback
+- (b) Llamaban `Swal.fire` pero sin leer `err?.error?.mensaje` del backend — el mensaje de regla de negocio se perdía
+
+**Patrón aplicado en todos los casos:**
+```typescript
+error: (err) => {
+  Swal.fire({ icon: 'error', title: 'Título', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Fallback.' });
+}
+```
+- `err?.error?.mensaje` → Proyecto-Key (9091) usa `mensaje` en español
+- `err?.error?.message` → Spring Boot `BasicErrorController` (404s) y Micro Imágenes (9096) usan `message` en inglés
+
+**Archivos modificados:**
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/gastos/all/all.component.ts` | + import Swal; `console.error` → Swal en `getData()` y `buscarProductoSinKey()` |
+| `src/app/productos/producto/busca/busca.component.ts` | + import Swal; `console.error` → Swal en `buscarPorNombreCodigoPostal()` |
+| `src/app/usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts` | + import Swal; `console.error` → Swal en `buscarProductoSinKey()` |
+| `src/app/usuarios/usuarios/all-usuarios/all-usuarios.component.ts` | `console.error` → Swal (ya tenía import) |
+| `src/app/productos/producto/all/all.component.ts` | `console.error` → Swal en reload después de eliminar + infinite scroll |
+| `src/app/productos/producto/detalle-producto/detalle-producto.component.ts` | `console.error` → Swal en `eliminarImagen()` |
+| `src/app/ventas/venta-producto/add-venta/add-venta.component.ts` | `console.error` → Swal en `getDataBuscador()` y `buscarProductos()` |
+| `src/app/pedidos/historial-mp/historial-mp.component.ts` | + import Swal; `error: () => { this.cargando = false; }` → + Swal en los 4 casos del switch |
+| `src/app/admin/cache/cache.component.ts` | Swal sin `text` → + `text: err?.error?.mensaje` |
+| `src/app/admin/config-negocio/config-negocio.component.ts` | `error: () => {}` → Swal en carga inicial; + `text: err?.error?.mensaje` en toggle/horario/contactos |
+| `src/app/documentos/carga-archivo/carga-archivo.component.ts` | Swal sin `text` → + `text: err?.error?.mensaje` en `subir()` |
+| `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` | `error: ()` → `error: (err)` + backend msg en `eliminarDetalle()` |
+| `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` | `error: ()` → `error: (err)` + backend msg en `cancelarConMotivo()` |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `error: ()` → `error: (err)` + backend msg en `cobrar()` |
+| `src/app/clietes/clientes-add/clientes-add.component.ts` | `error: ()` → `error: (err)` + backend msg en `saveCliente()` |
+| `src/app/productos/producto/add/add.component.ts` | `error: ()` → `error: (err)` + backend msg en `guardar()` |
+| `src/app/palabras-clave/gestion/gestion-palabras-clave.component.ts` | `error: () => { this.cargando = false; }` → + Swal en `cargar()` |
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX GLOBAL — `throwError` EN RXJS 6 + NORMALIZACIÓN DE BODY EN `TokenInterceptor` (2026-06-19)
+
+**Causa raíz 1 — RxJS 6 no acepta factory functions en `throwError`:**
+El proyecto usa RxJS **6.6.7**. En RxJS 6, `throwError(() => valor)` tira LA FUNCIÓN misma como error — no llama la factory. En RxJS 7+ sí la llama. El `TokenInterceptor` usaba `throwError(() => error)` (sintaxis de RxJS 7), así que TODOS los componentes del proyecto recibían una función vacía como `err` en vez del `HttpErrorResponse`. Resultado: `err.status`, `err.error`, `err.error.mensaje` — todos `undefined` — siempre se mostraba el mensaje de fallback.
+
+**Fix 1:** cambiar todos los `throwError(() => x)` → `throwError(x)` (valor directo, RxJS 6 API).
+
+**Causa raíz 2 — body de error como string si backend omite Content-Type:**
+Si el backend no envía `Content-Type: application/json` en respuestas de error, Angular no parsea el body — `err.error` llega como string `'{"mensaje":"..."}'` y `err.error.mensaje` es `undefined`.
+
+**Fix 2:** `TokenInterceptor.intercept()` — si `err.error` es string y parsea como JSON válido, se crea un nuevo `HttpErrorResponse` con el body ya como objeto:
+```typescript
+if (error.error && typeof error.error === 'string') {
+  try {
+    const parsed = JSON.parse(error.error);
+    normalizedError = new HttpErrorResponse({ error: parsed, headers, status, statusText, url });
+  } catch { /* no es JSON válido — dejar como estaba */ }
+}
+```
+
+**Nota sobre `requests.js:1 POST ... 400 (Bad Request)` en consola:** es comportamiento automático del navegador para cualquier respuesta 4xx/5xx — no es código nuestro, no se puede suprimir, es normal.
+
+**Archivo modificado:** `src/app/token/TokenInterceptor .ts` → todos los `throwError(() => x)` → `throwError(x)` + normalización de body antes del check 401.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO RIFAS — RIFA DIARIA: WIZARD MULTI-RIFA + SWAL PRUEBA + BUSCAR REDISEÑADO (2026-06-19)
+
+> Solo para rifa DIARIA (`AgregarRifaComponent`). `RifaMesComponent` sin tocar.
+
+### 1. Quitar "Rifas activas — retomar" de `AgregarRifaComponent`
+Lista de retomar eliminada del componente — ese flujo queda centralizado en `buscar-rifa`. El campo `rifasActivas` y el método `cargarRifasActivas()` fueron removidos. `retomarRifa()` también eliminado (ya no era necesario).
+
+### 2. Wizard multi-rifa (+ Agregar otra rifa)
+Cuando el admin termina de configurar premios y participantes de una rifa (Secciones B y C completas), aparece el botón **"➕ Agregar otra rifa"** encima del botón "🎡 Iniciar rifa". Al pulsarlo:
+- La rifa actual queda guardada en `rifasAnteriores[]` (colapsada como un resumen al tope de la página)
+- Los formularios se limpian para la siguiente rifa
+- Cada entrada colapsada tiene un botón **"✏️ Editar"** → `editarRifaAnterior(idx)` → recarga esa rifa con `_retomar()`, swapeando si había una activa
+- Botón **"📋 Copiar de otra rifa"** en el header de Sección C → `copiarDeRifaAnterior()` → `POST /v1/concursante/copiarDeRifa` (nuevo método en `RifaService`)
+
+### 3. Swal antes de `sortear()` cuando `esPrueba=true`
+`sortear()` ahora extrae la lógica HTTP a `ejecutar()`. Si `rifaConfig.esPrueba === true`, primero muestra un Swal de advertencia ("⚠️ Esta rifa es de PRUEBA — Los resultados no son definitivos"). Solo llama `ejecutar()` si el usuario confirma.
+
+### 4. Ocultar reiniciar en DIARIA vencida
+Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los dos botones de reiniciar en el paso resumen llevan `*ngIf="puedeReiniciar"`.
+
+### 5. `buscar-rifa` — rediseño completo
+- Reemplaza sistema de 3 tabs (hoy/todas/buscar) por selector **☀️ Diaria / 📅 Mensual**
+- DIARIA: filtro por día (default: hoy) → `buscar?tipo=DIARIA&desde=X&hasta=X`
+- MENSUAL: filtro por mes (default: mes actual) → `buscar?tipo=MENSUAL&mesReferencia=X`
+- Badges dinámicos: `badgeEstado()` → 🟢 Activa / ⚫ Completada / 🔴 Vencida + colores de header de card
+- Botones condicionales: **"🎡 Ir a ejecución"** solo si `activa=true`; **"📋 Ver detalle"** siempre; **"🔄 Recuperar"** solo si `tipo=MENSUAL && !activa`
+- Panel de detalle (overlay modal) con historial de ganadores → `getEstado(id)`
+
+**Archivos modificados:**
+- `src/app/rifas/service/rifa.service.ts` → `copiarDeRifa()`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → remove `rifasActivas`/`cargarRifasActivas`/`retomarRifa`; add multi-rifa wizard; Swal en `sortear()`; `puedeReiniciar` + `puedeAgregarOtraRifa`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → multi-rifa UI; `*ngIf="puedeReiniciar"` en botones resumen
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.ts` → reescritura completa
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.html` → reescritura completa
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.scss` → nuevas clases de badges, botones, detalle overlay, historial
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## REFACTOR MÓDULO RIFAS — ACORDEÓN UNIFICADO EN `AgregarRifaComponent` (2026-06-19)
+
+> `RifaMesComponent` sin tocar en ningún momento.
+
+### Arquitectura anterior vs nueva
+
+**Antes:** tab-bar (`rf-tabs`) con 4 pestañas — Configurar / Ruleta / Transición / Resumen. Configurar estaba FUERA del acordeón. Al retomar, los datos cargaban en el form superior.
+
+**Ahora:** acordeón único (`rf-acordeon`) que engloba TODO el contenido — configuración Y sorteo. El panel activo siempre está expandido; los demás (`rifasAnteriores`) aparecen colapsados debajo.
+
+### Flujo 1 — Crear rifas nuevas
+1. Form activo arriba (Sección A: tipo/fecha/palabra/prueba, Sección B: premios, Sección C: participantes)
+2. "Guardar configuración" → guarda en backend
+3. "➕ Agregar otra rifa" → rifa actual colapsa a acordeón; form se limpia
+4. Repetir para más rifas
+5. "🎡 Ir al sorteo" → modo sorteo; `modoSorteo = true`
+
+### Flujo 2 — Modo sorteo
+- Panel activo muestra la ruleta canvas + premio + elegibles
+- Rifas anteriores colapsadas con CTA "🎡 Ver sorteo ►"
+- Clic en colapsada → carga esa rifa con `_retomar()` → va directo a `paso='ruleta'` (porque `modoSorteo=true`)
+
+### Flujo 3 — Retomar (desde `buscar-rifa`)
+- Rifas existentes cargan en el acordeón (panel activo = la primera)
+- `modoSorteo = false` → `_retomar()` fuerza `paso='configurar'` aunque la rifa esté completa
+- Config precompletada editable antes de ir al sorteo
+- CTA de colapsadas: "📋 Ver config ►" mientras `modoSorteo=false`
+
+### Flag `modoSorteo`
+| Valor | Quién lo establece | Efecto en `_retomar()` |
+|---|---|---|
+| `false` (default) | `nuevaRifa()`, `agregarOtraRifa()` | fuerza `paso='configurar'` siempre |
+| `true` | `irARuleta()` | permite `paso='ruleta'` si rifa completa |
+
+### Estructura HTML (acordeón)
+```
+<div class="rf-acordeon">
+  <div class="rf-acord-item rf-acord-item--open">   ← panel activo (siempre abierto)
+    <div class="rf-acord-hdr rf-acord-hdr--active">
+      [título: "✨ Nueva rifa" o "Rifa #ID" + badge prueba + pill estado]
+    </div>
+    <div class="rf-acord-body">
+      <div *ngIf="paso === 'configurar'">     ← Secciones A, B, C + botones
+      <div *ngIf="paso === 'ruleta'">         ← canvas + elegibles + descartados
+      <div *ngIf="paso === 'transicion'">     ← pantalla ganador en vivo
+      <div *ngIf="paso === 'resumen'">        ← resumen final
+    </div>
+  </div>
+  <div *ngFor="let a of rifasAnteriores">    ← colapsadas, clic → editarRifaAnterior(i)
+</div>
+```
+
+### SCSS nuevo (reemplaza `rf-tabs`)
+- `.rf-acordeon`: contenedor con `border-radius: 14px`, `overflow: hidden`, `border: 1.5px solid var(--card-border)`
+- `.rf-acord-item`: fila colapsada; hover suave con `var(--form-section-bg)`
+- `.rf-acord-item--open`: panel activo, `cursor: default`
+- `.rf-acord-hdr`: flex con pill de estado y CTA condicional por `modoSorteo`
+- `.rf-acord-hdr--active`: fondo índigo sutil, `border-bottom: 1px solid rgba(99,102,241,0.2)`
+- `.rf-btn--secondary` / `.rf-btn--add-rifa`: botón "Agregar otra rifa"
+
+**Archivos modificados:**
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.html` → elimina `rf-tabs`, todo dentro de `rf-acordeon`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.ts` → `modoSorteo` field; `irARuleta()` lo activa; `_retomar()` lo respeta; `nuevaRifa()` + `agregarOtraRifa()` lo resetean a `false`
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss` → reemplaza bloque `rf-tabs` con clases `rf-acordeon`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX CARRITO — FLUJOS SEPARADOS CLIENTE vs ADMIN (2026-06-30)
+
+> Complemento al "FEAT CARRITO → VENTA DIRECTA" de sesiones anteriores.
+> Detalle completo de decisiones en `BUGS_FRONT_CARRITO_VENTA.md`.
+
+**Reglas de negocio definitivas:**
+
+- **Cliente (rol user):** solo puede generar el pedido desde el carrito. No ve selector de tipo de
+  pedido ni campo de cliente. Cuando va al local a recoger, el admin retoma el pedido desde `/pedidos`
+  y procesa la venta directa desde ahí.
+- **Admin (rol admin):** el carrito tiene solo "💰 Cobrar ahora (Venta Directa)" como CTA principal.
+  "📋 Generar pedido" queda oculto para admin. Selector de tipo y campo de cliente van exclusivamente
+  en `/variantes/venta-directa`.
+
+**Cambios en `venta-variante.component.html`:**
+- "📋 Generar pedido" → `*ngIf="!isAdminUser"` (solo usuario)
+- Card "Tipo de pedido" → `*ngIf="false"` (oculto para todos — va en venta directa)
+- Card "Asignar cliente" → `*ngIf="false"` (oculto para todos — va en venta directa)
+- Fix previo: `clienteSeleccionado?.campo` con optional chaining en la card oculta
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT CARRITO → VENTA DIRECTA PARA ADMIN (2026-06-30)
+
+> Flujo 3 de `REQUERIMIENTO_BACK_VENTA_DIRECTA_CREDITO.md` — cambio solo de front, sin tocar back.
+
+**Comportamiento:** cuando el admin está en `/variantes/carrito`, aparece un nuevo botón
+**"💰 Cobrar ahora (Venta Directa)"** junto a "📋 Generar pedido". Al pulsarlo navega a
+`/variantes/venta-directa` y los items del carrito se pre-cargan automáticamente como líneas
+de venta. Al confirmar la venta, el carrito se limpia solo.
+
+**Regla:** la pre-carga solo ocurre si `isAdminUser === true` y `lineas` está vacío — no
+sobrescribe una venta directa que el admin ya esté armando manualmente.
+
+**Archivos modificados:**
+- `src/app/variante/venta-variante/venta-variante.component.ts` → `irAVentaDirecta()`
+- `src/app/variante/venta-variante/venta-variante.component.html` → botón "💰 Cobrar ahora"
+- `src/app/variante/venta-directa/venta-directa.component.ts` → inyecta `CarritoVarianteService`;
+  `ngOnInit` pre-carga items del carrito; `limpiarTodo()` limpia el carrito si vino de ahí.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX VENTA DIRECTA — FORMA DE PAGO EN MODO CRÉDITO + ENGANCHE INICIAL (2026-06-30)
+
+> BUG 4 de `BUGS_FRONT_CARRITO_VENTA.md`. Respuestas R-D1..R-D5 del usuario.
+
+**Problema:** al seleccionar "Apartado" o "Ir pagando" en `/variantes/venta-directa`, el dropdown de
+forma de pago desaparecía porque estaba dentro de `*ngIf="!esCredito"`. El admin no podía indicar
+si el cliente dejaba un enganche (pago inicial parcial).
+
+**Decisión de diseño:** en modo crédito se usan 2 botones simples (EFECTIVO / TRANSFERENCIA) en vez
+del `p-dropdown` estructurado con cuotas/meses. TARJETA se excluye porque cada cobro con tarjeta
+genera comisión al negocio — no aplica a crédito. El dropdown contado se conserva solo para `!esCredito`.
+
+**Métodos aceptados en crédito:** EFECTIVO y TRANSFERENCIA únicamente. TARJETA excluida en ambas pantallas
+(venta-directa al crear el crédito y `/abonos` al registrar abonos posteriores).
+
+**Pendiente back:** `AbonoServiceImpl.registrarAbono()` debe validar que `metodoPago != TARJETA` cuando
+el pedido sea APARTADO o FIADO (el front ya lo filtra, pero el back aún no rechaza TARJETA si llegara).
+
+**Flujo de enganche (dos pasos):**
+1. `POST /v1/ventas/save` con `tipoPedido: APARTADO|FIADO` → devuelve `pedidoId`
+2. Si `montoInicial > 0` → `POST /v1/abonos/{pedidoId}` con `{ monto, metodoPago, usuarioId, fechaPago }`
+3. Swal con texto del monto y botón "💳 Ir a Créditos / Abonos" → navega a `/abonos`
+
+**Si `montoInicial === 0`:** solo el paso 1, Swal sin monto, mismo link a `/abonos`.
+
+**Campo de motivo al cancelar:** ya implementado en back (BD `motivo_cancelacion VARCHAR(30)`,
+`CancelarAbonoRequest.motivo?: string`). Pendiente: agregar `input[maxlength=30]` al modal de
+cancelación en `/abonos` para que el admin escriba el motivo. Ver DN-2 en `BUGS_FRONT_CARRITO_VENTA.md`.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.html` → sección crédito con 2 botones de método + input `montoInicial`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `metodosCredito: ['EFECTIVO','TRANSFERENCIA']`; inyecta `AbonoService`; `ejecutarVenta()` registra abono si `monto > 0`; `limpiarTodo()` resetea campos de crédito
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-metodo-btns`, `.vd-metodo-btn`, `.vd-monto-input`
+- `src/app/abonos/abonos.component.ts` → `metodos: ['EFECTIVO','TRANSFERENCIA']` (TARJETA eliminada)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT VENTA DIRECTA — CRÉDITO (APARTADO / IR PAGANDO) EN TODOS LOS PAGOS (2026-06-30)
+
+> Backend ya implementado (ver `REQUERIMIENTO_BACK_VENTA_DIRECTA_CREDITO.md`).
+> `POST /v1/ventas/save` acepta `tipoPedido: APARTADO|FIADO` → crea solo Pedido y devuelve `pedidoId`.
+
+**Cambios realizados:**
+
+1. **`abono.model.ts`** → `AbonoRequest.usuarioId?: number` (requerido por back al liquidar); nueva interfaz `AbonoRegistrarResponse { estadoPedido, saldoRestante }`.
+2. **`abono.service.ts`** → `registrarAbono()` ahora retorna `Observable<ResponseGeneric<AbonoRegistrarResponse>>`.
+3. **`abonos.component.ts`** → inyecta `AuthService` para obtener `idUsuario`; envía `usuarioId` en el body; usa `res.data.estadoPedido === 'PAGADO'` y `res.data.saldoRestante` para actualizar el estado local.
+4. **`variante.service.ts`** → `IVentaDirectaRequest`: `pagosYMesesId?` (opcional), `tipoPedido?`, `observaciones?`. `IVentaDirectaResponse`: `pedidoId: number | null`, `ventaId: number | null`, `tipoPago/descripcionPago` nullable.
+5. **`venta-directa.component.ts`** → inyecta `Router`; campo `tipoPedido: 'NORMAL'|'APARTADO'|'FIADO'`; getter `esCredito`; `puedeCobrar` acepta crédito sin `pagosYMesesId`; `seleccionarCredito()` activa/desactiva; `ejecutarVenta()` envía `tipoPedido`/`observaciones` (sin `pagosYMesesId` en crédito), maneja `res.pedidoId` → Swal + navigate `/abonos`.
+6. **`venta-directa.component.html`** → botones "📦 Apartado" / "💳 Ir pagando" debajo del dropdown de pago; textarea observaciones; aviso "solo efectivo"; dropdown meses oculto cuando crédito.
+7. **`venta-directa.component.scss`** → `.vd-credit-divider`, `.vd-credit-btns`, `.vd-btn-credit`, `.vd-btn-credit--active`, `.vd-observaciones`, `.vd-credit-info`.
+
+**Flujo crédito:** Admin selecciona APARTADO o IR PAGANDO (botones toggle) → `pagosYMesesId` no se envía → back crea Pedido y devuelve `pedidoId` → Swal "✅ Apartado/Ir pagando registrado" con botón "💳 Ir a Créditos / Abonos" → navega a `/abonos`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO ABONOS — CANCELAR, TRANSFERIR Y TAB CANCELADOS (2026-06-30)
+
+> Flujos G, H e I documentados en `DOCUMENTO_BACK_VENTAS_CREDITO.md` secciones 12-17.
+> Backend implementó 3 endpoints nuevos. El front los conecta aquí.
+
+### Flujo completo de crédito (APARTADO / IR PAGANDO)
+
+**Hay 3 formas de registrar un pedido en crédito:**
+1. **Venta Directa** (`/variantes/venta-directa`) — admin busca variantes, elige "📦 Apartado" o "💳 Ir pagando" → `POST /v1/ventas/save` con `tipoPedido` → devuelve `pedidoId` → Swal con link a `/abonos`
+2. **Carrito → Venta Directa** (`/variantes/carrito` → "💰 Cobrar ahora") — mismo endpoint, el carrito se pre-carga automáticamente
+3. **Carrito normal** (`/variantes/venta`) — admin elige APARTADO/FIADO → `POST /v1/pedidos/savePedido` con `tipoPedido` → devuelve pedido
+
+**A partir de aquí todos convergen en `/abonos`:**
+
+| Tab | Endpoint | Qué muestra |
+|---|---|---|
+| 📋 Cuentas por cobrar | `GET /v1/abonos/reporte/estado-cuenta` | Pedidos con saldo pendiente |
+| ✅ Liquidados | `GET /v1/abonos/reporte/pagados` | Pedidos ya pagados |
+| ✖ Cancelados | `GET /v1/abonos/reporte/cancelados` | Pedidos cancelados |
+
+**Flujo G — Cancelar APARTADO** (cliente no terminó de pagar):
+- Botón "✖ Cancelar" en cada card de "Cuentas por cobrar"
+- Swal diferenciado: APARTADO → "Se devolverá el stock" / FIADO → "La deuda quedará registrada"
+- `PUT /v1/abonos/{pedidoId}/cancelar` con `{ motivo?: string }` (texto libre, máx. 30 chars)
+- APARTADO: stock se devuelve + saldo a favor visible en tab "Cancelados"
+- FIADO: stock NO se devuelve + deuda pendiente visible en tab "Cancelados"
+
+**Flujo I — Transferir saldo** (solo APARTADO cancelado con `saldoAFavor > 0`):
+- Botón "↪ Aplicar a otro producto" en tab Cancelados (solo si `puedeTransferir === true`)
+- Modal con buscador de variantes (debounce 400ms, mismo `GET /v1/variantes/buscar`)
+- Precio precargado del buscador pero editable; muestra "⚠ precio editado manualmente" si cambia
+- Calcula `totalNuevo` y `saldoPendiente` en tiempo real
+- `POST /v1/abonos/{pedidoIdOrigen}/transferir` → crea nuevo pedido APARTADO con el saldo ya aplicado
+- Si `estadoNuevoPedido === 'PAGADO'` → el pedido queda liquidado en el mismo call
+
+### Interfaces nuevas (`abono.model.ts`)
+`CancelarAbonoRequest`, `CancelarAbonoResponse`, `TransferirAbonoRequest`, `TransferirAbonoResponse`, `ReporteCancelado`
+
+### Métodos nuevos (`abono.service.ts`)
+`cancelar(pedidoId, body)`, `transferir(pedidoIdOrigen, body)`, `reporteCancelados()`
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/abonos/models/abono.model.ts` | +5 interfaces; `AbonoResponse` ahora tiene `estadoPedido?` y `saldoRestante?` opcionales |
+| `src/app/abonos/service/abono.service.ts` | +3 métodos: `cancelar`, `transferir`, `reporteCancelados` |
+| `src/app/abonos/abonos.component.ts` | Tab `cancelados`; `cancelarPedido()`; modal transferencia con `abrirModalTransferencia()`, `seleccionarVarianteTransferencia()`, `aplicarTransferencia()`; inyecta `VarianteService` para búsqueda debounce |
+| `src/app/abonos/abonos.component.html` | Tab "✖ Cancelados" con cards de cancelados; botón "✖ Cancelar" en cuentas por cobrar; modal de transferencia completo |
+| `src/app/abonos/abonos.component.scss` | `.ab-badge--cancelado`, `.ab-card--cancelado`, `.ab-btn--cancelar`, `.ab-btn--transferir`, `.ab-monto__val--favor`, `.ab-transfer-search`, `.ab-transfer-dropdown`, `.ab-transfer-resumen`, `.ab-hint--warn` |
+
+### Fix en registrarAbono (D-4)
+Al liquidar un pedido (`estadoPedido === 'PAGADO'`) ahora se hace `cargarCuenta()` (reload del server) en vez de filtrar el array local — evita desfase si otro abono llegó en paralelo.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX BUSCADOR PRODUCTOS — MÍNIMO 3 CARACTERES (2026-06-30)
+
+**Síntoma:** en `/productos/buscar`, escribir exactamente 3 caracteres no disparaba la búsqueda. Requería 4+.
+
+**Causa:** `all.component.ts` line 75 usaba `filter(texto => texto.length > 3)` (estrictamente mayor).
+
+**Fix:** cambiado a `filter(texto => texto.length >= 3)` — consistente con todos los demás buscadores del proyecto (`/variantes/buscar` usa `termino.length < 3` como guard).
+
+**Archivo modificado:** `src/app/productos/producto/all/all.component.ts` → pipe del `keyUpSubject`
+
+---
+
+## FIX VENTA DIRECTA — MONTO RECIBIDO + CAMBIO EN VENTA AL CONTADO Y ENGANCHE (2026-07-01)
+
+**Síntoma:** en `/variantes/venta-directa`, al cobrar en efectivo no había campo para indicar
+el billete que da el cliente ni se calculaba el cambio a devolver.
+
+**Cambios en `venta-directa.component.ts`:**
+- Campos nuevos: `montoDadoContado = 0` (venta normal efectivo), `montoDadoEnganche = 0` (crédito)
+- Getter `esEfectivoContado` → detecta `tipoPagoActivo.formaPago.toUpperCase() === 'EFECTIVO'`
+- Getter `cambioContado` → `montoDadoContado - totalVenta` (cuando mayor)
+- Getter `cambioEnganche` → `montoDadoEnganche - montoInicial` (cuando mayor y monto > 0)
+- Ambos campos se resetean en `limpiarTodo()` y `seleccionarTipoPago()`
+
+**Cambios en `venta-directa.component.html`:**
+- **Venta al contado:** debajo del dropdown de forma de pago, cuando `esEfectivoContado && !esCredito && lineas.length > 0` → campo "💵 Monto recibido" + cuadro verde "Cambio a devolver: $X" o rojo "monto insuficiente"
+- **Enganche de crédito:** debajo del input de monto del enganche, cuando `metodoPagoCredito === 'EFECTIVO' && montoInicial > 0` → mismo patrón
+
+**Cambios en `venta-directa.component.scss`:**
+- `.vd-cambio` (verde) y `.vd-cambio--warn` (rojo) + variantes dark mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO ABONOS — NF-1, NF-2, BUG 5 (2026-07-01)
+
+### NF-1 — Bug en `cobrar()` cuando hay cliente sin registro
+
+**Síntoma:** al agregar un cliente sin registro con el modal y luego cobrar, el front ignoraba
+el `clienteSinRegistroModal` y llamaba a `buscarClientePorIdUsuario()` — enviaba el `clienteId`
+del admin junto a `clienteSinRegistroDto`, cuando el back los trata como mutuamente excluyentes.
+
+**Fix en `venta-directa.component.ts`:**
+- `cobrar()`: ahora verifica `clienteSinRegistroModal` PRIMERO — si existe, llama
+  `ejecutarVenta(0)` directamente sin buscar el cliente del admin. `clienteId=0` +
+  `clienteSinRegistroDto` → back usa el DTO.
+- `limpiarTodo()`: ahora resetea `clienteSinRegistroModal = null` y `clienteForm.reset()`.
+
+### NF-2 — Badges APARTADO/FIADO en mis-pedidos
+
+**Cambios:**
+- `IPedidoQuery.model.ts` → campo `tipoPedido?: string` agregado al modelo
+- `mis-pedidos.component.html` → `card-head-right` con badges condicionales:
+  - `tipo-badge--apartado` (naranja) cuando `tipoPedido === 'APARTADO'`
+  - `tipo-badge--fiado` (índigo) cuando `tipoPedido === 'FIADO'`
+- `mis-pedidos.component.scss` → `.card-head-right`, `.tipo-badge`, `&--apartado`, `&--fiado`
+
+### NF-2 — Botón "Registrar abono" + formulario en detalle-pedido
+
+**Contexto:** el admin puede ver el detalle de un pedido APARTADO/FIADO y registrar un abono
+directamente sin tener que navegar a `/abonos`.
+
+**Cambios en `detalle-pedido.component.ts`:**
+- Inyecta `AbonoService` y `AuthService`
+- Getter `esCredito` → `tipoPedido === 'APARTADO' || 'FIADO'`
+- Campos: `mostrarFormAbono`, `registrandoAbono`, `abonoForm`, `montoDado`, getter `cambio`
+- Métodos: `abrirFormAbono()`, `cancelarFormAbono()`, `registrarAbono()` (mismo patrón que
+  `/abonos` — incluye `montoDado` para cambio, muestra saldo restante en Swal)
+- Implementa `OnDestroy` con `destroy$` para `takeUntil` en `authService.userId$`
+
+**Cambios en `detalle-pedido.component.html`:**
+- Badge `dp-tipo-badge--apartado` / `dp-tipo-badge--fiado` en el header
+- Bloque `dp-abono-wrap` visible cuando `esCredito`:
+  - Botón "💳 Registrar abono" → despliega form inline
+  - Form: Monto, Método (EFECTIVO/TRANSFERENCIA), Monto recibido + cambio (solo EFECTIVO), Fecha, Nota
+  - Botones Cancelar / Guardar abono
+
+**Cambios en `detalle-pedido.component.scss`:**
+- `.dp-tipo-badge`, `.dp-abono-wrap`, `.dp-btn-abono`, `.dp-abono-form`, `.dp-metodo-btns`,
+  `.dp-cambio`, `.dp-btn-cancelar`, `.dp-btn-guardar`, `:host-context(body.theme-dark)`
+
+### BUG 5 — Stock devuelto al cancelar APARTADO
+
+`abonos.component.ts → cancelarPedido()`: el `next` handler lee `res?.data?.stockDevuelto` y
+agrega al mensaje de éxito " El stock fue devuelto — el buscador de variantes mostrará el
+dato actualizado." cuando es `true`.
+
+**Archivos modificados (esta sección):**
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `cobrar()`, `limpiarTodo()`
+- `src/app/pedidos/mis-pedidos/models/IPedidoQuery.model.ts` → `tipoPedido?: string`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → badges tipo pedido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.card-head-right`, `.tipo-badge`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → form abono inline
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → badge + form abono
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → estilos form abono
+- `src/app/abonos/abonos.component.ts` → `cancelarPedido()` con `stockDevuelto`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO ABONOS — RENOMBRAR FIADO + SOLO EFECTIVO/TRANSFERENCIA + SWAL CON LINK + MOTIVO CANCELACIÓN + MONTO DADO (2026-06-28 / 2026-07-01)
+
+**Cambios tras prueba en vivo:**
+
+1. **"Fiado" → "Ir pagando"** en `venta-variante.component.html` — label más claro para el cliente
+2. **"Normal" → "Venta total"** — idem
+3. **EFECTIVO + TRANSFERENCIA para crédito (sin TARJETA — cobra comisión):**
+   - `venta-directa.component.ts`: `metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA']`
+   - `abonos.component.ts`: `metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA']`
+   - Botones toggle en ambas pantallas para seleccionar método
+4. **Swal post-pedido con link a `/abonos`:**
+   - Cuando se guarda un pedido APARTADO o IR PAGANDO, se muestra Swal con botón "💳 Ir a Créditos / Abonos"
+5. **DN-2 — Motivo de cancelación en Swal (maxlength 30):**
+   - `abonos.component.ts → cancelarPedido()`: Swal usa `html:` con `<input id="swal-motivo">` para capturar el motivo; se lee con `document.getElementById` y se envía como `{ motivo }` al endpoint
+6. **NF-3 — Monto dado por cliente + cambio en tiempo real (solo EFECTIVO):**
+   - `abono.model.ts`: `AbonoRequest.montoDado?: number`
+   - `abonos.component.ts`: campo `montoDado = 0`, getter `cambio` (diferencia), se resetea en `abrirModal()`, se envía en el body si `metodoPago === 'EFECTIVO'`; Swal de éxito muestra "Cambio al cliente: $X.XX" cuando aplica
+   - `abonos.component.html`: campo "💵 Monto recibido (opcional)" visible solo cuando EFECTIVO, con alerta verde (cambio) o roja (monto insuficiente)
+   - `abonos.component.scss`: `.ab-optional`, `.ab-cambio`, `.ab-cambio--warn` con variantes dark mode
+
+**Pendiente de back (para NF-3):**
+- `ALTER TABLE abono_pedido ADD COLUMN monto_dado DECIMAL(10,2) NULL` — hasta que se haga, el campo se envía pero no se persiste en BD
+
+**Archivos modificados:**
+- `src/app/variante/venta-variante/venta-variante.component.html` → labels, aviso efectivo
+- `src/app/variante/venta-variante/venta-variante.component.ts` → Swal diferenciado para crédito
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `metodosCredito = ['EFECTIVO', 'TRANSFERENCIA']`
+- `src/app/abonos/models/abono.model.ts` → `AbonoRequest.montoDado`
+- `src/app/abonos/abonos.component.ts` → `metodos`, `montoDado`, `cambio`, `cancelarPedido()` con Swal html input, `registrarAbono()` con montoDado + txt cambio en Swal
+- `src/app/abonos/abonos.component.html` → botones EFECTIVO/TRANSFERENCIA; campo monto recibido + alerta cambio (NF-3)
+- `src/app/abonos/abonos.component.scss` → `.ab-hint`, `.ab-optional`, `.ab-cambio`, `.ab-cambio--warn`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## MÓDULO ABONOS — CRÉDITOS (APARTADO / FIADO) (2026-06-27)
+
+> Implementación según `ABONOS_FRONT.md`. Backend: `proyecto-key (9091)`. Solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/abonos/models/abono.model.ts` | Interfaces: `AbonoRequest`, `AbonoResponse`, `EstadoCuenta`, `PedidoPagado`, `MetodoPago`, `TipoPedidoAbono` |
+| `src/app/abonos/service/abono.service.ts` | 4 endpoints: `registrarAbono()`, `obtenerAbonos()`, `reporteEstadoCuenta()`, `reportePagados()` |
+| `src/app/abonos/abonos.component.ts` | Componente principal con dos tabs + modal de abono |
+| `src/app/abonos/abonos.component.html` | UI: cards de cuentas por cobrar, modal, historial expandible, tab de liquidados |
+| `src/app/abonos/abonos.component.scss` | Estilos con variables CSS (`--card-bg`, `--app-text`, etc.) + dark/light mode |
+| `src/app/abonos/abonos.module.ts` | Módulo lazy (`CommonModule` + `FormsModule`) |
+| `src/app/abonos/abonos-routing.module.ts` | Ruta raíz `''` → `AbonosComponent`, guards: `AuthGuard` + `AdminGuardGuard` |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `{ path: 'abonos', loadChildren: AbonosModule }` con guards admin |
+| `src/app/navbar/navbar.component.html` | Link "💳 Créditos / Abonos" → `/abonos` dentro del accordion "Pedidos" (solo `*ngIf="isAdminUser"`) |
+| `src/app/variante/models/pedido-variante.model.ts` | Campo opcional `tipoPedido?: 'NORMAL' \| 'APARTADO' \| 'FIADO'` en `IPedidoVarianteDTO` |
+| `src/app/variante/venta-variante/venta-variante.component.ts` | Campo `tipoPedido = 'NORMAL'`; `armarYConfirmar()` ahora incluye `tipoPedido` y ajusta `estadoPedido` si es crédito |
+| `src/app/variante/venta-variante/venta-variante.component.html` | Selector radio NORMAL/APARTADO/FIADO visible solo para admin, con aviso de link a `/abonos` |
+
+### Endpoints conectados
+
+| Método | URL | Método servicio |
+|---|---|---|
+| `POST` | `/v1/abonos/{pedidoId}` | `registrarAbono()` |
+| `GET` | `/v1/abonos/{pedidoId}` | `obtenerAbonos()` |
+| `GET` | `/v1/abonos/reporte/estado-cuenta` | `reporteEstadoCuenta()` |
+| `GET` | `/v1/abonos/reporte/pagados` | `reportePagados()` |
+| `POST` | `/v1/pedidos/savePedido` | ya existía — ahora envía `tipoPedido` |
+
+### Flujo de uso
+
+1. Admin va a **"Venta de variantes"** (`/variantes/venta`) → elige tipo APARTADO o FIADO → genera el pedido
+2. Admin va a **"💳 Créditos / Abonos"** (`/abonos`) desde el sidebar (accordion Pedidos)
+3. Tab "Cuentas por cobrar": lista de pedidos APARTADO/FIADO con saldo pendiente
+4. Botón "+ Abono" → modal (monto, método, fecha, nota) → `POST /v1/abonos/{id}`
+5. Si `saldo <= 0` tras el abono → mensaje "¡Pedido liquidado!" + se quita de la lista automáticamente
+6. Tab "Liquidados": lista read-only de pedidos ya pagados con historial de abonos expandible
+
+### Comportamiento del modal de abono
+
+- Validación local: `monto > 0` obligatorio
+- Métodos de pago: botones toggle (EFECTIVO / TRANSFERENCIA / TARJETA)
+- Al guardar: actualiza locales `totalPagado` y `saldo` sin recargar toda la lista
+- Si el backend responde `400` (`err?.error?.mensaje`) → Swal de error con el mensaje del back
+- Botón deshabilitado mientras `registrando = true` (guard de doble submit, patrón Lección #9)
+
+### Lecciones / errores a no repetir
+
+- **`FormsModule` en el módulo**: `abonos.module.ts` importa `FormsModule` porque el modal usa `[(ngModel)]`. Sin él, los inputs del modal no funcionan.
+- **Guard de admin en la ruta**: `abonos-routing.module.ts` usa `canActivate: [AuthGuard, AdminGuardGuard]`. Sin ambos guards cualquier usuario podría acceder a `/abonos`.
+- **`tipoPedido` en `estadoPedido`**: para APARTADO/FIADO el backend espera que `estadoPedido` tenga el MISMO valor que `tipoPedido` (no `'Pendiente'`). El código en `armarYConfirmar()` usa `esCreditoPedido ? this.tipoPedido : 'Pendiente'`.
+- **Actualización local vs recarga**: el abono actualiza `totalPagado`/`saldo` localmente en el objeto del array. Si el backend cambia la lógica de cálculo de saldo, podría haber divergencia — en ese caso cambiar a recargar la lista completa con `cargarCuenta()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## MÓDULO CHAT EN VIVO (2026-06-16)
 
 > Implementación de chat en tiempo real STOMP/WebSocket según `CHAT_FRONT_DEVELOPER.md`.
@@ -911,6 +1630,30 @@ el campo con nombre distinto (`mensaje` en vez de `contenido`).
 - `src/app/chat/service/chat-live.service.ts` → SockJS transports
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## LECCIONES APRENDIDAS — GLOBALES
+
+### L-G1 — `throwError(() => valor)` no funciona en RxJS 6 (2026-06-19)
+
+**Síntoma:** todos los manejadores `error: (err) => { ... }` en el proyecto reciben una **función** como `err` en vez de un `HttpErrorResponse`. `err.status`, `err.error`, `err.error.mensaje` son todos `undefined`. Siempre se muestra el mensaje de fallback aunque el backend mande un error específico.
+
+**Causa:** el proyecto usa **RxJS 6.6.7**. En RxJS 6, `throwError(valor)` tira el valor directamente. Si se pasa una arrow function (`throwError(() => valor)`), tira LA FUNCIÓN como error — nunca la llama. En RxJS 7+ sí se llama la factory.
+
+**Cómo detectarlo:** `console.log(err)` en cualquier error handler muestra algo como `() => normalizedError` (la representación string de la función).
+
+**Fix:** usar siempre `throwError(valor)` sin factory wrapper. Aplica a TODO el código del proyecto, especialmente en interceptores.
+
+```typescript
+// ❌ RxJS 7 (no funciona en RxJS 6)
+return throwError(() => error);
+
+// ✅ RxJS 6 correcto
+return throwError(error);
+```
+
+**Dónde aplica:** `src/app/token/TokenInterceptor .ts` — ya corregido. Si se agrega un interceptor nuevo o un `throwError` en cualquier servicio, usar la sintaxis de RxJS 6.
 
 ---
 

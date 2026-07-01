@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IHistorialMpItem, IHistorialMpMpItem, MpEstado } from '../mis-pedidos/models/IPago.model';
 import { PagoService } from '../pago.service';
+import Swal from 'sweetalert2';
 
 type Modo = 'todos' | 'pedido' | 'estado' | 'mp';
 
@@ -82,7 +83,7 @@ export class HistorialMpComponent implements OnInit {
       case 'todos':
         this.pagoService.getHistorial(this.pagina, this.size).subscribe({
           next: res => this.setPage(res),
-          error: () => { this.cargando = false; }
+          error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar historial', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el historial de pagos.' }); }
         });
         break;
 
@@ -90,7 +91,7 @@ export class HistorialMpComponent implements OnInit {
         if (!this.filtroPedidoId) { this.cargando = false; return; }
         this.pagoService.getHistorialPorPedido(this.filtroPedidoId, this.pagina, this.size).subscribe({
           next: res => this.setPage(res),
-          error: () => { this.cargando = false; }
+          error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar historial', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el historial de pagos.' }); }
         });
         break;
 
@@ -98,7 +99,7 @@ export class HistorialMpComponent implements OnInit {
         if (!this.filtroEstado) { this.cargando = false; return; }
         this.pagoService.getHistorialPorEstado(this.filtroEstado, this.pagina, this.size).subscribe({
           next: res => this.setPage(res),
-          error: () => { this.cargando = false; }
+          error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar historial', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el historial de pagos.' }); }
         });
         break;
 
@@ -115,7 +116,7 @@ export class HistorialMpComponent implements OnInit {
             this.totalPaginas = 0;
             this.cargando = false;
           },
-          error: () => { this.cargando = false; }
+          error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar historial', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el historial de pagos.' }); }
         });
         return;
     }

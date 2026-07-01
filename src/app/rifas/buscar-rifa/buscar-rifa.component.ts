@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import Swal from 'sweetalert2';
 import { IConfigurarRifa, TipoRifa } from '../models/configurar-rifa.model';
+import { IEstadoRifa } from '../models/estado-rifa.model';
 import { RifaService } from '../service/rifa.service';
 
 @Component({
@@ -10,81 +12,118 @@ import { RifaService } from '../service/rifa.service';
 })
 export class BuscarRifaComponent implements OnInit {
 
-  tab: 'hoy' | 'todas' | 'buscar' = 'hoy';
-  rifasHoy: IConfigurarRifa[]     = [];
-  rifasTodas: IConfigurarRifa[]   = [];
-  rifasBuscadas: IConfigurarRifa[] = [];
-  cargando = false;
-  buscando = false;
+  tipo: TipoRifa = 'DIARIA';
 
-  // ── Filtro de búsqueda (tab "buscar") ──────────────────────────────
-  filtroTipo: TipoRifa | '' = '';
-  filtroMesReferencia = '';
-  filtroDesde = '';
-  filtroHasta = '';
-  busquedaRealizada = false;
+  diaFiltro  = '';
+  mesFiltro  = '';
+
+  rifas: IConfigurarRifa[]  = [];
+  cargando                  = false;
+  busquedaRealizada         = false;
+
+  rifaDetalle: IEstadoRifa | null = null;
+  cargandoDetalle                 = false;
+
+  recuperando: number | null = null;
 
   constructor(
     private readonly rifaService: RifaService,
     private readonly router: Router
   ) {}
 
-  ngOnInit(): void { this.cargarHoy(); }
-
-  cambiarTab(tab: 'hoy' | 'todas' | 'buscar'): void {
-    this.tab = tab;
-    if (tab === 'hoy'   && this.rifasHoy.length   === 0) this.cargarHoy();
-    if (tab === 'todas' && this.rifasTodas.length  === 0) this.cargarTodas();
+  ngOnInit(): void {
+    const hoy  = new Date();
+    this.diaFiltro = hoy.toISOString().slice(0, 10);
+    const anio = hoy.getFullYear();
+    const mes  = String(hoy.getMonth() + 1).padStart(2, '0');
+    this.mesFiltro = `${anio}-${mes}`;
+    this.buscar();
   }
 
-  cargarHoy(): void {
-    this.cargando = true;
-    this.rifaService.getConfiguracionesHoy().subscribe({
-      next: res => { this.rifasHoy = res; this.cargando = false; },
-      error: ()  => { this.cargando = false; }
-    });
+  cambiarTipo(tipo: TipoRifa): void {
+    this.tipo  = tipo;
+    this.rifas = [];
+    this.rifaDetalle       = null;
+    this.busquedaRealizada = false;
+    this.buscar();
   }
 
-  cargarTodas(): void {
-    this.cargando = true;
-    this.rifaService.getConfiguracionesActivas().subscribe({
-      next: res => { this.rifasTodas = res; this.cargando = false; },
-      error: ()  => { this.cargando = false; }
-    });
-  }
-
-  buscarPorFiltro(): void {
-    this.cargando = true;
-    this.buscando = true;
+  buscar(): void {
+    this.cargando          = true;
     this.busquedaRealizada = true;
-    this.rifaService.buscarConfiguraciones({
-      tipo: this.filtroTipo || undefined,
-      mesReferencia: this.filtroMesReferencia || undefined,
-      desde: this.filtroDesde || undefined,
-      hasta: this.filtroHasta || undefined
-    }).subscribe({
-      next: res => { this.rifasBuscadas = res; this.cargando = false; this.buscando = false; },
-      error: ()  => { this.cargando = false; this.buscando = false; }
+    this.rifaDetalle       = null;
+    const params: { tipo: TipoRifa; desde?: string; hasta?: string; mesReferencia?: string } = { tipo: this.tipo };
+    if (this.tipo === 'DIARIA') {
+      params.desde = this.diaFiltro;
+      params.hasta = this.diaFiltro;
+    } else {
+      params.mesReferencia = this.mesFiltro;
+    }
+    this.rifaService.buscarConfiguraciones(params).subscribe({
+      next: res => { this.rifas = res; this.cargando = false; },
+      error: ()  => { this.cargando = false; }
     });
   }
 
-  retomarRifa(r: IConfigurarRifa): void {
-    this.router.navigate(['/rifas/agregar'], { state: { retomarRifaId: r.id } });
+  badgeEstado(r: IConfigurarRifa): { label: string; css: string } {
+    if (r.activa) return { label: '🟢 Activa', css: 'br-badge--activa' };
+    if (r.totalVariantes && (r.variantesSorteadas ?? 0) >= r.totalVariantes) {
+      return { label: '⚫ Completada', css: 'br-badge--completada' };
+    }
+    return { label: '🔴 Vencida', css: 'br-badge--vencida' };
   }
 
-  get rifasMostradas(): IConfigurarRifa[] {
-    if (this.tab === 'hoy') return this.rifasHoy;
-    if (this.tab === 'todas') return this.rifasTodas;
-    return this.rifasBuscadas;
+  irAEjecucion(r: IConfigurarRifa): void {
+    const ruta = r.tipo === 'MENSUAL' ? '/rifas/mes' : '/rifas/agregar';
+    this.router.navigate([ruta], { state: { retomarRifaId: r.id } });
+  }
+
+  verDetalle(r: IConfigurarRifa): void {
+    if (this.rifaDetalle?.configurarRifa?.id === r.id) {
+      this.rifaDetalle = null;
+      return;
+    }
+    this.rifaDetalle    = null;
+    this.cargandoDetalle = true;
+    this.rifaService.getEstado(r.id!).subscribe({
+      next: res => { this.rifaDetalle = res; this.cargandoDetalle = false; },
+      error: ()  => { this.cargandoDetalle = false; }
+    });
+  }
+
+  cerrarDetalle(): void { this.rifaDetalle = null; }
+
+  recuperarRifa(r: IConfigurarRifa): void {
+    if (!r.id || this.recuperando) return;
+    this.recuperando = r.id;
+    this.rifaService.reiniciar(r.id, false).subscribe({
+      next: () => {
+        this.recuperando = null;
+        this.buscar();
+      },
+      error: err => {
+        this.recuperando = null;
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al recuperar',
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo recuperar la rifa.'
+        });
+      }
+    });
   }
 
   progreso(r: IConfigurarRifa): string {
-    if (!r.totalVariantes) return '';
-    return `${r.variantesSorteadas ?? 0}/${r.totalVariantes} variantes`;
+    if (!r.totalVariantes) return '—';
+    return `${r.variantesSorteadas ?? 0}/${r.totalVariantes}`;
   }
 
   pct(r: IConfigurarRifa): number {
     if (!r.totalVariantes) return 0;
     return Math.round(((r.variantesSorteadas ?? 0) / r.totalVariantes) * 100);
+  }
+
+  nombreCompleto(c?: { nombre?: string | null; apellidoPaterno?: string | null } | null): string {
+    if (!c) return '';
+    return [c.nombre, c.apellidoPaterno].filter(p => !!p).join(' ');
   }
 }

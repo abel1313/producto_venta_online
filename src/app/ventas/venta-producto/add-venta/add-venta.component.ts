@@ -127,7 +127,7 @@ export class AddVentaComponent implements OnInit {
   getDataBuscador(pagina: number) {
     this.service.getData(pagina, 10).subscribe({
       next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },
-      error: err => console.error(err)
+      error: err => Swal.fire({ icon: 'error', title: 'Error al cargar productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de productos.' })
     });
   }
 
@@ -136,7 +136,7 @@ export class AddVentaComponent implements OnInit {
     this.buscarProd = texto;
     this.service.getDataNombreCodigoBarra(1, 10, texto).subscribe({
       next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },
-      error: err => console.error(err)
+      error: err => Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el producto.' })
     });
   }
 

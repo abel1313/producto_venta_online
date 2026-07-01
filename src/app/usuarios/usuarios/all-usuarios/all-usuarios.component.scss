@@ -2,26 +2,26 @@ $radius: 16px;
 $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 
-// ── Wrapper ────────────────────────────────────────────────────────────────
+// ── Wrapper ────────────────────────────────────────────────────────
 .au-wrapper {
-  max-width: 1200px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0.5rem 1rem 3rem;
+  padding: 0 20px 3rem;
 }
 
-// ── Scroll ─────────────────────────────────────────────────────────────────
+// ── Scroll ─────────────────────────────────────────────────────────
 .au-scroll {
   height: 72vh;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
 
-  &::-webkit-scrollbar        { width: 6px; }
-  &::-webkit-scrollbar-track  { background: transparent; }
-  &::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 99px; }
+  &::-webkit-scrollbar        { width: 4px; }
+  &::-webkit-scrollbar-track  { background: var(--form-section-bg); }
+  &::-webkit-scrollbar-thumb  { background: var(--card-border); border-radius: 99px; }
 }
 
-// ── Grid ───────────────────────────────────────────────────────────────────
+// ── Grid ───────────────────────────────────────────────────────────
 .au-grid {
   display: grid;
   gap: 1rem;
@@ -32,26 +32,26 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   @media (min-width: 1200px) { grid-template-columns: repeat(4, 1fr); }
 }
 
-// ── Card ───────────────────────────────────────────────────────────────────
+// ── Card ───────────────────────────────────────────────────────────
 .au-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: $radius;
-  box-shadow: $shadow;
+  box-shadow: var(--card-shadow);
   padding: 1.4rem 1.25rem 1.1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid #f3f4f6;
+  border: 1px solid var(--card-border);
   transition: $transition;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   }
 }
 
-// ── Avatar ─────────────────────────────────────────────────────────────────
+// ── Avatar ─────────────────────────────────────────────────────────
 .au-card__avatar {
   width: 62px;
   height: 62px;
@@ -64,10 +64,10 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   color: #fff;
   letter-spacing: 0.04em;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
-// ── Info ───────────────────────────────────────────────────────────────────
+// ── Info ───────────────────────────────────────────────────────────
 .au-card__body {
   display: flex;
   flex-direction: column;
@@ -80,14 +80,14 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 .au-card__name {
   font-size: 1rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--card-text);
   letter-spacing: -0.01em;
   word-break: break-word;
 }
 
 .au-card__email {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--card-text-muted);
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -105,11 +105,11 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
 }
 
-// ── Acciones ───────────────────────────────────────────────────────────────
+// ── Acciones ───────────────────────────────────────────────────────
 .au-card__actions {
   display: flex;
   flex-direction: column;
@@ -132,7 +132,7 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: $transition;
 
-  &:hover { transform: translateY(-1px); }
+  &:hover  { transform: translateY(-1px); }
   &:active { transform: none; }
 
   &__icon {
@@ -149,8 +149,26 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
 
   &--delete {
-    background: #fef2f2;
-    color: #dc2626;
-    &:hover { background: #fee2e2; }
+    background: rgba(239, 68, 68, 0.09);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    &:hover { background: rgba(239, 68, 68, 0.16); }
+  }
+}
+
+// ── Light mode — card con sombra índigo ────────────────────────────
+:host-context(body.theme-light) {
+  .au-card {
+    box-shadow:
+      0 4px 20px rgba(99, 102, 241, 0.08),
+      0 1px 4px rgba(0, 0, 0, 0.05);
+    border-color: rgba(99, 102, 241, 0.12);
+
+    &:hover {
+      box-shadow:
+        0 10px 36px rgba(99, 102, 241, 0.16),
+        0 4px 10px rgba(0, 0, 0, 0.07);
+      border-color: rgba(99, 102, 241, 0.24);
+    }
   }
 }

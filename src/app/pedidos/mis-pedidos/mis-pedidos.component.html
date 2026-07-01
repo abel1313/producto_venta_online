@@ -32,15 +32,25 @@
             <span class="order-label">PEDIDO</span>
             <span class="order-number">#{{ item.pedido.id }}</span>
           </div>
-          <span class="estado-badge">
-            <i class="pi"
-               [ngClass]="{
-                 'pi-check-circle': item.pedido.estado_pedido === 'Entregado',
-                 'pi-clock':        item.pedido.estado_pedido === 'Pendiente',
-                 'pi-times-circle': item.pedido.estado_pedido === 'Cancelado'
-               }"></i>
-            {{ item.pedido.estado_pedido }}
-          </span>
+          <div class="card-head-right">
+            <span class="tipo-badge tipo-badge--apartado"
+                  *ngIf="item.pedido.tipoPedido === 'APARTADO'">
+              📦 Apartado
+            </span>
+            <span class="tipo-badge tipo-badge--fiado"
+                  *ngIf="item.pedido.tipoPedido === 'FIADO'">
+              💳 Ir pagando
+            </span>
+            <span class="estado-badge">
+              <i class="pi"
+                 [ngClass]="{
+                   'pi-check-circle': item.pedido.estado_pedido === 'Entregado',
+                   'pi-clock':        item.pedido.estado_pedido === 'Pendiente',
+                   'pi-times-circle': item.pedido.estado_pedido === 'Cancelado'
+                 }"></i>
+              {{ item.pedido.estado_pedido }}
+            </span>
+          </div>
         </div>
 
         <!-- Cuerpo -->

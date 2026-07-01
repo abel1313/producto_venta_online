@@ -1,8 +1,9 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { IGastos } from '../models';
-import { ProductoService } from 'src/app/productos/service/producto.service';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { CATEGORIA_LABELS, CATEGORIAS, CategoriaGasto, IGasto } from '../models/IGastos.model';
+import { GastosService } from '../service/gastos.service';
 
 @Component({
   selector: 'app-add',
@@ -10,68 +11,129 @@ import Swal from 'sweetalert2';
   styleUrls: ['./add.component.scss']
 })
 export class AddComponent implements OnInit {
-  @Input() nombreCard: string = '';
-  formGastos: FormGroup;
 
-  gastoSave: IGastos;
+  readonly categorias      = CATEGORIAS;
+  readonly categoriaLabels = CATEGORIA_LABELS;
+
+  gastoForm!: FormGroup;
+  gastoEditando: IGasto | null = null;
+  guardando  = false;
+  eliminando = false;
+
+  categDropdownOpen = false;
+
+  get esEdicion(): boolean { return !!this.gastoEditando?.id; }
+  get titulo():    string  { return this.esEdicion ? '✏️ Editar gasto' : '➕ Nuevo gasto'; }
+  get categoriaActual(): string {
+    const v = this.gastoForm?.get('categoria')?.value;
+    return v ? this.categoriaLabels[v as CategoriaGasto] : 'Seleccionar…';
+  }
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly service: ProductoService
+    private readonly gastosService: GastosService,
+    private readonly router: Router,
+    private readonly elRef: ElementRef
+  ) {}
 
-  ) {
-
-    if(this.nombreCard == ''){
-      this.nombreCard = 'Agrgar Producto';
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: Event): void {
+    if (!this.elRef.nativeElement.contains(e.target as Node)) {
+      this.categDropdownOpen = false;
     }
+  }
 
-    this.gastoSave = {
-      precioGasto:0,
-      descripcionGasto: '',
-      id:0
-    }
-
-
-    this.formGastos = this.fb.group({
-      precioGasto: ['10', [Validators.required, Validators.maxLength(100), Validators.pattern("^[0-9]*$") ]], 
-      descripcionGasto: ['asdsd', Validators.required]
-    });
-
-    
-
-   }
   ngOnInit(): void {
-
+    this.gastoEditando = this.gastosService['_gastoEditar'].getValue();
+    this.buildForm(this.gastoEditando ?? undefined);
   }
 
-    gastos():void{
-      if( this.formGastos.valid){
-        const { codigoBarra, ...productoData } = this.formGastos.value;
-  
-        const producto: IGastos = this.formGastos.value;
+  private hoy(): string { return new Date().toISOString().slice(0, 10); }
 
-    }
+  private buildForm(g?: IGasto): void {
+    this.gastoForm = this.fb.group({
+      descripcion: [g?.descripcion ?? '',           Validators.required],
+      monto:       [g?.monto       ?? '',           [Validators.required, Validators.min(0.01)]],
+      fecha:       [g?.fecha       ?? this.hoy(),   Validators.required],
+      categoria:   [g?.categoria   ?? 'INVENTARIO', Validators.required],
+      proveedor:   [g?.proveedor   ?? ''],
+      comprobante: [g?.comprobante ?? ''],
+      notas:       [g?.notas       ?? '']
+    });
   }
 
-    guardar():void{
-      this.gastoSave = this.formGastos.value;
-      this.service.saveGasto(this.gastoSave)
-      .subscribe({
-        next:(res)=>{
-          this.formGastos.reset();
-            Swal.fire({
-              title: "Se guardo Correctamente",
-              icon: "success",
-              draggable: true
-            });
+  toggleCategDropdown(e: Event): void {
+    e.stopPropagation();
+    this.categDropdownOpen = !this.categDropdownOpen;
+  }
+
+  selectCategoria(c: CategoriaGasto): void {
+    this.gastoForm.get('categoria')!.setValue(c);
+    this.categDropdownOpen = false;
+  }
+
+  guardar(): void {
+    if (this.gastoForm.invalid || this.guardando) return;
+    this.guardando = true;
+    const val  = this.gastoForm.value;
+    const body: Partial<IGasto> = {
+      descripcion: val.descripcion,
+      monto:       +val.monto,
+      fecha:       val.fecha,
+      categoria:   val.categoria,
+      proveedor:   val.proveedor   || null,
+      comprobante: val.comprobante || null,
+      notas:       val.notas       || null
+    };
+
+    const op = this.esEdicion
+      ? this.gastosService.updateGasto(this.gastoEditando!.id!, body)
+      : this.gastosService.saveGasto(body);
+
+    op.subscribe({
+      next: () => {
+        this.guardando = false;
+        this.gastosService.setGastoEditar(null);
+        Swal.fire({ icon: 'success', title: this.esEdicion ? 'Gasto actualizado' : 'Gasto guardado', timer: 1500, showConfirmButton: false })
+          .then(() => this.router.navigate(['gastos/buscar']));
+      },
+      error: err => {
+        this.guardando = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar.' });
+      }
+    });
+  }
+
+  eliminar(): void {
+    if (!this.gastoEditando?.id || this.eliminando) return;
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Eliminar gasto?',
+      text: `${this.gastoEditando.descripcion} — $${this.gastoEditando.monto}`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.eliminando = true;
+      this.gastosService.deleteGasto(this.gastoEditando!.id!).subscribe({
+        next: () => {
+          this.eliminando = false;
+          this.gastosService.setGastoEditar(null);
+          Swal.fire({ icon: 'success', title: 'Gasto eliminado', timer: 1200, showConfirmButton: false })
+            .then(() => this.router.navigate(['gastos/buscar']));
         },
-        error(error){
-          console.error(error)
+        error: err => {
+          this.eliminando = false;
+          Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo eliminar.' });
         }
       });
-      
-    }
-    update():void{
-      
-    }
+    });
+  }
+
+  cancelar(): void {
+    this.gastosService.setGastoEditar(null);
+    this.router.navigate(['gastos/buscar']);
+  }
 }

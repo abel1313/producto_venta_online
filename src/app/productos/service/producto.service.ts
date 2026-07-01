@@ -60,7 +60,7 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     getDataImg(id: number, page: number, size: number): Observable<any> {
-        return this.http.get(`${this.urlImg}/${id}/detalle?size=${size}&page=${page}`, { responseType: 'text' }).pipe(
+        return this.http.get(`${this.urlImg}/v1/${id}/detalle?size=${size}&page=${page}`, { responseType: 'text' }).pipe(
             map(text => JSON.parse(text.replace(/"(\w+)":\s*(\d{16,})/g, '"$1":"$2"')))
         );
     }

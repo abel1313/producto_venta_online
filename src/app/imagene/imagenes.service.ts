@@ -21,7 +21,7 @@ export class ImagenesService {
    * El front NO migra aún; sigue funcionando. Lanza error si no hay imagen.
    */
   getDataGeneric<R>(idProducto: number): Observable<R> {
-    return this.http.get<R>(`${this.urlImg}/${idProducto}/imagenes`);
+    return this.http.get<R>(`${this.urlImg}/v1/${idProducto}/imagenes`);
   }
 
   /**
@@ -54,13 +54,13 @@ export class ImagenesService {
    * Endpoint: GET /mis-productos/imagen/file/{imagenId}
    */
   getImagenFile(imagenId: string): Observable<string> {
-    return this.http.get(`${this.urlImg}/file/${imagenId}`, { responseType: 'blob' }).pipe(
+    return this.http.get(`${this.urlImg}/v1/file/${imagenId}`, { responseType: 'blob' }).pipe(
       map(blob => URL.createObjectURL(blob))
     );
   }
 
   deleteById<R>(idImagen: string): Observable<R> {
-    return this.http.delete<R>(`${this.urlImg}/${idImagen}`);
+    return this.http.delete<R>(`${this.urlImg}/v1/${idImagen}`);
   }
 
   eliminarImagenesBatch(productoId: number, ids: string[]): Observable<{ data: string }> {

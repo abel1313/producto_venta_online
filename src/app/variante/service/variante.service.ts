@@ -87,7 +87,7 @@ export class VarianteService {
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
+    return this.http.delete<{ data: string }>(`${this.url}/v1/${varianteId}/imagenes`, { body: imageIds });
   }
 
   eliminarImagenesV2(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
@@ -95,7 +95,7 @@ export class VarianteService {
   }
 
   eliminarTodasImagenesVariantes(varianteIds: number[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/imagenes`, { body: varianteIds });
+    return this.http.delete<{ data: string }>(`${this.url}/v1/imagenes`, { body: varianteIds });
   }
 
   eliminarTodasImagenesVariantesV2(varianteIds: number[]): Observable<{ data: string }> {
@@ -109,7 +109,7 @@ export class VarianteService {
   }
 
   getImagenesVariante(varianteId: number): Observable<IVarianteImagenDto[]> {
-    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/imagenes/${varianteId}`)
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v1/imagenes/${varianteId}`)
       .pipe(map(res => res?.data ?? []));
   }
 

@@ -31,8 +31,9 @@ interface ILineaVenta {
 export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   modalClienteSinRegistro = false;
+  private cobrarPendiente = false;
   clienteForm: FormGroup;
-  clienteSinRegistroModal: IClienteSinRegistro = null as any; // Para almacenar los datos del cliente sin registro desde el modal
+  clienteSinRegistroModal: IClienteSinRegistro = null as any;
 
   // ── Búsqueda de variantes (panel izquierdo) ────────────────────────
   terminoVariante  = '';
@@ -140,6 +141,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
   closeModalModalSinRegistro() {
     this.modalClienteSinRegistro = false;
+    this.cobrarPendiente = false;
   }
 
   obtenerDatosClienteSinRegistro(): void {
@@ -147,14 +149,20 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = null;
     this.terminoCliente = '';
     this.clientes = [];
-    Swal.fire({
-      icon: 'success',
-      title: 'Cliente sin registro agregado',
-      text: `${this.clienteSinRegistroModal.nombre_persona} ${this.clienteSinRegistroModal.apeido_Paterno || ''}`.trim(),
-      timer: 2000,
-      showConfirmButton: false
-    });
     this.closeModalModalSinRegistro();
+
+    if (this.cobrarPendiente) {
+      this.cobrarPendiente = false;
+      this.ejecutarVenta(0);
+    } else {
+      Swal.fire({
+        icon: 'success',
+        title: 'Cliente sin registro agregado',
+        text: `${this.clienteSinRegistroModal.nombre_persona} ${this.clienteSinRegistroModal.apeido_Paterno || ''}`.trim(),
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
   }
 
   limpiarClienteSinRegistro(): void {
@@ -330,6 +338,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.montoInicial = 0;
     this.montoDadoContado = 0;
     this.montoDadoEnganche = 0;
+    this.cobrarPendiente = false;
     if (this.cargadoDesdeCarrito) {
       this.carritoService.limpiar();
       this.cargadoDesdeCarrito = false;
@@ -384,25 +393,43 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     if (!this.puedeCobrar) return;
 
     if (this.clienteSinRegistroModal) {
-      // Cliente sin registro — se envía clienteSinRegistroDto, clienteId = 0
       this.ejecutarVenta(0);
     } else if (this.clienteSeleccionado) {
       this.clienteResolvedId = this.clienteSeleccionado.id;
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
-      // Sin cliente → usar el cliente del admin logueado
-      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
-        next: (res: any) => {
-          if (res) {
-            this.clienteResolvedId = res as number;
-            this.ejecutarVenta(this.clienteResolvedId);
-          } else {
-            Swal.fire({ icon: 'warning', title: 'Sin perfil de cliente', text: 'El administrador no tiene un perfil de cliente registrado.' });
-          }
-        },
-        error: () => Swal.fire({ icon: 'error', title: 'Error al obtener el cliente.' })
+      // Sin cliente → preguntar si quiere agregar uno para la rifa
+      Swal.fire({
+        icon: 'question',
+        title: '¿Agregar cliente para la rifa?',
+        text: 'No hay cliente seleccionado. ¿Desea registrar uno antes de cobrar?',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, agregar cliente',
+        cancelButtonText: 'No, cobrar sin cliente',
+        reverseButtons: true
+      }).then(result => {
+        if (result.isConfirmed) {
+          this.cobrarPendiente = true;
+          this.openModalSinRegistro();
+        } else {
+          this.ejecutarVentaConAdmin();
+        }
       });
     }
+  }
+
+  private ejecutarVentaConAdmin(): void {
+    this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+      next: (res: any) => {
+        if (res) {
+          this.clienteResolvedId = res as number;
+          this.ejecutarVenta(this.clienteResolvedId);
+        } else {
+          Swal.fire({ icon: 'warning', title: 'Sin perfil de cliente', text: 'El administrador no tiene un perfil de cliente registrado.' });
+        }
+      },
+      error: () => Swal.fire({ icon: 'error', title: 'Error al obtener el cliente.' })
+    });
   }
 
   private ejecutarVenta(clienteId: number): void {

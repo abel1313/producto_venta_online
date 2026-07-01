@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -10,8 +11,11 @@ import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from 'src/ap
 import Swal from 'sweetalert2';
 import { IVarianteResumen } from '../models/variante.model';
 import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse, IClienteSinRegistro } from '../service/variante.service';
+import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
+import { AbonoService } from 'src/app/abonos/service/abono.service';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -54,6 +58,34 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   pagosYMesesId:         number | null = null;
   cargandoPagos          = false;
 
+  // ── Crédito ────────────────────────────────────────────────────────
+  tipoPedido:       'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
+  observaciones     = '';
+  readonly metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
+  metodoPagoCredito: MetodoPago = 'EFECTIVO';
+  montoInicial      = 0;
+  montoDadoContado  = 0;  // monto recibido en venta al contado con efectivo
+  montoDadoEnganche = 0;  // monto recibido para el enganche en crédito
+
+  get esEfectivoContado(): boolean {
+    return (this.tipoPagoActivo?.formaPago ?? '').toUpperCase() === 'EFECTIVO';
+  }
+
+  get cambioContado(): number {
+    return this.montoDadoContado > this.totalVenta
+      ? +(this.montoDadoContado - this.totalVenta).toFixed(2)
+      : 0;
+  }
+
+  get cambioEnganche(): number {
+    return this.montoDadoEnganche > this.montoInicial && this.montoInicial > 0
+      ? +(this.montoDadoEnganche - this.montoInicial).toFixed(2)
+      : 0;
+  }
+
+  // ── Carrito preload ────────────────────────────────────────────────
+  private cargadoDesdeCarrito = false;
+
   // ── Procesamiento / terminal ───────────────────────────────────────
   procesando       = false;
   mostrarTerminal  = false;
@@ -76,12 +108,17 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private varianteSub!: Subscription;
   private clienteSub!:  Subscription;
 
+  get esCredito(): boolean { return this.tipoPedido === 'APARTADO' || this.tipoPedido === 'FIADO'; }
+
   constructor(
     private readonly varianteService: VarianteService,
     private readonly clienteService:  ClienteService,
     private readonly pagoService:     PagoService,
     private readonly authService:     AuthService,
     private readonly usuarioService:  UsuarioService,
+    private readonly router:          Router,
+    private readonly carritoService:  CarritoVarianteService,
+    private readonly abonoService:    AbonoService,
     private fb: FormBuilder
   ) {
 
@@ -132,6 +169,31 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.idUsuario = id;
     });
 
+    // Pre-cargar items del carrito si el admin llega desde /variantes/carrito
+    if (this.isAdminUser && this.lineas.length === 0) {
+      const itemsCarrito = this.carritoService.obtener();
+      if (itemsCarrito.length > 0) {
+        this.cargadoDesdeCarrito = true;
+        this.lineas = itemsCarrito.map(item => ({
+          variante: {
+            id:           item.varianteId,
+            productoId:   item.productoId   ?? null,
+            talla:        item.talla        ?? null,
+            color:        item.color        ?? null,
+            marca:        item.marca        ?? null,
+            presentacion: item.presentacion ?? null,
+            stock:        item.stock,
+            precio:       item.precio,
+            imagenUrl:    item.imagenUrl    ?? null,
+            imagenBase64: item.imagenBase64 ?? null,
+            codigoBarras: null
+          } as IVarianteResumen,
+          cantidad: item.cantidad,
+          subTotal: item.subTotal
+        }));
+      }
+    }
+
     // Cargar formas de pago al iniciar
     this.cargarPagos();
 
@@ -168,14 +230,31 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
 
   seleccionarTipoPago(opcion: IOpcionPagoDto): void {
-    this.tipoPagoActivo   = opcion;
+    this.tipoPagoActivo    = opcion;
     this.mesesSeleccionado = null;
-    this.pagosYMesesId    = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
+    this.pagosYMesesId     = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
+    this.tipoPedido        = 'NORMAL';
+    this.montoDadoContado  = 0;
   }
 
   seleccionarMeses(opcion: IOpcionMesesDto): void {
     this.mesesSeleccionado = opcion;
     this.pagosYMesesId     = opcion.pagosYMesesId;
+  }
+
+  seleccionarCredito(tipo: 'APARTADO' | 'FIADO'): void {
+    if (this.tipoPedido === tipo) {
+      this.tipoPedido        = 'NORMAL';
+      this.metodoPagoCredito = 'EFECTIVO';
+      this.montoInicial      = 0;
+      return;
+    }
+    this.tipoPedido        = tipo;
+    this.tipoPagoActivo    = null;
+    this.mesesSeleccionado = null;
+    this.pagosYMesesId     = null;
+    this.metodoPagoCredito = 'EFECTIVO';
+    this.montoInicial      = 0;
   }
 
   // ── Búsqueda de variantes ──────────────────────────────────────────
@@ -238,18 +317,31 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private limpiarTodo(): void {
     this.lineas = [];
     this.clienteSeleccionado = null;
+    this.clienteSinRegistroModal = null as any;
+    this.clienteForm.reset();
     this.terminoCliente = '';
     this.clienteResolvedId = 0;
     this.ventaCreada = null;
     this.mostrarTerminal = false;
     this.estadoTerminal = 'idle';
+    this.tipoPedido = 'NORMAL';
+    this.observaciones = '';
+    this.metodoPagoCredito = 'EFECTIVO';
+    this.montoInicial = 0;
+    this.montoDadoContado = 0;
+    this.montoDadoEnganche = 0;
+    if (this.cargadoDesdeCarrito) {
+      this.carritoService.limpiar();
+      this.cargadoDesdeCarrito = false;
+    }
   }
 
   get totalVenta(): number { return this.lineas.reduce((s, l) => s + l.subTotal, 0); }
   get totalUnidades(): number { return this.lineas.reduce((s, l) => s + l.cantidad, 0); }
 
   get puedeCobrar(): boolean {
-    return this.lineas.length > 0 && this.pagosYMesesId !== null && !this.procesando;
+    const tieneFormaPago = this.esCredito || this.pagosYMesesId !== null;
+    return this.lineas.length > 0 && tieneFormaPago && !this.procesando;
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────
@@ -291,7 +383,10 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   cobrar(): void {
     if (!this.puedeCobrar) return;
 
-    if (this.clienteSeleccionado) {
+    if (this.clienteSinRegistroModal) {
+      // Cliente sin registro — se envía clienteSinRegistroDto, clienteId = 0
+      this.ejecutarVenta(0);
+    } else if (this.clienteSeleccionado) {
       this.clienteResolvedId = this.clienteSeleccionado.id;
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
@@ -316,7 +411,6 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     const request: IVentaDirectaRequest = {
       usuarioId:     this.idUsuario,
       clienteId,
-      pagosYMesesId: this.pagosYMesesId!,
       clienteSinRegistroDto: this.clienteSinRegistroModal,
       detalles: this.lineas.map(l => ({
         productoId:  l.variante.productoId ?? 0,
@@ -327,16 +421,74 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       }))
     };
 
+    if (this.esCredito) {
+      request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
+      request.observaciones = this.observaciones || undefined;
+    } else {
+      request.pagosYMesesId = this.pagosYMesesId!;
+    }
+
     this.varianteService.saveVentaDirecta(request).subscribe({
       next: (res: IVentaDirectaResponse) => {
+        if (res.pedidoId) {
+          // Crédito (APARTADO / FIADO)
+          this.varianteService.invalidarCache();
+          const pedidoId   = res.pedidoId;
+          const label      = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
+          const monto      = this.montoInicial;
+          const metodoPago = this.metodoPagoCredito;
+
+          this.limpiarTodo();
+
+          const mostrarSwalCredito = () => {
+            this.procesando = false;
+            const textoMonto = monto > 0 ? ` Enganche de $${monto.toFixed(2)} registrado.` : '';
+            Swal.fire({
+              icon: 'success',
+              title: `✅ ${label} registrado`,
+              text: `Pedido #${pedidoId} creado.${textoMonto} Registra los abonos en Créditos / Abonos.`,
+              showCancelButton: true,
+              confirmButtonText: '💳 Ir a Créditos / Abonos',
+              cancelButtonText: 'Cerrar',
+              confirmButtonColor: '#4f46e5'
+            }).then(result => {
+              if (result.isConfirmed) this.router.navigate(['/abonos']);
+            });
+          };
+
+          if (monto > 0) {
+            const abonoBody: AbonoRequest = {
+              monto,
+              metodoPago,
+              usuarioId: this.idUsuario,
+              fechaPago: new Date().toISOString().slice(0, 10)
+            };
+            this.abonoService.registrarAbono(pedidoId, abonoBody).subscribe({
+              next:  () => mostrarSwalCredito(),
+              error: (err) => {
+                this.procesando = false;
+                Swal.fire({
+                  icon: 'warning',
+                  title: `${label} registrado`,
+                  text: `Pedido #${pedidoId} creado, pero no se pudo registrar el enganche: ${err?.error?.mensaje ?? 'Error al registrar abono.'}. Regístralo manualmente en Créditos / Abonos.`
+                });
+              }
+            });
+          } else {
+            mostrarSwalCredito();
+          }
+          return;
+        }
+
         this.procesando = false;
+
         if (!res.requiereTerminal) {
           // Efectivo / Transferencia → venta confirmada
           this.varianteService.invalidarCache();
           Swal.fire({
             icon: 'success',
             title: `¡Venta #${res.ventaId} registrada!`,
-            text: res.descripcionPago,
+            text: res.descripcionPago ?? undefined,
             timer: 2200,
             showConfirmButton: false
           });
@@ -362,7 +514,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.estadoTerminal = 'procesando';
 
     const request: ITerminalIniciarRequest = {
-      pedidoId:      this.ventaCreada.ventaId,
+      pedidoId:      this.ventaCreada.ventaId!,
       clienteId:     this.clienteSeleccionado?.id ?? this.clienteResolvedId,
       pagosYMesesId: this.pagosYMesesId!,
       cuotas:        this.mesesSeleccionado?.cuotas ?? 1,

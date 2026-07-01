@@ -7,6 +7,10 @@
     </button>
     <div class="detalle-header__info">
       <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
+      <span class="dp-tipo-badge dp-tipo-badge--apartado"
+            *ngIf="pedido.pedido.tipoPedido === 'APARTADO'">📦 Apartado</span>
+      <span class="dp-tipo-badge dp-tipo-badge--fiado"
+            *ngIf="pedido.pedido.tipoPedido === 'FIADO'">💳 Ir pagando</span>
       <span class="detalle-header__estado"
         [class.estado--entregado]="pedido.pedido.estado_pedido === 'Entregado'"
         [class.estado--pendiente]="pedido.pedido.estado_pedido !== 'Entregado'">
@@ -14,6 +18,70 @@
       </span>
     </div>
     <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
+  </div>
+
+  <!-- FORM DE ABONO (solo crédito) -->
+  <div class="dp-abono-wrap" *ngIf="esCredito">
+    <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono">
+      💳 Registrar abono
+    </button>
+
+    <div class="dp-abono-form" *ngIf="mostrarFormAbono">
+      <p class="dp-abono-form__title">💳 Registrar abono — Pedido #{{ pedido.pedido.id }}</p>
+
+      <div class="dp-abono-form__row">
+        <label class="dp-abono-form__label">Monto <span style="color:#ef4444">*</span></label>
+        <input class="dp-abono-form__input" type="number" min="0.01" step="0.01"
+               [(ngModel)]="abonoForm.monto" placeholder="0.00">
+      </div>
+
+      <div class="dp-abono-form__row">
+        <label class="dp-abono-form__label">Método de pago</label>
+        <div class="dp-metodo-btns">
+          <button *ngFor="let m of metodosAbono"
+                  class="dp-metodo-btn"
+                  [class.dp-metodo-btn--active]="abonoForm.metodoPago === m"
+                  type="button"
+                  (click)="abonoForm.metodoPago = m; montoDado = 0">
+            {{ m === 'EFECTIVO' ? '💵 Efectivo' : '🏦 Transferencia' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="dp-abono-form__row" *ngIf="abonoForm.metodoPago === 'EFECTIVO'">
+        <label class="dp-abono-form__label">💵 Monto recibido <span class="dp-optional">(opcional)</span></label>
+        <input class="dp-abono-form__input" type="number" min="0" step="0.01"
+               [(ngModel)]="montoDado" placeholder="Ej: 200.00">
+        <div class="dp-cambio" *ngIf="montoDado > 0 && montoDado >= abonoForm.monto">
+          Cambio a devolver: <strong>${{ cambio | number:'1.2-2' }}</strong>
+        </div>
+        <div class="dp-cambio dp-cambio--warn" *ngIf="montoDado > 0 && montoDado < abonoForm.monto">
+          ⚠️ El monto recibido es menor al abono
+        </div>
+      </div>
+
+      <div class="dp-abono-form__row">
+        <label class="dp-abono-form__label">Fecha de pago</label>
+        <input class="dp-abono-form__input" type="date" [(ngModel)]="abonoForm.fechaPago">
+      </div>
+
+      <div class="dp-abono-form__row">
+        <label class="dp-abono-form__label">Nota <span class="dp-optional">(opcional)</span></label>
+        <input class="dp-abono-form__input" type="text" [(ngModel)]="abonoForm.nota"
+               placeholder="Observación sobre el abono…">
+      </div>
+
+      <div class="dp-abono-form__actions">
+        <button class="dp-btn-cancelar" type="button" (click)="cancelarFormAbono()">
+          Cancelar
+        </button>
+        <button class="dp-btn-guardar" type="button"
+                [disabled]="registrandoAbono || !abonoForm.monto || abonoForm.monto <= 0"
+                (click)="registrarAbono()">
+          {{ registrandoAbono ? 'Guardando…' : '💾 Guardar abono' }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- GRID DE PRODUCTOS -->

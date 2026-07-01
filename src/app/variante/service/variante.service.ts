@@ -152,7 +152,9 @@ export class VarianteService {
 export interface IVentaDirectaRequest {
   usuarioId:     number;
   clienteId:     number;
-  pagosYMesesId: number;
+  pagosYMesesId?: number;
+  tipoPedido?:   'NORMAL' | 'APARTADO' | 'FIADO';
+  observaciones?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
   detalles: {
     productoId:  number;
@@ -174,10 +176,11 @@ export interface IClienteSinRegistro {
       numero_Telefonico: string;
 }
 export interface IVentaDirectaResponse {
-  ventaId:          number;
-  tipoPago:         string;
+  ventaId:          number | null;
+  pedidoId:         number | null;
+  tipoPago:         string | null;
   requiereTerminal: boolean;
   totalVenta:       number;
   meses:            string | null;
-  descripcionPago:  string;
+  descripcionPago:  string | null;
 }

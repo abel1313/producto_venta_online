@@ -72,7 +72,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
       this.keyUpSubject
       .pipe(
-        filter(texto => texto.length > 3),   
+        filter(texto => texto.length >= 3),
         debounceTime(1500),
         distinctUntilChanged()                  
       )

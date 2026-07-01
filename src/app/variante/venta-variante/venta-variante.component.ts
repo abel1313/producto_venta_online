@@ -244,6 +244,12 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Ir a Venta Directa (admin) ────────────────────────────────────
+
+  irAVentaDirecta(): void {
+    this.router.navigate(['/variantes/venta-directa']);
+  }
+
   // ── Visor de imagen ────────────────────────────────────────────────
 
   mostrarVisor = false;

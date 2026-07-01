@@ -72,6 +72,7 @@
         🗑 Limpiar carrito
       </button>
       <button type="button" class="btn btn-success btn-sm"
+        *ngIf="!isAdminUser"
         [disabled]="carritoVacio" (click)="generarPedido()">
         📋 Generar pedido
       </button>
@@ -84,8 +85,8 @@
 
 </div>
 
-<!-- ══ TIPO DE PEDIDO (solo admin) ══ -->
-<div class="card mt-3 shadow-sm" *ngIf="isAdminUser">
+<!-- ══ TIPO DE PEDIDO — se elige en venta directa, no en carrito ══ -->
+<div class="card mt-3 shadow-sm" *ngIf="false">
   <div class="card-header bg-secondary text-white d-flex align-items-center gap-2">
     <span>💳</span>
     <span class="fw-semibold">Tipo de pedido</span>
@@ -102,8 +103,8 @@
   </div>
 </div>
 
-<!-- ══ BÚSQUEDA DE CLIENTES (solo admin) ══ -->
-<div class="card mt-4 shadow-sm" *ngIf="isAdminUser">
+<!-- ══ BÚSQUEDA DE CLIENTES — se asigna en venta directa, no en carrito ══ -->
+<div class="card mt-4 shadow-sm" *ngIf="false">
   <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
     <i class="pi pi-users"></i>
     <span class="fw-semibold">Asignar pedido a cliente</span>
@@ -130,11 +131,11 @@
       <div>
         <i class="pi pi-check-circle me-2"></i>
         <strong>Cliente asignado:</strong>
-        {{ clienteSeleccionado.nombrePersona }}
-        {{ clienteSeleccionado.apeidoPaterno }}
-        {{ clienteSeleccionado.apeidoMaterno }}
-        &nbsp;|&nbsp; {{ clienteSeleccionado.correoElectronico }}
-        &nbsp;|&nbsp; {{ clienteSeleccionado.numeroTelefonico }}
+        {{ clienteSeleccionado?.nombrePersona }}
+        {{ clienteSeleccionado?.apeidoPaterno }}
+        {{ clienteSeleccionado?.apeidoMaterno }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado?.correoElectronico }}
+        &nbsp;|&nbsp; {{ clienteSeleccionado?.numeroTelefonico }}
       </div>
       <button type="button" class="btn btn-sm btn-outline-danger ms-3" (click)="limpiarCliente()">
         <i class="pi pi-times"></i>

@@ -259,7 +259,82 @@ $t:  all 0.22s ease;
 .vd-credit-info {
   font-size: .78rem; color: #d97706;
   background: rgba(217,119,6,.1); border: 1px solid rgba(217,119,6,.25);
-  border-radius: 8px; padding: 7px 12px;
+  border-radius: 8px; padding: 7px 12px; margin-top: 8px;
+}
+
+// ── Métodos de pago en modo crédito ───────────────────────────────
+.vd-metodo-btns {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.vd-metodo-btn {
+  flex: 1;
+  min-width: 80px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--app-text);
+  transition: all 0.15s;
+
+  &--active {
+    background: rgba(99,102,241,0.15);
+    border-color: #6366f1;
+    color: #6366f1;
+    font-weight: 700;
+  }
+}
+
+.vd-monto-input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--app-text);
+  box-sizing: border-box;
+
+  &:focus { outline: none; border-color: #6366f1; }
+}
+
+.vd-cambio {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+
+  strong { font-weight: 700; }
+
+  &--warn {
+    background: rgba(239, 68, 68, 0.10);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+}
+
+:host-context(body.theme-dark) {
+  .vd-cambio {
+    background: rgba(74, 222, 128, 0.22);
+    color: #86efac;
+    border-color: rgba(74, 222, 128, 0.5);
+    font-weight: 600;
+
+    &--warn {
+      background: rgba(252, 165, 165, 0.2);
+      color: #fca5a5;
+      border-color: rgba(252, 165, 165, 0.5);
+    }
+  }
 }
 
 // ── Terminal inline ────────────────────────────────────────────────

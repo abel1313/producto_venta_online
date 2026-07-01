@@ -1035,178 +1035,548 @@ Solo mostrar el warning si el valor difiere del `precioVenta` que vino en la bú
 
 ---
 
-## 20. Implementación front — Flujos G/H/I + Tab Cancelados (2026-06-30)
+## 20. Cambios implementados — 2026-06-30 (segunda sesión)
 
-> Ya implementado y verificado con `ng build --configuration=development` sin errores.
+### 20.1 DN-1 — Rechazar TARJETA en abonos de crédito
 
-### Flujo G — Cancelar APARTADO (cliente no terminó de pagar)
+**Implementado en:** `AbonoServiceImpl.registrarAbono()`
 
-```
-Admin va a /abonos → Tab "📋 Cuentas por cobrar"
-
-Por cada card de pedido pendiente aparece el botón "✖ Cancelar"
-
-Admin hace clic en "✖ Cancelar"
-  → Swal de confirmación:
-    Título: "¿Cancelar el apartado de [cliente]?"
-    Texto:  "Pagó $X de $Y. Se devolverá el stock."
-    Botones: [Sí, cancelar y devolver stock] / [No]
-
-Si confirma:
-  PUT /v1/abonos/{pedidoId}/cancelar
-  Body: {}   ← motivo vacío, el back usa "CANCELADO" como default
-
-Response: { pedidoId, tipoPedido, estadoPedido: "cancelado", totalPagado,
-            totalPendiente, stockDevuelto: true, mensaje }
-
-  → Swal "Cancelado — [mensaje del back]" (2.5 seg)
-  → cargarCuenta()  ← reload completo desde el server
-  → cancelados = [] ← fuerza recarga la próxima vez que el admin abra tab Cancelados
-
-El card desaparece de "Cuentas por cobrar"
-Al ir a tab "✖ Cancelados" → carga y aparece con badge "✖ Cancelado" +
-  saldoAFavor: $X visible + botón "↪ Aplicar a otro producto" (si puedeTransferir)
-```
-
-### Flujo H — Cancelar FIADO (producto entregado, cliente no pagó)
+Los pedidos APARTADO y FIADO ahora rechazan `metodoPago = "TARJETA"` con HTTP 400:
 
 ```
-Igual que Flujo G pero el Swal tiene texto diferente:
-  "El producto ya fue entregado. La deuda de $X quedará registrada."
-  Botón: [Sí, registrar como incobrable]
-
-PUT /v1/abonos/{pedidoId}/cancelar
-Body: {}
-
-Response: { stockDevuelto: false, totalPendiente: 200, mensaje }
-
-  → Swal con el mensaje del back
-  → El card aparece en tab Cancelados con deudaPendiente: $X
-  → NO hay botón "↪ Aplicar a otro producto" (puedeTransferir = false)
+"Los pedidos de crédito (APARTADO/FIADO) solo aceptan EFECTIVO o TRANSFERENCIA"
 ```
 
-### Flujo I — Transferir saldo a otro producto
-
-```
-Prerequisito: pedido APARTADO ya cancelado con saldoAFavor > 0
-
-Admin va a /abonos → Tab "✖ Cancelados"
-  → Ve el card con badge "📦 Apartado" + "Saldo a favor: $150"
-  → Hace clic en "↪ Aplicar a otro producto"
-
-Se abre modal "↪ Aplicar saldo a otro producto":
-  Info: Pedido cancelado #55 | Cliente | Saldo disponible: $150.00
-
-  PASO 1 — Buscar variante:
-    Admin escribe nombre/código (debounce 400ms)
-    → GET /v1/variantes/buscar?termino=X&pagina=1&size=20
-    → Dropdown con resultados: nombre, talla, color, stock, precio
-    Admin hace clic en la variante deseada → se precargan precio y nombre
-
-  PASO 2 — Ajustar precio y cantidad (opcional):
-    Precio unitario: [280.00]   ← editable
-    Si cambia: muestra "⚠ Precio editado manualmente (original: $X)"
-    Cantidad: [1]
-
-  PASO 3 — Ver resumen calculado en tiempo real:
-    Total nuevo pedido: $280.00
-    Saldo disponible:   $150.00
-    Saldo pendiente:    $130.00   ← si es 0 muestra "✅ Queda liquidado"
-
-  Admin hace clic en "Aplicar transferencia"
-  → POST /v1/abonos/{pedidoIdOrigen}/transferir
-    Body: { nuevaVarianteId, cantidad, precioUnitario, usuarioId }
-
-  Response: { nuevoPedidoId, totalNuevo, montoTransferido, saldoPendiente, estadoNuevoPedido }
-
-  SI estadoNuevoPedido === "PAGADO":
-    → Swal "Pedido #X quedó liquidado con el saldo."
-    → cancelados = []  ← recarga tab Cancelados
-
-  SI estadoNuevoPedido === "APARTADO":
-    → Swal "Pedido #X creado. Saldo pendiente: $130.00"
-    → cancelados = []  ← recarga tab Cancelados
-    → cargarCuenta()   ← el nuevo pedido aparece en Cuentas por cobrar
-```
-
-### Archivos modificados (front)
-
-| Archivo | Qué se agregó |
-|---|---|
-| `src/app/abonos/models/abono.model.ts` | `CancelarAbonoRequest`, `CancelarAbonoResponse`, `TransferirAbonoRequest`, `TransferirAbonoResponse`, `ReporteCancelado` |
-| `src/app/abonos/service/abono.service.ts` | `cancelar()`, `transferir()`, `reporteCancelados()` |
-| `src/app/abonos/abonos.component.ts` | Tab cancelados + lazy load; `cancelarPedido()`; modal transferencia completo; inyecta `VarianteService` para búsqueda debounce |
-| `src/app/abonos/abonos.component.html` | Tab "✖ Cancelados"; botón "✖ Cancelar" en cards; modal de transferencia con buscador, precio editable y resumen |
-| `src/app/abonos/abonos.component.scss` | `.ab-badge--cancelado`, `.ab-card--cancelado`, `.ab-btn--cancelar`, `.ab-btn--transferir`, `.ab-monto__val--favor`, `.ab-transfer-search/dropdown/resumen`, `.ab-hint--warn` |
+El front debe quitar TARJETA del selector de método de pago cuando el pedido es APARTADO o FIADO.
 
 ---
 
-## 21. Fix front — AbonoResponse unificado (2026-06-30)
+### 20.2 NF-3 — Monto dado y cambio en abonos (solo EFECTIVO)
 
-**Problema:** `AbonoRegistrarResponse` solo tenía 2 campos (`estadoPedido`, `saldoRestante`) pero el back devuelve el objeto completo con 7 campos. El historial de abonos usaba un objeto construido localmente con `id: Date.now()` (falso).
+**Archivos cambiados:**
+- `AbonoPedido.java` — nuevo campo `montoDado`
+- `AbonoRequest.java` — nuevo campo opcional `montoDado`
+- `AbonoResponse.java` — nuevos campos `montoDado` y `cambio`
+- `AbonoServiceImpl.java` — validación + cálculo de cambio
 
-**Solución:** se eliminó `AbonoRegistrarResponse`. Los campos `estadoPedido?` y `saldoRestante?` se agregaron como **opcionales** a `AbonoResponse` (solo presentes en POST, ausentes en GET). El componente ahora usa `res.data` directo del server para agregar al historial → ids reales.
+**DDL aplicado:** QA ✅ | Dev ✅ | Prod ⏳
+
+#### Request POST /v1/abonos/{id}
+
+```json
+{
+  "monto": 100.00,
+  "metodoPago": "EFECTIVO",
+  "montoDado": 200.00,
+  "fechaPago": "2026-06-30",
+  "usuarioId": 1,
+  "nota": ""
+}
+```
+
+- `montoDado` es **opcional** — solo aplica cuando `metodoPago = "EFECTIVO"`
+- Si `montoDado < monto` → 400: `"El monto entregado $X es menor al monto del abono $Y"`
+- Si `montoDado` viene con TRANSFERENCIA → se ignora (se guarda null)
+
+#### Response
+
+```json
+{
+  "response": {
+    "id": 5,
+    "monto": 100.00,
+    "fechaPago": "30/06/2026",
+    "metodoPago": "EFECTIVO",
+    "nota": null,
+    "montoDado": 200.00,
+    "cambio": 100.00,
+    "estadoPedido": "APARTADO",
+    "saldoRestante": 150.00
+  }
+}
+```
+
+- `cambio` = `montoDado - monto` (solo EFECTIVO, solo si `montoDado > monto`; null si no aplica)
+- `montoDado` y `cambio` también aparecen en `GET /v1/abonos/{id}` (historial)
 
 ---
 
-## 22. Fix front — Reload al liquidar un pedido (D-4) (2026-06-30)
+### 20.3 NF-2 — Nuevo endpoint: detalle de pedido para pagar desde la pantalla de pedidos
 
-En `registrarAbono()`, cuando el abono liquida el pedido (`estadoPedido === 'PAGADO'`), el front ahora llama `cargarCuenta()` en vez de filtrar el array local:
+**Endpoint:** `GET /v1/pedidos/{id}/detalle`  
+**Acceso:** público (misma regla que `findPedido`)
+
+#### Response
+
+```json
+{
+  "response": {
+    "pedidoId": 42,
+    "tipoPedido": "APARTADO",
+    "estadoPedido": "APARTADO",
+    "totalPedido": 350.00,
+    "totalPagado": 100.00,
+    "saldoPendiente": 250.00,
+    "fechaPedido": "2026-06-30",
+    "fechaRecogida": null,
+    "observaciones": "",
+    "motivoCancelacion": null,
+    "fechaCancelacion": null,
+    "clienteNombre": "María López",
+    "clienteTelefono": "5512345678",
+    "detalles": [
+      {
+        "id": 10,
+        "varianteId": 88,
+        "productoNombre": "Pantalón clásico",
+        "talla": "M",
+        "color": "negro",
+        "descripcion": "Tiro alto",
+        "cantidad": 1,
+        "precioUnitario": 350.00,
+        "subTotal": 350.00
+      }
+    ]
+  }
+}
+```
+
+- Campos nulos se omiten del JSON (`@JsonInclude(NON_NULL)`)
+- `saldoPendiente` = `totalPedido - totalPagado`, calculado en el back
+
+#### Imagen de variante
+
+El response incluye `varianteId` en cada detalle. Para mostrar **1 imagen** por producto:
+
+```
+GET /mis-productos/v1/variantes/imagenes/{varianteId}
+```
+
+El front toma el primer elemento del array devuelto. Si está vacío → mostrar placeholder.  
+No hacer N llamadas en paralelo para N artículos: hacerlas secuencialmente o lazy al hacer scroll.
+
+---
+
+## 21. Cambios front pendientes — nuevos requerimientos (2026-06-30)
+
+### 21.1 NF-1 — Nombre del comprador para rifas (venta directa sin cliente registrado)
+
+**Pantalla:** Venta directa / Carrito admin  
+**Cuándo:** el admin no selecciona ningún cliente del buscador  
+**Cambio:** mostrar campo de texto "Nombre del comprador" que se envía en el body como `clienteSinRegistro`
+
+**Campo en el request** de `POST /v1/ventas/save` (ya soportado en back):
+```json
+{
+  "clienteSinRegistro": {
+    "nombrePersona": "Juan Sin Apellido",
+    "numeroTelefonico": ""
+  }
+}
+```
+
+Solo requerido `nombrePersona`. `numeroTelefonico` puede ser vacío.  
+Si el admin seleccionó cliente registrado → `clienteSinRegistro` no se envía.
+
+---
+
+### 21.2 NF-2 — Pagar APARTADO/FIADO desde la pantalla de pedidos
+
+**Pantalla:** Lista de pedidos (admin)  
+**Cambio:** detectar `tipoPedido = "APARTADO" | "FIADO"` y mostrar botón "Registrar abono" en lugar del flujo normal de confirmación de entrega.
+
+**Flujo sugerido:**
+1. Admin abre pedido → `GET /v1/pedidos/{id}/detalle` (nuevo endpoint, sección 20.3)
+2. Front detecta `tipoPedido !== "NORMAL"` → muestra panel de abono en lugar del botón "Confirmar entrega"
+3. Admin ingresa monto, método y opcionalmente monto dado
+4. Front llama `POST /v1/abonos/{id}` (sección 11)
+5. Si `response.estadoPedido === "PAGADO"` → toast "¡Pedido liquidado!" y recargar lista
+6. Si no → mostrar saldo restante actualizado
+
+**Botones según estado:**
+- `estadoPedido = "APARTADO" | "FIADO"` → botón "Registrar abono" (azul)
+- `estadoPedido = "PAGADO"` → badge verde "Liquidado", sin botones
+- `estadoPedido = "cancelado"` → badge rojo, botón "Transferir saldo" (solo si APARTADO y `totalPagado > 0`)
+
+---
+
+### 21.3 NF-3 — Campo "Monto recibido" en formulario de abono (solo EFECTIVO)
+
+**Pantalla:** Modal / panel de registrar abono  
+**Cambio:** cuando `metodoPago = "EFECTIVO"`, mostrar campo "Monto recibido" (`montoDado`)
+
+```
+Monto del abono:   [  100.00 ]
+Método de pago:    [ EFECTIVO ▼ ]   ← sin TARJETA (DN-1)
+Monto recibido:    [  200.00 ]      ← aparece solo con EFECTIVO
+Cambio:            $  100.00        ← calculado en tiempo real: montoDado - monto
+```
+
+- Calcular cambio en tiempo real en el front (no esperar al back)
+- Si `montoDado < monto` → mensaje de error inline, deshabilitar botón Guardar
+- Si `montoDado` es vacío → no enviar el campo (el back lo ignora)
+- Usar el `cambio` del response del back para confirmar en el toast: "Cambio: $100.00"
+
+---
+
+### 21.4 BUG 5 — Refrescar stock al cancelar APARTADO
+
+Tras `PUT /v1/abonos/{id}/cancelar` con `stockDevuelto: true` en el response → invalidar caché de variantes:
 
 ```typescript
-// Antes (puede quedar desfasado si otro abono llega en paralelo):
-this.estadoCuenta = this.estadoCuenta.filter(e => e.pedidoId !== pedido.pedidoId);
+// Invalidar la variante del pedido cancelado para que el stock se actualice
+this.varianteService.clearCache(); // o recargar la búsqueda activa
+```
 
-// Ahora (fuente de verdad del server):
-this.cargarCuenta();
+El back ya devuelve stock al cancelar APARTADO. El problema es solo de caché del front.
+
+
+Del documento, 3 cosas pendientes de front:
+
+1. NF-1 — En /variantes/venta-directa, cuando el admin no asigna cliente, mostrar campo "Nombre del comprador" → enviar clienteSinRegistro: { nombrePersona, numeroTelefonico } en el body. Back ya listo.
+
+2. NF-2 — En la pantalla de pedidos (/pedidos), detectar si el pedido es APARTADO/FIADO y mostrar botón "💳 Registrar abono" en lugar del flujo normal. Usa el endpoint nuevo GET /v1/pedidos/{id}/detalle. Este es el más grande — implica tocar la pantalla de pedidos.
+
+3. BUG 5 — Al cancelar APARTADO exitosamente, invalidar la caché de variantes para que el stock actualizado se vea en el buscador.
+
+Y antes de arrancar necesito que me confirmes:
+
+¿El response de POST /v1/abonos/{id} usa "data" o "response" como clave? El doc dice "response" pero el código actual lee res?.data. Si es "response", los campos montoDado y cambio del response no están llegando al front y hay que corregirlo primero.
+
+---
+
+**R — Respuesta back:** La clave es **`data`**. El código existente del front está correcto.
+
+`ResponseGeneric<T>` devuelve:
+
+```json
+{ "data": { ... }, "code": 200, "mensaje": "La peticion fue exitosa" }
+```
+
+El patrón `res?.data` que usan pedidos/variantes/productos aplica **igual para todos los endpoints de abonos**. No hay nada que cambiar. Ver F-D1 (sección 23) para la respuesta completa.
+
+---
+
+## 22. Resumen para el front — tareas pendientes (2026-06-30)
+
+> Entregar esta sección al desarrollador front. El back ya está completo y desplegado en dev/qa.
+
+---
+
+### PRIORIDAD 0 — Confirmar wrapper: `res.data` para TODOS los endpoints
+
+El back usa `ResponseGeneric<T>` con el campo **`data`** (no `response`):
+
+```json
+{ "data": { ... }, "code": 200, "mensaje": "La peticion fue exitosa" }
+```
+
+El patrón `res?.data` que ya usan pedidos/variantes/productos es **correcto y aplica igual para abonos**. No hay que cambiar nada en el wrapper. Ver respuesta completa en F-D1 (sección 23).
+
+---
+
+### TAREA 1 — Quitar TARJETA del selector de método de pago en abonos
+
+**Pantalla:** formulario de registrar abono  
+El back ahora rechaza TARJETA con 400. Quitar esa opción del `<select>`:
+
+```html
+<option value="EFECTIVO">Efectivo</option>
+<option value="TRANSFERENCIA">Transferencia</option>
+<!-- Quitar TARJETA -->
 ```
 
 ---
 
-## 23. Fix front — Buscador de productos con mínimo 3 caracteres (2026-06-30)
+### TAREA 2 — Campo "Monto recibido" y cambio (NF-3)
 
-**Problema:** en `/productos/buscar`, escribir exactamente 3 caracteres no disparaba la búsqueda — requería 4+.
+**Pantalla:** formulario de registrar abono  
+Solo mostrar cuando `metodoPago === 'EFECTIVO'`.
 
-**Causa:** `all.component.ts` usaba `filter(texto => texto.length > 3)` (estrictamente mayor que 3).
+```
+Monto del abono:   [  100.00 ]
+Método de pago:    [ EFECTIVO ▼ ]
+Monto recibido:    [  200.00 ]      ← nuevo campo, opcional
+Cambio:            $  100.00        ← calculado en tiempo real (montoDado - monto)
+```
 
-**Fix:** `filter(texto => texto.length >= 3)` — consistente con el resto de buscadores del proyecto.
+- Si `montoDado < monto` → error inline + deshabilitar botón Guardar
+- Si `montoDado` está vacío → no enviar el campo en el body (el back lo trata como null)
+- El response incluye `cambio` calculado por el back → mostrar en el toast de confirmación
 
-**Archivo:** `src/app/productos/producto/all/all.component.ts` línea 75.
+**Campo en el request:**
+```typescript
+{
+  monto: 100.00,
+  metodoPago: 'EFECTIVO',
+  montoDado: 200.00,   // opcional, solo EFECTIVO
+  usuarioId: 1
+}
+```
+
+**En el response:**
+```typescript
+res.response.cambio      // 100.00 — cambio a devolver
+res.response.montoDado   // 200.00 — lo que entregó el cliente
+res.response.saldoRestante
+res.response.estadoPedido
+```
 
 ---
 
-## 24. Estado final — Listo para pruebas (2026-06-30)
+### TAREA 3 — Nombre del comprador en venta directa sin cliente (NF-1)
 
-### ⚠️ Prerequisito obligatorio antes de probar
-
-Ejecutar el script de migración en el servidor de back **antes de cualquier prueba**:
+**Pantalla:** `/variantes/venta-directa` o carrito admin  
+Cuando el admin no selecciona cliente del buscador, mostrar un campo de texto:
 
 ```
-src/main/resources/static/migration_abonos_pedido.sql
+[ Buscar cliente... ]   ← si no encuentra a nadie
+[ Nombre del comprador: ____________ ]  ← mostrar este campo
 ```
 
-Sin esto, los endpoints de abonos y crédito fallan con "column/table not found".
+Enviar en el body:
+```typescript
+clienteSinRegistro: {
+  nombrePersona: 'Juan Pérez',
+  numeroTelefonico: ''   // puede ir vacío
+}
+// NO enviar el campo cliente si no hay cliente registrado
+```
 
-### Checklist de flujos a probar
+Sirve para que la venta aparezca asignada a un nombre en rifas y reportes.
 
-| Flujo | Ruta | Endpoint | Estado |
-|---|---|---|---|
-| **A** — Cliente genera pedido normal | `/variantes/buscar` → carrito → "Generar pedido" | `POST /v1/pedidos/savePedido` | ✅ Listo |
-| **B** — Venta directa al contado | `/variantes/venta-directa` → cobrar | `POST /v1/ventas/save` | ✅ Listo |
-| **B crédito** — Venta directa APARTADO/IR PAGANDO | `/variantes/venta-directa` → botones crédito → cobrar | `POST /v1/ventas/save` con `tipoPedido` | ✅ Listo |
-| **C** — Carrito admin → Venta directa | `/variantes/carrito` → "💰 Cobrar ahora" | Redirige a B | ✅ Listo |
-| **D** — Registrar abono | `/abonos` → tab "Cuentas por cobrar" → "+ Abono" | `POST /v1/abonos/{id}` | ✅ Listo |
-| **D liquidar** — Último abono cierra el pedido | Mismo que D, monto = saldo total | Mismo endpoint | ✅ Listo |
-| **G** — Cancelar APARTADO | `/abonos` → "✖ Cancelar" | `PUT /v1/abonos/{id}/cancelar` | ✅ Listo |
-| **H** — Cancelar FIADO | `/abonos` → "✖ Cancelar" | `PUT /v1/abonos/{id}/cancelar` | ✅ Listo |
-| **I** — Transferir saldo | `/abonos` → tab Cancelados → "↪ Aplicar a otro producto" | `POST /v1/abonos/{id}/transferir` | ✅ Listo |
+---
 
-### Lo que NO está implementado (pendiente futuro)
+### TAREA 4 — Botón "Registrar abono" en pantalla de pedidos (NF-2)
 
-| RF | Descripción |
-|---|---|
-| RF-1 | APARTADO/FIADO para clientes regulares (no solo admin) |
-| RF-2 | Notificación al cliente cuando se liquida |
-| RF-3 | Historial de abonos visible para el cliente |
-| RF-4 | ~~Cancelar pedido de crédito~~ ✅ Implementado (Flujos G/H) |
-| RF-5 | Reporte de abonos por rango de fecha |
+**Pantalla:** lista/detalle de pedidos (`/pedidos`)
+
+**Paso 1 — Detectar tipo de pedido:**
+```
+GET /mis-productos/v1/pedidos/{id}/detalle
+```
+
+Response clave:
+```typescript
+res.response.tipoPedido    // 'APARTADO' | 'FIADO' | 'NORMAL'
+res.response.estadoPedido  // 'APARTADO' | 'FIADO' | 'PAGADO' | 'cancelado'
+res.response.totalPedido
+res.response.totalPagado
+res.response.saldoPendiente
+res.response.clienteNombre
+res.response.detalles[]    // { varianteId, productoNombre, talla, color, cantidad, precioUnitario, subTotal }
+```
+
+**Paso 2 — Lógica de botones según estado:**
+
+| tipoPedido | estadoPedido | Acción |
+|---|---|---|
+| NORMAL | cualquiera | flujo normal actual |
+| APARTADO / FIADO | APARTADO / FIADO | botón "Registrar abono" |
+| APARTADO / FIADO | PAGADO | badge verde "Liquidado", sin botones |
+| APARTADO / FIADO | cancelado | badge rojo + botón "Transferir saldo" si `totalPagado > 0` |
+
+**Paso 3 — Al registrar abono exitosamente:**
+```typescript
+if (res.response.estadoPedido === 'PAGADO') {
+  // Toast: "¡Pedido liquidado!"
+  this.cargarPedidos(); // recargar lista
+} else {
+  // Mostrar saldo restante actualizado
+  pedido.saldoPendiente = res.response.saldoRestante;
+}
+```
+
+**Paso 4 — Imagen de variante en el detalle:**
+```
+GET /mis-productos/v1/variantes/imagenes/{varianteId}
+```
+Tomar solo el primer elemento del array. Si está vacío → mostrar placeholder.
+
+---
+
+### TAREA 5 — Invalidar caché de variantes al cancelar APARTADO (BUG 5)
+
+**Pantalla:** cualquier pantalla que llame a `PUT /mis-productos/v1/abonos/{id}/cancelar`
+
+```typescript
+.subscribe(res => {
+  if (res.response.stockDevuelto) {
+    this.varianteService.clearCache(); // o recargar búsqueda activa
+  }
+});
+```
+
+El back ya devolvió el stock. El problema era que el front no actualizaba la vista.
+
+---
+
+### Endpoints de referencia rápida
+
+| Acción | Método | URL |
+|---|---|---|
+| Detalle de pedido | GET | `/mis-productos/v1/pedidos/{id}/detalle` |
+| Registrar abono | POST | `/mis-productos/v1/abonos/{id}` |
+| Historial de abonos | GET | `/mis-productos/v1/abonos/{id}` |
+| Estado de cuenta | GET | `/mis-productos/v1/abonos/reporte/estado-cuenta` |
+| Cancelar pedido crédito | PUT | `/mis-productos/v1/abonos/{id}/cancelar` |
+| Transferir saldo | POST | `/mis-productos/v1/abonos/{id}/transferir` |
+| Imagen de variante (1) | GET | `/mis-productos/v1/variantes/imagenes/{varianteId}` |
+
+---
+
+## 23. Dudas del front pendientes de respuesta (2026-07-01)
+
+### F-D1 — ¿`response` o `data`? ¿Aplica solo a abonos o a todos los endpoints?
+
+El proyecto tiene dos tipos de wrapper distintos:
+
+- `ResponseGeneric<T>` (en `src/shared/generic-response.mode.ts`) → usa `data`
+- `IResponseGeneric<T>` (en `src/shared/responseGeneric.model.ts`) → usa `response`
+
+Los módulos de pedidos, variantes y productos leen `res?.data` y **funcionan correctamente**.  
+Los endpoints de abonos según la sección 22 usan `res?.response`.
+
+**Pregunta concreta:** ¿los endpoints de abonos (`/v1/abonos/*`) devuelven `response` mientras que el resto del proyecto devuelve `data`? ¿O es que todos los endpoints nuevos (a partir de cierta versión del back) pasaron a `response` y los viejos siguen con `data`?
+
+Necesito saber exactamente qué endpoints del módulo de abonos usan `response` para cambiar solo esos y no romper el resto del proyecto.
+
+---
+
+### F-D2 — NF-2: ¿En qué pantalla de pedidos va el botón "Registrar abono"?
+
+Hay dos componentes en el módulo de pedidos:
+- `mis-pedidos.component.ts` → lista de pedidos (admin y cliente)
+- `detalle-pedido.component.ts` → detalle de un pedido específico
+
+¿El botón "💳 Registrar abono" va en la lista (`mis-pedidos`) o en el detalle (`detalle-pedido`)? ¿O en ambos?
+
+---
+
+### F-D3 — NF-1: ¿Se envían `clienteSinRegistro` Y `clienteId` juntos o son mutuamente excluyentes?
+
+Según la sección 21.1, si el admin NO seleccionó cliente registrado se envía `clienteSinRegistro`. Pero el body actual siempre incluye un `clienteId` (el del admin logueado como fallback).
+
+¿Qué espera el back?
+- a) Si `clienteSinRegistro` viene → ignorar `clienteId`
+- b) Si `clienteSinRegistro` viene → NO enviar `clienteId` (mutuamente excluyentes)
+- c) Se envían ambos y el back decide cuál usar
+
+---
+
+### F-D4 — BUG 5: ¿`varianteService.clearCache()` existe o hay que hacer otra cosa?
+
+La sección 21.4 sugiere `this.varianteService.clearCache()` al cancelar APARTADO para actualizar el stock en pantalla. Ese método NO existe en el `VarianteService` actual del front.
+
+¿Hay un endpoint del back para invalidar el caché de variantes, o simplemente recargamos el buscador activo llamando de nuevo al `GET /v1/variantes/buscar`?
+
+
+---
+
+## 24. Respuestas back a dudas F-D1 — F-D4 (2026-06-30)
+
+### R-F-D1 — El campo siempre es `data`, para todos los endpoints
+
+Verificado en el código: `ResponseGeneric<T>` (único wrapper del proyecto) tiene el campo `private T data`.
+
+```json
+{ "data": { ... }, "code": 200, "mensaje": "La peticion fue exitosa" }
+```
+
+**No existe diferencia entre módulos.** Pedidos, variantes, productos Y abonos devuelven `data`. El front no tiene que cambiar nada en cómo lee las respuestas — `res?.data` es correcto en todos los casos.
+
+> La nota del CLAUDE.md sobre "response.response.accessToken" en el JWT se refería al objeto Angular HttpResponse, no a un campo JSON llamado `response`.
+
+---
+
+### R-F-D2 — El botón "Registrar abono" va en el DETALLE del pedido
+
+**Recomendación de UX:**
+
+- `mis-pedidos` (lista) → mostrar solo un **badge** indicando el tipo:
+  - `APARTADO` → badge naranja "Apartado"
+  - `FIADO` → badge azul "Ir pagando"
+  - `PAGADO` → badge verde "Liquidado"
+- Al hacer click en el pedido → navegar a `detalle-pedido`
+- `detalle-pedido` → aquí va el botón "💳 Registrar abono" y el formulario de pago
+
+Esto evita abrir modales pesados desde la lista y mantiene la pantalla de lista limpia.
+
+**Datos disponibles desde la lista** para mostrar el badge: el listado existente (`GET /v1/pedidos/buscarClientePedido`) ya incluye `tipoPedido` y `estadoPedido` en el JSON nativo que devuelve el repositorio.
+
+**Para el detalle** usar el nuevo endpoint:
+```
+GET /mis-productos/v1/pedidos/{id}/detalle
+```
+Devuelve `tipoPedido`, `estadoPedido`, `saldoPendiente`, `clienteNombre`, imagen por `varianteId`, etc. (ver sección 20.3).
+
+---
+
+### R-F-D3 — `clienteSinRegistroDto` y `clienteId` son mutuamente excluyentes
+
+Verificado en `VentaServiceImpl`:
+
+```java
+boolean esSinRegistro = request.getClienteSinRegistroDto() != null
+    && !request.getClienteSinRegistroDto().getNombre_persona().isBlank();
+
+if (esSinRegistro) {
+    clienteSinRegistro = iClienteSinRegistroRepository.save(mapperClienteSinRegistroDto(request));
+} else {
+    cliente = iClienteRepository.findById(request.getClienteId())...;
+}
+```
+
+**Regla:** si `clienteSinRegistroDto.nombre_persona` tiene valor → el back usa ese y **no lee `clienteId`**. Si está vacío/null → usa `clienteId`.
+
+**Lo que debe hacer el front:**
+
+```typescript
+// CASO: cliente registrado seleccionado
+body = {
+  clienteId: cliente.id,
+  clienteSinRegistroDto: null,   // o simplemente no enviar el campo
+  ...
+}
+
+// CASO: sin cliente registrado (nombre manual)
+body = {
+  clienteId: 0,                  // o no importa, el back no lo lee
+  clienteSinRegistroDto: {
+    nombre_persona: 'Juan Pérez',
+    numero_Telefonico: '',        // los demás campos pueden ir vacíos
+    segundo_nombre: '',
+    apeido_Paterno: '',
+    apeido_Materno: '',
+    fecha_Nacimiento: '',
+    sexo: '',
+    correo_Electronico: ''
+  },
+  ...
+}
+```
+
+> Nota: los campos de `ClienteSinRegistroDto` usan **snake_case** (`nombre_persona`, `numero_Telefonico`, etc.) — así están definidos en el back. El front debe usar exactamente esos nombres en el JSON.
+
+---
+
+### R-F-D4 — No hay endpoint de caché: simplemente recargar la búsqueda
+
+No existe un endpoint público para invalidar el caché de variantes. Lo que hace el back internamente es evictar Redis al guardar cambios de stock, así que una nueva llamada HTTP siempre trae datos frescos.
+
+**Solución para el front** al cancelar APARTADO:
+
+```typescript
+// Después de cancelar exitosamente:
+.subscribe(res => {
+  if (res?.data?.stockDevuelto) {
+    // Re-ejecutar la búsqueda activa de variantes con los mismos params
+    this.buscarVariantes(this.terminoBusqueda);
+    // O si estás en otra pantalla, solo mostrar mensaje:
+    // "El stock fue devuelto. Recarga el buscador para ver el cambio."
+  }
+});
+```
+
+No necesitas `clearCache()` — eso era una sugerencia de pseudocódigo. Simplemente volver a llamar `GET /v1/variantes/buscar` con los mismos parámetros actuales es suficiente.
+

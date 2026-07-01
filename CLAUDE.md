@@ -1177,6 +1177,30 @@ Getter `puedeReiniciar`: devuelve `false` si `tipo === 'DIARIA' && !activa`. Los
 
 ---
 
+## FIX CARRITO — FLUJOS SEPARADOS CLIENTE vs ADMIN (2026-06-30)
+
+> Complemento al "FEAT CARRITO → VENTA DIRECTA" de sesiones anteriores.
+> Detalle completo de decisiones en `BUGS_FRONT_CARRITO_VENTA.md`.
+
+**Reglas de negocio definitivas:**
+
+- **Cliente (rol user):** solo puede generar el pedido desde el carrito. No ve selector de tipo de
+  pedido ni campo de cliente. Cuando va al local a recoger, el admin retoma el pedido desde `/pedidos`
+  y procesa la venta directa desde ahí.
+- **Admin (rol admin):** el carrito tiene solo "💰 Cobrar ahora (Venta Directa)" como CTA principal.
+  "📋 Generar pedido" queda oculto para admin. Selector de tipo y campo de cliente van exclusivamente
+  en `/variantes/venta-directa`.
+
+**Cambios en `venta-variante.component.html`:**
+- "📋 Generar pedido" → `*ngIf="!isAdminUser"` (solo usuario)
+- Card "Tipo de pedido" → `*ngIf="false"` (oculto para todos — va en venta directa)
+- Card "Asignar cliente" → `*ngIf="false"` (oculto para todos — va en venta directa)
+- Fix previo: `clienteSeleccionado?.campo` con optional chaining en la card oculta
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FEAT CARRITO → VENTA DIRECTA PARA ADMIN (2026-06-30)
 
 > Flujo 3 de `REQUERIMIENTO_BACK_VENTA_DIRECTA_CREDITO.md` — cambio solo de front, sin tocar back.
@@ -1194,6 +1218,45 @@ sobrescribe una venta directa que el admin ya esté armando manualmente.
 - `src/app/variante/venta-variante/venta-variante.component.html` → botón "💰 Cobrar ahora"
 - `src/app/variante/venta-directa/venta-directa.component.ts` → inyecta `CarritoVarianteService`;
   `ngOnInit` pre-carga items del carrito; `limpiarTodo()` limpia el carrito si vino de ahí.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX VENTA DIRECTA — FORMA DE PAGO EN MODO CRÉDITO + ENGANCHE INICIAL (2026-06-30)
+
+> BUG 4 de `BUGS_FRONT_CARRITO_VENTA.md`. Respuestas R-D1..R-D5 del usuario.
+
+**Problema:** al seleccionar "Apartado" o "Ir pagando" en `/variantes/venta-directa`, el dropdown de
+forma de pago desaparecía porque estaba dentro de `*ngIf="!esCredito"`. El admin no podía indicar
+si el cliente dejaba un enganche (pago inicial parcial).
+
+**Decisión de diseño:** en modo crédito se usan 2 botones simples (EFECTIVO / TRANSFERENCIA) en vez
+del `p-dropdown` estructurado con cuotas/meses. TARJETA se excluye porque cada cobro con tarjeta
+genera comisión al negocio — no aplica a crédito. El dropdown contado se conserva solo para `!esCredito`.
+
+**Métodos aceptados en crédito:** EFECTIVO y TRANSFERENCIA únicamente. TARJETA excluida en ambas pantallas
+(venta-directa al crear el crédito y `/abonos` al registrar abonos posteriores).
+
+**Pendiente back:** `AbonoServiceImpl.registrarAbono()` debe validar que `metodoPago != TARJETA` cuando
+el pedido sea APARTADO o FIADO (el front ya lo filtra, pero el back aún no rechaza TARJETA si llegara).
+
+**Flujo de enganche (dos pasos):**
+1. `POST /v1/ventas/save` con `tipoPedido: APARTADO|FIADO` → devuelve `pedidoId`
+2. Si `montoInicial > 0` → `POST /v1/abonos/{pedidoId}` con `{ monto, metodoPago, usuarioId, fechaPago }`
+3. Swal con texto del monto y botón "💳 Ir a Créditos / Abonos" → navega a `/abonos`
+
+**Si `montoInicial === 0`:** solo el paso 1, Swal sin monto, mismo link a `/abonos`.
+
+**Campo de motivo al cancelar:** ya implementado en back (BD `motivo_cancelacion VARCHAR(30)`,
+`CancelarAbonoRequest.motivo?: string`). Pendiente: agregar `input[maxlength=30]` al modal de
+cancelación en `/abonos` para que el admin escriba el motivo. Ver DN-2 en `BUGS_FRONT_CARRITO_VENTA.md`.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.html` → sección crédito con 2 botones de método + input `montoInicial`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `metodosCredito: ['EFECTIVO','TRANSFERENCIA']`; inyecta `AbonoService`; `ejecutarVenta()` registra abono si `monto > 0`; `limpiarTodo()` resetea campos de crédito
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-metodo-btns`, `.vd-metodo-btn`, `.vd-monto-input`
+- `src/app/abonos/abonos.component.ts` → `metodos: ['EFECTIVO','TRANSFERENCIA']` (TARJETA eliminada)
 
 **Verificado con `ng build --configuration=development` sin errores.**
 
@@ -1290,26 +1353,127 @@ Al liquidar un pedido (`estadoPedido === 'PAGADO'`) ahora se hace `cargarCuenta(
 
 ---
 
-## FIX MÓDULO ABONOS — RENOMBRAR FIADO + SOLO EFECTIVO + SWAL CON LINK (2026-06-28)
+## FIX VENTA DIRECTA — MONTO RECIBIDO + CAMBIO EN VENTA AL CONTADO Y ENGANCHE (2026-07-01)
+
+**Síntoma:** en `/variantes/venta-directa`, al cobrar en efectivo no había campo para indicar
+el billete que da el cliente ni se calculaba el cambio a devolver.
+
+**Cambios en `venta-directa.component.ts`:**
+- Campos nuevos: `montoDadoContado = 0` (venta normal efectivo), `montoDadoEnganche = 0` (crédito)
+- Getter `esEfectivoContado` → detecta `tipoPagoActivo.formaPago.toUpperCase() === 'EFECTIVO'`
+- Getter `cambioContado` → `montoDadoContado - totalVenta` (cuando mayor)
+- Getter `cambioEnganche` → `montoDadoEnganche - montoInicial` (cuando mayor y monto > 0)
+- Ambos campos se resetean en `limpiarTodo()` y `seleccionarTipoPago()`
+
+**Cambios en `venta-directa.component.html`:**
+- **Venta al contado:** debajo del dropdown de forma de pago, cuando `esEfectivoContado && !esCredito && lineas.length > 0` → campo "💵 Monto recibido" + cuadro verde "Cambio a devolver: $X" o rojo "monto insuficiente"
+- **Enganche de crédito:** debajo del input de monto del enganche, cuando `metodoPagoCredito === 'EFECTIVO' && montoInicial > 0` → mismo patrón
+
+**Cambios en `venta-directa.component.scss`:**
+- `.vd-cambio` (verde) y `.vd-cambio--warn` (rojo) + variantes dark mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO ABONOS — NF-1, NF-2, BUG 5 (2026-07-01)
+
+### NF-1 — Bug en `cobrar()` cuando hay cliente sin registro
+
+**Síntoma:** al agregar un cliente sin registro con el modal y luego cobrar, el front ignoraba
+el `clienteSinRegistroModal` y llamaba a `buscarClientePorIdUsuario()` — enviaba el `clienteId`
+del admin junto a `clienteSinRegistroDto`, cuando el back los trata como mutuamente excluyentes.
+
+**Fix en `venta-directa.component.ts`:**
+- `cobrar()`: ahora verifica `clienteSinRegistroModal` PRIMERO — si existe, llama
+  `ejecutarVenta(0)` directamente sin buscar el cliente del admin. `clienteId=0` +
+  `clienteSinRegistroDto` → back usa el DTO.
+- `limpiarTodo()`: ahora resetea `clienteSinRegistroModal = null` y `clienteForm.reset()`.
+
+### NF-2 — Badges APARTADO/FIADO en mis-pedidos
+
+**Cambios:**
+- `IPedidoQuery.model.ts` → campo `tipoPedido?: string` agregado al modelo
+- `mis-pedidos.component.html` → `card-head-right` con badges condicionales:
+  - `tipo-badge--apartado` (naranja) cuando `tipoPedido === 'APARTADO'`
+  - `tipo-badge--fiado` (índigo) cuando `tipoPedido === 'FIADO'`
+- `mis-pedidos.component.scss` → `.card-head-right`, `.tipo-badge`, `&--apartado`, `&--fiado`
+
+### NF-2 — Botón "Registrar abono" + formulario en detalle-pedido
+
+**Contexto:** el admin puede ver el detalle de un pedido APARTADO/FIADO y registrar un abono
+directamente sin tener que navegar a `/abonos`.
+
+**Cambios en `detalle-pedido.component.ts`:**
+- Inyecta `AbonoService` y `AuthService`
+- Getter `esCredito` → `tipoPedido === 'APARTADO' || 'FIADO'`
+- Campos: `mostrarFormAbono`, `registrandoAbono`, `abonoForm`, `montoDado`, getter `cambio`
+- Métodos: `abrirFormAbono()`, `cancelarFormAbono()`, `registrarAbono()` (mismo patrón que
+  `/abonos` — incluye `montoDado` para cambio, muestra saldo restante en Swal)
+- Implementa `OnDestroy` con `destroy$` para `takeUntil` en `authService.userId$`
+
+**Cambios en `detalle-pedido.component.html`:**
+- Badge `dp-tipo-badge--apartado` / `dp-tipo-badge--fiado` en el header
+- Bloque `dp-abono-wrap` visible cuando `esCredito`:
+  - Botón "💳 Registrar abono" → despliega form inline
+  - Form: Monto, Método (EFECTIVO/TRANSFERENCIA), Monto recibido + cambio (solo EFECTIVO), Fecha, Nota
+  - Botones Cancelar / Guardar abono
+
+**Cambios en `detalle-pedido.component.scss`:**
+- `.dp-tipo-badge`, `.dp-abono-wrap`, `.dp-btn-abono`, `.dp-abono-form`, `.dp-metodo-btns`,
+  `.dp-cambio`, `.dp-btn-cancelar`, `.dp-btn-guardar`, `:host-context(body.theme-dark)`
+
+### BUG 5 — Stock devuelto al cancelar APARTADO
+
+`abonos.component.ts → cancelarPedido()`: el `next` handler lee `res?.data?.stockDevuelto` y
+agrega al mensaje de éxito " El stock fue devuelto — el buscador de variantes mostrará el
+dato actualizado." cuando es `true`.
+
+**Archivos modificados (esta sección):**
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `cobrar()`, `limpiarTodo()`
+- `src/app/pedidos/mis-pedidos/models/IPedidoQuery.model.ts` → `tipoPedido?: string`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → badges tipo pedido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.card-head-right`, `.tipo-badge`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → form abono inline
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → badge + form abono
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → estilos form abono
+- `src/app/abonos/abonos.component.ts` → `cancelarPedido()` con `stockDevuelto`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX MÓDULO ABONOS — RENOMBRAR FIADO + SOLO EFECTIVO/TRANSFERENCIA + SWAL CON LINK + MOTIVO CANCELACIÓN + MONTO DADO (2026-06-28 / 2026-07-01)
 
 **Cambios tras prueba en vivo:**
 
 1. **"Fiado" → "Ir pagando"** en `venta-variante.component.html` — label más claro para el cliente
 2. **"Normal" → "Venta total"** — idem
-3. **Solo EFECTIVO para crédito:**
-   - `venta-variante.component.html`: aviso ⚠️ "Solo se acepta efectivo para esta modalidad" visible cuando APARTADO o IR PAGANDO
-   - `abonos.component.ts`: `metodos: MetodoPago[]` reducido a `['EFECTIVO']` (eliminados TRANSFERENCIA y TARJETA)
-   - `abonos.component.html`: botón de método de pago fijo "💵 Efectivo" (disabled) + texto hint debajo
+3. **EFECTIVO + TRANSFERENCIA para crédito (sin TARJETA — cobra comisión):**
+   - `venta-directa.component.ts`: `metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA']`
+   - `abonos.component.ts`: `metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA']`
+   - Botones toggle en ambas pantallas para seleccionar método
 4. **Swal post-pedido con link a `/abonos`:**
-   - Cuando se guarda un pedido APARTADO o IR PAGANDO (`esCreditoPedido = true`), en vez de navegar directo a `/variantes/buscar`, se muestra Swal con botón "💳 Ir a Créditos / Abonos" que navega a `/abonos`
-   - Si el admin cierra el Swal sin confirmar → navega a `/variantes/buscar` (mismo comportamiento anterior)
+   - Cuando se guarda un pedido APARTADO o IR PAGANDO, se muestra Swal con botón "💳 Ir a Créditos / Abonos"
+5. **DN-2 — Motivo de cancelación en Swal (maxlength 30):**
+   - `abonos.component.ts → cancelarPedido()`: Swal usa `html:` con `<input id="swal-motivo">` para capturar el motivo; se lee con `document.getElementById` y se envía como `{ motivo }` al endpoint
+6. **NF-3 — Monto dado por cliente + cambio en tiempo real (solo EFECTIVO):**
+   - `abono.model.ts`: `AbonoRequest.montoDado?: number`
+   - `abonos.component.ts`: campo `montoDado = 0`, getter `cambio` (diferencia), se resetea en `abrirModal()`, se envía en el body si `metodoPago === 'EFECTIVO'`; Swal de éxito muestra "Cambio al cliente: $X.XX" cuando aplica
+   - `abonos.component.html`: campo "💵 Monto recibido (opcional)" visible solo cuando EFECTIVO, con alerta verde (cambio) o roja (monto insuficiente)
+   - `abonos.component.scss`: `.ab-optional`, `.ab-cambio`, `.ab-cambio--warn` con variantes dark mode
+
+**Pendiente de back (para NF-3):**
+- `ALTER TABLE abono_pedido ADD COLUMN monto_dado DECIMAL(10,2) NULL` — hasta que se haga, el campo se envía pero no se persiste en BD
 
 **Archivos modificados:**
 - `src/app/variante/venta-variante/venta-variante.component.html` → labels, aviso efectivo
 - `src/app/variante/venta-variante/venta-variante.component.ts` → Swal diferenciado para crédito
-- `src/app/abonos/abonos.component.ts` → `metodos = ['EFECTIVO']`
-- `src/app/abonos/abonos.component.html` → botón fijo Efectivo + hint
-- `src/app/abonos/abonos.component.scss` → `.ab-hint`, `&[disabled]` en `.ab-metodo-btn`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `metodosCredito = ['EFECTIVO', 'TRANSFERENCIA']`
+- `src/app/abonos/models/abono.model.ts` → `AbonoRequest.montoDado`
+- `src/app/abonos/abonos.component.ts` → `metodos`, `montoDado`, `cambio`, `cancelarPedido()` con Swal html input, `registrarAbono()` con montoDado + txt cambio en Swal
+- `src/app/abonos/abonos.component.html` → botones EFECTIVO/TRANSFERENCIA; campo monto recibido + alerta cambio (NF-3)
+- `src/app/abonos/abonos.component.scss` → `.ab-hint`, `.ab-optional`, `.ab-cambio`, `.ab-cambio--warn`
 
 **Verificado con `ng build --configuration=development` sin errores.**
 

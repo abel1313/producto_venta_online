@@ -278,11 +278,24 @@
                 class="ab-metodo-btn"
                 [class.ab-metodo-btn--active]="abonoForm.metodoPago === m"
                 type="button"
-                (click)="abonoForm.metodoPago = m">
+                (click)="abonoForm.metodoPago = m; montoDado = 0">
           {{ m === 'EFECTIVO' ? '💵 Efectivo' : m === 'TRANSFERENCIA' ? '🏦 Transferencia' : '💳 Tarjeta' }}
         </button>
       </div>
       <small class="ab-hint">Los abonos no incluyen pagos a meses</small>
+    </div>
+
+    <!-- NF-3: Monto dado por el cliente -->
+    <div class="ab-field" *ngIf="abonoForm.metodoPago === 'EFECTIVO'">
+      <label class="ab-label">💵 Monto recibido <span class="ab-optional">(opcional)</span></label>
+      <input class="ab-input" type="number" min="0" step="0.01"
+             [(ngModel)]="montoDado" placeholder="Ej: 200.00">
+      <div class="ab-cambio" *ngIf="montoDado > 0 && montoDado >= abonoForm.monto">
+        Cambio a devolver: <strong>${{ cambio | number:'1.2-2' }}</strong>
+      </div>
+      <div class="ab-cambio ab-cambio--warn" *ngIf="montoDado > 0 && montoDado < abonoForm.monto">
+        ⚠️ El monto recibido es menor al abono
+      </div>
     </div>
 
     <div class="ab-field">

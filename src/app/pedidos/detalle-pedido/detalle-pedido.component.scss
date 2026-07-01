@@ -203,3 +203,185 @@
   padding: 2rem;
   font-size: .95rem;
 }
+
+/* ── BADGE TIPO PEDIDO ───────────────────────────── */
+.dp-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .18rem .6rem;
+  border-radius: 50px;
+  font-size: .7rem;
+  font-weight: 700;
+  width: fit-content;
+  margin-top: .15rem;
+
+  &--apartado {
+    background: rgba(251, 146, 60, 0.18);
+    color: #b45309;
+  }
+
+  &--fiado {
+    background: rgba(99, 102, 241, 0.15);
+    color: #4338ca;
+  }
+}
+
+/* ── ABONO INLINE ────────────────────────────────── */
+.dp-abono-wrap {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  box-shadow: var(--card-shadow);
+}
+
+.dp-btn-abono {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .55rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  font-weight: 700;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: box-shadow .18s;
+
+  &:hover { box-shadow: 0 4px 14px rgba(99,102,241,.35); }
+}
+
+.dp-abono-form {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+
+  &__title {
+    font-weight: 700;
+    font-size: .92rem;
+    color: var(--card-text);
+    margin: 0 0 .25rem;
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+
+  &__label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--card-text-muted);
+  }
+
+  &__input {
+    padding: .5rem .75rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--form-section-bg);
+    color: var(--card-text);
+    font-size: .875rem;
+    outline: none;
+
+    &:focus { border-color: #6366f1; }
+  }
+
+  &__actions {
+    display: flex;
+    gap: .6rem;
+    justify-content: flex-end;
+    margin-top: .25rem;
+  }
+}
+
+.dp-metodo-btns {
+  display: flex;
+  gap: .5rem;
+}
+
+.dp-metodo-btn {
+  padding: .38rem .85rem;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--form-section-bg);
+  color: var(--card-text);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+
+  &--active {
+    background: rgba(99,102,241,.14);
+    border-color: #6366f1;
+    color: #4f46e5;
+  }
+}
+
+.dp-cambio {
+  font-size: .8rem;
+  padding: .35rem .65rem;
+  border-radius: 6px;
+  background: rgba(34,197,94,.12);
+  color: #16a34a;
+  border: 1px solid rgba(34,197,94,.25);
+
+  strong { font-size: .9rem; }
+
+  &--warn {
+    background: rgba(239,68,68,.1);
+    color: #dc2626;
+    border-color: rgba(239,68,68,.25);
+  }
+}
+
+.dp-optional {
+  font-weight: 400;
+  font-size: .7rem;
+  color: #94a3b8;
+}
+
+.dp-btn-cancelar {
+  padding: .45rem 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text-muted);
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+}
+
+.dp-btn-guardar {
+  padding: .45rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow .15s;
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &:not(:disabled):hover { box-shadow: 0 3px 10px rgba(99,102,241,.35); }
+}
+
+:host-context(body.theme-dark) {
+  .dp-tipo-badge--apartado { background: rgba(251,146,60,.2); color: #fbbf24; }
+  .dp-tipo-badge--fiado    { background: rgba(99,102,241,.2); color: #a5b4fc; }
+  .dp-cambio {
+    background: rgba(74, 222, 128, 0.22);
+    color: #86efac;
+    border-color: rgba(74, 222, 128, 0.5);
+    font-weight: 600;
+    &--warn {
+      background: rgba(252, 165, 165, 0.2);
+      color: #fca5a5;
+      border-color: rgba(252, 165, 165, 0.5);
+    }
+  }
+}

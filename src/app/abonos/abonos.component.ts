@@ -46,7 +46,13 @@ export class AbonosComponent implements OnInit, OnDestroy {
     nota:       ''
   };
 
-  readonly metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA', 'TARJETA'];
+  readonly metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
+  montoDado = 0;
+  get cambio(): number {
+    return this.montoDado > 0 && this.montoDado > this.abonoForm.monto
+      ? +(this.montoDado - this.abonoForm.monto).toFixed(2)
+      : 0;
+  }
 
   // ── Modal transferencia ───────────────────────────────────────────
   modalTransferenciaAbierto                 = false;
@@ -149,7 +155,9 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
     Swal.fire({
       title: `¿Cancelar el ${esFiado ? 'fiado' : 'apartado'} de ${pedido.cliente}?`,
-      text:  msgDetalle,
+      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>
+              <input id="swal-motivo" class="swal2-input" maxlength="30"
+                     placeholder="Motivo de cancelación (opcional)">`,
       icon: 'warning',
       showCancelButton:    true,
       confirmButtonText:   esFiado ? 'Sí, registrar como incobrable' : 'Sí, cancelar y devolver stock',
@@ -157,11 +165,13 @@ export class AbonosComponent implements OnInit, OnDestroy {
       confirmButtonColor:  '#ef4444'
     }).then(result => {
       if (!result.isConfirmed) return;
-      this.abonoService.cancelar(pedido.pedidoId, {}).subscribe({
+      const motivo = (document.getElementById('swal-motivo') as HTMLInputElement)?.value?.trim() || undefined;
+      this.abonoService.cancelar(pedido.pedidoId, { motivo }).subscribe({
         next: res => {
-          Swal.fire({ icon: 'success', title: 'Cancelado', text: res?.data?.mensaje ?? 'Pedido cancelado.', timer: 2500, showConfirmButton: false });
+          const stockMsg = res?.data?.stockDevuelto ? ' El stock fue devuelto — el buscador de variantes mostrará el dato actualizado.' : '';
+          Swal.fire({ icon: 'success', title: 'Cancelado', text: (res?.data?.mensaje ?? 'Pedido cancelado.') + stockMsg, timer: 3500, showConfirmButton: false });
           this.cargarCuenta();
-          this.cancelados = []; // fuerza recarga al abrir tab Cancelados
+          this.cancelados = [];
         },
         error: err => {
           Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cancelar el pedido.' });
@@ -175,6 +185,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
   abrirModal(ec: EstadoCuenta): void {
     this.pedidoSeleccionado = ec;
     this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    this.montoDado = 0;
     this.modalAbierto = true;
   }
 
@@ -196,7 +207,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
       usuarioId:  this.idUsuario,
       fechaPago:  this.abonoForm.fechaPago  || undefined,
       metodoPago: this.abonoForm.metodoPago || undefined,
-      nota:       this.abonoForm.nota       || undefined
+      nota:       this.abonoForm.nota       || undefined,
+      montoDado:  this.abonoForm.metodoPago === 'EFECTIVO' && this.montoDado > 0 ? this.montoDado : undefined
     };
 
     this.abonoService.registrarAbono(this.pedidoSeleccionado.pedidoId, body)
@@ -210,13 +222,16 @@ export class AbonosComponent implements OnInit, OnDestroy {
           pedido.totalPagado = +(pedido.totalPedido - pedido.saldo).toFixed(2);
           if (data) pedido.abonos.push(data);
 
+          const cambioMostrar = this.cambio;
           this.cerrarModal();
 
           if (data?.estadoPedido === 'PAGADO' || pedido.saldo <= 0) {
-            Swal.fire({ icon: 'success', title: '¡Pedido liquidado!', text: `El pedido #${pedido.pedidoId} de ${pedido.cliente} ha sido liquidado.`, timer: 3000, showConfirmButton: false });
-            this.cargarCuenta(); // reload del server: fuente de verdad, evita desfase local
+            const txtCambio = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
+            Swal.fire({ icon: 'success', title: '¡Pedido liquidado!', text: `El pedido #${pedido.pedidoId} de ${pedido.cliente} ha sido liquidado.${txtCambio}`, timer: 4000, showConfirmButton: false });
+            this.cargarCuenta();
           } else {
-            Swal.fire({ icon: 'success', title: 'Abono registrado', text: `Saldo restante: $${pedido.saldo.toFixed(2)}`, timer: 2000, showConfirmButton: false });
+            const txtCambio = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
+            Swal.fire({ icon: 'success', title: 'Abono registrado', text: `Saldo restante: $${pedido.saldo.toFixed(2)}.${txtCambio}`, timer: 2500, showConfirmButton: false });
           }
         },
         error: err => {

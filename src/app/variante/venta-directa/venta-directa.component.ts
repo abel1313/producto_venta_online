@@ -14,6 +14,8 @@ import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse, IClienteS
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
+import { AbonoService } from 'src/app/abonos/service/abono.service';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -57,8 +59,29 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   cargandoPagos          = false;
 
   // ── Crédito ────────────────────────────────────────────────────────
-  tipoPedido:   'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
-  observaciones = '';
+  tipoPedido:       'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
+  observaciones     = '';
+  readonly metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
+  metodoPagoCredito: MetodoPago = 'EFECTIVO';
+  montoInicial      = 0;
+  montoDadoContado  = 0;  // monto recibido en venta al contado con efectivo
+  montoDadoEnganche = 0;  // monto recibido para el enganche en crédito
+
+  get esEfectivoContado(): boolean {
+    return (this.tipoPagoActivo?.formaPago ?? '').toUpperCase() === 'EFECTIVO';
+  }
+
+  get cambioContado(): number {
+    return this.montoDadoContado > this.totalVenta
+      ? +(this.montoDadoContado - this.totalVenta).toFixed(2)
+      : 0;
+  }
+
+  get cambioEnganche(): number {
+    return this.montoDadoEnganche > this.montoInicial && this.montoInicial > 0
+      ? +(this.montoDadoEnganche - this.montoInicial).toFixed(2)
+      : 0;
+  }
 
   // ── Carrito preload ────────────────────────────────────────────────
   private cargadoDesdeCarrito = false;
@@ -95,6 +118,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly usuarioService:  UsuarioService,
     private readonly router:          Router,
     private readonly carritoService:  CarritoVarianteService,
+    private readonly abonoService:    AbonoService,
     private fb: FormBuilder
   ) {
 
@@ -210,6 +234,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.mesesSeleccionado = null;
     this.pagosYMesesId     = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
     this.tipoPedido        = 'NORMAL';
+    this.montoDadoContado  = 0;
   }
 
   seleccionarMeses(opcion: IOpcionMesesDto): void {
@@ -219,14 +244,17 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   seleccionarCredito(tipo: 'APARTADO' | 'FIADO'): void {
     if (this.tipoPedido === tipo) {
-      // toggle off
-      this.tipoPedido    = 'NORMAL';
+      this.tipoPedido        = 'NORMAL';
+      this.metodoPagoCredito = 'EFECTIVO';
+      this.montoInicial      = 0;
       return;
     }
     this.tipoPedido        = tipo;
     this.tipoPagoActivo    = null;
     this.mesesSeleccionado = null;
     this.pagosYMesesId     = null;
+    this.metodoPagoCredito = 'EFECTIVO';
+    this.montoInicial      = 0;
   }
 
   // ── Búsqueda de variantes ──────────────────────────────────────────
@@ -289,6 +317,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private limpiarTodo(): void {
     this.lineas = [];
     this.clienteSeleccionado = null;
+    this.clienteSinRegistroModal = null as any;
+    this.clienteForm.reset();
     this.terminoCliente = '';
     this.clienteResolvedId = 0;
     this.ventaCreada = null;
@@ -296,6 +326,10 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.estadoTerminal = 'idle';
     this.tipoPedido = 'NORMAL';
     this.observaciones = '';
+    this.metodoPagoCredito = 'EFECTIVO';
+    this.montoInicial = 0;
+    this.montoDadoContado = 0;
+    this.montoDadoEnganche = 0;
     if (this.cargadoDesdeCarrito) {
       this.carritoService.limpiar();
       this.cargadoDesdeCarrito = false;
@@ -349,7 +383,10 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   cobrar(): void {
     if (!this.puedeCobrar) return;
 
-    if (this.clienteSeleccionado) {
+    if (this.clienteSinRegistroModal) {
+      // Cliente sin registro — se envía clienteSinRegistroDto, clienteId = 0
+      this.ejecutarVenta(0);
+    } else if (this.clienteSeleccionado) {
       this.clienteResolvedId = this.clienteSeleccionado.id;
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
@@ -393,26 +430,57 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
     this.varianteService.saveVentaDirecta(request).subscribe({
       next: (res: IVentaDirectaResponse) => {
-        this.procesando = false;
-
         if (res.pedidoId) {
           // Crédito (APARTADO / FIADO)
           this.varianteService.invalidarCache();
-          const label = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
-          Swal.fire({
-            icon: 'success',
-            title: `✅ ${label} registrado`,
-            text: `Pedido #${res.pedidoId} creado. Ve a Créditos / Abonos para registrar los pagos.`,
-            showCancelButton: true,
-            confirmButtonText: '💳 Ir a Créditos / Abonos',
-            cancelButtonText: 'Cerrar',
-            confirmButtonColor: '#4f46e5'
-          }).then(result => {
-            if (result.isConfirmed) this.router.navigate(['/abonos']);
-          });
+          const pedidoId   = res.pedidoId;
+          const label      = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
+          const monto      = this.montoInicial;
+          const metodoPago = this.metodoPagoCredito;
+
           this.limpiarTodo();
+
+          const mostrarSwalCredito = () => {
+            this.procesando = false;
+            const textoMonto = monto > 0 ? ` Enganche de $${monto.toFixed(2)} registrado.` : '';
+            Swal.fire({
+              icon: 'success',
+              title: `✅ ${label} registrado`,
+              text: `Pedido #${pedidoId} creado.${textoMonto} Registra los abonos en Créditos / Abonos.`,
+              showCancelButton: true,
+              confirmButtonText: '💳 Ir a Créditos / Abonos',
+              cancelButtonText: 'Cerrar',
+              confirmButtonColor: '#4f46e5'
+            }).then(result => {
+              if (result.isConfirmed) this.router.navigate(['/abonos']);
+            });
+          };
+
+          if (monto > 0) {
+            const abonoBody: AbonoRequest = {
+              monto,
+              metodoPago,
+              usuarioId: this.idUsuario,
+              fechaPago: new Date().toISOString().slice(0, 10)
+            };
+            this.abonoService.registrarAbono(pedidoId, abonoBody).subscribe({
+              next:  () => mostrarSwalCredito(),
+              error: (err) => {
+                this.procesando = false;
+                Swal.fire({
+                  icon: 'warning',
+                  title: `${label} registrado`,
+                  text: `Pedido #${pedidoId} creado, pero no se pudo registrar el enganche: ${err?.error?.mensaje ?? 'Error al registrar abono.'}. Regístralo manualmente en Créditos / Abonos.`
+                });
+              }
+            });
+          } else {
+            mostrarSwalCredito();
+          }
           return;
         }
+
+        this.procesando = false;
 
         if (!res.requiereTerminal) {
           // Efectivo / Transferencia → venta confirmada

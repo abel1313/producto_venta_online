@@ -7,6 +7,7 @@ export interface AbonoRequest {
   fechaPago?: string;
   metodoPago?: MetodoPago;
   nota?: string;
+  montoDado?: number;
 }
 
 export interface AbonoResponse {

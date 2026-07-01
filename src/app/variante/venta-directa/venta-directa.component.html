@@ -132,6 +132,22 @@
             [style]="{ width: '100%', marginTop: '8px' }">
         </p-dropdown>
 
+        <!-- Monto recibido + cambio para venta al contado en EFECTIVO -->
+        <ng-container *ngIf="esEfectivoContado && !esCredito && lineas.length > 0">
+          <p class="vd-panel__title" style="font-size:0.8rem;margin:10px 0 5px">
+            💵 Monto recibido <span class="vd-optional">— opcional</span>
+          </p>
+          <input type="number" class="vd-monto-input"
+                 [(ngModel)]="montoDadoContado" min="0" step="0.01"
+                 placeholder="Billete que da el cliente (ej: 200.00)">
+          <div class="vd-cambio" *ngIf="montoDadoContado > 0 && montoDadoContado >= totalVenta">
+            Cambio a devolver: <strong>{{ montoDadoContado - totalVenta | currency:'$' }}</strong>
+          </div>
+          <div class="vd-cambio vd-cambio--warn" *ngIf="montoDadoContado > 0 && montoDadoContado < totalVenta">
+            ⚠️ El monto recibido es menor al total
+          </div>
+        </ng-container>
+
         <!-- Crédito — APARTADO / IR PAGANDO -->
         <div class="vd-credit-divider"><span>o pago en parcialidades</span></div>
 
@@ -150,18 +166,50 @@
           </button>
         </div>
 
-        <!-- Observaciones cuando hay crédito -->
+        <!-- Cuando hay crédito: método + monto del primer abono + observaciones -->
         <ng-container *ngIf="esCredito">
-          <div class="vd-observaciones">
+          <p class="vd-panel__title" style="font-size:0.8rem;margin:12px 0 6px">
+            💰 Pago inicial (enganche) <span class="vd-optional">— opcional</span>
+          </p>
+          <div class="vd-metodo-btns">
+            <button *ngFor="let m of metodosCredito"
+                    class="vd-metodo-btn"
+                    [class.vd-metodo-btn--active]="metodoPagoCredito === m"
+                    type="button"
+                    (click)="metodoPagoCredito = m">
+              {{ m === 'EFECTIVO' ? '💵 Efectivo' : m === 'TRANSFERENCIA' ? '🏦 Transferencia' : '💳 Tarjeta' }}
+            </button>
+          </div>
+          <input type="number" class="vd-monto-input"
+                 [(ngModel)]="montoInicial" min="0"
+                 placeholder="Monto del enganche (0 si no da nada ahora)">
+
+          <!-- Monto recibido + cambio del enganche (solo si es EFECTIVO y monto > 0) -->
+          <ng-container *ngIf="metodoPagoCredito === 'EFECTIVO' && montoInicial > 0">
+            <p class="vd-panel__title" style="font-size:0.78rem;margin:8px 0 4px">
+              💵 Monto recibido <span class="vd-optional">— opcional</span>
+            </p>
+            <input type="number" class="vd-monto-input"
+                   [(ngModel)]="montoDadoEnganche" min="0" step="0.01"
+                   placeholder="Billete que da el cliente">
+            <div class="vd-cambio" *ngIf="montoDadoEnganche > 0 && montoDadoEnganche >= montoInicial">
+              Cambio a devolver: <strong>{{ montoDadoEnganche - montoInicial | currency:'$' }}</strong>
+            </div>
+            <div class="vd-cambio vd-cambio--warn" *ngIf="montoDadoEnganche > 0 && montoDadoEnganche < montoInicial">
+              ⚠️ El monto recibido es menor al enganche
+            </div>
+          </ng-container>
+
+          <div class="vd-observaciones" style="margin-top:10px">
             <label class="vd-panel__title" style="display:block;margin-bottom:6px">📝 Observaciones <span class="vd-optional">(opcional)</span></label>
             <textarea class="vd-observaciones__input"
                       [(ngModel)]="observaciones"
                       rows="2"
-                      placeholder="Acuerdo de pago, fecha de enganche, etc.…">
+                      placeholder="Acuerdo de pago, fecha del siguiente abono, etc.…">
             </textarea>
           </div>
           <div class="vd-credit-info">
-            ℹ️ El pago de cada abono puede ser en <strong>efectivo, transferencia o tarjeta</strong> — sin pagos a meses.
+            ℹ️ Los abonos siguientes se registran en <strong>Créditos / Abonos</strong> — sin pagos a meses.
           </div>
         </ng-container>
       </div>

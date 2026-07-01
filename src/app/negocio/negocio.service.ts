@@ -16,6 +16,11 @@ export interface IContactosRequest {
   facebookUrl: string;
 }
 
+export interface IContactosPublicos {
+  whatsappUrl: string | null;
+  facebookUrl: string | null;
+}
+
 export interface IHorarioRequest {
   horaApertura: string;
   horaCierre:   string;
@@ -41,6 +46,10 @@ export class NegocioService {
 
   cerrar(): Observable<any> {
     return this.http.post(`${this.url}/cerrar`, {});
+  }
+
+  getContactosPublicos(): Observable<IContactosPublicos> {
+    return this.http.get<IContactosPublicos>(`${this.url}/contactos`);
   }
 
   actualizarContactos(data: IContactosRequest): Observable<any> {

@@ -163,6 +163,12 @@ export interface IVentaDirectaRequest {
     precioVenta: number;
     subTotal:    number;
   }[];
+  // Ticket para envío por correo (anidado en notificacion, el back lo envía si está presente)
+  notificacion?: {
+    enviarCorreo?:   boolean;
+    correo?:         string;
+    ticketHtml?:     string;
+  };
 }
 
 export interface IClienteSinRegistro {

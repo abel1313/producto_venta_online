@@ -311,6 +311,22 @@
              [placeholder]="abonoForm.metodoPago === 'TRANSFERENCIA' ? 'Ej: 123456789' : 'Ej: primer abono'">
     </div>
 
+    <!-- Enviar ticket por correo -->
+    <div class="ab-field ab-ticket-checks">
+      <label class="ab-label">Enviar ticket</label>
+      <!-- Cliente con correo registrado → checkbox -->
+      <label *ngIf="correoDisponible" class="ab-check-label">
+        <input type="checkbox" [(ngModel)]="enviarCorreo">
+        📧 Correo del cliente
+      </label>
+      <!-- Sin correo registrado → input manual -->
+      <div *ngIf="!correoDisponible" class="ab-correo-manual">
+        <span class="ab-check-hint">Sin correo registrado — escríbelo para enviar el ticket (opcional)</span>
+        <input type="email" class="ab-input-correo" [(ngModel)]="correoManual"
+               placeholder="correo@ejemplo.com" autocomplete="email">
+      </div>
+    </div>
+
   </div>
 
   <div class="ab-modal__footer">

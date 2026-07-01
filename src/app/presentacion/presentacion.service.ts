@@ -44,7 +44,7 @@ export class PresentacionService {
   constructor(private readonly http: HttpClient) {}
 
   getImagenUrl(id: number): string {
-    return `${this.url}/${id}/imagen`;
+    return `${this.urlV2}/${id}/imagen`;
   }
 
   getImagenUrlV2(id: number): string {
@@ -52,7 +52,7 @@ export class PresentacionService {
   }
 
   getImagenesPorTipo(tipo: 'LOGIN' | 'REGISTRO'): Observable<IImagenPresentacion[]> {
-    return this.http.get<IImagenPresentacion[]>(`${this.url}?tipo=${tipo}`);
+    return this.http.get<IImagenPresentacion[]>(`${this.urlV2}?tipo=${tipo}`);
   }
 
     getTodasImagenesPorId(id: number): Observable<any> {
@@ -60,7 +60,7 @@ export class PresentacionService {
   }
 
   getTodasImagenes(): Observable<any> {
-    return this.http.get<any>(`${this.url}/todas`);
+    return this.http.get<any>(`${this.urlV2}/todas`);
   }
 
   getTodasImagenesV2(): Observable<IImagenPresentacionV2Dto[]> {
@@ -69,7 +69,7 @@ export class PresentacionService {
   }
 
   actualizarImagen(id: number, data: IImagenUpdateRequest): Observable<any> {
-    return this.http.put<any>(`${this.url}/${id}`, data);
+    return this.http.put<any>(`${this.urlV2}/${id}`, data);
   }
 
   actualizarImagenV2(id: number, data: IImagenUpdateRequest): Observable<IImagenPresentacionV2Dto> {

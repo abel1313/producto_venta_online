@@ -3024,3 +3024,151 @@ Devuelve todos los pedidos `APARTADO` o `FIADO` con `estadoPedido = "PAGADO"`.
 | `PAGADO` | Liquidado (cierre de APARTADO o FIADO) |
 | `Entregado` | Confirmado por flujo normal de venta (ya existía) |
 | `cancelado` | Cancelado (ya existía) |
+
+---
+
+## Chatbot — Tarjetas de productos (2026-07-01)
+
+### Qué cambia
+
+El chatbot ahora puede mostrar productos como **tarjetas visuales** cuando el cliente pide ver
+productos por categoría o marca. El response del chatbot incluye campos nuevos opcionales.
+La paginación ("ver más") se hace con un endpoint separado **sin pasar por la IA** (0 tokens extra).
+
+---
+
+### 1. POST /v1/chatbot/mensaje — response extendido
+
+**Sin cambio en el request** — sigue igual que antes.
+
+**Response cuando el bot quiere mostrar productos:**
+```json
+{
+  "respuesta": "¡Claro, aquí te muestro! 👜",
+  "bloqueado": false,
+  "segundosEspera": 0,
+  "productos": [
+    {
+      "varianteId": 12,
+      "nombre": "Bolsa Coach Café",
+      "marca": "Coach",
+      "talla": "única",
+      "color": "café",
+      "precio": 850.0,
+      "stock": 5
+    },
+    {
+      "varianteId": 13,
+      "nombre": "Bolsa Coach Negra",
+      "marca": "Coach",
+      "talla": "única",
+      "color": "negra",
+      "precio": 900.0,
+      "stock": 3
+    }
+  ],
+  "hayMas": true,
+  "busquedaQuery": "Coach",
+  "busquedaOffset": 2
+}
+```
+
+**Response cuando el bot responde texto normal (sin productos):**
+```json
+{
+  "respuesta": "Hola, ¿en qué te puedo ayudar? 😊",
+  "bloqueado": false,
+  "segundosEspera": 0
+}
+```
+Los campos `productos`, `hayMas`, `busquedaQuery` y `busquedaOffset` **solo aparecen** cuando
+el bot quiere mostrar tarjetas. Si no están en el response, simplemente no renderizar tarjetas.
+
+---
+
+### 2. GET /v1/chatbot/buscar — "Ver más" sin IA
+
+Llamar este endpoint cuando el usuario hace clic en el botón **"Ver más"**.
+No llama a OpenAI, solo consulta la BD. Muy rápido y sin costo de tokens.
+
+**Request:**
+```
+GET /mis-productos/v1/chatbot/buscar?q=Coach&offset=2
+```
+| Param | Tipo | Descripción |
+|---|---|---|
+| `q` | string | La misma búsqueda del response anterior (`busquedaQuery`) |
+| `offset` | number | El valor de `busquedaOffset` del response anterior |
+
+**Response:**
+```json
+{
+  "productos": [ ... ],
+  "hayMas": false,
+  "busquedaQuery": "Coach",
+  "busquedaOffset": 4
+}
+```
+
+---
+
+### 3. Cómo obtener la imagen de cada tarjeta
+
+Cada producto tiene `varianteId`. Usar el endpoint ya existente:
+
+```
+GET /mis-productos/v1/variantes/imagenes/{varianteId}
+```
+Tomar el **primer elemento** del array que devuelve. Si el array está vacío, mostrar imagen placeholder.
+
+---
+
+### 4. Flujo completo para el front
+
+```
+1. Usuario escribe "tienes bolsas?"
+2. Front → POST /v1/chatbot/mensaje
+3. Response tiene productos[] y hayMas=true
+4. Front muestra:
+   - Burbuja de chat con respuesta.respuesta
+   - 2 tarjetas de producto debajo (con imagen de /variantes/imagenes/{id})
+   - Botón "Ver más" si hayMas=true
+
+5. Usuario hace clic en "Ver más"
+6. Front → GET /v1/chatbot/buscar?q={busquedaQuery}&offset={busquedaOffset}
+7. Response trae 2 productos más
+8. Front AGREGA las tarjetas nuevas debajo de las anteriores (no reemplaza)
+9. Si el nuevo hayMas=false, ocultar el botón "Ver más"
+
+10. Usuario escoge un producto → lo puede agregar al carrito normalmente
+```
+
+---
+
+### 5. Diseño sugerido de tarjeta
+
+```
+┌─────────────────────┐
+│   [imagen 150x150]  │
+├─────────────────────┤
+│ Bolsa Coach Café    │
+│ Marca: Coach        │
+│ Color: café         │
+│ Talla: única        │
+│ $850.00             │
+│ Stock: 5 pzas       │
+│  [Ver detalle]      │
+└─────────────────────┘
+```
+
+El botón "Ver detalle" puede abrir el modal/página de producto existente
+usando `varianteId` para hacer el fetch de detalle.
+
+---
+
+### 6. Notas importantes
+
+- `marca`, `talla`, `color` pueden ser `null` — mostrar solo los que tengan valor.
+- `hayMas` es `false` cuando ya no hay más resultados — ocultar el botón.
+- El botón "Ver más" siempre usa `busquedaQuery` y `busquedaOffset` del **último response**.
+- Si el usuario hace una nueva pregunta después de ver tarjetas, el historial del chat continúa normalmente.

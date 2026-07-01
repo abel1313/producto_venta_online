@@ -18,21 +18,68 @@
     </div>
 
     <div class="cb-msgs" #msgsRef>
-      <div *ngFor="let m of mensajes"
-           class="cb-row"
-           [class.cb-row--user]="m.rol === 'user'"
-           [class.cb-row--bot]="m.rol === 'assistant' || m.rol === 'typing'">
-        <div *ngIf="m.rol !== 'user'" class="cb-avatar">🤖</div>
-        <div class="cb-burbuja"
-             [class.cb-burbuja--user]="m.rol === 'user'"
-             [class.cb-burbuja--bot]="m.rol === 'assistant'"
-             [class.cb-burbuja--typing]="m.rol === 'typing'">
-          <div *ngIf="m.rol === 'typing'" class="cb-typing">
-            <span></span><span></span><span></span>
+      <ng-container *ngFor="let m of mensajes">
+
+        <!-- Burbuja de mensaje -->
+        <div class="cb-row"
+             [class.cb-row--user]="m.rol === 'user'"
+             [class.cb-row--bot]="m.rol === 'assistant' || m.rol === 'typing'">
+          <div *ngIf="m.rol !== 'user'" class="cb-avatar">🤖</div>
+          <div class="cb-burbuja"
+               [class.cb-burbuja--user]="m.rol === 'user'"
+               [class.cb-burbuja--bot]="m.rol === 'assistant'"
+               [class.cb-burbuja--typing]="m.rol === 'typing'">
+            <div *ngIf="m.rol === 'typing'" class="cb-typing">
+              <span></span><span></span><span></span>
+            </div>
+            <p *ngIf="m.rol !== 'typing'" class="cb-burbuja__text">{{ m.contenido }}</p>
           </div>
-          <p *ngIf="m.rol !== 'typing'" class="cb-burbuja__text">{{ m.contenido }}</p>
         </div>
-      </div>
+
+        <!-- Tarjetas de productos (solo en respuestas del bot) -->
+        <div *ngIf="m.rol === 'assistant' && m.productos?.length" class="cb-cards-row">
+          <div class="cb-cards-spacer"></div>
+          <div class="cb-cards-wrap">
+            <div class="cb-cards-grid">
+              <div *ngFor="let p of m.productos" class="cb-card">
+                <img *ngIf="imagenesVariante.get(p.varianteId)"
+                     [src]="imagenesVariante.get(p.varianteId)"
+                     class="cb-card__img"
+                     [alt]="p.nombre" />
+                <div *ngIf="!imagenesVariante.get(p.varianteId)" class="cb-card__placeholder">📦</div>
+                <div class="cb-card__body">
+                  <p class="cb-card__nombre">{{ p.nombre }}</p>
+                  <p *ngIf="p.marca" class="cb-card__meta">🏷️ {{ p.marca }}</p>
+                  <p *ngIf="p.color" class="cb-card__meta">🎨 {{ p.color }}</p>
+                  <p *ngIf="p.talla" class="cb-card__meta">📐 {{ p.talla }}</p>
+                  <p class="cb-card__precio">${{ p.precio | number:'1.2-2' }}</p>
+                  <p class="cb-card__stock">{{ p.stock }} pzas</p>
+                </div>
+                <div class="cb-card__actions">
+                  <button class="cb-btn-add"
+                          [disabled]="p.stock <= 0"
+                          (click)="agregarAlCarrito(p)">
+                    🛒 Agregar
+                  </button>
+                  <button *ngIf="carritoService.estaEnCarrito(p.varianteId)"
+                          class="cb-btn-remove"
+                          title="Quitar del carrito"
+                          (click)="quitarDelCarrito(p.varianteId)">
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button *ngIf="m.hayMas"
+                    class="cb-btn-mas"
+                    [disabled]="m.cargandoMas"
+                    (click)="verMas(m)">
+              {{ m.cargandoMas ? 'Cargando...' : 'Ver más ➜' }}
+            </button>
+          </div>
+        </div>
+
+      </ng-container>
     </div>
 
     <div *ngIf="inputBloqueado" class="cb-cooldown">{{ labelEspera }}</div>

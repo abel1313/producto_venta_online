@@ -1,10 +1,17 @@
 import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ChatbotService, IMensajeChat, IChatbotResponse } from './chatbot.service';
-import { NegocioService, INegocioEstado } from '../negocio/negocio.service';
+import { ChatbotService, IMensajeChat, IChatbotResponse, IChatbotProducto, IChatbotBuscarResponse } from './chatbot.service';
+import { NegocioService } from '../negocio/negocio.service';
+import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
+import { IVarianteResumen } from '../variante/models/variante.model';
 
 interface IBurbuja {
-  rol: 'user' | 'assistant' | 'typing';
-  contenido: string;
+  rol:             'user' | 'assistant' | 'typing';
+  contenido:       string;
+  productos?:      IChatbotProducto[];
+  hayMas?:         boolean;
+  busquedaQuery?:  string;
+  busquedaOffset?: number;
+  cargandoMas?:    boolean;
 }
 
 @Component({
@@ -15,11 +22,12 @@ interface IBurbuja {
 export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('msgsRef') msgsRef!: ElementRef<HTMLDivElement>;
 
-  minimizado      = true;
-  mensajes:       IBurbuja[] = [];
-  historial:      IMensajeChat[] = [];
-  inputTexto      = '';
-  cargando        = false;
+  minimizado        = true;
+  mensajes:         IBurbuja[] = [];
+  historial:        IMensajeChat[] = [];
+  inputTexto        = '';
+  cargando          = false;
+  imagenesVariante  = new Map<number, string>();
 
   // ── Estado de bloqueo ─────────────────────────────────────────────
   inputBloqueado    = false;
@@ -27,36 +35,28 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   segundosRestantes = 0;
 
   // ── Estado del negocio ────────────────────────────────────────────
-  negocioCerrado  = false;
-  whatsappUrl:    string | null = null;
-  facebookUrl:    string | null = null;
+  negocioCerrado = false;
+  whatsappUrl:   string | null = null;
+  facebookUrl:   string | null = null;
 
-  private countdownInterval: any  = null;
+  private countdownInterval: any = null;
   private pendingScroll = false;
 
   constructor(
     private readonly chatbotService: ChatbotService,
-    private readonly negocioService: NegocioService
+    private readonly negocioService: NegocioService,
+    readonly carritoService: CarritoVarianteService
   ) {}
 
   ngOnInit(): void {
     this.negocioService.getEstado().subscribe({
       next: (res: any) => {
-        console.log(res, "estadossss ")
-        const estado = res.data as any; 
+        const estado = res.data as any;
         this.negocioCerrado = !estado.abierto;
         this.whatsappUrl    = estado.whatsappUrl;
         this.facebookUrl    = estado.facebookUrl;
-        console.log("estadossss ", estado);
-        
-        console.log(this.negocioCerrado," cerrado ");
-        console.log(this.whatsappUrl, "whats");
-        console.log(this.facebookUrl, " face");
-        
-        
-        
       },
-      error: () => {} // silencioso — no interrumpe el chat
+      error: () => {}
     });
   }
 
@@ -100,11 +100,23 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.chatbotService.enviar(texto, this.historial.slice(-10)).subscribe({
       next: (res: IChatbotResponse) => {
         this.mensajes = this.mensajes.filter(m => m.rol !== 'typing');
-        this.mensajes.push({ rol: 'assistant', contenido: res.respuesta });
+        const burbuja: IBurbuja = {
+          rol:             'assistant',
+          contenido:       res.respuesta,
+          productos:       res.productos,
+          hayMas:          res.hayMas,
+          busquedaQuery:   res.busquedaQuery,
+          busquedaOffset:  res.busquedaOffset
+        };
+        this.mensajes.push(burbuja);
         this.historial.push({ rol: 'user',      contenido: texto });
         this.historial.push({ rol: 'assistant', contenido: res.respuesta });
         this.cargando      = false;
         this.pendingScroll = true;
+
+        if (res.productos?.length) {
+          this.cargarImagenesProductos(res.productos);
+        }
 
         if (res.segundosEspera > 0) {
           this.aplicarCooldown(res.segundosEspera, res.bloqueado);
@@ -124,6 +136,51 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
       e.preventDefault();
       this.enviar();
     }
+  }
+
+  // ── Productos ─────────────────────────────────────────────────────
+
+  private cargarImagenesProductos(productos: IChatbotProducto[]): void {
+    for (const p of productos) {
+      if (!this.imagenesVariante.has(p.varianteId)) {
+        this.chatbotService.getImagenVariante(p.varianteId).subscribe(url => {
+          if (url) this.imagenesVariante.set(p.varianteId, url);
+        });
+      }
+    }
+  }
+
+  verMas(burbuja: IBurbuja): void {
+    if (!burbuja.busquedaQuery || burbuja.cargandoMas) return;
+    burbuja.cargandoMas = true;
+    this.chatbotService.buscar(burbuja.busquedaQuery, burbuja.busquedaOffset ?? 0).subscribe({
+      next: (res: IChatbotBuscarResponse) => {
+        burbuja.productos      = [...(burbuja.productos ?? []), ...res.productos];
+        burbuja.hayMas         = res.hayMas;
+        burbuja.busquedaOffset = res.busquedaOffset;
+        burbuja.cargandoMas    = false;
+        this.pendingScroll     = true;
+        this.cargarImagenesProductos(res.productos);
+      },
+      error: () => { burbuja.cargandoMas = false; }
+    });
+  }
+
+  agregarAlCarrito(p: IChatbotProducto): void {
+    const variante: IVarianteResumen = {
+      id:        p.varianteId,
+      marca:     p.marca,
+      talla:     p.talla,
+      color:     p.color,
+      precio:    p.precio,
+      stock:     p.stock,
+      imagenUrl: this.imagenesVariante.get(p.varianteId) ?? null
+    };
+    this.carritoService.agregar(variante);
+  }
+
+  quitarDelCarrito(varianteId: number): void {
+    this.carritoService.eliminar(varianteId);
   }
 
   // ── Cooldown / bloqueo ────────────────────────────────────────────

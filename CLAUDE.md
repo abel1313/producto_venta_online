@@ -2755,3 +2755,39 @@ agregar un cliente para la rifa.
 - `src/app/variante/venta-directa/venta-directa.component.ts` → `cobrar()` con Swal; nuevo `ejecutarVentaConAdmin()`; `obtenerDatosClienteSinRegistro()` con rama `cobrarPendiente`; `closeModalModalSinRegistro()` y `limpiarTodo()` resetean el flag
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT CHATBOT — TARJETAS DE PRODUCTOS + CARRITO (2026-07-01)
+
+> Implementación del spec en `CAMBIOS_FRONT.md` sección "Chatbot — Tarjetas de productos".
+> Cuando el backend devuelve `productos[]` en la respuesta del chatbot, se muestran cards
+> debajo de la burbuja del bot con imagen, datos y acciones de carrito.
+
+### Flujo completo
+
+1. `POST /v1/chatbot/mensaje` puede devolver campos opcionales: `productos[]`, `hayMas`, `busquedaQuery`, `busquedaOffset`.
+2. Si `productos.length > 0` → se renderizan cards en grid 2 columnas bajo la burbuja.
+3. Imágenes: `GET /v1/variantes/imagenes/{varianteId}` → toma `data[0].urlImagen`. Placeholder 📦 si vacío o error.
+4. "Ver más": `GET /v1/chatbot/buscar?q={busquedaQuery}&offset={busquedaOffset}` — APPENDE cards nuevas, no reemplaza.
+5. Botón "🛒 Agregar" → `CarritoVarianteService.agregar()` con los datos de la variante.
+6. Botón "✕" (solo visible cuando ya está en carrito) → `CarritoVarianteService.eliminar(varianteId)`.
+
+### Campos opcionales en `IChatbotProducto`
+
+`marca`, `talla`, `color` se muestran solo si no son `null`.
+
+### Nuevos campos en `IBurbuja`
+
+`productos?`, `hayMas?`, `busquedaQuery?`, `busquedaOffset?`, `cargandoMas?`
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/chatbot/chatbot.service.ts` | +`IChatbotProducto`, `IChatbotBuscarResponse`; extendido `IChatbotResponse`; +`buscar()`, `getImagenVariante()` |
+| `src/app/chatbot/chatbot.component.ts` | +`imagenesVariante: Map<number, string>`; inyecta `CarritoVarianteService`; +`cargarImagenesProductos()`, `verMas()`, `agregarAlCarrito()`, `quitarDelCarrito()`; `enviar()` puebla productos en burbuja |
+| `src/app/chatbot/chatbot.component.html` | `*ngFor` → `ng-container`; +bloque de tarjetas `.cb-cards-row` con grid 2 columnas y botón "Ver más" |
+| `src/app/chatbot/chatbot.component.scss` | +`.cb-cards-row`, `.cb-cards-spacer`, `.cb-cards-wrap`, `.cb-cards-grid`, `.cb-card` (BEM), `.cb-btn-add`, `.cb-btn-remove`, `.cb-btn-mas`; dark mode al final |
+
+**Verificado con `ng build --configuration=development` sin errores.**

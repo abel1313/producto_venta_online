@@ -18,6 +18,9 @@
       </span>
     </div>
     <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
+    <button *ngIf="isAdmin" class="dp-btn-reenviar" type="button" (click)="reenviarComprobanteManual()" title="Reenviar ticket por correo">
+      📧 Reenviar ticket
+    </button>
   </div>
 
   <!-- FORM DE ABONO (solo crédito) -->

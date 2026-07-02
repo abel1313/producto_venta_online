@@ -35,6 +35,16 @@ const routes: Routes = [
     loadChildren: () => import('./abonos/abonos.module').then(m => m.AbonosModule),
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
+  {
+    path: 'reportes',
+    loadChildren: () => import('./reportes/reportes.module').then(m => m.ReportesModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
+    path: 'dashboard',
+    loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
     {
     path: 'pedidos',
     loadChildren: () => import('./pedidos/pedidos.module').then(m => m.PedidosModule)

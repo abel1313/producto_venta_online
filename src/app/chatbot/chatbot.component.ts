@@ -1,8 +1,11 @@
 import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChatbotService, IMensajeChat, IChatbotResponse, IChatbotProducto, IChatbotBuscarResponse } from './chatbot.service';
 import { NegocioService } from '../negocio/negocio.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
+import { AuthenticateService } from '../auth.service';
 import { IVarianteResumen } from '../variante/models/variante.model';
+import Swal from 'sweetalert2';
 
 interface IBurbuja {
   rol:             'user' | 'assistant' | 'typing';
@@ -48,7 +51,9 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   constructor(
     private readonly chatbotService: ChatbotService,
     private readonly negocioService: NegocioService,
-    readonly carritoService: CarritoVarianteService
+    readonly carritoService: CarritoVarianteService,
+    private readonly authService: AuthenticateService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -170,6 +175,20 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   agregarAlCarrito(p: IChatbotProducto): void {
+    if (!this.authService.getAccessToken()) {
+      Swal.fire({
+        icon: 'info',
+        title: '¡Regístrate para comprar!',
+        text: 'Necesitas una cuenta para agregar productos al carrito.',
+        confirmButtonText: 'Crear cuenta',
+        showCancelButton: true,
+        cancelButtonText: 'Cerrar',
+        confirmButtonColor: '#6366f1',
+      }).then(res => {
+        if (res.isConfirmed) this.router.navigate(['/usuarios/registrar']);
+      });
+      return;
+    }
     const variante: IVarianteResumen = {
       id:        p.varianteId,
       marca:     p.marca,

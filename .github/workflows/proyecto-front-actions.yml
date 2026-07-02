@@ -33,4 +33,9 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: sudo kubectl rollout restart deployment proyecto-key-front-deployment -n default
+          script: |
+            CONTAINER=$(sudo kubectl get deployment proyecto-key-front-deployment -n default -o jsonpath='{.spec.template.spec.containers[0].name}')
+            sudo kubectl set image deployment/proyecto-key-front-deployment \
+              $CONTAINER=${{ secrets.DOCKER_USERNAME }}/front-jade-service:v${{ github.run_number }} \
+              -n default
+            sudo kubectl rollout status deployment/proyecto-key-front-deployment -n default --timeout=120s

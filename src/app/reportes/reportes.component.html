@@ -1,0 +1,235 @@
+<div class="rp-page">
+
+  <!-- Header -->
+  <div class="rp-header">
+    <div class="rp-header__content">
+      <h4 class="rp-header__title">📊 Reportes de ventas</h4>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="rp-tabs">
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'diario'"     (click)="setTab('diario')">📅 Diario</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'mensual'"    (click)="setTab('mensual')">📆 Mensual</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    (click)="setTab('cliente')">👤 Por cliente</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
+  </div>
+
+  <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'diario'" class="rp-panel">
+    <div class="rp-filtros">
+      <label class="rp-label">Fecha</label>
+      <input type="date" class="rp-input" [(ngModel)]="fechaDiario" (change)="buscarDiario()" />
+    </div>
+
+    <div *ngIf="cargandoDiario" class="rp-loading">Cargando…</div>
+
+    <div *ngIf="diario && !cargandoDiario" class="rp-cards-row">
+      <div class="rp-stat-card">
+        <span class="rp-stat-card__label">Total vendido</span>
+        <span class="rp-stat-card__val">${{ diario.totalVenta | number:'1.2-2' }}</span>
+      </div>
+      <div class="rp-stat-card">
+        <span class="rp-stat-card__label">Ganancia</span>
+        <span class="rp-stat-card__val rp-stat-card__val--green">${{ diario.totalGanancia | number:'1.2-2' }}</span>
+      </div>
+      <div class="rp-stat-card">
+        <span class="rp-stat-card__label">Ventas realizadas</span>
+        <span class="rp-stat-card__val">{{ diario.cantidadVentas }}</span>
+      </div>
+    </div>
+
+    <p *ngIf="diario && !cargandoDiario && diario.cantidadVentas === 0" class="rp-empty">Sin ventas ese día.</p>
+  </div>
+
+  <!-- ── MENSUAL ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'mensual'" class="rp-panel">
+    <div class="rp-filtros">
+      <label class="rp-label">Mes</label>
+      <input type="month" class="rp-input" [(ngModel)]="mesSeleccionado" (change)="buscarMensual()" />
+    </div>
+
+    <div *ngIf="!mensual && !cargandoMensual" class="rp-empty">
+      <button class="rp-btn--primary" (click)="buscarMensual()">Cargar reporte</button>
+    </div>
+
+    <div *ngIf="cargandoMensual" class="rp-loading">Cargando…</div>
+
+    <ng-container *ngIf="mensual && !cargandoMensual">
+      <div class="rp-cards-row">
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Total mes</span>
+          <span class="rp-stat-card__val">${{ mensual.totalVenta | number:'1.2-2' }}</span>
+        </div>
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Ganancia mes</span>
+          <span class="rp-stat-card__val rp-stat-card__val--green">${{ mensual.totalGanancia | number:'1.2-2' }}</span>
+        </div>
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Ventas del mes</span>
+          <span class="rp-stat-card__val">{{ mensual.cantidadVentas }}</span>
+        </div>
+      </div>
+
+      <!-- Gráfica combinada: barras ventas + línea ganancia -->
+      <div *ngIf="mensual.porDia.length > 0" class="rp-chart-wrap">
+        <h6 class="rp-chart-title">Ventas vs Ganancia por día — {{ mensual.mes }}</h6>
+        <canvas #barCanvas></canvas>
+      </div>
+
+      <!-- Tabla detalle por día -->
+      <div *ngIf="mensual.porDia.length > 0" class="rp-table-wrap">
+        <table class="rp-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th class="rp-table__num">Ventas</th>
+              <th class="rp-table__num">Total ($)</th>
+              <th class="rp-table__num">Ganancia ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of mensual.porDia">
+              <td>{{ formatFecha(d.fecha) }}</td>
+              <td class="rp-table__num">{{ d.cantidadVentas }}</td>
+              <td class="rp-table__num">${{ d.totalVenta | number:'1.2-2' }}</td>
+              <td class="rp-table__num rp-table__num--green">${{ d.totalGanancia | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p *ngIf="mensual.cantidadVentas === 0" class="rp-empty">Sin ventas ese mes.</p>
+    </ng-container>
+  </div>
+
+  <!-- ── POR CLIENTE ─────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'cliente'" class="rp-panel">
+    <div class="rp-filtros rp-filtros--row">
+      <div class="rp-filtro-group rp-filtro-group--search">
+        <label class="rp-label">Buscar cliente por nombre</label>
+        <div class="rp-search-wrap">
+          <input type="text" class="rp-input" [(ngModel)]="terminoCliente"
+                 (ngModelChange)="onTerminoClienteChange()"
+                 placeholder="Escribe al menos 2 letras…"
+                 autocomplete="off" />
+          <div *ngIf="mostrarDropdownCliente" class="rp-dropdown">
+            <div *ngFor="let c of clientesSugeridos" class="rp-dropdown__item"
+                 (click)="seleccionarCliente(c)">
+              {{ c.nombrePersona }} {{ c.apeidoPaterno }}
+              <span class="rp-dropdown__sub">{{ c.correoElectronico || c.numeroTelefonico }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="cargandoCliente" class="rp-loading">Cargando…</div>
+
+    <ng-container *ngIf="reporteCliente && !cargandoCliente">
+      <div class="rp-cliente-header">
+        <span class="rp-cliente-nombre">{{ reporteCliente.clienteNombre }}</span>
+        <span class="rp-cliente-id">#{{ reporteCliente.clienteId }}</span>
+      </div>
+      <div class="rp-cards-row">
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Total compras</span>
+          <span class="rp-stat-card__val">{{ reporteCliente.totalCompras }}</span>
+        </div>
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Total gastado</span>
+          <span class="rp-stat-card__val">${{ reporteCliente.totalGastado | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Gráfica de tendencia de compras -->
+      <div *ngIf="reporteCliente.ventas.length > 1" class="rp-chart-wrap">
+        <h6 class="rp-chart-title">Historial de compras — {{ reporteCliente.clienteNombre }}</h6>
+        <canvas #clienteCanvas></canvas>
+      </div>
+
+      <div *ngIf="reporteCliente.ventas.length > 0" class="rp-table-wrap">
+        <table class="rp-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Fecha</th>
+              <th class="rp-table__num">Total ($)</th>
+              <th class="rp-table__num">Ganancia ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of reporteCliente.ventas">
+              <td>#{{ v.ventaId }}</td>
+              <td>{{ formatFechaHora(v.fechaVenta) }}</td>
+              <td class="rp-table__num">${{ v.totalVenta | number:'1.2-2' }}</td>
+              <td class="rp-table__num rp-table__num--green">${{ v.gananciaTotal | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p *ngIf="reporteCliente.totalCompras === 0" class="rp-empty">Este cliente no tiene compras registradas.</p>
+    </ng-container>
+  </div>
+
+  <!-- ── MÁS VENDIDOS ───────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'masVendidos'" class="rp-panel">
+    <div class="rp-filtros rp-filtros--row">
+      <div class="rp-filtro-group">
+        <label class="rp-label">Desde</label>
+        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="desdeVendidos" />
+      </div>
+      <div class="rp-filtro-group">
+        <label class="rp-label">Hasta</label>
+        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="hastaVendidos" />
+      </div>
+      <div class="rp-filtro-group">
+        <label class="rp-label">Top</label>
+        <input type="number" class="rp-input rp-input--xs" [(ngModel)]="limiteVendidos" min="1" max="50" />
+      </div>
+      <button class="rp-btn--primary" [disabled]="!desdeVendidos || !hastaVendidos || cargandoVendidos" (click)="buscarMasVendidos()">Buscar</button>
+    </div>
+
+    <div *ngIf="cargandoVendidos" class="rp-loading">Cargando…</div>
+
+    <!-- Gráfica de barras horizontales -->
+    <div *ngIf="masVendidos.length > 0 && !cargandoVendidos" class="rp-chart-wrap">
+      <h6 class="rp-chart-title">Top {{ masVendidos.length }} productos más vendidos</h6>
+      <canvas #masVendidosCanvas></canvas>
+    </div>
+
+    <div *ngIf="masVendidos.length > 0 && !cargandoVendidos" class="rp-table-wrap">
+      <table class="rp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Producto</th>
+            <th>Talla</th>
+            <th>Color</th>
+            <th class="rp-table__num">Unidades</th>
+            <th class="rp-table__num">Total ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of masVendidos; let i = index" [class.rp-tr--top3]="i < 3">
+            <td class="rp-rank">
+              <span *ngIf="i === 0">🥇</span>
+              <span *ngIf="i === 1">🥈</span>
+              <span *ngIf="i === 2">🥉</span>
+              <span *ngIf="i >= 3">{{ i + 1 }}</span>
+            </td>
+            <td>{{ p.productoNombre }}</td>
+            <td>{{ p.talla || '—' }}</td>
+            <td>{{ p.color || '—' }}</td>
+            <td class="rp-table__num">{{ p.cantidadVendida }}</td>
+            <td class="rp-table__num">${{ p.totalVendido | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p *ngIf="masVendidos.length === 0 && !cargandoVendidos" class="rp-empty">Sin datos para ese rango. Ajusta las fechas y busca de nuevo.</p>
+  </div>
+
+</div>

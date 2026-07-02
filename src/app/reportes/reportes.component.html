@@ -106,11 +106,22 @@
   <!-- ── POR CLIENTE ─────────────────────────────────────────────────────── -->
   <div *ngIf="tab === 'cliente'" class="rp-panel">
     <div class="rp-filtros rp-filtros--row">
-      <div class="rp-filtro-group">
-        <label class="rp-label">ID del cliente</label>
-        <input type="number" class="rp-input rp-input--sm" [(ngModel)]="clienteId" placeholder="ej. 5" min="1" />
+      <div class="rp-filtro-group rp-filtro-group--search">
+        <label class="rp-label">Buscar cliente por nombre</label>
+        <div class="rp-search-wrap">
+          <input type="text" class="rp-input" [(ngModel)]="terminoCliente"
+                 (ngModelChange)="onTerminoClienteChange()"
+                 placeholder="Escribe al menos 2 letras…"
+                 autocomplete="off" />
+          <div *ngIf="mostrarDropdownCliente" class="rp-dropdown">
+            <div *ngFor="let c of clientesSugeridos" class="rp-dropdown__item"
+                 (click)="seleccionarCliente(c)">
+              {{ c.nombrePersona }} {{ c.apeidoPaterno }}
+              <span class="rp-dropdown__sub">{{ c.correoElectronico || c.numeroTelefonico }}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <button class="rp-btn--primary" [disabled]="!clienteId || cargandoCliente" (click)="buscarCliente()">Buscar</button>
     </div>
 
     <div *ngIf="cargandoCliente" class="rp-loading">Cargando…</div>

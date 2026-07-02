@@ -1,4 +1,6 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
 import {
@@ -8,6 +10,8 @@ import {
   ReporteMensual,
   ReportesService,
 } from './service/reportes.service';
+import { ClienteService } from '../clietes/cliente.service';
+import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/models/pedidos.model';
 
 Chart.register(...registerables);
 
@@ -40,10 +44,15 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   private pendingMensual: ReporteMensual | null = null;
 
   // — Por cliente —
-  clienteId: number | null = null;
+  terminoCliente   = '';
+  clientesSugeridos: IClienteBusquedaDto[] = [];
+  clienteSeleccionado: IClienteBusquedaDto | null = null;
+  mostrarDropdownCliente = false;
   reporteCliente: ReporteCliente | null = null;
   cargandoCliente = false;
   private pendingCliente: ReporteCliente | null = null;
+  private clienteSearch$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   // — Más vendidos —
   desdeVendidos: string = this.primerDiaMes();
@@ -53,10 +62,24 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   cargandoVendidos = false;
   private pendingVendidos: ProductoMasVendido[] | null = null;
 
-  constructor(private readonly svc: ReportesService) {}
+  constructor(
+    private readonly svc: ReportesService,
+    private readonly clienteService: ClienteService,
+  ) {}
 
   ngOnInit(): void {
     this.buscarDiario();
+    this.clienteSearch$.pipe(
+      debounceTime(350),
+      distinctUntilChanged(),
+      switchMap(t => t.length >= 2
+        ? this.clienteService.buscarClientes(t, 0, 8)
+        : [null]
+      )
+    ).subscribe(res => {
+      this.clientesSugeridos = res?.data?.list ?? [];
+      this.mostrarDropdownCliente = this.clientesSugeridos.length > 0;
+    });
   }
 
   ngAfterViewInit(): void {
@@ -69,10 +92,13 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.barChart?.destroy();
     this.masVendidosChart?.destroy();
     this.clienteChart?.destroy();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   setTab(t: Tab): void {
     this.tab = t;
+    this.mostrarDropdownCliente = false;
     if (t === 'mensual' && this.mensual) {
       setTimeout(() => this.renderMensualChart(this.mensual!), 50);
     }
@@ -183,13 +209,26 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── CLIENTE ────────────────────────────────────────────────────────────────
 
-  buscarCliente(): void {
-    if (!this.clienteId) return;
+  onTerminoClienteChange(): void {
+    this.clienteSeleccionado = null;
+    this.reporteCliente      = null;
+    this.clienteSearch$.next(this.terminoCliente);
+  }
+
+  seleccionarCliente(c: IClienteBusquedaDto): void {
+    this.clienteSeleccionado   = c;
+    this.terminoCliente        = `${c.nombrePersona} ${c.apeidoPaterno}`.trim();
+    this.clientesSugeridos     = [];
+    this.mostrarDropdownCliente = false;
+    this.cargarReporteCliente(c.id);
+  }
+
+  private cargarReporteCliente(id: number): void {
     this.cargandoCliente = true;
-    this.reporteCliente = null;
-    this.svc.getCliente(this.clienteId).subscribe({
+    this.reporteCliente  = null;
+    this.svc.getCliente(id).subscribe({
       next: c => {
-        this.reporteCliente = c;
+        this.reporteCliente  = c;
         this.cargandoCliente = false;
         if (c.ventas.length > 1) {
           setTimeout(() => {

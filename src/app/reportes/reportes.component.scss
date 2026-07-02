@@ -83,6 +83,46 @@
   display: flex;
   flex-direction: column;
   gap: .25rem;
+
+  &--search { flex: 1; min-width: 240px; }
+}
+
+// Buscador de cliente con dropdown
+.rp-search-wrap {
+  position: relative;
+}
+
+.rp-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--card-border, rgba(0,0,0,.12));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  z-index: 200;
+  max-height: 260px;
+  overflow-y: auto;
+
+  &__item {
+    padding: .6rem 1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: .85rem;
+    color: var(--app-text, #1e293b);
+    border-bottom: 1px solid var(--card-border, rgba(0,0,0,.06));
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(99,102,241,.08); }
+  }
+
+  &__sub {
+    font-size: .75rem;
+    color: var(--app-text-muted, #64748b);
+  }
 }
 
 .rp-label {
@@ -272,6 +312,12 @@
   .rp-tr--top3 td { background: rgba(99,102,241,.08); }
   .rp-stat-card__val { color: #e2e8f0; }
   .rp-cliente-nombre { color: #e2e8f0; }
+  .rp-dropdown {
+    background: #27272a;
+    border-color: rgba(255,255,255,.12);
+    &__item { color: #e2e8f0; border-color: rgba(255,255,255,.06); &:hover { background: rgba(99,102,241,.15); } }
+    &__sub  { color: #94a3b8; }
+  }
 }
 
 :host-context(body.theme-light) {

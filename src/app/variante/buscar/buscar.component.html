@@ -20,7 +20,7 @@
   </div>
 
   <!-- Botón escáner solo en móvil (encima del buscador) -->
-  <button class="vb-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroAdmin === 'sin-stock'">
+  <button class="vb-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroAdmin !== 'todos'">
     📷 Escanear código de barras
   </button>
 
@@ -34,14 +34,14 @@
       [(ngModel)]="terminoBusqueda"
       (keyup)="onBuscar($event)"
       autocomplete="off"
-      [disabled]="filtroAdmin === 'sin-stock'"
+      [disabled]="filtroAdmin !== 'todos'"
     />
     <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 3"
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
     <button class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras"
-            [disabled]="filtroAdmin === 'sin-stock'">
+            [disabled]="filtroAdmin !== 'todos'">
       📷
     </button>
   </div>
@@ -66,7 +66,10 @@
       (click)="cambiarFiltroAdmin('todos')">Todos</button>
     <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'sin-stock'"
       (click)="cambiarFiltroAdmin('sin-stock')">Sin stock</button>
-
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-stock'"
+      (click)="cambiarFiltroAdmin('con-stock')">Con stock</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-imagenes'"
+      (click)="cambiarFiltroAdmin('con-imagenes')">Con imágenes</button>
   </div>
   </div><!-- /vb-header__content -->
 </div>

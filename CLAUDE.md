@@ -2990,3 +2990,27 @@ Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cl
 - `src/app/reportes/reportes.component.html` → +canvas en mensual, cliente y masVendidos
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT F-14 — FILTROS ADMIN EN CATÁLOGO DE PRODUCTOS Y VARIANTES (2026-07-02)
+
+> Backend: endpoints nuevos `GET /v1/productos/admin/filtrar?filtro=...` y `GET /variantes/v1/admin/filtrar?filtro=...`.
+> Los endpoints públicos ya filtraron automáticamente por rol (sin acción front) — solo admin ve todo el catálogo sin restricción de imagen.
+
+### Cambios
+
+- `ProductoService.adminFiltrar(filtro, page, size)` → `GET /v1/productos/admin/filtrar?filtro=SIN_STOCK|CON_STOCK|CON_IMAGENES&size=...&page=...`
+- `VarianteService.adminFiltrar(filtro, pagina, size)` → `GET /variantes/v1/admin/filtrar?filtro=...&pagina=...&size=...`
+- `AllComponent` (`/productos/buscar`): `filtroActivo` extendido con `'con-stock' | 'con-imagenes'`; método `cargarAdminFiltrar()`; 2 botones nuevos "Con stock" y "Con imágenes" en la barra de filtros admin; paginación actualizada.
+- `BuscarComponent` (`/variantes/buscar`): `filtroAdmin` extendido con `'con-stock' | 'con-imagenes'`; método `cargarAdminFiltrar()`; 2 botones nuevos; paginación actualizada; condición `[disabled]` del buscador/escáner corregida de `filtroAdmin === 'sin-stock'` a `filtroAdmin !== 'todos'` (cubre todos los filtros activos).
+
+**Archivos modificados:**
+- `src/app/productos/service/producto.service.ts` → +`adminFiltrar()`
+- `src/app/variante/service/variante.service.ts` → +`adminFiltrar()`
+- `src/app/productos/producto/all/all.component.ts` → tipo extendido, +`cargarAdminFiltrar()`, `cambiarFiltro()`, `conOSinBuscar()` actualizados
+- `src/app/productos/producto/all/all.component.html` → +2 botones filtro
+- `src/app/variante/buscar/buscar.component.ts` → tipo extendido, +`cargarAdminFiltrar()`, `cambiarFiltroAdmin()`, paginación actualizada
+- `src/app/variante/buscar/buscar.component.html` → +2 botones filtro, fix disabled
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

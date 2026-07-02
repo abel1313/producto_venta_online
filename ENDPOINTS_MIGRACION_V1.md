@@ -496,3 +496,161 @@ las rutas nuevas con el mismo nivel de protección que las viejas.
    coordinación con front).
 5. **`CLAUDE.md`** describe los endpoints de `VarianteController` sin el `/v1/` — desactualizado,
    pendiente de corregir.
+
+---
+
+## SECCIÓN — ENDPOINTS PENDIENTES PARA TICKETS / COMPROBANTES
+
+> Requeridos para el módulo de tickets (imprimir y enviar por correo desde Pedidos, Ventas
+> y Abonos). El front ya tiene la generación de HTML en `src/app/shared/ticket.util.ts`.
+> Necesita 2 cambios del back.
+
+---
+
+### EP-T1 — Enriquecer `GET /v1/pedidos/{id}/detalle` (endpoint existente)
+
+**Solo agregar campos al response que ya existe. Sin cambiar path ni auth.**
+
+**Campos NUEVOS a agregar:**
+
+| Campo | Tipo Java | Descripción |
+|---|---|---|
+| `clienteCorreo` | `String` (nullable) | Correo del cliente — para auto-llenar envío de ticket |
+| `metodoPago` | `String` (nullable) | Forma de pago del pedido original (`EFECTIVO`, `TRANSFERENCIA`, `TARJETA`). Para créditos puede ser `null`. |
+| `montoDado` | `Double` (nullable) | Cuánto entregó el cliente al pagar — para calcular cambio en el ticket. `null` si no se registró. |
+| `abonos` | `List<AbonoDetalleItem>` | Historial de todos los pagos del pedido. Lista vacía `[]` para ventas normales contado. |
+
+**Shape de cada `AbonoDetalleItem`:**
+```json
+{
+  "id": 1,
+  "monto": 200.00,
+  "fechaPago": "2026-07-01T10:30:00",
+  "metodoPago": "EFECTIVO",
+  "nota": "Primer abono",
+  "montoDado": 220.00
+}
+```
+
+**Response esperado — venta NORMAL al contado:**
+```json
+{
+  "pedidoId": 123,
+  "tipoPedido": "NORMAL",
+  "estadoPedido": "Entregado",
+  "totalPedido": 300.00,
+  "totalPagado": 300.00,
+  "saldoPendiente": 0.00,
+  "fechaPedido": "2026-07-01T10:00:00",
+  "clienteNombre": "Juan Pérez",
+  "clienteTelefono": "5551234567",
+  "clienteCorreo": "juan@email.com",
+  "metodoPago": "EFECTIVO",
+  "montoDado": 350.00,
+  "detalles": [
+    { "varianteId": 1, "productoNombre": "Blusa floral", "talla": "M", "color": "Rosa", "cantidad": 2, "precioUnitario": 150.00, "subTotal": 300.00 }
+  ],
+  "abonos": []
+}
+```
+
+**Response esperado — APARTADO con 2 abonos:**
+```json
+{
+  "pedidoId": 124,
+  "tipoPedido": "APARTADO",
+  "estadoPedido": "APARTADO",
+  "totalPedido": 500.00,
+  "totalPagado": 350.00,
+  "saldoPendiente": 150.00,
+  "fechaPedido": "2026-07-01T10:00:00",
+  "clienteNombre": "Ana López",
+  "clienteTelefono": "5559876543",
+  "clienteCorreo": "ana@email.com",
+  "metodoPago": null,
+  "montoDado": null,
+  "detalles": [
+    { "varianteId": 2, "productoNombre": "Pantalón slim", "talla": "28", "color": "Negro", "cantidad": 1, "precioUnitario": 500.00, "subTotal": 500.00 }
+  ],
+  "abonos": [
+    { "id": 10, "monto": 200.00, "fechaPago": "2026-07-01T10:30:00", "metodoPago": "EFECTIVO", "nota": "Enganche", "montoDado": 220.00 },
+    { "id": 11, "monto": 150.00, "fechaPago": "2026-07-15T14:00:00", "metodoPago": "TRANSFERENCIA", "nota": null, "montoDado": null }
+  ]
+}
+```
+
+**¿Por qué el front necesita estos datos?**
+
+| Dato | Ticket de venta | Ticket de crédito/abono |
+|---|---|---|
+| `clienteCorreo` | Auto-fill al enviar por correo | Auto-fill al enviar por correo |
+| `metodoPago` | Muestra "MÉTODO: EFECTIVO" | No aplica al pedido (cada abono tiene el suyo) |
+| `montoDado` | Muestra "ENTREGÓ: $350 / CAMBIO: $50" | Por abono individual |
+| `abonos[]` | Vacío | Muestra historial de pagos con fecha, monto y método |
+
+---
+
+### EP-T2 — Nuevo endpoint: reenviar comprobante por correo
+
+**Path:** `POST /v1/pedidos/{id}/notificar`
+
+**Auth:** Bearer token (admin)
+
+**Request body:**
+```json
+{
+  "correo": "cliente@email.com",
+  "ticketHtml": "<html><body>...HTML generado por el front...</body></html>"
+}
+```
+
+**Response 200:**
+```json
+{
+  "mensaje": "Comprobante enviado correctamente a cliente@email.com"
+}
+```
+
+**Response 400 / 500:**
+```json
+{
+  "mensaje": "No se pudo enviar el correo. Verifica la dirección."
+}
+```
+
+**¿Qué hace el back?**
+- Recibe el HTML ya listo del front
+- Lo envía como correo HTML a `correo`
+- Asunto: `"Comprobante de tu pedido #${id} — Novedades Jade"`
+- **No genera nada** — solo envía el HTML recibido
+
+**Nota:** el HTML ya incluye los QR codes de WhatsApp, Facebook y tienda web.
+El front los obtiene de `GET /v1/negocio/contactos` (`whatsappUrl`, `facebookUrl`).
+
+---
+
+### Nota sobre los QR en el ticket
+
+El ticket generado por el front incluye automáticamente códigos QR al pie:
+
+| QR | URL de origen | Cómo llega al front |
+|---|---|---|
+| 🏪 Tienda | `window.location.origin` | Automático (URL del sistema) |
+| 💬 WhatsApp | `contactos.whatsappUrl` | `GET /v1/negocio/contactos` → campo `whatsappUrl` |
+| 📘 Facebook | `contactos.facebookUrl` | `GET /v1/negocio/contactos` → campo `facebookUrl` |
+
+Los QR se generan vía `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data={url}`.
+Si `whatsappUrl` o `facebookUrl` son `null` o vacíos, ese QR no aparece en el ticket.
+
+**Conclusión:** el back no necesita hacer nada adicional para los QR — solo asegurarse de que
+`GET /v1/negocio/contactos` devuelva `whatsappUrl` y `facebookUrl` con valores válidos.
+
+---
+
+### Prioridad
+
+| # | Cambio | Impacto |
+|---|---|---|
+| 1 | Enriquecer `GET /v1/pedidos/{id}/detalle` con `abonos[]`, `clienteCorreo`, `metodoPago`, `montoDado` | **Alto** — tickets ricos en Pedidos, Ventas y Abonos |
+| 2 | `POST /v1/pedidos/{id}/notificar` | **Medio** — envío por correo desde cualquier pantalla |
+

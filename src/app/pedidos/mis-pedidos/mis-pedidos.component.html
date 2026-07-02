@@ -105,6 +105,17 @@
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> Cobrar
           </button>
+          <button class="btn-card btn-ticket"
+                  [disabled]="imprimiendoTicket[item.pedido.id]"
+                  (click)="imprimirTicketPedido(item)"
+                  title="Imprimir ticket">
+            <i class="pi pi-print"></i>
+          </button>
+          <button class="btn-card btn-correo" *ngIf="isAdminUser"
+                  (click)="enviarCorreoPedido(item)"
+                  title="Enviar comprobante por correo">
+            <i class="pi pi-envelope"></i>
+          </button>
           <button class="btn-card btn-cancelar"
                   [disabled]="item.pedido.estado_pedido === 'Entregado'"
                   (click)="cancelarPedido(item)">

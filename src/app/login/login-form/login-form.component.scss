@@ -10,6 +10,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1100;   // por encima del header Nebular (~1040)
   display: flex;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    overflow-y: auto;
+  }
 }
 
 // ── Panel izquierdo ────────────────────────────────────────────────────────
@@ -22,7 +27,13 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   background: #f9e8ef;
   position: relative;
 
-  @media (max-width: 768px) { display: none; }
+  @media (max-width: 768px) {
+    order: 2;
+    display: flex;
+    width: 100%;
+    height: 260px;
+    flex-shrink: 0;
+  }
 }
 
 .img-slot {
@@ -92,8 +103,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: -8px 0 32px rgba(139, 26, 74, 0.12);
 
   @media (max-width: 768px) {
-    background: linear-gradient(160deg, #fff5f7 0%, #fde8f0 100%);
+    order: 1;
+    flex: none;
+    width: 100%;
+    background: #ffffff;
     box-shadow: none;
+    padding: 2.5rem 1.5rem 1.5rem;
   }
 }
 
@@ -231,26 +246,31 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   gap: 0.5rem;
   padding: 0.82rem 1rem;
-  background: linear-gradient(135deg, $primary, $primary-d);
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba($primary, 0.35);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
   transition: $transition;
   margin-top: 0.5rem;
 
+  span, .pi { color: #fff; }
   .pi { font-size: 0.9rem; transition: $transition; }
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba($primary, 0.45);
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.45);
     .pi { transform: translateX(3px); }
   }
   &:active:not(:disabled) { transform: translateY(0); }
-  &:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+  &:disabled {
+    background: linear-gradient(135deg, #a5b4fc, #818cf8);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 }
 
 // ── Link registro ─────────────────────────────────────────────────────────��

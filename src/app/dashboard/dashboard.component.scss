@@ -1,0 +1,202 @@
+/* ── Layout ─────────────────────────────────────────────────────── */
+.db-page {
+  min-height: 100vh;
+  background: var(--page-bg, #f1f5f9);
+  padding-bottom: 40px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.db-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--header-brand);
+  padding: 0 16px;
+}
+
+.db-header__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+}
+
+.db-header__left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.db-header__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.db-header__ts {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.78rem;
+}
+
+.db-btn--refresh {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.db-spin {
+  display: inline-block;
+  animation: db-rotate 1s linear infinite;
+}
+
+@keyframes db-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Loading ────────────────────────────────────────────────────── */
+.db-loading {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--app-text, #64748b);
+  font-size: 0.95rem;
+}
+
+/* ── Grid de cards ──────────────────────────────────────────────── */
+.db-grid {
+  max-width: 1200px;
+  margin: 28px auto;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+/* ── Card base ──────────────────────────────────────────────────── */
+.db-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.08));
+  border-radius: 14px;
+  padding: 20px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+  }
+}
+
+.db-card__icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.db-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.db-card__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-text, #64748b);
+  opacity: 0.75;
+}
+
+.db-card__val {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--app-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--count {
+    font-size: 2rem;
+  }
+}
+
+.db-card__hint {
+  font-size: 0.73rem;
+  color: var(--app-text, #94a3b8);
+  opacity: 0.65;
+}
+
+/* ── Variantes de color de la tira superior ─────────────────────── */
+.db-card--green  { border-top: 4px solid #22c55e; }
+.db-card--blue   { border-top: 4px solid #3b82f6; }
+.db-card--teal   { border-top: 4px solid #14b8a6; }
+.db-card--orange { border-top: 4px solid #f97316; }
+.db-card--yellow { border-top: 4px solid #eab308; }
+.db-card--indigo { border-top: 4px solid #6366f1; }
+.db-card--purple { border-top: 4px solid #a855f7; }
+.db-card--red    { border-top: 4px solid #ef4444; }
+
+/* ── Dark mode ──────────────────────────────────────────────────── */
+:host-context(body.theme-dark) {
+  .db-page { background: var(--page-bg, #09090b); }
+
+  .db-header {
+    background: linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .db-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  .db-card__label { color: #94a3b8; }
+  .db-card__val   { color: #e2e8f0; }
+  .db-card__hint  { color: #64748b; }
+
+  .db-loading { color: #64748b; }
+}
+
+/* ── Light mode ─────────────────────────────────────────────────── */
+:host-context(body.theme-light) {
+  .db-page { background: #f1f5f9; }
+
+  .db-header {
+    background: linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6366f1 100%);
+    box-shadow: 0 2px 12px rgba(79, 70, 229, 0.25);
+  }
+
+  .db-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.07);
+  }
+
+  .db-card__label { color: #64748b; }
+  .db-card__val   { color: #0f172a; }
+  .db-card__hint  { color: #94a3b8; }
+
+  .db-loading { color: #94a3b8; }
+}

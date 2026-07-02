@@ -2872,3 +2872,121 @@ agregar un cliente para la rifa.
 | `src/app/abonos/abonos.component.scss` | +`.ab-correo-manual`, `.ab-input-correo` |
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO REPORTES — PANTALLA DE REPORTES DE VENTAS F-12 (2026-07-02)
+
+> Backend listo desde 2026-07-02. Módulo lazy `/reportes`, solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/reportes/service/reportes.service.ts` | 4 endpoints + interfaces: `getDiario`, `getMensual`, `getCliente`, `getMasVendidos` |
+| `src/app/reportes/reportes.component.ts` | 4 tabs, gráfica Chart.js nativo via `ViewChild` |
+| `src/app/reportes/reportes.component.html` | UI: tabs + filtros + stat cards + canvas + tablas |
+| `src/app/reportes/reportes.component.scss` | Variables CSS + dark/light mode |
+| `src/app/reportes/reportes-routing.module.ts` | Ruta raíz `''` → `ReportesComponent` |
+| `src/app/reportes/reportes.module.ts` | Módulo lazy (`CommonModule` + `FormsModule`) |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/reportes` con guards `AuthGuard + AdminGuardGuard + CarritoGuard` |
+| `src/app/navbar/navbar.component.html` | Link "📊 Reportes" → `/reportes` en accordion Pedidos (solo admin) |
+
+### Endpoints conectados
+
+| Método | URL | Descripción |
+|---|---|---|
+| `GET` | `/v1/reportes/ventas/diario?fecha=YYYY-MM-DD` | Resumen de un día |
+| `GET` | `/v1/reportes/ventas/mensual?mes=YYYY-MM` | Totales del mes + `porDia[]` para la gráfica |
+| `GET` | `/v1/reportes/ventas/cliente/{id}` | Historial de compras de un cliente |
+| `GET` | `/v1/reportes/ventas/productos-mas-vendidos?desde=&hasta=&limite=` | Ranking de variantes más vendidas |
+
+### Nota técnica — `ng2-charts` eliminado
+
+`ng2-charts` v5 (instalado en sesión anterior) es incompatible con Angular 14. Se usa **Chart.js v4 directamente** vía `ViewChild('barCanvas')` + `new Chart(canvas, config)`. La gráfica mensual llena días sin ventas con 0 construyendo un `Map<string, number>` de `porDia` y luego iterando todos los días del mes.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT DASHBOARD — PANTALLA DE MÉTRICAS DEL NEGOCIO F-13 (2026-07-02)
+
+> Backend: `GET /v1/dashboard/resumen`. Módulo lazy en `/dashboard`, solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/dashboard/service/dashboard.service.ts` | `DashboardResumen` interface + `getResumen()` → `GET /v1/dashboard/resumen` |
+| `src/app/dashboard/dashboard.component.ts` | 9 metric cards + auto-refresh cada 5 min |
+| `src/app/dashboard/dashboard.component.html` | Grid de cards con `ngIf` y clases de color por tipo |
+| `src/app/dashboard/dashboard.component.scss` | Grid auto-fill, dark/light mode, tira de color por card |
+| `src/app/dashboard/dashboard-routing.module.ts` | Ruta raíz `''` → `DashboardComponent` |
+| `src/app/dashboard/dashboard.module.ts` | Módulo lazy (solo `CommonModule`) |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/dashboard` con guards `AuthGuard + AdminGuardGuard + CarritoGuard` |
+| `src/app/navbar/navbar.component.html` | Link "🏠 Dashboard" → `/dashboard` en accordion Pedidos (solo admin), antes de "📊 Reportes" |
+
+### Métricas mostradas
+
+| Campo backend | Card | Color |
+|---|---|---|
+| `ventasHoy` | 💰 Ventas hoy | Verde |
+| `ventasMes` | 📆 Ventas del mes | Azul |
+| `gananciaMes` | 📈 Ganancia mes | Teal |
+| `gastosMes` | 💸 Gastos mes | Naranja |
+| `gananciaNetaMes` | 🏦 Ganancia neta | Verde/Rojo (positivo/negativo) |
+| `pedidosPendientesEntregar` | 📦 Pedidos por entregar | Amarillo |
+| `creditosActivos` | 💳 Créditos activos | Índigo |
+| `montoPorCobrar` | 🗂️ Por cobrar | Púrpura |
+| `productosStockBajo` | ⚠️ Stock bajo | Rojo/Verde (0 ok / >0 alerta) |
+
+**"Clientes nuevos este mes" NO incluido:** `Cliente` no tiene columna de fecha de registro en BD — no hay forma de calcularlo retroactivamente.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## EP-T2 — BOTÓN "REENVIAR TICKET" EN DETALLE PEDIDO (2026-07-02)
+
+> Backend: `POST /v1/pedidos/{id}/notificar` → requiere ROLE_ADMIN. Método ya existía en `pedidos.service.ts`.
+
+**Flujo:** botón "📧 Reenviar ticket" en el header del `DetallePedidoComponent`, visible solo para admin.
+Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cliente si existe) → si confirma:
+1. `GET /v1/pedidos/{id}/detalle` para obtener artículos y datos del pedido
+2. `generarHtmlTicket()` con tipo detectado (`venta`/`abono`/`liquidado`)
+3. `POST /v1/pedidos/{id}/notificar` con `{ correo, ticketHtml }` → Swal de confirmación/error
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `isAdmin`, método `reenviarComprobanteManual()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → botón `dp-btn-reenviar` en el header
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-btn-reenviar` + dark mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT REPORTES — GRÁFICAS COMBINADAS (2026-07-02)
+
+> Mejoras según "Guía de gráficas para reportes" en `PLAN_MEJORAS.md`.
+
+- **Tab Mensual:** gráfica combinada — barras (índigo) = `totalVenta` + línea (verde) = `totalGanancia` por día. Leyenda habilitada.
+- **Tab Por cliente:** línea de tendencia con `ventas[].fechaVenta` + `ventas[].totalVenta`, visible cuando `ventas.length > 1`.
+- **Tab Más vendidos:** barras horizontales (`indexAxis: 'y'`), top 10, paleta multicolor.
+- Los 3 charts usan `@ViewChild`, `pendingXxx`, `ngAfterViewInit` y `ngOnDestroy` para lifecycle correcto.
+- `setTab()` re-renderiza el chart activo con `setTimeout(..., 50)` al cambiar de pestaña.
+
+**Archivos modificados:**
+- `src/app/reportes/reportes.component.ts` → reescritura con 3 charts
+- `src/app/reportes/reportes.component.html` → +canvas en mensual, cliente y masVendidos
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

@@ -27,7 +27,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   buscando        = false;
   isAdminUser     = false;
   sinResultados   = false;
-  filtroAdmin: 'todos' | 'sin-stock' = 'todos';
+  filtroAdmin: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' = 'todos';
   detalle: IDetalleVariante[] = [];
   escaneando      = false;
   private controlesEscaner: IScannerControls | null = null;
@@ -132,7 +132,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock'): void {
+  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes'): void {
     if (!this.isAdminUser || this.filtroAdmin === filtro) return;
     this.filtroAdmin = filtro;
     this.varianteService.invalidarCache();
@@ -140,6 +140,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.sinResultados = false;
     if (filtro === 'sin-stock') {
       this.cargarAdminSinStock(1);
+    } else if (filtro === 'con-stock') {
+      this.cargarAdminFiltrar('CON_STOCK', 1);
+    } else if (filtro === 'con-imagenes') {
+      this.cargarAdminFiltrar('CON_IMAGENES', 1);
     } else {
       this.buscarPagina(this.terminoBusqueda, 1);
     }
@@ -158,6 +162,24 @@ export class BuscarComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.buscando = false;
         if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
+      }
+    });
+  }
+
+  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES', pagina: number): void {
+    this.buscando = true;
+    this.varianteService.adminFiltrar(filtro, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        this.sinResultados = false;
+        this.variantes    = res.t ?? [];
+        this.totalPaginas = res.totalPaginas;
+        this.paginaActual = pagina;
+        this.buscando = false;
+      },
+      error: (err) => {
+        this.buscando = false;
+        if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
+        else Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
       }
     });
   }
@@ -183,6 +205,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual - 1;
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
+    else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
+    else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -191,6 +215,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual + 1;
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
+    else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
+    else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 

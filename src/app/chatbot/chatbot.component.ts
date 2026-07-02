@@ -29,6 +29,9 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   cargando          = false;
   imagenesVariante  = new Map<number, string>();
 
+  visorUrl:    string | null = null;
+  visorNombre: string | null = null;
+
   // ── Estado de bloqueo ─────────────────────────────────────────────
   inputBloqueado    = false;
   oculto            = false;
@@ -181,6 +184,16 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   quitarDelCarrito(varianteId: number): void {
     this.carritoService.eliminar(varianteId);
+  }
+
+  abrirVisor(url: string, nombre: string): void {
+    this.visorUrl    = url;
+    this.visorNombre = nombre;
+  }
+
+  cerrarVisor(): void {
+    this.visorUrl    = null;
+    this.visorNombre = null;
   }
 
   // ── Cooldown / bloqueo ────────────────────────────────────────────

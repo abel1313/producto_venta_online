@@ -2872,3 +2872,42 @@ agregar un cliente para la rifa.
 | `src/app/abonos/abonos.component.scss` | +`.ab-correo-manual`, `.ab-input-correo` |
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO REPORTES — PANTALLA DE REPORTES DE VENTAS F-12 (2026-07-02)
+
+> Backend listo desde 2026-07-02. Módulo lazy `/reportes`, solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/reportes/service/reportes.service.ts` | 4 endpoints + interfaces: `getDiario`, `getMensual`, `getCliente`, `getMasVendidos` |
+| `src/app/reportes/reportes.component.ts` | 4 tabs, gráfica Chart.js nativo via `ViewChild` |
+| `src/app/reportes/reportes.component.html` | UI: tabs + filtros + stat cards + canvas + tablas |
+| `src/app/reportes/reportes.component.scss` | Variables CSS + dark/light mode |
+| `src/app/reportes/reportes-routing.module.ts` | Ruta raíz `''` → `ReportesComponent` |
+| `src/app/reportes/reportes.module.ts` | Módulo lazy (`CommonModule` + `FormsModule`) |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/reportes` con guards `AuthGuard + AdminGuardGuard + CarritoGuard` |
+| `src/app/navbar/navbar.component.html` | Link "📊 Reportes" → `/reportes` en accordion Pedidos (solo admin) |
+
+### Endpoints conectados
+
+| Método | URL | Descripción |
+|---|---|---|
+| `GET` | `/v1/reportes/ventas/diario?fecha=YYYY-MM-DD` | Resumen de un día |
+| `GET` | `/v1/reportes/ventas/mensual?mes=YYYY-MM` | Totales del mes + `porDia[]` para la gráfica |
+| `GET` | `/v1/reportes/ventas/cliente/{id}` | Historial de compras de un cliente |
+| `GET` | `/v1/reportes/ventas/productos-mas-vendidos?desde=&hasta=&limite=` | Ranking de variantes más vendidas |
+
+### Nota técnica — `ng2-charts` eliminado
+
+`ng2-charts` v5 (instalado en sesión anterior) es incompatible con Angular 14. Se usa **Chart.js v4 directamente** vía `ViewChild('barCanvas')` + `new Chart(canvas, config)`. La gráfica mensual llena días sin ventas con 0 construyendo un `Map<string, number>` de `porDia` y luego iterando todos los días del mes.
+
+**Verificado con `ng build --configuration=development` sin errores.**

@@ -1,0 +1,112 @@
+<div class="db-page">
+
+  <!-- Header -->
+  <div class="db-header">
+    <div class="db-header__content">
+      <div class="db-header__left">
+        <h4 class="db-header__title">📊 Dashboard</h4>
+        <span *ngIf="ultimaActualizacion" class="db-header__ts">
+          Actualizado: {{ formatHora(ultimaActualizacion) }}
+        </span>
+      </div>
+      <button class="db-btn--refresh" (click)="cargar()" [disabled]="cargando" title="Actualizar">
+        <span [class.db-spin]="cargando">🔄</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando && !resumen" class="db-loading">Cargando…</div>
+
+  <!-- Cards -->
+  <div *ngIf="resumen" class="db-grid">
+
+    <!-- Ventas hoy -->
+    <div class="db-card db-card--green">
+      <div class="db-card__icon">💰</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Ventas hoy</span>
+        <span class="db-card__val">{{ formatPeso(resumen.ventasHoy) }}</span>
+      </div>
+    </div>
+
+    <!-- Ventas del mes -->
+    <div class="db-card db-card--blue">
+      <div class="db-card__icon">📆</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Ventas del mes</span>
+        <span class="db-card__val">{{ formatPeso(resumen.ventasMes) }}</span>
+      </div>
+    </div>
+
+    <!-- Ganancia del mes -->
+    <div class="db-card db-card--teal">
+      <div class="db-card__icon">📈</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Ganancia mes</span>
+        <span class="db-card__val">{{ formatPeso(resumen.gananciaMes) }}</span>
+      </div>
+    </div>
+
+    <!-- Gastos del mes -->
+    <div class="db-card db-card--orange">
+      <div class="db-card__icon">💸</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Gastos mes</span>
+        <span class="db-card__val">{{ formatPeso(resumen.gastosMes) }}</span>
+      </div>
+    </div>
+
+    <!-- Ganancia neta -->
+    <div class="db-card" [class.db-card--green]="resumen.gananciaNetaMes >= 0" [class.db-card--red]="resumen.gananciaNetaMes < 0">
+      <div class="db-card__icon">🏦</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Ganancia neta</span>
+        <span class="db-card__val">{{ formatPeso(resumen.gananciaNetaMes) }}</span>
+        <span class="db-card__hint">(ventas − gastos)</span>
+      </div>
+    </div>
+
+    <!-- Pedidos pendientes de entregar (solo APARTADO activos) -->
+    <div class="db-card db-card--yellow">
+      <div class="db-card__icon">📦</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Pedidos por entregar</span>
+        <span class="db-card__val db-card__val--count">{{ resumen.pedidosPendientesEntregar }}</span>
+        <span class="db-card__hint">Apartados sin liquidar</span>
+      </div>
+    </div>
+
+    <!-- Créditos activos (APARTADO + FIADO) -->
+    <div class="db-card db-card--indigo">
+      <div class="db-card__icon">💳</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Créditos activos</span>
+        <span class="db-card__val db-card__val--count">{{ resumen.creditosActivos }}</span>
+        <span class="db-card__hint">Apartados + Ir pagando</span>
+      </div>
+    </div>
+
+    <!-- Monto por cobrar -->
+    <div class="db-card db-card--purple">
+      <div class="db-card__icon">🗂️</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Por cobrar</span>
+        <span class="db-card__val">{{ formatPeso(resumen.montoPorCobrar) }}</span>
+        <span class="db-card__hint">Saldo pendiente créditos</span>
+      </div>
+    </div>
+
+    <!-- Productos con stock bajo -->
+    <div class="db-card" [class.db-card--red]="resumen.productosStockBajo > 0" [class.db-card--green]="resumen.productosStockBajo === 0">
+      <div class="db-card__icon">⚠️</div>
+      <div class="db-card__body">
+        <span class="db-card__label">Stock bajo</span>
+        <span class="db-card__val db-card__val--count">{{ resumen.productosStockBajo }}</span>
+        <span class="db-card__hint">Variantes con 1–4 piezas</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>

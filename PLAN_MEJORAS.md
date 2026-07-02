@@ -13,7 +13,7 @@
 | 2 | Envío por correo electrónico | ✅ Listo | ⏳ Pendiente front | 2026-07-01 |
 | 3 | Envío por WhatsApp | 🚫 EN PAUSA — ver decisión 2026-07-01 | 🚫 No implementar | 2026-07-01 |
 | 4 | Alertas stock bajo al admin | ⏳ Pendiente back | ⏳ Pendiente front | — |
-| 5 | Reportes de ventas (día/mes/cliente) | ⏳ Pendiente back | ⏳ Pendiente front | — |
+| 5 | Reportes de ventas (día/mes/cliente) | ✅ Listo | ⏳ Pendiente front | 2026-07-02 |
 | 6 | Dashboard con métricas | ⏳ Pendiente back | ⏳ Pendiente front | — |
 | 7 | Devoluciones | ⏳ Pendiente back | ⏳ Pendiente front | — |
 | 8 | Chatbot — tarjetas de productos | ✅ Listo | ⏳ Pendiente front | 2026-07-01 |
@@ -23,6 +23,23 @@
 > **Orden:** el ticket (1) va primero porque correo (2) lo necesita.
 > El stock bajo (4) necesita correo (2) ya listo en back.
 > El dashboard (6) necesita los reportes (5).
+
+> **Checkpoint 2026-07-02:**
+> - ✅ Listos en back (falta front): 1 (ticket), 2 (correo), 5 (reportes), 8/9/10 (chatbot).
+> - 🚫 En pausa: 3 (WhatsApp al cliente).
+> - ⏳ Sin arrancar ni back ni front: 4 (stock bajo), 6 (dashboard, depende de 5 que ya está listo), 7 (devoluciones).
+> - Sueltos sin cerrar: confirmar migración `monto_dado` en BD de producción; respuesta del front
+>   sobre si necesitan `tiendaUrl` desde el back (`GET /v1/negocio/contactos`) o usan `window.location.origin`.
+> - **Bug reportado 2026-07-02 — DIAGNOSTICADO, no es bug de código:** verificado en vivo contra
+>   QA (`GET /v1/chatbot/buscar?q=Mochila`) — la búsqueda y paginación del chatbot funcionan bien,
+>   devuelven `varianteId` distintos (117, 165, 213, 277 para "Mochila Prada"). El problema es que
+>   esas 4 filas en la tabla `variantes` son **duplicados de datos**: mismo nombre, marca, precio,
+>   sin talla/color que las distinga — por eso se ven como "el mismo producto". Además las 4 dan
+>   error 500 al pedir sus imágenes (`variantes/v1/imagenes/{id}`), probablemente ninguna tiene
+>   imagen real cargada. **Pendiente:** decidir qué hacer con las filas duplicadas (limpiar en admin
+>   o pedir un script de limpieza) — no se tocó la BD, es una decisión del negocio, no técnica.
+>   De paso se corrigieron 2 errores de documentación en `CAMBIOS_FRONT.md` (F-8): la URL tenía el
+>   `/v1/` mal puesto, y decía "tomar el primer elemento" en vez de "el marcado como `principal`".
 
 > **Decisión 2026-07-01 — WhatsApp EN PAUSA:** se descartó implementar el envío del ticket por
 > WhatsApp al cliente. CallMeBot (gratis, ya programado en el back) solo le avisa al negocio, no
@@ -56,6 +73,7 @@
 | `AbonoServiceImpl` — llama email/WhatsApp tras registrar abono o cancelar | `AbonoServiceImpl.java` |
 | `VentaServiceImpl` — llama email/WhatsApp tras venta directa o registro crédito | `VentaServiceImpl.java` |
 | `GET /v1/negocio/contactos` (público, nuevo) — siempre expone `whatsappUrl`/`facebookUrl` para el QR del ticket, a diferencia de `/estado` que los oculta con negocio abierto | `NegocioController.java`, `NegocioService.java`, `ContactosPublicosDto.java`, `SecurityConfig.java` |
+| Reportes de ventas — diario, mensual (desglosado por día), por cliente, productos más vendidos (2026-07-02) | `ReporteVentasController.java`, `ReporteVentasServiceImpl.java`, `IReporteVentasService.java`, DTOs en `models/reportes/`, `IVentaRepository.java`, `IDetalleVentaVarianteRepository.java`, `SecurityConfig.java` |
 
 ### Front ⏳ pendiente (ver `CAMBIOS_FRONT.md` para detalle completo)
 
@@ -68,10 +86,11 @@
 | F-5 | Mostrar resultado: "Correo enviado ✅" | Toast/modal de confirmación | Misma sección |
 | F-6 | Tarjetas de producto en el chatbot (render `productos[]`) | Chatbot | "Chatbot — Tarjetas de productos" |
 | F-7 | Botón "Ver más" en chatbot (`GET /v1/chatbot/buscar?q=&offset=`) | Chatbot | Misma sección |
-| F-8 | Imagen por tarjeta (`GET /v1/variantes/imagenes/{varianteId}`, primer elemento) | Chatbot | Misma sección |
+| F-8 | Imagen por tarjeta (`GET /variantes/v1/imagenes/{varianteId}`, elemento con `principal:true`) — ⚠️ URL y "primer elemento" corregidos 2026-07-02, ver CAMBIOS_FRONT.md | Chatbot | Misma sección |
 | F-9 | QR al sitio de la tienda en el ticket (URL fija desde `environment.ts`) | Venta directa, abonos, cancelación | "QRs del ticket (2026-07-01)" |
 | F-10 | QR WhatsApp del negocio — solo si `whatsappUrl` existe en `GET /v1/negocio/contactos` | Venta directa, abonos, cancelación | Misma sección |
 | F-11 | QR Facebook del negocio — solo si `facebookUrl` existe en `GET /v1/negocio/contactos` | Venta directa, abonos, cancelación | Misma sección |
+| F-12 | Pantalla de reportes (diario, mensual con gráfica por día, por cliente, productos más vendidos) | Nueva pantalla `/reportes`, solo ADMIN | "Reportes de ventas (2026-07-02)" |
 
 > **Decisión 2026-07-01 — F-10/F-11:** los QR de WhatsApp y Facebook se muestran en el ticket
 > SOLO si el negocio tiene esos datos configurados en `GET /v1/negocio/contactos`. Si no hay URL
@@ -125,7 +144,9 @@ para UN número que primero se **auto-activa** para recibir mensajes de ese bot:
 > (de pago, sin esta restricción) — el switch `whatsapp.proveedor` ya está pensado para eso,
 > pero el caso `twilio` no está implementado todavía en `WhatsappService.java`.
 
-#### DECISIÓN PENDIENTE — ¿CallMeBot (solo aviso interno) o Twilio (mensaje real al cliente)?
+#### ✅ RESUELTO 2026-07-01 — Se descartó WhatsApp al cliente, solo correo (ver decisión arriba)
+
+Queda documentado abajo el análisis que se hizo para decidir, por si se retoma más adelante.
 
 **CallMeBot (ya implementado, gratis, $0 código extra):**
 1. Una sola vez: el negocio agrega el contacto de CallMeBot y le manda
@@ -155,9 +176,8 @@ para UN número que primero se **auto-activa** para recibir mensajes de ese bot:
 **En una frase:** CallMeBot = alerta para el negocio, gratis, ya funciona. Twilio = mensaje real
 al cliente, de pago, requiere alta de cuenta + verificación + código nuevo.
 
-**Pendiente de decidir:** ¿dejamos CallMeBot solo como aviso interno del negocio, implementamos
-Twilio para notificar al cliente de verdad, o quitamos WhatsApp por ahora y solo dejamos correo
-(que sí funciona para cualquier destinatario sin activación previa)?
+**Decisión final:** se quita WhatsApp por ahora, solo correo (que sí funciona para cualquier
+destinatario sin activación previa). Ver "Decisión 2026-07-01 — WhatsApp EN PAUSA" al inicio del documento.
 
 #### Comandos para setear las env vars (una vez que se tenga el apikey)
 
@@ -691,3 +711,35 @@ existe ni en el modelo de alta de usuario.
 Ya resuelto en la sección "Decisión 2026-07-01 — F-10/F-11" más arriba (línea ~76): los QR de
 WhatsApp y Facebook se muestran solo si `GET /v1/negocio/contactos` trae esa URL; si no, el QR
 simplemente no aparece. F-9/F-10/F-11 quedaron desbloqueadas — no hay nada más pendiente aquí.
+
+
+### Análisis del front (2026-07-02) — qué es nuevo y dónde va cada cosa
+
+Lo único nuevo real es **F-12**: pantalla de reportes de ventas (el back está listo desde
+2026-07-02). Las demás cosas del plan (tickets, correo, QRs) ya estaban implementadas en
+sesiones anteriores.
+
+**Archivos que se van a crear/modificar:**
+
+| Archivo | Qué |
+|---|---|
+| `src/app/reportes/service/reportes.service.ts` | Nuevo — 4 endpoints |
+| `src/app/reportes/reportes.component.*` | Nuevo — UI con 4 pestañas (Diario / Mensual / Por cliente / Más vendidos) |
+| `src/app/reportes/reportes.module.ts` + routing | Nuevos — módulo lazy |
+| `src/app/app-routing.module.ts` | Agregar ruta `/reportes` con guard admin |
+| `src/app/navbar/navbar.component.html` | Link "📊 Reportes" solo admin |
+
+### Duda del front — Chart.js directo vs `ng2-charts` — RESPONDIDA 2026-07-02
+
+**Contexto:** `chart.js` v4 ya está instalado, `ng2-charts` (wrapper Angular) no. Dos opciones
+para la gráfica de barras del reporte mensual (ventas por día):
+1. Chart.js directo con `@ViewChild` sobre un `<canvas>` — sin instalar nada nuevo.
+2. Instalar `ng2-charts` — más declarativo en el template.
+
+**Respuesta: instalar `ng2-charts`.** Razón: el ítem 6 (Dashboard con métricas) es el siguiente
+en la fila justo después de reportes, y va a necesitar **varias** gráficas más (ventas del mes,
+créditos activos, etc.) — instalarlo ahora evita reescribir la del reporte mensual con otro
+enfoque cuando llegue el dashboard. Es un wrapper delgado y bien mantenido sobre el mismo
+`chart.js` que ya tienen, compatible con v4 (`ng2-charts` v5+). Si solo fuera esta única gráfica
+y no hubiera nada más de gráficas a la vista, Chart.js directo habría sido razonable para no
+sumar una dependencia — pero dado que viene el dashboard, conviene instalarlo de una vez.

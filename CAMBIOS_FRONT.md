@@ -3055,7 +3055,9 @@ La paginación ("ver más") se hace con un endpoint separado **sin pasar por la 
       "talla": "única",
       "color": "café",
       "precio": 850.0,
-      "stock": 5
+      "stock": 5,
+      "descripcion": "Bolsa de piel genuina, correa ajustable",
+      "codigoBarras": "ABC123"
     },
     {
       "varianteId": 13,
@@ -3064,7 +3066,9 @@ La paginación ("ver más") se hace con un endpoint separado **sin pasar por la 
       "talla": "única",
       "color": "negra",
       "precio": 900.0,
-      "stock": 3
+      "stock": 3,
+      "descripcion": null,
+      "codigoBarras": "DEF456"
     }
   ],
   "hayMas": true,
@@ -3083,6 +3087,12 @@ La paginación ("ver más") se hace con un endpoint separado **sin pasar por la 
 ```
 Los campos `productos`, `hayMas`, `busquedaQuery` y `busquedaOffset` **solo aparecen** cuando
 el bot quiere mostrar tarjetas. Si no están en el response, simplemente no renderizar tarjetas.
+
+**Campos nuevos 2026-07-02 — respuesta a BUG-CB-03:** `descripcion` (puede ser `null` si la
+variante no tiene una cargada) y `codigoBarras` (solo aparece en el JSON si el producto tiene
+código de barras registrado — si no, el campo no viene). Úsenlos para diferenciar visualmente
+tarjetas que comparten nombre/marca/precio idénticos (ej. mostrar el código de barras chiquito
+debajo del nombre cuando `talla`/`color` vengan ambos `null`).
 
 ---
 
@@ -3114,12 +3124,20 @@ GET /mis-productos/v1/chatbot/buscar?q=Coach&offset=2
 
 ### 3. Cómo obtener la imagen de cada tarjeta
 
-Cada producto tiene `varianteId`. Usar el endpoint ya existente:
+Cada producto tiene `varianteId`. Usar el endpoint ya existente (⚠️ corregido 2026-07-02 — la URL
+tenía el `/v1/` en la posición equivocada):
 
 ```
-GET /mis-productos/v1/variantes/imagenes/{varianteId}
+GET /mis-productos/variantes/v1/imagenes/{varianteId}
 ```
-Tomar el **primer elemento** del array que devuelve. Si el array está vacío, mostrar imagen placeholder.
+
+**⚠️ Corrección 2026-07-02:** NO tomar el primer elemento del array a secas — tomar el elemento
+con **`"principal": true`**. Si ninguno viene marcado como principal, ahí sí usar el primero como
+fallback. Si el array está vacío, mostrar imagen placeholder.
+```js
+const imagenes = await fetch(`/mis-productos/variantes/v1/imagenes/${varianteId}`).then(r => r.json());
+const imagen = imagenes.data.find(img => img.principal) || imagenes.data[0];
+```
 
 ---
 
@@ -3241,18 +3259,10 @@ armado por el admin desde el panel — no hay que construirlo ni pedir el númer
 
 Usa directo el `facebookUrl` que regresa el mismo endpoint. Mismo tratamiento que el de WhatsApp.
 
-#### ⚠️ Cuántos QRs mostrar — DECISIÓN PENDIENTE, aún sin confirmar por el dueño del negocio
+#### ✅ Cuántos QRs mostrar — RESUELTO: los 3 fijos siempre, sin rotación
 
-Con los 3 QRs disponibles (tienda, WhatsApp, Facebook), falta decidir si el ticket muestra
-**los 3 fijos siempre**, o solo 1-2 (por espacio, sobre todo en impresión térmica 58mm/80mm).
-**No implementar los 3 todavía** hasta que se confirme esto — si el ticket es térmico angosto,
-el diseño final puede cambiar.
-
-Recomendación sugerida (pendiente de que el usuario la confirme): mostrar los 3 fijos siempre,
-sin rotación aleatoria — un ticket se lee una sola vez y se descarta, rotar cuál QR aparece no le
-suma nada al cliente y sí le agrega complejidad de código (lógica de selección) sin beneficio
-claro. Si el espacio es el problema real (ticket térmico angosto), la solución es recortar a 1-2
-QRs fijos (ej. tienda + WhatsApp), no rotar.
+Se confirmó mostrar los 3 QRs (tienda, WhatsApp, Facebook) fijos siempre — sin rotación
+aleatoria, ya implementado y funcionando del lado del front.
 
 ---
 
@@ -3789,3 +3799,182 @@ El back agrega al response normal tres campos extra: `correoEnviado`, `whatsappE
 **Qué hace:** reenvía tal cual el `ticketHtml` recibido por correo (asunto `"Comprobante de tu pedido #{id} — Novedades Jade"`). No genera nada nuevo — el HTML ya lo arma el front (con sus QR de tienda/WhatsApp/Facebook incluidos, como en el resto de tickets).
 
 **Uso:** botón "reenviar por correo" en cualquier pantalla de detalle de pedido, sin depender de que sea justo al momento de la venta/abono.
+
+---
+
+### Preguntas del front — confirmadas 2026-07-02
+
+El front reportó no ver el QR de Facebook y preguntó 4 cosas puntuales. Respuestas verificadas
+contra el código (no supuestas):
+
+1. **`GET /v1/negocio/contactos` va envuelto en `ResponseGeneric`** — leer `response.data.whatsappUrl`
+   / `response.data.facebookUrl`, NO `response.whatsappUrl` directo. Esto es lo que causaba que
+   el QR de Facebook (y probablemente el de WhatsApp) no aparecieran — ya estaba documentado así
+   arriba, pero se confirma explícito por si se leyó mal.
+2. **No existe `tiendaUrl` en el back** — nunca se implementó. La intención original (ver "QR 1"
+   arriba) es que el front lo resuelva con `environment.ts` / `window.location.origin`, no del
+   back. **Pendiente de confirmar con el front:** si `window.location.origin` no sirve en su caso
+   (ej. el ticket se genera en un contexto sin ese origin correcto), avisar y se agrega como campo
+   nuevo a este mismo endpoint — no implementado todavía, a la espera de esa confirmación.
+3. **`GET /v1/pedidos/{id}/detalle` va envuelto:** `{ "data": { pedidoId, detalles[], clienteCorreo,
+   metodoPago, montoDado, abonos[] } }` — ya documentado arriba en EP-T1, confirmado sin cambios.
+4. **`POST /v1/pedidos/{id}/notificar`:** éxito → `data` trae el texto de confirmación; error →
+   `mensaje` trae el motivo (dos campos distintos según si fue éxito o error, revisar el `code`/HTTP
+   status para saber cuál leer) — ya documentado arriba en EP-T2, confirmado sin cambios.
+
+---
+
+## Reportes de ventas (2026-07-02) — endpoints nuevos
+
+> Todos requieren rol ADMIN (Bearer token). Todos van envueltos en `ResponseGeneric`
+> (`{ "data": {...} }` o `{ "data": [...] }`), mismo patrón que el resto del proyecto.
+
+### `GET /v1/reportes/ventas/diario?fecha=YYYY-MM-DD`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/diario?fecha=2026-07-02`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "fecha": "2026-07-02",
+    "totalVenta": 4350.00,
+    "totalGanancia": 1200.00,
+    "cantidadVentas": 12
+  }
+}
+```
+Si no hubo ventas ese día: `totalVenta`/`totalGanancia` vienen en `0.0`, `cantidadVentas` en `0` (no error, no null).
+
+---
+
+### `GET /v1/reportes/ventas/mensual?mes=YYYY-MM`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/mensual?mes=2026-07`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "mes": "2026-07",
+    "totalVenta": 45000.00,
+    "totalGanancia": 12500.00,
+    "cantidadVentas": 130,
+    "porDia": [
+      { "fecha": "2026-07-01", "totalVenta": 4350.00, "totalGanancia": 1200.00, "cantidadVentas": 12 },
+      { "fecha": "2026-07-02", "totalVenta": 3100.00, "totalGanancia": 900.00, "cantidadVentas": 8 }
+    ]
+  }
+}
+```
+- `porDia` solo trae los días que tuvieron al menos una venta (no rellena con ceros los días sin ventas — si necesitan la gráfica con todos los días del mes, hay que completar los huecos en el front).
+
+**Response 400** (formato de `mes` inválido, ej. mandaron `2026-13` o `julio-2026`):
+```json
+{ "mensaje": "Formato de mes invalido, usar yyyy-MM" }
+```
+
+---
+
+### `GET /v1/reportes/ventas/cliente/{clienteId}`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/cliente/5`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "clienteId": 5,
+    "clienteNombre": "María López",
+    "totalCompras": 7,
+    "totalGastado": 3200.00,
+    "ventas": [
+      { "ventaId": 42, "fechaVenta": "2026-07-01T14:30:00", "totalVenta": 530.00, "gananciaTotal": 150.00 }
+    ]
+  }
+}
+```
+- Si el cliente existe pero no tiene compras → `totalCompras: 0`, `ventas: []` (no error).
+- Solo cuenta ventas de contado (`Venta`), no incluye créditos/abonos — para eso usar el reporte de abonos que ya existe en `GET /v1/abonos/reporte/*`.
+
+**Response 400** (cliente no existe):
+```json
+{ "mensaje": "Cliente no encontrado: 5" }
+```
+
+---
+
+### `GET /v1/reportes/ventas/productos-mas-vendidos?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&limite=10`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/productos-mas-vendidos?desde=2026-07-01&hasta=2026-07-31&limite=10`
+
+- `limite` es opcional, default `10`.
+
+**Response 200:**
+```json
+{
+  "data": [
+    { "varianteId": 12, "productoNombre": "Pantalón clásico negro", "talla": "M", "color": "Negro", "cantidadVendida": 34, "totalVendido": 11900.00 },
+    { "varianteId": 8, "productoNombre": "Blusa floral", "talla": "S", "color": "Rosa", "cantidadVendida": 21, "totalVendido": 3780.00 }
+  ]
+}
+```
+Ordenado de mayor a menor por `cantidadVendida`. Lista vacía `[]` si no hubo ventas en el rango (no error).
+
+---
+
+**Archivos nuevos en el back:** `ReporteVentasController.java`, `ReporteVentasServiceImpl.java`,
+`IReporteVentasService.java`, DTOs en `models/reportes/` (`ReporteDiarioDto`, `ReporteMensualDto`,
+`ReporteClienteDto`, `VentaResumenItem`, `ProductoMasVendidoDto`). Sin migración de BD — usa
+tablas y columnas que ya existían.
+
+---
+
+## ⚠️ Problema conocido — Chatbot muestra "el mismo producto" repetido (2026-07-02)
+
+### Qué está pasando
+
+Al buscar un producto en el chatbot (ej. "Mochila"), a veces varias tarjetas se ven idénticas —
+mismo nombre, mismo precio, sin talla/color que las distinga — como si fuera el mismo producto
+mostrado varias veces.
+
+### Diagnóstico — verificado en vivo contra QA, no es bug de front ni de back
+
+Se probó directo contra el servidor real:
+```
+GET /v1/chatbot/buscar?q=Mochila&offset=0
+→ varianteId 117 y 165, ambos "Mochila Prada", $400, sin talla, sin color
+GET /v1/chatbot/buscar?q=Mochila&offset=2
+→ varianteId 213 y 277, mismos datos otra vez
+```
+
+**La búsqueda y la paginación del back funcionan correctamente** — sí trae 4 registros distintos
+(`varianteId` 117, 165, 213, 277). El problema es que **esas 4 filas están duplicadas en la base
+de datos**: se cargó "Mochila Prada" 4 veces con exactamente los mismos datos, en vez de una sola
+vez con más stock, o con talla/color que las diferenciara. Por eso el chatbot no tiene manera de
+mostrar "cosas diferentes" — no hay 4 productos diferentes, hay 1 producto repetido 4 veces en la
+tabla `variantes`.
+
+**Extra:** las 4 variantes también dan error 500 al pedir su imagen
+(`GET /variantes/v1/imagenes/{varianteId}`) — probablemente ninguna tiene una imagen real cargada.
+
+### Qué lo puede solucionar
+
+No es algo que el front pueda arreglar con código — es limpieza de datos. Opciones (pendiente de
+decisión del negocio, no se tocó nada todavía):
+1. **Borrar las 3 filas sobrantes** desde el panel de admin de variantes y dejar solo 1, con el
+   stock correcto sumado (ej. si cada una tenía `stock: 1`, la que quede debería tener `stock: 4`).
+2. **Diferenciarlas** si en realidad SÍ son productos distintos (ej. colores/tallas distintos que
+   no se llenaron al crearlas) — habría que editarlas para agregar talla/color a cada una.
+3. Si se prefiere, se puede pedir un script de limpieza al back una vez que el negocio confirme
+   cuál de las dos opciones anteriores aplica — no se debe hacer sin esa confirmación porque borrar
+   filas es una acción destructiva.
+
+### Dos correcciones de documentación relacionadas (ya corregidas arriba, en la sección 3 del chatbot)
+
+Mientras se investigaba esto se encontraron 2 errores en la doc que el front ya tenía, que también
+podían afectar que la imagen mostrada fuera la incorrecta:
+- La URL tenía el `/v1/` mal puesto: era `/v1/variantes/imagenes/{varianteId}`, la correcta es
+  `/variantes/v1/imagenes/{varianteId}`.
+- Decía "tomar el primer elemento" del array de imágenes — debe ser el elemento con
+  `"principal": true` (el primero como fallback solo si ninguno viene marcado).

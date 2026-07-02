@@ -10,13 +10,15 @@ export interface IMensajeChat {
 }
 
 export interface IChatbotProducto {
-  varianteId: number;
-  nombre:     string;
-  marca:      string | null;
-  talla:      string | null;
-  color:      string | null;
-  precio:     number;
-  stock:      number;
+  varianteId:   number;
+  nombre:       string;
+  marca:        string | null;
+  talla:        string | null;
+  color:        string | null;
+  precio:       number;
+  stock:        number;
+  descripcion?: string | null;
+  codigoBarras?: string | null;
 }
 
 export interface IChatbotBuscarResponse {
@@ -55,10 +57,14 @@ export class ChatbotService {
   }
 
   getImagenVariante(varianteId: number): Observable<string | null> {
-    return this.http.get<{ data: { urlImagen: string }[] }>(
+    return this.http.get<{ data: { urlImagen: string; principal: boolean }[] }>(
       `${this.urlImagenes}/${varianteId}`
     ).pipe(
-      map(res => res?.data?.[0]?.urlImagen ?? null),
+      map(res => {
+        const imgs = res?.data ?? [];
+        const img  = imgs.find(i => i.principal) ?? imgs[0];
+        return img?.urlImagen ?? null;
+      }),
       catchError(() => of(null))
     );
   }

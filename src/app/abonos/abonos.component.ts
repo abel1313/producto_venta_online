@@ -114,7 +114,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
     // Cargar URLs de contacto del negocio para QR en ticket (silencioso si falla)
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
   }

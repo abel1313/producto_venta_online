@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface INegocioEstado {
@@ -19,6 +20,7 @@ export interface IContactosRequest {
 export interface IContactosPublicos {
   whatsappUrl: string | null;
   facebookUrl: string | null;
+  tiendaUrl?:  string | null;
 }
 
 export interface IHorarioRequest {
@@ -49,7 +51,17 @@ export class NegocioService {
   }
 
   getContactosPublicos(): Observable<IContactosPublicos> {
-    return this.http.get<IContactosPublicos>(`${this.url}/contactos`);
+    return this.http.get<any>(`${this.url}/contactos`).pipe(
+      map(r => {
+        // Maneja respuesta directa { whatsappUrl, facebookUrl } o envuelta { data: {...} }
+        const d = r?.data ?? r;
+        return {
+          whatsappUrl: d?.whatsappUrl ?? null,
+          facebookUrl: d?.facebookUrl ?? null,
+          tiendaUrl:   d?.tiendaUrl   ?? null
+        } as IContactosPublicos;
+      })
+    );
   }
 
   actualizarContactos(data: IContactosRequest): Observable<any> {

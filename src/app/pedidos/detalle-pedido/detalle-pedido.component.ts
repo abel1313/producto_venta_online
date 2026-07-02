@@ -35,6 +35,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return !!this.pedido?.cliente?.correoElectronico;
   }
 
+  get isAdmin(): boolean {
+    return this.authService.isAdminService;
+  }
+
   get esCredito(): boolean {
     const tp = this.pedido?.pedido?.tipoPedido;
     return tp === 'APARTADO' || tp === 'FIADO';
@@ -197,6 +201,49 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         });
       },
       error: () => {}
+    });
+  }
+
+  reenviarComprobanteManual(): void {
+    const pedidoId   = this.pedido.pedido.id;
+    const correoReg  = this.pedido?.cliente?.correoElectronico || '';
+    Swal.fire({
+      title: '📧 Reenviar comprobante',
+      input: 'email',
+      inputValue: correoReg,
+      inputPlaceholder: 'correo@ejemplo.com',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      inputValidator: v => (!v || !v.includes('@')) ? 'Ingresa un correo válido' : null,
+    }).then(res => {
+      if (!res.isConfirmed || !res.value) return;
+      const correo = res.value as string;
+      this.pedidosService.getDetallePedido(pedidoId).subscribe({
+        next: r => {
+          const d = r?.data;
+          if (!d) return;
+          const tipo: ITicketData['tipo'] = d.estadoPedido === 'PAGADO' ? 'liquidado'
+            : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+          const html = generarHtmlTicket({
+            tipo,
+            numero:         d.pedidoId,
+            fecha:          d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
+            cliente:        d.clienteNombre || this.pedido.cliente.nombreCliente,
+            metodoPago:     d.metodoPago ?? '',
+            total:          d.totalPedido,
+            totalPagado:    d.totalPagado ?? null,
+            saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+            articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+          });
+          this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
+            next: (r2: any) => Swal.fire({ title: '✅ Enviado', text: r2?.data ?? `Ticket enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
+            error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' }),
+          });
+        },
+        error: () => {},
+      });
     });
   }
 

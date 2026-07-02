@@ -2911,3 +2911,66 @@ agregar un cliente para la rifa.
 `ng2-charts` v5 (instalado en sesión anterior) es incompatible con Angular 14. Se usa **Chart.js v4 directamente** vía `ViewChild('barCanvas')` + `new Chart(canvas, config)`. La gráfica mensual llena días sin ventas con 0 construyendo un `Map<string, number>` de `porDia` y luego iterando todos los días del mes.
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT DASHBOARD — PANTALLA DE MÉTRICAS DEL NEGOCIO F-13 (2026-07-02)
+
+> Backend: `GET /v1/dashboard/resumen`. Módulo lazy en `/dashboard`, solo admin.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/dashboard/service/dashboard.service.ts` | `DashboardResumen` interface + `getResumen()` → `GET /v1/dashboard/resumen` |
+| `src/app/dashboard/dashboard.component.ts` | 9 metric cards + auto-refresh cada 5 min |
+| `src/app/dashboard/dashboard.component.html` | Grid de cards con `ngIf` y clases de color por tipo |
+| `src/app/dashboard/dashboard.component.scss` | Grid auto-fill, dark/light mode, tira de color por card |
+| `src/app/dashboard/dashboard-routing.module.ts` | Ruta raíz `''` → `DashboardComponent` |
+| `src/app/dashboard/dashboard.module.ts` | Módulo lazy (solo `CommonModule`) |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/dashboard` con guards `AuthGuard + AdminGuardGuard + CarritoGuard` |
+| `src/app/navbar/navbar.component.html` | Link "🏠 Dashboard" → `/dashboard` en accordion Pedidos (solo admin), antes de "📊 Reportes" |
+
+### Métricas mostradas
+
+| Campo backend | Card | Color |
+|---|---|---|
+| `ventasHoy` | 💰 Ventas hoy | Verde |
+| `ventasMes` | 📆 Ventas del mes | Azul |
+| `gananciaMes` | 📈 Ganancia mes | Teal |
+| `gastosMes` | 💸 Gastos mes | Naranja |
+| `gananciaNetaMes` | 🏦 Ganancia neta | Verde/Rojo (positivo/negativo) |
+| `pedidosPendientesEntregar` | 📦 Pedidos por entregar | Amarillo |
+| `creditosActivos` | 💳 Créditos activos | Índigo |
+| `montoPorCobrar` | 🗂️ Por cobrar | Púrpura |
+| `productosStockBajo` | ⚠️ Stock bajo | Rojo/Verde (0 ok / >0 alerta) |
+
+**"Clientes nuevos este mes" NO incluido:** `Cliente` no tiene columna de fecha de registro en BD — no hay forma de calcularlo retroactivamente.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## EP-T2 — BOTÓN "REENVIAR TICKET" EN DETALLE PEDIDO (2026-07-02)
+
+> Backend: `POST /v1/pedidos/{id}/notificar` → requiere ROLE_ADMIN. Método ya existía en `pedidos.service.ts`.
+
+**Flujo:** botón "📧 Reenviar ticket" en el header del `DetallePedidoComponent`, visible solo para admin.
+Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cliente si existe) → si confirma:
+1. `GET /v1/pedidos/{id}/detalle` para obtener artículos y datos del pedido
+2. `generarHtmlTicket()` con tipo detectado (`venta`/`abono`/`liquidado`)
+3. `POST /v1/pedidos/{id}/notificar` con `{ correo, ticketHtml }` → Swal de confirmación/error
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `isAdmin`, método `reenviarComprobanteManual()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → botón `dp-btn-reenviar` en el header
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-btn-reenviar` + dark mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+**Verificado con `ng build --configuration=development` sin errores.**

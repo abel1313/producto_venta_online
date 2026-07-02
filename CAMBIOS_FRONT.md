@@ -3024,3 +3024,957 @@ Devuelve todos los pedidos `APARTADO` o `FIADO` con `estadoPedido = "PAGADO"`.
 | `PAGADO` | Liquidado (cierre de APARTADO o FIADO) |
 | `Entregado` | Confirmado por flujo normal de venta (ya existía) |
 | `cancelado` | Cancelado (ya existía) |
+
+---
+
+## Chatbot — Tarjetas de productos (2026-07-01)
+
+### Qué cambia
+
+El chatbot ahora puede mostrar productos como **tarjetas visuales** cuando el cliente pide ver
+productos por categoría o marca. El response del chatbot incluye campos nuevos opcionales.
+La paginación ("ver más") se hace con un endpoint separado **sin pasar por la IA** (0 tokens extra).
+
+---
+
+### 1. POST /v1/chatbot/mensaje — response extendido
+
+**Sin cambio en el request** — sigue igual que antes.
+
+**Response cuando el bot quiere mostrar productos:**
+```json
+{
+  "respuesta": "¡Claro, aquí te muestro! 👜",
+  "bloqueado": false,
+  "segundosEspera": 0,
+  "productos": [
+    {
+      "varianteId": 12,
+      "nombre": "Bolsa Coach Café",
+      "marca": "Coach",
+      "talla": "única",
+      "color": "café",
+      "precio": 850.0,
+      "stock": 5,
+      "descripcion": "Bolsa de piel genuina, correa ajustable",
+      "codigoBarras": "ABC123"
+    },
+    {
+      "varianteId": 13,
+      "nombre": "Bolsa Coach Negra",
+      "marca": "Coach",
+      "talla": "única",
+      "color": "negra",
+      "precio": 900.0,
+      "stock": 3,
+      "descripcion": null,
+      "codigoBarras": "DEF456"
+    }
+  ],
+  "hayMas": true,
+  "busquedaQuery": "Coach",
+  "busquedaOffset": 2
+}
+```
+
+**Response cuando el bot responde texto normal (sin productos):**
+```json
+{
+  "respuesta": "Hola, ¿en qué te puedo ayudar? 😊",
+  "bloqueado": false,
+  "segundosEspera": 0
+}
+```
+Los campos `productos`, `hayMas`, `busquedaQuery` y `busquedaOffset` **solo aparecen** cuando
+el bot quiere mostrar tarjetas. Si no están en el response, simplemente no renderizar tarjetas.
+
+**Campos nuevos 2026-07-02 — respuesta a BUG-CB-03:** `descripcion` (puede ser `null` si la
+variante no tiene una cargada) y `codigoBarras` (solo aparece en el JSON si el producto tiene
+código de barras registrado — si no, el campo no viene). Úsenlos para diferenciar visualmente
+tarjetas que comparten nombre/marca/precio idénticos (ej. mostrar el código de barras chiquito
+debajo del nombre cuando `talla`/`color` vengan ambos `null`).
+
+---
+
+### 2. GET /v1/chatbot/buscar — "Ver más" sin IA
+
+Llamar este endpoint cuando el usuario hace clic en el botón **"Ver más"**.
+No llama a OpenAI, solo consulta la BD. Muy rápido y sin costo de tokens.
+
+**Request:**
+```
+GET /mis-productos/v1/chatbot/buscar?q=Coach&offset=2
+```
+| Param | Tipo | Descripción |
+|---|---|---|
+| `q` | string | La misma búsqueda del response anterior (`busquedaQuery`) |
+| `offset` | number | El valor de `busquedaOffset` del response anterior |
+
+**Response:**
+```json
+{
+  "productos": [ ... ],
+  "hayMas": false,
+  "busquedaQuery": "Coach",
+  "busquedaOffset": 4
+}
+```
+
+---
+
+### 3. Cómo obtener la imagen de cada tarjeta
+
+Cada producto tiene `varianteId`. Usar el endpoint ya existente (⚠️ corregido 2026-07-02 — la URL
+tenía el `/v1/` en la posición equivocada):
+
+```
+GET /mis-productos/variantes/v1/imagenes/{varianteId}
+```
+
+**⚠️ Corrección 2026-07-02:** NO tomar el primer elemento del array a secas — tomar el elemento
+con **`"principal": true`**. Si ninguno viene marcado como principal, ahí sí usar el primero como
+fallback. Si el array está vacío, mostrar imagen placeholder.
+```js
+const imagenes = await fetch(`/mis-productos/variantes/v1/imagenes/${varianteId}`).then(r => r.json());
+const imagen = imagenes.data.find(img => img.principal) || imagenes.data[0];
+```
+
+---
+
+### 4. Flujo completo para el front
+
+```
+1. Usuario escribe "tienes bolsas?"
+2. Front → POST /v1/chatbot/mensaje
+3. Response tiene productos[] y hayMas=true
+4. Front muestra:
+   - Burbuja de chat con respuesta.respuesta
+   - 2 tarjetas de producto debajo (con imagen de /variantes/imagenes/{id})
+   - Botón "Ver más" si hayMas=true
+
+5. Usuario hace clic en "Ver más"
+6. Front → GET /v1/chatbot/buscar?q={busquedaQuery}&offset={busquedaOffset}
+7. Response trae 2 productos más
+8. Front AGREGA las tarjetas nuevas debajo de las anteriores (no reemplaza)
+9. Si el nuevo hayMas=false, ocultar el botón "Ver más"
+
+10. Usuario escoge un producto → lo puede agregar al carrito normalmente
+```
+
+---
+
+### 5. Diseño sugerido de tarjeta
+
+```
+┌─────────────────────┐
+│   [imagen 150x150]  │
+├─────────────────────┤
+│ Bolsa Coach Café    │
+│ Marca: Coach        │
+│ Color: café         │
+│ Talla: única        │
+│ $850.00             │
+│ Stock: 5 pzas       │
+│  [Ver detalle]      │
+└─────────────────────┘
+```
+
+El botón "Ver detalle" puede abrir el modal/página de producto existente
+usando `varianteId` para hacer el fetch de detalle.
+
+---
+
+### 6. Notas importantes
+
+- `marca`, `talla`, `color` pueden ser `null` — mostrar solo los que tengan valor.
+- `hayMas` es `false` cuando ya no hay más resultados — ocultar el botón.
+- El botón "Ver más" siempre usa `busquedaQuery` y `busquedaOffset` del **último response**.
+- Si el usuario hace una nueva pregunta después de ver tarjetas, el historial del chat continúa normalmente.
+
+---
+
+## Ticket / Comprobante — implementación FRONT (2026-07-01)
+
+> El back solo manda datos. El front genera el HTML, aplica estilos de impresión y llama `window.print()`.
+> El correo se implementó en el back (ver sección "Correo — cómo lo hace el front" más abajo).
+> WhatsApp automático al cliente quedó descartado (ver `PLAN_MEJORAS.md`) — en su lugar el ticket
+> lleva un QR de "contáctanos por WhatsApp" (ver siguiente sección).
+
+---
+
+### QRs del ticket (2026-07-01)
+
+La generación del QR es **100% front** (librería JS, ej. `npm install qrcode` o `angularx-qrcode`).
+Los *datos* que van dentro de cada QR salen de dos fuentes distintas: la URL de la tienda es fija
+(`environment.ts`) y los links de WhatsApp/Facebook del negocio salen de un endpoint nuevo del back
+(`GET /v1/negocio/contactos`), **no se arman a mano ni se hardcodea ningún número**.
+
+#### Endpoint nuevo — `GET /v1/negocio/contactos` (público, 2026-07-01)
+
+```
+GET /mis-productos/v1/negocio/contactos
+```
+
+Response:
+```json
+{
+  "data": {
+    "whatsappUrl": "https://wa.me/52XXXXXXXXXX",
+    "facebookUrl": "https://facebook.com/novedadesjade"
+  }
+}
+```
+
+- Público, no requiere login.
+- **Diferencia con `GET /v1/negocio/estado`:** ese endpoint también trae `whatsappUrl`/`facebookUrl`,
+  pero los devuelve en `null` mientras el negocio está **abierto** (a propósito, para otro caso de
+  uso). Este endpoint nuevo (`/contactos`) siempre los devuelve, sin importar si está abierto o
+  cerrado — por eso es el que hay que usar para el ticket, que se genera justo durante la venta
+  (negocio abierto).
+- Cualquiera de los dos campos puede venir `null`/vacío si el admin no los configuró — en ese caso
+  no mostrar ese QR (ver "Cuántos QRs mostrar" abajo).
+- Los valores ya son URLs completas y listas para usar (`https://wa.me/...`, `https://facebook.com/...`)
+  — el front solo las mete en el QR, no arma nada.
+
+#### QR 1 — Link a la tienda
+
+Apunta a la URL pública de la tienda, sacada de `environment.ts` (`environment.tiendaUrl` o la que
+ya exista para CORS/base de la app), NO de este endpoint:
+- Prod: `https://shop.novedades-jade.com.mx`
+- QA: `https://qa.shop.novedades-jade.com.mx`
+
+#### QR 2 — "Contáctanos por WhatsApp" (click-to-chat)
+
+Usa directo el `whatsappUrl` que regresa `GET /v1/negocio/contactos` (ya es un link `wa.me/...`
+armado por el admin desde el panel — no hay que construirlo ni pedir el número por separado).
+
+- Al escanear/tocar, abre el WhatsApp de quien escanea con un chat ya armado **hacia el negocio**
+  (es al revés de "el negocio le manda algo al cliente" — aquí el cliente es quien envía, con un
+  solo tap en "Enviar").
+- El número no aparece como texto en el ticket, solo va codificado dentro del QR.
+- Si se quiere texto precargado (ej. `"Hola, tengo una duda sobre mi compra folio #42"`), se le
+  agrega `?text=<mensaje url-encoded>` al final del `whatsappUrl` recibido antes de generar el QR.
+
+#### QR 3 — Facebook del negocio
+
+Usa directo el `facebookUrl` que regresa el mismo endpoint. Mismo tratamiento que el de WhatsApp.
+
+#### ✅ Cuántos QRs mostrar — RESUELTO: los 3 fijos siempre, sin rotación
+
+Se confirmó mostrar los 3 QRs (tienda, WhatsApp, Facebook) fijos siempre — sin rotación
+aleatoria, ya implementado y funcionando del lado del front.
+
+---
+
+### Tipos de ticket y de dónde salen los datos
+
+#### A) Ticket de Venta Directa (NORMAL)
+
+**Cuándo mostrarlo:** después del éxito de `POST /mis-productos/v1/ventas/save`
+cuando `tipoPedido = "NORMAL"` (o cuando el pedido no es crédito).
+
+**De dónde salen los datos:**
+
+| Campo del ticket | Fuente |
+|---|---|
+| Nombre cliente | Estado local del form (el front ya lo tiene seleccionado) |
+| Artículos, cantidades, precios | Estado local del carrito |
+| Total | `res.data.totalVenta` |
+| Método de pago | Estado local del form |
+| Monto entregado (dado) | Estado local del form |
+| Cambio | Calculado en el front: `montoDado - totalVenta` |
+| Fecha | `new Date()` en el momento de la venta |
+| # Venta | `res.data.ventaId` |
+
+**Ticket generado:**
+```
+╔══════════════════════════════╗
+║       NOVEDADES JADE         ║
+╠══════════════════════════════╣
+║ Venta #1042   01/07/2026     ║
+║ Cliente: María López         ║
+╠══════════════════════════════╣
+║ 1x Pantalón Negro M  $350.00 ║
+║ 1x Blusa Floral S    $180.00 ║
+╠══════════════════════════════╣
+║ TOTAL              $530.00   ║
+║ MÉTODO: EFECTIVO             ║
+║ ENTREGÓ:           $600.00   ║
+║ CAMBIO:             $70.00   ║
+╚══════════════════════════════╝
+```
+
+---
+
+#### B) Ticket de Abono
+
+**Cuándo mostrarlo:** después del éxito de `POST /mis-productos/v1/abonos/{pedidoId}`
+
+**De dónde salen los datos:**
+
+Primero el front ya tiene el pedido en pantalla. Al registrar el abono, el response trae:
+
+```json
+{
+  "data": {
+    "id": 5,
+    "monto": 150.00,
+    "fechaPago": "01/07/2026",
+    "metodoPago": "EFECTIVO",
+    "nota": "segundo abono",
+    "montoDado": 200.00,
+    "cambio": 50.00,
+    "estadoPedido": "APARTADO",
+    "saldoRestante": 100.00
+  }
+}
+```
+
+Para completar el ticket (nombre cliente, artículos, total del apartado) el front hace:
+
+```
+GET /mis-productos/v1/pedidos/{pedidoId}/detalle
+```
+
+Response que necesitas:
+```json
+{
+  "data": {
+    "pedidoId": 42,
+    "tipoPedido": "APARTADO",
+    "estadoPedido": "APARTADO",
+    "totalPedido": 350.00,
+    "totalPagado": 250.00,
+    "saldoPendiente": 100.00,
+    "fechaPedido": "2026-06-15",
+    "clienteNombre": "María López",
+    "clienteTelefono": "7221234567",
+    "detalles": [
+      {
+        "varianteId": 12,
+        "productoNombre": "Pantalón Negro",
+        "talla": "M",
+        "color": "negro",
+        "cantidad": 1,
+        "precioUnitario": 350.00,
+        "subTotal": 350.00
+      }
+    ]
+  }
+}
+```
+
+**Ticket generado:**
+```
+╔══════════════════════════════╗
+║  NOVEDADES JADE — ABONO      ║
+╠══════════════════════════════╣
+║ Apartado #42  01/07/2026     ║
+║ Cliente: María López         ║
+╠══════════════════════════════╣
+║ Pantalón Negro M     $350.00 ║
+╠══════════════════════════════╣
+║ Total apartado:      $350.00 ║
+║ Ya pagado:           $250.00 ║
+║ Abono de hoy:        $150.00 ║
+║ Saldo pendiente:     $100.00 ║
+╠══════════════════════════════╣
+║ MÉTODO: EFECTIVO             ║
+║ ENTREGÓ:             $200.00 ║
+║ CAMBIO:               $50.00 ║
+╚══════════════════════════════╝
+```
+
+> Si `metodoPago = "TRANSFERENCIA"`, no mostrar las filas ENTREGÓ y CAMBIO (serán `null`).
+
+---
+
+#### C) Ticket de Liquidación (pedido PAGADO)
+
+**Cuándo mostrarlo:** cuando el response del abono trae `estadoPedido = "PAGADO"`.
+Mismo flujo que el ticket de abono — solo cambia el encabezado y no hay saldo pendiente.
+
+**Ticket generado:**
+```
+╔══════════════════════════════╗
+║ NOVEDADES JADE — ¡LIQUIDADO! ║
+╠══════════════════════════════╣
+║ Apartado #42  01/07/2026     ║
+║ Cliente: María López         ║
+╠══════════════════════════════╣
+║ Pantalón Negro M     $350.00 ║
+╠══════════════════════════════╣
+║ Total pagado:        $350.00 ║
+║ ✅ PAGADO COMPLETAMENTE      ║
+╚══════════════════════════════╝
+```
+
+---
+
+#### D) Ticket de Cancelación
+
+**Cuándo mostrarlo:** después del éxito de `PUT /mis-productos/v1/abonos/{pedidoId}/cancelar`
+
+Response de cancelación:
+```json
+{
+  "data": {
+    "pedidoId": 42,
+    "tipoPedido": "APARTADO",
+    "estadoPedido": "cancelado",
+    "totalPagado": 100.00,
+    "totalPendiente": 250.00,
+    "stockDevuelto": true,
+    "mensaje": "Pedido cancelado correctamente"
+  }
+}
+```
+
+El front también necesita llamar `GET /mis-productos/v1/pedidos/{id}/detalle` para obtener
+`clienteNombre`, `motivoCancelacion` y los artículos.
+
+**Ticket generado:**
+```
+╔══════════════════════════════╗
+║  NOVEDADES JADE — CANCELADO  ║
+╠══════════════════════════════╣
+║ Apartado #42  01/07/2026     ║
+║ Cliente: María López         ║
+╠══════════════════════════════╣
+║ Pantalón Negro M     $350.00 ║
+╠══════════════════════════════╣
+║ Motivo: NO SE PRESENTÓ       ║
+║ Abonos realizados:   $100.00 ║
+║ (saldo a favor del cliente)  ║
+╚══════════════════════════════╝
+```
+
+---
+
+### Dónde aparece el botón de imprimir
+
+| Pantalla | Cuándo mostrar el botón |
+|---|---|
+| Venta directa | Al cerrar el modal/toast de "Venta exitosa" — mostrar botón **🖨️ Imprimir ticket** |
+| Registrar abono | En el toast/modal de confirmación del abono |
+| Liquidación (PAGADO) | En el toast/modal — ticket distinto al de abono normal |
+| Cancelación | En el modal de confirmación de cancelación |
+
+---
+
+### Cómo imprimir
+
+```javascript
+function imprimirTicket(htmlTicket) {
+  const ventana = window.open('', '_blank', 'width=400,height=600');
+  ventana.document.write(`
+    <html>
+      <head>
+        <title>Ticket</title>
+        <style>
+          body {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            width: 280px;
+            margin: 0 auto;
+            padding: 8px;
+          }
+          .titulo    { text-align: center; font-weight: bold; font-size: 14px; }
+          .linea     { border-top: 1px dashed #000; margin: 4px 0; }
+          .fila      { display: flex; justify-content: space-between; }
+          .total     { font-weight: bold; }
+          .centro    { text-align: center; }
+          @media print {
+            body { width: 100%; }
+          }
+        </style>
+      </head>
+      <body>
+        ${htmlTicket}
+        <script>window.print(); window.close();<\/script>
+      </body>
+    </html>
+  `);
+  ventana.document.close();
+}
+```
+
+---
+
+### Estructura HTML sugerida del ticket
+
+```javascript
+function generarHtmlTicket({ tipo, numero, fecha, cliente, articulos,
+                              total, totalPagado, saldoPendiente, abonoHoy,
+                              metodoPago, montoDado, cambio, motivo }) {
+  const formatPeso = (n) => n != null ? `$${n.toFixed(2)}` : '';
+  const hoy = fecha || new Date().toLocaleDateString('es-MX');
+
+  let encabezado = '';
+  if (tipo === 'venta')        encabezado = 'COMPROBANTE DE VENTA';
+  if (tipo === 'abono')        encabezado = 'COMPROBANTE DE ABONO';
+  if (tipo === 'liquidado')    encabezado = '¡APARTADO LIQUIDADO!';
+  if (tipo === 'cancelacion')  encabezado = 'CANCELACIÓN DE PEDIDO';
+
+  const filasArticulos = articulos.map(a => `
+    <div class="fila">
+      <span>${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''}</span>
+      <span>${formatPeso(a.subTotal)}</span>
+    </div>
+  `).join('');
+
+  const filaPago = metodoPago === 'EFECTIVO' ? `
+    <div class="fila"><span>ENTREGÓ:</span><span>${formatPeso(montoDado)}</span></div>
+    <div class="fila"><span>CAMBIO:</span><span>${formatPeso(cambio)}</span></div>
+  ` : `<div class="fila"><span>MÉTODO:</span><span>TRANSFERENCIA</span></div>`;
+
+  return `
+    <div class="titulo">NOVEDADES JADE</div>
+    <div class="titulo">${encabezado}</div>
+    <div class="linea"></div>
+    <div class="fila"><span>Folio #${numero}</span><span>${hoy}</span></div>
+    <div>Cliente: ${cliente}</div>
+    <div class="linea"></div>
+    ${filasArticulos}
+    <div class="linea"></div>
+    ${total        ? `<div class="fila total"><span>TOTAL:</span><span>${formatPeso(total)}</span></div>` : ''}
+    ${totalPagado  ? `<div class="fila"><span>Ya pagado:</span><span>${formatPeso(totalPagado)}</span></div>` : ''}
+    ${abonoHoy     ? `<div class="fila"><span>Abono de hoy:</span><span>${formatPeso(abonoHoy)}</span></div>` : ''}
+    ${saldoPendiente != null && saldoPendiente > 0
+        ? `<div class="fila"><span>Saldo pendiente:</span><span>${formatPeso(saldoPendiente)}</span></div>` : ''}
+    ${tipo === 'liquidado' ? `<div class="centro">✅ PAGADO COMPLETAMENTE</div>` : ''}
+    ${motivo ? `<div>Motivo: ${motivo}</div>` : ''}
+    <div class="linea"></div>
+    ${filaPago}
+    <div class="linea"></div>
+    <div class="centro">¡Gracias por tu compra!</div>
+  `;
+}
+```
+
+---
+
+### Correo (y WhatsApp EN PAUSA) — cómo lo hace el front
+
+> **DECISIÓN 2026-07-01:** por ahora solo se implementa el envío por **correo**. WhatsApp queda
+> en pausa (ver "DECISIÓN PENDIENTE" en `PLAN_MEJORAS.md`) — CallMeBot (gratis) solo le avisa al
+> negocio, no al cliente, y Twilio (que sí notificaría al cliente) es de pago y requiere alta de
+> cuenta + código nuevo que no se justifica por ahora. **El front NO debe mostrar el checkbox de
+> WhatsApp.** El campo `notificacion.enviarWhatsapp` se puede omitir/mandar `false` siempre; el
+> back lo soporta pero no hay forma de que le llegue nada real al cliente todavía.
+
+El front genera el ticket (ya lo hace para imprimir). Si el usuario marcó el checkbox de correo,
+**incluye el ticket en el mismo request** que registra la acción. El back lo recibe y lo envía.
+
+#### Checkbox en el UI
+
+Mostrar en el form de abono, venta directa y cancelación:
+
+```html
+<label>
+  <input type="checkbox" [(ngModel)]="enviarCorreo" />
+  Enviar ticket al correo del cliente
+</label>
+```
+
+- Pre-marcar correo si el cliente tiene email registrado.
+- Si el cliente no tiene correo → deshabilitar el checkbox.
+
+---
+
+#### (Referencia, no implementar por ahora) Cómo armar el ticketTexto para WhatsApp
+
+Queda documentado por si más adelante se retoma con Twilio — no construir esto en el front hoy.
+WhatsApp no soporta HTML — mandar texto plano. Generar con una función separada:
+
+```javascript
+function generarTextoWhatsapp({ tipo, numero, fecha, cliente, articulos,
+                                 total, abonoHoy, saldoPendiente, metodoPago,
+                                 montoDado, cambio, motivo }) {
+  const fmt = (n) => n != null ? `$${n.toFixed(2)}` : '';
+  const hoy = fecha || new Date().toLocaleDateString('es-MX');
+
+  let lineas = [
+    '🛍️ NOVEDADES JADE',
+    tipo === 'venta'       ? 'Comprobante de venta' :
+    tipo === 'abono'       ? 'Comprobante de abono' :
+    tipo === 'liquidado'   ? '✅ Apartado liquidado' :
+                             '❌ Cancelación de pedido',
+    `Folio #${numero} — ${hoy}`,
+    `Cliente: ${cliente}`,
+    '─────────────────────',
+    ...articulos.map(a =>
+      `• ${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''} — ${fmt(a.subTotal)}`
+    ),
+    '─────────────────────',
+  ];
+
+  if (total)          lineas.push(`Total: ${fmt(total)}`);
+  if (abonoHoy)       lineas.push(`Abono de hoy: ${fmt(abonoHoy)}`);
+  if (saldoPendiente) lineas.push(`Saldo pendiente: ${fmt(saldoPendiente)}`);
+  if (tipo === 'liquidado') lineas.push('✅ PAGADO COMPLETAMENTE');
+  if (motivo)         lineas.push(`Motivo cancelación: ${motivo}`);
+
+  lineas.push('─────────────────────');
+  lineas.push(`Método: ${metodoPago}`);
+  if (metodoPago === 'EFECTIVO' && montoDado) {
+    lineas.push(`Entregó: ${fmt(montoDado)}`);
+    lineas.push(`Cambio: ${fmt(cambio)}`);
+  }
+  lineas.push('¡Gracias por tu compra! 🙏');
+
+  return lineas.join('\n');
+}
+```
+
+---
+
+#### Campos que se agregan al request cuando hay correo/WhatsApp
+
+Aplicar en: `POST /v1/abonos/{pedidoId}`, `POST /v1/ventas/save`,
+`PUT /v1/abonos/{pedidoId}/cancelar`.
+
+**IMPORTANTE — implementación final:** los campos van anidados dentro de un objeto
+`"notificacion"`, no planos en la raíz del body (`NotificacionRequest.java`):
+
+```json
+{
+  "monto": 150.00,
+  "metodoPago": "EFECTIVO",
+  "montoDado": 200.00,
+
+  "notificacion": {
+    "enviarCorreo":   true,
+    "enviarWhatsapp": false,
+    "ticketHtml":     "<html>...ticket generado por el front...</html>",
+    "correo":         "escrito-en-el-modal@ejemplo.com"
+  }
+}
+```
+
+- **Por ahora el front solo maneja `enviarCorreo`, `ticketHtml` y `correo`.** `enviarWhatsapp` se
+  manda siempre `false` (o se omite) y `ticketTexto` no hace falta construirlo — ver nota de
+  "WhatsApp EN PAUSA" arriba.
+- **`correo` (nuevo, 2026-07-01) — para el modal post-venta:** si el cliente no tiene correo
+  registrado, se muestra un modal pidiéndolo manualmente; ese valor va en este campo. Si viene con
+  valor, el back lo usa como destino en vez del correo de la BD. Si se omite o va vacío, se usa el
+  correo registrado (comportamiento normal, sin cambios).
+- Si no se quiere enviar nada → no mandar el campo `notificacion` (o mandar `null`). El back solo intenta notificar si `notificacion != null`.
+- Si `enviarCorreo = false` → no hace falta mandar `ticketHtml`.
+
+---
+
+#### Qué devuelve el back (campos nuevos en el response)
+
+El back agrega al response normal tres campos extra: `correoEnviado`, `whatsappEnviado`, `erroresEnvio`
+(todos `null`/omitidos si no se pidió notificación — `@JsonInclude(NON_NULL)`).
+
+- **Abono** (`POST /v1/abonos/{pedidoId}`) y **cancelación** (`PUT /v1/abonos/{pedidoId}/cancelar`)
+  devuelven envuelto en `ResponseGeneric` (campo `data`):
+
+```json
+{
+  "data": {
+    "id": 5,
+    "monto": 150.00,
+    "estadoPedido": "APARTADO",
+    "saldoRestante": 100.00,
+
+    "correoEnviado":    true,
+    "whatsappEnviado":  false,
+    "erroresEnvio":     []
+  }
+}
+```
+
+- **Venta directa** (`POST /v1/ventas/save`) **NO** usa `ResponseGeneric` — el back devuelve
+  `VentaDirectaResponse` directo, sin envolver en `data`:
+
+```json
+{
+  "ventaId": 10,
+  "tipoPago": "EFECTIVO",
+  "requiereTerminal": false,
+  "total": 350.00,
+  "correoEnviado":   true,
+  "whatsappEnviado": false,
+  "erroresEnvio":    []
+}
+```
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `correoEnviado` | boolean | `true` si el correo se envió con éxito |
+| `whatsappEnviado` | boolean | `true` si el WhatsApp se envió con éxito |
+| `erroresEnvio` | string[] | Lista de errores si algún envío falló (puede estar vacío) |
+
+#### Cómo mostrar el resultado en el UI
+
+```
+✅ Abono registrado correctamente
+✅ Correo enviado a maria@gmail.com
+❌ WhatsApp no se pudo enviar — intentar después
+```
+
+- Si `correoEnviado = false` y el usuario lo pidió → mostrar aviso (no es error fatal).
+- El abono/venta ya quedó guardado aunque falle el envío — no bloquear el flujo.
+
+---
+
+### Resumen de endpoints que usa el ticket (todos ya existen)
+
+| Tipo de ticket | Endpoints necesarios |
+|---|---|
+| Venta directa | Estado local del carrito + `res` (sin wrapper) del `POST /v1/ventas/save` |
+| Abono | `res.data` del `POST /v1/abonos/{pedidoId}` + `GET /v1/pedidos/{id}/detalle` |
+| Liquidado | Igual que abono |
+| Cancelación | `res.data` del `PUT /v1/abonos/{pedidoId}/cancelar` + `GET /v1/pedidos/{id}/detalle` |
+
+**El ticket HTML/texto lo genera el front. El back solo lo recibe y lo transporta por correo/WhatsApp.**
+
+---
+
+## EP-T1 y EP-T2 — Detalle de pedido enriquecido + reenviar comprobante (2026-07-02)
+
+### EP-T1 — `GET /v1/pedidos/{id}/detalle` (endpoint que ya usabas — mismo path, mismo auth)
+
+**Qué cambia:** se agregaron 4 campos nuevos a la respuesta. Nada de lo que ya consumías cambió.
+
+**Response — campos nuevos (además de los que ya recibías):**
+```json
+{
+  "data": {
+    "clienteCorreo": "juan@email.com",
+    "metodoPago": "EFECTIVO",
+    "montoDado": 350.00,
+    "abonos": [
+      { "id": 10, "monto": 200.00, "fechaPago": "2026-07-01", "metodoPago": "EFECTIVO", "nota": "Enganche", "montoDado": 220.00 }
+    ]
+  }
+}
+```
+
+| Campo | Tipo | Cuándo viene |
+|---|---|---|
+| `clienteCorreo` | string \| null | Si el cliente tiene correo registrado |
+| `metodoPago` | string \| null | **Solo en ventas NORMAL al contado.** `null` en créditos (APARTADO/FIADO) — ver `abonos[]` |
+| `montoDado` | number \| null | Solo ventas NORMAL, y **solo si el front lo mandó** al crear la venta (ver acción requerida abajo). En pedidos vendidos antes de este cambio siempre es `null` |
+| `abonos` | array | Historial de pagos del crédito. Lista vacía `[]` en ventas NORMAL |
+
+**⚠️ Acción requerida — sin esto `montoDado` nunca llega:** `montoDado` no se guardaba antes en el back para ventas de contado (solo existía para abonos). Para que el ticket pueda mostrar "ENTREGÓ / CAMBIO" en ventas nuevas, el front debe **agregar el campo `montoDado` al body de `POST /v1/ventas/save`**:
+```json
+{
+  "usuarioId": 1,
+  "clienteId": 5,
+  "detalles": [ ... ],
+  "montoDado": 350.00
+}
+```
+- Mandarlo solo cuando el método de pago sea EFECTIVO (igual que ya calculas el cambio localmente hoy, nada más ahora también se lo mandas al back).
+- Los pedidos vendidos **antes** de que el front implemente esto se quedan con `montoDado: null` para siempre — no hay forma de recuperarlo, el ticket de esos pedidos viejos simplemente no muestra esa línea.
+
+---
+
+### EP-T2 — `POST /v1/pedidos/{id}/notificar` (endpoint nuevo)
+
+**Request:** `POST /mis-productos/v1/pedidos/{id}/notificar` — requiere rol ADMIN (Bearer token).
+```json
+{
+  "correo": "cliente@email.com",
+  "ticketHtml": "<html>...ticket generado por el front...</html>"
+}
+```
+
+**Response 200:**
+```json
+{ "data": "Comprobante enviado correctamente a cliente@email.com" }
+```
+(va envuelto en `ResponseGeneric` como el resto del proyecto — el mensaje de éxito queda en `data`, no en `mensaje` como en el ejemplo original que se pidió)
+
+**Response 400:**
+```json
+{ "mensaje": "No se pudo enviar el correo. Verifica la dirección." }
+```
+
+**Qué hace:** reenvía tal cual el `ticketHtml` recibido por correo (asunto `"Comprobante de tu pedido #{id} — Novedades Jade"`). No genera nada nuevo — el HTML ya lo arma el front (con sus QR de tienda/WhatsApp/Facebook incluidos, como en el resto de tickets).
+
+**Uso:** botón "reenviar por correo" en cualquier pantalla de detalle de pedido, sin depender de que sea justo al momento de la venta/abono.
+
+---
+
+### Preguntas del front — confirmadas 2026-07-02
+
+El front reportó no ver el QR de Facebook y preguntó 4 cosas puntuales. Respuestas verificadas
+contra el código (no supuestas):
+
+1. **`GET /v1/negocio/contactos` va envuelto en `ResponseGeneric`** — leer `response.data.whatsappUrl`
+   / `response.data.facebookUrl`, NO `response.whatsappUrl` directo. Esto es lo que causaba que
+   el QR de Facebook (y probablemente el de WhatsApp) no aparecieran — ya estaba documentado así
+   arriba, pero se confirma explícito por si se leyó mal.
+2. **No existe `tiendaUrl` en el back** — nunca se implementó. La intención original (ver "QR 1"
+   arriba) es que el front lo resuelva con `environment.ts` / `window.location.origin`, no del
+   back. **Pendiente de confirmar con el front:** si `window.location.origin` no sirve en su caso
+   (ej. el ticket se genera en un contexto sin ese origin correcto), avisar y se agrega como campo
+   nuevo a este mismo endpoint — no implementado todavía, a la espera de esa confirmación.
+3. **`GET /v1/pedidos/{id}/detalle` va envuelto:** `{ "data": { pedidoId, detalles[], clienteCorreo,
+   metodoPago, montoDado, abonos[] } }` — ya documentado arriba en EP-T1, confirmado sin cambios.
+4. **`POST /v1/pedidos/{id}/notificar`:** éxito → `data` trae el texto de confirmación; error →
+   `mensaje` trae el motivo (dos campos distintos según si fue éxito o error, revisar el `code`/HTTP
+   status para saber cuál leer) — ya documentado arriba en EP-T2, confirmado sin cambios.
+
+---
+
+## Reportes de ventas (2026-07-02) — endpoints nuevos
+
+> Todos requieren rol ADMIN (Bearer token). Todos van envueltos en `ResponseGeneric`
+> (`{ "data": {...} }` o `{ "data": [...] }`), mismo patrón que el resto del proyecto.
+
+### `GET /v1/reportes/ventas/diario?fecha=YYYY-MM-DD`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/diario?fecha=2026-07-02`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "fecha": "2026-07-02",
+    "totalVenta": 4350.00,
+    "totalGanancia": 1200.00,
+    "cantidadVentas": 12
+  }
+}
+```
+Si no hubo ventas ese día: `totalVenta`/`totalGanancia` vienen en `0.0`, `cantidadVentas` en `0` (no error, no null).
+
+---
+
+### `GET /v1/reportes/ventas/mensual?mes=YYYY-MM`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/mensual?mes=2026-07`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "mes": "2026-07",
+    "totalVenta": 45000.00,
+    "totalGanancia": 12500.00,
+    "cantidadVentas": 130,
+    "porDia": [
+      { "fecha": "2026-07-01", "totalVenta": 4350.00, "totalGanancia": 1200.00, "cantidadVentas": 12 },
+      { "fecha": "2026-07-02", "totalVenta": 3100.00, "totalGanancia": 900.00, "cantidadVentas": 8 }
+    ]
+  }
+}
+```
+- `porDia` solo trae los días que tuvieron al menos una venta (no rellena con ceros los días sin ventas — si necesitan la gráfica con todos los días del mes, hay que completar los huecos en el front).
+
+**Response 400** (formato de `mes` inválido, ej. mandaron `2026-13` o `julio-2026`):
+```json
+{ "mensaje": "Formato de mes invalido, usar yyyy-MM" }
+```
+
+---
+
+### `GET /v1/reportes/ventas/cliente/{clienteId}`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/cliente/5`
+
+**Response 200:**
+```json
+{
+  "data": {
+    "clienteId": 5,
+    "clienteNombre": "María López",
+    "totalCompras": 7,
+    "totalGastado": 3200.00,
+    "ventas": [
+      { "ventaId": 42, "fechaVenta": "2026-07-01T14:30:00", "totalVenta": 530.00, "gananciaTotal": 150.00 }
+    ]
+  }
+}
+```
+- Si el cliente existe pero no tiene compras → `totalCompras: 0`, `ventas: []` (no error).
+- Solo cuenta ventas de contado (`Venta`), no incluye créditos/abonos — para eso usar el reporte de abonos que ya existe en `GET /v1/abonos/reporte/*`.
+
+**Response 400** (cliente no existe):
+```json
+{ "mensaje": "Cliente no encontrado: 5" }
+```
+
+---
+
+### `GET /v1/reportes/ventas/productos-mas-vendidos?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&limite=10`
+
+**Request:** `GET /mis-productos/v1/reportes/ventas/productos-mas-vendidos?desde=2026-07-01&hasta=2026-07-31&limite=10`
+
+- `limite` es opcional, default `10`.
+
+**Response 200:**
+```json
+{
+  "data": [
+    { "varianteId": 12, "productoNombre": "Pantalón clásico negro", "talla": "M", "color": "Negro", "cantidadVendida": 34, "totalVendido": 11900.00 },
+    { "varianteId": 8, "productoNombre": "Blusa floral", "talla": "S", "color": "Rosa", "cantidadVendida": 21, "totalVendido": 3780.00 }
+  ]
+}
+```
+Ordenado de mayor a menor por `cantidadVendida`. Lista vacía `[]` si no hubo ventas en el rango (no error).
+
+---
+
+**Archivos nuevos en el back:** `ReporteVentasController.java`, `ReporteVentasServiceImpl.java`,
+`IReporteVentasService.java`, DTOs en `models/reportes/` (`ReporteDiarioDto`, `ReporteMensualDto`,
+`ReporteClienteDto`, `VentaResumenItem`, `ProductoMasVendidoDto`). Sin migración de BD — usa
+tablas y columnas que ya existían.
+
+---
+
+## ⚠️ Problema conocido — Chatbot muestra "el mismo producto" repetido (2026-07-02)
+
+### Qué está pasando
+
+Al buscar un producto en el chatbot (ej. "Mochila"), a veces varias tarjetas se ven idénticas —
+mismo nombre, mismo precio, sin talla/color que las distinga — como si fuera el mismo producto
+mostrado varias veces.
+
+### Diagnóstico — verificado en vivo contra QA, no es bug de front ni de back
+
+Se probó directo contra el servidor real:
+```
+GET /v1/chatbot/buscar?q=Mochila&offset=0
+→ varianteId 117 y 165, ambos "Mochila Prada", $400, sin talla, sin color
+GET /v1/chatbot/buscar?q=Mochila&offset=2
+→ varianteId 213 y 277, mismos datos otra vez
+```
+
+**La búsqueda y la paginación del back funcionan correctamente** — sí trae 4 registros distintos
+(`varianteId` 117, 165, 213, 277). El problema es que **esas 4 filas están duplicadas en la base
+de datos**: se cargó "Mochila Prada" 4 veces con exactamente los mismos datos, en vez de una sola
+vez con más stock, o con talla/color que las diferenciara. Por eso el chatbot no tiene manera de
+mostrar "cosas diferentes" — no hay 4 productos diferentes, hay 1 producto repetido 4 veces en la
+tabla `variantes`.
+
+**Extra:** las 4 variantes también dan error 500 al pedir su imagen
+(`GET /variantes/v1/imagenes/{varianteId}`) — probablemente ninguna tiene una imagen real cargada.
+
+### Qué lo puede solucionar
+
+No es algo que el front pueda arreglar con código — es limpieza de datos. Opciones (pendiente de
+decisión del negocio, no se tocó nada todavía):
+1. **Borrar las 3 filas sobrantes** desde el panel de admin de variantes y dejar solo 1, con el
+   stock correcto sumado (ej. si cada una tenía `stock: 1`, la que quede debería tener `stock: 4`).
+2. **Diferenciarlas** si en realidad SÍ son productos distintos (ej. colores/tallas distintos que
+   no se llenaron al crearlas) — habría que editarlas para agregar talla/color a cada una.
+3. Si se prefiere, se puede pedir un script de limpieza al back una vez que el negocio confirme
+   cuál de las dos opciones anteriores aplica — no se debe hacer sin esa confirmación porque borrar
+   filas es una acción destructiva.
+
+### Dos correcciones de documentación relacionadas (ya corregidas arriba, en la sección 3 del chatbot)
+
+Mientras se investigaba esto se encontraron 2 errores en la doc que el front ya tenía, que también
+podían afectar que la imagen mostrada fuera la incorrecta:
+- La URL tenía el `/v1/` mal puesto: era `/v1/variantes/imagenes/{varianteId}`, la correcta es
+  `/variantes/v1/imagenes/{varianteId}`.
+- Decía "tomar el primer elemento" del array de imágenes — debe ser el elemento con
+  `"principal": true` (el primero como fallback solo si ninguno viene marcado).

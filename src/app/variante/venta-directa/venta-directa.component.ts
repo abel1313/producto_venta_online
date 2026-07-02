@@ -16,6 +16,9 @@ import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
+import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { NegocioService } from 'src/app/negocio/negocio.service';
+import { PedidosService } from 'src/app/pedidos/pedidos.service';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -84,6 +87,13 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       : 0;
   }
 
+  // ── Ticket ────────────────────────────────────────────────────────
+  enviarCorreo  = false;
+  // QR contactos del negocio (cargados en ngOnInit desde /v1/negocio/contactos)
+  private qrTienda    = window.location.origin;
+  private qrWhatsapp: string | null = null;
+  private qrFacebook: string | null = null;
+
   // ── Carrito preload ────────────────────────────────────────────────
   private cargadoDesdeCarrito = false;
 
@@ -120,6 +130,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly router:          Router,
     private readonly carritoService:  CarritoVarianteService,
     private readonly abonoService:    AbonoService,
+    private readonly negocioService:  NegocioService,
+    private readonly pedidosService:  PedidosService,
     private fb: FormBuilder
   ) {
 
@@ -151,6 +163,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clientes = [];
     this.closeModalModalSinRegistro();
 
+    this.actualizarCheckboxesTicket();
     if (this.cobrarPendiente) {
       this.cobrarPendiente = false;
       this.ejecutarVenta(0);
@@ -218,6 +231,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       debounceTime(400),
       distinctUntilChanged()
     ).subscribe(() => this.buscarClientes());
+
+    // Cargar URLs de contacto del negocio para QR en ticket (silencioso si falla)
+    this.negocioService.getContactosPublicos().subscribe({
+      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      error: () => {}
+    });
   }
 
   ngOnDestroy(): void {
@@ -338,7 +357,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.montoInicial = 0;
     this.montoDadoContado = 0;
     this.montoDadoEnganche = 0;
-    this.cobrarPendiente = false;
+    this.cobrarPendiente   = false;
+    this.enviarCorreo      = false;
     if (this.cargadoDesdeCarrito) {
       this.carritoService.limpiar();
       this.cargadoDesdeCarrito = false;
@@ -383,9 +403,39 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = c;
     this.terminoCliente = `${c.nombrePersona} ${c.apeidoPaterno}`;
     this.clientes = [];
+    this.actualizarCheckboxesTicket();
   }
 
-  limpiarCliente(): void { this.clienteSeleccionado = null; this.terminoCliente = ''; this.clientes = []; }
+  limpiarCliente(): void {
+    this.clienteSeleccionado = null;
+    this.terminoCliente = '';
+    this.clientes = [];
+    this.actualizarCheckboxesTicket();
+  }
+
+  private actualizarCheckboxesTicket(): void {
+    const correo = this.clienteSeleccionado?.correoElectronico
+      ?? this.clienteSinRegistroModal?.correo_Electronico ?? '';
+    const tel = this.clienteSeleccionado?.numeroTelefonico
+      ?? this.clienteSinRegistroModal?.numero_Telefonico ?? '';
+    // No se activa por default — el admin decide si enviarlo
+    this.enviarCorreo = false;
+  }
+
+  get correoDisponible(): boolean {
+    return !!(this.clienteSeleccionado?.correoElectronico ?? this.clienteSinRegistroModal?.correo_Electronico);
+  }
+
+  get nombreClienteTicket(): string {
+    if (this.clienteSinRegistroModal) {
+      return [this.clienteSinRegistroModal.nombre_persona, this.clienteSinRegistroModal.apeido_Paterno]
+        .filter(Boolean).join(' ');
+    }
+    if (this.clienteSeleccionado) {
+      return `${this.clienteSeleccionado.nombrePersona} ${this.clienteSeleccionado.apeidoPaterno}`.trim();
+    }
+    return 'Sin cliente';
+  }
 
   // ── Cobrar — un solo request ───────────────────────────────────────
 
@@ -435,6 +485,23 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private ejecutarVenta(clienteId: number): void {
     this.procesando = true;
 
+    // ── Snapshot de artículos y datos de ticket ANTES del POST ────────
+    // (limpiarTodo() borra this.lineas; necesitamos los datos para imprimir)
+    const articulosSnap = this.lineas.map(l => ({
+      cantidad:       l.cantidad,
+      productoNombre: l.variante.marca
+        ? `${l.variante.marca}${l.variante.talla ? ' ' + l.variante.talla : ''}`
+        : (l.variante.color ?? `Variante #${l.variante.id}`),
+      talla:    null as string | null,
+      subTotal: l.subTotal
+    }));
+    const totalSnap           = this.totalVenta;
+    const clienteSnap         = this.nombreClienteTicket;
+    const metodoPagoSnap      = this.tipoPagoActivo?.formaPago ?? 'EFECTIVO';
+    const montoDadoSnap       = this.esEfectivoContado && this.montoDadoContado > 0 ? this.montoDadoContado : null;
+    const cambioSnap          = this.esEfectivoContado ? this.cambioContado : null;
+    const correoDisponibleSnap = this.correoDisponible;
+
     const request: IVentaDirectaRequest = {
       usuarioId:     this.idUsuario,
       clienteId,
@@ -453,6 +520,21 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       request.observaciones = this.observaciones || undefined;
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;
+      if (montoDadoSnap !== null) request.montoDado = montoDadoSnap;
+      if (this.enviarCorreo && this.correoDisponible) {
+        const preTicket: ITicketData = {
+          tipo: 'venta', numero: 0, cliente: clienteSnap,
+          articulos: articulosSnap, total: totalSnap,
+          metodoPago: metodoPagoSnap, montoDado: montoDadoSnap, cambio: cambioSnap,
+          qrTienda:   this.qrTienda,
+          qrWhatsapp: this.qrWhatsapp,
+          qrFacebook: this.qrFacebook
+        };
+        request.notificacion = {
+          enviarCorreo: true,
+          ticketHtml:   generarHtmlTicket(preTicket)
+        };
+      }
     }
 
     this.varianteService.saveVentaDirecta(request).subscribe({
@@ -512,14 +594,39 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         if (!res.requiereTerminal) {
           // Efectivo / Transferencia → venta confirmada
           this.varianteService.invalidarCache();
-          Swal.fire({
-            icon: 'success',
-            title: `¡Venta #${res.ventaId} registrada!`,
-            text: res.descripcionPago ?? undefined,
-            timer: 2200,
-            showConfirmButton: false
+
+          // Ticket con ventaId real (para imprimir)
+          const htmlTicket = generarHtmlTicket({
+            tipo:      'venta',
+            numero:    res.ventaId ?? 0,
+            cliente:   clienteSnap,
+            articulos: articulosSnap,
+            total:     totalSnap,
+            metodoPago: metodoPagoSnap,
+            montoDado:  montoDadoSnap,
+            cambio:     cambioSnap,
+            qrTienda:   this.qrTienda,
+            qrWhatsapp: this.qrWhatsapp,
+            qrFacebook: this.qrFacebook
           });
+
           this.limpiarTodo();
+
+          Swal.fire({
+            icon:               'success',
+            title:              `¡Venta #${res.ventaId} registrada!`,
+            text:               res.descripcionPago ?? undefined,
+            showConfirmButton:  true,
+            confirmButtonText:  '🖨️ Imprimir ticket',
+            showCancelButton:   true,
+            cancelButtonText:   'Cerrar'
+          }).then(result => {
+            if (result.isConfirmed) imprimirTicket(htmlTicket);
+            // Sin correo registrado → preguntar si quiere recibir el ticket por correo
+            if (!correoDisponibleSnap && res.pedidoId) {
+              this.pedirCorreoPostTransaccion(res.pedidoId, htmlTicket);
+            }
+          });
         } else {
           // Tarjeta → mostrar panel de terminal
           this.ventaCreada     = res;
@@ -531,6 +638,25 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         this.procesando = false;
         Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo procesar la venta.' });
       }
+    });
+  }
+
+  private pedirCorreoPostTransaccion(pedidoId: number, htmlTicket: string): void {
+    Swal.fire({
+      title: '📧 ¿Enviar ticket por correo?',
+      input: 'email',
+      inputPlaceholder: 'correo@ejemplo.com',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'No, gracias',
+      reverseButtons: true,
+      inputValidator: v => (v && !v.includes('@')) ? 'Ingresa un correo válido' : null
+    }).then(res => {
+      if (!res.isConfirmed || !res.value) return;
+      this.pedidosService.reenviarComprobante(pedidoId, { correo: res.value, ticketHtml: htmlTicket }).subscribe({
+        next: (r: any) => Swal.fire({ title: '✅ Enviado', text: r?.data ?? `Ticket enviado a ${res.value}`, icon: 'success', timer: 2000, showConfirmButton: false }),
+        error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' })
+      });
     });
   }
 

@@ -176,8 +176,546 @@ Todos los `urlImagen` / `imagenUrl` que devuelven los listados (productos, varia
 
 ---
 
-## 5. Estado del front — revisión 2026-06-08 ✅ COMPLETO
+## 5. AUDITORÍA COMPLETA — 2026-07-01 (los 29 controladores de proyecto-key, método por método)
 
-Se revisó el front completo (todos los servicios que construyen URLs vía `environment.api_Url`/`environment.api_imagenes`) contra las secciones 0 y 1 (incluida la tabla de endpoints #16-25 de `VarianteController` agregada al final). **Ya no quedan llamadas sin `/v1/` hacia los controladores listados** — se actualizaron `AdminService`, `AccederService`, `AppComponent`, `TokenInterceptor`, `ChatbotService`, `ClienteService`, `RifaService`, `NegocioService`, `PagoService`, `PalabraClaveService`, `DocumentosService`, `ProductoService`, `VarianteService`, `UsuarioService` y ambos `PedidosService`. Detalle completo en `bugs/CAMBIOS_FRONT.md` → sección "SESIÓN 2026-06-08 — Fase 2: prefijo `/v1/` en TODOS los demás controladores".
+> Esta sección es la respuesta a "¿está completo este documento?". Las secciones 0-4 de arriba son
+> la foto del día de la migración (2026-06-09) — correctas pero **no cubrían controladores creados
+> después** (créditos/abonos, chat en vivo) ni endpoints agregados más tarde. Esta sección audita
+> **el estado real del código hoy**, controlador por controlador. Host base:
+> `http://localhost:9091/mis-productos` (dev) / equivalente en QA/prod.
+>
+> ⚠️ **No cubre `micro_imagenes`** (repo aparte) — para ese microservicio, la sección 2 arriba
+> sigue siendo la referencia; no se auditó de nuevo en esta pasada.
+>
+> Convención: los que extienden `AbstractController` heredan además el CRUD genérico
+> `DELETE {base}/delete`, `GET {base}/getAll`, `GET {base}/getOne/{tipoDato}`,
+> `POST {base}/save`, `PUT {base}/update/{tipoDato}` (algunos lo sobre-escriben con su propio
+> `save`/`update` personalizado, indicado en cada tabla).
 
-`LotesProductosControllerImpl` y `PruebaControllerImpl` confirmados sin uso en el front — no requieren cambios.
+### `AbonoController` — `/v1/abonos` — ⚠️ NO estaba en este documento (creado después de la migración)
+
+| Método | URL |
+|---|---|
+| POST | `/v1/abonos/{pedidoId}` — registrar abono |
+| GET | `/v1/abonos/{pedidoId}` — historial de abonos del pedido |
+| GET | `/v1/abonos/reporte/estado-cuenta` |
+| GET | `/v1/abonos/reporte/pagados` |
+| GET | `/v1/abonos/reporte/cancelados` |
+| PUT | `/v1/abonos/{pedidoId}/cancelar` |
+| POST | `/v1/abonos/{pedidoIdOrigen}/transferir` |
+
+### `AdminController` — `/v1/admin`
+
+| Método | URL |
+|---|---|
+| DELETE | `/v1/admin/cache` |
+
+### `AdminReconciliacionController` — `/v1/admin/reconciliacion/imagenes`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/admin/reconciliacion/imagenes` |
+| POST | `/v1/admin/reconciliacion/imagenes/limpiar-bd` |
+| GET | `/v1/admin/reconciliacion/imagenes/resultado` |
+
+### `AuthController` — `/v1/auth`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/auth/login` |
+| POST | `/v1/auth/refresh` |
+| POST | `/v1/auth/logout` |
+| POST | `/v1/auth/registrar` |
+| GET | `/v1/auth/validar` |
+
+### `ChatAdminController` — `/v1/chat` — ⚠️ NO estaba en este documento (chat creado después)
+
+| Método | URL |
+|---|---|
+| GET | `/v1/chat/admin/sesiones` |
+| GET | `/v1/chat/admin/historial/{sesionId}` |
+| GET | `/v1/chat/historial/usuario/{usuarioId}` |
+| GET | `/v1/chat/historial/cliente/{clienteId}` |
+| GET | `/v1/chat/historial/{sesionId}` |
+| POST | `/v1/chat/admin/cerrar/{sesionId}` |
+| GET | `/v1/chat/version` |
+
+### `ChatWebSocketController` — WebSocket STOMP, no HTTP REST — ⚠️ NO estaba en este documento
+
+Handshake: `ws://.../mis-productos/ws` (SockJS/STOMP). Prefijo de app: `/app` (`ConfigSocket.java`).
+
+| Cliente envía a | Server transmite a |
+|---|---|
+| `/app/chat.conectar` | — |
+| `/app/chat.mensaje` | `/topic/chat.admin` + destino por usuario |
+| `/app/chat.admin.responder` | `/topic/chat.admin` + destino por usuario |
+| `/app/chat.admin.conectado` | — |
+
+Detalle completo de payloads en `CHAT_FRONT_DEVELOPER.md` / `CHAT_EN_VIVO_FRONT.md` (no duplicado aquí).
+
+### `ChatbotController` — `/v1/chatbot`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/chatbot/mensaje` |
+| GET | `/v1/chatbot/buscar?q=&offset=` — ⚠️ agregado después de la migración (paginación sin IA) |
+
+### `ClienteControllerImpl` — `/v1/clientes` — extiende `AbstractController` (con `save` propio)
+
+| Método | URL |
+|---|---|
+| POST | `/v1/clientes/save` — propio, sobre-escribe el genérico |
+| GET | `/v1/clientes/buscarPorIdCliente/{idCliente}` |
+| GET | `/v1/clientes/buscar` |
+| + CRUD genérico | `/v1/clientes/getAll`, `/v1/clientes/getOne/{tipoDato}`, `/v1/clientes/update/{tipoDato}`, `/v1/clientes/delete` |
+
+### `ConcursanteControllerImpl` — `/v1/concursante` — extiende `AbstractController`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/concursante/registrar` |
+| GET | `/v1/concursante/porRifa/{configurarRifaId}` |
+| GET | `/v1/concursante/elegibles/{configurarRifaId}` |
+| GET | `/v1/concursante/clientesPorMes?mes=` |
+| POST | `/v1/concursante/importarDePedidos` |
+| DELETE | `/v1/concursante/{id}` |
+| POST | `/v1/concursante/copiarDeRifa` |
+| PUT | `/v1/concursante/{id}` |
+| + CRUD genérico | `/v1/concursante/getAll`, `/getOne/{tipoDato}`, `/save`, `/update/{tipoDato}`, `/delete` |
+
+### `ConfigurarRifaControllerImpl` — `/v1/configurarRifa` — extiende `AbstractController`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/configurarRifa/activas` |
+| GET | `/v1/configurarRifa/activas/hoy` |
+| GET | `/v1/configurarRifa/buscar?desde=&hasta=&tipo=&mesReferencia=` |
+| PUT | `/v1/configurarRifa/{id}` |
+| PUT | `/v1/configurarRifa/{id}/esPrueba` |
+| + CRUD genérico | `/v1/configurarRifa/save` (crear), `/getAll`, `/getOne/{tipoDato}`, `/delete` |
+
+### `ConfigurarRifaVarianteController` — `/v1/configurarRifaVariante` — NO extiende AbstractController
+
+| Método | URL |
+|---|---|
+| POST | `/v1/configurarRifaVariante/save` |
+| GET | `/v1/configurarRifaVariante/porRifa/{rifaId}` |
+| GET | `/v1/configurarRifaVariante/palabrasClave/{rifaId}` |
+| DELETE | `/v1/configurarRifaVariante/{id}` |
+| PUT | `/v1/configurarRifaVariante/{id}/palabraClave` |
+
+### `DopoMexController` — `/v1/dipomex`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/dipomex/getCodigoPostal/{codigoPostal}` |
+
+### `GanadorRifaControllerImpl` — `/v1/ganadorRifa` — extiende `AbstractController`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/ganadorRifa/sortear/{configurarRifaId}` |
+| POST | `/v1/ganadorRifa/continuarVariante/{configurarRifaId}?modo=RESTANTES` |
+| GET | `/v1/ganadorRifa/estado/{configurarRifaId}` |
+| POST | `/v1/ganadorRifa/reiniciar/{configurarRifaId}?completo=false` |
+| + CRUD genérico | heredado, uso limitado en este módulo |
+
+### `GastosControllerImpl` — `/v1/gastos` — NO extiende AbstractController
+
+| Método | URL |
+|---|---|
+| POST | `/v1/gastos/save` |
+| GET | `/v1/gastos/buscar` |
+| PUT | `/v1/gastos/{id}` |
+| DELETE | `/v1/gastos/{id}` |
+| GET | `/v1/gastos/reporte` |
+
+### `ImagenPresentacionController` / `ImageneController`
+
+Ya cubiertos en la sección 1 de este documento — sin cambios adicionales.
+
+### `VarianteController` — 🆕 hueco real encontrado y corregido 2026-07-01
+
+`VarianteController` extiende `AbstractController`, pero su `@RequestMapping` de clase es
+`"variantes"` (sin `/v1/`). Sus métodos propios sí llevan `/v1/` a mano, pero los 5 métodos
+**heredados** de `AbstractController` (`getAll`, `getOne/{tipoDato}`, `save`, `update/{tipoDato}`,
+`delete`) no estaban sobreescritos, así que quedaban expuestos sin versión:
+`/variantes/getAll`, `/variantes/save`, `/variantes/getOne/{tipoDato}`,
+`/variantes/update/{tipoDato}`, `/variantes/delete`.
+
+Se agregaron 5 métodos nuevos en `VarianteController.java` que delegan al `super.*` correspondiente,
+con `/v1/`, **sin quitar los viejos** (mismo patrón v1/v3 del resto del archivo — el front debe
+migrar a estos, los viejos siguen vivos por compatibilidad):
+
+| Antes (sigue vivo, migrar) | Ahora (usar este) |
+|---|---|
+| GET `/variantes/getAll?page=&size=` | GET `/variantes/v1/getAll?page=&size=` |
+| GET `/variantes/getOne/{tipoDato}` | GET `/variantes/v1/getOne/{tipoDato}` |
+| POST `/variantes/save` | POST `/variantes/v1/save` |
+| PUT `/variantes/update/{tipoDato}` | PUT `/variantes/v1/update/{tipoDato}` |
+| DELETE `/variantes/delete` | DELETE `/variantes/v1/delete` |
+
+`SecurityConfig.java` no necesitó cambios — los matchers ya usan wildcard (`/variantes/**`), cubren
+las rutas nuevas con el mismo nivel de protección que las viejas.
+
+### `LotesProductosControllerImpl` — sin endpoints (confirmado, ver sección 1)
+
+### `MercadoPagoController` — `/v1/mp`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/mp/iniciar` |
+| GET | `/v1/mp/estado/{intentId}` |
+| POST | `/v1/mp/webhook` — público, llamado por MercadoPago, sin auth |
+| DELETE | `/v1/mp/cancelar/{intentId}` |
+| GET | `/v1/mp/historial` |
+| GET | `/v1/mp/historial/pedido/{pedidoId}` |
+| GET | `/v1/mp/historial/estado/{estado}` |
+| POST | `/v1/mp/test/simular-pago/{intentId}` — ⚠️ endpoint de prueba, no usar en prod |
+| GET | `/v1/mp/historial/mp` |
+
+### `NegocioController` — `/v1/negocio`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/negocio/estado` — público, oculta `whatsappUrl`/`facebookUrl` si el negocio está abierto |
+| GET | `/v1/negocio/contactos` — 🆕 **agregado 2026-07-01**, público, siempre expone `whatsappUrl`/`facebookUrl` (para el QR del ticket) |
+| GET | `/v1/negocio/config` — solo ADMIN |
+| POST | `/v1/negocio/abrir` — solo ADMIN |
+| POST | `/v1/negocio/cerrar` — solo ADMIN |
+| PUT | `/v1/negocio/horario` — solo ADMIN |
+| PUT | `/v1/negocio/contactos` — solo ADMIN |
+
+### `PagosCatalogoController` — `/v1/pagos`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/pagos/tipos-pago` |
+| GET | `/v1/pagos/tarifas` |
+| GET | `/v1/pagos/iva` |
+| GET | `/v1/pagos/opciones` |
+| GET | `/v1/pagos/opciones-estructuradas` |
+| GET | `/v1/pagos/opciones-por-tipo/{tipoPagoId}` |
+
+### `PalabraClaveController` — `/v1/palabras-clave` — extiende `AbstractController`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/palabras-clave/buscar` |
+| + CRUD genérico | `/v1/palabras-clave/save`, `/getAll`, `/getOne/{tipoDato}`, `/update/{tipoDato}`, `/delete` |
+
+### `PedidoController` — `/v1/pedidos` — extiende `AbstractController`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/pedidos/savePedido` |
+| PUT | `/v1/pedidos/confirmar/{id}` |
+| GET | `/v1/pedidos/findPedido/{id}?size=&page=` |
+| GET | `/v1/pedidos/findPedido/{idPedido}/{idCliente}?size=&page=` |
+| GET | `/v1/pedidos/buscarClientePedido?buscar=&size=&page=` |
+| GET | `/v1/pedidos/{id}/detalle` |
+| DELETE | `/v1/pedidos/delete/{id}` |
+| DELETE | `/v1/pedidos/{pedidoId}/detalle/{productoId}` |
+| + CRUD genérico | `/v1/pedidos/save`, `/getAll`, `/getOne/{tipoDato}`, `/update/{tipoDato}` |
+
+### `ProductosControllerImpl` — `/v1/productos` — NO extiende AbstractController
+
+| Método | URL |
+|---|---|
+| GET | `/v1/productos/obtenerProductos?size=&page=` |
+| GET | `/v1/productos/buscarNombreOrCodigoBarra?size=&page=&nombre=` |
+| POST | `/v1/productos/save` |
+| PUT | `/v1/productos/update` |
+| GET | `/v1/productos/findById/{id}` |
+| DELETE | `/v1/productos/deleteBy/{id}` |
+| GET | `/v1/productos/admin/no-habilitados` |
+| GET | `/v1/productos/admin/sin-stock` |
+| PUT | `/v1/productos/{id}/habilitar` |
+| GET | `/v1/productos/admin/diagnostico-imagenes/{productoId}` |
+| GET | `/v1/productos/admin/sin-variantes/reporte` — devuelve bytes (reporte, no JSON) |
+| POST | `/v1/productos/compartir-imagenes-variantes` |
+
+### `PruebaControllerImpl` — `/v1/productos-eje/` — ⚠️ controlador de prueba, no usar en producción
+
+| Método | URL |
+|---|---|
+| GET | `/v1/productos-eje/data` |
+
+### `RifaControllerImpl` — `/v1/rifa` — extiende `AbstractController`; también expone WebSocket
+
+| Método | URL |
+|---|---|
+| POST | `/v1/rifa/registrar` |
+| GET | `/v1/rifa/listConcursantes/{configurarRifaId}` |
+| GET | `/v1/rifa/getRifasPorHora` |
+| WebSocket | cliente envía a `/app/actualizar` → server transmite a `/topic/ruleta` |
+| + CRUD genérico | heredado |
+
+### `SubirDocumentosController` — `/v1/documentos`
+
+| Método | URL |
+|---|---|
+| POST | `/v1/documentos/productos` — multipart, campo `archivo` |
+
+### `UsuarioController` — `/v1/usuarios`
+
+| Método | URL |
+|---|---|
+| GET | `/v1/usuarios/getAllPage` |
+| PUT | `/v1/usuarios/updateUsuario/{id}` |
+| DELETE | `/v1/usuarios/eliminarUsuarioDto/{id}` |
+| GET | `/v1/usuarios/buscarClientePorIdUsuario/{idUsuario}` |
+| GET | `/v1/usuarios/roles` |
+| GET | `/v1/usuarios/permisos` |
+| PUT | `/v1/usuarios/{usuarioId}/rol/{rolId}` |
+| POST | `/v1/usuarios/{usuarioId}/permisos/{permisoId}` |
+| DELETE | `/v1/usuarios/{usuarioId}/permisos/{permisoId}` |
+
+### `VentaControllerImpl` — `/v1/ventas` — NO extiende AbstractController
+
+| Método | URL |
+|---|---|
+| POST | `/v1/ventas/save` — ⚠️ response SIN wrapper `ResponseGeneric` (devuelve `VentaDirectaResponse` directo) |
+| POST | `/v1/ventas/getVentas?size=&page=` |
+| GET | `/v1/ventas/getTotalVentas` |
+| GET | `/v1/ventas/buscar` |
+
+### Resumen de hallazgos de esta auditoría
+
+1. **`VarianteController` sí tenía un hueco real:** los 5 métodos heredados de `AbstractController`
+   (`getAll`, `getOne`, `save`, `update`, `delete`) no llevaban `/v1/` porque la clase no tiene el
+   prefijo. Corregido 2026-07-01 (ver arriba) — ahora los 29 controladores tienen `/v1/` en
+   TODOS sus endpoints activos, viejos y nuevos coexistiendo (viejos por compatibilidad).
+2. **Faltaban del documento por completo:** `AbonoController`, `ChatAdminController`,
+   `ChatWebSocketController` (creados después de 2026-06-09) — ya agregados arriba.
+3. **Endpoint nuevo de hoy agregado:** `GET /v1/negocio/contactos`.
+4. **Inconsistencia de estilo que sigue viva (no es bug, es deuda técnica):** `ImageneController`
+   (`/imagen`), `ImagenPresentacionController` (`/presentacion`) y `VarianteController` (`variantes`)
+   ponen el `/v1/` por método, no en la clase — a diferencia de los otros 26 controladores. Ver
+   conversación 2026-07-01 para la decisión de si se unifica (implica cambiar URLs, requiere
+   coordinación con front).
+5. **`CLAUDE.md`** describe los endpoints de `VarianteController` sin el `/v1/` — desactualizado,
+   pendiente de corregir.
+
+---
+
+## SECCIÓN — ENDPOINTS PENDIENTES PARA TICKETS / COMPROBANTES
+
+> Requeridos para el módulo de tickets (imprimir y enviar por correo desde Pedidos, Ventas
+> y Abonos). El front ya tiene la generación de HTML en `src/app/shared/ticket.util.ts`.
+> Necesita 2 cambios del back.
+
+---
+
+### EP-T1 — Enriquecer `GET /v1/pedidos/{id}/detalle` (endpoint existente)
+
+**Solo agregar campos al response que ya existe. Sin cambiar path ni auth.**
+
+**Campos NUEVOS a agregar:**
+
+| Campo | Tipo Java | Descripción |
+|---|---|---|
+| `clienteCorreo` | `String` (nullable) | Correo del cliente — para auto-llenar envío de ticket |
+| `metodoPago` | `String` (nullable) | Forma de pago del pedido original (`EFECTIVO`, `TRANSFERENCIA`, `TARJETA`). Para créditos puede ser `null`. |
+| `montoDado` | `Double` (nullable) | Cuánto entregó el cliente al pagar — para calcular cambio en el ticket. `null` si no se registró. |
+| `abonos` | `List<AbonoDetalleItem>` | Historial de todos los pagos del pedido. Lista vacía `[]` para ventas normales contado. |
+
+**Shape de cada `AbonoDetalleItem`:**
+```json
+{
+  "id": 1,
+  "monto": 200.00,
+  "fechaPago": "2026-07-01T10:30:00",
+  "metodoPago": "EFECTIVO",
+  "nota": "Primer abono",
+  "montoDado": 220.00
+}
+```
+
+**Response esperado — venta NORMAL al contado:**
+```json
+{
+  "pedidoId": 123,
+  "tipoPedido": "NORMAL",
+  "estadoPedido": "Entregado",
+  "totalPedido": 300.00,
+  "totalPagado": 300.00,
+  "saldoPendiente": 0.00,
+  "fechaPedido": "2026-07-01T10:00:00",
+  "clienteNombre": "Juan Pérez",
+  "clienteTelefono": "5551234567",
+  "clienteCorreo": "juan@email.com",
+  "metodoPago": "EFECTIVO",
+  "montoDado": 350.00,
+  "detalles": [
+    { "varianteId": 1, "productoNombre": "Blusa floral", "talla": "M", "color": "Rosa", "cantidad": 2, "precioUnitario": 150.00, "subTotal": 300.00 }
+  ],
+  "abonos": []
+}
+```
+
+**Response esperado — APARTADO con 2 abonos:**
+```json
+{
+  "pedidoId": 124,
+  "tipoPedido": "APARTADO",
+  "estadoPedido": "APARTADO",
+  "totalPedido": 500.00,
+  "totalPagado": 350.00,
+  "saldoPendiente": 150.00,
+  "fechaPedido": "2026-07-01T10:00:00",
+  "clienteNombre": "Ana López",
+  "clienteTelefono": "5559876543",
+  "clienteCorreo": "ana@email.com",
+  "metodoPago": null,
+  "montoDado": null,
+  "detalles": [
+    { "varianteId": 2, "productoNombre": "Pantalón slim", "talla": "28", "color": "Negro", "cantidad": 1, "precioUnitario": 500.00, "subTotal": 500.00 }
+  ],
+  "abonos": [
+    { "id": 10, "monto": 200.00, "fechaPago": "2026-07-01T10:30:00", "metodoPago": "EFECTIVO", "nota": "Enganche", "montoDado": 220.00 },
+    { "id": 11, "monto": 150.00, "fechaPago": "2026-07-15T14:00:00", "metodoPago": "TRANSFERENCIA", "nota": null, "montoDado": null }
+  ]
+}
+```
+
+**¿Por qué el front necesita estos datos?**
+
+| Dato | Ticket de venta | Ticket de crédito/abono |
+|---|---|---|
+| `clienteCorreo` | Auto-fill al enviar por correo | Auto-fill al enviar por correo |
+| `metodoPago` | Muestra "MÉTODO: EFECTIVO" | No aplica al pedido (cada abono tiene el suyo) |
+| `montoDado` | Muestra "ENTREGÓ: $350 / CAMBIO: $50" | Por abono individual |
+| `abonos[]` | Vacío | Muestra historial de pagos con fecha, monto y método |
+
+---
+
+### EP-T2 — Nuevo endpoint: reenviar comprobante por correo
+
+**Path:** `POST /v1/pedidos/{id}/notificar`
+
+**Auth:** Bearer token (admin)
+
+**Request body:**
+```json
+{
+  "correo": "cliente@email.com",
+  "ticketHtml": "<html><body>...HTML generado por el front...</body></html>"
+}
+```
+
+**Response 200:**
+```json
+{
+  "mensaje": "Comprobante enviado correctamente a cliente@email.com"
+}
+```
+
+**Response 400 / 500:**
+```json
+{
+  "mensaje": "No se pudo enviar el correo. Verifica la dirección."
+}
+```
+
+**¿Qué hace el back?**
+- Recibe el HTML ya listo del front
+- Lo envía como correo HTML a `correo`
+- Asunto: `"Comprobante de tu pedido #${id} — Novedades Jade"`
+- **No genera nada** — solo envía el HTML recibido
+
+**Nota:** el HTML ya incluye los QR codes de WhatsApp, Facebook y tienda web.
+El front los obtiene de `GET /v1/negocio/contactos` (`whatsappUrl`, `facebookUrl`).
+
+---
+
+### Nota sobre los QR en el ticket
+
+El ticket generado por el front incluye automáticamente códigos QR al pie:
+
+| QR | URL de origen | Cómo llega al front |
+|---|---|---|
+| 🏪 Tienda | `window.location.origin` | Automático (URL del sistema) |
+| 💬 WhatsApp | `contactos.whatsappUrl` | `GET /v1/negocio/contactos` → campo `whatsappUrl` |
+| 📘 Facebook | `contactos.facebookUrl` | `GET /v1/negocio/contactos` → campo `facebookUrl` |
+
+Los QR se generan vía `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data={url}`.
+Si `whatsappUrl` o `facebookUrl` son `null` o vacíos, ese QR no aparece en el ticket.
+
+**Conclusión:** el back no necesita hacer nada adicional para los QR — solo asegurarse de que
+`GET /v1/negocio/contactos` devuelva `whatsappUrl` y `facebookUrl` con valores válidos.
+
+---
+
+### Prioridad
+
+| # | Cambio | Impacto |
+|---|---|---|
+| 1 | Enriquecer `GET /v1/pedidos/{id}/detalle` con `abonos[]`, `clienteCorreo`, `metodoPago`, `montoDado` | **Alto** — tickets ricos en Pedidos, Ventas y Abonos |
+| 2 | `POST /v1/pedidos/{id}/notificar` | **Medio** — envío por correo desde cualquier pantalla |
+
+Lo que ya está listo en el front ahora mismo:
+
+Feature	Estado	Detalle
+🖨️ Imprimir ticket desde mis-pedidos	✅ Funciona ya	Artículos, totales, cliente, fecha — pregunta el método de pago con Swal porque el back aún no lo devuelve
+QR WhatsApp + Facebook + Tienda en el ticket	✅ Funciona ya	Usa GET /v1/negocio/contactos que ya existe
+Correo auto-llenado con el email del cliente	⏳ Espera EP-T1	clienteCorreo no viene aún en el detalle
+Historial de abonos en el ticket (créditos)	⏳ Espera EP-T1	abonos[] no viene aún
+Cambio al cliente (entregó $X)	⏳ Espera EP-T1	montoDado no viene aún
+
+---
+
+## 6. EP-T1 y EP-T2 — IMPLEMENTADOS 2026-07-01 (con una duda real resuelta, ver abajo)
+
+### EP-T1 — `GET /v1/pedidos/{id}/detalle` enriquecido
+
+Se agregaron los 4 campos pedidos a `PedidoDetalleResponse`: `clienteCorreo`, `metodoPago`,
+`montoDado`, `abonos[]` (nuevo DTO `AbonoDetalleItem`: `id`, `monto`, `fechaPago`, `metodoPago`,
+`nota`, `montoDado`). Sin cambiar el path ni el auth, tal como se pidió.
+
+- `clienteCorreo`: mismo patrón que `clienteNombre`/`clienteTelefono` (Cliente o
+  ClienteSinRegistro). Sin duda, directo.
+- `abonos[]`: ya existía `IAbonoRepository.findByPedidoIdOrderByFechaPagoAsc(pedidoId)` con
+  exactamente los campos que se pedían — sin duda, directo.
+- `metodoPago`: se resuelve buscando la `Venta` ligada al pedido (nuevo
+  `IVentaRepository.findByPedidoId`) y leyendo `venta.pagosYMeses.tipoPago.formaPago`. Solo
+  aplica a ventas NORMAL al contado — en créditos (APARTADO/FIADO) no hay `Venta`, queda `null`
+  (correcto, cada abono ya trae el suyo en `abonos[]`).
+
+### ⚠️ DUDA REAL ENCONTRADA Y RESUELTA — `montoDado` en ventas de contado NUNCA se guardó
+
+A diferencia de los abonos (donde `AbonoPedido.montoDado` ya existía), **una venta NORMAL al
+contado nunca capturó `montoDado` en el back** — ni `VentaDirectaRequest` lo recibía, ni `Venta`
+lo guardaba. El front lo pedía asumiendo que ya estaba disponible para leer, pero en realidad
+había que agregar el punto de captura desde cero. Se implementó:
+
+1. `Venta.montoDado` — columna nueva (`monto_dado DOUBLE NULL`), migración manual en
+   `src/main/resources/static/migration_venta_monto_dado.sql` (correr en QA/prod, no hay Flyway).
+2. `VentaDirectaRequest.montoDado` — campo nuevo opcional en el request de
+   `POST /v1/ventas/save`.
+3. `VentaServiceImpl` guarda `request.getMontoDado()` en la `Venta` al crearla.
+
+**Impacto para el front — acción requerida:** para que `montoDado` aparezca en el ticket, el
+front debe **empezar a mandar `montoDado` en el body de `POST /v1/ventas/save`** cuando el
+método de pago sea EFECTIVO (igual que ya hace hoy con el Swal, pero ahora enviándolo al back
+en vez de solo calcular el cambio localmente). **Las ventas ya guardadas antes de este cambio
+quedarán con `montoDado: null`** — no hay forma de recuperar ese dato retroactivamente, el
+ticket de pedidos viejos simplemente no mostrará "ENTREGÓ/CAMBIO".
+
+### EP-T2 — `POST /v1/pedidos/{id}/notificar`
+
+Implementado tal como se pidió: recibe `{ correo, ticketHtml }`, reenvía el HTML tal cual por
+correo (asunto `"Comprobante de tu pedido #{id} — Novedades Jade"`), no genera nada. Protegido
+con `hasRole("ADMIN")` en `SecurityConfig.java` (mismo nivel que actualizar/cancelar pedidos).
+
+Diferencia menor respecto al spec: la response va envuelta en `ResponseGeneric` (como el resto
+del proyecto), no como el `{ "mensaje": "..." }` plano del ejemplo — el campo `mensaje` está en
+el mismo lugar (`response.mensaje` / `response.data`), solo con `code`/`data`/`lista` extra que
+el front puede ignorar.
+
+**Archivos tocados:** `PedidoDetalleResponse.java`, `AbonoDetalleItem.java` (nuevo),
+`NotificarPedidoRequest.java` (nuevo), `PedidoServiceImpl.java`, `IPedidoService.java`,
+`PedidoController.java`, `IVentaRepository.java`, `Venta.java`, `VentaDirectaRequest.java`,
+`VentaServiceImpl.java`, `SecurityConfig.java`, `migration_venta_monto_dado.sql` (nuevo).
+Enviar por correo	⏳ Espera EP-T2	El botón ya está, pero el endpoint POST /v1/pedidos/{id}/notificar no existe — muestra error claro al admin
+En resumen: el botón 🖨️ ya sirve para imprimir un ticket básico. Todo lo demás (ticket rico con abonos, correo automático) está preparado en código pero bloqueado hasta que el back implemente EP-T1 y EP-T2. Cuando el back los tenga, actualizo el front en una sesión y queda completo.'

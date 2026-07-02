@@ -71,6 +71,14 @@
                placeholder="Observación sobre el abono…">
       </div>
 
+      <!-- Enviar ticket por correo (solo si el cliente tiene correo registrado) -->
+      <div *ngIf="correoDisponible" class="dp-abono-form__row">
+        <label class="dp-check-label">
+          <input type="checkbox" [(ngModel)]="enviarCorreo">
+          📧 Enviar ticket al correo del cliente
+        </label>
+      </div>
+
       <div class="dp-abono-form__actions">
         <button class="dp-btn-cancelar" type="button" (click)="cancelarFormAbono()">
           Cancelar

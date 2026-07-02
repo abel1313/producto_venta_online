@@ -51,7 +51,7 @@ export class VarianteService {
   }
 
   getOne(id: number): Observable<IVariante> {
-    return this.http.get<{ data: IVariante }>(`${this.url}/getOne/${id}`)
+    return this.http.get<{ data: IVariante }>(`${this.url}/v1/getOne/${id}`)
       .pipe(map(res => res.data));
   }
 
@@ -83,11 +83,11 @@ export class VarianteService {
   }
 
   delete(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/delete`, { body: id });
+    return this.http.delete(`${this.url}/v1/delete`, { body: id });
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
+    return this.http.delete<{ data: string }>(`${this.url}/v1/${varianteId}/imagenes`, { body: imageIds });
   }
 
   eliminarImagenesV2(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
@@ -95,7 +95,7 @@ export class VarianteService {
   }
 
   eliminarTodasImagenesVariantes(varianteIds: number[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/imagenes`, { body: varianteIds });
+    return this.http.delete<{ data: string }>(`${this.url}/v1/imagenes`, { body: varianteIds });
   }
 
   eliminarTodasImagenesVariantesV2(varianteIds: number[]): Observable<{ data: string }> {
@@ -109,7 +109,7 @@ export class VarianteService {
   }
 
   getImagenesVariante(varianteId: number): Observable<IVarianteImagenDto[]> {
-    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/imagenes/${varianteId}`)
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v1/imagenes/${varianteId}`)
       .pipe(map(res => res?.data ?? []));
   }
 
@@ -123,7 +123,7 @@ export class VarianteService {
   }
 
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/getAll?page=${page}&size=${size}`)
       .pipe(map(res => res.data));
   }
 
@@ -153,6 +153,7 @@ export interface IVentaDirectaRequest {
   usuarioId:     number;
   clienteId:     number;
   pagosYMesesId?: number;
+  montoDado?:    number;
   tipoPedido?:   'NORMAL' | 'APARTADO' | 'FIADO';
   observaciones?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
@@ -163,6 +164,11 @@ export interface IVentaDirectaRequest {
     precioVenta: number;
     subTotal:    number;
   }[];
+  notificacion?: {
+    enviarCorreo?:   boolean;
+    correo?:         string;
+    ticketHtml?:     string;
+  };
 }
 
 export interface IClienteSinRegistro {
@@ -183,4 +189,7 @@ export interface IVentaDirectaResponse {
   totalVenta:       number;
   meses:            string | null;
   descripcionPago:  string | null;
+  correoEnviado?:   boolean;
+  whatsappEnviado?: boolean;
+  erroresEnvio?:    string[];
 }

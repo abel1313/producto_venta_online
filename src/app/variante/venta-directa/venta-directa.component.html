@@ -102,15 +102,14 @@
         </button>
       </div>
 
-      <!-- ── TICKET — enviar por correo ───────────────────────────── -->
-      <div class="vd-ticket-checks" *ngIf="lineas.length > 0">
+      <!-- ── TICKET — enviar por correo (solo si el cliente tiene correo registrado) -->
+      <div class="vd-ticket-checks" *ngIf="lineas.length > 0 && correoDisponible">
         <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
           🧾 Enviar ticket al cliente
         </p>
-        <label class="vd-check-label" [class.vd-check-label--disabled]="!correoDisponible">
-          <input type="checkbox" [(ngModel)]="enviarCorreo" [disabled]="!correoDisponible">
+        <label class="vd-check-label">
+          <input type="checkbox" [(ngModel)]="enviarCorreo">
           📧 Correo electrónico
-          <span *ngIf="!correoDisponible" class="vd-check-hint">(sin correo registrado)</span>
         </label>
       </div>
 

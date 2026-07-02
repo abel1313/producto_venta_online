@@ -78,7 +78,6 @@ export class AbonosComponent implements OnInit, OnDestroy {
   // ── Ticket ────────────────────────────────────────────────────────
   enviarCorreo     = false;
   correoDisponible = false;
-  correoManual     = '';
   private detalleActual: PedidoDetalleResponse | null = null;
   // QR contactos del negocio
   private qrTienda    = window.location.origin;
@@ -243,10 +242,9 @@ export class AbonosComponent implements OnInit, OnDestroy {
     this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
     this.detalleActual = null;
-    // EstadoCuenta no expone email — correo siempre deshabilitado hasta que el back lo incluya
+    // EstadoCuenta no expone email — correoDisponible en false hasta que el back lo incluya
     this.correoDisponible = false;
     this.enviarCorreo     = false;
-    this.correoManual     = '';
     this.modalAbierto = true;
     // Pre-cargar artículos para ticket (silencioso si falla)
     this.pedidosService.getDetallePedido(ec.pedidoId).subscribe({
@@ -279,15 +277,13 @@ export class AbonosComponent implements OnInit, OnDestroy {
       montoDado:  montoDadoEfectivo
     };
 
-    // Generar notificacion (ticket) para correo si aplica y hay detalle disponible
-    if ((this.enviarCorreo || this.correoManual) && this.detalleActual) {
+    if (this.enviarCorreo && this.correoDisponible && this.detalleActual) {
       const tempTicket = this.buildTicketData(body, 'abono', this.pedidoSeleccionado);
       tempTicket.qrTienda   = this.qrTienda;
       tempTicket.qrWhatsapp = this.qrWhatsapp;
       tempTicket.qrFacebook = this.qrFacebook;
       body.notificacion = {
         enviarCorreo: true,
-        correo:       this.correoManual || undefined,
         ticketHtml:   generarHtmlTicket(tempTicket)
       };
     }
@@ -342,12 +338,35 @@ export class AbonosComponent implements OnInit, OnDestroy {
             timer:              htmlTicket ? undefined : (esLiquidado ? 4000 : 2500)
           }).then(result => {
             if (result.isConfirmed && htmlTicket) imprimirTicket(htmlTicket);
+            // Si el cliente no tiene correo registrado → preguntar si quiere recibir el ticket
+            if (!this.correoDisponible && htmlTicket) {
+              this.pedirCorreoPostTransaccion(pedidoSnap.pedidoId, htmlTicket);
+            }
           });
         },
         error: err => {
           Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo registrar el abono.' });
         }
       });
+  }
+
+  pedirCorreoPostTransaccion(pedidoId: number, htmlTicket: string): void {
+    Swal.fire({
+      title: '📧 ¿Enviar ticket por correo?',
+      input: 'email',
+      inputPlaceholder: 'correo@ejemplo.com',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar',
+      cancelButtonText: 'No, gracias',
+      reverseButtons: true,
+      inputValidator: v => (v && !v.includes('@')) ? 'Ingresa un correo válido' : null
+    }).then(res => {
+      if (!res.isConfirmed || !res.value) return;
+      this.pedidosService.reenviarComprobante(pedidoId, { correo: res.value, ticketHtml: htmlTicket }).subscribe({
+        next: (r: any) => Swal.fire({ title: '✅ Enviado', text: r?.data ?? `Ticket enviado a ${res.value}`, icon: 'success', timer: 2000, showConfirmButton: false }),
+        error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' })
+      });
+    });
   }
 
   private buildTicketData(

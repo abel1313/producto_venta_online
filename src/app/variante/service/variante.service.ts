@@ -153,6 +153,7 @@ export interface IVentaDirectaRequest {
   usuarioId:     number;
   clienteId:     number;
   pagosYMesesId?: number;
+  montoDado?:    number;
   tipoPedido?:   'NORMAL' | 'APARTADO' | 'FIADO';
   observaciones?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
@@ -163,7 +164,6 @@ export interface IVentaDirectaRequest {
     precioVenta: number;
     subTotal:    number;
   }[];
-  // Ticket para envío por correo (anidado en notificacion, el back lo envía si está presente)
   notificacion?: {
     enviarCorreo?:   boolean;
     correo?:         string;
@@ -189,4 +189,7 @@ export interface IVentaDirectaResponse {
   totalVenta:       number;
   meses:            string | null;
   descripcionPago:  string | null;
+  correoEnviado?:   boolean;
+  whatsappEnviado?: boolean;
+  erroresEnvio?:    string[];
 }

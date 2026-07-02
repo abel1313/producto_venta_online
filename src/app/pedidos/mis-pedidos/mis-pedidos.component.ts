@@ -69,7 +69,7 @@ export class MisPedidosComponent implements OnInit {
     });
 
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
 

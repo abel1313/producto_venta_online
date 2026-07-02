@@ -110,7 +110,7 @@ $radius: 18px;
 
 // ── Header ─────────────────────────────────────────────────────────
 .cb-header {
-  background: var(--header-brand);
+  background: linear-gradient(135deg, #312e81 0%, #4338ca 55%, #6366f1 100%);
   padding: 16px 18px;
   display: flex;
   align-items: center;

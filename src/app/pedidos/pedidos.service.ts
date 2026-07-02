@@ -44,4 +44,8 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     getDetallePedido(pedidoId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.get<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/detalle`);
     }
+
+    reenviarComprobante(pedidoId: number, body: { correo: string; ticketHtml: string }): Observable<any> {
+      return this.http.post<any>(`${this.url}/v1/pedidos/${pedidoId}/notificar`, body);
+    }
 }

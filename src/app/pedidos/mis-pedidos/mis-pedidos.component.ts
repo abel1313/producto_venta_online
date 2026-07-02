@@ -9,6 +9,8 @@ import { IPageable } from './models/IPageable.mode';
 import { PagoService } from '../pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
+import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { NegocioService } from 'src/app/negocio/negocio.service';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -45,11 +47,17 @@ export class MisPedidosComponent implements OnInit {
   intentId: string | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
 
+  imprimiendoTicket: { [id: number]: boolean } = {};
+  private qrTienda    = window.location.origin;
+  private qrWhatsapp: string | null = null;
+  private qrFacebook: string | null = null;
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
     private readonly authService: AuthService,
-    private readonly pagoService: PagoService
+    private readonly pagoService: PagoService,
+    private readonly negocioService: NegocioService
   ) {}
 
   ngOnInit(): void {
@@ -57,6 +65,11 @@ export class MisPedidosComponent implements OnInit {
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
+    });
+
+    this.negocioService.getContactosPublicos().subscribe({
+      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; },
+      error: () => {}
     });
 
     if (this.isAdminUser) {
@@ -339,5 +352,116 @@ export class MisPedidosComponent implements OnInit {
         this.page++;
         this.cargando = false;
       }, err => console.error(err));
+  }
+
+  imprimirTicketPedido(item: IPedidoGenerico): void {
+    const pedidoId = item.pedido.id;
+    if (this.imprimiendoTicket[pedidoId]) return;
+
+    Swal.fire({
+      title: `Ticket pedido #${pedidoId}`,
+      text: '¿Cómo se pagó este pedido?',
+      icon: 'question',
+      input: 'radio',
+      inputOptions: { EFECTIVO: 'Efectivo', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta' },
+      inputValue: 'EFECTIVO',
+      showCancelButton: true,
+      confirmButtonText: 'Imprimir 🖨️',
+      cancelButtonText: 'Cancelar',
+      inputValidator: v => (!v ? 'Selecciona la forma de pago' : null)
+    }).then(res => {
+      if (!res.isConfirmed) return;
+      const metodoPago = res.value as string;
+      this.imprimiendoTicket[pedidoId] = true;
+      this.pedidoService.getDetallePedido(pedidoId).subscribe({
+        next: r => {
+          const d = r?.data;
+          if (!d) { Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' }); this.imprimiendoTicket[pedidoId] = false; return; }
+          const tipo: ITicketData['tipo'] = d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO' ? 'venta'
+            : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+          const data: ITicketData = {
+            tipo,
+            numero: d.pedidoId,
+            fecha: d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
+            cliente: d.clienteNombre || item.cliente.nombreCliente,
+            metodoPago,
+            total: d.totalPedido,
+            totalPagado: d.totalPagado ?? null,
+            saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+            articulos: d.detalles.map(det => ({
+              cantidad: det.cantidad,
+              productoNombre: det.productoNombre,
+              talla: det.talla,
+              subTotal: det.subTotal
+            })),
+            qrTienda: this.qrTienda,
+            qrWhatsapp: this.qrWhatsapp,
+            qrFacebook: this.qrFacebook
+          };
+          imprimirTicket(generarHtmlTicket(data));
+          this.imprimiendoTicket[pedidoId] = false;
+        },
+        error: err => {
+          Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el ticket.', icon: 'error' });
+          this.imprimiendoTicket[pedidoId] = false;
+        }
+      });
+    });
+  }
+
+  enviarCorreoPedido(item: IPedidoGenerico): void {
+    const pedidoId = item.pedido.id;
+    const correoDefault = item.cliente.correoElectronico || '';
+
+    Swal.fire({
+      title: `Enviar comprobante #${pedidoId}`,
+      html: `
+        <input id="sw-correo" type="email" class="swal2-input" placeholder="correo@ejemplo.com" value="${correoDefault}">
+        <select id="sw-metodo" class="swal2-select" style="margin-top:8px">
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="TRANSFERENCIA">Transferencia</option>
+          <option value="TARJETA">Tarjeta</option>
+        </select>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar correo 📧',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const correo = (document.getElementById('sw-correo') as HTMLInputElement)?.value?.trim();
+        const metodo = (document.getElementById('sw-metodo') as HTMLSelectElement)?.value;
+        if (!correo || !correo.includes('@')) { Swal.showValidationMessage('Ingresa un correo válido'); return false; }
+        return { correo, metodo };
+      }
+    }).then(res => {
+      if (!res.isConfirmed || !res.value) return;
+      const { correo, metodo } = res.value as { correo: string; metodo: string };
+      this.pedidoService.getDetallePedido(pedidoId).subscribe({
+        next: r => {
+          const d = r?.data;
+          if (!d) return;
+          const tipo: ITicketData['tipo'] = d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO' ? 'venta'
+            : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+          const html = generarHtmlTicket({
+            tipo,
+            numero: d.pedidoId,
+            fecha: d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
+            cliente: d.clienteNombre || item.cliente.nombreCliente,
+            metodoPago: metodo,
+            total: d.totalPedido,
+            totalPagado: d.totalPagado ?? null,
+            saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+            articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+            qrTienda: this.qrTienda,
+            qrWhatsapp: this.qrWhatsapp,
+            qrFacebook: this.qrFacebook
+          });
+          this.pedidoService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
+            next: () => Swal.fire({ title: '¡Correo enviado!', text: `Comprobante enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
+            error: err => Swal.fire({ title: 'Error al enviar correo', text: err?.error?.mensaje ?? 'El backend aún no tiene el endpoint de reenvío.', icon: 'error' })
+          });
+        },
+        error: err => Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el comprobante.', icon: 'error' })
+      });
+    });
   }
 }

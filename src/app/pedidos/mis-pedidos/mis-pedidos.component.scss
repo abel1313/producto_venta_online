@@ -355,6 +355,18 @@ $cancelado-to:   #dc2626;
   &:not(:disabled):hover { background: #fee2e2; }
 }
 
+.btn-ticket {
+  background: #f5f3ff;
+  color: #7c3aed;
+  &:not(:disabled):hover { background: #ede9fe; }
+}
+
+.btn-correo {
+  background: #ecfdf5;
+  color: #059669;
+  &:not(:disabled):hover { background: #d1fae5; }
+}
+
 // ── Panel Terminal Mercado Pago ─────────────────────────────────────────────
 .mp-terminal {
   margin-top: 1.25rem;

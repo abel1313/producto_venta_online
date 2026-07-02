@@ -3636,14 +3636,19 @@ Aplicar en: `POST /v1/abonos/{pedidoId}`, `POST /v1/ventas/save`,
   "notificacion": {
     "enviarCorreo":   true,
     "enviarWhatsapp": false,
-    "ticketHtml":     "<html>...ticket generado por el front...</html>"
+    "ticketHtml":     "<html>...ticket generado por el front...</html>",
+    "correo":         "escrito-en-el-modal@ejemplo.com"
   }
 }
 ```
 
-- **Por ahora el front solo maneja `enviarCorreo` y `ticketHtml`.** `enviarWhatsapp` se manda
-  siempre `false` (o se omite) y `ticketTexto` no hace falta construirlo — ver nota de
+- **Por ahora el front solo maneja `enviarCorreo`, `ticketHtml` y `correo`.** `enviarWhatsapp` se
+  manda siempre `false` (o se omite) y `ticketTexto` no hace falta construirlo — ver nota de
   "WhatsApp EN PAUSA" arriba.
+- **`correo` (nuevo, 2026-07-01) — para el modal post-venta:** si el cliente no tiene correo
+  registrado, se muestra un modal pidiéndolo manualmente; ese valor va en este campo. Si viene con
+  valor, el back lo usa como destino en vez del correo de la BD. Si se omite o va vacío, se usa el
+  correo registrado (comportamiento normal, sin cambios).
 - Si no se quiere enviar nada → no mandar el campo `notificacion` (o mandar `null`). El back solo intenta notificar si `notificacion != null`.
 - Si `enviarCorreo = false` → no hace falta mandar `ticketHtml`.
 
@@ -3716,3 +3721,71 @@ El back agrega al response normal tres campos extra: `correoEnviado`, `whatsappE
 | Cancelación | `res.data` del `PUT /v1/abonos/{pedidoId}/cancelar` + `GET /v1/pedidos/{id}/detalle` |
 
 **El ticket HTML/texto lo genera el front. El back solo lo recibe y lo transporta por correo/WhatsApp.**
+
+---
+
+## EP-T1 y EP-T2 — Detalle de pedido enriquecido + reenviar comprobante (2026-07-02)
+
+### EP-T1 — `GET /v1/pedidos/{id}/detalle` (endpoint que ya usabas — mismo path, mismo auth)
+
+**Qué cambia:** se agregaron 4 campos nuevos a la respuesta. Nada de lo que ya consumías cambió.
+
+**Response — campos nuevos (además de los que ya recibías):**
+```json
+{
+  "data": {
+    "clienteCorreo": "juan@email.com",
+    "metodoPago": "EFECTIVO",
+    "montoDado": 350.00,
+    "abonos": [
+      { "id": 10, "monto": 200.00, "fechaPago": "2026-07-01", "metodoPago": "EFECTIVO", "nota": "Enganche", "montoDado": 220.00 }
+    ]
+  }
+}
+```
+
+| Campo | Tipo | Cuándo viene |
+|---|---|---|
+| `clienteCorreo` | string \| null | Si el cliente tiene correo registrado |
+| `metodoPago` | string \| null | **Solo en ventas NORMAL al contado.** `null` en créditos (APARTADO/FIADO) — ver `abonos[]` |
+| `montoDado` | number \| null | Solo ventas NORMAL, y **solo si el front lo mandó** al crear la venta (ver acción requerida abajo). En pedidos vendidos antes de este cambio siempre es `null` |
+| `abonos` | array | Historial de pagos del crédito. Lista vacía `[]` en ventas NORMAL |
+
+**⚠️ Acción requerida — sin esto `montoDado` nunca llega:** `montoDado` no se guardaba antes en el back para ventas de contado (solo existía para abonos). Para que el ticket pueda mostrar "ENTREGÓ / CAMBIO" en ventas nuevas, el front debe **agregar el campo `montoDado` al body de `POST /v1/ventas/save`**:
+```json
+{
+  "usuarioId": 1,
+  "clienteId": 5,
+  "detalles": [ ... ],
+  "montoDado": 350.00
+}
+```
+- Mandarlo solo cuando el método de pago sea EFECTIVO (igual que ya calculas el cambio localmente hoy, nada más ahora también se lo mandas al back).
+- Los pedidos vendidos **antes** de que el front implemente esto se quedan con `montoDado: null` para siempre — no hay forma de recuperarlo, el ticket de esos pedidos viejos simplemente no muestra esa línea.
+
+---
+
+### EP-T2 — `POST /v1/pedidos/{id}/notificar` (endpoint nuevo)
+
+**Request:** `POST /mis-productos/v1/pedidos/{id}/notificar` — requiere rol ADMIN (Bearer token).
+```json
+{
+  "correo": "cliente@email.com",
+  "ticketHtml": "<html>...ticket generado por el front...</html>"
+}
+```
+
+**Response 200:**
+```json
+{ "data": "Comprobante enviado correctamente a cliente@email.com" }
+```
+(va envuelto en `ResponseGeneric` como el resto del proyecto — el mensaje de éxito queda en `data`, no en `mensaje` como en el ejemplo original que se pidió)
+
+**Response 400:**
+```json
+{ "mensaje": "No se pudo enviar el correo. Verifica la dirección." }
+```
+
+**Qué hace:** reenvía tal cual el `ticketHtml` recibido por correo (asunto `"Comprobante de tu pedido #{id} — Novedades Jade"`). No genera nada nuevo — el HTML ya lo arma el front (con sus QR de tienda/WhatsApp/Facebook incluidos, como en el resto de tickets).
+
+**Uso:** botón "reenviar por correo" en cualquier pantalla de detalle de pedido, sin depender de que sea justo al momento de la venta/abono.

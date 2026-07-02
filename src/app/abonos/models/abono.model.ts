@@ -33,6 +33,15 @@ export interface AbonoResponse {
   erroresEnvio?:    string[];
 }
 
+export interface AbonoDetalleItem {
+  id:         number;
+  monto:      number;
+  fechaPago:  string;
+  metodoPago: string;
+  nota:       string | null;
+  montoDado:  number | null;
+}
+
 export interface PedidoDetalleResponse {
   pedidoId:        number;
   tipoPedido:      string;
@@ -43,6 +52,10 @@ export interface PedidoDetalleResponse {
   fechaPedido:     string;
   clienteNombre:   string;
   clienteTelefono: string;
+  clienteCorreo?:  string | null;
+  metodoPago?:     string | null;
+  montoDado?:      number | null;
+  abonos?:         AbonoDetalleItem[];
   detalles:        PedidoDetalleItem[];
 }
 

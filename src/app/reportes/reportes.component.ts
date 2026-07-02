@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
 import {
   ProductoMasVendido,
@@ -19,10 +19,14 @@ type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos';
   styleUrls: ['./reportes.component.scss'],
 })
 export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('barCanvas') barCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('barCanvas')          barCanvasRef!:          ElementRef<HTMLCanvasElement>;
+  @ViewChild('masVendidosCanvas')  masVendidosCanvasRef!:  ElementRef<HTMLCanvasElement>;
+  @ViewChild('clienteCanvas')      clienteCanvasRef!:      ElementRef<HTMLCanvasElement>;
 
   tab: Tab = 'diario';
-  private barChart: Chart | null = null;
+  private barChart:          Chart | null = null;
+  private masVendidosChart:  Chart | null = null;
+  private clienteChart:      Chart | null = null;
 
   // — Diario —
   fechaDiario: string = this.hoy();
@@ -33,12 +37,13 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   mesSeleccionado: string = this.mesActual();
   mensual: ReporteMensual | null = null;
   cargandoMensual = false;
-  private pendingChartData: { labels: string[]; valores: number[] } | null = null;
+  private pendingMensual: ReporteMensual | null = null;
 
   // — Por cliente —
   clienteId: number | null = null;
   reporteCliente: ReporteCliente | null = null;
   cargandoCliente = false;
+  private pendingCliente: ReporteCliente | null = null;
 
   // — Más vendidos —
   desdeVendidos: string = this.primerDiaMes();
@@ -46,6 +51,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   limiteVendidos = 10;
   masVendidos: ProductoMasVendido[] = [];
   cargandoVendidos = false;
+  private pendingVendidos: ProductoMasVendido[] | null = null;
 
   constructor(private readonly svc: ReportesService) {}
 
@@ -54,20 +60,27 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (this.pendingChartData) {
-      this.renderChart(this.pendingChartData.labels, this.pendingChartData.valores);
-      this.pendingChartData = null;
-    }
+    if (this.pendingMensual) { this.renderMensualChart(this.pendingMensual); this.pendingMensual = null; }
+    if (this.pendingVendidos) { this.renderMasVendidosChart(this.pendingVendidos); this.pendingVendidos = null; }
+    if (this.pendingCliente) { this.renderClienteChart(this.pendingCliente); this.pendingCliente = null; }
   }
 
   ngOnDestroy(): void {
     this.barChart?.destroy();
+    this.masVendidosChart?.destroy();
+    this.clienteChart?.destroy();
   }
 
   setTab(t: Tab): void {
     this.tab = t;
-    if (t === 'mensual' && this.mensual && this.barCanvasRef) {
-      setTimeout(() => this.renderChart(...this.getChartArrays(this.mensual!)), 50);
+    if (t === 'mensual' && this.mensual) {
+      setTimeout(() => this.renderMensualChart(this.mensual!), 50);
+    }
+    if (t === 'masVendidos' && this.masVendidos.length > 0) {
+      setTimeout(() => this.renderMasVendidosChart(this.masVendidos), 50);
+    }
+    if (t === 'cliente' && this.reporteCliente) {
+      setTimeout(() => this.renderClienteChart(this.reporteCliente!), 50);
     }
   }
 
@@ -97,12 +110,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mensual = m;
         this.cargandoMensual = false;
         setTimeout(() => {
-          const [labels, valores] = this.getChartArrays(m);
-          if (this.barCanvasRef) {
-            this.renderChart(labels, valores);
-          } else {
-            this.pendingChartData = { labels, valores };
-          }
+          if (this.barCanvasRef) { this.renderMensualChart(m); }
+          else { this.pendingMensual = m; }
         }, 50);
       },
       error: err => {
@@ -112,35 +121,110 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private getChartArrays(m: ReporteMensual): [string[], number[]] {
+  private renderMensualChart(m: ReporteMensual): void {
+    this.barChart?.destroy();
+    if (!this.barCanvasRef?.nativeElement) return;
     const [anio, mes] = m.mes.split('-').map(Number);
     const diasEnMes = new Date(anio, mes, 0).getDate();
-    const mapaVentas = new Map<string, number>();
-    m.porDia.forEach(d => mapaVentas.set(d.fecha, d.totalVenta));
+    const mapaVentas    = new Map<string, number>();
+    const mapaGanancias = new Map<string, number>();
+    m.porDia.forEach(d => { mapaVentas.set(d.fecha, d.totalVenta); mapaGanancias.set(d.fecha, d.totalGanancia); });
     const labels: string[] = [];
-    const valores: number[] = [];
+    const ventas: number[] = [];
+    const ganancias: number[] = [];
     for (let d = 1; d <= diasEnMes; d++) {
       const fecha = `${m.mes}-${String(d).padStart(2, '0')}`;
       labels.push(String(d));
-      valores.push(mapaVentas.get(fecha) ?? 0);
+      ventas.push(mapaVentas.get(fecha) ?? 0);
+      ganancias.push(mapaGanancias.get(fecha) ?? 0);
     }
-    return [labels, valores];
-  }
-
-  private renderChart(labels: string[], valores: number[]): void {
-    this.barChart?.destroy();
-    if (!this.barCanvasRef?.nativeElement) return;
-    const config: ChartConfiguration<'bar'> = {
+    this.barChart = new Chart(this.barCanvasRef.nativeElement, {
       type: 'bar',
       data: {
         labels,
+        datasets: [
+          {
+            type: 'bar' as const,
+            label: 'Ventas ($)',
+            data: ventas,
+            backgroundColor: 'rgba(99,102,241,.55)',
+            borderColor: '#6366f1',
+            borderWidth: 1,
+            borderRadius: 4,
+            order: 2,
+          },
+          {
+            type: 'line' as const,
+            label: 'Ganancia ($)',
+            data: ganancias,
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22,163,74,.12)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 2,
+            order: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } },
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.15)' } },
+          x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
+        },
+      },
+    } as any);
+  }
+
+  // ── CLIENTE ────────────────────────────────────────────────────────────────
+
+  buscarCliente(): void {
+    if (!this.clienteId) return;
+    this.cargandoCliente = true;
+    this.reporteCliente = null;
+    this.svc.getCliente(this.clienteId).subscribe({
+      next: c => {
+        this.reporteCliente = c;
+        this.cargandoCliente = false;
+        if (c.ventas.length > 1) {
+          setTimeout(() => {
+            if (this.clienteCanvasRef) { this.renderClienteChart(c); }
+            else { this.pendingCliente = c; }
+          }, 50);
+        }
+      },
+      error: err => {
+        this.cargandoCliente = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el reporte del cliente.' });
+      },
+    });
+  }
+
+  private renderClienteChart(c: ReporteCliente): void {
+    this.clienteChart?.destroy();
+    if (!this.clienteCanvasRef?.nativeElement) return;
+    const sorted = [...c.ventas].sort((a, b) => a.fechaVenta.localeCompare(b.fechaVenta));
+    const labels = sorted.map(v => this.formatFecha(v.fechaVenta));
+    const datos  = sorted.map(v => v.totalVenta);
+    this.clienteChart = new Chart(this.clienteCanvasRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels,
         datasets: [{
-          data: valores,
-          backgroundColor: 'rgba(99,102,241,.65)',
+          label: 'Total compra ($)',
+          data: datos,
           borderColor: '#6366f1',
-          borderWidth: 1,
-          borderRadius: 4,
-          label: 'Ventas ($)',
+          backgroundColor: 'rgba(99,102,241,.1)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 2,
         }],
       },
       options: {
@@ -151,23 +235,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
           x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
         },
       },
-    };
-    this.barChart = new Chart(this.barCanvasRef.nativeElement, config);
-  }
-
-  // ── CLIENTE ────────────────────────────────────────────────────────────────
-
-  buscarCliente(): void {
-    if (!this.clienteId) return;
-    this.cargandoCliente = true;
-    this.reporteCliente = null;
-    this.svc.getCliente(this.clienteId).subscribe({
-      next: c => { this.reporteCliente = c; this.cargandoCliente = false; },
-      error: err => {
-        this.cargandoCliente = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el reporte del cliente.' });
-      },
-    });
+    } as any);
   }
 
   // ── MÁS VENDIDOS ──────────────────────────────────────────────────────────
@@ -177,12 +245,59 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cargandoVendidos = true;
     this.masVendidos = [];
     this.svc.getMasVendidos(this.desdeVendidos, this.hastaVendidos, this.limiteVendidos).subscribe({
-      next: v => { this.masVendidos = v; this.cargandoVendidos = false; },
+      next: v => {
+        this.masVendidos = v;
+        this.cargandoVendidos = false;
+        if (v.length > 0) {
+          setTimeout(() => {
+            if (this.masVendidosCanvasRef) { this.renderMasVendidosChart(v); }
+            else { this.pendingVendidos = v; }
+          }, 50);
+        }
+      },
       error: err => {
         this.cargandoVendidos = false;
         Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el ranking de productos.' });
       },
     });
+  }
+
+  private renderMasVendidosChart(items: ProductoMasVendido[]): void {
+    this.masVendidosChart?.destroy();
+    if (!this.masVendidosCanvasRef?.nativeElement) return;
+    const top = items.slice(0, 10);
+    const labels = top.map(p => {
+      const det = [p.talla, p.color].filter(Boolean).join(' / ');
+      return det ? `${p.productoNombre} (${det})` : p.productoNombre;
+    });
+    const datos = top.map(p => p.cantidadVendida);
+    this.masVendidosChart = new Chart(this.masVendidosCanvasRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Unidades vendidas',
+          data: datos,
+          backgroundColor: [
+            'rgba(99,102,241,.8)', 'rgba(79,70,229,.8)', 'rgba(16,163,74,.8)',
+            'rgba(245,158,11,.8)', 'rgba(239,68,68,.8)', 'rgba(14,165,233,.8)',
+            'rgba(168,85,247,.8)', 'rgba(236,72,153,.8)', 'rgba(20,184,166,.8)',
+            'rgba(251,146,60,.8)',
+          ],
+          borderWidth: 0,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        indexAxis: 'y' as const,
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(148,163,184,.15)' } },
+          y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+        },
+      },
+    } as any);
   }
 
   // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -201,7 +316,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatFecha(iso: string): string {
-    return new Date(iso + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(iso + (iso.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   formatFechaHora(iso: string): string {

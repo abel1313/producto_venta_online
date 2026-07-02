@@ -71,9 +71,9 @@
         </div>
       </div>
 
-      <!-- Gráfica de barras por día -->
+      <!-- Gráfica combinada: barras ventas + línea ganancia -->
       <div *ngIf="mensual.porDia.length > 0" class="rp-chart-wrap">
-        <h6 class="rp-chart-title">Ventas por día — {{ mensual.mes }}</h6>
+        <h6 class="rp-chart-title">Ventas vs Ganancia por día — {{ mensual.mes }}</h6>
         <canvas #barCanvas></canvas>
       </div>
 
@@ -131,6 +131,12 @@
         </div>
       </div>
 
+      <!-- Gráfica de tendencia de compras -->
+      <div *ngIf="reporteCliente.ventas.length > 1" class="rp-chart-wrap">
+        <h6 class="rp-chart-title">Historial de compras — {{ reporteCliente.clienteNombre }}</h6>
+        <canvas #clienteCanvas></canvas>
+      </div>
+
       <div *ngIf="reporteCliente.ventas.length > 0" class="rp-table-wrap">
         <table class="rp-table">
           <thead>
@@ -175,6 +181,12 @@
     </div>
 
     <div *ngIf="cargandoVendidos" class="rp-loading">Cargando…</div>
+
+    <!-- Gráfica de barras horizontales -->
+    <div *ngIf="masVendidos.length > 0 && !cargandoVendidos" class="rp-chart-wrap">
+      <h6 class="rp-chart-title">Top {{ masVendidos.length }} productos más vendidos</h6>
+      <canvas #masVendidosCanvas></canvas>
+    </div>
 
     <div *ngIf="masVendidos.length > 0 && !cargandoVendidos" class="rp-table-wrap">
       <table class="rp-table">

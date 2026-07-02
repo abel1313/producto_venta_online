@@ -3978,3 +3978,48 @@ podían afectar que la imagen mostrada fuera la incorrecta:
   `/variantes/v1/imagenes/{varianteId}`.
 - Decía "tomar el primer elemento" del array de imágenes — debe ser el elemento con
   `"principal": true` (el primero como fallback solo si ninguno viene marcado).
+
+---
+
+## Dashboard con métricas (2026-07-02) — endpoint nuevo
+
+### `GET /v1/dashboard/resumen`
+
+**Request:** `GET /mis-productos/v1/dashboard/resumen` — requiere rol ADMIN (Bearer token).
+
+**Response 200:**
+```json
+{
+  "data": {
+    "ventasHoy": 4350.00,
+    "ventasMes": 45000.00,
+    "gananciaMes": 12500.00,
+    "gastosMes": 3200.00,
+    "gananciaNetaMes": 9300.00,
+    "pedidosPendientesEntregar": 5,
+    "creditosActivos": 12,
+    "montoPorCobrar": 8400.00,
+    "productosStockBajo": 7
+  }
+}
+```
+
+| Campo | Qué significa |
+|---|---|
+| `ventasHoy` / `ventasMes` | Total vendido (ventas de contado), hoy y en lo que va del mes |
+| `gananciaMes` | Ganancia de las ventas del mes (sin restar gastos) |
+| `gastosMes` | Total de gastos registrados en el mes |
+| `gananciaNetaMes` | `gananciaMes - gastosMes` |
+| `pedidosPendientesEntregar` | Solo cuenta **APARTADO** activos (no pagados, no cancelados) — el producto no se entrega hasta pagarse completo. **FIADO no cuenta aquí** porque ese producto ya se entregó, solo falta cobrarlo |
+| `creditosActivos` | APARTADO + FIADO activos (no pagados, no cancelados) — cuenta de pedidos |
+| `montoPorCobrar` | Suma de `totalPedido - totalPagado` de esos mismos créditos activos |
+| `productosStockBajo` | Variantes con `0 < stock < 5` (no incluye stock=0, eso es "sin stock", otro caso) |
+
+**⚠️ Falta "Clientes nuevos este mes" del plan original** — no se implementó porque `Cliente`
+no tiene ninguna columna de fecha de registro/creación, ni siquiera a nivel de tabla base. Sin
+eso no hay forma de saber cuáles son "nuevos" vs "de siempre". Si se necesita, avisar y se agrega
+la columna (con migración SQL, y solo contará clientes dados de alta después de agregarla — los
+existentes no tienen ese dato retroactivamente, mismo caso que pasó con `montoDado`).
+
+**Archivos nuevos en el back:** `DashboardController.java`, `DashboardServiceImpl.java`,
+`IDashboardService.java`, `DashboardResumenDto.java`. Sin migración de BD.

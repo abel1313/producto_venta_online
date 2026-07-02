@@ -2973,4 +2973,20 @@ Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cl
 
 **Verificado con `ng build --configuration=development` sin errores.**
 
-**Verificado con `ng build --configuration=development` sin errores.**
+---
+
+## FEAT REPORTES — GRÁFICAS COMBINADAS (2026-07-02)
+
+> Mejoras según "Guía de gráficas para reportes" en `PLAN_MEJORAS.md`.
+
+- **Tab Mensual:** gráfica combinada — barras (índigo) = `totalVenta` + línea (verde) = `totalGanancia` por día. Leyenda habilitada.
+- **Tab Por cliente:** línea de tendencia con `ventas[].fechaVenta` + `ventas[].totalVenta`, visible cuando `ventas.length > 1`.
+- **Tab Más vendidos:** barras horizontales (`indexAxis: 'y'`), top 10, paleta multicolor.
+- Los 3 charts usan `@ViewChild`, `pendingXxx`, `ngAfterViewInit` y `ngOnDestroy` para lifecycle correcto.
+- `setTab()` re-renderiza el chart activo con `setTimeout(..., 50)` al cambiar de pestaña.
+
+**Archivos modificados:**
+- `src/app/reportes/reportes.component.ts` → reescritura con 3 charts
+- `src/app/reportes/reportes.component.html` → +canvas en mensual, cliente y masVendidos
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

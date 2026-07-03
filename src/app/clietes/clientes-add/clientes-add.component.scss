@@ -1,0 +1,302 @@
+// ── Variables ────────────────────────────────────────────────────────────────
+$radius:     14px;
+$radius-sm:  8px;
+$trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ── Contenedor ───────────────────────────────────────────────────────────────
+.ca-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+  min-height: 100%;
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────────
+.ca-card {
+  width: 100%;
+  max-width: 660px;
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  background: #fff;
+}
+
+// ── Header ───────────────────────────────────────────────────────────────────
+.ca-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 1.75rem;
+  background: linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6366f1 100%);
+}
+
+.ca-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+
+  .pi { font-size: 1.4rem; color: #fff; }
+}
+
+.ca-title {
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 2px;
+  letter-spacing: -0.02em;
+}
+
+.ca-subtitle {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+
+// ── Form ─────────────────────────────────────────────────────────────────────
+.ca-form { padding: 1.5rem 1.75rem 1.75rem; }
+
+// ── Sección ──────────────────────────────────────────────────────────────────
+.ca-section {
+  margin-bottom: 1.4rem;
+
+  &__label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6366f1;
+    margin-bottom: 0.65rem;
+    padding-left: 2px;
+  }
+}
+
+// ── Grid row ─────────────────────────────────────────────────────────────────
+.ca-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+
+  &--single { grid-template-columns: 1fr; }
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+}
+
+// ── Campo ────────────────────────────────────────────────────────────────────
+.ca-field { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.ca-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.ca-req { color: #ef4444; margin-left: 2px; }
+
+// ── Input wrap ───────────────────────────────────────────────────────────────
+.ca-input-wrap {
+  position: relative;
+
+  &--select .ca-input { padding-right: 2.4rem; appearance: none; -webkit-appearance: none; }
+}
+
+.ca-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.85rem;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.ca-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.72rem;
+  pointer-events: none;
+}
+
+// ── Input ────────────────────────────────────────────────────────────────────
+.ca-input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.35rem;
+  border: 2px solid #e5e7eb;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: $trans;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &::placeholder { color: #c4c9d4; }
+
+  &:focus {
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+
+    ~ .ca-input-icon { color: #6366f1; }
+  }
+
+  // Fix select — sobrescribe estilos del browser que ponen texto blanco
+  &.ca-select {
+    color: #111827;
+    cursor: pointer;
+
+    option {
+      color: #111827;
+      background: #fff;
+    }
+
+    option[value=""][disabled] {
+      color: #c4c9d4;
+    }
+  }
+}
+
+// ── Error ────────────────────────────────────────────────────────────────────
+.ca-error {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #dc2626;
+
+  .pi { font-size: 0.75rem; }
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+.ca-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f5;
+  margin-top: 0.5rem;
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────────
+.ca-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.35rem;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: $trans;
+  font-family: inherit;
+
+  .pi { font-size: 0.85rem; }
+
+  &--cancel {
+    background: transparent;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+
+    &:hover {
+      border-color: #d1d5db;
+      color: #374151;
+      background: #f9fafb;
+    }
+  }
+
+  &--save {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.38);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.48);
+    }
+
+    &:active:not(:disabled) { transform: translateY(0); }
+
+    &:disabled {
+      background: linear-gradient(135deg, #a5b4fc, #818cf8);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
+// ── DARK MODE ────────────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .ca-card {
+    background: #1e1e2e;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .ca-section__label { color: #818cf8; }
+
+  .ca-label { color: #94a3b8; }
+
+  .ca-input {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+
+    &::placeholder { color: #475569; }
+
+    &:focus {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+    }
+
+    &.ca-select {
+      color: #f1f5f9;
+
+      option {
+        color: #1e293b;
+        background: #f1f5f9;
+      }
+
+      option[value=""][disabled] { color: #94a3b8; }
+    }
+  }
+
+  .ca-input-icon  { color: #475569; }
+  .ca-select-arrow { color: #475569; }
+
+  .ca-footer { border-top-color: rgba(255, 255, 255, 0.07); }
+
+  .ca-btn--cancel {
+    color: #94a3b8;
+    border-color: rgba(255, 255, 255, 0.12);
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+}
+
+// ── LIGHT MODE ───────────────────────────────────────────────────────────────
+:host-context(body.theme-light) {
+  .ca-card  { background: #fff; }
+  .ca-input {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #111827;
+  }
+}

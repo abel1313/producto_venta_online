@@ -1,90 +1,170 @@
-<div class="d-flex justify-content-center p-4">
-  <div class="col-8">
-    <div class="card">
+<div class="ca-page">
+  <div class="ca-card">
 
-      <div class="card-header text-center">
-        <b> {{nombreCard}}</b>
+    <!-- Header -->
+    <div class="ca-card__header">
+      <div class="ca-header-icon">
+        <i class="pi pi-user-plus"></i>
       </div>
-      <form [formGroup]="formCliente">
-
-        <div class="row">
-          <div class="col-6">
-            <label for="nombrePersona">Nombre:</label>
-            <input id="nombrePersona" formControlName="nombrePersona" class="form-control">
-
-            <div *ngIf="formCliente.get('nombrePersona')?.invalid && formCliente.get('nombrePersona')?.touched">
-              <small class="text-danger">Campo requerido</small>
-            </div>
-
-
-          </div>
-          <div class="col-6">
-            <label for="segundoNombre">Segundo nombre:</label>
-            <input id="segundoNombre" formControlName="segundoNombre" class="form-control">
-          </div>
-        </div>
-
-
-        <div class="row">
-          <div class="col-6">
-            <label for="apeidoPaterno">Apellido paterno:</label>
-            <input id="apeidoPaterno" formControlName="apeidoPaterno" class="form-control">
-
-            <div *ngIf="formCliente.get('apeidoPaterno')?.invalid && formCliente.get('apeidoPaterno')?.touched">
-              <small class="text-danger">Campo requerido</small>
-            </div>
-
-
-          </div>
-          <div class="col-6">
-            <label for="apeidoMaterno">Apellido materno:</label>
-            <input id="apeidoMaterno" formControlName="apeidoMaterno" class="form-control">
-
-            <div *ngIf="formCliente.get('apeidoMaterno')?.invalid && formCliente.get('apeidoMaterno')?.touched">
-              <small class="text-danger">Campo requerido</small>
-            </div>
-          </div>
-        </div>
-
-
-
-        <div class="row">
-          <div class="col-6">
-            <label for="sexo">Sexo</label>
-            <select class="form-select" aria-label="Default select example" formControlName="sexo">
-              <option selected>Seleccione una opción</option>
-              <option value="Hombre">Hombre</option>
-              <option value="Mujer">Mujer</option>
-            </select>
-
-          </div>
-
-          <div class="col-6">
-            <label for="correoElectronico">Correo electrónico</label>
-            <input id="correoElectronico" formControlName="correoElectronico" class="form-control">
-          </div>
-        </div>
-
-                <div class="row">
-
-          <div class="col-6">
-            <label for="numeroTelefonico">Número de teléfono</label>
-            <input id="numeroTelefonico" formControlName="numeroTelefonico" class="form-control">
-          </div>
-        </div>
-
-
-
-
-
-        <div class="row p-2">
-          <div class="col-12 d-flex justify-content-end">
-
-            <button type="submit" class="btn btn-success col-6 " (click)="guardar()"
-              [disabled]="formCliente.invalid">Guardar</button>
-          </div>
-        </div>
-      </form>
+      <div>
+        <h2 class="ca-title">{{ nombreCard || 'Nuevo cliente' }}</h2>
+        <p class="ca-subtitle">Completa los datos del cliente</p>
+      </div>
     </div>
+
+    <form [formGroup]="formCliente" (ngSubmit)="guardar()" novalidate class="ca-form">
+
+      <!-- Sección: Nombre -->
+      <div class="ca-section">
+        <span class="ca-section__label">Nombre</span>
+        <div class="ca-row">
+
+          <div class="ca-field">
+            <label class="ca-label">Nombre <span class="ca-req">*</span></label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-user ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="nombrePersona"
+                     type="text"
+                     placeholder="Nombre(s)"
+                     autocomplete="given-name">
+            </div>
+            <div *ngIf="formCliente.get('nombrePersona')?.invalid && formCliente.get('nombrePersona')?.touched"
+                 class="ca-error">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </div>
+          </div>
+
+          <div class="ca-field">
+            <label class="ca-label">Segundo nombre</label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-user ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="segundoNombre"
+                     type="text"
+                     placeholder="Opcional"
+                     autocomplete="additional-name">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sección: Apellidos -->
+      <div class="ca-section">
+        <span class="ca-section__label">Apellidos</span>
+        <div class="ca-row">
+
+          <div class="ca-field">
+            <label class="ca-label">Apellido paterno <span class="ca-req">*</span></label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-id-card ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="apeidoPaterno"
+                     type="text"
+                     placeholder="Apellido paterno"
+                     autocomplete="family-name">
+            </div>
+            <div *ngIf="formCliente.get('apeidoPaterno')?.invalid && formCliente.get('apeidoPaterno')?.touched"
+                 class="ca-error">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </div>
+          </div>
+
+          <div class="ca-field">
+            <label class="ca-label">Apellido materno <span class="ca-req">*</span></label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-id-card ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="apeidoMaterno"
+                     type="text"
+                     placeholder="Apellido materno"
+                     autocomplete="family-name">
+            </div>
+            <div *ngIf="formCliente.get('apeidoMaterno')?.invalid && formCliente.get('apeidoMaterno')?.touched"
+                 class="ca-error">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Sección: Contacto -->
+      <div class="ca-section">
+        <span class="ca-section__label">Contacto</span>
+        <div class="ca-row">
+
+          <div class="ca-field">
+            <label class="ca-label">Sexo</label>
+            <div class="ca-input-wrap ca-input-wrap--select">
+              <i class="pi pi-venus-mars ca-input-icon"></i>
+              <select class="ca-input ca-select" formControlName="sexo">
+                <option value="" disabled selected>Selecciona…</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+                <option value="Prefiero no decir">Prefiero no decir</option>
+              </select>
+              <i class="pi pi-chevron-down ca-select-arrow"></i>
+            </div>
+          </div>
+
+          <div class="ca-field">
+            <label class="ca-label">Correo electrónico <span class="ca-req">*</span></label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-envelope ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="correoElectronico"
+                     type="email"
+                     placeholder="correo@ejemplo.com"
+                     autocomplete="email">
+            </div>
+            <div *ngIf="formCliente.get('correoElectronico')?.invalid && formCliente.get('correoElectronico')?.touched"
+                 class="ca-error">
+              <i class="pi pi-exclamation-circle"></i>
+              <span *ngIf="formCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</span>
+              <span *ngIf="formCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="ca-row ca-row--single">
+          <div class="ca-field">
+            <label class="ca-label">Número de teléfono <span class="ca-req">*</span></label>
+            <div class="ca-input-wrap">
+              <i class="pi pi-phone ca-input-icon"></i>
+              <input class="ca-input"
+                     formControlName="numeroTelefonico"
+                     type="tel"
+                     placeholder="10 dígitos"
+                     maxlength="10"
+                     autocomplete="tel">
+            </div>
+            <div *ngIf="formCliente.get('numeroTelefonico')?.invalid && formCliente.get('numeroTelefonico')?.touched"
+                 class="ca-error">
+              <i class="pi pi-exclamation-circle"></i>
+              <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['required']">Campo requerido</span>
+              <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['pattern']">Deben ser exactamente 10 dígitos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="ca-footer">
+        <button type="button" class="ca-btn ca-btn--cancel"
+                (click)="$hideComponent.emit(false)">
+          <i class="pi pi-times"></i>
+          Cancelar
+        </button>
+        <button type="submit" class="ca-btn ca-btn--save"
+                [disabled]="formCliente.invalid">
+          <i class="pi pi-check"></i>
+          Guardar cliente
+        </button>
+      </div>
+
+    </form>
   </div>
 </div>

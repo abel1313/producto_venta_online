@@ -36,8 +36,8 @@ export class ClientesAddComponent implements OnInit {
       apeidoPaterno: ['', Validators.required],
       apeidoMaterno: ['', Validators.required],
       sexo: [''],
-      correoElectronico: [''],
-      numeroTelefonico: ['']
+      correoElectronico: ['', [Validators.required, Validators.email]],
+      numeroTelefonico: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]]
     });
   }
 

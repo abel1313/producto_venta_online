@@ -186,20 +186,23 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 20px 32px;
+  padding: 0 16px 32px;
 }
 
 // ── Banners de promoción laterales ────────────────────────────────
 .vb-promo {
-  width: 190px;
+  width: 170px;
   flex-shrink: 0;
-  padding: 16px 10px;
+  padding: 14px 8px;
   position: sticky;
   top: 16px;
   align-self: flex-start;
 
-  // Ocultar en pantallas pequeñas donde no hay espacio
-  @media (max-width: 1380px) { display: none; }
+  // Ocultar solo en móvil/tablet — visible desde 1100px
+  @media (max-width: 1099px) { display: none; }
+
+  // Versión compacta entre 1100 y 1280
+  @media (min-width: 1100px) and (max-width: 1279px) { width: 140px; padding: 10px 6px; }
 
   &--left  { order: -1; }
   &--right { order: 1;  }

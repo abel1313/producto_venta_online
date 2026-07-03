@@ -43,4 +43,10 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+  resetVerificacion(clienteId: number): Observable<ResponseGeneric<string>> {
+    return this.http.delete<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/verificacion-correo`
+    );
+  }
+
 }

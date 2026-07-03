@@ -632,3 +632,16 @@ $t:  all 0.22s ease;
   margin-left: 2px;
 }
 
+
+.vd-verif-badge {
+  font-size: .8rem;
+  line-height: 1;
+  &--ok   { filter: none; }
+  &--warn { filter: none; }
+}
+
+.vd-client-option__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -247,6 +247,8 @@
           <span class="vd-client-chip__name">
             {{ clienteSeleccionado.nombrePersona }} {{ clienteSeleccionado.apeidoPaterno }}
           </span>
+          <span *ngIf="clienteSeleccionado.correoVerificado === true" class="vd-verif-badge vd-verif-badge--ok" title="Correo verificado">✅</span>
+          <span *ngIf="clienteSeleccionado.correoVerificado === false" class="vd-verif-badge vd-verif-badge--warn" title="Correo sin verificar">⚠️</span>
           <span *ngIf="clienteSeleccionado.numeroTelefonico" class="vd-client-chip__phone">
             📱 {{ clienteSeleccionado.numeroTelefonico }}
           </span>
@@ -266,7 +268,11 @@
             </div>
             <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
               <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">
-                <strong>{{ c.nombrePersona }} {{ c.apeidoPaterno }}</strong>
+                <div class="vd-client-option__row">
+                  <strong>{{ c.nombrePersona }} {{ c.apeidoPaterno }}</strong>
+                  <span *ngIf="c.correoVerificado === true" class="vd-verif-badge vd-verif-badge--ok" title="Correo verificado">✅</span>
+                  <span *ngIf="c.correoVerificado === false" class="vd-verif-badge vd-verif-badge--warn" title="Correo sin verificar">⚠️</span>
+                </div>
                 <small *ngIf="c.numeroTelefonico">{{ c.numeroTelefonico }}</small>
               </div>
             </div>

@@ -1,1 +1,73 @@
-<p>clientes-buscar works!</p>
+<div class="cb-page">
+
+  <!-- Header -->
+  <div class="cb-header">
+    <div class="cb-header__content">
+      <div class="cb-header__title">
+        <span class="cb-header__icon">👥</span>
+        <div>
+          <h4 class="mb-0">Clientes</h4>
+          <small>Buscar y gestionar clientes registrados</small>
+        </div>
+      </div>
+
+      <div class="cb-search">
+        <span class="cb-search__icon">🔍</span>
+        <input class="cb-search__input"
+               type="text"
+               placeholder="Nombre del cliente (mín. 3 letras)…"
+               [(ngModel)]="termino"
+               (input)="onInput()"
+               autocomplete="off">
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de resultados -->
+  <div class="cb-body">
+
+    <div *ngIf="cargando" class="cb-empty">Buscando…</div>
+
+    <div *ngIf="!cargando && clientes.length === 0 && termino.length >= 3" class="cb-empty">
+      Sin resultados para "{{ termino }}"
+    </div>
+
+    <div *ngIf="!cargando && termino.length < 3 && clientes.length === 0" class="cb-empty cb-empty--hint">
+      Escribe al menos 3 caracteres para buscar
+    </div>
+
+    <div *ngFor="let c of clientes" class="cb-card">
+
+      <div class="cb-card__info">
+        <div class="cb-card__name">
+          {{ c.nombrePersona }} {{ c.apeidoPaterno }} {{ c.apeidoMaterno }}
+          <span *ngIf="c.correoVerificado === true"  class="cb-badge cb-badge--ok"   title="Correo verificado">✅ Verificado</span>
+          <span *ngIf="c.correoVerificado === false" class="cb-badge cb-badge--warn" title="Sin verificar">⚠️ Sin verificar</span>
+        </div>
+        <div class="cb-card__details">
+          <span *ngIf="c.correoElectronico">📧 {{ c.correoElectronico }}</span>
+          <span *ngIf="c.numeroTelefonico">📱 {{ c.numeroTelefonico }}</span>
+          <span class="cb-card__id">#{{ c.id }}</span>
+        </div>
+      </div>
+
+      <div class="cb-card__actions">
+        <button *ngIf="c.correoVerificado !== false"
+                class="cb-btn cb-btn--reset"
+                title="Resetear verificación (soporte/QA)"
+                (click)="resetVerificacion(c)">
+          🔄 Resetear verif.
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="totalPaginas > 1" class="cb-pagination">
+      <button class="cb-page-btn" [disabled]="pagina === 0" (click)="paginaAnterior()">← Anterior</button>
+      <span class="cb-page-info">{{ pagina + 1 }} / {{ totalPaginas }}</span>
+      <button class="cb-page-btn" [disabled]="pagina >= totalPaginas - 1" (click)="paginaSiguiente()">Siguiente →</button>
+    </div>
+
+  </div>
+</div>

@@ -52,6 +52,8 @@
         (click)="cambiarFiltro('con-stock')">Con stock</button>
       <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-imagenes'"
         (click)="cambiarFiltro('con-imagenes')">Con imágenes</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-stock-y-imagenes'"
+        (click)="cambiarFiltro('con-stock-y-imagenes')">Con stock e imagen</button>
       <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
         📥 Excel sin variantes
       </button>

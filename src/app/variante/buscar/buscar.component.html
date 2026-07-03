@@ -80,21 +80,41 @@
 
 <!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
 <div *ngIf="isAdminUser && seleccionados.size > 0" class="vb-lote-bar">
-  <label class="vb-lote-bar__check">
-    <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
-    <span>{{ seleccionados.size }} seleccionada(s)</span>
-  </label>
-  <div class="vb-lote-bar__actions">
-    <button class="vb-lote-btn vb-lote-btn--enable" [disabled]="procesandoLote"
-      (click)="habilitarLote(true)">🔓 Habilitar seleccionadas</button>
-    <button class="vb-lote-btn vb-lote-btn--disable" [disabled]="procesandoLote"
-      (click)="habilitarLote(false)">🔒 Deshabilitar seleccionadas</button>
-    <button class="vb-lote-btn vb-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+  <div class="vb-lote-bar__inner">
+    <label class="vb-lote-bar__check">
+      <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
+      <span>{{ seleccionados.size }} seleccionada(s)</span>
+    </label>
+    <div class="vb-lote-bar__actions">
+      <button class="vb-lote-btn vb-lote-btn--enable" [disabled]="procesandoLote"
+        (click)="habilitarLote(true)">🔓 Habilitar seleccionadas</button>
+      <button class="vb-lote-btn vb-lote-btn--disable" [disabled]="procesandoLote"
+        (click)="habilitarLote(false)">🔒 Deshabilitar seleccionadas</button>
+      <button class="vb-lote-btn vb-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+    </div>
   </div>
 </div>
 
-<!-- ── Grid de cards ──────────────────────────────────────────────── -->
-<div class="vb-grid-wrap">
+<!-- ── Layout con banners laterales ───────────────────────────────── -->
+<div class="vb-layout">
+
+  <!-- Banner izquierdo -->
+  <aside class="vb-promo vb-promo--left" *ngIf="bannerLeft.activo && (imagenLeft || bannerLeft.titulo)">
+    <a class="vb-promo__card" [href]="bannerLeft.link || null" [target]="bannerLeft.link ? '_blank' : null"
+       [class.vb-promo__card--no-link]="!bannerLeft.link">
+      <div class="vb-promo__img-wrap" *ngIf="imagenLeft">
+        <img [src]="imagenLeft" alt="{{ bannerLeft.titulo }}" class="vb-promo__img">
+      </div>
+      <div class="vb-promo__overlay" *ngIf="bannerLeft.titulo || bannerLeft.texto">
+        <span class="vb-promo__title" *ngIf="bannerLeft.titulo">{{ bannerLeft.titulo }}</span>
+        <p class="vb-promo__text" *ngIf="bannerLeft.texto">{{ bannerLeft.texto }}</p>
+        <span class="vb-promo__cta" *ngIf="bannerLeft.link">Ver más →</span>
+      </div>
+    </a>
+  </aside>
+
+  <!-- Grid de cards ──────────────────────────────────────────────── -->
+  <div class="vb-grid-wrap">
 
   <!-- Sin resultados -->
   <div *ngIf="!buscando && (variantes.length === 0 || sinResultados)" class="vb-empty">
@@ -237,4 +257,21 @@
     </button>
   </div>
 
-</div>
+  </div><!-- /vb-grid-wrap -->
+
+  <!-- Banner derecho -->
+  <aside class="vb-promo vb-promo--right" *ngIf="bannerRight.activo && (imagenRight || bannerRight.titulo)">
+    <a class="vb-promo__card" [href]="bannerRight.link || null" [target]="bannerRight.link ? '_blank' : null"
+       [class.vb-promo__card--no-link]="!bannerRight.link">
+      <div class="vb-promo__img-wrap" *ngIf="imagenRight">
+        <img [src]="imagenRight" alt="{{ bannerRight.titulo }}" class="vb-promo__img">
+      </div>
+      <div class="vb-promo__overlay" *ngIf="bannerRight.titulo || bannerRight.texto">
+        <span class="vb-promo__title" *ngIf="bannerRight.titulo">{{ bannerRight.titulo }}</span>
+        <p class="vb-promo__text" *ngIf="bannerRight.texto">{{ bannerRight.texto }}</p>
+        <span class="vb-promo__cta" *ngIf="bannerRight.link">Ver más →</span>
+      </div>
+    </a>
+  </aside>
+
+</div><!-- /vb-layout -->

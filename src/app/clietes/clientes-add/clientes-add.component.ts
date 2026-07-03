@@ -85,9 +85,12 @@ export class ClientesAddComponent implements OnInit, OnDestroy {
   // ── Verificación ──────────────────────────────────────────────────────
 
   private iniciarVerificacion(): void {
-    this.pasoVerif = true;
-    this.codigoVerif = '';
-    this.enviarCodigo();
+    // Verificación de correo desactivada temporalmente para pruebas
+    this.omitirVerificacion();
+    // Para reactivar: descomentar las 3 líneas siguientes y comentar omitirVerificacion()
+    // this.pasoVerif = true;
+    // this.codigoVerif = '';
+    // this.enviarCodigo();
   }
 
   enviarCodigo(): void {

@@ -8,6 +8,7 @@ import { PresentacionImagenesComponent } from './presentacion-imagenes/presentac
 import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico-imagenes.component';
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
+import { AdminBannersComponent } from './admin-banners/admin-banners.component';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { ChatAdminComponent } from './chat-admin/chat-admin.component';
     PresentacionImagenesComponent,
     DiagnosticoImagenesComponent,
     ReconciliacionImagenesComponent,
-    ChatAdminComponent
+    ChatAdminComponent,
+    AdminBannersComponent
   ],
   imports: [
     CommonModule,

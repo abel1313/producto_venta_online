@@ -80,16 +80,18 @@
 
 <!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
 <div *ngIf="isAdminUser && seleccionados.size > 0" class="vb-lote-bar">
-  <label class="vb-lote-bar__check">
-    <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
-    <span>{{ seleccionados.size }} seleccionada(s)</span>
-  </label>
-  <div class="vb-lote-bar__actions">
-    <button class="vb-lote-btn vb-lote-btn--enable" [disabled]="procesandoLote"
-      (click)="habilitarLote(true)">🔓 Habilitar seleccionadas</button>
-    <button class="vb-lote-btn vb-lote-btn--disable" [disabled]="procesandoLote"
-      (click)="habilitarLote(false)">🔒 Deshabilitar seleccionadas</button>
-    <button class="vb-lote-btn vb-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+  <div class="vb-lote-bar__inner">
+    <label class="vb-lote-bar__check">
+      <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
+      <span>{{ seleccionados.size }} seleccionada(s)</span>
+    </label>
+    <div class="vb-lote-bar__actions">
+      <button class="vb-lote-btn vb-lote-btn--enable" [disabled]="procesandoLote"
+        (click)="habilitarLote(true)">🔓 Habilitar seleccionadas</button>
+      <button class="vb-lote-btn vb-lote-btn--disable" [disabled]="procesandoLote"
+        (click)="habilitarLote(false)">🔒 Deshabilitar seleccionadas</button>
+      <button class="vb-lote-btn vb-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+    </div>
   </div>
 </div>
 

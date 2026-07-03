@@ -407,18 +407,24 @@
   margin-bottom: 3px;
 }
 
-.sb-user-actions {
+.sb-user-links {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .sb-user-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.73rem;
   color: #e2e8f0;
   text-decoration: none;
   transition: color 0.13s;
   &:hover { color: #fff; }
+
+  .pi { font-size: 0.75rem; opacity: 0.7; }
 
   &--pass {
     opacity: 0.75;
@@ -426,41 +432,34 @@
   }
 }
 
-.sb-logout {
-  font-size: 0.73rem;
-  color: #f87171;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: var(--sb-font);
-  transition: color 0.13s;
-  &:hover { color: #ef4444; }
-}
-
-// Botón de logout icono — visible solo cuando colapsado
-.sb-logout-icon {
+// Botón de logout — fila propia, siempre visible (ícono en colapsado, ícono+texto en expandido)
+.sb-logout-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: rgba(248, 113, 113, 0.12);
-  border: 1px solid rgba(248, 113, 113, 0.25);
-  border-radius: 8px;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 18px;
+  background: rgba(248, 113, 113, 0.07);
+  border: none;
+  border-top: 1px solid rgba(248, 113, 113, 0.15);
   color: #f87171;
-  font-size: 0.9rem;
   cursor: pointer;
+  font-family: var(--sb-font);
+  font-size: 0.82rem;
+  font-weight: 600;
   transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
+  white-space: nowrap;
 
-  &:hover { background: rgba(239, 68, 68, 0.22); color: #ef4444; }
-}
+  &:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
-// Cuando el sidebar está expandido o en móvil abierto, ocultar el icono
-.sidebar.expanded .sb-logout-icon,
-.sidebar.mobile-open .sb-logout-icon {
-  display: none;
+  &__icon {
+    font-size: 1rem;
+    width: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* ══════════════════════════════════════════════════════

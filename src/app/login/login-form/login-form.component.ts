@@ -6,6 +6,8 @@ import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { AccederService } from '../acceder.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
+import { CarritoVarianteService } from 'src/app/variante/service/carrito-variante.service';
+import { CarritoService } from 'src/app/services/carrito/carrito.service';
 
 @Component({
   selector: 'app-login-form',
@@ -41,7 +43,9 @@ export class LoginFormComponent implements OnInit {
     private readonly authService:          AuthService,
     private readonly auth:                 auth,
     private readonly acceder:              AccederService,
-    private readonly presentacion:         PresentacionService
+    private readonly presentacion:         PresentacionService,
+    private readonly carritoVariante:      CarritoVarianteService,
+    private readonly carritoService:       CarritoService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -62,6 +66,8 @@ export class LoginFormComponent implements OnInit {
       next: (res: any) => {
         const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
         if (token) {
+          this.carritoVariante.limpiar();
+          this.carritoService.limpiarCarrito();
           this.auth.setAccessToken(token);
           this.authService.setRolesFromToken(token);
           this.router.navigate(['/productos/buscar']);

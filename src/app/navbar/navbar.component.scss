@@ -34,7 +34,7 @@
 
   .sb-brand-text     { color: #0f172a; }
   .sb-subitem        { color: #475569; &:hover { color: #6366f1; background: rgba(99,102,241,0.08); } }
-  .sb-user-link      { color: #64748b; &:hover { color: #1e293b; } }
+  .sb-user-link      { color: #64748b; &:hover { color: #1e293b; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: #6366f1; } } }
   .sb-logout         { color: #ef4444; }
   .sb-username       { color: #0f172a; }
   .sb-cart-btn       { color: #475569; &:hover { color: #1e293b; } }
@@ -419,6 +419,11 @@
   text-decoration: none;
   transition: color 0.13s;
   &:hover { color: #fff; }
+
+  &--pass {
+    opacity: 0.75;
+    &:hover { opacity: 1; color: #a5b4fc; }
+  }
 }
 
 .sb-logout {

@@ -273,6 +273,21 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ── Link olvidé contraseña ─────────────────────────────────────────────────
+.forgot-link {
+  text-align: right;
+  margin: -4px 0 16px;
+  font-size: 0.82rem;
+
+  a {
+    color: var(--app-accent);
+    font-weight: 500;
+    text-decoration: none;
+    transition: $transition;
+    &:hover { text-decoration: underline; }
+  }
+}
+
 // ── Link registro ─────────────────────────────────────────────────────────��
 .register-link {
   text-align: center;

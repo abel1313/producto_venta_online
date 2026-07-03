@@ -8,6 +8,7 @@ import { ClientesMostrarComponent } from './clientes-mostrar/clientes-mostrar.co
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { MisDatosComponent } from './mis-datos/mis-datos.component';
+import { CambiarPasswordComponent } from './cambiar-password/cambiar-password.component';
 import { NbAutocompleteModule, NbCardModule, NbDatepickerModule, NbFormFieldModule, NbSelectModule, NbStepperModule } from '@nebular/theme';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -21,7 +22,8 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
     ClientesAddComponent,
     ClientesBuscarComponent,
     ClientesMostrarComponent,
-    MisDatosComponent
+    MisDatosComponent,
+    CambiarPasswordComponent
   ],
   imports: [
     CommonModule,

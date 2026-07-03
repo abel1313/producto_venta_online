@@ -127,6 +127,13 @@
     </div>
   </div>
 
+  <!-- Estado vacío -->
+  <div class="mp-empty" *ngIf="pedidoGenerico.length === 0">
+    <i class="pi pi-inbox mp-empty__icon"></i>
+    <p class="mp-empty__title">Sin pedidos</p>
+    <p class="mp-empty__sub">Aún no tienes pedidos registrados. Tus compras aparecerán aquí.</p>
+  </div>
+
 </div>
 
 <!-- Diálogo de cobro -->

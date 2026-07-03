@@ -107,6 +107,7 @@ export class NavbarComponent implements OnInit {
     this.countCarrito = 0;
     this.countCarritoVariante = 0;
     this.serviceCarrito.limpiarCarrito();
+    this.carritoVariante.limpiar();
     this.closeMobile();
     this.router.navigate(['/login']);
   }

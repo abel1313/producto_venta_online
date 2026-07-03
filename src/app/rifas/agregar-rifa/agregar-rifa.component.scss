@@ -140,9 +140,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+    background: linear-gradient(135deg, #8A6A38, #B08A4E) !important;
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.40); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(176,138,78,0.40); }
   }
 
   &--outline {
@@ -166,11 +166,11 @@
     width: 100%;
     padding: 16px 36px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+    background: linear-gradient(135deg, #8A6A38, #B08A4E) !important;
     color: #fff !important;
-    box-shadow: 0 8px 24px rgba(59,130,246,0.35);
+    box-shadow: 0 8px 24px rgba(176,138,78,0.35);
     border-radius: 12px;
-    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(59,130,246,0.45); }
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(176,138,78,0.45); }
   }
 
   &--sortear {
@@ -193,7 +193,7 @@
   border-radius: 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  &--purple { background: rgba(99,102,241,0.12); color: var(--app-accent); border: 1px solid rgba(99,102,241,0.28); }
+  &--purple { background: rgba(176,138,78,0.12); color: var(--app-accent); border: 1px solid rgba(176,138,78,0.28); }
 }
 
 // ── Switch ─────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   &--done    { background: rgba(22, 101, 52, 0.12); color: #166534; }
-  &--current { background: #2563eb; color: #fff; }
+  &--current { background: linear-gradient(135deg, #8A6A38, #B08A4E); color: #fff; }
   &--pending { background: var(--form-section-bg); color: var(--card-text-muted); }
 }
 
@@ -623,7 +623,7 @@
   display: flex;
   flex-direction: column;
 
-  &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); }
+  &:hover { box-shadow: 0 4px 16px rgba(176,138,78,0.22); }
 
   &__img {
     height: 100px;
@@ -668,7 +668,7 @@
   &__codigo { font-size: 0.7rem;  color: var(--card-text-muted); font-family: monospace; }
 
   &__clave { font-size: 0.75rem; font-weight: 700; color: var(--app-accent);
-             background: #ede9fe; border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
+             background: rgba(176,138,78,0.12); border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
 
   &__giro { font-size: 0.72rem; color: var(--card-text-muted); margin-top: 2px; }
 
@@ -751,13 +751,13 @@
 
 // ── Chip seleccionado ──────────────────────────────────────────────
 .rf-chip-seleccionado {
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
+  background: rgba(176,138,78,0.12);
+  border: 1px solid rgba(176,138,78,0.35);
   border-radius: 10px;
   padding: 8px 14px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--app-accent);
 }
 
 // ── Switch label ───────────────────────────────────────────────────
@@ -827,17 +827,17 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: rgba(99, 102, 241, 0.06);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(176, 138, 78, 0.06);
+  border: 1px solid rgba(176, 138, 78, 0.18);
   border-radius: 10px;
   margin-top: 4px;
 }
 
 // ── Tema DÍA — ajustes que el glassmorphism global no cubre ────────
 :host-context(body.theme-light) {
-  // Círculo de paso (A/B/C): invisible sobre fondo blanco → tinte índigo
+  // Círculo de paso (A/B/C): invisible sobre fondo claro → tinte ámbar
   .rf-card__step {
-    background: rgba(99, 102, 241, 0.16);
+    background: rgba(176, 138, 78, 0.18);
     color: var(--app-accent);
   }
   // Botón outline dentro del head del card: borde visible sobre blanco
@@ -852,9 +852,9 @@
   // Círculo de paso: texto blanco
   .rf-card__step { color: #f1f5f9; }
 
-  // Botones PRIMARY en noche: azul visible sobre fondo oscuro
+  // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rf-btn--primary {
-    background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+    background: linear-gradient(135deg, #B08A4E, #C9A063) !important;
     color: #fff !important;
   }
 
@@ -951,8 +951,8 @@
   }
 
   &__badge {
-    background: #ede9fe;
-    color: #5b21b6;
+    background: rgba(176,138,78,0.12);
+    color: var(--app-accent);
     font-size: 0.72rem;
     font-weight: 700;
     padding: 2px 7px;
@@ -1026,7 +1026,7 @@
   flex-direction: column;
   gap: 12px;
 
-  &__title { font-size: 0.88rem; font-weight: 700; color: #5b21b6; margin: 0; }
+  &__title { font-size: 0.88rem; font-weight: 700; color: var(--app-accent); margin: 0; }
 }
 
 // ── Resumen variante ───────────────────────────────────────────────
@@ -1050,8 +1050,8 @@
 
 .rf-resumen__clave {
   font-size: 0.72rem;
-  background: #ede9fe;
-  color: #5b21b6;
+  background: rgba(176,138,78,0.12);
+  color: var(--app-accent);
   border-radius: 10px;
   padding: 2px 8px;
   font-weight: 700;
@@ -1095,7 +1095,7 @@
     font-size: 0.92rem;
     color: var(--app-text);
     margin: 0;
-    strong { color: #5b21b6; }
+    strong { color: var(--app-accent); }
   }
 }
 
@@ -1187,9 +1187,9 @@
   cursor: pointer;
   transition: box-shadow 0.18s;
 
-  &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); }
+  &:hover { box-shadow: 0 4px 16px rgba(176,138,78,0.22); }
 
-  &--empty { &:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.22); } }
+  &--empty { &:hover { box-shadow: 0 4px 16px rgba(176,138,78,0.22); } }
 }
 
 .rf-premio-img__hint {
@@ -1319,7 +1319,7 @@
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--app-accent);
-    background: rgba(99,102,241,0.1);
+    background: rgba(176,138,78,0.1);
     padding: 3px 10px;
     border-radius: 20px;
   }
@@ -1338,8 +1338,8 @@
 
   // Header del panel activo (expandido)
   &--active {
-    background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(79,70,229,0.05) 100%);
-    border-bottom: 1px solid rgba(99,102,241,0.2);
+    background: linear-gradient(135deg, rgba(176,138,78,0.08) 0%, rgba(138,106,56,0.05) 100%);
+    border-bottom: 1px solid rgba(176,138,78,0.2);
     cursor: default;
   }
 }

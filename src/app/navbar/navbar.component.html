@@ -86,6 +86,7 @@
       <div class="sb-submenu">
         <a class="sb-subitem" routerLink="variantes/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
         <a class="sb-subitem" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
+        <a class="sb-subitem" routerLink="clientes/buscar" (click)="closeMobile()">👥 Clientes</a>
       </div>
     </div>
 
@@ -195,10 +196,15 @@
     <!-- Usuario -->
     <div class="sb-user">
       <div class="sb-avatar">{{ username.charAt(0).toUpperCase() }}</div>
+      <!-- Botón logout visible solo cuando el sidebar está colapsado (70px) -->
+      <button class="sb-logout-icon" (click)="logout()" title="Salir">
+        <i class="pi pi-power-off"></i>
+      </button>
       <div class="sb-user-info">
         <span class="sb-username">{{ username }}</span>
         <div class="sb-user-actions">
           <a class="sb-user-link" routerLink="clientes/mis-datos" (click)="closeMobile()">Mis datos</a>
+          <a class="sb-user-link sb-user-link--pass" routerLink="clientes/cambiar-password" (click)="closeMobile()">Cambiar contraseña</a>
           <button class="sb-logout" (click)="logout()">Salir</button>
         </div>
       </div>

@@ -16,5 +16,6 @@ export interface ICliente extends IdGenerico {
     numeroTelefonico: string;
     usuario: IUsuarioDto;
     listDirecciones: IDireccion [];
+    correoVerificado?: boolean;
 
 }

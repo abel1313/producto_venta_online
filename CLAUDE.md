@@ -202,38 +202,30 @@ backdrop-filter: blur(6px);
 
 ---
 
+## HOMOLOGACIÓN DE PALETA — ÁMBAR/CREMA (2026-07-03) ✅ COMPLETO
+
+**Cambio de marca:** la paleta índigo (`#6366f1`/`#4f46e5`/`#818cf8`) fue reemplazada globalmente por ámbar/crema:
+- Accent claro: `#B08A4E` | Accent oscuro: `#C9A063` | Hover: `#8A6A38`
+- Gradiente principal: `linear-gradient(135deg, #8A6A38, #B08A4E)`
+- Tira de cards: `linear-gradient(135deg, rgba(61,44,12,0.88) 0%, rgba(176,138,78,0.72) 100%)`
+- Shadows: `rgba(176,138,78,...)` reemplaza `rgba(99,102,241,...)`
+- Regla: NUNCA hardcodear hex — usar siempre `var(--app-accent)`, `var(--header-brand)`, etc.
+
+**Archivos modificados (todos los SCSS de la app):**
+`loading`, `gastos/all`, `palabras-clave/autocomplete`, `palabras-clave/gestion`, `usuarios/all-usuarios`, `clientes-add`, `add-usuarios`, `detalle-productos`, `chat-usuario`, `chat-admin`, `buscar-rifa`, `diagnostico-imagenes`, `config-negocio`, `presentacion-imagenes`, `carga-archivo`, `productos/add`, `productos/all`, `venta-variante`, `add-venta`, `variante/buscar`, `detalle-variante`, `update-variante`, `update-producto`
+
+**Estado verificado:** `ng build --configuration=development` sin errores. Grep de `#6366f1|#4f46e5|99,102,241` en todos los SCSS → cero resultados.
+
 ## FIXES DE ESTILOS — PENDIENTES Y REALIZADOS
 
 ### ✅ Ya corregidos
-- `--header-brand` en light mode → cambiado de rojo/rosa a índigo (`#3730a3 → #4f46e5 → #6366f1`) en `src/styles.scss`
+- `--header-brand` en light mode → ámbar `linear-gradient(135deg, #8A6A38, #B08A4E)` en `src/styles.scss`
+- Toda la paleta índigo → ámbar en TODOS los SCSS del proyecto (ver sección HOMOLOGACIÓN)
 - `$primary` (#8b1a4a rojo) → `var(--app-accent)` en todos los SCSS de variantes, productos, admin, chatbot, palabras-clave
 - Scroll containers con rojo → `var(--card-border)`
 - Botón "quitar" → `#ef4444` (rojo semántico correcto)
 
-### ⏳ Pendientes de fix (identificados, aún con rojo/problema)
-
-| Componente | Clase Angular | Archivo SCSS | Problema |
-|---|---|---|---|
-| Buscar productos | `AllComponent` | `productos/producto/all/all.component.scss` | Header/buscador full-width — agregar `max-width: 1120px; margin: 0 auto` al contenido del header |
-| Buscar variantes | `BuscarComponent` | `variante/buscar/buscar.component.scss` | Mismo problema de ancho que AllComponent |
-| Agregar producto | `AddComponent` | `productos/producto/add/add.component.scss` | Ya usa `var(--header-brand)` — verificar en browser si sigue rojo |
-| Agregar variante | `AgregarComponent` | `variante/agregar/agregar.component.scss` | Ya usa `var(--header-brand)` — verificar en browser |
-| Carga archivo | `CargaArchivoComponent` | `documentos/carga-archivo/carga-archivo.component.scss` | 6 problemas: página rosa, card blanca, header ROJO hardcodeado, botón upload rojo, drop zone rosa, resultados blancos — NADA usa variables CSS aún |
-
-### Detalle CargaArchivoComponent (documentos/carga-archivo)
-- `.ca-page` → `linear-gradient(#fff5f7, #fde8f0)` rosa fijo → necesita `var(--page-bg)`
-- `.ca-card` → `background: #fff` → necesita `var(--card-bg)` + `border: 1px solid var(--card-border)`
-- `.ca-card__header` → `linear-gradient(#5c0f31, $primary, $primary-d)` ROJO → necesita `var(--header-brand)`
-- `.ca-btn--upload` → `linear-gradient($primary, $primary-d)` rojo → necesita `var(--app-accent)` estilo índigo
-- `.ca-drop` → border `#fbcfe8` rosa, background `#fdf2f8` → necesita `var(--card-border)` / `var(--form-section-bg)`
-- `.ca-resultado`, `.ca-errores` → blancos fijos → necesita `var(--form-section-bg)` / `var(--card-bg)`
-
-### Detalle AllComponent + BuscarComponent (ancho del header)
-El `.pl-header` y `.vb-header` son full-width. El grid está centrado con `max-width: 1120px` pero el header no.
-Fix: envolver el contenido interior del header en un `<div class="header-inner">` con `max-width: 1120px; margin: 0 auto; width: 100%`.
-Esto requiere cambio en HTML + SCSS.
-
-> **Instrucción:** Al arreglar cada uno, mover de "Pendientes" a "Ya corregidos" en este mismo archivo.
+> **Instrucción:** Al arreglar cada SCSS nuevo, verificar que NO use `#6366f1`, `#4f46e5`, `#818cf8`, `rgba(99,102,241,...)` — solo `var(--app-accent)` y `rgba(176,138,78,...)`.
 
 ---
 
@@ -3014,3 +3006,59 @@ Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cl
 - `src/app/variante/buscar/buscar.component.html` → +2 botones filtro, fix disabled
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+---
+
+## FEAT CLIENTES — VERIFICACIÓN DE CORREO + REDISEÑO FORMULARIO (2026-07-03)
+
+### Rediseño `/clientes/agregar`
+
+- Formulario completamente rediseñado con design system BEM + dark/light mode
+- Header con gradiente índigo + icono `pi-user-plus`
+- Tres secciones: Nombre, Apellidos, Contacto — grid 2 columnas responsive
+- Select de sexo con `appearance: none` + chevron overlay (soluciona texto invisible en dark mode)
+- Validaciones: `correoElectronico` requerido + `Validators.email`; `numeroTelefonico` requerido + `pattern(/^[0-9]{10}$/)`
+- Mensajes de error diferenciados por tipo (`required` vs `email`/`pattern`)
+- `FormsModule` agregado a `ClietesModule` (necesario para `[(ngModel)]` del código de verificación)
+
+### Verificación de correo — Opción A (inline en `/clientes/agregar`)
+
+**Flujo:** Al guardar exitosamente el cliente, la página pasa a un **Paso 2** (sin navegar):
+1. Se envía automáticamente el código de 6 dígitos al correo del cliente
+2. Input numérico centrado + botón "Verificar y continuar"
+3. Botón "Reenviar código" con cooldown de 60s y countdown visible
+4. Botón "Verificar más tarde" (omitir) que navega sin bloquear
+
+### Verificación de correo — Opción B (en pedido de variantes)
+
+**Flujo:** Si `guardarPedidoVariante` devuelve 400 con mensaje que contenga "verificar":
+1. `flujoVerificacion(clienteId)` → llama `enviarCodigoVerificacion` automáticamente
+2. Swal con input de 6 dígitos + botón "Reenviar código" inline en el modal
+3. `verificarCorreo(clienteId, codigo)` → si OK, muestra Swal "¡Verificado!" y reintenta el pedido
+
+### Nuevos métodos en `ClienteService`
+
+```typescript
+enviarCodigoVerificacion(clienteId: number): Observable<ResponseGeneric<string>>
+  // POST /v1/clientes/{id}/enviar-codigo-verificacion
+
+verificarCorreo(clienteId: number, codigo: string): Observable<ResponseGeneric<string>>
+  // POST /v1/clientes/{id}/verificar-correo { codigo }
+```
+
+### `ICliente` model
+
+`correoVerificado?: boolean` agregado en:
+- `src/app/clietes/models/cliente.model.ts`
+- `src/app/clietes/mis-datos/models/cliente.model.ts`
+
+**Archivos modificados:**
+- `src/app/clietes/clientes-add/clientes-add.component.ts` → reescritura completa con paso 2
+- `src/app/clietes/clientes-add/clientes-add.component.html` → rediseño + sección verificación
+- `src/app/clietes/clientes-add/clientes-add.component.scss` → design system BEM + dark/light mode
+- `src/app/clietes/cliente.service.ts` → +`enviarCodigoVerificacion()`, +`verificarCorreo()`
+- `src/app/clietes/models/cliente.model.ts` → +`correoVerificado?`
+- `src/app/clietes/mis-datos/models/cliente.model.ts` → +`correoVerificado?`
+- `src/app/clietes/clietes.module.ts` → +`FormsModule`
+- `src/app/variante/venta-variante/venta-variante.component.ts` → Opción B: `flujoVerificacion()`, `mostrarSwalCodigo()`
+
+**Verificado con `ng build --configuration=development` sin errores.**

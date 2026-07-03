@@ -38,7 +38,7 @@
   &--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(59,130,246,0.18);
+    box-shadow: 0 2px 8px rgba(176,138,78,0.18);
   }
 
   &:hover:not(&--active) { color: var(--app-text); }
@@ -95,13 +95,13 @@
   padding: 9px 20px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
   color: #fff !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s;
-  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(176,138,78,0.3); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
@@ -169,7 +169,7 @@
 
   &__bar {
     height: 100%;
-    background: linear-gradient(90deg, #1e40af, #3b82f6);
+    background: linear-gradient(90deg, #8A6A38, #B08A4E);
     border-radius: 3px;
     transition: width 0.3s ease;
     min-width: 4px;
@@ -181,13 +181,13 @@
   padding: 9px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
   color: #fff !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s;
-  &:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(176,138,78,0.3); }
 }
 
 // ── Selector DIARIA/MENSUAL ────────────────────────────────────────
@@ -213,7 +213,7 @@
   &--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(59,130,246,0.18);
+    box-shadow: 0 2px 8px rgba(176,138,78,0.18);
   }
 
   &:hover:not(&--active) { color: var(--app-text); }
@@ -221,7 +221,7 @@
 
 // ── Header de card con colores de estado ───────────────────────────
 .br-card__header {
-  background: linear-gradient(135deg, rgba(15,37,87,0.88) 0%, rgba(29,78,216,0.72) 100%);
+  background: linear-gradient(135deg, rgba(61,44,12,0.92) 0%, rgba(176,138,78,0.78) 100%);
 
   &--activa    { background: linear-gradient(135deg, #166534, #15803d); }
   &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
@@ -251,9 +251,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176,138,78,0.35); }
   }
 
   &--secondary {
@@ -264,9 +264,9 @@
   }
 
   &--recover {
-    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168,85,247,0.35); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176,138,78,0.35); }
   }
 
   &:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
@@ -390,21 +390,21 @@
 
 // ── Tema NOCHE — ajustes completos ────────────────────────────────
 :host-context(body.theme-dark) {
-  // Tab activo: azul claro visible sobre fondo oscuro
+  // Tab activo: ámbar visible sobre fondo oscuro
   .br-tab--active {
     background: var(--card-bg);
-    color: #60a5fa;
-    box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+    color: var(--app-accent);
+    box-shadow: 0 2px 8px rgba(176,138,78,0.25);
   }
 
-  // Botones de acción (filtro + ver rifa): azul claro en noche
+  // Botones de acción: ámbar en noche
   .br-btn--filtro,
   .br-btn {
-    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    background: linear-gradient(135deg, #B08A4E, #C9A063);
   }
 
-  // Barra de progreso: azul claro
+  // Barra de progreso: ámbar
   .br-progress__bar {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(90deg, #B08A4E, #C9A063);
   }
 }

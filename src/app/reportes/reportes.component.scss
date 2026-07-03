@@ -44,13 +44,13 @@
   transition: background .15s, color .15s;
 
   &--active {
-    background: #6366f1;
-    border-color: #6366f1;
+    background: var(--app-accent);
+    border-color: var(--app-accent);
     color: #fff;
   }
 
   &:hover:not(.rp-tab--active) {
-    background: rgba(99,102,241,.08);
+    background: rgba(176,138,78,.08);
   }
 }
 
@@ -116,7 +116,7 @@
     border-bottom: 1px solid var(--card-border, rgba(0,0,0,.06));
 
     &:last-child { border-bottom: none; }
-    &:hover { background: rgba(99,102,241,.08); }
+    &:hover { background: rgba(176,138,78,.08); }
   }
 
   &__sub {
@@ -146,13 +146,13 @@
 
   &:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--app-accent);
   }
 }
 
 .rp-btn--primary {
   padding: .45rem 1.1rem;
-  background: #6366f1;
+  background: var(--app-accent);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -161,7 +161,7 @@
   cursor: pointer;
   align-self: flex-end;
 
-  &:hover:not(:disabled) { background: #4f46e5; }
+  &:hover:not(:disabled) { background: var(--app-accent); }
   &:disabled { opacity: .55; cursor: default; }
 }
 
@@ -259,7 +259,7 @@
   }
 }
 
-.rp-tr--top3 td { background: rgba(99,102,241,.04); }
+.rp-tr--top3 td { background: rgba(176,138,78,.04); }
 
 .rp-rank {
   width: 2.5rem;
@@ -309,13 +309,13 @@
   .rp-page   { background: var(--app-bg); }
   .rp-input  { background: #27272a; color: #e2e8f0; border-color: rgba(255,255,255,.12); }
   .rp-table th { background: #27272a; }
-  .rp-tr--top3 td { background: rgba(99,102,241,.08); }
+  .rp-tr--top3 td { background: rgba(176,138,78,.08); }
   .rp-stat-card__val { color: #e2e8f0; }
   .rp-cliente-nombre { color: #e2e8f0; }
   .rp-dropdown {
     background: #27272a;
     border-color: rgba(255,255,255,.12);
-    &__item { color: #e2e8f0; border-color: rgba(255,255,255,.06); &:hover { background: rgba(99,102,241,.15); } }
+    &__item { color: #e2e8f0; border-color: rgba(255,255,255,.06); &:hover { background: rgba(176,138,78,.15); } }
     &__sub  { color: #94a3b8; }
   }
 }

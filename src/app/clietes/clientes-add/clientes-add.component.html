@@ -1,170 +1,223 @@
 <div class="ca-page">
   <div class="ca-card">
 
-    <!-- Header -->
-    <div class="ca-card__header">
-      <div class="ca-header-icon">
-        <i class="pi pi-user-plus"></i>
-      </div>
-      <div>
-        <h2 class="ca-title">{{ nombreCard || 'Nuevo cliente' }}</h2>
-        <p class="ca-subtitle">Completa los datos del cliente</p>
-      </div>
-    </div>
+    <!-- ══════════════════════════════════════════════════════
+         PASO 1 — Formulario
+    ══════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="!pasoVerif">
 
-    <form [formGroup]="formCliente" (ngSubmit)="guardar()" novalidate class="ca-form">
-
-      <!-- Sección: Nombre -->
-      <div class="ca-section">
-        <span class="ca-section__label">Nombre</span>
-        <div class="ca-row">
-
-          <div class="ca-field">
-            <label class="ca-label">Nombre <span class="ca-req">*</span></label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-user ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="nombrePersona"
-                     type="text"
-                     placeholder="Nombre(s)"
-                     autocomplete="given-name">
-            </div>
-            <div *ngIf="formCliente.get('nombrePersona')?.invalid && formCliente.get('nombrePersona')?.touched"
-                 class="ca-error">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
-            </div>
-          </div>
-
-          <div class="ca-field">
-            <label class="ca-label">Segundo nombre</label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-user ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="segundoNombre"
-                     type="text"
-                     placeholder="Opcional"
-                     autocomplete="additional-name">
-            </div>
-          </div>
-
+      <!-- Header -->
+      <div class="ca-card__header">
+        <div class="ca-header-icon">
+          <i class="pi pi-user-plus"></i>
+        </div>
+        <div>
+          <h2 class="ca-title">{{ nombreCard || 'Nuevo cliente' }}</h2>
+          <p class="ca-subtitle">Completa los datos del cliente</p>
         </div>
       </div>
 
-      <!-- Sección: Apellidos -->
-      <div class="ca-section">
-        <span class="ca-section__label">Apellidos</span>
-        <div class="ca-row">
+      <form [formGroup]="formCliente" (ngSubmit)="guardar()" novalidate class="ca-form">
 
-          <div class="ca-field">
-            <label class="ca-label">Apellido paterno <span class="ca-req">*</span></label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-id-card ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="apeidoPaterno"
-                     type="text"
-                     placeholder="Apellido paterno"
-                     autocomplete="family-name">
+        <!-- Nombre -->
+        <div class="ca-section">
+          <span class="ca-section__label">Nombre</span>
+          <div class="ca-row">
+
+            <div class="ca-field">
+              <label class="ca-label">Nombre <span class="ca-req">*</span></label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-user ca-input-icon"></i>
+                <input class="ca-input" formControlName="nombrePersona" type="text"
+                       placeholder="Nombre(s)" autocomplete="given-name">
+              </div>
+              <div *ngIf="formCliente.get('nombrePersona')?.invalid && formCliente.get('nombrePersona')?.touched"
+                   class="ca-error">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </div>
             </div>
-            <div *ngIf="formCliente.get('apeidoPaterno')?.invalid && formCliente.get('apeidoPaterno')?.touched"
-                 class="ca-error">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
+
+            <div class="ca-field">
+              <label class="ca-label">Segundo nombre</label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-user ca-input-icon"></i>
+                <input class="ca-input" formControlName="segundoNombre" type="text"
+                       placeholder="Opcional" autocomplete="additional-name">
+              </div>
             </div>
+
+          </div>
+        </div>
+
+        <!-- Apellidos -->
+        <div class="ca-section">
+          <span class="ca-section__label">Apellidos</span>
+          <div class="ca-row">
+
+            <div class="ca-field">
+              <label class="ca-label">Apellido paterno <span class="ca-req">*</span></label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-id-card ca-input-icon"></i>
+                <input class="ca-input" formControlName="apeidoPaterno" type="text"
+                       placeholder="Apellido paterno" autocomplete="family-name">
+              </div>
+              <div *ngIf="formCliente.get('apeidoPaterno')?.invalid && formCliente.get('apeidoPaterno')?.touched"
+                   class="ca-error">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </div>
+            </div>
+
+            <div class="ca-field">
+              <label class="ca-label">Apellido materno <span class="ca-req">*</span></label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-id-card ca-input-icon"></i>
+                <input class="ca-input" formControlName="apeidoMaterno" type="text"
+                       placeholder="Apellido materno" autocomplete="family-name">
+              </div>
+              <div *ngIf="formCliente.get('apeidoMaterno')?.invalid && formCliente.get('apeidoMaterno')?.touched"
+                   class="ca-error">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="ca-section">
+          <span class="ca-section__label">Contacto</span>
+          <div class="ca-row">
+
+            <div class="ca-field">
+              <label class="ca-label">Sexo</label>
+              <div class="ca-input-wrap ca-input-wrap--select">
+                <i class="pi pi-venus-mars ca-input-icon"></i>
+                <select class="ca-input ca-select" formControlName="sexo">
+                  <option value="" disabled selected>Selecciona…</option>
+                  <option value="Hombre">Hombre</option>
+                  <option value="Mujer">Mujer</option>
+                  <option value="Prefiero no decir">Prefiero no decir</option>
+                </select>
+                <i class="pi pi-chevron-down ca-select-arrow"></i>
+              </div>
+            </div>
+
+            <div class="ca-field">
+              <label class="ca-label">Correo electrónico <span class="ca-req">*</span></label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-envelope ca-input-icon"></i>
+                <input class="ca-input" formControlName="correoElectronico" type="email"
+                       placeholder="correo@ejemplo.com" autocomplete="email">
+              </div>
+              <div *ngIf="formCliente.get('correoElectronico')?.invalid && formCliente.get('correoElectronico')?.touched"
+                   class="ca-error">
+                <i class="pi pi-exclamation-circle"></i>
+                <span *ngIf="formCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</span>
+                <span *ngIf="formCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</span>
+              </div>
+            </div>
+
           </div>
 
-          <div class="ca-field">
-            <label class="ca-label">Apellido materno <span class="ca-req">*</span></label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-id-card ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="apeidoMaterno"
-                     type="text"
-                     placeholder="Apellido materno"
-                     autocomplete="family-name">
-            </div>
-            <div *ngIf="formCliente.get('apeidoMaterno')?.invalid && formCliente.get('apeidoMaterno')?.touched"
-                 class="ca-error">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
+          <div class="ca-row ca-row--single">
+            <div class="ca-field">
+              <label class="ca-label">Número de teléfono <span class="ca-req">*</span></label>
+              <div class="ca-input-wrap">
+                <i class="pi pi-phone ca-input-icon"></i>
+                <input class="ca-input" formControlName="numeroTelefonico" type="tel"
+                       placeholder="10 dígitos" maxlength="10" autocomplete="tel">
+              </div>
+              <div *ngIf="formCliente.get('numeroTelefonico')?.invalid && formCliente.get('numeroTelefonico')?.touched"
+                   class="ca-error">
+                <i class="pi pi-exclamation-circle"></i>
+                <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['required']">Campo requerido</span>
+                <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['pattern']">Deben ser exactamente 10 dígitos</span>
+              </div>
             </div>
           </div>
+        </div>
 
+        <!-- Footer -->
+        <div class="ca-footer">
+          <button type="button" class="ca-btn ca-btn--cancel"
+                  (click)="$hideComponent.emit(false)">
+            <i class="pi pi-times"></i> Cancelar
+          </button>
+          <button type="submit" class="ca-btn ca-btn--save" [disabled]="formCliente.invalid">
+            <i class="pi pi-check"></i> Guardar cliente
+          </button>
+        </div>
+
+      </form>
+    </ng-container>
+
+    <!-- ══════════════════════════════════════════════════════
+         PASO 2 — Verificar correo
+    ══════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="pasoVerif">
+
+      <div class="ca-card__header ca-card__header--verif">
+        <div class="ca-header-icon ca-header-icon--verif">
+          <i class="pi pi-envelope"></i>
+        </div>
+        <div>
+          <h2 class="ca-title">Verifica tu correo</h2>
+          <p class="ca-subtitle">Paso 2 de 2</p>
         </div>
       </div>
 
-      <!-- Sección: Contacto -->
-      <div class="ca-section">
-        <span class="ca-section__label">Contacto</span>
-        <div class="ca-row">
+      <div class="ca-form">
 
-          <div class="ca-field">
-            <label class="ca-label">Sexo</label>
-            <div class="ca-input-wrap ca-input-wrap--select">
-              <i class="pi pi-venus-mars ca-input-icon"></i>
-              <select class="ca-input ca-select" formControlName="sexo">
-                <option value="" disabled selected>Selecciona…</option>
-                <option value="Hombre">Hombre</option>
-                <option value="Mujer">Mujer</option>
-                <option value="Prefiero no decir">Prefiero no decir</option>
-              </select>
-              <i class="pi pi-chevron-down ca-select-arrow"></i>
-            </div>
-          </div>
-
-          <div class="ca-field">
-            <label class="ca-label">Correo electrónico <span class="ca-req">*</span></label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-envelope ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="correoElectronico"
-                     type="email"
-                     placeholder="correo@ejemplo.com"
-                     autocomplete="email">
-            </div>
-            <div *ngIf="formCliente.get('correoElectronico')?.invalid && formCliente.get('correoElectronico')?.touched"
-                 class="ca-error">
-              <i class="pi pi-exclamation-circle"></i>
-              <span *ngIf="formCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</span>
-              <span *ngIf="formCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</span>
-            </div>
-          </div>
-
+        <div class="ca-verif-info">
+          <i class="pi pi-send ca-verif-info__icon"></i>
+          <p>
+            Enviamos un código de <strong>6 dígitos</strong> a<br>
+            <span class="ca-verif-info__email">{{ correoGuardado }}</span>
+          </p>
+          <p class="ca-verif-info__note">Revisa también tu carpeta de spam. El código expira en 15 minutos.</p>
         </div>
 
-        <div class="ca-row ca-row--single">
-          <div class="ca-field">
-            <label class="ca-label">Número de teléfono <span class="ca-req">*</span></label>
-            <div class="ca-input-wrap">
-              <i class="pi pi-phone ca-input-icon"></i>
-              <input class="ca-input"
-                     formControlName="numeroTelefonico"
-                     type="tel"
-                     placeholder="10 dígitos"
-                     maxlength="10"
-                     autocomplete="tel">
-            </div>
-            <div *ngIf="formCliente.get('numeroTelefonico')?.invalid && formCliente.get('numeroTelefonico')?.touched"
-                 class="ca-error">
-              <i class="pi pi-exclamation-circle"></i>
-              <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['required']">Campo requerido</span>
-              <span *ngIf="formCliente.get('numeroTelefonico')?.errors?.['pattern']">Deben ser exactamente 10 dígitos</span>
-            </div>
+        <!-- Input código -->
+        <div class="ca-section">
+          <div class="ca-field ca-field--center">
+            <label class="ca-label ca-label--center">Código de verificación</label>
+            <input class="ca-input ca-input--code"
+                   [(ngModel)]="codigoVerif"
+                   type="text"
+                   inputmode="numeric"
+                   maxlength="6"
+                   placeholder="— — — — — —"
+                   autocomplete="one-time-code">
           </div>
         </div>
-      </div>
 
-      <!-- Footer -->
-      <div class="ca-footer">
-        <button type="button" class="ca-btn ca-btn--cancel"
-                (click)="$hideComponent.emit(false)">
-          <i class="pi pi-times"></i>
-          Cancelar
+        <!-- Botón verificar -->
+        <button class="ca-btn ca-btn--save ca-btn--full"
+                (click)="verificar()"
+                [disabled]="codigoVerif.length !== 6 || verificando">
+          <i class="pi" [class.pi-check]="!verificando" [class.pi-spin]="verificando"
+             [class.pi-spinner]="verificando"></i>
+          {{ verificando ? 'Verificando…' : 'Verificar y continuar' }}
         </button>
-        <button type="submit" class="ca-btn ca-btn--save"
-                [disabled]="formCliente.invalid">
-          <i class="pi pi-check"></i>
-          Guardar cliente
-        </button>
-      </div>
 
-    </form>
+        <!-- Reenviar -->
+        <div class="ca-verif-resend">
+          <span class="ca-verif-resend__text">¿No te llegó el código?</span>
+          <button class="ca-verif-resend__btn"
+                  (click)="enviarCodigo()"
+                  [disabled]="cooldown > 0 || enviandoCodigo">
+            <i class="pi pi-refresh"></i>
+            {{ enviandoCodigo ? 'Enviando…' : cooldown > 0 ? 'Reenviar en ' + cooldown + 's' : 'Reenviar código' }}
+          </button>
+        </div>
+
+        <!-- Omitir -->
+        <button class="ca-btn ca-btn--skip" (click)="omitirVerificacion()">
+          Verificar más tarde
+        </button>
+
+      </div>
+    </ng-container>
+
   </div>
 </div>

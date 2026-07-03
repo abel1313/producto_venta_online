@@ -65,6 +65,7 @@ export interface IVarianteResumen {
   precio?: number | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;
+  habilitado?: string | null;
 }
 
 export interface IVarianteResumenPaginable {

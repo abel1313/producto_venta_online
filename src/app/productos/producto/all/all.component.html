@@ -76,6 +76,21 @@
   </div>
 </div>
 
+<!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
+<div *ngIf="isAdminUser && seleccionados.size > 0" class="pl-lote-bar">
+  <label class="pl-lote-bar__check">
+    <input type="checkbox" [checked]="todoSeleccionadoProducto" (change)="toggleTodosProductos()" />
+    <span>{{ seleccionados.size }} seleccionado(s)</span>
+  </label>
+  <div class="pl-lote-bar__actions">
+    <button class="pl-lote-btn pl-lote-btn--enable" [disabled]="procesandoLote"
+      (click)="habilitarLote(true)">🔓 Habilitar seleccionados</button>
+    <button class="pl-lote-btn pl-lote-btn--disable" [disabled]="procesandoLote"
+      (click)="habilitarLote(false)">🔒 Deshabilitar seleccionados</button>
+    <button class="pl-lote-btn pl-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+  </div>
+</div>
+
 <!-- ── Grid con scroll infinito ──────────────────────────────────── -->
 <div class="pl-grid-wrap scroll-container" (scroll)="onScroll($event)">
 
@@ -87,7 +102,13 @@
 
   <div class="pl-grid">
     <div class="pl-card" *ngFor="let item of rows; trackBy: trackById"
-         [class.pl-card--deshabilitado]="isAdminUser && !estaHabilitado(item)">
+         [class.pl-card--deshabilitado]="isAdminUser && !estaHabilitado(item)"
+         [class.pl-card--seleccionado]="seleccionados.has(item.idProducto)">
+
+      <!-- Checkbox de selección (solo admin) -->
+      <label *ngIf="isAdminUser" class="pl-card__check" (click)="$event.stopPropagation()">
+        <input type="checkbox" [checked]="seleccionados.has(item.idProducto)" (change)="toggleSeleccionProducto(item.idProducto)" />
+      </label>
 
       <!-- Botón X eliminar (solo admin) -->
       <button *ngIf="isAdminUser"

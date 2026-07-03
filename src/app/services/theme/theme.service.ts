@@ -22,5 +22,6 @@ export class ThemeService {
     this._isDark.next(dark);
     document.body.classList.toggle('theme-dark', dark);
     document.body.classList.toggle('theme-light', !dark);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }
 }

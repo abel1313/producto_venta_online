@@ -1,6 +1,6 @@
 $t: all 0.2s ease;
-$accent: #7c3aed;
-$accent-light: #ede9fe;
+$accent: #B08A4E;
+$accent-light: rgba(176,138,78,0.12);
 
 // ── Página ─────────────────────────────────────────────────────────
 .di-page {
@@ -23,7 +23,7 @@ $accent-light: #ede9fe;
   // SIN overflow:hidden para que el dropdown no quede cortado
 
   &__header {
-    background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 60%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #3D2C0C 0%, #8A6A38 60%, #B08A4E 100%);
     padding: 24px 28px 22px;
     display: flex;
     align-items: center;
@@ -66,7 +66,7 @@ $accent-light: #ede9fe;
   &--active {
     background: var(--card-bg);
     color: $accent;
-    box-shadow: 0 2px 8px rgba(124,58,237,0.18);
+    box-shadow: 0 2px 8px rgba(176,138,78,0.18);
   }
   &:hover:not(&--active) { color: var(--card-text); }
 }
@@ -148,6 +148,7 @@ $accent-light: #ede9fe;
     font-size: 0.75rem; font-family: monospace;
     color: $accent; white-space: nowrap;
     background: $accent-light; padding: 1px 7px; border-radius: 10px;
+    border: 1px solid rgba(176,138,78,0.3);
   }
 
   &__sub {
@@ -175,13 +176,13 @@ $accent-light: #ede9fe;
   &__chip {
     display: inline-flex; align-items: center; gap: 8px;
     background: $accent-light;
-    border: 1px solid #c4b5fd;
+    border: 1px solid rgba(176,138,78,0.35);
     border-radius: 20px; padding: 4px 14px;
     font-size: 0.88rem; font-weight: 600; color: $accent;
   }
 
   &__id {
-    font-size: 0.75rem; font-family: monospace; color: #7c3aed99;
+    font-size: 0.75rem; font-family: monospace; color: rgba(176,138,78,0.6);
   }
 }
 
@@ -253,8 +254,8 @@ $accent-light: #ede9fe;
   padding: 3px 10px; border-radius: 20px;
   background: var(--form-section-bg); border: 1px solid var(--card-border); color: var(--card-text);
 
-  &--id    { background: $accent-light; border-color: #c4b5fd; color: $accent; }
-  &--ext   { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+  &--id    { background: $accent-light; border-color: rgba(176,138,78,0.35); color: $accent; }
+  &--ext   { background: $accent-light; border-color: rgba(176,138,78,0.3); color: $accent; }
   &--path  { color: var(--card-text-muted); font-size: 0.7rem; }
   &--green { background: #dcfce7; border-color: #86efac; color: #166534; }
   &--red   { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }

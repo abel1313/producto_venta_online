@@ -1,29 +1,417 @@
-body.theme-dark ::ng-deep nb-autocomplete {
-  background-color: rgba(255,255,255,0.07);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-body.theme-dark ::ng-deep nb-option {
-  padding: 10px 16px;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  color: #f1f5f9;
-}
-body.theme-dark ::ng-deep nb-option:hover {
-  background-color: rgba(255,255,255,0.1);
+// ── Variables ────────────────────────────────────────────────────────────────
+$radius:    14px;
+$radius-sm: 8px;
+$trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ── Contenedor ───────────────────────────────────────────────────────────────
+.md-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem 3rem;
+  min-height: 100%;
+  background: var(--page-bg, #f1f5f9);
 }
 
-body.theme-light ::ng-deep nb-autocomplete {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+// ── Card ─────────────────────────────────────────────────────────────────────
+.md-card {
+  width: 100%;
+  max-width: 720px;
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  background: var(--card-bg, #fff);
 }
-body.theme-light ::ng-deep nb-option {
-  padding: 10px 16px;
-  font-size: 14px;
-  border-bottom: 1px solid #eee;
-  color: #1e293b;
+
+// ── Header ───────────────────────────────────────────────────────────────────
+.md-card__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 1.75rem;
+  background: linear-gradient(135deg, #3D2C0C 0%, #8A6A38 55%, #B08A4E 100%);
 }
-body.theme-light ::ng-deep nb-option:hover {
-  background-color: #f0f0f0;
+
+.md-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+
+  .pi { font-size: 1.4rem; color: #fff; }
+}
+
+.md-title {
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 2px;
+  letter-spacing: -0.02em;
+}
+
+.md-subtitle {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+
+// ── Form ─────────────────────────────────────────────────────────────────────
+.md-form { padding: 1.5rem 1.75rem 1.75rem; }
+
+// ── Sección ──────────────────────────────────────────────────────────────────
+.md-section {
+  margin-bottom: 1.75rem;
+}
+
+.md-section-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.md-section__label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--app-accent, #B08A4E);
+  padding-left: 2px;
+}
+
+// ── Grid row ─────────────────────────────────────────────────────────────────
+.md-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+
+  &--single { grid-template-columns: 1fr; }
+
+  @media (max-width: 540px) { grid-template-columns: 1fr; }
+}
+
+// ── Campo ────────────────────────────────────────────────────────────────────
+.md-field { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.md-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.02em;
+}
+
+.md-req { color: #ef4444; margin-left: 2px; }
+
+// ── Input wrap ───────────────────────────────────────────────────────────────
+.md-input-wrap {
+  position: relative;
+
+  &--select .md-input {
+    padding-right: 2.4rem;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+}
+
+.md-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.85rem;
+  pointer-events: none;
+  transition: color 0.2s;
+
+  &--top {
+    top: 0.75rem;
+    transform: none;
+  }
+}
+
+.md-select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.72rem;
+  pointer-events: none;
+}
+
+// ── Input ────────────────────────────────────────────────────────────────────
+.md-input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.35rem;
+  border: 2px solid #e5e7eb;
+  border-radius: $radius-sm;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  transition: $trans;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &::placeholder { color: #c4c9d4; }
+
+  &:focus {
+    border-color: var(--app-accent, #B08A4E);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.12);
+
+    ~ .md-input-icon { color: var(--app-accent, #B08A4E); }
+  }
+
+  &--date { color-scheme: light dark; }
+
+  &.md-select {
+    color: #111827;
+    cursor: pointer;
+
+    option { color: #111827; background: #fff; }
+    option[value=""][disabled] { color: #c4c9d4; }
+  }
+}
+
+.md-textarea {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  resize: vertical;
+  min-height: 60px;
+}
+
+// ── Error ────────────────────────────────────────────────────────────────────
+.md-error {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #dc2626;
+
+  .pi { font-size: 0.75rem; }
+}
+
+// ── Tarjeta de dirección ──────────────────────────────────────────────────────
+.md-address-card {
+  background: var(--form-section-bg, #f8fafc);
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.md-address-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.md-address-num {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--app-accent, #B08A4E);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  .pi { font-size: 0.85rem; }
+}
+
+// ── Toggle predefinida ────────────────────────────────────────────────────────
+.md-predefinida { margin-top: 0.75rem; }
+
+.md-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.md-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+
+  &:checked + .md-toggle-slider { background: var(--app-accent, #B08A4E); }
+  &:checked + .md-toggle-slider::before { transform: translateX(18px); }
+}
+
+.md-toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  background: #d1d5db;
+  border-radius: 11px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+}
+
+.md-toggle-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+// ── Botones de acción ─────────────────────────────────────────────────────────
+.md-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid rgba(176, 138, 78, 0.4);
+  background: rgba(176, 138, 78, 0.07);
+  color: var(--app-accent, #B08A4E);
+  transition: $trans;
+  font-family: inherit;
+
+  .pi { font-size: 0.75rem; }
+
+  &:hover {
+    background: rgba(176, 138, 78, 0.14);
+    border-color: rgba(176, 138, 78, 0.6);
+  }
+}
+
+.md-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.07);
+  color: #dc2626;
+  transition: $trans;
+  font-family: inherit;
+
+  .pi { font-size: 0.75rem; }
+
+  &:hover { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.5); }
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+.md-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--card-border, #f0f0f5);
+  margin-top: 0.5rem;
+}
+
+.md-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.75rem;
+  border-radius: $radius-sm;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: $trans;
+  font-family: inherit;
+
+  .pi { font-size: 0.9rem; }
+
+  &--save {
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(176, 138, 78, 0.38);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(176, 138, 78, 0.48);
+    }
+
+    &:active:not(:disabled) { transform: translateY(0); }
+
+    &:disabled {
+      background: linear-gradient(135deg, #C9A063, #B08A4E);
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+  }
+}
+
+// ── DARK MODE ────────────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .md-card { background: #1e1e2e; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+
+  .md-section__label { color: var(--app-accent); }
+
+  .md-label        { color: #94a3b8; }
+  .md-toggle-text  { color: #94a3b8; }
+  .md-address-num  { color: var(--app-accent); }
+
+  .md-input {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+
+    &::placeholder { color: #475569; }
+
+    &:focus {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--app-accent);
+      box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.18);
+    }
+
+    &--date { color-scheme: dark; }
+
+    &.md-select {
+      color: #f1f5f9;
+      option { color: #1e293b; background: #f1f5f9; }
+      option[value=""][disabled] { color: #94a3b8; }
+    }
+  }
+
+  .md-input-icon    { color: #475569; }
+  .md-select-arrow  { color: #475569; }
+  .md-toggle-slider { background: #374151; }
+
+  .md-address-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .md-footer { border-top-color: rgba(255, 255, 255, 0.07); }
+}
+
+// ── LIGHT MODE ───────────────────────────────────────────────────────────────
+:host-context(body.theme-light) {
+  .md-card  { background: #fff; }
+  .md-input { background: #f9fafb; border-color: #e5e7eb; color: #111827; }
 }

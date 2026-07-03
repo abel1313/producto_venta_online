@@ -56,7 +56,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   ];
   roles: string[] = [];
   isAdminUser: boolean = false;
-  filtroActivo: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' = 'todos';
+  filtroActivo: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' = 'todos';
   sinResultados = false;
   mensajeError  = '';
 
@@ -340,7 +340,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
-  cambiarFiltro(filtro: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes'): void {
+  cambiarFiltro(filtro: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes'): void {
     if (this.filtroActivo === filtro) return;
     this.filtroActivo = filtro;
     this.buscarProd = '';
@@ -355,12 +355,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.cargarSinStock(1);
     } else if (filtro === 'con-stock') {
       this.cargarAdminFiltrar('CON_STOCK', 1);
-    } else {
+    } else if (filtro === 'con-imagenes') {
       this.cargarAdminFiltrar('CON_IMAGENES', 1);
+    } else {
+      this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', 1);
     }
   }
 
-  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES', pagina: number): void {
+  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', pagina: number): void {
     this.srvice.adminFiltrar(filtro, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;
@@ -516,6 +518,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     if (this.filtroActivo === 'sin-stock') { this.cargarSinStock(pagina); return; }
     if (this.filtroActivo === 'con-stock') { this.cargarAdminFiltrar('CON_STOCK', pagina); return; }
     if (this.filtroActivo === 'con-imagenes') { this.cargarAdminFiltrar('CON_IMAGENES', pagina); return; }
+    if (this.filtroActivo === 'con-stock-y-imagenes') { this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', pagina); return; }
     if (this.buscarProd === '') {
       this.getData(pagina);
     } else {

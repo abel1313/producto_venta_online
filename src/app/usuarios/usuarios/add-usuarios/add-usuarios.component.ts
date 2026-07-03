@@ -213,6 +213,9 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
     this.router.navigate(['/login']);
   }
 
+  showPassword        = false;
+  showConfirmPassword = false;
+
   get pwd(): string { return this.formRegistro.get('password')?.value || ''; }
   get reqMayuscula(): boolean { return /[A-Z]/.test(this.pwd); }
   get reqMinuscula(): boolean { return /[a-z]/.test(this.pwd); }

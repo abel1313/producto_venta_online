@@ -296,7 +296,7 @@
   font-weight: 700;
   white-space: nowrap;
 
-  &--inventario       { background: rgba(99, 102, 241, 0.15);  color: #4f46e5; }
+  &--inventario       { background: rgba(176, 138, 78, 0.15);  color: var(--app-accent); }
   &--operativo        { background: rgba(245, 158, 11, 0.15);  color: #b45309; }
   &--servicios        { background: rgba(16, 185, 129, 0.15);  color: #059669; }
   &--otros            { background: rgba(100, 116, 139, 0.15); color: #475569; }

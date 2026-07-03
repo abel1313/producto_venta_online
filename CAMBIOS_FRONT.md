@@ -4159,3 +4159,210 @@ sin exigir habilitado — a diferencia del listado público):
 `IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`,
 `VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java`. Sin
 migración de BD — usa las tablas de imágenes que ya existían.
+
+## Verificación de correo del cliente (2026-07-02) — acción requerida en el front
+
+### 1. Correo y teléfono ahora son obligatorios en `Cliente`
+
+`POST /v1/clientes/save` y `PUT /v1/clientes/update/{id}` ahora exigen `correoElectronico` y
+`numeroTelefonico` (antes eran opcionales, sin ninguna validación). Si faltan o el formato es
+inválido, responde **400** con `mensaje` describiendo el error (mismo patrón que ya usan
+`nombrePersona`/`apeidoPaterno`/`apeidoMaterno`):
+- `correoElectronico`: obligatorio, formato de email válido.
+- `numeroTelefonico`: obligatorio, exactamente 10 dígitos (sin espacios, guiones ni lada
+  internacional — ej. `"5512345678"`).
+
+**No aplica** a venta directa sin cuenta (`ClienteSinRegistroDto`) — esos campos siguen
+opcionales, es una venta de mostrador supervisada por personal.
+
+También ahora `POST /v1/auth/registrar` exige `email` (antes era opcional, solo se validaba el
+formato si venía). El endpoint pasó de usar `AuthRequest` a un DTO nuevo `RegistroRequest` con
+los mismos 3 campos (`userName`, `password`, `email`) — sin cambio de contrato para el front,
+solo ahora `email` es requerido. **`POST /v1/auth/login` no cambia** — sigue sin pedir email.
+
+### 2. Nuevo flujo: verificar el correo con un código de 6 dígitos
+
+Antes de que un cliente **con cuenta** pueda generar un pedido (`POST /pedidos/savePedido`) o
+recibir el ticket automático en su correo registrado (venta directa, abono, cancelación de
+pedido), su correo debe estar verificado.
+
+```
+POST /v1/clientes/{id}/enviar-codigo-verificacion
+POST /v1/clientes/{id}/verificar-correo
+Body: { "codigo": "123456" }
+```
+
+- `enviar-codigo-verificacion`: genera un código de 6 dígitos, lo manda por correo (vence en 15
+  minutos) y responde `200` con `{ "data": "Codigo enviado al correo registrado" }`. Si el
+  cliente no existe o no tiene correo registrado, responde `400`.
+- `verificar-correo`: valida el código contra el que se envió. Si es correcto y no venció, marca
+  el cliente como verificado y responde `200`. Si el código es incorrecto o ya venció, responde
+  `400` con el mensaje correspondiente (`"Codigo de verificacion invalido"` /
+  `"El codigo de verificacion expiro, solicita uno nuevo"`) — en ese caso hay que dejar que el
+  usuario pida un código nuevo (`enviar-codigo-verificacion` otra vez).
+- Si ya estaba verificado, `verificar-correo` no hace nada y responde `200` igual (idempotente).
+
+**Qué pasa si el cliente NO está verificado:**
+- `POST /pedidos/savePedido` responde `400` con mensaje `"Debes verificar tu correo antes de
+  generar un pedido"` — no se crea el pedido.
+- En venta directa / abono / cancelación de pedido, si se pidió `enviarCorreo: true` en la
+  notificación y el cliente no está verificado, el ticket **no se envía** — el response trae
+  `correoEnviado: false` y en `erroresEnvio` aparece `"El correo del cliente no esta verificado,
+  no se envio el ticket"`. **Excepción:** si en el modal post-venta se escribe un correo manual
+  (`notificacion.correo`) para esa notificación puntual, se envía ahí sin exigir verificación —
+  ese campo es un envío puntual, no depende de la cuenta del cliente.
+
+**Sugerencia de UX para el front:** tras crear/actualizar el `Cliente` (o al detectar
+`correoVerificado: false` en el objeto `Cliente`), mostrar un paso de "verifica tu correo" con un
+input de 6 dígitos y botón de reenviar código, antes de dejar avanzar al carrito/pedido.
+
+**Nota operativa:** los clientes que ya existían antes de este cambio quedan con
+`correoVerificado = false` por default (no hay migración retroactiva) — van a tener que
+verificar su correo la primera vez que intenten generar un pedido, aunque su cuenta sea antigua.
+
+**Archivos tocados en el back:** `Cliente.java` (3 campos nuevos + validaciones), `AuthRequest.java`
+(sin campo obligatorio, no cambia), `RegistroRequest.java` (nuevo), `VerificarCorreoRequest.java`
+(nuevo), `ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `EmailService.java`,
+`PedidoServiceImpl.java`, `VentaServiceImpl.java`, `AbonoServiceImpl.java`, `AuthController.java`.
+Migración: `migration_verificacion_correo.sql` (agrega 3 columnas a `clientes`, pendiente de
+correr en dev/qa/prod).
+
+### 3. Estado de verificación visible en la búsqueda de clientes
+
+`GET /v1/clientes/buscar` ahora incluye `correoVerificado` en cada elemento de la lista
+(`ClienteBusquedaDto`) — útil para que el panel admin muestre un badge de "verificado" / "sin
+verificar" junto a cada cliente.
+
+### 4. Endpoint de soporte/pruebas — resetear verificación (solo ADMIN)
+
+```
+DELETE /v1/clientes/{id}/verificacion-correo
+```
+
+Regresa el cliente a `correoVerificado: false` y borra cualquier código pendiente. Requiere rol
+ADMIN (mismo criterio que el resto de `DELETE /v1/clientes/**`). Pensado para soporte/QA — no es
+parte del flujo normal del cliente, sirve para poder re-probar la verificación sin tener que
+crear una cuenta nueva cada vez.
+
+## Deshabilitar productos/variantes en lote (2026-07-02) — acción requerida en el front
+
+Pensado para ocultar productos o variantes de prueba sin borrarlos: el admin busca (paginado,
+usando `admin/filtrar` o la búsqueda normal), selecciona varios de la lista con checkboxes, y
+manda un solo request con todos los IDs.
+
+```
+PUT /v1/productos/admin/habilitar-lote
+PUT /variantes/v1/admin/habilitar-lote
+Body: { "ids": [12, 15, 20], "habilitar": false }
+```
+
+- `ids`: lista de IDs de producto o de variante (según el endpoint) — no puede venir vacía.
+- `habilitar`: `false` para ocultar, `true` para volver a mostrar (mismo endpoint sirve para
+  ambas direcciones).
+- Requiere rol ADMIN. Responde `200` con `{ "data": "Productos deshabilitados correctamente" }`
+  (o el mensaje equivalente para variantes/habilitar). Los IDs que no existan simplemente se
+  ignoran (no truena, solo actualiza los que sí encuentra).
+- Después de deshabilitar, esos productos/variantes **dejan de aparecer de inmediato** en los
+  listados públicos (cliente normal) — la caché se limpia automáticamente. El admin los sigue
+  viendo igual en sus búsquedas/filtros (para poder rehabilitarlos después).
+
+### Novedad importante: la variante ahora tiene SU PROPIO campo `habilitado`
+
+Antes una variante solo era visible/oculta según el `habilitado` del producto padre — no había
+forma de ocultar una variante suelta (ej. una talla de prueba) dejando visibles las demás del
+mismo producto. Ahora `Variantes` tiene su propio campo `habilitado`, independiente del producto:
+para que una variante sea visible al cliente normal se necesitan **ambos** en `'1'` (producto
+habilitado Y variante habilitada). El campo `habilitado` de la variante ya viene incluido en las
+respuestas donde antes venían el resto de sus campos (mismo objeto `Variantes`).
+
+**Archivos tocados en el back:** `Variantes.java` (campo nuevo), `HabilitarLoteRequest.java`
+(nuevo, reutilizado en ambos endpoints), `IVarianteRepository.java` (las 5 queries públicas ahora
+también exigen `v.habilitado = '1'`), `VarianteServiceImpl.java`, `VarianteController.java`,
+`ProductosServiceImpl.java`, `ProductosControllerImpl.java`. Migración:
+`migration_habilitado_variantes.sql` (agrega columna a `variantes`, default `'1'` para no afectar
+datos existentes — pendiente de correr en dev/qa/prod).
+
+## Restablecer contraseña olvidada (2026-07-03) — acción requerida en el front
+
+Mismo patrón que la verificación de correo: código de 6 dígitos por correo, vence en 15 minutos.
+Dos pasos, dos endpoints:
+
+```
+POST /v1/auth/olvide-password
+Body: { "email": "cliente@correo.com" }
+
+POST /v1/auth/restablecer-password
+Body: { "email": "cliente@correo.com", "codigo": "123456", "nuevaPassword": "miNuevaClave" }
+```
+
+**Paso 1 — `olvide-password`:** manda el código al correo. **Siempre responde `200`**, exista o
+no una cuenta con ese correo — es intencional, para no revelar si un correo está registrado en el
+sistema (protección contra enumeración de cuentas). El front debe mostrar el mismo mensaje
+("revisa tu correo") sin importar el resultado, no puede usar la respuesta para saber si el
+correo existe.
+
+**Paso 2 — `restablecer-password`:** valida el código y, si es correcto y no venció, actualiza la
+contraseña. Responde `200` en éxito, `400` con mensaje `"Codigo invalido o expirado"` si el
+código está mal, venció, o no hay cuenta con ese correo (mismo mensaje genérico en los 3 casos,
+misma razón de seguridad que el paso 1).
+
+**Sobre el flujo de UX que describiste (código primero, campo de nueva contraseña después):** no
+hay un endpoint separado para "solo validar el código" — el back valida y cambia la contraseña en
+el mismo request. El front puede armar la pantalla en dos pasos visuales (mostrar el campo de
+"nueva contraseña" recién cuando el usuario terminó de escribir los 6 dígitos) sin necesidad de
+otra llamada al back; si el código resulta incorrecto, el error sale hasta que se manda el
+formulario completo (mismo comportamiento que cualquier validación de formulario).
+
+**Nota de seguridad:** esto NO cierra las sesiones activas del usuario — si tenía un access/refresh
+token válido en otro dispositivo, sigue funcionando hasta que expire naturalmente (15 min / 7
+días). No hay revocación de tokens implementada todavía; avisar si esto es un problema para
+retomarlo.
+
+**Archivos tocados en el back:** `Usuario.java` (2 campos nuevos), `IUsuarioRepository.java`,
+`OlvidePasswordRequest.java` (nuevo), `RestablecerPasswordRequest.java` (nuevo),
+`PasswordResetService.java` (nuevo), `EmailService.java`, `AuthController.java`,
+`SecurityConfig.java` (los 2 endpoints nuevos son públicos, como `/login`). Migración:
+`migration_reset_password.sql` (agrega 2 columnas a `usuario_modificacion` — pendiente de correr
+en dev/qa/prod).
+
+### Cambiar contraseña estando logueado — endpoint distinto, sin código por correo
+
+```
+PUT /v1/auth/cambiar-password
+Header: Authorization: Bearer {accessToken}
+Body: { "passwordActual": "claveVieja", "nuevaPassword": "claveNueva" }
+```
+
+Requiere sesión válida (JWT) — no manda `username` ni `email` en el body, el back identifica al
+usuario por el token. Pide la contraseña actual en vez de código por correo porque el usuario ya
+está autenticado (re-autenticar con la contraseña actual es la protección estándar para que una
+sesión abierta/robada no pueda cambiar la contraseña sin más).
+
+- `200` con `"Contrasena actualizada correctamente"`.
+- `400` con `"La contrasena actual es incorrecta"` si `passwordActual` no coincide.
+- `401` si el token no es válido/expiró (igual que cualquier endpoint protegido).
+
+Va en la pantalla de "mi cuenta"/perfil, no en el login — ese caso sigue siendo
+`olvide-password` + `restablecer-password` de la sección anterior.
+
+**Archivos:** `CambiarPasswordRequest.java` (nuevo), `PasswordResetService.java`,
+`AuthController.java`. No requiere migración (usa las columnas de `password` que ya existían).
+
+
+
+
+me ayudas con una imagene de un diseno de mi pagina para lso componentes es que actualmente tengo unos de un color otros de otro y asi uso dark y ligth por eso necesitario 2 cosas y homologarlas peor antes de que me muestres la imagenquisiera que los colores quedaran con forme a mi negocio y otra cosa que todo quede homologado en colores necesitas saber cosas de mi proyecto y ademas de mi negocio para hacer algo espectacular?
+
+
+Deliberó sobre necesidades del proyecto para diseñar sistema cromático cohesivo
+Deliberó sobre necesidades del proyecto para diseñar sistema cromático cohesivo
+¡Sí, totalmente! Para que el diseño realmente refleje tu negocio y no sea un paleta genérica, me ayuda mucho saber algunas cosas antes de mostrarte algo.
+
+Q: ¿A qué se dedica tu negocio o qué tipo de plataforma es?
+A: Es un negocion de venta de mochilas, bolsas, perfumes, pantalones poco de ropa y mas
+
+Q: ¿Ya tienes colores de marca (logo, identidad) que debamos respetar?
+A: No, parto de cero
+
+Q: ¿Qué sensación quieres que transmita tu marca?
+A: Elegante / premium

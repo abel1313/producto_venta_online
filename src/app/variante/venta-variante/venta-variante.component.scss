@@ -46,7 +46,7 @@
   justify-content: center;
   color: var(--app-text-muted);
   transition: background .15s;
-  &:hover { background: #ffcdd2; color: #c62828; }
+  &:hover { background: var(--card-border); color: var(--app-text); }
 }
 
 .img-visor-img {

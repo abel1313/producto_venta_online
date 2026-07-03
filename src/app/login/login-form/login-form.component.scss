@@ -1,5 +1,5 @@
-$primary:    #8b1a4a;
-$primary-d:  #c2255c;
+$accent:     #B08A4E;
+$accent-d:   #8A6A38;
 $radius:     14px;
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -24,7 +24,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex-direction: column;
   gap: 6px;
   padding: 6px;
-  background: #f9e8ef;
+  background: #EDE3D3;
   position: relative;
 
   @media (max-width: 768px) {
@@ -39,11 +39,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .img-slot {
   border-radius: 12px;
   overflow: hidden;
-  position: relative;   // bloque, no flex — la imagen se posiciona absolutamente
+  position: relative;
 
-  &--1 { flex: 1.4; background: linear-gradient(160deg, #c2255c 0%, #8b1a4a 60%, #5c0f31 100%); }
-  &--2 { flex: 1;   background: linear-gradient(160deg, #e91e8c 0%, #c2255c 100%); }
-  &--3 { flex: 1;   background: linear-gradient(160deg, #f06292 0%, #e91e8c 100%); }
+  &--1 { flex: 1.4; background: linear-gradient(160deg, #8A6A38 0%, #B08A4E 60%, #C9A063 100%); }
+  &--2 { flex: 1;   background: linear-gradient(160deg, #6B5030 0%, #8A6A38 100%); }
+  &--3 { flex: 1;   background: linear-gradient(160deg, #B08A4E 0%, #C9A063 100%); }
 
   &__overlay {
     position: absolute;
@@ -94,19 +94,19 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Panel derecho ──────────────────────────────────────────────────────────
 .split-form {
   flex: 1;
-  background: #ffffff;
+  background: var(--card-bg, #FFFFFF);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow-y: auto;
   padding: 2rem 1.5rem;
-  box-shadow: -8px 0 32px rgba(139, 26, 74, 0.12);
+  box-shadow: -8px 0 32px rgba(176, 138, 78, 0.10);
 
   @media (max-width: 768px) {
     order: 1;
     flex: none;
     width: 100%;
-    background: #ffffff;
+    background: var(--card-bg, #FFFFFF);
     box-shadow: none;
     padding: 2.5rem 1.5rem 1.5rem;
   }
@@ -117,7 +117,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 380px;
 }
 
-// ── Marca ──────────────────────────────────────────────────────────────���───
+// ── Marca ─────────────────────────────────────────────────────────────────
 .brand {
   text-align: center;
   margin-bottom: 2rem;
@@ -130,9 +130,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   width: 60px;
   height: 60px;
   border-radius: 16px;
-  background: linear-gradient(135deg, $primary, $primary-d);
+  background: linear-gradient(135deg, $accent, $accent-d);
   margin-bottom: 0.85rem;
-  box-shadow: 0 8px 20px rgba($primary, 0.35);
+  box-shadow: 0 8px 20px rgba($accent, 0.35);
 
   .pi { font-size: 1.6rem; color: #fff; }
 }
@@ -140,12 +140,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .brand-name {
   font-size: 1.65rem;
   font-weight: 800;
-  color: #1f2937;
+  color: var(--app-text, #1C1B19);
   margin: 0 0 0.2rem;
   letter-spacing: -0.03em;
 
   span {
-    background: linear-gradient(135deg, $primary, $primary-d);
+    background: linear-gradient(135deg, $accent, $accent-d);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -154,7 +154,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 .brand-sub {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #7A6A58);
   margin: 0;
 }
 
@@ -165,7 +165,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: block;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text-muted, #7A6A58);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.4rem;
@@ -178,7 +178,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   left: 13px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #B8AE9C);
   font-size: 0.95rem;
   pointer-events: none;
   transition: $transition;
@@ -187,22 +187,22 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .field-input {
   width: 100%;
   padding: 0.72rem 2.75rem 0.72rem 2.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--input-border, #E3DCCC);
   border-radius: 10px;
   font-size: 0.88rem;
-  color: #1f2937;
-  background: #f9fafb;
+  color: var(--input-text, #1C1B19);
+  background: var(--input-bg, #FFFFFF);
   outline: none;
   transition: $transition;
   box-sizing: border-box;
 
-  &::placeholder { color: #d1d5db; }
+  &::placeholder { color: var(--input-placeholder, #B8AE9C); }
 
   &:focus {
-    border-color: var(--app-accent);
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
-    ~ .input-icon { color: var(--app-accent); }
+    border-color: var(--app-accent, #B08A4E);
+    background: var(--card-bg, #FFFFFF);
+    box-shadow: 0 0 0 4px rgba(176,138,78,0.15);
+    ~ .input-icon { color: var(--app-accent, #B08A4E); }
   }
 }
 
@@ -215,14 +215,14 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   padding: 0;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--app-text-muted, #B8AE9C);
   font-size: 0.95rem;
   line-height: 1;
   transition: $transition;
-  &:hover { color: var(--app-accent); }
+  &:hover { color: var(--app-accent, #B08A4E); }
 }
 
-// ── Error ─────────────────────────────────────────────────────────────���────
+// ── Error ──────────────────────────────────────────────────────────────────
 .error-msg {
   display: flex;
   align-items: center;
@@ -246,14 +246,14 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   gap: 0.5rem;
   padding: 0.82rem 1rem;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, $accent, $accent-d);
   color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 20px rgba(176, 138, 78, 0.35);
   transition: $transition;
   margin-top: 0.5rem;
 
@@ -262,12 +262,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 10px 28px rgba(176, 138, 78, 0.45);
     .pi { transform: translateX(3px); }
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled {
-    background: linear-gradient(135deg, #a5b4fc, #818cf8);
+    background: linear-gradient(135deg, #D4B483, #C9A063);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -280,7 +280,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.82rem;
 
   a {
-    color: var(--app-accent);
+    color: var(--app-accent, #B08A4E);
     font-weight: 500;
     text-decoration: none;
     transition: $transition;
@@ -288,19 +288,19 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ── Link registro ─────────────────────────────────────────────────────────��
+// ── Link registro ──────────────────────────────────────────────────────────
 .register-link {
   text-align: center;
   margin: 1.2rem 0 0;
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #7A6A58);
 
   a {
-    color: var(--app-accent);
+    color: var(--app-accent, #B08A4E);
     font-weight: 600;
     text-decoration: none;
     transition: $transition;
-    &:hover { color: var(--app-accent); text-decoration: underline; }
+    &:hover { color: var(--app-accent, #B08A4E); text-decoration: underline; }
   }
 }
 
@@ -314,37 +314,39 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── TEMA OSCURO ───────────────────────────────────────────────────────────
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark), :host-context([data-theme="dark"]) {
+  .split-images { background: #3A331F; }
+
   .split-form {
-    background: rgba(13, 17, 23, 0.97);
+    background: rgba(28, 27, 25, 0.97);
     box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
 
     @media (max-width: 768px) {
-      background: #0d1117;
+      background: #1C1B19;
     }
   }
 
-  .brand-name { color: #f1f5f9; }
-  .brand-sub  { color: #64748b; }
+  .brand-name { color: #F5F1EA; }
+  .brand-sub  { color: #7A6A58; }
 
-  .field-label { color: #94a3b8; }
+  .field-label { color: #B8AE9C; }
 
   .field-input {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
+    background: rgba(255, 250, 242, 0.06);
+    border-color: #3A372F;
+    color: #F5F1EA;
 
-    &::placeholder { color: #475569; }
+    &::placeholder { color: #7A6A58; }
 
     &:focus {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--app-accent);
-      box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+      background: rgba(255, 250, 242, 0.09);
+      border-color: var(--app-accent, #C9A063);
+      box-shadow: 0 0 0 4px rgba(201,160,99,0.20);
     }
   }
 
-  .input-icon   { color: #64748b; }
-  .toggle-pass  { color: #64748b; &:hover { color: var(--app-accent); } }
+  .input-icon   { color: #7A6A58; }
+  .toggle-pass  { color: #7A6A58; &:hover { color: var(--app-accent, #C9A063); } }
 
   .error-msg {
     background: rgba(220, 38, 38, 0.12);
@@ -352,24 +354,25 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     color: #fca5a5;
   }
 
-  .register-link { color: #64748b; }
+  .register-link { color: #7A6A58; }
 }
 
-// ── TEMA CLARO (explícito para asegurar que no haya restos del dark) ──────
-:host-context(body.theme-light) {
+// ── TEMA CLARO ────────────────────────────────────────────────────────────
+:host-context(body.theme-light), :host-context([data-theme="light"]) {
   .split-form {
-    background: #ffffff;
-    box-shadow: -8px 0 32px rgba(139, 26, 74, 0.12);
+    background: #FFFFFF;
+    box-shadow: -8px 0 32px rgba(176, 138, 78, 0.10);
   }
+  .split-images { background: #EDE3D3; }
 
-  .brand-name { color: #1f2937; }
-  .field-label { color: #374151; }
+  .brand-name { color: #1C1B19; }
+  .field-label { color: #7A6A58; }
 
   .field-input {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #1f2937;
+    background: #FFFFFF;
+    border-color: #E3DCCC;
+    color: #1C1B19;
 
-    &::placeholder { color: #d1d5db; }
+    &::placeholder { color: #B8AE9C; }
   }
 }

@@ -1,6 +1,6 @@
 // ── Variables ──────────────────────────────────────────────────────
-$primary:      #8b1a4a;
-$primary-d:    #c2255c;
+$primary:      #8A6A38;
+$primary-d:    #B08A4E;
 $radius:       16px;
 $shadow:       0 4px 24px rgba(0, 0, 0, 0.13);
 $shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
@@ -113,7 +113,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(194, 37, 92, 0.88);
+  background: rgba(239, 68, 68, 0.88);
   backdrop-filter: blur(4px);
   border: 2px solid rgba(255, 255, 255, 0.8);
   color: #fff;
@@ -124,7 +124,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   cursor: pointer;
   transition: $transition;
-  box-shadow: 0 2px 8px rgba(194, 37, 92, 0.45);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.45);
   padding: 0;
   line-height: 1;
 
@@ -375,7 +375,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover { transform: scale(1.04); }
   }
 
-  &__img-placeholder { font-size: 3.5rem; color: #e9a0bb; }
+  &__img-placeholder { font-size: 3.5rem; color: var(--app-text-muted); }
 
   &__header {
     padding: 14px 16px 12px;
@@ -384,7 +384,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, rgba(15, 37, 87, 0.88) 0%, rgba(29, 78, 216, 0.72) 100%);
+    background: linear-gradient(135deg, rgba(61, 44, 12, 0.88) 0%, rgba(176, 138, 78, 0.72) 100%);
     backdrop-filter: blur(6px);
   }
 
@@ -588,7 +588,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
   background: var(--app-accent-soft);
-  border-bottom: 1px solid rgba(99,102,241,0.2);
+  border-bottom: 1px solid rgba(176,138,78,0.2);
   font-size: 0.875rem;
 
   &__check {
@@ -666,10 +666,10 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(255, 255, 255, 0.60);
     backdrop-filter: blur(20px) saturate(180%);
     box-shadow:
-      0 8px 32px rgba(99, 102, 241, 0.14),
+      0 8px 32px rgba(176, 138, 78, 0.14),
       0 2px 8px rgba(0, 0, 0, 0.06),
       inset 0 0 0 1px rgba(255, 255, 255, 0.80);
-    border: 1px solid rgba(99, 102, 241, 0.20);
+    border: 1px solid rgba(176, 138, 78, 0.20);
   }
   .pl-header__inner        { color: #1e293b; }
   .pl-header__title h4     { color: #1e293b; }
@@ -697,7 +697,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #475569;
     &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
     &--active {
-      background: rgba(99, 102, 241, 0.14);
+      background: rgba(176, 138, 78, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }

@@ -137,8 +137,8 @@
   transition: background .15s;
 
   &:hover {
-    background: rgba(198, 40, 40, 0.15);
-    color: #c62828;
+    background: var(--card-border);
+    color: var(--app-text);
   }
 }
 

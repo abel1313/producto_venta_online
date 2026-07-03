@@ -28,7 +28,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 1rem;
   padding: 1.4rem 1.75rem;
-  background: linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6366f1 100%);
+  background: linear-gradient(135deg, #3D2C0C 0%, #8A6A38 55%, #B08A4E 100%);
 }
 
 .ca-header-icon {
@@ -72,7 +72,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #6366f1;
+    color: var(--app-accent);
     margin-bottom: 0.65rem;
     padding-left: 2px;
   }
@@ -146,11 +146,11 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &::placeholder { color: #c4c9d4; }
 
   &:focus {
-    border-color: #6366f1;
+    border-color: var(--app-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.12);
 
-    ~ .ca-input-icon { color: #6366f1; }
+    ~ .ca-input-icon { color: var(--app-accent); }
   }
 
   // Fix select — sobrescribe estilos del browser que ponen texto blanco
@@ -219,19 +219,19 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--save {
-    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.38);
+    box-shadow: 0 4px 14px rgba(176, 138, 78, 0.38);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.48);
+      box-shadow: 0 8px 20px rgba(176, 138, 78, 0.48);
     }
 
     &:active:not(:disabled) { transform: translateY(0); }
 
     &:disabled {
-      background: linear-gradient(135deg, #a5b4fc, #818cf8);
+      background: linear-gradient(135deg, #C9A063, #B08A4E);
       cursor: not-allowed;
       box-shadow: none;
     }
@@ -245,7 +245,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 
-  .ca-section__label { color: #818cf8; }
+  .ca-section__label { color: var(--app-accent); }
 
   .ca-label { color: #94a3b8; }
 
@@ -258,8 +258,8 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:focus {
       background: rgba(255, 255, 255, 0.09);
-      border-color: #818cf8;
-      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+      border-color: var(--app-accent);
+      box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.18);
     }
 
     &.ca-select {
@@ -294,22 +294,22 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .ca-verif-info {
     p       { color: #cbd5e1; }
     &__note { color: #94a3b8 !important; }
-    &__email { color: #a5b4fc; }
+    &__email { color: var(--app-accent); }
   }
 
   .ca-verif-resend {
-    background: rgba(99, 102, 241, 0.08);
-    border-color: rgba(99, 102, 241, 0.18);
+    background: rgba(176, 138, 78, 0.08);
+    border-color: rgba(176, 138, 78, 0.18);
 
     &__text { color: #94a3b8; }
 
     &__btn {
-      color: #a5b4fc;
-      border-color: rgba(165, 180, 252, 0.28);
+      color: var(--app-accent);
+      border-color: rgba(176, 138, 78, 0.28);
 
       &:hover:not(:disabled) {
-        background: rgba(99, 102, 241, 0.15);
-        border-color: rgba(165, 180, 252, 0.5);
+        background: rgba(176, 138, 78, 0.15);
+        border-color: rgba(176, 138, 78, 0.5);
       }
 
       &:disabled { color: #475569; border-color: rgba(255,255,255,0.08); }
@@ -330,7 +330,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__icon {
     font-size: 2.2rem;
-    color: #6366f1;
+    color: var(--app-accent);
     margin-bottom: 0.5rem;
   }
 
@@ -343,7 +343,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__email {
     font-weight: 700;
-    color: #4f46e5;
+    color: var(--app-accent);
   }
 
   &__note {
@@ -385,8 +385,8 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.55rem;
   margin-top: 1.4rem;
   padding: 1rem 1.25rem;
-  background: rgba(99, 102, 241, 0.05);
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  background: rgba(176, 138, 78, 0.05);
+  border: 1px solid rgba(176, 138, 78, 0.12);
   border-radius: $radius-sm;
 
   &__text {
@@ -403,17 +403,17 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    border: 1px solid rgba(176, 138, 78, 0.3);
     background: transparent;
-    color: #4f46e5;
+    color: var(--app-accent);
     transition: $trans;
     font-family: inherit;
 
     .pi { font-size: 0.8rem; }
 
     &:hover:not(:disabled) {
-      background: rgba(99, 102, 241, 0.1);
-      border-color: rgba(99, 102, 241, 0.45);
+      background: rgba(176, 138, 78, 0.1);
+      border-color: rgba(176, 138, 78, 0.45);
     }
 
     &:disabled {

@@ -64,6 +64,8 @@
   <div *ngIf="isAdminUser" class="vb-filtros">
     <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'todos'"
       (click)="cambiarFiltroAdmin('todos')">Todos</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'no-habilitados'"
+      (click)="cambiarFiltroAdmin('no-habilitados')">No habilitados</button>
     <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'sin-stock'"
       (click)="cambiarFiltroAdmin('sin-stock')">Sin stock</button>
     <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-stock'"
@@ -74,6 +76,21 @@
       (click)="cambiarFiltroAdmin('con-stock-y-imagenes')">Con stock e imagen</button>
   </div>
   </div><!-- /vb-header__content -->
+</div>
+
+<!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
+<div *ngIf="isAdminUser && seleccionados.size > 0" class="vb-lote-bar">
+  <label class="vb-lote-bar__check">
+    <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
+    <span>{{ seleccionados.size }} seleccionada(s)</span>
+  </label>
+  <div class="vb-lote-bar__actions">
+    <button class="vb-lote-btn vb-lote-btn--enable" [disabled]="procesandoLote"
+      (click)="habilitarLote(true)">🔓 Habilitar seleccionadas</button>
+    <button class="vb-lote-btn vb-lote-btn--disable" [disabled]="procesandoLote"
+      (click)="habilitarLote(false)">🔒 Deshabilitar seleccionadas</button>
+    <button class="vb-lote-btn vb-lote-btn--cancel" (click)="seleccionados.clear()">✕ Cancelar</button>
+  </div>
 </div>
 
 <!-- ── Grid de cards ──────────────────────────────────────────────── -->
@@ -90,7 +107,17 @@
   </div>
 
   <div class="vb-grid">
-    <div class="vb-card" *ngFor="let v of variantes">
+    <div class="vb-card" *ngFor="let v of variantes"
+         [class.vb-card--deshabilitado]="isAdminUser && !estaHabilitado(v)"
+         [class.vb-card--seleccionada]="seleccionados.has(v.id)">
+
+      <!-- Checkbox de selección (solo admin) -->
+      <label *ngIf="isAdminUser" class="vb-card__check" (click)="$event.stopPropagation()">
+        <input type="checkbox" [checked]="seleccionados.has(v.id)" (change)="toggleSeleccion(v.id)" />
+      </label>
+
+      <!-- Badge deshabilitado (solo admin) -->
+      <span *ngIf="isAdminUser && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
@@ -184,6 +211,13 @@
                 title="Compartir imagen">
           <span>📤</span>
           <span class="vb-btn-card__label">Imagen</span>
+        </button>
+
+        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--toggle"
+          [title]="estaHabilitado(v) ? 'Deshabilitar' : 'Habilitar'"
+          (click)="habilitarVariante(v, !estaHabilitado(v))">
+          <span>{{ estaHabilitado(v) ? '🔒' : '🔓' }}</span>
+          <span class="vb-btn-card__label">{{ estaHabilitado(v) ? 'Deshab.' : 'Habilitar' }}</span>
         </button>
       </div>
 

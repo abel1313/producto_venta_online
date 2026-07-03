@@ -188,6 +188,10 @@ export class ProductoService {
         return this.http.put(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, {});
     }
 
+    habilitarLote(ids: number[], habilitar: boolean): Observable<any> {
+        return this.http.put(`${this.url}/admin/habilitar-lote`, { ids, habilitar });
+    }
+
     descargarReporteExcel(): Observable<Blob> {
         return this.http.get(`${this.url}/admin/sin-variantes/reporte`, { responseType: 'blob' });
     }

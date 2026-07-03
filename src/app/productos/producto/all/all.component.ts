@@ -57,8 +57,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   roles: string[] = [];
   isAdminUser: boolean = false;
   filtroActivo: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' = 'todos';
-  sinResultados = false;
-  mensajeError  = '';
+  sinResultados    = false;
+  mensajeError     = '';
+  seleccionados    = new Set<number>();
+  procesandoLote   = false;
 
   constructor(
     public iconImagen: IconService,
@@ -416,6 +418,46 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         Swal.fire({ icon: 'success', title: habilitar ? 'Producto habilitado' : 'Producto deshabilitado', timer: 1500, showConfirmButton: false});
       },
       error: () => Swal.fire({ icon: 'error', title: 'Error al cambiar estado', timer: 1800, showConfirmButton: false })
+    });
+  }
+
+  toggleSeleccionProducto(id: number): void {
+    if (this.seleccionados.has(id)) {
+      this.seleccionados.delete(id);
+    } else {
+      this.seleccionados.add(id);
+    }
+  }
+
+  get todoSeleccionadoProducto(): boolean {
+    return this.rows.length > 0 && this.rows.every(r => this.seleccionados.has(r.idProducto));
+  }
+
+  toggleTodosProductos(): void {
+    if (this.todoSeleccionadoProducto) {
+      this.rows.forEach(r => this.seleccionados.delete(r.idProducto));
+    } else {
+      this.rows.forEach(r => this.seleccionados.add(r.idProducto));
+    }
+  }
+
+  habilitarLote(habilitar: boolean): void {
+    if (this.seleccionados.size === 0 || this.procesandoLote) return;
+    const ids = Array.from(this.seleccionados);
+    this.procesandoLote = true;
+    this.srvice.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.rows.forEach(r => {
+          if (this.seleccionados.has(r.idProducto)) r.habilitado = habilitar ? '1' : '0';
+        });
+        this.seleccionados.clear();
+        this.procesandoLote = false;
+        Swal.fire({ icon: 'success', title: habilitar ? 'Productos habilitados' : 'Productos deshabilitados', timer: 1800, showConfirmButton: false });
+      },
+      error: (err) => {
+        this.procesandoLote = false;
+        Swal.fire({ icon: 'error', title: 'Error en lote', text: err?.error?.mensaje ?? 'No se pudo procesar el lote.' });
+      }
     });
   }
 

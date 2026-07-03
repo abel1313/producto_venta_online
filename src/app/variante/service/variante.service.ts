@@ -132,6 +132,11 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
+  adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', pagina: number, size: number): Observable<IVarianteResumenPaginable> {
+    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar?filtro=${filtro}&pagina=${pagina}&size=${size}`)
+      .pipe(map(res => res.data));
+  }
+
   inicializarDesdeProducto(form: FormData): Observable<{ mensaje: string; data: any[] }> {
     return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/v1/inicializarDesdeProducto`, form);
   }

@@ -180,6 +180,10 @@ export class ProductoService {
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/sin-stock?size=${size}&page=${page}`);
     }
 
+    adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar?filtro=${filtro}&size=${size}&page=${page}`);
+    }
+
     habilitarProducto(id: number, habilitar: boolean): Observable<any> {
         return this.http.put(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, {});
     }

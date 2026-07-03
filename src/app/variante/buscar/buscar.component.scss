@@ -173,10 +173,123 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Grid — centrado con espacio lateral para anuncios ─────────────
+// ── Layout con banners laterales ──────────────────────────────────
+.vb-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+}
+
 .vb-grid-wrap {
+  flex: 1;
+  min-width: 0;
   max-width: 1120px;
   margin: 0 auto;
   padding: 0 20px 32px;
+}
+
+// ── Banners de promoción laterales ────────────────────────────────
+.vb-promo {
+  width: 190px;
+  flex-shrink: 0;
+  padding: 16px 10px;
+  position: sticky;
+  top: 16px;
+  align-self: flex-start;
+
+  // Ocultar en pantallas pequeñas donde no hay espacio
+  @media (max-width: 1380px) { display: none; }
+
+  &--left  { order: -1; }
+  &--right { order: 1;  }
+
+  &__card {
+    display: block;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+
+    &:not(.vb-promo__card--no-link):hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 12px 36px rgba(176,138,78,0.25);
+    }
+
+    &--no-link { cursor: default; }
+  }
+
+  &__img-wrap {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+  }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+
+  &__card:not(.vb-promo__card--no-link):hover &__img {
+    transform: scale(1.04);
+  }
+
+  &__overlay {
+    padding: 12px 14px 14px;
+    background: var(--card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+    line-height: 1.25;
+  }
+
+  &__text {
+    font-size: 0.76rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__cta {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--app-accent, #B08A4E);
+    letter-spacing: 0.03em;
+  }
+}
+
+// Dark mode para banners
+:host-context(body.theme-dark) {
+  .vb-promo__card {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    &:not(.vb-promo__card--no-link):hover {
+      box-shadow: 0 12px 36px rgba(176,138,78,0.2);
+    }
+  }
+
+  .vb-promo__title { color: #f1f5f9; }
+  .vb-promo__text  { color: #94a3b8; }
 }
 
 .vb-grid {

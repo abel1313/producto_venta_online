@@ -4023,3 +4023,139 @@ existentes no tienen ese dato retroactivamente, mismo caso que pasó con `montoD
 
 **Archivos nuevos en el back:** `DashboardController.java`, `DashboardServiceImpl.java`,
 `IDashboardService.java`, `DashboardResumenDto.java`. Sin migración de BD.
+
+---
+
+## Guía de gráficas para reportes (2026-07-02)
+
+Son **2 cosas distintas**, para que no se mezclen:
+
+### 1. Corrección de algo que dijimos mal antes
+
+Cuando se respondió la duda de `ng2-charts` vs Chart.js directo, se dijo que el **Dashboard**
+(`GET /v1/dashboard/resumen`) iba a necesitar "varias gráficas más". **Eso estaba mal** — ya se
+implementó el dashboard y es solo números sueltos en cards (ventas hoy, stock bajo, etc.), sin
+ninguna serie de datos. **El dashboard NO lleva gráficas, solo cards de números.** La única razón
+real para tener `ng2-charts` instalado es el punto 2 de abajo.
+
+### 2. Qué gráficas SÍ se pueden armar, y con qué endpoint
+
+Esto es nuevo — una guía de qué gráficas arma cada endpoint de **reportes** (no del dashboard),
+usando datos que ya existen, sin pedir nada nuevo al back:
+
+| Gráfica | Endpoint | Campos a usar | Tipo sugerido |
+|---|---|---|---|
+| Ventas por día del mes | `GET /v1/reportes/ventas/mensual?mes=` | `porDia[].fecha` + `porDia[].totalVenta` | Barras |
+| Ventas vs Ganancia por día | Mismo endpoint | `porDia[].totalVenta` + `porDia[].totalGanancia` (ya vienen juntos) | Combinada: barras (venta) + línea (ganancia) |
+| Top productos vendidos | `GET /v1/reportes/ventas/productos-mas-vendidos?desde=&hasta=` | Ya viene ordenado desc por `cantidadVendida` | Barras horizontales, o dona con top 5 + "otros" agrupado |
+| Comparar mes actual vs mes anterior | Llamar `mensual` **dos veces** (una por cada mes) y combinar en el front — no hay endpoint que regrese los 2 meses juntos | `totalVenta` de cada llamada | Barras agrupadas (2 series) |
+| Gasto histórico de un cliente | `GET /v1/reportes/ventas/cliente/{clienteId}` | `ventas[].fechaVenta` + `ventas[].totalVenta`, agrupar por mes en el front (el back regresa venta por venta, no agrupado por mes) | Línea de tendencia |
+
+**Lo que NO tiene dato para gráfica:** `GET /v1/dashboard/resumen` (números sueltos, ver punto 1)
+y `GET /v1/reportes/ventas/diario` (es un solo número del día que se pida, no una serie).
+
+---
+
+## Filtros producto/variante por rol (2026-07-02)
+
+### 1. Cambio de comportamiento en los listados públicos (sin acción del front)
+
+Los endpoints de catálogo que ya usa el front **ahora exigen una condición más** para clientes
+normales (no ADMIN): además de `stock > 0` y `habilitado`, el producto/variante también debe
+**tener al menos una imagen**. Antes solo se exigía stock + habilitado. No cambia el contrato
+(mismos campos, mismo formato) — solo puede que aparezcan **menos resultados** que antes si hay
+productos sin foto todavía. No requiere ningún cambio en el front, es automático según el rol del
+token.
+
+Afecta a: `GET /v1/productos/obtenerProductos`, `GET /v1/productos/buscarNombreOrCodigoBarra`,
+`GET /variantes/v1/buscar`, `GET /variantes/v1/getAll`.
+
+**Nota:** para ADMIN no cambia nada — sigue viendo todo el catálogo sin este filtro.
+
+### 2. Endpoints nuevos — filtros de admin (acción requerida en el front)
+
+Antes había endpoints sueltos por cada filtro (`admin/sin-stock`, `admin/no-habilitados`, que
+siguen existiendo y funcionando igual). Ahora hay un endpoint único con parámetro `filtro` para
+elegir entre 4 vistas, pensado para un dropdown/select en el panel de admin:
+
+```
+GET /mis-productos/v1/productos/admin/filtrar?filtro=SIN_STOCK&size=10&page=1
+GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_STOCK&size=10&page=1
+GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_IMAGENES&size=10&page=1
+GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_STOCK_Y_IMAGENES&size=10&page=1
+
+GET /mis-productos/variantes/v1/admin/filtrar?filtro=SIN_STOCK&pagina=1&size=10
+GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_STOCK&pagina=1&size=10
+GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_IMAGENES&pagina=1&size=10
+GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_STOCK_Y_IMAGENES&pagina=1&size=10
+```
+
+`filtro` es un enum de texto — valores válidos: `SIN_STOCK`, `CON_STOCK`, `CON_IMAGENES`,
+`CON_STOCK_Y_IMAGENES`. Ambos requieren rol ADMIN (Bearer token). Ojo: productos usa `page`,
+variantes usa `pagina` (ya era así en el resto de los endpoints de cada uno, se mantiene la misma
+convención).
+
+**Response productos — mismo formato que `admin/sin-stock`:**
+```json
+{
+  "pagina": 1,
+  "totalPaginas": 3,
+  "totalRegistros": 25,
+  "t": [
+    {
+      "idProducto": 42,
+      "nombre": "Mochila Prada",
+      "color": "negro",
+      "precioVenta": 400.0,
+      "precioCosto": 200.0,
+      "precioRebaja": null,
+      "descripcion": "Mochila para mostrar",
+      "codigoBarras": "cod1230981",
+      "stock": 0,
+      "marca": "PRADA",
+      "contenido": "1 pieza",
+      "habilitado": "1",
+      "imagen": { "urlImagen": "https://.../v1/imagenes/file/123" }
+    }
+  ]
+}
+```
+
+**Response variantes — mismo formato que `admin/sin-stock` (resumen):**
+```json
+{
+  "pagina": 1,
+  "totalPaginas": 2,
+  "totalRegistros": 15,
+  "t": [
+    {
+      "id": 117,
+      "talla": "s",
+      "descripcion": "Mochila para mostrar",
+      "color": null,
+      "presentacion": "bolsa",
+      "stock": 5,
+      "marca": null,
+      "contenidoNeto": "1 pieza",
+      "imagenUrl": "https://.../v1/imagenes/file/456",
+      "precio": 300.0,
+      "codigoBarras": "cod1230981",
+      "nombreProducto": "Mochila para mostrar"
+    }
+  ]
+}
+```
+
+**Qué significa cada filtro** (aplica igual a productos y variantes, admin ve TODO el catálogo,
+sin exigir habilitado — a diferencia del listado público):
+- `SIN_STOCK` → `stock = 0`
+- `CON_STOCK` → `stock > 0`
+- `CON_IMAGENES` → tiene al menos una imagen cargada (sin importar stock)
+- `CON_STOCK_Y_IMAGENES` → `stock > 0` **y** tiene al menos una imagen cargada (combina los dos
+  anteriores — es la misma condición que ya se exige al cliente normal, pero aquí sin exigir
+  `habilitado`, para que el admin pueda ver también los que están deshabilitados)
+
+**Archivos nuevos/tocados en el back:** `FiltroCatalogoEnum.java` (nuevo),
+`IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`,
+`VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java`. Sin
+migración de BD — usa las tablas de imágenes que ya existían.

@@ -31,4 +31,16 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+  enviarCodigoVerificacion(clienteId: number): Observable<ResponseGeneric<string>> {
+    return this.http.post<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/enviar-codigo-verificacion`, {}
+    );
+  }
+
+  verificarCorreo(clienteId: number, codigo: string): Observable<ResponseGeneric<string>> {
+    return this.http.post<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/verificar-correo`, { codigo }
+    );
+  }
+
 }

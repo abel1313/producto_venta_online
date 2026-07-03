@@ -5,7 +5,7 @@ import { ClietesRoutingModule } from './clietes-routing.module';
 import { ClientesAddComponent } from './clientes-add/clientes-add.component';
 import { ClientesBuscarComponent } from './clientes-buscar/clientes-buscar.component';
 import { ClientesMostrarComponent } from './clientes-mostrar/clientes-mostrar.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { MisDatosComponent } from './mis-datos/mis-datos.component';
 import { NbAutocompleteModule, NbCardModule, NbDatepickerModule, NbFormFieldModule, NbSelectModule, NbStepperModule } from '@nebular/theme';
@@ -26,6 +26,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
   imports: [
     CommonModule,
     ClietesRoutingModule,
+    FormsModule,
     ReactiveFormsModule,
     NzStepsModule,
     NbStepperModule,

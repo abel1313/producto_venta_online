@@ -200,6 +200,22 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   transition: $transition;
 }
 
+.toggle-pass {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: color 0.2s;
+  &:hover { color: var(--app-accent); }
+}
+
 .field-input {
   width: 100%;
   padding: 0.65rem 1rem 0.65rem 2.5rem;
@@ -211,6 +227,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
   transition: $transition;
   box-sizing: border-box;
+
+  &--has-toggle { padding-right: 2.5rem; }
 
   &::placeholder { color: #d1d5db; }
 
@@ -263,11 +281,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.4rem;
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: #dc2626;
   transition: color 0.2s;
 
-  i { font-size: 0.82rem; color: #d1d5db; transition: color 0.2s; flex-shrink: 0; }
-  .req-example { color: #e9a0bb; font-size: 0.72rem; }
+  i { font-size: 0.82rem; color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
+  .req-example { color: #f87171; font-size: 0.72rem; }
 
   &.met {
     color: #374151;
@@ -333,6 +351,22 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   .input-icon  { color: #64748b; }
   .toggle-pass { color: #64748b; &:hover { color: var(--app-accent); } }
+
+  .pwd-requirements {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
+  }
+  .pwd-req-title { color: #f87171; }
+  .req-item {
+    color: #fca5a5;
+    i { color: #fca5a5; }
+    .req-example { color: #f87171; }
+    &.met {
+      color: #d1fae5;
+      i { color: #34d399; }
+      .req-example { color: #a7f3d0; }
+    }
+  }
 
   .admin-section {
     background: rgba(255, 255, 255, 0.04);

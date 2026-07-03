@@ -77,8 +77,13 @@
           <label class="field-label">Contraseña</label>
           <div class="input-wrap">
             <i class="pi pi-lock input-icon"></i>
-            <input class="field-input" formControlName="password" type="password"
+            <input class="field-input field-input--has-toggle" formControlName="password"
+                   [type]="showPassword ? 'text' : 'password'"
                    placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+            <button type="button" class="toggle-pass" (click)="showPassword = !showPassword"
+                    [title]="showPassword ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i class="pi" [class.pi-eye]="!showPassword" [class.pi-eye-slash]="showPassword"></i>
+            </button>
           </div>
 
           <div class="pwd-requirements" *ngIf="formRegistro.get('password')?.dirty">
@@ -120,8 +125,13 @@
           <label class="field-label">Confirmar contraseña</label>
           <div class="input-wrap">
             <i class="pi pi-lock input-icon"></i>
-            <input class="field-input" formControlName="confirmPassword" type="password"
+            <input class="field-input field-input--has-toggle" formControlName="confirmPassword"
+                   [type]="showConfirmPassword ? 'text' : 'password'"
                    placeholder="Repite tu contraseña" autocomplete="new-password">
+            <button type="button" class="toggle-pass" (click)="showConfirmPassword = !showConfirmPassword"
+                    [title]="showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i class="pi" [class.pi-eye]="!showConfirmPassword" [class.pi-eye-slash]="showConfirmPassword"></i>
+            </button>
           </div>
           <div *ngIf="formRegistro.errors?.['passwordMismatch'] && formRegistro.get('confirmPassword')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>

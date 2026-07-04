@@ -1920,23 +1920,23 @@ contrario.
   `reiniciar` y, además, si se volvía a mandar `POST /configurarRifaVariante/save` con la misma
   `palabraClave`, daba error `"La palabraClave 'X' ya existe en esta rifa"`.
 - **Ahora:**
-  - Si `esPrueba: true`, la rifa **se mantiene `activa: true`** aunque ya se haya sorteado el
-    ganador de la última variante. `rifaTerminada` (en `/sortear` y `/estado`) sigue marcando
-    correctamente cuándo terminó el ciclo — no depende de `activa`.
-  - `POST /v1/configurarRifaVariante/save`: si `esPrueba: true` y la `palabraClave` ya existe en
-    esa rifa, **ya no rechaza** — actualiza la configuración existente (`giroGanador`, `orden`,
-    `permitirNuevos`, y la variante/stock si se cambió de variante). Mismo `request`/`response`
-    de siempre.
-  - Si `esPrueba: false` (rifa real), el comportamiento **no cambia**: al terminar se pone
-    `activa: false`, y reusar una `palabraClave` ya configurada en esa rifa sigue dando
-    `"ya existe en esta rifa"`.
+    - Si `esPrueba: true`, la rifa **se mantiene `activa: true`** aunque ya se haya sorteado el
+      ganador de la última variante. `rifaTerminada` (en `/sortear` y `/estado`) sigue marcando
+      correctamente cuándo terminó el ciclo — no depende de `activa`.
+    - `POST /v1/configurarRifaVariante/save`: si `esPrueba: true` y la `palabraClave` ya existe en
+      esa rifa, **ya no rechaza** — actualiza la configuración existente (`giroGanador`, `orden`,
+      `permitirNuevos`, y la variante/stock si se cambió de variante). Mismo `request`/`response`
+      de siempre.
+    - Si `esPrueba: false` (rifa real), el comportamiento **no cambia**: al terminar se pone
+      `activa: false`, y reusar una `palabraClave` ya configurada en esa rifa sigue dando
+      `"ya existe en esta rifa"`.
 
 ### Qué debe hacer el front
 - **Nada obligatorio, es retrocompatible.** Mientras `esPrueba: true`, el admin puede:
-  - Repetir `sortear` tras `POST /v1/ganadorRifa/reiniciar/{id}?completo=true|false` cuantas veces
-    quiera, sin que la rifa se "cierre" (`activas`/`activas/hoy` la sigue listando).
-  - Re-mandar `POST /configurarRifaVariante/save` con la misma `palabraClave` para "recargar" la
-    config de la variante de prueba — ya no da error.
+    - Repetir `sortear` tras `POST /v1/ganadorRifa/reiniciar/{id}?completo=true|false` cuantas veces
+      quiera, sin que la rifa se "cierre" (`activas`/`activas/hoy` la sigue listando).
+    - Re-mandar `POST /configurarRifaVariante/save` con la misma `palabraClave` para "recargar" la
+      config de la variante de prueba — ya no da error.
 - Cuando el admin haga `PUT /v1/configurarRifa/{id}/esPrueba` con `{ "esPrueba": false }`
   ("Pasar a sorteo real"), la `ConfigurarRifaVariante` y su `palabraClave` configuradas durante las
   pruebas **se conservan** y se usan tal cual para el sorteo real (no hay que volver a crearlas).
@@ -2119,8 +2119,8 @@ que no terminen en este arreglo.
 **Regla:** siempre que haya un `@Query` que devuelva `Page<T>` y contenga subqueries, agregar `countQuery` sin el `ORDER BY`:
 ```java
 @Query(
-    value = "SELECT m FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...) ORDER BY m.timestamp DESC",
-    countQuery = "SELECT COUNT(m) FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...)"
+        value = "SELECT m FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...) ORDER BY m.timestamp DESC",
+        countQuery = "SELECT COUNT(m) FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...)"
 )
 Page<ChatMensaje> findBy...(Pageable pageable);
 ```
@@ -2319,9 +2319,9 @@ ngOnInit() {
 1. Recibir `{ tipo: "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`
 2. Limpiar `mensajes` del componente (y `sesionId` de sessionStorage)
 3. Cuando el usuario envía el siguiente mensaje:
-   - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
-   - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
-   - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
+    - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
+    - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
+    - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
 
 ---
 
@@ -3572,8 +3572,8 @@ Mostrar en el form de abono, venta directa y cancelación:
 
 ```html
 <label>
-  <input type="checkbox" [(ngModel)]="enviarCorreo" />
-  Enviar ticket al correo del cliente
+    <input type="checkbox" [(ngModel)]="enviarCorreo" />
+    Enviar ticket al correo del cliente
 </label>
 ```
 
@@ -4350,10 +4350,12 @@ Va en la pantalla de "mi cuenta"/perfil, no en el login — ese caso sigue siend
 
 ## Unificar verificación de correo Usuario/Cliente (2026-07-03) — acción requerida en el front
 
-> ⚠️ **Código escrito pero NO compilado/probado ni desplegado todavía** (sesión sin Maven
-> disponible) y **migraciones sin correr**. No arrancar el front hasta que se confirme "ya está en
-> QA" — esta sección documenta el contrato tal como quedó en el código, puede ajustarse si algo
-> falla al probarlo. Diseño completo en `PLAN_MEJORAS.md` mejora 15.
+> ✅ **Back ya está en QA** (2026-07-04) — merge `dev → qa` hecho y pusheado, migraciones
+> `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` ya
+> corridas en `inventario_key_qa`. `correo_verificado` nace en `0` para todos sin excepción (sin
+> grandfathering, decisión de diseño — ver migración); `datos_completos` sí hace backfill contra
+> los datos reales del cliente. El front puede empezar a integrar esta sección. Diseño completo en
+> `PLAN_MEJORAS.md` mejora 15.
 
 ### 1. Registro ahora exige verificar el correo antes de poder loguearse
 
@@ -4395,6 +4397,40 @@ por default (sin excepción, no hay "pase automático") — al primer intento de
 esto se despliegue, van a recibir el mismo `403` de arriba y tendrán que verificar su correo por
 primera vez, aunque su cuenta sea antigua. Sesiones ya activas (con un access/refresh token
 válido) NO se ven afectadas — solo un login nuevo dispara esta validación.
+
+**Flujo exacto que debe implementar el front (no hay endpoint de "revisar si está verificado antes"
+— todo se resuelve con la respuesta del propio `login`):**
+
+```
+1. Usuario escribe userName + password → una sola petición:
+   POST /v1/auth/login  Body: { "userName": "...", "password": "..." }
+
+2. Reaccionar según el código de esa misma respuesta:
+   - 200                                          → guardar accessToken/refreshToken, entrar
+                                                     al sistema normal (dashboard/productos/
+                                                     variantes). Sin cambios.
+   - 401 (credenciales inválidas)                 → error de siempre. Sin cambios.
+   - 429 (rate-limit)                             → mensaje de siempre. Sin cambios.
+   - 403 "Debes verificar tu correo antes de
+     iniciar sesión"                              → NUEVO. No mostrar error genérico, no
+                                                     guardar token, no entrar al sistema.
+                                                     Ir al paso 3.
+
+3. Si vino ese 403 puntual:
+   a) Navegar a la pantalla de código (la misma de F-19 usada en registro).
+   b) Disparar automático: POST /v1/auth/enviar-codigo-verificacion { "userName": "..." }
+   c) Usuario escribe el código de 6 dígitos.
+   d) POST /v1/auth/verificar-correo { "userName": "...", "codigo": "..." }
+        - 400 → mostrar error, permitir reintentar o reenviar código.
+        - 200 → correo verificado, pero AÚN NO hay sesión iniciada (este endpoint no
+                 devuelve tokens).
+   e) Volver a llamar POST /v1/auth/login con el mismo userName/password.
+        - Ahora responde 200 → recién aquí se entra al sistema.
+```
+
+**Importante:** distinguir este `403` puntual (por el texto del mensaje o un código de error
+propio, si el back lo agrega) de cualquier otro `403` genérico que la app ya use para "no
+autorizado" — no deben compartir el mismo manejador en el front.
 
 ### 3. Al verificar, se auto-crea el `Cliente` — nuevo campo `datosCompletos`
 
@@ -4453,5 +4489,7 @@ capturar el código que el cliente dicte), puede armarla ya con estos 2 endpoint
 `EnviarCodigoVerificacionUsuarioRequest.java` / `VerificarCorreoUsuarioRequest.java` (nuevos),
 `ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `AuthController.java`,
 `SecurityConfig.java`, `PedidoServiceImpl.java`. Migraciones:
-`migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **sin
-correr en ningún ambiente todavía**.
+`migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **ya
+corridas en QA (2026-07-04)**.
+
+¿Tienes acceso a la BD para correr el UPDATE ahora?

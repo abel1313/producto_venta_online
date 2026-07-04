@@ -243,6 +243,17 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
           const msg: string = err?.error?.mensaje ?? err?.error?.message ?? '';
           if (msg.toLowerCase().includes('verificar')) {
             this.flujoVerificacion(clienteId);
+          } else if (msg.toLowerCase().includes('completar tus datos')) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Completa tu perfil',
+              text: 'Necesitamos tu nombre, apellido paterno y teléfono antes de generar un pedido.',
+              confirmButtonText: 'Completar datos',
+              showCancelButton: true,
+              cancelButtonText: 'Cancelar'
+            }).then(result => {
+              if (result.isConfirmed) this.router.navigate(['/mis-datos']);
+            });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo guardar el pedido.' });
           }

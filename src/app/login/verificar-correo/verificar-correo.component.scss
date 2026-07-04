@@ -1,0 +1,78 @@
+/* Reutiliza los estilos de split-page del login-form.component.scss */
+/* Solo sobreescribe lo específico de esta pantalla */
+
+.vc-split-images {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8A6A38 0%, #B08A4E 100%);
+}
+
+.vc-hero {
+  text-align: center;
+  padding: 2rem;
+  color: #fff;
+
+  &__icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  &__sub {
+    font-size: 1rem;
+    opacity: 0.85;
+    max-width: 280px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+}
+
+.vc-code-input {
+  text-align: center;
+  font-size: 1.6rem;
+  letter-spacing: 8px;
+  font-weight: 700;
+}
+
+.vc-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.vc-resend {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #64748b;
+
+  &__btn {
+    background: none;
+    border: none;
+    color: var(--app-accent, #B08A4E);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0;
+    text-decoration: underline;
+
+    &:disabled {
+      color: #94a3b8;
+      cursor: default;
+      text-decoration: none;
+    }
+  }
+}
+
+/* Dark mode */
+:host-context(body.theme-dark) {
+  .vc-hint { color: #94a3b8; }
+  .vc-resend { color: #94a3b8; }
+}

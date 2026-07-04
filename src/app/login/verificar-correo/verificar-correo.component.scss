@@ -1,67 +1,132 @@
-/* Reutiliza los estilos de split-page del login-form.component.scss */
-/* Solo sobreescribe lo específico de esta pantalla */
-
-.vc-split-images {
+.vc-page {
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8A6A38 0%, #B08A4E 100%);
+  background: var(--app-bg, #f1f5f9);
+  padding: 1.5rem;
 }
 
-.vc-hero {
+.vc-card {
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-border, #e2e8f0);
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 2rem;
-  color: #fff;
+  gap: 0.75rem;
 
   &__icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    display: block;
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
   }
 
   &__title {
-    font-size: 1.75rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
+    color: var(--app-text, #1e293b);
+    margin: 0;
   }
 
   &__sub {
-    font-size: 1rem;
-    opacity: 0.85;
-    max-width: 280px;
-    margin: 0 auto;
+    font-size: 0.92rem;
+    color: #64748b;
     line-height: 1.6;
+    margin: 0;
+    max-width: 340px;
   }
 }
 
 .vc-code-input {
+  width: 100%;
+  max-width: 260px;
   text-align: center;
-  font-size: 1.6rem;
-  letter-spacing: 8px;
+  font-size: 2rem;
   font-weight: 700;
+  letter-spacing: 10px;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--app-border, #e2e8f0);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--app-text, #1e293b);
+  outline: none;
+  transition: border-color 0.2s;
+  margin-top: 0.5rem;
+
+  &:focus {
+    border-color: #B08A4E;
+    box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.15);
+  }
+
+  &::placeholder {
+    color: #cbd5e1;
+    letter-spacing: 6px;
+    font-size: 1.2rem;
+  }
 }
 
 .vc-hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.8rem;
-  color: #64748b;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.vc-error {
+  width: 100%;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: #dc2626;
+  text-align: left;
+}
+
+.vc-btn-primary {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-top: 0.25rem;
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
 }
 
 .vc-resend {
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #64748b;
+  margin-top: 0.25rem;
 
   &__btn {
     background: none;
     border: none;
-    color: var(--app-accent, #B08A4E);
-    cursor: pointer;
+    color: #B08A4E;
     font-weight: 600;
+    cursor: pointer;
     padding: 0;
     text-decoration: underline;
+    font-size: 0.85rem;
 
     &:disabled {
       color: #94a3b8;
@@ -71,8 +136,42 @@
   }
 }
 
+.vc-back {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  text-decoration: none;
+  margin-top: 0.5rem;
+  transition: color 0.2s;
+
+  &:hover { color: #B08A4E; }
+}
+
 /* Dark mode */
 :host-context(body.theme-dark) {
-  .vc-hint { color: #94a3b8; }
+  .vc-page {
+    background: var(--app-bg, #0f172a);
+  }
+
+  .vc-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+
+    &__title { color: #f1f5f9; }
+    &__sub   { color: #94a3b8; }
+  }
+
+  .vc-code-input {
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.12);
+
+    &:focus {
+      border-color: #C9A063;
+      box-shadow: 0 0 0 3px rgba(201, 160, 99, 0.18);
+    }
+  }
+
   .vc-resend { color: #94a3b8; }
+  .vc-hint   { color: #64748b; }
+  .vc-back   { color: #64748b; }
 }

@@ -1,79 +1,53 @@
-<div class="split-page">
+<div class="vc-page">
+  <div class="vc-card">
 
-  <!-- Panel izquierdo igual que login -->
-  <div class="split-images vc-split-images">
-    <div class="vc-hero">
-      <div class="vc-hero__icon">✉️</div>
-      <h2 class="vc-hero__title">Verifica tu correo</h2>
-      <p class="vc-hero__sub">
-        Revisamos que seas el dueño de la cuenta antes de que puedas entrar.
-      </p>
+    <!-- Ícono -->
+    <div class="vc-card__icon">✉️</div>
+
+    <!-- Título -->
+    <h1 class="vc-card__title">Verifica tu correo</h1>
+    <p class="vc-card__sub">
+      Enviamos un código de <strong>6 dígitos</strong> al correo vinculado a
+      <strong>{{ userName }}</strong>. Ingrésalo aquí para continuar.
+    </p>
+
+    <!-- Input código -->
+    <input
+      class="vc-code-input"
+      type="text"
+      inputmode="numeric"
+      maxlength="6"
+      placeholder="● ● ● ● ● ●"
+      [(ngModel)]="codigo"
+      (keydown)="soloNumeros($event)"
+      autocomplete="one-time-code"
+    />
+
+    <p class="vc-hint">El código vence en 15 minutos.</p>
+
+    <!-- Error -->
+    <div class="vc-error" *ngIf="errorMsg">
+      <span>⚠️</span> {{ errorMsg }}
     </div>
-  </div>
 
-  <!-- Panel derecho: formulario -->
-  <div class="split-form">
-    <div class="form-inner">
+    <!-- Botón verificar -->
+    <button
+      class="vc-btn-primary"
+      [disabled]="codigo.length !== 6 || verificando"
+      (click)="verificar()">
+      {{ verificando ? 'Verificando…' : '✓ Verificar y entrar' }}
+    </button>
 
-      <div class="brand">
-        <div class="brand-icon">
-          <i class="pi pi-envelope"></i>
-        </div>
-        <h1 class="brand-name">Verifica tu <span>correo</span></h1>
-        <p class="brand-sub">
-          Enviamos un código de <strong>6 dígitos</strong> al correo
-          vinculado a <strong>{{ userName }}</strong>.
-          Ingrésalo aquí para continuar.
-        </p>
-      </div>
-
-      <!-- Input código -->
-      <div class="field-wrap">
-        <label class="field-label">Código de verificación</label>
-        <div class="input-wrap">
-          <i class="pi pi-key input-icon"></i>
-          <input
-            class="field-input vc-code-input"
-            type="text"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="123456"
-            [(ngModel)]="codigo"
-            (keydown)="soloNumeros($event)"
-            autocomplete="one-time-code"
-          />
-        </div>
-        <span class="vc-hint">El código vence en 15 minutos.</span>
-      </div>
-
-      <!-- Error -->
-      <div class="error-msg" *ngIf="errorMsg">
-        <i class="pi pi-exclamation-circle"></i>
-        {{ errorMsg }}
-      </div>
-
-      <!-- Botón verificar -->
-      <button
-        class="btn-login"
-        [disabled]="codigo.length !== 6 || verificando"
-        (click)="verificar()">
-        <span>{{ verificando ? 'Verificando…' : 'Verificar y entrar' }}</span>
-        <i class="pi pi-check-circle"></i>
+    <!-- Reenviar -->
+    <div class="vc-resend">
+      ¿No llegó el correo?
+      <button class="vc-resend__btn" [disabled]="cooldown > 0 || enviando" (click)="reenviarCodigo()">
+        {{ enviando ? 'Enviando…' : (cooldown > 0 ? 'Reenviar en ' + cooldown + 's' : 'Reenviar código') }}
       </button>
-
-      <!-- Reenviar -->
-      <p class="vc-resend">
-        ¿No llegó el correo?
-        <button class="vc-resend__btn" [disabled]="cooldown > 0 || enviando" (click)="reenviarCodigo()">
-          {{ enviando ? 'Enviando…' : (cooldown > 0 ? 'Reenviar en ' + cooldown + 's' : 'Reenviar código') }}
-        </button>
-      </p>
-
-      <p class="register-link">
-        <a [routerLink]="['/login']">← Volver al login</a>
-      </p>
-
     </div>
-  </div>
 
+    <!-- Volver -->
+    <a class="vc-back" [routerLink]="['/login']">← Volver al login</a>
+
+  </div>
 </div>

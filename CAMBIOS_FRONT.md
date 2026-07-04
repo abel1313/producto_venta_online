@@ -4392,11 +4392,18 @@ Nueva respuesta posible, además de las que ya existían:
   genérico de credenciales.
 - `401` (credenciales inválidas) y `429` (rate-limit) siguen igual que antes, sin cambios.
 
-**Usuarios que ya existían antes de este cambio:** todos quedan con `correoVerificado = false`
-por default (sin excepción, no hay "pase automático") — al primer intento de login después de que
-esto se despliegue, van a recibir el mismo `403` de arriba y tendrán que verificar su correo por
-primera vez, aunque su cuenta sea antigua. Sesiones ya activas (con un access/refresh token
-válido) NO se ven afectadas — solo un login nuevo dispara esta validación.
+**Excepción — rol ADMIN:** los usuarios con rol `ROLE_ADMIN` **no** requieren correo verificado
+para hacer login, sin importar el valor de `correoVerificado` en BD. El chequeo de verificación se
+salta por completo para ese rol y nunca reciben este `403`. El front no necesita ninguna lógica
+especial para esto: simplemente el admin nunca va a recibir el `403` de arriba, entra normal con
+`200` aunque nunca haya pasado por la pantalla de verificación.
+
+**Usuarios que ya existían antes de este cambio (no admin):** todos quedan con
+`correoVerificado = false` por default (sin excepción para roles no-admin, no hay "pase
+automático") — al primer intento de login después de que esto se despliegue, van a recibir el
+mismo `403` de arriba y tendrán que verificar su correo por primera vez, aunque su cuenta sea
+antigua. Sesiones ya activas (con un access/refresh token válido) NO se ven afectadas — solo un
+login nuevo dispara esta validación.
 
 **Flujo exacto que debe implementar el front (no hay endpoint de "revisar si está verificado antes"
 — todo se resuelve con la respuesta del propio `login`):**
@@ -4431,6 +4438,29 @@ válido) NO se ven afectadas — solo un login nuevo dispara esta validación.
 **Importante:** distinguir este `403` puntual (por el texto del mensaje o un código de error
 propio, si el back lo agrega) de cualquier otro `403` genérico que la app ya use para "no
 autorizado" — no deben compartir el mismo manejador en el front.
+
+---
+
+### [BUG-KEY-11] ✅ Fix: contraseña incorrecta ya no se confundía con "correo sin verificar"
+**Fecha:** 2026-07-04 | **Archivos:** `Usuario.java`, `AuthController.java`
+
+**Antes (incorrecto):** Spring Security evalúa `isEnabled()` **antes** de comparar la contraseña.
+Como `isEnabled()` dependía de `correoVerificado`, un usuario sin verificar recibía el `403`
+"Debes verificar tu correo..." **sin importar si la contraseña era correcta o incorrecta** — la
+contraseña nunca llegaba a compararse. Esto rompía el caso de contraseña mal escrita: en vez de
+`401 "Credenciales inválidas"` salía el `403` de verificación, dando información confusa/errónea
+al usuario.
+
+**Después (correcto):** `isEnabled()` ya no depende de `correoVerificado` (vuelve a depender solo
+del flag `enabled`, como antes de mejora 15). El chequeo de correo verificado se hace aparte, en
+`AuthController.login()`, **después** de que `authManager.authenticate()` ya confirmó la
+contraseña. Orden real ahora: 1) usuario existe, 2) contraseña correcta → si no, `401` sin
+excepción, 3) correo verificado o rol ADMIN → si no, `403`.
+
+**El front no necesita cambiar nada de lo ya documentado arriba** — mismos endpoints, mismos
+códigos de respuesta. Solo que ahora `401` y `403` salen en el caso correcto cada uno.
+
+---
 
 ### 3. Al verificar, se auto-crea el `Cliente` — nuevo campo `datosCompletos`
 

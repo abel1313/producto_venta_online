@@ -78,11 +78,14 @@ export class LoginFormComponent implements OnInit {
       },
       error: (error: any) => {
         if (error.status === 403) {
-          // Correo sin verificar — enviar código y redirigir a pantalla de verificación
+          // Correo sin verificar — enviar código y redirigir a pantalla de verificación.
+          // Pasamos el password en el state (en memoria, no persiste) para hacer auto-login
+          // después de que el usuario verifique el código, sin que tenga que escribirlo de nuevo.
           const userName: string = credentials.userName ?? '';
+          const password: string = credentials.password ?? '';
           this.acceder.enviarCodigoVerificacionUsuario(userName).subscribe({
-            next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true } }),
-            error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true } })
+            next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } }),
+            error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } })
           });
           return;
         }

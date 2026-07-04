@@ -126,9 +126,10 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
           if (registrado != null) {
             this.formRegistro.reset();
             // Enviar código de verificación automáticamente y redirigir
+            const pwd: string = password ?? '';
             this.auth.enviarCodigoVerificacionUsuario(usrName).subscribe({
-              next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true } }),
-              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true } })
+              next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } }),
+              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } })
             });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrarse.' });

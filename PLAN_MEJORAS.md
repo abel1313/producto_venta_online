@@ -23,16 +23,24 @@
 | 12 | Correo/teléfono obligatorios en cliente + verificación de correo (código de 6 dígitos) antes de pedidos/ticket por correo | ✅ Listo (migración corrida en dev/qa, falta en prod) | ⏳ Pendiente front | 2026-07-02 |
 | 13 | Deshabilitar producto/variante en lote (para ocultar datos de prueba) + habilitado propio por variante | ✅ Listo (columna ya existía en dev/qa, falta confirmar en prod) | ⏳ Pendiente front | 2026-07-02 |
 | 14 | Restablecer contraseña olvidada (código de 6 dígitos por correo) + cambiar contraseña logueado (con contraseña actual, sin código) | ✅ Listo (falta correr migración SQL) | ⏳ Pendiente front | 2026-07-03 |
+| 15 | Unificar verificación de correo Usuario/Cliente + auto-crear Cliente al registrar | ✅ Código listo (falta compilar/probar + correr migraciones) | ⏳ Pendiente front | 2026-07-03 |
 
 > **Orden:** el ticket (1) va primero porque correo (2) lo necesita.
 > El stock bajo (4) necesita correo (2) ya listo en back.
 > El dashboard (6) necesita los reportes (5).
 
-> **Checkpoint 2026-07-02 (actualizado):**
+> **Checkpoint 2026-07-03 (actualizado):**
 > - ✅ Listos en back (falta front): 1 (ticket), 2 (correo), 5 (reportes), 6 (dashboard), 8/9/10 (chatbot),
->   11 (filtros por rol), 12 (correo/teléfono obligatorios + verificación).
+>   11 (filtros por rol), 12 (correo/teléfono obligatorios + verificación), 13 (deshabilitar en
+>   lote + habilitado por variante), 14 (reset de contraseña + cambiar contraseña logueado).
 > - 🚫 En pausa: 3 (WhatsApp al cliente).
 > - ⏳ Sin arrancar ni back ni front: 4 (stock bajo), 7 (devoluciones).
+> - 📄 Documentado, sin implementar: uso de hilos/async para envío de correos — ver
+>   `HILOS_Y_CONCURRENCIA.md` (guía completa + qué endpoints conviene tocar y cuáles no).
+> - **Migraciones SQL pendientes de correr en prod** (dev/qa ya están al día): 
+>   `migration_verificacion_correo.sql`, `migration_habilitado_variantes.sql` (columna ya existía
+>   en dev/qa, confirmar en prod primero con `DESCRIBE variantes` — puede que tampoco haga falta),
+>   `migration_reset_password.sql`.
 > - Sueltos sin cerrar: confirmar migración `monto_dado` en BD de producción; respuesta del front
 >   sobre si necesitan `tiendaUrl` desde el back (`GET /v1/negocio/contactos`) o usan `window.location.origin`;
 >   decidir qué hacer con las 4 filas "Mochila Prada" duplicadas; BUG-CB-01 pendiente de corrección
@@ -96,6 +104,12 @@
 >   `savePedido`). El carrito vivía en `localStorage`/`sessionStorage` del navegador sin limpiarse
 >   al cerrar sesión (mismo patrón que el bug ya resuelto de `sesionId` del chat). El front ya lo
 >   solucionó, no requirió cambios en este repo.
+> - **PENDIENTE (2026-07-03, sin arrancar) — usar hilos para envíos de correo/notificaciones:**
+>   se detectó que `EmailService` (tickets, códigos de verificación, reset de contraseña) corre
+>   síncrono en el hilo del request — si el SMTP tarda, el usuario espera hasta el timeout (5s en
+>   QA). Guía completa de cómo implementarlo (conceptos de hilos, `@Async`, `CompletableFuture`,
+>   virtual threads) y auditoría de qué endpoints conviene tocar (y cuáles NO) en
+>   `HILOS_Y_CONCURRENCIA.md`. Nada implementado todavía, solo documentado para retomar.
 
 > **Decisión 2026-07-01 — WhatsApp EN PAUSA:** se descartó implementar el envío del ticket por
 > WhatsApp al cliente. CallMeBot (gratis, ya programado en el back) solo le avisa al negocio, no
@@ -158,6 +172,7 @@
 | F-16 | Selección múltiple (checkboxes) en la lista paginada de productos/variantes del panel admin + botón "deshabilitar seleccionados" que llame `admin/habilitar-lote` con los IDs marcados | Panel admin — productos y variantes | "Deshabilitar productos/variantes en lote (2026-07-02)" |
 | F-17 | Pantalla "olvidé mi contraseña": input de correo → input de código de 6 dígitos + nueva contraseña (mismo formulario, se revela el segundo campo cuando terminan de escribir el código) | Login, link "olvidé mi contraseña" | "Restablecer contraseña olvidada (2026-07-03)" |
 | F-18 | Formulario "cambiar contraseña" (contraseña actual + nueva) usando `PUT /v1/auth/cambiar-password` — requiere sesión, no pide código | Pantalla de perfil/mi cuenta | "Cambiar contraseña estando logueado (2026-07-03)" |
+| F-19 | ⚠️ NO EMPEZAR TODAVÍA — back escrito pero sin compilar/probar/desplegar. Cuando esté en QA: pantalla de "ingresa el código" tras registrarse (bloquea login hasta verificar), pantalla de "completa tus datos" en el primer pedido, aviso de "revisa tu correo nuevo" al editar cliente y cambiar el correo, pantalla de verificación forzada en el próximo login de usuarios ya existentes, y opcional pantalla de soporte en panel admin (reenviar código / capturar código dictado — ya funciona con los endpoints existentes de Cliente) | Registro, primer pedido, editar cliente, login, panel admin | `CAMBIOS_FRONT.md` → "Unificar verificación de correo Usuario/Cliente (2026-07-03)" |
 
 > **Decisión 2026-07-01 — F-10/F-11:** los QR de WhatsApp y Facebook se muestran en el ticket
 > SOLO si el negocio tiene esos datos configurados en `GET /v1/negocio/contactos`. Si no hay URL
@@ -817,3 +832,413 @@ bien mantenido sobre el mismo `chart.js` que ya tienen instalado (compatible con
 dejarlo así (instalar `ng2-charts`) aunque la justificación de "más gráficas después" no aplicó —
 no se rediseñó el dashboard para agregar una gráfica de tendencia solo para justificar la
 dependencia.
+
+---
+
+## 15. Unificar verificación de correo Usuario/Cliente + auto-crear Cliente al registrar (SOLO DISEÑO, 2026-07-03)
+
+> **Estado: idea anotada para retomar, nada implementado.** Nace de una sesión de dudas sobre por
+> qué hoy existen DOS correos y DOS verificaciones separadas (`Usuario.email` para login/reset de
+> password, sin verificar nunca vs. `Cliente.correoElectronico` con verificación de código,
+> exigida solo en `savePedido`). Ver contexto completo del estado actual en el chat del
+> 2026-07-03, resumen abajo.
+
+### Estado actual (confirmado en código, sin ambigüedad)
+
+- `Usuario` (login, tabla `usuario_modificacion`) y `Cliente` (tabla `clientes`) tienen **cada
+  uno su propio campo de correo**, sin sincronizar nunca. `Cliente.usuario_id` es una FK 1-a-1
+  opcional que se asigna manualmente al guardar un cliente (`ClienteControllerImpl.save`) — nunca
+  se crea sola en `POST /v1/auth/registrar` (ese endpoint solo crea `Usuario`).
+- La verificación por código (`correoVerificado`, `codigoVerificacion*`) **solo existe en
+  `Cliente`**. `Usuario` no tiene ningún campo de verificación — el reset de contraseña
+  (`PasswordResetService.solicitarReset`) manda el código a cualquier email de `Usuario` sin
+  haberlo confirmado jamás.
+- El bloqueo real de "debes verificar tu correo" solo está en `PedidoServiceImpl.savePedido`
+  (línea ~104), y solo aplica cuando el `Cliente` **ya existe** — no cubre el caso de un usuario
+  recién registrado que todavía no tiene `Cliente`.
+
+### Propuesta del usuario (a diseñar en detalle antes de tocar código)
+
+1. **Verificar una sola vez, no dos.** Al registrarse (`POST /v1/auth/registrar`), el `Usuario`
+   verifica su correo con el mismo flujo de código de 6 dígitos que hoy tiene `Cliente`.
+2. **Auto-crear el `Cliente` en ese momento**, vinculado por `usuario_id`, con el correo ya
+   marcado como verificado (copiado del `Usuario`) — así no hay que volver a verificar cuando
+   más adelante se genera un pedido.
+3. **Problema que esto introduce:** hoy `PedidoServiceImpl.savePedido` asume que "si el `Cliente`
+   existe, tiene sus datos completos" (nombre, apellido paterno, teléfono, etc.), porque
+   actualmente el `Cliente` solo se creaba cuando alguien llenaba el formulario completo. Si ahora
+   se auto-crea el `Cliente` desde el registro con SOLO el correo, existiría el registro pero
+   con nombre/apellido/teléfono vacíos — la validación actual (que solo chequea
+   `correoVerificado`) dejaría pasar pedidos con datos de cliente incompletos.
+4. **Solución propuesta (a validar):** agregar un campo booleano nuevo a `Cliente` (ej.
+   `datosCompletos`, nombre por definir) que:
+   - Nace en `false` cuando el `Cliente` se auto-crea solo con correo (desde el registro).
+   - Pasa a `true` cuando se capturan/actualizan los campos obligatorios: nombre, apellido
+     paterno, teléfono (a definir la lista exacta y si aplica también dirección).
+   - `PedidoServiceImpl.savePedido` valida **ambas cosas**: `correoVerificado == true` Y
+     `datosCompletos == true` (mensaje de error distinto para cada caso, para que el front sepa
+     si debe pedir "verifica tu correo" o "completa tus datos").
+
+### Flujo detallado aclarado por el usuario (2026-07-03, segunda vuelta)
+
+Esto reemplaza/precisa el punto 1-2 de la propuesta original — es el flujo exacto pensado:
+
+1. **Registro (`/v1/auth/registrar`):** al registrarse, se pide verificar el correo ahí mismo
+   (código de 6 dígitos, mismo mecanismo que ya existe para `Cliente`). El usuario **no accede al
+   sistema hasta terminar la verificación** — primero se registra, luego verifica el código, y
+   hasta entonces puede entrar (login) ya con el correo marcado como validado.
+2. En ese momento se auto-crea el `Cliente` vinculado, con el campo nuevo (`datosCompletos` o
+   como se llame) en `false` — porque solo se tiene el correo, faltan nombre/apellido/teléfono.
+3. **Al generar un pedido:** si `datosCompletos == false`, se dispara la validación/formulario
+   para completar los campos requeridos del cliente (nombre, apellido paterno, teléfono, etc.).
+   El correo en ese formulario ya viene puesto (el del `Usuario`, ya verificado) — el cliente no
+   lo tiene que volver a escribir ni verificar en este paso.
+4. **REVISADO 2026-07-03, cuarta vuelta (versión definitiva, reemplaza la anterior) — si el
+   cliente edita sus datos y cambia el correo:**
+   - Los **demás campos del formulario** (nombre, apellido paterno, teléfono, etc.) se guardan/
+     actualizan normalmente, sin condición — eso nunca se bloquea.
+   - El **correo específicamente** no se aplica de inmediato: se dispara el flujo de verificación
+     (enviar código al correo nuevo).
+     - Si el cliente **completa la verificación** → el correo nuevo queda guardado en
+       `Cliente.correoElectronico`, sigue verificado, y (por la sincronización decidida en el
+       punto 2 de abajo) se actualiza también `Usuario.email` al mismo valor.
+     - Si el cliente **no completa la verificación** (abandona/cancela) → el correo **regresa al
+       valor anterior** (el mismo que ya tenía `Usuario`, sigue sincronizado y verificado) — el
+       intento de correo nuevo se descarta, sin dejar a el cliente con un correo sin verificar ni
+       bloquear nada más.
+   - Con esto YA NO hace falta resetear `correoVerificado = false` ni depender del bloqueo de
+     `savePedido` para este caso — el invariante "correo de Cliente = correo de Usuario, siempre
+     verificado" nunca se rompe, porque el cambio de correo solo se confirma cuando ya está
+     verificado.
+   - **Sin cerrar:** el usuario mencionó una excepción — *"a menos que haya cambios del punto
+     uno"* — no quedó claro a qué se refiere exactamente (¿el primer login forzado del punto 1?
+     ¿otra cosa?). Preguntar de nuevo antes de implementar este paso.
+
+### DDL ya preparado, sin correr todavía
+
+`src/main/resources/static/migration_datos_completos_cliente.sql` — creado el 2026-07-03, agrega
+`clientes.datos_completos` (`TINYINT(1) DEFAULT 0`) + backfill a `1` para clientes existentes con
+los 4 campos obligatorios ya llenos. **No correr en ningún ambiente todavía** — faltan cerrar las
+preguntas abiertas de esta sección antes de tocar el back que depende de esta columna. No hace
+falta ALTER para `apeido_materno` (ver más abajo) porque la columna ya es `NULLABLE` en BD.
+
+### ✅ DECIDIDO 2026-07-03 — cómo resolver el choque técnico
+
+Se elige la opción de **método de guardado alterno**, no grupos de validación:
+
+- Se crea un método nuevo (ej. `ClienteService.crearClienteDesdeRegistro(usuario, correo)`) que
+  se llama SOLO desde el flujo de registro/auto-alta, hace bypass de las validaciones `@NotBlank`
+  de nombre/apellidos/teléfono (guarda directo vía repositorio, no pasa por
+  `AbstractController.save`) y arma el `Cliente` con: `usuario` (FK), `correoElectronico` (ya
+  verificado), `datosCompletos = false`. El resto de campos quedan `null`.
+- El guardado/actualización normal (`AbstractController.save/update`, el mismo endpoint de
+  siempre `/v1/clientes`) sigue validando los campos obligatorios — **excepto `apeidoMaterno`,
+  que deja de ser `@NotBlank`** (ver decisión abajo). Cuando el cliente completa su perfil (o el
+  admin lo edita), pasa por ahí y ahí sí debe venir nombre/apellido paterno/teléfono/correo; ese
+  es también el punto natural donde `datosCompletos` pasa a `true`.
+
+### ✅ DECIDIDO 2026-07-03 — campos que entran en `datosCompletos` + apellido materno pasa a opcional
+
+El usuario definió: solo **nombre, apellido paterno, teléfono y correo** son obligatorios para
+que `datosCompletos = true`. El resto (segundo nombre, fecha de nacimiento, sexo, **apellido
+materno**) queda opcional.
+
+**Confirmado explícitamente 2026-07-03:** hay que relajar `Cliente.apeidoMaterno` en
+`Cliente.java` (quitar el `@NotBlank`) — pasa a ser opcional en TODOS los guardados de cliente de
+aquí en adelante (admin incluido), no solo en este flujo nuevo. Esto modifica el comportamiento
+ya vigente de la mejora 12 (que hoy lo exige) — avisar en `CAMBIOS_FRONT.md` cuando se
+implemente, porque el front pudo haber puesto `Validators.required` en ese campo del formulario
+de cliente asumiendo que era obligatorio.
+
+### ⚠️ Choque técnico confirmado en código — bloqueante, hay que resolverlo primero
+
+`Cliente.java` (líneas 36-66) tiene **Bean Validation directo en la entidad** (no hay DTO
+separado — `ClienteControllerImpl.save` recibe la entidad `Cliente` tal cual como body):
+`nombrePersona`, `apeidoPaterno`, `apeidoMaterno`, `correoElectronico` y `numeroTelefonico` son
+`@NotBlank` (mejora 12). `AbstractController.save/update` valida con `BindingResult` y devuelve
+400 **antes** de llamar al service si hay errores — nunca llega a guardar. Esto significa que
+**auto-crear el `Cliente` solo con el correo (sin nombre/apellidos/teléfono) fallaría hoy mismo**
+con un 400 por los 4 campos faltantes. La idea del flag `datosCompletos` no resuelve esto por sí
+sola — hace falta ADEMÁS una de estas dos cosas:
+- Usar **grupos de validación** (`@NotBlank(groups = OnCompleto.class)` + `@Validated(OnCreate.class)`
+  vs `@Validated(OnCompleto.class)` según el punto de entrada), para que el alta automática desde
+  el registro use un grupo relajado y el guardado completo del perfil use el grupo estricto.
+- O crear un método de guardado alterno para el auto-alta (bypass de `AbstractController.save`,
+  llamando directo al repositorio) que no pase por esas validaciones — pero entonces to el mismo
+  `PUT` genérico usado para completar el perfil sí debe exigirlas.
+
+### Otros puntos sueltos identificados (2026-07-03) — no bloqueantes pero hay que definirlos
+
+- **No afecta a `ClienteSinRegistro` ni venta directa sin cuenta** — eso ya quedó fuera desde la
+  mejora 12 (el correo manual del modal post-venta es independiente). Esta mejora 15 solo aplica
+  al flujo de cuenta con `Usuario` + pedidos online, no a venta de mostrador.
+- **Front nuevo, no solo lo que ya está en la tabla F-XX:** la pantalla de registro necesita el
+  paso de "ingresa el código" inline antes de dar acceso (hoy no existe esa pantalla, F-15 solo
+  cubre la verificación de `Cliente` para pedidos, no la de `Usuario` en el registro). Con la
+  revisión del punto 3 (abajo) YA NO hace falta el modal de "confirmar cambio de correo" al
+  editar cliente — el guardado ya no se bloquea, solo se avisa que quedó pendiente de verificar.
+- **Rate-limit del reenvío de código:** ya existe `seguridad.rate-limit-habilitado` para
+  login/registro — decidir si el nuevo endpoint de verificación de `Usuario` (si es uno nuevo,
+  separado del que ya tiene `Cliente`) reutiliza ese mismo mecanismo o necesita el suyo.
+
+### ✅ RESPUESTAS DEL USUARIO 2026-07-03 (tercera vuelta)
+
+**1. Login bloqueado hasta verificar — SÍ, forzarlo.** Razón del usuario: si no se fuerza la
+verificación desde el registro, cuando el usuario después necesite recuperar su contraseña
+olvidada no habría garantía de que el correo registrado sea real/suyo — forzar la verificación
+en el registro resuelve ese problema de raíz. **Implica tocar el flujo de login**
+(`AuthController`/`AuthServiceImpl`), no solo `RegistroService`: mientras `Usuario` no esté
+verificado, no puede completar el login normal.
+
+**2. Sincronizar `Usuario.email` y `Cliente.correoElectronico` — ✅ CONFIRMADO 2026-07-03 (cuarta
+vuelta).** Sí, se sincronizan: el correo del `Usuario` se pone en el `Cliente` (al auto-crearlo),
+y de ahí en adelante es un solo correo real por cuenta. La pregunta de seguimiento del usuario
+fue: *"pero la cosa es si lo quiere modificar, ¿qué pasaría?"* — respondida en el punto 3
+(reemplaza la versión anterior de este documento).
+
+**3. Editar `Cliente` y cambiar el correo — ✅ REVISADO 2026-07-03, versión definitiva (reemplaza
+la anterior), ver "Flujo detallado" punto 4 arriba.** Resumen: los demás campos (nombre,
+apellidos, teléfono) se guardan siempre sin condición. El correo nuevo NO se aplica de inmediato
+— se dispara verificación. Si se verifica, se guarda y se sincroniza también en `Usuario.email`
+(punto 2). Si NO se verifica, el correo **regresa al valor anterior** (el de `Usuario`, que sigue
+verificado) — se descarta el intento, sin dejar correos sin verificar colgados ni depender del
+bloqueo de `savePedido` para este caso.
+
+**✅ ACLARADO 2026-07-03 (quinta vuelta) — no era una excepción nueva, era el mismo escenario
+explicado con más detalle.** El usuario confirmó con un ejemplo concreto: te registras y
+verificas tu correo (queda en `Usuario` y copiado a `Cliente`); al generar tu primer pedido te
+pide llenar los datos de `Cliente` (nombre, apellido, teléfono) porque `datosCompletos == false`;
+en ese mismo formulario cambias también el correo (distinto al que ya tenías de `Usuario`); al
+dar guardar, el back detecta que el correo ya no coincide y dispara el aviso/modal "has cambiado
+el correo, hay que validarlo". Si el cliente acepta, sigue el flujo normal de verificación ya
+descrito. **Si dice que no quiere validar → se guardan los demás datos del formulario (nombre,
+apellido, teléfono) y el correo regresa al que tenía como `Usuario`** — exactamente el
+comportamiento ya documentado arriba, sin ninguna excepción adicional. Punto 3 queda 100%
+cerrado.
+
+**4. Re-verificación solo aplica al propio cliente, el admin queda fuera —
+CONFIRMADO.** Cuando un ADMIN edita los datos de un cliente desde el panel, NO se dispara este
+flujo de re-verificación (eso es exclusivo de cuando el cliente edita su propia cuenta).
+**Nuevo requerimiento anotado, pendiente de implementar:** el admin necesita poder **reenviar
+manualmente el código de verificación a un cliente** (caso de soporte: el cliente llama porque
+no le llegó o lo perdió). Y si el cliente le lee el código al admin por teléfono, el admin debe
+poder introducirlo en el sistema y que el cliente quede verificado automáticamente con ese
+código — es decir, el endpoint de "verificar-correo" existente necesita ser accesible también
+por un admin actuando en nombre del cliente (hoy no está confirmado si ya lo permite o es
+exclusivo de la sesión del propio cliente — **revisar el código de
+`ClienteControllerImpl`/`SecurityConfig` antes de implementar** para ver si los endpoints
+`enviar-codigo-verificacion`/`verificar-correo` ya aceptan rol ADMIN o solo el dueño de la cuenta).
+
+**5. Usuarios ya existentes sin verificar — SÍ forzar verificación en el próximo login, NO
+grandfathering.** Confirmado explícitamente: no se les da un pase automático. **El usuario pidió
+que esto se anote para que el FRONT lo implemente tal cual** — al primer login después de
+desplegar esta mejora, si el `Usuario` no tiene correo verificado, el front debe mostrar la
+pantalla de verificación antes de dejarlo continuar, igual que a un usuario recién registrado.
+
+**6. Patrón de llamadas para verificar el correo en el registro — ✅ CONFIRMADO 2026-07-03.** Sí,
+replicar el mismo patrón de 3 llamadas que ya existe para `Cliente`: 1️⃣ `POST /v1/auth/registrar`
+crea el `Usuario` sin verificar → 2️⃣ `POST enviar-codigo-verificacion` manda el correo con el
+código → 3️⃣ `POST verificar-correo` con el código que el usuario escribió, ahí se marca
+verificado (y recién ahí se le permite el login, punto 1).
+
+---
+
+## Explicación completa del flujo — versión limpia para front + back (2026-07-03)
+
+> Esto NO va todavía en `CAMBIOS_FRONT.md` porque nada está implementado — ahí se documentará el
+> contrato real (endpoints, request/response) cuando se escriba el código, siguiendo la
+> convención del proyecto. Esto es la explicación de diseño ya cerrada, para que tanto front como
+> back entiendan el flujo completo de punta a punta antes de que arranque la implementación.
+
+### A) Registro de un usuario nuevo
+
+1. El front manda el registro de siempre: `POST /v1/auth/registrar` (usuario, contraseña, correo).
+   El `Usuario` se crea, pero **sin verificar** — todavía no puede loguearse.
+2. El front debe pedir el código de verificación (nuevo endpoint, análogo al que ya existe para
+   `Cliente`: `enviar-codigo-verificacion`) y mostrar una pantalla "ingresa el código de 6
+   dígitos que te enviamos".
+3. El usuario escribe el código → el front lo manda (nuevo endpoint análogo a `verificar-correo`
+   de `Cliente`). Si es correcto, el `Usuario` queda verificado.
+4. **Solo hasta ese momento** el back auto-crea el `Cliente` vinculado (correo copiado, ya
+   verificado, `datosCompletos = false`) y **solo hasta ese momento** el login funciona. Si el
+   front intenta loguear a alguien sin verificar, el back debe rechazarlo — el front necesita
+   distinguir esa respuesta para mandarlo de vuelta a la pantalla de "ingresa el código" en vez
+   de mostrar un error genérico de login.
+
+### B) Primer pedido — completar los datos que faltan
+
+5. Cuando el cliente intenta generar su primer pedido, el back debe detectar `datosCompletos ==
+   false` y devolver una respuesta que el front pueda distinguir de "correo sin verificar" (son
+   dos motivos de bloqueo distintos, mejora 12 vs mejora 15 — necesitan mensajes/códigos de error
+   diferentes para que el front sepa qué pantalla mostrar).
+6. El front muestra el formulario de "completa tus datos": nombre, apellido paterno, teléfono
+   (apellido materno queda opcional). El correo aparece prellenado con el ya verificado.
+7. Al guardar, se usa el mismo endpoint de actualizar cliente de siempre
+   (`PUT`/`POST /v1/clientes`). Si el cliente **no tocó el correo**, se guarda tal cual, sin nada
+   especial — `datosCompletos` pasa a `true` en el back automáticamente.
+
+### C) Si en ese mismo formulario (o cualquier edición futura) el cliente cambia el correo
+
+8. Los demás campos (nombre, apellido, teléfono) se guardan siempre, sin condición.
+9. Si el correo que llega es distinto al que ya tenía, el back dispara el aviso de verificación —
+   el front debe mostrar un modal tipo *"Has cambiado tu correo, es necesario validarlo. ¿Quieres
+   verificarlo ahora?"*.
+   - **Si acepta:** mismo flujo de código de 6 dígitos ya conocido (enviar código → escribir
+     código → verificar). Al terminar, el correo nuevo queda guardado y verificado, y se
+     sincroniza también en `Usuario.email`.
+   - **Si dice que no:** no pasa nada malo — el resto del formulario ya se guardó (paso 8), y el
+     campo correo en la respuesta del back **vuelve a traer el valor anterior** (el mismo que
+     tiene `Usuario`). El front debe refrescar el campo correo en pantalla con ese valor
+     devuelto, no dejar el que el usuario había escrito y canceló.
+
+### D) Usuarios que ya existían antes de esta mejora
+
+10. Nunca verificaron su correo (el concepto no existía). En su próximo login, el back debe
+    tratarlos igual que a alguien recién registrado sin verificar: el front los manda a la
+    pantalla de "ingresa el código" (pasos 2-3) antes de dejarlos entrar normalmente.
+
+### E) Soporte — verificación asistida por un admin (aclarado 2026-07-03, sexta vuelta)
+
+**Caso de uso real, tal como lo describió el usuario:** un cliente se presenta con el admin
+(en persona o por teléfono) y le pide ayuda para validar su correo (típicamente porque no le
+llegó el código, perdió acceso, o simplemente no supo hacerlo solo). El admin busca a ESE cliente
+en el sistema, reenvía el código a su correo, el cliente lo revisa y se lo dicta al admin, y el
+admin lo captura para verificarlo en su nombre.
+
+11. Nueva pantalla/función en el panel admin: buscar un cliente y poder (a) reenviarle el código
+    de verificación, y (b) capturar el código que el cliente le dicte para verificarlo en su
+    nombre. Es una extensión pequeña de lo que ya existe — mismos dos endpoints de siempre
+    (`enviar-codigo-verificacion`/`verificar-correo`), solo que quien los llama es el admin
+    buscando a un cliente específico, en vez del propio cliente con su sesión. Depende de
+    confirmar que el back ya permite rol ADMIN ahí (ver pendientes abajo) — si no, hay que
+    agregarlo. **No hace falta restringir el caso de uso más que esto** (no hay que limitarlo
+    solo a "cuando el cliente olvidó completamente sus datos" — aplica en general, cualquier vez
+    que el cliente no pueda verificarse solo).
+12. Importante para el front del panel admin: cuando un ADMIN edita los datos de un cliente
+    (no el propio cliente logueado), el flujo de los pasos 8-9 **no aplica** — el admin puede
+    cambiar el correo de un cliente sin que se dispare ningún modal de verificación.
+
+## ✅ Detalles de implementación — CERRADOS 2026-07-03 (sexta vuelta)
+
+1. **Recalcular `datosCompletos` — se hace automático, CONFIRMADO.** Cada vez que se guarda un
+   `Cliente`, se revisa si `nombrePersona`, `apeidoPaterno`, `numeroTelefonico` y
+   `correoElectronico` son válidos (no vacíos) — si sí, se pone `datosCompletos = true`. No hace
+   falta que el front ni nadie lo envíe explícito, lo calcula el back solo en cada guardado
+   (vía `@PrePersist`/`@PreUpdate` en la entidad, o una verificación equivalente en el service
+   antes de persistir).
+2. **Rate-limit del reenvío de código — independientes, CONFIRMADO.** El de `Usuario` (nuevo) y
+   el de `Cliente` (ya existente) quedan cada uno con su propio límite, sin compartir el mismo
+   contador ni la misma configuración.
+
+## ✅ IMPLEMENTADO 2026-07-03 — back completo, pendiente compilar/probar + correr migraciones
+
+Se escribió todo el código descrito en este documento. **No se corrió `mvn compile` en esta
+sesión** (Maven no estaba disponible en el entorno) — revisar que compile y probar en vivo antes
+de mergear a qa. Tampoco se corrieron las migraciones SQL contra ninguna base de datos.
+
+### Punto E resuelto sin cambios — ya funcionaba
+
+Se revisó el código: `enviar-codigo-verificacion`/`verificar-correo` de `Cliente` viven bajo
+`.requestMatchers("/v1/clientes/**").authenticated()` en `SecurityConfig` — **cualquier usuario
+autenticado (incluido ADMIN) ya puede llamarlos para cualquier `clienteId`**, no solo el dueño de
+la cuenta. El caso de soporte del punto E funciona hoy tal cual, sin tocar nada.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `service/UsuarioVerificacionService.java` | `enviarCodigoVerificacion(usernameOEmail)` / `verificarCorreo(usernameOEmail, codigo)` — mismo patrón que `Cliente`; al verificar por primera vez, auto-crea el `Cliente` vinculado |
+| `models/EnviarCodigoVerificacionUsuarioRequest.java` | DTO body `{ userName }` |
+| `models/VerificarCorreoUsuarioRequest.java` | DTO body `{ userName, codigo }` |
+| `migration_usuario_verificacion_correo.sql` | Agrega `correo_verificado`/`codigo_verificacion`/`codigo_verificacion_expira` a `usuario_modificacion` |
+| `migration_datos_completos_cliente.sql` | Actualizado — agrega `datos_completos` y `correo_pendiente` a `clientes` (antes solo tenía `datos_completos`) |
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `entity/Usuario.java` | + `correoVerificado`/`codigoVerificacion`/`codigoVerificacionExpira`; `isEnabled()` ahora exige `correoVerificado=true` — Spring Security bloquea el login solo (lanza `DisabledException`) |
+| `entity/Cliente.java` | + `datosCompletos`/`correoPendiente`; `apeidoMaterno` ya NO es `@NotEmpty`/`@NotNull` (opcional); nuevo `@PrePersist`/`@PreUpdate` que recalcula `datosCompletos` en cada guardado |
+| `service/ClienteServiceImpl.java` | + `crearClienteDesdeRegistro(usuario, correo)` — INSERT nativo vía `EntityManager` que hace bypass de Bean Validation (nombre/apellidos/teléfono aún no existen); `enviarCodigoVerificacionCorreo`/`verificarCorreo` ahora usan `correoPendiente` si existe (manda el código ahí, y al verificar promueve el valor a `correoElectronico` + sincroniza `Usuario.email`) |
+| `controller/AuthController.java` | + `POST /v1/auth/enviar-codigo-verificacion` y `POST /v1/auth/verificar-correo` (para `Usuario`, rate-limit propio con key `verif-usr:`); `login()` captura `DisabledException` aparte → 403 "Debes verificar tu correo antes de iniciar sesión" |
+| `controller/ClienteControllerImpl.java` | `save()` ahora: preserva `codigoVerificacion`/`correoVerificado`/`correoPendiente` existentes (el guardado genérico hace `merge()` completo y los pisaría con `false`/`null` si el front no los manda); si el correo cambia y quien edita NO es admin (`AuthenticationUtils.isAdminContext()`), lo manda a `correoPendiente` y dispara el envío del código — si es admin, se aplica directo y verificado |
+| `security/SecurityConfig.java` | Los 2 endpoints nuevos de `/v1/auth/` agregados a `permitAll()` (el usuario aún no puede loguearse en ese punto) |
+| `service/PedidoServiceImpl.java` | `savePedido` valida también `cliente.getDatosCompletos()`, con mensaje de error distinto al de correo sin verificar |
+
+### Bug pre-existente encontrado y corregido de paso
+
+`ClienteControllerImpl.save()` no preservaba explícitamente los campos administrados por el back
+(`correoVerificado`, `codigoVerificacion`, etc.) antes de esta sesión. Como el guardado genérico
+hace `repository.save()` con el objeto completo deserializado del JSON (sin DTO intermedio), si el
+front no incluía esos campos en el request, un simple "actualizar mis datos" los reseteaba a
+`false`/`null` — es decir, **cualquier cliente que ya había verificado su correo y luego editaba
+su perfil (nombre, teléfono, etc.) perdía la verificación silenciosamente** y quedaba bloqueado en
+su siguiente pedido sin haber tocado su correo. Se corrigió al mismo tiempo que se agregó la
+lógica de `correoPendiente`, cargando el registro existente y preservando esos campos antes de
+guardar.
+
+### Sin disrupción a sesiones activas
+
+El bloqueo de login por correo sin verificar solo aplica en `POST /v1/auth/login`
+(`authManager.authenticate()`). Ni `JwtAuthenticationFilter` (valida tokens en cada request) ni
+`POST /v1/auth/refresh` revisan `isEnabled()` — un usuario ya logueado con un refresh token válido
+sigue funcionando sin interrupción hasta que cierre sesión y necesite loguearse de nuevo.
+
+### Pendiente antes de mergear a qa
+
+1. Compilar (`mvn compile`) y correr pruebas manuales del flujo completo — no se verificó en
+   ejecución en esta sesión.
+2. Correr `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql`
+   en dev primero, revisar, luego qa (comparten `inventario_key_qa`). Prod queda pendiente hasta
+   que la rama llegue ahí.
+3. Documentar el contrato real de los 2 endpoints nuevos en `CAMBIOS_FRONT.md` una vez probado.
+4. Implementar las pantallas nuevas del front (ver F-19 en la tabla de arriba).
+
+> **NOTA 2026-07-03 — código en working tree, sin commitear:** todos los archivos de esta mejora
+> ya están escritos en local (rama `dev`), listos para revisar/compilar/probar, pero **sin git add
+> ni commit** — se quedan así hasta que el usuario diga explícitamente "sube" o "haz commit"
+> (regla de `CLAUDE.md`). Si se retoma esta sesión en otra conversación, correr `git status` para
+> confirmar que siguen ahí antes de asumir que se perdieron.
+
+### Dudas de front pegadas por el usuario (2026-07-03) — vienen de otra sesión/repo (Angular)
+
+> Este análisis lo generó otra sesión trabajando sobre el proyecto Angular (front), no existe
+> ningún `.component.ts` en este repo (`proyecto_key_new` es solo el back). Lo dejo aquí limpio,
+> con verificación desde el lado del back, para que quien retome el front sepa qué es seguro
+> proceder y qué NO todavía.
+
+| # | Qué | Archivo (front) | Verificación desde el back |
+|---|---|---|---|
+| 1 | QR de Facebook no aparece — el código lee `res.whatsappUrl` en vez de `res.data.whatsappUrl`/`res.data.facebookUrl` | `negocio.service.ts` (o donde se consuma `NegocioService.getContactosPublicos()`) | ✅ Confirmado en el back: `NegocioController.getContactosPublicos()` devuelve `ResponseEntity<ResponseGeneric<ContactosPublicosDto>>` — el wrapper `.data` es obligatorio, como en el resto del proyecto. Es bug del front, seguro de corregir ya. |
+| 2 | URL incorrecta del chatbot para imagen de variante: usa `/v1/variantes/imagenes/{id}` en vez de `/variantes/v1/imagenes/{id}`; además toma el primer elemento del array en vez del que trae `principal:true` | `chatbot.service.ts` | ✅ Ya documentado como corrección pendiente del front desde el 2026-07-02 (ver nota F-8 más arriba en este documento) — nada nuevo, seguro de proceder. |
+| 3 | Falta mandar `montoDado` en `POST /v1/ventas/save` (solo si método = EFECTIVO) | `venta-directa.component.ts` | ✅ Correcto — el campo `montoDado` ya existe en el back (NF-3, `VentaDirectaRequest`) desde la sesión del módulo de crédito. Seguro de proceder. |
+| 4 | Apellido materno ya no es obligatorio — quitar `Validators.required` | `clientes-add.component.ts` | 🔴 **NO PROCEDER TODAVÍA.** Esa validación se quitó en el back **en esta misma sesión** (mejora 15) y sigue **sin commitear, sin compilar, sin correr en ningún ambiente** (dev/qa/prod siguen exigiendo apellido materno hoy). Si el front quita el `required` antes de que el back esté desplegado, un formulario sin apellido materno se rechazaría igual con 400 contra dev/qa reales. Esperar a que se confirme que el back de la mejora 15 ya está arriba. |
+
+**Respuesta a "¿Procedo con estos 4 cambios?":** sí a los puntos 1, 2 y 3 — son seguros e
+independientes de la mejora 15. El punto 4 hay que dejarlo pendiente hasta que el back de la
+mejora 15 esté compilado, probado y desplegado en el ambiente correspondiente (ver "Pendiente
+antes de mergear a qa" arriba).
+
+### Nueva idea sin desarrollar — Promociones por variante (2026-07-03, solo anotada, sin decidir)
+
+Pregunta del usuario: quiere poder marcar promociones puntuales sobre variantes específicas (ej.
+2 variantes en promoción) sin afectar el cálculo de ganancias que ya existe, y sin saber todavía
+cómo manejarlo en el front.
+
+**Contexto ya confirmado en el back:**
+- La ganancia de cada venta se calcula con el precio real vendido (`subTotal` del item) menos
+  `precioCosto` del producto — **no depende de un precio fijo**, así que vender más barato como
+  promo ya recalcula bien la ganancia hoy, sin tocar nada.
+- Ya existe un campo `Producto.precioRebaja` (get/set simple, sin lógica de negocio, sin fechas,
+  sin activar/desactivar) — pero vive en `Producto`, no en `Variantes`, así que no sirve para
+  promocionar una talla/color puntual sin afectar las demás variantes del mismo producto.
+
+**Recomendación dada (sin implementar, el usuario no ha confirmado):** agregar 2-3 campos nuevos
+directo en `Variantes` (ej. `precioPromocion`, `descripcionPromocion`, `enPromocion`) en vez de
+tocar `Producto`. El catálogo público mostraría el precio de promo solo en esas variantes; al
+vender, el front manda el precio como ya hace hoy (no hay que tocar `savePedido`/venta ni la
+lógica de ganancia). Pendiente de decidir: ¿el back debe validar que el precio cobrado en la venta
+coincida exactamente con `precioPromocion` (evita que el front mande cualquier precio), o queda
+como hoy (el front es responsable del precio, sin validación de por medio)?
+
+**Estado: pausado a petición del usuario para retomar después de cerrar la mejora 15.**

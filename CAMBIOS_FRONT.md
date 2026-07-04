@@ -4348,21 +4348,110 @@ Va en la pantalla de "mi cuenta"/perfil, no en el login — ese caso sigue siend
 **Archivos:** `CambiarPasswordRequest.java` (nuevo), `PasswordResetService.java`,
 `AuthController.java`. No requiere migración (usa las columnas de `password` que ya existían).
 
+## Unificar verificación de correo Usuario/Cliente (2026-07-03) — acción requerida en el front
 
+> ⚠️ **Código escrito pero NO compilado/probado ni desplegado todavía** (sesión sin Maven
+> disponible) y **migraciones sin correr**. No arrancar el front hasta que se confirme "ya está en
+> QA" — esta sección documenta el contrato tal como quedó en el código, puede ajustarse si algo
+> falla al probarlo. Diseño completo en `PLAN_MEJORAS.md` mejora 15.
 
+### 1. Registro ahora exige verificar el correo antes de poder loguearse
 
-me ayudas con una imagene de un diseno de mi pagina para lso componentes es que actualmente tengo unos de un color otros de otro y asi uso dark y ligth por eso necesitario 2 cosas y homologarlas peor antes de que me muestres la imagenquisiera que los colores quedaran con forme a mi negocio y otra cosa que todo quede homologado en colores necesitas saber cosas de mi proyecto y ademas de mi negocio para hacer algo espectacular?
+`POST /v1/auth/registrar` no cambia de contrato, pero el `Usuario` que crea queda **sin poder
+loguearse** hasta verificar su correo (antes podía loguearse de inmediato).
 
+```
+POST /v1/auth/enviar-codigo-verificacion
+Body: { "userName": "juanperez" }      // acepta username O correo, cualquiera de los dos
 
-Deliberó sobre necesidades del proyecto para diseñar sistema cromático cohesivo
-Deliberó sobre necesidades del proyecto para diseñar sistema cromático cohesivo
-¡Sí, totalmente! Para que el diseño realmente refleje tu negocio y no sea un paleta genérica, me ayuda mucho saber algunas cosas antes de mostrarte algo.
+POST /v1/auth/verificar-correo
+Body: { "userName": "juanperez", "codigo": "123456" }
+```
 
-Q: ¿A qué se dedica tu negocio o qué tipo de plataforma es?
-A: Es un negocion de venta de mochilas, bolsas, perfumes, pantalones poco de ropa y mas
+Mismo patrón que ya conocen de la verificación de `Cliente` (vencimiento 15 minutos, código de 6
+dígitos). Ambos responden `200` con texto plano en éxito, `400` con el mensaje de error en texto
+plano si falla (`"Usuario no encontrado"`, `"El correo ya esta verificado"`,
+`"Codigo de verificacion invalido"`, `"El codigo de verificacion expiro, solicita uno nuevo"`).
+`enviar-codigo-verificacion` también puede responder `429` si se pide demasiadas veces seguidas
+(rate-limit propio, independiente del de login/registro).
 
-Q: ¿Ya tienes colores de marca (logo, identidad) que debamos respetar?
-A: No, parto de cero
+**Flujo front sugerido:** justo después de `POST /v1/auth/registrar`, llamar
+`enviar-codigo-verificacion` automáticamente y mostrar la pantalla de "ingresa el código de 6
+dígitos", con botón de reenviar. Recién cuando `verificar-correo` responde `200`, mandar al login
+normal (`POST /v1/auth/login`).
 
-Q: ¿Qué sensación quieres que transmita tu marca?
-A: Elegante / premium
+### 2. `POST /v1/auth/login` ahora puede rechazar por correo sin verificar
+
+Nueva respuesta posible, además de las que ya existían:
+
+- **`403`** con body `"Debes verificar tu correo antes de iniciar sesión"` — el `Usuario` existe,
+  la contraseña es correcta, pero `correoVerificado` sigue en `false`. El front debe mandar a la
+  pantalla de "ingresa el código" (mismos 2 endpoints del punto 1) en vez de mostrar un error
+  genérico de credenciales.
+- `401` (credenciales inválidas) y `429` (rate-limit) siguen igual que antes, sin cambios.
+
+**Usuarios que ya existían antes de este cambio:** todos quedan con `correoVerificado = false`
+por default (sin excepción, no hay "pase automático") — al primer intento de login después de que
+esto se despliegue, van a recibir el mismo `403` de arriba y tendrán que verificar su correo por
+primera vez, aunque su cuenta sea antigua. Sesiones ya activas (con un access/refresh token
+válido) NO se ven afectadas — solo un login nuevo dispara esta validación.
+
+### 3. Al verificar, se auto-crea el `Cliente` — nuevo campo `datosCompletos`
+
+Cuando `verificar-correo` (punto 1) tiene éxito por primera vez, el back crea automáticamente un
+`Cliente` vinculado a ese `Usuario`, con el correo ya copiado y verificado, pero **sin nombre,
+apellidos ni teléfono todavía** — nuevo campo `Cliente.datosCompletos: false`.
+
+**`POST /pedidos/savePedido` ahora valida dos cosas por separado, con mensajes distintos:**
+- `400` `"Debes verificar tu correo antes de generar un pedido"` — ya existía (mejora 12), sigue
+  igual.
+- `400` `"Debes completar tus datos (nombre, apellido paterno, telefono) antes de generar un
+  pedido"` — **nuevo**. El front debe distinguir este mensaje del anterior para saber si mandar a
+  la pantalla de "verifica tu correo" o a la de "completa tu perfil" (nombre, apellido paterno,
+  teléfono — el correo ya viene prellenado, no hace falta volver a pedirlo ni verificarlo aquí).
+
+Se guarda con el mismo endpoint de siempre: `POST /v1/clientes/save` /
+`PUT /v1/clientes/update/{id}`.
+
+**Apellido materno ahora es opcional** (antes obligatorio, mejora 12) — si el formulario del front
+tenía `Validators.required` en ese campo, hay que quitarlo.
+
+### 4. Cambiar el correo de un cliente ya no se aplica de inmediato
+
+Al actualizar un `Cliente` (`POST/PUT /v1/clientes/...`) con un `correoElectronico` distinto al
+que ya tenía guardado:
+
+- Los demás campos del formulario (nombre, apellidos, teléfono, direcciones) se guardan siempre,
+  sin condición.
+- El correo **no cambia todavía** — el objeto `Cliente` que devuelve el response sigue trayendo el
+  correo **anterior** (el ya verificado), no el que se acaba de escribir.
+- El back dispara automáticamente el envío de un código de verificación al correo nuevo (mismo
+  mecanismo de siempre: `POST /v1/clientes/{id}/enviar-codigo-verificacion` ya se llama solo, el
+  front no necesita invocarlo aparte en este caso).
+- El front debe comparar el `correoElectronico` que mandó vs. el que regresó el response: si son
+  distintos, mostrar un aviso tipo *"Guardamos tus datos. Te enviamos un código a tu correo nuevo
+  para confirmarlo — mientras no lo confirmes, seguirás recibiendo notificaciones en tu correo
+  anterior."* y ofrecer el input de 6 dígitos (`POST /v1/clientes/{id}/verificar-correo`, ya
+  existente). Si el cliente nunca verifica, no pasa nada malo — simplemente el correo anterior
+  sigue siendo el vigente indefinidamente.
+- **Excepción — un ADMIN editando el cliente desde el panel:** el correo se aplica directo, sin
+  disparar nada de esto. Se distingue por el rol de la sesión que hace el request, no por ningún
+  campo del body — el front del panel admin no necesita hacer nada especial aquí, ya funciona así
+  automáticamente.
+
+### 5. Nada nuevo para soporte — ya funcionaba
+
+El caso de "el cliente no puede verificar su correo solo, un admin lo ayuda por teléfono" **no
+requirió cambios** — `POST /v1/clientes/{id}/enviar-codigo-verificacion` y
+`POST /v1/clientes/{id}/verificar-correo` ya eran accesibles por cualquier usuario autenticado
+(incluido ADMIN) para cualquier `clienteId`, no solo el dueño de la cuenta. Si el front quiere una
+pantalla de soporte en el panel admin (buscar cliente → botón reenviar código → input para
+capturar el código que el cliente dicte), puede armarla ya con estos 2 endpoints existentes.
+
+**Archivos tocados en el back:** `Usuario.java` (3 campos nuevos), `Cliente.java` (`datosCompletos`,
+`correoPendiente`, apellido materno ya no obligatorio), `UsuarioVerificacionService.java` (nuevo),
+`EnviarCodigoVerificacionUsuarioRequest.java` / `VerificarCorreoUsuarioRequest.java` (nuevos),
+`ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `AuthController.java`,
+`SecurityConfig.java`, `PedidoServiceImpl.java`. Migraciones:
+`migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **sin
+correr en ningún ambiente todavía**.

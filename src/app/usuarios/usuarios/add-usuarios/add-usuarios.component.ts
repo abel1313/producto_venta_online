@@ -120,29 +120,25 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
   darAltaUser(){
     if (this.formRegistro.valid) {
       const { userName, email, password } = this.formRegistro.value;
-      this.auth.registrar({ userName, email, password }).subscribe(registrado => {
-        if (registrado != null) {
-          this.formRegistro.reset();
-          Swal.fire({
-            title: `Usuario ${userName} registrado con exito`,
-            icon: "success",
-            draggable: true
-          }).then(() => this.router.navigate(['/login']));
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrio un error al registrarse"
-          });
+      const usrName: string = userName ?? '';
+      this.auth.registrar({ userName: usrName, email, password }).subscribe({
+        next: (registrado) => {
+          if (registrado != null) {
+            this.formRegistro.reset();
+            // Enviar código de verificación automáticamente y redirigir
+            const pwd: string = password ?? '';
+            this.auth.enviarCodigoVerificacionUsuario(usrName).subscribe({
+              next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } }),
+              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } })
+            });
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrarse.' });
+          }
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'Ocurrió un error al registrarse.' });
         }
-      },
-        errr => {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrio un error al registrarse"
-          });
-        });
+      });
     }
   }
 

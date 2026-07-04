@@ -76,13 +76,24 @@ export class LoginFormComponent implements OnInit {
         }
         this.errorMessage = '';
       },
-      error: (error: any) => { 
-        this.errorMessage = 'Usuario o contraseña incorrectos'; 
+      error: (error: any) => {
+        if (error.status === 403) {
+          // Correo sin verificar — enviar código y redirigir a pantalla de verificación.
+          // Pasamos el password en el state (en memoria, no persiste) para hacer auto-login
+          // después de que el usuario verifique el código, sin que tenga que escribirlo de nuevo.
+          const userName: string = credentials.userName ?? '';
+          const password: string = credentials.password ?? '';
+          this.acceder.enviarCodigoVerificacionUsuario(userName).subscribe({
+            next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } }),
+            error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } })
+          });
+          return;
+        }
         if (error.status === 429) {
           this.errorMessage = error.error ?? 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.';
+          return;
         }
-        console.log("que ror trae ", error);
-        
+        this.errorMessage = 'Usuario o contraseña incorrectos';
       }
     });
   }

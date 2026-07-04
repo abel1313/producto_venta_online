@@ -44,7 +44,7 @@ export class ClientesAddComponent implements OnInit, OnDestroy {
       nombrePersona:     ['', [Validators.required]],
       segundoNombre:     [''],
       apeidoPaterno:     ['', Validators.required],
-      apeidoMaterno:     ['', Validators.required],
+      apeidoMaterno:     [''],
       sexo:              [''],
       correoElectronico: ['', [Validators.required, Validators.email]],
       numeroTelefonico:  ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]]

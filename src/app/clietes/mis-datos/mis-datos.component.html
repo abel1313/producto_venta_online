@@ -109,7 +109,11 @@
         <div class="md-row">
           <!-- Correo -->
           <div class="md-field">
-            <label class="md-label" for="md-correo">Correo electrónico <span class="md-req">*</span></label>
+            <label class="md-label" for="md-correo">
+              Correo electrónico <span class="md-req">*</span>
+              <span *ngIf="correoVerificado === true"  class="md-badge md-badge--ok">✅ Verificado</span>
+              <span *ngIf="correoVerificado === false" class="md-badge md-badge--warn">⚠️ Sin verificar</span>
+            </label>
             <div class="md-input-wrap">
               <i class="pi pi-envelope md-input-icon"></i>
               <input id="md-correo" class="md-input" type="email"
@@ -121,6 +125,11 @@
               <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</ng-container>
               <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</ng-container>
             </span>
+            <button *ngIf="correoVerificado !== true && clienteId"
+                    type="button" class="md-btn-verify"
+                    (click)="verificarCorreoPropio()">
+              ✉️ Verificar mi correo
+            </button>
           </div>
 
           <!-- Teléfono -->

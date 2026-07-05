@@ -135,8 +135,17 @@
         <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
         <a class="sb-subitem" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
         <a class="sb-subitem" routerLink="admin/banners" (click)="closeMobile()">🖼️ Banners promoción</a>
+        <a class="sb-subitem" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
       </div>
     </div>
+
+    <!-- Promociones (todos los usuarios logueados) -->
+    <a class="sb-item" *ngIf="!isAnonymous"
+       routerLink="promociones" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🎁</span>
+      <span class="sb-label">Promociones</span>
+    </a>
 
     <!-- Chat (usuarios logueados) -->
     <a class="sb-item" *ngIf="!isAnonymous && !isAdminUser"

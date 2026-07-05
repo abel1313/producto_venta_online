@@ -49,7 +49,14 @@ export class NavbarComponent implements OnInit {
     });
 
     this.carritoVariante.carrito$.subscribe(items => {
-      this.countCarritoVariante = items.reduce((s, i) => s + i.cantidad, 0);
+      const v = items.reduce((s, i) => s + i.cantidad, 0);
+      const p = this.carritoVariante.obtenerPromos().reduce((s, pr) => s + pr.cantidadCombos, 0);
+      this.countCarritoVariante = v + p;
+    });
+    this.carritoVariante.promos$.subscribe(() => {
+      const v = this.carritoVariante.obtener().reduce((s, i) => s + i.cantidad, 0);
+      const p = this.carritoVariante.obtenerPromos().reduce((s, pr) => s + pr.cantidadCombos, 0);
+      this.countCarritoVariante = v + p;
     });
 
     window.addEventListener('storage', () => {

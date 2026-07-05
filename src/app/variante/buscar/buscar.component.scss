@@ -828,3 +828,64 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid rgba(255, 255, 255, 0.07);
   }
 }
+
+// ── Banner de descubribilidad de promociones ──────────────────────
+.vb-promo-banner {
+  max-width: 1120px;
+  margin: -10px auto 16px;
+  padding: 0 20px;
+
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(176,138,78,0.15) 0%, rgba(176,138,78,0.08) 100%);
+    border: 1px solid rgba(176,138,78,0.35);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: $transition;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(176,138,78,0.24) 0%, rgba(176,138,78,0.14) 100%);
+      border-color: rgba(176,138,78,0.55);
+      text-decoration: none;
+    }
+  }
+
+  &__icon { font-size: 1.5rem; flex-shrink: 0; }
+
+  &__texto {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong { font-size: 0.9rem; color: var(--app-accent); }
+    span   { font-size: 0.78rem; color: var(--app-text-muted); }
+  }
+
+  &__cta {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--app-accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 576px) {
+    padding: 0 12px;
+    &__cta { display: none; }
+  }
+}
+
+:host-context(body.theme-light) {
+  .vb-promo-banner__link {
+    background: linear-gradient(135deg, rgba(176,138,78,0.10) 0%, rgba(176,138,78,0.05) 100%);
+    border-color: rgba(176,138,78,0.28);
+    &:hover {
+      background: linear-gradient(135deg, rgba(176,138,78,0.18) 0%, rgba(176,138,78,0.10) 100%);
+    }
+  }
+}

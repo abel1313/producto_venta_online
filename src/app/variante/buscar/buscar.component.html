@@ -78,6 +78,18 @@
   </div><!-- /vb-header__content -->
 </div>
 
+<!-- ── Banner de promociones activas ──────────────────────────────── -->
+<div class="vb-promo-banner">
+  <a routerLink="/promociones" class="vb-promo-banner__link">
+    <span class="vb-promo-banner__icon">🏷️</span>
+    <div class="vb-promo-banner__texto">
+      <strong>¡Tenemos promociones activas!</strong>
+      <span>Combos exclusivos a precio especial — solo de contado</span>
+    </div>
+    <span class="vb-promo-banner__cta">Ver promociones →</span>
+  </a>
+</div>
+
 <!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
 <div *ngIf="isAdminUser && seleccionados.size > 0" class="vb-lote-bar">
   <div class="vb-lote-bar__inner">

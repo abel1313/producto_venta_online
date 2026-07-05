@@ -4522,4 +4522,111 @@ capturar el código que el cliente dicte), puede armarla ya con estos 2 endpoint
 `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **ya
 corridas en QA (2026-07-04)**.
 
-¿Tienes acceso a la BD para correr el UPDATE ahora?
+---
+
+## [SEC-KEY-01] ✅ Fix: control de acceso — un usuario ya no podía ver/editar datos de otro (2026-07-04)
+
+**Hallazgo:** `POST /v1/clientes/save`, `PUT /v1/clientes/update/{id}` y
+`GET /v1/clientes/buscarPorIdCliente/{id}` solo exigían estar autenticado, sin verificar que el
+`id`/`usuario.id` del request correspondiera al usuario dueño de la sesión. Cualquier cliente
+logueado podía leer o sobreescribir los datos de **otro** cliente con solo mandar su `id`. Lo
+mismo pasaba con `/v1/usuarios/**` (gestión de cuentas/roles/permisos): solo pedía estar
+autenticado, no ser ADMIN — un usuario cualquiera podía, por ejemplo, asignarse el rol `ADMIN` vía
+`PUT /v1/usuarios/{usuarioId}/rol/{rolId}`.
+
+**Fix aplicado:**
+- `/v1/usuarios/**` (excepto `buscarClientePorIdUsuario`, que ya era público) ahora requiere
+  `hasRole("ADMIN")` en `SecurityConfig` — toda esa gestión es exclusiva de admin, no había caso
+  de autoservicio legítimo.
+- `GET /v1/clientes/buscar` (búsqueda por nombre, expone correo/teléfono) ahora también requiere
+  `hasRole("ADMIN")` — antes cualquier cliente autenticado podía buscar los datos de otros.
+- `POST /v1/clientes/save`, `PUT /v1/clientes/update/{id}` y
+  `GET /v1/clientes/buscarPorIdCliente/{id}` ahora comparan el usuario del JWT contra el
+  `usuario.id`/`idCliente` de la petición — si no coincide y quien llama no es ADMIN, responden
+  `403`. Un ADMIN sigue pudiendo operar sobre cualquier cliente (panel admin no se ve afectado).
+- `PUT /v1/clientes/update/{id}` antes ignoraba el `{id}` de la URL y hacía un guardado crudo sin
+  pasar por la lógica de correo pendiente/mejora 15 — ahora reutiliza exactamente la misma lógica
+  que `save()`, así que ambos se comportan igual.
+
+**El front no necesita cambiar nada si ya mandaba el `usuario.id`/`idCliente` correctos (el
+propio, no el de otro)** — solo verá un `403` nuevo si por error intentaba operar sobre un id que
+no le pertenece, cosa que antes se permitía silenciosamente.
+
+**Acción específica del front para `/v1/usuarios/**` y `GET /v1/clientes/buscar`:** antes
+funcionaban para cualquier usuario logueado; ahora dan `403` si quien llama no es ADMIN. Si alguna
+pantalla que NO es del panel admin (ej. "mi perfil" de un cliente normal) llegaba a llamar alguno
+de estos endpoints, hay que quitarle esa llamada — no van a volver a funcionar para no-admins. El
+panel admin no se ve afectado (siempre llama estos endpoints ya logueado como ADMIN).
+
+**Archivos:** `SecurityConfig.java`, `ClienteControllerImpl.java`, `AuthenticationUtils.java`
+(nuevo método `currentUsuario()`). No requiere migración.
+
+---
+
+## Reseteo de contraseña por ADMIN — contraseña temporal fija (2026-07-04)
+
+Pensado para cuando un usuario olvida su contraseña y el correo que registró es falso/no revisa
+(el flujo normal de `olvide-password` no le sirve porque nunca va a recibir el código). El admin
+lo resetea a una contraseña generada al azar y se la pasa al usuario por el medio que sea
+(teléfono, en persona, etc.).
+
+```
+PUT /v1/usuarios/{id}/resetear-password
+```
+
+- Requiere rol ADMIN (cae dentro de `/v1/usuarios/**`, ver `SEC-KEY-01` arriba).
+- No lleva body — solo el `id` del usuario (el mismo que usarías para `updateUsuario/{id}`).
+- Genera una contraseña aleatoria de 8 caracteres (letras mayúsculas/minúsculas + dígitos, sin
+  `0/O/1/l/I` para no confundir al dictarla), se la asigna al usuario y marca internamente
+  `passwordTemporal = true`.
+- Responde `200` con `{ "data": "aB3dEfG9", "mensaje": "Contrasena reseteada. Comparte esta
+  contrasena con el usuario; debera cambiarla en su siguiente login." }` — **el front debe
+  mostrarle esa contraseña (`data`) al admin en pantalla** para que se la pueda dar al usuario;
+  el back no la vuelve a mostrar después, solo queda el hash.
+
+**Cambio en el login — nuevo campo `debeCambiarPassword`:**
+
+`POST /v1/auth/login` ahora devuelve, además de `accessToken`:
+
+```json
+{ "accessToken": "...", "debeCambiarPassword": true }
+```
+
+- `true` solo si la contraseña actual fue puesta por un reseteo de admin y el usuario **todavía
+  no la ha cambiado**. En cualquier otro caso viene `false`.
+- **El front debe revisar este flag después de un login exitoso** (200): si viene `true`, no
+  dejar navegar al sistema normal — forzar la pantalla de "cambia tu contraseña" (reusar
+  `PUT /v1/auth/cambiar-password`, ya documentado arriba, pidiendo como "actual" la contraseña
+  temporal que el admin le dio, y la nueva que el usuario elija).
+- En cuanto el usuario cambia su contraseña con éxito (por `cambiar-password` o por
+  `restablecer-password` del flujo de "olvidé mi contraseña"), el flag se limpia solo — el
+  próximo login ya viene con `debeCambiarPassword: false`.
+
+**Archivos:** `Usuario.java` (`passwordTemporal`), `UsuarioServiceImpl.java`
+(`resetearPasswordAleatoria`), `UsuarioController.java`, `AuthResponse.java`, `AuthController.java`,
+`PasswordResetService.java`. Migración: `migration_password_temporal.sql` — **pendiente de correr
+en dev/qa/prod**.
+
+### Verificar el correo de un Usuario desde el panel de admin
+
+No es un endpoint nuevo — la pantalla de detalle/edición de un `Usuario` en el panel puede usar
+los mismos 2 endpoints ya documentados arriba (sección "Unificar verificación de correo
+Usuario/Cliente", punto 1):
+
+```
+POST /v1/auth/enviar-codigo-verificacion   Body: { "userName": "..." }
+POST /v1/auth/verificar-correo             Body: { "userName": "...", "codigo": "..." }
+```
+
+Son públicos (cualquiera los puede llamar, no piden rol) porque un usuario recién registrado
+todavía no tiene sesión cuando los usa por primera vez — así que el panel admin también puede
+dispararlos para cualquier `userName`, sin restricción adicional. Flujo sugerido en el panel: botón
+"Reenviar código de verificación" → dispara `enviar-codigo-verificacion` → input para que el admin
+capture el código que el usuario le dicte por teléfono → `verificar-correo`.
+
+### Si el admin edita el correo de un Usuario (no Cliente), se aplica directo
+
+`PUT /v1/usuarios/updateUsuario/{id}` (ahora solo ADMIN, ver `SEC-KEY-01`) ya aplicaba — y sigue
+aplicando — el correo nuevo de inmediato, sin pedir verificación ni dejar nada pendiente. Mismo
+criterio que ya existe para `Cliente` cuando lo edita un ADMIN (mejora 15, punto 4): se confía en
+el admin, no hay paso intermedio. No fue necesario cambiar código para esto, ya funcionaba así.

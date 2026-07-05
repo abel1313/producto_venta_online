@@ -3062,3 +3062,62 @@ verificarCorreo(clienteId: number, codigo: string): Observable<ResponseGeneric<s
 - `src/app/variante/venta-variante/venta-variante.component.ts` → Opción B: `flujoVerificacion()`, `mostrarSwalCodigo()`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT AUTH — FORZAR CAMBIO CONTRASEÑA + ACCIONES ADMIN EN UPDATE USER + VERIFICACIÓN CORREO CLIENTE (2026-07-04)
+
+> Implementación de todos los puntos de `RESUMEN_FRONT_2026-07-04` / `CAMBIOS_FRONT.md`.
+
+### 1. `debeCambiarPassword` en login (forzar cambio tras reseteo de admin)
+
+`POST /v1/auth/login` ahora devuelve `{ accessToken, debeCambiarPassword: boolean }`.
+Si `true` → no navegar al sistema — Swal forzado (`allowOutsideClick: false`, `allowEscapeKey: false`)
+con 2 inputs (nueva + confirmar), llama `PUT /v1/auth/cambiar-password`. Implementado en
+`login-form.component.ts` y `verificar-correo.component.ts` (ambos puntos de auto-login).
+
+### 2. Mover acciones admin de lista → pantalla de edición de usuario
+
+**Antes:** botones "🔑 Resetear contraseña" y "✉️ Verificar correo" en cada card de la lista.
+**Ahora:** solo en `add-usuarios` cuando `textoCard === 'Actualizar usuario' && authService.isAdminService`.
+El botón viejo "Restablecer contraseña" (ponía `username123`) fue reemplazado.
+
+- `resetearPasswordAdmin()` → `PUT /v1/usuarios/{id}/resetear-password` (sin body) → muestra contraseña temporal en Swal
+- `verificarCorreoAdmin()` → envía código → `mostrarSwalCodigoAdmin()` (Swal con input de 6 dígitos para que admin capture lo que el usuario le dicte por teléfono/voz) → `POST /v1/auth/verificar-correo`
+
+**Archivos modificados:**
+- `src/app/usuarios/usuarios/all-usuarios/all-usuarios.component.html` → quitados los 2 botones de la lista
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` → +`resetearPasswordAdmin()`, +`verificarCorreoAdmin()`, +`mostrarSwalCodigoAdmin()`
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` → sección `.admin-actions` con los 2 botones, reemplaza btn-reset viejo
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` → `.admin-actions`, `.btn-admin-reset`, `.btn-admin-verify`
+
+### 3. Verificar correo de cliente — admin (clientes-buscar)
+
+Admin puede verificar el correo de cualquier cliente desde `/clientes/buscar`.
+Botón "✉️ Verificar correo" visible por card cuando `correoVerificado !== true`.
+Flujo: envía código → Swal captura los 6 dígitos → `POST /v1/clientes/{id}/verificar-correo`.
+Al éxito: `c.correoVerificado = true` (actualización local del array).
+
+**Archivos modificados:**
+- `src/app/clietes/clientes-buscar/clientes-buscar.component.ts` → +`verificarCorreoCliente()`, +`mostrarSwalCodigo()`
+- `src/app/clietes/clientes-buscar/clientes-buscar.component.html` → botón `cb-btn--verify` por card
+- `src/app/clietes/clientes-buscar/clientes-buscar.component.scss` → `&--verify` style + dark mode
+
+### 4. Verificar correo de cliente — el propio usuario (mis-datos)
+
+El usuario verifica su propio correo de cliente desde `/clientes/mis-datos`.
+Badge "✅ Verificado" / "⚠️ Sin verificar" junto al label del correo.
+Botón "✉️ Verificar mi correo" visible cuando `correoVerificado !== true && clienteId > 0`.
+
+**Archivos modificados:**
+- `src/app/clietes/mis-datos/mis-datos.component.ts` → +`clienteId`, +`correoVerificado`, +`verificarCorreoPropio()`, +`mostrarSwalVerificacion()`; `ngOnInit` guarda ambos campos de la respuesta
+- `src/app/clietes/mis-datos/mis-datos.component.html` → badge `md-badge--ok/warn` + botón `md-btn-verify`
+- `src/app/clietes/mis-datos/mis-datos.component.scss` → `.md-badge`, `.md-btn-verify` + dark mode
+
+### 5. Restricciones confirmadas (`GET /v1/clientes/buscar` → solo ADMIN)
+
+Todos los usos de `buscarClientes()` verificados — ninguno accesible para usuario no-admin:
+- `clientes-buscar`, `detalle-productos`, `reportes`, `venta-directa`, `agregar-rifa` → todos bajo `AdminGuardGuard`
+- `venta-variante` → bloque en `*ngIf="false"`, nunca se ejecuta
+
+**Verificado con `ng build --configuration=development` sin errores.**

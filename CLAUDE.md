@@ -3121,3 +3121,65 @@ Todos los usos de `buscarClientes()` verificados — ninguno accesible para usua
 - `venta-variante` → bloque en `*ngIf="false"`, nunca se ejecuta
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO PROMOCIONES — COMBOS DE VARIANTES (2026-07-05)
+
+> Implementación completa del módulo de promociones según `PROMOCIONES.md`.
+> Una "promoción" es un combo: N variantes vendidas juntas a precios individuales con descuento.
+
+### Arquitectura
+
+- **Catálogo cliente:** ruta lazy `/promociones` → `PromocionesModule` → `PromocionesComponent`
+- **Panel admin:** `GestionPromocionesComponent` en módulo eager `AdminModule`, ruta `/admin/promociones`
+- **Carrito:** extendido en `CarritoVarianteService` — variantes conservan localStorage, promos son in-memory únicamente (los precios de promo pueden vencer)
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/promociones/models/promocion.model.ts` | `IPromocionDetalle`, `IPromocion`, `IPromocionRequest`, `IPromocionPaginable`, `IItemPromoCarrito` |
+| `src/app/promociones/service/promocion.service.ts` | 5 endpoints: `crear`, `editar`, `toggleActivo`, `getAdmin`, `getActivas` |
+| `src/app/promociones/promociones.component.ts` | Catálogo cliente: grid de cards, countdown timers, modal detalle, selector de cantidad |
+| `src/app/promociones/promociones.component.html` + `.scss` | BEM prefix `pm-`; cards con badge "🏷️ PROMO", precio tachado vs promo, piezas, countdown |
+| `src/app/promociones/promociones-routing.module.ts` | Ruta raíz `''` → `PromocionesComponent` |
+| `src/app/promociones/promociones.module.ts` | Lazy module (`CommonModule`, `FormsModule`) |
+| `src/app/admin/promociones/gestion-promociones.component.ts` | Panel admin: listar/crear/editar promos + toggle activo/inactivo |
+| `src/app/admin/promociones/gestion-promociones.component.html` + `.scss` | BEM prefix `gp-`; dark/light mode |
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/variante/service/carrito-variante.service.ts` | `_promos: BehaviorSubject<IItemPromoCarrito[]>`; `promos$`; `total` incluye promos; `agregarPromo()`, `eliminarPromo()`, `quitarPromo()`, `obtenerPromos()`, `tienePromos()`, `cantidadPromoEnCarrito()`, `limpiarPromos()`; `limpiar()` también limpia promos |
+| `src/app/variante/models/pedido-variante.model.ts` | `IPedidoVarianteDetalleDTO.promocionId?: number` |
+| `src/app/variante/service/variante.service.ts` | `IVentaDirectaRequest.detalles[].promocionId?: number` |
+| `src/app/variante/venta-variante/venta-variante.component.ts` | `promos: IItemPromoCarrito[]`; `tienePromos` getter; suscripción a `promos$`; `recalcularTotales()`; `armarYConfirmar()` añade detalles de promo + fuerza `NORMAL` si `tienePromos`; `quitarPromo()` |
+| `src/app/variante/venta-variante/venta-variante.component.html` | Sección de promos en el carrito (listado + aviso "solo contado") |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `promosCarrito: IItemPromoCarrito[]`; `tienePromos` getter; pre-carga desde `carritoService.obtenerPromos()`; `totalVenta`/`totalUnidades` incluyen promos; `puedeCobrar` acepta solo-promos; `ejecutarVenta()` concatena detalles de promo + bloquea crédito si `tienePromos`; `limpiarTodo()` resetea `promosCarrito` |
+| `src/app/admin/admin-routing.module.ts` | `{ path: 'promociones', component: GestionPromocionesComponent }` |
+| `src/app/admin/admin.module.ts` | `GestionPromocionesComponent` en declarations |
+| `src/app/app-routing.module.ts` | Ruta lazy `/promociones` con `AuthGuard + CarritoGuard` (sin AdminGuard — visible a todos) |
+| `src/app/navbar/navbar.component.ts` | Badge de carrito ahora suma `countCarritoVariante` = variantes + promos |
+| `src/app/navbar/navbar.component.html` | Link "🎁 Promociones" (todos los usuarios logueados); "🎁 Gestión Promociones" en accordion Admin |
+
+### Endpoints conectados
+
+| Método | URL | Descripción |
+|---|---|---|
+| `POST` | `/v1/promociones` | Crear promoción |
+| `PUT` | `/v1/promociones/{id}` | Editar promoción |
+| `PUT` | `/v1/promociones/{id}/activo?activo=bool` | Toggle activo/inactivo |
+| `GET` | `/v1/promociones/admin?pagina=&size=` | Listar todas (admin) |
+| `GET` | `/v1/promociones/activas?pagina=&size=` | Listar activas (cliente) |
+
+### Reglas de negocio en front
+
+- `instanciasDisponibles` = calculado por back (MIN de floor(stock/cantidad) por pieza)
+- Promos son **solo de contado** — si hay promos en el carrito, `tipoPedido` se fuerza a `NORMAL` en ambos flujos (savePedido y venta directa)
+- `promocionId` se envía en cada línea de detalle que pertenece a un combo
+- Cada combo expande a: por cada `IPromocionDetalle`: `cantidad × cantidadCombos`, `precioUnitario = precioEnPromocion`
+- Promos **no** usan localStorage (precios pueden vencer). Variantes conservan localStorage sin cambios.
+
+**Verificado con `ng build --configuration=development` sin errores.**

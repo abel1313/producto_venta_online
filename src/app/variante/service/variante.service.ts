@@ -171,11 +171,12 @@ export interface IVentaDirectaRequest {
   observaciones?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
   detalles: {
-    productoId:  number;
-    varianteId:  number | null;
-    cantidad:    number;
-    precioVenta: number;
-    subTotal:    number;
+    productoId:   number;
+    varianteId:   number | null;
+    cantidad:     number;
+    precioVenta:  number;
+    subTotal:     number;
+    promocionId?: number;
   }[];
   notificacion?: {
     enviarCorreo?:   boolean;

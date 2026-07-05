@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 import { IVarianteResumen } from '../models/variante.model';
 import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse, IClienteSinRegistro } from '../service/variante.service';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
+import { IItemPromoCarrito } from 'src/app/promociones/models/promocion.model';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
@@ -46,6 +47,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   // ── Líneas de venta ────────────────────────────────────────────────
   lineas: ILineaVenta[] = [];
+  promosCarrito: IItemPromoCarrito[] = [];
+  get tienePromos(): boolean { return this.promosCarrito.length > 0; }
 
   // ── Cliente ────────────────────────────────────────────────────────
   terminoCliente       = '';
@@ -193,7 +196,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     // Pre-cargar items del carrito si el admin llega desde /variantes/carrito
     if (this.isAdminUser && this.lineas.length === 0) {
       const itemsCarrito = this.carritoService.obtener();
-      if (itemsCarrito.length > 0) {
+      const promosCarrito = this.carritoService.obtenerPromos();
+      if (itemsCarrito.length > 0 || promosCarrito.length > 0) {
         this.cargadoDesdeCarrito = true;
         this.lineas = itemsCarrito.map(item => ({
           variante: {
@@ -212,6 +216,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           cantidad: item.cantidad,
           subTotal: item.subTotal
         }));
+        this.promosCarrito = promosCarrito;
       }
     }
 
@@ -359,18 +364,28 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.montoDadoEnganche = 0;
     this.cobrarPendiente   = false;
     this.enviarCorreo      = false;
+    this.promosCarrito     = [];
     if (this.cargadoDesdeCarrito) {
       this.carritoService.limpiar();
       this.cargadoDesdeCarrito = false;
     }
   }
 
-  get totalVenta(): number { return this.lineas.reduce((s, l) => s + l.subTotal, 0); }
-  get totalUnidades(): number { return this.lineas.reduce((s, l) => s + l.cantidad, 0); }
+  get totalVenta(): number {
+    const v = this.lineas.reduce((s, l) => s + l.subTotal, 0);
+    const p = this.promosCarrito.reduce((s, p) => s + p.precioTotal * p.cantidadCombos, 0);
+    return v + p;
+  }
+  get totalUnidades(): number {
+    const v = this.lineas.reduce((s, l) => s + l.cantidad, 0);
+    const p = this.promosCarrito.reduce((s, pr) => s + pr.cantidadCombos, 0);
+    return v + p;
+  }
 
   get puedeCobrar(): boolean {
+    const tieneItems     = this.lineas.length > 0 || this.tienePromos;
     const tieneFormaPago = this.esCredito || this.pagosYMesesId !== null;
-    return this.lineas.length > 0 && tieneFormaPago && !this.procesando;
+    return tieneItems && tieneFormaPago && !this.procesando;
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────
@@ -502,20 +517,34 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     const cambioSnap          = this.esEfectivoContado ? this.cambioContado : null;
     const correoDisponibleSnap = this.correoDisponible;
 
+    const detallesVariantes = this.lineas.map(l => ({
+      productoId:  l.variante.productoId ?? 0,
+      varianteId:  l.variante.id,
+      cantidad:    l.cantidad,
+      precioVenta: l.variante.precio ?? 0,
+      subTotal:    l.subTotal
+    }));
+
+    const detallesPromos = this.promosCarrito.flatMap(p =>
+      p.detalles.map(d => ({
+        productoId:  0,
+        varianteId:  d.varianteId,
+        cantidad:    d.cantidad * p.cantidadCombos,
+        precioVenta: d.precioEnPromocion,
+        subTotal:    d.precioEnPromocion * d.cantidad * p.cantidadCombos,
+        promocionId: p.promocionId
+      }))
+    );
+
     const request: IVentaDirectaRequest = {
       usuarioId:     this.idUsuario,
       clienteId,
       clienteSinRegistroDto: this.clienteSinRegistroModal,
-      detalles: this.lineas.map(l => ({
-        productoId:  l.variante.productoId ?? 0,
-        varianteId:  l.variante.id,
-        cantidad:    l.cantidad,
-        precioVenta: l.variante.precio ?? 0,
-        subTotal:    l.subTotal
-      }))
+      detalles: [...detallesVariantes, ...detallesPromos]
     };
 
-    if (this.esCredito) {
+    // Promos son solo de contado — bloquear crédito aunque el admin lo haya seleccionado
+    if (this.esCredito && !this.tienePromos) {
       request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
       request.observaciones = this.observaciones || undefined;
     } else {

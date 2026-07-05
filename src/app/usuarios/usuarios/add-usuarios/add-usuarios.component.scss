@@ -466,6 +466,45 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ── Admin actions (reset password + verify email) ──────────────────────────
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-admin-reset,
+.btn-admin-verify {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.58rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: $transition;
+  border: none;
+}
+
+.btn-admin-reset {
+  background: rgba(217, 119, 6, 0.09);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  &:hover { background: rgba(217, 119, 6, 0.18); }
+}
+
+.btn-admin-verify {
+  background: rgba(14, 165, 233, 0.09);
+  color: #0ea5e9;
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  &:hover { background: rgba(14, 165, 233, 0.18); }
+}
+
 // ── Footer ─────────────────────────────────────────────────────────────────
 .footer-link {
   text-align: center;

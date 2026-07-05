@@ -162,10 +162,14 @@
           <i class="pi" [class.pi-check]="textoCard === 'Actualizar usuario'" [class.pi-arrow-right]="textoCard !== 'Actualizar usuario'"></i>
         </button>
 
-        <button type="button" class="btn-reset" *ngIf="authService.isAdminService" (click)="restablecerContra()">
-          <i class="pi pi-refresh"></i>
-          Restablecer contraseña
-        </button>
+        <div class="admin-actions" *ngIf="textoCard === 'Actualizar usuario' && authService.isAdminService">
+          <button type="button" class="btn-admin-reset" (click)="resetearPasswordAdmin()">
+            🔑 Resetear contraseña
+          </button>
+          <button type="button" class="btn-admin-verify" (click)="verificarCorreoAdmin()">
+            ✉️ Verificar correo
+          </button>
+        </div>
 
         <p class="footer-link" *ngIf="!authService.isAdminService">
           ¿Ya tienes cuenta?

@@ -60,7 +60,8 @@ export class CarritoVarianteService {
   }
 
   limpiar(): void {
-    this.emitir([]);
+    this._carrito.next([]);
+    localStorage.removeItem(LS_KEY);
   }
 
   obtener(): IDetalleVariante[] {

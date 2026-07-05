@@ -31,6 +31,24 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/registrar`, credentials);
   }
 
+  olvidoPassword(email: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/olvide-password`, { email });
+  }
 
+  restablecerPassword(email: string, codigo: string, nuevaPassword: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/restablecer-password`, { email, codigo, nuevaPassword });
+  }
+
+  cambiarPassword(passwordActual: string, nuevaPassword: string) {
+    return this.http.put<any>(`${environment.api_Url}/v1/auth/cambiar-password`, { passwordActual, nuevaPassword });
+  }
+
+  enviarCodigoVerificacionUsuario(userName: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName });
+  }
+
+  verificarCorreoUsuario(userName: string, codigo: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo });
+  }
 
 }

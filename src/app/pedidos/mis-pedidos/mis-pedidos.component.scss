@@ -1,6 +1,38 @@
 // ── Variables ──────────────────────────────────────────────────────────────
 $radius: 16px;
 $shadow-base: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+// ── Estado vacío ───────────────────────────────────────────────────────────
+.mp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  text-align: center;
+  gap: 0.5rem;
+
+  &__icon {
+    font-size: 3rem;
+    color: var(--app-accent);
+    opacity: 0.45;
+    margin-bottom: 0.5rem;
+  }
+
+  &__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+    margin: 0;
+  }
+
+  &__sub {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin: 0;
+    max-width: 300px;
+  }
+}
 $shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.16);
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -33,13 +65,13 @@ $cancelado-to:   #dc2626;
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.28);
+  box-shadow: 0 4px 12px rgba(176,138,78,0.28);
   transition: $transition;
 
   &:hover {
-    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.42);
+    box-shadow: 0 6px 18px rgba(176,138,78,0.42);
     transform: translateY(-1px);
     color: #fff;
   }
@@ -79,8 +111,8 @@ $cancelado-to:   #dc2626;
   outline: none;
 
   &:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 4px rgba(176,138,78,0.12);
   }
 }
 
@@ -118,7 +150,7 @@ $cancelado-to:   #dc2626;
   display: flex;
   flex-direction: column;
   transition: $transition;
-  border-top: 4px solid #6366f1;
+  border-top: 4px solid var(--app-accent);
 
   &:hover {
     transform: translateY(-4px);
@@ -153,7 +185,7 @@ $cancelado-to:   #dc2626;
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
 .card-head {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
@@ -189,7 +221,7 @@ $cancelado-to:   #dc2626;
   }
 
   &--fiado {
-    background: rgba(99, 102, 241, 0.85);
+    background: rgba(176,138,78,0.85);
     color: #fff;
   }
 }
@@ -278,8 +310,8 @@ $cancelado-to:   #dc2626;
   margin-top: 0.5rem;
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(79,70,229,0.12));
-  border: 1px solid rgba(99,102,241,0.18);
+  background: linear-gradient(135deg, rgba(176,138,78,0.07), rgba(138,106,56,0.12));
+  border: 1px solid rgba(176,138,78,0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -296,7 +328,7 @@ $cancelado-to:   #dc2626;
 .total-amount {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #4f46e5;
+  color: var(--app-accent);
   letter-spacing: -0.02em;
 }
 
@@ -356,9 +388,9 @@ $cancelado-to:   #dc2626;
 }
 
 .btn-ticket {
-  background: #f5f3ff;
-  color: #7c3aed;
-  &:not(:disabled):hover { background: #ede9fe; }
+  background: rgba(176,138,78,0.1);
+  color: var(--app-accent);
+  &:not(:disabled):hover { background: rgba(176,138,78,0.18); }
 }
 
 .btn-correo {
@@ -371,8 +403,8 @@ $cancelado-to:   #dc2626;
 .mp-terminal {
   margin-top: 1.25rem;
   border-radius: 14px;
-  border: 2px solid #e0e7ff;
-  background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+  border: 2px solid rgba(176,138,78,0.25);
+  background: linear-gradient(135deg, rgba(176,138,78,0.06) 0%, rgba(176,138,78,0.1) 100%);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -387,7 +419,7 @@ $cancelado-to:   #dc2626;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #4f46e5;
+  color: var(--app-accent);
 }
 
 .mp-terminal__icon {
@@ -483,10 +515,10 @@ $cancelado-to:   #dc2626;
 
   &--send {
     flex: 1;
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
-    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45); }
+    box-shadow: 0 4px 14px rgba(176,138,78,0.3);
+    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(176,138,78,0.45); }
   }
 
   &--cancel {

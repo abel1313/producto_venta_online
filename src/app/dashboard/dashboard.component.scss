@@ -149,7 +149,7 @@
 .db-card--teal   { border-top: 4px solid #14b8a6; }
 .db-card--orange { border-top: 4px solid #f97316; }
 .db-card--yellow { border-top: 4px solid #eab308; }
-.db-card--indigo { border-top: 4px solid #6366f1; }
+.db-card--indigo { border-top: 4px solid var(--app-accent); }
 .db-card--purple { border-top: 4px solid #a855f7; }
 .db-card--red    { border-top: 4px solid #ef4444; }
 
@@ -185,8 +185,8 @@
   .db-page { background: #f1f5f9; }
 
   .db-header {
-    background: linear-gradient(135deg, #3730a3 0%, #4f46e5 55%, #6366f1 100%);
-    box-shadow: 0 2px 12px rgba(79, 70, 229, 0.25);
+    background: linear-gradient(135deg, #3D2C0C 0%, #8A6A38 55%, #B08A4E 100%);
+    box-shadow: 0 2px 12px rgba(176,138,78,0.25);
   }
 
   .db-card {

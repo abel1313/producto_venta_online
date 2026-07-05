@@ -10,6 +10,7 @@ import { IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
+import { BannerPromoService, IBannerPromo } from 'src/app/shared/services/banner-promo.service';
 
 @Component({
   selector: 'app-buscar',
@@ -27,9 +28,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
   buscando        = false;
   isAdminUser     = false;
   sinResultados   = false;
-  filtroAdmin: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' = 'todos';
+  filtroAdmin: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' | 'no-habilitados' = 'todos';
   detalle: IDetalleVariante[] = [];
-  escaneando      = false;
+  escaneando       = false;
+  seleccionados    = new Set<number>();
+  procesandoLote   = false;
   private controlesEscaner: IScannerControls | null = null;
 
   private productoId = 0;
@@ -37,13 +40,20 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
+  bannerLeft:  IBannerPromo = { activo: false };
+  bannerRight: IBannerPromo = { activo: false };
+
+  get imagenLeft():  string { return this.bannerLeft.imagenBase64  || this.bannerLeft.imagenUrl  || ''; }
+  get imagenRight(): string { return this.bannerRight.imagenBase64 || this.bannerRight.imagenUrl || ''; }
+
   constructor(
     private readonly varianteService: VarianteService,
     private readonly authService: AuthService,
     private readonly carritoVariante: CarritoVarianteService,
     private readonly route: ActivatedRoute,
     readonly router: Router,
-    private readonly compartirSvc: CompartirService
+    private readonly compartirSvc: CompartirService,
+    private readonly bannerSvc: BannerPromoService
   ) {}
 
   compartirImagen(v: IVarianteResumen): void {
@@ -56,6 +66,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.bannerLeft  = this.bannerSvc.getBannerLeft();
+    this.bannerRight = this.bannerSvc.getBannerRight();
+
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
@@ -132,9 +145,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes'): void {
+  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' | 'no-habilitados'): void {
     if (!this.isAdminUser || this.filtroAdmin === filtro) return;
     this.filtroAdmin = filtro;
+    this.seleccionados.clear();
     this.varianteService.invalidarCache();
     this.paginaActual = 1;
     this.sinResultados = false;
@@ -146,6 +160,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
       this.cargarAdminFiltrar('CON_IMAGENES', 1);
     } else if (filtro === 'con-stock-y-imagenes') {
       this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', 1);
+    } else if (filtro === 'no-habilitados') {
+      this.cargarAdminFiltrar('NO_HABILITADOS', 1);
     } else {
       this.buscarPagina(this.terminoBusqueda, 1);
     }
@@ -168,7 +184,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
-  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', pagina: number): void {
+  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES' | 'NO_HABILITADOS', pagina: number): void {
     this.buscando = true;
     this.varianteService.adminFiltrar(filtro, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
@@ -205,22 +221,26 @@ export class BuscarComponent implements OnInit, OnDestroy {
   anteriorPagina(): void {
     if (this.paginaActual <= 1) return;
     const p = this.paginaActual - 1;
+    this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
     else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
     else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
     else if (this.filtroAdmin === 'con-stock-y-imagenes') this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', p);
+    else if (this.filtroAdmin === 'no-habilitados') this.cargarAdminFiltrar('NO_HABILITADOS', p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
   siguientePagina(): void {
     if (this.paginaActual >= this.totalPaginas) return;
     const p = this.paginaActual + 1;
+    this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
     else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
     else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
     else if (this.filtroAdmin === 'con-stock-y-imagenes') this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', p);
+    else if (this.filtroAdmin === 'no-habilitados') this.cargarAdminFiltrar('NO_HABILITADOS', p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -341,6 +361,62 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.controlesEscaner?.stop();
     this.controlesEscaner = null;
     this.escaneando = false;
+  }
+
+  // ── Habilitar / Deshabilitar ───────────────────────────────────────
+
+  estaHabilitado(v: IVarianteResumen): boolean {
+    return v.habilitado !== '0';
+  }
+
+  toggleSeleccion(id: number): void {
+    if (this.seleccionados.has(id)) {
+      this.seleccionados.delete(id);
+    } else {
+      this.seleccionados.add(id);
+    }
+  }
+
+  get todoSeleccionado(): boolean {
+    return this.variantes.length > 0 && this.variantes.every(v => this.seleccionados.has(v.id));
+  }
+
+  toggleTodos(): void {
+    if (this.todoSeleccionado) {
+      this.variantes.forEach(v => this.seleccionados.delete(v.id));
+    } else {
+      this.variantes.forEach(v => this.seleccionados.add(v.id));
+    }
+  }
+
+  habilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
+    this.varianteService.habilitarVariante(v.id, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        v.habilitado = habilitar ? '1' : '0';
+        Swal.fire({ icon: 'success', title: habilitar ? 'Variante habilitada' : 'Variante deshabilitada', timer: 1500, showConfirmButton: false });
+      },
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cambiar el estado.' })
+    });
+  }
+
+  habilitarLote(habilitar: boolean): void {
+    if (this.seleccionados.size === 0 || this.procesandoLote) return;
+    const ids = Array.from(this.seleccionados);
+    this.procesandoLote = true;
+    this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.variantes.forEach(v => {
+          if (this.seleccionados.has(v.id)) v.habilitado = habilitar ? '1' : '0';
+        });
+        this.seleccionados.clear();
+        this.procesandoLote = false;
+        Swal.fire({ icon: 'success', title: habilitar ? 'Variantes habilitadas' : 'Variantes deshabilitadas', timer: 1800, showConfirmButton: false });
+      },
+      error: (err) => {
+        this.procesandoLote = false;
+        Swal.fire({ icon: 'error', title: 'Error en lote', text: err?.error?.mensaje ?? 'No se pudo procesar el lote.' });
+      }
+    });
   }
 
 }

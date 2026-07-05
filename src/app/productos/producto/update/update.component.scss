@@ -1,5 +1,5 @@
-$primary:   #8b1a4a;
-$primary-d: #c2255c;
+$primary:   #8A6A38;
+$primary-d: #B08A4E;
 $radius:    14px;
 $t:         all 0.22s ease;
 
@@ -13,15 +13,15 @@ $t:         all 0.22s ease;
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #6366f1;
+  color: var(--app-accent);
   font-size: 0.83rem;
   font-weight: 600;
   cursor: pointer;
   transition: $t;
 
   &:hover {
-    background: rgba(99,102,241,0.08);
-    color: #4f46e5;
+    background: rgba(176,138,78,0.08);
+    color: var(--app-accent);
   }
 
   .pi { font-size: 0.85rem; }
@@ -101,7 +101,7 @@ $t:         all 0.22s ease;
     border: 1.5px solid var(--card-border);
     transition: $t;
 
-    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(99,102,241,0.15); }
+    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(176,138,78,0.15); }
 
     @media (max-width: 575px) { aspect-ratio: 1 / 1; }
   }
@@ -239,7 +239,7 @@ $t:         all 0.22s ease;
 
     @media (max-width: 767px) { height: 140px; }
 
-    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(99,102,241,0.15); }
+    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(176,138,78,0.15); }
 
     &--principal {
       border-color: #f59e0b !important;

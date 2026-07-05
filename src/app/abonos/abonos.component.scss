@@ -104,12 +104,12 @@
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &--reload     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--abono      { background: #6366f1; color: #fff; }
+  &--abono      { background: var(--app-accent); color: #fff; }
   &--cancelar   { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
   &--transferir { background: rgba(8,145,178,0.1); color: #0891b2; border: 1px solid rgba(8,145,178,0.3); }
   &--detalle    { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--cancel     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--save       { background: #6366f1; color: #fff; min-width: 140px; }
+  &--save       { background: var(--app-accent); color: #fff; min-width: 140px; }
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@
   font-size: 0.72rem;
   font-weight: 700;
 
-  &--apartado  { background: rgba(99,102,241,0.15); color: #6366f1; }
+  &--apartado  { background: rgba(176,138,78,0.15); color: var(--app-accent); }
   &--fiado     { background: rgba(234,179,8,0.15);  color: #ca8a04; }
   &--pagado    { background: rgba(34,197,94,0.15);  color: #16a34a; }
   &--cancelado { background: rgba(239,68,68,0.12);  color: #dc2626; }
@@ -200,7 +200,7 @@
 
   &__bar {
     height: 100%;
-    background: linear-gradient(90deg, #6366f1, #22c55e);
+    background: linear-gradient(90deg, var(--app-accent), #22c55e);
     border-radius: 999px;
     transition: width 0.4s ease;
   }
@@ -249,7 +249,7 @@
 
   &__fecha  { opacity: 0.65; min-width: 90px; }
   &__metodo { font-weight: 600; min-width: 110px; }
-  &__monto  { font-weight: 700; color: #6366f1; }
+  &__monto  { font-weight: 700; color: var(--app-accent); }
   &__nota   { opacity: 0.7; font-style: italic; }
 }
 
@@ -360,7 +360,7 @@
   width: 100%;
   box-sizing: border-box;
 
-  &:focus { outline: none; border-color: #6366f1; }
+  &:focus { outline: none; border-color: var(--app-accent); }
 }
 
 .ab-metodos {
@@ -382,9 +382,9 @@
   transition: all 0.15s;
 
   &--active {
-    background: rgba(99,102,241,0.15);
-    border-color: #6366f1;
-    color: #6366f1;
+    background: rgba(176,138,78,0.15);
+    border-color: var(--app-accent);
+    color: var(--app-accent);
     font-weight: 700;
   }
 
@@ -565,7 +565,7 @@
 // ── Dark mode ────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .ab-input { color-scheme: dark; color: #f1f5f9; }
-  .ab-badge--apartado { color: #818cf8; }
+  .ab-badge--apartado { color: var(--app-accent); }
   .ab-badge--fiado    { color: #fbbf24; }
   .ab-badge--pagado   { color: #4ade80; }
   .ab-monto__val--ok  { color: #4ade80; }

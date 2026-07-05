@@ -120,29 +120,25 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
   darAltaUser(){
     if (this.formRegistro.valid) {
       const { userName, email, password } = this.formRegistro.value;
-      this.auth.registrar({ userName, email, password }).subscribe(registrado => {
-        if (registrado != null) {
-          this.formRegistro.reset();
-          Swal.fire({
-            title: `Usuario ${userName} registrado con exito`,
-            icon: "success",
-            draggable: true
-          }).then(() => this.router.navigate(['/login']));
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrio un error al registrarse"
-          });
+      const usrName: string = userName ?? '';
+      this.auth.registrar({ userName: usrName, email, password }).subscribe({
+        next: (registrado) => {
+          if (registrado != null) {
+            this.formRegistro.reset();
+            // Enviar código de verificación automáticamente y redirigir
+            const pwd: string = password ?? '';
+            this.auth.enviarCodigoVerificacionUsuario(usrName).subscribe({
+              next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } }),
+              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } })
+            });
+          } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrarse.' });
+          }
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'Ocurrió un error al registrarse.' });
         }
-      },
-        errr => {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrio un error al registrarse"
-          });
-        });
+      });
     }
   }
 
@@ -211,6 +207,92 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
 
   irAlLogin() {
     this.router.navigate(['/login']);
+  }
+
+  resetearPasswordAdmin(): void {
+    if (!this.updateUser.id) return;
+    Swal.fire({
+      title: `¿Resetear contraseña de ${this.updateUser.username}?`,
+      text: 'Se generará una contraseña temporal que deberás compartir con el usuario.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, resetear',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d97706'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.usuario.resetearPassword(this.updateUser.id!).subscribe({
+        next: (res: any) => {
+          const nuevaPass: string = res?.data ?? '—';
+          Swal.fire({
+            icon: 'success',
+            title: 'Contraseña reseteada',
+            html: `
+              <p>La contraseña temporal de <strong>${this.updateUser.username}</strong> es:</p>
+              <div style="font-size:1.7rem;font-weight:800;letter-spacing:5px;
+                          padding:12px 16px;background:rgba(0,0,0,0.06);
+                          border-radius:10px;margin:10px 0;font-family:monospace">
+                ${nuevaPass}
+              </div>
+              <p style="font-size:0.82rem;color:#64748b">
+                Dásela al usuario. Deberá cambiarla en su siguiente inicio de sesión.
+              </p>
+            `,
+            confirmButtonText: 'Entendido'
+          });
+        },
+        error: (err: any) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo resetear la contraseña.' });
+        }
+      });
+    });
+  }
+
+  verificarCorreoAdmin(): void {
+    this.auth.enviarCodigoVerificacionUsuario(this.updateUser.username).subscribe({
+      next:  () => this.mostrarSwalCodigoAdmin(),
+      error: () => this.mostrarSwalCodigoAdmin()
+    });
+  }
+
+  private mostrarSwalCodigoAdmin(): void {
+    Swal.fire({
+      title: `Verificar correo — ${this.updateUser.username}`,
+      html: `
+        <p style="margin-bottom:10px;font-size:0.88rem">
+          Se envió un código al correo de <strong>${this.updateUser.username}</strong>.<br>
+          Pídele que te dicte el código de 6 dígitos.
+        </p>
+        <input id="swal-codigo-admin" type="text" inputmode="numeric" maxlength="6"
+               placeholder="123456"
+               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
+                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      outline:none;font-family:monospace">
+      `,
+      confirmButtonText: 'Verificar',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const codigo = (document.getElementById('swal-codigo-admin') as HTMLInputElement)?.value ?? '';
+        if (codigo.length !== 6) {
+          Swal.showValidationMessage('Ingresa los 6 dígitos del código');
+          return false;
+        }
+        return codigo;
+      }
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) return;
+      this.auth.verificarCorreoUsuario(this.updateUser.username, result.value as string).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue verificado correctamente.` });
+        },
+        error: (err: any) => {
+          const raw = err?.error;
+          const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
+          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
+        }
+      });
+    });
   }
 
   showPassword        = false;

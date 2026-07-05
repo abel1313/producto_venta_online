@@ -60,9 +60,13 @@ export class UpdateComponent implements OnInit, OnDestroy {
     this.serviceProducto.productoUpdate$
       .pipe(takeUntil(this.destroy$))
       .subscribe(producto => {
+        if (!producto?.idProducto) {
+          this.router.navigate(['/productos/buscar']);
+          return;
+        }
         this.productoActualizar = producto as IProductoDTORec | null;
-        const nuevoId = producto?.idProducto ?? null;
-        if (nuevoId && nuevoId !== this.idProductoCargado) {
+        const nuevoId = producto.idProducto;
+        if (nuevoId !== this.idProductoCargado) {
           this.idProductoCargado = nuevoId;
           this.resetCarrusel();
           this.cargarPagina(0, nuevoId);

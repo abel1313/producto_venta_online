@@ -1,0 +1,53 @@
+<div class="vc-page">
+  <div class="vc-card">
+
+    <!-- Ícono -->
+    <div class="vc-card__icon">✉️</div>
+
+    <!-- Título -->
+    <h1 class="vc-card__title">Verifica tu correo</h1>
+    <p class="vc-card__sub">
+      Enviamos un código de <strong>6 dígitos</strong> al correo vinculado a
+      <strong>{{ userName }}</strong>. Ingrésalo aquí para continuar.
+    </p>
+
+    <!-- Input código -->
+    <input
+      class="vc-code-input"
+      type="text"
+      inputmode="numeric"
+      maxlength="6"
+      placeholder="● ● ● ● ● ●"
+      [(ngModel)]="codigo"
+      (keydown)="soloNumeros($event)"
+      autocomplete="one-time-code"
+    />
+
+    <p class="vc-hint">El código vence en 15 minutos.</p>
+
+    <!-- Error -->
+    <div class="vc-error" *ngIf="errorMsg">
+      <span>⚠️</span> {{ errorMsg }}
+    </div>
+
+    <!-- Botón verificar -->
+    <button
+      class="vc-btn-primary"
+      [disabled]="codigo.length !== 6 || verificando"
+      (click)="verificar()">
+      {{ verificando ? 'Verificando…' : '✓ Verificar y entrar' }}
+    </button>
+
+    <!-- Reenviar -->
+    <div class="vc-resend">
+      ¿No llegó el correo?
+      <button class="vc-resend__btn" [disabled]="cooldown > 0 || enviando" (click)="reenviarCodigo()">
+        {{ enviando ? 'Enviando…' : (cooldown > 0 ? 'Reenviar en ' + cooldown + 's' : 'Reenviar código') }}
+      </button>
+    </div>
+
+    <!-- Volver -->
+    <a class="vc-back" [routerLink]="['/login']">← Volver al login</a>
+
+  </div>
+</div>

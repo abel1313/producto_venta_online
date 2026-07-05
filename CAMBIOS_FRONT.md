@@ -1920,23 +1920,23 @@ contrario.
   `reiniciar` y, además, si se volvía a mandar `POST /configurarRifaVariante/save` con la misma
   `palabraClave`, daba error `"La palabraClave 'X' ya existe en esta rifa"`.
 - **Ahora:**
-  - Si `esPrueba: true`, la rifa **se mantiene `activa: true`** aunque ya se haya sorteado el
-    ganador de la última variante. `rifaTerminada` (en `/sortear` y `/estado`) sigue marcando
-    correctamente cuándo terminó el ciclo — no depende de `activa`.
-  - `POST /v1/configurarRifaVariante/save`: si `esPrueba: true` y la `palabraClave` ya existe en
-    esa rifa, **ya no rechaza** — actualiza la configuración existente (`giroGanador`, `orden`,
-    `permitirNuevos`, y la variante/stock si se cambió de variante). Mismo `request`/`response`
-    de siempre.
-  - Si `esPrueba: false` (rifa real), el comportamiento **no cambia**: al terminar se pone
-    `activa: false`, y reusar una `palabraClave` ya configurada en esa rifa sigue dando
-    `"ya existe en esta rifa"`.
+    - Si `esPrueba: true`, la rifa **se mantiene `activa: true`** aunque ya se haya sorteado el
+      ganador de la última variante. `rifaTerminada` (en `/sortear` y `/estado`) sigue marcando
+      correctamente cuándo terminó el ciclo — no depende de `activa`.
+    - `POST /v1/configurarRifaVariante/save`: si `esPrueba: true` y la `palabraClave` ya existe en
+      esa rifa, **ya no rechaza** — actualiza la configuración existente (`giroGanador`, `orden`,
+      `permitirNuevos`, y la variante/stock si se cambió de variante). Mismo `request`/`response`
+      de siempre.
+    - Si `esPrueba: false` (rifa real), el comportamiento **no cambia**: al terminar se pone
+      `activa: false`, y reusar una `palabraClave` ya configurada en esa rifa sigue dando
+      `"ya existe en esta rifa"`.
 
 ### Qué debe hacer el front
 - **Nada obligatorio, es retrocompatible.** Mientras `esPrueba: true`, el admin puede:
-  - Repetir `sortear` tras `POST /v1/ganadorRifa/reiniciar/{id}?completo=true|false` cuantas veces
-    quiera, sin que la rifa se "cierre" (`activas`/`activas/hoy` la sigue listando).
-  - Re-mandar `POST /configurarRifaVariante/save` con la misma `palabraClave` para "recargar" la
-    config de la variante de prueba — ya no da error.
+    - Repetir `sortear` tras `POST /v1/ganadorRifa/reiniciar/{id}?completo=true|false` cuantas veces
+      quiera, sin que la rifa se "cierre" (`activas`/`activas/hoy` la sigue listando).
+    - Re-mandar `POST /configurarRifaVariante/save` con la misma `palabraClave` para "recargar" la
+      config de la variante de prueba — ya no da error.
 - Cuando el admin haga `PUT /v1/configurarRifa/{id}/esPrueba` con `{ "esPrueba": false }`
   ("Pasar a sorteo real"), la `ConfigurarRifaVariante` y su `palabraClave` configuradas durante las
   pruebas **se conservan** y se usan tal cual para el sorteo real (no hay que volver a crearlas).
@@ -2119,8 +2119,8 @@ que no terminen en este arreglo.
 **Regla:** siempre que haya un `@Query` que devuelva `Page<T>` y contenga subqueries, agregar `countQuery` sin el `ORDER BY`:
 ```java
 @Query(
-    value = "SELECT m FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...) ORDER BY m.timestamp DESC",
-    countQuery = "SELECT COUNT(m) FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...)"
+        value = "SELECT m FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...) ORDER BY m.timestamp DESC",
+        countQuery = "SELECT COUNT(m) FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...)"
 )
 Page<ChatMensaje> findBy...(Pageable pageable);
 ```
@@ -2319,9 +2319,9 @@ ngOnInit() {
 1. Recibir `{ tipo: "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`
 2. Limpiar `mensajes` del componente (y `sesionId` de sessionStorage)
 3. Cuando el usuario envía el siguiente mensaje:
-   - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
-   - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
-   - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
+    - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
+    - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
+    - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
 
 ---
 
@@ -3572,8 +3572,8 @@ Mostrar en el form de abono, venta directa y cancelación:
 
 ```html
 <label>
-  <input type="checkbox" [(ngModel)]="enviarCorreo" />
-  Enviar ticket al correo del cliente
+    <input type="checkbox" [(ngModel)]="enviarCorreo" />
+    Enviar ticket al correo del cliente
 </label>
 ```
 
@@ -4159,3 +4159,474 @@ sin exigir habilitado — a diferencia del listado público):
 `IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`,
 `VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java`. Sin
 migración de BD — usa las tablas de imágenes que ya existían.
+
+## Verificación de correo del cliente (2026-07-02) — acción requerida en el front
+
+### 1. Correo y teléfono ahora son obligatorios en `Cliente`
+
+`POST /v1/clientes/save` y `PUT /v1/clientes/update/{id}` ahora exigen `correoElectronico` y
+`numeroTelefonico` (antes eran opcionales, sin ninguna validación). Si faltan o el formato es
+inválido, responde **400** con `mensaje` describiendo el error (mismo patrón que ya usan
+`nombrePersona`/`apeidoPaterno`/`apeidoMaterno`):
+- `correoElectronico`: obligatorio, formato de email válido.
+- `numeroTelefonico`: obligatorio, exactamente 10 dígitos (sin espacios, guiones ni lada
+  internacional — ej. `"5512345678"`).
+
+**No aplica** a venta directa sin cuenta (`ClienteSinRegistroDto`) — esos campos siguen
+opcionales, es una venta de mostrador supervisada por personal.
+
+También ahora `POST /v1/auth/registrar` exige `email` (antes era opcional, solo se validaba el
+formato si venía). El endpoint pasó de usar `AuthRequest` a un DTO nuevo `RegistroRequest` con
+los mismos 3 campos (`userName`, `password`, `email`) — sin cambio de contrato para el front,
+solo ahora `email` es requerido. **`POST /v1/auth/login` no cambia** — sigue sin pedir email.
+
+### 2. Nuevo flujo: verificar el correo con un código de 6 dígitos
+
+Antes de que un cliente **con cuenta** pueda generar un pedido (`POST /pedidos/savePedido`) o
+recibir el ticket automático en su correo registrado (venta directa, abono, cancelación de
+pedido), su correo debe estar verificado.
+
+```
+POST /v1/clientes/{id}/enviar-codigo-verificacion
+POST /v1/clientes/{id}/verificar-correo
+Body: { "codigo": "123456" }
+```
+
+- `enviar-codigo-verificacion`: genera un código de 6 dígitos, lo manda por correo (vence en 15
+  minutos) y responde `200` con `{ "data": "Codigo enviado al correo registrado" }`. Si el
+  cliente no existe o no tiene correo registrado, responde `400`.
+- `verificar-correo`: valida el código contra el que se envió. Si es correcto y no venció, marca
+  el cliente como verificado y responde `200`. Si el código es incorrecto o ya venció, responde
+  `400` con el mensaje correspondiente (`"Codigo de verificacion invalido"` /
+  `"El codigo de verificacion expiro, solicita uno nuevo"`) — en ese caso hay que dejar que el
+  usuario pida un código nuevo (`enviar-codigo-verificacion` otra vez).
+- Si ya estaba verificado, `verificar-correo` no hace nada y responde `200` igual (idempotente).
+
+**Qué pasa si el cliente NO está verificado:**
+- `POST /pedidos/savePedido` responde `400` con mensaje `"Debes verificar tu correo antes de
+  generar un pedido"` — no se crea el pedido.
+- En venta directa / abono / cancelación de pedido, si se pidió `enviarCorreo: true` en la
+  notificación y el cliente no está verificado, el ticket **no se envía** — el response trae
+  `correoEnviado: false` y en `erroresEnvio` aparece `"El correo del cliente no esta verificado,
+  no se envio el ticket"`. **Excepción:** si en el modal post-venta se escribe un correo manual
+  (`notificacion.correo`) para esa notificación puntual, se envía ahí sin exigir verificación —
+  ese campo es un envío puntual, no depende de la cuenta del cliente.
+
+**Sugerencia de UX para el front:** tras crear/actualizar el `Cliente` (o al detectar
+`correoVerificado: false` en el objeto `Cliente`), mostrar un paso de "verifica tu correo" con un
+input de 6 dígitos y botón de reenviar código, antes de dejar avanzar al carrito/pedido.
+
+**Nota operativa:** los clientes que ya existían antes de este cambio quedan con
+`correoVerificado = false` por default (no hay migración retroactiva) — van a tener que
+verificar su correo la primera vez que intenten generar un pedido, aunque su cuenta sea antigua.
+
+**Archivos tocados en el back:** `Cliente.java` (3 campos nuevos + validaciones), `AuthRequest.java`
+(sin campo obligatorio, no cambia), `RegistroRequest.java` (nuevo), `VerificarCorreoRequest.java`
+(nuevo), `ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `EmailService.java`,
+`PedidoServiceImpl.java`, `VentaServiceImpl.java`, `AbonoServiceImpl.java`, `AuthController.java`.
+Migración: `migration_verificacion_correo.sql` (agrega 3 columnas a `clientes`, pendiente de
+correr en dev/qa/prod).
+
+### 3. Estado de verificación visible en la búsqueda de clientes
+
+`GET /v1/clientes/buscar` ahora incluye `correoVerificado` en cada elemento de la lista
+(`ClienteBusquedaDto`) — útil para que el panel admin muestre un badge de "verificado" / "sin
+verificar" junto a cada cliente.
+
+### 4. Endpoint de soporte/pruebas — resetear verificación (solo ADMIN)
+
+```
+DELETE /v1/clientes/{id}/verificacion-correo
+```
+
+Regresa el cliente a `correoVerificado: false` y borra cualquier código pendiente. Requiere rol
+ADMIN (mismo criterio que el resto de `DELETE /v1/clientes/**`). Pensado para soporte/QA — no es
+parte del flujo normal del cliente, sirve para poder re-probar la verificación sin tener que
+crear una cuenta nueva cada vez.
+
+## Deshabilitar productos/variantes en lote (2026-07-02) — acción requerida en el front
+
+Pensado para ocultar productos o variantes de prueba sin borrarlos: el admin busca (paginado,
+usando `admin/filtrar` o la búsqueda normal), selecciona varios de la lista con checkboxes, y
+manda un solo request con todos los IDs.
+
+```
+PUT /v1/productos/admin/habilitar-lote
+PUT /variantes/v1/admin/habilitar-lote
+Body: { "ids": [12, 15, 20], "habilitar": false }
+```
+
+- `ids`: lista de IDs de producto o de variante (según el endpoint) — no puede venir vacía.
+- `habilitar`: `false` para ocultar, `true` para volver a mostrar (mismo endpoint sirve para
+  ambas direcciones).
+- Requiere rol ADMIN. Responde `200` con `{ "data": "Productos deshabilitados correctamente" }`
+  (o el mensaje equivalente para variantes/habilitar). Los IDs que no existan simplemente se
+  ignoran (no truena, solo actualiza los que sí encuentra).
+- Después de deshabilitar, esos productos/variantes **dejan de aparecer de inmediato** en los
+  listados públicos (cliente normal) — la caché se limpia automáticamente. El admin los sigue
+  viendo igual en sus búsquedas/filtros (para poder rehabilitarlos después).
+
+### Novedad importante: la variante ahora tiene SU PROPIO campo `habilitado`
+
+Antes una variante solo era visible/oculta según el `habilitado` del producto padre — no había
+forma de ocultar una variante suelta (ej. una talla de prueba) dejando visibles las demás del
+mismo producto. Ahora `Variantes` tiene su propio campo `habilitado`, independiente del producto:
+para que una variante sea visible al cliente normal se necesitan **ambos** en `'1'` (producto
+habilitado Y variante habilitada). El campo `habilitado` de la variante ya viene incluido en las
+respuestas donde antes venían el resto de sus campos (mismo objeto `Variantes`).
+
+**Archivos tocados en el back:** `Variantes.java` (campo nuevo), `HabilitarLoteRequest.java`
+(nuevo, reutilizado en ambos endpoints), `IVarianteRepository.java` (las 5 queries públicas ahora
+también exigen `v.habilitado = '1'`), `VarianteServiceImpl.java`, `VarianteController.java`,
+`ProductosServiceImpl.java`, `ProductosControllerImpl.java`. Migración:
+`migration_habilitado_variantes.sql` (agrega columna a `variantes`, default `'1'` para no afectar
+datos existentes — pendiente de correr en dev/qa/prod).
+
+## Restablecer contraseña olvidada (2026-07-03) — acción requerida en el front
+
+Mismo patrón que la verificación de correo: código de 6 dígitos por correo, vence en 15 minutos.
+Dos pasos, dos endpoints:
+
+```
+POST /v1/auth/olvide-password
+Body: { "email": "cliente@correo.com" }
+
+POST /v1/auth/restablecer-password
+Body: { "email": "cliente@correo.com", "codigo": "123456", "nuevaPassword": "miNuevaClave" }
+```
+
+**Paso 1 — `olvide-password`:** manda el código al correo. **Siempre responde `200`**, exista o
+no una cuenta con ese correo — es intencional, para no revelar si un correo está registrado en el
+sistema (protección contra enumeración de cuentas). El front debe mostrar el mismo mensaje
+("revisa tu correo") sin importar el resultado, no puede usar la respuesta para saber si el
+correo existe.
+
+**Paso 2 — `restablecer-password`:** valida el código y, si es correcto y no venció, actualiza la
+contraseña. Responde `200` en éxito, `400` con mensaje `"Codigo invalido o expirado"` si el
+código está mal, venció, o no hay cuenta con ese correo (mismo mensaje genérico en los 3 casos,
+misma razón de seguridad que el paso 1).
+
+**Sobre el flujo de UX que describiste (código primero, campo de nueva contraseña después):** no
+hay un endpoint separado para "solo validar el código" — el back valida y cambia la contraseña en
+el mismo request. El front puede armar la pantalla en dos pasos visuales (mostrar el campo de
+"nueva contraseña" recién cuando el usuario terminó de escribir los 6 dígitos) sin necesidad de
+otra llamada al back; si el código resulta incorrecto, el error sale hasta que se manda el
+formulario completo (mismo comportamiento que cualquier validación de formulario).
+
+**Nota de seguridad:** esto NO cierra las sesiones activas del usuario — si tenía un access/refresh
+token válido en otro dispositivo, sigue funcionando hasta que expire naturalmente (15 min / 7
+días). No hay revocación de tokens implementada todavía; avisar si esto es un problema para
+retomarlo.
+
+**Archivos tocados en el back:** `Usuario.java` (2 campos nuevos), `IUsuarioRepository.java`,
+`OlvidePasswordRequest.java` (nuevo), `RestablecerPasswordRequest.java` (nuevo),
+`PasswordResetService.java` (nuevo), `EmailService.java`, `AuthController.java`,
+`SecurityConfig.java` (los 2 endpoints nuevos son públicos, como `/login`). Migración:
+`migration_reset_password.sql` (agrega 2 columnas a `usuario_modificacion` — pendiente de correr
+en dev/qa/prod).
+
+### Cambiar contraseña estando logueado — endpoint distinto, sin código por correo
+
+```
+PUT /v1/auth/cambiar-password
+Header: Authorization: Bearer {accessToken}
+Body: { "passwordActual": "claveVieja", "nuevaPassword": "claveNueva" }
+```
+
+Requiere sesión válida (JWT) — no manda `username` ni `email` en el body, el back identifica al
+usuario por el token. Pide la contraseña actual en vez de código por correo porque el usuario ya
+está autenticado (re-autenticar con la contraseña actual es la protección estándar para que una
+sesión abierta/robada no pueda cambiar la contraseña sin más).
+
+- `200` con `"Contrasena actualizada correctamente"`.
+- `400` con `"La contrasena actual es incorrecta"` si `passwordActual` no coincide.
+- `401` si el token no es válido/expiró (igual que cualquier endpoint protegido).
+
+Va en la pantalla de "mi cuenta"/perfil, no en el login — ese caso sigue siendo
+`olvide-password` + `restablecer-password` de la sección anterior.
+
+**Archivos:** `CambiarPasswordRequest.java` (nuevo), `PasswordResetService.java`,
+`AuthController.java`. No requiere migración (usa las columnas de `password` que ya existían).
+
+## Unificar verificación de correo Usuario/Cliente (2026-07-03) — acción requerida en el front
+
+> ✅ **Back ya está en QA** (2026-07-04) — merge `dev → qa` hecho y pusheado, migraciones
+> `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` ya
+> corridas en `inventario_key_qa`. `correo_verificado` nace en `0` para todos sin excepción (sin
+> grandfathering, decisión de diseño — ver migración); `datos_completos` sí hace backfill contra
+> los datos reales del cliente. El front puede empezar a integrar esta sección. Diseño completo en
+> `PLAN_MEJORAS.md` mejora 15.
+
+### 1. Registro ahora exige verificar el correo antes de poder loguearse
+
+`POST /v1/auth/registrar` no cambia de contrato, pero el `Usuario` que crea queda **sin poder
+loguearse** hasta verificar su correo (antes podía loguearse de inmediato).
+
+```
+POST /v1/auth/enviar-codigo-verificacion
+Body: { "userName": "juanperez" }      // acepta username O correo, cualquiera de los dos
+
+POST /v1/auth/verificar-correo
+Body: { "userName": "juanperez", "codigo": "123456" }
+```
+
+Mismo patrón que ya conocen de la verificación de `Cliente` (vencimiento 15 minutos, código de 6
+dígitos). Ambos responden `200` con texto plano en éxito, `400` con el mensaje de error en texto
+plano si falla (`"Usuario no encontrado"`, `"El correo ya esta verificado"`,
+`"Codigo de verificacion invalido"`, `"El codigo de verificacion expiro, solicita uno nuevo"`).
+`enviar-codigo-verificacion` también puede responder `429` si se pide demasiadas veces seguidas
+(rate-limit propio, independiente del de login/registro).
+
+**Flujo front sugerido:** justo después de `POST /v1/auth/registrar`, llamar
+`enviar-codigo-verificacion` automáticamente y mostrar la pantalla de "ingresa el código de 6
+dígitos", con botón de reenviar. Recién cuando `verificar-correo` responde `200`, mandar al login
+normal (`POST /v1/auth/login`).
+
+### 2. `POST /v1/auth/login` ahora puede rechazar por correo sin verificar
+
+Nueva respuesta posible, además de las que ya existían:
+
+- **`403`** con body `"Debes verificar tu correo antes de iniciar sesión"` — el `Usuario` existe,
+  la contraseña es correcta, pero `correoVerificado` sigue en `false`. El front debe mandar a la
+  pantalla de "ingresa el código" (mismos 2 endpoints del punto 1) en vez de mostrar un error
+  genérico de credenciales.
+- `401` (credenciales inválidas) y `429` (rate-limit) siguen igual que antes, sin cambios.
+
+**Excepción — rol ADMIN:** los usuarios con rol `ROLE_ADMIN` **no** requieren correo verificado
+para hacer login, sin importar el valor de `correoVerificado` en BD. El chequeo de verificación se
+salta por completo para ese rol y nunca reciben este `403`. El front no necesita ninguna lógica
+especial para esto: simplemente el admin nunca va a recibir el `403` de arriba, entra normal con
+`200` aunque nunca haya pasado por la pantalla de verificación.
+
+**Usuarios que ya existían antes de este cambio (no admin):** todos quedan con
+`correoVerificado = false` por default (sin excepción para roles no-admin, no hay "pase
+automático") — al primer intento de login después de que esto se despliegue, van a recibir el
+mismo `403` de arriba y tendrán que verificar su correo por primera vez, aunque su cuenta sea
+antigua. Sesiones ya activas (con un access/refresh token válido) NO se ven afectadas — solo un
+login nuevo dispara esta validación.
+
+**Flujo exacto que debe implementar el front (no hay endpoint de "revisar si está verificado antes"
+— todo se resuelve con la respuesta del propio `login`):**
+
+```
+1. Usuario escribe userName + password → una sola petición:
+   POST /v1/auth/login  Body: { "userName": "...", "password": "..." }
+
+2. Reaccionar según el código de esa misma respuesta:
+   - 200                                          → guardar accessToken/refreshToken, entrar
+                                                     al sistema normal (dashboard/productos/
+                                                     variantes). Sin cambios.
+   - 401 (credenciales inválidas)                 → error de siempre. Sin cambios.
+   - 429 (rate-limit)                             → mensaje de siempre. Sin cambios.
+   - 403 "Debes verificar tu correo antes de
+     iniciar sesión"                              → NUEVO. No mostrar error genérico, no
+                                                     guardar token, no entrar al sistema.
+                                                     Ir al paso 3.
+
+3. Si vino ese 403 puntual:
+   a) Navegar a la pantalla de código (la misma de F-19 usada en registro).
+   b) Disparar automático: POST /v1/auth/enviar-codigo-verificacion { "userName": "..." }
+   c) Usuario escribe el código de 6 dígitos.
+   d) POST /v1/auth/verificar-correo { "userName": "...", "codigo": "..." }
+        - 400 → mostrar error, permitir reintentar o reenviar código.
+        - 200 → correo verificado, pero AÚN NO hay sesión iniciada (este endpoint no
+                 devuelve tokens).
+   e) Volver a llamar POST /v1/auth/login con el mismo userName/password.
+        - Ahora responde 200 → recién aquí se entra al sistema.
+```
+
+**Importante:** distinguir este `403` puntual (por el texto del mensaje o un código de error
+propio, si el back lo agrega) de cualquier otro `403` genérico que la app ya use para "no
+autorizado" — no deben compartir el mismo manejador en el front.
+
+---
+
+### [BUG-KEY-11] ✅ Fix: contraseña incorrecta ya no se confundía con "correo sin verificar"
+**Fecha:** 2026-07-04 | **Archivos:** `Usuario.java`, `AuthController.java`
+
+**Antes (incorrecto):** Spring Security evalúa `isEnabled()` **antes** de comparar la contraseña.
+Como `isEnabled()` dependía de `correoVerificado`, un usuario sin verificar recibía el `403`
+"Debes verificar tu correo..." **sin importar si la contraseña era correcta o incorrecta** — la
+contraseña nunca llegaba a compararse. Esto rompía el caso de contraseña mal escrita: en vez de
+`401 "Credenciales inválidas"` salía el `403` de verificación, dando información confusa/errónea
+al usuario.
+
+**Después (correcto):** `isEnabled()` ya no depende de `correoVerificado` (vuelve a depender solo
+del flag `enabled`, como antes de mejora 15). El chequeo de correo verificado se hace aparte, en
+`AuthController.login()`, **después** de que `authManager.authenticate()` ya confirmó la
+contraseña. Orden real ahora: 1) usuario existe, 2) contraseña correcta → si no, `401` sin
+excepción, 3) correo verificado o rol ADMIN → si no, `403`.
+
+**El front no necesita cambiar nada de lo ya documentado arriba** — mismos endpoints, mismos
+códigos de respuesta. Solo que ahora `401` y `403` salen en el caso correcto cada uno.
+
+---
+
+### 3. Al verificar, se auto-crea el `Cliente` — nuevo campo `datosCompletos`
+
+Cuando `verificar-correo` (punto 1) tiene éxito por primera vez, el back crea automáticamente un
+`Cliente` vinculado a ese `Usuario`, con el correo ya copiado y verificado, pero **sin nombre,
+apellidos ni teléfono todavía** — nuevo campo `Cliente.datosCompletos: false`.
+
+**`POST /pedidos/savePedido` ahora valida dos cosas por separado, con mensajes distintos:**
+- `400` `"Debes verificar tu correo antes de generar un pedido"` — ya existía (mejora 12), sigue
+  igual.
+- `400` `"Debes completar tus datos (nombre, apellido paterno, telefono) antes de generar un
+  pedido"` — **nuevo**. El front debe distinguir este mensaje del anterior para saber si mandar a
+  la pantalla de "verifica tu correo" o a la de "completa tu perfil" (nombre, apellido paterno,
+  teléfono — el correo ya viene prellenado, no hace falta volver a pedirlo ni verificarlo aquí).
+
+Se guarda con el mismo endpoint de siempre: `POST /v1/clientes/save` /
+`PUT /v1/clientes/update/{id}`.
+
+**Apellido materno ahora es opcional** (antes obligatorio, mejora 12) — si el formulario del front
+tenía `Validators.required` en ese campo, hay que quitarlo.
+
+### 4. Cambiar el correo de un cliente ya no se aplica de inmediato
+
+Al actualizar un `Cliente` (`POST/PUT /v1/clientes/...`) con un `correoElectronico` distinto al
+que ya tenía guardado:
+
+- Los demás campos del formulario (nombre, apellidos, teléfono, direcciones) se guardan siempre,
+  sin condición.
+- El correo **no cambia todavía** — el objeto `Cliente` que devuelve el response sigue trayendo el
+  correo **anterior** (el ya verificado), no el que se acaba de escribir.
+- El back dispara automáticamente el envío de un código de verificación al correo nuevo (mismo
+  mecanismo de siempre: `POST /v1/clientes/{id}/enviar-codigo-verificacion` ya se llama solo, el
+  front no necesita invocarlo aparte en este caso).
+- El front debe comparar el `correoElectronico` que mandó vs. el que regresó el response: si son
+  distintos, mostrar un aviso tipo *"Guardamos tus datos. Te enviamos un código a tu correo nuevo
+  para confirmarlo — mientras no lo confirmes, seguirás recibiendo notificaciones en tu correo
+  anterior."* y ofrecer el input de 6 dígitos (`POST /v1/clientes/{id}/verificar-correo`, ya
+  existente). Si el cliente nunca verifica, no pasa nada malo — simplemente el correo anterior
+  sigue siendo el vigente indefinidamente.
+- **Excepción — un ADMIN editando el cliente desde el panel:** el correo se aplica directo, sin
+  disparar nada de esto. Se distingue por el rol de la sesión que hace el request, no por ningún
+  campo del body — el front del panel admin no necesita hacer nada especial aquí, ya funciona así
+  automáticamente.
+
+### 5. Nada nuevo para soporte — ya funcionaba
+
+El caso de "el cliente no puede verificar su correo solo, un admin lo ayuda por teléfono" **no
+requirió cambios** — `POST /v1/clientes/{id}/enviar-codigo-verificacion` y
+`POST /v1/clientes/{id}/verificar-correo` ya eran accesibles por cualquier usuario autenticado
+(incluido ADMIN) para cualquier `clienteId`, no solo el dueño de la cuenta. Si el front quiere una
+pantalla de soporte en el panel admin (buscar cliente → botón reenviar código → input para
+capturar el código que el cliente dicte), puede armarla ya con estos 2 endpoints existentes.
+
+**Archivos tocados en el back:** `Usuario.java` (3 campos nuevos), `Cliente.java` (`datosCompletos`,
+`correoPendiente`, apellido materno ya no obligatorio), `UsuarioVerificacionService.java` (nuevo),
+`EnviarCodigoVerificacionUsuarioRequest.java` / `VerificarCorreoUsuarioRequest.java` (nuevos),
+`ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `AuthController.java`,
+`SecurityConfig.java`, `PedidoServiceImpl.java`. Migraciones:
+`migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **ya
+corridas en QA (2026-07-04)**.
+
+---
+
+## [SEC-KEY-01] ✅ Fix: control de acceso — un usuario ya no podía ver/editar datos de otro (2026-07-04)
+
+**Hallazgo:** `POST /v1/clientes/save`, `PUT /v1/clientes/update/{id}` y
+`GET /v1/clientes/buscarPorIdCliente/{id}` solo exigían estar autenticado, sin verificar que el
+`id`/`usuario.id` del request correspondiera al usuario dueño de la sesión. Cualquier cliente
+logueado podía leer o sobreescribir los datos de **otro** cliente con solo mandar su `id`. Lo
+mismo pasaba con `/v1/usuarios/**` (gestión de cuentas/roles/permisos): solo pedía estar
+autenticado, no ser ADMIN — un usuario cualquiera podía, por ejemplo, asignarse el rol `ADMIN` vía
+`PUT /v1/usuarios/{usuarioId}/rol/{rolId}`.
+
+**Fix aplicado:**
+- `/v1/usuarios/**` (excepto `buscarClientePorIdUsuario`, que ya era público) ahora requiere
+  `hasRole("ADMIN")` en `SecurityConfig` — toda esa gestión es exclusiva de admin, no había caso
+  de autoservicio legítimo.
+- `GET /v1/clientes/buscar` (búsqueda por nombre, expone correo/teléfono) ahora también requiere
+  `hasRole("ADMIN")` — antes cualquier cliente autenticado podía buscar los datos de otros.
+- `POST /v1/clientes/save`, `PUT /v1/clientes/update/{id}` y
+  `GET /v1/clientes/buscarPorIdCliente/{id}` ahora comparan el usuario del JWT contra el
+  `usuario.id`/`idCliente` de la petición — si no coincide y quien llama no es ADMIN, responden
+  `403`. Un ADMIN sigue pudiendo operar sobre cualquier cliente (panel admin no se ve afectado).
+- `PUT /v1/clientes/update/{id}` antes ignoraba el `{id}` de la URL y hacía un guardado crudo sin
+  pasar por la lógica de correo pendiente/mejora 15 — ahora reutiliza exactamente la misma lógica
+  que `save()`, así que ambos se comportan igual.
+
+**El front no necesita cambiar nada si ya mandaba el `usuario.id`/`idCliente` correctos (el
+propio, no el de otro)** — solo verá un `403` nuevo si por error intentaba operar sobre un id que
+no le pertenece, cosa que antes se permitía silenciosamente.
+
+**Acción específica del front para `/v1/usuarios/**` y `GET /v1/clientes/buscar`:** antes
+funcionaban para cualquier usuario logueado; ahora dan `403` si quien llama no es ADMIN. Si alguna
+pantalla que NO es del panel admin (ej. "mi perfil" de un cliente normal) llegaba a llamar alguno
+de estos endpoints, hay que quitarle esa llamada — no van a volver a funcionar para no-admins. El
+panel admin no se ve afectado (siempre llama estos endpoints ya logueado como ADMIN).
+
+**Archivos:** `SecurityConfig.java`, `ClienteControllerImpl.java`, `AuthenticationUtils.java`
+(nuevo método `currentUsuario()`). No requiere migración.
+
+---
+
+## Reseteo de contraseña por ADMIN — contraseña temporal fija (2026-07-04)
+
+Pensado para cuando un usuario olvida su contraseña y el correo que registró es falso/no revisa
+(el flujo normal de `olvide-password` no le sirve porque nunca va a recibir el código). El admin
+lo resetea a una contraseña generada al azar y se la pasa al usuario por el medio que sea
+(teléfono, en persona, etc.).
+
+```
+PUT /v1/usuarios/{id}/resetear-password
+```
+
+- Requiere rol ADMIN (cae dentro de `/v1/usuarios/**`, ver `SEC-KEY-01` arriba).
+- No lleva body — solo el `id` del usuario (el mismo que usarías para `updateUsuario/{id}`).
+- Genera una contraseña aleatoria de 8 caracteres (letras mayúsculas/minúsculas + dígitos, sin
+  `0/O/1/l/I` para no confundir al dictarla), se la asigna al usuario y marca internamente
+  `passwordTemporal = true`.
+- Responde `200` con `{ "data": "aB3dEfG9", "mensaje": "Contrasena reseteada. Comparte esta
+  contrasena con el usuario; debera cambiarla en su siguiente login." }` — **el front debe
+  mostrarle esa contraseña (`data`) al admin en pantalla** para que se la pueda dar al usuario;
+  el back no la vuelve a mostrar después, solo queda el hash.
+
+**Cambio en el login — nuevo campo `debeCambiarPassword`:**
+
+`POST /v1/auth/login` ahora devuelve, además de `accessToken`:
+
+```json
+{ "accessToken": "...", "debeCambiarPassword": true }
+```
+
+- `true` solo si la contraseña actual fue puesta por un reseteo de admin y el usuario **todavía
+  no la ha cambiado**. En cualquier otro caso viene `false`.
+- **El front debe revisar este flag después de un login exitoso** (200): si viene `true`, no
+  dejar navegar al sistema normal — forzar la pantalla de "cambia tu contraseña" (reusar
+  `PUT /v1/auth/cambiar-password`, ya documentado arriba, pidiendo como "actual" la contraseña
+  temporal que el admin le dio, y la nueva que el usuario elija).
+- En cuanto el usuario cambia su contraseña con éxito (por `cambiar-password` o por
+  `restablecer-password` del flujo de "olvidé mi contraseña"), el flag se limpia solo — el
+  próximo login ya viene con `debeCambiarPassword: false`.
+
+**Archivos:** `Usuario.java` (`passwordTemporal`), `UsuarioServiceImpl.java`
+(`resetearPasswordAleatoria`), `UsuarioController.java`, `AuthResponse.java`, `AuthController.java`,
+`PasswordResetService.java`. Migración: `migration_password_temporal.sql` — **pendiente de correr
+en dev/qa/prod**.
+
+### Verificar el correo de un Usuario desde el panel de admin
+
+No es un endpoint nuevo — la pantalla de detalle/edición de un `Usuario` en el panel puede usar
+los mismos 2 endpoints ya documentados arriba (sección "Unificar verificación de correo
+Usuario/Cliente", punto 1):
+
+```
+POST /v1/auth/enviar-codigo-verificacion   Body: { "userName": "..." }
+POST /v1/auth/verificar-correo             Body: { "userName": "...", "codigo": "..." }
+```
+
+Son públicos (cualquiera los puede llamar, no piden rol) porque un usuario recién registrado
+todavía no tiene sesión cuando los usa por primera vez — así que el panel admin también puede
+dispararlos para cualquier `userName`, sin restricción adicional. Flujo sugerido en el panel: botón
+"Reenviar código de verificación" → dispara `enviar-codigo-verificacion` → input para que el admin
+capture el código que el usuario le dicte por teléfono → `verificar-correo`.
+
+### Si el admin edita el correo de un Usuario (no Cliente), se aplica directo
+
+`PUT /v1/usuarios/updateUsuario/{id}` (ahora solo ADMIN, ver `SEC-KEY-01`) ya aplicaba — y sigue
+aplicando — el correo nuevo de inmediato, sin pedir verificación ni dejar nada pendiente. Mismo
+criterio que ya existe para `Cliente` cuando lo edita un ADMIN (mejora 15, punto 4): se confía en
+el admin, no hay paso intermedio. No fue necesario cambiar código para esto, ya funcionaba así.

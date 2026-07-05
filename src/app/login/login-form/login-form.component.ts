@@ -6,6 +6,8 @@ import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { AccederService } from '../acceder.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
+import { CarritoVarianteService } from 'src/app/variante/service/carrito-variante.service';
+import { CarritoService } from 'src/app/services/carrito/carrito.service';
 
 @Component({
   selector: 'app-login-form',
@@ -41,7 +43,9 @@ export class LoginFormComponent implements OnInit {
     private readonly authService:          AuthService,
     private readonly auth:                 auth,
     private readonly acceder:              AccederService,
-    private readonly presentacion:         PresentacionService
+    private readonly presentacion:         PresentacionService,
+    private readonly carritoVariante:      CarritoVarianteService,
+    private readonly carritoService:       CarritoService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -61,23 +65,85 @@ export class LoginFormComponent implements OnInit {
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
         const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
+        const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
         if (token) {
+          this.carritoVariante.limpiar();
+          this.carritoService.limpiarCarrito();
           this.auth.setAccessToken(token);
           this.authService.setRolesFromToken(token);
-          this.router.navigate(['/productos/buscar']);
+          if (debeCambiar) {
+            this.forzarCambioPassword(credentials.password ?? '');
+          } else {
+            this.router.navigate(['/productos/buscar']);
+          }
         } else {
           Swal.fire({ title: 'Usuario o contraseña incorrectos', icon: 'error', showConfirmButton: false });
         }
         this.errorMessage = '';
       },
-      error: (error: any) => { 
-        this.errorMessage = 'Usuario o contraseña incorrectos'; 
+      error: (error: any) => {
+        if (error.status === 403) {
+          // Correo sin verificar — enviar código y redirigir a pantalla de verificación.
+          // Pasamos el password en el state (en memoria, no persiste) para hacer auto-login
+          // después de que el usuario verifique el código, sin que tenga que escribirlo de nuevo.
+          const userName: string = credentials.userName ?? '';
+          const password: string = credentials.password ?? '';
+          this.acceder.enviarCodigoVerificacionUsuario(userName).subscribe({
+            next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } }),
+            error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: userName }, state: { codigoEnviado: true, password } })
+          });
+          return;
+        }
         if (error.status === 429) {
           this.errorMessage = error.error ?? 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.';
+          return;
         }
-        console.log("que ror trae ", error);
-        
+        this.errorMessage = 'Usuario o contraseña incorrectos';
       }
+    });
+  }
+
+  private forzarCambioPassword(passwordActual: string): void {
+    Swal.fire({
+      title: '🔑 Cambia tu contraseña',
+      html: `
+        <p style="font-size:0.88rem;color:#64748b;margin-bottom:12px">
+          Tu contraseña fue reseteada por un administrador.<br>
+          Debes crear una nueva contraseña para continuar.
+        </p>
+        <input id="swal-pwd-nueva" type="password" class="swal2-input" placeholder="Nueva contraseña (mín. 8 caracteres)">
+        <input id="swal-pwd-confirm" type="password" class="swal2-input" placeholder="Confirmar nueva contraseña">
+      `,
+      icon: 'warning',
+      confirmButtonText: 'Cambiar y entrar',
+      showCancelButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      preConfirm: () => {
+        const nueva   = (document.getElementById('swal-pwd-nueva')   as HTMLInputElement)?.value ?? '';
+        const confirm = (document.getElementById('swal-pwd-confirm') as HTMLInputElement)?.value ?? '';
+        if (nueva.length < 8) {
+          Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
+          return false;
+        }
+        if (nueva !== confirm) {
+          Swal.showValidationMessage('Las contraseñas no coinciden');
+          return false;
+        }
+        return nueva;
+      }
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) return;
+      this.acceder.cambiarPassword(passwordActual, result.value as string).subscribe({
+        next: () => this.router.navigate(['/productos/buscar']),
+        error: (err: any) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cambiar',
+            text: err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.'
+          }).then(() => this.forzarCambioPassword(passwordActual));
+        }
+      });
     });
   }
 }

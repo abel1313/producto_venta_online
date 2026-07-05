@@ -1,6 +1,6 @@
 // ── Variables ──────────────────────────────────────────────────────
-$primary:    #8b1a4a;
-$primary-d:  #c2255c;
+$primary:    #8A6A38;
+$primary-d:  #B08A4E;
 $radius:     16px;
 $shadow:     0 4px 24px rgba(0, 0, 0, 0.13);
 $shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
@@ -173,10 +173,126 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Grid — centrado con espacio lateral para anuncios ─────────────
+// ── Layout con banners laterales ──────────────────────────────────
+.vb-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+}
+
 .vb-grid-wrap {
+  flex: 1;
+  min-width: 0;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 20px 32px;
+  padding: 0 16px 32px;
+}
+
+// ── Banners de promoción laterales ────────────────────────────────
+.vb-promo {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 14px 10px;
+  position: sticky;
+  top: 16px;
+  align-self: flex-start;
+
+  // Ocultar solo en móvil/tablet — visible desde 1100px
+  @media (max-width: 1099px) { display: none; }
+
+  // Versión compacta entre 1100 y 1300
+  @media (min-width: 1100px) and (max-width: 1299px) { width: 175px; padding: 10px 8px; }
+
+  &--left  { order: -1; }
+  &--right { order: 1;  }
+
+  &__card {
+    display: block;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+
+    &:not(.vb-promo__card--no-link):hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 12px 36px rgba(176,138,78,0.25);
+    }
+
+    &--no-link { cursor: default; }
+  }
+
+  &__img-wrap {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+  }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+
+  &__card:not(.vb-promo__card--no-link):hover &__img {
+    transform: scale(1.04);
+  }
+
+  &__overlay {
+    padding: 12px 14px 14px;
+    background: var(--card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  &__title {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--app-text, #1e293b);
+    line-height: 1.25;
+  }
+
+  &__text {
+    font-size: 0.76rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__cta {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--app-accent, #B08A4E);
+    letter-spacing: 0.03em;
+  }
+}
+
+// Dark mode para banners
+:host-context(body.theme-dark) {
+  .vb-promo__card {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    &:not(.vb-promo__card--no-link):hover {
+      box-shadow: 0 12px 36px rgba(176,138,78,0.2);
+    }
+  }
+
+  .vb-promo__title { color: #f1f5f9; }
+  .vb-promo__text  { color: #94a3b8; }
 }
 
 .vb-grid {
@@ -187,6 +303,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Card ───────────────────────────────────────────────────────────
 .vb-card {
+  position: relative;
   background: var(--card-bg);
   border-radius: var(--card-radius);
   box-shadow: var(--card-shadow);
@@ -360,6 +477,126 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #0891b2;
     border-left: 1px solid var(--card-border);
     &:hover { background: rgba(8,145,178,0.08); }
+  }
+
+  &--toggle {
+    color: var(--app-accent);
+    border-left: 1px solid var(--card-border);
+    &:hover { background: rgba(176,138,78,0.08); }
+  }
+}
+
+// ── Card deshabilitada + seleccionada ─────────────────────────────
+.vb-card--deshabilitado {
+  opacity: 0.55;
+  outline: 2px dashed #ef4444;
+  outline-offset: 2px;
+}
+
+.vb-card--seleccionada {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+.vb-badge-disabled {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  z-index: 4;
+}
+
+.vb-card__check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--app-accent);
+    cursor: pointer;
+  }
+}
+
+// ── Barra de lote ─────────────────────────────────────────────────
+.vb-lote-bar {
+  background: var(--app-accent-soft);
+  border-bottom: 1px solid rgba(176,138,78,0.2);
+  font-size: 0.875rem;
+  padding: 0.65rem 1.25rem;
+
+  // Contenido centrado — misma lógica que .vb-header__content
+  &__inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--app-accent);
+    cursor: pointer;
+
+    input { width: 16px; height: 16px; accent-color: var(--app-accent); cursor: pointer; }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+}
+
+.vb-lote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: $transition;
+  font-family: inherit;
+
+  &--enable {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+    border-color: rgba(34, 197, 94, 0.3);
+    &:hover:not(:disabled) { background: rgba(34, 197, 94, 0.22); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &--disable {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.25);
+    &:hover:not(:disabled) { background: rgba(239, 68, 68, 0.2); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &--cancel {
+    background: transparent;
+    color: var(--app-text-muted);
+    border-color: var(--card-border);
+    &:hover { background: var(--form-section-bg); }
   }
 }
 

@@ -9,6 +9,7 @@ export interface IClienteBusquedaDto {
   apeidoMaterno: string;
   correoElectronico: string;
   numeroTelefonico: string;
+  correoVerificado?: boolean;
 }
 
 export interface IPageableClientes {

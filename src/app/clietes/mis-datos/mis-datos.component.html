@@ -1,332 +1,271 @@
-<nb-card>
-    <nb-card-body>
+<div class="md-page">
+  <div class="md-card">
 
-        <form [formGroup]="formDatosCliente">
+    <!-- Header -->
+    <div class="md-card__header">
+      <div class="md-header-icon">
+        <i class="pi pi-user-edit"></i>
+      </div>
+      <div>
+        <h2 class="md-title">Mis datos</h2>
+        <p class="md-subtitle">Actualiza tu información personal y direcciones de entrega</p>
+      </div>
+    </div>
 
-            <nb-stepper orientation="horizontal">
-                <nb-step [label]="labelOne">
-                    <ng-template #labelOne>Primer paso</ng-template>
-                    <h4>Step content #1</h4>
-                    <br>
+    <!-- Formulario -->
+    <form class="md-form" [formGroup]="formDatosCliente" (ngSubmit)="guardarCliente()">
 
-                    <div class="row">
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="nombre"
-                                    formControlName="nombrePersona" />
-                                <label for="nombre">Nombre</label>
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('nombrePersona')?.invalid && formDatosCliente.get('nombrePersona')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                    <small *ngIf="formDatosCliente.get('nombrePersona')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Solo se permiten letras sin espacios.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
+      <!-- ── Sección: Datos personales ─────────────────────────────── -->
+      <div class="md-section">
+        <span class="md-section__label">Datos personales</span>
 
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="segundoNombre"
-                                    formControlName="segundoNombre" />
-                                <label for="segundoNombre">Segundo nombre</label>
-                                <div>
-                                    <small *ngIf="formDatosCliente.get('segundoNombre')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Solo se permiten letras sin espacios.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
+        <div class="md-row">
+          <!-- Nombre -->
+          <div class="md-field">
+            <label class="md-label" for="md-nombre">Nombre <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="md-nombre" class="md-input" type="text"
+                     formControlName="nombrePersona" placeholder="Tu nombre">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('nombrePersona')?.invalid && formDatosCliente.get('nombrePersona')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
 
+          <!-- Segundo nombre -->
+          <div class="md-field">
+            <label class="md-label" for="md-segundo">Segundo nombre</label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="md-segundo" class="md-input" type="text"
+                     formControlName="segundoNombre" placeholder="Opcional">
+            </div>
+          </div>
+        </div>
 
+        <div class="md-row">
+          <!-- Apellido paterno -->
+          <div class="md-field">
+            <label class="md-label" for="md-paterno">Apellido paterno <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="md-paterno" class="md-input" type="text"
+                     formControlName="apeidoPaterno" placeholder="Apellido paterno">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
 
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="apeidoPaterno"
-                                    formControlName="apeidoPaterno" />
-                                <label for="apeidoPaterno">Apellido paterno</label>
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                    <small *ngIf="formDatosCliente.get('apeidoPaterno')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Solo se permiten letras sin espacios.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
+          <!-- Apellido materno -->
+          <div class="md-field">
+            <label class="md-label" for="md-materno">Apellido materno <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="md-materno" class="md-input" type="text"
+                     formControlName="apeidoMaterno" placeholder="Apellido materno">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && formDatosCliente.get('apeidoMaterno')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
+        </div>
 
+        <div class="md-row">
+          <!-- Fecha de nacimiento -->
+          <div class="md-field">
+            <label class="md-label" for="md-fecha">Fecha de nacimiento <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-calendar md-input-icon"></i>
+              <input id="md-fecha" class="md-input md-input--date" type="date"
+                     formControlName="fechaNacimiento">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('fechaNacimiento')?.invalid && formDatosCliente.get('fechaNacimiento')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
 
+          <!-- Sexo -->
+          <div class="md-field">
+            <label class="md-label" for="md-sexo">Sexo</label>
+            <div class="md-input-wrap md-input-wrap--select">
+              <i class="pi pi-users md-input-icon"></i>
+              <select id="md-sexo" class="md-input md-select" formControlName="sexo">
+                <option value="" disabled>Selecciona…</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+                <option value="Otro">Otro</option>
+              </select>
+              <i class="pi pi-chevron-down md-select-arrow"></i>
+            </div>
+          </div>
+        </div>
 
-                    </div>
+        <div class="md-row">
+          <!-- Correo -->
+          <div class="md-field">
+            <label class="md-label" for="md-correo">
+              Correo electrónico <span class="md-req">*</span>
+              <span *ngIf="correoVerificado === true"  class="md-badge md-badge--ok">✅ Verificado</span>
+              <span *ngIf="correoVerificado === false" class="md-badge md-badge--warn">⚠️ Sin verificar</span>
+            </label>
+            <div class="md-input-wrap">
+              <i class="pi pi-envelope md-input-icon"></i>
+              <input id="md-correo" class="md-input" type="email"
+                     formControlName="correoElectronico" placeholder="tu@correo.com">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</ng-container>
+            </span>
+            <button *ngIf="correoVerificado !== true && clienteId"
+                    type="button" class="md-btn-verify"
+                    (click)="verificarCorreoPropio()">
+              ✉️ Verificar mi correo
+            </button>
+          </div>
 
-                    <br>
+          <!-- Teléfono -->
+          <div class="md-field">
+            <label class="md-label" for="md-tel">Número de contacto <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-phone md-input-icon"></i>
+              <input id="md-tel" class="md-input" type="tel"
+                     formControlName="numeroTelefonico" placeholder="10 dígitos">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['pattern']">Ingresa un número de 10 dígitos</ng-container>
+            </span>
+          </div>
+        </div>
+      </div>
 
-                    <div class="row">
+      <!-- ── Sección: Direcciones ──────────────────────────────────── -->
+      <div class="md-section" formArrayName="listDirecciones">
+        <div class="md-section-hdr">
+          <span class="md-section__label">Direcciones de entrega</span>
+          <button type="button" class="md-btn-add" (click)="agregarDireccion()">
+            <i class="pi pi-plus"></i> Agregar
+          </button>
+        </div>
 
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="apeidoMaterno"
-                                    formControlName="apeidoMaterno" />
-                                <label for="apeidoMaterno">Apellido materno</label>
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && formDatosCliente.get('apeidoMaterno')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                    <small *ngIf="formDatosCliente.get('apeidoMaterno')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Solo se permiten letras sin espacios.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
+        <div *ngFor="let dir of listDirecciones.controls; let i = index"
+             [formGroupName]="i" class="md-address-card">
 
+          <div class="md-address-hdr">
+            <span class="md-address-num">
+              <i class="pi pi-map-marker"></i> Dirección {{ i + 1 }}
+            </span>
+            <button type="button" class="md-btn-delete" *ngIf="listDirecciones.length > 1"
+                    (click)="eliminarDireccion(i)">
+              <i class="pi pi-trash"></i> Eliminar
+            </button>
+          </div>
 
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <p-calendar class="p-calendar col-sm-12" styleClass="w-100"
-                                    formControlName="fechaNacimiento" appendTo="body"></p-calendar>
-                                <label for="fechaNacimiento">Fecha de nacimiento</label>
-                                <br />
+          <div class="md-row">
+            <!-- Calle -->
+            <div class="md-field">
+              <label class="md-label">Calle <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-road md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="calle"
+                       placeholder="Ej: Av. Hidalgo 123">
+              </div>
+              <span class="md-error" *ngIf="dir.get('calle')?.invalid && dir.get('calle')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
 
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('fechaNacimiento')?.invalid && formDatosCliente.get('fechaNacimiento')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Colonia -->
+            <div class="md-field">
+              <label class="md-label">Colonia <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-building md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="colonia"
+                       placeholder="Tu colonia">
+              </div>
+              <span class="md-error" *ngIf="dir.get('colonia')?.invalid && dir.get('colonia')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
+          </div>
 
+          <div class="md-row">
+            <!-- Código postal -->
+            <div class="md-field">
+              <label class="md-label">Código postal <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-hashtag md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="codigoPostal"
+                       maxlength="5" placeholder="00000" (blur)="getCodigoPostal($event, i)">
+              </div>
+              <span class="md-error"
+                    *ngIf="dir.get('codigoPostal')?.errors?.['required'] && dir.get('codigoPostal')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+              <span class="md-error"
+                    *ngIf="dir.get('codigoPostal')?.errors?.['pattern'] && dir.get('codigoPostal')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Ingresa 5 dígitos
+              </span>
+            </div>
 
+            <!-- Municipio -->
+            <div class="md-field">
+              <label class="md-label">Municipio <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-map md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="municipio"
+                       placeholder="Se llena automáticamente">
+              </div>
+              <span class="md-error"
+                    *ngIf="dir.get('municipio')?.invalid && dir.get('municipio')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
+          </div>
 
+          <!-- Referencias -->
+          <div class="md-row md-row--single">
+            <div class="md-field">
+              <label class="md-label">Referencias</label>
+              <div class="md-input-wrap">
+                <i class="pi pi-info-circle md-input-icon md-input-icon--top"></i>
+                <textarea class="md-input md-textarea" formControlName="referencias" rows="2"
+                          placeholder="Entre calles, punto de referencia, instrucciones de entrega…"></textarea>
+              </div>
+            </div>
+          </div>
 
+          <!-- Toggle predefinida -->
+          <div class="md-predefinida">
+            <label class="md-toggle-wrap">
+              <input type="checkbox" class="md-toggle-input" formControlName="predefinida">
+              <span class="md-toggle-slider"></span>
+              <span class="md-toggle-text">Dirección predefinida</span>
+            </label>
+          </div>
 
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
+        </div><!-- /address-card -->
+      </div><!-- /formArrayName -->
 
-                                <nb-select placeholder="Seleccione una opción" class="col-sm-12" formControlName="sexo">
-                                    <nb-option value="Hombre">Hombre</nb-option>
-                                    <nb-option value="Mujer">Mujer</nb-option>
-                                    <nb-option value="Otro">Otro</nb-option>
-                                </nb-select>
+      <!-- ── Footer ────────────────────────────────────────────────── -->
+      <div class="md-footer">
+        <button type="submit" class="md-btn md-btn--save"
+                [disabled]="!formDatosCliente.valid">
+          <i class="pi pi-save"></i> Guardar cambios
+        </button>
+      </div>
 
-                                <div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <br>
-
-                    <div class="row">
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="correo"
-                                    formControlName="correoElectronico" />
-                                <label for="correo">Correo electrónico</label>
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                    <small *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Solo se permiten letras sin espacios.
-                                    </small>
-                                    <div
-                                        *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['email'] && formDatosCliente.get('correoElectronico')?.touched">
-                                        <small class="text-danger">Formato de correo inválido</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-4">
-                            <div class="p-float-label pt-4">
-                                <input pInputText class="col-sm-12 col-ml-12" id="numeroTelefonico"
-                                    formControlName="numeroTelefonico" />
-                                <label for="numeroTelefonico">Número de contacto</label>
-                                <div>
-                                    <small
-                                        *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched"
-                                        class="text-danger">Campo requerido</small>
-                                    <br>
-                                    <small *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['pattern']"
-                                        class="text-danger">
-                                        Ingresa un número válido de 10 dígitos sin espacios ni símbolos.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-4">
-
-                            <div class="row">
-                                <div class="col-6 mt-4">
-                                    <button class="col-sm-12" nz-button nzType="dashed" nbButton disabled
-                                        nbStepperNext>anterior</button>
-                                </div>
-                                <div class="col-sm-6 pt-4">
-                                    <button class="col-sm-12" nz-button nzType="primary" nbButton
-                                        nbStepperNext>siguiente</button>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </nb-step>
-
-                <nb-step [label]="labelFour">
-                    <ng-template #labelFour>Terminado</ng-template>
-                    <h4>Terminado</h4>
-                    <br>
-                    <h4>Direcciones</h4>
-
-                    <div formArrayName="listDirecciones">
-                        <div *ngFor="let direccion of listDirecciones.controls; let i = index" [formGroupName]="i"
-                            class="border p-3">
-
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="p-float-label">
-                                        <input pInputText id="calle{{i}}" class="col-sm-12" formControlName="calle" />
-                                        <label for="calle{{i}}">Calle</label>
-                                    </div>
-
-                                    <div>
-                                        <small
-                                            *ngIf="direccion.get('calle')?.invalid && direccion.get('calle')?.touched"
-                                            class="text-danger">
-                                            Campo requerido
-                                        </small>
-                                        <br>
-                                    </div>
-
-                                </div>
-                                <div class="col-4">
-                                    <div class="p-float-label">
-                                        <input pInputText id="municipio{{i}}" class="col-sm-12"
-                                            formControlName="municipio" />
-                                        <label for="municipio{{i}}">Municipio</label>
-                                    </div>
-                                    <small
-                                        *ngIf="direccion.get('municipio')?.invalid && direccion.get('municipio')?.touched"
-                                        class="text-danger">
-                                        Campo requerido
-                                    </small>
-
-                                </div>
-                                <div class="col-4">
-                                    <div class="p-float-label">
-                                        <input pInputText id="colonia{{i}}" class="col-sm-12"
-                                            formControlName="colonia" />
-                                        <label for="colonia{{i}}">Colonia</label>
-
-                                    </div>
-                                    <small
-                                        *ngIf="direccion.get('colonia')?.invalid && direccion.get('colonia')?.touched"
-                                        class="text-danger">
-                                        Campo requerido
-                                    </small>
-                                </div>
-                            </div>
-
-                            <br>
-                            <br>
-
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="p-float-label">
-                                        <input pInputText id="cp{{i}}" class="col-sm-12" formControlName="codigoPostal"
-                                            (blur)="getCodigoPostal($event, i)" />
-                                        <label for="cp{{i}}">Código postal</label>
-                                    </div>
-
-                                    <small
-                                        *ngIf="direccion.get('codigoPostal')?.errors?.['required'] && direccion.get('codigoPostal')?.touched"
-                                        class="text-danger">
-                                        Campo requerido
-                                    </small>
-                                    <small
-                                        *ngIf="direccion.get('codigoPostal')?.errors?.['pattern'] && direccion.get('codigoPostal')?.touched"
-                                        class="text-danger">
-                                        Ingrese el código postal con 5 dígitos
-                                    </small>
-
-                                </div>
-                                <div class="col-4">
-                                    <div class="p-float-label">
-                                        <textarea rows="5" id="referencias{{i}}" class="col-sm-12" cols="30" pTextarea
-                                            formControlName="referencias"
-                                            style="color: #000; background-color: #fff;"></textarea>
-                                        <label for="referencias{{i}}">Referencias</label>
-                                    </div>
-                                </div>
-
-                                <div class="col-4">
-                                    <div class="col-sm-12">
-                                        <label for="predifinida{{i}}" class="form-label d-block mb-2">Dirección
-                                            predefinida</label>
-                                        <nz-switch formControlName="predefinida" [nzId]="'predefinida' + i" ></nz-switch>
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            <br>
-                            <br>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button nz-button nzType="default" (click)="eliminarDireccion(i)"
-                                    *ngIf="listDirecciones.length > 1">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Botón para agregar dirección -->
-                    <div class="text-end mt-3">
-                        <button nz-button nzType="dashed" (click)="agregarDireccion()">+ Agregar otra dirección</button>
-                    </div>
-
-                    <br>
-
-                    <div class="row">
-
-
-
-                        <div class="col-sm-12">
-                            <div class="row d-flex justify-content-center">
-                                <div class="col-sm-3 mt-4">
-                                    <button class="col-sm-12" nz-button nzType="dashed" nbButton
-                                        nbStepperPrevious>anterior</button>
-
-                                </div>
-                                <div class="col-sm-3 pt-4">
-                                    <button class="col-sm-12" nz-button nzType="primary" (click)="guardarCliente()"
-                                        nbButton nbStepperNext [disabled]="!formDatosCliente.valid">guardar</button>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </nb-step>
-            </nb-stepper>
-
-        </form>
-
-    </nb-card-body>
-</nb-card>
+    </form>
+  </div>
+</div>

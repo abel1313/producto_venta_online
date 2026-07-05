@@ -235,7 +235,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   &:focus {
     border-color: var(--app-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    box-shadow: 0 0 0 3px rgba(176,138,78,0.1);
     ~ .input-icon { color: var(--app-accent); }
   }
 }
@@ -345,7 +345,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:focus {
       background: rgba(255, 255, 255, 0.1);
       border-color: var(--app-accent);
-      box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+      box-shadow: 0 0 0 4px rgba(176,138,78,0.2);
     }
   }
 
@@ -416,14 +416,14 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   gap: 0.5rem;
   padding: 0.78rem 1rem;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #B08A4E, #8A6A38);
   color: #fff;
   border: none;
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 18px rgba(176, 138, 78, 0.35);
   transition: $transition;
 
   span, .pi { color: #fff; }
@@ -431,12 +431,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 10px 24px rgba(176, 138, 78, 0.45);
     .pi { transform: translateX(3px); }
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled {
-    background: linear-gradient(135deg, #a5b4fc, #818cf8);
+    background: linear-gradient(135deg, #C9A063, #B08A4E);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -464,6 +464,45 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--app-accent);
     background: var(--app-accent-soft);
   }
+}
+
+// ── Admin actions (reset password + verify email) ──────────────────────────
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-admin-reset,
+.btn-admin-verify {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.58rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: $transition;
+  border: none;
+}
+
+.btn-admin-reset {
+  background: rgba(217, 119, 6, 0.09);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  &:hover { background: rgba(217, 119, 6, 0.18); }
+}
+
+.btn-admin-verify {
+  background: rgba(14, 165, 233, 0.09);
+  color: #0ea5e9;
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  &:hover { background: rgba(14, 165, 233, 0.18); }
 }
 
 // ── Footer ─────────────────────────────────────────────────────────────────

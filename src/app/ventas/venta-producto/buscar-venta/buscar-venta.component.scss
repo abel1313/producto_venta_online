@@ -1,0 +1,86 @@
+// ── Página ─────────────────────────────────────────────────────────────────
+:host {
+  display: block;
+  padding: 1.25rem 1rem;
+  background: var(--page-bg, #f1f5f9);
+  min-height: 100%;
+}
+
+// ── Botones Bootstrap ──────────────────────────────────────────────────────
+.btn-primary {
+  background: var(--app-accent, #B08A4E);
+  border-color: var(--app-accent, #B08A4E);
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover, &:focus { background: #8A6A38; border-color: #8A6A38; }
+}
+
+// ── Labels / totales ───────────────────────────────────────────────────────
+label { color: var(--app-text, #1e293b); font-weight: 600; }
+p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
+
+.row { margin-bottom: 0.75rem; }
+
+// ── AG Grid — tema base ────────────────────────────────────────────────────
+::ng-deep .ag-theme-alpine {
+  --ag-header-background-color: #f8fafc;
+  --ag-background-color: #ffffff;
+  --ag-odd-row-background-color: #fafafa;
+  --ag-border-color: #e2e8f0;
+  --ag-header-foreground-color: #1e293b;
+  --ag-foreground-color: #374151;
+  --ag-row-hover-color: rgba(176, 138, 78, 0.06);
+  --ag-selected-row-background-color: rgba(176, 138, 78, 0.12);
+  --ag-range-selection-border-color: var(--app-accent, #B08A4E);
+  --ag-input-focus-border-color: var(--app-accent, #B08A4E);
+
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .ag-header { font-weight: 600; font-size: 0.825rem; }
+  .ag-header-cell-label { color: #475569; }
+  .ag-row { font-size: 0.875rem; }
+}
+
+// ── Dark mode ──────────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  ::ng-deep .ag-theme-alpine {
+    --ag-header-background-color: rgba(255, 255, 255, 0.05);
+    --ag-background-color: #1e1e2e;
+    --ag-odd-row-background-color: rgba(255, 255, 255, 0.03);
+    --ag-border-color: rgba(255, 255, 255, 0.08);
+    --ag-header-foreground-color: #e2e8f0;
+    --ag-foreground-color: #cbd5e1;
+    --ag-row-hover-color: rgba(255, 255, 255, 0.04);
+    --ag-selected-row-background-color: rgba(176, 138, 78, 0.15);
+    --ag-icon-color: #94a3b8;
+    --ag-header-column-resize-handle-color: rgba(255, 255, 255, 0.2);
+    --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.06);
+    --ag-input-border-color: rgba(255, 255, 255, 0.15);
+    --ag-input-focus-border-color: var(--app-accent, #B08A4E);
+
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+
+    .ag-header-cell-label { color: #94a3b8; }
+    .ag-paging-panel      { color: #94a3b8; }
+    .ag-row-even { background-color: #1e1e2e; }
+    .ag-row-odd  { background-color: rgba(255,255,255,0.03); }
+  }
+
+  label { color: #e2e8f0; }
+  p     { color: #e2e8f0; }
+}
+
+// ── Light mode ─────────────────────────────────────────────────────────────
+:host-context(body.theme-light) {
+  .btn-primary {
+    background: var(--app-accent);
+    border-color: var(--app-accent);
+    &:hover { background: #8A6A38; border-color: #8A6A38; }
+  }
+}

@@ -68,12 +68,17 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
           this.acceder.login({ userName: this.userName, password: this.password } as any).subscribe({
             next: (res: any) => {
               const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
+              const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
               if (token) {
                 this.carritoVariante.limpiar();
                 this.carritoService.limpiarCarrito();
                 this.authStorage.setAccessToken(token);
                 this.authService.setRolesFromToken(token);
-                this.router.navigate(['/productos/buscar']);
+                if (debeCambiar) {
+                  this.forzarCambioPassword(this.password);
+                } else {
+                  this.router.navigate(['/productos/buscar']);
+                }
               } else {
                 this.router.navigate(['/login']);
               }
@@ -125,6 +130,50 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
       this.cooldown--;
       if (this.cooldown <= 0) clearInterval(this.cooldownTimer);
     }, 1000);
+  }
+
+  private forzarCambioPassword(passwordActual: string): void {
+    Swal.fire({
+      title: '🔑 Cambia tu contraseña',
+      html: `
+        <p style="font-size:0.88rem;color:#64748b;margin-bottom:12px">
+          Tu contraseña fue reseteada por un administrador.<br>
+          Debes crear una nueva contraseña para continuar.
+        </p>
+        <input id="swal-pwd-nueva" type="password" class="swal2-input" placeholder="Nueva contraseña (mín. 8 caracteres)">
+        <input id="swal-pwd-confirm" type="password" class="swal2-input" placeholder="Confirmar nueva contraseña">
+      `,
+      icon: 'warning',
+      confirmButtonText: 'Cambiar y entrar',
+      showCancelButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      preConfirm: () => {
+        const nueva   = (document.getElementById('swal-pwd-nueva')   as HTMLInputElement)?.value ?? '';
+        const confirm = (document.getElementById('swal-pwd-confirm') as HTMLInputElement)?.value ?? '';
+        if (nueva.length < 8) {
+          Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
+          return false;
+        }
+        if (nueva !== confirm) {
+          Swal.showValidationMessage('Las contraseñas no coinciden');
+          return false;
+        }
+        return nueva;
+      }
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) return;
+      this.acceder.cambiarPassword(passwordActual, result.value as string).subscribe({
+        next: () => this.router.navigate(['/productos/buscar']),
+        error: (err: any) => {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo cambiar',
+            text: err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.'
+          }).then(() => this.forzarCambioPassword(passwordActual));
+        }
+      });
+    });
   }
 
   soloNumeros(e: KeyboardEvent): void {

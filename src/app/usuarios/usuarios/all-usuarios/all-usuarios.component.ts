@@ -5,6 +5,7 @@ import { IUsuarioDto } from '../models/usuario.dto';
 import { IconService } from 'src/app/Icon/icon.service';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { AccederService } from 'src/app/login/acceder.service';
 
 @Component({
   selector: 'app-all-usuarios',
@@ -25,9 +26,11 @@ export class AllUsuariosComponent implements OnInit {
   };
 
   rows: IUsuarioDto[] = [];
-  constructor(private readonly serviceUser: UsuarioService,
-    public iconImagen: IconService,
-    private readonly router: Router,
+  constructor(
+    private readonly serviceUser: UsuarioService,
+    public  readonly iconImagen:  IconService,
+    private readonly router:      Router,
+    private readonly acceder:     AccederService,
   ) { }
 
   ngOnInit(): void {
@@ -95,6 +98,91 @@ export class AllUsuariosComponent implements OnInit {
     ];
     const idx = (username ?? '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
     return palette[idx];
+  }
+
+  resetearPassword(item: IUsuarioDto): void {
+    Swal.fire({
+      title: `¿Resetear contraseña de ${item.username}?`,
+      text: 'Se generará una contraseña temporal que deberás compartir con el usuario.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, resetear',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d97706'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.serviceUser.resetearPassword(item.id!).subscribe({
+        next: (res: any) => {
+          const nuevaPass: string = res?.data ?? '—';
+          Swal.fire({
+            icon: 'success',
+            title: 'Contraseña reseteada',
+            html: `
+              <p>La contraseña temporal de <strong>${item.username}</strong> es:</p>
+              <div style="font-size:1.7rem;font-weight:800;letter-spacing:5px;
+                          padding:12px 16px;background:rgba(0,0,0,0.06);
+                          border-radius:10px;margin:10px 0;font-family:monospace">
+                ${nuevaPass}
+              </div>
+              <p style="font-size:0.82rem;color:#64748b">
+                Dásela al usuario. Deberá cambiarla en su siguiente inicio de sesión.
+              </p>
+            `,
+            confirmButtonText: 'Entendido'
+          });
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo resetear la contraseña.' });
+        }
+      });
+    });
+  }
+
+  verificarCorreoUsuario(item: IUsuarioDto): void {
+    this.acceder.enviarCodigoVerificacionUsuario(item.username).subscribe({
+      next:  () => this.mostrarSwalCodigoAdmin(item),
+      error: () => this.mostrarSwalCodigoAdmin(item)
+    });
+  }
+
+  private mostrarSwalCodigoAdmin(item: IUsuarioDto): void {
+    Swal.fire({
+      title: `Verificar correo — ${item.username}`,
+      html: `
+        <p style="margin-bottom:10px;font-size:0.88rem">
+          Se envió un código al correo de <strong>${item.username}</strong>.<br>
+          Pídele que te dicte el código de 6 dígitos por teléfono.
+        </p>
+        <input id="swal-codigo-admin" type="text" inputmode="numeric" maxlength="6"
+               placeholder="123456"
+               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
+                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      outline:none;font-family:monospace">
+      `,
+      confirmButtonText: 'Verificar',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const codigo = (document.getElementById('swal-codigo-admin') as HTMLInputElement)?.value ?? '';
+        if (codigo.length !== 6) {
+          Swal.showValidationMessage('Ingresa los 6 dígitos del código');
+          return false;
+        }
+        return codigo;
+      }
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) return;
+      this.acceder.verificarCorreoUsuario(item.username, result.value as string).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${item.username} fue verificado correctamente.` });
+        },
+        error: (err) => {
+          const raw = err?.error;
+          const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
+          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
+        }
+      });
+    });
   }
 
   removeUsuario(item: any) {

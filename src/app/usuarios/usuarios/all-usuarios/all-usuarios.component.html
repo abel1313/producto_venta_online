@@ -24,6 +24,12 @@
             <img [src]="iconImagen.iconEditar" class="au-btn__icon" alt="" />
             Actualizar
           </button>
+          <button class="au-btn au-btn--reset" (click)="resetearPassword(item)">
+            🔑 Resetear contraseña
+          </button>
+          <button class="au-btn au-btn--verify" (click)="verificarCorreoUsuario(item)">
+            ✉️ Verificar correo
+          </button>
           <button class="au-btn au-btn--delete" (click)="removeUsuario(item)">
             <img [src]="iconImagen.iconEliminar" class="au-btn__icon" alt="" />
             Eliminar

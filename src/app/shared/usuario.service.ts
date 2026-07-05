@@ -38,4 +38,8 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   buscarClientePorIdUsuario(idUsuario: number) {
     return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
   }
+
+  resetearPassword(id: number) {
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${id}/resetear-password`, {});
+  }
 }

@@ -10,8 +10,8 @@ import { IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
-import { BannerPromoService, IBannerPromo } from 'src/app/shared/services/banner-promo.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
+import { IPromocion } from 'src/app/promociones/models/promocion.model';
 
 @Component({
   selector: 'app-buscar',
@@ -41,12 +41,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
-  bannerLeft:  IBannerPromo = { activo: false };
-  bannerRight: IBannerPromo = { activo: false };
+  promoLeft:  IPromocion | null = null;
+  promoRight: IPromocion | null = null;
   hayPromos = false;
 
-  get imagenLeft():  string { return this.bannerLeft.imagenBase64  || this.bannerLeft.imagenUrl  || ''; }
-  get imagenRight(): string { return this.bannerRight.imagenBase64 || this.bannerRight.imagenUrl || ''; }
+  precioPromoTotal(p: IPromocion): number {
+    return (p.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
+  }
 
   constructor(
     private readonly varianteService: VarianteService,
@@ -55,7 +56,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     readonly router: Router,
     private readonly compartirSvc: CompartirService,
-    private readonly bannerSvc: BannerPromoService,
     private readonly promoService: PromocionService
   ) {}
 
@@ -69,11 +69,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.bannerLeft  = this.bannerSvc.getBannerLeft();
-    this.bannerRight = this.bannerSvc.getBannerRight();
-
-    this.promoService.getActivas(1, 1).pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => { this.hayPromos = (res?.data?.totalRegistros ?? 0) > 0; },
+    this.promoService.getActivas(1, 2).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        const lista = res?.data?.t ?? [];
+        this.hayPromos  = lista.length > 0;
+        this.promoLeft  = lista[0] ?? null;
+        this.promoRight = lista[1] ?? null;
+      },
       error: () => { this.hayPromos = false; }
     });
 

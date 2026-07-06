@@ -110,17 +110,20 @@
 <!-- ── Layout con banners laterales ───────────────────────────────── -->
 <div class="vb-layout">
 
-  <!-- Banner izquierdo -->
-  <aside class="vb-promo vb-promo--left" *ngIf="bannerLeft.activo && (imagenLeft || bannerLeft.titulo)">
-    <a class="vb-promo__card" [href]="bannerLeft.link || null" [target]="bannerLeft.link ? '_blank' : null"
-       [class.vb-promo__card--no-link]="!bannerLeft.link">
-      <div class="vb-promo__img-wrap" *ngIf="imagenLeft">
-        <img [src]="imagenLeft" alt="{{ bannerLeft.titulo }}" class="vb-promo__img">
+  <!-- Promo izquierda -->
+  <aside class="vb-promo vb-promo--left" *ngIf="promoLeft">
+    <a class="vb-promo__card" routerLink="/promociones">
+      <div class="vb-promo__img-wrap" *ngIf="promoLeft!.detalles?.[0]?.imagenUrl">
+        <img [src]="promoLeft!.detalles![0].imagenUrl" alt="{{ promoLeft!.descripcion }}" class="vb-promo__img">
       </div>
-      <div class="vb-promo__overlay" *ngIf="bannerLeft.titulo || bannerLeft.texto">
-        <span class="vb-promo__title" *ngIf="bannerLeft.titulo">{{ bannerLeft.titulo }}</span>
-        <p class="vb-promo__text" *ngIf="bannerLeft.texto">{{ bannerLeft.texto }}</p>
-        <span class="vb-promo__cta" *ngIf="bannerLeft.link">Ver más →</span>
+      <div class="vb-promo__img-wrap vb-promo__img-wrap--ph" *ngIf="!promoLeft!.detalles?.[0]?.imagenUrl">
+        <span class="vb-promo__ph-icon">🏷️</span>
+      </div>
+      <div class="vb-promo__overlay">
+        <span class="vb-promo__badge">🏷️ PROMO</span>
+        <span class="vb-promo__title">{{ promoLeft!.descripcion }}</span>
+        <p class="vb-promo__text">${{ precioPromoTotal(promoLeft!) | number:'1.2-2' }}</p>
+        <span class="vb-promo__cta">Ver combo →</span>
       </div>
     </a>
   </aside>
@@ -271,17 +274,20 @@
 
   </div><!-- /vb-grid-wrap -->
 
-  <!-- Banner derecho -->
-  <aside class="vb-promo vb-promo--right" *ngIf="bannerRight.activo && (imagenRight || bannerRight.titulo)">
-    <a class="vb-promo__card" [href]="bannerRight.link || null" [target]="bannerRight.link ? '_blank' : null"
-       [class.vb-promo__card--no-link]="!bannerRight.link">
-      <div class="vb-promo__img-wrap" *ngIf="imagenRight">
-        <img [src]="imagenRight" alt="{{ bannerRight.titulo }}" class="vb-promo__img">
+  <!-- Promo derecha -->
+  <aside class="vb-promo vb-promo--right" *ngIf="promoRight">
+    <a class="vb-promo__card" routerLink="/promociones">
+      <div class="vb-promo__img-wrap" *ngIf="promoRight!.detalles?.[0]?.imagenUrl">
+        <img [src]="promoRight!.detalles![0].imagenUrl" alt="{{ promoRight!.descripcion }}" class="vb-promo__img">
       </div>
-      <div class="vb-promo__overlay" *ngIf="bannerRight.titulo || bannerRight.texto">
-        <span class="vb-promo__title" *ngIf="bannerRight.titulo">{{ bannerRight.titulo }}</span>
-        <p class="vb-promo__text" *ngIf="bannerRight.texto">{{ bannerRight.texto }}</p>
-        <span class="vb-promo__cta" *ngIf="bannerRight.link">Ver más →</span>
+      <div class="vb-promo__img-wrap vb-promo__img-wrap--ph" *ngIf="!promoRight!.detalles?.[0]?.imagenUrl">
+        <span class="vb-promo__ph-icon">🏷️</span>
+      </div>
+      <div class="vb-promo__overlay">
+        <span class="vb-promo__badge">🏷️ PROMO</span>
+        <span class="vb-promo__title">{{ promoRight!.descripcion }}</span>
+        <p class="vb-promo__text">${{ precioPromoTotal(promoRight!) | number:'1.2-2' }}</p>
+        <span class="vb-promo__cta">Ver combo →</span>
       </div>
     </a>
   </aside>

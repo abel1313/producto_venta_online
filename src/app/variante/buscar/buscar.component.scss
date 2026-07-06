@@ -280,6 +280,35 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--app-accent, #B08A4E);
     letter-spacing: 0.03em;
   }
+
+  &__badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #B08A4E;
+    background: rgba(176,138,78,0.12);
+    border: 1px solid rgba(176,138,78,0.3);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-bottom: 2px;
+    align-self: flex-start;
+  }
+
+  &__img-wrap--ph {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(176,138,78,0.08), rgba(176,138,78,0.18));
+  }
+
+  &__ph-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+  }
 }
 
 // Dark mode para banners

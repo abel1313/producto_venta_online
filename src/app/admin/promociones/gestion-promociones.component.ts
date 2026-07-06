@@ -66,8 +66,9 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
   // ── Lista ─────────────────────────────────────────────────────────────
 
   cargar(): void {
+    if (this.cargando) return;
     this.cargando = true;
-    this.promoService.getAdmin(this.pagina, this.size).subscribe({
+    this.promoService.getAdmin(this.pagina, this.size).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.promos = res?.data?.t ?? [];
         this.totalPaginas = res?.data?.totalPaginas ?? 1;

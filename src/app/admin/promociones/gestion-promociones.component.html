@@ -97,13 +97,13 @@
 
       <div class="gp-card__body">
         <p class="gp-card__vence">Vence: {{ p.fechaVencimiento | date:'dd/MM/yyyy HH:mm' }}</p>
-        <p class="gp-card__piezas">{{ p.detalles.length }} pieza(s)</p>
+        <p class="gp-card__piezas">{{ (p.detalles?.length ?? 0) }} pieza(s)</p>
         <div class="gp-card__precios">
           <span class="gp-precio--normal">${{ precioTotalNormal(p) | number:'1.2-2' }}</span>
           <span class="gp-precio--promo">${{ precioTotalPromo(p) | number:'1.2-2' }} promo</span>
         </div>
         <ul class="gp-card__piezas-list">
-          <li *ngFor="let d of p.detalles">
+          <li *ngFor="let d of (p.detalles ?? [])">
             {{ d.nombreProducto ?? 'Variante #' + d.varianteId }}
             <span *ngIf="d.talla"> · {{ d.talla }}</span>
             <span *ngIf="d.color"> · {{ d.color }}</span>

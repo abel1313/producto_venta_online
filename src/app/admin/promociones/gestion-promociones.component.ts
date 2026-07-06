@@ -102,11 +102,11 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
   }
 
   precioTotalNormal(p: IPromocion): number {
-    return p.detalles.reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
+    return (p.detalles ?? []).reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
   }
 
   precioTotalPromo(p: IPromocion): number {
-    return p.detalles.reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
+    return (p.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
   }
 
   toggleActivo(p: IPromocion): void {
@@ -141,7 +141,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     this.editandoId = p.id;
     this.formDescripcion = p.descripcion;
     this.formFechaVencimiento = p.fechaVencimiento.slice(0, 16); // datetime-local
-    this.formDetalles = p.detalles.map(d => ({ ...d }));
+    this.formDetalles = (p.detalles ?? []).map(d => ({ ...d }));
   }
 
   cancelarForm(): void {

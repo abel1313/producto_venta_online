@@ -24,11 +24,11 @@
     <div class="pm-card" *ngFor="let p of promos">
 
       <!-- Imagen principal del primer detalle -->
-      <div class="pm-card__img-wrap" *ngIf="p.detalles[0]?.imagenUrl">
-        <img [src]="p.detalles[0].imagenUrl" class="pm-card__img" [alt]="p.descripcion">
+      <div class="pm-card__img-wrap" *ngIf="p.detalles?.[0]?.imagenUrl">
+        <img [src]="p.detalles![0].imagenUrl" class="pm-card__img" [alt]="p.descripcion">
         <span class="pm-badge-promo">🏷️ PROMO</span>
       </div>
-      <div class="pm-card__img-wrap pm-card__img-wrap--placeholder" *ngIf="!p.detalles[0]?.imagenUrl">
+      <div class="pm-card__img-wrap pm-card__img-wrap--placeholder" *ngIf="!p.detalles?.[0]?.imagenUrl">
         <span class="pm-badge-promo pm-badge-promo--solo">🏷️ PROMO</span>
       </div>
 

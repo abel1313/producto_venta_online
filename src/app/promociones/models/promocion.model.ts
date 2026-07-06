@@ -16,7 +16,7 @@ export interface IPromocion {
   fechaVencimiento: string; // ISO "2026-07-05T18:00:00"
   activo: boolean;
   instanciasDisponibles?: number; // solo en GET activas
-  detalles: IPromocionDetalle[];
+  detalles?: IPromocionDetalle[];
 }
 
 export interface IPromocionRequest {

@@ -97,11 +97,11 @@ export class PromocionesComponent implements OnInit, OnDestroy {
   // ── Precios ───────────────────────────────────────────────────────────
 
   precioTotalNormal(p: IPromocion): number {
-    return p.detalles.reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
+    return (p.detalles ?? []).reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
   }
 
   precioTotalPromo(p: IPromocion): number {
-    return p.detalles.reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
+    return (p.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
   }
 
   ahorro(p: IPromocion): number {

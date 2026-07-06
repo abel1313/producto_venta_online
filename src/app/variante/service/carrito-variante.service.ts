@@ -87,7 +87,7 @@ export class CarritoVarianteService {
   agregarPromo(promo: IPromocion, cantidad: number): void {
     const actual = this._promos.getValue();
     const idx = actual.findIndex(p => p.promocionId === promo.id);
-    const precioTotal = promo.detalles.reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
+    const precioTotal = (promo.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
 
     if (idx !== -1) {
       const nuevaCantidad = actual[idx].cantidadCombos + cantidad;
@@ -100,7 +100,7 @@ export class CarritoVarianteService {
         cantidadCombos:         Math.min(cantidad, promo.instanciasDisponibles ?? 999),
         instanciasDisponibles:  promo.instanciasDisponibles ?? 0,
         precioTotal,
-        detalles:               promo.detalles
+        detalles:               promo.detalles ?? []
       });
     }
     this._promos.next([...actual]);

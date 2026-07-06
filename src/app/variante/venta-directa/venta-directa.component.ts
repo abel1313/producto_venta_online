@@ -665,7 +665,19 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.procesando = false;
-        Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo procesar la venta.' });
+        const msg: string = (err?.error?.mensaje ?? err?.error?.message) ?? '';
+        if (msg.toLowerCase().includes('no es valido') || msg.toLowerCase().includes('no es válido')) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Precio desactualizado',
+            html: `<p>${msg}</p><p>El precio de uno o más productos cambió. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
+            confirmButtonText: '🔄 Ir al catálogo',
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar'
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: msg || 'No se pudo procesar la venta.' });
+        }
       }
     });
   }

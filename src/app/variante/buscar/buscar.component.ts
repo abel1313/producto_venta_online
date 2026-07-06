@@ -11,6 +11,7 @@ import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { BannerPromoService, IBannerPromo } from 'src/app/shared/services/banner-promo.service';
+import { PromocionService } from 'src/app/promociones/service/promocion.service';
 
 @Component({
   selector: 'app-buscar',
@@ -42,6 +43,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   bannerLeft:  IBannerPromo = { activo: false };
   bannerRight: IBannerPromo = { activo: false };
+  hayPromos = false;
 
   get imagenLeft():  string { return this.bannerLeft.imagenBase64  || this.bannerLeft.imagenUrl  || ''; }
   get imagenRight(): string { return this.bannerRight.imagenBase64 || this.bannerRight.imagenUrl || ''; }
@@ -53,7 +55,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     readonly router: Router,
     private readonly compartirSvc: CompartirService,
-    private readonly bannerSvc: BannerPromoService
+    private readonly bannerSvc: BannerPromoService,
+    private readonly promoService: PromocionService
   ) {}
 
   compartirImagen(v: IVarianteResumen): void {
@@ -68,6 +71,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.bannerLeft  = this.bannerSvc.getBannerLeft();
     this.bannerRight = this.bannerSvc.getBannerRight();
+
+    this.promoService.getActivas(1, 1).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => { this.hayPromos = (res?.data?.totalRegistros ?? 0) > 0; },
+      error: () => { this.hayPromos = false; }
+    });
 
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');

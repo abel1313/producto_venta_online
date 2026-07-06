@@ -79,7 +79,7 @@
 </div>
 
 <!-- ── Banner de promociones activas ──────────────────────────────── -->
-<div class="vb-promo-banner">
+<div class="vb-promo-banner" *ngIf="hayPromos">
   <a routerLink="/promociones" class="vb-promo-banner__link">
     <span class="vb-promo-banner__icon">🏷️</span>
     <div class="vb-promo-banner__texto">

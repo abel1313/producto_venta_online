@@ -56,9 +56,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   ];
   roles: string[] = [];
   isAdminUser: boolean = false;
-  filtroConStock: boolean | null = null;
-  filtroConImagenes: boolean | null = null;
-  filtroHabilitado: boolean | null = null;
+  // Cada checkbox es independiente (no excluyente entre si). Si ambos de un par estan marcados
+  // (o ninguno), no se filtra por esa dimension (se traen ambos casos) — solo cuando queda
+  // marcado exactamente uno de los dos se manda el booleano al back.
+  mostrarConStock = false;
+  mostrarSinStock = false;
+  mostrarConImagenes = false;
+  mostrarSinImagenes = false;
+  mostrarHabilitados = false;
+  mostrarNoHabilitados = false;
   sinResultados    = false;
   mensajeError     = '';
   seleccionados    = new Set<number>();
@@ -348,28 +354,35 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   get hayFiltrosAdminActivos(): boolean {
-    return this.filtroConStock !== null || this.filtroConImagenes !== null || this.filtroHabilitado !== null;
+    return this.mostrarConStock || this.mostrarSinStock
+        || this.mostrarConImagenes || this.mostrarSinImagenes
+        || this.mostrarHabilitados || this.mostrarNoHabilitados;
   }
 
-  toggleFiltroStock(valor: boolean): void {
-    this.filtroConStock = this.filtroConStock === valor ? null : valor;
-    this.aplicarFiltrosAdmin(1);
+  // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
+  private get paramConStock(): boolean | undefined {
+    return this.mostrarConStock === this.mostrarSinStock ? undefined : this.mostrarConStock;
+  }
+  private get paramConImagenes(): boolean | undefined {
+    return this.mostrarConImagenes === this.mostrarSinImagenes ? undefined : this.mostrarConImagenes;
+  }
+  private get paramHabilitado(): boolean | undefined {
+    return this.mostrarHabilitados === this.mostrarNoHabilitados ? undefined : this.mostrarHabilitados;
   }
 
-  toggleFiltroImagenes(valor: boolean): void {
-    this.filtroConImagenes = this.filtroConImagenes === valor ? null : valor;
-    this.aplicarFiltrosAdmin(1);
-  }
-
-  toggleFiltroHabilitado(valor: boolean): void {
-    this.filtroHabilitado = this.filtroHabilitado === valor ? null : valor;
+  toggleFiltroAdmin(campo: 'mostrarConStock' | 'mostrarSinStock' | 'mostrarConImagenes'
+      | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'): void {
+    this[campo] = !this[campo];
     this.aplicarFiltrosAdmin(1);
   }
 
   limpiarFiltrosAdmin(): void {
-    this.filtroConStock = null;
-    this.filtroConImagenes = null;
-    this.filtroHabilitado = null;
+    this.mostrarConStock = false;
+    this.mostrarSinStock = false;
+    this.mostrarConImagenes = false;
+    this.mostrarSinImagenes = false;
+    this.mostrarHabilitados = false;
+    this.mostrarNoHabilitados = false;
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
@@ -381,9 +394,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.srvice.invalidarProdCache();
     this.srvice.adminFiltrar({
       nombreOCodigo: this.buscarProd || undefined,
-      conStock: this.filtroConStock ?? undefined,
-      conImagenes: this.filtroConImagenes ?? undefined,
-      habilitado: this.filtroHabilitado ?? undefined
+      conStock: this.paramConStock,
+      conImagenes: this.paramConImagenes,
+      habilitado: this.paramHabilitado
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;

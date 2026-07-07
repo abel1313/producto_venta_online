@@ -303,3 +303,9 @@ $primary-d:  #c2255c;
 
 .dp-header__name { color: #fff; }
 .dp-header__desc { color: rgba(255,255,255,0.75); }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
+:host-context(body.theme-light) {
+  .dp-header__name { color: #1e293b; }
+  .dp-header__desc { color: rgba(0,0,0,0.55); }
+}

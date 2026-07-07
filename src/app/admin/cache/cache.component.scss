@@ -187,3 +187,9 @@ $t: all 0.22s ease;
     font-family: monospace;
   }
 }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
+:host-context(body.theme-light) {
+  .ac-card__title    { color: #1e293b; }
+  .ac-card__subtitle { color: rgba(0,0,0,0.55); }
+}

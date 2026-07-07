@@ -166,3 +166,18 @@
   .cb-btn--reset   { color: #f87171; }
   .cb-btn--verify  { color: #38bdf8; }
 }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto blanco debe pasar a oscuro ──
+:host-context(body.theme-light) {
+  .cb-header__title { color: #1e293b; h4, small { color: #1e293b; } }
+
+  .cb-search {
+    background: rgba(0,0,0,.05);
+    border-color: rgba(0,0,0,.12);
+    &__icon { color: rgba(0,0,0,.5); }
+    &__input {
+      color: #1e293b;
+      &::placeholder { color: rgba(0,0,0,.42); }
+    }
+  }
+}

@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <!-- Pedidos — accordion -->
+    <!-- Pedidos — accordion (solo lo que es "mi pedido", la analítica vive en Analítica) -->
     <div class="sb-group" *ngIf="!isAnonymous"
          [class.sb-group--open]="openGroup === 'pedidos'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('pedidos')">
@@ -66,16 +66,10 @@
         <a class="sb-subitem" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
         <a class="sb-subitem" *ngIf="isAdminUser"
            routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
-        <a class="sb-subitem" *ngIf="isAdminUser"
-           routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
-        <a class="sb-subitem" *ngIf="isAdminUser"
-           routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
-        <a class="sb-subitem" *ngIf="isAdminUser"
-           routerLink="reportes" (click)="closeMobile()">📊 Reportes</a>
       </div>
     </div>
 
-    <!-- Ventas (admin) — accordion -->
+    <!-- Ventas (admin) — accordion: cobro + créditos + gastos, todo lo que mueve dinero -->
     <div class="sb-group" *ngIf="isAdminUser"
          [class.sb-group--open]="openGroup === 'ventas'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('ventas')">
@@ -86,22 +80,25 @@
       <div class="sb-submenu">
         <a class="sb-subitem" routerLink="variantes/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
         <a class="sb-subitem" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
+        <a class="sb-subitem" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
+        <a class="sb-subitem" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos y Ventas</a>
       </div>
     </div>
 
-    <!-- Clientes (admin) — link directo -->
-    <a class="sb-item" *ngIf="isAdminUser"
-       routerLink="clientes/buscar" routerLinkActive="sb-item--active"
-       (click)="closeMobile()">
-      <span class="sb-icon">👥</span>
-      <span class="sb-label">Clientes</span>
-    </a>
-
-    <!-- Gastos (admin) — link directo -->
-    <a class="sb-item" *ngIf="isAdminUser" routerLink="gastos/buscar" routerLinkActive="sb-item--active" (click)="closeMobile()">
-      <span class="sb-icon">💸</span>
-      <span class="sb-label">Gastos y Ventas</span>
-    </a>
+    <!-- Analítica (admin) — accordion: métricas del negocio, no operación del día a día -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'analitica'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('analitica')">
+        <span class="sb-icon">📊</span>
+        <span class="sb-label">Analítica</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
+        <a class="sb-subitem" routerLink="reportes" (click)="closeMobile()">📈 Reportes</a>
+        <a class="sb-subitem" routerLink="clientes/buscar" (click)="closeMobile()">👥 Clientes</a>
+      </div>
+    </div>
 
     <!-- Rifas (admin) — accordion -->
     <div class="sb-group" *ngIf="isAdminUser"
@@ -118,23 +115,35 @@
       </div>
     </div>
 
-    <!-- Admin (admin) — accordion -->
+    <!-- Imágenes (admin) — accordion: las 4 herramientas de imágenes, separadas de Sistema -->
     <div class="sb-group" *ngIf="isAdminUser"
-         [class.sb-group--open]="openGroup === 'admin'">
-      <button class="sb-item sb-item--toggle" (click)="toggleGroup('admin')">
+         [class.sb-group--open]="openGroup === 'imagenes'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('imagenes')">
+        <span class="sb-icon">🖼️</span>
+        <span class="sb-label">Imágenes</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
+        <a class="sb-subitem" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
+        <a class="sb-subitem" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
+        <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+      </div>
+    </div>
+
+    <!-- Sistema (admin) — accordion: configuración del sistema en sí (antes "Admin") -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'sistema'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('sistema')">
         <span class="sb-icon">🛠️</span>
-        <span class="sb-label">Admin</span>
+        <span class="sb-label">Sistema</span>
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
         <a class="sb-subitem" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
-        <a class="sb-subitem" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
-        <a class="sb-subitem" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
-        <a class="sb-subitem" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
-        <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
         <a class="sb-subitem" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
-<a class="sb-subitem" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
+        <a class="sb-subitem" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
       </div>
     </div>
 

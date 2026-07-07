@@ -229,6 +229,59 @@ backdrop-filter: blur(6px);
 
 ---
 
+## FIX ESTILOS — TEXTO BLANCO INVISIBLE EN HEADERS/BOTONES EN MODO CLARO (2026-07-07)
+
+**Síntoma:** en modo claro, varias pantallas mostraban el botón o el header "vacío" — el
+fondo se veía pero el texto no. Reportado puntualmente en `/promociones` (botón "🛒 Agregar"
+sin texto visible).
+
+**Causa raíz:** `--header-brand` cambia de valor por tema — en modo oscuro es un color oscuro
+(`rgba(28,27,25,0.80)`), pero en modo claro es un **glass casi blanco**
+(`rgba(255,250,242,0.82)`), pensado únicamente para el fondo del header con glassmorphism
+(que SIEMPRE lleva su propio override de color de texto oscuro para modo claro, ver sección
+"DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE"). Varios componentes usaron esa misma
+variable para fondos de **botones** o headers de página, con `color:#fff`/`color:white`
+hardcodeado, **sin agregar el override de texto para modo claro** — en modo claro queda texto
+blanco sobre fondo casi blanco = invisible.
+
+**Fix — dos patrones distintos:**
+1. **Botón/banner puntual** (no es el header principal de la página): cambiar el fondo de
+   `var(--header-brand)` a `var(--app-accent)` (color sólido ámbar, igual de visible en ambos
+   temas) o al gradiente fijo `linear-gradient(135deg, #8A6A38, #B08A4E)` — nunca depende del
+   tema.
+2. **Header de página** (usa `var(--header-brand)` a propósito, por el efecto glass): agregar
+   `:host-context(body.theme-light) { .xx-header__title { color: #1e293b; } .xx-header__subtitle { color: rgba(0,0,0,.55); } }`
+   — mismo patrón ya usado en `productos/all` y `variante/buscar`.
+
+**Archivos corregidos:**
+| Archivo | Qué se corrigió |
+|---|---|
+| `promociones/promociones.component.scss` | `.pm-btn--agregar` → `var(--app-accent)` (patrón 1) |
+| `variante/venta-directa/venta-directa.component.scss` | `.vd-modal__header` → gradiente fijo (patrón 1) |
+| `reportes/reportes.component.scss` | `.rp-header__title` (patrón 2) |
+| `admin/cache/cache.component.scss` | `.ac-card__title`/`__subtitle` (patrón 2, sin bloque `theme-light` previo) |
+| `admin/reconciliacion-imagenes/reconciliacion-imagenes.component.scss` | `.rc-card__title`/`__subtitle` (patrón 2) |
+| `admin/config-negocio/config-negocio.component.scss` | `.cn-card__title`/`__subtitle` (patrón 2) |
+| `admin/presentacion-imagenes/presentacion-imagenes.component.scss` | `.pi-card__title`/`__subtitle` (patrón 2) |
+| `clietes/clientes-buscar/clientes-buscar.component.scss` | `.cb-header__title` + buscador `.cb-search` (título Y buscador estaban en blanco) |
+| `productos/producto/detalle-producto/detalle-producto.component.scss` | `.dp-header__name`/`__desc` (patrón 2) |
+| `documentos/carga-archivo/carga-archivo.component.scss` | `.ca-card__title`/`__subtitle` (patrón 2) |
+| `abonos/abonos.component.scss` | `.ab-header__title` (patrón 2, ya tenía bloque `theme-light` para el input) |
+
+**Verificados como YA correctos (no tocados):** `productos/all`, `variante/buscar`,
+`variante/agregar` y `productos/producto/add` (redefinen `--header-brand` localmente con un
+gradiente fijo, a propósito — ver "DISEÑO DEFINITIVO"), `dashboard`, `gastos/all`, `gastos/add`
+(ya tenían su override de modo claro completo).
+
+**Pendiente relacionado (no tocado en este fix):** el rediseño completo dark/light de varios
+de estos mismos componentes (bordes, cards, inputs) sigue abierto — ver sección "PENDIENTE —
+MIGRACIÓN DE COMPONENTES A DARK/LIGHT THEME". Este fix solo resuelve la invisibilidad de
+texto, no el rediseño completo de esos componentes.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FIX ESTILOS — CHECKBOX CUSTOM EN FILTROS ADMIN (2026-07-07)
 
 **Motivo:** los checkboxes de los filtros admin (Con stock / Sin stock / Con imágenes / Sin
@@ -1910,6 +1963,55 @@ return throwError(error);
 
 `ImagenesService.getImagenV2(productoId)` → llama a `GET /imagen/v2/{productoId}` (micro de imágenes).
 **Estado:** método creado en el servicio pero NINGÚN componente lo invoca. No tocar hasta confirmar path exacto del backend.
+
+---
+
+## REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR (2026-07-07)
+
+> Reorganización aplicada sobre `src/app/navbar/navbar.component.html` (Opción B de
+> `navbar-rutas-opciones` — reagrupar por función, cambio mínimo sobre el orden ya
+> existente). **Usar este criterio para decidir dónde va cualquier ruta/link nuevo que se
+> agregue al sidebar de aquí en adelante.**
+
+### Los 9 grupos y su criterio
+
+| # | Grupo | Criterio — qué entra aquí | Ítems actuales |
+|---|---|---|---|
+| 1 | 🏠 Home | Link directo, todos | — |
+| 2 | 🛍️ Productos | Link directo, catálogo cliente | `variantes/buscar` |
+| 3 | 📦 Mis productos | Alta/edición del catálogo (admin) | Ver todos, Agregar producto, Gestionar variantes, Cargar Excel, Palabras clave |
+| 4 | 📋 Pedidos | Solo lo que es "un pedido" — **NO** analítica ni dinero | Mis pedidos, Historial MP |
+| 5 | 💰 Ventas | Todo lo que mueve dinero: cobrar, créditos, gastos | Venta directa, Buscar ventas, Créditos/Abonos, Gastos y Ventas |
+| 6 | 📊 Analítica | Métricas/reportes del negocio — nunca operación del día a día | Dashboard, Reportes, Clientes |
+| 7 | 🎰 Rifas | Todo el módulo de rifas | Rifa de variantes, Rifa mensual, Ver rifas activas |
+| 8 | 🖼️ Imágenes | Herramientas de imágenes — separado de Sistema a propósito | Imágenes presentación, Diagnóstico, Reconciliación, Limpiar caché |
+| 9 | 🛠️ Sistema | Configuración del sistema en sí (antes se llamaba "Admin") | Usuarios, Negocio & Contactos, Chat en vivo, Gestión Promociones |
+
+Fuera de accordions, quedan como **link directo** (sin submenú): Promociones, Chat (no-admin),
+QR, Login (anónimo), toggle de tema. Regla para decidir link directo vs. accordion: si hoy
+tiene o es previsible que tenga 2+ sub-rutas relacionadas → accordion; si es una sola pantalla
+→ link directo.
+
+### Qué NO hacer (para no repetir el desorden anterior)
+
+- **No meter analítica/reportes dentro de "Pedidos".** Antes vivían ahí Dashboard, Reportes y
+  Créditos/Abonos — se sentía mezclado porque "Pedidos" es algo que un cliente reconoce, y esos
+  3 ítems son herramientas de admin sin relación con "ver mi pedido". Cualquier métrica/reporte
+  nuevo va a **Analítica**.
+- **No agregar ítems sueltos como link directo si son admin-only y temáticos** (ej. "Clientes" y
+  "Gastos y Ventas" vivían así antes) — si el ítem nuevo tiene relación clara con un grupo
+  existente (Ventas, Analítica, Sistema), métanlo ahí en vez de crear un link nuevo a nivel raíz.
+- **No volver a cargar "Sistema"/"Admin" con herramientas de imágenes.** Ese grupo llegó a tener
+  8 ítems sin relación entre sí. Cualquier herramienta nueva de imágenes va a **Imágenes**;
+  cualquier cosa de configuración/usuarios/negocio va a **Sistema**.
+- **Antes de crear un grupo nuevo**, revisar si encaja en uno de los 9 de la tabla — solo crear
+  uno nuevo si de verdad no hay match temático (ej. no forzar "Rifas" dentro de "Ventas" aunque
+  ambos generen dinero, porque son operativamente un módulo aparte).
+
+### Claves internas del accordion (`openGroup` en `navbar.component.ts`)
+
+`'misproductos'`, `'pedidos'`, `'ventas'`, `'analitica'`, `'rifas'`, `'imagenes'`, `'sistema'`
+— el nombre interno no necesita coincidir con la etiqueta visible, solo ser único.
 
 ---
 

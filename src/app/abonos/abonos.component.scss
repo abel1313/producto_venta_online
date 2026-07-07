@@ -573,4 +573,9 @@
 
 :host-context(body.theme-light) {
   .ab-input { color-scheme: light; color: #1e293b; }
+  .ab-header__title {
+    color: #1e293b;
+    h4    { color: #1e293b; }
+    small { color: rgba(0,0,0,0.55); }
+  }
 }

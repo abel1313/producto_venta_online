@@ -229,6 +229,32 @@ backdrop-filter: blur(6px);
 
 ---
 
+## FIX ESTILOS — CHECKBOX CUSTOM EN FILTROS ADMIN (2026-07-07)
+
+**Motivo:** los checkboxes de los filtros admin (Con stock / Sin stock / Con imágenes / Sin
+imágenes / Habilitados / No habilitados) en `productos/buscar` y `variantes/buscar` usaban el
+checkbox nativo del navegador (cuadradito diminuto con `accent-color`) — se veía "muy básico"
+dentro de la pill.
+
+**Fix:** checkbox propio (caja redondeada 16×16, borde sutil, palomita blanca dibujada con CSS
+que aparece con animación de escala al marcar, fondo `var(--app-accent)` cuando está activo).
+El input nativo se oculta visualmente (clip-path, sigue siendo accesible/focuseable) y un
+`<span class="…__box">` hermano dibuja la caja + la palomita vía `:checked + &__box`.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.html` → 6 checkboxes de `.pl-filtros` con `<span class="pl-filtro-check__box">`
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtro-check__input`, `.pl-filtro-check__box` (dark + light mode)
+- `src/app/variante/buscar/buscar.component.html` → 6 checkboxes de `.vb-filtros` con `<span class="vb-filtro-check__box">`
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtro-check__input`, `.vb-filtro-check__box` (dark + light mode)
+
+**Hallazgo colateral corregido:** `.vb-filtro-btn--active` en light mode (`buscar.component.scss`)
+todavía tenía `rgba(99, 102, 241, 0.14)` (índigo viejo) en vez de `rgba(176, 138, 78, 0.14)`
+(ámbar) — quedó fuera de la migración de paleta de la sección HOMOLOGACIÓN. Corregido de paso.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## BUG CONOCIDO — LOADING OVERLAY SE ESCONDE ANTES DE TIEMPO
 
 **Síntoma:** al guardar un producto/variante, el overlay de carga de pantalla completa desaparece mientras el botón sigue mostrando spinner. El usuario puede volver a dar clic antes de que termine la operación.

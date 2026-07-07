@@ -134,7 +134,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-filtro-check {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 5px 14px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
@@ -149,11 +149,62 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover { background: rgba(255,255,255,0.28); color: #fff; }
 
-  input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: var(--app-accent);
-    cursor: pointer;
+  // Input nativo oculto visualmente pero funcional (accesible, clickeable, sigue disparando (change))
+  &__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  // Caja custom del checkbox
+  &__box {
+    position: relative;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.08);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+
+    // Palomita dibujada con un borde en L rotado — nítida en cualquier resolución
+    &::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg) scale(0);
+      transform-origin: center;
+      opacity: 0;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.1s ease;
+    }
+  }
+
+  &:hover &__box { border-color: #fff; }
+
+  &__input:checked + &__box {
+    background: var(--app-accent);
+    border-color: var(--app-accent);
+
+    &::after {
+      opacity: 1;
+      transform: rotate(45deg) scale(1);
+    }
+  }
+
+  &__input:focus-visible + &__box {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
   }
 
   &:has(input:checked) {
@@ -162,6 +213,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 700;
     border-color: transparent;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  &:has(input:checked) &__box {
+    border-color: var(--app-accent);
   }
 }
 
@@ -873,10 +928,30 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #475569;
     &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
     &--active {
-      background: rgba(99, 102, 241, 0.14);
+      background: rgba(176, 138, 78, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }
+  }
+
+  .vb-filtro-check {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+
+    &__box {
+      border-color: rgba(0, 0, 0, 0.28);
+      background: rgba(255, 255, 255, 0.55);
+    }
+    &:hover &__box { border-color: rgba(0, 0, 0, 0.45); }
+
+    &:has(input:checked) {
+      background: rgba(176, 138, 78, 0.14);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
+    &:has(input:checked) &__box { border-color: var(--app-accent); }
   }
 
   .vb-scan-mobile {

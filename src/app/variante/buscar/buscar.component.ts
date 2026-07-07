@@ -11,7 +11,6 @@ import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
-import { IPromocion } from 'src/app/promociones/models/promocion.model';
 
 @Component({
   selector: 'app-buscar',
@@ -41,13 +40,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
-  promoLeft:  IPromocion | null = null;
-  promoRight: IPromocion | null = null;
   hayPromos = false;
-
-  precioPromoTotal(p: IPromocion): number {
-    return (p.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
-  }
 
   constructor(
     private readonly varianteService: VarianteService,
@@ -69,13 +62,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.promoService.getActivas(1, 2).pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        const lista = res?.data?.t ?? [];
-        this.hayPromos  = lista.length > 0;
-        this.promoLeft  = lista[0] ?? null;
-        this.promoRight = lista[1] ?? null;
-      },
+    this.promoService.getActivas(1, 1).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => { this.hayPromos = (res?.data?.totalRegistros ?? 0) > 0; },
       error: () => { this.hayPromos = false; }
     });
 

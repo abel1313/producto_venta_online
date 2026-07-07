@@ -19,7 +19,7 @@
     </div>
 
     <!-- Botón escáner solo en móvil (encima del buscador) -->
-    <button class="pl-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroActivo !== 'todos'">
+    <button class="pl-scan-mobile" (click)="iniciarEscaner()">
       📷 Escanear código de barras
     </button>
 
@@ -33,7 +33,6 @@
         [(ngModel)]="buscarProd"
         (keyup)="buscarProductos($event)"
         autocomplete="off"
-        [disabled]="filtroActivo !== 'todos'"
         appUppercase
       />
       <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
@@ -41,20 +40,22 @@
       </button>
     </div>
 
-    <!-- Filtros admin -->
+    <!-- Filtros admin: cada par (con/sin, habilitado/deshabilitado) es independiente y se
+         combina con AND entre si y con la busqueda por texto. Ninguno de los dos marcados = todos. -->
     <div *ngIf="isAdminUser" class="pl-filtros">
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'todos'"
-        (click)="cambiarFiltro('todos')">Todos</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'no-habilitados'"
-        (click)="cambiarFiltro('no-habilitados')">No habilitados</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'sin-stock'"
-        (click)="cambiarFiltro('sin-stock')">Sin stock</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-stock'"
-        (click)="cambiarFiltro('con-stock')">Con stock</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-imagenes'"
-        (click)="cambiarFiltro('con-imagenes')">Con imágenes</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-stock-y-imagenes'"
-        (click)="cambiarFiltro('con-stock-y-imagenes')">Con stock e imagen</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroConStock === true"
+        (click)="toggleFiltroStock(true)">☑ Con stock</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroConStock === false"
+        (click)="toggleFiltroStock(false)">☑ Sin stock</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroConImagenes === true"
+        (click)="toggleFiltroImagenes(true)">☑ Con imágenes</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroConImagenes === false"
+        (click)="toggleFiltroImagenes(false)">☑ Sin imágenes</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroHabilitado === true"
+        (click)="toggleFiltroHabilitado(true)">☑ Habilitados</button>
+      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroHabilitado === false"
+        (click)="toggleFiltroHabilitado(false)">☑ No habilitados</button>
+      <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
         📥 Excel sin variantes
       </button>

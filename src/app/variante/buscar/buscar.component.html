@@ -20,7 +20,7 @@
   </div>
 
   <!-- Botón escáner solo en móvil (encima del buscador) -->
-  <button class="vb-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroAdmin !== 'todos'">
+  <button class="vb-scan-mobile" (click)="iniciarEscaner()">
     📷 Escanear código de barras
   </button>
 
@@ -34,15 +34,13 @@
       [(ngModel)]="terminoBusqueda"
       (keyup)="onBuscar($event)"
       autocomplete="off"
-      [disabled]="filtroAdmin !== 'todos'"
       appUppercase
     />
     <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 3"
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
-    <button class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras"
-            [disabled]="filtroAdmin !== 'todos'">
+    <button class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
     </button>
   </div>
@@ -61,20 +59,22 @@
     </div>
   </div>
 
-  <!-- Filtros solo admin -->
+  <!-- Filtros solo admin: cada par (con/sin, habilitada/deshabilitada) es independiente y se
+       combina con AND entre si y con la busqueda por texto. Ninguno de los dos marcados = todas. -->
   <div *ngIf="isAdminUser" class="vb-filtros">
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'todos'"
-      (click)="cambiarFiltroAdmin('todos')">Todos</button>
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'no-habilitados'"
-      (click)="cambiarFiltroAdmin('no-habilitados')">No habilitados</button>
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'sin-stock'"
-      (click)="cambiarFiltroAdmin('sin-stock')">Sin stock</button>
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-stock'"
-      (click)="cambiarFiltroAdmin('con-stock')">Con stock</button>
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-imagenes'"
-      (click)="cambiarFiltroAdmin('con-imagenes')">Con imágenes</button>
-    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroAdmin === 'con-stock-y-imagenes'"
-      (click)="cambiarFiltroAdmin('con-stock-y-imagenes')">Con stock e imagen</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroConStock === true"
+      (click)="toggleFiltroStock(true)">☑ Con stock</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroConStock === false"
+      (click)="toggleFiltroStock(false)">☑ Sin stock</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroConImagenes === true"
+      (click)="toggleFiltroImagenes(true)">☑ Con imágenes</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroConImagenes === false"
+      (click)="toggleFiltroImagenes(false)">☑ Sin imágenes</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroHabilitado === true"
+      (click)="toggleFiltroHabilitado(true)">☑ Habilitadas</button>
+    <button class="vb-filtro-btn" [class.vb-filtro-btn--active]="filtroHabilitado === false"
+      (click)="toggleFiltroHabilitado(false)">☑ No habilitadas</button>
+    <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
   </div><!-- /vb-header__content -->
 </div>

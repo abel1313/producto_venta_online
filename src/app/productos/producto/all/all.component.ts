@@ -56,7 +56,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   ];
   roles: string[] = [];
   isAdminUser: boolean = false;
-  filtroActivo: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' = 'todos';
+  filtroConStock: boolean | null = null;
+  filtroConImagenes: boolean | null = null;
+  filtroHabilitado: boolean | null = null;
   sinResultados    = false;
   mensajeError     = '';
   seleccionados    = new Set<number>();
@@ -76,11 +78,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       .pipe(
         filter(texto => texto.length >= 3),
         debounceTime(1500),
-        distinctUntilChanged()                  
+        distinctUntilChanged()
       )
       .subscribe(valor => {
-        console.log('Buscar en base: despues de 3 segundos', valor);
-        this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+        if (this.hayFiltrosAdminActivos) {
+          this.aplicarFiltrosAdmin(1);
+        } else {
+          this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+        }
       });
 
   }
@@ -342,30 +347,44 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
-  cambiarFiltro(filtro: 'todos' | 'no-habilitados' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes'): void {
-    if (this.filtroActivo === filtro) return;
-    this.filtroActivo = filtro;
+  get hayFiltrosAdminActivos(): boolean {
+    return this.filtroConStock !== null || this.filtroConImagenes !== null || this.filtroHabilitado !== null;
+  }
+
+  toggleFiltroStock(valor: boolean): void {
+    this.filtroConStock = this.filtroConStock === valor ? null : valor;
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  toggleFiltroImagenes(valor: boolean): void {
+    this.filtroConImagenes = this.filtroConImagenes === valor ? null : valor;
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  toggleFiltroHabilitado(valor: boolean): void {
+    this.filtroHabilitado = this.filtroHabilitado === valor ? null : valor;
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  limpiarFiltrosAdmin(): void {
+    this.filtroConStock = null;
+    this.filtroConImagenes = null;
+    this.filtroHabilitado = null;
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
     this.paginaPrimera = 1;
-    if (filtro === 'todos') {
-      this.getData(1);
-    } else if (filtro === 'no-habilitados') {
-      this.cargarNoHabilitados(1);
-    } else if (filtro === 'sin-stock') {
-      this.cargarSinStock(1);
-    } else if (filtro === 'con-stock') {
-      this.cargarAdminFiltrar('CON_STOCK', 1);
-    } else if (filtro === 'con-imagenes') {
-      this.cargarAdminFiltrar('CON_IMAGENES', 1);
-    } else {
-      this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', 1);
-    }
+    this.getData(1);
   }
 
-  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', pagina: number): void {
-    this.srvice.adminFiltrar(filtro, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+  private aplicarFiltrosAdmin(pagina: number): void {
+    this.srvice.invalidarProdCache();
+    this.srvice.adminFiltrar({
+      nombreOCodigo: this.buscarProd || undefined,
+      conStock: this.filtroConStock ?? undefined,
+      conImagenes: this.filtroConImagenes ?? undefined,
+      habilitado: this.filtroHabilitado ?? undefined
+    }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;
         this.rows = res.t;
@@ -375,34 +394,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       error: (err) => {
         if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
         else Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
-      }
-    });
-  }
-
-  private cargarNoHabilitados(pagina: number): void {
-    this.srvice.getNoHabilitados(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        this.sinResultados = false;
-        this.rows = res.t;
-        this.totalPaginas = res.totalPaginas;
-        this.paginaPrimera = pagina;
-      },
-      error: (err) => {
-        if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
-      }
-    });
-  }
-
-  private cargarSinStock(pagina: number): void {
-    this.srvice.getSinStock(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        this.sinResultados = false;
-        this.rows = res.t;
-        this.totalPaginas = res.totalPaginas;
-        this.paginaPrimera = pagina;
-      },
-      error: (err) => {
-        if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
       }
     });
   }
@@ -556,11 +547,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
 
   conOSinBuscar(pagina: number): void {
-    if (this.filtroActivo === 'no-habilitados') { this.cargarNoHabilitados(pagina); return; }
-    if (this.filtroActivo === 'sin-stock') { this.cargarSinStock(pagina); return; }
-    if (this.filtroActivo === 'con-stock') { this.cargarAdminFiltrar('CON_STOCK', pagina); return; }
-    if (this.filtroActivo === 'con-imagenes') { this.cargarAdminFiltrar('CON_IMAGENES', pagina); return; }
-    if (this.filtroActivo === 'con-stock-y-imagenes') { this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', pagina); return; }
+    if (this.hayFiltrosAdminActivos) { this.aplicarFiltrosAdmin(pagina); return; }
     if (this.buscarProd === '') {
       this.getData(pagina);
     } else {
@@ -714,7 +701,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           if (result) {
             const codigo = result.getText();
             this.buscarProd = codigo;
-            this.buscarProductoSinKey(1, codigo);
+            if (this.hayFiltrosAdminActivos) {
+              this.aplicarFiltrosAdmin(1);
+            } else {
+              this.buscarProductoSinKey(1, codigo);
+            }
             controls.stop();
             this.escaneando = false;
           }

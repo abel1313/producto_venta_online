@@ -15,7 +15,7 @@
         <span class="cb-search__icon">🔍</span>
         <input class="cb-search__input"
                type="text"
-               placeholder="Nombre del cliente (mín. 3 letras)…"
+               placeholder="Buscar por nombre…"
                [(ngModel)]="termino"
                (input)="onInput()"
                autocomplete="off"
@@ -29,12 +29,8 @@
 
     <div *ngIf="cargando" class="cb-empty">Buscando…</div>
 
-    <div *ngIf="!cargando && clientes.length === 0 && termino.length >= 3" class="cb-empty">
-      Sin resultados para "{{ termino }}"
-    </div>
-
-    <div *ngIf="!cargando && termino.length < 3 && clientes.length === 0" class="cb-empty cb-empty--hint">
-      Escribe al menos 3 caracteres para buscar
+    <div *ngIf="!cargando && clientes.length === 0" class="cb-empty">
+      {{ termino.length > 0 ? 'Sin resultados para "' + termino + '"' : 'No hay clientes registrados.' }}
     </div>
 
     <div *ngFor="let c of clientes" class="cb-card">

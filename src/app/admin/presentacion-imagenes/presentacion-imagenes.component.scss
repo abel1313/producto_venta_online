@@ -170,3 +170,9 @@ $p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
 }
 
 .pi-divider { border: none; border-top: 1px solid var(--card-border); margin: 0; }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
+:host-context(body.theme-light) {
+  .pi-card__title    { color: #1e293b; }
+  .pi-card__subtitle { color: rgba(0,0,0,0.55); }
+}

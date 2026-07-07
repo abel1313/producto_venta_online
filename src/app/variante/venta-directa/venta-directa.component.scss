@@ -524,7 +524,7 @@ $t:  all 0.22s ease;
 
   &__header {
     display: flex; align-items: center; gap: 14px;
-    background: var(--header-brand);
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
     padding: 18px 20px; color: #fff;
   }
   &__icon  { font-size: 1.6rem; flex-shrink: 0; }

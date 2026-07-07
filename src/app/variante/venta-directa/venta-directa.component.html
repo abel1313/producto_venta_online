@@ -157,7 +157,8 @@
           </div>
         </ng-container>
 
-        <!-- Crédito — APARTADO / IR PAGANDO -->
+        <!-- Crédito — APARTADO / IR PAGANDO (oculto cuando hay promos: solo contado) -->
+        <ng-container *ngIf="!tienePromos">
         <div class="vd-credit-divider"><span>o pago en parcialidades</span></div>
 
         <div class="vd-credit-btns">
@@ -221,6 +222,7 @@
             ℹ️ Los abonos siguientes se registran en <strong>Créditos / Abonos</strong> — sin pagos a meses.
           </div>
         </ng-container>
+        </ng-container><!-- /!tienePromos -->
       </div>
 
       <!-- ── CLIENTE ───────────────────────────────────────────── -->

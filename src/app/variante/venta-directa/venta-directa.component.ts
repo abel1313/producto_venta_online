@@ -217,6 +217,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           subTotal: item.subTotal
         }));
         this.promosCarrito = promosCarrito;
+        if (promosCarrito.length > 0) this.tipoPedido = 'NORMAL';
       }
     }
 

@@ -6,7 +6,6 @@ import { PresentacionImagenesComponent } from './presentacion-imagenes/presentac
 import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico-imagenes.component';
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
-import { AdminBannersComponent } from './admin-banners/admin-banners.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
 
 const routes: Routes = [
@@ -16,7 +15,6 @@ const routes: Routes = [
   { path: 'diagnostico-imagenes',    component: DiagnosticoImagenesComponent },
   { path: 'reconciliacion-imagenes', component: ReconciliacionImagenesComponent },
   { path: 'chat',                    component: ChatAdminComponent },
-  { path: 'banners',                 component: AdminBannersComponent },
   { path: 'promociones',             component: GestionPromocionesComponent }
 ];
 

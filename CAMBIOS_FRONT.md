@@ -4579,6 +4579,15 @@ PUT /v1/usuarios/{id}/resetear-password
 - Genera una contraseña aleatoria de 8 caracteres (letras mayúsculas/minúsculas + dígitos, sin
   `0/O/1/l/I` para no confundir al dictarla), se la asigna al usuario y marca internamente
   `passwordTemporal = true`.
+
+> **[BUG-KEY-12] ✅ Fix (2026-07-04):** al probar este endpoint, el response llegaba vacío
+> `{ "mensaje": null, "code": 0, "data": null, "lista": null }` a pesar de responder `200`. Causa:
+> el constructor de 2 argumentos de `ResponseGeneric` (`ResponseGeneric.java`) solo llenaba los
+> campos cuando `data` era `null` — el caso de éxito (con datos reales) nunca los asignaba. Era un
+> bug preexistente en una clase muy usada en todo el back; nadie lo había notado porque hasta hoy
+> todos los demás usos de ese constructor pasaban `null` a propósito (casos de error). Ya
+> corregido — el `data`/`mensaje`/`code` ahora sí llegan bien en la respuesta de este endpoint (y
+> de cualquier otro que use ese mismo constructor con datos reales en el futuro).
 - Responde `200` con `{ "data": "aB3dEfG9", "mensaje": "Contrasena reseteada. Comparte esta
   contrasena con el usuario; debera cambiarla en su siguiente login." }` — **el front debe
   mostrarle esa contraseña (`data`) al admin en pantalla** para que se la pueda dar al usuario;
@@ -4630,3 +4639,125 @@ capture el código que el usuario le dicte por teléfono → `verificar-correo`.
 aplicando — el correo nuevo de inmediato, sin pedir verificación ni dejar nada pendiente. Mismo
 criterio que ya existe para `Cliente` cuando lo edita un ADMIN (mejora 15, punto 4): se confía en
 el admin, no hay paso intermedio. No fue necesario cambiar código para esto, ya funcionaba así.
+
+---
+
+## ⏳ Promociones por variante / combos (2026-07-05) — código en dev, migración y pruebas pendientes
+
+> **Implementado en el código de `dev`, pero todavía no funciona en ningún ambiente.** Falta
+> correr `migration_promociones.sql` (crea las tablas nuevas) y hacer pruebas end-to-end antes de
+> que el front pueda integrar de verdad. Este aviso se quita de aquí en cuanto esté probado.
+> Diseño completo en `PROMOCIONES.md` en la raíz del repo.
+
+**Qué es:** un combo de 1 o más variantes ya existentes (pueden ser productos distintos entre sí)
+que se venden juntas con precio rebajado por pieza. Cada pieza conserva su propio precio de oferta
+(no hay precio único de paquete) — así que en pedidos/ventas cada pieza viaja como una línea normal,
+solo con un campo nuevo `promocionId` para agruparlas.
+
+**Endpoints planeados:**
+- `POST /v1/promociones` (ADMIN) — crear
+- `PUT /v1/promociones/{id}` (ADMIN) — editar (reemplaza detalles completos)
+- `PUT /v1/promociones/{id}/activo` (ADMIN) — activar/desactivar
+- `GET /v1/promociones/admin?pagina=&size=` (ADMIN) — listado completo, incluye vencidas/inactivas
+- `GET /v1/promociones/activas?pagina=&size=` (cualquier usuario logueado) — catálogo, trae
+  `instanciasDisponibles` ya calculado y el desglose de piezas (variante, talla, color, precio
+  normal vs promo, imagen)
+
+> **No existe endpoint DELETE para promociones.** "Eliminar" una promo desde el panel admin es
+> llamar `PUT /v1/promociones/{id}/activo` con `{ "activo": false }` — la promoción no se borra,
+> se apaga: deja de salir en `/v1/promociones/activas` pero sigue existiendo (con su historial)
+> en `/v1/promociones/admin`. Si el front pone un botón de "eliminar" en la lista de admin, debe
+> llamar a este endpoint, no esperar un DELETE que no existe.
+
+**Cambios que vendrán en endpoints existentes:**
+- `POST /pedidos/savePedido` y venta directa: cada detalle gana campo opcional `promocionId`.
+- `GET /pedidos/findPedido/{id}`: cada línea del detalle gana `promocionId` +
+  `promocionDescripcion` (null en líneas normales) para que el front agrupe el combo visualmente.
+- Ticket/comprobante: se agrupa por `promocionId` igual que el detalle de pedido.
+
+**Regla de negocio clave para el checkout:** si el carrito trae al menos una promoción, **todo el
+pedido se fuerza a pago de contado** — el front debe ocultar/deshabilitar "Apartar" y "Fiado" para
+el pedido completo (no solo la promo) y mostrar aviso. El back rechazará con `400` si de todos
+modos llega un pedido con promoción y `tipoPedido` distinto de `NORMAL`.
+
+Ver `PROMOCIONES.md` para los JSON de request/response completos de cada endpoint y el flujo UX
+sugerido (catálogo, detalle de la promo, carrito, countdown de vencimiento calculado en el front).
+
+---
+
+## [SEC-KEY-02] ✅ Fix: precio de línea ahora se valida contra catálogo (2026-07-05)
+
+**Antes:** `POST /pedidos/savePedido` y la venta directa (`VentaDirectaRequest`) aceptaban el
+`precioUnitario`/`precioVenta` y `subTotal` de cada línea tal cual los mandara el request, sin
+comparar contra nada — solo se validaba stock. Cualquier usuario autenticado (no solo ADMIN, ya
+que `savePedido` está abierto a `authenticated()`) podía editar el request antes de enviarlo
+(DevTools, Postman, etc.) y pagar el precio que quisiera por un producto normal.
+
+**Después:** en una línea **sin** `promocionId`, el back ahora exige que `precioUnitario`
+(`precioVenta` en venta directa) coincida con el precio de catálogo actual del producto
+(`Producto.precioVenta`), y que `subTotal` sea `precioUnitario * cantidad` (tolerancia de 1
+centavo por redondeo). Si no coincide, responde `400` con `"El precio de {nombre} no es valido"` o
+`"El subtotal de {nombre} no es valido"` y no crea el pedido/venta.
+
+**Qué debe hacer el front:** nada nuevo si ya arma el carrito con el precio que el back le dio en
+el listado del producto/variante (`GET /variantes/buscar`, etc.) — ese sigue siendo el precio
+válido. El único caso que ahora falla es si el carrito quedó con un precio **desactualizado**
+(ej. el admin cambió el precio del producto mientras el cliente tenía el carrito abierto desde
+hace rato) — en ese caso el front debe mostrar el error del `400` y sugerir refrescar el carrito
+antes de reintentar, en vez de reintentar con el mismo precio viejo.
+
+**Las líneas con `promocionId` no cambian:** su precio rebajado sigue siendo válido — se valida
+aparte contra `promocion_detalle` (ver sección de Promociones arriba), no contra el precio de
+catálogo.
+
+**Archivos:** `PedidoServiceImpl.java` (`validarPrecioCatalogo`), `VentaServiceImpl.java`
+(`validarPrecioCatalogo`).
+
+---
+
+## ⚠️ Revisar en el FRONT — segunda llamada a `/v1/promociones/admin` se queda colgada indefinidamente (2026-07-05)
+
+**Síntoma reportado:** al cargar el panel de admin de promociones, salen (casi) dos llamadas
+seguidas a `GET /v1/promociones/admin?pagina=1&size=10`. La primera termina bien (200, con los
+datos). La segunda se queda "cargando" **para siempre** (varios minutos, nunca resuelve ni falla).
+
+**Ya se descartó que sea el backend.** Se probó el endpoint directo (fuera del front) tres veces
+seguidas y respondió en menos de 1.1s cada vez, sin colgarse. Además, si fuera un bloqueo de MySQL
+(por ejemplo dejado por las `ALTER TABLE` de la migración de promociones), el pool de conexiones
+(Hikari, `connection-timeout: 20000`) habría fallado con error a los ~20-25 segundos — no se
+quedaría colgado de forma indefinida. Un hang indefinido (no un timeout) apunta a algo del lado
+del cliente/Angular, no de la base de datos ni del servidor.
+
+**Qué debe revisar el front — sospecha concreta: el interceptor de refresh de token.**
+Ya hubo un bug ahí antes (ver ticket del bug de `response.response.accessToken` documentado
+arriba, sección JWT). El patrón que explica exactamente este síntoma:
+
+1. Salen 2 requests casi al mismo tiempo hacia un endpoint protegido.
+2. Alguno de los dos (o ambos) dispara el flujo de refresh de token en el interceptor HTTP.
+3. El interceptor debe hacer que **todas** las requests que estaban esperando ese refresh se
+   reanuden cuando el token nuevo esté listo — típicamente compartiendo un
+   `BehaviorSubject<string | null>` (o similar) donde las requests en espera hacen algo como
+   `filter(token => token !== null)` sobre ese subject.
+4. **Si en cambio se usa un `Subject` (no `BehaviorSubject`), o solo se resuelve una promesa/
+   observable de un solo uso, o solo la request que "ganó la carrera" y disparó el refresh
+   recibe la notificación** — la segunda request se queda suscrita a algo que ya emitió y nunca
+   vuelve a emitir, o a algo que nunca la tiene en cuenta. Se queda esperando para siempre.
+
+**Qué pedirle al desarrollador del front que verifique puntualmente:**
+- Ubicar el interceptor HTTP que maneja 401 / refresh de token.
+- Confirmar cómo maneja **llamadas concurrentes** que necesitan el mismo refresh: ¿usa un
+  `BehaviorSubject` (o equivalente) que emite el token nuevo a **todos** los suscriptores en
+  espera, o solo resuelve para la request que originó el refresh?
+- Reproducir disparando 2 llamadas al mismo endpoint protegido casi al mismo tiempo (ej. desde la
+  consola o abriendo la pantalla de promociones admin) y confirmar si el bug ocurre solo cuando
+  hay una condición de carrera en el refresh, o también sin refresh de por medio (en ese caso la
+  causa sería otra, ej. una duplicación de la llamada en el propio componente/servicio Angular que
+  vale la pena revisar aparte — dos suscripciones al mismo observable sin compartir, un resolver +
+  un `ngOnInit` llamando dos veces, etc.).
+
+**No es un cambio de contrato de API** — no hay nada nuevo que el front tenga que mandar o
+interpretar distinto en la respuesta; es una investigación de un bug de concurrencia en el cliente.
+
+
+
+

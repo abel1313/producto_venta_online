@@ -408,5 +408,5 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     return [item.talla, item.color, item.marca].filter(Boolean).join(' · ') || `Variante #${item.varianteId}`;
   }
 
-  get carritoVacio(): boolean { return this.carrito.length === 0; }
+  get carritoVacio(): boolean { return this.carrito.length === 0 && this.promos.length === 0; }
 }

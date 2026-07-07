@@ -4758,6 +4758,238 @@ arriba, sección JWT). El patrón que explica exactamente este síntoma:
 **No es un cambio de contrato de API** — no hay nada nuevo que el front tenga que mandar o
 interpretar distinto en la respuesta; es una investigación de un bug de concurrencia en el cliente.
 
+> ✅ **Resuelto en el front (2026-07-06).** Confirmado por el equipo de front — era el interceptor
+> de refresh de token, como se sospechaba arriba. Cerrado, no requiere nada más del backend.
 
+---
 
+## ⚠️ Diagnóstico temporal en `PUT /variantes/v1/admin/habilitar-lote` (2026-07-06)
 
+**Bug reportado:** al deshabilitar/habilitar variantes en lote, el endpoint responde 200 con el
+mensaje de éxito, pero en la base de datos las variantes no cambian de estado. Sospecha: el
+`findAllById(ids)` del backend ignora en silencio los ids que no existan como `Variantes.id` — si
+el front está mandando ids equivocados (por ejemplo `producto.id` en vez de `variante.id`), el
+endpoint "tiene éxito" sin actualizar nada, porque no hay ninguna variante real que coincida.
+
+**Actualización 2026-07-06 (misma sesión):** con datos reales de QA (ids `2, 3, 4`) los 3 salieron
+`encontradoEnBD: true` — sí existen como `Variantes.id`, así que se descarta el mismatch de ids.
+Se agregó una segunda verificación: tras el `saveAll`, el backend hace `flush()` +
+`entityManager.clear()` y vuelve a leer esas mismas variantes directo de la BD (sin caché de
+Hibernate de por medio) para confirmar si el `UPDATE` realmente se aplicó, dentro de la misma
+transacción.
+
+**Cambio (temporal, solo para diagnosticar — no es el fix final):** el campo `data` de la
+respuesta, que antes era solo el texto `"Variantes deshabilitadas correctamente"` /
+`"Variantes habilitadas correctamente"`, ahora viene con un diagnóstico concatenado:
+
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": "Variantes deshabilitadas correctamente. {\"idsEnviados\":[2, 3, 4],\"resultado\":[{\"id\":2,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"},{\"id\":3,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"},{\"id\":4,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"}]}",
+  "lista": null
+}
+```
+
+- `idsEnviados`: los ids tal cual los mandó el front en el `request.ids`.
+- `resultado`: por cada id, si existe (`encontradoEnBD: true`) o no (`false`) como `Variantes.id`
+  real en la base, y `habilitadoTrasGuardar`: el valor de la columna `habilitado` releído
+  directamente de la BD después de guardar (`"1"` = habilitado, `"0"` = deshabilitado).
+- Si `habilitadoTrasGuardar` ya sale correcto (`"0"` al deshabilitar) pero al consultar la tabla
+  con otra herramienta (DBeaver, consola MySQL, etc.) todavía se ve `"1"`, el problema no es del
+  backend — es una lectura obsoleta de esa herramienta (transacción/conexión abierta desde antes
+  con aislamiento `REPEATABLE READ`, o apuntando a un host/réplica distinto). Hay que cerrar y
+  reabrir la conexión de esa herramienta antes de volver a consultar.
+- También se loguea del lado del servidor (`log.info`) el mismo diagnóstico.
+
+**⚠️ Si el front hace algo con ese string además de mostrarlo tal cual** (comparación exacta contra
+`"Variantes deshabilitadas correctamente"`, parseo, etc.), va a dejar de matchear porque ahora trae
+texto extra al final. Si solo se muestra el mensaje en un toast/snackbar sin comparar el contenido,
+no requiere ningún cambio del front — solo van a ver un texto más largo temporalmente.
+
+**Pendiente:** con este diagnóstico en logs/respuesta, confirmar si los ids que manda el front para
+esta pantalla (`variantes/v1/admin/habilitar-lote`) realmente corresponden a `variante.id` o si por
+error de la pantalla se están mandando otros ids (ej. `producto.id`). Una vez confirmada la causa,
+se quita este diagnóstico y se aplica el fix definitivo (que puede ser en front, si el bug es que
+se arma mal el arreglo de ids antes de llamar al endpoint).
+
+---
+
+## ✅ Causa real encontrada y arreglada (2026-07-06): variantes SÍ se deshabilitaban, pero nunca se veía
+
+Con el diagnóstico de arriba se confirmó en QA que `habilitar-lote` **sí actualiza la BD**
+correctamente (`habilitadoTrasGuardar` salía con el valor correcto). El problema real era otro: los
+endpoints de búsqueda/listado de variantes para admin (`GET /variantes/v1/buscar`,
+`GET /variantes/v1/porProducto/{productoId}`, el filtro admin, "sin stock deshabilitadas", etc.)
+**nunca incluían el campo `habilitado` en su respuesta** — a diferencia de productos, donde ese
+campo sí viaja. Por eso, aunque la variante ya estaba deshabilitada en la BD, cualquier pantalla
+que la buscara/listara no tenía forma de saberlo y seguía mostrándola como habilitada.
+
+**Cambio de contrato — nuevo campo `habilitado` (char, `'1'`/`'0'`) agregado a:**
+- El objeto de cada variante en `GET /variantes/v1/buscar` (búsqueda por nombre/código/palabra
+  clave, resumen paginado) — clase `VarianteResumenDto`.
+- El objeto de cada variante en `GET /variantes/v1/porProducto/{productoId}` (listado simple, no
+  paginado) — clase `VarianteDto`.
+
+Mismo formato que ya usa `Producto.habilitado`: `'1'` = habilitada, `'0'` = deshabilitada. El front
+debe empezar a leer este campo en esas pantallas para reflejar correctamente el estado, igual que
+ya lo hace con productos.
+
+**Aún pendiente de correr en producción** — este fix (junto con el diagnóstico de arriba) solo
+está en `dev`/`qa` por ahora; falta subir a `main` cuando se confirme que todo funciona bien en QA.
+
+---
+
+## ✅ Fix (2026-07-06): búsqueda de cliente por nombre completo no encontraba resultados
+
+**Bug:** `GET /clientes/buscar?nombre=...` buscaba el texto contra `nombrePersona`,
+`apeidoPaterno` y `apeidoMaterno` **por separado** (OR). Si buscabas solo "Abel" sí encontraba al
+cliente (matchea `nombrePersona`), pero si buscabas "Abel Tiburcio" (nombre + apellido juntos) no
+encontraba nada, porque ningún campo individual contiene esa cadena completa.
+
+**Fix:** la query ahora concatena `nombrePersona + apeidoPaterno + apeidoMaterno` y busca el texto
+contra el nombre completo. Sigue funcionando buscar por una sola palabra (nombre solo, o apellido
+solo) y ahora también funciona buscar "nombre apellido" junto, en ese orden. **No cambia el
+contrato** (mismo endpoint, mismo request/response) — solo corrige los resultados.
+
+---
+
+## ⚠️ Cambio de comportamiento (2026-07-06): errores de validación ya NO regresan 500
+
+**Contexto:** al guardar una venta directa con una promoción
+(`POST /v1/ventas/save`, líneas con `promocionId`), el front reportó `{"code":500,"data":null,
+"mensaje":"Error interno del servidor"}` — sin ninguna pista de qué estaba mal. La causa inmediata
+era que el request mandaba `"cantidad": null` en las líneas de la promo (el backend no validaba
+eso y tronaba con un error interno al hacer una comparación numérica). **El front debe mandar
+`cantidad` con el número real de piezas en cada línea de detalle**, incluidas las de promoción
+(no puede ir `null`).
+
+**Pero el hallazgo más importante fue de fondo:** el backend tiene decenas de validaciones de
+negocio (stock insuficiente, precio inválido, promoción vencida o no disponible, "las promociones
+solo se pueden comprar de contado", etc.) que se lanzan internamente como una excepción genérica.
+El manejador global de errores no tenía un caso para ese tipo de excepción, así que **todas esas
+validaciones terminaban devolviendo `code: 500` con el mensaje genérico `"Error interno del
+servidor"`**, ocultando el mensaje real (p. ej. "Stock insuficiente en variante id 5. Disponible:
+2, solicitado: 10").
+
+**Fix:** ahora esas validaciones de negocio devuelven `code: 400` con el mensaje real y específico
+en `mensaje`/`data`, igual que ya pasaba con otras validaciones (`404`, `409`, `422`, etc.).
+
+**Lo que el front necesita revisar:**
+- Si en algún lado el front distingue `500` vs `400` para decidir qué mostrarle al usuario (p. ej.
+  "algo salió mal, intenta de nuevo" para 500 vs. mostrar el mensaje tal cual para 400), muchos
+  errores que antes caían en la rama de "500 genérico" ahora van a caer en la rama de "400 con
+  mensaje específico" — en general esto es una mejora (mensajes más útiles), pero si hay lógica
+  específica atada al código 500 en particular, revisarla.
+- Ya se puede mostrar directamente el mensaje de `data`/`mensaje` en la mayoría de los errores de
+  venta/pedido/promoción — antes esa información no llegaba nunca.
+- Además se agregó validación explícita de `cantidad` (obligatoria y mayor a 0) en
+  `POST /v1/ventas/save` y `POST /pedidos/savePedido` — si falta o es 0/negativa, ahora regresa
+  400 con `"La cantidad es obligatoria y debe ser mayor a 0..."` en vez de tronar.
+
+**Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
+`dev`/`qa` por ahora.
+
+---
+
+## ⚠️ Cambio de contrato (2026-07-06): filtro admin combinado de productos/variantes + fix paginación por defecto
+
+**1. `GET /productos/*` sin página/tamaño por defecto (bug, ya corregido).** Varios endpoints de
+`ProductosControllerImpl` (`obtenerProductos`, `buscarNombreOrCodigoBarra`, `admin/no-habilitados`,
+`admin/sin-stock`, `admin/filtrar`) exigían `size`/`page` como obligatorios — si el front entraba a
+un componente sin mandarlos, el backend rechazaba la petición en vez de asumir página 1 / 10
+registros (a diferencia de `VarianteController`, que sí tenía default). Ahora todos tienen
+`page` por defecto `1` y `size` por defecto `10`, igual que variantes. **No rompe nada** — si ya
+mandabas esos params, sigue funcionando igual.
+
+**2. `GET /productos/admin/filtrar` y `GET /variantes/v1/admin/filtrar` — filtro combinado
+(rompe contrato, hay que actualizar el front).**
+
+Antes: un solo parámetro `filtro` (enum `SIN_STOCK` / `CON_STOCK` / `CON_IMAGENES` /
+`CON_STOCK_Y_IMAGENES`), sin poder combinarlo con búsqueda por nombre/código.
+
+Ahora, **se quitó el parámetro `filtro`** y se reemplazó por 4 parámetros independientes, todos
+opcionales, que se combinan entre sí con AND:
+
+| Parámetro | Tipo | Significado |
+|---|---|---|
+| `nombreOCodigo` | string, opcional | Busca en nombre del producto/variante y en código de barras a la vez (como ya funciona en las búsquedas públicas) |
+| `conStock` | boolean, opcional | `true` = con stock, `false` = sin stock, **omitido** = cualquiera |
+| `conImagenes` | boolean, opcional | `true` = con imágenes, `false` = sin imágenes, **omitido** = cualquiera |
+| `habilitado` | boolean, opcional | `true` = habilitado, `false` = deshabilitado, **omitido** = cualquiera |
+| `page`/`pagina`, `size` | int | Igual que antes (default 1 y 10 si no se mandan) |
+
+Ejemplo: buscar "pantalon" con stock, sin importar si tiene imágenes o no, solo habilitados:
+```
+GET /productos/admin/filtrar?nombreOCodigo=pantalon&conStock=true&habilitado=true&page=1&size=10
+```
+
+Ejemplo: solo deshabilitados, sin ningún otro filtro:
+```
+GET /variantes/v1/admin/filtrar?habilitado=false&pagina=1&size=10
+```
+
+**Reglas de uso:**
+- Cada uno de los 3 filtros (`conStock`, `conImagenes`, `habilitado`) es de un solo estado a la
+  vez — no tiene sentido pedir "con imágenes" y "sin imágenes" al mismo tiempo, por eso cada uno
+  es un solo booleano (no un arreglo). Si no se manda el parámetro, no se filtra por esa dimensión.
+  `nombreOCodigo` sí se puede combinar libremente con cualquier combinación de los otros 3.
+- En variantes, `habilitado` filtra por el estado de la **variante** (`v.habilitado`), no del
+  producto padre — coincide con el fix documentado arriba de `habilitar-lote`.
+- El front necesita actualizar la pantalla de filtros de admin (productos y variantes) para mandar
+  estos 4 parámetros en vez del enum `filtro` — el enum `FiltroCatalogoEnum` ya no existe en el
+  backend, cualquier request con `filtro=...` va a fallar (`400`, parámetro no reconocido).
+
+**Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
+`dev`/`qa` por ahora.
+
+---
+
+## Fix UX — `clientes-buscar` carga primeros 10 clientes al abrir (2026-07-06)
+
+**Problema:** al entrar a `/clientes/buscar`, la pantalla aparecía vacía esperando que el admin
+escribiera al menos 3 letras. No era consistente con el resto del sistema (`/productos/buscar`,
+`/variantes/buscar`, etc.), donde la lista cargada se muestra de inmediato.
+
+**Fix en `ClientesBuscarComponent`:**
+- `ngOnInit` llama `buscar()` directamente al montar, sin esperar input del usuario.
+- El filtro del pipe acepta string vacío OR ≥ 3 chars:
+  ```typescript
+  filter(v => v.trim().length === 0 || v.trim().length >= 3)
+  ```
+- Búsqueda con `termino = ''` devuelve los primeros 10 clientes paginados (comportamiento ya
+  soportado por el back — el mismo que hace `/v1/clientes/buscar?nombre=&page=0&size=10`).
+- Placeholder cambiado de `"Nombre del cliente (mín. 3 letras)…"` a `"Buscar por nombre…"`.
+- Mensaje de lista vacía diferenciado: si `termino` no está vacío → `"Sin resultados para '…'"`;
+  si está vacío → `"No hay clientes registrados."`.
+- Paginación prev/next (clases `.cb-pagination`) visible cuando `totalPaginas > 1`.
+
+**Archivos modificados:**
+- `src/app/clietes/clientes-buscar/clientes-buscar.component.ts`
+- `src/app/clietes/clientes-buscar/clientes-buscar.component.html`
+
+---
+
+## Estado del front por F-item (resumen 2026-07-06)
+
+| F | Descripción corta | Estado |
+|---|---|---|
+| F-1 | Ticket HTML `generarHtmlTicket()` + botón 🖨️ | ✅ Implementado 2026-07-01 |
+| F-2 | Checkbox correo + campo `notificacion` en requests | ✅ Implementado 2026-07-01 |
+| F-3 | Correo manual post-venta si cliente no tiene | ✅ Implementado 2026-07-01 |
+| F-4 | `notificacion` en venta directa, abono y cancelación | ✅ Implementado 2026-07-01 |
+| F-5 | Resultado `correoEnviado` en Swal | ✅ Implementado 2026-07-01 |
+| F-6 | Tarjetas chatbot (grid 2 col, imagen, carrito) | ✅ Implementado 2026-07-01 |
+| F-7 | Botón "Ver más" en chatbot (`/v1/chatbot/buscar`) | ✅ Implementado 2026-07-01 |
+| F-8 | Imagen por tarjeta (`GET /variantes/v1/imagenes/{id}`, elemento `principal: true`) | ✅ Implementado 2026-07-01 |
+| F-9 | QR tienda (`window.location.origin`) | ✅ Implementado 2026-07-01 |
+| F-10 | QR WhatsApp (solo si `whatsappUrl` en `/negocio/contactos`) | ✅ Implementado 2026-07-01 |
+| F-11 | QR Facebook (solo si `facebookUrl`) | ✅ Implementado 2026-07-01 |
+| F-12 | Pantalla reportes `/reportes` (4 tabs + Chart.js) | ✅ Implementado 2026-07-02 |
+| F-13 | Dashboard `/dashboard` (9 cards, auto-refresh 5 min) | ✅ Implementado 2026-07-02 |
+| F-14 | Filtros admin combinados en productos/variantes | ⚠️ REIMPLEMENTAR — primera versión usa `FiltroCatalogoEnum` (eliminado del back). Nuevo contrato: 4 params independientes (ver "Cambio de contrato 2026-07-06" arriba) |
+| F-15 | Verificación correo cliente antes de pedido | ⏳ Parcial — form + badge + acciones admin listos; falta interceptar `400 "Debes verificar..."` en `savePedido` y mostrar pantalla de verificación |
+| F-16 | Badge `habilitado` en variantes + batch deshabilitar | ⏳ Parcial — campo disponible en DTOs; falta mostrar badge en cards y UI de checkboxes + botón lote |
+| F-17 | Pantalla "Olvidé mi contraseña" (link en login) | ⏳ Pendiente |
+| F-18 | Formulario "Cambiar contraseña" en perfil | ⏳ Pendiente |
+| F-19 | Flujo registro + verificación unificada | ⚠️ NO EMPEZAR — back escrito pero sin compilar/probar/desplegar |

@@ -298,6 +298,17 @@
   font-size: 0.88rem;
 }
 
+.gp-combos-disp {
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.gp-existencias {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-left: 4px;
+}
+
 // ── Dark mode ─────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .gp-form-card { background: rgba(255,255,255,.04); }

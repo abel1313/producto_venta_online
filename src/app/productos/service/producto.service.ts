@@ -1,6 +1,6 @@
 import { CompartirImagenesVarianteDto } from './../producto/detalle-producto/detalle-producto.component';
 import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -181,7 +181,18 @@ export class ProductoService {
     }
 
     adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar?filtro=${filtro}&size=${size}&page=${page}`);
+        let params = new HttpParams()
+            .set('page', String(page))
+            .set('size', String(size));
+
+        switch (filtro) {
+            case 'SIN_STOCK':            params = params.set('conStock', 'false'); break;
+            case 'CON_STOCK':            params = params.set('conStock', 'true'); break;
+            case 'CON_IMAGENES':         params = params.set('conImagenes', 'true'); break;
+            case 'CON_STOCK_Y_IMAGENES': params = params.set('conStock', 'true').set('conImagenes', 'true'); break;
+        }
+
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }
 
     habilitarProducto(id: number, habilitar: boolean): Observable<any> {

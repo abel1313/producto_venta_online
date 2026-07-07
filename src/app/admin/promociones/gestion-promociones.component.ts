@@ -109,6 +109,12 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     return (p.detalles ?? []).reduce((s, d) => s + d.precioEnPromocion * d.cantidad, 0);
   }
 
+  combosDisponibles(p: IPromocion): number {
+    const conStock = (p.detalles ?? []).filter(d => d.existencias != null);
+    if (conStock.length === 0) return 0;
+    return Math.min(...conStock.map(d => Math.floor(d.existencias! / d.cantidad)));
+  }
+
   toggleActivo(p: IPromocion): void {
     const nuevoValor = !p.activo;
     const label = nuevoValor ? 'activar' : 'desactivar';

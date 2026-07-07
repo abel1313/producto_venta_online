@@ -8,6 +8,7 @@ export interface IPromocionDetalle {
   precioNormal: number;
   precioEnPromocion: number;
   imagenUrl?: string;
+  existencias?: number; // stock actual de la variante — solo viene en GET /admin
 }
 
 export interface IPromocion {

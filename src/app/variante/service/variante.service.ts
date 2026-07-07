@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -133,7 +133,19 @@ export class VarianteService {
   }
 
   adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES' | 'NO_HABILITADOS', pagina: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar?filtro=${filtro}&pagina=${pagina}&size=${size}`)
+    let params = new HttpParams()
+      .set('pagina', String(pagina))
+      .set('size', String(size));
+
+    switch (filtro) {
+      case 'SIN_STOCK':            params = params.set('conStock', 'false'); break;
+      case 'CON_STOCK':            params = params.set('conStock', 'true'); break;
+      case 'CON_IMAGENES':         params = params.set('conImagenes', 'true'); break;
+      case 'CON_STOCK_Y_IMAGENES': params = params.set('conStock', 'true').set('conImagenes', 'true'); break;
+      case 'NO_HABILITADOS':       params = params.set('habilitado', 'false'); break;
+    }
+
+    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
       .pipe(map(res => res.data));
   }
 

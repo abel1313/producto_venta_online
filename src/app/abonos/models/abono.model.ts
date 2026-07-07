@@ -43,30 +43,40 @@ export interface AbonoDetalleItem {
 }
 
 export interface PedidoDetalleResponse {
-  pedidoId:        number;
-  tipoPedido:      string;
-  estadoPedido:    string;
-  totalPedido:     number;
-  totalPagado:     number;
-  saldoPendiente:  number;
-  fechaPedido:     string;
-  clienteNombre:   string;
-  clienteTelefono: string;
-  clienteCorreo?:  string | null;
-  metodoPago?:     string | null;
-  montoDado?:      number | null;
-  abonos?:         AbonoDetalleItem[];
-  detalles:        PedidoDetalleItem[];
+  pedidoId:          number;
+  tipoPedido:        string;
+  estadoPedido:      string;
+  totalPedido:       number;
+  totalPagado:       number;
+  saldoPendiente:    number;
+  fechaPedido:       string;
+  // Fecha+hora completa de la compra (ISO). En pedidos anteriores a 2026-07-07 no hay hora
+  // real registrada y el back rellena con medianoche.
+  fechaHoraRegistro?: string;
+  clienteNombre:     string;
+  clienteTelefono:   string;
+  clienteCorreo?:    string | null;
+  metodoPago?:       string | null;
+  montoDado?:        number | null;
+  abonos?:           AbonoDetalleItem[];
+  detalles:          PedidoDetalleItem[];
 }
 
 export interface PedidoDetalleItem {
-  varianteId:     number;
-  productoNombre: string;
-  talla:          string | null;
-  color:          string | null;
-  cantidad:       number;
-  precioUnitario: number;
-  subTotal:       number;
+  id?:                   number;
+  // Id real del producto (ya resuelto por el back incluso en líneas de promoción/variante).
+  // Úsalo para armar la URL de imagen: GET /imagen/v1/{productoId}.
+  productoId?:            number;
+  varianteId:             number;
+  productoNombre:         string;
+  talla:                  string | null;
+  color:                  string | null;
+  descripcion?:           string | null;
+  cantidad:               number;
+  precioUnitario:         number;
+  subTotal:               number;
+  promocionId?:           number | null;
+  promocionDescripcion?:  string | null;
 }
 
 export interface EstadoCuenta {

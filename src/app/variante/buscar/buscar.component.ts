@@ -28,7 +28,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
   buscando        = false;
   isAdminUser     = false;
   sinResultados   = false;
-  filtroAdmin: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' | 'no-habilitados' = 'todos';
+  filtroConStock: boolean | null = null;
+  filtroConImagenes: boolean | null = null;
+  filtroHabilitado: boolean | null = null;
   detalle: IDetalleVariante[] = [];
   escaneando       = false;
   seleccionados    = new Set<number>();
@@ -74,7 +76,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
-      .subscribe((termino: string) => this.buscarPagina(termino, 1));
+      .subscribe((termino: string) => {
+        if (this.hayFiltrosAdminActivos) {
+          this.aplicarFiltrosAdmin(1);
+        } else {
+          this.buscarPagina(termino, 1);
+        }
+      });
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.productoId = Number(params['productoId']) || 0;
@@ -104,8 +112,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const valor = (event.target as HTMLInputElement).value;
     this.terminoBusqueda = valor;
     const termino = valor.trim();
-    if (termino.length === 0) { this.buscarPagina('', 1); return; }
-    if (termino.length < 3) return;
+    if (termino.length === 0 && !this.hayFiltrosAdminActivos) { this.buscarPagina('', 1); return; }
+    if (termino.length > 0 && termino.length < 3) return;
     this.busquedaSubject.next(termino);
   }
 
@@ -143,48 +151,49 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
-  cambiarFiltroAdmin(filtro: 'todos' | 'sin-stock' | 'con-stock' | 'con-imagenes' | 'con-stock-y-imagenes' | 'no-habilitados'): void {
-    if (!this.isAdminUser || this.filtroAdmin === filtro) return;
-    this.filtroAdmin = filtro;
+  get hayFiltrosAdminActivos(): boolean {
+    return this.filtroConStock !== null || this.filtroConImagenes !== null || this.filtroHabilitado !== null;
+  }
+
+  toggleFiltroStock(valor: boolean): void {
+    if (!this.isAdminUser) return;
+    this.filtroConStock = this.filtroConStock === valor ? null : valor;
+    this.seleccionados.clear();
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  toggleFiltroImagenes(valor: boolean): void {
+    if (!this.isAdminUser) return;
+    this.filtroConImagenes = this.filtroConImagenes === valor ? null : valor;
+    this.seleccionados.clear();
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  toggleFiltroHabilitado(valor: boolean): void {
+    if (!this.isAdminUser) return;
+    this.filtroHabilitado = this.filtroHabilitado === valor ? null : valor;
+    this.seleccionados.clear();
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  limpiarFiltrosAdmin(): void {
+    this.filtroConStock = null;
+    this.filtroConImagenes = null;
+    this.filtroHabilitado = null;
     this.seleccionados.clear();
     this.varianteService.invalidarCache();
-    this.paginaActual = 1;
-    this.sinResultados = false;
-    if (filtro === 'sin-stock') {
-      this.cargarAdminSinStock(1);
-    } else if (filtro === 'con-stock') {
-      this.cargarAdminFiltrar('CON_STOCK', 1);
-    } else if (filtro === 'con-imagenes') {
-      this.cargarAdminFiltrar('CON_IMAGENES', 1);
-    } else if (filtro === 'con-stock-y-imagenes') {
-      this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', 1);
-    } else if (filtro === 'no-habilitados') {
-      this.cargarAdminFiltrar('NO_HABILITADOS', 1);
-    } else {
-      this.buscarPagina(this.terminoBusqueda, 1);
-    }
+    this.buscarPagina(this.terminoBusqueda, 1);
   }
 
-  private cargarAdminSinStock(pagina: number): void {
+  private aplicarFiltrosAdmin(pagina: number): void {
     this.buscando = true;
-    this.varianteService.getAdminSinStock(pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        this.sinResultados = false;
-        this.variantes    = res.t ?? [];
-        this.totalPaginas = res.totalPaginas;
-        this.paginaActual = pagina;
-        this.buscando = false;
-      },
-      error: (err) => {
-        this.buscando = false;
-        if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
-      }
-    });
-  }
-
-  private cargarAdminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES' | 'NO_HABILITADOS', pagina: number): void {
-    this.buscando = true;
-    this.varianteService.adminFiltrar(filtro, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+    this.varianteService.invalidarCache();
+    this.varianteService.adminFiltrar({
+      nombreOCodigo: this.terminoBusqueda || undefined,
+      conStock: this.filtroConStock ?? undefined,
+      conImagenes: this.filtroConImagenes ?? undefined,
+      habilitado: this.filtroHabilitado ?? undefined
+    }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
@@ -221,11 +230,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual - 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
-    else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
-    else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
-    else if (this.filtroAdmin === 'con-stock-y-imagenes') this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', p);
-    else if (this.filtroAdmin === 'no-habilitados') this.cargarAdminFiltrar('NO_HABILITADOS', p);
+    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -234,11 +239,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual + 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.filtroAdmin === 'sin-stock') this.cargarAdminSinStock(p);
-    else if (this.filtroAdmin === 'con-stock') this.cargarAdminFiltrar('CON_STOCK', p);
-    else if (this.filtroAdmin === 'con-imagenes') this.cargarAdminFiltrar('CON_IMAGENES', p);
-    else if (this.filtroAdmin === 'con-stock-y-imagenes') this.cargarAdminFiltrar('CON_STOCK_Y_IMAGENES', p);
-    else if (this.filtroAdmin === 'no-habilitados') this.cargarAdminFiltrar('NO_HABILITADOS', p);
+    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -343,7 +344,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
           if (result) {
             const codigo = result.getText();
             this.terminoBusqueda = codigo;
-            this.buscarPagina(codigo, 1);
+            if (this.hayFiltrosAdminActivos) {
+              this.aplicarFiltrosAdmin(1);
+            } else {
+              this.buscarPagina(codigo, 1);
+            }
             controls.stop();
             this.escaneando = false;
           }

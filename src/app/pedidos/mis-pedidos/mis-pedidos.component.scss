@@ -131,14 +131,13 @@ $cancelado-to:   #dc2626;
 }
 
 // ── Grid de tarjetas ────────────────────────────────────────────────────────
+// 1 columna en celular, 3 en PC (sin pasos intermedios de 2/4).
 .pedidos-grid {
   display: grid;
   gap: 1.25rem;
   grid-template-columns: 1fr;
 
-  @media (min-width: 576px)  { grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 992px)  { grid-template-columns: repeat(3, 1fr); }
-  @media (min-width: 1400px) { grid-template-columns: repeat(4, 1fr); }
+  @media (min-width: 992px) { grid-template-columns: repeat(3, 1fr); }
 }
 
 // ── Tarjeta base ────────────────────────────────────────────────────────────
@@ -336,20 +335,23 @@ $cancelado-to:   #dc2626;
 .card-footer-custom {
   padding: 0.85rem 1.25rem;
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   border-top: 1px solid #f3f4f6;
   flex-wrap: wrap;
 }
 
 // ── Botones de la tarjeta ───────────────────────────────────────────────────
+// Los botones con texto (Detalle/Cobrar/Cancelar) se reparten el espacio;
+// los de solo ícono (ticket/correo) quedan a tamaño fijo para no amontonarse.
 .btn-card {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 84px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.5rem 0.6rem;
+  padding: 0.55rem 0.7rem;
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -367,6 +369,13 @@ $cancelado-to:   #dc2626;
   }
 
   &:not(:disabled):hover { transform: translateY(-1px); }
+}
+
+.btn-icon-only {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 38px;
+  padding: 0.55rem;
 }
 
 .btn-detalle {

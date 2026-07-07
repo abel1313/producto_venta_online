@@ -127,23 +127,20 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
-  getAdminSinStock(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/sin-stock?pagina=${pagina}&size=${size}`)
-      .pipe(map(res => res.data));
-  }
-
-  adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES' | 'NO_HABILITADOS', pagina: number, size: number): Observable<IVarianteResumenPaginable> {
+  // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
+  // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
+  adminFiltrar(
+    filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean },
+    pagina: number, size: number
+  ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
       .set('pagina', String(pagina))
       .set('size', String(size));
 
-    switch (filtro) {
-      case 'SIN_STOCK':            params = params.set('conStock', 'false'); break;
-      case 'CON_STOCK':            params = params.set('conStock', 'true'); break;
-      case 'CON_IMAGENES':         params = params.set('conImagenes', 'true'); break;
-      case 'CON_STOCK_Y_IMAGENES': params = params.set('conStock', 'true').set('conImagenes', 'true'); break;
-      case 'NO_HABILITADOS':       params = params.set('habilitado', 'false'); break;
-    }
+    if (filtros.nombreOCodigo) params = params.set('nombreOCodigo', filtros.nombreOCodigo);
+    if (filtros.conStock !== undefined) params = params.set('conStock', String(filtros.conStock));
+    if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
+    if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
 
     return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
       .pipe(map(res => res.data));

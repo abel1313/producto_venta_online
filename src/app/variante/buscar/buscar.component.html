@@ -65,27 +65,33 @@
        combinan con AND con la busqueda por texto. -->
   <div *ngIf="isAdminUser" class="vb-filtros">
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
+      <span class="vb-filtro-check__box"></span>
       Con stock
     </label>
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
+      <span class="vb-filtro-check__box"></span>
       Sin stock
     </label>
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
+      <span class="vb-filtro-check__box"></span>
       Con imágenes
     </label>
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
+      <span class="vb-filtro-check__box"></span>
       Sin imágenes
     </label>
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
+      <span class="vb-filtro-check__box"></span>
       Habilitadas
     </label>
     <label class="vb-filtro-check">
-      <input type="checkbox" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
+      <span class="vb-filtro-check__box"></span>
       No habilitadas
     </label>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>

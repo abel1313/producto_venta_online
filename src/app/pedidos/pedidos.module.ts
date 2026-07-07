@@ -13,6 +13,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { FechaEspanolPipe } from '../fecha-espanol.pipe';
 import { TotalPedidoPipe } from '../shared/total-pedido.pipe';
 import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.component';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.componen
     ButtonModule,
     DialogModule,
     DropdownModule,
+    SharedModule
   ]
 })
 export class PedidosModule { }

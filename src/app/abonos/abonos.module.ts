@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { AbonosRoutingModule } from './abonos-routing.module';
 import { AbonosComponent } from './abonos.component';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [AbonosComponent],
@@ -11,6 +12,7 @@ import { AbonosComponent } from './abonos.component';
     CommonModule,
     FormsModule,
     AbonosRoutingModule,
+    SharedModule
   ]
 })
 export class AbonosModule {}

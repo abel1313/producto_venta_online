@@ -35,6 +35,7 @@
       (keyup)="onBuscar($event)"
       autocomplete="off"
       [disabled]="filtroAdmin !== 'todos'"
+      appUppercase
     />
     <span *ngIf="terminoBusqueda.length > 0 && terminoBusqueda.length < 3"
           class="vb-search__hint">

@@ -3,17 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ImagenSrcPipe } from '../productos/producto/pipes/imagen-src.pipe';
 import { PalabraClaveAutocompleteComponent } from '../palabras-clave/autocomplete/palabra-clave-autocomplete.component';
+import { UppercaseInputDirective } from './directives/uppercase-input.directive';
 
 @NgModule({
   declarations: [
     ImagenSrcPipe,
-    // Autocomplete reutilizable para seleccionar palabra clave en cualquier formulario
-    PalabraClaveAutocompleteComponent
+    PalabraClaveAutocompleteComponent,
+    UppercaseInputDirective
   ],
   imports:  [CommonModule, FormsModule],
   exports:  [
     ImagenSrcPipe,
-    PalabraClaveAutocompleteComponent
+    PalabraClaveAutocompleteComponent,
+    UppercaseInputDirective
   ]
 })
 export class SharedModule {}

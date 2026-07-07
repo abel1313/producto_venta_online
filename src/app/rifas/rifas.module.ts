@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { RifasRoutingModule } from './rifas-routing.module';
+import { SharedModule } from '../shared/shared.module';
 import { AgregarRifaComponent } from './agregar-rifa/agregar-rifa.component';
 import { BuscarRifaComponent } from './buscar-rifa/buscar-rifa.component';
 import { MostrarRifasComponent } from './mostrar-rifas/mostrar-rifas.component';
@@ -20,6 +21,7 @@ import { RifaMesComponent } from './rifa-mes/rifa-mes.component';
     RifasRoutingModule,
     FormsModule,
     ReactiveFormsModule,
+    SharedModule
   ]
 })
 export class RifasModule { }

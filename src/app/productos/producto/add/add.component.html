@@ -148,7 +148,8 @@
                    [class.pf-input--generated]="sinCodigoActivo"
                    formControlName="codigoBarras"
                    [readonly]="sinCodigoActivo"
-                   placeholder="Ingresa el código de barras">
+                   placeholder="Ingresa el código de barras"
+                   appUppercase>
             <small class="pf-error" *ngIf="isInvalid('codigoBarras')">Campo requerido</small>
           </div>
         </div>

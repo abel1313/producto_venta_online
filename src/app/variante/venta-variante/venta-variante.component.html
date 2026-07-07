@@ -149,7 +149,8 @@
         placeholder="Buscar cliente por nombre (mín. 3 letras)..."
         [(ngModel)]="nombreBusqueda"
         (input)="onInputBusquedaCliente()"
-        (keyup.enter)="buscarClientes()" />
+        (keyup.enter)="buscarClientes()"
+        appUppercase />
       <button class="btn btn-primary" type="button"
         (click)="buscarClientes()" [disabled]="cargandoClientes">
         <i class="pi pi-search me-1"></i>

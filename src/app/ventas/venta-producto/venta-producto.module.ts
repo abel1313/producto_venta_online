@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { BuscarGenericoComponent } from 'src/app/buscador/buscar-generico/buscar-generico.component';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 
 @NgModule({
@@ -36,6 +37,7 @@ import { DropdownModule } from 'primeng/dropdown';
         FormsModule,
         DialogModule,
         DropdownModule,
+        SharedModule
   ]
 })
 export class VentaProductoModule { }

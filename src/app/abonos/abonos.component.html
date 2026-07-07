@@ -354,7 +354,7 @@
       <div class="ab-transfer-search">
         <input class="ab-input" type="text" [(ngModel)]="terminoTransferencia"
                (input)="onInputTransferencia()" placeholder="Nombre, código o descripción..."
-               autocomplete="off">
+               autocomplete="off" appUppercase>
         <div class="ab-transfer-dropdown" *ngIf="resultadosTransferencia.length">
           <div class="ab-transfer-item" *ngFor="let v of resultadosTransferencia"
                (click)="seleccionarVarianteTransferencia(v)">

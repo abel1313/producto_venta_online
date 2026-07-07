@@ -10,6 +10,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import {MatCardModule} from '@angular/material/card';
 import {  RadioButtonModule } from 'primeng/radiobutton';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
+import { SharedModule } from '../../shared/shared.module';
+import { FormsModule } from '@angular/forms';
 @NgModule({
   declarations: [
     AddUsuariosComponent,
@@ -20,9 +22,11 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
   imports: [
     CommonModule,
     UsuariosRoutingModule,
+    FormsModule,
     ReactiveFormsModule,
     MatCardModule,
-    NzSwitchModule
+    NzSwitchModule,
+    SharedModule
   ]
 })
 export class UsuariosModule { }

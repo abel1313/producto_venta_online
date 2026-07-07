@@ -34,6 +34,7 @@
         (keyup)="buscarProductos($event)"
         autocomplete="off"
         [disabled]="filtroActivo !== 'todos'"
+        appUppercase
       />
       <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
         📷

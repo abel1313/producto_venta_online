@@ -38,7 +38,8 @@
                placeholder="Nombre o código de barras (mín. 3 chars)…"
                [(ngModel)]="terminoVariante"
                (input)="onInputVariante()"
-               autocomplete="off">
+               autocomplete="off"
+               appUppercase>
         <button *ngIf="terminoVariante" class="vd-search__clear"
                 (click)="terminoVariante = ''; resultados = []">✕</button>
       </div>
@@ -266,7 +267,8 @@
                      placeholder="Buscar cliente por nombre…"
                      [(ngModel)]="terminoCliente"
                      (input)="onInputCliente()"
-                     autocomplete="off">
+                     autocomplete="off"
+                     appUppercase>
             </div>
             <div *ngIf="clientes.length > 0" class="vd-client-dropdown">
               <div class="vd-client-option" *ngFor="let c of clientes" (click)="seleccionarCliente(c)">

@@ -202,7 +202,8 @@
                    placeholder="Buscar variante por nombre, color, talla o código…"
                    [value]="terminoBusca"
                    (input)="onBuscarVariante($event)"
-                   autocomplete="off" />
+                   autocomplete="off"
+                   appUppercase />
             <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
           </div>
           <div class="rf-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
@@ -357,7 +358,8 @@
                    placeholder="Buscar cliente registrado por nombre…"
                    [value]="terminoBuscaCliente"
                    (input)="onBuscarCliente($event)"
-                   autocomplete="off" />
+                   autocomplete="off"
+                   appUppercase />
             <span *ngIf="buscandoCliente" class="spinner-border spinner-border-sm text-secondary"></span>
           </div>
           <div class="rf-dropdown" *ngIf="clientesBusqueda.length > 0" [ngStyle]="dropdownStyleCliente">

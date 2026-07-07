@@ -10,14 +10,18 @@ export class FechaEspanolPipe implements PipeTransform {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
   ];
 
-  transform(value: string  | string): string {
+  transform(value: string): string {
+    if (!value) return '';
 
-  const [diaStr, mesStr, añoStr] = value.split('/');
-  const dia = parseInt(diaStr, 10);
-  const mes = this.meses[parseInt(mesStr, 10) - 1]; // -1 porque los meses van de 0 a 11
-  const año = parseInt(añoStr, 10);
+    // El back manda "dd/mm/yyyy" o "dd/mm/yyyy HH:mm" (con hora, desde 2026-07-07).
+    const [fechaParte, horaParte] = value.trim().split(' ');
+    const [diaStr, mesStr, añoStr] = fechaParte.split('/');
+    const dia = parseInt(diaStr, 10);
+    const mes = this.meses[parseInt(mesStr, 10) - 1]; // -1 porque los meses van de 0 a 11
+    const año = parseInt(añoStr, 10);
 
-  return `${dia} de ${mes} del ${año}`;
+    const fechaTexto = `${dia} de ${mes} del ${año}`;
+    return horaParte ? `${fechaTexto}, ${horaParte} hrs` : fechaTexto;
   }
 
 }

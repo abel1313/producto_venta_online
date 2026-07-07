@@ -2,14 +2,14 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
-import { IDetalleQuery } from '../mis-pedidos/models/IDetallePedido.model';
 import { environment } from 'src/environments/environment';
 import { PedidosService } from '../pedidos.service';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
-import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
+import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { AuthService } from 'src/app/auth/auth.service';
+import { NegocioService } from 'src/app/negocio/negocio.service';
 import Swal from 'sweetalert2';
-import { generarHtmlTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
 @Component({
   selector: 'app-detalle-pedido',
@@ -20,7 +20,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Input() pedido!: IPedidoGenerico;
   @Output() regresarProductos = new EventEmitter<boolean>();
 
-  public env: string = environment.api_Url + '/imagen/';
+  // Base correcta del microservicio de imágenes: GET /imagen/v1/{productoId}
+  public env: string = environment.api_Url + '/imagen/v1/';
+
+  // ── Detalle rico (promoción, talla/color, fecha+hora, imagen) ────────
+  detalle: PedidoDetalleResponse | null = null;
+  cargandoDetalle = false;
+  imprimiendoTicket = false;
+
+  private qrTienda    = window.location.origin;
+  private qrWhatsapp: string | null = null;
+  private qrFacebook: string | null = null;
 
   // ── Abono inline ──────────────────────────────────────────────────
   mostrarFormAbono = false;
@@ -40,8 +50,16 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   get esCredito(): boolean {
-    const tp = this.pedido?.pedido?.tipoPedido;
+    const tp = this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido;
     return tp === 'APARTADO' || tp === 'FIADO';
+  }
+
+  get estadoPedido(): string {
+    return this.detalle?.estadoPedido ?? this.pedido?.pedido?.estado_pedido ?? '';
+  }
+
+  get fechaCompra(): string | null {
+    return this.detalle?.fechaHoraRegistro ?? this.detalle?.fechaPedido ?? null;
   }
 
   get cambio(): number {
@@ -55,32 +73,52 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   constructor(
     private readonly pedidosService: PedidosService,
     private readonly abonoService:   AbonoService,
-    private readonly authService:    AuthService
+    private readonly authService:    AuthService,
+    private readonly negocioService: NegocioService
   ) {}
 
   ngOnInit(): void {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
+
+    this.negocioService.getContactosPublicos().subscribe({
+      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      error: () => {}
+    });
+
+    this.cargarDetalleCompleto();
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
-  get totalGeneral(): number {
-    return this.pedido.pedido.detalles.reduce((sum, d) => sum + d.sub_total, 0);
+  private cargarDetalleCompleto(): void {
+    this.cargandoDetalle = true;
+    this.pedidosService.getDetallePedido(this.pedido.pedido.id).subscribe({
+      next: r => {
+        this.detalle = r?.data ?? null;
+        this.cargandoDetalle = false;
+      },
+      error: () => { this.cargandoDetalle = false; }
+    });
   }
 
-  eliminando = new Set<IDetalleQuery>();
+  get totalGeneral(): number {
+    return this.detalle?.totalPedido
+      ?? this.pedido.pedido.detalles.reduce((sum, d) => sum + d.sub_total, 0);
+  }
 
-  reducirCantidad(item: IDetalleQuery): void {
-    if (this.eliminando.has(item)) return;
+  eliminando = new Set<PedidoDetalleItem>();
+
+  reducirCantidad(item: PedidoDetalleItem): void {
+    if (this.eliminando.has(item) || item.productoId == null) return;
     this.eliminando.add(item);
 
-    this.pedidosService.eliminarDetalle(this.pedido.pedido.id, item.producto).subscribe({
+    this.pedidosService.eliminarDetalle(this.pedido.pedido.id, item.productoId).subscribe({
       next: () => {
         item.cantidad -= 1;
-        if (item.cantidad <= 0) {
-          this.pedido.pedido.detalles = this.pedido.pedido.detalles.filter(d => d !== item);
+        if (item.cantidad <= 0 && this.detalle) {
+          this.detalle.detalles = this.detalle.detalles.filter(d => d !== item);
         } else {
-          item.sub_total = item.cantidad * item.precio_unitario;
+          item.subTotal = item.cantidad * item.precioUnitario;
         }
         this.eliminando.delete(item);
       },
@@ -137,6 +175,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         const cambioMostrar = this.cambio;
         this.mostrarFormAbono = false;
         this.enviarCorreo   = false;
+        this.cargarDetalleCompleto();
         const liquidado     = data?.estadoPedido === 'PAGADO' || (data?.saldoRestante != null && data.saldoRestante <= 0);
         const txtCambio     = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
 
@@ -181,36 +220,52 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.pedidosService.getDetallePedido(pedidoId).subscribe({
       next: r => {
         const d = r?.data;
-        if (!d) return;
-        const tipo: ITicketData['tipo'] = d.estadoPedido === 'PAGADO' ? 'liquidado'
-          : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
-        const html = generarHtmlTicket({
-          tipo,
-          numero:         d.pedidoId,
-          fecha:          d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
-          cliente:        d.clienteNombre || this.pedido.cliente.nombreCliente,
-          metodoPago:     d.metodoPago ?? '',
-          total:          d.totalPedido,
-          totalPagado:    d.totalPagado ?? null,
-          saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
-          articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal }))
-        });
-        this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
-          next: (r2: any) => Swal.fire({ title: '✅ Enviado', text: r2?.data ?? `Ticket enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
-          error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' })
-        });
+        if (d) this.enviarTicketConDetalle(pedidoId, d, correo);
       },
       error: () => {}
     });
   }
 
+  // ── Reenviar ticket: confirma primero con el correo del cliente ────
+
   reenviarComprobanteManual(): void {
-    const pedidoId   = this.pedido.pedido.id;
-    const correoReg  = this.pedido?.cliente?.correoElectronico || '';
+    const pedidoId = this.pedido.pedido.id;
+    this.pedidosService.getDetallePedido(pedidoId).subscribe({
+      next: r => {
+        const d = r?.data;
+        if (!d) return;
+        const correoReg = d.clienteCorreo || this.pedido?.cliente?.correoElectronico || '';
+        this.confirmarCorreoYEnviar(pedidoId, d, correoReg);
+      },
+      error: () => Swal.fire({ title: 'Error', text: 'No se pudo obtener el detalle del pedido.', icon: 'error' })
+    });
+  }
+
+  private confirmarCorreoYEnviar(pedidoId: number, d: PedidoDetalleResponse, correoReg: string): void {
+    if (correoReg) {
+      const nombre = d.clienteNombre || this.pedido.cliente.nombreCliente;
+      Swal.fire({
+        title: '📧 Reenviar ticket',
+        html: `¿Enviar el ticket al correo de <b>${nombre}</b>:<br><b>${correoReg}</b>?`,
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Sí, enviar',
+        denyButtonText: 'Usar otro correo',
+        cancelButtonText: 'Cancelar'
+      }).then(res => {
+        if (res.isConfirmed) this.enviarTicketConDetalle(pedidoId, d, correoReg);
+        else if (res.isDenied) this.pedirCorreoManualYEnviar(pedidoId, d);
+      });
+    } else {
+      this.pedirCorreoManualYEnviar(pedidoId, d);
+    }
+  }
+
+  private pedirCorreoManualYEnviar(pedidoId: number, d: PedidoDetalleResponse): void {
     Swal.fire({
       title: '📧 Reenviar comprobante',
       input: 'email',
-      inputValue: correoReg,
       inputPlaceholder: 'correo@ejemplo.com',
       showCancelButton: true,
       confirmButtonText: 'Enviar',
@@ -218,32 +273,114 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       reverseButtons: true,
       inputValidator: v => (!v || !v.includes('@')) ? 'Ingresa un correo válido' : null,
     }).then(res => {
-      if (!res.isConfirmed || !res.value) return;
-      const correo = res.value as string;
-      this.pedidosService.getDetallePedido(pedidoId).subscribe({
-        next: r => {
-          const d = r?.data;
-          if (!d) return;
-          const tipo: ITicketData['tipo'] = d.estadoPedido === 'PAGADO' ? 'liquidado'
-            : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
-          const html = generarHtmlTicket({
-            tipo,
-            numero:         d.pedidoId,
-            fecha:          d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
-            cliente:        d.clienteNombre || this.pedido.cliente.nombreCliente,
-            metodoPago:     d.metodoPago ?? '',
-            total:          d.totalPedido,
-            totalPagado:    d.totalPagado ?? null,
-            saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
-            articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      if (res.isConfirmed && res.value) this.enviarTicketConDetalle(pedidoId, d, res.value as string);
+    });
+  }
+
+  private enviarTicketConDetalle(pedidoId: number, d: PedidoDetalleResponse, correo: string): void {
+    const tipo: ITicketData['tipo'] = d.estadoPedido === 'PAGADO' ? 'liquidado'
+      : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+    const html = generarHtmlTicket({
+      tipo,
+      numero:         d.pedidoId,
+      fecha:          this.formatearFechaTicket(d),
+      cliente:        d.clienteNombre || this.pedido.cliente.nombreCliente,
+      metodoPago:     d.metodoPago ?? '',
+      total:          d.totalPedido,
+      totalPagado:    d.totalPagado ?? null,
+      saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      qrTienda:   this.qrTienda,
+      qrWhatsapp: this.qrWhatsapp,
+      qrFacebook: this.qrFacebook
+    });
+    this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
+      next: (r2: any) => Swal.fire({ title: '✅ Enviado', text: r2?.data ?? `Ticket enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
+      error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' })
+    });
+  }
+
+  // ── Imprimir ticket (junto a reenviar) ─────────────────────────────
+
+  imprimirTicketDetalle(): void {
+    if (this.imprimiendoTicket) return;
+    this.imprimiendoTicket = true;
+    const pedidoId = this.pedido.pedido.id;
+
+    this.pedidosService.getDetallePedido(pedidoId).subscribe({
+      next: r => {
+        this.imprimiendoTicket = false;
+        const d = r?.data;
+        if (!d) {
+          Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+
+        if (d.metodoPago || d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO') {
+          Swal.fire({
+            title: `Ticket pedido #${pedidoId}`,
+            text: '¿Deseas imprimir el ticket?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir ticket',
+            cancelButtonText: 'Cancelar'
+          }).then(res => {
+            if (res.isConfirmed) this.imprimirConDetalle(d, d.metodoPago ?? '', d.montoDado ?? null);
           });
-          this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
-            next: (r2: any) => Swal.fire({ title: '✅ Enviado', text: r2?.data ?? `Ticket enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
-            error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' }),
-          });
-        },
-        error: () => {},
-      });
+          return;
+        }
+
+        // Pedido NORMAL antiguo sin metodoPago guardado en BD → preguntar forma de pago
+        Swal.fire({
+          title: `Ticket pedido #${pedidoId}`,
+          text: '¿Cómo se pagó este pedido?',
+          icon: 'question',
+          input: 'radio',
+          inputOptions: { EFECTIVO: 'Efectivo', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta' },
+          inputValue: 'EFECTIVO',
+          showCancelButton: true,
+          confirmButtonText: 'Imprimir 🖨️',
+          cancelButtonText: 'Cancelar',
+          inputValidator: v => (!v ? 'Selecciona la forma de pago' : null)
+        }).then(res => {
+          if (res.isConfirmed) this.imprimirConDetalle(d, res.value, null);
+        });
+      },
+      error: err => {
+        this.imprimiendoTicket = false;
+        Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el ticket.', icon: 'error' });
+      }
+    });
+  }
+
+  private imprimirConDetalle(d: PedidoDetalleResponse, metodoPago: string, montoDadoOrig: number | null): void {
+    const tipo: ITicketData['tipo'] = d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO' ? 'venta'
+      : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+    const montoDado = metodoPago === 'EFECTIVO' && montoDadoOrig ? montoDadoOrig : null;
+    const cambio    = montoDado && montoDado > d.totalPedido ? +(montoDado - d.totalPedido).toFixed(2) : null;
+    imprimirTicket(generarHtmlTicket({
+      tipo,
+      numero:         d.pedidoId,
+      fecha:          this.formatearFechaTicket(d),
+      cliente:        d.clienteNombre || this.pedido.cliente.nombreCliente,
+      metodoPago,
+      total:          d.totalPedido,
+      totalPagado:    d.totalPagado ?? null,
+      saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      montoDado,
+      cambio,
+      articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      qrTienda:   this.qrTienda,
+      qrWhatsapp: this.qrWhatsapp,
+      qrFacebook: this.qrFacebook
+    }));
+  }
+
+  private formatearFechaTicket(d: PedidoDetalleResponse): string | undefined {
+    const fecha = d.fechaHoraRegistro || d.fechaPedido;
+    if (!fecha) return undefined;
+    return new Date(fecha).toLocaleString('es-MX', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   }
 

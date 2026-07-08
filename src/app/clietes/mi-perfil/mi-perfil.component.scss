@@ -326,6 +326,25 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176, 138, 78, 0.35); }
 }
 
+.mp-btn--reenviar {
+  padding: 0.45rem 1rem;
+  background: transparent;
+  color: #B08A4E;
+  border: 1.5px solid rgba(176, 138, 78, 0.45);
+  border-radius: $radius-sm;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: $trans;
+  .pi { font-size: 0.8rem; }
+  &:hover:not(:disabled) { background: rgba(176, 138, 78, 0.08); border-color: #B08A4E; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
 .mp-btn--cancelar-codigo {
   padding: 0.45rem 1rem;
   background: transparent;
@@ -398,6 +417,12 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mp-codigo-info { color: #cbd5e1; }
+
+  .mp-btn--reenviar {
+    color: #C9A063;
+    border-color: rgba(201, 160, 99, 0.35);
+    &:hover:not(:disabled) { background: rgba(201, 160, 99, 0.1); border-color: #C9A063; }
+  }
 
   .mp-btn--cancelar-codigo {
     color: #94a3b8;

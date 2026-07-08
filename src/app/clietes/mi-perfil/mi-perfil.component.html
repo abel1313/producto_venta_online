@@ -57,6 +57,12 @@
             <button type="button" class="mp-btn mp-btn--codigo" (click)="reingresarCodigo()">
               <i class="pi pi-key"></i> Ingresar código
             </button>
+            <button type="button" class="mp-btn mp-btn--reenviar"
+                    (click)="reenviarCodigo()"
+                    [disabled]="cooldownReenvio > 0">
+              <i class="pi pi-refresh"></i>
+              {{ cooldownReenvio > 0 ? 'Reenviar en ' + cooldownReenvio + 's' : 'No llegó el correo — Reenviar' }}
+            </button>
             <button type="button" class="mp-btn mp-btn--cancelar-codigo" (click)="cancelarVerificacion()">
               Cancelar cambio
             </button>

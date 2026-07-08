@@ -63,4 +63,8 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/confirmar-cambio-correo`, { codigo });
   }
 
+  cambioCorreoPendiente() {
+    return this.http.get<any>(`${environment.api_Url}/v1/auth/cambio-correo-pendiente`);
+  }
+
 }

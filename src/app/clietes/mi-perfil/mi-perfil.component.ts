@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { take } from 'rxjs/operators';
 import { AccederService } from 'src/app/login/acceder.service';
@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
   templateUrl: './mi-perfil.component.html',
   styleUrls: ['./mi-perfil.component.scss']
 })
-export class MiPerfilComponent implements OnInit {
+export class MiPerfilComponent implements OnInit, OnDestroy {
   usernameCtrl   = new FormControl('', Validators.required);
   emailCtrl      = new FormControl('', [Validators.email]);
   passActualCtrl = new FormControl('');
@@ -25,7 +25,10 @@ export class MiPerfilComponent implements OnInit {
   guardandoPass        = false;
   errorPerfil          = '';
 
-  private readonly SK_SELF = 'cambio_correo_self';
+  // Reenviar código
+  cooldownReenvio  = 0;
+  reenviadoCodigo  = false;
+  private cooldownTimer: any = null;
 
   showActual  = false;
   showNueva   = false;
@@ -50,10 +53,28 @@ export class MiPerfilComponent implements OnInit {
             this.emailOriginal = correo;
             this.emailCtrl.setValue(correo);
           }
-          this.restaurarCambioCorreoPendiente();
+          this.verificarCambioCorreoPendiente();
         },
-        error: () => { this.restaurarCambioCorreoPendiente(); }
+        error: () => { this.verificarCambioCorreoPendiente(); }
       });
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+  }
+
+  private verificarCambioCorreoPendiente(): void {
+    this.acceder.cambioCorreoPendiente().subscribe({
+      next: (res: any) => {
+        const data = res?.data ?? res;
+        if (data?.pendiente === true && data?.correoPendiente) {
+          this.codigoPendiente      = true;
+          this.correoNuevoPendiente = data.correoPendiente;
+          this.emailCtrl.setValue(data.correoPendiente);
+        }
+      },
+      error: () => { /* sin cambio pendiente — ignorar error */ }
     });
   }
 
@@ -107,19 +128,6 @@ export class MiPerfilComponent implements OnInit {
     });
   }
 
-  private restaurarCambioCorreoPendiente(): void {
-    try {
-      const raw = sessionStorage.getItem(this.SK_SELF);
-      if (!raw) return;
-      const { correo } = JSON.parse(raw);
-      if (correo) {
-        this.codigoPendiente      = true;
-        this.correoNuevoPendiente = correo;
-        this.emailCtrl.setValue(correo);
-      }
-    } catch { }
-  }
-
   private flujoEmailChange(nuevoEmail: string): void {
     this.guardandoPerfil = true;
     this.errorPerfil     = '';
@@ -128,7 +136,7 @@ export class MiPerfilComponent implements OnInit {
         this.guardandoPerfil       = false;
         this.codigoPendiente       = true;
         this.correoNuevoPendiente  = nuevoEmail;
-        sessionStorage.setItem(this.SK_SELF, JSON.stringify({ correo: nuevoEmail }));
+        this.iniciarCooldown();
         this.mostrarSwalCodigo(nuevoEmail);
       },
       error: (err: any) => {
@@ -174,7 +182,8 @@ export class MiPerfilComponent implements OnInit {
         this.emailOriginal        = nuevoEmail;
         this.codigoPendiente      = false;
         this.correoNuevoPendiente = '';
-        sessionStorage.removeItem(this.SK_SELF);
+        this.reenviadoCodigo      = false;
+        this.cooldownReenvio      = 0;
         Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });
       }
     });
@@ -187,8 +196,38 @@ export class MiPerfilComponent implements OnInit {
   cancelarVerificacion(): void {
     this.codigoPendiente      = false;
     this.correoNuevoPendiente = '';
-    sessionStorage.removeItem(this.SK_SELF);
+    this.reenviadoCodigo      = false;
+    this.cooldownReenvio      = 0;
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
     this.emailCtrl.setValue(this.emailOriginal);
+  }
+
+  reenviarCodigo(): void {
+    if (this.cooldownReenvio > 0) return;
+    this.acceder.solicitarCambioCorreo(this.correoNuevoPendiente).subscribe({
+      next: () => {
+        this.reenviadoCodigo = true;
+        this.iniciarCooldown();
+        Swal.fire({ icon: 'success', title: 'Código reenviado', text: `Se envió un nuevo código a ${this.correoNuevoPendiente}`, timer: 2500, showConfirmButton: false });
+      },
+      error: (err: any) => {
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo reenviar el código.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+      }
+    });
+  }
+
+  private iniciarCooldown(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.cooldownReenvio = 60;
+    this.cooldownTimer = setInterval(() => {
+      this.cooldownReenvio--;
+      if (this.cooldownReenvio <= 0) {
+        this.cooldownReenvio = 0;
+        clearInterval(this.cooldownTimer);
+        this.cooldownTimer = null;
+      }
+    }, 1000);
   }
 
   cambiarPassword(): void {

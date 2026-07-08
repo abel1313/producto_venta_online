@@ -1,5 +1,5 @@
 
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AccederService } from 'src/app/login/acceder.service';
@@ -15,7 +15,7 @@ import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentac
   templateUrl: './add-usuarios.component.html',
   styleUrls: ['./add-usuarios.component.scss']
 })
-export class AddUsuariosComponent implements OnInit {
+export class AddUsuariosComponent implements OnInit, OnDestroy {
   @Input() textoCard: string = 'Registrar usuario';
   @Input() updateUser: IUsuarioDto = {
     email: '',
@@ -26,7 +26,8 @@ export class AddUsuariosComponent implements OnInit {
   emailOriginal        = '';
   codigoPendiente      = false;
   correoNuevoPendiente = '';
-  private skAdmin(): string { return `cambio_correo_admin_${this.updateUser.id ?? 0}`; }
+  cooldownReenvio      = 0;
+  private cooldownTimer: any = null;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -85,18 +86,20 @@ export class AddUsuariosComponent implements OnInit {
       this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
       this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
 
-      // Restaurar estado de cambio de correo pendiente tras refresco de página
-      try {
-        const raw = sessionStorage.getItem(this.skAdmin());
-        if (raw) {
-          const { correo } = JSON.parse(raw);
-          if (correo) {
-            this.codigoPendiente      = true;
-            this.correoNuevoPendiente = correo;
-            this.formRegistro.get('email')?.setValue(correo);
-          }
-        }
-      } catch { }
+      // Verificar si hay cambio de correo pendiente en el backend
+      if (this.updateUser.id) {
+        this.usuario.cambioCorreoPendienteAdmin(this.updateUser.id).subscribe({
+          next: (res: any) => {
+            const data = res?.data ?? res;
+            if (data?.pendiente === true && data?.correoPendiente) {
+              this.codigoPendiente      = true;
+              this.correoNuevoPendiente = data.correoPendiente;
+              this.formRegistro.get('email')?.setValue(data.correoPendiente);
+            }
+          },
+          error: () => { /* sin cambio pendiente — ignorar */ }
+        });
+      }
     }
   }
 
@@ -316,7 +319,7 @@ export class AddUsuariosComponent implements OnInit {
       next: () => {
         this.codigoPendiente      = true;
         this.correoNuevoPendiente = nuevoEmail;
-        sessionStorage.setItem(this.skAdmin(), JSON.stringify({ correo: nuevoEmail }));
+        this.iniciarCooldown();
         this.mostrarSwalCambioCorreo(nuevoEmail, id);
       },
       error: (err: any) => {
@@ -335,7 +338,40 @@ export class AddUsuariosComponent implements OnInit {
     this.formRegistro.get('email')?.setValue(this.emailOriginal);
     this.codigoPendiente      = false;
     this.correoNuevoPendiente = '';
-    sessionStorage.removeItem(this.skAdmin());
+    this.cooldownReenvio      = 0;
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+  }
+
+  reenviarCodigoCambioCorreo(): void {
+    if (this.cooldownReenvio > 0 || !this.updateUser.id) return;
+    this.usuario.solicitarCambioCorreoAdmin(this.updateUser.id, this.correoNuevoPendiente).subscribe({
+      next: () => {
+        this.iniciarCooldown();
+        Swal.fire({ icon: 'success', title: 'Código reenviado', text: `Se envió un nuevo código a ${this.correoNuevoPendiente}`, timer: 2500, showConfirmButton: false });
+      },
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'No se pudo reenviar el código.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+      }
+    });
+  }
+
+  private iniciarCooldown(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.cooldownReenvio = 60;
+    this.cooldownTimer = setInterval(() => {
+      this.cooldownReenvio--;
+      if (this.cooldownReenvio <= 0) {
+        this.cooldownReenvio = 0;
+        clearInterval(this.cooldownTimer);
+        this.cooldownTimer = null;
+      }
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
   }
 
   private mostrarSwalCambioCorreo(correoNuevo: string, id: number): void {
@@ -378,7 +414,7 @@ export class AddUsuariosComponent implements OnInit {
       this.formRegistro.get('email')?.setValue(correoNuevo);
       this.codigoPendiente          = false;
       this.correoNuevoPendiente     = '';
-      sessionStorage.removeItem(this.skAdmin());
+      this.cooldownReenvio          = 0;
       Swal.fire({ icon: 'success', title: '¡Correo actualizado!', text: `El correo de ${this.updateUser.username} fue cambiado y verificado.`, timer: 2500, showConfirmButton: false });
     });
   }

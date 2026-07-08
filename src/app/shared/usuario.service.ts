@@ -50,4 +50,8 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   confirmarCambioCorreoAdmin(id: number, codigo: string) {
     return this.http.post<any>(`${environment.api_Url}/v1/usuarios/${id}/confirmar-cambio-correo`, { codigo });
   }
+
+  cambioCorreoPendienteAdmin(id: number) {
+    return this.http.get<any>(`${environment.api_Url}/v1/usuarios/${id}/cambio-correo-pendiente`);
+  }
 }

@@ -189,6 +189,12 @@
             <button type="button" class="au-btn-codigo" (click)="reingresarCodigoCambioCorreo()">
               <i class="pi pi-key"></i> Ingresar código
             </button>
+            <button type="button" class="au-btn-reenviar"
+                    (click)="reenviarCodigoCambioCorreo()"
+                    [disabled]="cooldownReenvio > 0">
+              <i class="pi pi-refresh"></i>
+              {{ cooldownReenvio > 0 ? 'Reenviar en ' + cooldownReenvio + 's' : 'No llegó — Reenviar' }}
+            </button>
             <button type="button" class="au-btn-cancelar-codigo" (click)="cancelarCambioCorreo()">
               Cancelar cambio
             </button>

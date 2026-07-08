@@ -94,7 +94,9 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
             if (data?.pendiente === true && data?.correoPendiente) {
               this.codigoPendiente      = true;
               this.correoNuevoPendiente = data.correoPendiente;
-              this.formRegistro.get('email')?.setValue(data.correoPendiente);
+              // El campo se queda mostrando el correo ACTUAL (this.emailOriginal), no el
+              // pendiente sin verificar — el banner de abajo es quien comunica a qué correo
+              // va a cambiar. Evita que el campo "aparente" ya tener el correo nuevo guardado.
             }
           },
           error: () => { /* sin cambio pendiente — ignorar */ }
@@ -319,6 +321,9 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
       next: () => {
         this.codigoPendiente      = true;
         this.correoNuevoPendiente = nuevoEmail;
+        // El campo vuelve a mostrar el correo actual — el nuevo (sin verificar) solo se
+        // comunica vía el banner de "código pendiente", no como valor del campo.
+        this.formRegistro.get('email')?.setValue(this.emailOriginal);
         this.iniciarCooldown();
         this.mostrarSwalCambioCorreo(nuevoEmail, id);
       },

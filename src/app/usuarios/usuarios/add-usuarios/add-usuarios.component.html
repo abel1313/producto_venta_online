@@ -76,6 +76,22 @@
           </div>
         </div>
 
+        <!-- Código pendiente de verificación de correo (solo admin editando) -->
+        <div class="codigo-pendiente-email" *ngIf="codigoPendiente && textoCard === 'Actualizar usuario'">
+          <div class="codigo-pendiente-email__info">
+            <i class="pi pi-envelope"></i>
+            <span>Se envió un código a <strong>{{ correoNuevoPendiente }}</strong>. Pídele al usuario que te lo dicte antes de que caduque.</span>
+          </div>
+          <div class="codigo-pendiente-email__acciones">
+            <button type="button" class="btn-admin-verify" (click)="reingresarCodigoEmail()">
+              <i class="pi pi-key"></i> Ingresar código
+            </button>
+            <button type="button" class="btn-admin-cancel-codigo" (click)="cancelarVerificacionEmail()">
+              Cancelar cambio
+            </button>
+          </div>
+        </div>
+
         <div class="field-wrap" *ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)">
           <label class="field-label">Contraseña</label>
           <div class="input-wrap">

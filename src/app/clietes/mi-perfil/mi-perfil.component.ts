@@ -18,10 +18,12 @@ export class MiPerfilComponent implements OnInit {
   passNuevaCtrl  = new FormControl('');
   passConfCtrl   = new FormControl('');
 
-  emailOriginal   = '';
-  guardandoPerfil = false;
-  guardandoPass   = false;
-  errorPerfil     = '';
+  emailOriginal        = '';
+  codigoPendiente      = false;
+  correoNuevoPendiente = '';
+  guardandoPerfil      = false;
+  guardandoPass        = false;
+  errorPerfil          = '';
 
   showActual  = false;
   showNueva   = false;
@@ -107,7 +109,9 @@ export class MiPerfilComponent implements OnInit {
     this.errorPerfil     = '';
     this.acceder.solicitarCambioCorreo(nuevoEmail).subscribe({
       next: () => {
-        this.guardandoPerfil = false;
+        this.guardandoPerfil       = false;
+        this.codigoPendiente       = true;
+        this.correoNuevoPendiente  = nuevoEmail;
         this.mostrarSwalCodigo(nuevoEmail);
       },
       error: (err: any) => {
@@ -136,29 +140,38 @@ export class MiPerfilComponent implements OnInit {
       showCancelButton: true,
       cancelButtonText: 'Verificar más tarde',
       confirmButtonColor: '#B08A4E',
-      preConfirm: () => {
+      preConfirm: async () => {
         const codigo = (document.getElementById('swal-mp-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos'); return false; }
-        return codigo;
+        try {
+          await this.acceder.confirmarCambioCorreo(codigo).toPromise();
+          return true;
+        } catch (err: any) {
+          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Código incorrecto o expirado.';
+          Swal.showValidationMessage(msg);
+          return false;
+        }
       }
     }).then(result => {
-      if (!result.isConfirmed || !result.value) {
-        this.emailOriginal = nuevoEmail;
-        Swal.fire({ icon: 'info', title: 'Correo guardado', text: 'Tu correo fue actualizado. Verifícalo cuando puedas.', timer: 2500, showConfirmButton: false });
-        return;
+      if (result.isConfirmed) {
+        this.emailOriginal        = nuevoEmail;
+        this.codigoPendiente      = false;
+        this.correoNuevoPendiente = '';
+        Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });
       }
-      this.acceder.confirmarCambioCorreo(result.value as string).subscribe({
-        next: () => {
-          this.emailOriginal = nuevoEmail;
-          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });
-        },
-        error: (err: any) => {
-          this.emailCtrl.setValue(this.emailOriginal);
-          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Código incorrecto o expirado.';
-          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
-        }
-      });
+      // Si el usuario cierra el Swal (cancelar/ESC): codigoPendiente sigue true
+      // → la sección de UI permite volver a ingresar el código
     });
+  }
+
+  reingresarCodigo(): void {
+    this.mostrarSwalCodigo(this.correoNuevoPendiente);
+  }
+
+  cancelarVerificacion(): void {
+    this.codigoPendiente      = false;
+    this.correoNuevoPendiente = '';
+    this.emailCtrl.setValue(this.emailOriginal);
   }
 
   cambiarPassword(): void {

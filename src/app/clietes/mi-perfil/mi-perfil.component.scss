@@ -281,6 +281,65 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &.strong { background: #10b981; }
 }
 
+// ── Código pendiente ──────────────────────────────────────────────────────────
+.mp-codigo-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(176, 138, 78, 0.07);
+  border: 1.5px solid rgba(176, 138, 78, 0.28);
+  border-radius: 10px;
+}
+
+.mp-codigo-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: #374151;
+  .pi { color: var(--app-accent, #B08A4E); font-size: 0.9rem; margin-top: 2px; flex-shrink: 0; }
+}
+
+.mp-codigo-acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mp-btn--codigo {
+  padding: 0.45rem 1rem;
+  background: linear-gradient(135deg, #8A6A38, #B08A4E);
+  color: #fff;
+  border-radius: $radius-sm;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: $trans;
+  .pi { font-size: 0.82rem; }
+  &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176, 138, 78, 0.35); }
+}
+
+.mp-btn--cancelar-codigo {
+  padding: 0.45rem 1rem;
+  background: transparent;
+  color: #64748b;
+  border: 1.5px solid #e5e7eb;
+  border-radius: $radius-sm;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: $trans;
+  &:hover { border-color: #94a3b8; color: #374151; }
+}
+
 // ── DARK MODE ────────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .mp-card { background: #1e1e2e; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
@@ -331,6 +390,19 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--app-accent);
     border-color: rgba(176, 138, 78, 0.4);
     background: rgba(176, 138, 78, 0.08);
+  }
+
+  .mp-codigo-pendiente {
+    background: rgba(176, 138, 78, 0.09);
+    border-color: rgba(176, 138, 78, 0.22);
+  }
+
+  .mp-codigo-info { color: #cbd5e1; }
+
+  .mp-btn--cancelar-codigo {
+    color: #94a3b8;
+    border-color: rgba(255, 255, 255, 0.1);
+    &:hover { border-color: #475569; color: #e2e8f0; }
   }
 }
 

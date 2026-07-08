@@ -22,11 +22,11 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService
   ) {
-
     this.formDatosCliente = this.fb.group({
       nombrePersona: ['abel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
       segundoNombre: ['', [Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],

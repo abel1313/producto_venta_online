@@ -4909,7 +4909,7 @@ en `mensaje`/`data`, igual que ya pasaba con otras validaciones (`404`, `409`, `
 
 ---
 
-## ⚠️ Cambio de contrato (2026-07-06): filtro admin combinado de productos/variantes + fix paginación por defecto
+## ✅ Cambio de contrato (2026-07-06, front actualizado 2026-07-07): filtro admin combinado de productos/variantes + fix paginación por defecto
 
 **1. `GET /productos/*` sin página/tamaño por defecto (bug, ya corregido).** Varios endpoints de
 `ProductosControllerImpl` (`obtenerProductos`, `buscarNombreOrCodigoBarra`, `admin/no-habilitados`,
@@ -4953,9 +4953,9 @@ GET /variantes/v1/admin/filtrar?habilitado=false&pagina=1&size=10
   `nombreOCodigo` sí se puede combinar libremente con cualquier combinación de los otros 3.
 - En variantes, `habilitado` filtra por el estado de la **variante** (`v.habilitado`), no del
   producto padre — coincide con el fix documentado arriba de `habilitar-lote`.
-- El front necesita actualizar la pantalla de filtros de admin (productos y variantes) para mandar
-  estos 4 parámetros en vez del enum `filtro` — el enum `FiltroCatalogoEnum` ya no existe en el
-  backend, cualquier request con `filtro=...` va a fallar (`400`, parámetro no reconocido).
+- **✅ Implementado en el front (2026-07-07):** `variante.service.ts` y `producto.service.ts`
+  traducen internamente el enum al nuevo formato de parámetros. Los componentes que llaman a
+  `adminFiltrar(...)` no cambian — la traducción ocurre dentro del servicio.
 
 ---
 
@@ -4986,6 +4986,113 @@ compone — ver contrato en `PROMOCIONES.md`, sección 7).
 
 **Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
 `dev`/`qa` por ahora.
+
+---
+
+## ✅ Fix (2026-07-07): campo `cantidad` en detalles de promoción activa
+
+**Causa raíz del bug "cantidad obligatoria":** `GET /v1/promociones/activas` devolvía los detalles
+de cada promo sin el campo `cantidad` (cuántas unidades de esa variante consume un combo). Cuando el
+front armaba la solicitud de venta hacía `d.cantidad * cantidadCombos`, y al ser `d.cantidad`
+`undefined`, el resultado era `NaN` → `null` en el JSON → el back rechazaba con *"La cantidad es
+obligatoria y debe ser mayor a 0"*.
+
+**Fix:** `PromocionDetalleActivaDto` ahora incluye `cantidad`. El front no necesita cambiar nada
+en `venta-directa.component.ts` — el cálculo ya era correcto, solo faltaba el dato del back.
+
+**Respuesta actualizada de `GET /v1/promociones/activas` — cada detalle ahora incluye `cantidad`:**
+```json
+{
+  "varianteId": 12,
+  "nombreProducto": "Jean Slim",
+  "talla": "M",
+  "color": "Azul",
+  "cantidad": 1,
+  "precioNormal": 300.00,
+  "precioEnPromocion": 220.00,
+  "imagenUrl": "..."
+}
+```
+
+**Archivos cambiados:** `PromocionDetalleActivaDto.java`, `PromocionServiceImpl.java`
+(método `toDetalleActivaDto`).
+
+---
+
+## ✅ Nuevo (2026-07-07): `existencias` por variante en `GET /v1/promociones/admin`
+
+**Qué es:** el endpoint `GET /v1/promociones/admin?pagina=&size=` ahora devuelve en cada detalle
+el stock actual (`existencias`) de la variante. Útil para que el panel admin muestre cuántos combos
+se pueden vender actualmente sin tener que ir a buscar el stock variante por variante.
+
+**Campo nuevo en cada detalle de la respuesta admin:**
+```json
+{
+  "varianteId": 12,
+  "nombreProducto": "Jean Slim",
+  "talla": "M",
+  "color": "Azul",
+  "cantidad": 1,
+  "precioEnPromocion": 220.00,
+  "imagenUrl": "...",
+  "existencias": 8
+}
+```
+`existencias` es el stock actual de esa variante. Para calcular cuántos combos completos se pueden
+vender: `Math.floor(existencias / cantidad)` por cada detalle → tomar el mínimo de todos.
+
+**El endpoint de clientes (`GET /v1/promociones/activas`) NO cambia:** sigue devolviendo
+`instanciasDisponibles` ya calculado en el back. El `existencias` crudo es solo para el panel admin.
+
+**Archivos cambiados:** `PromocionDetalleResponseDto.java` (campo `existencias` agregado),
+`PromocionServiceImpl.java` (método `toDetalleResponseDto` pasa `variante.getStock()`).
+
+**Cambios en el front (ya aplicados en esta sesión):**
+- `promocion.model.ts` — `IPromocionDetalle` tiene campo opcional `existencias?: number`.
+- Panel admin `gestion-promociones.component.html` — cada detalle muestra `(N en stock)` y el
+  encabezado de la tarjeta calcula `N combos disponibles` (mínimo entre las piezas).
+
+---
+
+## ✅ Nuevo (2026-07-07): fecha+hora completa y `productoId` en endpoints de pedidos
+
+**Motivo:** en `mis-pedidos` no se podía mostrar la hora de la compra porque el back nunca la
+guardaba (`pedidos.fecha_pedido` es columna `DATE`, sin hora). Se agregó una columna nueva
+`fecha_hora_registro` (`DATETIME`, aditiva, no reemplaza `fecha_pedido`) que se llena en cada
+pedido nuevo. **Pedidos creados antes de este cambio no tienen hora real** — el back rellena con
+medianoche (`00:00`) como fallback, no lo interpretes como que la compra fue a esa hora.
+
+**1. `GET /v1/pedidos/{id}/detalle` (`PedidoDetalleResponse`)** — dos campos nuevos:
+```json
+{
+  "fechaPedido": "2026-07-07",
+  "fechaHoraRegistro": "2026-07-07T14:32:10",
+  "detalles": [
+    { "id": 1, "productoId": 45, "varianteId": 12, "productoNombre": "Jean Slim", "talla": "M", "color": "Azul", "promocionId": 3, "promocionDescripcion": "Combo verano" }
+  ]
+}
+```
+- `fechaHoraRegistro`: ISO `LocalDateTime` (fecha+hora completa) — úsalo en vez de `fechaPedido`
+  para mostrar/formatear la hora de la compra en ticket y detalle.
+- `detalles[].productoId`: id real del producto (ya resuelto por el back incluso en líneas de
+  promoción/variante) — úsalo para armar la URL de imagen: `GET /imagen/v1/{productoId}`.
+  Antes este campo no existía en `detalles[]`, solo `varianteId`.
+
+**2. `GET /v1/pedidos/findPedido/{id}`, `findPedido/{idPedido}/{idCliente}`, `buscarClientePedido`**
+(la respuesta paginada que arma la lista de `mis-pedidos`, campo `pedido.detalles[].producto` /
+`pedido.fecha_pedido`): **NO cambia de forma (sigue siendo el mismo JSON con los mismos nombres de
+campo)**, solo cambia el **contenido** del string `fecha_pedido`: antes `"07/07/2026"`, ahora
+`"07/07/2026 14:32"` (agregó `HH:mm`). Si el front parsea esta fecha con un split fijo por `/`
+asumiendo solo `dd/mm/yyyy` (como el pipe `FechaEspanolPipe`), hay que actualizarlo para no rompa
+con el sufijo de hora.
+
+**Archivos cambiados:** `Pedido.java` (campo `fechaHoraRegistro`), `PedidoDetalleResponse.java`,
+`DetalleItemResponse.java` (campo `productoId`), `PedidoServiceImpl.java` (los 4 puntos donde se
+crea un pedido + `getDetallePedido()`), `VentaServiceImpl.java`, `AbonoServiceImpl.java`,
+`IPedidoRepository.java` (los 4 queries nativos), migración
+`migration_pedido_fecha_hora.sql` (**pendiente de aplicar en la BD** `inventario_key_qa`).
+- Panel admin `gestion-promociones.component.ts` — método `combosDisponibles(p)` calcula el
+  mínimo de `Math.floor(existencias / cantidad)` entre todas las piezas del combo.
 
 ---
 
@@ -5056,6 +5163,87 @@ en el interceptor/handler genérico:
 el error handler genérico ya muestra estos mensajes nuevos en el Swal. Es contrato de referencia
 para que sepan qué esperar al probar los 3 flujos y no se sorprendan con el `404` nuevo del caso B.
 
-**Estado:** cambio hecho localmente en rama `dev`, todavía sin commitear/pushear. Falta subir a
-`qa` y luego a `main` siguiendo el flujo normal (`dev → qa → main`); no se ha corrido ningún
-pipeline con este fix todavía.
+**Estado:** subiendo a `dev` para pruebas de QA. Falta subir a `main` siguiendo el flujo normal
+(`dev → qa → main`).
+
+---
+
+## 🔴 Fix crítico (2026-07-08): `PUT /v1/usuarios/updateUsuario/{id}` destruía la contraseña real del usuario
+
+**Bug reportado:** al editar el correo de un usuario desde el panel admin (`usuarios/update`) y dar
+"Actualizar", el back sobrescribía la contraseña real del usuario aunque el front no haya tocado
+ese campo — dejando la cuenta con una contraseña inservible.
+
+**Causa:** `UsuarioServiceImpl.updateUserDto()` hacía
+`existe.setPassword(passwordEncoder.encode(usuarioDto.getPassword()))` **sin validar** si
+`usuarioDto.getPassword()` venía `null`/vacío. Si el front no incluía el campo `password` en el
+body (el caso normal al editar solo correo/username/enabled), el back igual encriptaba ese valor
+vacío/null y lo guardaba como la contraseña real — efectivamente reseteándola sin que nadie lo
+pidiera.
+
+**Fix:** `updateUserDto()` **ya no toca el campo password en absoluto**, sin importar qué venga en
+el body. El único endpoint que puede cambiar la contraseña de un usuario sigue siendo
+`PUT /v1/usuarios/{id}/resetear-password` (genera una password aleatoria de 8 caracteres y la
+devuelve en la respuesta para que el admin se la comparta al usuario).
+
+**Acción requerida en el front:**
+- El campo `password` en el body de `PUT /v1/usuarios/updateUsuario/{id}` ya no tiene ningún
+  efecto — el back lo ignora. Se puede dejar de mandar.
+- **El formulario de edición de usuario (admin) no debe mostrar ningún campo de contraseña.** El
+  admin solo tiene 2 acciones válidas sobre la contraseña de otro usuario: el botón
+  "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) y nada más — no puede
+  fijar una contraseña arbitraria directamente.
+- El campo `username` en ese mismo formulario debe mostrarse **deshabilitado** (solo lectura) para
+  el admin — el update sigue aceptándolo en el body por compatibilidad, pero la UI no debería
+  permitir editarlo desde esta pantalla.
+
+**Efecto secundario nuevo (intencional):** si el admin cambia el `email` de un usuario y el nuevo
+valor es distinto al que tenía, el back ahora resetea `correoVerificado = false` (y limpia
+cualquier código de verificación pendiente). Antes, si el usuario ya tenía el correo verificado
+(el caso normal para cualquier cuenta activa), `POST /v1/auth/enviar-codigo-verificacion` fallaba
+con `"El correo ya esta verificado"` y no había forma de re-verificar un correo nuevo. Ahora sí se
+puede volver a disparar ese flujo tras cambiar el correo.
+
+**Front — flujo esperado al cambiar el correo (admin o el propio usuario, donde aplique):**
+1. Si el correo ingresado es **igual** al que ya tenía → guardar normal, sin modal de verificación.
+2. Si el correo ingresado es **distinto** → después de guardar (`PUT
+   /v1/usuarios/updateUsuario/{id}`), mostrar el modal de verificación y llamar
+   `POST /v1/auth/enviar-codigo-verificacion` con el `username`, luego
+   `POST /v1/auth/verificar-correo` con el código de 6 dígitos que llega a ese correo.
+3. Estos 2 endpoints de verificación ya existían (flujo de registro) — lo único nuevo es que ahora
+   también funcionan después de un cambio de correo, no solo la primera vez.
+
+**Resuelto (2026-07-08, segunda vuelta) — self-service (el propio usuario edita su cuenta):**
+no existía ningún endpoint para esto (`/v1/usuarios/**` es 100% ADMIN, no accesible para un usuario
+normal). Se agregó:
+
+```
+PUT /v1/auth/mi-perfil
+Authorization: Bearer <token del propio usuario>
+Content-Type: application/json
+
+Body: { "username": "string, requerido", "email": "string, requerido, formato valido" }
+```
+Response éxito (200): `"Perfil actualizado correctamente"` (texto plano). Response error (400):
+mensaje de la excepción tal cual.
+
+- Identifica la cuenta por el JWT (`Authentication`), **no** hay que mandar ningún id — así un
+  usuario no puede editar la cuenta de otro aunque manipule el body.
+- **No incluye contraseña.** Si el usuario quiere cambiar su contraseña, usar el endpoint que
+  **ya existía antes de esta sesión** y no cambió: `PUT /v1/auth/cambiar-password`, body
+  `{ "passwordActual", "nuevaPassword" }` — valida la contraseña actual contra el hash guardado
+  antes de aplicar la nueva. El front debe pedir esa contraseña actual en el formulario de "cambiar
+  contraseña" de self-service — nunca permitir guardar una nueva sin ese campo.
+- Mismo comportamiento de correo que en el caso admin: si el email cambia, se resetea
+  `correoVerificado` y hay que mostrar el mismo modal de verificación
+  (`enviar-codigo-verificacion` + `verificar-correo`), sin mandar `username` explícito (el back ya
+  lo saca del JWT).
+
+**Resumen para el front — 2 pantallas distintas:**
+
+| Pantalla | Quién | Password | Email cambia |
+|---|---|---|---|
+| Admin edita a otro usuario (`usuarios/update`) | Solo ADMIN | Sin campo de password en el form. Solo botón "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) | Modal de verificación tras guardar `PUT /v1/usuarios/updateUsuario/{id}` |
+| Usuario edita su propia cuenta ("Mi perfil") | Cualquier autenticado | Campo de "contraseña actual" obligatorio si quiere cambiarla, vía `PUT /v1/auth/cambiar-password` | Modal de verificación tras guardar `PUT /v1/auth/mi-perfil` |
+
+**Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.

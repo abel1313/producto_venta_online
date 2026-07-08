@@ -1499,6 +1499,7 @@ los del producto origen — todo editable antes de enviar:
   "marca": "string",
   "color": "string",
   "contenido": "string",
+  "piezas": 1.0,
   "precioCosto": 0.0,
   "precioVenta": 0.0,
   "precioRebaja": 0.0,
@@ -1510,6 +1511,8 @@ los del producto origen — todo editable antes de enviar:
 - `imagenPrincipalId` es opcional — solo aplica si la variante tenía más de una imagen y el admin
   quiere elegir cuál queda como principal del producto nuevo. Si la variante solo tenía 1 imagen,
   el back la usa automáticamente sin necesidad de mandar este campo.
+- **`piezas` es requerido** — la columna `producto.piezas` es `NOT NULL` en BD. La variante no
+  tiene este campo (ver tabla de fallback abajo), tiene que salir del producto origen.
 - **No se manda `stock`** — se calcula automáticamente del `stock` de la variante (ver decisión
   de diseño arriba).
 
@@ -1553,6 +1556,7 @@ barras, pero el form completo queda editable por si hace falta ajustar algo más
    | `marca` | Variante | Producto origen |
    | `color` | Variante | Producto origen |
    | `contenido` | Variante (`contenidoNeto`) | Producto origen (`contenido`) |
+   | `piezas` | — | **Producto origen** (único lugar donde existe, la variante no tiene `piezas`; es `NOT NULL` en BD, no se puede omitir) |
    | `precioCosto`/`precioVenta`/`precioRebaja` | — | Producto origen (la variante no tiene precio propio) |
    | `palabraClaveId` | Variante | Producto origen |
    | `codigoBarras` | — | **Siempre vacío** — es el dato nuevo que captura el admin |
@@ -1578,3 +1582,92 @@ barras, pero el form completo queda editable por si hace falta ajustar algo más
    - Refrescar la lista de variantes del producto origen — la variante independizada ya no debe
      aparecer ahí.
    - Navegar o mostrar el producto nuevo creado (`data.productoNuevoId` + `data.codigoBarras`).
+
+---
+
+## 17. Edición de usuario — admin vs. self-service (BACK IMPLEMENTADO, 2026-07-08)
+
+> **Contexto:** bug reportado en `usuarios/update` (panel admin) — al editar el correo de un
+> usuario y guardar, el back destruía la contraseña real del usuario como efecto secundario. A
+> partir de ahí se aclaró el diseño completo de quién puede tocar qué en una cuenta de `Usuario`.
+
+### Reglas confirmadas con el usuario (2026-07-08)
+
+1. **El admin nunca puede fijar una contraseña directamente.** Solo tiene 2 acciones válidas sobre
+   la contraseña de otra cuenta: **restablecer contraseña** (genera una aleatoria) y **verificar
+   correo**. Nada más.
+2. **El propio dueño de la cuenta sí puede actualizar sus datos** (username/email) desde su propia
+   sesión, y **si además quiere cambiar su contraseña, el back debe validar la contraseña actual**
+   antes de aplicar la nueva — igual que en el login.
+3. **Ambos casos (admin editando a otro usuario, o el usuario editando su propia cuenta):** si el
+   correo que se guarda es distinto al que tenía, se debe abrir el modal de verificación del correo
+   nuevo. Si el correo no cambió, no se muestra ningún modal.
+
+### Bug #1 — RESUELTO: `updateUserDto` destruía la contraseña real
+
+`UsuarioServiceImpl.updateUserDto()` hacía `existe.setPassword(passwordEncoder.encode(usuarioDto.getPassword()))`
+sin validar si venía null/vacío — el caso normal al editar solo el correo. Ya no toca el campo
+password en absoluto; ver `CAMBIOS_FRONT.md` para el detalle completo de este fix.
+
+### Bug #2 — RESUELTO: verificación de correo bloqueada para siempre tras la primera vez
+
+`UsuarioVerificacionService.enviarCodigoVerificacion()` tiene un guard `if (correoVerificado)
+throw "El correo ya esta verificado"`. Como cualquier cuenta activa ya pasó por esa verificación
+una vez, era imposible re-verificar un correo nuevo tras editarlo. Ahora, tanto `updateUserDto`
+(admin) como el nuevo `actualizarMiPerfil` (self-service, ver abajo) resetean
+`correoVerificado=false` cuando el email efectivamente cambia — desbloqueando poder volver a
+llamar `enviar-codigo-verificacion` / `verificar-correo` (mismos 2 endpoints de siempre, sin
+cambios en ellos).
+
+### Endpoint nuevo — self-service: `PUT /v1/auth/mi-perfil`
+
+No existía ningún endpoint para que un usuario autenticado (no-admin) editara su propio
+username/email — `/v1/usuarios/**` es 100% `ROLE_ADMIN` (`SecurityConfig.java:115`). Se agregó
+este endpoint nuevo, junto a `cambiar-password` (mismo patrón: usa `Authentication` del JWT para
+identificar la cuenta, nunca un id que mande el body — así un usuario no puede editar la cuenta de
+otro).
+
+```
+PUT /v1/auth/mi-perfil
+Authorization: Bearer <token de cualquier usuario autenticado>
+Content-Type: application/json
+
+Body:
+{
+  "username": "string, requerido",
+  "email": "string, requerido, formato de correo valido"
+}
+```
+
+**Response éxito (200):** `"Perfil actualizado correctamente"` (texto plano, mismo estilo que
+`cambiar-password`).
+**Response error (400):** el mensaje de la excepción tal cual (ej. `"Usuario no encontrado"`).
+
+**No incluye contraseña.** Para cambiar la contraseña estando logueado, ese endpoint **ya
+existía** y no cambió — `PUT /v1/auth/cambiar-password`, body `{ "passwordActual", "nuevaPassword"
+}`, valida `passwordActual` contra el hash guardado antes de aplicar la nueva (`PasswordResetService
+.cambiarPassword`, ya implementado desde antes de esta sesión).
+
+### Flujo completo para el front
+
+**Pantalla admin (`usuarios/update`, edita a OTRO usuario):**
+- Mostrar `username` **deshabilitado** (solo lectura).
+- **No mostrar ningún campo de contraseña.** Las únicas 2 acciones sobre password son botones
+  aparte: "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`, ya existía) y
+  "Verificar correo" (`POST /v1/auth/enviar-codigo-verificacion` + `verificar-correo`, ya
+  existían). El botón "Actualizar" normal sigue existiendo para guardar email/enabled — llama a
+  `PUT /v1/usuarios/updateUsuario/{id}`.
+- Si el correo ingresado es distinto al que ya tenía la cuenta → después de guardar, abrir el
+  modal de verificación y disparar `enviar-codigo-verificacion` / `verificar-correo` con el
+  `username` de esa cuenta (no la del admin logueado).
+
+**Pantalla self-service (el propio usuario edita SU cuenta, ej. "Mi perfil"):**
+- `username`/`email` editables, `PUT /v1/auth/mi-perfil` para guardarlos.
+- Si quiere cambiar contraseña, **debe pedir la contraseña actual** en el mismo formulario (o uno
+  aparte) y llamar `PUT /v1/auth/cambiar-password` — nunca se permite guardar una contraseña nueva
+  sin validar la actual.
+- Si el correo ingresado es distinto al que ya tenía → mismo modal de verificación que en el caso
+  admin, mismos 2 endpoints, pero usando el `username` de la sesión actual (no hace falta mandarlo,
+  el back ya lo saca del JWT).
+
+**Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.

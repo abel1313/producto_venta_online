@@ -19,6 +19,7 @@ export class LoginFormComponent implements OnInit {
   loginForm: FormGroup;
   errorMessage    = '';
   mostrarPassword = false;
+  cargando        = false;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
 
   private readonly FALLBACK = [
@@ -61,6 +62,8 @@ export class LoginFormComponent implements OnInit {
   }
 
   onLogin(): void {
+    if (this.cargando) return;
+    this.cargando = true;
     const credentials = this.loginForm.value;
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
@@ -72,16 +75,21 @@ export class LoginFormComponent implements OnInit {
           this.auth.setAccessToken(token);
           this.authService.setRolesFromToken(token);
           if (debeCambiar) {
+            // cargando sigue en true hasta que se resuelva el Swal — evita que el usuario
+            // reenvíe el formulario con otras credenciales mientras el cambio está pendiente.
             this.forzarCambioPassword(credentials.password ?? '');
           } else {
+            this.cargando = false;
             this.router.navigate(['/productos/buscar']);
           }
         } else {
+          this.cargando = false;
           Swal.fire({ title: 'Usuario o contraseña incorrectos', icon: 'error', showConfirmButton: false });
         }
         this.errorMessage = '';
       },
       error: (error: any) => {
+        this.cargando = false;
         if (error.status === 403) {
           // Correo sin verificar — enviar código y redirigir a pantalla de verificación.
           // Pasamos el password en el state (en memoria, no persiste) para hacer auto-login
@@ -140,6 +148,7 @@ export class LoginFormComponent implements OnInit {
         }
       }
     }).then(result => {
+      this.cargando = false;
       if (result.isConfirmed) this.router.navigate(['/productos/buscar']);
     });
   }

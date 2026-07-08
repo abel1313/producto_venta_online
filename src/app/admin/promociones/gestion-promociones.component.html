@@ -34,7 +34,8 @@
         <input class="gp-input gp-input--search" type="text"
                placeholder="Buscar variante por nombre, talla o color…"
                [(ngModel)]="terminoVariante"
-               (input)="onInputVariante()">
+               (input)="onInputVariante()"
+               appUppercase>
         <span class="gp-search-spinner" *ngIf="buscandoVariante">⏳</span>
       </div>
       <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">

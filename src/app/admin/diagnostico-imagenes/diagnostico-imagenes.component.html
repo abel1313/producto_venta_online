@@ -55,7 +55,7 @@
               </div>
               <div class="di-dropdown__sub">
                 <span *ngIf="p.marca">{{ p.marca }}</span>
-                <span *ngIf="p.codigoBarras" class="di-dropdown__code">{{ p.codigoBarras }}</span>
+                <span *ngIf="p.codigoBarras" class="di-dropdown__code">{{ p.codigoBarras | uppercase }}</span>
                 <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="p.stock === 0">
                   stock {{ p.stock }}
                 </span>
@@ -110,7 +110,7 @@
                 <span class="di-dropdown__id">ID {{ v.id }}</span>
               </div>
               <div class="di-dropdown__sub">
-                <span *ngIf="v.codigoBarras" class="di-dropdown__code">{{ v.codigoBarras }}</span>
+                <span *ngIf="v.codigoBarras" class="di-dropdown__code">{{ v.codigoBarras | uppercase }}</span>
                 <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="(v.stock ?? 0) === 0">
                   stock {{ v.stock ?? 0 }}
                 </span>

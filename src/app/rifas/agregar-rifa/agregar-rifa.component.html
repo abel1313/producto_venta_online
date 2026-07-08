@@ -149,7 +149,7 @@
             </div>
             <div class="rf-var-card__row">
               <span class="rf-var-card__stock">Stock: {{ v.variante?.stock }}</span>
-              <span class="rf-var-card__codigo" *ngIf="v.variante?.codigoBarras">{{ v.variante?.codigoBarras }}</span>
+              <span class="rf-var-card__codigo" *ngIf="v.variante?.codigoBarras">{{ v.variante?.codigoBarras | uppercase }}</span>
             </div>
             <div class="rf-var-card__clave">🔑 {{ v.palabraClave }}</div>
             <div class="rf-var-card__giro">Giro ganador: {{ v.giroGanador }}</div>
@@ -188,7 +188,7 @@
           </div>
           <div class="rf-hover-modal__row" *ngIf="varianteHover.variante?.codigoBarras">
             <span class="rf-hover-modal__label">Código</span>
-            <span class="rf-hover-modal__code">{{ varianteHover.variante?.codigoBarras }}</span>
+            <span class="rf-hover-modal__code">{{ varianteHover.variante?.codigoBarras | uppercase }}</span>
           </div>
         </div>
       </div>
@@ -212,7 +212,7 @@
               <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
               <span class="rf-dropdown__meta">
                 Stock {{ v.stock }}
-                <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras }}</span>
+                <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span>
               </span>
             </div>
           </div>
@@ -1005,7 +1005,7 @@
         </div>
         <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.codigoBarras">
           <span class="rf-var-modal__lbl">Código</span>
-          <span class="rf-var-modal__val" style="font-family:monospace; font-size:0.82rem">{{ varianteModal.variante!.codigoBarras }}</span>
+          <span class="rf-var-modal__val" style="font-family:monospace; font-size:0.82rem">{{ varianteModal.variante!.codigoBarras | uppercase }}</span>
         </div>
         <div class="rf-var-modal__row">
           <span class="rf-var-modal__lbl">Giro ganador</span>

@@ -65,7 +65,7 @@
                 {{ (v.stock ?? 0) === 0 ? 'Agotado' : v.stock + ' en stock' }}
               </span>
             </div>
-            <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras }}</span>
+            <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras | uppercase }}</span>
           </div>
           <button class="vd-btn-add"
                   [disabled]="(v.stock ?? 0) === 0"

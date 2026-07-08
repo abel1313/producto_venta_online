@@ -13,7 +13,7 @@
       <h2 class="dp-header__name">{{ producto.nombre }}</h2>
       <p *ngIf="producto.descripcion" class="dp-header__desc">{{ producto.descripcion }}</p>
       <div class="dp-badge-row" *ngIf="producto.codigoBarras">
-        <span class="dp-badge dp-badge--codigo">🔖 {{ producto.codigoBarras }}</span>
+        <span class="dp-badge dp-badge--codigo">🔖 {{ producto.codigoBarras | uppercase }}</span>
       </div>
     </div>
 

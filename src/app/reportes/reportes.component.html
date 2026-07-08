@@ -112,7 +112,8 @@
           <input type="text" class="rp-input" [(ngModel)]="terminoCliente"
                  (ngModelChange)="onTerminoClienteChange()"
                  placeholder="Escribe al menos 2 letras…"
-                 autocomplete="off" />
+                 autocomplete="off"
+                 appUppercase />
           <div *ngIf="mostrarDropdownCliente" class="rp-dropdown">
             <div *ngFor="let c of clientesSugeridos" class="rp-dropdown__item"
                  (click)="seleccionarCliente(c)">

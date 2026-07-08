@@ -181,7 +181,7 @@
 
           <div class="pl-card__detail-row" *ngIf="item.codigoBarras">
             <span class="pl-card__detail-label">Código</span>
-            <span class="pl-card__detail-val">{{ item.codigoBarras }}</span>
+            <span class="pl-card__detail-val">{{ item.codigoBarras | uppercase }}</span>
           </div>
 
           <div class="pl-card__detail-row" *ngIf="item.marca">

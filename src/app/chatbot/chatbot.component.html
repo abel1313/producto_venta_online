@@ -56,7 +56,7 @@
                   <p *ngIf="p.talla" class="cb-card__meta">📐 {{ p.talla }}</p>
                   <p *ngIf="p.descripcion" class="cb-card__meta cb-card__meta--desc">{{ p.descripcion }}</p>
                   <p *ngIf="!p.talla && !p.color && p.codigoBarras" class="cb-card__codigo">
-                    # {{ p.codigoBarras }}
+                    # {{ p.codigoBarras | uppercase }}
                   </p>
                   <p class="cb-card__precio">${{ p.precio | number:'1.2-2' }}</p>
                   <p class="cb-card__stock">{{ p.stock }} pzas</p>

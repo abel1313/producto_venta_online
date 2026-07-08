@@ -125,7 +125,7 @@
     </div>
     <div class="dv-details__row" *ngIf="varianteSeleccionada.codigoBarras">
       <span class="dv-details__label">Código de barras</span>
-      <span class="dv-details__val">{{ varianteSeleccionada.codigoBarras }}</span>
+      <span class="dv-details__val">{{ varianteSeleccionada.codigoBarras | uppercase }}</span>
     </div>
   </div>
 
@@ -191,8 +191,8 @@
       <div class="dv-indep-row">
         <div class="dv-indep-field dv-indep-field--full">
           <label class="dv-indep-label">Código de barras nuevo <span class="dv-indep-req">*</span></label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.codigoBarras" placeholder="Código de barras (diferente al actual)" />
-          <span class="dv-indep-hint">Actual: {{ varianteSeleccionada?.codigoBarras ?? '—' }}</span>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.codigoBarras" placeholder="Código de barras (diferente al actual)" appUppercase />
+          <span class="dv-indep-hint">Actual: {{ (varianteSeleccionada?.codigoBarras || '—') | uppercase }}</span>
         </div>
       </div>
 

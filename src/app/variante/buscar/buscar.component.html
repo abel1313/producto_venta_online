@@ -185,7 +185,7 @@
 
                     <div class="vb-card__detail-row" *ngIf="v.codigoBarras">
             <span class="vb-card__detail-label">Código de barras</span>
-            <span class="vb-card__detail-val">{{ v.codigoBarras }}</span>
+            <span class="vb-card__detail-val">{{ v.codigoBarras | uppercase }}</span>
           </div>
           
           <div class="vb-card__detail-row" *ngIf="v.talla">

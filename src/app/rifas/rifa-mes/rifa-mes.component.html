@@ -294,7 +294,7 @@
                *ngFor="let v of variantesBusqueda"
                (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
             <span class="rm-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
-            <span class="rm-dropdown__meta">Stock {{ v.stock }}<span *ngIf="v.codigoBarras"> · {{ v.codigoBarras }}</span></span>
+            <span class="rm-dropdown__meta">Stock {{ v.stock }}<span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span></span>
           </div>
         </div>
       </div>

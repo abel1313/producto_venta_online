@@ -66,29 +66,12 @@
           <div class="input-wrap">
             <i class="pi pi-envelope input-icon"></i>
             <input class="field-input" formControlName="email" type="email"
-                   placeholder="correo@ejemplo.com" autocomplete="email"
-                   (blur)="onEmailBlur()">
+                   placeholder="correo@ejemplo.com" autocomplete="email">
           </div>
           <div *ngIf="formRegistro.get('email')?.invalid && formRegistro.get('email')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
             <span *ngIf="formRegistro.get('email')?.errors?.['required']">Campo requerido</span>
             <span *ngIf="formRegistro.get('email')?.errors?.['email']">Formato inválido</span>
-          </div>
-        </div>
-
-        <!-- Código pendiente de verificación de correo (solo admin editando) -->
-        <div class="codigo-pendiente-email" *ngIf="codigoPendiente && textoCard === 'Actualizar usuario'">
-          <div class="codigo-pendiente-email__info">
-            <i class="pi pi-envelope"></i>
-            <span>Se envió un código a <strong>{{ correoNuevoPendiente }}</strong>. Pídele al usuario que te lo dicte antes de que caduque.</span>
-          </div>
-          <div class="codigo-pendiente-email__acciones">
-            <button type="button" class="btn-admin-verify" (click)="reingresarCodigoEmail()">
-              <i class="pi pi-key"></i> Ingresar código
-            </button>
-            <button type="button" class="btn-admin-cancel-codigo" (click)="cancelarVerificacionEmail()">
-              Cancelar cambio
-            </button>
           </div>
         </div>
 
@@ -193,6 +176,62 @@
           <button type="button" class="btn-admin-verify" (click)="verificarCorreoAdmin()">
             ✉️ Verificar correo
           </button>
+          <button type="button" class="btn-admin-email" (click)="abrirFormCambioCorreo()">
+            📧 Cambiar correo
+          </button>
+        </div>
+
+        <!-- Panel inline: cambio de correo -->
+        <div class="admin-cambio-correo" *ngIf="mostrarFormCambioCorreo && textoCard === 'Actualizar usuario'">
+          <div class="admin-cambio-correo__header">
+            <span>📧 Cambiar correo de {{ updateUser.username }}</span>
+            <button type="button" class="admin-cambio-correo__close" (click)="cerrarFormCambioCorreo()">✕</button>
+          </div>
+
+          <!-- Paso 1: nuevo correo -->
+          <div *ngIf="!codigoEnviado">
+            <div class="admin-cambio-correo__field">
+              <label>Nuevo correo electrónico</label>
+              <input type="email" [(ngModel)]="nuevoCorreoAdmin"
+                     placeholder="nuevo@correo.com" class="admin-cambio-correo__input">
+            </div>
+            <div class="admin-cambio-correo__error" *ngIf="errorCambioCorreo">
+              <i class="pi pi-exclamation-circle"></i> {{ errorCambioCorreo }}
+            </div>
+            <button type="button" class="admin-cambio-correo__btn"
+                    (click)="enviarCodigoCambioCorreo()"
+                    [disabled]="!nuevoCorreoAdmin || enviandoCodigo">
+              {{ enviandoCodigo ? 'Enviando…' : 'Enviar código al nuevo correo' }}
+            </button>
+          </div>
+
+          <!-- Paso 2: ingresar código -->
+          <div *ngIf="codigoEnviado">
+            <p class="admin-cambio-correo__hint">
+              Se envió un código a <strong>{{ nuevoCorreoAdmin }}</strong>.<br>
+              Pídele al usuario que te dicte los 6 dígitos.
+            </p>
+            <div class="admin-cambio-correo__field">
+              <label>Código de verificación</label>
+              <input type="text" inputmode="numeric" maxlength="6"
+                     [(ngModel)]="codigoAdmin" placeholder="123456"
+                     class="admin-cambio-correo__input admin-cambio-correo__input--codigo">
+            </div>
+            <div class="admin-cambio-correo__error" *ngIf="errorCambioCorreo">
+              <i class="pi pi-exclamation-circle"></i> {{ errorCambioCorreo }}
+            </div>
+            <div class="admin-cambio-correo__footer">
+              <button type="button" class="admin-cambio-correo__btn"
+                      (click)="verificarCambioCorreo()"
+                      [disabled]="codigoAdmin.length !== 6 || verificandoCodigo">
+                {{ verificandoCodigo ? 'Verificando…' : 'Verificar y guardar' }}
+              </button>
+              <button type="button" class="admin-cambio-correo__btn--ghost"
+                      (click)="codigoEnviado = false; codigoAdmin = ''; errorCambioCorreo = ''">
+                ← Cambiar correo
+              </button>
+            </div>
+          </div>
         </div>
 
         <p class="footer-link" *ngIf="!authService.isAdminService">

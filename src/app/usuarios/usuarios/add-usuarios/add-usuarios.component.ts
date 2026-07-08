@@ -23,9 +23,15 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-  emailOriginal        = '';
-  codigoPendiente      = false;
-  correoNuevoPendiente = '';
+  emailOriginal            = '';
+  // Panel inline cambio de correo
+  mostrarFormCambioCorreo  = false;
+  nuevoCorreoAdmin         = '';
+  codigoEnviado            = false;
+  codigoAdmin              = '';
+  enviandoCodigo           = false;
+  verificandoCodigo        = false;
+  errorCambioCorreo        = '';
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -299,95 +305,56 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
     });
   }
 
-  onEmailBlur(): void {
-    if (this.textoCard !== 'Actualizar usuario' || !this.authService.isAdminService) return;
-    const nuevoEmail = this.formRegistro.get('email')?.value ?? '';
-    if (!nuevoEmail || nuevoEmail === this.emailOriginal) return;
-    if (this.formRegistro.get('email')?.errors?.['email']) return;
-
-    Swal.fire({
-      title: 'Cambiar correo',
-      html: `¿Cambiar el correo de <strong>${this.updateUser.username}</strong> a <strong>${nuevoEmail}</strong>?<br><small style="color:#64748b">Se enviará un código al nuevo correo para verificarlo.</small>`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#B08A4E'
-    }).then(r => {
-      if (!r.isConfirmed) {
-        this.formRegistro.get('email')?.setValue(this.emailOriginal);
-        return;
-      }
-      this.cambiarEmailAdmin(nuevoEmail);
-    });
+  abrirFormCambioCorreo(): void {
+    this.mostrarFormCambioCorreo = true;
+    this.nuevoCorreoAdmin        = '';
+    this.codigoEnviado           = false;
+    this.codigoAdmin             = '';
+    this.errorCambioCorreo       = '';
   }
 
-  private cambiarEmailAdmin(nuevoEmail: string): void {
+  cerrarFormCambioCorreo(): void {
+    this.mostrarFormCambioCorreo = false;
+  }
+
+  enviarCodigoCambioCorreo(): void {
+    if (!this.nuevoCorreoAdmin) return;
     const id = this.updateUser.id || 0;
-    this.usuario.solicitarCambioCorreoAdmin(id, nuevoEmail).subscribe({
+    this.enviandoCodigo    = true;
+    this.errorCambioCorreo = '';
+    this.usuario.solicitarCambioCorreoAdmin(id, this.nuevoCorreoAdmin).subscribe({
       next: () => {
-        this.codigoPendiente       = true;
-        this.correoNuevoPendiente  = nuevoEmail;
-        this.mostrarSwalCodigoEmail(nuevoEmail);
+        this.enviandoCodigo = false;
+        this.codigoEnviado  = true;
       },
       error: (err: any) => {
-        this.formRegistro.get('email')?.setValue(this.emailOriginal);
-        Swal.fire({ icon: 'error', title: 'Error al cambiar correo', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo enviar el código.' });
+        this.enviandoCodigo = false;
+        const raw = err?.error;
+        this.errorCambioCorreo = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'No se pudo enviar el código.';
       }
     });
   }
 
-  private mostrarSwalCodigoEmail(nuevoEmail: string): void {
-    Swal.fire({
-      title: 'Verificar nuevo correo',
-      html: `
-        <p style="margin-bottom:10px;font-size:0.88rem">
-          Se envió un código a <strong>${nuevoEmail}</strong>.<br>
-          Pídele al usuario que te dicte el código de 6 dígitos.
-        </p>
-        <input id="swal-codigo-email" type="text" inputmode="numeric" maxlength="6"
-               placeholder="123456"
-               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
-                      outline:none;font-family:monospace">
-      `,
-      confirmButtonText: 'Verificar',
-      showCancelButton: true,
-      cancelButtonText: 'Verificar más tarde',
-      confirmButtonColor: '#B08A4E',
-      preConfirm: async () => {
-        const codigo = (document.getElementById('swal-codigo-email') as HTMLInputElement)?.value ?? '';
-        if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos del código'); return false; }
-        try {
-          await this.usuario.confirmarCambioCorreoAdmin(this.updateUser.id || 0, codigo).toPromise();
-          return true;
-        } catch (err: any) {
-          const raw = err?.error;
-          const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
-          Swal.showValidationMessage(msg);
-          return false;
-        }
+  verificarCambioCorreo(): void {
+    if (this.codigoAdmin.length !== 6) return;
+    const id = this.updateUser.id || 0;
+    this.verificandoCodigo = true;
+    this.errorCambioCorreo = '';
+    this.usuario.confirmarCambioCorreoAdmin(id, this.codigoAdmin).subscribe({
+      next: () => {
+        this.verificandoCodigo       = false;
+        this.emailOriginal            = this.nuevoCorreoAdmin;
+        this.updateUser.email         = this.nuevoCorreoAdmin;
+        this.formRegistro.get('email')?.setValue(this.nuevoCorreoAdmin);
+        this.mostrarFormCambioCorreo = false;
+        Swal.fire({ icon: 'success', title: '¡Correo actualizado!', text: `El correo de ${this.updateUser.username} fue cambiado y verificado.`, timer: 2500, showConfirmButton: false });
+      },
+      error: (err: any) => {
+        this.verificandoCodigo = false;
+        const raw = err?.error;
+        this.errorCambioCorreo = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
       }
-    }).then(result => {
-      if (result.isConfirmed) {
-        this.emailOriginal        = nuevoEmail;
-        this.updateUser.email     = nuevoEmail;
-        this.codigoPendiente      = false;
-        this.correoNuevoPendiente = '';
-        Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue actualizado y verificado.` });
-      }
-      // Si cierra el Swal: codigoPendiente stays true → sección de UI permite reingresar
     });
-  }
-
-  reingresarCodigoEmail(): void {
-    this.mostrarSwalCodigoEmail(this.correoNuevoPendiente);
-  }
-
-  cancelarVerificacionEmail(): void {
-    this.codigoPendiente      = false;
-    this.correoNuevoPendiente = '';
-    this.formRegistro.get('email')?.setValue(this.emailOriginal);
   }
 
   guardarPermisos(): void {

@@ -505,36 +505,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover { background: rgba(14, 165, 233, 0.18); }
 }
 
-// ── Código pendiente de correo ────────────────────────────────────────────────
-.codigo-pendiente-email {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1rem;
-  background: rgba(176, 138, 78, 0.07);
-  border: 1.5px solid rgba(176, 138, 78, 0.28);
-  border-radius: 10px;
-
-  &__info {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    font-size: 0.82rem;
-    color: var(--app-text, #374151);
-    .pi { color: var(--app-accent, #B08A4E); font-size: 0.9rem; margin-top: 2px; flex-shrink: 0; }
-  }
-
-  &__acciones {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-}
-
-.btn-admin-cancel-codigo {
+// ── Botón cambiar correo ───────────────────────────────────────────────────────
+.btn-admin-email {
   flex: 1;
-  min-width: 120px;
+  min-width: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -542,14 +516,156 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.5rem 1rem;
   border-radius: 10px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: $transition;
-  background: transparent;
-  color: #64748b;
-  border: 1px solid #e5e7eb;
+  background: rgba(176, 138, 78, 0.09);
+  color: #B08A4E;
+  border: 1px solid rgba(176, 138, 78, 0.22);
   font-family: inherit;
-  &:hover { border-color: #94a3b8; color: #374151; }
+  &:hover { background: rgba(176, 138, 78, 0.18); }
+}
+
+// ── Panel inline: cambio de correo ────────────────────────────────────────────
+.admin-cambio-correo {
+  margin-top: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: var(--form-section-bg, #f8fafc);
+  border: 1.5px solid var(--card-border, #e8ecf0);
+  border-radius: 12px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--app-text, #374151);
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: $transition;
+    &:hover { background: rgba(0,0,0,0.06); color: #374151; }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+    label {
+      font-size: 0.73rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.55rem 0.85rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: #fff;
+    color: #111827;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: $transition;
+    &:focus { border-color: #B08A4E; box-shadow: 0 0 0 3px rgba(176,138,78,0.12); }
+    &::placeholder { color: #c4c9d4; }
+
+    &--codigo {
+      text-align: center;
+      font-size: 1.3rem;
+      letter-spacing: 6px;
+      font-family: monospace;
+      max-width: 180px;
+    }
+  }
+
+  &__hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: #dc2626;
+    background: rgba(220,38,38,0.06);
+    border: 1px solid rgba(220,38,38,0.15);
+    border-radius: 7px;
+    padding: 0.45rem 0.7rem;
+    margin-bottom: 0.6rem;
+    .pi { font-size: 0.8rem; }
+  }
+
+  &__btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #8A6A38, #B08A4E);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: $transition;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176,138,78,0.35); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__btn--ghost {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: #64748b;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: $transition;
+    &:hover { border-color: #94a3b8; color: #374151; }
+  }
+}
+
+:host-context(body.theme-dark) {
+  .btn-admin-email { color: #C9A063; border-color: rgba(176,138,78,0.3); background: rgba(176,138,78,0.08); }
+
+  .admin-cambio-correo {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.09);
+
+    &__header  { color: #e2e8f0; }
+    &__close   { color: #64748b; &:hover { background: rgba(255,255,255,0.07); color: #e2e8f0; } }
+    &__field label { color: #94a3b8; }
+    &__input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: #f1f5f9; &:focus { border-color: #C9A063; } }
+    &__hint  { color: #64748b; }
+    &__error { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.25); }
+    &__btn--ghost { color: #94a3b8; border-color: rgba(255,255,255,0.1); &:hover { border-color: #475569; color: #e2e8f0; } }
+  }
 }
 
 .btn-admin-permisos {

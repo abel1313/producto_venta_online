@@ -31,119 +31,119 @@
 
 > **Checkpoint 2026-07-03 (actualizado):**
 > - ✅ Listos en back (falta front): 1 (ticket), 2 (correo), 5 (reportes), 6 (dashboard), 8/9/10 (chatbot),
->   11 (filtros por rol), 12 (correo/teléfono obligatorios + verificación), 13 (deshabilitar en
->   lote + habilitado por variante), 14 (reset de contraseña + cambiar contraseña logueado).
+    >   11 (filtros por rol), 12 (correo/teléfono obligatorios + verificación), 13 (deshabilitar en
+    >   lote + habilitado por variante), 14 (reset de contraseña + cambiar contraseña logueado).
 > - 🚫 En pausa: 3 (WhatsApp al cliente).
 > - ⏳ Sin arrancar ni back ni front: 4 (stock bajo), 7 (devoluciones).
 > - 📄 Documentado, sin implementar: uso de hilos/async para envío de correos — ver
->   `HILOS_Y_CONCURRENCIA.md` (guía completa + qué endpoints conviene tocar y cuáles no).
-> - **Migraciones SQL pendientes de correr en prod** (dev/qa ya están al día): 
->   `migration_verificacion_correo.sql`, `migration_habilitado_variantes.sql` (columna ya existía
->   en dev/qa, confirmar en prod primero con `DESCRIBE variantes` — puede que tampoco haga falta),
->   `migration_reset_password.sql`.
+    >   `HILOS_Y_CONCURRENCIA.md` (guía completa + qué endpoints conviene tocar y cuáles no).
+> - **Migraciones SQL pendientes de correr en prod** (dev/qa ya están al día):
+    >   `migration_verificacion_correo.sql`, `migration_habilitado_variantes.sql` (columna ya existía
+    >   en dev/qa, confirmar en prod primero con `DESCRIBE variantes` — puede que tampoco haga falta),
+    >   `migration_reset_password.sql`.
 > - Sueltos sin cerrar: confirmar migración `monto_dado` en BD de producción; respuesta del front
->   sobre si necesitan `tiendaUrl` desde el back (`GET /v1/negocio/contactos`) o usan `window.location.origin`;
->   decidir qué hacer con las 4 filas "Mochila Prada" duplicadas; BUG-CB-01 pendiente de corrección
->   manual en admin (imagen vinculada al varianteId equivocado).
+    >   sobre si necesitan `tiendaUrl` desde el back (`GET /v1/negocio/contactos`) o usan `window.location.origin`;
+    >   decidir qué hacer con las 4 filas "Mochila Prada" duplicadas; BUG-CB-01 pendiente de corrección
+    >   manual en admin (imagen vinculada al varianteId equivocado).
 > - **Dashboard (6) implementado 2026-07-02:** `GET /v1/dashboard/resumen` con ventas
->   hoy/mes, ganancia, gastos, pedidos pendientes de entregar, créditos activos, monto por cobrar,
->   productos con stock bajo. **Se excluyó "clientes nuevos este mes"** del plan original — `Cliente`
->   no tiene columna de fecha de registro, no hay forma de calcularlo sin agregarla (y solo contaría
->   desde que se agregue en adelante, no retroactivo). Avisar si se quiere agregar.
->   Detalle completo en `CAMBIOS_FRONT.md` → "Dashboard con métricas (2026-07-02)".
+    >   hoy/mes, ganancia, gastos, pedidos pendientes de entregar, créditos activos, monto por cobrar,
+    >   productos con stock bajo. **Se excluyó "clientes nuevos este mes"** del plan original — `Cliente`
+    >   no tiene columna de fecha de registro, no hay forma de calcularlo sin agregarla (y solo contaría
+    >   desde que se agregue en adelante, no retroactivo). Avisar si se quiere agregar.
+    >   Detalle completo en `CAMBIOS_FRONT.md` → "Dashboard con métricas (2026-07-02)".
 > - **Bug reportado 2026-07-02 — DIAGNOSTICADO, no es bug de código:** verificado en vivo contra
->   QA (`GET /v1/chatbot/buscar?q=Mochila`) — la búsqueda y paginación del chatbot funcionan bien,
->   devuelven `varianteId` distintos (117, 165, 213, 277 para "Mochila Prada"). El problema es que
->   esas 4 filas en la tabla `variantes` son **duplicados de datos**: mismo nombre, marca, precio,
->   sin talla/color que las distinga — por eso se ven como "el mismo producto". Además las 4 dan
->   error 500 al pedir sus imágenes (`variantes/v1/imagenes/{id}`), probablemente ninguna tiene
->   imagen real cargada. **Pendiente:** decidir qué hacer con las filas duplicadas (limpiar en admin
->   o pedir un script de limpieza) — no se tocó la BD, es una decisión del negocio, no técnica.
->   De paso se corrigieron 2 errores de documentación en `CAMBIOS_FRONT.md` (F-8): la URL tenía el
->   `/v1/` mal puesto, y decía "tomar el primer elemento" en vez de "el marcado como `principal`".
+    >   QA (`GET /v1/chatbot/buscar?q=Mochila`) — la búsqueda y paginación del chatbot funcionan bien,
+    >   devuelven `varianteId` distintos (117, 165, 213, 277 para "Mochila Prada"). El problema es que
+    >   esas 4 filas en la tabla `variantes` son **duplicados de datos**: mismo nombre, marca, precio,
+    >   sin talla/color que las distinga — por eso se ven como "el mismo producto". Además las 4 dan
+    >   error 500 al pedir sus imágenes (`variantes/v1/imagenes/{id}`), probablemente ninguna tiene
+    >   imagen real cargada. **Pendiente:** decidir qué hacer con las filas duplicadas (limpiar en admin
+    >   o pedir un script de limpieza) — no se tocó la BD, es una decisión del negocio, no técnica.
+    >   De paso se corrigieron 2 errores de documentación en `CAMBIOS_FRONT.md` (F-8): la URL tenía el
+    >   `/v1/` mal puesto, y decía "tomar el primer elemento" en vez de "el marcado como `principal`".
 > - **BUG-CB-01 corregido 2026-07-02 (causa real encontrada, no era dato de BD):** el prompt del
->   chatbot le decía a la IA que usara el NOMBRE del producto para buscar la imagen, incluso cuando
->   el producto ya se había identificado por código de barras — como el nombre se repite entre
->   productos distintos ("Mochila para mostrar" vs "Mochila Prada"), la búsqueda traía cualquiera
->   de los dos. Se corrigió el prompt para que use el código de barras (único) cuando esté
->   disponible en la conversación. Ver `BUGS_CHATBOT_BACK.md` para el detalle completo.
+    >   chatbot le decía a la IA que usara el NOMBRE del producto para buscar la imagen, incluso cuando
+    >   el producto ya se había identificado por código de barras — como el nombre se repite entre
+    >   productos distintos ("Mochila para mostrar" vs "Mochila Prada"), la búsqueda traía cualquiera
+    >   de los dos. Se corrigió el prompt para que use el código de barras (único) cuando esté
+    >   disponible en la conversación. Ver `BUGS_CHATBOT_BACK.md` para el detalle completo.
 > - **Filtros producto/variante por rol (2026-07-02, rediseñado 2026-07-06):** cliente normal ve
->   solo productos y variantes con stock>0 + habilitado + con al menos una imagen (sin UI de
->   filtros, es automático). Admin ve todo el catálogo con un filtro combinado en
->   `.../admin/filtrar`: `nombreOCodigo` (texto) + `conStock` + `conImagenes` + `habilitado`, los 4
->   opcionales e independientes, combinables con AND (antes era un solo enum de valor único que no
->   se podía combinar con nombre y no tenía opción de habilitado/deshabilitado). Ver
->   `CAMBIOS_FRONT.md` → "Cambio de contrato (2026-07-06): filtro admin combinado..." para el
->   contrato completo con ejemplos. De paso se corrigió un bug de caché en `VarianteServiceImpl`
->   que exponía a clientes normales resultados sin filtrar cacheados previamente por un admin.
+    >   solo productos y variantes con stock>0 + habilitado + con al menos una imagen (sin UI de
+    >   filtros, es automático). Admin ve todo el catálogo con un filtro combinado en
+    >   `.../admin/filtrar`: `nombreOCodigo` (texto) + `conStock` + `conImagenes` + `habilitado`, los 4
+    >   opcionales e independientes, combinables con AND (antes era un solo enum de valor único que no
+    >   se podía combinar con nombre y no tenía opción de habilitado/deshabilitado). Ver
+    >   `CAMBIOS_FRONT.md` → "Cambio de contrato (2026-07-06): filtro admin combinado..." para el
+    >   contrato completo con ejemplos. De paso se corrigió un bug de caché en `VarianteServiceImpl`
+    >   que exponía a clientes normales resultados sin filtrar cacheados previamente por un admin.
 > - **PENDIENTE (no bloquea nada, anotado para retomar):** definir fórmula de ganancia por
->   producto — se acordó usar markup sobre costo (`precioVenta = precioCosto × (1 + %ganancia)`).
->   Falta decidir: ¿se guarda el `%ganancia` como campo del producto (para poder mostrarlo/editarlo
->   directo), o se calcula al vuelo en un reporte (`(precioVenta - precioCosto) / precioCosto`) sin
->   guardar nada nuevo en BD? Ninguna de las dos está implementada todavía.
+    >   producto — se acordó usar markup sobre costo (`precioVenta = precioCosto × (1 + %ganancia)`).
+    >   Falta decidir: ¿se guarda el `%ganancia` como campo del producto (para poder mostrarlo/editarlo
+    >   directo), o se calcula al vuelo en un reporte (`(precioVenta - precioCosto) / precioCosto`) sin
+    >   guardar nada nuevo en BD? Ninguna de las dos está implementada todavía.
 > - **Mejora 12 — Correo/teléfono obligatorios + verificación de correo (2026-07-02):**
->   `Cliente.correoElectronico`/`numeroTelefonico` ahora obligatorios; nuevo flujo de código de 6
->   dígitos por correo (`POST /v1/clientes/{id}/enviar-codigo-verificacion` y `verificar-correo`)
->   que bloquea generar pedido (`savePedido`) y el envío automático de ticket por correo si el
->   cliente no está verificado (no aplica al correo manual del modal post-venta ni a venta directa
->   sin cuenta). `POST /v1/auth/registrar` ahora exige `email` (DTO nuevo `RegistroRequest`, separado
->   de `AuthRequest` para no romper `/auth/login`). Se decidió **no** usar Twilio/WhatsApp para
->   verificar el teléfono — sale muy caro (~$1.13 MXN por verificación vs ~$0.35 MXN por ticket
->   suelto) y el correo (gratis, ya con SMTP) cubre la necesidad real. Migración
->   `migration_verificacion_correo.sql` **ya corrida en dev y qa** (2026-07-02), **pendiente en
->   prod** para cuando se suba esa rama. Detalle completo para el front en `CAMBIOS_FRONT.md` →
->   "Verificación de correo del cliente (2026-07-02)" (4 subsecciones: obligatoriedad, flujo de
->   verificación, estado visible en búsqueda de clientes, endpoint de reset para pruebas).
+    >   `Cliente.correoElectronico`/`numeroTelefonico` ahora obligatorios; nuevo flujo de código de 6
+    >   dígitos por correo (`POST /v1/clientes/{id}/enviar-codigo-verificacion` y `verificar-correo`)
+    >   que bloquea generar pedido (`savePedido`) y el envío automático de ticket por correo si el
+    >   cliente no está verificado (no aplica al correo manual del modal post-venta ni a venta directa
+    >   sin cuenta). `POST /v1/auth/registrar` ahora exige `email` (DTO nuevo `RegistroRequest`, separado
+    >   de `AuthRequest` para no romper `/auth/login`). Se decidió **no** usar Twilio/WhatsApp para
+    >   verificar el teléfono — sale muy caro (~$1.13 MXN por verificación vs ~$0.35 MXN por ticket
+    >   suelto) y el correo (gratis, ya con SMTP) cubre la necesidad real. Migración
+    >   `migration_verificacion_correo.sql` **ya corrida en dev y qa** (2026-07-02), **pendiente en
+    >   prod** para cuando se suba esa rama. Detalle completo para el front en `CAMBIOS_FRONT.md` →
+    >   "Verificación de correo del cliente (2026-07-02)" (4 subsecciones: obligatoriedad, flujo de
+    >   verificación, estado visible en búsqueda de clientes, endpoint de reset para pruebas).
 > - **Rate-limit configurable, desactivado en QA (2026-07-02):** nueva propiedad
->   `seguridad.rate-limit-habilitado` (default `true`) controla los 3 bloqueos por IP/usuario de
->   `/auth/login` y `/auth/registrar`. Se puso en `false` solo en `application-qa.yml` para no
->   trabarse en pruebas manuales repetidas — dev y prod siguen protegidos (no tienen la propiedad,
->   toman el default `true`). No aplica al bloqueo de IP del chatbot, que es un mecanismo aparte
->   (`ChatbotController`/`blockService`) y sigue activo en todos los ambientes.
+    >   `seguridad.rate-limit-habilitado` (default `true`) controla los 3 bloqueos por IP/usuario de
+    >   `/auth/login` y `/auth/registrar`. Se puso en `false` solo en `application-qa.yml` para no
+    >   trabarse en pruebas manuales repetidas — dev y prod siguen protegidos (no tienen la propiedad,
+    >   toman el default `true`). No aplica al bloqueo de IP del chatbot, que es un mecanismo aparte
+    >   (`ChatbotController`/`blockService`) y sigue activo en todos los ambientes.
 > - **Bug reportado 2026-07-02 — carrito con datos de otra cuenta tras logout/login — ES DEL
->   FRONT, ya corregido por el front:** se confirmó que el back no tiene ningún concepto de
->   "carrito" (no hay entidad/tabla/controlador — el pedido se arma completo en un solo request a
->   `savePedido`). El carrito vivía en `localStorage`/`sessionStorage` del navegador sin limpiarse
->   al cerrar sesión (mismo patrón que el bug ya resuelto de `sesionId` del chat). El front ya lo
->   solucionó, no requirió cambios en este repo.
+    >   FRONT, ya corregido por el front:** se confirmó que el back no tiene ningún concepto de
+    >   "carrito" (no hay entidad/tabla/controlador — el pedido se arma completo en un solo request a
+    >   `savePedido`). El carrito vivía en `localStorage`/`sessionStorage` del navegador sin limpiarse
+    >   al cerrar sesión (mismo patrón que el bug ya resuelto de `sesionId` del chat). El front ya lo
+    >   solucionó, no requirió cambios en este repo.
 > - **PENDIENTE (2026-07-03, sin arrancar) — usar hilos para envíos de correo/notificaciones:**
->   se detectó que `EmailService` (tickets, códigos de verificación, reset de contraseña) corre
->   síncrono en el hilo del request — si el SMTP tarda, el usuario espera hasta el timeout (5s en
->   QA). Guía completa de cómo implementarlo (conceptos de hilos, `@Async`, `CompletableFuture`,
->   virtual threads) y auditoría de qué endpoints conviene tocar (y cuáles NO) en
->   `HILOS_Y_CONCURRENCIA.md`. Nada implementado todavía, solo documentado para retomar.
+    >   se detectó que `EmailService` (tickets, códigos de verificación, reset de contraseña) corre
+    >   síncrono en el hilo del request — si el SMTP tarda, el usuario espera hasta el timeout (5s en
+    >   QA). Guía completa de cómo implementarlo (conceptos de hilos, `@Async`, `CompletableFuture`,
+    >   virtual threads) y auditoría de qué endpoints conviene tocar (y cuáles NO) en
+    >   `HILOS_Y_CONCURRENCIA.md`. Nada implementado todavía, solo documentado para retomar.
 > - **Checkpoint 2026-07-06 — estado del FRONT:**
->   - ✅ Implementados (front): F-1/F-2 tickets+correo, F-5 reportes, F-6 dashboard, F-8 chatbot cards, F-9/F-10/F-11 QRs.
+    >   - ✅ Implementados (front): F-1/F-2 tickets+correo, F-5 reportes, F-6 dashboard, F-8 chatbot cards, F-9/F-10/F-11 QRs.
 >   - ⚠️ Requiere reimplementación: F-14 (filtro admin — contrato cambió, `FiltroCatalogoEnum` eliminado del back).
 >   - ⏳ Parciales: F-15 (verificación cliente — form/badge listo, falta interceptar 400 en `savePedido`), F-16 (campo `habilitado` en DTOs listo, falta UI batch), F-17+F-18 (forzado en login listo, falta pantalla "olvidé" + formulario en perfil).
 >   - ⏳ No empezados: F-4 (stock bajo), F-7 (devoluciones).
 >   - ⚠️ NO EMPEZAR: F-19 (back sin compilar/probar). `clientes-buscar` carga paginada en init. Módulo Promociones implementado en el front de forma optimista — espera deploy del back en QA.
 > - **Checkpoint 2026-07-06 — sesión de bugs reportados en QA (todo en `dev`/`qa`, falta `main`):**
->   - **Bug real de `habilitar-lote` de variantes (mejora 13) encontrado:** la BD sí se actualizaba
->     bien (confirmado con diagnóstico de `flush()`+`clear()`+relectura); el problema real era que
->     `VarianteResumenDto`/`VarianteDto` (usados por las búsquedas/listados de variantes) nunca
->     traían el campo `habilitado` — a diferencia de `ProductoDTO`, que sí lo trae. El front no
->     tenía forma de reflejar el estado real aunque la BD estuviera correcta. Ya se agregó el
->     campo a ambos DTOs. Ver `CAMBIOS_FRONT.md`.
+    >   - **Bug real de `habilitar-lote` de variantes (mejora 13) encontrado:** la BD sí se actualizaba
+          >     bien (confirmado con diagnóstico de `flush()`+`clear()`+relectura); el problema real era que
+          >     `VarianteResumenDto`/`VarianteDto` (usados por las búsquedas/listados de variantes) nunca
+          >     traían el campo `habilitado` — a diferencia de `ProductoDTO`, que sí lo trae. El front no
+          >     tenía forma de reflejar el estado real aunque la BD estuviera correcta. Ya se agregó el
+          >     campo a ambos DTOs. Ver `CAMBIOS_FRONT.md`.
 >   - **Búsqueda de cliente por nombre completo no encontraba resultados:** la query buscaba
->     `nombrePersona`/`apeidoPaterno`/`apeidoMaterno` por separado (OR); buscar "Abel" funcionaba
->     pero "Abel Tiburcio" (nombre y apellido juntos) no. Se corrigió concatenando los 3 campos
->     antes de buscar.
+      >     `nombrePersona`/`apeidoPaterno`/`apeidoMaterno` por separado (OR); buscar "Abel" funcionaba
+      >     pero "Abel Tiburcio" (nombre y apellido juntos) no. Se corrigió concatenando los 3 campos
+      >     antes de buscar.
 >   - **Hallazgo importante — errores de validación de negocio devolvían siempre `500`:** el
->     manejador global de excepciones no tenía caso para `RuntimeException` simple (así están
->     escritas casi todas las validaciones de negocio: stock insuficiente, precio inválido,
->     promoción vencida, etc.), así que cualquiera de esas validaciones cae en el catch-all de
->     `Exception.class` y siempre devolvía `"Error interno del servidor"` con `500`, ocultando el
->     mensaje real. Ahora esas validaciones devuelven `400` con el mensaje específico. Se detectó
->     al investigar un 500 real en `POST /v1/ventas/save` con una línea de promoción con
->     `cantidad: null` — también se agregó validación explícita de `cantidad` (obligatoria, > 0)
->     en venta directa y `savePedido`.
+      >     manejador global de excepciones no tenía caso para `RuntimeException` simple (así están
+      >     escritas casi todas las validaciones de negocio: stock insuficiente, precio inválido,
+      >     promoción vencida, etc.), así que cualquiera de esas validaciones cae en el catch-all de
+      >     `Exception.class` y siempre devolvía `"Error interno del servidor"` con `500`, ocultando el
+      >     mensaje real. Ahora esas validaciones devuelven `400` con el mensaje específico. Se detectó
+      >     al investigar un 500 real en `POST /v1/ventas/save` con una línea de promoción con
+      >     `cantidad: null` — también se agregó validación explícita de `cantidad` (obligatoria, > 0)
+      >     en venta directa y `savePedido`.
 >   - **Filtro admin de productos/variantes rediseñado** — ver nota de mejora 11 arriba y
->     `CAMBIOS_FRONT.md` para el contrato nuevo (`nombreOCodigo`+`conStock`+`conImagenes`+
->     `habilitado`, todos opcionales y combinables). Reemplaza `FiltroCatalogoEnum`.
+      >     `CAMBIOS_FRONT.md` para el contrato nuevo (`nombreOCodigo`+`conStock`+`conImagenes`+
+      >     `habilitado`, todos opcionales y combinables). Reemplaza `FiltroCatalogoEnum`.
 >   - **Fix de paginación:** `ProductosControllerImpl` no tenía `page`/`size` con default (a
->     diferencia de `VarianteController`) — el front tenía que mandarlos siempre o el endpoint
->     rechazaba la petición. Ya tiene default `1`/`10` igual que variantes.
+      >     diferencia de `VarianteController`) — el front tenía que mandarlos siempre o el endpoint
+      >     rechazaba la petición. Ya tiene default `1`/`10` igual que variantes.
 
 > **Decisión 2026-07-01 — WhatsApp EN PAUSA:** se descartó implementar el envío del ticket por
 > WhatsApp al cliente. CallMeBot (gratis, ya programado en el back) solo le avisa al negocio, no
@@ -907,12 +907,12 @@ dependencia.
    `correoVerificado`) dejaría pasar pedidos con datos de cliente incompletos.
 4. **Solución propuesta (a validar):** agregar un campo booleano nuevo a `Cliente` (ej.
    `datosCompletos`, nombre por definir) que:
-   - Nace en `false` cuando el `Cliente` se auto-crea solo con correo (desde el registro).
-   - Pasa a `true` cuando se capturan/actualizan los campos obligatorios: nombre, apellido
-     paterno, teléfono (a definir la lista exacta y si aplica también dirección).
-   - `PedidoServiceImpl.savePedido` valida **ambas cosas**: `correoVerificado == true` Y
-     `datosCompletos == true` (mensaje de error distinto para cada caso, para que el front sepa
-     si debe pedir "verifica tu correo" o "completa tus datos").
+    - Nace en `false` cuando el `Cliente` se auto-crea solo con correo (desde el registro).
+    - Pasa a `true` cuando se capturan/actualizan los campos obligatorios: nombre, apellido
+      paterno, teléfono (a definir la lista exacta y si aplica también dirección).
+    - `PedidoServiceImpl.savePedido` valida **ambas cosas**: `correoVerificado == true` Y
+      `datosCompletos == true` (mensaje de error distinto para cada caso, para que el front sepa
+      si debe pedir "verifica tu correo" o "completa tus datos").
 
 ### Flujo detallado aclarado por el usuario (2026-07-03, segunda vuelta)
 
@@ -930,24 +930,24 @@ Esto reemplaza/precisa el punto 1-2 de la propuesta original — es el flujo exa
    lo tiene que volver a escribir ni verificar en este paso.
 4. **REVISADO 2026-07-03, cuarta vuelta (versión definitiva, reemplaza la anterior) — si el
    cliente edita sus datos y cambia el correo:**
-   - Los **demás campos del formulario** (nombre, apellido paterno, teléfono, etc.) se guardan/
-     actualizan normalmente, sin condición — eso nunca se bloquea.
-   - El **correo específicamente** no se aplica de inmediato: se dispara el flujo de verificación
-     (enviar código al correo nuevo).
-     - Si el cliente **completa la verificación** → el correo nuevo queda guardado en
-       `Cliente.correoElectronico`, sigue verificado, y (por la sincronización decidida en el
-       punto 2 de abajo) se actualiza también `Usuario.email` al mismo valor.
-     - Si el cliente **no completa la verificación** (abandona/cancela) → el correo **regresa al
-       valor anterior** (el mismo que ya tenía `Usuario`, sigue sincronizado y verificado) — el
-       intento de correo nuevo se descarta, sin dejar a el cliente con un correo sin verificar ni
-       bloquear nada más.
-   - Con esto YA NO hace falta resetear `correoVerificado = false` ni depender del bloqueo de
-     `savePedido` para este caso — el invariante "correo de Cliente = correo de Usuario, siempre
-     verificado" nunca se rompe, porque el cambio de correo solo se confirma cuando ya está
-     verificado.
-   - **Sin cerrar:** el usuario mencionó una excepción — *"a menos que haya cambios del punto
-     uno"* — no quedó claro a qué se refiere exactamente (¿el primer login forzado del punto 1?
-     ¿otra cosa?). Preguntar de nuevo antes de implementar este paso.
+    - Los **demás campos del formulario** (nombre, apellido paterno, teléfono, etc.) se guardan/
+      actualizan normalmente, sin condición — eso nunca se bloquea.
+    - El **correo específicamente** no se aplica de inmediato: se dispara el flujo de verificación
+      (enviar código al correo nuevo).
+        - Si el cliente **completa la verificación** → el correo nuevo queda guardado en
+          `Cliente.correoElectronico`, sigue verificado, y (por la sincronización decidida en el
+          punto 2 de abajo) se actualiza también `Usuario.email` al mismo valor.
+        - Si el cliente **no completa la verificación** (abandona/cancela) → el correo **regresa al
+          valor anterior** (el mismo que ya tenía `Usuario`, sigue sincronizado y verificado) — el
+          intento de correo nuevo se descarta, sin dejar a el cliente con un correo sin verificar ni
+          bloquear nada más.
+    - Con esto YA NO hace falta resetear `correoVerificado = false` ni depender del bloqueo de
+      `savePedido` para este caso — el invariante "correo de Cliente = correo de Usuario, siempre
+      verificado" nunca se rompe, porque el cambio de correo solo se confirma cuando ya está
+      verificado.
+    - **Sin cerrar:** el usuario mencionó una excepción — *"a menos que haya cambios del punto
+      uno"* — no quedó claro a qué se refiere exactamente (¿el primer login forzado del punto 1?
+      ¿otra cosa?). Preguntar de nuevo antes de implementar este paso.
 
 ### DDL ya preparado, sin correr todavía
 
@@ -1118,13 +1118,13 @@ verificado (y recién ahí se le permite el login, punto 1).
 9. Si el correo que llega es distinto al que ya tenía, el back dispara el aviso de verificación —
    el front debe mostrar un modal tipo *"Has cambiado tu correo, es necesario validarlo. ¿Quieres
    verificarlo ahora?"*.
-   - **Si acepta:** mismo flujo de código de 6 dígitos ya conocido (enviar código → escribir
-     código → verificar). Al terminar, el correo nuevo queda guardado y verificado, y se
-     sincroniza también en `Usuario.email`.
-   - **Si dice que no:** no pasa nada malo — el resto del formulario ya se guardó (paso 8), y el
-     campo correo en la respuesta del back **vuelve a traer el valor anterior** (el mismo que
-     tiene `Usuario`). El front debe refrescar el campo correo en pantalla con ese valor
-     devuelto, no dejar el que el usuario había escrito y canceló.
+    - **Si acepta:** mismo flujo de código de 6 dígitos ya conocido (enviar código → escribir
+      código → verificar). Al terminar, el correo nuevo queda guardado y verificado, y se
+      sincroniza también en `Usuario.email`.
+    - **Si dice que no:** no pasa nada malo — el resto del formulario ya se guardó (paso 8), y el
+      campo correo en la respuesta del back **vuelve a traer el valor anterior** (el mismo que
+      tiene `Usuario`). El front debe refrescar el campo correo en pantalla con ese valor
+      devuelto, no dejar el que el usuario había escrito y canceló.
 
 ### D) Usuarios que ya existían antes de esta mejora
 
@@ -1289,19 +1289,12 @@ como hoy (el front es responsable del precio, sin validación de por medio)?
 
 ---
 
-### 🔴 URGENTE — Bloquean funcionalidad ya desplegada
+### ✅ RESUELTO 2026-07-07 — Bloqueaban funcionalidad ya desplegada
 
-**1. Quitar el JSON de diagnóstico del response de `PUT variantes/v1/admin/habilitar-lote`**
-
-El response de ese endpoint actualmente devuelve en `data` un string con JSON concatenado:
-```
-"Variantes deshabilitadas correctamente. {\"idsEnviados\":[...],...}"
-```
-Eso era temporal para diagnosticar el bug. El bug ya está resuelto (la BD sí se actualiza). Hay que quitar ese diagnóstico y volver al mensaje limpio:
-```
-"Variantes deshabilitadas correctamente."
-```
-Mismo para `"Variantes habilitadas correctamente."`. Mientras quede así, cualquier comparación de string en el front falla.
+**1. Quitar el JSON de diagnóstico del response de `PUT variantes/v1/admin/habilitar-lote` — HECHO.**
+`data` vuelve al mensaje limpio (`"Variantes deshabilitadas correctamente."` /
+`"Variantes habilitadas correctamente."`); el diagnóstico ahora solo va a `log.debug` del servidor.
+Ver `CAMBIOS_FRONT.md` → "RESUELTO (2026-07-07): diagnóstico temporal quitado de `habilitar-lote`".
 
 ---
 
@@ -1315,10 +1308,34 @@ Estas migraciones ya están corridas en `dev` y `qa` pero **faltan en `prod`** (
 | `migration_habilitado_variantes.sql` | Campo `habilitado` en `variantes` (default `'1'`) | ✅ dev/qa — ⏳ prod (verificar con `DESCRIBE variantes`) |
 | `migration_reset_password.sql` | Campos `passwordTemporal` en `usuario_modificacion` | ✅ dev/qa — ⏳ prod |
 | `migration_password_temporal.sql` | Campo `debeCambiarPassword` en `usuario_modificacion` | Verificar si ya corrió |
-| `migration_promociones.sql` | Tablas `promocion` / `promocion_detalle` | ⏳ **FALTA EN QA** — el back está en `dev` pero sin migrar en QA |
+| `migration_promociones.sql` | Tablas `promocion` / `promocion_detalle` | ✅ **corrida en QA (2026-07-07, confirmado por el usuario)** — falta en prod |
 | `monto_dado` en `abono_pedido` | Campo para registrar billete que dio el cliente | ⏳ Pendiente — el front ya lo manda, el back no lo persiste |
 
-**Acción concreta:** correr `migration_promociones.sql` en QA para poder probar el módulo de promociones. El front ya está listo.
+---
+
+### ✅ Bug 2026-07-07 — no se puede confirmar venta directa con una promoción en el carrito (RESUELTO)
+
+**Síntoma reportado por el usuario:** con una variante normal en el carrito, los pagos funcionan
+igual que siempre. En cuanto el carrito trae una promoción, **ninguna forma de pago funciona** —
+ni apartado/ir pagando (esto es esperado) ni las opciones de pago directo (esto NO era esperado).
+Error mostrado: *"La cantidad es obligatoria y debe ser mayor a 0 para la variante id X"*.
+
+**Causa raíz confirmada 2026-07-07:** `PromocionDetalleActivaDto` (respuesta de `GET
+/v1/promociones/activas`) no incluía el campo `cantidad`. El front armaba la solicitud de venta así:
+```typescript
+cantidad: d.cantidad * p.cantidadCombos  // d.cantidad era undefined
+```
+`undefined * 1 = NaN` → `JSON.stringify` lo serializa como `null` → el back recibe `cantidad: null`
+→ `VentaServiceImpl` valida `getCantidad() == null || getCantidad() <= 0` → arroja el error.
+
+**Fix aplicado 2026-07-07:**
+1. `PromocionDetalleActivaDto.java` — se agregó el campo `private Integer cantidad`.
+2. `PromocionServiceImpl.toDetalleActivaDto()` — se asigna `dto.setCantidad(detalle.getCantidad())`.
+
+Ver `CAMBIOS_FRONT.md` → "Fix (2026-07-07): campo `cantidad` en detalles de promoción activa".
+
+**También en esta sesión:** se agregó campo `existencias` (stock) al endpoint admin.
+Ver `CAMBIOS_FRONT.md` → "Nuevo (2026-07-07): existencias por variante en `GET /admin`".
 
 ---
 
@@ -1373,3 +1390,191 @@ El back no siempre sabe qué ya tiene el front. Resumen:
 | Badge habilitado + batch (F-16) | ⏳ Parcial — falta UI de checkboxes |
 | Olvidé contraseña / cambiar contraseña (F-17/F-18) | ⏳ Pendiente — ¿endpoints en QA? |
 | Flujo registro unificado (F-19) | ⚠️ NO empezar hasta que back confirme QA |
+
+---
+
+## 16. Independizar una variante en su propio producto (BACK IMPLEMENTADO, 2026-07-07)
+
+> **Estado: back implementado en `dev` (local, sin subir todavía) siguiendo el contrato de abajo
+> tal cual. No hay Maven disponible en este entorno para compilar/correr pruebas — falta
+> verificar compilación antes de subir a `dev`/`qa`. Front puede empezar a maquetar el flujo con
+> este documento como contrato, el endpoint responde exactamente lo descrito abajo.**
+
+**Archivos nuevos/modificados:**
+- `dto/variantes/IndependizarVarianteRequestDto.java` (nuevo) — request.
+- `models/variantes/IndependizarVarianteResponseDto.java` (nuevo) — response.
+- `service/api/IVarianteService.java` — método `independizarVariante` agregado a la interfaz.
+- `service/VarianteServiceImpl.java` — implementación (`independizarVariante`), inyecta
+  `ICodigoBarrasRepository` nuevo (para crear el código de barras del producto nuevo).
+- `controller/VarianteController.java` — `POST /variantes/v1/{varianteId}/independizar`.
+
+### Contexto / problema real
+
+Hoy se puede crear 1 producto con varias variantes (ej. 3 variantes para 3 unidades de stock).
+Cada variante va acumulando su propia info con el tiempo (talla, color, imagen, stock propio),
+pero **una variante no tiene código de barras ni precio propios** — siempre heredan los del
+producto padre (`Variantes.java` no tiene esos campos; `Producto.codigoBarras` es
+`@OneToOne(unique=true)`, un único código por producto). Cuando una de esas variantes en realidad
+merece ser su propio producto (con su propio código de barras para venderse/escanearse aparte), hoy
+no hay forma de "graduarla" — solo se puede editar la variante dentro del mismo producto padre.
+
+### Decisiones confirmadas con el usuario (2026-07-07)
+
+1. **La Variante no se borra ni se recrea.** Se reasigna (`UPDATE variantes SET producto_id = ?`)
+   al producto nuevo. Conserva intactas sus imágenes (`VarianteImagen`), su talla, color, stock,
+   etc. — no hay que copiar/recrear nada de la variante en sí.
+2. **Precio del producto nuevo:** se precarga en el front con `precioCosto`/`precioVenta`/
+   `precioRebaja` del producto **origen** (de donde viene la variante), pero el admin puede
+   editarlo antes de guardar. El back simplemente recibe lo que venga en el body, igual que
+   cualquier creación de producto normal.
+3. **Si era la última variante del producto origen:** no pasa nada especial. El producto origen
+   se queda con el stock que le sobre (puede llegar a 0) y sin variantes — sigue existiendo como
+   producto normal, igual que cualquier producto sin variantes hoy.
+4. **Todo en una sola transacción (`@Transactional`)** — crear producto nuevo + copiar imagen +
+   descontar stock del producto origen + reasignar la variante deben pasar todos o ninguno.
+5. **Identificación:** la variante a independizar se identifica por su `id` propio (`varianteId`),
+   igual que cualquier otro endpoint de variantes ya existente.
+6. **Solo ADMIN** — ya cubierto por el matcher genérico existente en `SecurityConfig.java:106`
+   (`/variantes/**` → `hasRole("ADMIN")`), no requiere config nueva.
+7. **Motivo real de uso (2026-07-07, segunda vuelta):** el caso típico es que el admin se
+   equivocó al capturar el código de barras de un producto que en realidad debía ser
+   independiente — por eso la variante ya trae toda su info correcta (talla, color, imagen,
+   stock) y solo hace falta corregir el código de barras. Aun así, el modal sigue mostrando el
+   formulario completo de "crear producto" prellenado (no solo un campo de código de barras) por
+   si hace falta corregir algo más al vuelo.
+8. **CONFIRMADO — no se copia+elimina la variante, se reasigna (ver punto 1).** Se evaluó la
+   alternativa de copiar los datos de la variante a un producto nuevo y borrar la variante
+   original para "regresar" el stock al producto origen, pero **no hace falta**: reasignar el
+   `producto_id` de la variante logra el mismo resultado sin duplicar datos ni arriesgar perder
+   imágenes/talla/color en una recreación manual. Ejemplo numérico: Producto A stock=3 con 3
+   variantes stock=1 c/u (cuadra 3=1+1+1) → se independiza la variante #2 → Producto A stock=2 con
+   2 variantes restantes stock=1 c/u (cuadra 2=1+1) → Producto B nace con stock=1 y la variante #2
+   reasignada con stock=1 (cuadra 1=1). El stock nunca queda duplicado ni descuadrado.
+9. **Orden de validación dentro de la transacción:** primero se valida que el código de barras
+   nuevo no exista ya en otro producto — si existe, se corta ahí mismo (mensaje de error, sin
+   tocar stock, sin reasignar la variante, sin crear nada). Solo si el código es válido continúa
+   con crear el producto, copiar imagen, descontar stock y reasignar la variante.
+
+### Decisiones de diseño — TODAS CONFIRMADAS 2026-07-07
+
+- **El stock del producto nuevo NO es editable por el admin** — se fija automáticamente al
+  `variante.getStock()` que se está moviendo, y esa misma cantidad se resta del `stock` del
+  producto origen. El stock nunca se "borra" ni se "crea de la nada": es solo un número (columna
+  `stock`) que se resta en un lado y se asigna en el otro. **Ejemplo paso a paso confirmado:**
+    1. Producto A (origen) tiene `stock=3`, con 3 variantes de `stock=1` cada una (3 = 1+1+1).
+    2. Se independiza la variante #2 (`stock=1`).
+    3. Producto A pasa a `stock=2` (se le resta el 1 de la variante movida). Le quedan las
+       variantes #1 y #3, ambas `stock=1` → sigue cuadrando (2 = 1+1).
+    4. Producto B (nuevo) nace con `stock=1` — el mismo número que traía la variante, no uno
+       inventado.
+    5. La variante #2 (con su `stock=1` intacto) se reasigna a Producto B → también cuadra (1=1).
+  En ningún punto el stock queda duplicado ni descuadrado.
+- **Código de barras nuevo duplicado:** si el código que ingresa el admin en el modal ya
+  pertenece a otro producto existente, el back **rechaza con error** (no reactiva/reutiliza ese
+  producto como hace `guardarProducto` en el alta normal) — evita fusionar por accidente esta
+  variante con un producto no relacionado. Esta validación va **primero**, antes de tocar stock o
+  reasignar la variante — si falla, no se hace ningún cambio.
+- **Imagen de la variante → producto nuevo:** si la variante ya tiene imagen(es) propias
+  (`VarianteImagen`), se **copian** (no se mueven) como `ProductoImagen` del producto nuevo — la
+  variante conserva las suyas intactas (mismo patrón de "copiar, no mover" ya usado en
+  `compartirImagenesVarianteDto` y en el fix de hoy de `inicializarDesdeProducto`).
+
+### Contrato (ya implementado en el back, tal cual)
+
+```
+POST /variantes/v1/{varianteId}/independizar
+Authorization: Bearer <token admin>
+Content-Type: application/json
+```
+
+**Request** — mismo shape que crear un producto normal (`ProductoDetalle`), más el código de
+barras nuevo obligatorio. El front prellena `nombre`/`descripcion`/`marca`/`color`/`contenido`
+con los datos de la variante, y `precioCosto`/`precioVenta`/`precioRebaja`/`palabraClaveId` con
+los del producto origen — todo editable antes de enviar:
+
+```json
+{
+  "nombre": "string, requerido",
+  "descripcion": "string",
+  "marca": "string",
+  "color": "string",
+  "contenido": "string",
+  "precioCosto": 0.0,
+  "precioVenta": 0.0,
+  "precioRebaja": 0.0,
+  "palabraClaveId": 1,
+  "codigoBarras": "string, requerido, debe ser nuevo (no existir ya en otro producto)",
+  "imagenPrincipalId": 123
+}
+```
+- `imagenPrincipalId` es opcional — solo aplica si la variante tenía más de una imagen y el admin
+  quiere elegir cuál queda como principal del producto nuevo. Si la variante solo tenía 1 imagen,
+  el back la usa automáticamente sin necesidad de mandar este campo.
+- **No se manda `stock`** — se calcula automáticamente del `stock` de la variante (ver decisión
+  de diseño arriba).
+
+**Response (éxito, 201):**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "productoNuevoId": 456,
+    "codigoBarras": "cod-nuevo-123",
+    "stockProductoOrigenRestante": 2
+  }
+}
+```
+
+**Errores esperados:**
+| Caso | HTTP | Mensaje |
+|---|---|---|
+| `varianteId` no existe | `404` | `"No existe la variante con id: {id}"` |
+| Código de barras vacío/no enviado | `404` | `"El codigo de barras es requerido"` |
+| Código de barras ya usado por otro producto | `409` | `"El codigo de barras {codigo} ya esta en uso por otro producto"` |
+
+### Lo que necesita el front — flujo paso a paso
+
+**Caso de uso real:** el admin se equivocó de código de barras al crear un producto con variantes,
+o simplemente decide que una variante ya merece ser su propio producto. La variante ya tiene toda
+su info correcta (talla, color, imagen, stock) — lo único que casi siempre cambia es el código de
+barras, pero el form completo queda editable por si hace falta ajustar algo más.
+
+1. **Botón "Independizar"** en el detalle de una variante (solo visible/habilitado para admin —
+   igual que el resto de acciones de escritura de variantes, ya restringidas a `ROLE_ADMIN`).
+2. **Al hacer click**, abrir el mismo formulario que se usa para "crear producto", pero
+   **prellenado** con esta prioridad por campo (implementación 100% del front, el back solo
+   recibe lo que venga en el body, sin importar de dónde lo sacó el front):
+
+   | Campo | Prioridad 1 | Si viene null/vacío, cae a |
+   |---|---|---|
+   | `nombre` | — | **Producto origen** (único lugar donde existe, la variante no tiene `nombre`) |
+   | `descripcion` | Variante | Producto origen |
+   | `marca` | Variante | Producto origen |
+   | `color` | Variante | Producto origen |
+   | `contenido` | Variante (`contenidoNeto`) | Producto origen (`contenido`) |
+   | `precioCosto`/`precioVenta`/`precioRebaja` | — | Producto origen (la variante no tiene precio propio) |
+   | `palabraClaveId` | Variante | Producto origen |
+   | `codigoBarras` | — | **Siempre vacío** — es el dato nuevo que captura el admin |
+
+   En el caso típico (la variante nunca sobreescribió nada distinto al producto), el modal termina
+   mostrando todo idéntico al producto origen y solo el código de barras en blanco. Todo es
+   editable — el admin puede corregir cualquier campo antes de confirmar, no solo el código.
+   - **El campo `stock` NO se muestra como editable** — no se manda en el body, el back lo calcula
+     solo (ver mecanismo de stock arriba). Si el front quiere mostrarlo de forma informativa
+     (no editable), usar el `stock` actual de la variante.
+3. **Campo obligatorio adicional: código de barras nuevo** — debe ser distinto al del producto
+   origen. Validar en el front que no venga vacío, pero la validación real de "no duplicado" la
+   hace el back.
+4. **Al confirmar**, llamar `POST /variantes/v1/{varianteId}/independizar` con el body descrito
+   arriba.
+5. **Si el back responde 409/400 por código duplicado**, mostrar el mensaje tal cual (ya viene
+   listo para el usuario: `"El codigo de barras {codigo} ya esta en uso por otro producto"`) y
+   dejar el formulario abierto para que el admin corrija el código — no se perdió nada porque el
+   back no tocó ni stock ni la variante en ese caso.
+6. **Tras éxito (201):**
+   - Refrescar la vista del producto origen — su `stock` bajó (`data.stockProductoOrigenRestante`
+     ya viene en la respuesta, no hace falta volver a pedir el producto completo solo para eso).
+   - Refrescar la lista de variantes del producto origen — la variante independizada ya no debe
+     aparecer ahí.
+   - Navegar o mostrar el producto nuevo creado (`data.productoNuevoId` + `data.codigoBarras`).

@@ -306,9 +306,9 @@ export class DetalleVarianteComponent implements OnInit {
           color:         v.color ?? p?.color ?? '',
           contenido:     v.contenidoNeto ?? p?.contenido ?? '',
           precioCosto:   p?.precioCosto ?? 0,
-          precioVenta:   v.precio ?? p?.precioVenta ?? 0,
+          precioVenta:   p?.precioVenta ?? v.precio ?? 0,
           precioRebaja:  p?.precioRebaja ?? 0,
-          palabraClaveId: p?.palabraClave?.id ?? null,
+          palabraClaveId: (v as any).palabraClave?.id ?? p?.palabraClave?.id ?? null,
           codigoBarras:  '',
         };
         this.cargandoIndependizar = false;

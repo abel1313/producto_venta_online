@@ -326,10 +326,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         <input id="swal-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:160px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #6366f1;border-radius:8px;outline:none">
+                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;outline:none">
         <div id="swal-resend" style="margin-top:12px;font-size:0.85rem;color:#64748b">
           ¿No llegó?
-          <span id="swal-resend-btn" style="color:#4f46e5;cursor:pointer;text-decoration:underline">
+          <span id="swal-resend-btn" style="color:#B08A4E;cursor:pointer;text-decoration:underline">
             Reenviar código
           </span>
         </div>
@@ -337,7 +337,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4f46e5',
+      confirmButtonColor: '#B08A4E',
       didOpen: () => {
         const btn = document.getElementById('swal-resend-btn');
         if (btn) {
@@ -351,33 +351,30 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
           });
         }
       },
-      preConfirm: () => {
+      preConfirm: async () => {
         const codigo = (document.getElementById('swal-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) {
           Swal.showValidationMessage('Ingresa los 6 dígitos del código');
           return false;
         }
-        return codigo;
+        try {
+          await this.clienteService.verificarCorreo(clienteId, codigo).toPromise();
+          return true;
+        } catch (err: any) {
+          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Código incorrecto o expirado.';
+          Swal.showValidationMessage(msg);
+          return false;
+        }
       }
     }).then(result => {
-      if (!result.isConfirmed || !result.value) return;
-      const codigo: string = result.value;
-
-      this.clienteService.verificarCorreo(clienteId, codigo).subscribe({
-        next: () => {
-          Swal.fire({
-            icon: 'success',
-            title: '¡Correo verificado!',
-            text: 'Ahora generaremos tu pedido.',
-            timer: 1800,
-            showConfirmButton: false
-          }).then(() => this.armarYConfirmar(clienteId));
-        },
-        error: (err2) => {
-          const msg2 = err2?.error?.mensaje ?? err2?.error?.message ?? 'Código incorrecto o expirado.';
-          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg2 });
-        }
-      });
+      if (!result.isConfirmed) return;
+      Swal.fire({
+        icon: 'success',
+        title: '¡Correo verificado!',
+        text: 'Ahora generaremos tu pedido.',
+        timer: 1800,
+        showConfirmButton: false
+      }).then(() => this.armarYConfirmar(clienteId));
     });
   }
 

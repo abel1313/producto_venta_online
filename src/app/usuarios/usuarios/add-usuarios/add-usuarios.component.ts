@@ -282,26 +282,25 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      preConfirm: () => {
+      preConfirm: async () => {
         const codigo = (document.getElementById('swal-codigo-admin') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) {
           Swal.showValidationMessage('Ingresa los 6 dígitos del código');
           return false;
         }
-        return codigo;
-      }
-    }).then(result => {
-      if (!result.isConfirmed || !result.value) return;
-      this.auth.verificarCorreoUsuario(this.updateUser.username, result.value as string).subscribe({
-        next: () => {
-          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue verificado correctamente.` });
-        },
-        error: (err: any) => {
+        try {
+          await this.auth.verificarCorreoUsuario(this.updateUser.username, codigo).toPromise();
+          return true;
+        } catch (err: any) {
           const raw = err?.error;
           const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
-          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
+          Swal.showValidationMessage(msg);
+          return false;
         }
-      });
+      }
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue verificado correctamente.` });
     });
   }
 

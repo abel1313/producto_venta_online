@@ -26,6 +26,7 @@ export class AddUsuariosComponent implements OnInit {
   emailOriginal        = '';
   codigoPendiente      = false;
   correoNuevoPendiente = '';
+  private skAdmin(): string { return `cambio_correo_admin_${this.updateUser.id ?? 0}`; }
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -76,18 +77,26 @@ export class AddUsuariosComponent implements OnInit {
         rol: this.updateUser.rol
       });
 
-this.formRegistro.get('password')?.clearValidators();
-this.formRegistro.get('confirmPassword')?.clearValidators();
+      this.formRegistro.get('password')?.clearValidators();
+      this.formRegistro.get('confirmPassword')?.clearValidators();
+      this.formRegistro.get('password')?.updateValueAndValidity({ emitEvent: false });
+      this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
 
-this.formRegistro.get('password')?.updateValueAndValidity({ emitEvent: false });
-this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
+      this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
+      this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
 
-    this.formRegistro.get('password')?.valueChanges.subscribe(value => {
-      this.togglePasswordValidators();
-    });
-    this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(value => {
-      this.togglePasswordValidators();
-    });
+      // Restaurar estado de cambio de correo pendiente tras refresco de página
+      try {
+        const raw = sessionStorage.getItem(this.skAdmin());
+        if (raw) {
+          const { correo } = JSON.parse(raw);
+          if (correo) {
+            this.codigoPendiente      = true;
+            this.correoNuevoPendiente = correo;
+            this.formRegistro.get('email')?.setValue(correo);
+          }
+        }
+      } catch { }
     }
   }
 
@@ -307,6 +316,7 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
       next: () => {
         this.codigoPendiente      = true;
         this.correoNuevoPendiente = nuevoEmail;
+        sessionStorage.setItem(this.skAdmin(), JSON.stringify({ correo: nuevoEmail }));
         this.mostrarSwalCambioCorreo(nuevoEmail, id);
       },
       error: (err: any) => {
@@ -325,6 +335,7 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
     this.formRegistro.get('email')?.setValue(this.emailOriginal);
     this.codigoPendiente      = false;
     this.correoNuevoPendiente = '';
+    sessionStorage.removeItem(this.skAdmin());
   }
 
   private mostrarSwalCambioCorreo(correoNuevo: string, id: number): void {
@@ -367,6 +378,7 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
       this.formRegistro.get('email')?.setValue(correoNuevo);
       this.codigoPendiente          = false;
       this.correoNuevoPendiente     = '';
+      sessionStorage.removeItem(this.skAdmin());
       Swal.fire({ icon: 'success', title: '¡Correo actualizado!', text: `El correo de ${this.updateUser.username} fue cambiado y verificado.`, timer: 2500, showConfirmButton: false });
     });
   }

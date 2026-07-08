@@ -25,6 +25,8 @@ export class MiPerfilComponent implements OnInit {
   guardandoPass        = false;
   errorPerfil          = '';
 
+  private readonly SK_SELF = 'cambio_correo_self';
+
   showActual  = false;
   showNueva   = false;
   showConfirm = false;
@@ -48,8 +50,9 @@ export class MiPerfilComponent implements OnInit {
             this.emailOriginal = correo;
             this.emailCtrl.setValue(correo);
           }
+          this.restaurarCambioCorreoPendiente();
         },
-        error: () => {}
+        error: () => { this.restaurarCambioCorreoPendiente(); }
       });
     });
   }
@@ -104,6 +107,19 @@ export class MiPerfilComponent implements OnInit {
     });
   }
 
+  private restaurarCambioCorreoPendiente(): void {
+    try {
+      const raw = sessionStorage.getItem(this.SK_SELF);
+      if (!raw) return;
+      const { correo } = JSON.parse(raw);
+      if (correo) {
+        this.codigoPendiente      = true;
+        this.correoNuevoPendiente = correo;
+        this.emailCtrl.setValue(correo);
+      }
+    } catch { }
+  }
+
   private flujoEmailChange(nuevoEmail: string): void {
     this.guardandoPerfil = true;
     this.errorPerfil     = '';
@@ -112,6 +128,7 @@ export class MiPerfilComponent implements OnInit {
         this.guardandoPerfil       = false;
         this.codigoPendiente       = true;
         this.correoNuevoPendiente  = nuevoEmail;
+        sessionStorage.setItem(this.SK_SELF, JSON.stringify({ correo: nuevoEmail }));
         this.mostrarSwalCodigo(nuevoEmail);
       },
       error: (err: any) => {
@@ -157,10 +174,9 @@ export class MiPerfilComponent implements OnInit {
         this.emailOriginal        = nuevoEmail;
         this.codigoPendiente      = false;
         this.correoNuevoPendiente = '';
+        sessionStorage.removeItem(this.SK_SELF);
         Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });
       }
-      // Si el usuario cierra el Swal (cancelar/ESC): codigoPendiente sigue true
-      // → la sección de UI permite volver a ingresar el código
     });
   }
 
@@ -171,6 +187,7 @@ export class MiPerfilComponent implements OnInit {
   cancelarVerificacion(): void {
     this.codigoPendiente      = false;
     this.correoNuevoPendiente = '';
+    sessionStorage.removeItem(this.SK_SELF);
     this.emailCtrl.setValue(this.emailOriginal);
   }
 

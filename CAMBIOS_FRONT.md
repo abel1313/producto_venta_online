@@ -4815,6 +4815,23 @@ se arma mal el arreglo de ids antes de llamar al endpoint).
 
 ---
 
+## ✅ RESUELTO (2026-07-07): diagnóstico temporal quitado de `habilitar-lote`
+
+Como ya se confirmó (sección de arriba, "Causa real encontrada") que el `UPDATE` en BD siempre
+funcionó bien, se quitó el JSON de diagnóstico del campo `data`. El endpoint vuelve al mensaje
+limpio de siempre:
+
+```json
+{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Variantes deshabilitadas correctamente.", "lista": null }
+```
+
+Mismo para `"Variantes habilitadas correctamente."`. El diagnóstico (ids/resultado) sigue
+generándose pero solo va al log del servidor (`log.debug`), ya no viaja en la respuesta HTTP. Si el
+front había agregado algún manejo temporal para el texto largo con JSON embebido, ya se puede
+quitar — el `data` vuelve a ser el string corto de antes.
+
+---
+
 ## ✅ Causa real encontrada y arreglada (2026-07-06): variantes SÍ se deshabilitaban, pero nunca se veía
 
 Con el diagnóstico de arriba se confirmó en QA que `habilitar-lote` **sí actualiza la BD**
@@ -4940,56 +4957,105 @@ GET /variantes/v1/admin/filtrar?habilitado=false&pagina=1&size=10
   estos 4 parámetros en vez del enum `filtro` — el enum `FiltroCatalogoEnum` ya no existe en el
   backend, cualquier request con `filtro=...` va a fallar (`400`, parámetro no reconocido).
 
+---
+
+## ✅ Fix (2026-07-07): mensajes de error de promociones ahora son específicos
+
+**Reportado:** al agregar una promoción al carrito y confirmar la venta/pedido, el back rechazaba
+la operación con `400` y el mismo mensaje genérico `"La promocion '...' ya no esta disponible"` sin
+importar cuál era el problema real (línea faltante, precio distinto, cantidad inválida, etc.) — esto
+hacía imposible saber, desde el front, qué corregir.
+
+**Causa:** `PromocionServiceImpl.validarLineasPromocion()` usaba el mismo mensaje para 4
+validaciones distintas. Ya se separaron — el mensaje ahora dice exactamente cuál fue el problema:
+
+| Situación | Mensaje nuevo |
+|---|---|
+| Faltan o sobran líneas del combo (el front debe mandar **una línea por cada variante** de la promoción, ver `PROMOCIONES.md` punto 7) | `"La promocion '{descripcion}' requiere N linea(s) (una por cada variante del combo), se recibieron M"` |
+| Una `varianteId` mandada no pertenece a esa promoción | `"La variante {id} no pertenece a la promocion '{descripcion}'"` |
+| El `precioUnitario` mandado no coincide con `precioEnPromocion` de esa variante en BD | `"El precio de la variante {id} en la promocion '{descripcion}' no coincide. Esperado: X, recibido: Y"` |
+| La `cantidad` mandada no es múltiplo de la cantidad del detalle (ej. detalle pide de 1 en 1 y llegó 3 en una promo que solo permite llevar combos completos) | `"La cantidad de la variante {id} en la promocion '{descripcion}' debe ser multiplo de N, se recibio M"` |
+| Promoción vencida o desactivada | `"La promocion '{descripcion}' ya no esta disponible"` (sin cambios) |
+| Se intenta apartar/dar a crédito una promoción | `"Las promociones solo se pueden comprar de contado, no se pueden apartar ni dar a credito"` (sin cambios) |
+
+**No cambia el contrato** (mismo `400`, mismo formato de response) — solo el texto del mensaje es
+más específico. Si el front tenía un caso de prueba fallando "por promociones" sin saber por qué,
+usar este mensaje nuevo para identificar cuál de las 4 validaciones está chocando (lo más común:
+el front manda la promoción como **una sola línea** en vez de una línea por cada variante que la
+compone — ver contrato en `PROMOCIONES.md`, sección 7).
+
 **Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
 `dev`/`qa` por ahora.
 
 ---
 
-## Fix UX — `clientes-buscar` carga primeros 10 clientes al abrir (2026-07-06)
+## ✅ Fix (2026-07-07): `POST /variantes/v1/inicializarDesdeProducto` — el checkbox "misma imagen para todas" no funcionaba
 
-**Problema:** al entrar a `/clientes/buscar`, la pantalla aparecía vacía esperando que el admin
-escribiera al menos 3 letras. No era consistente con el resto del sistema (`/productos/buscar`,
-`/variantes/buscar`, etc.), donde la lista cargada se muestra de inmediato.
+**Endpoint:** `POST /variantes/v1/inicializarDesdeProducto` (botón "Variantes" en la card de
+`/productos/buscar` admin).
 
-**Fix en `ClientesBuscarComponent`:**
-- `ngOnInit` llama `buscar()` directamente al montar, sin esperar input del usuario.
-- El filtro del pipe acepta string vacío OR ≥ 3 chars:
-  ```typescript
-  filter(v => v.trim().length === 0 || v.trim().length >= 3)
-  ```
-- Búsqueda con `termino = ''` devuelve los primeros 10 clientes paginados (comportamiento ya
-  soportado por el back — el mismo que hace `/v1/clientes/buscar?nombre=&page=0&size=10`).
-- Placeholder cambiado de `"Nombre del cliente (mín. 3 letras)…"` a `"Buscar por nombre…"`.
-- Mensaje de lista vacía diferenciado: si `termino` no está vacío → `"Sin resultados para '…'"`;
-  si está vacío → `"No hay clientes registrados."`.
-- Paginación prev/next (clases `.cb-pagination`) visible cuando `totalPaginas > 1`.
+**Bug reportado:** con `imagenParaTodas: true`, tanto sin subir archivos como subiendo un archivo
+nuevo, el back respondía error y no se creaban variantes con imagen. Solo funcionaba el caso sin
+checkbox y sin archivos (variantes sin imagen).
 
-**Archivos modificados:**
-- `src/app/clietes/clientes-buscar/clientes-buscar.component.ts`
-- `src/app/clietes/clientes-buscar/clientes-buscar.component.html`
+**Causa:** el código solo manejaba el caso "checkbox marcado + archivo nuevo". Si el checkbox
+estaba marcado pero no se mandaba ningún archivo, el bloque de imágenes se saltaba por completo —
+nunca buscaba la imagen ya existente del producto, así que las variantes se creaban sin imagen aunque
+el checkbox estuviera marcado. Aparte, la subida al microservicio de imágenes no tenía manejo de
+error, así que si ese servicio fallaba o tardaba, el error no traía info útil.
 
----
+### Request (sin cambios respecto a lo que el front ya manda)
 
-## Estado del front por F-item (resumen 2026-07-06)
+`multipart/form-data` con 2 partes:
 
-| F | Descripción corta | Estado |
+```
+Part 1 → nombre: "request"
+         Content-Type: application/json
+         Body: {
+           "productoId":        <número>,
+           "cantidadVariantes": <número>,
+           "imagenParaTodas":   <boolean>   ← viene del checkbox
+         }
+
+Part 2 → nombre: "files[]"    ← solo si el usuario seleccionó archivos
+         Content-Type: image/*
+         Body: <archivo(s) seleccionados>
+```
+
+### Response — éxito (201)
+
+```json
+{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Variantes", "lista": null }
+```
+
+`data` es el string literal `"Variantes"`, **no** un arreglo de las variantes creadas (esto ya era
+así antes del fix, solo estaba mal documentado). Si el front necesita las variantes recién creadas
+(con sus imágenes) para refrescar la UI, tiene que volver a pedir
+`GET /variantes/porProducto/{productoId}` después de este POST.
+
+### Los 3 flujos — comportamiento ya corregido
+
+| Flujo | `imagenParaTodas` | `files[]` | Resultado |
+|---|---|---|---|
+| A | `false` | sin archivos | Crea variantes sin imagen. (sin cambios) |
+| B | `true` | sin archivos | Busca la imagen **principal** ya vinculada al producto (o la primera si ninguna está marcada como principal) y la vincula a **todas** las variantes creadas. |
+| C | `true` | con 1+ archivos | Sube el/los archivo(s) al microservicio de imágenes y vincula esa(s) imagen(es) nueva(s) a **todas** las variantes creadas. Si el producto no tenía imagen propia, también se la asigna a él. |
+
+### Response — error (nuevos casos)
+
+Todos llegan en el mismo campo que el front ya lee (`err.error.mensaje`), no cambia el manejo
+en el interceptor/handler genérico:
+
+| Caso | HTTP | `mensaje` |
 |---|---|---|
-| F-1 | Ticket HTML `generarHtmlTicket()` + botón 🖨️ | ✅ Implementado 2026-07-01 |
-| F-2 | Checkbox correo + campo `notificacion` en requests | ✅ Implementado 2026-07-01 |
-| F-3 | Correo manual post-venta si cliente no tiene | ✅ Implementado 2026-07-01 |
-| F-4 | `notificacion` en venta directa, abono y cancelación | ✅ Implementado 2026-07-01 |
-| F-5 | Resultado `correoEnviado` en Swal | ✅ Implementado 2026-07-01 |
-| F-6 | Tarjetas chatbot (grid 2 col, imagen, carrito) | ✅ Implementado 2026-07-01 |
-| F-7 | Botón "Ver más" en chatbot (`/v1/chatbot/buscar`) | ✅ Implementado 2026-07-01 |
-| F-8 | Imagen por tarjeta (`GET /variantes/v1/imagenes/{id}`, elemento `principal: true`) | ✅ Implementado 2026-07-01 |
-| F-9 | QR tienda (`window.location.origin`) | ✅ Implementado 2026-07-01 |
-| F-10 | QR WhatsApp (solo si `whatsappUrl` en `/negocio/contactos`) | ✅ Implementado 2026-07-01 |
-| F-11 | QR Facebook (solo si `facebookUrl`) | ✅ Implementado 2026-07-01 |
-| F-12 | Pantalla reportes `/reportes` (4 tabs + Chart.js) | ✅ Implementado 2026-07-02 |
-| F-13 | Dashboard `/dashboard` (9 cards, auto-refresh 5 min) | ✅ Implementado 2026-07-02 |
-| F-14 | Filtros admin combinados en productos/variantes | ⚠️ REIMPLEMENTAR — primera versión usa `FiltroCatalogoEnum` (eliminado del back). Nuevo contrato: 4 params independientes (ver "Cambio de contrato 2026-07-06" arriba) |
-| F-15 | Verificación correo cliente antes de pedido | ⏳ Parcial — form + badge + acciones admin listos; falta interceptar `400 "Debes verificar..."` en `savePedido` y mostrar pantalla de verificación |
-| F-16 | Badge `habilitado` en variantes + batch deshabilitar | ⏳ Parcial — campo disponible en DTOs; falta mostrar badge en cards y UI de checkboxes + botón lote |
-| F-17 | Pantalla "Olvidé mi contraseña" (link en login) | ⏳ Pendiente |
-| F-18 | Formulario "Cambiar contraseña" en perfil | ⏳ Pendiente |
-| F-19 | Flujo registro + verificación unificada | ⚠️ NO EMPEZAR — back escrito pero sin compilar/probar/desplegar |
+| Flujo B, **producto sin ninguna imagen** para copiar | `404` | `"El producto {id} no tiene una imagen para copiar a las variantes. Sube una imagen o desmarca la casilla de 'misma imagen para todas'."` |
+| Flujo C, **falla la subida al microservicio de imágenes** | `404` | `"No se pudo subir la imagen al servicio de imagenes, intenta de nuevo"` |
+| Stock insuficiente (ya existía, sin cambios) | `404` | `"Stock insuficiente para crear N variantes del producto X. Stock disponible: Y"` |
+
+**Front:** no requiere cambios de código — la petición que ya arman coincide con este contrato y
+el error handler genérico ya muestra estos mensajes nuevos en el Swal. Es contrato de referencia
+para que sepan qué esperar al probar los 3 flujos y no se sorprendan con el `404` nuevo del caso B.
+
+**Estado:** cambio hecho localmente en rama `dev`, todavía sin commitear/pushear. Falta subir a
+`qa` y luego a `main` siguiendo el flujo normal (`dev → qa → main`); no se ha corrido ningún
+pipeline con este fix todavía.

@@ -51,4 +51,8 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo });
   }
 
+  miPerfil(username: string, email: string) {
+    return this.http.put<any>(`${environment.api_Url}/v1/auth/mi-perfil`, { username, email });
+  }
+
 }

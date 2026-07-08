@@ -23,6 +23,7 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
+  emailOriginal = '';
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -65,6 +66,7 @@ export class AddUsuariosComponent implements OnInit {
     });
 
     if (this.textoCard == 'Actualizar usuario') {
+      this.emailOriginal = this.updateUser.email;
       this.formRegistro.patchValue({
         userName: this.updateUser.username,
         email: this.updateUser.email,
@@ -292,6 +294,103 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
           Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
         }
       });
+    });
+  }
+
+  onEmailBlur(): void {
+    if (this.textoCard !== 'Actualizar usuario' || !this.authService.isAdminService) return;
+    const nuevoEmail = this.formRegistro.get('email')?.value ?? '';
+    if (!nuevoEmail || nuevoEmail === this.emailOriginal) return;
+    if (this.formRegistro.get('email')?.errors?.['email']) return;
+
+    Swal.fire({
+      title: 'Cambiar correo',
+      html: `¿Cambiar el correo de <strong>${this.updateUser.username}</strong> a <strong>${nuevoEmail}</strong>?<br><small style="color:#64748b">Se enviará un código al nuevo correo para verificarlo.</small>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#B08A4E'
+    }).then(r => {
+      if (!r.isConfirmed) {
+        this.formRegistro.get('email')?.setValue(this.emailOriginal);
+        return;
+      }
+      this.cambiarEmailAdmin(nuevoEmail);
+    });
+  }
+
+  private cambiarEmailAdmin(nuevoEmail: string): void {
+    const body = { ...this.updateUser, email: nuevoEmail };
+    this.usuario.restablecerContra(body, body.id || 0).subscribe({
+      next: () => {
+        this.updateUser.email = nuevoEmail;
+        this.auth.enviarCodigoVerificacionUsuario(this.updateUser.username).subscribe({
+          next:  () => this.mostrarSwalCodigoEmail(nuevoEmail),
+          error: () => this.mostrarSwalCodigoEmail(nuevoEmail)
+        });
+      },
+      error: (err: any) => {
+        this.formRegistro.get('email')?.setValue(this.emailOriginal);
+        Swal.fire({ icon: 'error', title: 'Error al cambiar correo', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar el correo.' });
+      }
+    });
+  }
+
+  private mostrarSwalCodigoEmail(nuevoEmail: string): void {
+    Swal.fire({
+      title: 'Verificar nuevo correo',
+      html: `
+        <p style="margin-bottom:10px;font-size:0.88rem">
+          Se envió un código a <strong>${nuevoEmail}</strong>.<br>
+          Pídele al usuario que te dicte el código de 6 dígitos.
+        </p>
+        <input id="swal-codigo-email" type="text" inputmode="numeric" maxlength="6"
+               placeholder="123456"
+               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
+                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      outline:none;font-family:monospace">
+      `,
+      confirmButtonText: 'Verificar',
+      showCancelButton: true,
+      cancelButtonText: 'Verificar más tarde',
+      confirmButtonColor: '#B08A4E',
+      preConfirm: () => {
+        const codigo = (document.getElementById('swal-codigo-email') as HTMLInputElement)?.value ?? '';
+        if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos del código'); return false; }
+        return codigo;
+      }
+    }).then(result => {
+      if (!result.isConfirmed || !result.value) {
+        this.emailOriginal = nuevoEmail;
+        return;
+      }
+      this.auth.verificarCorreoUsuario(this.updateUser.username, result.value as string).subscribe({
+        next: () => {
+          this.emailOriginal = nuevoEmail;
+          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue actualizado y verificado.` });
+        },
+        error: (err: any) => {
+          this.formRegistro.get('email')?.setValue(this.emailOriginal);
+          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Código incorrecto o expirado.';
+          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
+        }
+      });
+    });
+  }
+
+  guardarPermisos(): void {
+    const { enabled, rol } = this.formRegistro.value;
+    const body = { ...this.updateUser, enabled: enabled ?? false, rol: rol ?? '' };
+    this.usuario.restablecerContra(body, body.id || 0).subscribe({
+      next: () => {
+        this.updateUser.enabled = body.enabled;
+        this.updateUser.rol     = body.rol;
+        Swal.fire({ icon: 'success', title: 'Permisos guardados', text: `Estado y rol de ${this.updateUser.username} actualizados.`, timer: 2000, showConfirmButton: false });
+      },
+      error: (err: any) => {
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo guardar.' });
+      }
     });
   }
 

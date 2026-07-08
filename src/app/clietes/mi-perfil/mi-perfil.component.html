@@ -1,0 +1,165 @@
+<div class="mp-page">
+  <div class="mp-card">
+
+    <!-- Header -->
+    <div class="mp-header">
+      <div class="mp-header-icon"><i class="pi pi-user-edit"></i></div>
+      <div>
+        <h2 class="mp-title">Mi perfil</h2>
+        <p class="mp-subtitle">Actualiza tu usuario, correo o contraseña</p>
+      </div>
+    </div>
+
+    <div class="mp-body">
+
+      <!-- ── Sección: Datos de cuenta ──────────────────────────────── -->
+      <div class="mp-section">
+        <span class="mp-section-label">Datos de cuenta</span>
+
+        <!-- Usuario -->
+        <div class="mp-field">
+          <label class="mp-label" for="mp-user">Nombre de usuario <span class="mp-req">*</span></label>
+          <div class="mp-input-wrap">
+            <i class="pi pi-user mp-input-icon"></i>
+            <input id="mp-user" class="mp-input" type="text"
+                   [formControl]="usernameCtrl"
+                   placeholder="Tu nombre de usuario" autocomplete="username">
+          </div>
+          <span class="mp-error" *ngIf="usernameCtrl.invalid && usernameCtrl.touched">
+            <i class="pi pi-exclamation-circle"></i> Campo requerido
+          </span>
+        </div>
+
+        <!-- Correo -->
+        <div class="mp-field">
+          <label class="mp-label" for="mp-email">Correo electrónico</label>
+          <div class="mp-input-wrap">
+            <i class="pi pi-envelope mp-input-icon"></i>
+            <input id="mp-email" class="mp-input" type="email"
+                   [formControl]="emailCtrl"
+                   placeholder="tu@correo.com" autocomplete="email">
+          </div>
+          <span class="mp-error" *ngIf="emailCtrl.errors?.['email'] && emailCtrl.dirty">
+            <i class="pi pi-exclamation-circle"></i> Formato de correo inválido
+          </span>
+          <p class="mp-hint" *ngIf="emailOriginal">
+            Actual: <strong>{{ emailOriginal }}</strong>. Cambia el valor para actualizarlo.
+          </p>
+        </div>
+
+        <div class="mp-error-msg" *ngIf="errorPerfil">
+          <i class="pi pi-exclamation-triangle"></i> {{ errorPerfil }}
+        </div>
+
+        <div class="mp-footer-section">
+          <button class="mp-btn mp-btn--save" type="button"
+                  (click)="guardarPerfil()"
+                  [disabled]="guardandoPerfil || usernameCtrl.invalid || (emailCtrl.dirty && emailCtrl.invalid)">
+            <i class="pi pi-save"></i>
+            {{ guardandoPerfil ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="mp-divider"></div>
+
+      <!-- ── Sección: Cambiar contraseña ──────────────────────────── -->
+      <div class="mp-section">
+        <span class="mp-section-label">Cambiar contraseña</span>
+        <p class="mp-section-desc">Rellena solo si deseas cambiar tu contraseña actual.</p>
+
+        <!-- Contraseña actual -->
+        <div class="mp-field">
+          <label class="mp-label" for="mp-pass-actual">Contraseña actual</label>
+          <div class="mp-input-wrap">
+            <i class="pi pi-lock mp-input-icon"></i>
+            <input id="mp-pass-actual" class="mp-input mp-input--has-toggle"
+                   [type]="showActual ? 'text' : 'password'"
+                   [formControl]="passActualCtrl"
+                   placeholder="Tu contraseña actual" autocomplete="current-password">
+            <button type="button" class="mp-toggle-pass" (click)="showActual = !showActual">
+              <i class="pi" [class.pi-eye]="!showActual" [class.pi-eye-slash]="showActual"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Nueva contraseña -->
+        <div class="mp-field">
+          <label class="mp-label" for="mp-pass-nueva">Nueva contraseña</label>
+          <div class="mp-input-wrap">
+            <i class="pi pi-lock mp-input-icon"></i>
+            <input id="mp-pass-nueva" class="mp-input mp-input--has-toggle"
+                   [type]="showNueva ? 'text' : 'password'"
+                   [formControl]="passNuevaCtrl"
+                   placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+            <button type="button" class="mp-toggle-pass" (click)="showNueva = !showNueva">
+              <i class="pi" [class.pi-eye]="!showNueva" [class.pi-eye-slash]="showNueva"></i>
+            </button>
+          </div>
+
+          <div class="pwd-requirements" *ngIf="passNuevaCtrl.dirty && passNuevaCtrl.value">
+            <p class="pwd-req-title">Tu contraseña debe tener:</p>
+            <div class="pwd-req-list">
+              <div class="req-item" [class.met]="reqLongitud">
+                <i class="pi" [class.pi-check-circle]="reqLongitud" [class.pi-times-circle]="!reqLongitud"></i>
+                Mínimo 8 caracteres
+              </div>
+              <div class="req-item" [class.met]="reqMayuscula">
+                <i class="pi" [class.pi-check-circle]="reqMayuscula" [class.pi-times-circle]="!reqMayuscula"></i>
+                Una mayúscula <span class="req-example">(A, B, C…)</span>
+              </div>
+              <div class="req-item" [class.met]="reqMinuscula">
+                <i class="pi" [class.pi-check-circle]="reqMinuscula" [class.pi-times-circle]="!reqMinuscula"></i>
+                Una minúscula <span class="req-example">(a, b, c…)</span>
+              </div>
+              <div class="req-item" [class.met]="reqNumero">
+                <i class="pi" [class.pi-check-circle]="reqNumero" [class.pi-times-circle]="!reqNumero"></i>
+                Un número <span class="req-example">(0–9)</span>
+              </div>
+              <div class="req-item" [class.met]="reqEspecial">
+                <i class="pi" [class.pi-check-circle]="reqEspecial" [class.pi-times-circle]="!reqEspecial"></i>
+                Un carácter especial <span class="req-example">(! @ # $ % &amp; * - _ .)</span>
+              </div>
+            </div>
+            <div class="pwd-strength-bar">
+              <div class="pwd-strength-fill"
+                   [style.width.%]="pwdStrength * 20"
+                   [class.weak]="pwdStrengthLevel === 'weak'"
+                   [class.medium]="pwdStrengthLevel === 'medium'"
+                   [class.strong]="pwdStrengthLevel === 'strong'">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmar contraseña -->
+        <div class="mp-field">
+          <label class="mp-label" for="mp-pass-conf">Confirmar nueva contraseña</label>
+          <div class="mp-input-wrap">
+            <i class="pi pi-lock mp-input-icon"></i>
+            <input id="mp-pass-conf" class="mp-input mp-input--has-toggle"
+                   [type]="showConfirm ? 'text' : 'password'"
+                   [formControl]="passConfCtrl"
+                   placeholder="Repite la contraseña" autocomplete="new-password">
+            <button type="button" class="mp-toggle-pass" (click)="showConfirm = !showConfirm">
+              <i class="pi" [class.pi-eye]="!showConfirm" [class.pi-eye-slash]="showConfirm"></i>
+            </button>
+          </div>
+          <span class="mp-error" *ngIf="passwordsNoCoinciden">
+            <i class="pi pi-exclamation-circle"></i> Las contraseñas no coinciden
+          </span>
+        </div>
+
+        <div class="mp-footer-section">
+          <button class="mp-btn mp-btn--secondary" type="button"
+                  (click)="cambiarPassword()"
+                  [disabled]="guardandoPass || !passActualCtrl.value || !passNuevaCtrl.value || passwordsNoCoinciden || !reqLongitud || !reqMayuscula || !reqMinuscula || !reqNumero || !reqEspecial">
+            <i class="pi pi-key"></i>
+            {{ guardandoPass ? 'Cambiando…' : 'Cambiar contraseña' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

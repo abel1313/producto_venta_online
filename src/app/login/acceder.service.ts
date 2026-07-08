@@ -51,8 +51,16 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo });
   }
 
-  miPerfil(username: string, email: string) {
-    return this.http.put<any>(`${environment.api_Url}/v1/auth/mi-perfil`, { username, email });
+  miPerfil(username: string) {
+    return this.http.put<any>(`${environment.api_Url}/v1/auth/mi-perfil`, { username });
+  }
+
+  solicitarCambioCorreo(correoNuevo: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/solicitar-cambio-correo`, { correoNuevo });
+  }
+
+  confirmarCambioCorreo(codigo: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/confirmar-cambio-correo`, { codigo });
   }
 
 }

@@ -42,4 +42,12 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   resetearPassword(id: number) {
     return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${id}/resetear-password`, {});
   }
+
+  solicitarCambioCorreoAdmin(id: number, correoNuevo: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/usuarios/${id}/solicitar-cambio-correo`, { correoNuevo });
+  }
+
+  confirmarCambioCorreoAdmin(id: number, codigo: string) {
+    return this.http.post<any>(`${environment.api_Url}/v1/usuarios/${id}/confirmar-cambio-correo`, { codigo });
+  }
 }

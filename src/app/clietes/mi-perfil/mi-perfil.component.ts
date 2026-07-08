@@ -81,19 +81,18 @@ export class MiPerfilComponent implements OnInit {
     const emailCambia = email && email !== this.emailOriginal;
 
     if (emailCambia) {
-      this.flujoEmailChange(username, email);
+      this.flujoEmailChange(email);
     } else {
-      this.ejecutarGuardarPerfil(username, this.emailOriginal);
+      this.ejecutarGuardarPerfil(username);
     }
   }
 
-  private ejecutarGuardarPerfil(username: string, email: string): void {
+  private ejecutarGuardarPerfil(username: string): void {
     this.guardandoPerfil = true;
     this.errorPerfil     = '';
-    this.acceder.miPerfil(username, email).subscribe({
+    this.acceder.miPerfil(username).subscribe({
       next: () => {
         this.guardandoPerfil = false;
-        this.emailOriginal   = email;
         Swal.fire({ icon: 'success', title: '¡Perfil actualizado!', text: 'Tus datos fueron guardados.', timer: 2000, showConfirmButton: false });
       },
       error: (err: any) => {
@@ -103,26 +102,23 @@ export class MiPerfilComponent implements OnInit {
     });
   }
 
-  private flujoEmailChange(username: string, nuevoEmail: string): void {
+  private flujoEmailChange(nuevoEmail: string): void {
     this.guardandoPerfil = true;
     this.errorPerfil     = '';
-    this.acceder.miPerfil(username, nuevoEmail).subscribe({
+    this.acceder.solicitarCambioCorreo(nuevoEmail).subscribe({
       next: () => {
         this.guardandoPerfil = false;
-        this.acceder.enviarCodigoVerificacionUsuario(username).subscribe({
-          next:  () => this.mostrarSwalCodigo(username, nuevoEmail),
-          error: () => this.mostrarSwalCodigo(username, nuevoEmail)
-        });
+        this.mostrarSwalCodigo(nuevoEmail);
       },
       error: (err: any) => {
         this.guardandoPerfil = false;
-        this.errorPerfil     = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar el correo.';
+        this.errorPerfil     = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo enviar el código.';
         this.emailCtrl.setValue(this.emailOriginal);
       }
     });
   }
 
-  private mostrarSwalCodigo(username: string, nuevoEmail: string): void {
+  private mostrarSwalCodigo(nuevoEmail: string): void {
     Swal.fire({
       title: 'Verifica tu nuevo correo',
       html: `
@@ -151,7 +147,7 @@ export class MiPerfilComponent implements OnInit {
         Swal.fire({ icon: 'info', title: 'Correo guardado', text: 'Tu correo fue actualizado. Verifícalo cuando puedas.', timer: 2500, showConfirmButton: false });
         return;
       }
-      this.acceder.verificarCorreoUsuario(username, result.value as string).subscribe({
+      this.acceder.confirmarCambioCorreo(result.value as string).subscribe({
         next: () => {
           this.emailOriginal = nuevoEmail;
           Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });

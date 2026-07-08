@@ -321,18 +321,12 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
   }
 
   private cambiarEmailAdmin(nuevoEmail: string): void {
-    const body = { ...this.updateUser, email: nuevoEmail };
-    this.usuario.restablecerContra(body, body.id || 0).subscribe({
-      next: () => {
-        this.updateUser.email = nuevoEmail;
-        this.auth.enviarCodigoVerificacionUsuario(this.updateUser.username).subscribe({
-          next:  () => this.mostrarSwalCodigoEmail(nuevoEmail),
-          error: () => this.mostrarSwalCodigoEmail(nuevoEmail)
-        });
-      },
+    const id = this.updateUser.id || 0;
+    this.usuario.solicitarCambioCorreoAdmin(id, nuevoEmail).subscribe({
+      next: () => this.mostrarSwalCodigoEmail(nuevoEmail),
       error: (err: any) => {
         this.formRegistro.get('email')?.setValue(this.emailOriginal);
-        Swal.fire({ icon: 'error', title: 'Error al cambiar correo', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar el correo.' });
+        Swal.fire({ icon: 'error', title: 'Error al cambiar correo', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo enviar el código.' });
       }
     });
   }
@@ -365,9 +359,10 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
         this.emailOriginal = nuevoEmail;
         return;
       }
-      this.auth.verificarCorreoUsuario(this.updateUser.username, result.value as string).subscribe({
+      this.usuario.confirmarCambioCorreoAdmin(this.updateUser.id || 0, result.value as string).subscribe({
         next: () => {
-          this.emailOriginal = nuevoEmail;
+          this.emailOriginal    = nuevoEmail;
+          this.updateUser.email = nuevoEmail;
           Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${this.updateUser.username} fue actualizado y verificado.` });
         },
         error: (err: any) => {

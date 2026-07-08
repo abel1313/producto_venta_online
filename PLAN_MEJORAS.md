@@ -1591,17 +1591,24 @@ barras, pero el form completo queda editable por si hace falta ajustar algo más
 > usuario y guardar, el back destruía la contraseña real del usuario como efecto secundario. A
 > partir de ahí se aclaró el diseño completo de quién puede tocar qué en una cuenta de `Usuario`.
 
-### Reglas confirmadas con el usuario (2026-07-08)
+### Reglas confirmadas con el usuario (2026-07-08, versión final tras 2 rondas de aclaración)
 
 1. **El admin nunca puede fijar una contraseña directamente.** Solo tiene 2 acciones válidas sobre
-   la contraseña de otra cuenta: **restablecer contraseña** (genera una aleatoria) y **verificar
-   correo**. Nada más.
+   la contraseña de otra cuenta: **restablecer contraseña** (genera una aleatoria y se la muestra
+   al admin para dársela al usuario) y **verificar correo**. Nada más — ni inputs de contraseña ni
+   botón de "actualizar contraseña" en el form del admin.
 2. **El propio dueño de la cuenta sí puede actualizar sus datos** (username/email) desde su propia
-   sesión, y **si además quiere cambiar su contraseña, el back debe validar la contraseña actual**
-   antes de aplicar la nueva — igual que en el login.
-3. **Ambos casos (admin editando a otro usuario, o el usuario editando su propia cuenta):** si el
-   correo que se guarda es distinto al que tenía, se debe abrir el modal de verificación del correo
-   nuevo. Si el correo no cambió, no se muestra ningún modal.
+   sesión. Si además quiere cambiar su contraseña, el front debe mostrar el **mismo validador de
+   fuerza de contraseña que usa el formulario de registro** (front reutiliza ese componente/reglas
+   tal cual), y el back valida la contraseña actual antes de aplicar la nueva.
+3. **Cambio de correo — patrón "verificar antes de guardar" (2ª ronda, reemplaza el diseño
+   original de esta sección):** tanto si es el admin editando a otro usuario como si es el propio
+   usuario editando su cuenta, el correo **NO se guarda de inmediato**. Al detectar que el valor
+   del campo correo es distinto al actual, se abre un modal que pide el correo nuevo, lo manda a
+   validar (se envía un código de 6 dígitos a esa dirección nueva) y pide ingresar el código. **Solo
+   si el código es correcto se actualiza el correo real** del usuario; si el código falla, expira,
+   o el admin/usuario cancela, el correo real **nunca cambió** — el campo simplemente vuelve a
+   mostrar el valor anterior porque nunca se llegó a guardar nada distinto.
 
 ### Bug #1 — RESUELTO: `updateUserDto` destruía la contraseña real
 
@@ -1609,65 +1616,109 @@ barras, pero el form completo queda editable por si hace falta ajustar algo más
 sin validar si venía null/vacío — el caso normal al editar solo el correo. Ya no toca el campo
 password en absoluto; ver `CAMBIOS_FRONT.md` para el detalle completo de este fix.
 
-### Bug #2 — RESUELTO: verificación de correo bloqueada para siempre tras la primera vez
+### Diseño final — cambio de correo con verificación previa
 
-`UsuarioVerificacionService.enviarCodigoVerificacion()` tiene un guard `if (correoVerificado)
-throw "El correo ya esta verificado"`. Como cualquier cuenta activa ya pasó por esa verificación
-una vez, era imposible re-verificar un correo nuevo tras editarlo. Ahora, tanto `updateUserDto`
-(admin) como el nuevo `actualizarMiPerfil` (self-service, ver abajo) resetean
-`correoVerificado=false` cuando el email efectivamente cambia — desbloqueando poder volver a
-llamar `enviar-codigo-verificacion` / `verificar-correo` (mismos 2 endpoints de siempre, sin
-cambios en ellos).
+> ⚠️ **No confundir con `Cliente.correoPendiente` (mejora 15, más arriba en este documento).**
+> Son 2 columnas distintas en 2 tablas distintas para 2 flujos distintos: `Cliente.correoPendiente`
+> es del **perfil del cliente** (`mis-datos`) y ahí el admin puede aplicar el correo directo sin
+> verificar (`ClienteControllerImpl.save()`, ver arriba). `usuario_modificacion.correo_pendiente`
+> (esta sección) es de la **cuenta de login** (`Usuario`) y aquí, por decisión explícita del
+> usuario en esta sesión, **el admin también tiene que verificar el código** — no hay bypass.
+> Mismo patrón de campo, mismo nombre de concepto, pero reglas y tablas independientes.
 
-### Endpoint nuevo — self-service: `PUT /v1/auth/mi-perfil`
+**Se agregó una columna nueva:** `usuario_modificacion.correo_pendiente` (migración
+`migration_correo_pendiente_usuario.sql`, **pendiente de correr en dev/qa/prod**). El correo real
+(`email`) no se toca hasta que el código se confirma correctamente — reutiliza las columnas ya
+existentes `codigo_verificacion`/`codigo_verificacion_expira` (no hizo falta duplicarlas).
+
+Esto **reemplaza** el diseño de la primera ronda de esta sección (que guardaba el correo de
+inmediato y solo reseteaba `correoVerificado=false`) — ese enfoque no soportaba "revertir" el
+campo si el código fallaba, porque el correo ya se había sobrescrito. El patrón nuevo evita el
+problema de raíz: si nunca se confirma el código, nunca se tocó el correo real.
+
+### 🐛 BUG CONFIRMADO EN QA (2026-07-08) — front sigue llamando el endpoint viejo
+
+Probado con curl real en `usuarios/update`: el front llama `POST /v1/auth/enviar-codigo-verificacion`
+(`{ "userName": "pedro" }`) para intentar mandar el código al correo nuevo — ese endpoint es el de
+verificación **única post-registro**, no acepta correo nuevo y manda al correo ya guardado, que
+normalmente ya está verificado (→ `400 "El correo ya esta verificado"`, no manda nada). El front
+necesita cambiar esa llamada a `POST /v1/usuarios/{id}/solicitar-cambio-correo` con
+`{ "correoNuevo": "..." }` (ver contrato completo en `CAMBIOS_FRONT.md`, tiene tabla ❌/✅ del
+endpoint incorrecto vs. el correcto).
+
+**4 endpoints nuevos** (2 para admin, 2 para self-service — mismo patrón que `resetear-password`
+vs. `cambiar-password`):
+
+```
+# Admin — cambia el correo de OTRO usuario (por id)
+POST /v1/usuarios/{id}/solicitar-cambio-correo   Body: { "correoNuevo": "..." }
+POST /v1/usuarios/{id}/confirmar-cambio-correo   Body: { "codigo": "123456" }
+
+# Self-service — el propio usuario cambia SU correo (identificado por el JWT)
+POST /v1/auth/solicitar-cambio-correo            Body: { "correoNuevo": "..." }
+POST /v1/auth/confirmar-cambio-correo            Body: { "codigo": "123456" }
+```
+
+- `solicitar-cambio-correo`: valida que `correoNuevo` no sea igual al actual, genera el código,
+  lo guarda junto con `correoNuevo` en `correoPendiente`, y **manda el código al correo nuevo**
+  (no al viejo). Responde `200` con `"Codigo enviado al correo nuevo"`, o `400` si el correo viene
+  vacío o es igual al actual.
+- `confirmar-cambio-correo`: valida el código contra lo guardado. Si es correcto y no expiró (15
+  min), **recién ahí** hace `email = correoPendiente`, marca `correoVerificado=true` y limpia los
+  campos temporales. Responde `200` con `"Correo actualizado correctamente"`. Si el código es
+  inválido/expiró, responde `400` con el mensaje correspondiente y **el correo real no cambia**.
+- El código **nunca se devuelve en la respuesta de la API** — llega solo por correo a la dirección
+  nueva. El modal del front debe pedirle al usuario/admin que lo escriba (no hay forma de
+  autocompletarlo desde el response).
+
+**Los endpoints viejos de verificación (`enviar-codigo-verificacion` / `verificar-correo`,
+`AuthController`) NO cambiaron** — siguen siendo exclusivamente para verificar el correo la
+primera vez, justo después del registro. El cambio de correo posterior usa este flujo nuevo, no
+ese.
+
+### Endpoint — self-service: `PUT /v1/auth/mi-perfil` (solo username)
 
 No existía ningún endpoint para que un usuario autenticado (no-admin) editara su propio
-username/email — `/v1/usuarios/**` es 100% `ROLE_ADMIN` (`SecurityConfig.java:115`). Se agregó
-este endpoint nuevo, junto a `cambiar-password` (mismo patrón: usa `Authentication` del JWT para
-identificar la cuenta, nunca un id que mande el body — así un usuario no puede editar la cuenta de
-otro).
+username — `/v1/usuarios/**` es 100% `ROLE_ADMIN` (`SecurityConfig.java:115`). Se agregó junto a
+`cambiar-password` (mismo patrón: usa `Authentication` del JWT, nunca un id del body).
 
 ```
 PUT /v1/auth/mi-perfil
 Authorization: Bearer <token de cualquier usuario autenticado>
 Content-Type: application/json
 
-Body:
-{
-  "username": "string, requerido",
-  "email": "string, requerido, formato de correo valido"
-}
+Body: { "username": "string, requerido" }
 ```
-
-**Response éxito (200):** `"Perfil actualizado correctamente"` (texto plano, mismo estilo que
-`cambiar-password`).
-**Response error (400):** el mensaje de la excepción tal cual (ej. `"Usuario no encontrado"`).
-
-**No incluye contraseña.** Para cambiar la contraseña estando logueado, ese endpoint **ya
-existía** y no cambió — `PUT /v1/auth/cambiar-password`, body `{ "passwordActual", "nuevaPassword"
-}`, valida `passwordActual` contra el hash guardado antes de aplicar la nueva (`PasswordResetService
-.cambiarPassword`, ya implementado desde antes de esta sesión).
+**Ya no incluye `email`** (ver arriba, el correo tiene su propio flujo de 2 pasos) **ni
+`password`** (usar `cambiar-password`). Response éxito (200): `"Perfil actualizado correctamente"`.
 
 ### Flujo completo para el front
 
 **Pantalla admin (`usuarios/update`, edita a OTRO usuario):**
 - Mostrar `username` **deshabilitado** (solo lectura).
-- **No mostrar ningún campo de contraseña.** Las únicas 2 acciones sobre password son botones
-  aparte: "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`, ya existía) y
-  "Verificar correo" (`POST /v1/auth/enviar-codigo-verificacion` + `verificar-correo`, ya
-  existían). El botón "Actualizar" normal sigue existiendo para guardar email/enabled — llama a
-  `PUT /v1/usuarios/updateUsuario/{id}`.
-- Si el correo ingresado es distinto al que ya tenía la cuenta → después de guardar, abrir el
-  modal de verificación y disparar `enviar-codigo-verificacion` / `verificar-correo` con el
-  `username` de esa cuenta (no la del admin logueado).
+- **No mostrar ningún campo ni botón de contraseña en el form de edición.** Las únicas 2 acciones
+  sobre password/correo son botones aparte: "Restablecer contraseña"
+  (`PUT /v1/usuarios/{id}/resetear-password`, ya existía) y el modal de correo descrito abajo.
+- Campo `email`: si el admin escribe un valor distinto al actual, **no lo guarda directo** — abre
+  el modal, llama `POST /v1/usuarios/{id}/solicitar-cambio-correo` con el correo nuevo, pide el
+  código, y llama `POST /v1/usuarios/{id}/confirmar-cambio-correo`. Solo si esa segunda llamada
+  responde `200` se actualiza el campo en pantalla; si falla o se cancela, el campo vuelve a
+  mostrar el correo original (nunca cambió en el back).
+- El botón "Actualizar" normal (`PUT /v1/usuarios/updateUsuario/{id}`) sigue existiendo para
+  `enabled` (y username, aunque esté deshabilitado visualmente) — ya no manda ni toca `email` ni
+  `password`.
 
 **Pantalla self-service (el propio usuario edita SU cuenta, ej. "Mi perfil"):**
-- `username`/`email` editables, `PUT /v1/auth/mi-perfil` para guardarlos.
-- Si quiere cambiar contraseña, **debe pedir la contraseña actual** en el mismo formulario (o uno
-  aparte) y llamar `PUT /v1/auth/cambiar-password` — nunca se permite guardar una contraseña nueva
-  sin validar la actual.
-- Si el correo ingresado es distinto al que ya tenía → mismo modal de verificación que en el caso
-  admin, mismos 2 endpoints, pero usando el `username` de la sesión actual (no hace falta mandarlo,
-  el back ya lo saca del JWT).
+- `username` editable → `PUT /v1/auth/mi-perfil`, body `{ "username" }`. Se puede guardar solo, sin
+  tocar correo ni contraseña.
+- `email`: mismo patrón de modal verificar-antes-de-guardar que el admin, pero con
+  `POST /v1/auth/solicitar-cambio-correo` / `confirmar-cambio-correo` (sin id, usa la sesión).
+- Contraseña: al detectar que el usuario está escribiendo en los campos de nueva contraseña, mostrar
+  el **mismo validador de reglas que el formulario de registro** (front). Si pasa esa validación,
+  pedir la contraseña actual y llamar `PUT /v1/auth/cambiar-password` (`{ "passwordActual",
+  "nuevaPassword" }`) — nunca se permite guardar una contraseña nueva sin ese campo.
+
+**Pendiente:** correr `migration_correo_pendiente_usuario.sql` en `dev`/`qa`/`prod` antes de que
+este flujo funcione (la columna `correo_pendiente` no existe todavía en ninguna BD).
 
 **Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.

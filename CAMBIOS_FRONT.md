@@ -5197,53 +5197,115 @@ devuelve en la respuesta para que el admin se la comparta al usuario).
   el admin — el update sigue aceptándolo en el body por compatibilidad, pero la UI no debería
   permitir editarlo desde esta pantalla.
 
-**Efecto secundario nuevo (intencional):** si el admin cambia el `email` de un usuario y el nuevo
-valor es distinto al que tenía, el back ahora resetea `correoVerificado = false` (y limpia
-cualquier código de verificación pendiente). Antes, si el usuario ya tenía el correo verificado
-(el caso normal para cualquier cuenta activa), `POST /v1/auth/enviar-codigo-verificacion` fallaba
-con `"El correo ya esta verificado"` y no había forma de re-verificar un correo nuevo. Ahora sí se
-puede volver a disparar ese flujo tras cambiar el correo.
+**CORRECCIÓN (2026-07-08, segunda vuelta) — el diseño de correo de arriba cambió por completo.**
+La primera versión de este fix guardaba el correo de inmediato y solo reseteaba
+`correoVerificado`. El diseño real que se pidió es **verificar ANTES de guardar**: el correo NO se
+actualiza hasta que el código sea correcto; si el código falla/expira/se cancela, el correo real
+**nunca cambió** (no hace falta "revertir" nada porque nunca se tocó). Se agregó una columna nueva
+`usuario_modificacion.correo_pendiente` para esto — ver migración
+`migration_correo_pendiente_usuario.sql`, **pendiente de correr en dev/qa/prod**.
 
-**Front — flujo esperado al cambiar el correo (admin o el propio usuario, donde aplique):**
-1. Si el correo ingresado es **igual** al que ya tenía → guardar normal, sin modal de verificación.
-2. Si el correo ingresado es **distinto** → después de guardar (`PUT
-   /v1/usuarios/updateUsuario/{id}`), mostrar el modal de verificación y llamar
-   `POST /v1/auth/enviar-codigo-verificacion` con el `username`, luego
-   `POST /v1/auth/verificar-correo` con el código de 6 dígitos que llega a ese correo.
-3. Estos 2 endpoints de verificación ya existían (flujo de registro) — lo único nuevo es que ahora
-   también funcionan después de un cambio de correo, no solo la primera vez.
+> ⚠️ **No confundir con `Cliente.correoPendiente`** (perfil del cliente, `mis-datos`, ya existía de
+> antes) — es una columna distinta en otra tabla, con otra regla: ahí el admin SÍ puede aplicar el
+> correo directo sin verificar. Aquí (cuenta de login/`Usuario`), el admin también verifica.
 
-**Resuelto (2026-07-08, segunda vuelta) — self-service (el propio usuario edita su cuenta):**
-no existía ningún endpoint para esto (`/v1/usuarios/**` es 100% ADMIN, no accesible para un usuario
-normal). Se agregó:
+### 🐛 BUG CONFIRMADO EN QA (2026-07-08) — el front en `usuarios/update` llama al endpoint equivocado
+
+**Síntoma:** al cambiar el correo de otro usuario desde el panel admin, no llega ningún código al
+correo nuevo.
+
+**Causa confirmada con curl real:** el front está llamando
+`POST /v1/auth/enviar-codigo-verificacion` con body `{ "userName": "pedro" }` — **ese es el
+endpoint viejo** (verificación única post-registro, ver arriba). Ese endpoint:
+- No recibe ningún correo nuevo, solo `userName`.
+- Manda el código al correo que **ya está guardado**, no a uno nuevo.
+- Si ese correo ya está verificado (el caso normal para cualquier cuenta activa), responde `400`
+  con `"El correo ya esta verificado"` y no manda nada — por eso "no llega el correo".
+
+**Corrección necesaria en el front — reemplazar esa llamada:**
+
+| ❌ Está llamando (incorrecto para cambio de correo) | ✅ Debe llamar |
+|---|---|
+| `POST /v1/auth/enviar-codigo-verificacion` `{ "userName": "..." }` | `POST /v1/usuarios/{id}/solicitar-cambio-correo` `{ "correoNuevo": "..." }` (admin, `{id}` = id del usuario que se está editando, **no** el id del admin) |
+| `POST /v1/auth/verificar-correo` `{ "userName": "...", "codigo": "..." }` | `POST /v1/usuarios/{id}/confirmar-cambio-correo` `{ "codigo": "..." }` (admin) |
+
+Los endpoints `enviar-codigo-verificacion`/`verificar-correo` **solo sirven para la verificación
+única post-registro** — nunca para cambiar un correo ya existente, ni desde el panel admin ni
+desde self-service. Para self-service (el propio usuario cambia su correo) es la misma tabla pero
+con las rutas `/v1/auth/solicitar-cambio-correo` / `confirmar-cambio-correo` (sin `{id}`, ver el
+contrato completo abajo).
+
+**4 endpoints nuevos (2 admin, 2 self-service) — reemplazan el uso de
+`enviar-codigo-verificacion`/`verificar-correo` para este caso** (esos 2 endpoints viejos siguen
+existiendo tal cual, pero solo para la verificación inicial post-registro, no para cambios de
+correo posteriores):
+
+```
+# Admin — cambia el correo de OTRO usuario (por id)
+POST /v1/usuarios/{id}/solicitar-cambio-correo   Body: { "correoNuevo": "..." }
+POST /v1/usuarios/{id}/confirmar-cambio-correo   Body: { "codigo": "123456" }
+
+# Self-service — el propio usuario cambia SU correo (identificado por el JWT, sin id)
+POST /v1/auth/solicitar-cambio-correo            Body: { "correoNuevo": "..." }
+POST /v1/auth/confirmar-cambio-correo            Body: { "codigo": "123456" }
+```
+
+**Corrección de contrato (2026-07-08):** la primera versión de estos 4 endpoints devolvía texto
+plano (`"Codigo enviado al correo nuevo"`) en vez de JSON. Eso rompía el front porque el
+`HttpClient` esperaba JSON y tronaba al parsear un body que no lo era — el back sí mandaba el
+correo, pero el front mostraba error igual. Ya está corregido: ahora responden `ResponseGeneric<String>`,
+igual que el resto del API.
+
+- `solicitar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Codigo enviado al correo nuevo", "lista": null }`
+  (el código se manda a la dirección **nueva**, no a la actual). Leer el mensaje para mostrar desde `data` (o `mensaje` en el caso de error).
+  `400` con body `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }` si `correoNuevo` viene vacío o es igual al actual.
+- `confirmar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Correo actualizado correctamente", "lista": null }`
+  — **solo en este momento** se actualiza el `email` real. `400` con `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }`
+  si el código es inválido/expiró — en ese caso el correo real sigue siendo el de antes, no hay que
+  hacer nada para "revertir" el campo en el front, solo mostrar `mensaje` y dejar el valor viejo.
+- El código **nunca viaja en la respuesta de la API** — solo llega por correo. El modal siempre
+  necesita un input para que el usuario/admin lo escriba.
+- Nota sobre el `code` del body en caso de error: viene `404` aunque el HTTP status real sea `400`
+  — es una particularidad de `ResponseGeneric` que ya existía en otros endpoints del API, no es
+  nuevo de esta corrección. Para detectar error en el front, usar el status HTTP (`400`), no el
+  campo `code` del body.
+
+**Front — flujo para las 2 pantallas (admin y self-service), idéntico salvo el endpoint:**
+1. Si el correo ingresado en el form es **igual** al actual → no pasa nada especial, se guarda
+   junto con los demás campos del form normal (o ni se manda, según cómo armes el form).
+2. Si es **distinto** → abrir modal, llamar `solicitar-cambio-correo` (con `{id}` si es admin, sin
+   nada si es self-service), mostrar input para el código, llamar `confirmar-cambio-correo`.
+3. Si `confirmar-cambio-correo` responde `200` → refrescar el campo `email` en pantalla con el
+   valor nuevo. Si responde `400` → mostrar el mensaje, dejar el campo como estaba, permitir
+   reintentar o cancelar.
+
+**Endpoint self-service — `PUT /v1/auth/mi-perfil` (ya NO incluye `email`):**
 
 ```
 PUT /v1/auth/mi-perfil
 Authorization: Bearer <token del propio usuario>
 Content-Type: application/json
 
-Body: { "username": "string, requerido", "email": "string, requerido, formato valido" }
+Body: { "username": "string, requerido" }
 ```
-Response éxito (200): `"Perfil actualizado correctamente"` (texto plano). Response error (400):
-mensaje de la excepción tal cual.
+Response éxito (200): `"Perfil actualizado correctamente"`. El correo se maneja exclusivamente con
+los 2 endpoints de arriba, nunca con este. Identifica la cuenta por el JWT — no hay que mandar
+ningún id.
 
-- Identifica la cuenta por el JWT (`Authentication`), **no** hay que mandar ningún id — así un
-  usuario no puede editar la cuenta de otro aunque manipule el body.
-- **No incluye contraseña.** Si el usuario quiere cambiar su contraseña, usar el endpoint que
-  **ya existía antes de esta sesión** y no cambió: `PUT /v1/auth/cambiar-password`, body
-  `{ "passwordActual", "nuevaPassword" }` — valida la contraseña actual contra el hash guardado
-  antes de aplicar la nueva. El front debe pedir esa contraseña actual en el formulario de "cambiar
-  contraseña" de self-service — nunca permitir guardar una nueva sin ese campo.
-- Mismo comportamiento de correo que en el caso admin: si el email cambia, se resetea
-  `correoVerificado` y hay que mostrar el mismo modal de verificación
-  (`enviar-codigo-verificacion` + `verificar-correo`), sin mandar `username` explícito (el back ya
-  lo saca del JWT).
+**Contraseña self-service — sin cambios respecto a la primera vuelta:** `PUT /v1/auth/cambiar-password`
+(`{ "passwordActual", "nuevaPassword" }`, ya existía antes de esta sesión) sigue siendo el único
+camino. Front: al detectar que el usuario está escribiendo en los campos de nueva contraseña, se
+debe mostrar el **mismo validador de reglas que usa el formulario de registro** (reusar ese
+componente), y solo permitir guardar si pasa esa validación y se ingresó la contraseña actual.
 
 **Resumen para el front — 2 pantallas distintas:**
 
-| Pantalla | Quién | Password | Email cambia |
-|---|---|---|---|
-| Admin edita a otro usuario (`usuarios/update`) | Solo ADMIN | Sin campo de password en el form. Solo botón "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) | Modal de verificación tras guardar `PUT /v1/usuarios/updateUsuario/{id}` |
-| Usuario edita su propia cuenta ("Mi perfil") | Cualquier autenticado | Campo de "contraseña actual" obligatorio si quiere cambiarla, vía `PUT /v1/auth/cambiar-password` | Modal de verificación tras guardar `PUT /v1/auth/mi-perfil` |
+| Pantalla | Quién | Password | Username | Email |
+|---|---|---|---|---|
+| Admin edita a otro usuario (`usuarios/update`) | Solo ADMIN | Sin campo de password en el form. Solo botón "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) | Deshabilitado (solo lectura) | Modal verificar-antes-de-guardar (`solicitar`/`confirmar-cambio-correo` con `{id}`) |
+| Usuario edita su propia cuenta ("Mi perfil") | Cualquier autenticado | Validador de registro + contraseña actual obligatoria, vía `PUT /v1/auth/cambiar-password` | Editable, `PUT /v1/auth/mi-perfil` | Modal verificar-antes-de-guardar (`solicitar`/`confirmar-cambio-correo` sin id) |
+
+**Pendiente:** correr `migration_correo_pendiente_usuario.sql` en todos los ambientes antes de que
+el flujo de correo funcione.
 
 **Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.

@@ -3252,6 +3252,60 @@ Todos los usos de `buscarClientes()` verificados — ninguno accesible para usua
 
 ---
 
+## FIX LOGIN — NO REDIRIGÍA COMO USUARIO NORMAL + MODAL DE CAMBIO DE CONTRASEÑA MEZCLADO ENTRE SESIONES (2026-07-08)
+
+**Síntoma 1:** al iniciar sesión con un usuario normal (no admin), no pasaba nada — se quedaba
+en `/login`. Al recargar la página manualmente, ahí sí redirigía a `/variantes/buscar`.
+
+**Causa raíz:** `AdminGuardGuard` y `AuthGuard` redirigían con el patrón
+`this.router.navigate([...]); return false;` **desde dentro del propio guard**. Cuando este
+guard se dispara como consecuencia de OTRA navegación ya en curso (la que lanza
+`login-form.component.ts` con `this.router.navigate(['/productos/buscar'])` justo después del
+login), llamar a `.navigate()` de nuevo desde el guard entra en conflicto con esa navegación
+que ya está en vuelo y la redirección se pierde — patrón conocido de Angular, poco confiable.
+Al recargar la página no hay navegación "en curso" compitiendo (el token ya se hidrata antes
+vía `APP_INITIALIZER`/`bootstrapAuth` en `app.module.ts`), por eso ahí sí funcionaba.
+
+**Fix:** ambos guards ahora devuelven un `UrlTree` (`this.router.parseUrl(...)`) en vez de
+llamar `.navigate()` + `return false`. Es el patrón recomendado por Angular para redirecciones
+desde guards — le dice al Router "redirige ESTA navegación" en lugar de disparar una segunda
+navegación en paralelo.
+
+**Síntoma 2 (relacionado, mismo hallazgo en vivo):** con un usuario cuya contraseña había sido
+reseteada por un admin (`debeCambiarPassword: true`), el login "no reaccionaba" (síntoma 1).
+El usuario, sin recargar, sobrescribió los campos del formulario con credenciales de admin y
+volvió a dar "Entrar" — el segundo intento sí entró, pero mostrando el modal de cambio de
+contraseña **del usuario normal** encima de la sesión de admin ya cargada.
+
+**Causa raíz:** el botón "Entrar" solo se deshabilita si el formulario es inválido
+(`[disabled]="loginForm.invalid"`) — nada bloqueaba un segundo envío mientras el primer
+`POST /v1/auth/login` (o el flujo de `forzarCambioPassword()` que dispara) seguía sin resolver.
+Se pudieron disparar dos `onLogin()` superpuestos con credenciales distintas, y el Swal del
+primer intento (usuario normal, closure con SU contraseña) quedó abierto en el DOM por encima
+de la sesión de admin que sí navegó.
+
+**Fix:** nuevo campo `cargando` en `LoginFormComponent`. Se pone en `true` al entrar a
+`onLogin()` (con guard de re-entrada `if (this.cargando) return;`) y solo se libera en el
+`next`/`error` terminal — si `debeCambiarPassword` es `true`, sigue en `true` hasta que el
+Swal de `forzarCambioPassword()` se resuelve (`.then()`). El botón usa
+`[disabled]="loginForm.invalid || cargando"` — mismo patrón de guard de doble-submit ya usado
+en el resto del proyecto (sin spinner local, solo `[disabled]`, según la regla de
+"ELIMINACIÓN DE SPINNERS LOCALES").
+
+**Archivos modificados:**
+- `src/app/guard/admin-guard.guard.ts` → `canActivate(): boolean | UrlTree`, todas las
+  redirecciones devuelven `this.router.parseUrl(...)`
+- `src/app/auth.guard.ts` → mismo cambio
+- `src/app/login/login-form/login-form.component.ts` → campo `cargando`, guard de re-entrada
+  en `onLogin()`, se libera en los 3 puntos de salida (`next` sin `debeCambiar`, `next` sin
+  token, `error`, y `.then()` de `forzarCambioPassword`)
+- `src/app/login/login-form/login-form.component.html` → botón "Entrar"
+  `[disabled]="loginForm.invalid || cargando"`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FEAT VARIANTES — INDEPENDIZAR VARIANTE EN SU PROPIO PRODUCTO (2026-07-08)
 
 > Diseño en `PLAN_MEJORAS.md` sección 16. El back implementó `POST /variantes/v1/{varianteId}/independizar`.
@@ -3443,5 +3497,61 @@ invalidan al anterior.
 | `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` | Elimina `skAdmin()` y todo `sessionStorage.*`; `ngOnInit` llama `cambioCorreoPendienteAdmin(id)`; + `reenviarCodigoCambioCorreo()` con cooldown; + `ngOnDestroy` |
 | `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` | + botón `au-btn-reenviar` con contador en `au-codigo-pendiente` |
 | `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` | + `.au-btn-reenviar` light + dark mode |
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX USUARIOS/ADD-USUARIOS — CAMPO DE CORREO NO DEBE MOSTRAR EL PENDIENTE SIN VERIFICAR (2026-07-08)
+
+> Reporte en vivo (QA): admin entra a `/usuarios/buscar` → selecciona a Pedro (que ya tenía un
+> código de cambio de correo pendiente, enviado antes de recargar la página) → el botón
+> "Ingresar código" **no aparecía** — solo aparecía si el admin volvía a editar el campo de
+> correo (disparando `onEmailBlur()` de nuevo).
+
+### Diagnóstico — esto NO era un bug de código
+
+El chequeo de "¿hay un cambio de correo pendiente?" al abrir la pantalla de edición
+(`ngOnInit()` → `usuario.cambioCorreoPendienteAdmin(id)` → si `pendiente:true` pone
+`codigoPendiente = true` y el botón "Ingresar código" aparece) **ya existía y funcionaba
+correctamente** — se implementó en el mismo commit de la sección anterior
+(`b7b5881`, 2026-07-08), y ese commit ya estaba empujado a `origin/qa` en el momento del reporte
+(confirmado con `git branch -r --contains b7b5881` → `origin/dev`, `origin/qa`).
+
+**Conclusión:** lo que el admin vio en `qa.shop.novedades-jade.com.mx` era casi seguro un
+**bundle desactualizado** — el código ya estaba en la rama `qa` pero el pipeline de CI/CD hacia
+el servidor QA es conocido por no dispararse solo (ver sección "CI/CD — ESTADO Y CONFIGURACIÓN
+DEL PIPELINE QA", pendiente sin resolver desde 2026-06-18). Mismo patrón que la Lección #9 del
+módulo chat: *"cuando el servidor QA no refleja los cambios del front, el problema casi siempre
+es que el bundle no se ha reconstruido — no que el código esté mal."* Antes de asumir que hay
+que tocar código, verificar con el admin: ¿el server QA ya corrió el `kubectl rollout restart`
+manual después del último push a `qa`? Si no, ese es el primer paso, no una nueva corrección.
+
+### Hallazgo real (sí era un bug) — el campo de correo mostraba el valor SIN VERIFICAR
+
+Al revisar el código para confirmar el diagnóstico de arriba, sí apareció un problema de diseño
+real: cuando había un cambio de correo pendiente, el campo del formulario **mostraba el correo
+NUEVO (sin verificar)** como si ya fuera el correo real guardado — tanto al detectar un pendiente
+existente en `ngOnInit()` (`this.formRegistro.get('email')?.setValue(data.correoPendiente)`)
+como justo después de solicitar un cambio nuevo en `onEmailBlur()`. Esto es engañoso (el campo
+aparenta tener ya guardado un correo que en realidad nadie confirmó) y frágil a futuro: si algún
+día se agrega un botón de "Guardar cambios" que envíe el valor del campo `email` del formulario,
+se guardaría el correo sin verificar saltándose todo el flujo de confirmación por código. Hoy no
+pasa (el único guardado disponible para admin, "💾 Guardar permisos", usa `this.updateUser.email`
+— el valor original — no el del form), pero es una trampa fácil de pisar después.
+
+**Fix:** el campo de correo ahora **siempre** muestra el correo actual/real (`emailOriginal`) —
+nunca el pendiente sin verificar. El banner "Se envió un código a **X**..." (ya existente) es la
+única fuente visual de "a qué correo va a cambiar". Además, el campo se vuelve `readonly`
+mientras `codigoPendiente` es `true` (mismo patrón visual que el campo `userName` en modo
+edición admin) — evita que el admin escriba un tercer correo encima de una solicitud sin
+resolver sin antes darle "Cancelar cambio" explícitamente.
+
+**Archivos modificados:**
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` → `ngOnInit()` ya no
+  hace `setValue(data.correoPendiente)`; `onEmailBlur()` revierte el campo a `emailOriginal`
+  justo después de solicitar el cambio
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` → campo de correo
+  `[attr.readonly]`/`[class.field-input--readonly]` cuando `codigoPendiente` es `true`
 
 **Verificado con `ng build --configuration=development` sin errores.**

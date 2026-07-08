@@ -64,6 +64,38 @@
 
   </p-table>
 
+  <!-- Sección de promociones en el carrito -->
+  <ng-container *ngIf="promos.length > 0">
+    <div class="px-3 pt-2 pb-1">
+      <h6 class="text-muted mb-2">🏷️ Promociones en el carrito</h6>
+    </div>
+    <div class="px-3 pb-2">
+      <div *ngFor="let p of promos" class="d-flex align-items-center justify-content-between border rounded p-2 mb-2">
+        <div class="flex-grow-1">
+          <span class="fw-semibold">{{ p.descripcion }}</span>
+          <span class="badge bg-warning text-dark ms-2">× {{ p.cantidadCombos }} combo(s)</span>
+          <div class="small text-muted mt-1">
+            <span *ngFor="let d of p.detalles; let i = index">
+              {{ d.cantidad }}× {{ d.nombreProducto || 'Variante ' + d.varianteId }}
+              <span *ngIf="d.talla">({{ d.talla }})</span>
+              <span *ngIf="i < p.detalles.length - 1"> · </span>
+            </span>
+          </div>
+        </div>
+        <div class="text-end ms-3">
+          <div class="fw-bold text-success">{{ (p.precioTotal * p.cantidadCombos) | currency:'$' }}</div>
+          <button type="button" class="btn btn-sm btn-outline-danger mt-1"
+            (click)="quitarPromo(p.promocionId)" title="Quitar promo">
+            🗑
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info mx-3 py-1 mb-2 small">
+      ⚠️ Las promociones son solo de contado — no se puede generar crédito cuando hay promos en el carrito.
+    </div>
+  </ng-container>
+
   <!-- Total + botones -->
   <div class="row mt-2 mb-2 px-3">
     <div class="col d-flex justify-content-end gap-2 flex-wrap">
@@ -117,7 +149,8 @@
         placeholder="Buscar cliente por nombre (mín. 3 letras)..."
         [(ngModel)]="nombreBusqueda"
         (input)="onInputBusquedaCliente()"
-        (keyup.enter)="buscarClientes()" />
+        (keyup.enter)="buscarClientes()"
+        appUppercase />
       <button class="btn btn-primary" type="button"
         (click)="buscarClientes()" [disabled]="cargandoClientes">
         <i class="pi pi-search me-1"></i>

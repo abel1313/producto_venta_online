@@ -4,6 +4,7 @@ export interface IPedidoVarianteDetalleDTO {
   precioUnitario: number;
   subTotal: number;
   varianteId: number;
+  promocionId?: number;
 }
 
 export interface IPedidoVarianteDTO {

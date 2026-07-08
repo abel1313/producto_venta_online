@@ -4579,6 +4579,15 @@ PUT /v1/usuarios/{id}/resetear-password
 - Genera una contraseña aleatoria de 8 caracteres (letras mayúsculas/minúsculas + dígitos, sin
   `0/O/1/l/I` para no confundir al dictarla), se la asigna al usuario y marca internamente
   `passwordTemporal = true`.
+
+> **[BUG-KEY-12] ✅ Fix (2026-07-04):** al probar este endpoint, el response llegaba vacío
+> `{ "mensaje": null, "code": 0, "data": null, "lista": null }` a pesar de responder `200`. Causa:
+> el constructor de 2 argumentos de `ResponseGeneric` (`ResponseGeneric.java`) solo llenaba los
+> campos cuando `data` era `null` — el caso de éxito (con datos reales) nunca los asignaba. Era un
+> bug preexistente en una clase muy usada en todo el back; nadie lo había notado porque hasta hoy
+> todos los demás usos de ese constructor pasaban `null` a propósito (casos de error). Ya
+> corregido — el `data`/`mensaje`/`code` ahora sí llegan bien en la respuesta de este endpoint (y
+> de cualquier otro que use ese mismo constructor con datos reales en el futuro).
 - Responde `200` con `{ "data": "aB3dEfG9", "mensaje": "Contrasena reseteada. Comparte esta
   contrasena con el usuario; debera cambiarla en su siguiente login." }` — **el front debe
   mostrarle esa contraseña (`data`) al admin en pantalla** para que se la pueda dar al usuario;
@@ -4630,3 +4639,423 @@ capture el código que el usuario le dicte por teléfono → `verificar-correo`.
 aplicando — el correo nuevo de inmediato, sin pedir verificación ni dejar nada pendiente. Mismo
 criterio que ya existe para `Cliente` cuando lo edita un ADMIN (mejora 15, punto 4): se confía en
 el admin, no hay paso intermedio. No fue necesario cambiar código para esto, ya funcionaba así.
+
+---
+
+## ⏳ Promociones por variante / combos (2026-07-05) — código en dev, migración y pruebas pendientes
+
+> **Implementado en el código de `dev`, pero todavía no funciona en ningún ambiente.** Falta
+> correr `migration_promociones.sql` (crea las tablas nuevas) y hacer pruebas end-to-end antes de
+> que el front pueda integrar de verdad. Este aviso se quita de aquí en cuanto esté probado.
+> Diseño completo en `PROMOCIONES.md` en la raíz del repo.
+
+**Qué es:** un combo de 1 o más variantes ya existentes (pueden ser productos distintos entre sí)
+que se venden juntas con precio rebajado por pieza. Cada pieza conserva su propio precio de oferta
+(no hay precio único de paquete) — así que en pedidos/ventas cada pieza viaja como una línea normal,
+solo con un campo nuevo `promocionId` para agruparlas.
+
+**Endpoints planeados:**
+- `POST /v1/promociones` (ADMIN) — crear
+- `PUT /v1/promociones/{id}` (ADMIN) — editar (reemplaza detalles completos)
+- `PUT /v1/promociones/{id}/activo` (ADMIN) — activar/desactivar
+- `GET /v1/promociones/admin?pagina=&size=` (ADMIN) — listado completo, incluye vencidas/inactivas
+- `GET /v1/promociones/activas?pagina=&size=` (cualquier usuario logueado) — catálogo, trae
+  `instanciasDisponibles` ya calculado y el desglose de piezas (variante, talla, color, precio
+  normal vs promo, imagen)
+
+> **No existe endpoint DELETE para promociones.** "Eliminar" una promo desde el panel admin es
+> llamar `PUT /v1/promociones/{id}/activo` con `{ "activo": false }` — la promoción no se borra,
+> se apaga: deja de salir en `/v1/promociones/activas` pero sigue existiendo (con su historial)
+> en `/v1/promociones/admin`. Si el front pone un botón de "eliminar" en la lista de admin, debe
+> llamar a este endpoint, no esperar un DELETE que no existe.
+
+**Cambios que vendrán en endpoints existentes:**
+- `POST /pedidos/savePedido` y venta directa: cada detalle gana campo opcional `promocionId`.
+- `GET /pedidos/findPedido/{id}`: cada línea del detalle gana `promocionId` +
+  `promocionDescripcion` (null en líneas normales) para que el front agrupe el combo visualmente.
+- Ticket/comprobante: se agrupa por `promocionId` igual que el detalle de pedido.
+
+**Regla de negocio clave para el checkout:** si el carrito trae al menos una promoción, **todo el
+pedido se fuerza a pago de contado** — el front debe ocultar/deshabilitar "Apartar" y "Fiado" para
+el pedido completo (no solo la promo) y mostrar aviso. El back rechazará con `400` si de todos
+modos llega un pedido con promoción y `tipoPedido` distinto de `NORMAL`.
+
+Ver `PROMOCIONES.md` para los JSON de request/response completos de cada endpoint y el flujo UX
+sugerido (catálogo, detalle de la promo, carrito, countdown de vencimiento calculado en el front).
+
+---
+
+## [SEC-KEY-02] ✅ Fix: precio de línea ahora se valida contra catálogo (2026-07-05)
+
+**Antes:** `POST /pedidos/savePedido` y la venta directa (`VentaDirectaRequest`) aceptaban el
+`precioUnitario`/`precioVenta` y `subTotal` de cada línea tal cual los mandara el request, sin
+comparar contra nada — solo se validaba stock. Cualquier usuario autenticado (no solo ADMIN, ya
+que `savePedido` está abierto a `authenticated()`) podía editar el request antes de enviarlo
+(DevTools, Postman, etc.) y pagar el precio que quisiera por un producto normal.
+
+**Después:** en una línea **sin** `promocionId`, el back ahora exige que `precioUnitario`
+(`precioVenta` en venta directa) coincida con el precio de catálogo actual del producto
+(`Producto.precioVenta`), y que `subTotal` sea `precioUnitario * cantidad` (tolerancia de 1
+centavo por redondeo). Si no coincide, responde `400` con `"El precio de {nombre} no es valido"` o
+`"El subtotal de {nombre} no es valido"` y no crea el pedido/venta.
+
+**Qué debe hacer el front:** nada nuevo si ya arma el carrito con el precio que el back le dio en
+el listado del producto/variante (`GET /variantes/buscar`, etc.) — ese sigue siendo el precio
+válido. El único caso que ahora falla es si el carrito quedó con un precio **desactualizado**
+(ej. el admin cambió el precio del producto mientras el cliente tenía el carrito abierto desde
+hace rato) — en ese caso el front debe mostrar el error del `400` y sugerir refrescar el carrito
+antes de reintentar, en vez de reintentar con el mismo precio viejo.
+
+**Las líneas con `promocionId` no cambian:** su precio rebajado sigue siendo válido — se valida
+aparte contra `promocion_detalle` (ver sección de Promociones arriba), no contra el precio de
+catálogo.
+
+**Archivos:** `PedidoServiceImpl.java` (`validarPrecioCatalogo`), `VentaServiceImpl.java`
+(`validarPrecioCatalogo`).
+
+---
+
+## ⚠️ Revisar en el FRONT — segunda llamada a `/v1/promociones/admin` se queda colgada indefinidamente (2026-07-05)
+
+**Síntoma reportado:** al cargar el panel de admin de promociones, salen (casi) dos llamadas
+seguidas a `GET /v1/promociones/admin?pagina=1&size=10`. La primera termina bien (200, con los
+datos). La segunda se queda "cargando" **para siempre** (varios minutos, nunca resuelve ni falla).
+
+**Ya se descartó que sea el backend.** Se probó el endpoint directo (fuera del front) tres veces
+seguidas y respondió en menos de 1.1s cada vez, sin colgarse. Además, si fuera un bloqueo de MySQL
+(por ejemplo dejado por las `ALTER TABLE` de la migración de promociones), el pool de conexiones
+(Hikari, `connection-timeout: 20000`) habría fallado con error a los ~20-25 segundos — no se
+quedaría colgado de forma indefinida. Un hang indefinido (no un timeout) apunta a algo del lado
+del cliente/Angular, no de la base de datos ni del servidor.
+
+**Qué debe revisar el front — sospecha concreta: el interceptor de refresh de token.**
+Ya hubo un bug ahí antes (ver ticket del bug de `response.response.accessToken` documentado
+arriba, sección JWT). El patrón que explica exactamente este síntoma:
+
+1. Salen 2 requests casi al mismo tiempo hacia un endpoint protegido.
+2. Alguno de los dos (o ambos) dispara el flujo de refresh de token en el interceptor HTTP.
+3. El interceptor debe hacer que **todas** las requests que estaban esperando ese refresh se
+   reanuden cuando el token nuevo esté listo — típicamente compartiendo un
+   `BehaviorSubject<string | null>` (o similar) donde las requests en espera hacen algo como
+   `filter(token => token !== null)` sobre ese subject.
+4. **Si en cambio se usa un `Subject` (no `BehaviorSubject`), o solo se resuelve una promesa/
+   observable de un solo uso, o solo la request que "ganó la carrera" y disparó el refresh
+   recibe la notificación** — la segunda request se queda suscrita a algo que ya emitió y nunca
+   vuelve a emitir, o a algo que nunca la tiene en cuenta. Se queda esperando para siempre.
+
+**Qué pedirle al desarrollador del front que verifique puntualmente:**
+- Ubicar el interceptor HTTP que maneja 401 / refresh de token.
+- Confirmar cómo maneja **llamadas concurrentes** que necesitan el mismo refresh: ¿usa un
+  `BehaviorSubject` (o equivalente) que emite el token nuevo a **todos** los suscriptores en
+  espera, o solo resuelve para la request que originó el refresh?
+- Reproducir disparando 2 llamadas al mismo endpoint protegido casi al mismo tiempo (ej. desde la
+  consola o abriendo la pantalla de promociones admin) y confirmar si el bug ocurre solo cuando
+  hay una condición de carrera en el refresh, o también sin refresh de por medio (en ese caso la
+  causa sería otra, ej. una duplicación de la llamada en el propio componente/servicio Angular que
+  vale la pena revisar aparte — dos suscripciones al mismo observable sin compartir, un resolver +
+  un `ngOnInit` llamando dos veces, etc.).
+
+**No es un cambio de contrato de API** — no hay nada nuevo que el front tenga que mandar o
+interpretar distinto en la respuesta; es una investigación de un bug de concurrencia en el cliente.
+
+> ✅ **Resuelto en el front (2026-07-06).** Confirmado por el equipo de front — era el interceptor
+> de refresh de token, como se sospechaba arriba. Cerrado, no requiere nada más del backend.
+
+---
+
+## ⚠️ Diagnóstico temporal en `PUT /variantes/v1/admin/habilitar-lote` (2026-07-06)
+
+**Bug reportado:** al deshabilitar/habilitar variantes en lote, el endpoint responde 200 con el
+mensaje de éxito, pero en la base de datos las variantes no cambian de estado. Sospecha: el
+`findAllById(ids)` del backend ignora en silencio los ids que no existan como `Variantes.id` — si
+el front está mandando ids equivocados (por ejemplo `producto.id` en vez de `variante.id`), el
+endpoint "tiene éxito" sin actualizar nada, porque no hay ninguna variante real que coincida.
+
+**Actualización 2026-07-06 (misma sesión):** con datos reales de QA (ids `2, 3, 4`) los 3 salieron
+`encontradoEnBD: true` — sí existen como `Variantes.id`, así que se descarta el mismatch de ids.
+Se agregó una segunda verificación: tras el `saveAll`, el backend hace `flush()` +
+`entityManager.clear()` y vuelve a leer esas mismas variantes directo de la BD (sin caché de
+Hibernate de por medio) para confirmar si el `UPDATE` realmente se aplicó, dentro de la misma
+transacción.
+
+**Cambio (temporal, solo para diagnosticar — no es el fix final):** el campo `data` de la
+respuesta, que antes era solo el texto `"Variantes deshabilitadas correctamente"` /
+`"Variantes habilitadas correctamente"`, ahora viene con un diagnóstico concatenado:
+
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": "Variantes deshabilitadas correctamente. {\"idsEnviados\":[2, 3, 4],\"resultado\":[{\"id\":2,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"},{\"id\":3,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"},{\"id\":4,\"encontradoEnBD\":true,\"habilitadoTrasGuardar\":\"0\"}]}",
+  "lista": null
+}
+```
+
+- `idsEnviados`: los ids tal cual los mandó el front en el `request.ids`.
+- `resultado`: por cada id, si existe (`encontradoEnBD: true`) o no (`false`) como `Variantes.id`
+  real en la base, y `habilitadoTrasGuardar`: el valor de la columna `habilitado` releído
+  directamente de la BD después de guardar (`"1"` = habilitado, `"0"` = deshabilitado).
+- Si `habilitadoTrasGuardar` ya sale correcto (`"0"` al deshabilitar) pero al consultar la tabla
+  con otra herramienta (DBeaver, consola MySQL, etc.) todavía se ve `"1"`, el problema no es del
+  backend — es una lectura obsoleta de esa herramienta (transacción/conexión abierta desde antes
+  con aislamiento `REPEATABLE READ`, o apuntando a un host/réplica distinto). Hay que cerrar y
+  reabrir la conexión de esa herramienta antes de volver a consultar.
+- También se loguea del lado del servidor (`log.info`) el mismo diagnóstico.
+
+**⚠️ Si el front hace algo con ese string además de mostrarlo tal cual** (comparación exacta contra
+`"Variantes deshabilitadas correctamente"`, parseo, etc.), va a dejar de matchear porque ahora trae
+texto extra al final. Si solo se muestra el mensaje en un toast/snackbar sin comparar el contenido,
+no requiere ningún cambio del front — solo van a ver un texto más largo temporalmente.
+
+**Pendiente:** con este diagnóstico en logs/respuesta, confirmar si los ids que manda el front para
+esta pantalla (`variantes/v1/admin/habilitar-lote`) realmente corresponden a `variante.id` o si por
+error de la pantalla se están mandando otros ids (ej. `producto.id`). Una vez confirmada la causa,
+se quita este diagnóstico y se aplica el fix definitivo (que puede ser en front, si el bug es que
+se arma mal el arreglo de ids antes de llamar al endpoint).
+
+---
+
+## ✅ RESUELTO (2026-07-07): diagnóstico temporal quitado de `habilitar-lote`
+
+Como ya se confirmó (sección de arriba, "Causa real encontrada") que el `UPDATE` en BD siempre
+funcionó bien, se quitó el JSON de diagnóstico del campo `data`. El endpoint vuelve al mensaje
+limpio de siempre:
+
+```json
+{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Variantes deshabilitadas correctamente.", "lista": null }
+```
+
+Mismo para `"Variantes habilitadas correctamente."`. El diagnóstico (ids/resultado) sigue
+generándose pero solo va al log del servidor (`log.debug`), ya no viaja en la respuesta HTTP. Si el
+front había agregado algún manejo temporal para el texto largo con JSON embebido, ya se puede
+quitar — el `data` vuelve a ser el string corto de antes.
+
+---
+
+## ✅ Causa real encontrada y arreglada (2026-07-06): variantes SÍ se deshabilitaban, pero nunca se veía
+
+Con el diagnóstico de arriba se confirmó en QA que `habilitar-lote` **sí actualiza la BD**
+correctamente (`habilitadoTrasGuardar` salía con el valor correcto). El problema real era otro: los
+endpoints de búsqueda/listado de variantes para admin (`GET /variantes/v1/buscar`,
+`GET /variantes/v1/porProducto/{productoId}`, el filtro admin, "sin stock deshabilitadas", etc.)
+**nunca incluían el campo `habilitado` en su respuesta** — a diferencia de productos, donde ese
+campo sí viaja. Por eso, aunque la variante ya estaba deshabilitada en la BD, cualquier pantalla
+que la buscara/listara no tenía forma de saberlo y seguía mostrándola como habilitada.
+
+**Cambio de contrato — nuevo campo `habilitado` (char, `'1'`/`'0'`) agregado a:**
+- El objeto de cada variante en `GET /variantes/v1/buscar` (búsqueda por nombre/código/palabra
+  clave, resumen paginado) — clase `VarianteResumenDto`.
+- El objeto de cada variante en `GET /variantes/v1/porProducto/{productoId}` (listado simple, no
+  paginado) — clase `VarianteDto`.
+
+Mismo formato que ya usa `Producto.habilitado`: `'1'` = habilitada, `'0'` = deshabilitada. El front
+debe empezar a leer este campo en esas pantallas para reflejar correctamente el estado, igual que
+ya lo hace con productos.
+
+**Aún pendiente de correr en producción** — este fix (junto con el diagnóstico de arriba) solo
+está en `dev`/`qa` por ahora; falta subir a `main` cuando se confirme que todo funciona bien en QA.
+
+---
+
+## ✅ Fix (2026-07-06): búsqueda de cliente por nombre completo no encontraba resultados
+
+**Bug:** `GET /clientes/buscar?nombre=...` buscaba el texto contra `nombrePersona`,
+`apeidoPaterno` y `apeidoMaterno` **por separado** (OR). Si buscabas solo "Abel" sí encontraba al
+cliente (matchea `nombrePersona`), pero si buscabas "Abel Tiburcio" (nombre + apellido juntos) no
+encontraba nada, porque ningún campo individual contiene esa cadena completa.
+
+**Fix:** la query ahora concatena `nombrePersona + apeidoPaterno + apeidoMaterno` y busca el texto
+contra el nombre completo. Sigue funcionando buscar por una sola palabra (nombre solo, o apellido
+solo) y ahora también funciona buscar "nombre apellido" junto, en ese orden. **No cambia el
+contrato** (mismo endpoint, mismo request/response) — solo corrige los resultados.
+
+---
+
+## ⚠️ Cambio de comportamiento (2026-07-06): errores de validación ya NO regresan 500
+
+**Contexto:** al guardar una venta directa con una promoción
+(`POST /v1/ventas/save`, líneas con `promocionId`), el front reportó `{"code":500,"data":null,
+"mensaje":"Error interno del servidor"}` — sin ninguna pista de qué estaba mal. La causa inmediata
+era que el request mandaba `"cantidad": null` en las líneas de la promo (el backend no validaba
+eso y tronaba con un error interno al hacer una comparación numérica). **El front debe mandar
+`cantidad` con el número real de piezas en cada línea de detalle**, incluidas las de promoción
+(no puede ir `null`).
+
+**Pero el hallazgo más importante fue de fondo:** el backend tiene decenas de validaciones de
+negocio (stock insuficiente, precio inválido, promoción vencida o no disponible, "las promociones
+solo se pueden comprar de contado", etc.) que se lanzan internamente como una excepción genérica.
+El manejador global de errores no tenía un caso para ese tipo de excepción, así que **todas esas
+validaciones terminaban devolviendo `code: 500` con el mensaje genérico `"Error interno del
+servidor"`**, ocultando el mensaje real (p. ej. "Stock insuficiente en variante id 5. Disponible:
+2, solicitado: 10").
+
+**Fix:** ahora esas validaciones de negocio devuelven `code: 400` con el mensaje real y específico
+en `mensaje`/`data`, igual que ya pasaba con otras validaciones (`404`, `409`, `422`, etc.).
+
+**Lo que el front necesita revisar:**
+- Si en algún lado el front distingue `500` vs `400` para decidir qué mostrarle al usuario (p. ej.
+  "algo salió mal, intenta de nuevo" para 500 vs. mostrar el mensaje tal cual para 400), muchos
+  errores que antes caían en la rama de "500 genérico" ahora van a caer en la rama de "400 con
+  mensaje específico" — en general esto es una mejora (mensajes más útiles), pero si hay lógica
+  específica atada al código 500 en particular, revisarla.
+- Ya se puede mostrar directamente el mensaje de `data`/`mensaje` en la mayoría de los errores de
+  venta/pedido/promoción — antes esa información no llegaba nunca.
+- Además se agregó validación explícita de `cantidad` (obligatoria y mayor a 0) en
+  `POST /v1/ventas/save` y `POST /pedidos/savePedido` — si falta o es 0/negativa, ahora regresa
+  400 con `"La cantidad es obligatoria y debe ser mayor a 0..."` en vez de tronar.
+
+**Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
+`dev`/`qa` por ahora.
+
+---
+
+## ⚠️ Cambio de contrato (2026-07-06): filtro admin combinado de productos/variantes + fix paginación por defecto
+
+**1. `GET /productos/*` sin página/tamaño por defecto (bug, ya corregido).** Varios endpoints de
+`ProductosControllerImpl` (`obtenerProductos`, `buscarNombreOrCodigoBarra`, `admin/no-habilitados`,
+`admin/sin-stock`, `admin/filtrar`) exigían `size`/`page` como obligatorios — si el front entraba a
+un componente sin mandarlos, el backend rechazaba la petición en vez de asumir página 1 / 10
+registros (a diferencia de `VarianteController`, que sí tenía default). Ahora todos tienen
+`page` por defecto `1` y `size` por defecto `10`, igual que variantes. **No rompe nada** — si ya
+mandabas esos params, sigue funcionando igual.
+
+**2. `GET /productos/admin/filtrar` y `GET /variantes/v1/admin/filtrar` — filtro combinado
+(rompe contrato, hay que actualizar el front).**
+
+Antes: un solo parámetro `filtro` (enum `SIN_STOCK` / `CON_STOCK` / `CON_IMAGENES` /
+`CON_STOCK_Y_IMAGENES`), sin poder combinarlo con búsqueda por nombre/código.
+
+Ahora, **se quitó el parámetro `filtro`** y se reemplazó por 4 parámetros independientes, todos
+opcionales, que se combinan entre sí con AND:
+
+| Parámetro | Tipo | Significado |
+|---|---|---|
+| `nombreOCodigo` | string, opcional | Busca en nombre del producto/variante y en código de barras a la vez (como ya funciona en las búsquedas públicas) |
+| `conStock` | boolean, opcional | `true` = con stock, `false` = sin stock, **omitido** = cualquiera |
+| `conImagenes` | boolean, opcional | `true` = con imágenes, `false` = sin imágenes, **omitido** = cualquiera |
+| `habilitado` | boolean, opcional | `true` = habilitado, `false` = deshabilitado, **omitido** = cualquiera |
+| `page`/`pagina`, `size` | int | Igual que antes (default 1 y 10 si no se mandan) |
+
+Ejemplo: buscar "pantalon" con stock, sin importar si tiene imágenes o no, solo habilitados:
+```
+GET /productos/admin/filtrar?nombreOCodigo=pantalon&conStock=true&habilitado=true&page=1&size=10
+```
+
+Ejemplo: solo deshabilitados, sin ningún otro filtro:
+```
+GET /variantes/v1/admin/filtrar?habilitado=false&pagina=1&size=10
+```
+
+**Reglas de uso:**
+- Cada uno de los 3 filtros (`conStock`, `conImagenes`, `habilitado`) es de un solo estado a la
+  vez — no tiene sentido pedir "con imágenes" y "sin imágenes" al mismo tiempo, por eso cada uno
+  es un solo booleano (no un arreglo). Si no se manda el parámetro, no se filtra por esa dimensión.
+  `nombreOCodigo` sí se puede combinar libremente con cualquier combinación de los otros 3.
+- En variantes, `habilitado` filtra por el estado de la **variante** (`v.habilitado`), no del
+  producto padre — coincide con el fix documentado arriba de `habilitar-lote`.
+- El front necesita actualizar la pantalla de filtros de admin (productos y variantes) para mandar
+  estos 4 parámetros en vez del enum `filtro` — el enum `FiltroCatalogoEnum` ya no existe en el
+  backend, cualquier request con `filtro=...` va a fallar (`400`, parámetro no reconocido).
+
+---
+
+## ✅ Fix (2026-07-07): mensajes de error de promociones ahora son específicos
+
+**Reportado:** al agregar una promoción al carrito y confirmar la venta/pedido, el back rechazaba
+la operación con `400` y el mismo mensaje genérico `"La promocion '...' ya no esta disponible"` sin
+importar cuál era el problema real (línea faltante, precio distinto, cantidad inválida, etc.) — esto
+hacía imposible saber, desde el front, qué corregir.
+
+**Causa:** `PromocionServiceImpl.validarLineasPromocion()` usaba el mismo mensaje para 4
+validaciones distintas. Ya se separaron — el mensaje ahora dice exactamente cuál fue el problema:
+
+| Situación | Mensaje nuevo |
+|---|---|
+| Faltan o sobran líneas del combo (el front debe mandar **una línea por cada variante** de la promoción, ver `PROMOCIONES.md` punto 7) | `"La promocion '{descripcion}' requiere N linea(s) (una por cada variante del combo), se recibieron M"` |
+| Una `varianteId` mandada no pertenece a esa promoción | `"La variante {id} no pertenece a la promocion '{descripcion}'"` |
+| El `precioUnitario` mandado no coincide con `precioEnPromocion` de esa variante en BD | `"El precio de la variante {id} en la promocion '{descripcion}' no coincide. Esperado: X, recibido: Y"` |
+| La `cantidad` mandada no es múltiplo de la cantidad del detalle (ej. detalle pide de 1 en 1 y llegó 3 en una promo que solo permite llevar combos completos) | `"La cantidad de la variante {id} en la promocion '{descripcion}' debe ser multiplo de N, se recibio M"` |
+| Promoción vencida o desactivada | `"La promocion '{descripcion}' ya no esta disponible"` (sin cambios) |
+| Se intenta apartar/dar a crédito una promoción | `"Las promociones solo se pueden comprar de contado, no se pueden apartar ni dar a credito"` (sin cambios) |
+
+**No cambia el contrato** (mismo `400`, mismo formato de response) — solo el texto del mensaje es
+más específico. Si el front tenía un caso de prueba fallando "por promociones" sin saber por qué,
+usar este mensaje nuevo para identificar cuál de las 4 validaciones está chocando (lo más común:
+el front manda la promoción como **una sola línea** en vez de una línea por cada variante que la
+compone — ver contrato en `PROMOCIONES.md`, sección 7).
+
+**Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
+`dev`/`qa` por ahora.
+
+---
+
+## ✅ Fix (2026-07-07): `POST /variantes/v1/inicializarDesdeProducto` — el checkbox "misma imagen para todas" no funcionaba
+
+**Endpoint:** `POST /variantes/v1/inicializarDesdeProducto` (botón "Variantes" en la card de
+`/productos/buscar` admin).
+
+**Bug reportado:** con `imagenParaTodas: true`, tanto sin subir archivos como subiendo un archivo
+nuevo, el back respondía error y no se creaban variantes con imagen. Solo funcionaba el caso sin
+checkbox y sin archivos (variantes sin imagen).
+
+**Causa:** el código solo manejaba el caso "checkbox marcado + archivo nuevo". Si el checkbox
+estaba marcado pero no se mandaba ningún archivo, el bloque de imágenes se saltaba por completo —
+nunca buscaba la imagen ya existente del producto, así que las variantes se creaban sin imagen aunque
+el checkbox estuviera marcado. Aparte, la subida al microservicio de imágenes no tenía manejo de
+error, así que si ese servicio fallaba o tardaba, el error no traía info útil.
+
+### Request (sin cambios respecto a lo que el front ya manda)
+
+`multipart/form-data` con 2 partes:
+
+```
+Part 1 → nombre: "request"
+         Content-Type: application/json
+         Body: {
+           "productoId":        <número>,
+           "cantidadVariantes": <número>,
+           "imagenParaTodas":   <boolean>   ← viene del checkbox
+         }
+
+Part 2 → nombre: "files[]"    ← solo si el usuario seleccionó archivos
+         Content-Type: image/*
+         Body: <archivo(s) seleccionados>
+```
+
+### Response — éxito (201)
+
+```json
+{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Variantes", "lista": null }
+```
+
+`data` es el string literal `"Variantes"`, **no** un arreglo de las variantes creadas (esto ya era
+así antes del fix, solo estaba mal documentado). Si el front necesita las variantes recién creadas
+(con sus imágenes) para refrescar la UI, tiene que volver a pedir
+`GET /variantes/porProducto/{productoId}` después de este POST.
+
+### Los 3 flujos — comportamiento ya corregido
+
+| Flujo | `imagenParaTodas` | `files[]` | Resultado |
+|---|---|---|---|
+| A | `false` | sin archivos | Crea variantes sin imagen. (sin cambios) |
+| B | `true` | sin archivos | Busca la imagen **principal** ya vinculada al producto (o la primera si ninguna está marcada como principal) y la vincula a **todas** las variantes creadas. |
+| C | `true` | con 1+ archivos | Sube el/los archivo(s) al microservicio de imágenes y vincula esa(s) imagen(es) nueva(s) a **todas** las variantes creadas. Si el producto no tenía imagen propia, también se la asigna a él. |
+
+### Response — error (nuevos casos)
+
+Todos llegan en el mismo campo que el front ya lee (`err.error.mensaje`), no cambia el manejo
+en el interceptor/handler genérico:
+
+| Caso | HTTP | `mensaje` |
+|---|---|---|
+| Flujo B, **producto sin ninguna imagen** para copiar | `404` | `"El producto {id} no tiene una imagen para copiar a las variantes. Sube una imagen o desmarca la casilla de 'misma imagen para todas'."` |
+| Flujo C, **falla la subida al microservicio de imágenes** | `404` | `"No se pudo subir la imagen al servicio de imagenes, intenta de nuevo"` |
+| Stock insuficiente (ya existía, sin cambios) | `404` | `"Stock insuficiente para crear N variantes del producto X. Stock disponible: Y"` |
+
+**Front:** no requiere cambios de código — la petición que ya arman coincide con este contrato y
+el error handler genérico ya muestra estos mensajes nuevos en el Swal. Es contrato de referencia
+para que sepan qué esperar al probar los 3 flujos y no se sorprendan con el `404` nuevo del caso B.
+
+**Estado:** cambio hecho localmente en rama `dev`, todavía sin commitear/pushear. Falta subir a
+`qa` y luego a `main` siguiendo el flujo normal (`dev → qa → main`); no se ha corrido ningún
+pipeline con este fix todavía.

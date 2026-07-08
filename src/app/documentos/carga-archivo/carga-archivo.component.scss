@@ -317,3 +317,9 @@ $t:  all 0.22s ease;
   border-radius: 10px;
   padding: 10px 14px;
 }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
+:host-context(body.theme-light) {
+  .ca-card__title    { color: #1e293b; }
+  .ca-card__subtitle { color: rgba(0,0,0,0.55); }
+}

@@ -86,6 +86,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    path: 'promociones',
+    loadChildren: () => import('./promociones/promociones.module').then(m => m.PromocionesModule),
+    canActivate: [AuthGuard, CarritoGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

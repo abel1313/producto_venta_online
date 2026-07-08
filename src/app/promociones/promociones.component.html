@@ -1,0 +1,154 @@
+<div class="pm-wrap">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+  <div class="pm-header">
+    <div class="pm-header__inner">
+      <div class="pm-header__title">
+        <h4>🏷️ Promociones del momento</h4>
+        <small>Combos exclusivos a precio especial</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOADING ────────────────────────────────────────────────────── -->
+  <div class="pm-loading" *ngIf="cargando">Cargando promociones…</div>
+
+  <!-- ── VACÍO ──────────────────────────────────────────────────────── -->
+  <div class="pm-empty" *ngIf="!cargando && promos.length === 0">
+    <p>😴 Por ahora no hay promociones activas.</p>
+    <p>¡Vuelve pronto para descubrir nuevos combos!</p>
+  </div>
+
+  <!-- ── GRID DE CARDS ──────────────────────────────────────────────── -->
+  <div class="pm-grid" *ngIf="!cargando && promos.length > 0">
+    <div class="pm-card" *ngFor="let p of promos">
+
+      <!-- Imagen principal del primer detalle -->
+      <div class="pm-card__img-wrap" *ngIf="p.detalles?.[0]?.imagenUrl">
+        <img [src]="p.detalles![0].imagenUrl" class="pm-card__img" [alt]="p.descripcion">
+        <span class="pm-badge-promo">🏷️ PROMO</span>
+      </div>
+      <div class="pm-card__img-wrap pm-card__img-wrap--placeholder" *ngIf="!p.detalles?.[0]?.imagenUrl">
+        <span class="pm-badge-promo pm-badge-promo--solo">🏷️ PROMO</span>
+      </div>
+
+      <div class="pm-card__body">
+        <p class="pm-card__nombre">{{ p.descripcion }}</p>
+
+        <!-- Countdown -->
+        <div class="pm-countdown" [class.pm-countdown--urgente]="countdown(p).includes('m') && !countdown(p).includes('d') && !countdown(p).includes('h')">
+          ⏱ {{ countdown(p) }}
+        </div>
+
+        <!-- Precios -->
+        <div class="pm-precios">
+          <span class="pm-precio--normal">${{ precioTotalNormal(p) | number:'1.2-2' }}</span>
+          <span class="pm-precio--promo">${{ precioTotalPromo(p) | number:'1.2-2' }}</span>
+        </div>
+        <p class="pm-ahorro" *ngIf="ahorro(p) > 0">Ahorras ${{ ahorro(p) | number:'1.2-2' }}</p>
+
+        <!-- Piezas del combo -->
+        <ul class="pm-piezas">
+          <li *ngFor="let d of p.detalles">
+            <span class="pm-pieza__nombre">{{ labelDetalle(d) }}</span>
+            <span class="pm-pieza__precio">${{ d.precioEnPromocion | number:'1.2-2' }}</span>
+          </li>
+        </ul>
+
+        <!-- Disponibilidad -->
+        <p class="pm-disponibilidad">
+          <span [class.pm-disp--ok]="(p.instanciasDisponibles ?? 0) > 2"
+                [class.pm-disp--poco]="(p.instanciasDisponibles ?? 0) <= 2 && (p.instanciasDisponibles ?? 0) > 0"
+                [class.pm-disp--cero]="(p.instanciasDisponibles ?? 0) === 0">
+            {{ (p.instanciasDisponibles ?? 0) === 0 ? '❌ Sin disponibilidad' : '✅ ' + p.instanciasDisponibles + ' disponible(s)' }}
+          </span>
+        </p>
+      </div>
+
+      <!-- Footer: acciones -->
+      <div class="pm-card__footer">
+        <button class="pm-btn pm-btn--detalle" (click)="abrirDetalle(p)">Ver detalle</button>
+
+        <ng-container *ngIf="estaEnCarrito(p); else btnAgregar">
+          <div class="pm-en-carrito">
+            <span>🛒 {{ cantidadEnCarrito(p) }} en carrito</span>
+            <button class="pm-btn pm-btn--quitar" (click)="quitarDelCarrito(p)">✕</button>
+          </div>
+        </ng-container>
+        <ng-template #btnAgregar>
+          <button class="pm-btn pm-btn--agregar" (click)="agregarDirecto(p)"
+                  [disabled]="(p.instanciasDisponibles ?? 0) === 0">
+            🛒 Agregar
+          </button>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="pm-paginacion" *ngIf="!cargando && totalPaginas > 1">
+    <button class="pm-btn pm-btn--ghost" (click)="paginaAnterior()" [disabled]="pagina <= 1">← Anterior</button>
+    <span>{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="pm-btn pm-btn--ghost" (click)="paginaSiguiente()" [disabled]="pagina >= totalPaginas">Siguiente →</button>
+  </div>
+
+</div>
+
+<!-- ── MODAL DETALLE ──────────────────────────────────────────────────── -->
+<div class="pm-overlay" *ngIf="promoDetalle" (click)="cerrarDetalle()">
+  <div class="pm-modal" (click)="$event.stopPropagation()">
+
+    <div class="pm-modal__hdr">
+      <h5>{{ promoDetalle.descripcion }}</h5>
+      <button class="pm-modal__close" (click)="cerrarDetalle()">✕</button>
+    </div>
+
+    <div class="pm-modal__body">
+      <p class="pm-modal__vence">⏱ Vence en: {{ countdown(promoDetalle) }}</p>
+
+      <div class="pm-modal__precios">
+        <span class="pm-precio--normal">${{ precioTotalNormal(promoDetalle) | number:'1.2-2' }}</span>
+        <span class="pm-precio--promo">${{ precioTotalPromo(promoDetalle) | number:'1.2-2' }}</span>
+        <span class="pm-ahorro" *ngIf="ahorro(promoDetalle) > 0"> — Ahorras ${{ ahorro(promoDetalle) | number:'1.2-2' }}</span>
+      </div>
+
+      <h6 class="pm-modal__piezas-titulo">Incluye:</h6>
+      <div class="pm-modal__pieza" *ngFor="let d of promoDetalle.detalles">
+        <img *ngIf="d.imagenUrl" [src]="d.imagenUrl" class="pm-modal__pieza-img" [alt]="labelDetalle(d)">
+        <div class="pm-modal__pieza-info">
+          <p class="pm-modal__pieza-nombre">{{ labelDetalle(d) }}</p>
+          <p class="pm-modal__pieza-precios">
+            <s class="pm-precio--normal">${{ d.precioNormal | number:'1.2-2' }}</s>
+            <strong class="pm-precio--promo">${{ d.precioEnPromocion | number:'1.2-2' }}</strong>
+            <span *ngIf="d.cantidad > 1"> × {{ d.cantidad }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Selector de cantidad -->
+      <div class="pm-modal__cantidad" *ngIf="(promoDetalle.instanciasDisponibles ?? 0) > 1">
+        <label class="pm-modal__cantidad-label">¿Cuántos combos llevas?</label>
+        <div class="pm-qty">
+          <button class="pm-qty__btn" (click)="decrementarCantidad()" [disabled]="cantidadDetalle <= 1">−</button>
+          <span class="pm-qty__val">{{ cantidadDetalle }}</span>
+          <button class="pm-qty__btn" (click)="incrementarCantidad()" [disabled]="cantidadDetalle >= (promoDetalle.instanciasDisponibles ?? 1)">+</button>
+        </div>
+        <small class="pm-modal__max">Máx. {{ promoDetalle.instanciasDisponibles }}</small>
+      </div>
+
+      <p class="pm-modal__aviso-credito">
+        ⚠️ Las promociones son <strong>solo de contado</strong> — no se pueden apartar ni dar a crédito.
+      </p>
+    </div>
+
+    <div class="pm-modal__footer">
+      <button class="pm-btn pm-btn--ghost" (click)="cerrarDetalle()">Cancelar</button>
+      <button class="pm-btn pm-btn--agregar" (click)="confirmarAgregar()"
+              [disabled]="(promoDetalle.instanciasDisponibles ?? 0) === 0">
+        🛒 Agregar {{ cantidadDetalle }} combo(s)
+        — ${{ (precioTotalPromo(promoDetalle) * cantidadDetalle) | number:'1.2-2' }}
+      </button>
+    </div>
+
+  </div>
+</div>

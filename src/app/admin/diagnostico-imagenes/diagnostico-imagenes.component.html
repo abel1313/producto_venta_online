@@ -39,7 +39,8 @@
               placeholder="Buscar producto por nombre o código de barras (mín. 3 chars)…"
               [value]="terminoProducto"
               (input)="onBuscarProducto($event)"
-              autocomplete="off" />
+              autocomplete="off"
+              appUppercase />
           </div>
 
           <!-- Dropdown resultados producto -->
@@ -94,7 +95,8 @@
               placeholder="Buscar variante por nombre, color, talla o código (mín. 3 chars)…"
               [value]="terminoVariante"
               (input)="onBuscarVariante($event)"
-              autocomplete="off" />
+              autocomplete="off"
+              appUppercase />
           </div>
 
           <!-- Dropdown resultados variante -->

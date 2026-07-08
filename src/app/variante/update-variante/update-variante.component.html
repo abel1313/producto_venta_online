@@ -31,6 +31,7 @@
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"
+              appUppercase
             />
           </div>
           <div *ngIf="productos.length > 0" class="vf-product-search__results">
@@ -70,7 +71,7 @@
           </div>
           <div class="vf-field">
             <label class="vf-label">Marca</label>
-            <input class="vf-input" formControlName="marca" placeholder="Nike, Levi's…">
+            <input class="vf-input" formControlName="marca" placeholder="Nike, Levi's…" appUppercase>
           </div>
           <!-- Stock con ajuste ± -->
           <div class="vf-field vf-field--full">

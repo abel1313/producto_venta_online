@@ -229,6 +229,85 @@ backdrop-filter: blur(6px);
 
 ---
 
+## FIX ESTILOS — TEXTO BLANCO INVISIBLE EN HEADERS/BOTONES EN MODO CLARO (2026-07-07)
+
+**Síntoma:** en modo claro, varias pantallas mostraban el botón o el header "vacío" — el
+fondo se veía pero el texto no. Reportado puntualmente en `/promociones` (botón "🛒 Agregar"
+sin texto visible).
+
+**Causa raíz:** `--header-brand` cambia de valor por tema — en modo oscuro es un color oscuro
+(`rgba(28,27,25,0.80)`), pero en modo claro es un **glass casi blanco**
+(`rgba(255,250,242,0.82)`), pensado únicamente para el fondo del header con glassmorphism
+(que SIEMPRE lleva su propio override de color de texto oscuro para modo claro, ver sección
+"DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE"). Varios componentes usaron esa misma
+variable para fondos de **botones** o headers de página, con `color:#fff`/`color:white`
+hardcodeado, **sin agregar el override de texto para modo claro** — en modo claro queda texto
+blanco sobre fondo casi blanco = invisible.
+
+**Fix — dos patrones distintos:**
+1. **Botón/banner puntual** (no es el header principal de la página): cambiar el fondo de
+   `var(--header-brand)` a `var(--app-accent)` (color sólido ámbar, igual de visible en ambos
+   temas) o al gradiente fijo `linear-gradient(135deg, #8A6A38, #B08A4E)` — nunca depende del
+   tema.
+2. **Header de página** (usa `var(--header-brand)` a propósito, por el efecto glass): agregar
+   `:host-context(body.theme-light) { .xx-header__title { color: #1e293b; } .xx-header__subtitle { color: rgba(0,0,0,.55); } }`
+   — mismo patrón ya usado en `productos/all` y `variante/buscar`.
+
+**Archivos corregidos:**
+| Archivo | Qué se corrigió |
+|---|---|
+| `promociones/promociones.component.scss` | `.pm-btn--agregar` → `var(--app-accent)` (patrón 1) |
+| `variante/venta-directa/venta-directa.component.scss` | `.vd-modal__header` → gradiente fijo (patrón 1) |
+| `reportes/reportes.component.scss` | `.rp-header__title` (patrón 2) |
+| `admin/cache/cache.component.scss` | `.ac-card__title`/`__subtitle` (patrón 2, sin bloque `theme-light` previo) |
+| `admin/reconciliacion-imagenes/reconciliacion-imagenes.component.scss` | `.rc-card__title`/`__subtitle` (patrón 2) |
+| `admin/config-negocio/config-negocio.component.scss` | `.cn-card__title`/`__subtitle` (patrón 2) |
+| `admin/presentacion-imagenes/presentacion-imagenes.component.scss` | `.pi-card__title`/`__subtitle` (patrón 2) |
+| `clietes/clientes-buscar/clientes-buscar.component.scss` | `.cb-header__title` + buscador `.cb-search` (título Y buscador estaban en blanco) |
+| `productos/producto/detalle-producto/detalle-producto.component.scss` | `.dp-header__name`/`__desc` (patrón 2) |
+| `documentos/carga-archivo/carga-archivo.component.scss` | `.ca-card__title`/`__subtitle` (patrón 2) |
+| `abonos/abonos.component.scss` | `.ab-header__title` (patrón 2, ya tenía bloque `theme-light` para el input) |
+
+**Verificados como YA correctos (no tocados):** `productos/all`, `variante/buscar`,
+`variante/agregar` y `productos/producto/add` (redefinen `--header-brand` localmente con un
+gradiente fijo, a propósito — ver "DISEÑO DEFINITIVO"), `dashboard`, `gastos/all`, `gastos/add`
+(ya tenían su override de modo claro completo).
+
+**Pendiente relacionado (no tocado en este fix):** el rediseño completo dark/light de varios
+de estos mismos componentes (bordes, cards, inputs) sigue abierto — ver sección "PENDIENTE —
+MIGRACIÓN DE COMPONENTES A DARK/LIGHT THEME". Este fix solo resuelve la invisibilidad de
+texto, no el rediseño completo de esos componentes.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX ESTILOS — CHECKBOX CUSTOM EN FILTROS ADMIN (2026-07-07)
+
+**Motivo:** los checkboxes de los filtros admin (Con stock / Sin stock / Con imágenes / Sin
+imágenes / Habilitados / No habilitados) en `productos/buscar` y `variantes/buscar` usaban el
+checkbox nativo del navegador (cuadradito diminuto con `accent-color`) — se veía "muy básico"
+dentro de la pill.
+
+**Fix:** checkbox propio (caja redondeada 16×16, borde sutil, palomita blanca dibujada con CSS
+que aparece con animación de escala al marcar, fondo `var(--app-accent)` cuando está activo).
+El input nativo se oculta visualmente (clip-path, sigue siendo accesible/focuseable) y un
+`<span class="…__box">` hermano dibuja la caja + la palomita vía `:checked + &__box`.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.html` → 6 checkboxes de `.pl-filtros` con `<span class="pl-filtro-check__box">`
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtro-check__input`, `.pl-filtro-check__box` (dark + light mode)
+- `src/app/variante/buscar/buscar.component.html` → 6 checkboxes de `.vb-filtros` con `<span class="vb-filtro-check__box">`
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtro-check__input`, `.vb-filtro-check__box` (dark + light mode)
+
+**Hallazgo colateral corregido:** `.vb-filtro-btn--active` en light mode (`buscar.component.scss`)
+todavía tenía `rgba(99, 102, 241, 0.14)` (índigo viejo) en vez de `rgba(176, 138, 78, 0.14)`
+(ámbar) — quedó fuera de la migración de paleta de la sección HOMOLOGACIÓN. Corregido de paso.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## BUG CONOCIDO — LOADING OVERLAY SE ESCONDE ANTES DE TIEMPO
 
 **Síntoma:** al guardar un producto/variante, el overlay de carga de pantalla completa desaparece mientras el botón sigue mostrando spinner. El usuario puede volver a dar clic antes de que termine la operación.
@@ -1887,6 +1966,55 @@ return throwError(error);
 
 ---
 
+## REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR (2026-07-07)
+
+> Reorganización aplicada sobre `src/app/navbar/navbar.component.html` (Opción B de
+> `navbar-rutas-opciones` — reagrupar por función, cambio mínimo sobre el orden ya
+> existente). **Usar este criterio para decidir dónde va cualquier ruta/link nuevo que se
+> agregue al sidebar de aquí en adelante.**
+
+### Los 9 grupos y su criterio
+
+| # | Grupo | Criterio — qué entra aquí | Ítems actuales |
+|---|---|---|---|
+| 1 | 🏠 Home | Link directo, todos | — |
+| 2 | 🛍️ Productos | Link directo, catálogo cliente | `variantes/buscar` |
+| 3 | 📦 Mis productos | Alta/edición del catálogo (admin) | Ver todos, Agregar producto, Gestionar variantes, Cargar Excel, Palabras clave |
+| 4 | 📋 Pedidos | Solo lo que es "un pedido" — **NO** analítica ni dinero | Mis pedidos, Historial MP |
+| 5 | 💰 Ventas | Todo lo que mueve dinero: cobrar, créditos, gastos | Venta directa, Buscar ventas, Créditos/Abonos, Gastos y Ventas |
+| 6 | 📊 Analítica | Métricas/reportes del negocio — nunca operación del día a día | Dashboard, Reportes, Clientes |
+| 7 | 🎰 Rifas | Todo el módulo de rifas | Rifa de variantes, Rifa mensual, Ver rifas activas |
+| 8 | 🖼️ Imágenes | Herramientas de imágenes — separado de Sistema a propósito | Imágenes presentación, Diagnóstico, Reconciliación, Limpiar caché |
+| 9 | 🛠️ Sistema | Configuración del sistema en sí (antes se llamaba "Admin") | Usuarios, Negocio & Contactos, Chat en vivo, Gestión Promociones |
+
+Fuera de accordions, quedan como **link directo** (sin submenú): Promociones, Chat (no-admin),
+QR, Login (anónimo), toggle de tema. Regla para decidir link directo vs. accordion: si hoy
+tiene o es previsible que tenga 2+ sub-rutas relacionadas → accordion; si es una sola pantalla
+→ link directo.
+
+### Qué NO hacer (para no repetir el desorden anterior)
+
+- **No meter analítica/reportes dentro de "Pedidos".** Antes vivían ahí Dashboard, Reportes y
+  Créditos/Abonos — se sentía mezclado porque "Pedidos" es algo que un cliente reconoce, y esos
+  3 ítems son herramientas de admin sin relación con "ver mi pedido". Cualquier métrica/reporte
+  nuevo va a **Analítica**.
+- **No agregar ítems sueltos como link directo si son admin-only y temáticos** (ej. "Clientes" y
+  "Gastos y Ventas" vivían así antes) — si el ítem nuevo tiene relación clara con un grupo
+  existente (Ventas, Analítica, Sistema), métanlo ahí en vez de crear un link nuevo a nivel raíz.
+- **No volver a cargar "Sistema"/"Admin" con herramientas de imágenes.** Ese grupo llegó a tener
+  8 ítems sin relación entre sí. Cualquier herramienta nueva de imágenes va a **Imágenes**;
+  cualquier cosa de configuración/usuarios/negocio va a **Sistema**.
+- **Antes de crear un grupo nuevo**, revisar si encaja en uno de los 9 de la tabla — solo crear
+  uno nuevo si de verdad no hay match temático (ej. no forzar "Rifas" dentro de "Ventas" aunque
+  ambos generen dinero, porque son operativamente un módulo aparte).
+
+### Claves internas del accordion (`openGroup` en `navbar.component.ts`)
+
+`'misproductos'`, `'pedidos'`, `'ventas'`, `'analitica'`, `'rifas'`, `'imagenes'`, `'sistema'`
+— el nombre interno no necesita coincidir con la etiqueta visible, solo ser único.
+
+---
+
 ## SIDEBAR (navbar rediseñado)
 
 
@@ -3119,5 +3247,67 @@ Botón "✉️ Verificar mi correo" visible cuando `correoVerificado !== true &&
 Todos los usos de `buscarClientes()` verificados — ninguno accesible para usuario no-admin:
 - `clientes-buscar`, `detalle-productos`, `reportes`, `venta-directa`, `agregar-rifa` → todos bajo `AdminGuardGuard`
 - `venta-variante` → bloque en `*ngIf="false"`, nunca se ejecuta
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT MÓDULO PROMOCIONES — COMBOS DE VARIANTES (2026-07-05)
+
+> Implementación completa del módulo de promociones según `PROMOCIONES.md`.
+> Una "promoción" es un combo: N variantes vendidas juntas a precios individuales con descuento.
+
+### Arquitectura
+
+- **Catálogo cliente:** ruta lazy `/promociones` → `PromocionesModule` → `PromocionesComponent`
+- **Panel admin:** `GestionPromocionesComponent` en módulo eager `AdminModule`, ruta `/admin/promociones`
+- **Carrito:** extendido en `CarritoVarianteService` — variantes conservan localStorage, promos son in-memory únicamente (los precios de promo pueden vencer)
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/promociones/models/promocion.model.ts` | `IPromocionDetalle`, `IPromocion`, `IPromocionRequest`, `IPromocionPaginable`, `IItemPromoCarrito` |
+| `src/app/promociones/service/promocion.service.ts` | 5 endpoints: `crear`, `editar`, `toggleActivo`, `getAdmin`, `getActivas` |
+| `src/app/promociones/promociones.component.ts` | Catálogo cliente: grid de cards, countdown timers, modal detalle, selector de cantidad |
+| `src/app/promociones/promociones.component.html` + `.scss` | BEM prefix `pm-`; cards con badge "🏷️ PROMO", precio tachado vs promo, piezas, countdown |
+| `src/app/promociones/promociones-routing.module.ts` | Ruta raíz `''` → `PromocionesComponent` |
+| `src/app/promociones/promociones.module.ts` | Lazy module (`CommonModule`, `FormsModule`) |
+| `src/app/admin/promociones/gestion-promociones.component.ts` | Panel admin: listar/crear/editar promos + toggle activo/inactivo |
+| `src/app/admin/promociones/gestion-promociones.component.html` + `.scss` | BEM prefix `gp-`; dark/light mode |
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/variante/service/carrito-variante.service.ts` | `_promos: BehaviorSubject<IItemPromoCarrito[]>`; `promos$`; `total` incluye promos; `agregarPromo()`, `eliminarPromo()`, `quitarPromo()`, `obtenerPromos()`, `tienePromos()`, `cantidadPromoEnCarrito()`, `limpiarPromos()`; `limpiar()` también limpia promos |
+| `src/app/variante/models/pedido-variante.model.ts` | `IPedidoVarianteDetalleDTO.promocionId?: number` |
+| `src/app/variante/service/variante.service.ts` | `IVentaDirectaRequest.detalles[].promocionId?: number` |
+| `src/app/variante/venta-variante/venta-variante.component.ts` | `promos: IItemPromoCarrito[]`; `tienePromos` getter; suscripción a `promos$`; `recalcularTotales()`; `armarYConfirmar()` añade detalles de promo + fuerza `NORMAL` si `tienePromos`; `quitarPromo()` |
+| `src/app/variante/venta-variante/venta-variante.component.html` | Sección de promos en el carrito (listado + aviso "solo contado") |
+| `src/app/variante/venta-directa/venta-directa.component.ts` | `promosCarrito: IItemPromoCarrito[]`; `tienePromos` getter; pre-carga desde `carritoService.obtenerPromos()`; `totalVenta`/`totalUnidades` incluyen promos; `puedeCobrar` acepta solo-promos; `ejecutarVenta()` concatena detalles de promo + bloquea crédito si `tienePromos`; `limpiarTodo()` resetea `promosCarrito` |
+| `src/app/admin/admin-routing.module.ts` | `{ path: 'promociones', component: GestionPromocionesComponent }` |
+| `src/app/admin/admin.module.ts` | `GestionPromocionesComponent` en declarations |
+| `src/app/app-routing.module.ts` | Ruta lazy `/promociones` con `AuthGuard + CarritoGuard` (sin AdminGuard — visible a todos) |
+| `src/app/navbar/navbar.component.ts` | Badge de carrito ahora suma `countCarritoVariante` = variantes + promos |
+| `src/app/navbar/navbar.component.html` | Link "🎁 Promociones" (todos los usuarios logueados); "🎁 Gestión Promociones" en accordion Admin |
+
+### Endpoints conectados
+
+| Método | URL | Descripción |
+|---|---|---|
+| `POST` | `/v1/promociones` | Crear promoción |
+| `PUT` | `/v1/promociones/{id}` | Editar promoción |
+| `PUT` | `/v1/promociones/{id}/activo?activo=bool` | Toggle activo/inactivo |
+| `GET` | `/v1/promociones/admin?pagina=&size=` | Listar todas (admin) |
+| `GET` | `/v1/promociones/activas?pagina=&size=` | Listar activas (cliente) |
+
+### Reglas de negocio en front
+
+- `instanciasDisponibles` = calculado por back (MIN de floor(stock/cantidad) por pieza)
+- Promos son **solo de contado** — si hay promos en el carrito, `tipoPedido` se fuerza a `NORMAL` en ambos flujos (savePedido y venta directa)
+- `promocionId` se envía en cada línea de detalle que pertenece a un combo
+- Cada combo expande a: por cada `IPromocionDetalle`: `cantidad × cantidadCombos`, `precioUnitario = precioEnPromocion`
+- Promos **no** usan localStorage (precios pueden vencer). Variantes conservan localStorage sin cambios.
 
 **Verificado con `ng build --configuration=development` sin errores.**

@@ -1,4461 +1,1375 @@
-# Cambios de API para Frontend — Migración a micro_imagenes
+# Plan de mejoras — Novedades Jade
 
-## Regla general
-- **proyecto-key (9091):** solo maneja lógica de negocio (productos, variantes, pedidos, etc.)
-- **micro_imagenes (9096):** todo lo relacionado con archivos de imagen
-
-Los endpoints deprecados en proyecto-key siguen funcionando pero el front debe apuntar a los nuevos.
-Los endpoints que dicen `✅ micro_imagenes (9096)` el front los llama **directamente al micro**.
-Los endpoints que dicen `✅ proyecto-key (9091)` no pudieron moverse al micro (mezclan datos de negocio).
+**Fecha inicio:** 2026-06-30  
+**Metodología:** una mejora a la vez, se marca ✅ al terminar back + doc front antes de pasar a la siguiente.
 
 ---
 
-## ⚠️ MIGRACIÓN DE VERSIONES DE URL — 2026-06-07 (acción requerida en el front)
+## Estado general
 
-Se normalizó el versionado de URLs en **ambos** backends (proyecto-key 9091 y micro_imagenes 9096) para que todo use `/v1/` como versión estable. Resumen para el front:
-
-- **Lo que el front ya está usando como "v2"** → se renombró a **`/v1/`**. Es la versión activa/estable. **El front solo necesita agregar `/v1/`** donde antes no había versión, o cambiar `/v2/` por `/v1/` donde ya tenía `/v2/`.
-- **Lo que el front YA NO usa** (la versión vieja, marcada `@Deprecated`) → se renombró a **`/v3/`**. Sigue funcionando por compatibilidad pero no se debe usar para nada nuevo.
-- **micro_imagenes (9096)** no tenía versión en sus URLs — ahora **todas** sus rutas llevan el prefijo `/v1/`.
-
-### Tabla de cambios — proyecto-key (9091)
-
-> ✅ `imagenes.service.ts` y `producto.service.ts` ya actualizados (2026-06-17)
-
-| Antes (front lo usa) | Ahora | Estado |
-|---|---|---|
-| `imagen/v2/{productoId}` | `imagen/v1/{productoId}` | ✅ `imagenes.service.ts` |
-| `imagen/v2/{productoId}/detalle` | `imagen/v1/{productoId}/detalle` | ✅ `producto.service.ts` |
-| `imagen/v2/file/{imagenId}` | `imagen/v1/file/{imagenId}` |
-| `imagen/v2/{idProducto}/imagenes` | `imagen/v1/{idProducto}/imagenes` |
-| `imagen/v2/{idImagen}` (DELETE) | `imagen/v1/{idImagen}` (DELETE) |
-| `imagen/v2/{productoId}/imagenes` (DELETE) | `imagen/v1/{productoId}/imagenes` (DELETE) |
-| `imagen/v2/producto` (DELETE) | `imagen/v1/producto` (DELETE) |
-| `imagen/v2/cache/limpiar` | `imagen/v1/cache/limpiar` |
-| `presentacion/v2/imagenes` | `presentacion/v1/imagenes` |
-| `presentacion/v2/imagenes/{id}/imagen` | `presentacion/v1/imagenes/{id}/imagen` |
-| `presentacion/v2/imagenes/todas` | `presentacion/v1/imagenes/todas` |
-| `presentacion/v2/imagenes/{id}` (PUT) | `presentacion/v1/imagenes/{id}` (PUT) |
-| `variantes/v2/imagenes/{varianteId}` | `variantes/v1/imagenes/{varianteId}` |
-| `variantes/v2/imagenes` (DELETE) | `variantes/v1/imagenes` (DELETE) |
-| `variantes/v2/{varianteId}/imagenes` (DELETE) | `variantes/v1/{varianteId}/imagenes` (DELETE) |
-
-> Las rutas viejas sin versión (`imagen/{id}`, `presentacion/imagenes`, `variantes/imagenes/{varianteId}`, etc.) ahora viven bajo `/v3/` y están `@Deprecated` — el front **no** debe usarlas.
-
-### Tabla de cambios — micro_imagenes (9096) — antes no tenía versión, ahora todo lleva `/v1/`
-
-| Antes | Ahora |
-|---|---|
-| `imagenes/file/{imagenId}` | `v1/imagenes/file/{imagenId}` |
-| `imagenes/{id}` | `v1/imagenes/{id}` |
-| `imagenes` (POST/GET/DELETE) | `v1/imagenes` |
-| `imagenes/verificar` | `v1/imagenes/verificar` |
-| `imagenes/disco` (DELETE) | `v1/imagenes/disco` |
-| `producto-imagen/...` (todas las rutas) | `v1/producto-imagen/...` |
-| `cache/limpiar` (DELETE) | `v1/cache/limpiar` |
-
-**Ejemplo concreto que dio el equipo:**
-```
-Antes: http://localhost:9096/mis-productos/imagenes/file/7305237692097776164
-Ahora: http://localhost:9096/mis-productos/v1/imagenes/file/7305237692097776164
-```
-
-Los `urlImagen` / `imagenUrl` que devuelven los listados (productos, variantes, presentación) **ya vienen actualizados con `/v1/` desde el backend** — el front no tiene que construir esas URLs manualmente, solo usarlas tal cual llegan en el response.
-
----
-
-## BUGS CORREGIDOS — Cambios de comportamiento que el front debe conocer
-
----
-
-### [BUG-KEY-02] ✅ Fix: búsqueda de pedidos — endpoint migrado a query param
-**Fecha:** 2026-06-05  
-**Archivos corregidos:** `PedidoController.java:92`, `PedidoServiceImpl.java:250`
-
-**Endpoint ANTERIOR (deprecado):**
-```
-GET /pedidos/buscarClientePedido/{buscar}?size=10&page=0
-```
-
-**Endpoint NUEVO:**
-```
-GET /pedidos/buscarClientePedido?buscar=juan&size=10&page=0
-GET /pedidos/buscarClientePedido?size=10&page=0            ← sin buscar = todos los pedidos
-```
-
-**El front DEBE cambiar la llamada:**
-- Quitar el segmento `/{buscar}` de la URL
-- Pasar `buscar` como query param (opcional)
-- Cuando el campo está vacío → omitir el param o mandarlo vacío `buscar=`; ambos devuelven todos los pedidos
-
-**Por qué cambia:** un path variable nunca puede ser vacío en HTTP — el router de Spring no matchea la ruta si el segmento falta. El front usaba `"vacio"` como centinela, lo que provocaba que la búsqueda buscara un cliente llamado "vacio" y no devolviera nada. Con query param opcional el problema desaparece.
-
-**Comportamiento:**
-- `buscar` ausente o vacío → devuelve **todos** los pedidos paginados
-- `buscar=juan` → filtra pedidos cuyo cliente contiene "juan"
-
-**Códigos de respuesta:** 200 con `PageableDto`, 500 si hay error interno.
-
----
-
-### [BUG-KEY-01] ✅ Fix: guardar/actualizar producto ahora tiene rollback real si algo falla
-**Fecha:** 2026-06-04  
-**Archivo corregido:** `ProductosServiceImpl.java:365` — `private` → `protected` en `guardarProducto()`
-
-**Endpoints afectados:**
-```
-POST /productos/save
-PUT  /productos/update
-```
-
-**Dónde verlo en el panel:**
-> Menú lateral → **Productos** → botón **Agregar producto** o **Editar producto** → llenar el formulario y guardar.
-
-**Comportamiento ANTES del fix (incorrecto):**
-- Si fallaba cualquier paso después de guardar el producto en BD (por ejemplo el guardado de imágenes), el producto quedaba guardado pero sin imágenes — estado inconsistente, datos a medias sin rollback
-
-**Comportamiento DESPUÉS del fix (correcto):**
-- Si algo falla durante el guardado completo (producto + imágenes + relaciones), Spring hace rollback de todo
-- O se guarda todo completo, o no se guarda nada
-
-**El front no necesita cambiar nada** — mismo endpoint, mismo request, mismo response. El cambio es interno de integridad de datos.
-
----
-
-### [BUG-KEY-03] ✅ Fix: compartir imágenes a variantes ya no genera duplicados ni errores aleatorios
-**Fecha:** 2026-06-05  
-**Archivo corregido:** `ProductosServiceImpl.java:352` — eliminado `parallelStream`, reemplazado por `saveAll()` en un solo batch
-
-**Endpoint afectado:**
-```
-POST /productos/compartir-imagenes-variantes
-```
-
-**Dónde verlo en el panel:**
-> Menú lateral → **Productos** → abrir un producto → sección de variantes → botón **Compartir imágenes a variantes** (asigna las imágenes del producto a todas sus variantes de una vez).
-
-**Comportamiento ANTES del fix (incorrecto):**
-- Se usaban dos `parallelStream` anidados para guardar cada relación variante-imagen en paralelo
-- JPA no soporta múltiples hilos simultáneos sobre el mismo contexto de BD
-- Podía resultar en: duplicados silenciosos, errores aleatorios tipo `ConcurrentModificationException`, o imágenes asignadas incorrectamente a variantes equivocadas
-
-**Comportamiento DESPUÉS del fix (correcto):**
-- Se arma toda la lista de relaciones variante-imagen en memoria y se persiste en **una sola llamada** `saveAll()`
-- Sin hilos paralelos, sin riesgo de corrupción, más rápido porque es un solo INSERT en lote
-
-**El front no necesita cambiar nada** — mismo endpoint, mismo request, mismo response.
-
----
-
-### [BUG-KEY-04] ✅ Fix: reconciliación de imágenes ya no se bloquea permanentemente si hay un error
-**Fecha:** 2026-06-05  
-**Archivo corregido:** `ReconciliacionImagenService.java:68` — envuelto en `try/catch/finally`
-
-**Endpoints afectados:**
-```
-POST /admin/reconciliacion/imagenes
-POST /admin/reconciliacion/imagenes/limpiar-bd
-GET  /admin/reconciliacion/imagenes/resultado
-```
-
-**Dónde verlo en el panel:**
-> Menú lateral → **Administración** → sección **Reconciliación de imágenes** → botón **Iniciar reconciliación**.
-
-**Comportamiento ANTES del fix (incorrecto):**
-- Si durante la reconciliación ocurría cualquier error (BD caída, NPE, timeout), la bandera interna `enProceso` quedaba en `true` para siempre
-- Desde ese momento todos los intentos de volver a reconciliar eran rechazados con "ya hay un proceso en curso"
-- La única solución era reiniciar el servidor
-
-**Comportamiento DESPUÉS del fix (correcto):**
-- Si ocurre un error, se loguea, se guarda el resultado parcial que se alcanzó a procesar, y `enProceso` se libera en el bloque `finally` — siempre, pase lo que pase
-- Se puede volver a lanzar la reconciliación inmediatamente sin reiniciar
-
-**El front no necesita cambiar nada** — mismos endpoints, mismo response.
-
----
-
-### [BUG-KEY-06] ✅ Fix: errores en endpoints de pedidos ya no devuelven pantalla en blanco
-**Fecha:** 2026-06-05 | **Archivo:** `PedidoController.java`
-
-**Endpoints afectados:**
-```
-GET    /pedidos/findPedido/{id}
-GET    /pedidos/findPedido/{idPedido}/{idCliente}
-GET    /pedidos/buscarClientePedido/{buscar}
-DELETE /pedidos/delete/{id}
-```
-**Dónde verlo:** Menú → **Pedidos** → cualquier acción de consulta o eliminación.
-
-**Antes:** si el backend tenía un error interno, retornaba `null` → el front recibía un 500 genérico sin body, causando pantalla en blanco o comportamiento indefinido.
-
-**Después:** retorna `500 Internal Server Error` con body de error controlado que el front puede leer y mostrar mensaje al usuario.
-
-**El front puede mejorar:** si el front ya maneja el caso de `response == null`, ahora puede leer `response.mensaje` para mostrar el error específico.
-
----
-
-### [BUG-KEY-07] ✅ Fix: subida de imágenes ya no falla silenciosamente por JWT
-**Fecha:** 2026-06-05 | **Archivo:** `ImageneClienteDisco.java:54`
-
-**Endpoints afectados (indirectamente — flujo interno):**
-```
-POST /variantes/guardarConImagenes
-POST /productos/save
-PUT  /productos/update
-```
-**Dónde verlo:** Menú → **Productos** o **Variantes** → subir imágenes al guardar/actualizar.
-
-**Antes:** si el contexto de seguridad no tenía credenciales JWT (ej. token expirado en ciertos flujos), lanzaba `NullPointerException` → 500 genérico sin mensaje claro.
-
-**Después:** lanza `IllegalStateException` con mensaje descriptivo "No hay credenciales JWT en el contexto de seguridad" → más fácil de diagnosticar en logs.
-
-**El front no necesita cambiar nada** — si ocurre, el error ahora llega con mensaje legible.
-
----
-
-### [BUG-KEY-08] ✅ Fix: actualizar imagen de presentación ahora refresca la caché
-**Fecha:** 2026-06-05 | **Archivo:** `ImagenPresentacionService.java`
-
-**Endpoints afectados:**
-```
-PUT /presentacion/imagenes/{id}
-PUT /presentacion/v1/imagenes/{id}
-```
-**Dónde verlo:** Menú → **Presentación** o **Inicio/Banner** → editar una imagen → guardar.
-
-**Antes:** después de actualizar una imagen de presentación, la caché seguía sirviendo la imagen anterior hasta que expirara sola (podía tardar minutos).
-
-**Después:** al actualizar, la caché se invalida automáticamente y todos los usuarios ven la imagen nueva de inmediato.
-
-**El front no necesita cambiar nada.**
-
----
-
-### [BUG-KEY-09] ✅ Fix: IDs de imagen ahora usan 128 bits — sin riesgo de colisión
-**Fecha:** 2026-06-05 | **Archivo:** `ProductosServiceImpl.java`
-
-**Endpoints afectados:**
-```
-POST /productos/save
-PUT  /productos/update
-```
-**Dónde verlo:** Menú → **Productos** → agregar o editar producto con imágenes.
-
-**Antes:** el ID de cada imagen se generaba con solo 63 bits de un UUID → con muchas imágenes acumuladas había riesgo de duplicados silenciosos o error de BD.
-
-**Después:** usa XOR de las dos mitades del UUID (128 bits efectivos) → probabilidad de colisión prácticamente cero.
-
-**El front no necesita cambiar nada.**
-
----
-
-### [BUG-KEY-10] ✅ Fix: contrato de saveAll() ahora es correcto (void)
-**Fecha:** 2026-06-05 | **Archivo:** `ImagenProductoClienteVPS.java` + `ImagenProductoPort.java`
-
-**Flujo afectado (interno — no es endpoint público):**
-Cuando se guarda un producto con imágenes, internamente se publica a RabbitMQ la relación producto-imagen.
-
-**Antes:** el método declaraba retorno `ResponseGeneric<ProductoImagen>` pero siempre devolvía `null`. Engañoso y potencial NPE si algún caller usaba el retorno.
-
-**Después:** retorno cambiado a `void` — el contrato refleja la realidad (fire-and-forget por Rabbit).
-
-**El front no necesita cambiar nada.**
-
----
-
-### [PERF-KEY-01] ✅ Fix: timeouts en llamadas HTTP al micro de imágenes
-**Fecha:** 2026-06-05 | **Archivos:** `ImageneClienteDisco.java`, `ImagenProductoClienteVPS.java`
-
-**Endpoints que mejoran (los que consultan imágenes al micro):**
-```
-GET /imagen/{id}
-GET /imagen/v1/{productoId}
-GET /variantes/buscar
-GET /variantes/imagenes/{varianteId}
-GET /productos/findById/{id}
-```
-**Dónde verlo:** cualquier pantalla que muestre imágenes de productos o variantes.
-
-**Antes:** si el micro de imágenes tardaba o no respondía, el hilo de Tomcat quedaba bloqueado indefinidamente → con varios usuarios concurrentes el servidor dejaba de responder.
-
-**Después:** timeout de 5 segundos en todas las llamadas HTTP. Si el micro no responde en 5s, libera el hilo y devuelve error controlado.
-
-**El front puede notar:** en casos donde el micro de imágenes esté lento, ahora recibirá un error a los 5s en vez de esperar indefinidamente. Recomendable mostrar imagen placeholder si el response de imagen viene vacío.
-
----
-
-### [PERF-KEY-02] ✅ Fix: listado de imágenes por producto ya pagina en SQL
-**Fecha:** 2026-06-05 | **Archivo:** `ImagenServiceImpl.java`
-
-**Endpoints afectados:**
-```
-GET /imagen/{id}/detalle?page=1&size=10
-GET /imagen/v1/{productoId}/detalle?page=1&size=10
-```
-**Dónde verlo:** Menú → **Productos** → detalle de producto → galería de imágenes paginada.
-
-**Antes:** cargaba TODAS las imágenes del producto en memoria (incluyendo leer los archivos del disco), luego recortaba por página en Java. Con muchas imágenes: memoria alta, respuesta lenta.
-
-**Después:** la paginación ocurre en SQL — solo carga del disco las imágenes de la página actual. Respuesta significativamente más rápida y sin presión de memoria.
-
-**El front no necesita cambiar nada** — mismo endpoint, mismo response, mismos parámetros `page` y `size`.
-
----
-
-### [PERF-KEY-03] ✅ Fix: marcar imagen principal ya no hace N queries individuales
-**Fecha:** 2026-06-05 | **Archivos:** `ProductosServiceImpl.java`, `IProductoImagenRepository.java`
-
-**Endpoints afectados:**
-```
-POST /productos/save      (cuando se envía imagenPrincipalId)
-PUT  /productos/update    (cuando se envía imagenPrincipalId)
-```
-**Dónde verlo:** Menú → **Productos** → guardar producto → el campo "imagen principal" del formulario.
-
-**Antes:** por cada imagen del producto hacía 1 SELECT + N UPDATEs individuales (un UPDATE por imagen). Producto con 10 imágenes = 11 queries.
-
-**Después:** 2 queries fijas sin importar cuántas imágenes tenga el producto: 1 UPDATE que desmarca todas + 1 UPDATE que marca la principal.
-
-**El front no necesita cambiar nada.**
-
----
-
-## ENDPOINTS MIGRADOS
-
----
-
-### 1. Imagen principal de un producto en el listado
-
-> El front **no necesita llamar a ningún endpoint adicional**. El response de `GET /productos/obtenerProductos` ya incluye el campo `urlImagen` que apunta directo a los bytes. El front solo hace `<img [src]="producto.imagen.urlImagen">`.
-
-**`urlImagen` que viene en el listado de productos (a partir de ahora):**
-```
-http://localhost:9096/mis-productos/v1/imagenes/file/{imagenId}
-```
-
-**Response al llamar esa URL (micro_imagenes 9096):**
-```
-Content-Type: image/jpeg   (o image/png, image/gif)
-Body: <bytes binarios>
-```
-
-**Response 204:** sin body — imagen no encontrada en disco (no explota con 500).
-
-**Cambio respecto a la versión anterior:** antes la `urlImagen` apuntaba a `buscarImagenProducto/{productoId}` que devolvía JSON (no bytes). Ahora apunta directamente a `/imagenes/file/{imagenId}` — se puede usar directo como `src` del `<img>` sin ningún procesamiento.
-
----
-
-### 2. Detalle paginado de imágenes de un producto
-
-#### Version anterior — `GET /imagen/v3/{productoId}/detalle` ❌ Deprecated
-
-| | |
-|---|---|
-| **Controlador** | `ImageneController` — `proyecto-key` — método `getDetalle()` |
-| **Path param** | `productoId` (Integer) |
-| **Query params** | `page` (int), `size` (int) |
-| **Response 200** | `PageableDto` → lista de items: `{ idProducto, idImagen, name, price, inventoryStatus, extencion, image (bytes) }` |
-| **RabbitMQ** | No aplica — lectura síncrona |
-| **Acción front** | Sin cambio — sigue funcionando igual |
-
-**Flujo interno:**
-```
-Front → proyecto-key ImageneController.getDetalle()
-            └─► IImagenService.findImagenPrincipalPorProductoIds()
-                      └─► consulta BD local (nombre, precio, stock, imagenId)
-                      └─► por cada imagen: lee bytes del DISCO LOCAL de proyecto-key
-```
-
----
-
-#### Version nueva — `GET /imagen/v1/{productoId}/detalle` ✅ Usar esta — **proyecto-key (9091)** — se queda aquí
-
-> Este endpoint **no puede moverse al micro** porque mezcla datos del producto (nombre, precio, stock) con bytes de imagen.
-
-| | |
-|---|---|
-| **Controlador** | `ImageneController` — `proyecto-key` — método `getDetalleV2()` |
-| **Path param** | `productoId` (Integer) — mismo que antes |
-| **Query params** | `page` (int), `size` (int) — mismos que antes |
-| **Response 200** | Misma estructura: `PageableDto` → lista de `{ idProducto, idImagen, name, price, inventoryStatus, extencion, image (bytes) }` |
-| **RabbitMQ** | No aplica — lectura síncrona |
-| **Acción front** | Cambiar URL de `/imagen/{id}/detalle` a `/imagen/v1/{id}/detalle` |
-
-**Diferencia clave con la versión anterior:**
-- `name`, `price`, `inventoryStatus`, `extencion` → siguen saliendo de la **BD local de proyecto-key** (el micro no tiene datos del producto)
-- `image` (bytes) → ahora vienen del **microservicio de imágenes** en vez del disco local
-- Si una imagen no existe en el micro → ese item llega con `image: null` + log en servidor (antes también podía ser null pero sin aviso)
-
-**Flujo interno:**
-```
-Front → proyecto-key ImageneController.getDetalleV2()
-            └─► IImagenService.findImagenPrincipalPorProductoIdsV2()
-                      └─► consulta BD local (nombre, precio, stock, imagenId) ← igual que antes
-                      └─► por cada imagen: ImagenPort.getOne(imagenId)
-                                └─► HTTP → microservicio de imágenes → bytes del DISCO DEL MICRO
-```
-
----
-
-### 3. Obtener bytes de imagen por ID de imagen
-
-#### Version anterior — `GET /imagen/v3/file/{imagenId}` ❌ Deprecated
-
-| | |
-|---|---|
-| **Controlador** | `ImageneController` — `proyecto-key` — método `getImagenByImagenId()` |
-| **Path param** | `imagenId` (Long) — ID de la imagen |
-| **Response 200** | `byte[]` con header `Content-Type` |
-| **Response error** | HTTP 500 si el archivo no existe en disco local |
-| **RabbitMQ** | No aplica |
-| **Acción front** | Sin cambio — sigue funcionando si el archivo está en disco local |
-
-**Flujo interno:**
-```
-Front → proyecto-key ImageneController.getImagenByImagenId()
-            └─► IImagenService.findByImagenId()
-                      └─► busca en imagenes_copy → lee bytes del DISCO LOCAL de proyecto-key
-```
-
----
-
-#### Version nueva — `GET /imagenes/file/{imagenId}` ✅ Usar esta — **micro_imagenes (9096)**
-
-| | |
-|---|---|
-| **Micro** | `micro_imagenes` — `ImagenController.getImagenBytes()` |
-| **Path param** | `imagenId` (Long) — mismo que antes |
-| **Response 200** | `byte[]` con header `Content-Type` |
-| **Response sin imagen** | HTTP 204 No Content (antes daba 500) |
-| **Acción front** | Cambiar URL a `GET http://localhost:9096/mis-productos/v1/imagenes/file/{imagenId}` |
-
-**Request:**
-```
-GET http://localhost:9096/mis-productos/v1/imagenes/file/123
-```
-
-**Response 200:**
-```
-Content-Type: image/jpeg   (o image/png, image/gif)
-Body: <bytes binarios>
-```
-
-**Response 204:** sin body — imagen no encontrada en disco.
-
-**Diferencia clave:** el front llama directo al micro — proyecto-key ya no intermedia. Los bytes vienen del disco del micro.
-
-**Flujo:**
-```
-Front → GET /mis-productos/imagenes/file/{imagenId}   ← micro_imagenes directo
-            └─► imagenes_copy (BD compartida) → obtiene nombre de archivo
-            └─► lee bytes del DISCO DEL MICRO
-            ← byte[] + Content-Type
-```
-
----
-
-### 4. Listado de imágenes de un producto (metadata + URLs)
-
-#### Version anterior — `GET /imagen/v3/{idProducto}/imagenes` ❌ Deprecated
-
-| | |
-|---|---|
-| **Controlador** | `ImageneController` — `proyecto-key` — método `getImagenesPorProductoId()` |
-| **Path param** | `idProducto` (Integer) |
-| **Response 200** | `ProductoImagenDto` → `{ productoId, listaImagenes: [{ id, extension, nombreImagen, urlImagen, principal }] }` |
-| **urlImagen apunta a** | `GET /imagen/v3/file/{imagenId}` — disco local |
-| **RabbitMQ** | No aplica |
-| **Acción front** | Sin cambio — sigue funcionando |
-
----
-
-#### Version nueva — `GET /producto-imagen/listar/{productoId}` ✅ Usar esta — **micro_imagenes (9096)**
-
-| | |
-|---|---|
-| **Micro** | `micro_imagenes` — `ProductoImagenController.listarImagenesProducto()` |
-| **Path param** | `productoId` (Integer) — mismo que antes |
-| **Response 200** | Misma estructura — `{ productoId, listaImagenes: [{id, extension, nombreImagen, urlImagen, principal}] }` |
-| **urlImagen apunta a** | `GET /mis-productos/imagenes/file/{imagenId}` — micro_imagenes |
-| **Acción front** | Cambiar URL a `GET http://localhost:9096/mis-productos/producto-imagen/listar/{productoId}` |
-
-**Request:**
-```
-GET http://localhost:9096/mis-productos/producto-imagen/listar/10
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "productoId": 10,
-  "listaImagenes": [
-    { "id": 123, "extension": "jpg", "nombreImagen": "foto.jpg", "urlImagen": "/mis-productos/imagenes/file/123", "principal": true },
-    { "id": 124, "extension": "png", "nombreImagen": "foto2.png", "urlImagen": "/mis-productos/imagenes/file/124", "principal": false }
-  ]
-}
-```
-
-**Diferencia clave:** el front llama directo al micro. La `urlImagen` ya apunta al endpoint de bytes del micro — el front no cambia cómo procesa la respuesta, solo la URL del request.
-
-**Flujo:**
-```
-Front → GET /mis-productos/producto-imagen/listar/{productoId}   ← micro_imagenes directo
-            └─► JOIN producto_imagen_copy + imagenes_copy (BD compartida)
-            └─► urlImagen = /mis-productos/imagenes/file/{id}
-            ← { productoId, listaImagenes:[...] }
-```
-
----
-
-### 5. Eliminar imagen por ID
-
-#### Versión anterior — `DELETE /imagen/v3/{idImagen}` ❌ Deprecated (proyecto-key)
-
-Solo borraba de la BD local — el archivo quedaba en disco del micro.
-
-#### Versión final — `DELETE /producto-imagen/{id}` ✅ Usar esta — **micro_imagenes (9096)**
-
-> `{id}` = el ID de la imagen (Long) — el mismo valor que antes se mandaba a proyecto-key.
-
-**Request:**
-```
-DELETE http://localhost:9096/mis-productos/producto-imagen/123
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{ "response": {} }
-```
-
-**Diferencia clave:** el front llama directo al micro. Borra el archivo del disco, el registro de `imagenes_copy` y la relación de `producto_imagen_copy` — todo en una sola llamada. Ya no pasa por proyecto-key.
-
-**Flujo:**
-```
-Front → DELETE /mis-productos/producto-imagen/{imagenId}   ← micro_imagenes directo
-            └─► busca relación por imagenId en producto_imagen_copy
-            └─► borra archivo del disco del micro
-            └─► borra registro de imagenes_copy
-            └─► borra relación de producto_imagen_copy
-            ← 200 OK
-```
-
----
-
-### 6. Eliminar imágenes específicas de un producto — **proyecto-key (9091)** — se queda aquí
-
-> No puede moverse al micro porque necesita verificar `variante_imagen` que es tabla de proyecto-key.
-
-| | `DELETE /imagen/v3/{productoId}/imagenes` ❌ Deprecated | `DELETE /imagen/v1/{productoId}/imagenes` ✅ Usar esta |
-|---|---|---|
-| **URL completa** | `http://localhost:9091/mis-productos/imagen/v3/{id}/imagenes` | `http://localhost:9091/mis-productos/imagen/v1/{id}/imagenes` |
-| **Body** | `[imagenId1, imagenId2, ...]` (Long[]) | mismo |
-| **Response** | HTTP 200 `{ message }` | HTTP 200 `{ message }` — mismo |
-
----
-
-### 7. Eliminar todas las imágenes de varios productos — **proyecto-key (9091)** — se queda aquí
-
-> Misma razón que el punto 6.
-
-| | `DELETE /imagen/v3/producto` ❌ Deprecated | `DELETE /imagen/v1/producto` ✅ Usar esta |
-|---|---|---|
-| **URL completa** | `http://localhost:9091/mis-productos/imagen/v3/producto` | `http://localhost:9091/mis-productos/imagen/v1/producto` |
-| **Body** | `[productoId1, productoId2, ...]` (Integer[]) | mismo |
-| **Response** | HTTP 200 `{ message }` | HTTP 200 `{ message }` — mismo |
-
----
-
-### 8. Limpiar caché de imágenes
-
-| | `GET /imagen/v3/cache/imagen/limpiar` ❌ Deprecated | `GET /imagen/v1/cache/limpiar` ✅ Usar esta |
-|---|---|---|
-| **Controlador** | `ImageneController` — `limpiarTodaLaCacheDeImagenes()` | `ImageneController` — `limpiarCacheImagenesV2()` |
-| **Response** | void | HTTP 204 No Content |
-| **Diferencia** | Solo evicta caché `imagenes` | Evicta `imagenes`, `detalleImagen`, `detalle`, `detalle-v2`, `buscarImagenIdCache` |
-| **RabbitMQ** | No aplica | TODO: publicar evento para invalidar caché en todos los nodos |
-| **Acción front** | Sin cambio | Cambiar URL a `/imagen/v1/cache/limpiar` |
-
----
-
-## ENDPOINTS MIGRADOS (continuación)
-
----
-
-### 9. Imágenes activas de presentación por tipo (LOGIN / REGISTRO)
-
-#### Versión anterior — `GET /presentacion/v3/imagenes?tipo=LOGIN` ❌ Deprecated
-
-| | |
-|---|---|
-| **Controlador** | `ImagenPresentacionController` — `getImagenes()` |
-| **Query param** | `tipo` (String: `LOGIN` \| `REGISTRO`) |
-| **Response 200** | `ResponseGeneric<List<ImagenPresentacion>>` — entidad directa con `nombreArchivo` (ruta de disco interno) |
-| **RabbitMQ** | No aplica |
-| **Acción front** | Sin cambio — sigue funcionando |
-
-**Request:**
-```
-GET /mis-productos/presentacion/v3/imagenes?tipo=LOGIN
-```
-
-**Response 200:**
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": [
-    {
-      "id": 1,
-      "tipo": "LOGIN",
-      "orden": 1,
-      "nombreArchivo": "uuid_banner.jpg",
-      "extension": "jpg",
-      "nombreOriginal": "banner.jpg",
-      "descripcion": "Banner principal de login",
-      "activo": true,
-      "actualizadoEn": "2026-05-21T10:00:00"
-    }
-  ],
-  "lista": null
-}
-```
-
-**Flujo interno:**
-```
-Front → getImagenes()
-    └─► ImagenPresentacionService.getImagenesPorTipo()
-              └─► IImagenPresentacionRepository.findByTipoAndActivoOrderByOrden()
-                        └─► BD local → devuelve entidad con nombreArchivo (disco local)
-```
-
----
-
-#### Versión nueva — `GET /presentacion/v1/imagenes?tipo=LOGIN` ✅ Usar esta
-
-| | |
-|---|---|
-| **Controlador** | `ImagenPresentacionController` — `getImagenesV2()` |
-| **Query param** | `tipo` (String: `LOGIN` \| `REGISTRO`) — mismo que antes |
-| **Response 200** | `ResponseGeneric<List<ImagenPresentacionDto>>` — DTO con `urlImagen` calculada |
-| **Response sin datos** | HTTP 200 con `data: []` (lista vacía) |
-| **Cache** | `@Cacheable("presentacion-imagenes")` por `tipo` |
-| **RabbitMQ** | **NO aplica** — lectura síncrona. TODO: cuando se implemente `PUT /presentacion/v1/imagenes/{id}`, publicar evento `cache.evict.presentacion` en `exchange.imagenes` para invalidar caché en todos los nodos |
-| **Acción front** | Cambiar URL a `/presentacion/v1/imagenes?tipo=...` y usar `urlImagen` del DTO para cargar la imagen |
-
-**Request:**
-```
-GET /mis-productos/presentacion/v1/imagenes?tipo=LOGIN
-```
-
-**Response 200:**
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": [
-    {
-      "id": 1,
-      "tipo": "LOGIN",
-      "orden": 1,
-      "extension": "jpg",
-      "nombreOriginal": "banner.jpg",
-      "descripcion": "Banner principal de login",
-      "activo": true,
-      "actualizadoEn": "2026-05-21T10:00:00",
-      "urlImagen": "/presentacion/v1/imagenes/1/imagen"
-    }
-  ],
-  "lista": null
-}
-```
-
-**Diferencia clave con la versión anterior:**
-- Ya **no expone** `nombreArchivo` (ruta de disco interno)
-- Agrega `urlImagen` → apunta a `GET /presentacion/v1/imagenes/{id}/imagen` (bytes desde el micro)
-- La respuesta se cachea — menor carga en BD en producción
-
-**Flujo interno:**
-```
-Front → getImagenesV2()
-    └─► ImagenPresentacionService.getImagenesPorTipoV2()   ← @Cacheable("presentacion-imagenes")
-              └─► IImagenPresentacionRepository.findByTipoAndActivoOrderByOrden()
-                        └─► BD local → mapea a ImagenPresentacionDto con urlImagen calculada
-```
-
----
-
----
-
-### 10. Bytes de imagen de presentación por ID
-
-#### Versión anterior — `GET /presentacion/v3/imagenes/{id}/imagen` ❌ Deprecated
-
-| | |
-|---|---|
-| **Controlador** | `ImagenPresentacionController` — `getImagen()` |
-| **Path param** | `id` (Integer) — ID de la `ImagenPresentacion` |
-| **Response 200** | `byte[]` con header `Content-Type: image/jpeg \| image/png \| ...` |
-| **Response error** | HTTP 500 si el archivo no existe en disco |
-| **RabbitMQ** | No aplica |
-| **Acción front** | Sin cambio — sigue funcionando |
-
-**Request:**
-```
-GET /mis-productos/presentacion/imagenes/1/imagen
-```
-
-**Response 200:**
-```
-Content-Type: image/jpeg   (o image/png, image/gif)
-Body: <bytes binarios — usar directamente como src de <img> o blob>
-```
-
-**Response 500:** archivo no encontrado en disco.
-
----
-
-#### Versión nueva — `GET /presentacion/v1/imagenes/{id}/imagen` ✅ Usar esta
-
-| | |
-|---|---|
-| **Path param** | `id` (Integer) — mismo que antes |
-| **Acción front** | Si ya usas `GET /presentacion/v1/imagenes?tipo=...`, el campo `urlImagen` de cada item ya apunta a esta URL — sin cambio adicional. Solo actualizar si tenías la URL hardcodeada. |
-
-**Request:**
-```
-GET /mis-productos/presentacion/v1/imagenes/1/imagen
-```
-
-**Response 200:**
-```
-Content-Type: image/jpeg   (o image/png, image/gif según la imagen)
-Body: <bytes binarios — usar directamente como src de <img> o blob>
-```
-
-**Response 204:** sin body — imagen no encontrada (ya no explota con 500).
-
-**Diferencia clave:** igual que v1 pero devuelve **204** en vez de **500** cuando no existe el archivo.
-
----
-
----
-
-### 11. Listar todas las imágenes de presentación (ADMIN)
-
-#### Versión anterior — `GET /presentacion/v3/imagenes/todas` ❌ Deprecated
-
-**Request:**
-```
-GET /mis-productos/presentacion/v3/imagenes/todas
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "tipo": "LOGIN",
-      "orden": 1,
-      "nombreArchivo": "uuid_banner.jpg",
-      "extension": "jpg",
-      "nombreOriginal": "banner.jpg",
-      "descripcion": "Banner principal",
-      "activo": true,
-      "actualizadoEn": "2026-05-21T10:00:00"
-    }
-  ]
-}
-```
-
----
-
-#### Versión nueva — `GET /presentacion/v1/imagenes/todas` ✅ Usar esta
-
-**Request:**
-```
-GET /mis-productos/presentacion/v1/imagenes/todas
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "tipo": "LOGIN",
-      "orden": 1,
-      "extension": "jpg",
-      "nombreOriginal": "banner.jpg",
-      "descripcion": "Banner principal",
-      "activo": true,
-      "actualizadoEn": "2026-05-21T10:00:00",
-      "urlImagen": "/presentacion/v1/imagenes/1/imagen"
-    }
-  ]
-}
-```
-
-**Diferencia clave:** ya no expone `nombreArchivo` (ruta interna del servidor). Usar `urlImagen` para mostrar la imagen.
-
----
-
-### 12. Actualizar imagen de presentación (ADMIN)
-
-#### Versión anterior — `PUT /presentacion/v3/imagenes/{id}` ❌ Deprecated
-
-**Request:**
-```
-PUT /mis-productos/presentacion/imagenes/1
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "base64": "<bytes[]>",
-  "extension": "jpg",
-  "nombreImagen": "banner.jpg",
-  "descripcion": "Banner principal",
-  "activo": true
-}
-```
-
-> `base64` es opcional — si no se envía, solo se actualizan `descripcion` y `activo`.
-
-**Response 200:**
-```json
-{
-  "data": {
-    "id": 1,
-    "tipo": "LOGIN",
-    "orden": 1,
-    "nombreArchivo": "uuid_banner.jpg",
-    "extension": "jpg",
-    "nombreOriginal": "banner.jpg",
-    "descripcion": "Banner principal",
-    "activo": true,
-    "actualizadoEn": "2026-05-21T10:00:00"
-  }
-}
-```
-
----
-
-#### Versión nueva — `PUT /presentacion/v1/imagenes/{id}` ✅ Usar esta
-
-**Request:** igual que v1 — mismo body, mismo token ADMIN.
-
-```
-PUT /mis-productos/presentacion/v1/imagenes/1
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "base64": "<bytes[]>",
-  "extension": "jpg",
-  "nombreImagen": "banner.jpg",
-  "descripcion": "Banner principal",
-  "activo": true
-}
-```
-
-**Response 200:**
-```json
-{
-  "data": {
-    "id": 1,
-    "tipo": "LOGIN",
-    "orden": 1,
-    "extension": "jpg",
-    "nombreOriginal": "banner.jpg",
-    "descripcion": "Banner principal",
-    "activo": true,
-    "actualizadoEn": "2026-05-21T10:00:00",
-    "urlImagen": "/presentacion/v1/imagenes/1/imagen"
-  }
-}
-```
-
-**Diferencia clave:**
-- Ya no devuelve `nombreArchivo` (ruta interna del servidor)
-- **Invalida automáticamente el caché** `presentacion-imagenes` — el próximo `GET /presentacion/v1/imagenes?tipo=...` devuelve datos frescos
-- RabbitMQ: TODO para invalidar caché en multi-nodo (por ahora se invalida solo el nodo que recibe el PUT)
-
----
-
-### 13. Imágenes de una variante por ID
-
-#### Versión anterior — `GET /variantes/v3/imagenes/{varianteId}` ❌ Deprecated
-
-**Request:**
-```
-GET /mis-productos/variantes/v3/imagenes/5
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "id": "123",
-      "extension": "jpg",
-      "nombreImagen": "foto.jpg",
-      "urlImagen": "http://micro-imagenes/imagenes/123",
-      "principal": true
-    }
-  ]
-}
-```
-
-> Puede devolver `urlImagen` con URLs rotas si el archivo ya no existe en el micro.
-
----
-
-#### Versión nueva — `GET /variantes/v1/imagenes/{varianteId}` ✅ Usar esta
-
-**Request:**
-```
-GET /mis-productos/variantes/v1/imagenes/5
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "id": "123",
-      "extension": "jpg",
-      "nombreImagen": "foto.jpg",
-      "urlImagen": "http://micro-imagenes/imagenes/123",
-      "principal": true
-    }
-  ]
-}
-```
-
-**Response 200 sin imágenes:** `{ "data": [] }`
-
-**Diferencia clave:** antes de responder verifica en el micro cuáles archivos existen — solo devuelve imágenes con archivo real. Nunca devuelve URLs rotas.
-
----
-
-### 14. Eliminar todas las imágenes de varias variantes (ADMIN)
-
-| | `DELETE /variantes/v3/imagenes` ❌ Deprecated | `DELETE /variantes/v1/imagenes` ✅ Usar esta |
-|---|---|---|
-| **Auth** | Bearer token ADMIN | igual |
-| **Body** | `[varianteId1, varianteId2, ...]` (Integer[]) | igual |
-| **Response 200** | `{ "data": "Imágenes eliminadas correctamente" }` | igual |
-| **Diferencia** | misma lógica | misma lógica — solo cambia la URL |
-
-**Request:**
-```
-DELETE /mis-productos/variantes/v1/imagenes
-Authorization: Bearer <token>
-Content-Type: application/json
-
-[1, 2, 3]
-```
-
-**Response 200:**
-```json
-{ "data": "Imágenes eliminadas correctamente" }
-```
-
----
-
-### 15. Eliminar imágenes específicas de una variante (ADMIN)
-
-| | `DELETE /variantes/v3/{varianteId}/imagenes` ❌ Deprecated | `DELETE /variantes/v1/{varianteId}/imagenes` ✅ Usar esta |
-|---|---|---|
-| **Auth** | Bearer token ADMIN | igual |
-| **Path param** | `varianteId` (Integer) | igual |
-| **Body** | `[imagenId1, imagenId2, ...]` (Long[]) | igual |
-| **Response 200** | `{ "data": "Imágenes eliminadas correctamente" }` | igual |
-| **Diferencia** | misma lógica | misma lógica — solo cambia la URL |
-
-**Request:**
-```
-DELETE /mis-productos/variantes/v1/5/imagenes
-Authorization: Bearer <token>
-Content-Type: application/json
-
-[123, 456]
-```
-
-**Response 200:**
-```json
-{ "data": "Imágenes eliminadas correctamente" }
-```
-
-> Ambos DELETEs ya eliminaban de BD local **y** del micro en la versión anterior. El cambio es solo la URL.
-
-## PENDIENTES DE MIGRAR
-
----
-
-## CAMBIOS ADICIONALES EN MICRO_IMAGENES
-
----
-
-### 16. Listar imágenes de un producto — ahora paginado
-
-**Endpoint:** `GET /producto-imagen/listar/{productoId}` — **micro_imagenes (9096)**
-
-> Este endpoint ya se documentó en el punto 4. Ahora se le agregó paginación.
-
-**Request:**
-```
-GET http://localhost:9096/mis-productos/producto-imagen/listar/265?pagina=1&size=8
-Authorization: Bearer <token>
-```
-
-| Param | Tipo | Obligatorio | Default | Descripción |
+| # | Mejora | Back | Front | Fecha |
 |---|---|---|---|---|
-| `pagina` | Integer | No | `1` | Número de página (empieza en 1) |
-| `size` | Integer | No | `8` | Imágenes por página |
+| 1 | Ticket (impresión HTML) | ✅ No requiere back | ✅ Implementado 2026-07-01 — `generarHtmlTicket()` + botón 🖨️ en Swal (venta directa, abonos, cancelación) | — |
+| 2 | Envío por correo electrónico | ✅ Listo | ✅ Implementado 2026-07-01 — checkbox correo + campo `notificacion.enviarCorreo/correo/ticketHtml` en todos los requests que generan comprobante | 2026-07-01 |
+| 3 | Envío por WhatsApp | 🚫 EN PAUSA — ver decisión 2026-07-01 | 🚫 No implementar | 2026-07-01 |
+| 4 | Alertas stock bajo al admin | ⏳ Pendiente back | ⏳ Pendiente front | — |
+| 5 | Reportes de ventas (día/mes/cliente) | ✅ Listo | ✅ Implementado 2026-07-02 — módulo lazy `/reportes` con 4 tabs (diario, mensual, por cliente, más vendidos) + gráficas Chart.js | 2026-07-02 |
+| 6 | Dashboard con métricas | ✅ Listo (sin "clientes nuevos", ver nota) | ✅ Implementado 2026-07-02 — módulo lazy `/dashboard` con 9 cards + auto-refresh cada 5 min | 2026-07-02 |
+| 7 | Devoluciones | ⏳ Pendiente back | ⏳ Pendiente front | — |
+| 8 | Chatbot — tarjetas de productos | ✅ Listo | ✅ Implementado 2026-07-01 — cards en grid 2 col, imagen de variante, botón "🛒 Agregar"/"✕ Quitar", botón "Ver más" con paginación | 2026-07-01 |
+| 9 | Chatbot — código de barras | ✅ Listo | — | 2026-07-01 |
+| 10 | Chatbot — flujo 2 pasos foto | ✅ Listo | — | 2026-07-01 |
+| 11 | Filtros producto/variante por rol (cliente: stock+imagen; admin: filtro combinado nombre/código + stock + imágenes + habilitado, todos opcionales y combinables) | ✅ Listo — rediseñado 2026-07-06, ver nota abajo | ⚠️ REIMPLEMENTAR — se hizo una primera versión con `FiltroCatalogoEnum` (ya no existe en el back). El nuevo contrato usa 4 params independientes: `nombreOCodigo` (texto) + `conStock`/`conImagenes`/`habilitado` (3-state: omitir/true/false). Ver `CAMBIOS_FRONT.md` → "Cambio de contrato (2026-07-06)". | 2026-07-02, actualizado 2026-07-06 |
+| 12 | Correo/teléfono obligatorios en cliente + verificación de correo (código de 6 dígitos) antes de pedidos/ticket por correo | ✅ Listo (migración corrida en dev/qa, falta en prod) | ⏳ Parcial — form mejorado (correo + tel obligatorios), badge verificado/no en `clientes-buscar`, acciones admin en panel usuario. Falta: interceptar `400 "Debes verificar..."` en `savePedido` y mostrar pantalla de verificación antes del carrito para clientes no verificados | 2026-07-02 |
+| 13 | Deshabilitar producto/variante en lote (para ocultar datos de prueba) + habilitado propio por variante | ✅ Listo (campo `habilitado` ya en `VarianteResumenDto`/`VarianteDto` desde 2026-07-06) | ⏳ Parcial — campo `habilitado` disponible en DTOs (el front puede leerlo). Falta: mostrar badge activo/inactivo en cards de variantes + checkboxes de selección múltiple + botón "Deshabilitar seleccionados" en panel admin | 2026-07-02 |
+| 14 | Restablecer contraseña olvidada (código de 6 dígitos por correo) + cambiar contraseña logueado (con contraseña actual, sin código) | ✅ Listo (falta correr migración SQL) | ⏳ Parcial — `debeCambiarPassword` en login (forzado tras reset de admin) implementado. Falta: pantalla "Olvidé mi contraseña" en login + formulario voluntario "Cambiar contraseña" en perfil | 2026-07-03 |
+| 15 | Unificar verificación de correo Usuario/Cliente + auto-crear Cliente al registrar | ✅ Código listo (falta compilar/probar + correr migraciones) | ⚠️ NO EMPEZAR TODAVÍA — back escrito pero sin compilar/probar/desplegar. Pendiente hasta que esté en QA confirmado | 2026-07-03 |
 
-**Response 200:**
-```json
-{
-  "productoId": 265,
-  "listaImagenes": [
-    {
-      "id": 123,
-      "extension": "image/jpeg",
-      "nombreImagen": "foto.jpg",
-      "urlImagen": "http://localhost:9096/mis-productos/v1/imagenes/file/123",
-      "principal": true
-    }
-  ],
-  "pagina": 1,
-  "totalPaginas": 3,
-  "totalImagenes": 20
-}
-```
+> **Orden:** el ticket (1) va primero porque correo (2) lo necesita.
+> El stock bajo (4) necesita correo (2) ya listo en back.
+> El dashboard (6) necesita los reportes (5).
 
-**Cómo navegar páginas desde el front:**
-```
-Primera página:   GET .../listar/265?pagina=1&size=8
-Segunda página:   GET .../listar/265?pagina=2&size=8
-Última página:    GET .../listar/265?pagina={totalPaginas}&size=8
-```
+> **Checkpoint 2026-07-03 (actualizado):**
+> - ✅ Listos en back (falta front): 1 (ticket), 2 (correo), 5 (reportes), 6 (dashboard), 8/9/10 (chatbot),
+>   11 (filtros por rol), 12 (correo/teléfono obligatorios + verificación), 13 (deshabilitar en
+>   lote + habilitado por variante), 14 (reset de contraseña + cambiar contraseña logueado).
+> - 🚫 En pausa: 3 (WhatsApp al cliente).
+> - ⏳ Sin arrancar ni back ni front: 4 (stock bajo), 7 (devoluciones).
+> - 📄 Documentado, sin implementar: uso de hilos/async para envío de correos — ver
+>   `HILOS_Y_CONCURRENCIA.md` (guía completa + qué endpoints conviene tocar y cuáles no).
+> - **Migraciones SQL pendientes de correr en prod** (dev/qa ya están al día): 
+>   `migration_verificacion_correo.sql`, `migration_habilitado_variantes.sql` (columna ya existía
+>   en dev/qa, confirmar en prod primero con `DESCRIBE variantes` — puede que tampoco haga falta),
+>   `migration_reset_password.sql`.
+> - Sueltos sin cerrar: confirmar migración `monto_dado` en BD de producción; respuesta del front
+>   sobre si necesitan `tiendaUrl` desde el back (`GET /v1/negocio/contactos`) o usan `window.location.origin`;
+>   decidir qué hacer con las 4 filas "Mochila Prada" duplicadas; BUG-CB-01 pendiente de corrección
+>   manual en admin (imagen vinculada al varianteId equivocado).
+> - **Dashboard (6) implementado 2026-07-02:** `GET /v1/dashboard/resumen` con ventas
+>   hoy/mes, ganancia, gastos, pedidos pendientes de entregar, créditos activos, monto por cobrar,
+>   productos con stock bajo. **Se excluyó "clientes nuevos este mes"** del plan original — `Cliente`
+>   no tiene columna de fecha de registro, no hay forma de calcularlo sin agregarla (y solo contaría
+>   desde que se agregue en adelante, no retroactivo). Avisar si se quiere agregar.
+>   Detalle completo en `CAMBIOS_FRONT.md` → "Dashboard con métricas (2026-07-02)".
+> - **Bug reportado 2026-07-02 — DIAGNOSTICADO, no es bug de código:** verificado en vivo contra
+>   QA (`GET /v1/chatbot/buscar?q=Mochila`) — la búsqueda y paginación del chatbot funcionan bien,
+>   devuelven `varianteId` distintos (117, 165, 213, 277 para "Mochila Prada"). El problema es que
+>   esas 4 filas en la tabla `variantes` son **duplicados de datos**: mismo nombre, marca, precio,
+>   sin talla/color que las distinga — por eso se ven como "el mismo producto". Además las 4 dan
+>   error 500 al pedir sus imágenes (`variantes/v1/imagenes/{id}`), probablemente ninguna tiene
+>   imagen real cargada. **Pendiente:** decidir qué hacer con las filas duplicadas (limpiar en admin
+>   o pedir un script de limpieza) — no se tocó la BD, es una decisión del negocio, no técnica.
+>   De paso se corrigieron 2 errores de documentación en `CAMBIOS_FRONT.md` (F-8): la URL tenía el
+>   `/v1/` mal puesto, y decía "tomar el primer elemento" en vez de "el marcado como `principal`".
+> - **BUG-CB-01 corregido 2026-07-02 (causa real encontrada, no era dato de BD):** el prompt del
+>   chatbot le decía a la IA que usara el NOMBRE del producto para buscar la imagen, incluso cuando
+>   el producto ya se había identificado por código de barras — como el nombre se repite entre
+>   productos distintos ("Mochila para mostrar" vs "Mochila Prada"), la búsqueda traía cualquiera
+>   de los dos. Se corrigió el prompt para que use el código de barras (único) cuando esté
+>   disponible en la conversación. Ver `BUGS_CHATBOT_BACK.md` para el detalle completo.
+> - **Filtros producto/variante por rol (2026-07-02, rediseñado 2026-07-06):** cliente normal ve
+>   solo productos y variantes con stock>0 + habilitado + con al menos una imagen (sin UI de
+>   filtros, es automático). Admin ve todo el catálogo con un filtro combinado en
+>   `.../admin/filtrar`: `nombreOCodigo` (texto) + `conStock` + `conImagenes` + `habilitado`, los 4
+>   opcionales e independientes, combinables con AND (antes era un solo enum de valor único que no
+>   se podía combinar con nombre y no tenía opción de habilitado/deshabilitado). Ver
+>   `CAMBIOS_FRONT.md` → "Cambio de contrato (2026-07-06): filtro admin combinado..." para el
+>   contrato completo con ejemplos. De paso se corrigió un bug de caché en `VarianteServiceImpl`
+>   que exponía a clientes normales resultados sin filtrar cacheados previamente por un admin.
+> - **PENDIENTE (no bloquea nada, anotado para retomar):** definir fórmula de ganancia por
+>   producto — se acordó usar markup sobre costo (`precioVenta = precioCosto × (1 + %ganancia)`).
+>   Falta decidir: ¿se guarda el `%ganancia` como campo del producto (para poder mostrarlo/editarlo
+>   directo), o se calcula al vuelo en un reporte (`(precioVenta - precioCosto) / precioCosto`) sin
+>   guardar nada nuevo en BD? Ninguna de las dos está implementada todavía.
+> - **Mejora 12 — Correo/teléfono obligatorios + verificación de correo (2026-07-02):**
+>   `Cliente.correoElectronico`/`numeroTelefonico` ahora obligatorios; nuevo flujo de código de 6
+>   dígitos por correo (`POST /v1/clientes/{id}/enviar-codigo-verificacion` y `verificar-correo`)
+>   que bloquea generar pedido (`savePedido`) y el envío automático de ticket por correo si el
+>   cliente no está verificado (no aplica al correo manual del modal post-venta ni a venta directa
+>   sin cuenta). `POST /v1/auth/registrar` ahora exige `email` (DTO nuevo `RegistroRequest`, separado
+>   de `AuthRequest` para no romper `/auth/login`). Se decidió **no** usar Twilio/WhatsApp para
+>   verificar el teléfono — sale muy caro (~$1.13 MXN por verificación vs ~$0.35 MXN por ticket
+>   suelto) y el correo (gratis, ya con SMTP) cubre la necesidad real. Migración
+>   `migration_verificacion_correo.sql` **ya corrida en dev y qa** (2026-07-02), **pendiente en
+>   prod** para cuando se suba esa rama. Detalle completo para el front en `CAMBIOS_FRONT.md` →
+>   "Verificación de correo del cliente (2026-07-02)" (4 subsecciones: obligatoriedad, flujo de
+>   verificación, estado visible en búsqueda de clientes, endpoint de reset para pruebas).
+> - **Rate-limit configurable, desactivado en QA (2026-07-02):** nueva propiedad
+>   `seguridad.rate-limit-habilitado` (default `true`) controla los 3 bloqueos por IP/usuario de
+>   `/auth/login` y `/auth/registrar`. Se puso en `false` solo en `application-qa.yml` para no
+>   trabarse en pruebas manuales repetidas — dev y prod siguen protegidos (no tienen la propiedad,
+>   toman el default `true`). No aplica al bloqueo de IP del chatbot, que es un mecanismo aparte
+>   (`ChatbotController`/`blockService`) y sigue activo en todos los ambientes.
+> - **Bug reportado 2026-07-02 — carrito con datos de otra cuenta tras logout/login — ES DEL
+>   FRONT, ya corregido por el front:** se confirmó que el back no tiene ningún concepto de
+>   "carrito" (no hay entidad/tabla/controlador — el pedido se arma completo en un solo request a
+>   `savePedido`). El carrito vivía en `localStorage`/`sessionStorage` del navegador sin limpiarse
+>   al cerrar sesión (mismo patrón que el bug ya resuelto de `sesionId` del chat). El front ya lo
+>   solucionó, no requirió cambios en este repo.
+> - **PENDIENTE (2026-07-03, sin arrancar) — usar hilos para envíos de correo/notificaciones:**
+>   se detectó que `EmailService` (tickets, códigos de verificación, reset de contraseña) corre
+>   síncrono en el hilo del request — si el SMTP tarda, el usuario espera hasta el timeout (5s en
+>   QA). Guía completa de cómo implementarlo (conceptos de hilos, `@Async`, `CompletableFuture`,
+>   virtual threads) y auditoría de qué endpoints conviene tocar (y cuáles NO) en
+>   `HILOS_Y_CONCURRENCIA.md`. Nada implementado todavía, solo documentado para retomar.
+> - **Checkpoint 2026-07-06 — estado del FRONT:**
+>   - ✅ Implementados (front): F-1/F-2 tickets+correo, F-5 reportes, F-6 dashboard, F-8 chatbot cards, F-9/F-10/F-11 QRs.
+>   - ⚠️ Requiere reimplementación: F-14 (filtro admin — contrato cambió, `FiltroCatalogoEnum` eliminado del back).
+>   - ⏳ Parciales: F-15 (verificación cliente — form/badge listo, falta interceptar 400 en `savePedido`), F-16 (campo `habilitado` en DTOs listo, falta UI batch), F-17+F-18 (forzado en login listo, falta pantalla "olvidé" + formulario en perfil).
+>   - ⏳ No empezados: F-4 (stock bajo), F-7 (devoluciones).
+>   - ⚠️ NO EMPEZAR: F-19 (back sin compilar/probar). `clientes-buscar` carga paginada en init. Módulo Promociones implementado en el front de forma optimista — espera deploy del back en QA.
+> - **Checkpoint 2026-07-06 — sesión de bugs reportados en QA (todo en `dev`/`qa`, falta `main`):**
+>   - **Bug real de `habilitar-lote` de variantes (mejora 13) encontrado:** la BD sí se actualizaba
+>     bien (confirmado con diagnóstico de `flush()`+`clear()`+relectura); el problema real era que
+>     `VarianteResumenDto`/`VarianteDto` (usados por las búsquedas/listados de variantes) nunca
+>     traían el campo `habilitado` — a diferencia de `ProductoDTO`, que sí lo trae. El front no
+>     tenía forma de reflejar el estado real aunque la BD estuviera correcta. Ya se agregó el
+>     campo a ambos DTOs. Ver `CAMBIOS_FRONT.md`.
+>   - **Búsqueda de cliente por nombre completo no encontraba resultados:** la query buscaba
+>     `nombrePersona`/`apeidoPaterno`/`apeidoMaterno` por separado (OR); buscar "Abel" funcionaba
+>     pero "Abel Tiburcio" (nombre y apellido juntos) no. Se corrigió concatenando los 3 campos
+>     antes de buscar.
+>   - **Hallazgo importante — errores de validación de negocio devolvían siempre `500`:** el
+>     manejador global de excepciones no tenía caso para `RuntimeException` simple (así están
+>     escritas casi todas las validaciones de negocio: stock insuficiente, precio inválido,
+>     promoción vencida, etc.), así que cualquiera de esas validaciones cae en el catch-all de
+>     `Exception.class` y siempre devolvía `"Error interno del servidor"` con `500`, ocultando el
+>     mensaje real. Ahora esas validaciones devuelven `400` con el mensaje específico. Se detectó
+>     al investigar un 500 real en `POST /v1/ventas/save` con una línea de promoción con
+>     `cantidad: null` — también se agregó validación explícita de `cantidad` (obligatoria, > 0)
+>     en venta directa y `savePedido`.
+>   - **Filtro admin de productos/variantes rediseñado** — ver nota de mejora 11 arriba y
+>     `CAMBIOS_FRONT.md` para el contrato nuevo (`nombreOCodigo`+`conStock`+`conImagenes`+
+>     `habilitado`, todos opcionales y combinables). Reemplaza `FiltroCatalogoEnum`.
+>   - **Fix de paginación:** `ProductosControllerImpl` no tenía `page`/`size` con default (a
+>     diferencia de `VarianteController`) — el front tenía que mandarlos siempre o el endpoint
+>     rechazaba la petición. Ya tiene default `1`/`10` igual que variantes.
 
-**Diferencia clave:** antes devolvía todas las imágenes sin límite. Ahora devuelve 8 por página. Usar `totalPaginas` para renderizar los botones de paginación. Si no se mandan params, devuelve la primera página con 8 imágenes.
-
----
-
-### 17. DetalleProductoComponent — imágenes del producto con URL en lugar de bytes
-
-#### Versión anterior — `GET /imagen/v3/{productoId}/detalle` ❌ Deprecated (proyecto-key 9091)
-
-Devolvía bytes embebidos en el response (pesado, lento).
-
-**Request:**
-```
-GET http://localhost:9091/mis-productos/imagen/265/detalle?size=4&page=0
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "list": [
-    {
-      "idProducto": 265,
-      "idImagen": 123,
-      "name": "prod",
-      "price": 1.0,
-      "inventoryStatus": "INSTOCK",
-      "extencion": "jpg",
-      "image": "/9j/4AAQSkZJRgAB..."
-    }
-  ],
-  "totalPaginas": 3
-}
-```
-
----
-
-#### Versión nueva — `GET /producto-imagen/listar/{productoId}` ✅ Usar esta — **micro_imagenes (9096)**
-
-Devuelve URLs — el front carga cada imagen con `<img [src]="imagen.urlImagen">`.
-
-**Request:**
-```
-GET http://localhost:9096/mis-productos/producto-imagen/listar/265?pagina=1&size=8
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "productoId": 265,
-  "listaImagenes": [
-    {
-      "id": "3855830153700593542",
-      "extension": "image/jpeg",
-      "nombreImagen": "foto.jpg",
-      "urlImagen": "http://localhost:9096/mis-productos/v1/imagenes/file/3855830153700593542",
-      "principal": true
-    },
-    {
-      "id": "7565125362907238017",
-      "extension": "image/jpeg",
-      "nombreImagen": "foto2.jpg",
-      "urlImagen": "http://localhost:9096/mis-productos/v1/imagenes/file/7565125362907238017",
-      "principal": false
-    }
-  ],
-  "pagina": 1,
-  "totalPaginas": 2,
-  "totalImagenes": 10
-}
-```
-
-**Cómo mostrar cada imagen en el front:**
-```html
-<img [src]="imagen.urlImagen" />
-```
-
-**Cómo navegar páginas:**
-```
-GET .../listar/265?pagina=1&size=8   ← primera página
-GET .../listar/265?pagina=2&size=8   ← siguiente página
-```
-
-**Diferencia clave:**
-- Ya no vienen bytes embebidos (`image: "base64..."`) — el front usa `urlImagen` directamente
-- El campo `id` es **string** (no number) — JS no puede representar estos IDs como Number sin perder precisión
-- `principal: true` indica cuál es la imagen principal del producto
-
----
-
-### 18. DetalleProductoComponent — eliminar imágenes
-
-#### Versión anterior — `DELETE /imagen/v3/{productoId}/imagenes` ❌ Deprecated (proyecto-key 9091)
-
-**Request:**
-```
-DELETE http://localhost:9091/mis-productos/imagen/265/imagenes
-Authorization: Bearer <token>
-Content-Type: application/json
-
-["3855830153700593542", "7565125362907238017"]
-```
-
-**Response 200:**
-```json
-{ "data": "Imágenes eliminadas correctamente" }
-```
-
----
-
-#### Versión nueva — `DELETE /imagen/v1/{productoId}/imagenes` ✅ Usar esta (proyecto-key 9091)
-
-**Request:**
-```
-DELETE http://localhost:9091/mis-productos/imagen/v1/265/imagenes
-Authorization: Bearer <token>
-Content-Type: application/json
-
-["3855830153700593542", "7565125362907238017"]
-```
-
-**Response 200:**
-```json
-{ "data": "Imágenes eliminadas correctamente" }
-```
-
-**Diferencia clave:** verifica si la imagen es compartida con otras variantes antes de borrarla del disco — si la comparte, solo borra la relación del producto sin borrar el archivo.
-
-> **Nota:** los IDs se mandan como strings (igual que vienen del `listar`).
+> **Decisión 2026-07-01 — WhatsApp EN PAUSA:** se descartó implementar el envío del ticket por
+> WhatsApp al cliente. CallMeBot (gratis, ya programado en el back) solo le avisa al negocio, no
+> al cliente; Twilio (que sí notificaría al cliente real) implica alta de cuenta de pago,
+> verificación de número de WhatsApp Business y programar el caso `"twilio"` en
+> `WhatsappService.java` — se consideró mucho esfuerzo para el beneficio. **Solo se implementa
+> correo.** El código de WhatsApp en el back queda tal cual (no estorba, simplemente no se usa) y
+> el front NO debe agregar el checkbox ni el campo de WhatsApp.
 
 ---
 
----
+## Lo que se hizo — sesión 2026-07-01
 
-## LISTADO DE VARIANTES — `/variantes/buscar`
+### Back ✅ completado
 
-**Endpoint:** `GET http://localhost:9091/mis-productos/variantes/buscar?termino=&pagina=1&size=10`
-
-**Response 200:**
-```json
-{
-  "data": {
-    "pagina": 1,
-    "totalPaginas": 3,
-    "totalRegistros": 25,
-    "t": [
-      {
-        "id": 5,
-        "talla": "M",
-        "descripcion": "Pantalón slim",
-        "color": "Azul",
-        "presentacion": null,
-        "stock": 10,
-        "marca": "...",
-        "contenidoNeto": null,
-        "imagenBase64": null,
-        "imagenUrl": "http://localhost:9096/mis-productos/v1/imagenes/file/7305237692097776164",
-        "precio": 99.99,
-        "codigoBarras": "...",
-        "nombreProducto": "Jeans Slim"
-      }
-    ]
-  }
-}
-```
-
-**Claves para el front:**
-- La imagen viene en `data.t[i].imagenUrl` — no en `imagenBase64` (siempre `null`)
-- `imagenUrl` es una URL completa a bytes directos: usar `<img [src]="variante.imagenUrl">`
-- Si `imagenUrl` es `null` → la variante no tiene imagen asignada
-- La lista de variantes está en `data.t` (no `data.content`, no `data.items`)
-- Paginación: `data.pagina`, `data.totalPaginas`, `data.totalRegistros`
-- El back selecciona la imagen marcada como principal; si ninguna lo es, usa la primera disponible
-
----
-
-## RESUMEN POR COMPONENTE
-
-> Referencia rápida para el equipo de front — qué endpoint usa cada componente.
-
----
-
-### UpdateComponent (editar producto)
-
-| Acción | Método | URL | Body / Params |
-|---|---|---|---|
-| Listar imágenes del producto | GET | `http://localhost:9096/mis-productos/v1/producto-imagen/listar/{productoId}?pagina=1&size=8` | — |
-| Ver bytes de una imagen | GET | `http://localhost:9096/mis-productos/v1/imagenes/file/{imagenId}` | — |
-| Eliminar una imagen | DELETE | `http://localhost:9096/mis-productos/v1/producto-imagen/{imagenId}` | — |
-| Marcar imagen como principal | PUT | `http://localhost:9096/mis-productos/v1/producto-imagen/{id}/principal` | — |
-
-> `imagenId` viene del campo `id` (string) del response de `listar`.
-
----
-
-### DetalleProductoComponent (detalle y carrusel del producto)
-
-| Acción | Método | URL | Body / Params |
-|---|---|---|---|
-| Listar imágenes del producto | GET | `http://localhost:9096/mis-productos/v1/producto-imagen/listar/{productoId}?pagina=1&size=8` | — |
-| Ver bytes de una imagen | GET | usar `urlImagen` del response de `listar` directamente en `<img [src]>` | — |
-| Eliminar imágenes seleccionadas (batch) | DELETE | `http://localhost:9091/mis-productos/imagen/v1/{productoId}/imagenes` | `["imagenId1", "imagenId2"]` |
-
----
-
-### LoginFormComponent / AddUsuariosComponent (imágenes de login/registro)
-
-| Acción | Método | URL | Body / Params |
-|---|---|---|---|
-| Listar imágenes por tipo | GET | `http://localhost:9091/mis-productos/presentacion/v1/imagenes?tipo=LOGIN` | — |
-| Ver bytes de una imagen | GET | usar `urlImagen` del response directamente en `<img [src]>` | — |
-
----
-
-### PresentacionImagenesComponent (admin — imágenes de presentación)
-
-| Acción | Método | URL | Body / Params |
-|---|---|---|---|
-| Listar todas (activas e inactivas) | GET | `http://localhost:9091/mis-productos/presentacion/v1/imagenes/todas` | Bearer token ADMIN |
-| Actualizar imagen/descripción | PUT | `http://localhost:9091/mis-productos/presentacion/v1/imagenes/{id}` | `{ base64, extension, nombreImagen, descripcion, activo }` |
-
----
-
-### DetalleVarianteComponent / UpdateVarianteComponent (imágenes de variante)
-
-| Acción | Método | URL | Body / Params |
-|---|---|---|---|
-| Listar imágenes de variante | GET | `http://localhost:9091/mis-productos/variantes/v1/imagenes/{varianteId}` | — |
-| Eliminar imágenes específicas | DELETE | `http://localhost:9091/mis-productos/variantes/v1/{varianteId}/imagenes` | `[imagenId1, imagenId2]` |
-| Marcar imagen como principal | PUT | `http://localhost:9091/mis-productos/variantes/imagenes/{imagenId}/principal` | — |
-
----
-
-## GLOSARIO
-
-- **@Deprecated**: el endpoint original, sin tocar, sigue funcionando
-- **v1**: el endpoint activo/estable que delega al microservicio de imágenes (antes llamado "v2"; se renombró a `v1` el 2026-06-07 — ver sección "MIGRACIÓN DE VERSIONES DE URL")
-- **v3**: el endpoint antiguo/deprecado (antes era la ruta sin versión, ahora vive bajo `/v3/` para no chocar con `/v1/`)
-- **204 No Content**: no hay imagen disponible, no es un error
-- **RabbitMQ — No aplica**: lectura síncrona, no hay eventos
-- **RabbitMQ — TODO**: hay una oportunidad de usar Rabbit aquí pero aún no está implementado
-
----
-
----
-
-## CAMBIOS DE BACKEND — 2026-05-22 — Acciones requeridas en el front
-
-> Estos cambios ya están aplicados en el backend (rama `dev`). El front debe actualizar los componentes indicados.
-
----
-
-### CAMBIO A — Listado de variantes: `imagenUrl` ahora siempre viene poblada
-
-**Endpoint afectado:** `GET /mis-productos/variantes/buscar?termino=&pagina=1&size=10`
-
-**Qué cambió en el back:**
-Antes el back verificaba contra el microservicio de imágenes si el archivo existía en disco antes de incluir la URL. Si esa verificación fallaba (error de red, micro lento) la `imagenUrl` llegaba `null` aunque la variante tuviera imagen. Ahora el back asigna la URL directamente desde la base de datos, sin verificación extra.
-
-**Comportamiento nuevo:**
-- Si la variante tiene imágenes → `imagenUrl` siempre viene con valor
-- Si la variante NO tiene ninguna imagen asignada → `imagenUrl` es `null`
-- Si el archivo ya no existe en disco → el micro devuelve `204 No Content` al hacer `GET imagenes/file/{id}` (el `<img>` no muestra nada, no explota)
-- La imagen seleccionada es la marcada como **principal**; si ninguna lo es, la de **id más bajo**
-
-**Response (no cambia la estructura, cambia el valor):**
-```json
-{
-  "data": {
-    "pagina": 1,
-    "totalPaginas": 3,
-    "totalRegistros": 25,
-    "t": [
-      {
-        "id": 5,
-        "talla": "M",
-        "descripcion": "Pantalón slim",
-        "color": "Azul",
-        "stock": 10,
-        "marca": "Marca X",
-        "imagenBase64": null,
-        "imagenUrl": "http://localhost:9096/mis-productos/v1/imagenes/file/7305237692097776164",
-        "precio": 99.99,
-        "codigoBarras": "1234567890",
-        "nombreProducto": "Jeans Slim"
-      }
-    ]
-  }
-}
-```
-
-**Acción requerida en el front:**
-```html
-<!-- Antes: el front no mostraba nada porque imagenUrl llegaba null -->
-<!-- Ahora: usar directo como src -->
-<img [src]="variante.imagenUrl" *ngIf="variante.imagenUrl" />
-```
-
-- **No usar** `imagenBase64` — siempre es `null`
-- **No filtrar** por `principal` — el back ya eligió la imagen correcta
-- La lista de variantes está en `response.data.t` (no `data.content` ni `data.items`)
-
-**Componentes que deben actualizarse:**
-- Cualquier componente que liste variantes con imagen (catálogo, búsqueda, etc.)
-
----
-
-### CAMBIO B — Listado de productos: `urlImagen` ahora apunta directo a los bytes
-
-**Endpoints afectados:**
-- `GET /mis-productos/productos/obtenerProductos?page=1&size=10`
-- `GET /mis-productos/productos/buscarNombreOrCodigoBarra?nombre=...&page=1&size=10`
-
-**Qué cambió en el back:**
-Antes `producto.imagen.urlImagen` apuntaba a `buscarImagenProducto/{productoId}` que devuelve un **JSON** (no bytes). El front tenía que llamar ese endpoint, extraer el `id` del JSON y luego llamar `/imagenes/file/{id}` para obtener los bytes.
-
-Ahora `producto.imagen.urlImagen` apunta directamente a `/imagenes/file/{imagenId}` — **devuelve bytes**, se puede usar directo como `src` del `<img>`.
-
-**Valor anterior de `urlImagen`:**
-```
-http://localhost:9096/mis-productos/producto-imagen/buscarImagenProducto/265
-→ devolvía JSON: { id, imagen (base64), urlImagen (filename), contentType }
-```
-
-**Valor nuevo de `urlImagen`:**
-```
-http://localhost:9096/mis-productos/v1/imagenes/file/7305237692097776164
-→ devuelve bytes directos (Content-Type: image/jpeg)
-```
-
-**Response de `obtenerProductos` (estructura no cambia, cambia el valor de `urlImagen`):**
-```json
-{
-  "data": {
-    "pagina": 1,
-    "totalPaginas": 5,
-    "totalRegistros": 48,
-    "t": [
-      {
-        "idProducto": 265,
-        "nombre": "Great Jeans",
-        "color": "Azul",
-        "precioVenta": 150.0,
-        "descripcion": "...",
-        "codigoBarras": "...",
-        "stock": 10,
-        "imagen": {
-          "urlImagen": "http://localhost:9096/mis-productos/v1/imagenes/file/7305237692097776164"
-        }
-      }
-    ]
-  }
-}
-```
-
-**Acción requerida en el front:**
-```html
-<!-- Antes: llamar buscarImagenProducto, extraer id, luego llamar /imagenes/file/{id} -->
-<!-- Ahora: usar directo -->
-<img [src]="producto.imagen?.urlImagen" *ngIf="producto.imagen?.urlImagen" />
-```
-
-- Si el producto **no tiene imagen asignada** → `imagen.urlImagen` es `null` (o `imagen` puede ser un objeto con `urlImagen: null`)
-- Si el archivo no existe en disco → micro devuelve `204`, el `<img>` no muestra nada
-- **Eliminar** toda lógica que llame `buscarImagenProducto` para obtener la imagen del listado
-
-**Componentes que deben actualizarse:**
-- Componente de listado/catálogo de productos
-- Componente de búsqueda de productos
-- Cualquier componente que use `obtenerProductos` o `buscarNombreOrCodigoBarra` y muestre imagen
-
----
-
-### Resumen de acciones — tabla rápida
-
-| Componente | Qué cambiar |
+| Qué | Archivo(s) |
 |---|---|
-| Listado/catálogo de variantes | Usar `variante.imagenUrl` directo en `<img [src]>`. No filtrar por principal. |
-| Listado/catálogo de productos | Usar `producto.imagen.urlImagen` directo en `<img [src]>`. Eliminar la llamada intermedia a `buscarImagenProducto`. |
-| Búsqueda de productos (`buscarNombreOrCodigoBarra`) | Igual que listado de productos — misma estructura de response. |
+| Chatbot busca por código de barras | `IVarianteRepository.java`, `ChatbotService.java` |
+| Chatbot devuelve tarjetas `productos[]` cuando el AI usa `##BUSCAR[...]##` | `ChatbotController.java`, `ChatbotService.java` |
+| Endpoint `GET /v1/chatbot/buscar?q=&offset=` para "ver más" sin IA | `ChatbotController.java` |
+| System prompt: flujo 2 pasos — bot pregunta "¿quieres ver foto?" antes de mostrar | `ChatbotService.java` |
+| `EmailService` — envía HTML por SMTP OVH (ya configurado) | `EmailService.java` |
+| `WhatsappService` — envía texto por CallMeBot (apikey en yml) | `WhatsappService.java` |
+| `NotificacionRequest` — DTO compartido con `enviarCorreo`, `enviarWhatsapp`, `ticketHtml`, `ticketTexto` | `NotificacionRequest.java` |
+| `AbonoRequest` — campo `notificacion` opcional | `AbonoRequest.java` |
+| `AbonoResponse` — campos `correoEnviado`, `whatsappEnviado`, `erroresEnvio` | `AbonoResponse.java` |
+| `CancelarAbonoRequest` — campo `notificacion` opcional | `CancelarAbonoRequest.java` |
+| `CancelarAbonoResponse` — campos de resultado de notificación | `CancelarAbonoResponse.java` |
+| `VentaDirectaRequest` — campo `notificacion` opcional | `VentaDirectaRequest.java` |
+| `VentaDirectaResponse` — campos de resultado de notificación | `VentaDirectaResponse.java` |
+| `AbonoServiceImpl` — llama email/WhatsApp tras registrar abono o cancelar | `AbonoServiceImpl.java` |
+| `VentaServiceImpl` — llama email/WhatsApp tras venta directa o registro crédito | `VentaServiceImpl.java` |
+| `GET /v1/negocio/contactos` (público, nuevo) — siempre expone `whatsappUrl`/`facebookUrl` para el QR del ticket, a diferencia de `/estado` que los oculta con negocio abierto | `NegocioController.java`, `NegocioService.java`, `ContactosPublicosDto.java`, `SecurityConfig.java` |
+| Reportes de ventas — diario, mensual (desglosado por día), por cliente, productos más vendidos (2026-07-02) | `ReporteVentasController.java`, `ReporteVentasServiceImpl.java`, `IReporteVentasService.java`, DTOs en `models/reportes/`, `IVentaRepository.java`, `IDetalleVentaVarianteRepository.java`, `SecurityConfig.java` |
+| `GET /v1/dashboard/resumen` — ventas hoy/mes, ganancia, gastos, pendientes de entregar, créditos activos, monto por cobrar, stock bajo (2026-07-02) | `DashboardController.java`, `DashboardServiceImpl.java`, `IDashboardService.java`, `DashboardResumenDto.java`, `IPedidoRepository.java`, `IVarianteRepository.java`, `SecurityConfig.java` |
+| Fix BUG-CB-02 (500 en imágenes huérfanas) + BUG-CB-03 (campos `descripcion`/`codigoBarras` en chatbot) (2026-07-02) | `VarianteServiceImpl.java`, `VarianteController.java`, `ChatbotService.java` |
+| Fix BUG-CB-01 real: prompt del chatbot usaba nombre ambiguo en vez de código de barras para re-buscar imagen (2026-07-02) | `ChatbotService.java` |
+| Fix bug de caché: varias búsquedas de variantes cacheaban sin incluir el rol, exponiendo a clientes normales resultados sin filtrar que un admin había cacheado antes (2026-07-02) | `VarianteServiceImpl.java` |
+| Filtros producto/variante por rol: cliente normal solo ve stock>0 + habilitado + con imagen; endpoint admin `.../admin/filtrar` paginado, ve todo el catálogo (2026-07-02) | `IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`, `VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java` |
+| Filtro admin rediseñado: reemplaza `FiltroCatalogoEnum` (un solo valor) por 4 parámetros opcionales combinables (`nombreOCodigo`, `conStock`, `conImagenes`, `habilitado` — este último nuevo); `ProductosControllerImpl` ganó default `page=1/size=10` que le faltaba (2026-07-06) | `IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`, `VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java` |
+
+### Front ⏳ pendiente (ver `CAMBIOS_FRONT.md` para detalle completo)
+
+| # | Tarea | Pantalla(s) | Sección en CAMBIOS_FRONT.md |
+|---|---|---|---|
+| F-1 | Generar HTML del ticket con `generarHtmlTicket()` | Todas | "Ticket / Comprobante — implementación FRONT" |
+| F-2 | Botón 🖨️ imprimir con `window.print()` | Venta directa, abonos, cancelación | Misma sección |
+| F-3 | Checkbox de correo (NO marcado por default; solo visible si cliente tiene correo. Sin correo → modal post-venta) | Venta directa, abonos, cancelación | Misma sección |
+| F-4 | Agregar `notificacion: { enviarCorreo, ticketHtml }` al request (sin `enviarWhatsapp`/`ticketTexto`) | POST venta, POST abono, PUT cancelar | Misma sección |
+| F-5 | Mostrar resultado: "Correo enviado ✅" | Toast/modal de confirmación | Misma sección |
+| F-6 | Tarjetas de producto en el chatbot (render `productos[]`) | Chatbot | "Chatbot — Tarjetas de productos" |
+| F-7 | Botón "Ver más" en chatbot (`GET /v1/chatbot/buscar?q=&offset=`) | Chatbot | Misma sección |
+| F-8 | Imagen por tarjeta (`GET /variantes/v1/imagenes/{varianteId}`, elemento con `principal:true`) — ⚠️ URL y "primer elemento" corregidos 2026-07-02, ver CAMBIOS_FRONT.md | Chatbot | Misma sección |
+| F-9 | QR al sitio de la tienda en el ticket (URL fija desde `environment.ts`) | Venta directa, abonos, cancelación | "QRs del ticket (2026-07-01)" |
+| F-10 | QR WhatsApp del negocio — solo si `whatsappUrl` existe en `GET /v1/negocio/contactos` | Venta directa, abonos, cancelación | Misma sección |
+| F-11 | QR Facebook del negocio — solo si `facebookUrl` existe en `GET /v1/negocio/contactos` | Venta directa, abonos, cancelación | Misma sección |
+| F-12 | Pantalla de reportes (diario, mensual con gráfica por día, por cliente, productos más vendidos) | Nueva pantalla `/reportes`, solo ADMIN | "Reportes de ventas (2026-07-02)" |
+| F-13 | Pantalla de dashboard (`GET /v1/dashboard/resumen`, 9 cards de métricas) | Nueva pantalla `/dashboard`, solo ADMIN | "Dashboard con métricas (2026-07-02)" |
+| F-14 | ⚠️ REIMPLEMENTAR — Filtros de admin en catálogo de productos/variantes: OLD code used `FiltroCatalogoEnum` (no longer exists in back). NEW: campo de texto `nombreOCodigo` + 3 toggles 3-state (`conStock`, `conImagenes`, `habilitado` NUEVO), todos opcionales y combinables con AND. Cliente normal NO necesita UI nueva. | Panel admin — productos y variantes | "Cambio de contrato (2026-07-06): filtro admin combinado..." en `CAMBIOS_FRONT.md` |
+| F-15 | Interceptar `400 "Debes verificar..."` en `savePedido` + pantalla de verificación antes del carrito. Form ya mejorado (correo+tel obligatorios), badge/acciones admin ya implementados. | Alta de cliente / venta-variante antes del pedido | "Verificación de correo del cliente (2026-07-02)" |
+| F-16 | Badge activo/inactivo en cards de variantes (campo `habilitado` ya en DTOs) + checkboxes de selección múltiple + botón "Deshabilitar seleccionados" (`admin/habilitar-lote`) | Panel admin — productos y variantes | "Deshabilitar productos/variantes en lote (2026-07-02)" |
+| F-17 | Pantalla "olvidé mi contraseña": input de correo → input de código de 6 dígitos + nueva contraseña. `debeCambiarPassword` (forzado) ya implementado. Falta: flujo voluntario desde link en login y formulario en perfil. | Login (link "olvidé"), perfil (cambio voluntario) | "Restablecer contraseña olvidada (2026-07-03)" |
+| F-18 | Mismo que F-17 segundo punto: formulario "cambiar contraseña" voluntario en perfil (`PUT /v1/auth/cambiar-password` con contraseña actual + nueva). No pide código. | Pantalla de perfil/mi cuenta | "Cambiar contraseña estando logueado (2026-07-03)" |
+| F-19 | ⚠️ NO EMPEZAR TODAVÍA — back escrito pero sin compilar/probar/desplegar. Cuando esté en QA: pantalla "ingresa código" tras registro, "completa tus datos" en primer pedido, aviso al cambiar correo, verificación forzada en login de usuarios ya existentes | Registro, primer pedido, editar cliente, login, panel admin | `CAMBIOS_FRONT.md` → "Unificar verificación de correo Usuario/Cliente (2026-07-03)" |
+
+> **Decisión 2026-07-01 — F-10/F-11:** los QR de WhatsApp y Facebook se muestran en el ticket
+> SOLO si el negocio tiene esos datos configurados en `GET /v1/negocio/contactos`. Si no hay URL
+> configurada, el QR simplemente no aparece. F-9 (QR de la tienda) siempre aparece.
+> F-9/F-10/F-11 **desbloqueadas** — proceder con la implementación.
+
+> **Decisión 2026-07-01 — F-3 (correo):** checkbox NO se marca por default aunque el cliente
+> tenga correo. Flujo:
+> - Cliente **tiene correo** → aparece el checkbox desmarcado → admin lo puede marcar antes de cobrar.
+> - Cliente **no tiene correo** → NO aparece el checkbox. Después de completar la venta/abono,
+    >   se muestra un modal/Swal preguntando "¿Enviar ticket por correo?" con un input para escribir
+    >   el correo; al confirmar se envía (POST separado o campo en el Swal).
+
+> **Dudas anotadas — RESPONDIDAS 2026-07-01 (ver detalle al final del documento en
+> "Respuestas a las dudas anotadas"):** D-01 (correo/teléfono obligatorios), D-02 (campo `correo`
+> en `NotificacionRequest` — ✅ ya agregado al back), D-03 (QR F-10/F-11 — ya resuelto arriba).
+
+### Configuración pendiente en servidor (QA y producción)
+
+| Variable de entorno | Valor | Para qué | Estado |
+|---|---|---|---|
+| `WHATSAPP_PROVEEDOR` | `callmebot` | Activar envío WhatsApp | 🚫 No aplica — WhatsApp en pausa (ver decisión arriba) |
+| `WHATSAPP_APIKEY` | (API key de CallMeBot) | Autenticación CallMeBot | 🚫 No aplica — no se va a usar |
+| `MAIL_USERNAME` | `qa.boutique.bolsas@novedades-jade.com.mx` | Ya en dev, verificar en prod | ✅ Ya activo (lo usa el chat) |
+| `MAIL_PASSWORD` | (contraseña OVH) | Ya en dev, verificar en prod | ✅ Ya activo (lo usa el chat) |
+
+> **2026-07-01:** el bloque `whatsapp:` faltaba en `application-qa.yml` y `application-docker.yml`
+> (solo estaba en dev) — ya se agregó por si algún día se retoma, pero **no hace falta setear
+> `WHATSAPP_APIKEY` en k8s** porque se decidió no implementar el envío por WhatsApp al cliente
+> (ver "Decisión 2026-07-01 — WhatsApp EN PAUSA" arriba). Con `MAIL_USERNAME`/`MAIL_PASSWORD` ya
+> activos, el envío de tickets por correo debería funcionar en QA y prod sin más configuración.
+
+#### Cómo obtener el `WHATSAPP_APIKEY` de CallMeBot (gratis, pero limitado)
+
+CallMeBot no manda mensajes "a nombre del negocio" a cualquier número. La clave se genera
+para UN número que primero se **auto-activa** para recibir mensajes de ese bot:
+
+1. Desde el WhatsApp del número que va a **recibir** los mensajes (ej. el WhatsApp del negocio),
+   agregar como contacto el número oficial de CallMeBot (verificar el número vigente en
+   callmebot.com antes de usarlo, puede cambiar).
+2. Mandarle un mensaje con el texto exacto: `I allow callmebot to send me messages`.
+3. El bot responde en segundos/minutos con un mensaje tipo:
+   `"API Activated for your phone number. Your APIKEY is 123456"`.
+4. Ese número (`123456` en el ejemplo) es el valor de `WHATSAPP_APIKEY`.
+
+> **Limitación importante:** ese apikey solo sirve para mandar mensajes A ESE número que se
+> activó — no sirve para mandarle el ticket a un cliente distinto. Cada cliente tendría que
+> activar el suyo. Por ahora esto solo es viable para que **el negocio reciba una copia** del
+> ticket en su propio WhatsApp, no para notificar a clientes reales. Si se necesita mandar a
+> clientes arbitrarios sin que se den de alta, hay que migrar a Twilio WhatsApp Business API
+> (de pago, sin esta restricción) — el switch `whatsapp.proveedor` ya está pensado para eso,
+> pero el caso `twilio` no está implementado todavía en `WhatsappService.java`.
+
+#### ✅ RESUELTO 2026-07-01 — Se descartó WhatsApp al cliente, solo correo (ver decisión arriba)
+
+Queda documentado abajo el análisis que se hizo para decidir, por si se retoma más adelante.
+
+**CallMeBot (ya implementado, gratis, $0 código extra):**
+1. Una sola vez: el negocio agrega el contacto de CallMeBot y le manda
+   `I allow callmebot to send me messages` → CallMeBot devuelve un `apikey` ligado a **ese número**.
+2. Ese `apikey` se guarda como `WHATSAPP_APIKEY`.
+3. Cuando un cliente compra, el back llama a CallMeBot con `phone = número del negocio` (el que se
+   activó) y ese mismo `apikey`.
+4. El mensaje llega **al WhatsApp del negocio**, no al del cliente. El cliente nunca recibe nada
+   por WhatsApp con este método — sirve como alerta interna de venta/abono, no como notificación
+   al comprador.
+
+**Twilio WhatsApp Business API (NO implementado, de pago, requiere código nuevo):**
+1. Alta de cuenta en Twilio (con tarjeta de pago) y activar el producto WhatsApp.
+2. Sandbox gratis para pruebas; para producción real hay que registrar un número de WhatsApp
+   Business propio ante Meta (verificación que tarda días).
+3. Regla de WhatsApp (no de Twilio): solo se puede mandar texto libre si el cliente escribió
+   primero en las últimas 24h; si no, hay que usar una "plantilla" pre-aprobada por Meta
+   (ej. `"Tu ticket de compra folio {{1}} por {{2}} está listo"`), y aprobar plantillas nuevas
+   también tarda.
+4. Con la cuenta lista, el back llama a Twilio con `to = número del cliente`,
+   `from = número de WhatsApp Business del negocio` → **sí llega al cliente**, sin que el cliente
+   tenga que activar nada antes.
+5. Costo: centavos de dólar por mensaje, facturación mensual.
+6. Esfuerzo: programar el caso `"twilio"` en `WhatsappService.java` (llamada a la API/SDK de
+   Twilio) — no es complicado pero es código nuevo, hoy no existe.
+
+**En una frase:** CallMeBot = alerta para el negocio, gratis, ya funciona. Twilio = mensaje real
+al cliente, de pago, requiere alta de cuenta + verificación + código nuevo.
+
+**Decisión final:** se quita WhatsApp por ahora, solo correo (que sí funciona para cualquier
+destinatario sin activación previa). Ver "Decisión 2026-07-01 — WhatsApp EN PAUSA" al inicio del documento.
+
+#### Comandos para setear las env vars (una vez que se tenga el apikey)
+
+```bash
+# QA
+kubectl set env deployment/proyecto-key-deployment \
+  WHATSAPP_PROVEEDOR=callmebot \
+  WHATSAPP_APIKEY=<apikey_obtenido> \
+  WHATSAPP_COUNTRY_CODE=52 \
+  -n qa
+kubectl rollout restart deployment/proyecto-key-deployment -n qa
+
+# Prod
+kubectl set env deployment/proyecto-key-deployment \
+  WHATSAPP_PROVEEDOR=callmebot \
+  WHATSAPP_APIKEY=<apikey_obtenido> \
+  WHATSAPP_COUNTRY_CODE=52 \
+  -n default
+kubectl rollout restart deployment/proyecto-key-deployment -n default
+```
 
 ---
 
-### Lo que NO cambia
+## Flujo general de ticket + notificaciones
 
-- Endpoints de detalle de imágenes de variante: `GET /variantes/v1/imagenes/{varianteId}` — sin cambios (renombrado de `v2` a `v1`, ver sección "MIGRACIÓN DE VERSIONES DE URL")
-- Endpoints de imágenes de producto en detalle: `GET /producto-imagen/listar/{productoId}` — sin cambios
-- Endpoints de eliminación y marcado de principal — sin cambios
-- Estructura general del response (`data.t`, `data.pagina`, etc.) — sin cambios
+> Esta sección describe el flujo UX completo ANTES de implementar cualquier ítem.
+> Los ítems 1, 2 y 3 comparten este diseño.
+
+### ¿A quién se envía?
+- **Al cliente** — el ticket de lo que hizo (compra, abono, cancelación, liquidación)
+- **Al admin** — solo para alertas de stock bajo (mejora 4), no para tickets de venta
+
+### ¿Cuándo se muestran los checkboxes?
+En TODAS las pantallas donde el cliente o admin confirma una acción que genera comprobante:
+
+| Pantalla | Evento | Checkboxes |
+|---|---|---|
+| Venta directa | Al hacer click en "Cobrar" | ✅ |
+| Abonos | Al registrar un abono | ✅ |
+| Pedidos (crédito liquidado) | Al registrar el último abono | ✅ |
+| Pedidos (cancelación) | Al cancelar APARTADO o FIADO | ✅ |
+| Carrito cliente | Al generar pedido | ✅ |
+
+### ¿Qué checkboxes aparecen?
+
+```
+┌─────────────────────────────────────────────────┐
+│  ¿Deseas recibir el comprobante?                │
+│                                                 │
+│  [ ] 📧 Por correo electrónico                  │
+│         cliente@ejemplo.com  [editar]           │
+│                                                 │
+│  [ ] 💬 Por WhatsApp                            │
+│         55 1234 5678  [editar]                  │
+│                                                 │
+│  Si ambos están marcados → se envía por los dos │
+└─────────────────────────────────────────────────┘
+```
+
+### Reglas de los checkboxes (actualizado 2026-07-01)
+
+- Si el cliente tiene **correo registrado** → aparece el checkbox **desmarcado** (el admin decide si enviarlo)
+- Si el cliente **no tiene correo** → el checkbox NO aparece. Después de la venta/abono aparece un modal/Swal con input para escribir el correo manualmente
+- Si es `clienteSinRegistro` (nombre manual sin cuenta) → sin checkbox antes de la venta; modal post-venta igual
+- WhatsApp **EN PAUSA** — no hay checkbox de WhatsApp ni campo de teléfono para envío
+- Si el checkbox está desmarcado → se genera el ticket de todas formas (para imprimir en pantalla), pero no se envía
+
+### Campos que el front manda al back
+
+```typescript
+// Se agrega a todos los requests que generan comprobante
+notificacion?: {
+  enviarCorreo: boolean;
+  correo?: string;          // puede diferir del correo registrado
+  enviarWhatsapp: boolean;
+  telefono?: string;        // puede diferir del teléfono registrado
+}
+```
+
+### Lo que hace el back al recibir la notificación
+
+```
+1. Ejecuta la acción principal (guardar venta / registrar abono / cancelar)
+2. Genera el ticket en memoria (texto o PDF)
+3. Si notificacion.enviarCorreo === true  → envía email con el ticket
+4. Si notificacion.enviarWhatsapp === true → envía WhatsApp con el ticket
+5. Devuelve el response normal + ticketPdf (bytes en base64) para que el front lo muestre
+```
+
+### Lo que devuelve el back (añadido al response normal)
+
+```json
+{
+  "data": {
+    ...campos normales de la respuesta...,
+    "ticket": {
+      "pdf": "base64...",           // para abrir/imprimir en el front
+      "correoEnviado": true,
+      "whatsappEnviado": false,
+      "errores": []                 // si falló algún envío, aquí va el motivo
+    }
+  }
+}
+```
+
+### Flujo visual en el front (paso a paso)
+
+```
+1. Admin llena el formulario (venta directa / abono / etc.)
+
+2. Antes del botón "Confirmar" aparecen los 2 checkboxes
+   con los datos del cliente pre-llenados si los tiene
+
+3. Admin hace click en "Confirmar"
+
+4. Front manda el request con el objeto notificacion incluido
+
+5. Back procesa y devuelve response + ticket.pdf en base64
+
+6. Front muestra:
+   a. Toast de éxito ("Venta registrada / Abono registrado")
+   b. Si correoEnviado → "📧 Ticket enviado a correo@ejemplo.com"
+   c. Si whatsappEnviado → "💬 Ticket enviado por WhatsApp"
+   d. Botón "🖨️ Imprimir ticket" → abre el PDF en nueva pestaña
+```
 
 ---
 
-## CAMBIOS INTERNOS — RabbitMQ + Caché (sin impacto en el contrato de API)
+## 1. Ticket de venta / abono / cancelación
 
-> **El front NO necesita cambiar nada.** Request, response y URLs son exactamente los mismos.
-> Estos cambios son internos: ahora cualquier escritura invalida la caché en **todos los nodos** del back
-> vía RabbitMQ, en lugar de solo en el nodo que procesó el request.
+> Ver sección "Flujo general" arriba para el diseño UX completo.
+> Este ítem es la base — sin el ticket no hay qué enviar por correo ni WhatsApp.
 
-### Qué cambió internamente
+**Qué genera:** un comprobante con todo lo que hizo el cliente, listo para imprimir o enviar.
 
-Antes: cada método de escritura usaba `@CacheEvict` con una lista de caches específicas. Si el back corría en varios nodos, solo el nodo que recibía el request limpiaba su caché — los otros seguían sirviendo datos viejos.
+### Tipos de ticket
 
-Ahora: cualquier escritura hace dos cosas:
-1. Llama a `CacheService.evictAll()` → limpia **todas** las caches del nodo actual
-2. Publica un evento `cache.evict.all` a RabbitMQ → todos los demás nodos reciben el evento y también limpian sus caches
+**A) Ticket de venta directa (contado)**
+```
+NOVEDADES JADE
+Fecha: 01/07/2026  14:30
+Cliente: María López
+----------------------------
+1x Pantalón negro M          $350.00
+1x Blusa floral S            $180.00
+----------------------------
+TOTAL                        $530.00
+MÉTODO: EFECTIVO
+ENTREGÓ:                     $600.00
+CAMBIO:                       $70.00
+============================
+[QR → link tienda]
+```
+
+**B) Ticket de abono (crédito)**
+```
+NOVEDADES JADE — COMPROBANTE DE ABONO
+Fecha: 01/07/2026
+Cliente: María López
+APARTADO #42
+----------------------------
+Pantalón clásico negro M
+Total apartado:              $350.00
+Ya pagado:                   $100.00
+Abono de hoy:                $150.00
+Saldo pendiente:             $100.00
+----------------------------
+MÉTODO: EFECTIVO
+ENTREGÓ:                     $200.00
+CAMBIO:                       $50.00
+============================
+[QR → link tienda]
+```
+
+**C) Ticket de liquidación (PAGADO)**
+```
+NOVEDADES JADE — APARTADO LIQUIDADO
+Fecha: 01/07/2026
+Cliente: María López
+----------------------------
+Pantalón clásico negro M
+Total:                       $350.00
+✅ PAGADO COMPLETAMENTE
+Fecha recogida: 01/07/2026
+============================
+[QR → link tienda]
+```
+
+**D) Ticket de cancelación**
+```
+NOVEDADES JADE — CANCELACIÓN
+Fecha: 01/07/2026
+Cliente: María López
+APARTADO #42 — CANCELADO
+Motivo: NO SE PRESENTÓ
+----------------------------
+Saldo a favor cliente:       $100.00
+(abonos realizados)
+============================
+[QR → link tienda]
+```
+
+### Tecnología propuesta
+- **Opción A (recomendada):** HTML optimizado para impresión → el front hace `window.print()`
+    - Sin dependencias en el back, más flexible para el front
+    - El back devuelve el HTML como string en el response
+- **Opción B:** PDF con `iText 7` o `Apache PDFBox` → bytes en base64
+    - Más robusto para guardar/compartir
+    - Requiere dependencia en `pom.xml`
+- **QR:** librería `ZXing` (Java) — genera el QR con la URL de la tienda
+
+### Lo que necesita el back
+- `TicketService.generarTicketVenta(ventaId, notificacion)` → String HTML o byte[]
+- `TicketService.generarTicketAbono(abonoId, notificacion)` → String HTML o byte[]
+- Config en `application.yml`: `tienda.nombre`, `tienda.url`, `tienda.telefono`
+- El ticket se devuelve en `data.ticket.contenido` (base64 o HTML)
+
+### Lo que necesita el front
+- Checkboxes de notificación en: venta directa, abonos, cancelación (ver flujo general)
+- Botón "🖨️ Imprimir ticket" en el toast de confirmación
+- Leer `data.ticket.contenido` y abrir en nueva pestaña o `window.print()`
+
+### Endpoints nuevos
+- Ninguno obligatorio — el ticket viaja dentro del response normal de cada acción
+- Opcional: `GET /v1/ticket/venta/{id}` y `GET /v1/ticket/abono/{id}` para regenerar un ticket anterior
 
 ---
 
-### Endpoints afectados (mismo contrato, nuevo comportamiento de caché)
+## 2. Envío de ticket por correo electrónico
 
-#### Imágenes de producto
+> Ver sección "Flujo general" arriba para el diseño UX completo.
+> Depende de que el ítem 1 (ticket) esté implementado.
 
-| Método | URL | Comportamiento visible para el front |
-|--------|-----|--------------------------------------|
-| `DELETE` | `/imagen/v1/{imagenId}` | Sin cambio — sigue eliminando la imagen y respondiendo 200 |
-| `PUT` | `/presentacion/v1/imagenes/{id}` | Sin cambio — sigue actualizando y devolviendo `ImagenPresentacionDto` |
-| `GET` | `/imagen/v1/cache/limpiar` | Sin cambio en response — ahora también notifica a los demás nodos vía Rabbit |
+### Eventos que generan correo al cliente
+- Venta directa confirmada
+- Abono registrado
+- Pedido liquidado (PAGADO)
+- Pedido cancelado
 
-#### Productos
+### Eventos que generan correo al admin
+- Stock bajo (mejora 4) — independiente del ticket del cliente
 
-| Método | URL | Comportamiento visible para el front |
-|--------|-----|--------------------------------------|
-| `POST` | `/productos/save` | Sin cambio en request/response |
-| `PUT` | `/productos/update` | Sin cambio en request/response |
-| `DELETE` | `/productos/deleteBy/{id}` | Sin cambio en request/response |
-| `PUT` | `/productos/{id}/habilitar?habilitar=` | Sin cambio en request/response |
+### Tecnología
+- **Spring Boot Mail** + SMTP OVH (ya configurado en el proyecto)
+- Plantilla HTML simple con el contenido del ticket + logo de la tienda
 
-#### Pedidos
+### Lo que necesita el back
+- `EmailService.enviarTicket(correo, asunto, ticketHtml)`
+- Llamado desde `VentaServiceImpl`, `AbonoServiceImpl` si `notificacion.enviarCorreo === true`
+- Sin endpoints nuevos — va embebido en el flujo de cada acción
 
-| Método | URL | Comportamiento visible para el front |
-|--------|-----|--------------------------------------|
-| `POST` | `/pedidos/savePedido` | Sin cambio en request/response |
-| `PUT` | `/pedidos/confirmar/{id}` | Sin cambio en request/response |
-| `DELETE` | `/pedidos/delete/{id}?motivo=` | Sin cambio en request/response |
-| `DELETE` | `/pedidos/{pedidoId}/detalle/{productoId}?cantidad=` | Sin cambio en request/response |
-
-#### Ventas
-
-| Método | URL | Comportamiento visible para el front |
-|--------|-----|--------------------------------------|
-| `POST` | `/ventas/save` | Sin cambio en request/response |
-
-#### Palabras clave
-
-| Método | URL | Comportamiento visible para el front |
-|--------|-----|--------------------------------------|
-| `POST` | `/palabras-clave/save` | Sin cambio en request/response |
-| `PUT` | `/palabras-clave/update/{id}` | Sin cambio — el `save` del servicio base ahora evicta caché + Rabbit |
-| `DELETE` | `/palabras-clave/delete` | Sin cambio — igual |
-
-#### Admin — limpieza de caché
-
-| Método | URL | Qué hace | Cambio |
-|--------|-----|----------|--------|
-| `DELETE` | `/admin/cache` | Limpia todas las caches de Spring | Ahora también notifica vía Rabbit a los demás nodos. Response sin cambio: devuelve lista de caches limpiadas. |
+### Lo que necesita el front
+- Los checkboxes de correo (ver flujo general)
+- Mostrar `data.ticket.correoEnviado` en el toast
 
 ---
 
-### Acción requerida por el front
+## 3. Envío de ticket por WhatsApp
 
-**Ninguna.** Todos los endpoints mantienen el mismo método HTTP, URL, request body y response.
+> Ver sección "Flujo general" arriba para el diseño UX completo.
+> Depende de que el ítem 1 (ticket) esté implementado.
 
-El único beneficio observable es que después de cualquier escritura, **todos los nodos** del back sirven datos actualizados — elimina el caso donde el front veía datos viejos al refrescar si era atendido por un nodo diferente.
+### Qué se envía
+- Texto plano con el resumen (WhatsApp no soporta PDF directo en la API básica)
+- Al final: link de la tienda
+
+### Eventos
+- Los mismos que el correo (venta, abono, liquidación, cancelación)
+
+### Tecnología propuesta
+- **CallMeBot** (gratuito, solo notificaciones salientes) — requiere que el cliente active el número una vez
+- **Twilio WhatsApp API** (de pago, más profesional, no requiere activación del cliente)
+- **Recomendación:** empezar con CallMeBot para pruebas, migrar a Twilio en producción
+
+### Lo que necesita el back
+- `WhatsappService.enviarMensaje(telefono, texto)`
+- Cliente HTTP (`WebClient`) hacia la API de CallMeBot o Twilio
+- Config en `application.yml`: `whatsapp.apiKey`, `whatsapp.proveedor`
+
+### Lo que necesita el front
+- Los checkboxes de WhatsApp (ver flujo general)
+- Mostrar `data.ticket.whatsappEnviado` en el toast
 
 ---
 
-## CAMBIOS INTERNOS — micro_imagenes ahora también evicta caché vía Rabbit
+## 3. Reportes de ventas
 
-> **El front NO necesita cambiar nada.** Este cambio es interno a micro_imagenes (puerto 9096).
+**Qué hace:** endpoints para consultar ventas agrupadas por período y por cliente.
 
-### Qué cambió
+### Reportes a implementar
+- `GET /v1/reportes/ventas/diario?fecha=YYYY-MM-DD` — total vendido en el día
+- `GET /v1/reportes/ventas/mensual?mes=YYYY-MM` — total del mes, desglosado por día
+- `GET /v1/reportes/ventas/cliente/{clienteId}` — historial de compras de un cliente
+- `GET /v1/reportes/ventas/productos-mas-vendidos?desde=X&hasta=Y` — ranking de productos
 
-`micro_imagenes` ahora escucha el evento `cache.evict.all` de RabbitMQ.
+### Lo que necesita el back
+- `ReporteVentasController` nuevo
+- Queries JPQL en `IVentaRepository` agrupando por fecha/cliente/producto
+- DTOs para cada reporte
 
-Antes: cuando `proyecto-key` publicaba `cache.evict.all`, solo los nodos de `proyecto-key` limpiaban su caché. `micro_imagenes` no se enteraba y podía seguir sirviendo datos cacheados viejos (imágenes de productos que ya no existen, listas de imágenes desactualizadas).
+### Lo que necesita el front
+- Pantalla de reportes con filtros de fecha
+- Tabla + gráfica simple (Chart.js o similar)
 
-Ahora: cuando se publica `cache.evict.all`:
-1. Los nodos de `proyecto-key` limpian su caché (como antes)
-2. Los nodos de `micro_imagenes` también limpian su caché (nuevo)
+---
 
-### Implementación
+## 4. Dashboard con métricas en tiempo real
 
-- **Cola nueva en micro_imagenes:** `queue.cache.evict.all.imagenes` — cola propia, separada de la de proyecto-key, vinculada al mismo `exchange.imagenes` con la misma routing key `cache.evict.all`. Esto garantiza que ambos servicios reciban el mismo mensaje (no compiten por él).
-- **Listener:** `ImagenRabbitConsumer.evictAllCache()` — limpia todas las caches de Redis en el nodo de micro_imagenes que recibe el mensaje.
+**Qué hace:** pantalla de resumen para el admin con los números más importantes del negocio.
+
+### Métricas propuestas
+- Ventas de hoy (total $)
+- Ventas de este mes (total $)
+- Pedidos pendientes de entregar
+- Créditos activos (APARTADO + FIADO) y monto total por cobrar
+- Productos con stock bajo (< 5 unidades)
+- Clientes nuevos este mes
+- Ganancia del mes (ventas - gastos)
+
+### Lo que necesita el back
+- `GET /v1/dashboard/resumen` — un solo endpoint con todos los números
+- Queries a ventas, pedidos, abonos, gastos, productos
+
+### Lo que necesita el front
+- Pantalla `/dashboard` visible solo para ROLE_ADMIN
+- Cards con los números
+- Actualización automática cada X minutos (o botón recargar)
+
+---
+
+## 5. Alertas de stock bajo
+
+**Qué hace:** avisar al admin cuando el stock de una variante baja de un umbral configurado.
 
 ### Cuándo se dispara
+- Al guardar una venta que descuenta stock
+- Al confirmar un pedido
+- Al registrar un abono que liquida un FIADO (el producto ya fue entregado)
 
-Los mismos eventos que ya existían en proyecto-key (POST producto, PUT producto, DELETE producto, POST pedido, etc.) ahora también limpian la caché de micro_imagenes automáticamente.
+### Canales de alerta
+- Email al admin (depende de mejora 2)
+- WhatsApp al admin (depende de mejora 1)
+- Respuesta de la API incluye `alertasStock: [{ varianteId, nombre, stockActual }]`
+  para que el front también pueda mostrar un banner
 
----
+### Lo que necesita el back
+- `StockAlertService` con método `verificarYNotificar(varianteId, stockActual)`
+- Umbral configurable en `application.yml` (default: 5 unidades)
+- Llamar al verificar en cada operación que descuente stock
 
-## CAMBIOS INTERNOS — Guardar relaciones producto-imagen ahora es asíncrono vía Rabbit
-
-> **El front NO necesita cambiar nada.** Request, response y URLs son exactamente los mismos.
-
-### Qué cambió
-
-Cuando se guarda o actualiza un producto con imágenes, el paso de registrar la relación `productoId → imagenId` en micro_imagenes ahora es **asíncrono vía RabbitMQ** en vez de una llamada HTTP síncrona.
-
-**Flujo anterior:**
-```
-Front → POST /productos/save
-    └─► sube bytes al micro (HTTP multipart) → obtiene imagenIds
-    └─► POST producto-imagen/saveAll (HTTP síncrono) → micro_imagenes registra la relación
-    ← 200 OK  (todo en la misma llamada)
-```
-
-**Flujo nuevo:**
-```
-Front → POST /productos/save
-    └─► sube bytes al micro (HTTP multipart) → obtiene imagenIds
-    └─► publica a queue.guardar.imagenes (Rabbit, fire-and-forget)
-    ← 200 OK  (respuesta inmediata, sin esperar al micro)
-              ...micro_imagenes recibe el mensaje y registra la relación en segundo plano
-```
-
-### Garantías
-- Si micro_imagenes está caído cuando se guarda el producto, el mensaje **queda encolado** en Rabbit y se procesa cuando el micro levanta — no se pierde
-- Si el procesamiento falla → NACK → va a `dlq.guardar.imagenes` (Dead Letter Queue) para inspección manual
-
-### Dónde se ve el cambio en el front (cómo probarlo)
-
-1. Ve al panel admin → crear nuevo producto → sube una imagen → guarda
-2. El 200 OK llega **más rápido** que antes (ya no espera la confirmación del micro)
-3. Espera 1-2 segundos → ve al listado de productos → la imagen ya aparece
-4. **Caso de falla simulada:** si micro_imagenes está abajo al guardar, el producto se crea igual y la imagen aparece en cuanto micro_imagenes vuelve a estar activo
+### Lo que necesita el front
+- Banner o notificación en la pantalla del admin al recibir `alertasStock` en el response
+- Pantalla de "Alertas de inventario" (opcional, puede verse en Dashboard)
 
 ---
 
-## CAMBIOS INTERNOS — Eliminar imágenes ahora es asíncrono vía Rabbit
+## 6. Devoluciones
 
-> **El front NO necesita cambiar nada.** Mismos endpoints, mismo request, mismo response.
+**Qué hace:** registrar que un cliente devolvió un producto y gestionar el reembolso o crédito a favor.
 
-### Qué cambió
+### Casos de uso
+- Cliente devuelve artículo de una venta ya entregada
+- Se devuelve el stock a la variante
+- Se registra el motivo y si se reembolsa (efectivo, transferencia) o queda como crédito para otra compra
 
-Las dos operaciones de eliminación de imágenes que antes hacían HTTP síncrono a micro_imagenes ahora publican a RabbitMQ:
+### Reglas de negocio por definir
+- ¿Cuántos días tiene el cliente para devolver?
+- ¿Se devuelve el dinero o solo crédito en tienda?
+- ¿Se puede devolver parte del pedido o todo completo?
 
-| Operación | Queue | Qué hace micro_imagenes al recibirlo |
-|---|---|---|
-| Eliminar imágenes por ID | `queue.eliminar.imagenes` | Borra el archivo del disco + el registro de BD por cada ID |
-| Eliminar archivos del disco | `queue.eliminar.imagenes.disco` | Borra solo los archivos del disco (sin tocar BD) |
+### Lo que necesita el back
+- Entidad `Devolucion` (ventaId, varianteId, cantidad, motivo, tipoReembolso, fecha)
+- `POST /v1/devoluciones` — registra la devolución y devuelve stock
+- `GET /v1/devoluciones/reporte` — listado de devoluciones
+- DDL: tabla `devoluciones`
 
-Ambas colas tienen Dead Letter Queue (`dlq.eliminar.imagenes`, `dlq.eliminar.imagenes.disco`) — si el procesamiento falla, el mensaje va al DLQ en vez de perderse o reintentar infinitamente.
-
-**Flujo anterior:**
-```
-Front → DELETE producto/variante
-    └─► DELETE /imagenes?ids=... (HTTP síncrono a micro_imagenes)
-    ← 200 OK  (espera a que el micro confirme la eliminación)
-```
-
-**Flujo nuevo:**
-```
-Front → DELETE producto/variante
-    └─► publica ids a queue.eliminar.imagenes (Rabbit, fire-and-forget)
-    ← 200 OK  (respuesta inmediata)
-              ...micro_imagenes recibe el mensaje y elimina archivos + BD en segundo plano
-```
-
-### Dónde se ve el cambio en el front (cómo probarlo)
-
-**Caso 1 — Eliminar imagen de un producto:**
-1. Ve al panel admin → editar producto → elimina una imagen → guarda
-2. El 200 OK llega más rápido que antes
-3. Recarga el detalle del producto → la imagen ya no aparece
-
-**Caso 2 — Eliminar un producto completo:**
-1. Ve al panel admin → listado de productos → elimina un producto
-2. El producto desaparece del listado inmediatamente
-3. Las imágenes asociadas se eliminan del disco del micro en segundo plano — si entras al diagnóstico de imágenes del producto antes de que procese, puede que aún aparezcan brevemente
-
-**Caso 3 — Eliminar imagen de una variante:**
-1. Ve al panel admin → variantes → selecciona una variante → elimina imágenes → guarda
-2. Las imágenes desaparecen del listado de esa variante en el siguiente request
-
-### Dónde se ve el cambio en el front (cómo probarlo)
-
-**Caso 1 — Imagen de producto:**
-1. Ve al panel admin → editar producto → cambia o elimina la imagen principal → guarda
-2. Ve al catálogo/listado de productos (sin recargar manualmente el front)
-3. **Antes:** la imagen vieja seguía apareciendo hasta que expiraba el TTL de 30 min
-4. **Ahora:** la imagen actualizada aparece de inmediato en el siguiente request al listado
-
-**Caso 2 — Banner de login/registro:**
-1. Ve al panel admin → Imágenes de presentación → selecciona el banner de LOGIN → cambia la imagen → guarda
-2. Abre otra pestaña y ve a la pantalla de login
-3. **Antes:** el banner viejo seguía apareciendo (caché de micro_imagenes no se limpiaba)
-4. **Ahora:** el banner nuevo aparece de inmediato
-
-**Caso 3 — Eliminar imagen de variante:**
-1. Ve al panel admin → variantes → selecciona una variante → elimina una imagen → guarda
-2. Ve al listado de variantes o al detalle de esa variante
-3. **Antes:** la imagen eliminada podía seguir apareciendo en caché
-4. **Ahora:** el listado ya no incluye esa imagen en el siguiente request
+### Lo que necesita el front
+- Botón "Registrar devolución" en el detalle de una venta entregada
+- Formulario: artículo, cantidad, motivo, tipo de reembolso
+- Listado de devoluciones para el admin
 
 ---
 
-## Optimizaciones internas N+1 — 2026-06-09
+## Notas generales
 
-### Qué se hizo
-Se corrigieron problemas de N+1 en JPA/Hibernate en `proyecto_key_new`. Los contratos de API **no cambian** — mismo request, mismo response. Solo mejora el rendimiento y la estabilidad interna.
-
-### Endpoints a probar (pruebas de regresión)
-
-#### 1. Módulo Rifa — GanadorRifaController (`/v1/ganadorRifa`)
-
-| Endpoint | Método | Qué probar |
-|----------|--------|-----------|
-| `/v1/ganadorRifa/sortear/{configurarRifaId}` | POST | Ejecutar un sorteo completo, verificar que devuelve ganador y variante |
-| `/v1/ganadorRifa/continuarVariante/{configurarRifaId}?modo=RESTANTES` | POST | Continuar variante con modo RESTANTES/CERO/NUEVOS, verificar que el historial queda bien |
-| `/v1/ganadorRifa/estado/{configurarRifaId}` | GET | Obtener estado de la rifa activa, verificar que trae variante actual, elegibles y descartados |
-| `/v1/ganadorRifa/reiniciar/{configurarRifaId}` | POST | Reiniciar rifa con `completo=false` y `completo=true`, verificar que limpia ganadores e historial |
-
-**Qué cambió internamente:**
-- `sortear()` y `continuarVariante()`: las variantes de rifa ahora se cargan con sus variantes de producto y producto en una sola query (antes era 1+N+N)
-- `continuarVariante()`: los ganadores anteriores se cargan con `concursante` y `configurarRifaVariante` en una sola query (antes era 1+N+N)
-- `reiniciar()`: usa DELETE directo en BD en vez de cargar todos los registros y borrarlos uno a uno (antes era 1+N queries de SELECT + N de DELETE)
+- **Orden recomendado:** 1 → 2 → 5 (notificaciones primero porque el stock bajo las usa) → 3 → 4 → 6
+- Cada mejora se termina completa (back + doc front) antes de pasar a la siguiente
+- Los commits siguen el flujo: dev → qa → main
+- Las dudas del front se anotan al final de este documento o en `DOCUMENTO_BACK_VENTAS_CREDITO.md` según corresponda
 
 ---
 
-#### 2. Módulo Variantes de Rifa — ConfigurarRifaVarianteController (`/v1/configurarRifaVariante`)
+## 7. Ticket de venta (PDF / impresión térmica) con QR
 
-| Endpoint | Método | Qué probar |
-|----------|--------|-----------|
-| `GET /v1/configurarRifaVariante/porRifa/{rifaId}` | GET | Listar variantes de una rifa, verificar que devuelve variante con nombre de producto incluido |
+**Qué hace:** generar un ticket listo para imprimir o mostrar en pantalla con el resumen
+completo de la compra y un código QR con el link de la tienda al final.
 
-**Qué cambió internamente:**
-- `listarPorRifa()`: carga variantes con su `Variante` y el `Producto` asociado en una sola query (antes era 1+N+N)
+### Contenido del ticket
 
----
+```
+============================
+      NOVEDADES JADE
+============================
+Fecha: 30/06/2026  12:35 hrs
+Vendedor: Admin
+Cliente: María López
+----------------------------
+ARTÍCULOS
+----------------------------
+1x Pantalón clásico negro M    $350.00
+1x Blusa floral talla S        $180.00
+----------------------------
+SUBTOTAL                       $530.00
+----------------------------
+MÉTODO DE PAGO: EFECTIVO
+MONTO RECIBIDO:                $600.00
+CAMBIO:                         $70.00
+============================
+   ¡Gracias por su compra!
+   Vuelva pronto 😊
 
-#### 3. Módulo Productos — ProductosController (`/v1/productos`)
-
-| Endpoint | Método | Qué probar |
-|----------|--------|-----------|
-| `POST /v1/productos/compartir-imagenes-variantes` | POST | Compartir imágenes de un producto a todas sus variantes, verificar que todas las variantes reciben las imágenes |
-
-**Qué cambió internamente:**
-- `compartirImagenesVarianteDto()`: las imágenes del producto se cargan con JOIN FETCH incluyendo el objeto `Imagen` completo (antes era N queries extras en el loop doble)
-
----
-
-### micro_imagenes — sin cambios
-No se modificó ningún archivo de `micro_imagenes`. No requiere pruebas adicionales.
-
----
-
-## Rifa Mensual — nuevos campos y endpoints (2026-06-11)
-
-Diseño completo en `RIFA_MENSUAL_PROPUESTA.md`. Todos los endpoints son **ADMIN** (`/v1/configurarRifa/**`, `/v1/concursante/**`).
-
-### 1. `ConfigurarRifa` — 3 campos nuevos (opcionales, no rompen lo existente)
-
-Afecta a: `POST /v1/configurarRifa/save`, `PUT /v1/configurarRifa/update/{id}`, `GET /v1/configurarRifa/activas`, `GET /v1/configurarRifa/activas/hoy`, `GET /v1/configurarRifa/buscar`, `GET /v1/ganadorRifa/estado/{id}` (dentro de `configurarRifa`).
-
-**Campos nuevos:**
-- `tipo`: `"MENSUAL"` | `"DIARIA"` | `null` (rifas viejas quedan `null`)
-- `mesReferencia`: `"YYYY-MM"` | `null` — solo informativo, de qué mes son los participantes
-- `esPrueba`: `boolean`, default `false`
-
-**Request** (`save`/`update`, campos nuevos opcionales):
-```json
-{
-  "fechaHoraLimite": "2026-07-01T20:00:00",
-  "activa": true,
-  "tipo": "MENSUAL",
-  "mesReferencia": "2026-06",
-  "esPrueba": false
-}
+   [QR con link de la tienda]
+   novedadesjadelink.com
+============================
 ```
 
-**Response** (`/activas`, `/activas/hoy`, `/buscar`) — 3 campos nuevos al final:
-```json
-{
-  "id": 9,
-  "fechaHoraLimite": "2026-07-01T20:00:00",
-  "activa": true,
-  "totalVariantes": 2,
-  "variantesSorteadas": 0,
-  "tipo": "MENSUAL",
-  "mesReferencia": "2026-06",
-  "esPrueba": false
-}
+### Casos de uso
+- Venta directa al contado → ticket inmediato al confirmar
+- Abono de crédito → ticket del abono (monto pagado, saldo restante)
+- Pedido liquidado (PAGADO) → ticket de liquidación
+
+### Ticket de abono (crédito)
+```
+============================
+      NOVEDADES JADE
+============================
+COMPROBANTE DE ABONO
+Fecha: 30/06/2026
+Cliente: María López
+----------------------------
+APARTADO #42
+Pantalón clásico negro M
+Total del apartado:    $350.00
+Pagos anteriores:      $100.00
+Abono de hoy:          $150.00
+Saldo pendiente:       $100.00
+----------------------------
+MÉTODO: EFECTIVO
+MONTO RECIBIDO:        $200.00
+CAMBIO:                 $50.00
+============================
+   [QR con link de la tienda]
+============================
 ```
 
-Si `esPrueba: true`, el front debe mostrar un aviso tipo **"⚠️ Esta rifa es de prueba"**.
+### Tecnología propuesta
+- **Back:** generar PDF con `iText` o `Apache PDFBox` (Java)
+  → endpoint `GET /v1/ticket/venta/{ventaId}` devuelve PDF (bytes)
+  → endpoint `GET /v1/ticket/abono/{abonoId}` devuelve PDF (bytes)
+- **QR:** librería `ZXing` (ya muy común en Spring Boot) — genera el QR con la URL de la tienda
+- **URL de la tienda:** configurable en `application.yml` (para cambiar sin recompilar)
+- **Alternativa ligera:** generar HTML optimizado para impresión térmica (58mm o 80mm)
+  → el front abre una ventana con `window.print()` — sin dependencias de PDF en el back
 
----
+### Lo que necesita el back
+- Dependencia iText o ZXing en `pom.xml`
+- `TicketService` con métodos `generarTicketVenta(ventaId)` y `generarTicketAbono(abonoId)`
+- `TicketController` con endpoints que devuelven `application/pdf`
+- Config en yml: `tienda.url`, `tienda.nombre`, `tienda.telefono`
 
-### 2. `PUT /v1/configurarRifa/{id}/esPrueba` — 🆕 toggle modo prueba
+### Lo que necesita el front
+- Botón "🧾 Imprimir ticket" en:
+    - Pantalla de confirmación de venta directa
+    - Pantalla de abonos tras registrar un pago
+    - Detalle de pedido PAGADO
+- Al hacer click → `GET /v1/ticket/venta/{id}` → abrir PDF en nueva pestaña o `window.print()`
 
-**Request:**
-```json
-{ "esPrueba": false }
-```
-
-**Response:** entidad `ConfigurarRifa` completa (incluye `id`, `esPrueba`, `activa`, `variantes`, etc.)
-
-**⚠️ Efecto al pasar de `true` → `false`** (botón "Pasar a sorteo real"):
-- Borra los giros de la demo (`ganador_rifa` + `historial_rifa_variante` de esa rifa)
-- Todos los concursantes vuelven a estar elegibles (`descartado=false`), incluidos los agregados durante la prueba
-- Reactiva la rifa (`activa=true`)
-
-Al pasar de `false` → `true` (botón "Modo demo") solo cambia el flag, no borra nada.
-
-**Error 400** si el `id` no existe: `{ "mensaje": "Configuración de rifa no encontrada" }`
-
----
-
-### 3. `GET /v1/configurarRifa/buscar` — 🆕 nuevo endpoint
-
-**Request:** `GET /v1/configurarRifa/buscar?desde=2026-06-25&hasta=2026-06-30` (rango de días por `fechaHoraLimite`)
-o `GET /v1/configurarRifa/buscar?tipo=MENSUAL&mesReferencia=2026-06` (rifas mensuales de ese mes)
-o combinaciones de `desde`, `hasta`, `tipo`, `mesReferencia`.
-
-**Sin parámetros**: devuelve lo mismo que `/activas/hoy` (rifas activas con `fechaHoraLimite` de hoy).
-
-**Response:** `List<ConfigurarRifaResumenDto>`, mismo formato que `/activas` (ver sección 1).
+### Notas
+- El QR apunta a la URL pública de la tienda (no a un pedido específico por privacidad)
+- Si se prefiere impresora térmica (ticket físico), el HTML es mejor que el PDF
+- El `montoDado` y `cambio` ya están implementados en el back (NF-3) — el ticket los usa directamente
 
 ---
 
-### 4. `Concursante` — campo nuevo `agregadoEnPrueba`
-
-Afecta a: `GET /v1/concursante/porRifa/{id}`, `GET /v1/concursante/elegibles/{id}`, `GET /v1/ganadorRifa/estado/{id}` (dentro de `elegibles`/`descartados`).
-
-**Campo nuevo:** `agregadoEnPrueba: boolean` — `true` si el concursante se registró mientras la rifa estaba en `esPrueba=true`.
-
-Con esto el front puede mostrar **2 listas**:
-- Participantes normales (`agregadoEnPrueba=false`)
-- Agregados durante la prueba (`agregadoEnPrueba=true`)
-
-Al pasar a sorteo real (toggle `esPrueba→false`, sección 2) estos concursantes **siguen participando** — el flag es solo informativo para el admin.
-
----
-
-### 5. `POST /v1/concursante/importarDePedidos` — ⚠️ cambia el `response`
-
-**Request:** sin cambios —
-```json
-{
-  "configurarRifaId": 9,
-  "palabraClave": "BOLSA",
-  "ordenDesde": 1,
-  "mes": "2026-06",
-  "clientes": [
-    { "clientePedidoId": 102, "nombre": "Carlos Ruiz", "telefono": "555...", "sinRegistro": false }
-  ]
-}
-```
-
-**Response — ANTES** era `List<Concursante>` directo. **AHORA:**
-```json
-{
-  "importados": [
-    { "id": 201, "nombre": "María López", "palabraClave": "BOLSA", "agregadoEnPrueba": false }
-  ],
-  "omitidosYaRegistrados": [
-    { "clientePedidoId": 102, "nombre": "Carlos Ruiz", "telefono": "555...", "sinRegistro": false }
-  ]
-}
-```
-
-**Diferencia clave:** si un `clientePedidoId` ya estaba registrado como concursante en esa misma rifa
-(ej. el admin dio clic 2 veces en "importar"), ya **no se duplica** — se omite y aparece en
-`omitidosYaRegistrados` para que el front avise "estos N ya estaban registrados".
-
----
-
-### 6. `DELETE /v1/concursante/{id}` — 🆕 nuevo endpoint
-
-Reemplaza usar `DELETE /v1/concursante/delete` (genérico, requiere el id en el body) para este caso.
-
-**Response OK (200):**
-```json
-{ "data": "Concursante eliminado" }
-```
-
-**Response error (400)** — si el concursante ya participó en algún giro (`ganador_rifa`):
-```json
-{ "mensaje": "No se puede eliminar: el concursante ya participó en un sorteo" }
-```
-
----
-
-### 7. `PUT /v1/concursante/{id}` — 🆕 nuevo endpoint (body parcial)
-
-Reemplaza usar `PUT /v1/concursante/update/{id}` (genérico, exige el objeto `Concursante` completo) para este caso.
-
-**Request** (todos los campos opcionales, solo se actualizan los que vengan):
-```json
-{
-  "nombre": "Juan",
-  "apellidoPaterno": "García",
-  "telefono": "5551234567",
-  "palabraClave": "BOLSA",
-  "ordenDesde": 1
-}
-```
-
-**Response (200):** entidad `Concursante` actualizada completa.
-
-`boletos`, `boletosBase`, `descartado`, `agregadoEnPrueba`, `clientePedidoId` y `configurarRifa`
-**no se pueden modificar** desde este endpoint.
-
----
-
-### 8. Cambio interno — fórmula de "boletos" (sin cambio de contrato)
-
-`boletosBase`/`boletos` (campos ya existentes en `Concursante`, visibles en `/porRifa`, `/elegibles`,
-`/estado`) ahora se calculan por **cantidad de productos comprados** en el mes
-(`SUM(detalle_pedidos.cantidad)` de pedidos `Entregado`), antes era por **número de pedidos**. No
-cambia ningún endpoint ni nombre de campo — solo el valor numérico que puede llegar a tener un
-concursante. No mostrar estos campos en pantallas proyectadas al público.
-
----
-
-## Rifa por Día (`tipo="DIARIA"`) — reutiliza todo lo de arriba (2026-06-11)
-
-Diseño en `RIFA_DIARIA_PROPUESTA.md`. **No hay endpoints nuevos.** La diaria usa el mismo backend que
-la rifa mensual (sección anterior) — solo cambia el `tipo` y cómo se agregan los participantes.
-
-### 1. Crear la sesión del día
-
-`POST /v1/configurarRifa/save`
-```json
-{ "fechaHoraLimite": "2026-06-11T20:00:00", "activa": true, "tipo": "DIARIA", "esPrueba": false }
-```
-`mesReferencia` se deja `null` (no aplica para diaria).
-
----
-
-### 2. Agregar participantes — uno por uno (no hay importación en bloque)
-
-**Caso A — cliente ya registrado en la app:**
-`GET /v1/clientes/buscar?nombre=Maria` (🟢 endpoint ya existente, no es de rifas) →
-`ClienteBusquedaDto` con `nombrePersona`, `apeidoPaterno`, `numeroTelefonico`. El front toma esos
-datos y los manda al paso siguiente.
-
-**Caso B — persona sin registro:** el front captura los datos a mano.
-
-En ambos casos:
-`POST /v1/concursante/registrar`
-```json
-{ "nombre": "Maria", "apellidoPaterno": "Lopez", "telefono": "555...",
-  "palabraClave": "BOLSA", "configurarRifa": { "id": 12 } }
-```
-
-**⚠️ Importante:** NO enviar `clientePedidoId` en la diaria → `boletos` queda en `1` para todos
-(misma probabilidad para cada participante). Si se envía `clientePedidoId`, el back calculará
-`boletos` por compras del mes (igual que en mensual) — no usar ese campo aquí salvo que se pida lo
-contrario.
-
----
-
-### 3. Resto del flujo — igual que mensual
-
-- Editar / eliminar: `PUT` / `DELETE /v1/concursante/{id}` (sección 6 y 7 de arriba)
-- Modo prueba: `PUT /v1/configurarRifa/{id}/esPrueba` (sección 2 de arriba) — mismo banner
-  "⚠️ Esta rifa es de prueba"
-- Ver participantes / separar en 2 listas: `GET /v1/concursante/porRifa/{id}` → `agregadoEnPrueba`
-  (sección 4 de arriba)
-- Traer la rifa de hoy: `GET /v1/configurarRifa/activas/hoy` — ya devuelve **cualquier** `tipo`
-  activo hoy, incluida la diaria, sin que el front tenga que filtrar
-- Buscar una rifa diaria de otro día: `GET /v1/configurarRifa/buscar?tipo=DIARIA&desde=&hasta=`
-- Sorteo: `sortear` / `continuarVariante` / `estado` — mismo motor que mensual
-
----
-
-## Rifa — modo prueba ya no se "cierra" tras el sorteo (2026-06-13)
-
-### Qué cambió
-- **Antes:** al sortear el ganador de la última variante, el backend ponía `activa=false` en la rifa
-  **sin importar `esPrueba`**. Eso rompía el flujo de pruebas: para repetir la prueba había que
-  `reiniciar` y, además, si se volvía a mandar `POST /configurarRifaVariante/save` con la misma
-  `palabraClave`, daba error `"La palabraClave 'X' ya existe en esta rifa"`.
-- **Ahora:**
-    - Si `esPrueba: true`, la rifa **se mantiene `activa: true`** aunque ya se haya sorteado el
-      ganador de la última variante. `rifaTerminada` (en `/sortear` y `/estado`) sigue marcando
-      correctamente cuándo terminó el ciclo — no depende de `activa`.
-    - `POST /v1/configurarRifaVariante/save`: si `esPrueba: true` y la `palabraClave` ya existe en
-      esa rifa, **ya no rechaza** — actualiza la configuración existente (`giroGanador`, `orden`,
-      `permitirNuevos`, y la variante/stock si se cambió de variante). Mismo `request`/`response`
-      de siempre.
-    - Si `esPrueba: false` (rifa real), el comportamiento **no cambia**: al terminar se pone
-      `activa: false`, y reusar una `palabraClave` ya configurada en esa rifa sigue dando
-      `"ya existe en esta rifa"`.
-
-### Qué debe hacer el front
-- **Nada obligatorio, es retrocompatible.** Mientras `esPrueba: true`, el admin puede:
-    - Repetir `sortear` tras `POST /v1/ganadorRifa/reiniciar/{id}?completo=true|false` cuantas veces
-      quiera, sin que la rifa se "cierre" (`activas`/`activas/hoy` la sigue listando).
-    - Re-mandar `POST /configurarRifaVariante/save` con la misma `palabraClave` para "recargar" la
-      config de la variante de prueba — ya no da error.
-- Cuando el admin haga `PUT /v1/configurarRifa/{id}/esPrueba` con `{ "esPrueba": false }`
-  ("Pasar a sorteo real"), la `ConfigurarRifaVariante` y su `palabraClave` configuradas durante las
-  pruebas **se conservan** y se usan tal cual para el sorteo real (no hay que volver a crearlas).
-  A partir de ahí aplica el comportamiento de rifa real descrito arriba.
-
----
-
-## Catálogo de errores — endpoints de Rifas (2026-06-13)
-
-### Formato de error
-Todos los endpoints de Rifas que validan reglas de negocio (todos excepto los `GET` simples)
-responden, cuando algo falla:
-
-```
-HTTP 400 Bad Request
-{
-  "mensaje": "<texto del error, mostrar tal cual al usuario>",
-  "code": 404,
-  "data": null,
-  "lista": null
-}
-```
-
-⚠️ **`code: 404` es un valor fijo** del helper `ResponseGeneric` (no significa "no encontrado" en
-sentido HTTP). Para detectar error el front debe usar el **status HTTP 400** y/o `data === null`,
-y mostrar el texto de `mensaje`.
-
-### `POST /v1/configurarRifaVariante/save`
-| `mensaje` | Causa |
-|---|---|
-| `Rifa no encontrada` | `configurarRifaId` no existe |
-| `La rifa no está activa` | `activa=false` (rifa real ya cerrada) |
-| `La palabraClave 'X' ya existe en esta rifa` | solo si `esPrueba=false` y otra variante de la rifa ya usa esa `palabraClave` |
-| `Variante no encontrada` | `varianteId` no existe |
-| `La variante no tiene stock disponible` | `stock < 1` en la variante |
-
-### `DELETE /v1/configurarRifaVariante/{id}`
-| `mensaje` | Causa |
-|---|---|
-| `Configuración de variante no encontrada` | `id` no existe |
-
-### `PUT /v1/configurarRifaVariante/{id}/palabraClave`
-| `mensaje` | Causa |
-|---|---|
-| `Configuración de variante no encontrada` | `id` no existe |
-| `La palabraClave ya existe en esta rifa` | otra variante de la misma rifa ya usa esa `palabraClave` |
-
-### `PUT /v1/configurarRifa/{id}/esPrueba`
-| `mensaje` | Causa |
-|---|---|
-| `Configuración de rifa no encontrada` | `id` no existe |
-
-### `POST /v1/concursante/registrar?forzar=`
-| `mensaje` | Causa |
-|---|---|
-| `El nombre es requerido` | falta `nombre` (validación de campo) |
-| `Debe indicar la configuración de rifa` | falta `configurarRifa.id` en el body |
-| `Configuración de rifa no encontrada` | `configurarRifa.id` no existe |
-| `Esta rifa ya fue sorteada o está inactiva` | `activa=false` |
-| `El plazo de registro cerró el {fechaHoraLimite}` | ya pasó `fechaHoraLimite` y `forzar=false` (default) — reintentar con `?forzar=true` si el admin quiere forzar el registro |
-
-### `POST /v1/concursante/importarDePedidos`
-| `mensaje` | Causa |
-|---|---|
-| `Configuración de rifa no encontrada` | `configurarRifaId` no existe |
-| `Esta rifa no está activa` | `activa=false` |
-
-### `DELETE /v1/concursante/{id}`
-| `mensaje` | Causa |
-|---|---|
-| `Concursante no encontrado` | `id` no existe |
-| `No se puede eliminar: el concursante ya participó en un sorteo` | tiene un registro en `ganador_rifa` |
-
-### `PUT /v1/concursante/{id}`
-| `mensaje` | Causa |
-|---|---|
-| `Concursante no encontrado` | `id` no existe |
-
-### `POST /v1/ganadorRifa/sortear/{configurarRifaId}`
-| `mensaje` | Causa |
-|---|---|
-| `Configuración de rifa no encontrada` | `configurarRifaId` no existe |
-| `Esta rifa ya fue completada o está inactiva` | `activa=false` |
-| `La rifa no tiene variantes configuradas` | la rifa no tiene ninguna `configurarRifaVariante` |
-| `Todas las variantes ya fueron sorteadas` | ya hay un ganador declarado por cada variante |
-| `No hay concursantes elegibles para la variante con palabraClave='X'` | nadie con esa `palabraClave` y `descartado=false` |
-
-### `POST /v1/ganadorRifa/continuarVariante/{configurarRifaId}?modo=`
-| `mensaje` | Causa |
-|---|---|
-| `Rifa no encontrada` | `configurarRifaId` no existe |
-| `No hay siguiente variante` | ya se sortearon todas las variantes |
-| `Modo inválido: X. Usar RESTANTES, CERO o NUEVOS` | `modo` no es uno de los 3 valores válidos |
-
-### `GET /v1/ganadorRifa/estado/{configurarRifaId}`
-| `mensaje` | Causa |
-|---|---|
-| `Rifa no encontrada` | `configurarRifaId` no existe |
-
-### `POST /v1/ganadorRifa/reiniciar/{configurarRifaId}?completo=`
-| `mensaje` | Causa |
-|---|---|
-| `Rifa no encontrada` | `configurarRifaId` no existe |
-
-**Response OK (200)** de `reiniciar`:
-```json
-{ "data": "Rifa reiniciada completamente (concursantes eliminados)" }
-```
-o, con `completo=false`:
-```json
-{ "data": "Rifa reiniciada (concursantes conservados)" }
-```
-
----
-
-## Autenticación — token expirado/ausente ahora responde 401 (antes 403) (2026-06-13)
-
-**Causa del bug:** `SecurityConfig` no tenía configurado un `AuthenticationEntryPoint`, así que
-Spring Security usaba el fallback por defecto (`Http403ForbiddenEntryPoint`). Esto hacía que
-**cualquier request sin autenticación válida** (token ausente, corrupto o **expirado**) devolviera
-**403 Forbidden** en vez de **401 Unauthorized**. Si el interceptor del front solo dispara el
-refresh ante un **401**, nunca se enteraba de que el access token expiró — el request fallaba con
-un 403 "seco" y ahí quedaba.
-
-**Cambio:**
-- **401 Unauthorized** → no autenticado: token ausente, inválido o **expirado**.
-  Body: `{ "mensaje": "Token inválido o expirado", "code": 404, "data": null, "lista": null }`
-  → el front debe intentar `/v1/auth/refresh` y reintentar el request original.
-- **403 Forbidden** → autenticado correctamente pero sin el rol requerido (ej. usuario sin
-  `ROLE_ADMIN` llamando a un endpoint de admin).
-  Body: `{ "mensaje": "No tiene permisos para acceder a este recurso", "code": 404, "data": null, "lista": null }`
-  → el front **no** debe reintentar con refresh aquí (el token es válido, solo falta permiso).
-
-**Acción para el front:** revisar el interceptor — el flujo de `/v1/auth/refresh` debe dispararse
-ante **401**, no ante 403. Si antes "funcionaba" reintentando en 403, eso era un parche al bug
-descrito arriba; ahora la expiración de token llega correctamente como 401.
-
----
-
-## `POST /v1/concursante/importarDePedidos` — nuevo campo `omitidosSinNombre` (2026-06-13)
-
-**Causa del bug:** si `clientes[]` traía una entrada `sinRegistro: true` con `nombre: ""`
-(vacío), el backend intentaba guardar el `Concursante` y la validación `@NotBlank` de Hibernate
-lanzaba un `ConstraintViolationException` cuyo mensaje crudo (técnico) se devolvía tal cual en
-`mensaje`, y **abortaba todo el batch** — ningún concursante se importaba, ni siquiera los
-válidos.
-
-**Cambio:** las entradas sin `nombre` (vacío o solo espacios) ya **no rompen el batch**: se omiten
-y se devuelven en un nuevo arreglo `omitidosSinNombre`, igual que ya pasaba con
-`omitidosYaRegistrados`.
-
-**Response — ahora:**
-```json
-{
-  "importados": [
-    { "id": 201, "nombre": "María López", "palabraClave": "BOLSA", "agregadoEnPrueba": false }
-  ],
-  "omitidosYaRegistrados": [
-    { "clientePedidoId": 102, "nombre": "Carlos Ruiz", "telefono": "555...", "sinRegistro": false }
-  ],
-  "omitidosSinNombre": [
-    { "clientePedidoId": null, "nombre": "", "telefono": "", "sinRegistro": true }
-  ]
-}
-```
-
-**Acción para el front:** si `omitidosSinNombre` no viene vacío, avisar al admin algo como
-"N participante(s) sin registro no se importaron porque no tienen nombre". Si la UI permite
-agregar filas de "cliente sin registro" a mano, idealmente exigir `nombre` antes de enviar para
-que no terminen en este arreglo.
-
----
-
-## Pitfall técnico resuelto — @Query + Page<> con subquery JPQL (2026-06-18)
-
-**Síntoma:** endpoint de historial devuelve `{ mensajes: [], totalMensajes: 0 }` aunque en BD hay filas con datos correctos.
-
-**Causa:** cuando `@Query` usa una subconsulta JPQL (`IN (SELECT ...)`) y el tipo de retorno es `Page<T>`, Spring Data JPA no puede derivar el COUNT automáticamente. Sin `countQuery` explícito asume `totalElements = 0` y nunca ejecuta la query real.
-
-**Regla:** siempre que haya un `@Query` que devuelva `Page<T>` y contenga subqueries, agregar `countQuery` sin el `ORDER BY`:
-```java
-@Query(
-        value = "SELECT m FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...) ORDER BY m.timestamp DESC",
-        countQuery = "SELECT COUNT(m) FROM ... WHERE m.sesionId IN (SELECT s.sesionId FROM ...)"
-)
-Page<ChatMensaje> findBy...(Pageable pageable);
-```
-
----
-
-## CHAT EN VIVO — Panel Admin (acción requerida en el front) — 2026-06-17
-
-### Problema actual
-Cuando el admin selecciona una sesión en el panel, **solo ve los mensajes nuevos** que llegan en tiempo real (WebSocket). Los mensajes anteriores de esa sesión no aparecen porque el front no los está cargando.
-
-### Endpoints de historial — paginado tipo Messenger (scroll hacia arriba carga más)
-
-Ambos endpoints (admin y cliente) aceptan `pagina` y `size`. La carga inicial trae los últimos 20 mensajes. Cuando el usuario hace scroll arriba se pide la siguiente página.
-
-#### Admin
-```
-GET /mis-productos/v1/chat/admin/historial/{sesionId}?pagina=0&size=20
-Authorization: Bearer <token admin>
-```
-
-#### Cliente (público)
-```
-GET /mis-productos/v1/chat/historial/{sesionId}?pagina=0&size=20
-```
-
-| Param | Default | Descripción |
-|---|---|---|
-| `pagina` | `0` | Página a cargar. `0` = mensajes más recientes |
-| `size` | `20` | Mensajes por página |
-
-**Response** — leer `response.data`:
-```json
-{
-  "code": 200,
-  "data": {
-    "mensajes": [
-      { "remitente": "USUARIO", "contenido": "Hola, tengo una pregunta", "timestamp": "2026-06-17T10:00:00" },
-      { "remitente": "ADMIN",   "contenido": "Claro, ¿en qué te ayudo?", "timestamp": "2026-06-17T10:00:05" }
-    ],
-    "pagina": 0,
-    "totalPaginas": 3,
-    "totalMensajes": 45,
-    "hayMasAntiguos": true
-  }
-}
-```
-
-- `mensajes` viene ordenado **cronológico ascendente** (el más antiguo primero) — listo para renderizar de arriba a abajo
-- `hayMasAntiguos: true` → mostrar botón/spinner de "cargar más" al inicio del scroll
-- `id` y `sesionId` no aparecen en cada mensaje (`@JsonIgnore`)
-- `remitente` es exactamente `"USUARIO"` o `"ADMIN"`
-- El endpoint de cliente devuelve **403** si el `sesionId` no existe en BD
-
-**Flujo scroll tipo Messenger:**
-```typescript
-// Carga inicial (mensajes más recientes)
-cargarHistorial(sesionId, pagina = 0) {
-  GET .../historial/{sesionId}?pagina=0&size=20
-  this.mensajes = res.data.mensajes;        // renderizar
-  this.hayMasAntiguos = res.data.hayMasAntiguos;
-}
-
-// Usuario hace scroll arriba → cargar página siguiente
-cargarMasAntiguos() {
-  if (!this.hayMasAntiguos) return;
-  GET .../historial/{sesionId}?pagina={paginaActual + 1}&size=20
-  this.mensajes = [...res.data.mensajes, ...this.mensajes]; // prepend
-  this.hayMasAntiguos = res.data.hayMasAntiguos;
-}
-```
-
-**Acción para el front — PENDIENTE:** Llamar este endpoint en DOS lugares:
-1. **Panel admin:** cuando el admin hace clic en una sesión, cargar `pagina=0` y renderizar antes de recibir eventos WebSocket.
-2. **Chat del cliente:** al inicializar, usar el endpoint por `clienteId` (ver sección siguiente) para ver TODA la historia entre sesiones.
-
----
-
-### Historial completo del cliente a través de sesiones — `clienteId` persistente
-
-El `sesionId` cambia cada vez que la sesión expira (5 min de inactividad). Para que el cliente vea mensajes de sesiones anteriores, el front genera un `clienteId` fijo guardado en `localStorage`.
-
-**Generar y guardar el `clienteId` una sola vez:**
-```typescript
-if (!localStorage.getItem('chat_cliente_id')) {
-  localStorage.setItem('chat_cliente_id', crypto.randomUUID());
-}
-const clienteId = localStorage.getItem('chat_cliente_id');
-```
-
-**Enviarlo al conectar** — payload de `/app/chat.conectar`:
-```json
-{ "tempId": "uuid-temporal", "nombreUsuario": "Juan", "clienteId": "uuid-persistente" }
-```
-
-**Endpoint de historial completo** — todas las sesiones del cliente:
-```
-GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=0&size=20
-```
-Público, sin token. Devuelve mensajes de **todas las sesiones** vinculadas a ese `clienteId` ordenados cronológicamente. Mismo formato de response que el historial por `sesionId` (`{ mensajes, pagina, totalPaginas, totalMensajes, hayMasAntiguos }`).
-
-**Flujo correcto al inicializar el chat del cliente:**
-```typescript
-ngOnInit() {
-  // 1. clienteId persiste en localStorage entre sesiones y recargas
-  if (!localStorage.getItem('chat_cliente_id'))
-    localStorage.setItem('chat_cliente_id', crypto.randomUUID());
-  this.clienteId = localStorage.getItem('chat_cliente_id');
-
-  // 2. Cargar toda la historia del cliente (todas las sesiones pasadas)
-  this.http.get(`/v1/chat/historial/cliente/${this.clienteId}?pagina=0&size=20`)
-    .subscribe(res => {
-      this.mensajes = res.data.mensajes ?? [];
-      this.hayMasAntiguos = res.data.hayMasAntiguos;
-    });
-
-  // 3. Conectar WebSocket mandando clienteId para vincular la nueva sesión
-  this.conectarWebSocket();
-}
-```
-
-> **Resumen de storage:**
-> - `clienteId` → **`localStorage`** — persiste aunque se cierre el navegador, une todas las sesiones (usuarios anónimos)
-> - `sesionId` → **`sessionStorage`** — solo dura la pestaña, identifica la sesión WebSocket activa
-
----
-
-### Historial por usuario registrado — `usuarioId` (vinculado a la cuenta)
-
-Para usuarios que tienen cuenta en el sistema, se puede vincular la sesión de chat a su `usuarioId` real (Integer) en lugar de un UUID anónimo. Esto permite recuperar todos sus mensajes históricos de forma confiable.
-
-**Enviar `usuarioId` al conectar** — payload de `\app\chat.conectar`:
-```json
-{
-  "tempId": "uuid-temporal",
-  "nombreUsuario": "Juan",
-  "clienteId": "uuid-persistente-localStorage",
-  "usuarioId": 42
-}
-```
-- `usuarioId` es opcional (null si el usuario no está autenticado → solo se usa `clienteId`)
-- `usuarioId` es el `id` (Integer) del usuario en `usuario_modificacion`
-
-**Endpoint de historial por usuarioId** — todas las sesiones del usuario registrado:
-```
-GET /mis-productos/v1/chat/historial/usuario/{usuarioId}?pagina=0&size=20
-```
-Público, sin token. Devuelve mensajes de **todas las sesiones** vinculadas a ese `usuarioId`, mismo formato que historial por sesión.
-
-**Response:** igual al historial paginado:
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": {
-    "mensajes": [ { "remitente": "USUARIO", "contenido": "Hola", "timestamp": "2026-06-17T10:00:00" } ],
-    "pagina": 0,
-    "totalPaginas": 3,
-    "totalMensajes": 45,
-    "hayMasAntiguos": true
-  }
-}
-```
-
-**Flujo recomendado para usuario autenticado:**
-```typescript
-ngOnInit() {
-  // usuarioId viene del token decodificado o del perfil del usuario autenticado
-  this.usuarioId = this.authService.getCurrentUser()?.id ?? null;
-
-  // Cargar historial del usuario (todas sus sesiones pasadas)
-  if (this.usuarioId) {
-    this.http.get(`/v1/chat/historial/usuario/${this.usuarioId}?pagina=0&size=20`)
-      .subscribe(res => {
-        this.mensajes = (res as any).data?.mensajes ?? [];
-        this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
-      });
-  } else {
-    // usuario anónimo: usar clienteId de localStorage
-    const clienteId = localStorage.getItem('chat_cliente_id');
-    if (clienteId) {
-      this.http.get(`/v1/chat/historial/cliente/${clienteId}?pagina=0&size=20`)
-        .subscribe(res => {
-          this.mensajes = (res as any).data?.mensajes ?? [];
-          this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
-        });
-    }
-  }
-
-  // Conectar WebSocket
-  this.conectarWebSocket();
-}
-```
-
-**UX de expiración de sesión (SESION_CERRADA):**
-1. Recibir `{ tipo: "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`
-2. Limpiar `mensajes` del componente (y `sesionId` de sessionStorage)
-3. Cuando el usuario envía el siguiente mensaje:
-    - Llamar de nuevo a `\app\chat.conectar` con el `usuarioId` (o `clienteId`) → recibir nuevo `sesionId`
-    - Llamar al endpoint de historial (`pagina=0, size=20`) para cargar los últimos mensajes
-    - Renderizar esos mensajes — el scroll hacia arriba carga páginas anteriores (`pagina=1`, `pagina=2`...)
-
----
-
----
-
-### Endpoint de sesiones activas (para el listado del panel)
-
-**Request:**
-```
-GET /mis-productos/v1/chat/admin/sesiones
-Authorization: Bearer <token admin>
-```
-
-**Response:** envuelto en `ResponseGeneric` — leer `response.data`:
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": [
-    {
-      "sesionId": "f1d0db6f-496f-4000-9dd1-234efdc51f06",
-      "nombreUsuario": "chat",
-      "estado": "ACTIVA",
-      "fechaInicio": "2026-06-17T10:00:00",
-      "ultimaActividad": "2026-06-17T10:02:00",
-      "ultimoMensaje": "Hola, tengo una pregunta"
-    },
-    {
-      "sesionId": "37cb781e-f39f-4fa4-b825-52a7f0b9ab0c",
-      "nombreUsuario": "Visitante",
-      "estado": "CERRADA",
-      "fechaInicio": "2026-06-17T09:00:00",
-      "ultimaActividad": "2026-06-17T09:05:00",
-      "ultimoMensaje": "Buen dia"
-    }
-  ],
-  "lista": null
-}
-```
-
-- Devuelve **todas las sesiones de las últimas 24 horas** (ACTIVA y CERRADA), ordenadas por `ultimaActividad` descendente
-- Campo nuevo `estado`: `"ACTIVA"` o `"CERRADA"` — mostrar indicador visual (ej. punto verde / gris)
-- `ultimoMensaje` puede ser `null` si el usuario conectó pero no envió ningún mensaje
-- El admin puede hacer clic en cualquier sesión para ver el historial — incluso las cerradas
-- `estado === 'CERRADA'` → solo lectura (no tiene sentido responder, la sesión ya expiró)
-
-```typescript
-// ✅ Correcto
-this.sesiones = (response as any).data ?? [];
-// Indicador visual sugerido:
-// sesion.estado === 'ACTIVA'  → punto verde, puede responder
-// sesion.estado === 'CERRADA' → punto gris, solo ver historial
-```
-
----
-
-### Endpoint para cerrar sesión manualmente
-
-**Request:**
-```
-POST /mis-productos/v1/chat/admin/cerrar/{sesionId}
-Authorization: Bearer <token admin>
-```
-
-**Response:** 204 No Content
-
----
-
-### Comportamiento del email de notificación
-
-El backend manda email al admin en el **primer mensaje de cada sesión**, sin importar si el admin está en el panel o no.
-
-- Visitante se conecta → sin email
-- Visitante manda primer mensaje → email con el contenido del mensaje
-- Visitante manda más mensajes en la misma sesión → sin email (ya fue notificado)
-- Sesión expira por inactividad (5 min) → visitante manda nuevo mensaje → nueva sesión → nuevo email
-
-El front **no necesita hacer nada especial** para controlar los emails. Solo asegurarse de que el visitante llame `/chat.conectar` para crear sesión antes de mandar mensajes.
-
----
-
-### Notificación en el panel cuando el admin ESTÁ en la app — ✅ IMPLEMENTADO (2026-06-17)
-
-Cuando el admin está en el panel y llega un mensaje de un visitante, el backend publica el evento por WebSocket en `/topic/chat.admin`.
-
-**Lo que se implementó:**
-- Sonido beep via Web Audio API al llegar mensaje en sesión no activa (sin archivo externo)
-- Highlight rojo en la sesión del listado con clase `ca-session-item--unread`, se quita al hacer clic
-- Eliminada propiedad `env.buscarImagenProducto` (URL deprecada, no se usaba en templates)
-
-El campo del mensaje en el evento es `contenido` (no `mensaje`):
-```json
-{
-  "tipo": "MENSAJE",
-  "sesionId": "f1d0db6f-...",
-  "nombreUsuario": "Juan",
-  "contenido": "Hola, tengo una pregunta",
-  "timestamp": "2026-06-17T10:00:05"
-}
-```
-
-**Para eventos `NUEVA_SESION`**, `contenido` viene `null` — es correcto, no hay mensaje aún.
-
----
-
-### Protección anti-bot
-
-El backend limita los emails a uno por sesión. Si un bot manda mensajes continuamente dentro de la misma sesión, solo llega 1 email. Si crea sesiones nuevas continuamente, puede generar emails repetidos — se puede agregar rate limiting por IP en una iteración futura si se detecta el problema.
-
-**Timeout de sesión:** 5 minutos sin actividad de ninguno de los dos lados (ni usuario ni admin) → la sesión se cierra y el cliente recibe `{ "tipo": "SESION_CERRADA" }` en `/topic/chat.usuario.{sesionId}`. Cualquier mensaje de cualquiera de los dos reinicia el contador.
-
----
-
-### Confirmado correcto por el front — sin cambios requeridos (2026-06-17)
-
-Lo siguiente ya estaba bien implementado y no requiere ninguna acción:
-
-| Ítem | Estado |
-|---|---|
-| `buscarClientePedido` con query params | ✅ correcto |
-| micro_imagenes con prefijo `/v1/` | ✅ correcto |
-| Imágenes de productos y variantes usando `urlImagen` directa del response | ✅ correcto |
-| Interceptor maneja 401 (token expirado) y 403 (sin permiso) correctamente | ✅ correcto |
-| `omitidosSinNombre?.` con optional chaining | ✅ correcto |
-
----
-
-## CHAT EN VIVO — Referencia completa para el front (2026-06-18)
-
-> **Por qué no aparecen los mensajes al recargar la página**
->
-> Se confirmó en BD que los mensajes SÍ se guardan correctamente. El problema es que el componente del chat **no está llamando al endpoint de historial al inicializar (`ngOnInit`)**.
-> Al recargar la página la conexión WebSocket se reinicia (nueva sesión) y si el front no consulta el historial antes de conectar, la pantalla arranca vacía aunque existan mensajes previos en la BD.
-> La sesión más reciente en BD tiene `cliente_id = e8ea8611-ca0a-48e1-8619-d754923e2885` con mensajes de USUARIO y ADMIN guardados — el backend funciona. Solo falta que el front haga el `GET /historial/cliente/{clienteId}` al iniciar.
-
----
-
-### Mapa completo de endpoints de chat
-
-#### 1. WebSocket — conectar nueva sesión
-
-**Cuándo usarlo:** al montar el componente de chat (ngOnInit), antes de enviar mensajes. Genera el `sesionId` que identifica esta sesión.
-
-**Suscribirse primero en:**
-```
-/topic/chat.inicio.{tempId}
-```
-
-**Publicar en:**
-```
-/app/chat.conectar
-```
-
-**Payload:**
-```json
-{
-  "tempId": "uuid-generado-en-el-front",
-  "nombreUsuario": "Juan",
-  "clienteId": "uuid-de-localStorage",
-  "usuarioId": 42
-}
-```
-- `tempId`: UUID que el front genera en el momento para recibir la respuesta (no se guarda)
-- `clienteId`: UUID guardado en `localStorage` — se crea la primera vez y persiste siempre (usuarios anónimos o como fallback)
-- `usuarioId`: el `id` del usuario autenticado (Integer) — enviar `null` si no está logueado
-
-**Response que llega en `/topic/chat.inicio.{tempId}`:**
-```json
-{ "sesionId": "94bb63c0-a3fe-4d7c-b4a9-ecd2a72c871c" }
-```
-→ Guardar `sesionId` en `sessionStorage`. Se usa para enviar mensajes y recibir respuestas del admin.
-
----
-
-#### 2. WebSocket — enviar mensaje del cliente
-
-**Cuándo usarlo:** cuando el usuario escribe y presiona enviar.
-
-**Publicar en:**
-```
-/app/chat.mensaje
-```
-
-**Payload:**
-```json
-{ "sesionId": "uuid-de-sessionStorage", "contenido": "Hola, tengo una pregunta" }
-```
-
-**No hay response directo.** El admin recibe el mensaje en `/topic/chat.admin`. Si la sesión está expirada el mensaje se descarta — el front debe reconectar primero.
-
----
-
-#### 3. WebSocket — recibir eventos del backend (canal del cliente)
-
-**Suscribirse en:**
-```
-/topic/chat.usuario.{sesionId}
-```
-
-**Evento: mensaje del admin**
-```json
-{ "tipo": "MENSAJE", "remitente": "ADMIN", "contenido": "Hola, ¿en qué te ayudo?", "timestamp": "2026-06-18T02:35:47" }
-```
-
-**Evento: sesión expirada** (5 min sin actividad)
-```json
-{ "tipo": "SESION_CERRADA" }
-```
-→ Al recibir `SESION_CERRADA`: limpiar `sesionId` de sessionStorage y limpiar la lista de mensajes del componente. La próxima vez que el usuario envíe un mensaje, reconectar (`/app/chat.conectar`) y luego cargar historial.
-
----
-
-#### 4. REST — historial del cliente por `clienteId` (usuarios anónimos o fallback)
-
-**Cuándo usarlo:** en `ngOnInit`, ANTES de conectar el WebSocket. Carga todos los mensajes de todas las sesiones anteriores.
-
-**Request:**
-```
-GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=0&size=20
-```
-Sin token. `clienteId` viene de `localStorage.getItem('chat_cliente_id')`.
-
-**Response:** `ResponseGeneric` — leer `response.data`:
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": {
-    "mensajes": [
-      { "remitente": "USUARIO", "contenido": "Hola", "timestamp": "2026-06-18T02:35:16" },
-      { "remitente": "ADMIN",   "contenido": "Como estas", "timestamp": "2026-06-18T02:35:47" }
-    ],
-    "pagina": 0,
-    "totalPaginas": 1,
-    "totalMensajes": 2,
-    "hayMasAntiguos": false
-  }
-}
-```
-→ Leer: `(response as any).data.mensajes` — **NO** `response as any[]`.
-
-**Scroll hacia arriba — cargar más antiguos:**
-```
-GET /mis-productos/v1/chat/historial/cliente/{clienteId}?pagina=1&size=20
-```
-Cuando `hayMasAntiguos === true`, al hacer scroll al tope cargar `pagina + 1` y **prepend** al array actual:
-```typescript
-this.mensajes = [...nuevosMensajes, ...this.mensajes];
-```
-
----
-
-#### 5. REST — historial del cliente por `usuarioId` (usuarios registrados)
-
-**Cuándo usarlo:** igual que el anterior, pero cuando el usuario está autenticado. Tiene la ventaja de ser robusto aunque el `localStorage` se borre.
-
-**Request:**
-```
-GET /mis-productos/v1/chat/historial/usuario/{usuarioId}?pagina=0&size=20
-```
-Sin token. `usuarioId` es el `id` Integer del usuario autenticado.
-
-**Response:** mismo formato que el endpoint por `clienteId` (ver arriba).
-
----
-
-#### 6. REST — historial de una sesión específica (para el panel admin)
-
-**Cuándo usarlo:** en el panel admin, cuando el admin hace clic en una sesión del listado para ver su historial.
-
-**Request:**
-```
-GET /mis-productos/v1/chat/admin/historial/{sesionId}?pagina=0&size=20
-Authorization: Bearer <token admin>
-```
-
-**Response:** mismo formato paginado que los anteriores.
-
----
-
-#### 7. REST — listado de sesiones para el panel admin
-
-**Cuándo usarlo:** al cargar el panel de admin, para ver todas las sesiones de las últimas 24 h (activas y cerradas).
-
-**Request:**
-```
-GET /mis-productos/v1/chat/admin/sesiones
-Authorization: Bearer <token admin>
-```
-
-**Response:** `ResponseGeneric` — leer `response.data`:
-```json
-{
-  "data": [
-    {
-      "sesionId": "94bb63c0-...",
-      "nombreUsuario": "chat",
-      "estado": "ACTIVA",
-      "fechaInicio": "2026-06-18T02:35:07",
-      "ultimaActividad": "2026-06-18T02:35:47",
-      "ultimoMensaje": "Como estas"
-    }
-  ]
-}
-```
-→ Leer: `(response as any).data` — **NO** `response as any[]`.
-- `estado` puede ser `"ACTIVA"` o `"CERRADA"`
-
----
-
-#### 8. REST — cerrar sesión manualmente (panel admin)
-
-**Cuándo usarlo:** botón "Cerrar sesión" en el panel admin.
-
-**Request:**
-```
-POST /mis-productos/v1/chat/admin/cerrar/{sesionId}
-Authorization: Bearer <token admin>
-```
-**Response:** 204 No Content.
-
----
-
-#### 9. WebSocket — panel admin (recibir eventos y responder)
-
-**Suscribirse en** (para recibir mensajes de todos los clientes):
-```
-/topic/chat.admin
-```
-
-**Eventos posibles:**
-
-Nueva sesión conectada:
-```json
-{ "tipo": "NUEVA_SESION", "sesionId": "...", "nombreUsuario": "Juan", "contenido": null, "timestamp": null }
-```
-
-Mensaje del cliente:
-```json
-{ "tipo": "MENSAJE", "sesionId": "...", "nombreUsuario": "Juan", "contenido": "Hola", "timestamp": "2026-06-18T02:35:16" }
-```
-
-**Publicar para responder al cliente:**
-```
-/app/chat.admin.responder
-```
-```json
-{ "sesionId": "uuid-del-cliente", "contenido": "Hola, ¿en qué te ayudo?" }
-```
-
-**Publicar para marcar que el admin está en el panel** (suspende emails):
-```
-/app/chat.admin.conectado
-```
-Sin payload.
-
----
-
-### Flujo completo del componente de chat del cliente — código de referencia
-
-> **Decisión 2026-06-18:** el chat es solo para usuarios logueados. Se eliminó el `clienteId` (localStorage UUID). El único identificador es `usuarioId` (Integer del usuario autenticado).
-
-```typescript
-// usuarioId viene del usuario autenticado (Integer)
-// Solo mostrar el chat si el usuario está logueado
-const usuarioId = this.authService.getCurrentUser()?.id;
-
-ngOnInit() {
-  if (!usuarioId) return; // no mostrar chat a usuarios no autenticados
-
-  // PASO 1: cargar historial ANTES de conectar el WebSocket
-  this.http.get(`/v1/chat/historial/usuario/${usuarioId}?pagina=0&size=20`)
-    .subscribe(res => {
-      this.mensajes       = (res as any).data?.mensajes      ?? [];
-      this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
-      this.paginaActual   = 0;
-    });
-
-  // PASO 2: conectar WebSocket
-  this.conectarWebSocket();
-}
-
-conectarWebSocket() {
-  const tempId = crypto.randomUUID();
-
-  // suscribirse ANTES de publicar
-  this.stompClient.subscribe(`/topic/chat.inicio.${tempId}`, frame => {
-    const data = JSON.parse(frame.body);
-    this.sesionId = data.sesionId;
-    sessionStorage.setItem('chat_sesion_id', this.sesionId);
-
-    // suscribirse al canal de respuestas del admin
-    this.stompClient.subscribe(`/topic/chat.usuario.${this.sesionId}`, frame2 => {
-      const evento = JSON.parse(frame2.body);
-      if (evento.tipo === 'MENSAJE') {
-        this.mensajes = [...this.mensajes, evento];
-      } else if (evento.tipo === 'SESION_CERRADA') {
-        sessionStorage.removeItem('chat_sesion_id');
-        this.sesionId = null;
-        // NO limpiar mensajes — dejarlos visibles
-        // Al siguiente envío reconectar y recargar historial
-      }
-    });
-  });
-
-  this.stompClient.publish({
-    destination: '/app/chat.conectar',
-    body: JSON.stringify({ tempId, nombreUsuario: this.nombre, usuarioId })
-  });
-}
-
-cargarMasAntiguos() {
-  if (!this.hayMasAntiguos) return;
-  this.paginaActual++;
-  this.http.get(`/v1/chat/historial/usuario/${usuarioId}?pagina=${this.paginaActual}&size=20`)
-    .subscribe(res => {
-      const antiguos = (res as any).data?.mensajes ?? [];
-      this.mensajes       = [...antiguos, ...this.mensajes]; // prepend al inicio
-      this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
-    });
-}
-
-enviarMensaje(contenido: string) {
-  if (!this.sesionId) {
-    // sesión expirada → reconectar y recargar historial
-    this.conectarWebSocket();
-    this.http.get(`/v1/chat/historial/usuario/${usuarioId}?pagina=0&size=20`)
-      .subscribe(res => {
-        this.mensajes       = (res as any).data?.mensajes      ?? [];
-        this.hayMasAntiguos = (res as any).data?.hayMasAntiguos ?? false;
-        this.paginaActual   = 0;
-      });
-    return;
-  }
-  this.stompClient.publish({
-    destination: '/app/chat.mensaje',
-    body: JSON.stringify({ sesionId: this.sesionId, contenido })
-  });
-  // agregar optimistamente al array local
-  this.mensajes = [...this.mensajes, { remitente: 'USUARIO', contenido, timestamp: new Date().toISOString() }];
-}
-```
-
----
-
-## MÓDULO: Pagos parciales — Apartado y Fiado (2026-06-27)
-
-> Backend: proyecto-key (9091) — todos los endpoints requieren `ROLE_ADMIN` (token JWT en cookie)
-
-### Concepto
-
-| Tipo | Flujo |
-|---|---|
-| `APARTADO` | Cliente aparta producto → va dando abonos → al liquidar se le entrega |
-| `FIADO` | Se entrega producto de entrada → cliente va pagando → al liquidar cierra |
-
-El tipo se define al crear el pedido. Una vez creado no cambia.
-
----
-
-### 1. Crear pedido con tipo de crédito
-
-Campo nuevo en el body de `POST /v1/pedidos/savePedido`:
-
-```
-tipoPedido: "APARTADO" | "FIADO" | "NORMAL"  (default: "NORMAL")
-```
-
-El back calcula `totalPedido` automáticamente sumando los `subTotal` del detalle.
-`totalPagado` inicia en `0`.
-
-**Request igual al existente + campo nuevo:**
-```json
-{
-  "cliente": { "id": 10 },
-  "fechaPedido": "2026-06-27",
-  "tipoPedido": "APARTADO",
-  "estadoPedido": "APARTADO",
-  "observaciones": "Pantalón azul talla M",
-  "detalles": [
-    { "productoId": 5, "varianteId": 12, "cantidad": 1, "precioUnitario": 350.00, "subTotal": 350.00 }
-  ]
-}
-```
-
-**Response:** igual al response actual de pedido (incluye los nuevos campos `tipoPedido`, `totalPedido`, `totalPagado`).
-
----
-
-### 1b. Venta directa con crédito — `POST /v1/ventas/save` (MODIFICADO)
-
-El endpoint ya existía para venta inmediata. Ahora acepta el campo opcional `tipoPedido`.
-
-**Diferencia clave vs v1 anterior:**
-- Si `tipoPedido` es `"APARTADO"` o `"FIADO"` → **no se crea Venta**, solo se crea el Pedido con estado = `tipoPedido`. El response devuelve `pedidoId` y `ventaId` es `null`.
-- Si `tipoPedido` es `null` / `"NORMAL"` → comportamiento igual al actual (Pedido + Venta cerrados en un shot).
-
-**Request (campos relevantes, igual al existente + `tipoPedido` + `observaciones`):**
-```json
-{
-  "usuarioId": 1,
-  "clienteId": 10,
-  "pagosYMesesId": 1,
-  "tipoPedido": "APARTADO",
-  "observaciones": "Pantaloneta negra talla M",
-  "detalles": [
-    { "varianteId": 42, "cantidad": 1, "precioVenta": 350.00, "subTotal": 350.00 }
-  ]
-}
-```
-
-> `pagosYMesesId` sigue siendo requerido en el request pero **no se usa** en el flujo crédito (no hay Venta ni cargos).
-
-**Response 200 — flujo crédito (ventaId = null, pedidoId presente):**
-```json
-{
-  "response": {
-    "ventaId": null,
-    "tipoPago": null,
-    "requiereTerminal": false,
-    "totalVenta": 350.00,
-    "meses": null,
-    "descripcionPago": null,
-    "intentId": null,
-    "pedidoId": 55
-  }
-}
-```
-
-**Response 200 — flujo normal (sin cambios):**
-```json
-{
-  "response": {
-    "ventaId": 23,
-    "tipoPago": "Efectivo",
-    "requiereTerminal": false,
-    "totalVenta": 350.00,
-    "meses": null,
-    "descripcionPago": "Efectivo / Transferencia",
-    "intentId": null,
-    "pedidoId": null
-  }
-}
-```
-
-**Lógica para el front:**
-```ts
-if (response.pedidoId) {
-  // crédito → redirigir a /abonos con el pedidoId
-} else {
-  // venta inmediata → flujo normal
-}
-```
-
----
-
-### 2. Registrar un abono
-
-```
-POST /v1/abonos/{pedidoId}
-```
-
-**Request:**
-```json
-{
-  "monto": 100.00,
-  "fechaPago": "2026-06-27",
-  "metodoPago": "EFECTIVO",
-  "nota": "primer abono"
-}
-```
-- `fechaPago`: opcional, default = hoy
-- `metodoPago`: `"EFECTIVO"` | `"TRANSFERENCIA"` | `"TARJETA"` (default `"EFECTIVO"`)
-- `nota`: opcional
-
-**Response 200:**
-```json
-{
-  "mensaje": "La peticion fue exitosa",
-  "code": 200,
-  "data": {
-    "id": 1,
-    "monto": 100.00,
-    "fechaPago": "27/06/2026",
-    "metodoPago": "EFECTIVO",
-    "nota": "primer abono"
-  }
-}
-```
-
-**Response 400** si el pedido ya está `PAGADO`, `cancelado`, o es de tipo `NORMAL`.
-
-> **Auto-cierre:** cuando `totalPagado >= totalPedido` el back cambia `estadoPedido` a `"PAGADO"` automáticamente.
-> Para `APARTADO` además guarda `fechaRecogida = hoy` (fecha de entrega del producto).
-
----
-
-### 3. Historial de abonos de un pedido
-
-```
-GET /v1/abonos/{pedidoId}
-```
-
-**Response 200:**
-```json
-{
-  "code": 200,
-  "data": [
-    { "id": 1, "monto": 100.00, "fechaPago": "27/06/2026", "metodoPago": "EFECTIVO", "nota": "primer abono" },
-    { "id": 2, "monto": 200.00, "fechaPago": "05/07/2026", "metodoPago": "TRANSFERENCIA", "nota": null }
-  ]
-}
-```
-
----
-
-### 4. Reporte: estado de cuenta (pedidos pendientes de liquidar)
-
-```
-GET /v1/abonos/reporte/estado-cuenta
-```
-
-Devuelve todos los pedidos `APARTADO` o `FIADO` que **aún no están pagados**.
-
-**Response 200:**
-```json
-{
-  "code": 200,
-  "data": [
-    {
-      "pedidoId": 45,
-      "tipoPedido": "FIADO",
-      "estadoPedido": "FIADO",
-      "cliente": "María López",
-      "telefono": "5512345678",
-      "totalPedido": 350.00,
-      "totalPagado": 100.00,
-      "saldo": 250.00,
-      "fechaPedido": "27/06/2026",
-      "abonos": [
-        { "id": 1, "monto": 100.00, "fechaPago": "27/06/2026", "metodoPago": "EFECTIVO", "nota": null }
-      ]
-    }
-  ]
-}
-```
-
----
-
-### 5. Reporte: pedidos liquidados
-
-```
-GET /v1/abonos/reporte/pagados
-```
-
-Devuelve todos los pedidos `APARTADO` o `FIADO` con `estadoPedido = "PAGADO"`.
-
-**Response 200:**
-```json
-{
-  "code": 200,
-  "data": [
-    {
-      "pedidoId": 40,
-      "tipoPedido": "APARTADO",
-      "cliente": "Ana García",
-      "telefono": "5598765432",
-      "totalPedido": 500.00,
-      "fechaPedido": "10/06/2026",
-      "fechaUltimoPago": "27/06/2026",
-      "abonos": [
-        { "id": 3, "monto": 200.00, "fechaPago": "15/06/2026", "metodoPago": "EFECTIVO", "nota": null },
-        { "id": 7, "monto": 300.00, "fechaPago": "27/06/2026", "metodoPago": "TRANSFERENCIA", "nota": "liquidación" }
-      ]
-    }
-  ]
-}
-```
-
----
-
-### Resumen de endpoints nuevos
-
-| Método | URL | Descripción |
-|---|---|---|
-| `POST` | `/v1/ventas/save` | **MODIFICADO** — acepta `tipoPedido`; si es APARTADO/FIADO devuelve `pedidoId` en vez de `ventaId` |
-| `POST` | `/v1/pedidos/savePedido` | Ya existía — ahora acepta `tipoPedido` |
-| `POST` | `/v1/abonos/{pedidoId}` | Registrar abono |
-| `GET` | `/v1/abonos/{pedidoId}` | Historial de abonos |
-| `GET` | `/v1/abonos/reporte/estado-cuenta` | Pedidos con saldo pendiente |
-| `GET` | `/v1/abonos/reporte/pagados` | Pedidos liquidados |
-
-### Estados posibles de `estadoPedido`
-
-| Estado | Significado |
-|---|---|
-| `PENDIENTE` | Pedido normal sin confirmar (flujo existente) |
-| `APARTADO` | Reservado, abonando, sin entregar |
-| `FIADO` | Entregado, abonando, sin liquidar |
-| `PAGADO` | Liquidado (cierre de APARTADO o FIADO) |
-| `Entregado` | Confirmado por flujo normal de venta (ya existía) |
-| `cancelado` | Cancelado (ya existía) |
-
----
-
-## Chatbot — Tarjetas de productos (2026-07-01)
-
-### Qué cambia
-
-El chatbot ahora puede mostrar productos como **tarjetas visuales** cuando el cliente pide ver
-productos por categoría o marca. El response del chatbot incluye campos nuevos opcionales.
-La paginación ("ver más") se hace con un endpoint separado **sin pasar por la IA** (0 tokens extra).
-
----
-
-### 1. POST /v1/chatbot/mensaje — response extendido
-
-**Sin cambio en el request** — sigue igual que antes.
-
-**Response cuando el bot quiere mostrar productos:**
-```json
-{
-  "respuesta": "¡Claro, aquí te muestro! 👜",
-  "bloqueado": false,
-  "segundosEspera": 0,
-  "productos": [
-    {
-      "varianteId": 12,
-      "nombre": "Bolsa Coach Café",
-      "marca": "Coach",
-      "talla": "única",
-      "color": "café",
-      "precio": 850.0,
-      "stock": 5,
-      "descripcion": "Bolsa de piel genuina, correa ajustable",
-      "codigoBarras": "ABC123"
-    },
-    {
-      "varianteId": 13,
-      "nombre": "Bolsa Coach Negra",
-      "marca": "Coach",
-      "talla": "única",
-      "color": "negra",
-      "precio": 900.0,
-      "stock": 3,
-      "descripcion": null,
-      "codigoBarras": "DEF456"
-    }
-  ],
-  "hayMas": true,
-  "busquedaQuery": "Coach",
-  "busquedaOffset": 2
-}
-```
-
-**Response cuando el bot responde texto normal (sin productos):**
-```json
-{
-  "respuesta": "Hola, ¿en qué te puedo ayudar? 😊",
-  "bloqueado": false,
-  "segundosEspera": 0
-}
-```
-Los campos `productos`, `hayMas`, `busquedaQuery` y `busquedaOffset` **solo aparecen** cuando
-el bot quiere mostrar tarjetas. Si no están en el response, simplemente no renderizar tarjetas.
-
-**Campos nuevos 2026-07-02 — respuesta a BUG-CB-03:** `descripcion` (puede ser `null` si la
-variante no tiene una cargada) y `codigoBarras` (solo aparece en el JSON si el producto tiene
-código de barras registrado — si no, el campo no viene). Úsenlos para diferenciar visualmente
-tarjetas que comparten nombre/marca/precio idénticos (ej. mostrar el código de barras chiquito
-debajo del nombre cuando `talla`/`color` vengan ambos `null`).
-
----
-
-### 2. GET /v1/chatbot/buscar — "Ver más" sin IA
-
-Llamar este endpoint cuando el usuario hace clic en el botón **"Ver más"**.
-No llama a OpenAI, solo consulta la BD. Muy rápido y sin costo de tokens.
-
-**Request:**
-```
-GET /mis-productos/v1/chatbot/buscar?q=Coach&offset=2
-```
-| Param | Tipo | Descripción |
-|---|---|---|
-| `q` | string | La misma búsqueda del response anterior (`busquedaQuery`) |
-| `offset` | number | El valor de `busquedaOffset` del response anterior |
-
-**Response:**
-```json
-{
-  "productos": [ ... ],
-  "hayMas": false,
-  "busquedaQuery": "Coach",
-  "busquedaOffset": 4
-}
-```
-
----
-
-### 3. Cómo obtener la imagen de cada tarjeta
-
-Cada producto tiene `varianteId`. Usar el endpoint ya existente (⚠️ corregido 2026-07-02 — la URL
-tenía el `/v1/` en la posición equivocada):
-
-```
-GET /mis-productos/variantes/v1/imagenes/{varianteId}
-```
-
-**⚠️ Corrección 2026-07-02:** NO tomar el primer elemento del array a secas — tomar el elemento
-con **`"principal": true`**. Si ninguno viene marcado como principal, ahí sí usar el primero como
-fallback. Si el array está vacío, mostrar imagen placeholder.
-```js
-const imagenes = await fetch(`/mis-productos/variantes/v1/imagenes/${varianteId}`).then(r => r.json());
-const imagen = imagenes.data.find(img => img.principal) || imagenes.data[0];
-```
-
----
-
-### 4. Flujo completo para el front
-
-```
-1. Usuario escribe "tienes bolsas?"
-2. Front → POST /v1/chatbot/mensaje
-3. Response tiene productos[] y hayMas=true
-4. Front muestra:
-   - Burbuja de chat con respuesta.respuesta
-   - 2 tarjetas de producto debajo (con imagen de /variantes/imagenes/{id})
-   - Botón "Ver más" si hayMas=true
-
-5. Usuario hace clic en "Ver más"
-6. Front → GET /v1/chatbot/buscar?q={busquedaQuery}&offset={busquedaOffset}
-7. Response trae 2 productos más
-8. Front AGREGA las tarjetas nuevas debajo de las anteriores (no reemplaza)
-9. Si el nuevo hayMas=false, ocultar el botón "Ver más"
-
-10. Usuario escoge un producto → lo puede agregar al carrito normalmente
-```
-
----
-
-### 5. Diseño sugerido de tarjeta
-
-```
-┌─────────────────────┐
-│   [imagen 150x150]  │
-├─────────────────────┤
-│ Bolsa Coach Café    │
-│ Marca: Coach        │
-│ Color: café         │
-│ Talla: única        │
-│ $850.00             │
-│ Stock: 5 pzas       │
-│  [Ver detalle]      │
-└─────────────────────┘
-```
-
-El botón "Ver detalle" puede abrir el modal/página de producto existente
-usando `varianteId` para hacer el fetch de detalle.
-
----
-
-### 6. Notas importantes
-
-- `marca`, `talla`, `color` pueden ser `null` — mostrar solo los que tengan valor.
-- `hayMas` es `false` cuando ya no hay más resultados — ocultar el botón.
-- El botón "Ver más" siempre usa `busquedaQuery` y `busquedaOffset` del **último response**.
-- Si el usuario hace una nueva pregunta después de ver tarjetas, el historial del chat continúa normalmente.
-
----
-
-## Ticket / Comprobante — implementación FRONT (2026-07-01)
-
-> El back solo manda datos. El front genera el HTML, aplica estilos de impresión y llama `window.print()`.
-> El correo se implementó en el back (ver sección "Correo — cómo lo hace el front" más abajo).
-> WhatsApp automático al cliente quedó descartado (ver `PLAN_MEJORAS.md`) — en su lugar el ticket
-> lleva un QR de "contáctanos por WhatsApp" (ver siguiente sección).
-
----
-
-### QRs del ticket (2026-07-01)
-
-La generación del QR es **100% front** (librería JS, ej. `npm install qrcode` o `angularx-qrcode`).
-Los *datos* que van dentro de cada QR salen de dos fuentes distintas: la URL de la tienda es fija
-(`environment.ts`) y los links de WhatsApp/Facebook del negocio salen de un endpoint nuevo del back
-(`GET /v1/negocio/contactos`), **no se arman a mano ni se hardcodea ningún número**.
-
-#### Endpoint nuevo — `GET /v1/negocio/contactos` (público, 2026-07-01)
-
-```
-GET /mis-productos/v1/negocio/contactos
-```
-
-Response:
-```json
-{
-  "data": {
-    "whatsappUrl": "https://wa.me/52XXXXXXXXXX",
-    "facebookUrl": "https://facebook.com/novedadesjade"
-  }
-}
-```
-
-- Público, no requiere login.
-- **Diferencia con `GET /v1/negocio/estado`:** ese endpoint también trae `whatsappUrl`/`facebookUrl`,
-  pero los devuelve en `null` mientras el negocio está **abierto** (a propósito, para otro caso de
-  uso). Este endpoint nuevo (`/contactos`) siempre los devuelve, sin importar si está abierto o
-  cerrado — por eso es el que hay que usar para el ticket, que se genera justo durante la venta
-  (negocio abierto).
-- Cualquiera de los dos campos puede venir `null`/vacío si el admin no los configuró — en ese caso
-  no mostrar ese QR (ver "Cuántos QRs mostrar" abajo).
-- Los valores ya son URLs completas y listas para usar (`https://wa.me/...`, `https://facebook.com/...`)
-  — el front solo las mete en el QR, no arma nada.
-
-#### QR 1 — Link a la tienda
-
-Apunta a la URL pública de la tienda, sacada de `environment.ts` (`environment.tiendaUrl` o la que
-ya exista para CORS/base de la app), NO de este endpoint:
-- Prod: `https://shop.novedades-jade.com.mx`
-- QA: `https://qa.shop.novedades-jade.com.mx`
-
-#### QR 2 — "Contáctanos por WhatsApp" (click-to-chat)
-
-Usa directo el `whatsappUrl` que regresa `GET /v1/negocio/contactos` (ya es un link `wa.me/...`
-armado por el admin desde el panel — no hay que construirlo ni pedir el número por separado).
-
-- Al escanear/tocar, abre el WhatsApp de quien escanea con un chat ya armado **hacia el negocio**
-  (es al revés de "el negocio le manda algo al cliente" — aquí el cliente es quien envía, con un
-  solo tap en "Enviar").
-- El número no aparece como texto en el ticket, solo va codificado dentro del QR.
-- Si se quiere texto precargado (ej. `"Hola, tengo una duda sobre mi compra folio #42"`), se le
-  agrega `?text=<mensaje url-encoded>` al final del `whatsappUrl` recibido antes de generar el QR.
-
-#### QR 3 — Facebook del negocio
-
-Usa directo el `facebookUrl` que regresa el mismo endpoint. Mismo tratamiento que el de WhatsApp.
-
-#### ✅ Cuántos QRs mostrar — RESUELTO: los 3 fijos siempre, sin rotación
-
-Se confirmó mostrar los 3 QRs (tienda, WhatsApp, Facebook) fijos siempre — sin rotación
-aleatoria, ya implementado y funcionando del lado del front.
-
----
-
-### Tipos de ticket y de dónde salen los datos
-
-#### A) Ticket de Venta Directa (NORMAL)
-
-**Cuándo mostrarlo:** después del éxito de `POST /mis-productos/v1/ventas/save`
-cuando `tipoPedido = "NORMAL"` (o cuando el pedido no es crédito).
-
-**De dónde salen los datos:**
-
-| Campo del ticket | Fuente |
-|---|---|
-| Nombre cliente | Estado local del form (el front ya lo tiene seleccionado) |
-| Artículos, cantidades, precios | Estado local del carrito |
-| Total | `res.data.totalVenta` |
-| Método de pago | Estado local del form |
-| Monto entregado (dado) | Estado local del form |
-| Cambio | Calculado en el front: `montoDado - totalVenta` |
-| Fecha | `new Date()` en el momento de la venta |
-| # Venta | `res.data.ventaId` |
-
-**Ticket generado:**
-```
-╔══════════════════════════════╗
-║       NOVEDADES JADE         ║
-╠══════════════════════════════╣
-║ Venta #1042   01/07/2026     ║
-║ Cliente: María López         ║
-╠══════════════════════════════╣
-║ 1x Pantalón Negro M  $350.00 ║
-║ 1x Blusa Floral S    $180.00 ║
-╠══════════════════════════════╣
-║ TOTAL              $530.00   ║
-║ MÉTODO: EFECTIVO             ║
-║ ENTREGÓ:           $600.00   ║
-║ CAMBIO:             $70.00   ║
-╚══════════════════════════════╝
-```
-
----
-
-#### B) Ticket de Abono
-
-**Cuándo mostrarlo:** después del éxito de `POST /mis-productos/v1/abonos/{pedidoId}`
-
-**De dónde salen los datos:**
-
-Primero el front ya tiene el pedido en pantalla. Al registrar el abono, el response trae:
+## Respuestas a las dudas anotadas (2026-07-01)
+
+### D-01 — ¿Correo/teléfono obligatorios en el alta de usuario/cliente?
+
+**Revisado el back para responder con datos reales, no opinión:**
+- `AuthRequest` (alta de usuario, `/v1/auth/registrar`): el campo `email` tiene `@Email` (valida
+  formato SI viene) pero **NO tiene `@NotBlank`** — el back no lo exige. No existe campo teléfono
+  en el registro de usuario.
+- `Cliente` (entidad): `correoElectronico` y `numeroTelefonico` son columnas simples, sin ninguna
+  anotación de validación (`@NotBlank`/`@Email`/`@NotNull`) — el back tampoco los exige ahí.
+
+**Recomendación: dejarlos como están (opcionales), no agregar `Validators.required` en el front.**
+Razón: como ya se diseñó el modal post-venta para pedir el correo cuando falta, hacerlos
+obligatorios en el alta sería redundante — obligarías a capturar un dato en un momento (alta de
+cliente) que ya tiene una red de seguridad más adelante (el modal), y frenarías altas rápidas de
+clientes sin correo/teléfono a mano (común en ventas de mostrador). Si más adelante se quiere
+teléfono también capturado, hay que agregar el campo primero a `Usuario`/`AuthRequest` — hoy no
+existe ni en el modelo de alta de usuario.
+
+### D-02 — Campo `correo` en `NotificacionRequest` para el modal post-venta
+
+**Ya implementado en el back (2026-07-01).** Se agregó el campo a
+`NotificacionRequest.java`:
 
 ```json
 {
-  "data": {
-    "id": 5,
-    "monto": 150.00,
-    "fechaPago": "01/07/2026",
-    "metodoPago": "EFECTIVO",
-    "nota": "segundo abono",
-    "montoDado": 200.00,
-    "cambio": 50.00,
-    "estadoPedido": "APARTADO",
-    "saldoRestante": 100.00
-  }
-}
-```
-
-Para completar el ticket (nombre cliente, artículos, total del apartado) el front hace:
-
-```
-GET /mis-productos/v1/pedidos/{pedidoId}/detalle
-```
-
-Response que necesitas:
-```json
-{
-  "data": {
-    "pedidoId": 42,
-    "tipoPedido": "APARTADO",
-    "estadoPedido": "APARTADO",
-    "totalPedido": 350.00,
-    "totalPagado": 250.00,
-    "saldoPendiente": 100.00,
-    "fechaPedido": "2026-06-15",
-    "clienteNombre": "María López",
-    "clienteTelefono": "7221234567",
-    "detalles": [
-      {
-        "varianteId": 12,
-        "productoNombre": "Pantalón Negro",
-        "talla": "M",
-        "color": "negro",
-        "cantidad": 1,
-        "precioUnitario": 350.00,
-        "subTotal": 350.00
-      }
-    ]
-  }
-}
-```
-
-**Ticket generado:**
-```
-╔══════════════════════════════╗
-║  NOVEDADES JADE — ABONO      ║
-╠══════════════════════════════╣
-║ Apartado #42  01/07/2026     ║
-║ Cliente: María López         ║
-╠══════════════════════════════╣
-║ Pantalón Negro M     $350.00 ║
-╠══════════════════════════════╣
-║ Total apartado:      $350.00 ║
-║ Ya pagado:           $250.00 ║
-║ Abono de hoy:        $150.00 ║
-║ Saldo pendiente:     $100.00 ║
-╠══════════════════════════════╣
-║ MÉTODO: EFECTIVO             ║
-║ ENTREGÓ:             $200.00 ║
-║ CAMBIO:               $50.00 ║
-╚══════════════════════════════╝
-```
-
-> Si `metodoPago = "TRANSFERENCIA"`, no mostrar las filas ENTREGÓ y CAMBIO (serán `null`).
-
----
-
-#### C) Ticket de Liquidación (pedido PAGADO)
-
-**Cuándo mostrarlo:** cuando el response del abono trae `estadoPedido = "PAGADO"`.
-Mismo flujo que el ticket de abono — solo cambia el encabezado y no hay saldo pendiente.
-
-**Ticket generado:**
-```
-╔══════════════════════════════╗
-║ NOVEDADES JADE — ¡LIQUIDADO! ║
-╠══════════════════════════════╣
-║ Apartado #42  01/07/2026     ║
-║ Cliente: María López         ║
-╠══════════════════════════════╣
-║ Pantalón Negro M     $350.00 ║
-╠══════════════════════════════╣
-║ Total pagado:        $350.00 ║
-║ ✅ PAGADO COMPLETAMENTE      ║
-╚══════════════════════════════╝
-```
-
----
-
-#### D) Ticket de Cancelación
-
-**Cuándo mostrarlo:** después del éxito de `PUT /mis-productos/v1/abonos/{pedidoId}/cancelar`
-
-Response de cancelación:
-```json
-{
-  "data": {
-    "pedidoId": 42,
-    "tipoPedido": "APARTADO",
-    "estadoPedido": "cancelado",
-    "totalPagado": 100.00,
-    "totalPendiente": 250.00,
-    "stockDevuelto": true,
-    "mensaje": "Pedido cancelado correctamente"
-  }
-}
-```
-
-El front también necesita llamar `GET /mis-productos/v1/pedidos/{id}/detalle` para obtener
-`clienteNombre`, `motivoCancelacion` y los artículos.
-
-**Ticket generado:**
-```
-╔══════════════════════════════╗
-║  NOVEDADES JADE — CANCELADO  ║
-╠══════════════════════════════╣
-║ Apartado #42  01/07/2026     ║
-║ Cliente: María López         ║
-╠══════════════════════════════╣
-║ Pantalón Negro M     $350.00 ║
-╠══════════════════════════════╣
-║ Motivo: NO SE PRESENTÓ       ║
-║ Abonos realizados:   $100.00 ║
-║ (saldo a favor del cliente)  ║
-╚══════════════════════════════╝
-```
-
----
-
-### Dónde aparece el botón de imprimir
-
-| Pantalla | Cuándo mostrar el botón |
-|---|---|
-| Venta directa | Al cerrar el modal/toast de "Venta exitosa" — mostrar botón **🖨️ Imprimir ticket** |
-| Registrar abono | En el toast/modal de confirmación del abono |
-| Liquidación (PAGADO) | En el toast/modal — ticket distinto al de abono normal |
-| Cancelación | En el modal de confirmación de cancelación |
-
----
-
-### Cómo imprimir
-
-```javascript
-function imprimirTicket(htmlTicket) {
-  const ventana = window.open('', '_blank', 'width=400,height=600');
-  ventana.document.write(`
-    <html>
-      <head>
-        <title>Ticket</title>
-        <style>
-          body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            width: 280px;
-            margin: 0 auto;
-            padding: 8px;
-          }
-          .titulo    { text-align: center; font-weight: bold; font-size: 14px; }
-          .linea     { border-top: 1px dashed #000; margin: 4px 0; }
-          .fila      { display: flex; justify-content: space-between; }
-          .total     { font-weight: bold; }
-          .centro    { text-align: center; }
-          @media print {
-            body { width: 100%; }
-          }
-        </style>
-      </head>
-      <body>
-        ${htmlTicket}
-        <script>window.print(); window.close();<\/script>
-      </body>
-    </html>
-  `);
-  ventana.document.close();
-}
-```
-
----
-
-### Estructura HTML sugerida del ticket
-
-```javascript
-function generarHtmlTicket({ tipo, numero, fecha, cliente, articulos,
-                              total, totalPagado, saldoPendiente, abonoHoy,
-                              metodoPago, montoDado, cambio, motivo }) {
-  const formatPeso = (n) => n != null ? `$${n.toFixed(2)}` : '';
-  const hoy = fecha || new Date().toLocaleDateString('es-MX');
-
-  let encabezado = '';
-  if (tipo === 'venta')        encabezado = 'COMPROBANTE DE VENTA';
-  if (tipo === 'abono')        encabezado = 'COMPROBANTE DE ABONO';
-  if (tipo === 'liquidado')    encabezado = '¡APARTADO LIQUIDADO!';
-  if (tipo === 'cancelacion')  encabezado = 'CANCELACIÓN DE PEDIDO';
-
-  const filasArticulos = articulos.map(a => `
-    <div class="fila">
-      <span>${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''}</span>
-      <span>${formatPeso(a.subTotal)}</span>
-    </div>
-  `).join('');
-
-  const filaPago = metodoPago === 'EFECTIVO' ? `
-    <div class="fila"><span>ENTREGÓ:</span><span>${formatPeso(montoDado)}</span></div>
-    <div class="fila"><span>CAMBIO:</span><span>${formatPeso(cambio)}</span></div>
-  ` : `<div class="fila"><span>MÉTODO:</span><span>TRANSFERENCIA</span></div>`;
-
-  return `
-    <div class="titulo">NOVEDADES JADE</div>
-    <div class="titulo">${encabezado}</div>
-    <div class="linea"></div>
-    <div class="fila"><span>Folio #${numero}</span><span>${hoy}</span></div>
-    <div>Cliente: ${cliente}</div>
-    <div class="linea"></div>
-    ${filasArticulos}
-    <div class="linea"></div>
-    ${total        ? `<div class="fila total"><span>TOTAL:</span><span>${formatPeso(total)}</span></div>` : ''}
-    ${totalPagado  ? `<div class="fila"><span>Ya pagado:</span><span>${formatPeso(totalPagado)}</span></div>` : ''}
-    ${abonoHoy     ? `<div class="fila"><span>Abono de hoy:</span><span>${formatPeso(abonoHoy)}</span></div>` : ''}
-    ${saldoPendiente != null && saldoPendiente > 0
-        ? `<div class="fila"><span>Saldo pendiente:</span><span>${formatPeso(saldoPendiente)}</span></div>` : ''}
-    ${tipo === 'liquidado' ? `<div class="centro">✅ PAGADO COMPLETAMENTE</div>` : ''}
-    ${motivo ? `<div>Motivo: ${motivo}</div>` : ''}
-    <div class="linea"></div>
-    ${filaPago}
-    <div class="linea"></div>
-    <div class="centro">¡Gracias por tu compra!</div>
-  `;
-}
-```
-
----
-
-### Correo (y WhatsApp EN PAUSA) — cómo lo hace el front
-
-> **DECISIÓN 2026-07-01:** por ahora solo se implementa el envío por **correo**. WhatsApp queda
-> en pausa (ver "DECISIÓN PENDIENTE" en `PLAN_MEJORAS.md`) — CallMeBot (gratis) solo le avisa al
-> negocio, no al cliente, y Twilio (que sí notificaría al cliente) es de pago y requiere alta de
-> cuenta + código nuevo que no se justifica por ahora. **El front NO debe mostrar el checkbox de
-> WhatsApp.** El campo `notificacion.enviarWhatsapp` se puede omitir/mandar `false` siempre; el
-> back lo soporta pero no hay forma de que le llegue nada real al cliente todavía.
-
-El front genera el ticket (ya lo hace para imprimir). Si el usuario marcó el checkbox de correo,
-**incluye el ticket en el mismo request** que registra la acción. El back lo recibe y lo envía.
-
-#### Checkbox en el UI
-
-Mostrar en el form de abono, venta directa y cancelación:
-
-```html
-<label>
-    <input type="checkbox" [(ngModel)]="enviarCorreo" />
-    Enviar ticket al correo del cliente
-</label>
-```
-
-- Pre-marcar correo si el cliente tiene email registrado.
-- Si el cliente no tiene correo → deshabilitar el checkbox.
-
----
-
-#### (Referencia, no implementar por ahora) Cómo armar el ticketTexto para WhatsApp
-
-Queda documentado por si más adelante se retoma con Twilio — no construir esto en el front hoy.
-WhatsApp no soporta HTML — mandar texto plano. Generar con una función separada:
-
-```javascript
-function generarTextoWhatsapp({ tipo, numero, fecha, cliente, articulos,
-                                 total, abonoHoy, saldoPendiente, metodoPago,
-                                 montoDado, cambio, motivo }) {
-  const fmt = (n) => n != null ? `$${n.toFixed(2)}` : '';
-  const hoy = fecha || new Date().toLocaleDateString('es-MX');
-
-  let lineas = [
-    '🛍️ NOVEDADES JADE',
-    tipo === 'venta'       ? 'Comprobante de venta' :
-    tipo === 'abono'       ? 'Comprobante de abono' :
-    tipo === 'liquidado'   ? '✅ Apartado liquidado' :
-                             '❌ Cancelación de pedido',
-    `Folio #${numero} — ${hoy}`,
-    `Cliente: ${cliente}`,
-    '─────────────────────',
-    ...articulos.map(a =>
-      `• ${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''} — ${fmt(a.subTotal)}`
-    ),
-    '─────────────────────',
-  ];
-
-  if (total)          lineas.push(`Total: ${fmt(total)}`);
-  if (abonoHoy)       lineas.push(`Abono de hoy: ${fmt(abonoHoy)}`);
-  if (saldoPendiente) lineas.push(`Saldo pendiente: ${fmt(saldoPendiente)}`);
-  if (tipo === 'liquidado') lineas.push('✅ PAGADO COMPLETAMENTE');
-  if (motivo)         lineas.push(`Motivo cancelación: ${motivo}`);
-
-  lineas.push('─────────────────────');
-  lineas.push(`Método: ${metodoPago}`);
-  if (metodoPago === 'EFECTIVO' && montoDado) {
-    lineas.push(`Entregó: ${fmt(montoDado)}`);
-    lineas.push(`Cambio: ${fmt(cambio)}`);
-  }
-  lineas.push('¡Gracias por tu compra! 🙏');
-
-  return lineas.join('\n');
-}
-```
-
----
-
-#### Campos que se agregan al request cuando hay correo/WhatsApp
-
-Aplicar en: `POST /v1/abonos/{pedidoId}`, `POST /v1/ventas/save`,
-`PUT /v1/abonos/{pedidoId}/cancelar`.
-
-**IMPORTANTE — implementación final:** los campos van anidados dentro de un objeto
-`"notificacion"`, no planos en la raíz del body (`NotificacionRequest.java`):
-
-```json
-{
-  "monto": 150.00,
-  "metodoPago": "EFECTIVO",
-  "montoDado": 200.00,
-
   "notificacion": {
-    "enviarCorreo":   true,
-    "enviarWhatsapp": false,
-    "ticketHtml":     "<html>...ticket generado por el front...</html>",
-    "correo":         "escrito-en-el-modal@ejemplo.com"
+    "enviarCorreo": true,
+    "ticketHtml": "<html>...</html>",
+    "correo": "escrito-en-el-modal@ejemplo.com"
   }
 }
 ```
 
-- **Por ahora el front solo maneja `enviarCorreo`, `ticketHtml` y `correo`.** `enviarWhatsapp` se
-  manda siempre `false` (o se omite) y `ticketTexto` no hace falta construirlo — ver nota de
-  "WhatsApp EN PAUSA" arriba.
-- **`correo` (nuevo, 2026-07-01) — para el modal post-venta:** si el cliente no tiene correo
-  registrado, se muestra un modal pidiéndolo manualmente; ese valor va en este campo. Si viene con
-  valor, el back lo usa como destino en vez del correo de la BD. Si se omite o va vacío, se usa el
-  correo registrado (comportamiento normal, sin cambios).
-- Si no se quiere enviar nada → no mandar el campo `notificacion` (o mandar `null`). El back solo intenta notificar si `notificacion != null`.
-- Si `enviarCorreo = false` → no hace falta mandar `ticketHtml`.
+- Si `correo` viene con valor → el back lo usa como destino del email en vez del correo
+  registrado en BD (o en vez de "" si el cliente no tiene ninguno).
+- Si `correo` viene vacío/null → se usa el correo registrado en BD, como antes (sin cambios de
+  comportamiento para el flujo normal).
+- Aplica en los 3 flujos: `POST /v1/ventas/save`, `POST /v1/abonos/{pedidoId}`,
+  `PUT /v1/abonos/{pedidoId}/cancelar`.
+- **No hizo falta el endpoint alternativo** `POST /v1/ventas/{id}/notificar` — se resuelve todo
+  en el mismo request de la acción principal, más simple para el front (un solo request, no dos).
+- Archivos tocados: `NotificacionRequest.java`, `AbonoServiceImpl.java`, `VentaServiceImpl.java`.
 
----
+### D-03 — QR F-10/F-11, confirmación pendiente
 
-#### Qué devuelve el back (campos nuevos en el response)
+Ya resuelto en la sección "Decisión 2026-07-01 — F-10/F-11" más arriba (línea ~76): los QR de
+WhatsApp y Facebook se muestran solo si `GET /v1/negocio/contactos` trae esa URL; si no, el QR
+simplemente no aparece. F-9/F-10/F-11 quedaron desbloqueadas — no hay nada más pendiente aquí.
 
-El back agrega al response normal tres campos extra: `correoEnviado`, `whatsappEnviado`, `erroresEnvio`
-(todos `null`/omitidos si no se pidió notificación — `@JsonInclude(NON_NULL)`).
 
-- **Abono** (`POST /v1/abonos/{pedidoId}`) y **cancelación** (`PUT /v1/abonos/{pedidoId}/cancelar`)
-  devuelven envuelto en `ResponseGeneric` (campo `data`):
+### Análisis del front (2026-07-02) — qué es nuevo y dónde va cada cosa
 
-```json
-{
-  "data": {
-    "id": 5,
-    "monto": 150.00,
-    "estadoPedido": "APARTADO",
-    "saldoRestante": 100.00,
+Lo único nuevo real es **F-12**: pantalla de reportes de ventas (el back está listo desde
+2026-07-02). Las demás cosas del plan (tickets, correo, QRs) ya estaban implementadas en
+sesiones anteriores.
 
-    "correoEnviado":    true,
-    "whatsappEnviado":  false,
-    "erroresEnvio":     []
-  }
-}
-```
+**Archivos que se van a crear/modificar:**
 
-- **Venta directa** (`POST /v1/ventas/save`) **NO** usa `ResponseGeneric` — el back devuelve
-  `VentaDirectaResponse` directo, sin envolver en `data`:
-
-```json
-{
-  "ventaId": 10,
-  "tipoPago": "EFECTIVO",
-  "requiereTerminal": false,
-  "total": 350.00,
-  "correoEnviado":   true,
-  "whatsappEnviado": false,
-  "erroresEnvio":    []
-}
-```
-
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `correoEnviado` | boolean | `true` si el correo se envió con éxito |
-| `whatsappEnviado` | boolean | `true` si el WhatsApp se envió con éxito |
-| `erroresEnvio` | string[] | Lista de errores si algún envío falló (puede estar vacío) |
-
-#### Cómo mostrar el resultado en el UI
-
-```
-✅ Abono registrado correctamente
-✅ Correo enviado a maria@gmail.com
-❌ WhatsApp no se pudo enviar — intentar después
-```
-
-- Si `correoEnviado = false` y el usuario lo pidió → mostrar aviso (no es error fatal).
-- El abono/venta ya quedó guardado aunque falle el envío — no bloquear el flujo.
-
----
-
-### Resumen de endpoints que usa el ticket (todos ya existen)
-
-| Tipo de ticket | Endpoints necesarios |
+| Archivo | Qué |
 |---|---|
-| Venta directa | Estado local del carrito + `res` (sin wrapper) del `POST /v1/ventas/save` |
-| Abono | `res.data` del `POST /v1/abonos/{pedidoId}` + `GET /v1/pedidos/{id}/detalle` |
-| Liquidado | Igual que abono |
-| Cancelación | `res.data` del `PUT /v1/abonos/{pedidoId}/cancelar` + `GET /v1/pedidos/{id}/detalle` |
+| `src/app/reportes/service/reportes.service.ts` | Nuevo — 4 endpoints |
+| `src/app/reportes/reportes.component.*` | Nuevo — UI con 4 pestañas (Diario / Mensual / Por cliente / Más vendidos) |
+| `src/app/reportes/reportes.module.ts` + routing | Nuevos — módulo lazy |
+| `src/app/app-routing.module.ts` | Agregar ruta `/reportes` con guard admin |
+| `src/app/navbar/navbar.component.html` | Link "📊 Reportes" solo admin |
 
-**El ticket HTML/texto lo genera el front. El back solo lo recibe y lo transporta por correo/WhatsApp.**
+### Duda del front — Chart.js directo vs `ng2-charts` — RESPONDIDA 2026-07-02
 
----
+**Contexto:** `chart.js` v4 ya está instalado, `ng2-charts` (wrapper Angular) no. Dos opciones
+para la gráfica de barras del reporte mensual (ventas por día):
+1. Chart.js directo con `@ViewChild` sobre un `<canvas>` — sin instalar nada nuevo.
+2. Instalar `ng2-charts` — más declarativo en el template.
 
-## EP-T1 y EP-T2 — Detalle de pedido enriquecido + reenviar comprobante (2026-07-02)
+**Respuesta: instalar `ng2-charts`.**
 
-### EP-T1 — `GET /v1/pedidos/{id}/detalle` (endpoint que ya usabas — mismo path, mismo auth)
+**⚠️ Corrección 2026-07-02:** la razón original decía que el dashboard (ítem 6) iba a necesitar
+"varias gráficas más" — eso no se cumplió. Ya se implementó el dashboard
+(`GET /v1/dashboard/resumen`) y es solo números sueltos en cards (ventas hoy, stock bajo, etc.),
+sin ninguna serie de datos que graficar. La única gráfica real que existe hoy en todo el plan es
+la del reporte mensual (`porDia[]`).
 
-**Qué cambia:** se agregaron 4 campos nuevos a la respuesta. Nada de lo que ya consumías cambió.
-
-**Response — campos nuevos (además de los que ya recibías):**
-```json
-{
-  "data": {
-    "clienteCorreo": "juan@email.com",
-    "metodoPago": "EFECTIVO",
-    "montoDado": 350.00,
-    "abonos": [
-      { "id": 10, "monto": 200.00, "fechaPago": "2026-07-01", "metodoPago": "EFECTIVO", "nota": "Enganche", "montoDado": 220.00 }
-    ]
-  }
-}
-```
-
-| Campo | Tipo | Cuándo viene |
-|---|---|---|
-| `clienteCorreo` | string \| null | Si el cliente tiene correo registrado |
-| `metodoPago` | string \| null | **Solo en ventas NORMAL al contado.** `null` en créditos (APARTADO/FIADO) — ver `abonos[]` |
-| `montoDado` | number \| null | Solo ventas NORMAL, y **solo si el front lo mandó** al crear la venta (ver acción requerida abajo). En pedidos vendidos antes de este cambio siempre es `null` |
-| `abonos` | array | Historial de pagos del crédito. Lista vacía `[]` en ventas NORMAL |
-
-**⚠️ Acción requerida — sin esto `montoDado` nunca llega:** `montoDado` no se guardaba antes en el back para ventas de contado (solo existía para abonos). Para que el ticket pueda mostrar "ENTREGÓ / CAMBIO" en ventas nuevas, el front debe **agregar el campo `montoDado` al body de `POST /v1/ventas/save`**:
-```json
-{
-  "usuarioId": 1,
-  "clienteId": 5,
-  "detalles": [ ... ],
-  "montoDado": 350.00
-}
-```
-- Mandarlo solo cuando el método de pago sea EFECTIVO (igual que ya calculas el cambio localmente hoy, nada más ahora también se lo mandas al back).
-- Los pedidos vendidos **antes** de que el front implemente esto se quedan con `montoDado: null` para siempre — no hay forma de recuperarlo, el ticket de esos pedidos viejos simplemente no muestra esa línea.
+**Razón real para instalar `ng2-charts`:** aunque sea una sola gráfica, es un wrapper delgado y
+bien mantenido sobre el mismo `chart.js` que ya tienen instalado (compatible con v4,
+`ng2-charts` v5+), más declarativo que manejar el `<canvas>` a mano con `@ViewChild`. Se decidió
+dejarlo así (instalar `ng2-charts`) aunque la justificación de "más gráficas después" no aplicó —
+no se rediseñó el dashboard para agregar una gráfica de tendencia solo para justificar la
+dependencia.
 
 ---
 
-### EP-T2 — `POST /v1/pedidos/{id}/notificar` (endpoint nuevo)
+## 15. Unificar verificación de correo Usuario/Cliente + auto-crear Cliente al registrar (SOLO DISEÑO, 2026-07-03)
 
-**Request:** `POST /mis-productos/v1/pedidos/{id}/notificar` — requiere rol ADMIN (Bearer token).
-```json
-{
-  "correo": "cliente@email.com",
-  "ticketHtml": "<html>...ticket generado por el front...</html>"
-}
-```
+> **Estado: idea anotada para retomar, nada implementado.** Nace de una sesión de dudas sobre por
+> qué hoy existen DOS correos y DOS verificaciones separadas (`Usuario.email` para login/reset de
+> password, sin verificar nunca vs. `Cliente.correoElectronico` con verificación de código,
+> exigida solo en `savePedido`). Ver contexto completo del estado actual en el chat del
+> 2026-07-03, resumen abajo.
 
-**Response 200:**
-```json
-{ "data": "Comprobante enviado correctamente a cliente@email.com" }
-```
-(va envuelto en `ResponseGeneric` como el resto del proyecto — el mensaje de éxito queda en `data`, no en `mensaje` como en el ejemplo original que se pidió)
+### Estado actual (confirmado en código, sin ambigüedad)
 
-**Response 400:**
-```json
-{ "mensaje": "No se pudo enviar el correo. Verifica la dirección." }
-```
+- `Usuario` (login, tabla `usuario_modificacion`) y `Cliente` (tabla `clientes`) tienen **cada
+  uno su propio campo de correo**, sin sincronizar nunca. `Cliente.usuario_id` es una FK 1-a-1
+  opcional que se asigna manualmente al guardar un cliente (`ClienteControllerImpl.save`) — nunca
+  se crea sola en `POST /v1/auth/registrar` (ese endpoint solo crea `Usuario`).
+- La verificación por código (`correoVerificado`, `codigoVerificacion*`) **solo existe en
+  `Cliente`**. `Usuario` no tiene ningún campo de verificación — el reset de contraseña
+  (`PasswordResetService.solicitarReset`) manda el código a cualquier email de `Usuario` sin
+  haberlo confirmado jamás.
+- El bloqueo real de "debes verificar tu correo" solo está en `PedidoServiceImpl.savePedido`
+  (línea ~104), y solo aplica cuando el `Cliente` **ya existe** — no cubre el caso de un usuario
+  recién registrado que todavía no tiene `Cliente`.
 
-**Qué hace:** reenvía tal cual el `ticketHtml` recibido por correo (asunto `"Comprobante de tu pedido #{id} — Novedades Jade"`). No genera nada nuevo — el HTML ya lo arma el front (con sus QR de tienda/WhatsApp/Facebook incluidos, como en el resto de tickets).
+### Propuesta del usuario (a diseñar en detalle antes de tocar código)
 
-**Uso:** botón "reenviar por correo" en cualquier pantalla de detalle de pedido, sin depender de que sea justo al momento de la venta/abono.
+1. **Verificar una sola vez, no dos.** Al registrarse (`POST /v1/auth/registrar`), el `Usuario`
+   verifica su correo con el mismo flujo de código de 6 dígitos que hoy tiene `Cliente`.
+2. **Auto-crear el `Cliente` en ese momento**, vinculado por `usuario_id`, con el correo ya
+   marcado como verificado (copiado del `Usuario`) — así no hay que volver a verificar cuando
+   más adelante se genera un pedido.
+3. **Problema que esto introduce:** hoy `PedidoServiceImpl.savePedido` asume que "si el `Cliente`
+   existe, tiene sus datos completos" (nombre, apellido paterno, teléfono, etc.), porque
+   actualmente el `Cliente` solo se creaba cuando alguien llenaba el formulario completo. Si ahora
+   se auto-crea el `Cliente` desde el registro con SOLO el correo, existiría el registro pero
+   con nombre/apellido/teléfono vacíos — la validación actual (que solo chequea
+   `correoVerificado`) dejaría pasar pedidos con datos de cliente incompletos.
+4. **Solución propuesta (a validar):** agregar un campo booleano nuevo a `Cliente` (ej.
+   `datosCompletos`, nombre por definir) que:
+   - Nace en `false` cuando el `Cliente` se auto-crea solo con correo (desde el registro).
+   - Pasa a `true` cuando se capturan/actualizan los campos obligatorios: nombre, apellido
+     paterno, teléfono (a definir la lista exacta y si aplica también dirección).
+   - `PedidoServiceImpl.savePedido` valida **ambas cosas**: `correoVerificado == true` Y
+     `datosCompletos == true` (mensaje de error distinto para cada caso, para que el front sepa
+     si debe pedir "verifica tu correo" o "completa tus datos").
+
+### Flujo detallado aclarado por el usuario (2026-07-03, segunda vuelta)
+
+Esto reemplaza/precisa el punto 1-2 de la propuesta original — es el flujo exacto pensado:
+
+1. **Registro (`/v1/auth/registrar`):** al registrarse, se pide verificar el correo ahí mismo
+   (código de 6 dígitos, mismo mecanismo que ya existe para `Cliente`). El usuario **no accede al
+   sistema hasta terminar la verificación** — primero se registra, luego verifica el código, y
+   hasta entonces puede entrar (login) ya con el correo marcado como validado.
+2. En ese momento se auto-crea el `Cliente` vinculado, con el campo nuevo (`datosCompletos` o
+   como se llame) en `false` — porque solo se tiene el correo, faltan nombre/apellido/teléfono.
+3. **Al generar un pedido:** si `datosCompletos == false`, se dispara la validación/formulario
+   para completar los campos requeridos del cliente (nombre, apellido paterno, teléfono, etc.).
+   El correo en ese formulario ya viene puesto (el del `Usuario`, ya verificado) — el cliente no
+   lo tiene que volver a escribir ni verificar en este paso.
+4. **REVISADO 2026-07-03, cuarta vuelta (versión definitiva, reemplaza la anterior) — si el
+   cliente edita sus datos y cambia el correo:**
+   - Los **demás campos del formulario** (nombre, apellido paterno, teléfono, etc.) se guardan/
+     actualizan normalmente, sin condición — eso nunca se bloquea.
+   - El **correo específicamente** no se aplica de inmediato: se dispara el flujo de verificación
+     (enviar código al correo nuevo).
+     - Si el cliente **completa la verificación** → el correo nuevo queda guardado en
+       `Cliente.correoElectronico`, sigue verificado, y (por la sincronización decidida en el
+       punto 2 de abajo) se actualiza también `Usuario.email` al mismo valor.
+     - Si el cliente **no completa la verificación** (abandona/cancela) → el correo **regresa al
+       valor anterior** (el mismo que ya tenía `Usuario`, sigue sincronizado y verificado) — el
+       intento de correo nuevo se descarta, sin dejar a el cliente con un correo sin verificar ni
+       bloquear nada más.
+   - Con esto YA NO hace falta resetear `correoVerificado = false` ni depender del bloqueo de
+     `savePedido` para este caso — el invariante "correo de Cliente = correo de Usuario, siempre
+     verificado" nunca se rompe, porque el cambio de correo solo se confirma cuando ya está
+     verificado.
+   - **Sin cerrar:** el usuario mencionó una excepción — *"a menos que haya cambios del punto
+     uno"* — no quedó claro a qué se refiere exactamente (¿el primer login forzado del punto 1?
+     ¿otra cosa?). Preguntar de nuevo antes de implementar este paso.
+
+### DDL ya preparado, sin correr todavía
+
+`src/main/resources/static/migration_datos_completos_cliente.sql` — creado el 2026-07-03, agrega
+`clientes.datos_completos` (`TINYINT(1) DEFAULT 0`) + backfill a `1` para clientes existentes con
+los 4 campos obligatorios ya llenos. **No correr en ningún ambiente todavía** — faltan cerrar las
+preguntas abiertas de esta sección antes de tocar el back que depende de esta columna. No hace
+falta ALTER para `apeido_materno` (ver más abajo) porque la columna ya es `NULLABLE` en BD.
+
+### ✅ DECIDIDO 2026-07-03 — cómo resolver el choque técnico
+
+Se elige la opción de **método de guardado alterno**, no grupos de validación:
+
+- Se crea un método nuevo (ej. `ClienteService.crearClienteDesdeRegistro(usuario, correo)`) que
+  se llama SOLO desde el flujo de registro/auto-alta, hace bypass de las validaciones `@NotBlank`
+  de nombre/apellidos/teléfono (guarda directo vía repositorio, no pasa por
+  `AbstractController.save`) y arma el `Cliente` con: `usuario` (FK), `correoElectronico` (ya
+  verificado), `datosCompletos = false`. El resto de campos quedan `null`.
+- El guardado/actualización normal (`AbstractController.save/update`, el mismo endpoint de
+  siempre `/v1/clientes`) sigue validando los campos obligatorios — **excepto `apeidoMaterno`,
+  que deja de ser `@NotBlank`** (ver decisión abajo). Cuando el cliente completa su perfil (o el
+  admin lo edita), pasa por ahí y ahí sí debe venir nombre/apellido paterno/teléfono/correo; ese
+  es también el punto natural donde `datosCompletos` pasa a `true`.
+
+### ✅ DECIDIDO 2026-07-03 — campos que entran en `datosCompletos` + apellido materno pasa a opcional
+
+El usuario definió: solo **nombre, apellido paterno, teléfono y correo** son obligatorios para
+que `datosCompletos = true`. El resto (segundo nombre, fecha de nacimiento, sexo, **apellido
+materno**) queda opcional.
+
+**Confirmado explícitamente 2026-07-03:** hay que relajar `Cliente.apeidoMaterno` en
+`Cliente.java` (quitar el `@NotBlank`) — pasa a ser opcional en TODOS los guardados de cliente de
+aquí en adelante (admin incluido), no solo en este flujo nuevo. Esto modifica el comportamiento
+ya vigente de la mejora 12 (que hoy lo exige) — avisar en `CAMBIOS_FRONT.md` cuando se
+implemente, porque el front pudo haber puesto `Validators.required` en ese campo del formulario
+de cliente asumiendo que era obligatorio.
+
+### ⚠️ Choque técnico confirmado en código — bloqueante, hay que resolverlo primero
+
+`Cliente.java` (líneas 36-66) tiene **Bean Validation directo en la entidad** (no hay DTO
+separado — `ClienteControllerImpl.save` recibe la entidad `Cliente` tal cual como body):
+`nombrePersona`, `apeidoPaterno`, `apeidoMaterno`, `correoElectronico` y `numeroTelefonico` son
+`@NotBlank` (mejora 12). `AbstractController.save/update` valida con `BindingResult` y devuelve
+400 **antes** de llamar al service si hay errores — nunca llega a guardar. Esto significa que
+**auto-crear el `Cliente` solo con el correo (sin nombre/apellidos/teléfono) fallaría hoy mismo**
+con un 400 por los 4 campos faltantes. La idea del flag `datosCompletos` no resuelve esto por sí
+sola — hace falta ADEMÁS una de estas dos cosas:
+- Usar **grupos de validación** (`@NotBlank(groups = OnCompleto.class)` + `@Validated(OnCreate.class)`
+  vs `@Validated(OnCompleto.class)` según el punto de entrada), para que el alta automática desde
+  el registro use un grupo relajado y el guardado completo del perfil use el grupo estricto.
+- O crear un método de guardado alterno para el auto-alta (bypass de `AbstractController.save`,
+  llamando directo al repositorio) que no pase por esas validaciones — pero entonces to el mismo
+  `PUT` genérico usado para completar el perfil sí debe exigirlas.
+
+### Otros puntos sueltos identificados (2026-07-03) — no bloqueantes pero hay que definirlos
+
+- **No afecta a `ClienteSinRegistro` ni venta directa sin cuenta** — eso ya quedó fuera desde la
+  mejora 12 (el correo manual del modal post-venta es independiente). Esta mejora 15 solo aplica
+  al flujo de cuenta con `Usuario` + pedidos online, no a venta de mostrador.
+- **Front nuevo, no solo lo que ya está en la tabla F-XX:** la pantalla de registro necesita el
+  paso de "ingresa el código" inline antes de dar acceso (hoy no existe esa pantalla, F-15 solo
+  cubre la verificación de `Cliente` para pedidos, no la de `Usuario` en el registro). Con la
+  revisión del punto 3 (abajo) YA NO hace falta el modal de "confirmar cambio de correo" al
+  editar cliente — el guardado ya no se bloquea, solo se avisa que quedó pendiente de verificar.
+- **Rate-limit del reenvío de código:** ya existe `seguridad.rate-limit-habilitado` para
+  login/registro — decidir si el nuevo endpoint de verificación de `Usuario` (si es uno nuevo,
+  separado del que ya tiene `Cliente`) reutiliza ese mismo mecanismo o necesita el suyo.
+
+### ✅ RESPUESTAS DEL USUARIO 2026-07-03 (tercera vuelta)
+
+**1. Login bloqueado hasta verificar — SÍ, forzarlo.** Razón del usuario: si no se fuerza la
+verificación desde el registro, cuando el usuario después necesite recuperar su contraseña
+olvidada no habría garantía de que el correo registrado sea real/suyo — forzar la verificación
+en el registro resuelve ese problema de raíz. **Implica tocar el flujo de login**
+(`AuthController`/`AuthServiceImpl`), no solo `RegistroService`: mientras `Usuario` no esté
+verificado, no puede completar el login normal.
+
+**2. Sincronizar `Usuario.email` y `Cliente.correoElectronico` — ✅ CONFIRMADO 2026-07-03 (cuarta
+vuelta).** Sí, se sincronizan: el correo del `Usuario` se pone en el `Cliente` (al auto-crearlo),
+y de ahí en adelante es un solo correo real por cuenta. La pregunta de seguimiento del usuario
+fue: *"pero la cosa es si lo quiere modificar, ¿qué pasaría?"* — respondida en el punto 3
+(reemplaza la versión anterior de este documento).
+
+**3. Editar `Cliente` y cambiar el correo — ✅ REVISADO 2026-07-03, versión definitiva (reemplaza
+la anterior), ver "Flujo detallado" punto 4 arriba.** Resumen: los demás campos (nombre,
+apellidos, teléfono) se guardan siempre sin condición. El correo nuevo NO se aplica de inmediato
+— se dispara verificación. Si se verifica, se guarda y se sincroniza también en `Usuario.email`
+(punto 2). Si NO se verifica, el correo **regresa al valor anterior** (el de `Usuario`, que sigue
+verificado) — se descarta el intento, sin dejar correos sin verificar colgados ni depender del
+bloqueo de `savePedido` para este caso.
+
+**✅ ACLARADO 2026-07-03 (quinta vuelta) — no era una excepción nueva, era el mismo escenario
+explicado con más detalle.** El usuario confirmó con un ejemplo concreto: te registras y
+verificas tu correo (queda en `Usuario` y copiado a `Cliente`); al generar tu primer pedido te
+pide llenar los datos de `Cliente` (nombre, apellido, teléfono) porque `datosCompletos == false`;
+en ese mismo formulario cambias también el correo (distinto al que ya tenías de `Usuario`); al
+dar guardar, el back detecta que el correo ya no coincide y dispara el aviso/modal "has cambiado
+el correo, hay que validarlo". Si el cliente acepta, sigue el flujo normal de verificación ya
+descrito. **Si dice que no quiere validar → se guardan los demás datos del formulario (nombre,
+apellido, teléfono) y el correo regresa al que tenía como `Usuario`** — exactamente el
+comportamiento ya documentado arriba, sin ninguna excepción adicional. Punto 3 queda 100%
+cerrado.
+
+**4. Re-verificación solo aplica al propio cliente, el admin queda fuera —
+CONFIRMADO.** Cuando un ADMIN edita los datos de un cliente desde el panel, NO se dispara este
+flujo de re-verificación (eso es exclusivo de cuando el cliente edita su propia cuenta).
+**Nuevo requerimiento anotado, pendiente de implementar:** el admin necesita poder **reenviar
+manualmente el código de verificación a un cliente** (caso de soporte: el cliente llama porque
+no le llegó o lo perdió). Y si el cliente le lee el código al admin por teléfono, el admin debe
+poder introducirlo en el sistema y que el cliente quede verificado automáticamente con ese
+código — es decir, el endpoint de "verificar-correo" existente necesita ser accesible también
+por un admin actuando en nombre del cliente (hoy no está confirmado si ya lo permite o es
+exclusivo de la sesión del propio cliente — **revisar el código de
+`ClienteControllerImpl`/`SecurityConfig` antes de implementar** para ver si los endpoints
+`enviar-codigo-verificacion`/`verificar-correo` ya aceptan rol ADMIN o solo el dueño de la cuenta).
+
+**5. Usuarios ya existentes sin verificar — SÍ forzar verificación en el próximo login, NO
+grandfathering.** Confirmado explícitamente: no se les da un pase automático. **El usuario pidió
+que esto se anote para que el FRONT lo implemente tal cual** — al primer login después de
+desplegar esta mejora, si el `Usuario` no tiene correo verificado, el front debe mostrar la
+pantalla de verificación antes de dejarlo continuar, igual que a un usuario recién registrado.
+
+**6. Patrón de llamadas para verificar el correo en el registro — ✅ CONFIRMADO 2026-07-03.** Sí,
+replicar el mismo patrón de 3 llamadas que ya existe para `Cliente`: 1️⃣ `POST /v1/auth/registrar`
+crea el `Usuario` sin verificar → 2️⃣ `POST enviar-codigo-verificacion` manda el correo con el
+código → 3️⃣ `POST verificar-correo` con el código que el usuario escribió, ahí se marca
+verificado (y recién ahí se le permite el login, punto 1).
 
 ---
 
-### Preguntas del front — confirmadas 2026-07-02
+## Explicación completa del flujo — versión limpia para front + back (2026-07-03)
 
-El front reportó no ver el QR de Facebook y preguntó 4 cosas puntuales. Respuestas verificadas
-contra el código (no supuestas):
+> Esto NO va todavía en `CAMBIOS_FRONT.md` porque nada está implementado — ahí se documentará el
+> contrato real (endpoints, request/response) cuando se escriba el código, siguiendo la
+> convención del proyecto. Esto es la explicación de diseño ya cerrada, para que tanto front como
+> back entiendan el flujo completo de punta a punta antes de que arranque la implementación.
 
-1. **`GET /v1/negocio/contactos` va envuelto en `ResponseGeneric`** — leer `response.data.whatsappUrl`
-   / `response.data.facebookUrl`, NO `response.whatsappUrl` directo. Esto es lo que causaba que
-   el QR de Facebook (y probablemente el de WhatsApp) no aparecieran — ya estaba documentado así
-   arriba, pero se confirma explícito por si se leyó mal.
-2. **No existe `tiendaUrl` en el back** — nunca se implementó. La intención original (ver "QR 1"
-   arriba) es que el front lo resuelva con `environment.ts` / `window.location.origin`, no del
-   back. **Pendiente de confirmar con el front:** si `window.location.origin` no sirve en su caso
-   (ej. el ticket se genera en un contexto sin ese origin correcto), avisar y se agrega como campo
-   nuevo a este mismo endpoint — no implementado todavía, a la espera de esa confirmación.
-3. **`GET /v1/pedidos/{id}/detalle` va envuelto:** `{ "data": { pedidoId, detalles[], clienteCorreo,
-   metodoPago, montoDado, abonos[] } }` — ya documentado arriba en EP-T1, confirmado sin cambios.
-4. **`POST /v1/pedidos/{id}/notificar`:** éxito → `data` trae el texto de confirmación; error →
-   `mensaje` trae el motivo (dos campos distintos según si fue éxito o error, revisar el `code`/HTTP
-   status para saber cuál leer) — ya documentado arriba en EP-T2, confirmado sin cambios.
+### A) Registro de un usuario nuevo
 
----
+1. El front manda el registro de siempre: `POST /v1/auth/registrar` (usuario, contraseña, correo).
+   El `Usuario` se crea, pero **sin verificar** — todavía no puede loguearse.
+2. El front debe pedir el código de verificación (nuevo endpoint, análogo al que ya existe para
+   `Cliente`: `enviar-codigo-verificacion`) y mostrar una pantalla "ingresa el código de 6
+   dígitos que te enviamos".
+3. El usuario escribe el código → el front lo manda (nuevo endpoint análogo a `verificar-correo`
+   de `Cliente`). Si es correcto, el `Usuario` queda verificado.
+4. **Solo hasta ese momento** el back auto-crea el `Cliente` vinculado (correo copiado, ya
+   verificado, `datosCompletos = false`) y **solo hasta ese momento** el login funciona. Si el
+   front intenta loguear a alguien sin verificar, el back debe rechazarlo — el front necesita
+   distinguir esa respuesta para mandarlo de vuelta a la pantalla de "ingresa el código" en vez
+   de mostrar un error genérico de login.
 
-## Reportes de ventas (2026-07-02) — endpoints nuevos
+### B) Primer pedido — completar los datos que faltan
 
-> Todos requieren rol ADMIN (Bearer token). Todos van envueltos en `ResponseGeneric`
-> (`{ "data": {...} }` o `{ "data": [...] }`), mismo patrón que el resto del proyecto.
+5. Cuando el cliente intenta generar su primer pedido, el back debe detectar `datosCompletos ==
+   false` y devolver una respuesta que el front pueda distinguir de "correo sin verificar" (son
+   dos motivos de bloqueo distintos, mejora 12 vs mejora 15 — necesitan mensajes/códigos de error
+   diferentes para que el front sepa qué pantalla mostrar).
+6. El front muestra el formulario de "completa tus datos": nombre, apellido paterno, teléfono
+   (apellido materno queda opcional). El correo aparece prellenado con el ya verificado.
+7. Al guardar, se usa el mismo endpoint de actualizar cliente de siempre
+   (`PUT`/`POST /v1/clientes`). Si el cliente **no tocó el correo**, se guarda tal cual, sin nada
+   especial — `datosCompletos` pasa a `true` en el back automáticamente.
 
-### `GET /v1/reportes/ventas/diario?fecha=YYYY-MM-DD`
+### C) Si en ese mismo formulario (o cualquier edición futura) el cliente cambia el correo
 
-**Request:** `GET /mis-productos/v1/reportes/ventas/diario?fecha=2026-07-02`
+8. Los demás campos (nombre, apellido, teléfono) se guardan siempre, sin condición.
+9. Si el correo que llega es distinto al que ya tenía, el back dispara el aviso de verificación —
+   el front debe mostrar un modal tipo *"Has cambiado tu correo, es necesario validarlo. ¿Quieres
+   verificarlo ahora?"*.
+   - **Si acepta:** mismo flujo de código de 6 dígitos ya conocido (enviar código → escribir
+     código → verificar). Al terminar, el correo nuevo queda guardado y verificado, y se
+     sincroniza también en `Usuario.email`.
+   - **Si dice que no:** no pasa nada malo — el resto del formulario ya se guardó (paso 8), y el
+     campo correo en la respuesta del back **vuelve a traer el valor anterior** (el mismo que
+     tiene `Usuario`). El front debe refrescar el campo correo en pantalla con ese valor
+     devuelto, no dejar el que el usuario había escrito y canceló.
 
-**Response 200:**
-```json
-{
-  "data": {
-    "fecha": "2026-07-02",
-    "totalVenta": 4350.00,
-    "totalGanancia": 1200.00,
-    "cantidadVentas": 12
-  }
-}
-```
-Si no hubo ventas ese día: `totalVenta`/`totalGanancia` vienen en `0.0`, `cantidadVentas` en `0` (no error, no null).
+### D) Usuarios que ya existían antes de esta mejora
 
----
+10. Nunca verificaron su correo (el concepto no existía). En su próximo login, el back debe
+    tratarlos igual que a alguien recién registrado sin verificar: el front los manda a la
+    pantalla de "ingresa el código" (pasos 2-3) antes de dejarlos entrar normalmente.
 
-### `GET /v1/reportes/ventas/mensual?mes=YYYY-MM`
+### E) Soporte — verificación asistida por un admin (aclarado 2026-07-03, sexta vuelta)
 
-**Request:** `GET /mis-productos/v1/reportes/ventas/mensual?mes=2026-07`
+**Caso de uso real, tal como lo describió el usuario:** un cliente se presenta con el admin
+(en persona o por teléfono) y le pide ayuda para validar su correo (típicamente porque no le
+llegó el código, perdió acceso, o simplemente no supo hacerlo solo). El admin busca a ESE cliente
+en el sistema, reenvía el código a su correo, el cliente lo revisa y se lo dicta al admin, y el
+admin lo captura para verificarlo en su nombre.
 
-**Response 200:**
-```json
-{
-  "data": {
-    "mes": "2026-07",
-    "totalVenta": 45000.00,
-    "totalGanancia": 12500.00,
-    "cantidadVentas": 130,
-    "porDia": [
-      { "fecha": "2026-07-01", "totalVenta": 4350.00, "totalGanancia": 1200.00, "cantidadVentas": 12 },
-      { "fecha": "2026-07-02", "totalVenta": 3100.00, "totalGanancia": 900.00, "cantidadVentas": 8 }
-    ]
-  }
-}
-```
-- `porDia` solo trae los días que tuvieron al menos una venta (no rellena con ceros los días sin ventas — si necesitan la gráfica con todos los días del mes, hay que completar los huecos en el front).
+11. Nueva pantalla/función en el panel admin: buscar un cliente y poder (a) reenviarle el código
+    de verificación, y (b) capturar el código que el cliente le dicte para verificarlo en su
+    nombre. Es una extensión pequeña de lo que ya existe — mismos dos endpoints de siempre
+    (`enviar-codigo-verificacion`/`verificar-correo`), solo que quien los llama es el admin
+    buscando a un cliente específico, en vez del propio cliente con su sesión. Depende de
+    confirmar que el back ya permite rol ADMIN ahí (ver pendientes abajo) — si no, hay que
+    agregarlo. **No hace falta restringir el caso de uso más que esto** (no hay que limitarlo
+    solo a "cuando el cliente olvidó completamente sus datos" — aplica en general, cualquier vez
+    que el cliente no pueda verificarse solo).
+12. Importante para el front del panel admin: cuando un ADMIN edita los datos de un cliente
+    (no el propio cliente logueado), el flujo de los pasos 8-9 **no aplica** — el admin puede
+    cambiar el correo de un cliente sin que se dispare ningún modal de verificación.
 
-**Response 400** (formato de `mes` inválido, ej. mandaron `2026-13` o `julio-2026`):
-```json
-{ "mensaje": "Formato de mes invalido, usar yyyy-MM" }
-```
+## ✅ Detalles de implementación — CERRADOS 2026-07-03 (sexta vuelta)
 
----
+1. **Recalcular `datosCompletos` — se hace automático, CONFIRMADO.** Cada vez que se guarda un
+   `Cliente`, se revisa si `nombrePersona`, `apeidoPaterno`, `numeroTelefonico` y
+   `correoElectronico` son válidos (no vacíos) — si sí, se pone `datosCompletos = true`. No hace
+   falta que el front ni nadie lo envíe explícito, lo calcula el back solo en cada guardado
+   (vía `@PrePersist`/`@PreUpdate` en la entidad, o una verificación equivalente en el service
+   antes de persistir).
+2. **Rate-limit del reenvío de código — independientes, CONFIRMADO.** El de `Usuario` (nuevo) y
+   el de `Cliente` (ya existente) quedan cada uno con su propio límite, sin compartir el mismo
+   contador ni la misma configuración.
 
-### `GET /v1/reportes/ventas/cliente/{clienteId}`
+## ✅ IMPLEMENTADO 2026-07-03 — back completo, pendiente compilar/probar + correr migraciones
 
-**Request:** `GET /mis-productos/v1/reportes/ventas/cliente/5`
+Se escribió todo el código descrito en este documento. **No se corrió `mvn compile` en esta
+sesión** (Maven no estaba disponible en el entorno) — revisar que compile y probar en vivo antes
+de mergear a qa. Tampoco se corrieron las migraciones SQL contra ninguna base de datos.
 
-**Response 200:**
-```json
-{
-  "data": {
-    "clienteId": 5,
-    "clienteNombre": "María López",
-    "totalCompras": 7,
-    "totalGastado": 3200.00,
-    "ventas": [
-      { "ventaId": 42, "fechaVenta": "2026-07-01T14:30:00", "totalVenta": 530.00, "gananciaTotal": 150.00 }
-    ]
-  }
-}
-```
-- Si el cliente existe pero no tiene compras → `totalCompras: 0`, `ventas: []` (no error).
-- Solo cuenta ventas de contado (`Venta`), no incluye créditos/abonos — para eso usar el reporte de abonos que ya existe en `GET /v1/abonos/reporte/*`.
+### Punto E resuelto sin cambios — ya funcionaba
 
-**Response 400** (cliente no existe):
-```json
-{ "mensaje": "Cliente no encontrado: 5" }
-```
+Se revisó el código: `enviar-codigo-verificacion`/`verificar-correo` de `Cliente` viven bajo
+`.requestMatchers("/v1/clientes/**").authenticated()` en `SecurityConfig` — **cualquier usuario
+autenticado (incluido ADMIN) ya puede llamarlos para cualquier `clienteId`**, no solo el dueño de
+la cuenta. El caso de soporte del punto E funciona hoy tal cual, sin tocar nada.
 
----
+### Archivos nuevos
 
-### `GET /v1/reportes/ventas/productos-mas-vendidos?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&limite=10`
-
-**Request:** `GET /mis-productos/v1/reportes/ventas/productos-mas-vendidos?desde=2026-07-01&hasta=2026-07-31&limite=10`
-
-- `limite` es opcional, default `10`.
-
-**Response 200:**
-```json
-{
-  "data": [
-    { "varianteId": 12, "productoNombre": "Pantalón clásico negro", "talla": "M", "color": "Negro", "cantidadVendida": 34, "totalVendido": 11900.00 },
-    { "varianteId": 8, "productoNombre": "Blusa floral", "talla": "S", "color": "Rosa", "cantidadVendida": 21, "totalVendido": 3780.00 }
-  ]
-}
-```
-Ordenado de mayor a menor por `cantidadVendida`. Lista vacía `[]` si no hubo ventas en el rango (no error).
-
----
-
-**Archivos nuevos en el back:** `ReporteVentasController.java`, `ReporteVentasServiceImpl.java`,
-`IReporteVentasService.java`, DTOs en `models/reportes/` (`ReporteDiarioDto`, `ReporteMensualDto`,
-`ReporteClienteDto`, `VentaResumenItem`, `ProductoMasVendidoDto`). Sin migración de BD — usa
-tablas y columnas que ya existían.
-
----
-
-## ⚠️ Problema conocido — Chatbot muestra "el mismo producto" repetido (2026-07-02)
-
-### Qué está pasando
-
-Al buscar un producto en el chatbot (ej. "Mochila"), a veces varias tarjetas se ven idénticas —
-mismo nombre, mismo precio, sin talla/color que las distinga — como si fuera el mismo producto
-mostrado varias veces.
-
-### Diagnóstico — verificado en vivo contra QA, no es bug de front ni de back
-
-Se probó directo contra el servidor real:
-```
-GET /v1/chatbot/buscar?q=Mochila&offset=0
-→ varianteId 117 y 165, ambos "Mochila Prada", $400, sin talla, sin color
-GET /v1/chatbot/buscar?q=Mochila&offset=2
-→ varianteId 213 y 277, mismos datos otra vez
-```
-
-**La búsqueda y la paginación del back funcionan correctamente** — sí trae 4 registros distintos
-(`varianteId` 117, 165, 213, 277). El problema es que **esas 4 filas están duplicadas en la base
-de datos**: se cargó "Mochila Prada" 4 veces con exactamente los mismos datos, en vez de una sola
-vez con más stock, o con talla/color que las diferenciara. Por eso el chatbot no tiene manera de
-mostrar "cosas diferentes" — no hay 4 productos diferentes, hay 1 producto repetido 4 veces en la
-tabla `variantes`.
-
-**Extra:** las 4 variantes también dan error 500 al pedir su imagen
-(`GET /variantes/v1/imagenes/{varianteId}`) — probablemente ninguna tiene una imagen real cargada.
-
-### Qué lo puede solucionar
-
-No es algo que el front pueda arreglar con código — es limpieza de datos. Opciones (pendiente de
-decisión del negocio, no se tocó nada todavía):
-1. **Borrar las 3 filas sobrantes** desde el panel de admin de variantes y dejar solo 1, con el
-   stock correcto sumado (ej. si cada una tenía `stock: 1`, la que quede debería tener `stock: 4`).
-2. **Diferenciarlas** si en realidad SÍ son productos distintos (ej. colores/tallas distintos que
-   no se llenaron al crearlas) — habría que editarlas para agregar talla/color a cada una.
-3. Si se prefiere, se puede pedir un script de limpieza al back una vez que el negocio confirme
-   cuál de las dos opciones anteriores aplica — no se debe hacer sin esa confirmación porque borrar
-   filas es una acción destructiva.
-
-### Dos correcciones de documentación relacionadas (ya corregidas arriba, en la sección 3 del chatbot)
-
-Mientras se investigaba esto se encontraron 2 errores en la doc que el front ya tenía, que también
-podían afectar que la imagen mostrada fuera la incorrecta:
-- La URL tenía el `/v1/` mal puesto: era `/v1/variantes/imagenes/{varianteId}`, la correcta es
-  `/variantes/v1/imagenes/{varianteId}`.
-- Decía "tomar el primer elemento" del array de imágenes — debe ser el elemento con
-  `"principal": true` (el primero como fallback solo si ninguno viene marcado).
-
----
-
-## Dashboard con métricas (2026-07-02) — endpoint nuevo
-
-### `GET /v1/dashboard/resumen`
-
-**Request:** `GET /mis-productos/v1/dashboard/resumen` — requiere rol ADMIN (Bearer token).
-
-**Response 200:**
-```json
-{
-  "data": {
-    "ventasHoy": 4350.00,
-    "ventasMes": 45000.00,
-    "gananciaMes": 12500.00,
-    "gastosMes": 3200.00,
-    "gananciaNetaMes": 9300.00,
-    "pedidosPendientesEntregar": 5,
-    "creditosActivos": 12,
-    "montoPorCobrar": 8400.00,
-    "productosStockBajo": 7
-  }
-}
-```
-
-| Campo | Qué significa |
+| Archivo | Qué hace |
 |---|---|
-| `ventasHoy` / `ventasMes` | Total vendido (ventas de contado), hoy y en lo que va del mes |
-| `gananciaMes` | Ganancia de las ventas del mes (sin restar gastos) |
-| `gastosMes` | Total de gastos registrados en el mes |
-| `gananciaNetaMes` | `gananciaMes - gastosMes` |
-| `pedidosPendientesEntregar` | Solo cuenta **APARTADO** activos (no pagados, no cancelados) — el producto no se entrega hasta pagarse completo. **FIADO no cuenta aquí** porque ese producto ya se entregó, solo falta cobrarlo |
-| `creditosActivos` | APARTADO + FIADO activos (no pagados, no cancelados) — cuenta de pedidos |
-| `montoPorCobrar` | Suma de `totalPedido - totalPagado` de esos mismos créditos activos |
-| `productosStockBajo` | Variantes con `0 < stock < 5` (no incluye stock=0, eso es "sin stock", otro caso) |
+| `service/UsuarioVerificacionService.java` | `enviarCodigoVerificacion(usernameOEmail)` / `verificarCorreo(usernameOEmail, codigo)` — mismo patrón que `Cliente`; al verificar por primera vez, auto-crea el `Cliente` vinculado |
+| `models/EnviarCodigoVerificacionUsuarioRequest.java` | DTO body `{ userName }` |
+| `models/VerificarCorreoUsuarioRequest.java` | DTO body `{ userName, codigo }` |
+| `migration_usuario_verificacion_correo.sql` | Agrega `correo_verificado`/`codigo_verificacion`/`codigo_verificacion_expira` a `usuario_modificacion` |
+| `migration_datos_completos_cliente.sql` | Actualizado — agrega `datos_completos` y `correo_pendiente` a `clientes` (antes solo tenía `datos_completos`) |
 
-**⚠️ Falta "Clientes nuevos este mes" del plan original** — no se implementó porque `Cliente`
-no tiene ninguna columna de fecha de registro/creación, ni siquiera a nivel de tabla base. Sin
-eso no hay forma de saber cuáles son "nuevos" vs "de siempre". Si se necesita, avisar y se agrega
-la columna (con migración SQL, y solo contará clientes dados de alta después de agregarla — los
-existentes no tienen ese dato retroactivamente, mismo caso que pasó con `montoDado`).
+### Archivos modificados
 
-**Archivos nuevos en el back:** `DashboardController.java`, `DashboardServiceImpl.java`,
-`IDashboardService.java`, `DashboardResumenDto.java`. Sin migración de BD.
+| Archivo | Qué cambió |
+|---|---|
+| `entity/Usuario.java` | + `correoVerificado`/`codigoVerificacion`/`codigoVerificacionExpira`; `isEnabled()` ahora exige `correoVerificado=true` — Spring Security bloquea el login solo (lanza `DisabledException`) |
+| `entity/Cliente.java` | + `datosCompletos`/`correoPendiente`; `apeidoMaterno` ya NO es `@NotEmpty`/`@NotNull` (opcional); nuevo `@PrePersist`/`@PreUpdate` que recalcula `datosCompletos` en cada guardado |
+| `service/ClienteServiceImpl.java` | + `crearClienteDesdeRegistro(usuario, correo)` — INSERT nativo vía `EntityManager` que hace bypass de Bean Validation (nombre/apellidos/teléfono aún no existen); `enviarCodigoVerificacionCorreo`/`verificarCorreo` ahora usan `correoPendiente` si existe (manda el código ahí, y al verificar promueve el valor a `correoElectronico` + sincroniza `Usuario.email`) |
+| `controller/AuthController.java` | + `POST /v1/auth/enviar-codigo-verificacion` y `POST /v1/auth/verificar-correo` (para `Usuario`, rate-limit propio con key `verif-usr:`); `login()` captura `DisabledException` aparte → 403 "Debes verificar tu correo antes de iniciar sesión" |
+| `controller/ClienteControllerImpl.java` | `save()` ahora: preserva `codigoVerificacion`/`correoVerificado`/`correoPendiente` existentes (el guardado genérico hace `merge()` completo y los pisaría con `false`/`null` si el front no los manda); si el correo cambia y quien edita NO es admin (`AuthenticationUtils.isAdminContext()`), lo manda a `correoPendiente` y dispara el envío del código — si es admin, se aplica directo y verificado |
+| `security/SecurityConfig.java` | Los 2 endpoints nuevos de `/v1/auth/` agregados a `permitAll()` (el usuario aún no puede loguearse en ese punto) |
+| `service/PedidoServiceImpl.java` | `savePedido` valida también `cliente.getDatosCompletos()`, con mensaje de error distinto al de correo sin verificar |
 
----
+### Bug pre-existente encontrado y corregido de paso
 
-## Guía de gráficas para reportes (2026-07-02)
+`ClienteControllerImpl.save()` no preservaba explícitamente los campos administrados por el back
+(`correoVerificado`, `codigoVerificacion`, etc.) antes de esta sesión. Como el guardado genérico
+hace `repository.save()` con el objeto completo deserializado del JSON (sin DTO intermedio), si el
+front no incluía esos campos en el request, un simple "actualizar mis datos" los reseteaba a
+`false`/`null` — es decir, **cualquier cliente que ya había verificado su correo y luego editaba
+su perfil (nombre, teléfono, etc.) perdía la verificación silenciosamente** y quedaba bloqueado en
+su siguiente pedido sin haber tocado su correo. Se corrigió al mismo tiempo que se agregó la
+lógica de `correoPendiente`, cargando el registro existente y preservando esos campos antes de
+guardar.
 
-Son **2 cosas distintas**, para que no se mezclen:
+### Sin disrupción a sesiones activas
 
-### 1. Corrección de algo que dijimos mal antes
+El bloqueo de login por correo sin verificar solo aplica en `POST /v1/auth/login`
+(`authManager.authenticate()`). Ni `JwtAuthenticationFilter` (valida tokens en cada request) ni
+`POST /v1/auth/refresh` revisan `isEnabled()` — un usuario ya logueado con un refresh token válido
+sigue funcionando sin interrupción hasta que cierre sesión y necesite loguearse de nuevo.
 
-Cuando se respondió la duda de `ng2-charts` vs Chart.js directo, se dijo que el **Dashboard**
-(`GET /v1/dashboard/resumen`) iba a necesitar "varias gráficas más". **Eso estaba mal** — ya se
-implementó el dashboard y es solo números sueltos en cards (ventas hoy, stock bajo, etc.), sin
-ninguna serie de datos. **El dashboard NO lleva gráficas, solo cards de números.** La única razón
-real para tener `ng2-charts` instalado es el punto 2 de abajo.
+### Pendiente antes de mergear a qa
 
-### 2. Qué gráficas SÍ se pueden armar, y con qué endpoint
+1. Compilar (`mvn compile`) y correr pruebas manuales del flujo completo — no se verificó en
+   ejecución en esta sesión.
+2. Correr `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql`
+   en dev primero, revisar, luego qa (comparten `inventario_key_qa`). Prod queda pendiente hasta
+   que la rama llegue ahí.
+3. Documentar el contrato real de los 2 endpoints nuevos en `CAMBIOS_FRONT.md` una vez probado.
+4. Implementar las pantallas nuevas del front (ver F-19 en la tabla de arriba).
 
-Esto es nuevo — una guía de qué gráficas arma cada endpoint de **reportes** (no del dashboard),
-usando datos que ya existen, sin pedir nada nuevo al back:
+> **NOTA 2026-07-03 — código en working tree, sin commitear:** todos los archivos de esta mejora
+> ya están escritos en local (rama `dev`), listos para revisar/compilar/probar, pero **sin git add
+> ni commit** — se quedan así hasta que el usuario diga explícitamente "sube" o "haz commit"
+> (regla de `CLAUDE.md`). Si se retoma esta sesión en otra conversación, correr `git status` para
+> confirmar que siguen ahí antes de asumir que se perdieron.
 
-| Gráfica | Endpoint | Campos a usar | Tipo sugerido |
+### Dudas de front pegadas por el usuario (2026-07-03) — vienen de otra sesión/repo (Angular)
+
+> Este análisis lo generó otra sesión trabajando sobre el proyecto Angular (front), no existe
+> ningún `.component.ts` en este repo (`proyecto_key_new` es solo el back). Lo dejo aquí limpio,
+> con verificación desde el lado del back, para que quien retome el front sepa qué es seguro
+> proceder y qué NO todavía.
+
+| # | Qué | Archivo (front) | Verificación desde el back |
 |---|---|---|---|
-| Ventas por día del mes | `GET /v1/reportes/ventas/mensual?mes=` | `porDia[].fecha` + `porDia[].totalVenta` | Barras |
-| Ventas vs Ganancia por día | Mismo endpoint | `porDia[].totalVenta` + `porDia[].totalGanancia` (ya vienen juntos) | Combinada: barras (venta) + línea (ganancia) |
-| Top productos vendidos | `GET /v1/reportes/ventas/productos-mas-vendidos?desde=&hasta=` | Ya viene ordenado desc por `cantidadVendida` | Barras horizontales, o dona con top 5 + "otros" agrupado |
-| Comparar mes actual vs mes anterior | Llamar `mensual` **dos veces** (una por cada mes) y combinar en el front — no hay endpoint que regrese los 2 meses juntos | `totalVenta` de cada llamada | Barras agrupadas (2 series) |
-| Gasto histórico de un cliente | `GET /v1/reportes/ventas/cliente/{clienteId}` | `ventas[].fechaVenta` + `ventas[].totalVenta`, agrupar por mes en el front (el back regresa venta por venta, no agrupado por mes) | Línea de tendencia |
+| 1 | QR de Facebook no aparece — el código lee `res.whatsappUrl` en vez de `res.data.whatsappUrl`/`res.data.facebookUrl` | `negocio.service.ts` (o donde se consuma `NegocioService.getContactosPublicos()`) | ✅ Confirmado en el back: `NegocioController.getContactosPublicos()` devuelve `ResponseEntity<ResponseGeneric<ContactosPublicosDto>>` — el wrapper `.data` es obligatorio, como en el resto del proyecto. Es bug del front, seguro de corregir ya. |
+| 2 | URL incorrecta del chatbot para imagen de variante: usa `/v1/variantes/imagenes/{id}` en vez de `/variantes/v1/imagenes/{id}`; además toma el primer elemento del array en vez del que trae `principal:true` | `chatbot.service.ts` | ✅ Ya documentado como corrección pendiente del front desde el 2026-07-02 (ver nota F-8 más arriba en este documento) — nada nuevo, seguro de proceder. |
+| 3 | Falta mandar `montoDado` en `POST /v1/ventas/save` (solo si método = EFECTIVO) | `venta-directa.component.ts` | ✅ Correcto — el campo `montoDado` ya existe en el back (NF-3, `VentaDirectaRequest`) desde la sesión del módulo de crédito. Seguro de proceder. |
+| 4 | Apellido materno ya no es obligatorio — quitar `Validators.required` | `clientes-add.component.ts` | 🔴 **NO PROCEDER TODAVÍA.** Esa validación se quitó en el back **en esta misma sesión** (mejora 15) y sigue **sin commitear, sin compilar, sin correr en ningún ambiente** (dev/qa/prod siguen exigiendo apellido materno hoy). Si el front quita el `required` antes de que el back esté desplegado, un formulario sin apellido materno se rechazaría igual con 400 contra dev/qa reales. Esperar a que se confirme que el back de la mejora 15 ya está arriba. |
 
-**Lo que NO tiene dato para gráfica:** `GET /v1/dashboard/resumen` (números sueltos, ver punto 1)
-y `GET /v1/reportes/ventas/diario` (es un solo número del día que se pida, no una serie).
+**Respuesta a "¿Procedo con estos 4 cambios?":** sí a los puntos 1, 2 y 3 — son seguros e
+independientes de la mejora 15. El punto 4 hay que dejarlo pendiente hasta que el back de la
+mejora 15 esté compilado, probado y desplegado en el ambiente correspondiente (ver "Pendiente
+antes de mergear a qa" arriba).
+
+### Nueva idea sin desarrollar — Promociones por variante (2026-07-03, solo anotada, sin decidir)
+
+Pregunta del usuario: quiere poder marcar promociones puntuales sobre variantes específicas (ej.
+2 variantes en promoción) sin afectar el cálculo de ganancias que ya existe, y sin saber todavía
+cómo manejarlo en el front.
+
+**Contexto ya confirmado en el back:**
+- La ganancia de cada venta se calcula con el precio real vendido (`subTotal` del item) menos
+  `precioCosto` del producto — **no depende de un precio fijo**, así que vender más barato como
+  promo ya recalcula bien la ganancia hoy, sin tocar nada.
+- Ya existe un campo `Producto.precioRebaja` (get/set simple, sin lógica de negocio, sin fechas,
+  sin activar/desactivar) — pero vive en `Producto`, no en `Variantes`, así que no sirve para
+  promocionar una talla/color puntual sin afectar las demás variantes del mismo producto.
+
+**Recomendación dada (sin implementar, el usuario no ha confirmado):** agregar 2-3 campos nuevos
+directo en `Variantes` (ej. `precioPromocion`, `descripcionPromocion`, `enPromocion`) en vez de
+tocar `Producto`. El catálogo público mostraría el precio de promo solo en esas variantes; al
+vender, el front manda el precio como ya hace hoy (no hay que tocar `savePedido`/venta ni la
+lógica de ganancia). Pendiente de decidir: ¿el back debe validar que el precio cobrado en la venta
+coincida exactamente con `precioPromocion` (evita que el front mande cualquier precio), o queda
+como hoy (el front es responsable del precio, sin validación de por medio)?
+
+**Estado: pausado a petición del usuario para retomar después de cerrar la mejora 15.**
 
 ---
 
-## Filtros producto/variante por rol (2026-07-02)
+---
 
-### 1. Cambio de comportamiento en los listados públicos (sin acción del front)
+## 📋 NOTA PARA EL BACK — Pendientes que el front necesita (2026-07-07)
 
-Los endpoints de catálogo que ya usa el front **ahora exigen una condición más** para clientes
-normales (no ADMIN): además de `stock > 0` y `habilitado`, el producto/variante también debe
-**tener al menos una imagen**. Antes solo se exigía stock + habilitado. No cambia el contrato
-(mismos campos, mismo formato) — solo puede que aparezcan **menos resultados** que antes si hay
-productos sin foto todavía. No requiere ningún cambio en el front, es automático según el rol del
-token.
+> Esta nota resume exactamente qué necesita el back para que el front pueda avanzar.
+> Copiar y pegar al equipo de back.
 
-Afecta a: `GET /v1/productos/obtenerProductos`, `GET /v1/productos/buscarNombreOrCodigoBarra`,
-`GET /variantes/v1/buscar`, `GET /variantes/v1/getAll`.
+---
 
-**Nota:** para ADMIN no cambia nada — sigue viendo todo el catálogo sin este filtro.
+### 🔴 URGENTE — Bloquean funcionalidad ya desplegada
 
-### 2. Endpoints nuevos — filtros de admin (acción requerida en el front)
+**1. Quitar el JSON de diagnóstico del response de `PUT variantes/v1/admin/habilitar-lote`**
 
-Antes había endpoints sueltos por cada filtro (`admin/sin-stock`, `admin/no-habilitados`, que
-siguen existiendo y funcionando igual). Ahora hay un endpoint único con parámetro `filtro` para
-elegir entre 4 vistas, pensado para un dropdown/select en el panel de admin:
-
+El response de ese endpoint actualmente devuelve en `data` un string con JSON concatenado:
 ```
-GET /mis-productos/v1/productos/admin/filtrar?filtro=SIN_STOCK&size=10&page=1
-GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_STOCK&size=10&page=1
-GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_IMAGENES&size=10&page=1
-GET /mis-productos/v1/productos/admin/filtrar?filtro=CON_STOCK_Y_IMAGENES&size=10&page=1
-
-GET /mis-productos/variantes/v1/admin/filtrar?filtro=SIN_STOCK&pagina=1&size=10
-GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_STOCK&pagina=1&size=10
-GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_IMAGENES&pagina=1&size=10
-GET /mis-productos/variantes/v1/admin/filtrar?filtro=CON_STOCK_Y_IMAGENES&pagina=1&size=10
+"Variantes deshabilitadas correctamente. {\"idsEnviados\":[...],...}"
 ```
-
-`filtro` es un enum de texto — valores válidos: `SIN_STOCK`, `CON_STOCK`, `CON_IMAGENES`,
-`CON_STOCK_Y_IMAGENES`. Ambos requieren rol ADMIN (Bearer token). Ojo: productos usa `page`,
-variantes usa `pagina` (ya era así en el resto de los endpoints de cada uno, se mantiene la misma
-convención).
-
-**Response productos — mismo formato que `admin/sin-stock`:**
-```json
-{
-  "pagina": 1,
-  "totalPaginas": 3,
-  "totalRegistros": 25,
-  "t": [
-    {
-      "idProducto": 42,
-      "nombre": "Mochila Prada",
-      "color": "negro",
-      "precioVenta": 400.0,
-      "precioCosto": 200.0,
-      "precioRebaja": null,
-      "descripcion": "Mochila para mostrar",
-      "codigoBarras": "cod1230981",
-      "stock": 0,
-      "marca": "PRADA",
-      "contenido": "1 pieza",
-      "habilitado": "1",
-      "imagen": { "urlImagen": "https://.../v1/imagenes/file/123" }
-    }
-  ]
-}
+Eso era temporal para diagnosticar el bug. El bug ya está resuelto (la BD sí se actualiza). Hay que quitar ese diagnóstico y volver al mensaje limpio:
 ```
-
-**Response variantes — mismo formato que `admin/sin-stock` (resumen):**
-```json
-{
-  "pagina": 1,
-  "totalPaginas": 2,
-  "totalRegistros": 15,
-  "t": [
-    {
-      "id": 117,
-      "talla": "s",
-      "descripcion": "Mochila para mostrar",
-      "color": null,
-      "presentacion": "bolsa",
-      "stock": 5,
-      "marca": null,
-      "contenidoNeto": "1 pieza",
-      "imagenUrl": "https://.../v1/imagenes/file/456",
-      "precio": 300.0,
-      "codigoBarras": "cod1230981",
-      "nombreProducto": "Mochila para mostrar"
-    }
-  ]
-}
+"Variantes deshabilitadas correctamente."
 ```
+Mismo para `"Variantes habilitadas correctamente."`. Mientras quede así, cualquier comparación de string en el front falla.
 
-**Qué significa cada filtro** (aplica igual a productos y variantes, admin ve TODO el catálogo,
-sin exigir habilitado — a diferencia del listado público):
-- `SIN_STOCK` → `stock = 0`
-- `CON_STOCK` → `stock > 0`
-- `CON_IMAGENES` → tiene al menos una imagen cargada (sin importar stock)
-- `CON_STOCK_Y_IMAGENES` → `stock > 0` **y** tiene al menos una imagen cargada (combina los dos
-  anteriores — es la misma condición que ya se exige al cliente normal, pero aquí sin exigir
-  `habilitado`, para que el admin pueda ver también los que están deshabilitados)
+---
 
-**Archivos nuevos/tocados en el back:** `FiltroCatalogoEnum.java` (nuevo),
-`IProductosRepository.java`, `IVarianteRepository.java`, `ProductosServiceImpl.java`,
-`VarianteServiceImpl.java`, `ProductosControllerImpl.java`, `VarianteController.java`. Sin
-migración de BD — usa las tablas de imágenes que ya existían.
+### 🟡 IMPORTANTE — Migraciones SQL pendientes en ambientes
 
-## Verificación de correo del cliente (2026-07-02) — acción requerida en el front
+Estas migraciones ya están corridas en `dev` y `qa` pero **faltan en `prod`** (o en alguno):
 
-### 1. Correo y teléfono ahora son obligatorios en `Cliente`
+| Migración | Para qué | Estado |
+|---|---|---|
+| `migration_verificacion_correo.sql` | Campo `correoVerificado` en `clientes` | ✅ dev/qa — ⏳ prod |
+| `migration_habilitado_variantes.sql` | Campo `habilitado` en `variantes` (default `'1'`) | ✅ dev/qa — ⏳ prod (verificar con `DESCRIBE variantes`) |
+| `migration_reset_password.sql` | Campos `passwordTemporal` en `usuario_modificacion` | ✅ dev/qa — ⏳ prod |
+| `migration_password_temporal.sql` | Campo `debeCambiarPassword` en `usuario_modificacion` | Verificar si ya corrió |
+| `migration_promociones.sql` | Tablas `promocion` / `promocion_detalle` | ⏳ **FALTA EN QA** — el back está en `dev` pero sin migrar en QA |
+| `monto_dado` en `abono_pedido` | Campo para registrar billete que dio el cliente | ⏳ Pendiente — el front ya lo manda, el back no lo persiste |
 
-`POST /v1/clientes/save` y `PUT /v1/clientes/update/{id}` ahora exigen `correoElectronico` y
-`numeroTelefonico` (antes eran opcionales, sin ninguna validación). Si faltan o el formato es
-inválido, responde **400** con `mensaje` describiendo el error (mismo patrón que ya usan
-`nombrePersona`/`apeidoPaterno`/`apeidoMaterno`):
-- `correoElectronico`: obligatorio, formato de email válido.
-- `numeroTelefonico`: obligatorio, exactamente 10 dígitos (sin espacios, guiones ni lada
-  internacional — ej. `"5512345678"`).
+**Acción concreta:** correr `migration_promociones.sql` en QA para poder probar el módulo de promociones. El front ya está listo.
 
-**No aplica** a venta directa sin cuenta (`ClienteSinRegistroDto`) — esos campos siguen
-opcionales, es una venta de mostrador supervisada por personal.
+---
 
-También ahora `POST /v1/auth/registrar` exige `email` (antes era opcional, solo se validaba el
-formato si venía). El endpoint pasó de usar `AuthRequest` a un DTO nuevo `RegistroRequest` con
-los mismos 3 campos (`userName`, `password`, `email`) — sin cambio de contrato para el front,
-solo ahora `email` es requerido. **`POST /v1/auth/login` no cambia** — sigue sin pedir email.
+### 🟡 IMPORTANTE — F-19: confirmar cuándo estará en QA
 
-### 2. Nuevo flujo: verificar el correo con un código de 6 dígitos
+El back tiene escrito (pero sin compilar/probar/desplegar) el código de:
+- Verificación de correo al registrarse (`POST /v1/auth/registrar` bloquea login hasta verificar)
+- Auto-crear `Cliente` al verificar por primera vez
+- Campo `datosCompletos` en `Cliente`
+- `POST /pedidos/savePedido` con 2 validaciones separadas ("Debes verificar..." y "Debes completar tus datos...")
+- Cambio de correo de cliente no aplica inmediato (queda en `correoPendiente`)
 
-Antes de que un cliente **con cuenta** pueda generar un pedido (`POST /pedidos/savePedido`) o
-recibir el ticket automático en su correo registrado (venta directa, abono, cancelación de
-pedido), su correo debe estar verificado.
+**El front no puede tocar nada de esto hasta que el back confirme que el código está compilando y corriendo en QA.** Avisar con "F-19 lista para integrar" cuando esté desplegado.
 
+---
+
+### 🟢 NUEVOS endpoints que el front necesita (no están en el back todavía)
+
+Estos no están implementados ni en `dev` — son los siguientes a pedir:
+
+**Para F-17 — Olvidé mi contraseña (ya documentado, back conoce el diseño):**
 ```
-POST /v1/clientes/{id}/enviar-codigo-verificacion
-POST /v1/clientes/{id}/verificar-correo
-Body: { "codigo": "123456" }
+POST /v1/auth/olvide-password        Body: { "email": "..." }         — público
+POST /v1/auth/restablecer-password   Body: { "email", "codigo", "nuevaPassword" }  — público
 ```
+Back: según `CAMBIOS_FRONT.md`, ya hay archivos `OlvidePasswordRequest.java` y `RestablecerPasswordRequest.java` creados. ¿Está compilado? Confirmar.
 
-- `enviar-codigo-verificacion`: genera un código de 6 dígitos, lo manda por correo (vence en 15
-  minutos) y responde `200` con `{ "data": "Codigo enviado al correo registrado" }`. Si el
-  cliente no existe o no tiene correo registrado, responde `400`.
-- `verificar-correo`: valida el código contra el que se envió. Si es correcto y no venció, marca
-  el cliente como verificado y responde `200`. Si el código es incorrecto o ya venció, responde
-  `400` con el mensaje correspondiente (`"Codigo de verificacion invalido"` /
-  `"El codigo de verificacion expiro, solicita uno nuevo"`) — en ese caso hay que dejar que el
-  usuario pida un código nuevo (`enviar-codigo-verificacion` otra vez).
-- Si ya estaba verificado, `verificar-correo` no hace nada y responde `200` igual (idempotente).
-
-**Qué pasa si el cliente NO está verificado:**
-- `POST /pedidos/savePedido` responde `400` con mensaje `"Debes verificar tu correo antes de
-  generar un pedido"` — no se crea el pedido.
-- En venta directa / abono / cancelación de pedido, si se pidió `enviarCorreo: true` en la
-  notificación y el cliente no está verificado, el ticket **no se envía** — el response trae
-  `correoEnviado: false` y en `erroresEnvio` aparece `"El correo del cliente no esta verificado,
-  no se envio el ticket"`. **Excepción:** si en el modal post-venta se escribe un correo manual
-  (`notificacion.correo`) para esa notificación puntual, se envía ahí sin exigir verificación —
-  ese campo es un envío puntual, no depende de la cuenta del cliente.
-
-**Sugerencia de UX para el front:** tras crear/actualizar el `Cliente` (o al detectar
-`correoVerificado: false` en el objeto `Cliente`), mostrar un paso de "verifica tu correo" con un
-input de 6 dígitos y botón de reenviar código, antes de dejar avanzar al carrito/pedido.
-
-**Nota operativa:** los clientes que ya existían antes de este cambio quedan con
-`correoVerificado = false` por default (no hay migración retroactiva) — van a tener que
-verificar su correo la primera vez que intenten generar un pedido, aunque su cuenta sea antigua.
-
-**Archivos tocados en el back:** `Cliente.java` (3 campos nuevos + validaciones), `AuthRequest.java`
-(sin campo obligatorio, no cambia), `RegistroRequest.java` (nuevo), `VerificarCorreoRequest.java`
-(nuevo), `ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `EmailService.java`,
-`PedidoServiceImpl.java`, `VentaServiceImpl.java`, `AbonoServiceImpl.java`, `AuthController.java`.
-Migración: `migration_verificacion_correo.sql` (agrega 3 columnas a `clientes`, pendiente de
-correr en dev/qa/prod).
-
-### 3. Estado de verificación visible en la búsqueda de clientes
-
-`GET /v1/clientes/buscar` ahora incluye `correoVerificado` en cada elemento de la lista
-(`ClienteBusquedaDto`) — útil para que el panel admin muestre un badge de "verificado" / "sin
-verificar" junto a cada cliente.
-
-### 4. Endpoint de soporte/pruebas — resetear verificación (solo ADMIN)
-
+**Para F-18 — Cambiar contraseña logueado (ya documentado, back conoce el diseño):**
 ```
-DELETE /v1/clientes/{id}/verificacion-correo
+PUT /v1/auth/cambiar-password   Header: Bearer token   Body: { "passwordActual", "nuevaPassword" }
 ```
+Back: según `CAMBIOS_FRONT.md`, `CambiarPasswordRequest.java` ya existe. ¿Compilado y en QA?
 
-Regresa el cliente a `correoVerificado: false` y borra cualquier código pendiente. Requiere rol
-ADMIN (mismo criterio que el resto de `DELETE /v1/clientes/**`). Pensado para soporte/QA — no es
-parte del flujo normal del cliente, sirve para poder re-probar la verificación sin tener que
-crear una cuenta nueva cada vez.
+**Para F-4 — Alertas de stock bajo (no empezado):**
+Pendiente de diseñar. El campo `productosStockBajo` ya está en `GET /v1/dashboard/resumen`. Falta definir: ¿el admin recibe correo automático cuando una variante llega a stock = X?, ¿cuál es el umbral X?, ¿se configura por variante o es global?
 
-## Deshabilitar productos/variantes en lote (2026-07-02) — acción requerida en el front
+---
 
-Pensado para ocultar productos o variantes de prueba sin borrarlos: el admin busca (paginado,
-usando `admin/filtrar` o la búsqueda normal), selecciona varios de la lista con checkboxes, y
-manda un solo request con todos los IDs.
+### ℹ️ Info para el back — qué tiene listo el front
 
-```
-PUT /v1/productos/admin/habilitar-lote
-PUT /variantes/v1/admin/habilitar-lote
-Body: { "ids": [12, 15, 20], "habilitar": false }
-```
+El back no siempre sabe qué ya tiene el front. Resumen:
 
-- `ids`: lista de IDs de producto o de variante (según el endpoint) — no puede venir vacía.
-- `habilitar`: `false` para ocultar, `true` para volver a mostrar (mismo endpoint sirve para
-  ambas direcciones).
-- Requiere rol ADMIN. Responde `200` con `{ "data": "Productos deshabilitados correctamente" }`
-  (o el mensaje equivalente para variantes/habilitar). Los IDs que no existan simplemente se
-  ignoran (no truena, solo actualiza los que sí encuentra).
-- Después de deshabilitar, esos productos/variantes **dejan de aparecer de inmediato** en los
-  listados públicos (cliente normal) — la caché se limpia automáticamente. El admin los sigue
-  viendo igual en sus búsquedas/filtros (para poder rehabilitarlos después).
-
-### Novedad importante: la variante ahora tiene SU PROPIO campo `habilitado`
-
-Antes una variante solo era visible/oculta según el `habilitado` del producto padre — no había
-forma de ocultar una variante suelta (ej. una talla de prueba) dejando visibles las demás del
-mismo producto. Ahora `Variantes` tiene su propio campo `habilitado`, independiente del producto:
-para que una variante sea visible al cliente normal se necesitan **ambos** en `'1'` (producto
-habilitado Y variante habilitada). El campo `habilitado` de la variante ya viene incluido en las
-respuestas donde antes venían el resto de sus campos (mismo objeto `Variantes`).
-
-**Archivos tocados en el back:** `Variantes.java` (campo nuevo), `HabilitarLoteRequest.java`
-(nuevo, reutilizado en ambos endpoints), `IVarianteRepository.java` (las 5 queries públicas ahora
-también exigen `v.habilitado = '1'`), `VarianteServiceImpl.java`, `VarianteController.java`,
-`ProductosServiceImpl.java`, `ProductosControllerImpl.java`. Migración:
-`migration_habilitado_variantes.sql` (agrega columna a `variantes`, default `'1'` para no afectar
-datos existentes — pendiente de correr en dev/qa/prod).
-
-## Restablecer contraseña olvidada (2026-07-03) — acción requerida en el front
-
-Mismo patrón que la verificación de correo: código de 6 dígitos por correo, vence en 15 minutos.
-Dos pasos, dos endpoints:
-
-```
-POST /v1/auth/olvide-password
-Body: { "email": "cliente@correo.com" }
-
-POST /v1/auth/restablecer-password
-Body: { "email": "cliente@correo.com", "codigo": "123456", "nuevaPassword": "miNuevaClave" }
-```
-
-**Paso 1 — `olvide-password`:** manda el código al correo. **Siempre responde `200`**, exista o
-no una cuenta con ese correo — es intencional, para no revelar si un correo está registrado en el
-sistema (protección contra enumeración de cuentas). El front debe mostrar el mismo mensaje
-("revisa tu correo") sin importar el resultado, no puede usar la respuesta para saber si el
-correo existe.
-
-**Paso 2 — `restablecer-password`:** valida el código y, si es correcto y no venció, actualiza la
-contraseña. Responde `200` en éxito, `400` con mensaje `"Codigo invalido o expirado"` si el
-código está mal, venció, o no hay cuenta con ese correo (mismo mensaje genérico en los 3 casos,
-misma razón de seguridad que el paso 1).
-
-**Sobre el flujo de UX que describiste (código primero, campo de nueva contraseña después):** no
-hay un endpoint separado para "solo validar el código" — el back valida y cambia la contraseña en
-el mismo request. El front puede armar la pantalla en dos pasos visuales (mostrar el campo de
-"nueva contraseña" recién cuando el usuario terminó de escribir los 6 dígitos) sin necesidad de
-otra llamada al back; si el código resulta incorrecto, el error sale hasta que se manda el
-formulario completo (mismo comportamiento que cualquier validación de formulario).
-
-**Nota de seguridad:** esto NO cierra las sesiones activas del usuario — si tenía un access/refresh
-token válido en otro dispositivo, sigue funcionando hasta que expire naturalmente (15 min / 7
-días). No hay revocación de tokens implementada todavía; avisar si esto es un problema para
-retomarlo.
-
-**Archivos tocados en el back:** `Usuario.java` (2 campos nuevos), `IUsuarioRepository.java`,
-`OlvidePasswordRequest.java` (nuevo), `RestablecerPasswordRequest.java` (nuevo),
-`PasswordResetService.java` (nuevo), `EmailService.java`, `AuthController.java`,
-`SecurityConfig.java` (los 2 endpoints nuevos son públicos, como `/login`). Migración:
-`migration_reset_password.sql` (agrega 2 columnas a `usuario_modificacion` — pendiente de correr
-en dev/qa/prod).
-
-### Cambiar contraseña estando logueado — endpoint distinto, sin código por correo
-
-```
-PUT /v1/auth/cambiar-password
-Header: Authorization: Bearer {accessToken}
-Body: { "passwordActual": "claveVieja", "nuevaPassword": "claveNueva" }
-```
-
-Requiere sesión válida (JWT) — no manda `username` ni `email` en el body, el back identifica al
-usuario por el token. Pide la contraseña actual en vez de código por correo porque el usuario ya
-está autenticado (re-autenticar con la contraseña actual es la protección estándar para que una
-sesión abierta/robada no pueda cambiar la contraseña sin más).
-
-- `200` con `"Contrasena actualizada correctamente"`.
-- `400` con `"La contrasena actual es incorrecta"` si `passwordActual` no coincide.
-- `401` si el token no es válido/expiró (igual que cualquier endpoint protegido).
-
-Va en la pantalla de "mi cuenta"/perfil, no en el login — ese caso sigue siendo
-`olvide-password` + `restablecer-password` de la sección anterior.
-
-**Archivos:** `CambiarPasswordRequest.java` (nuevo), `PasswordResetService.java`,
-`AuthController.java`. No requiere migración (usa las columnas de `password` que ya existían).
-
-## Unificar verificación de correo Usuario/Cliente (2026-07-03) — acción requerida en el front
-
-> ✅ **Back ya está en QA** (2026-07-04) — merge `dev → qa` hecho y pusheado, migraciones
-> `migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` ya
-> corridas en `inventario_key_qa`. `correo_verificado` nace en `0` para todos sin excepción (sin
-> grandfathering, decisión de diseño — ver migración); `datos_completos` sí hace backfill contra
-> los datos reales del cliente. El front puede empezar a integrar esta sección. Diseño completo en
-> `PLAN_MEJORAS.md` mejora 15.
-
-### 1. Registro ahora exige verificar el correo antes de poder loguearse
-
-`POST /v1/auth/registrar` no cambia de contrato, pero el `Usuario` que crea queda **sin poder
-loguearse** hasta verificar su correo (antes podía loguearse de inmediato).
-
-```
-POST /v1/auth/enviar-codigo-verificacion
-Body: { "userName": "juanperez" }      // acepta username O correo, cualquiera de los dos
-
-POST /v1/auth/verificar-correo
-Body: { "userName": "juanperez", "codigo": "123456" }
-```
-
-Mismo patrón que ya conocen de la verificación de `Cliente` (vencimiento 15 minutos, código de 6
-dígitos). Ambos responden `200` con texto plano en éxito, `400` con el mensaje de error en texto
-plano si falla (`"Usuario no encontrado"`, `"El correo ya esta verificado"`,
-`"Codigo de verificacion invalido"`, `"El codigo de verificacion expiro, solicita uno nuevo"`).
-`enviar-codigo-verificacion` también puede responder `429` si se pide demasiadas veces seguidas
-(rate-limit propio, independiente del de login/registro).
-
-**Flujo front sugerido:** justo después de `POST /v1/auth/registrar`, llamar
-`enviar-codigo-verificacion` automáticamente y mostrar la pantalla de "ingresa el código de 6
-dígitos", con botón de reenviar. Recién cuando `verificar-correo` responde `200`, mandar al login
-normal (`POST /v1/auth/login`).
-
-### 2. `POST /v1/auth/login` ahora puede rechazar por correo sin verificar
-
-Nueva respuesta posible, además de las que ya existían:
-
-- **`403`** con body `"Debes verificar tu correo antes de iniciar sesión"` — el `Usuario` existe,
-  la contraseña es correcta, pero `correoVerificado` sigue en `false`. El front debe mandar a la
-  pantalla de "ingresa el código" (mismos 2 endpoints del punto 1) en vez de mostrar un error
-  genérico de credenciales.
-- `401` (credenciales inválidas) y `429` (rate-limit) siguen igual que antes, sin cambios.
-
-**Usuarios que ya existían antes de este cambio:** todos quedan con `correoVerificado = false`
-por default (sin excepción, no hay "pase automático") — al primer intento de login después de que
-esto se despliegue, van a recibir el mismo `403` de arriba y tendrán que verificar su correo por
-primera vez, aunque su cuenta sea antigua. Sesiones ya activas (con un access/refresh token
-válido) NO se ven afectadas — solo un login nuevo dispara esta validación.
-
-### 3. Al verificar, se auto-crea el `Cliente` — nuevo campo `datosCompletos`
-
-Cuando `verificar-correo` (punto 1) tiene éxito por primera vez, el back crea automáticamente un
-`Cliente` vinculado a ese `Usuario`, con el correo ya copiado y verificado, pero **sin nombre,
-apellidos ni teléfono todavía** — nuevo campo `Cliente.datosCompletos: false`.
-
-**`POST /pedidos/savePedido` ahora valida dos cosas por separado, con mensajes distintos:**
-- `400` `"Debes verificar tu correo antes de generar un pedido"` — ya existía (mejora 12), sigue
-  igual.
-- `400` `"Debes completar tus datos (nombre, apellido paterno, telefono) antes de generar un
-  pedido"` — **nuevo**. El front debe distinguir este mensaje del anterior para saber si mandar a
-  la pantalla de "verifica tu correo" o a la de "completa tu perfil" (nombre, apellido paterno,
-  teléfono — el correo ya viene prellenado, no hace falta volver a pedirlo ni verificarlo aquí).
-
-Se guarda con el mismo endpoint de siempre: `POST /v1/clientes/save` /
-`PUT /v1/clientes/update/{id}`.
-
-**Apellido materno ahora es opcional** (antes obligatorio, mejora 12) — si el formulario del front
-tenía `Validators.required` en ese campo, hay que quitarlo.
-
-### 4. Cambiar el correo de un cliente ya no se aplica de inmediato
-
-Al actualizar un `Cliente` (`POST/PUT /v1/clientes/...`) con un `correoElectronico` distinto al
-que ya tenía guardado:
-
-- Los demás campos del formulario (nombre, apellidos, teléfono, direcciones) se guardan siempre,
-  sin condición.
-- El correo **no cambia todavía** — el objeto `Cliente` que devuelve el response sigue trayendo el
-  correo **anterior** (el ya verificado), no el que se acaba de escribir.
-- El back dispara automáticamente el envío de un código de verificación al correo nuevo (mismo
-  mecanismo de siempre: `POST /v1/clientes/{id}/enviar-codigo-verificacion` ya se llama solo, el
-  front no necesita invocarlo aparte en este caso).
-- El front debe comparar el `correoElectronico` que mandó vs. el que regresó el response: si son
-  distintos, mostrar un aviso tipo *"Guardamos tus datos. Te enviamos un código a tu correo nuevo
-  para confirmarlo — mientras no lo confirmes, seguirás recibiendo notificaciones en tu correo
-  anterior."* y ofrecer el input de 6 dígitos (`POST /v1/clientes/{id}/verificar-correo`, ya
-  existente). Si el cliente nunca verifica, no pasa nada malo — simplemente el correo anterior
-  sigue siendo el vigente indefinidamente.
-- **Excepción — un ADMIN editando el cliente desde el panel:** el correo se aplica directo, sin
-  disparar nada de esto. Se distingue por el rol de la sesión que hace el request, no por ningún
-  campo del body — el front del panel admin no necesita hacer nada especial aquí, ya funciona así
-  automáticamente.
-
-### 5. Nada nuevo para soporte — ya funcionaba
-
-El caso de "el cliente no puede verificar su correo solo, un admin lo ayuda por teléfono" **no
-requirió cambios** — `POST /v1/clientes/{id}/enviar-codigo-verificacion` y
-`POST /v1/clientes/{id}/verificar-correo` ya eran accesibles por cualquier usuario autenticado
-(incluido ADMIN) para cualquier `clienteId`, no solo el dueño de la cuenta. Si el front quiere una
-pantalla de soporte en el panel admin (buscar cliente → botón reenviar código → input para
-capturar el código que el cliente dicte), puede armarla ya con estos 2 endpoints existentes.
-
-**Archivos tocados en el back:** `Usuario.java` (3 campos nuevos), `Cliente.java` (`datosCompletos`,
-`correoPendiente`, apellido materno ya no obligatorio), `UsuarioVerificacionService.java` (nuevo),
-`EnviarCodigoVerificacionUsuarioRequest.java` / `VerificarCorreoUsuarioRequest.java` (nuevos),
-`ClienteServiceImpl.java`, `ClienteControllerImpl.java`, `AuthController.java`,
-`SecurityConfig.java`, `PedidoServiceImpl.java`. Migraciones:
-`migration_usuario_verificacion_correo.sql` y `migration_datos_completos_cliente.sql` — **ya
-corridas en QA (2026-07-04)**.
-
-¿Tienes acceso a la BD para correr el UPDATE ahora?
+| Módulo | Estado front |
+|---|---|
+| Tickets HTML + impresión + correo | ✅ Completo (venta directa, abonos, cancelación) |
+| Chatbot — tarjetas de productos | ✅ Completo (cards, ver más, imagen, carrito) |
+| Reportes `/reportes` | ✅ Completo (4 tabs + gráficas) |
+| Dashboard `/dashboard` | ✅ Completo (9 cards, auto-refresh) |
+| Módulo Promociones `/promociones` | ✅ Listo — esperando `migration_promociones.sql` en QA |
+| Filtros admin productos/variantes (F-14) | ⚠️ Necesita reimplementarse (viejo código roto) |
+| Verificación correo cliente (F-15) | ⏳ Parcial — falta interceptar 400 en savePedido |
+| Badge habilitado + batch (F-16) | ⏳ Parcial — falta UI de checkboxes |
+| Olvidé contraseña / cambiar contraseña (F-17/F-18) | ⏳ Pendiente — ¿endpoints en QA? |
+| Flujo registro unificado (F-19) | ⚠️ NO empezar hasta que back confirme QA |

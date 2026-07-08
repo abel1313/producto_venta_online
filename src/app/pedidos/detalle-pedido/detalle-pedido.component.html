@@ -8,19 +8,27 @@
     <div class="detalle-header__info">
       <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
       <span class="dp-tipo-badge dp-tipo-badge--apartado"
-            *ngIf="pedido.pedido.tipoPedido === 'APARTADO'">📦 Apartado</span>
+            *ngIf="esCredito && (detalle?.tipoPedido ?? pedido.pedido.tipoPedido) === 'APARTADO'">📦 Apartado</span>
       <span class="dp-tipo-badge dp-tipo-badge--fiado"
-            *ngIf="pedido.pedido.tipoPedido === 'FIADO'">💳 Ir pagando</span>
+            *ngIf="esCredito && (detalle?.tipoPedido ?? pedido.pedido.tipoPedido) === 'FIADO'">💳 Ir pagando</span>
       <span class="detalle-header__estado"
-        [class.estado--entregado]="pedido.pedido.estado_pedido === 'Entregado'"
-        [class.estado--pendiente]="pedido.pedido.estado_pedido !== 'Entregado'">
-        {{ pedido.pedido.estado_pedido }}
+        [class.estado--entregado]="estadoPedido === 'Entregado' || estadoPedido === 'PAGADO'"
+        [class.estado--pendiente]="estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'">
+        {{ estadoPedido }}
+      </span>
+      <span class="detalle-header__fecha" *ngIf="fechaCompra">
+        🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
       </span>
     </div>
     <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
-    <button *ngIf="isAdmin" class="dp-btn-reenviar" type="button" (click)="reenviarComprobanteManual()" title="Reenviar ticket por correo">
-      📧 Reenviar ticket
-    </button>
+    <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <button class="dp-btn-imprimir" type="button" [disabled]="imprimiendoTicket" (click)="imprimirTicketDetalle()" title="Imprimir ticket">
+        🖨️ Imprimir ticket
+      </button>
+      <button class="dp-btn-reenviar" type="button" (click)="reenviarComprobanteManual()" title="Reenviar ticket por correo">
+        📧 Reenviar ticket
+      </button>
+    </div>
   </div>
 
   <!-- FORM DE ABONO (solo crédito) -->
@@ -96,20 +104,31 @@
   </div>
 
   <!-- GRID DE PRODUCTOS -->
-  <div class="detalle-grid">
-    <div class="prod-card" *ngFor="let item of pedido.pedido.detalles">
+  <div class="detalle-cargando" *ngIf="cargandoDetalle">
+    <i class="pi pi-spin pi-spinner"></i> Cargando detalle…
+  </div>
+
+  <div class="detalle-grid" *ngIf="!cargandoDetalle">
+    <div class="prod-card" *ngFor="let item of (detalle?.detalles ?? [])">
 
       <img class="prod-card__img"
-        [src]="env + item.producto"
-        [alt]="item.nombre_producto"
+        [src]="env + item.productoId"
+        [alt]="item.productoNombre"
         (error)="onImgError($event)" />
 
       <div class="prod-card__body">
-        <p class="prod-card__nombre">{{ item.nombre_producto }}</p>
+        <span class="prod-card__promo-badge" *ngIf="item.promocionId">
+          🏷️ {{ item.promocionDescripcion || 'Promoción' }}
+        </span>
+        <p class="prod-card__nombre">{{ item.productoNombre }}</p>
+        <p class="prod-card__variante" *ngIf="item.talla || item.color">
+          <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
+          <span *ngIf="item.color"> · Color: {{ item.color }}</span>
+        </p>
 
         <div class="prod-card__fila">
           <span class="prod-card__label">Precio unitario</span>
-          <span class="prod-card__valor">{{ item.precio_unitario | currency:'$' }}</span>
+          <span class="prod-card__valor">{{ item.precioUnitario | currency:'$' }}</span>
         </div>
 
         <div class="prod-card__fila">
@@ -126,13 +145,13 @@
 
         <div class="prod-card__fila prod-card__fila--subtotal">
           <span class="prod-card__label">Subtotal</span>
-          <span class="prod-card__subtotal">{{ item.sub_total | currency:'$' }}</span>
+          <span class="prod-card__subtotal">{{ item.subTotal | currency:'$' }}</span>
         </div>
       </div>
 
     </div>
 
-    <div class="detalle-vacio" *ngIf="pedido.pedido.detalles.length === 0">
+    <div class="detalle-vacio" *ngIf="(detalle?.detalles ?? []).length === 0">
       <p>No hay productos en este pedido.</p>
     </div>
   </div>

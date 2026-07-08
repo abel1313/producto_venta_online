@@ -16,6 +16,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { CalendarModule } from 'primeng/calendar';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -41,8 +42,8 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
     NbSelectModule,
     NbAutocompleteModule,
     NbFormFieldModule,
-    NzSwitchModule
-
+    NzSwitchModule,
+    SharedModule
   ],
   exports: [
     ClientesAddComponent,

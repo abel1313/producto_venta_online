@@ -8,7 +8,7 @@ export function passwordFuerte(control: AbstractControl): ValidationErrors | nul
   const tieneMayuscula = /[A-Z]/.test(valor);
   const tieneMinuscula = /[a-z]/.test(valor);
   const tieneNumero = /[0-9]/.test(valor);
-  const tieneEspecial = /[!@#$%^&*(),.?":{}|<>]/.test(valor);
+  const tieneEspecial = /[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/.test(valor);
 
   const valido = tieneMayuscula && tieneMinuscula && tieneNumero && tieneEspecial;
 

@@ -1,0 +1,137 @@
+<div class="gp-wrap">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+  <div class="gp-header">
+    <div class="gp-header__title">
+      <h4>🏷️ Gestión de Promociones</h4>
+      <small>Combos y ofertas especiales</small>
+    </div>
+    <button class="gp-btn gp-btn--primary" (click)="abrirNuevo()" *ngIf="!modoForm">
+      + Nueva promoción
+    </button>
+  </div>
+
+  <!-- ── FORMULARIO ─────────────────────────────────────────────────── -->
+  <div class="gp-form-card" *ngIf="modoForm">
+    <h5 class="gp-form-title">{{ modoForm === 'nuevo' ? '✨ Nueva promoción' : '✏️ Editar promoción' }}</h5>
+
+    <div class="gp-form-grid">
+      <div class="gp-field">
+        <label class="gp-label">Descripción del combo</label>
+        <input class="gp-input" type="text" placeholder="Ej. Combo Jean + Blusa"
+               [(ngModel)]="formDescripcion" maxlength="120">
+      </div>
+      <div class="gp-field">
+        <label class="gp-label">Fecha y hora de vencimiento</label>
+        <input class="gp-input" type="datetime-local" [(ngModel)]="formFechaVencimiento">
+      </div>
+    </div>
+
+    <!-- Buscador de variante -->
+    <div class="gp-variante-search">
+      <label class="gp-label">Agregar variante al combo</label>
+      <div class="gp-search-wrap">
+        <input class="gp-input gp-input--search" type="text"
+               placeholder="Buscar variante por nombre, talla o color…"
+               [(ngModel)]="terminoVariante"
+               (input)="onInputVariante()">
+        <span class="gp-search-spinner" *ngIf="buscandoVariante">⏳</span>
+      </div>
+      <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">
+        <div class="gp-dropdown__item" *ngFor="let v of resultadosVariante"
+             (click)="seleccionarVariante(v)">
+          <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" class="gp-dropdown__img" alt="">
+          <span>{{ labelVariante(v) }}</span>
+          <span class="gp-dropdown__precio">${{ v.precio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de piezas del combo -->
+    <div class="gp-detalles" *ngIf="formDetalles.length > 0">
+      <div class="gp-detalles__hdr">
+        <span>Variante</span>
+        <span>Cant.</span>
+        <span>Precio promo $</span>
+        <span></span>
+      </div>
+      <div class="gp-detalles__row" *ngFor="let d of formDetalles; let i = index">
+        <span class="gp-detalles__nombre">
+          <img *ngIf="d.imagenUrl" [src]="d.imagenUrl" class="gp-dropdown__img" alt="">
+          {{ labelDetalle(d) }}
+          <small *ngIf="d.precioNormal" class="gp-detalles__normal"> (normal ${{ d.precioNormal | number:'1.2-2' }})</small>
+        </span>
+        <input class="gp-input gp-input--num" type="number" min="1"
+               [(ngModel)]="d.cantidad">
+        <input class="gp-input gp-input--num" type="number" min="0" step="0.01"
+               [(ngModel)]="d.precioEnPromocion" placeholder="0.00">
+        <button class="gp-btn gp-btn--quitar" (click)="quitarDetalle(i)" title="Quitar">✕</button>
+      </div>
+    </div>
+
+    <div class="gp-form-empty" *ngIf="formDetalles.length === 0">
+      Busca y agrega variantes para armar el combo.
+    </div>
+
+    <div class="gp-form-actions">
+      <button class="gp-btn gp-btn--ghost" (click)="cancelarForm()">Cancelar</button>
+      <button class="gp-btn gp-btn--primary" (click)="guardar()" [disabled]="guardando">
+        {{ guardando ? 'Guardando…' : '💾 Guardar promoción' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LISTA ──────────────────────────────────────────────────────── -->
+  <div class="gp-loading" *ngIf="cargando && !modoForm">Cargando…</div>
+
+  <div class="gp-empty" *ngIf="!cargando && !modoForm && promos.length === 0">
+    No hay promociones registradas.
+  </div>
+
+  <div class="gp-grid" *ngIf="!modoForm && promos.length > 0">
+    <div class="gp-card" *ngFor="let p of promos">
+      <div class="gp-card__hdr">
+        <span class="gp-card__titulo">{{ p.descripcion }}</span>
+        <span class="gp-badge" [ngClass]="claseBadge(p)">{{ badgeEstado(p) }}</span>
+      </div>
+
+      <div class="gp-card__body">
+        <p class="gp-card__vence">Vence: {{ p.fechaVencimiento | date:'dd/MM/yyyy HH:mm' }}</p>
+        <p class="gp-card__piezas">
+          {{ (p.detalles?.length ?? 0) }} pieza(s)
+          <span class="gp-combos-disp"> · {{ combosDisponibles(p) }} combos disponibles</span>
+        </p>
+        <div class="gp-card__precios">
+          <span class="gp-precio--normal">${{ precioTotalNormal(p) | number:'1.2-2' }}</span>
+          <span class="gp-precio--promo">${{ precioTotalPromo(p) | number:'1.2-2' }} promo</span>
+        </div>
+        <ul class="gp-card__piezas-list">
+          <li *ngFor="let d of (p.detalles ?? [])">
+            {{ d.nombreProducto ?? 'Variante #' + d.varianteId }}
+            <span *ngIf="d.talla"> · {{ d.talla }}</span>
+            <span *ngIf="d.color"> · {{ d.color }}</span>
+            — x{{ d.cantidad }} · ${{ d.precioEnPromocion | number:'1.2-2' }}
+            <span class="gp-existencias" *ngIf="d.existencias != null">
+              ({{ d.existencias }} en stock)
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="gp-card__footer">
+        <button class="gp-btn gp-btn--edit" (click)="abrirEditar(p)">✏️ Editar</button>
+        <button class="gp-btn" [ngClass]="p.activo ? 'gp-btn--off' : 'gp-btn--on'" (click)="toggleActivo(p)">
+          {{ p.activo ? '⏸ Desactivar' : '▶️ Activar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="gp-paginacion" *ngIf="!modoForm && totalPaginas > 1">
+    <button class="gp-btn gp-btn--ghost" (click)="paginaAnterior()" [disabled]="pagina <= 1">← Anterior</button>
+    <span>{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="gp-btn gp-btn--ghost" (click)="paginaSiguiente()" [disabled]="pagina >= totalPaginas">Siguiente →</button>
+  </div>
+
+</div>

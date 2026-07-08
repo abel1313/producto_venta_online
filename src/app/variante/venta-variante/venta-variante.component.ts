@@ -9,6 +9,7 @@ import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
+import { IItemPromoCarrito } from 'src/app/promociones/models/promocion.model';
 import { VarianteService } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 
@@ -21,11 +22,14 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   // ── Carrito ────────────────────────────────────────────────────────
   carrito: IDetalleVariante[] = [];
+  promos:  IItemPromoCarrito[] = [];
   totalUnidades = 0;
   totalImporte  = 0;
 
   // ── Tipo de pedido (admin) ─────────────────────────────────────────
   tipoPedido: 'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
+
+  get tienePromos(): boolean { return this.promos.length > 0; }
 
   // ── Búsqueda de clientes (admin) ───────────────────────────────────
   isAdminUser = false;
@@ -58,9 +62,12 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     this.authService.userId$.subscribe(id => { this.idUsuario = id; });
 
     this.carritoService.carrito$.subscribe(items => {
-      this.carrito       = items;
-      this.totalUnidades = items.reduce((s, i) => s + i.cantidad, 0);
-      this.totalImporte  = items.reduce((s, i) => s + i.subTotal, 0);
+      this.carrito = items;
+      this.recalcularTotales();
+    });
+    this.carritoService.promos$.subscribe(promos => {
+      this.promos = promos;
+      this.recalcularTotales();
     });
 
     this.subBusqueda = this.inputBusqueda$.pipe(
@@ -76,10 +83,23 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void { this.subBusqueda?.unsubscribe(); }
 
+  private recalcularTotales(): void {
+    const unidadesV = this.carrito.reduce((s, i) => s + i.cantidad, 0);
+    const unidadesP = this.promos.reduce((s, p) => s + p.cantidadCombos, 0);
+    this.totalUnidades = unidadesV + unidadesP;
+    const importeV = this.carrito.reduce((s, i) => s + i.subTotal, 0);
+    const importeP = this.promos.reduce((s, p) => s + p.precioTotal * p.cantidadCombos, 0);
+    this.totalImporte = importeV + importeP;
+  }
+
   // ── Carrito ────────────────────────────────────────────────────────
 
   quitarUna(item: IDetalleVariante): void {
     this.carritoService.eliminar(item.varianteId);
+  }
+
+  quitarPromo(promocionId: number): void {
+    this.carritoService.quitarPromo(promocionId);
   }
 
   limpiar(): void {
@@ -174,20 +194,37 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   private armarYConfirmar(clienteId: number): void {
-    const esCreditoPedido = this.isAdminUser && this.tipoPedido !== 'NORMAL';
+    // Si hay promos, el pedido siempre es de contado
+    const tipoPedidoFinal: 'NORMAL' | 'APARTADO' | 'FIADO' =
+      this.tienePromos ? 'NORMAL' : (this.isAdminUser ? this.tipoPedido : 'NORMAL');
+    const esCreditoPedido = this.isAdminUser && !this.tienePromos && this.tipoPedido !== 'NORMAL';
+
+    const detallesVariantes = this.carrito.map(d => ({
+      producto:       { id: d.productoId ?? 0 },
+      cantidad:       d.cantidad,
+      precioUnitario: d.precio,
+      subTotal:       d.precio * d.cantidad,
+      varianteId:     d.varianteId
+    }));
+
+    const detallesPromos = this.promos.flatMap(p =>
+      p.detalles.map(d => ({
+        producto:       { id: 0 },
+        cantidad:       d.cantidad * p.cantidadCombos,
+        precioUnitario: d.precioEnPromocion,
+        subTotal:       d.precioEnPromocion * d.cantidad * p.cantidadCombos,
+        varianteId:     d.varianteId,
+        promocionId:    p.promocionId
+      }))
+    );
+
     const pedido: IPedidoVarianteDTO = {
       cliente:       { id: clienteId },
-      tipoPedido:    this.isAdminUser ? this.tipoPedido : 'NORMAL',
+      tipoPedido:    tipoPedidoFinal,
       estadoPedido:  esCreditoPedido ? this.tipoPedido : 'Pendiente',
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
-      detalles: this.carrito.map(d => ({
-        producto:       { id: d.productoId ?? 0 },
-        cantidad:       d.cantidad,
-        precioUnitario: d.precio,
-        subTotal:       d.precio * d.cantidad,
-        varianteId:     d.varianteId
-      }))
+      detalles:      [...detallesVariantes, ...detallesPromos]
     };
 
     const total = this.totalImporte.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -254,6 +291,15 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
             }).then(result => {
               if (result.isConfirmed) this.router.navigate(['/mis-datos']);
             });
+          } else if (msg.toLowerCase().includes('no es valido') || msg.toLowerCase().includes('no es válido')) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Precio desactualizado',
+              html: `<p>${msg}</p><p>El precio de uno o más productos cambió mientras tenías el carrito abierto. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
+              confirmButtonText: '🔄 Ir al catálogo',
+              showCancelButton: true,
+              cancelButtonText: 'Cerrar'
+            }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo guardar el pedido.' });
           }
@@ -362,5 +408,5 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     return [item.talla, item.color, item.marca].filter(Boolean).join(' · ') || `Variante #${item.varianteId}`;
   }
 
-  get carritoVacio(): boolean { return this.carrito.length === 0; }
+  get carritoVacio(): boolean { return this.carrito.length === 0 && this.promos.length === 0; }
 }

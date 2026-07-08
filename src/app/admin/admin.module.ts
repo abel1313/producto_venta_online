@@ -8,7 +8,8 @@ import { PresentacionImagenesComponent } from './presentacion-imagenes/presentac
 import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico-imagenes.component';
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
-import { AdminBannersComponent } from './admin-banners/admin-banners.component';
+import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
+import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -18,13 +19,14 @@ import { AdminBannersComponent } from './admin-banners/admin-banners.component';
     DiagnosticoImagenesComponent,
     ReconciliacionImagenesComponent,
     ChatAdminComponent,
-    AdminBannersComponent
+    GestionPromocionesComponent
   ],
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    AdminRoutingModule
+    AdminRoutingModule,
+    SharedModule
   ]
 })
 export class AdminModule {}

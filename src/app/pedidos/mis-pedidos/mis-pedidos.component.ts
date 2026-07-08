@@ -362,24 +362,27 @@ export class MisPedidosComponent implements OnInit {
     this.imprimiendoTicket[pedidoId] = true;
     this.pedidoService.getDetallePedido(pedidoId).subscribe({
       next: r => {
+        this.imprimiendoTicket[pedidoId] = false;
         const d = r?.data;
         if (!d) {
           Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
-          this.imprimiendoTicket[pedidoId] = false;
           return;
         }
 
-        if (d.metodoPago) {
-          // Backend devuelve el método de pago guardado → imprimir sin preguntar
-          this.buildAndPrintTicket(d, item, d.metodoPago, d.montoDado ?? null);
-          this.imprimiendoTicket[pedidoId] = false;
-          return;
-        }
-
-        if (d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO') {
-          // Crédito: metodoPago no aplica al crear el pedido
-          this.buildAndPrintTicket(d, item, '', null);
-          this.imprimiendoTicket[pedidoId] = false;
+        if (d.metodoPago || d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO') {
+          // Se muestra un botón de confirmación dedicado y se imprime en su propio .then():
+          // window.open() solo escapa al bloqueador de popups si ocurre síncrono a un
+          // clic del usuario, no dentro del callback de una petición HTTP.
+          Swal.fire({
+            title: `Ticket pedido #${pedidoId}`,
+            text: '¿Deseas imprimir el ticket?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '🖨️ Imprimir ticket',
+            cancelButtonText: 'Cancelar'
+          }).then(swRes => {
+            if (swRes.isConfirmed) this.buildAndPrintTicket(d, item, d.metodoPago ?? '', d.montoDado ?? null);
+          });
           return;
         }
 
@@ -397,13 +400,20 @@ export class MisPedidosComponent implements OnInit {
           inputValidator: v => (!v ? 'Selecciona la forma de pago' : null)
         }).then(swRes => {
           if (swRes.isConfirmed) this.buildAndPrintTicket(d, item, swRes.value, null);
-          this.imprimiendoTicket[pedidoId] = false;
         });
       },
       error: err => {
-        Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el ticket.', icon: 'error' });
         this.imprimiendoTicket[pedidoId] = false;
+        Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el ticket.', icon: 'error' });
       }
+    });
+  }
+
+  private formatearFechaTicket(d: PedidoDetalleResponse): string | undefined {
+    const fecha = d.fechaHoraRegistro || d.fechaPedido;
+    if (!fecha) return undefined;
+    return new Date(fecha).toLocaleString('es-MX', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   }
 
@@ -415,7 +425,7 @@ export class MisPedidosComponent implements OnInit {
     imprimirTicket(generarHtmlTicket({
       tipo,
       numero:         d.pedidoId,
-      fecha:          d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
+      fecha:          this.formatearFechaTicket(d),
       cliente:        d.clienteNombre || item.cliente.nombreCliente,
       metodoPago,
       total:          d.totalPedido,
@@ -435,69 +445,115 @@ export class MisPedidosComponent implements OnInit {
   enviarCorreoPedido(item: IPedidoGenerico): void {
     const pedidoId = item.pedido.id;
 
-    // Carga el detalle primero para pre-llenar correo y método de pago
+    // Carga el detalle primero para conocer correo/método de pago registrados
     this.pedidoService.getDetallePedido(pedidoId).subscribe({
       next: r => {
         const d = r?.data;
-        const correoDefault = d?.clienteCorreo || item.cliente.correoElectronico || '';
-        const metodoPagoKnown = d?.metodoPago ?? null;
+        if (!d) {
+          Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+        const correoDefault = d.clienteCorreo || item.cliente.correoElectronico || '';
 
-        const selectHtml = metodoPagoKnown ? '' : `
-          <select id="sw-metodo" class="swal2-select" style="margin-top:8px">
-            <option value="EFECTIVO">Efectivo</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-            <option value="TARJETA">Tarjeta</option>
-          </select>`;
-
-        Swal.fire({
-          title: `Enviar comprobante #${pedidoId}`,
-          html: `<input id="sw-correo" type="email" class="swal2-input" placeholder="correo@ejemplo.com" value="${correoDefault}">${selectHtml}`,
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Enviar correo 📧',
-          cancelButtonText: 'Cancelar',
-          preConfirm: () => {
-            const correo = (document.getElementById('sw-correo') as HTMLInputElement)?.value?.trim();
-            if (!correo || !correo.includes('@')) { Swal.showValidationMessage('Ingresa un correo válido'); return false; }
-            const metodo = metodoPagoKnown ?? (document.getElementById('sw-metodo') as HTMLSelectElement)?.value ?? 'EFECTIVO';
-            return { correo, metodo };
-          }
-        }).then(swRes => {
-          if (!swRes.isConfirmed || !swRes.value || !d) return;
-          const { correo, metodo } = swRes.value as { correo: string; metodo: string };
-          const montoDado = metodo === 'EFECTIVO' && d.montoDado ? d.montoDado : null;
-          const cambio    = montoDado && montoDado > d.totalPedido ? +(montoDado - d.totalPedido).toFixed(2) : null;
-          const tipo: ITicketData['tipo'] = d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO' ? 'venta'
-            : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
-
-          const html = generarHtmlTicket({
-            tipo,
-            numero:         d.pedidoId,
-            fecha:          d.fechaPedido ? new Date(d.fechaPedido).toLocaleDateString('es-MX') : undefined,
-            cliente:        d.clienteNombre || item.cliente.nombreCliente,
-            metodoPago:     metodo,
-            total:          d.totalPedido,
-            totalPagado:    d.totalPagado ?? null,
-            saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
-            montoDado,
-            cambio,
-            articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
-            qrTienda:   this.qrTienda,
-            qrWhatsapp: this.qrWhatsapp,
-            qrFacebook: this.qrFacebook
+        if (correoDefault) {
+          Swal.fire({
+            title: `Enviar comprobante #${pedidoId}`,
+            html: `¿Enviar el ticket al correo de <b>${item.cliente.nombreCliente}</b>:<br><b>${correoDefault}</b>?`,
+            icon: 'question',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: 'Sí, enviar',
+            denyButtonText: 'Usar otro correo',
+            cancelButtonText: 'Cancelar'
+          }).then(res => {
+            if (res.isConfirmed) this.pedirMetodoYEnviar(pedidoId, item, d, correoDefault);
+            else if (res.isDenied) this.pedirCorreoManualYEnviar(pedidoId, item, d);
           });
-
-          this.pedidoService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
-            next: (res: any) => Swal.fire({
-              title: '¡Correo enviado!',
-              text: res?.data ?? `Comprobante enviado a ${correo}`,
-              icon: 'success', timer: 2500, showConfirmButton: false
-            }),
-            error: err => Swal.fire({ title: 'Error al enviar correo', text: err?.error?.mensaje ?? 'No se pudo enviar el comprobante.', icon: 'error' })
-          });
-        });
+        } else {
+          this.pedirCorreoManualYEnviar(pedidoId, item, d);
+        }
       },
       error: err => Swal.fire({ title: 'Error al obtener el pedido', text: err?.error?.mensaje ?? 'No se pudo generar el comprobante.', icon: 'error' })
+    });
+  }
+
+  private pedirMetodoYEnviar(pedidoId: number, item: IPedidoGenerico, d: PedidoDetalleResponse, correo: string): void {
+    if (d.metodoPago) {
+      this.enviarComprobanteConDatos(pedidoId, item, d, correo, d.metodoPago);
+      return;
+    }
+    Swal.fire({
+      title: 'Forma de pago',
+      input: 'select',
+      inputOptions: { EFECTIVO: 'Efectivo', TRANSFERENCIA: 'Transferencia', TARJETA: 'Tarjeta' },
+      inputValue: 'EFECTIVO',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar correo 📧',
+      cancelButtonText: 'Cancelar'
+    }).then(res => {
+      if (res.isConfirmed) this.enviarComprobanteConDatos(pedidoId, item, d, correo, res.value);
+    });
+  }
+
+  private pedirCorreoManualYEnviar(pedidoId: number, item: IPedidoGenerico, d: PedidoDetalleResponse): void {
+    const metodoPagoKnown = d.metodoPago ?? null;
+    const selectHtml = metodoPagoKnown ? '' : `
+      <select id="sw-metodo" class="swal2-select" style="margin-top:8px">
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="TRANSFERENCIA">Transferencia</option>
+        <option value="TARJETA">Tarjeta</option>
+      </select>`;
+
+    Swal.fire({
+      title: `Enviar comprobante #${pedidoId}`,
+      html: `<input id="sw-correo" type="email" class="swal2-input" placeholder="correo@ejemplo.com">${selectHtml}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar correo 📧',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const correo = (document.getElementById('sw-correo') as HTMLInputElement)?.value?.trim();
+        if (!correo || !correo.includes('@')) { Swal.showValidationMessage('Ingresa un correo válido'); return false; }
+        const metodo = metodoPagoKnown ?? (document.getElementById('sw-metodo') as HTMLSelectElement)?.value ?? 'EFECTIVO';
+        return { correo, metodo };
+      }
+    }).then(swRes => {
+      if (!swRes.isConfirmed || !swRes.value) return;
+      const { correo, metodo } = swRes.value as { correo: string; metodo: string };
+      this.enviarComprobanteConDatos(pedidoId, item, d, correo, metodo);
+    });
+  }
+
+  private enviarComprobanteConDatos(pedidoId: number, item: IPedidoGenerico, d: PedidoDetalleResponse, correo: string, metodo: string): void {
+    const montoDado = metodo === 'EFECTIVO' && d.montoDado ? d.montoDado : null;
+    const cambio    = montoDado && montoDado > d.totalPedido ? +(montoDado - d.totalPedido).toFixed(2) : null;
+    const tipo: ITicketData['tipo'] = d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO' ? 'venta'
+      : d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO' ? 'abono' : 'venta';
+
+    const html = generarHtmlTicket({
+      tipo,
+      numero:         d.pedidoId,
+      fecha:          this.formatearFechaTicket(d),
+      cliente:        d.clienteNombre || item.cliente.nombreCliente,
+      metodoPago:     metodo,
+      total:          d.totalPedido,
+      totalPagado:    d.totalPagado ?? null,
+      saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      montoDado,
+      cambio,
+      articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      qrTienda:   this.qrTienda,
+      qrWhatsapp: this.qrWhatsapp,
+      qrFacebook: this.qrFacebook
+    });
+
+    this.pedidoService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
+      next: (res: any) => Swal.fire({
+        title: '¡Correo enviado!',
+        text: res?.data ?? `Comprobante enviado a ${correo}`,
+        icon: 'success', timer: 2500, showConfirmButton: false
+      }),
+      error: err => Swal.fire({ title: 'Error al enviar correo', text: err?.error?.mensaje ?? 'No se pudo enviar el comprobante.', icon: 'error' })
     });
   }
 }

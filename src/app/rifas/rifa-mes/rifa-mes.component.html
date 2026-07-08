@@ -285,7 +285,8 @@
                  placeholder="Buscar variante por nombre, talla, color o código…"
                  [value]="terminoBusca"
                  (input)="onBuscarVariante($event)"
-                 autocomplete="off" />
+                 autocomplete="off"
+                 appUppercase />
           <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
         </div>
         <div class="rm-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">

@@ -46,6 +46,18 @@
     color: var(--card-text);
     white-space: nowrap;
   }
+
+  &__fecha {
+    font-size: .78rem;
+    color: var(--card-text-muted);
+    margin-top: .2rem;
+  }
+
+  &__acciones {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
 }
 
 .btn-regresar {
@@ -76,6 +88,17 @@
 .estado--pendiente {
   background: rgba(245, 127, 23, 0.12);
   color: #f57f17;
+}
+
+/* ── CARGANDO ────────────────────────────────────── */
+.detalle-cargando {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  justify-content: center;
+  padding: 2.5rem;
+  color: var(--card-text-muted);
+  font-size: .9rem;
 }
 
 /* ── GRID DE PRODUCTOS ───────────────────────────── */
@@ -116,11 +139,30 @@
     flex: 1;
   }
 
+  &__promo-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: .18rem .6rem;
+    border-radius: 50px;
+    font-size: .68rem;
+    font-weight: 700;
+    background: rgba(176, 138, 78, 0.15);
+    color: var(--app-accent);
+    margin-bottom: .15rem;
+  }
+
   &__nombre {
     font-weight: 700;
     font-size: .95rem;
     color: var(--card-text);
     margin: 0 0 .25rem;
+  }
+
+  &__variante {
+    font-size: .78rem;
+    color: var(--card-text-muted);
+    margin: -0.15rem 0 .25rem;
   }
 
   &__fila {
@@ -380,8 +422,7 @@
   &:not(:disabled):hover { box-shadow: 0 3px 10px rgba(176,138,78,.35); }
 }
 
-.dp-btn-reenviar {
-  margin-left: auto;
+.dp-btn-reenviar, .dp-btn-imprimir {
   padding: .38rem .9rem;
   border: 1px solid rgba(176,138,78,.5);
   border-radius: 8px;
@@ -394,10 +435,15 @@
   transition: background .15s;
 
   &:hover { background: rgba(176,138,78,.08); }
+
+  &:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
 }
 
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  .dp-btn-reenviar { color: #D4B483; border-color: rgba(212,180,131,.4); }
+  .dp-btn-reenviar, .dp-btn-imprimir { color: #D4B483; border-color: rgba(212,180,131,.4); }
   .dp-tipo-badge--apartado { background: rgba(251,146,60,.2); color: #fbbf24; }
   .dp-tipo-badge--fiado    { background: rgba(201,160,99,.2); color: #D4B483; }
   .dp-cambio {

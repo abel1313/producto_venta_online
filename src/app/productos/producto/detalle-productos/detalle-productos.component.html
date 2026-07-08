@@ -83,6 +83,7 @@
         [(ngModel)]="nombreBusqueda"
         (input)="onInputBusqueda()"
         (keyup.enter)="buscarClientes()"
+        appUppercase
       />
       <button class="btn btn-primary" type="button" (click)="buscarClientes()" [disabled]="cargandoClientes">
         <i class="pi pi-search me-1"></i>

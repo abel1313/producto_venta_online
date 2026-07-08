@@ -26,10 +26,11 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.sub = this.input$.pipe(
-      filter(v => v.trim().length >= 3),
+      filter(v => v.trim().length === 0 || v.trim().length >= 3),
       debounceTime(400),
       distinctUntilChanged()
     ).subscribe(() => { this.pagina = 0; this.buscar(); });
+    this.buscar();
   }
 
   ngOnDestroy(): void { this.sub?.unsubscribe(); }
@@ -37,7 +38,6 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
   onInput(): void { this.input$.next(this.termino); }
 
   buscar(): void {
-    if (!this.termino.trim()) return;
     this.cargando = true;
     this.clienteService.buscarClientes(this.termino, this.pagina, this.size).subscribe({
       next: res => {

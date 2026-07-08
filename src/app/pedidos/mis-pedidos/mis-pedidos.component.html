@@ -12,7 +12,7 @@
     <div class="search-input-wrap">
       <i class="pi pi-search search-icon"></i>
       <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
-             (keyup)="buscarProductos($event)">
+             (keyup)="buscarProductos($event)" appUppercase>
     </div>
   </div>
 
@@ -105,13 +105,13 @@
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> Cobrar
           </button>
-          <button class="btn-card btn-ticket"
+          <button class="btn-card btn-ticket btn-icon-only"
                   [disabled]="imprimiendoTicket[item.pedido.id]"
                   (click)="imprimirTicketPedido(item)"
                   title="Imprimir ticket">
             <i class="pi pi-print"></i>
           </button>
-          <button class="btn-card btn-correo" *ngIf="isAdminUser"
+          <button class="btn-card btn-correo btn-icon-only" *ngIf="isAdminUser"
                   (click)="enviarCorreoPedido(item)"
                   title="Enviar comprobante por correo">
             <i class="pi pi-envelope"></i>

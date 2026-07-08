@@ -3,7 +3,7 @@ import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpClient, HttpE
 import { Observable, throwError, BehaviorSubject, TimeoutError } from 'rxjs';
 import { AuthenticateService } from '../auth.service';
 import { AuthService } from '../auth/auth.service';
-import { catchError, switchMap, filter, take, timeout } from 'rxjs/operators';
+import { catchError, switchMap, filter, take, timeout, finalize } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Router } from '@angular/router';
 
@@ -126,6 +126,16 @@ export class TokenInterceptor implements HttpInterceptor {
           : err;
         this.router.navigate(['/login']);
         return throwError(finalErr);
+      }),
+      finalize(() => {
+        // Si el observable fue cancelado (unsubscribe) antes de que switchMap o catchError
+        // pudieran resetear isRefreshing, lo hacemos aquí para evitar que todos los
+        // requests posteriores queden bloqueados esperando en la cola del BehaviorSubject.
+        if (this.isRefreshing) {
+          this.isRefreshing = false;
+          this.refreshToken$.next(REFRESH_FAILED);
+          setTimeout(() => this.refreshToken$.next(null), 0);
+        }
       })
     );
   }

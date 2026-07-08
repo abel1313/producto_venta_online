@@ -19,7 +19,7 @@
     </div>
 
     <!-- Botón escáner solo en móvil (encima del buscador) -->
-    <button class="pl-scan-mobile" (click)="iniciarEscaner()" [disabled]="filtroActivo !== 'todos'">
+    <button class="pl-scan-mobile" (click)="iniciarEscaner()">
       📷 Escanear código de barras
     </button>
 
@@ -33,27 +33,49 @@
         [(ngModel)]="buscarProd"
         (keyup)="buscarProductos($event)"
         autocomplete="off"
-        [disabled]="filtroActivo !== 'todos'"
+        appUppercase
       />
       <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
         📷
       </button>
     </div>
 
-    <!-- Filtros admin -->
+    <!-- Filtros admin: cada checkbox es independiente (no excluyente). Se pueden marcar varios
+         a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae ambos,
+         solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se combinan
+         con AND con la busqueda por texto. -->
     <div *ngIf="isAdminUser" class="pl-filtros">
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'todos'"
-        (click)="cambiarFiltro('todos')">Todos</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'no-habilitados'"
-        (click)="cambiarFiltro('no-habilitados')">No habilitados</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'sin-stock'"
-        (click)="cambiarFiltro('sin-stock')">Sin stock</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-stock'"
-        (click)="cambiarFiltro('con-stock')">Con stock</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-imagenes'"
-        (click)="cambiarFiltro('con-imagenes')">Con imágenes</button>
-      <button class="pl-filtro-btn" [class.pl-filtro-btn--active]="filtroActivo === 'con-stock-y-imagenes'"
-        (click)="cambiarFiltro('con-stock-y-imagenes')">Con stock e imagen</button>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
+        <span class="pl-filtro-check__box"></span>
+        Con stock
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
+        <span class="pl-filtro-check__box"></span>
+        Sin stock
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
+        <span class="pl-filtro-check__box"></span>
+        Con imágenes
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
+        <span class="pl-filtro-check__box"></span>
+        Sin imágenes
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
+        <span class="pl-filtro-check__box"></span>
+        Habilitados
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
+        <span class="pl-filtro-check__box"></span>
+        No habilitados
+      </label>
+      <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
         📥 Excel sin variantes
       </button>

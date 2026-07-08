@@ -230,3 +230,9 @@ $t:  all 0.25s ease;
     &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
   }
 }
+
+// ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
+:host-context(body.theme-light) {
+  .cn-card__title    { color: #1e293b; }
+  .cn-card__subtitle { color: rgba(0,0,0,0.55); }
+}

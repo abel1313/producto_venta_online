@@ -1,6 +1,6 @@
 import { CompartirImagenesVarianteDto } from './../producto/detalle-producto/detalle-producto.component';
 import { IVentaDirectaRequest } from './../../ventas/venta-producto/models/ventaDirectaRequest.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -172,16 +172,22 @@ export class ProductoService {
         return this.http.delete(`${this.url}/deleteBy/${id}`);
     }
 
-    getNoHabilitados(page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/no-habilitados?size=${size}&page=${page}`);
-    }
+    // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
+    // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
+    adminFiltrar(
+        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean },
+        page: number, size: number
+    ): Observable<IProductoPaginable<IProductoDTO[]>> {
+        let params = new HttpParams()
+            .set('page', String(page))
+            .set('size', String(size));
 
-    getSinStock(page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/sin-stock?size=${size}&page=${page}`);
-    }
+        if (filtros.nombreOCodigo) params = params.set('nombreOCodigo', filtros.nombreOCodigo);
+        if (filtros.conStock !== undefined) params = params.set('conStock', String(filtros.conStock));
+        if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
+        if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
 
-    adminFiltrar(filtro: 'SIN_STOCK' | 'CON_STOCK' | 'CON_IMAGENES' | 'CON_STOCK_Y_IMAGENES', page: number, size: number): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar?filtro=${filtro}&size=${size}&page=${page}`);
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }
 
     habilitarProducto(id: number, habilitar: boolean): Observable<any> {

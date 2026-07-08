@@ -1728,6 +1728,46 @@ return throwError(error);
 
 ---
 
+### L-G2 — un `Swal.fire()` puede crearse en el DOM y quedar completamente invisible por z-index (2026-07-08)
+
+**Síntoma:** `Swal.fire()` se ejecuta sin ningún error en consola, el modal SÍ se crea en el DOM
+(`document.querySelectorAll('.swal2-container').length` devuelve `1`), pero el usuario no ve
+nada en pantalla — parece que "no pasa nada" al hacer una acción que debería mostrar un popup.
+
+**Causa:** SweetAlert2 usa `z-index: 1060` por defecto para `.swal2-container`. Varios
+componentes del proyecto usan `position: fixed` con z-index más alto que eso — `.split-page`
+(login) en `1100`, `navbar` en `1100`, y `chatbot`/`add-venta`/`venta-variante`/
+`detalle-productos` entre `10000` y `10002`. Si un `Swal.fire()` se abre mientras alguno de
+esos elementos está visible, el modal se crea en el DOM pero queda **dibujado detrás** de esa
+pantalla — invisible e inaccesible, sin ningún error, porque técnicamente no hay ningún fallo:
+solo perdió la pelea de stacking. Encontrado en vivo en el login: `debeCambiarPassword: true`
+hacía que `forzarCambioPassword()` llamara a `Swal.fire()` correctamente, pero `.split-page`
+(z-index 1100) lo tapaba por completo.
+
+**Cómo detectarlo:** en la consola del navegador, después de disparar la acción que debería
+abrir el Swal, correr `document.querySelectorAll('.swal2-container').length`. Si devuelve `1`
+(o más), el modal SÍ se creó — es un problema de z-index, no de lógica JS. Si devuelve `0`, el
+código nunca llegó a llamar `Swal.fire()` (ahí sí hay que revisar la lógica/el bundle
+desplegado).
+
+**Fix — NO bajar el z-index de cada componente uno por uno.** Se agregó una regla global en
+`src/styles.scss`, justo antes del bloque de estilos de SweetAlert2 existente:
+```scss
+.swal2-container {
+  z-index: 20000 !important;
+}
+```
+Un modal de este tipo debe **siempre** ganar, sin importar qué z-index tenga la pantalla
+debajo — por eso la regla es global y con `!important`, no un fix puntual por componente.
+
+**Regla a futuro:** si se agrega un componente nuevo con `position: fixed` y z-index alto
+(headers, overlays, banners), no hace falta preocuparse por SweetAlert2 — ya está cubierto
+globalmente. Si en el futuro se usa OTRA librería de modales/toasts, aplicar el mismo criterio:
+verificar su z-index por defecto contra los z-index más altos del proyecto (hoy el tope es
+`10002`, en `chatbot.component.scss`) y forzarlo por arriba en `styles.scss` si hace falta.
+
+---
+
 ## LECCIONES APRENDIDAS — MÓDULO RIFAS (errores recurrentes a evitar)
 
 > Registro de patrones que ya causaron bugs en este módulo. Antes de tocar `AgregarRifaComponent`
@@ -3303,6 +3343,19 @@ en el resto del proyecto (sin spinner local, solo `[disabled]`, según la regla 
   `[disabled]="loginForm.invalid || cargando"`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+**⚠️ ACTUALIZACIÓN — el fix de arriba era necesario pero NO era la causa completa (mismo día,
+después de probar en vivo):** con Pedro (usuario cuya cuenta seguía con `debeCambiarPassword:
+true` de una prueba anterior), el login seguía sin mostrar ningún cambio en pantalla — ni el
+modal de cambio de contraseña, ni redirección, ni error. Se comprobó con
+`document.querySelectorAll('.swal2-container').length` (→ `1`) que el modal **sí se estaba
+creando** correctamente, pero era invisible: `.split-page` (el wrapper de toda la pantalla de
+login) tiene `z-index: 1100`, más alto que el `z-index: 1060` por defecto de SweetAlert2 — el
+login tapaba su propio modal. Causa raíz completa y fix (global, no solo login) documentados en
+**[[L-G2]]** ("LECCIONES APRENDIDAS — GLOBALES"). Este bug es el que en realidad explicaba el
+síntoma 2 de arriba (el modal del usuario normal "reapareciendo" mezclado con la sesión admin
+no era una condición de carrera activa — era el mismo Swal invisible que había quedado abierto
+todo el tiempo, tapado, hasta que algo con menor z-index dejaba de estar encima).
 
 ---
 

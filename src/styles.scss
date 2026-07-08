@@ -611,6 +611,17 @@ body.theme-light {
    SWEETALERT2 — mismo look que las cards del sistema
    ════════════════════════════════════════════════════════════ */
 
+/* SweetAlert2 usa z-index:1060 por defecto. Varios componentes del proyecto
+   (login .split-page, navbar, chatbot, add-venta, venta-variante,
+   detalle-productos, etc.) usan position:fixed con z-index de 1100 hasta
+   10002 — cualquier Swal.fire() abierto sobre esas pantallas queda creado
+   en el DOM pero tapado e inaccesible detrás de ellas, sin ningún error en
+   consola. El modal SIEMPRE debe ganar, sin importar qué z-index tenga la
+   pantalla debajo. */
+.swal2-container {
+  z-index: 20000 !important;
+}
+
 body.theme-light, [data-theme="light"] {
   .swal2-popup {
     background: #FFFFFF !important;

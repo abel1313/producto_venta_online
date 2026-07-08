@@ -5259,6 +5259,8 @@ igual que el resto del API.
 - `solicitar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Codigo enviado al correo nuevo", "lista": null }`
   (el código se manda a la dirección **nueva**, no a la actual). Leer el mensaje para mostrar desde `data` (o `mensaje` en el caso de error).
   `400` con body `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }` si `correoNuevo` viene vacío o es igual al actual.
+  - **Nuevo (2026-07-08):** si ya había un código vigente (no expirado) para ese mismo correo nuevo — ej. el usuario le dio doble click al botón, o cerró el modal y volvió a intentar antes de que pasaran los 15 min — el back **ya no reenvía un correo nuevo**, reutiliza el código que ya mandó (evita que el usuario reciba varios correos con códigos distintos donde el último invalida a los anteriores). En ese caso `data` viene con el mensaje
+    `"Ya tienes un codigo vigente enviado a ese correo, revisa tu bandeja"` en vez de `"Codigo enviado al correo nuevo"` — sigue siendo `200`, el front puede mostrar cualquiera de los dos como texto informativo y abrir el modal del código igual en ambos casos.
 - `confirmar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Correo actualizado correctamente", "lista": null }`
   — **solo en este momento** se actualiza el `email` real. `400` con `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }`
   si el código es inválido/expiró — en ese caso el correo real sigue siendo el de antes, no hay que
@@ -5309,3 +5311,154 @@ componente), y solo permitir guardar si pasa esa validación y se ingresó la co
 el flujo de correo funcione.
 
 **Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.
+
+---
+
+## 🆕 Consultar cambio de correo pendiente (2026-07-08) — reemplaza guardar estado en el navegador
+
+**Motivo:** se detectó que la implementación actual en el front (`mi-perfil.component.ts`) guarda
+el correo pendiente en `sessionStorage` (`cambio_correo_self`) para sobrevivir a un refresh de
+página mientras el código de verificación sigue vigente (15 min). Esto funciona pero tiene un bug:
+la clave de `sessionStorage` no distingue usuario — si el usuario A pide un cambio de correo y
+cierra sesión sin confirmar/cancelar, y el usuario B inicia sesión en la **misma pestaña**, al
+cargar `mi-perfil` se restaura el correo pendiente de A en el formulario de B. Además, el front
+adivina el tiempo de expiración (15 min contados desde el navegador) en vez de usar el real del
+back.
+
+**Se agregaron 2 endpoints GET para que el front deje de usar `sessionStorage`/`localStorage` para
+esto y consulte el estado real al back** (que ya lo persistía en BD, columna
+`usuario.correo_pendiente` + `usuario.codigo_verificacion_expira`):
+
+```
+GET /v1/auth/cambio-correo-pendiente              (self-service, identifica por JWT)
+GET /v1/usuarios/{id}/cambio-correo-pendiente     (admin, de OTRO usuario por id)
+```
+
+**Response (200), igual en ambos:**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "pendiente": true,
+    "correoPendiente": "nuevo@correo.com",
+    "expiraEn": "2026-07-08T14:35:00"
+  },
+  "lista": null
+}
+```
+- `pendiente: false` (con `correoPendiente`/`expiraEn` en `null`) si no hay cambio en curso, **o si
+  el código ya expiró** — en ese caso el front debe tratarlo como "no hay nada pendiente" (no
+  reabrir el modal), aunque el dato siga en BD hasta el próximo `solicitar-cambio-correo`.
+- `expiraEn` es la fecha/hora real de expiración (formato ISO local, sin zona) — úsala para mostrar
+  cuenta regresiva o decidir si vale la pena reabrir el modal, en vez de una regla fija de 15 min
+  del lado del front.
+
+**Acción pendiente para el front (no implementada por el back, es cambio de front):**
+- Reemplazar la lógica de `sessionStorage.getItem('cambio_correo_self')` en
+  `mi-perfil.component.ts` (`ngOnInit` → `restaurarCambioCorreoPendiente()`) por una llamada a
+  `GET /v1/auth/cambio-correo-pendiente` al cargar el componente. Si `pendiente: true`, mostrar el
+  banner/estado de "verificación en curso" con `correoPendiente`; si `false`, no mostrar nada — ya
+  no hace falta leer ni escribir `sessionStorage` para esto.
+- Aplicar el mismo cambio en la pantalla admin de edición de usuario (`usuarios/update`), usando
+  `GET /v1/usuarios/{id}/cambio-correo-pendiente` en vez de cualquier storage local equivalente que
+  tenga esa pantalla.
+- Ya no es necesario limpiar manualmente ninguna key de `sessionStorage`/`localStorage` al
+  confirmar o cancelar — simplemente dejar de mostrar el banner tras la respuesta del backend
+  (`confirmar-cambio-correo` exitoso, o el usuario cancela en el front sin llamar a nada, ya que el
+  back no expone un endpoint de "cancelar" — el pendiente se sobreescribe solo la próxima vez que
+  se llame `solicitar-cambio-correo`, o expira solo a los 15 min).
+
+**En `dev`, pendiente de subir a `qa`/`main`.**
+
+---
+
+## 🆕 Independizar una variante en su propio producto (2026-07-07)
+
+**Caso de uso:** el admin capturó mal el código de barras de un producto con varias variantes, o
+simplemente decide que una variante ya merece ser su propio producto. La variante conserva toda su
+info (talla, color, imagen, stock) — la operación crea un producto nuevo a partir de ella, con su
+propio código de barras.
+
+```
+POST /variantes/v1/{varianteId}/independizar
+Authorization: Bearer <token admin>
+Content-Type: application/json
+```
+
+**Request** — mismo shape que crear un producto normal, más el código de barras nuevo obligatorio.
+El front prellena estos campos abriendo el mismo formulario de "crear producto":
+
+```json
+{
+  "nombre": "string, requerido",
+  "descripcion": "string",
+  "marca": "string",
+  "color": "string",
+  "contenido": "string",
+  "piezas": 0.0,
+  "precioCosto": 0.0,
+  "precioVenta": 0.0,
+  "precioRebaja": 0.0,
+  "palabraClaveId": 1,
+  "codigoBarras": "string, requerido, debe ser nuevo (no existir ya en otro producto)",
+  "imagenPrincipalId": 123
+}
+```
+
+**Precarga de campos en el front** (el back solo recibe lo que venga en el body, no le importa de
+dónde lo sacó el front):
+
+| Campo | Prioridad 1 | Si viene null/vacío, cae a |
+|---|---|---|
+| `nombre` | — | **Producto origen** (la variante no tiene `nombre`) |
+| `descripcion` | Variante | Producto origen |
+| `marca` | Variante | Producto origen |
+| `color` | Variante | Producto origen |
+| `contenido` | Variante (`contenidoNeto`) | Producto origen (`contenido`) |
+| `piezas` | — | **Producto origen** (la variante no tiene `piezas`, es `NOT NULL` en BD) |
+| `precioCosto`/`precioVenta`/`precioRebaja` | — | Producto origen (la variante no tiene precio propio) |
+| `palabraClaveId` | Variante | Producto origen |
+| `codigoBarras` | — | **Siempre vacío** — es el dato nuevo que captura el admin |
+
+- `imagenPrincipalId` opcional — solo si la variante tenía más de una imagen y el admin quiere
+  elegir cuál queda como principal. Con 1 sola imagen el back la usa automático.
+- **No se manda `stock`** — se calcula solo, a partir del stock de la variante (se resta del
+  producto origen y se asigna al producto nuevo, sin duplicar ni perder unidades).
+- El campo `stock` no se muestra editable en el modal; si se quiere mostrar informativo, usar el
+  stock actual de la variante.
+
+**Response (éxito, 201):**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "productoNuevoId": 456,
+    "codigoBarras": "cod-nuevo-123",
+    "stockProductoOrigenRestante": 2
+  }
+}
+```
+
+**Errores esperados:**
+| Caso | HTTP | Mensaje |
+|---|---|---|
+| `varianteId` no existe | `404` | `"No existe la variante con id: {id}"` |
+| Código de barras vacío/no enviado | `404` | `"El codigo de barras es requerido"` |
+| Código de barras ya usado por otro producto | `409` | `"El codigo de barras {codigo} ya esta en uso por otro producto"` |
+
+**Flujo en el front:**
+1. Botón "Independizar" en el detalle de una variante (solo admin).
+2. Abre el formulario de "crear producto" prellenado según la tabla de arriba, todo editable.
+3. Campo obligatorio adicional: código de barras nuevo (distinto al del producto origen). El front
+   puede validar que no venga vacío; la validación de "no duplicado" la hace el back.
+4. Al confirmar, llama al endpoint. Si responde `409`/`400` por código duplicado, muestra el
+   mensaje tal cual y deja el formulario abierto — no se tocó stock ni la variante en ese caso.
+5. Tras éxito (`201`): refrescar el producto origen (usar `data.stockProductoOrigenRestante`, no
+   hace falta volver a pedir el producto completo), refrescar la lista de variantes del producto
+   origen (la variante ya no debe aparecer ahí), y navegar/mostrar el producto nuevo
+   (`data.productoNuevoId` + `data.codigoBarras`).
+
+**Solo ADMIN** (mismo matcher genérico de `/variantes/**`). Contrato completo también en
+`PLAN_MEJORAS.md` sección 16. **En `dev`, pendiente de subir a `qa`/`main`.**

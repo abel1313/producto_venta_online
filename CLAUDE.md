@@ -3385,3 +3385,63 @@ Nuevo método → `PUT /v1/auth/mi-perfil` con body `{ username, email }`.
 - Promos **no** usan localStorage (precios pueden vencer). Variantes conservan localStorage sin cambios.
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX USUARIOS/MI-PERFIL — CORREO PENDIENTE VIA GET ENDPOINT + BOTÓN REENVIAR (2026-07-08)
+
+> Eliminación total de `sessionStorage`/`localStorage` para persistir el estado de cambio de correo
+> pendiente. Reemplazado por consulta directa al backend, que ya guardaba ese estado en BD.
+
+### Problema resuelto
+
+**Bug de user-bleeding con sessionStorage:** la clave `cambio_correo_self` no distinguía usuario.
+Si el usuario A pedía un cambio de correo y cerraba sesión sin confirmar, el usuario B que iniciaba
+sesión en la misma pestaña veía el banner con el correo pendiente de A. Mismo riesgo en la pantalla
+admin de edición de usuario (clave `cambio_correo_admin_{id}` era más segura pero seguía usando
+sessionStorage sin necesidad).
+
+**Refresh de página perdía el estado:** si el usuario cerraba el modal de verificación de código y
+refrescaba la página antes de que los 15 min expiraran, el front olvidaba que había un código vigente.
+
+### Nuevos endpoints conectados
+
+| Método | URL | Quién lo llama |
+|---|---|---|
+| `GET` | `/v1/auth/cambio-correo-pendiente` | `mi-perfil` al cargar (`ngOnInit`) |
+| `GET` | `/v1/usuarios/{id}/cambio-correo-pendiente` | `add-usuarios` al cargar en modo edición |
+
+**Response:** `{ data: { pendiente: boolean, correoPendiente: string\|null, expiraEn: string\|null } }`
+Si `pendiente: true` → mostrar banner con `correoPendiente`; si `false` → no mostrar nada.
+
+### Botón "Reenviar código"
+
+Cuando el correo no llega, el usuario puede reenviar sin tener que cancelar y volver a editar el
+campo. Cooldown de 60s para evitar spam.
+
+- Campos nuevos: `cooldownReenvio = 0`, `private cooldownTimer`
+- Método `reenviarCodigo()` / `reenviarCodigoCambioCorreo()`: llama `solicitarCambioCorreo()` /
+  `solicitarCambioCorreoAdmin()` y arranca el countdown
+- `iniciarCooldown()`: setInterval de 1s decrementa hasta 0
+- `ngOnDestroy()`: limpia el timer en ambos componentes
+
+**Nota back:** si ya hay un código vigente para ese mismo correo nuevo, el back **no reenvía uno
+nuevo** — reutiliza el existente y responde `data: "Ya tienes un codigo vigente enviado a ese
+correo, revisa tu bandeja"`. El front lo trata igual que el envío normal (muestra el modal del
+código de todas formas). Esto evita que múltiples clics en "Reenviar" generen códigos que
+invalidan al anterior.
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/login/acceder.service.ts` | + `cambioCorreoPendiente()` → `GET /v1/auth/cambio-correo-pendiente` |
+| `src/app/shared/usuario.service.ts` | + `cambioCorreoPendienteAdmin(id)` → `GET /v1/usuarios/{id}/cambio-correo-pendiente` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.ts` | Elimina `SK_SELF` y todo `sessionStorage.*`; `ngOnInit` llama `verificarCambioCorreoPendiente()`; + `reenviarCodigo()` con cooldown; + `ngOnDestroy` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.html` | + botón `mp-btn--reenviar` con contador en `mp-codigo-pendiente` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.scss` | + `.mp-btn--reenviar` light + dark mode |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` | Elimina `skAdmin()` y todo `sessionStorage.*`; `ngOnInit` llama `cambioCorreoPendienteAdmin(id)`; + `reenviarCodigoCambioCorreo()` con cooldown; + `ngOnDestroy` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` | + botón `au-btn-reenviar` con contador en `au-codigo-pendiente` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` | + `.au-btn-reenviar` light + dark mode |
+
+**Verificado con `ng build --configuration=development` sin errores.**

@@ -613,6 +613,12 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   color: var(--app-text-muted);
 }
 
+.dv-indep-optional {
+  font-size: 0.72rem;
+  color: var(--app-text-muted);
+  font-weight: 400;
+}
+
 .dv-indep-btn {
   padding: 0.6rem 1.4rem;
   border-radius: 10px;

@@ -216,6 +216,7 @@ export interface IIndependizarRequest {
   marca?: string;
   color?: string;
   contenido?: string;
+  piezas?: number;
   precioCosto: number;
   precioVenta: number;
   precioRebaja?: number;

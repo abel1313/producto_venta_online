@@ -214,11 +214,15 @@
         </div>
         <div class="dv-indep-field">
           <label class="dv-indep-label">Contenido neto</label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.contenido" placeholder="Contenido neto" />
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.contenido" placeholder="500ml, 1kg…" />
         </div>
       </div>
 
       <div class="dv-indep-row">
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Piezas</label>
+          <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.piezas" placeholder="0" />
+        </div>
         <div class="dv-indep-field">
           <label class="dv-indep-label">Precio costo</label>
           <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.precioCosto" placeholder="0.00" />
@@ -230,6 +234,16 @@
         <div class="dv-indep-field">
           <label class="dv-indep-label">Precio rebaja</label>
           <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.precioRebaja" placeholder="0.00" />
+        </div>
+      </div>
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field dv-indep-field--full">
+          <label class="dv-indep-label">Categoría <span class="dv-indep-optional">(opcional)</span></label>
+          <app-palabra-clave-autocomplete
+            [valorInicial]="palabraClaveSeleccionadaIndep"
+            (seleccionada)="onPalabraClaveIndep($event)">
+          </app-palabra-clave-autocomplete>
         </div>
       </div>
 

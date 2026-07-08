@@ -8,6 +8,7 @@ import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/va
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { IIndependizarRequest, VarianteService } from '../service/variante.service';
 import { ProductoService } from 'src/app/productos/service/producto.service';
+import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 
 const PAGE_SIZE = 4;
 
@@ -47,12 +48,14 @@ export class DetalleVarianteComponent implements OnInit {
   independizando = false;
   independizarError: string | null = null;
   indepStockInfo = 0;
+  palabraClaveSeleccionadaIndep: IPalabraClave | null = null;
   indepForm = {
     nombre: '',
     descripcion: '',
     marca: '',
     color: '',
     contenido: '',
+    piezas: 0,
     precioCosto: 0,
     precioVenta: 0,
     precioRebaja: 0,
@@ -299,29 +302,35 @@ export class DetalleVarianteComponent implements OnInit {
     this.productoService.getDataGeneric<any>(this.productoId).subscribe({
       next: (res: any) => {
         const p = res?.data ?? res;
+        const pkVariante = (v as any).palabraClave ?? null;
+        const pkProducto = p?.palabraClave ?? null;
+        const pk: IPalabraClave | null = pkVariante ?? pkProducto ?? null;
+        this.palabraClaveSeleccionadaIndep = pk;
         this.indepForm = {
           nombre:        p?.nombre ?? '',
           descripcion:   v.descripcion ?? p?.descripcion ?? '',
           marca:         v.marca ?? p?.marca ?? '',
           color:         v.color ?? p?.color ?? '',
           contenido:     v.contenidoNeto ?? p?.contenido ?? '',
+          piezas:        p?.piezas ?? 0,
           precioCosto:   p?.precioCosto ?? 0,
           precioVenta:   p?.precioVenta ?? v.precio ?? 0,
           precioRebaja:  p?.precioRebaja ?? 0,
-          palabraClaveId: (v as any).palabraClave?.id ?? p?.palabraClave?.id ?? null,
+          palabraClaveId: pk?.id ?? null,
           codigoBarras:  '',
         };
         this.cargandoIndependizar = false;
         this.mostrarModalIndependizar = true;
       },
       error: () => {
-        // Si falla el fetch, abrir igualmente con los datos de la variante
+        this.palabraClaveSeleccionadaIndep = null;
         this.indepForm = {
           nombre:        '',
           descripcion:   v.descripcion ?? '',
           marca:         v.marca ?? '',
           color:         v.color ?? '',
           contenido:     v.contenidoNeto ?? '',
+          piezas:        0,
           precioCosto:   0,
           precioVenta:   v.precio ?? 0,
           precioRebaja:  0,
@@ -338,6 +347,11 @@ export class DetalleVarianteComponent implements OnInit {
     if (this.independizando) return;
     this.mostrarModalIndependizar = false;
     this.independizarError = null;
+    this.palabraClaveSeleccionadaIndep = null;
+  }
+
+  onPalabraClaveIndep(pk: IPalabraClave | null): void {
+    this.indepForm.palabraClaveId = pk?.id ?? null;
   }
 
   confirmarIndependizar(): void {
@@ -360,6 +374,7 @@ export class DetalleVarianteComponent implements OnInit {
       marca:         this.indepForm.marca || undefined,
       color:         this.indepForm.color || undefined,
       contenido:     this.indepForm.contenido || undefined,
+      piezas:        this.indepForm.piezas || undefined,
       precioCosto:   this.indepForm.precioCosto,
       precioVenta:   this.indepForm.precioVenta,
       precioRebaja:  this.indepForm.precioRebaja || undefined,

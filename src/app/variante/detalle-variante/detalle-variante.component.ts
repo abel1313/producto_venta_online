@@ -43,6 +43,7 @@ export class DetalleVarianteComponent implements OnInit {
 
   // ── Modal Independizar ─────────────────────────────────────────────────────
   mostrarModalIndependizar = false;
+  cargandoIndependizar = false;
   independizando = false;
   independizarError: string | null = null;
   indepStockInfo = 0;
@@ -287,37 +288,50 @@ export class DetalleVarianteComponent implements OnInit {
   // ── Independizar variante ──────────────────────────────────────────────────
 
   abrirIndependizar(): void {
-    if (!this.varianteSeleccionada) return;
+    if (!this.varianteSeleccionada || this.cargandoIndependizar) return;
     const v = this.varianteSeleccionada;
 
     this.indepStockInfo = v.stock;
     this.independizarError = null;
-    this.indepForm = {
-      nombre: '',
-      descripcion: v.descripcion ?? '',
-      marca: v.marca ?? '',
-      color: v.color ?? '',
-      contenido: v.contenidoNeto ?? '',
-      precioCosto: 0,
-      precioVenta: v.precio ?? 0,
-      precioRebaja: 0,
-      palabraClaveId: null,
-      codigoBarras: '',
-    };
+    this.cargandoIndependizar = true;
 
-    // Obtener datos del producto origen (nombre, precioCosto, precioRebaja, palabraClave)
+    // Primero cargar producto — solo abrir el modal cuando todos los datos estén listos
     this.productoService.getDataGeneric<any>(this.productoId).subscribe({
       next: (res: any) => {
         const p = res?.data ?? res;
-        if (p?.nombre) this.indepForm.nombre = p.nombre;
-        if (p?.precioCosto) this.indepForm.precioCosto = p.precioCosto;
-        if (p?.precioRebaja) this.indepForm.precioRebaja = p.precioRebaja;
-        if (p?.palabraClave?.id) this.indepForm.palabraClaveId = p.palabraClave.id;
+        this.indepForm = {
+          nombre:        p?.nombre ?? '',
+          descripcion:   v.descripcion ?? p?.descripcion ?? '',
+          marca:         v.marca ?? p?.marca ?? '',
+          color:         v.color ?? p?.color ?? '',
+          contenido:     v.contenidoNeto ?? p?.contenido ?? '',
+          precioCosto:   p?.precioCosto ?? 0,
+          precioVenta:   v.precio ?? p?.precioVenta ?? 0,
+          precioRebaja:  p?.precioRebaja ?? 0,
+          palabraClaveId: p?.palabraClave?.id ?? null,
+          codigoBarras:  '',
+        };
+        this.cargandoIndependizar = false;
+        this.mostrarModalIndependizar = true;
       },
-      error: () => {}
+      error: () => {
+        // Si falla el fetch, abrir igualmente con los datos de la variante
+        this.indepForm = {
+          nombre:        '',
+          descripcion:   v.descripcion ?? '',
+          marca:         v.marca ?? '',
+          color:         v.color ?? '',
+          contenido:     v.contenidoNeto ?? '',
+          precioCosto:   0,
+          precioVenta:   v.precio ?? 0,
+          precioRebaja:  0,
+          palabraClaveId: null,
+          codigoBarras:  '',
+        };
+        this.cargandoIndependizar = false;
+        this.mostrarModalIndependizar = true;
+      }
     });
-
-    this.mostrarModalIndependizar = true;
   }
 
   cerrarIndependizar(): void {

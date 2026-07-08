@@ -147,9 +147,9 @@
 
   <!-- Acción admin: Independizar variante -->
   <div *ngIf="isAdminUser" class="dv-admin-actions">
-    <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()">
-      <i class="pi pi-external-link"></i>
-      Independizar variante
+    <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()" [disabled]="cargandoIndependizar">
+      <span *ngIf="cargandoIndependizar"><span class="spinner-border spinner-border-sm"></span> Cargando…</span>
+      <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Independizar variante</span>
     </button>
   </div>
 

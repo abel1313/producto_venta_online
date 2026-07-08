@@ -3277,6 +3277,55 @@ La variante NO se borra — se reasigna a un producto nuevo. Las imágenes se co
 
 ---
 
+## FEAT USUARIOS/PERFIL — ADMIN EDIT FLOW + COMPONENTE MI PERFIL F-19 (2026-07-08)
+
+### 1. `add-usuarios` — flujo especial cuando admin edita usuario
+
+- **Contraseña/confirmar:** ocultos con `*ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)"` (admin no toca la contraseña de otro usuario)
+- **Username:** `[attr.readonly]="true"` cuando admin edita — campo visible pero no editable
+- **Email:** `(blur)="onEmailBlur()"` — si el valor cambió, muestra Swal de confirmación → `cambiarEmailAdmin()` (PUT updateUsuario con nuevo correo) → `enviarCodigoVerificacionUsuario()` → `mostrarSwalCodigoEmail()` con input de 6 dígitos → `verificarCorreoUsuario()`. Si cancela el Swal → revierte el campo al valor original (`emailOriginal`)
+- **Botón submit:** oculto para admin en modo edición (`*ngIf` igual que contraseñas)
+- **Botón "💾 Guardar permisos":** en `.admin-section`, guarda `enabled`/`rol` independientemente via `PUT /v1/usuarios/updateUsuario/{id}` (mismo endpoint que ya existía, backend ignora la contraseña)
+- `emailOriginal` se asigna en `ngOnInit()` cuando `textoCard === 'Actualizar usuario'`
+
+### 2. `AccederService.miPerfil(username, email)`
+
+Nuevo método → `PUT /v1/auth/mi-perfil` con body `{ username, email }`.
+
+### 3. `MiPerfilComponent` — ruta `/clientes/mi-perfil`
+
+**Sección "Datos de cuenta":**
+- `usernameCtrl` precargado desde `authService.userName$`
+- `emailCtrl` precargado desde `clienteService.getDataOneCliente(userId)` → `data.data.correoElectronico`
+- "Guardar cambios": si email no cambió → `acceder.miPerfil()` directo; si cambió → `flujoEmailChange()`: PUT mi-perfil → enviar código → Swal con input 6 dígitos → `verificarCorreoUsuario()`; si cancela verificación → correo guardado sin verificar (aviso `info`)
+
+**Sección "Cambiar contraseña":**
+- 3 campos (actual + nueva + confirmar) con toggles de visibilidad
+- Panel de requisitos en vivo (longitud, mayúscula, minúscula, número, especial) + barra de fortaleza
+- Botón habilitado solo cuando todos los requisitos se cumplen y las contraseñas coinciden
+- Llama `acceder.cambiarPassword(actual, nueva)`
+
+**Navbar:** link "Mi perfil" → `clientes/mi-perfil` en `.sb-user-links` (debajo de "Cambiar contraseña")
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/login/acceder.service.ts` | + `miPerfil()` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` | `emailOriginal`, `onEmailBlur()`, `cambiarEmailAdmin()`, `mostrarSwalCodigoEmail()`, `guardarPermisos()` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` | `*ngIf` en password/confirm/submit; `readonly` en username; `blur` en email; botón guardar permisos |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` | `.btn-admin-permisos`, `.field-input--readonly` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.ts` | Nuevo componente |
+| `src/app/clietes/mi-perfil/mi-perfil.component.html` | Nuevo template |
+| `src/app/clietes/mi-perfil/mi-perfil.component.scss` | Nuevos estilos BEM + dark/light mode |
+| `src/app/clietes/clietes.module.ts` | + `MiPerfilComponent` en declarations |
+| `src/app/clietes/clietes-routing.module.ts` | + ruta `mi-perfil` con `AuthGuard` |
+| `src/app/navbar/navbar.component.html` | + link "Mi perfil" en user links |
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FEAT MÓDULO PROMOCIONES — COMBOS DE VARIANTES (2026-07-05)
 
 > Implementación completa del módulo de promociones según `PROMOCIONES.md`.

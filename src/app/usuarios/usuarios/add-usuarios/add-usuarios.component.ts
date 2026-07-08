@@ -23,15 +23,9 @@ export class AddUsuariosComponent implements OnInit {
     rol: '',
     username: '',
   }
-  emailOriginal            = '';
-  // Panel inline cambio de correo
-  mostrarFormCambioCorreo  = false;
-  nuevoCorreoAdmin         = '';
-  codigoEnviado            = false;
-  codigoAdmin              = '';
-  enviandoCodigo           = false;
-  verificandoCodigo        = false;
-  errorCambioCorreo        = '';
+  emailOriginal        = '';
+  codigoPendiente      = false;
+  correoNuevoPendiente = '';
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
@@ -304,55 +298,76 @@ this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: fa
     });
   }
 
-  abrirFormCambioCorreo(): void {
-    this.mostrarFormCambioCorreo = true;
-    this.nuevoCorreoAdmin        = '';
-    this.codigoEnviado           = false;
-    this.codigoAdmin             = '';
-    this.errorCambioCorreo       = '';
-  }
-
-  cerrarFormCambioCorreo(): void {
-    this.mostrarFormCambioCorreo = false;
-  }
-
-  enviarCodigoCambioCorreo(): void {
-    if (!this.nuevoCorreoAdmin) return;
-    const id = this.updateUser.id || 0;
-    this.enviandoCodigo    = true;
-    this.errorCambioCorreo = '';
-    this.usuario.solicitarCambioCorreoAdmin(id, this.nuevoCorreoAdmin).subscribe({
+  onEmailBlur(): void {
+    if (!this.updateUser.id || !this.authService.isAdminService || this.textoCard !== 'Actualizar usuario') return;
+    const nuevoEmail = this.formRegistro.get('email')?.value ?? '';
+    if (!nuevoEmail || nuevoEmail === this.emailOriginal) return;
+    const id = this.updateUser.id;
+    this.usuario.solicitarCambioCorreoAdmin(id, nuevoEmail).subscribe({
       next: () => {
-        this.enviandoCodigo = false;
-        this.codigoEnviado  = true;
+        this.codigoPendiente      = true;
+        this.correoNuevoPendiente = nuevoEmail;
+        this.mostrarSwalCambioCorreo(nuevoEmail, id);
       },
       error: (err: any) => {
-        this.enviandoCodigo = false;
         const raw = err?.error;
-        this.errorCambioCorreo = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'No se pudo enviar el código.';
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
 
-  verificarCambioCorreo(): void {
-    if (this.codigoAdmin.length !== 6) return;
-    const id = this.updateUser.id || 0;
-    this.verificandoCodigo = true;
-    this.errorCambioCorreo = '';
-    this.usuario.confirmarCambioCorreoAdmin(id, this.codigoAdmin).subscribe({
-      next: () => {
-        this.verificandoCodigo       = false;
-        this.emailOriginal            = this.nuevoCorreoAdmin;
-        this.updateUser.email         = this.nuevoCorreoAdmin;
-        this.formRegistro.get('email')?.setValue(this.nuevoCorreoAdmin);
-        this.mostrarFormCambioCorreo = false;
-        Swal.fire({ icon: 'success', title: '¡Correo actualizado!', text: `El correo de ${this.updateUser.username} fue cambiado y verificado.`, timer: 2500, showConfirmButton: false });
-      },
-      error: (err: any) => {
-        this.verificandoCodigo = false;
-        const raw = err?.error;
-        this.errorCambioCorreo = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
+  reingresarCodigoCambioCorreo(): void {
+    this.mostrarSwalCambioCorreo(this.correoNuevoPendiente, this.updateUser.id!);
+  }
+
+  cancelarCambioCorreo(): void {
+    this.formRegistro.get('email')?.setValue(this.emailOriginal);
+    this.codigoPendiente      = false;
+    this.correoNuevoPendiente = '';
+  }
+
+  private mostrarSwalCambioCorreo(correoNuevo: string, id: number): void {
+    Swal.fire({
+      title: `Verificar nuevo correo — ${this.updateUser.username}`,
+      html: `
+        <p style="margin-bottom:10px;font-size:0.88rem">
+          Se envió un código a <strong>${correoNuevo}</strong>.<br>
+          Pídele al usuario que te dicte los 6 dígitos.
+        </p>
+        <input id="swal-codigo-cambio" type="text" inputmode="numeric" maxlength="6"
+               placeholder="123456"
+               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
+                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      outline:none;font-family:monospace">
+      `,
+      confirmButtonText: 'Verificar y guardar',
+      showCancelButton: true,
+      cancelButtonText: 'Verificar después',
+      preConfirm: async () => {
+        const codigo = (document.getElementById('swal-codigo-cambio') as HTMLInputElement)?.value ?? '';
+        if (codigo.length !== 6) {
+          Swal.showValidationMessage('Ingresa los 6 dígitos del código');
+          return false;
+        }
+        try {
+          await this.usuario.confirmarCambioCorreoAdmin(id, codigo).toPromise();
+          return true;
+        } catch (err: any) {
+          const raw = err?.error;
+          const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
+          Swal.showValidationMessage(msg);
+          return false;
+        }
       }
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.emailOriginal            = correoNuevo;
+      this.updateUser.email         = correoNuevo;
+      this.formRegistro.get('email')?.setValue(correoNuevo);
+      this.codigoPendiente          = false;
+      this.correoNuevoPendiente     = '';
+      Swal.fire({ icon: 'success', title: '¡Correo actualizado!', text: `El correo de ${this.updateUser.username} fue cambiado y verificado.`, timer: 2500, showConfirmButton: false });
     });
   }
 

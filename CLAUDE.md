@@ -3252,6 +3252,31 @@ Todos los usos de `buscarClientes()` verificados — ninguno accesible para usua
 
 ---
 
+## FEAT VARIANTES — INDEPENDIZAR VARIANTE EN SU PROPIO PRODUCTO (2026-07-08)
+
+> Diseño en `PLAN_MEJORAS.md` sección 16. El back implementó `POST /variantes/v1/{varianteId}/independizar`.
+
+**Qué hace:** Permite al admin "graduar" una variante para que sea su propio producto independiente.
+La variante NO se borra — se reasigna a un producto nuevo. Las imágenes se copian y el stock se transfiere. Todo en una sola transacción.
+
+**Flujo front:**
+1. Admin en `/variantes/detalle/{productoId}/{id}` → botón **"Independizar variante"** (solo admin, abajo de los botones de carrito)
+2. Modal con formulario prellenado desde variante (descripcion, marca, color, contenido, precio) + producto origen (nombre, precioCosto, precioRebaja, palabraClave)
+3. Campo obligatorio: nuevo `codigoBarras` (diferente al actual)
+4. Stock mostrado informacionalmente (no editable — el back lo calcula automáticamente)
+5. Al confirmar → `POST /variantes/v1/{varianteId}/independizar` → Swal con nuevo ID + botón "Ver variantes"
+6. Error 400/409 (código duplicado) → mensaje del back en la alerta del modal, el form sigue abierto para corregir
+
+**Archivos modificados:**
+- `src/app/variante/service/variante.service.ts` → `independizar(varianteId, body)`, interfaces `IIndependizarRequest`, `IIndependizarResponse`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → inyecta `ProductoService`; campos del modal; `abrirIndependizar()`, `cerrarIndependizar()`, `confirmarIndependizar()`
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → botón `.dv-btn--independizar` + modal overlay `.dv-indep-overlay`
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-admin-actions`, `.dv-btn--independizar`, `.dv-indep-*` con dark/light mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FEAT MÓDULO PROMOCIONES — COMBOS DE VARIANTES (2026-07-05)
 
 > Implementación completa del módulo de promociones según `PROMOCIONES.md`.

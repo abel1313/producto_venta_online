@@ -145,4 +145,105 @@
     </button>
   </div>
 
+  <!-- Acción admin: Independizar variante -->
+  <div *ngIf="isAdminUser" class="dv-admin-actions">
+    <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()">
+      <i class="pi pi-external-link"></i>
+      Independizar variante
+    </button>
+  </div>
+
+</div>
+
+<!-- ── Modal Independizar ──────────────────────────────────────────────────── -->
+<div *ngIf="mostrarModalIndependizar" class="dv-indep-overlay" (click)="cerrarIndependizar()">
+  <div class="dv-indep-modal" (click)="$event.stopPropagation()">
+
+    <div class="dv-indep-modal__header">
+      <h3 class="dv-indep-modal__title">⚡ Independizar variante #{{ varianteSeleccionada?.id }}</h3>
+      <button class="dv-indep-modal__close" (click)="cerrarIndependizar()" [disabled]="independizando">✕</button>
+    </div>
+
+    <p class="dv-indep-modal__hint">
+      Esta variante pasará a ser su propio producto. Las imágenes se copian y el stock se transfiere automáticamente.
+    </p>
+
+    <div class="dv-indep-stock-info">
+      <span class="dv-indep-stock-info__label">📦 Stock que se transferirá</span>
+      <strong class="dv-indep-stock-info__val">{{ indepStockInfo }} unidades</strong>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="independizarError" class="dv-indep-alert">
+      ⚠️ {{ independizarError }}
+    </div>
+
+    <!-- Formulario -->
+    <div class="dv-indep-form">
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field dv-indep-field--full">
+          <label class="dv-indep-label">Nombre del producto <span class="dv-indep-req">*</span></label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.nombre" placeholder="Nombre del producto nuevo" />
+        </div>
+      </div>
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field dv-indep-field--full">
+          <label class="dv-indep-label">Código de barras nuevo <span class="dv-indep-req">*</span></label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.codigoBarras" placeholder="Código de barras (diferente al actual)" />
+          <span class="dv-indep-hint">Actual: {{ varianteSeleccionada?.codigoBarras ?? '—' }}</span>
+        </div>
+      </div>
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Descripción</label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.descripcion" placeholder="Descripción" />
+        </div>
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Marca</label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.marca" placeholder="Marca" />
+        </div>
+      </div>
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Color</label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.color" placeholder="Color" />
+        </div>
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Contenido neto</label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.contenido" placeholder="Contenido neto" />
+        </div>
+      </div>
+
+      <div class="dv-indep-row">
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Precio costo</label>
+          <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.precioCosto" placeholder="0.00" />
+        </div>
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Precio venta</label>
+          <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.precioVenta" placeholder="0.00" />
+        </div>
+        <div class="dv-indep-field">
+          <label class="dv-indep-label">Precio rebaja</label>
+          <input class="dv-indep-input" type="number" min="0" [(ngModel)]="indepForm.precioRebaja" placeholder="0.00" />
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dv-indep-modal__footer">
+      <button class="dv-indep-btn dv-indep-btn--cancel" (click)="cerrarIndependizar()" [disabled]="independizando">
+        Cancelar
+      </button>
+      <button class="dv-indep-btn dv-indep-btn--confirm" (click)="confirmarIndependizar()" [disabled]="independizando">
+        <span *ngIf="independizando"><span class="spinner-border spinner-border-sm"></span> Procesando…</span>
+        <span *ngIf="!independizando"><i class="pi pi-external-link"></i> Confirmar independizar</span>
+      </button>
+    </div>
+
+  </div>
 </div>

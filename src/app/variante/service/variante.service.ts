@@ -158,6 +158,12 @@ export class VarianteService {
     return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/v1/inicializarDesdeProducto`, form);
   }
 
+  independizar(varianteId: number, body: IIndependizarRequest): Observable<{ mensaje: string; data: IIndependizarResponse }> {
+    return this.http.post<{ mensaje: string; data: IIndependizarResponse }>(
+      `${this.url}/v1/${varianteId}/independizar`, body
+    );
+  }
+
   diagnosticoImagenes(varianteId: number): Observable<any> {
     return this.http.get(`${this.url}/v1/admin/diagnostico-imagenes/${varianteId}`);
   }
@@ -204,6 +210,26 @@ export interface IClienteSinRegistro {
       correo_Electronico: string;
       numero_Telefonico: string;
 }
+export interface IIndependizarRequest {
+  nombre: string;
+  descripcion?: string;
+  marca?: string;
+  color?: string;
+  contenido?: string;
+  precioCosto: number;
+  precioVenta: number;
+  precioRebaja?: number;
+  palabraClaveId?: number | null;
+  codigoBarras: string;
+  imagenPrincipalId?: string | null;
+}
+
+export interface IIndependizarResponse {
+  productoNuevoId: number;
+  codigoBarras: string;
+  stockProductoOrigenRestante: number;
+}
+
 export interface IVentaDirectaResponse {
   ventaId:          number | null;
   pedidoId:         number | null;

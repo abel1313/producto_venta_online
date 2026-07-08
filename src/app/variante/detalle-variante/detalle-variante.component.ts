@@ -6,7 +6,8 @@ import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
-import { VarianteService } from '../service/variante.service';
+import { IIndependizarRequest, VarianteService } from '../service/variante.service';
+import { ProductoService } from 'src/app/productos/service/producto.service';
 
 const PAGE_SIZE = 4;
 
@@ -40,12 +41,31 @@ export class DetalleVarianteComponent implements OnInit {
     { breakpoint: '575px',  numVisible: 1, numScroll: 1 },
   ];
 
+  // ── Modal Independizar ─────────────────────────────────────────────────────
+  mostrarModalIndependizar = false;
+  independizando = false;
+  independizarError: string | null = null;
+  indepStockInfo = 0;
+  indepForm = {
+    nombre: '',
+    descripcion: '',
+    marca: '',
+    color: '',
+    contenido: '',
+    precioCosto: 0,
+    precioVenta: 0,
+    precioRebaja: 0,
+    palabraClaveId: null as number | null,
+    codigoBarras: '',
+  };
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly varianteService: VarianteService,
     private readonly carritoVariante: CarritoVarianteService,
     private readonly authService: AuthService,
+    private readonly productoService: ProductoService,
   ) {}
 
   ngOnInit(): void {
@@ -263,4 +283,108 @@ export class DetalleVarianteComponent implements OnInit {
   }
 
   volver(): void { this.router.navigate(['/variantes/buscar']); }
+
+  // ── Independizar variante ──────────────────────────────────────────────────
+
+  abrirIndependizar(): void {
+    if (!this.varianteSeleccionada) return;
+    const v = this.varianteSeleccionada;
+
+    this.indepStockInfo = v.stock;
+    this.independizarError = null;
+    this.indepForm = {
+      nombre: '',
+      descripcion: v.descripcion ?? '',
+      marca: v.marca ?? '',
+      color: v.color ?? '',
+      contenido: v.contenidoNeto ?? '',
+      precioCosto: 0,
+      precioVenta: v.precio ?? 0,
+      precioRebaja: 0,
+      palabraClaveId: null,
+      codigoBarras: '',
+    };
+
+    // Obtener datos del producto origen (nombre, precioCosto, precioRebaja, palabraClave)
+    this.productoService.getDataGeneric<any>(this.productoId).subscribe({
+      next: (res: any) => {
+        const p = res?.data ?? res;
+        if (p?.nombre) this.indepForm.nombre = p.nombre;
+        if (p?.precioCosto) this.indepForm.precioCosto = p.precioCosto;
+        if (p?.precioRebaja) this.indepForm.precioRebaja = p.precioRebaja;
+        if (p?.palabraClave?.id) this.indepForm.palabraClaveId = p.palabraClave.id;
+      },
+      error: () => {}
+    });
+
+    this.mostrarModalIndependizar = true;
+  }
+
+  cerrarIndependizar(): void {
+    if (this.independizando) return;
+    this.mostrarModalIndependizar = false;
+    this.independizarError = null;
+  }
+
+  confirmarIndependizar(): void {
+    if (!this.varianteSeleccionada || this.independizando) return;
+    if (!this.indepForm.nombre.trim()) {
+      this.independizarError = 'El nombre del producto es obligatorio.';
+      return;
+    }
+    if (!this.indepForm.codigoBarras.trim()) {
+      this.independizarError = 'El código de barras es obligatorio.';
+      return;
+    }
+
+    this.independizando = true;
+    this.independizarError = null;
+
+    const body: IIndependizarRequest = {
+      nombre:        this.indepForm.nombre.trim(),
+      descripcion:   this.indepForm.descripcion || undefined,
+      marca:         this.indepForm.marca || undefined,
+      color:         this.indepForm.color || undefined,
+      contenido:     this.indepForm.contenido || undefined,
+      precioCosto:   this.indepForm.precioCosto,
+      precioVenta:   this.indepForm.precioVenta,
+      precioRebaja:  this.indepForm.precioRebaja || undefined,
+      palabraClaveId: this.indepForm.palabraClaveId,
+      codigoBarras:  this.indepForm.codigoBarras.trim(),
+    };
+
+    this.varianteService.independizar(this.varianteSeleccionada.id, body).subscribe({
+      next: (res) => {
+        this.independizando = false;
+        this.mostrarModalIndependizar = false;
+        const d = res.data;
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Variante independizada',
+          html: `Producto nuevo creado con ID <strong>#${d.productoNuevoId}</strong><br>
+                 Código: <strong>${d.codigoBarras}</strong><br>
+                 Stock restante del producto origen: <strong>${d.stockProductoOrigenRestante}</strong>`,
+          showCancelButton: true,
+          confirmButtonText: '🔍 Ver variantes',
+          cancelButtonText: 'Cerrar',
+        }).then(result => {
+          if (result.isConfirmed) {
+            this.router.navigate(['/variantes/buscar']);
+          } else {
+            // Quitar la variante independizada de la lista y actualizar vista
+            this.variantes = this.variantes.filter(v => v.id !== this.varianteSeleccionada!.id);
+            if (this.variantes.length > 0) {
+              this.seleccionar(this.variantes[0]);
+            } else {
+              this.router.navigate(['/variantes/buscar']);
+            }
+          }
+        });
+      },
+      error: (err) => {
+        this.independizando = false;
+        this.independizarError = err?.error?.mensaje ?? 'No se pudo independizar la variante.';
+      }
+    });
+  }
 }

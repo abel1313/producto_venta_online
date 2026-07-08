@@ -44,7 +44,7 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   }
 
   solicitarCambioCorreoAdmin(id: number, correoNuevo: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/usuarios/${id}/solicitar-cambio-correo`, { correoNuevo }, { responseType: 'text' as 'json' });
+    return this.http.post<any>(`${environment.api_Url}/v1/usuarios/${id}/solicitar-cambio-correo`, { correoNuevo });
   }
 
   confirmarCambioCorreoAdmin(id: number, codigo: string) {

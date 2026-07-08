@@ -56,7 +56,7 @@ export class AccederService {
   }
 
   solicitarCambioCorreo(correoNuevo: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/solicitar-cambio-correo`, { correoNuevo }, { responseType: 'text' as 'json' });
+    return this.http.post<any>(`${environment.api_Url}/v1/auth/solicitar-cambio-correo`, { correoNuevo });
   }
 
   confirmarCambioCorreo(codigo: string) {

@@ -3357,6 +3357,31 @@ síntoma 2 de arriba (el modal del usuario normal "reapareciendo" mezclado con l
 no era una condición de carrera activa — era el mismo Swal invisible que había quedado abierto
 todo el tiempo, tapado, hasta que algo con menor z-index dejaba de estar encima).
 
+**⚠️ SEGUNDA ACTUALIZACIÓN — el modal ya se veía, pero le faltaba el checklist de requisitos
+(mismo día):** una vez visible, el modal de `forzarCambioPassword()` solo tenía 2 inputs planos
+con un placeholder de texto — a diferencia del formulario de registro/edición de usuario
+(`add-usuarios.component.html`), que muestra un checklist en vivo (✓/○ por cada regla: mínimo 8
+caracteres, mayúscula, minúscula, número, carácter especial) + una barra de fortaleza. Además,
+`preConfirm` solo validaba longitud ≥ 8 y que coincidieran — **no** las mismas reglas que exige
+`passwordFuerte` (`src/app/validador/validador.ts`), dejando pasar al backend contraseñas que
+igual iban a ser rechazadas ahí, sin que el usuario supiera por qué hasta el rechazo.
+
+**Fix:** el `html` del Swal ahora incluye el mismo checklist (con un `<style>` embebido en el
+propio string del modal, ya que los estilos de un componente Angular NO llegan al DOM que
+SweetAlert2 inyecta directo en `document.body` — mismo motivo por el que otros Swal del proyecto
+como `mostrarSwalCambioCorreo` ya usan estilos inline). Un listener `input` agregado en
+`didOpen` recalcula los 5 requisitos en cada tecleo y actualiza clases/ícono/barra — mismas
+reglas exactas que `passwordFuerte`, extraídas a un método privado `cumpleRequisitos()` para no
+duplicar los 4 regex sueltos. `preConfirm` ahora llama `cumpleRequisitos()` en vez de solo
+chequear longitud, así el front rechaza una contraseña débil ANTES de mandarla al backend.
+
+**Archivos modificados (ambas actualizaciones de esta sesión):**
+- `src/styles.scss` → regla global `.swal2-container { z-index: 20000 !important; }`
+- `src/app/login/login-form/login-form.component.ts` → `forzarCambioPassword()` reescrito con
+  checklist + barra de fortaleza + `didOpen` + `cumpleRequisitos()`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
 ---
 
 ## FEAT VARIANTES — INDEPENDIZAR VARIANTE EN SU PROPIO PRODUCTO (2026-07-08)

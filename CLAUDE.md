@@ -3520,6 +3520,50 @@ Nuevo método → `PUT /v1/auth/mi-perfil` con body `{ username, email }`.
 
 ---
 
+## FIX PROMOCIONES — BOTÓN "AGREGAR" ILEGIBLE EN DISABLED + BUG DE DISPONIBILIDAD REPORTADO AL BACK (2026-07-13)
+
+**Síntoma 1 (front, corregido):** en `/promociones`, el botón "🛒 Agregar" deshabilitado no se
+veía en modo claro — parecía "sin letras". Causa: `.pm-btn:disabled` usaba `opacity: .45`, que
+desvanece fondo Y texto blanco casi hasta el blanco puro sobre la card blanca del modo claro.
+
+**Fix:** `.pm-btn:disabled` ahora usa colores explícitos en vez de `opacity` —
+`background: var(--card-border)`, `color: var(--app-text-muted)` — legible en ambos modos.
+
+**Síntoma 2 (no era bug — confirmado con curl a QA):** la promoción "ropa" (id 1) aparecía como
+"❌ Sin disponibilidad" aunque el producto "Mochila Prada" mostraba stock 5. Diagnóstico con
+`GET /variantes/v1/porProducto/326`: el producto tiene 7 variantes (mismo `codigoBarras`, talla y
+color — confirmado con el usuario que esto es diseño esperado, un producto puede tener varias
+variantes), con el stock repartido entre ellas (0,1,1,0,1,1,1 = 5). La promo apuntaba a
+`varianteId 277` y `117` — justo las dos que tienen `stock: 0` de las 7. `instanciasDisponibles = 0`
+es matemáticamente correcto para esa combinación; no hay nada que corregir en el back. El problema
+fue de UX al armar la promo: variantes hermanas indistinguibles en el buscador (mismo
+nombre/talla/color) hacían fácil elegir por accidente una sin stock. Detalle completo en
+`PROMOCIONES.md`, sección 6.
+
+**Mitigación de front aplicada (2026-07-13):** en "Gestión Promociones", el buscador de variantes
+del formulario ahora muestra **stock** e **ID** por resultado (antes solo nombre/talla/color/precio
+— indistinguibles entre duplicados) + aviso cuando hay resultados que se ven idénticos, para que el
+admin no vuelva a elegir por accidente una variante-fantasma con 0 stock al armar un combo.
+
+**Extra (2026-07-13):** en el modal "Ver detalle" de `/promociones` (catálogo cliente), cada pieza
+ahora muestra `ID #{varianteId}` cuando el usuario logueado es ADMIN, para poder ir a revisar el
+stock real de esa variante exacta. Se dejó preparado también `codigoBarras` en el modelo, pero
+**el back todavía no lo manda** en `GET /v1/promociones/activas` — por ahora cae en el fallback
+"código de barras no disponible aún" (ver `PROMOCIONES.md` para el detalle de qué falta agregar).
+
+**Archivos modificados:**
+- `src/app/promociones/promociones.component.scss` → `.pm-btn:disabled`, `.pm-modal__pieza-admin`
+- `src/app/promociones/promociones.component.ts` → `isAdminUser` vía `AuthService.userRoles$`
+- `src/app/promociones/promociones.component.html` → línea admin-only con ID/código de barras en el modal
+- `src/app/promociones/models/promocion.model.ts` → `IPromocionDetalle.codigoBarras?` (pendiente del back)
+- `src/app/admin/promociones/gestion-promociones.component.html` → dropdown con stock/ID + aviso
+- `src/app/admin/promociones/gestion-promociones.component.scss` → `.gp-dropdown__stock`, `.gp-dropdown__id`, `.gp-dropdown__item--sinstock`, `.gp-hint-duplicados`
+- `PROMOCIONES.md` → sección 6 (causa raíz confirmada — no era bug de back) y 7 (fix de contraste)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FIX USUARIOS/MI-PERFIL — CORREO PENDIENTE VIA GET ENDPOINT + BOTÓN REENVIAR (2026-07-08)
 
 > Eliminación total de `sessionStorage`/`localStorage` para persistir el estado de cambio de correo

@@ -1,8 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IItemPromoCarrito, IPromocion } from './models/promocion.model';
 import { PromocionService } from './service/promocion.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-promociones',
@@ -16,6 +19,7 @@ export class PromocionesComponent implements OnInit, OnDestroy {
   pagina = 1;
   size = 12;
   totalPaginas = 1;
+  isAdminUser = false;
 
   // Detalle abierto
   promoDetalle: IPromocion | null = null;
@@ -24,18 +28,25 @@ export class PromocionesComponent implements OnInit, OnDestroy {
   // Countdown timers
   private timers: ReturnType<typeof setInterval>[] = [];
   countdowns: Map<number, string> = new Map();
+  private destroy$ = new Subject<void>();
 
   constructor(
     private readonly promoService: PromocionService,
-    private readonly carritoService: CarritoVarianteService
+    private readonly carritoService: CarritoVarianteService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.cargar();
+    this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
+      this.isAdminUser = roles.includes('ROLE_ADMIN');
+    });
   }
 
   ngOnDestroy(): void {
     this.timers.forEach(t => clearInterval(t));
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // ── Lista ─────────────────────────────────────────────────────────────

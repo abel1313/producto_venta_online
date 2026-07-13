@@ -125,6 +125,7 @@
     color: var(--app-text);
     font-size: 0.88rem;
     &:hover { background: rgba(176,138,78,.1); }
+    &--sinstock { opacity: .6; }
   }
 
   &__img {
@@ -135,12 +136,32 @@
     flex-shrink: 0;
   }
 
-  &__precio {
+  &__id {
+    color: var(--app-text-muted, #7A6A58);
+    font-weight: 400;
+  }
+
+  &__stock {
     margin-left: auto;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #16a34a;
+    &--cero { color: #ef4444; }
+  }
+
+  &__precio {
     font-weight: 700;
     color: var(--app-accent);
     white-space: nowrap;
   }
+}
+
+.gp-hint-duplicados {
+  font-size: 0.76rem;
+  color: var(--app-text-muted, #7A6A58);
+  margin: 6px 2px 0;
+  line-height: 1.4;
 }
 
 // ── Tabla de detalles ─────────────────────────────────────────────────────

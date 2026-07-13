@@ -39,13 +39,22 @@
         <span class="gp-search-spinner" *ngIf="buscandoVariante">⏳</span>
       </div>
       <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">
-        <div class="gp-dropdown__item" *ngFor="let v of resultadosVariante"
+        <div class="gp-dropdown__item" [class.gp-dropdown__item--sinstock]="(v.stock ?? 0) === 0"
+             *ngFor="let v of resultadosVariante"
              (click)="seleccionarVariante(v)">
           <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" class="gp-dropdown__img" alt="">
-          <span>{{ labelVariante(v) }}</span>
+          <span>{{ labelVariante(v) }} <small class="gp-dropdown__id">#{{ v.id }}</small></span>
+          <span class="gp-dropdown__stock" [class.gp-dropdown__stock--cero]="(v.stock ?? 0) === 0">
+            {{ (v.stock ?? 0) === 0 ? '❌ sin stock' : (v.stock ?? 0) + ' pz' + ((v.stock ?? 0) === 1 ? '' : 's') }}
+          </span>
           <span class="gp-dropdown__precio">${{ v.precio | number:'1.2-2' }}</span>
         </div>
       </div>
+      <p class="gp-hint-duplicados" *ngIf="resultadosVariante.length > 1">
+        ⚠️ Si ves varias variantes idénticas (mismo nombre/talla/color), pueden ser registros
+        duplicados del mismo producto con el stock repartido entre ellas — revisa el número de
+        piezas de cada una antes de elegir.
+      </p>
     </div>
 
     <!-- Tabla de piezas del combo -->

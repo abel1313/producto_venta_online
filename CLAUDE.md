@@ -3306,6 +3306,93 @@ y está lista para eso si se pide después.
 
 ---
 
+## FIX BUSCADORES — `.toLowerCase()` PISABA EL `appUppercase` (2026-07-13)
+
+**Síntoma reportado:** en "Buscar producto" (`/productos/buscar`), el texto escrito en el
+buscador se veía en minúsculas aunque el proyecto usa mayúsculas en todos los inputs
+(`appUppercase`).
+
+**Causa raíz:** `UppercaseInputDirective` mutaba el DOM a mayúsculas correctamente, pero
+`AllComponent.buscarProductos()` hacía `(event.target as HTMLInputElement).value.toLowerCase()`
+y guardaba ese texto en minúsculas en `this.buscarProd`, que está bindeado con `[(ngModel)]` al
+mismo input — en el siguiente ciclo de detección de cambios, Angular reescribe el DOM con el
+valor del modelo (minúsculas), revirtiendo visualmente lo que el directive acababa de poner en
+mayúsculas. No era un bug del directive.
+
+**Grep de `.toLowerCase()` en manejadores de buscador — se encontró el mismo patrón en 5
+archivos** (mismo criterio que las lecciones del módulo rifas: cuando se corrige un patrón así,
+revisar TODOS los archivos con el mismo método antes de cerrar la tarea):
+
+| Archivo | Buscador |
+|---|---|
+| `productos/producto/all/all.component.ts` | Productos → Ver todos (el reportado) |
+| `productos/producto/busca/busca.component.ts` | Buscador secundario de productos |
+| `pedidos/mis-pedidos/mis-pedidos.component.ts` | Buscador de pedidos |
+| `usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts` | Buscador de usuarios |
+| `ventas/venta-producto/add-venta/add-venta.component.ts` | Buscador de venta de producto |
+
+**Fix:** se quitó `.toLowerCase()` en los 5 — ahora se guarda el valor tal cual llega del DOM
+(ya en mayúsculas gracias al directive).
+
+**Revisado y confirmado limpio (no tenían el bug):** `variante/buscar/buscar.component.ts`
+(`onBuscar`), `variante/agregar/agregar.component.ts` y `variante/update-variante/*.ts`
+(`onBuscarProducto`), `admin/promociones/gestion-promociones.component.ts` (`buscarVariante`).
+
+**Efecto colateral positivo:** como el backend en algunos casos comparaba el término tal cual
+contra `codigoBarras` (ver siguiente sección — bug de coincidencia exacta), mandar el término en
+minúsculas también contribuía a que búsquedas como "glpd" no encontraran `GLPD-066`. Este fix
+por sí solo ya ayuda en el buscador de Productos; el bug de fondo (coincidencia exacta vs.
+parcial) lo corrigió el back — ver siguiente sección.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.ts`
+- `src/app/productos/producto/busca/busca.component.ts`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts`
+- `src/app/usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts`
+- `src/app/ventas/venta-producto/add-venta/add-venta.component.ts`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX BACK — BÚSQUEDA POR CÓDIGO DE BARRAS ERA EXACTA, NO PARCIAL (2026-07-13)
+
+> Sin cambios de contrato para el front — documentado aquí porque explica por completo el
+> síntoma "busco `glpd` y no aparece nada" reportado por el usuario, investigado en esta misma
+> sesión (se había descartado ya el bug de mayúsculas/minúsculas de la sección anterior, y se
+> había planteado como hipótesis alterna que las variantes sin imagen no aparecían en el
+> buscador — **esa hipótesis era incorrecta**, la causa real es esta).
+
+**Causa raíz (back, ya corregida):** el "paso 1" (código de barras) tanto de
+`ProductosServiceImpl.findNombreOrCodigoBarra` como de
+`VarianteServiceImpl.buscarPorCodigoBarrasPaginado` usaba coincidencia **exacta**
+(`= :codigoBarras`) en vez de `LIKE %texto%`. Escribir "glpd" nunca iba a encontrar "GLPD-066"
+porque no son iguales, solo uno contiene al otro. El filtro admin "con stock" nunca tuvo este
+bug (usa una query distinta, siempre fue `LIKE`) — por eso una variante con stock real aparecía
+ahí pero no en el buscador normal ni en el buscador de variantes de "Gestión Promociones" (que
+reutiliza `/variantes/v1/buscar`).
+
+**Fix del back:** paso 1 (código) ahora usa `LIKE %texto%`, igual que el paso 3 (nombre) y que
+los filtros admin. No cambia el contrato (mismos endpoints, mismo shape) — cambia el
+comportamiento: estos 2 endpoints ahora pueden regresar **más de un resultado** por código de
+barras cuando antes solo podían regresar 0 o exactamente 1.
+
+**Revisado en el front (sin cambios necesarios):** ningún componente que llama
+`getDataNombreCodigoBarra()` o `/variantes/v1/buscar` asume "si encontró por código, es un solo
+resultado" — todos pintan una lista/grid paginada normal (`all.component.ts`, `busca.component.ts`,
+`buscar.component.ts`, `agregar.component.ts`, `update-variante.component.ts`,
+`gestion-promociones.component.ts`, `add-venta.component.ts`), así que el cambio de "0 o 1" a
+"0 o N" no rompe nada existente.
+
+**⚠️ Antes de volver a probar:** estos buscadores están cacheados en el back (`@Cacheable`). Si
+se buscó "glpd" antes del fix del back, puede seguir devolviendo "sin resultados" hasta limpiar
+la caché — usar el botón "🗑️ Limpiar caché" en `/admin/cache`, o `DELETE /v1/admin/cache`.
+
+**Verificado con `ng build --configuration=development` sin errores** (no hubo cambios de código
+front en esta sección, solo el hallazgo documentado).
+
+---
+
 ## FEAT F-14 — FILTROS ADMIN EN CATÁLOGO DE PRODUCTOS Y VARIANTES (2026-07-02)
 
 > Backend: endpoints nuevos `GET /v1/productos/admin/filtrar?filtro=...` y `GET /variantes/v1/admin/filtrar?filtro=...`.

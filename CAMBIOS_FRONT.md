@@ -5864,3 +5864,56 @@ compra) y `currentUsuarioOpt()` a `AuthenticationUtils.java` (para que el listad
 
 **⏳ Pendiente:** correr `migration_favoritos_resenas.sql` en el ambiente que corresponda antes de
 probar, y subir de `dev` a `qa`.
+
+---
+
+## 🐛 Fix (2026-07-13): búsqueda por código de barras era EXACTA, no parcial — reportado por el usuario
+
+**Síntoma reportado:** buscar `glpd` en el buscador de productos no traía nada, aunque existe el
+producto "Mochila Prada" con código de barras `GLPD-066`. En variantes pasaba lo mismo con el
+buscador normal (`/variantes/v1/buscar`, usado también dentro del buscador de variantes de
+"Gestión Promociones") — pero el filtro admin "con stock" **sí** encontraba las variantes, aunque
+según el reporte "la promoción decía que no había productos" cuando en realidad el stock existía
+(1 de cada variante).
+
+**Causa raíz (una sola, repetida en 3 lugares):** el "paso 1" del buscador (código de barras) en
+`ProductosServiceImpl.findNombreOrCodigoBarra` y en `VarianteServiceImpl.buscarPorCodigoBarrasPaginado`
+(camino ADMIN) usaba métodos de Spring Data con **coincidencia EXACTA** (`= :codigoBarras`, o el
+derived method `findByProductoCodigoBarrasCodigoBarras` sin `Containing`) en vez de `LIKE
+%texto%`. Es decir: escribir `glpd` nunca iba a encontrar `GLPD-066` porque no son *iguales*, solo
+un texto que *contiene* al otro. Solo el nombre (paso 3) ya usaba `LIKE`, pero como "glpd" tampoco
+está en el nombre "Mochila Prada", tampoco aparecía por ahí — de ahí que pareciera que la búsqueda
+completa no funcionaba, cuando en realidad solo fallaba el primer paso (código) sin caer
+correctamente a nada más.
+
+**Por qué el filtro "con stock" (`/variantes/v1/admin/filtrar` y el equivalente de productos) sí
+funcionaba:** esos endpoints usan una query distinta (`buscarVariantesAdmin` / `buscarProductosAdmin`)
+que **siempre** fue `LIKE` — nunca tuvieron el bug. Por eso la variante con stock=1 sí aparecía ahí
+pero no en el buscador normal ni en el buscador de "Gestión Promociones" (que reutiliza
+`/variantes/v1/buscar`): dos implementaciones de "buscar" con comportamiento distinto para el mismo
+caso de uso.
+
+**Fix aplicado:** el paso 1 (código de barras) de ambos buscadores ahora usa `LIKE
+%texto%` igual que el paso 3 (nombre) y que los filtros admin — un código de barras completo
+(escaneado) sigue encontrando el match exacto igual que antes (`LIKE '%GLPD-066%'` también es
+`true` para el texto exacto), pero ahora **además** funciona escribir solo una parte.
+
+**No cambia el contrato** (mismos endpoints, mismo shape de response) — cambia el comportamiento:
+ahora estos 2 endpoints pueden regresar **más de un resultado** cuando antes el "paso 1" solo podía
+regresar 0 o exactamente 1 (coincidencia exacta). Si el front tenía lógica que asumía "si
+encontró por código, es un solo producto", hay que revisarla — ahora es una lista paginada normal
+como los otros pasos.
+
+**Archivos:** `IProductosRepository.java` (`findByCodigoBarrasContainingAdmin`,
+`findByCodigoBarrasPublicoContaining` nuevos), `ProductosServiceImpl.java`
+(`findNombreOrCodigoBarra`), `IVarianteRepository.java`
+(`findByProductoCodigoBarrasCodigoBarrasContainingIgnoreCase` nuevo), `VarianteServiceImpl.java`
+(`buscarPorCodigoBarrasPaginado`). Los métodos de coincidencia exacta **no se tocaron** — siguen
+existiendo y se usan a propósito en otros lugares (validar duplicados al guardar, escaneo de
+código de barras en venta directa) donde sí se necesita exacto, no parcial.
+
+**⚠️ Importante para probar el fix:** estos buscadores están cacheados (`@Cacheable`,
+`buscarNombreOrCodigoBarrasCache` / `variantesCodigoBarrasCache`). Si ya buscaste `glpd` antes del
+fix y quedó un resultado vacío en caché, puede que sigas viendo "sin resultados" hasta que se
+limpie. Limpiar con `DELETE /v1/admin/cache` (ADMIN) después de desplegar, antes de volver a
+probar.

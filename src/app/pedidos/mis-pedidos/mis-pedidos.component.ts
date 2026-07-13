@@ -311,7 +311,7 @@ export class MisPedidosComponent implements OnInit {
   }
 
   buscarProductos(event: KeyboardEvent) {
-    const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    const texto = (event.target as HTMLInputElement).value;
     this.buscarProd = texto;
 
     if (this.isAdminUser) {

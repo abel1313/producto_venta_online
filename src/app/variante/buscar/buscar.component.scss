@@ -131,6 +131,42 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ── Filtros públicos del catálogo (talla/color/marca/precio) ────────
+.vb-pub-filtros {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.vb-pub-select,
+.vb-pub-input {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.92);
+  font-size: 0.78rem;
+  font-weight: 500;
+  outline: none;
+  transition: $transition;
+
+  &:hover, &:focus { background: rgba(255,255,255,0.28); }
+
+  option { color: #1e293b; }
+}
+
+.vb-pub-input { width: 90px; }
+
+.vb-pub-precio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &__sep { color: rgba(255,255,255,0.6); font-size: 0.78rem; }
+}
+
 .vb-filtro-check {
   display: flex;
   align-items: center;
@@ -635,6 +671,33 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 4;
 }
 
+.vb-card__heart {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 4;
+  border: none;
+  background: rgba(0,0,0,.35);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: .95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s, background .15s;
+
+  &:hover { background: rgba(0,0,0,.55); }
+  &--activo { animation: vb-heart-pop .25s ease; }
+}
+
+@keyframes vb-heart-pop {
+  0%   { transform: scale(0.8); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
 .vb-card__check {
   position: absolute;
   top: 8px;
@@ -933,6 +996,16 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       border-color: transparent;
     }
   }
+
+  .vb-pub-select,
+  .vb-pub-input {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover, &:focus { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+    &::placeholder { color: rgba(0, 0, 0, 0.42); }
+  }
+  .vb-pub-precio__sep { color: rgba(0, 0, 0, 0.45); }
 
   .vb-filtro-check {
     border: 1px solid rgba(0, 0, 0, 0.12);

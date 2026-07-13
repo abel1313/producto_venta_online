@@ -1,0 +1,144 @@
+// ── Wrap ──────────────────────────────────────────────────────────────────
+.fv-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+.fv-header {
+  padding: 0 16px;
+  margin-bottom: 28px;
+  &__content {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 24px 0;
+  }
+  &__title { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
+  &__sub   { color: var(--app-text-muted, #64748b); }
+}
+
+// ── Loading / Empty ───────────────────────────────────────────────────────
+.fv-loading, .fv-empty {
+  text-align: center;
+  padding: 60px 16px;
+  color: var(--app-text-muted, #64748b);
+  font-size: 1rem;
+}
+.fv-empty__icon { font-size: 2.4rem; display: block; margin-bottom: 8px; }
+.fv-empty__hint { font-size: .85rem; margin: 4px 0 16px; }
+
+// ── Grid ─────────────────────────────────────────────────────────────────
+.fv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  padding: 0 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────
+.fv-card {
+  background: var(--app-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .2s;
+  &:hover { box-shadow: 0 8px 24px rgba(176,138,78,.16); }
+
+  &__img-wrap {
+    position: relative;
+    height: 150px;
+    background: var(--app-surface-2, #f1f5f9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  &__img { width: 100%; height: 100%; object-fit: cover; }
+  &__img-placeholder { font-size: 2rem; opacity: .5; }
+
+  &__heart {
+    position: absolute;
+    top: 8px; right: 8px;
+    border: none;
+    background: rgba(0,0,0,.35);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    font-size: .95rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    &:hover { background: rgba(0,0,0,.55); }
+  }
+
+  &__body { padding: 12px 14px; flex: 1; }
+  &__nombre { font-weight: 700; font-size: .92rem; color: var(--app-text); margin: 0 0 4px; }
+  &__detalle { font-size: .78rem; color: var(--app-text-muted, #64748b); margin: 0 0 8px; }
+  &__row { display: flex; align-items: center; justify-content: space-between; }
+  &__precio { font-weight: 800; font-size: 1.05rem; color: var(--app-accent); }
+  &__stock {
+    font-size: .74rem; font-weight: 600; color: #16a34a;
+    &--cero { color: #ef4444; }
+  }
+
+  &__footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    gap: 8px;
+  }
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────
+.fv-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity .15s, background .15s, color .15s;
+  &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #7A6A58); }
+  &--add    { background: var(--app-accent); color: #fff; &:hover:not(:disabled) { opacity: .85; } }
+  &--remove { background: rgba(239,68,68,.1); color: #ef4444; }
+  &--primary { background: var(--app-accent); color: #fff; padding: 9px 22px; }
+}
+
+// ── Paginación ────────────────────────────────────────────────────────────
+.fv-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 32px auto;
+  color: var(--app-text);
+  font-size: .88rem;
+}
+.fv-page-btn {
+  border: 1px solid var(--card-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  &:disabled { opacity: .4; cursor: not-allowed; }
+}
+
+// ── Dark / Light ────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .fv-card { background: rgba(255,255,255,.04); }
+  .fv-card__img-wrap { background: rgba(255,255,255,.03); }
+}
+
+:host-context(body.theme-light) {
+  .fv-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .fv-header__title { color: #1e293b; }
+  .fv-header__sub { color: rgba(0,0,0,.55); }
+}

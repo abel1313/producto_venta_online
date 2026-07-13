@@ -9,6 +9,8 @@ import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { IIndependizarRequest, VarianteService } from '../service/variante.service';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
+import { ResenaService } from 'src/app/resenas/service/resena.service';
+import { IResena, IResenaResumen } from 'src/app/resenas/models/resena.model';
 
 const PAGE_SIZE = 4;
 
@@ -30,6 +32,8 @@ export class DetalleVarianteComponent implements OnInit {
 
   // ── Eliminación de imágenes (solo admin) ──────────────────────────
   isAdminUser = false;
+  private roles: string[] = [];
+  get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
   imagenesParaEliminar = new Set<string>();
   eliminando = false;
 
@@ -63,6 +67,21 @@ export class DetalleVarianteComponent implements OnInit {
     codigoBarras: '',
   };
 
+  // ── Reseñas ──────────────────────────────────────────────────────────────
+  resenaResumen: IResenaResumen | null = null;
+  seccionResenasAbierta = false;
+  resenas: IResena[] = [];
+  resenasPagina = 1;
+  resenasTotalPaginas = 1;
+  cargandoResenas = false;
+  get miResena(): IResena | null { return this.resenas.find(r => r.esPropia) ?? null; }
+
+  mostrarFormResena = false;
+  editandoResenaId: number | null = null;
+  formCalificacion = 5;
+  formComentario = '';
+  guardandoResena = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -70,10 +89,12 @@ export class DetalleVarianteComponent implements OnInit {
     private readonly carritoVariante: CarritoVarianteService,
     private readonly authService: AuthService,
     private readonly productoService: ProductoService,
+    private readonly resenaService: ResenaService,
   ) {}
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
+      this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
 
@@ -119,6 +140,18 @@ export class DetalleVarianteComponent implements OnInit {
         this.paginasCargadas.add(1);
         this.cargaInicialCompletada = true;
       }
+    });
+
+    // Reseñas — el resumen (estrellitas) se carga siempre; el listado completo solo si el
+    // usuario abre la sección, para no traer todos los comentarios de entrada.
+    this.resenaResumen = null;
+    this.seccionResenasAbierta = false;
+    this.resenas = [];
+    this.resenasPagina = 1;
+    this.cerrarFormResena();
+    this.resenaService.resumen(v.id).subscribe({
+      next: res => { this.resenaResumen = res?.data ?? null; },
+      error: () => { this.resenaResumen = null; }
     });
   }
 
@@ -414,6 +447,107 @@ export class DetalleVarianteComponent implements OnInit {
         this.independizando = false;
         this.independizarError = err?.error?.mensaje ?? 'No se pudo independizar la variante.';
       }
+    });
+  }
+
+  // ── Reseñas ──────────────────────────────────────────────────────────────
+
+  toggleSeccionResenas(): void {
+    this.seccionResenasAbierta = !this.seccionResenasAbierta;
+    if (this.seccionResenasAbierta && this.resenas.length === 0) {
+      this.cargarResenas(1);
+    }
+  }
+
+  cargarResenas(pagina: number): void {
+    if (!this.varianteSeleccionada) return;
+    this.cargandoResenas = true;
+    this.resenaService.listarPorVariante(this.varianteSeleccionada.id, pagina, 10).subscribe({
+      next: res => {
+        this.resenas = res?.data?.t ?? [];
+        this.resenasTotalPaginas = res?.data?.totalPaginas ?? 1;
+        this.resenasPagina = pagina;
+        this.cargandoResenas = false;
+      },
+      error: () => { this.cargandoResenas = false; }
+    });
+  }
+
+  anteriorPaginaResenas(): void {
+    if (this.resenasPagina > 1) this.cargarResenas(this.resenasPagina - 1);
+  }
+
+  siguientePaginaResenas(): void {
+    if (this.resenasPagina < this.resenasTotalPaginas) this.cargarResenas(this.resenasPagina + 1);
+  }
+
+  estrellas(n: number): number[] {
+    const redondeado = Math.round(n);
+    return Array(5).fill(0).map((_, i) => i < redondeado ? 1 : 0);
+  }
+
+  abrirFormResena(existente?: IResena): void {
+    this.editandoResenaId = existente?.id ?? null;
+    this.formCalificacion = existente?.calificacion ?? 5;
+    this.formComentario   = existente?.comentario ?? '';
+    this.mostrarFormResena = true;
+  }
+
+  cerrarFormResena(): void {
+    this.mostrarFormResena = false;
+    this.editandoResenaId = null;
+    this.formCalificacion = 5;
+    this.formComentario = '';
+  }
+
+  guardarResena(): void {
+    if (!this.varianteSeleccionada || this.guardandoResena) return;
+    this.guardandoResena = true;
+
+    const obs = this.editandoResenaId
+      ? this.resenaService.editar(this.editandoResenaId, this.formCalificacion, this.formComentario)
+      : this.resenaService.crear(this.varianteSeleccionada.id, this.formCalificacion, this.formComentario);
+
+    obs.subscribe({
+      next: () => {
+        this.guardandoResena = false;
+        this.cerrarFormResena();
+        this.cargarResenas(1);
+        this.resenaService.resumen(this.varianteSeleccionada!.id).subscribe({
+          next: res => { this.resenaResumen = res?.data ?? null; },
+          error: () => {}
+        });
+      },
+      error: (err) => {
+        this.guardandoResena = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo guardar tu reseña', text: err?.error?.mensaje ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  eliminarResena(r: IResena): void {
+    Swal.fire({
+      title: '¿Eliminar reseña?',
+      text: r.esPropia ? 'Esta acción no se puede deshacer.' : `Se eliminará la reseña de ${r.nombreCliente}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.resenaService.eliminar(r.id).subscribe({
+        next: () => {
+          this.resenas = this.resenas.filter(x => x.id !== r.id);
+          if (this.varianteSeleccionada) {
+            this.resenaService.resumen(this.varianteSeleccionada.id).subscribe({
+              next: res => { this.resenaResumen = res?.data ?? null; },
+              error: () => {}
+            });
+          }
+        },
+        error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo eliminar la reseña.' })
+      });
     });
   }
 }

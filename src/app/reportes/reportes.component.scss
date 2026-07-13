@@ -304,6 +304,14 @@
   font-size: .88rem;
 }
 
+.rp-hint {
+  margin: -.4rem 0 .9rem;
+  font-size: .8rem;
+  color: var(--app-text-muted, #64748b);
+}
+
+.rp-tr--sin-ventas td { opacity: .55; }
+
 // Dark mode
 :host-context(body.theme-dark) {
   .rp-page   { background: var(--app-bg); }

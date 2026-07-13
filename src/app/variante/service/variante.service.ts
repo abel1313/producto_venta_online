@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
+import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
@@ -70,6 +70,30 @@ export class VarianteService {
     const { termino, pagina = 1, size = 10 } = params;
     const q = `termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`;
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/buscar?${q}`)
+      .pipe(map(res => res.data));
+  }
+
+  // Catálogo público con filtros combinables (AND). Todos los parámetros son opcionales — a
+  // diferencia de /buscar, nunca 404: sin resultados devuelve t: [].
+  buscarFiltrado(
+    filtros: { termino?: string; precioMin?: number; precioMax?: number; talla?: string; color?: string; marca?: string },
+    pagina = 1, size = 10
+  ): Observable<IVarianteResumenPaginable> {
+    let params = new HttpParams().set('pagina', String(pagina)).set('size', String(size));
+    if (filtros.termino)   params = params.set('termino', filtros.termino);
+    if (filtros.precioMin !== undefined) params = params.set('precioMin', String(filtros.precioMin));
+    if (filtros.precioMax !== undefined) params = params.set('precioMax', String(filtros.precioMax));
+    if (filtros.talla)  params = params.set('talla', filtros.talla);
+    if (filtros.color)  params = params.set('color', filtros.color);
+    if (filtros.marca)  params = params.set('marca', filtros.marca);
+
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/buscar-filtrado`, { params })
+      .pipe(map(res => res.data));
+  }
+
+  // Valores reales del catálogo visible (para armar dropdowns/slider sin adivinar opciones).
+  filtrosDisponibles(): Observable<IFiltrosDisponibles> {
+    return this.http.get<{ data: IFiltrosDisponibles }>(`${this.url}/v1/filtros-disponibles`)
       .pipe(map(res => res.data));
   }
 

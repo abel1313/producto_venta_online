@@ -1,0 +1,61 @@
+<div class="fv-wrap">
+
+  <div class="fv-header">
+    <div class="fv-header__content">
+      <h4 class="fv-header__title">❤️ Mis favoritos</h4>
+      <small class="fv-header__sub">Variantes que guardaste para después</small>
+    </div>
+  </div>
+
+  <div *ngIf="cargando" class="fv-loading">Cargando…</div>
+
+  <div *ngIf="!cargando && variantes.length === 0" class="fv-empty">
+    <span class="fv-empty__icon">💔</span>
+    <p class="mb-0">Todavía no tienes favoritos.</p>
+    <p class="fv-empty__hint">Toca el corazón de cualquier variante en el catálogo para guardarla aquí.</p>
+    <a routerLink="/variantes/buscar" class="fv-btn fv-btn--primary">Ir al catálogo</a>
+  </div>
+
+  <div class="fv-grid" *ngIf="!cargando && variantes.length > 0">
+    <div class="fv-card" *ngFor="let v of variantes">
+
+      <div class="fv-card__img-wrap" (click)="irDetalle(v)">
+        <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+          <img [src]="src" class="fv-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+        </ng-container>
+        <div *ngIf="!v.imagenUrl" class="fv-card__img-placeholder">📦</div>
+        <button class="fv-card__heart" (click)="quitarFavorito(v); $event.stopPropagation()" title="Quitar de favoritos">❤️</button>
+      </div>
+
+      <div class="fv-card__body">
+        <p class="fv-card__nombre">{{ v.nombreProducto }}</p>
+        <p class="fv-card__detalle" *ngIf="v.talla || v.color || v.marca">
+          {{ [v.talla, v.color, v.marca].join(' · ') }}
+        </p>
+        <div class="fv-card__row">
+          <span class="fv-card__precio" *ngIf="v.precio">${{ v.precio | number:'1.2-2' }}</span>
+          <span class="fv-card__stock" [class.fv-card__stock--cero]="(v.stock ?? 0) === 0">
+            {{ (v.stock ?? 0) === 0 ? 'Agotado' : (v.stock ?? 0) + ' pzas' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="fv-card__footer">
+        <button class="fv-btn fv-btn--add" [disabled]="stockAgotado(v)" (click)="agregarCarrito(v)">
+          {{ stockAgotado(v) ? '🚫 Sin stock' : '🛒 Agregar' }}
+        </button>
+        <button class="fv-btn fv-btn--remove" [disabled]="!estaEnCarrito(v)" (click)="eliminarCarrito(v)">
+          ➖ Quitar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="fv-pagination" *ngIf="totalPaginas > 1">
+    <button class="fv-page-btn" [disabled]="pagina <= 1" (click)="anteriorPagina()">‹ Anterior</button>
+    <span class="fv-page-info">{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="fv-page-btn" [disabled]="pagina >= totalPaginas" (click)="siguientePagina()">Siguiente ›</button>
+  </div>
+
+</div>

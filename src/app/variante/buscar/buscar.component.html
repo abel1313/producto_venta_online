@@ -96,6 +96,32 @@
     </label>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
+
+  <!-- Filtros públicos del catálogo: talla / color / marca / precio — para cualquier usuario -->
+  <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
+    <select class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
+      <option value="">Talla</option>
+      <option *ngFor="let t of filtrosDisponibles.tallas" [value]="t">{{ t }}</option>
+    </select>
+    <select class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
+      <option value="">Color</option>
+      <option *ngFor="let c of filtrosDisponibles.colores" [value]="c">{{ c }}</option>
+    </select>
+    <select class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
+      <option value="">Marca</option>
+      <option *ngFor="let m of filtrosDisponibles.marcas" [value]="m">{{ m }}</option>
+    </select>
+    <div class="vb-pub-precio">
+      <input type="number" class="vb-pub-input" placeholder="$ mín"
+             [(ngModel)]="filtroPrecioMin" (ngModelChange)="onFiltroPublicoChange()"
+             [min]="filtrosDisponibles.precioMin ?? 0" />
+      <span class="vb-pub-precio__sep">–</span>
+      <input type="number" class="vb-pub-input" placeholder="$ máx"
+             [(ngModel)]="filtroPrecioMax" (ngModelChange)="onFiltroPublicoChange()"
+             [max]="filtrosDisponibles.precioMax ?? null" />
+    </div>
+    <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
+  </div>
   </div><!-- /vb-header__content -->
 </div>
 
@@ -164,6 +190,11 @@
           <img [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
+        <button *ngIf="!isAnonymous" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"
+                (click)="toggleFavorito(v); $event.stopPropagation()"
+                [title]="esFavorito(v) ? 'Quitar de favoritos' : 'Agregar a favoritos'">
+          {{ esFavorito(v) ? '❤️' : '🤍' }}
+        </button>
       </div>
 
       <!-- Header con color -->

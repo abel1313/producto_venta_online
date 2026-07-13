@@ -35,6 +35,12 @@
       <span class="dv-price">
         {{ varianteSeleccionada.precio | currency:'$' }}
       </span>
+      <span class="dv-resumen-resenas" *ngIf="resenaResumen && resenaResumen.totalResenas > 0" (click)="toggleSeccionResenas()">
+        <ng-container *ngFor="let e of estrellas(resenaResumen.promedio)">
+          <span [class.dv-star--on]="e" class="dv-star">★</span>
+        </ng-container>
+        <span class="dv-resumen-resenas__num">{{ resenaResumen.promedio | number:'1.1-1' }} ({{ resenaResumen.totalResenas }})</span>
+      </span>
       <span class="dv-stock"
             [ngClass]="{
               'dv-stock--ok':  varianteSeleccionada.stock > 3,
@@ -143,6 +149,83 @@
       <i class="pi pi-minus"></i>
       Quitar del carrito
     </button>
+  </div>
+
+  <!-- Reseñas -->
+  <div class="dv-resenas">
+    <button class="dv-resenas__toggle" (click)="toggleSeccionResenas()">
+      ⭐ Reseñas <span *ngIf="resenaResumen && resenaResumen.totalResenas > 0">({{ resenaResumen.totalResenas }})</span>
+      <i class="pi" [ngClass]="seccionResenasAbierta ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+    </button>
+
+    <div *ngIf="seccionResenasAbierta" class="dv-resenas__body">
+
+      <!-- Distribución por estrella -->
+      <div class="dv-resenas__conteo" *ngIf="resenaResumen && resenaResumen.totalResenas > 0">
+        <div class="dv-resenas__conteo-row" *ngFor="let n of [5,4,3,2,1]">
+          <span>{{ n }}★</span>
+          <span class="dv-resenas__conteo-val">{{ resenaResumen.conteoPorEstrella[n] }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="cargandoResenas" class="dv-resenas__loading">Cargando reseñas…</div>
+
+      <!-- Botón escribir / editar (usuarios logueados) -->
+      <div *ngIf="!isAnonymous && !mostrarFormResena && !cargandoResenas" class="dv-resenas__cta">
+        <button class="dv-btn dv-btn--add" (click)="abrirFormResena(miResena ?? undefined)">
+          <i class="pi" [ngClass]="miResena ? 'pi-pencil' : 'pi-star'"></i>
+          {{ miResena ? 'Editar mi reseña' : 'Escribir una reseña' }}
+        </button>
+      </div>
+
+      <!-- Formulario crear/editar -->
+      <div *ngIf="mostrarFormResena" class="dv-resena-form">
+        <label class="dv-details__label">Calificación</label>
+        <div class="dv-resena-form__stars">
+          <span *ngFor="let n of [1,2,3,4,5]"
+                class="dv-star dv-star--pick"
+                [class.dv-star--on]="n <= formCalificacion"
+                (click)="formCalificacion = n">★</span>
+        </div>
+        <textarea class="dv-resena-form__textarea" rows="3" maxlength="500"
+                  placeholder="¿Qué te pareció? (opcional)"
+                  [(ngModel)]="formComentario"></textarea>
+        <div class="dv-resena-form__actions">
+          <button class="dv-indep-btn dv-indep-btn--cancel" (click)="cerrarFormResena()" [disabled]="guardandoResena">Cancelar</button>
+          <button class="dv-indep-btn dv-indep-btn--confirm" (click)="guardarResena()" [disabled]="guardandoResena">
+            {{ guardandoResena ? 'Guardando…' : 'Guardar reseña' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista -->
+      <div class="dv-resena-item" *ngFor="let r of resenas" [class.dv-resena-item--propia]="r.esPropia">
+        <div class="dv-resena-item__hdr">
+          <span class="dv-resena-item__autor">{{ r.nombreCliente }}<span *ngIf="r.esPropia"> (tú)</span></span>
+          <span class="dv-resena-item__fecha">{{ r.fechaCreacion | date:'d MMM y' }}</span>
+        </div>
+        <div class="dv-resena-item__stars">
+          <ng-container *ngFor="let e of estrellas(r.calificacion)">
+            <span [class.dv-star--on]="e" class="dv-star">★</span>
+          </ng-container>
+        </div>
+        <p class="dv-resena-item__comentario" *ngIf="r.comentario">{{ r.comentario }}</p>
+        <div class="dv-resena-item__acciones" *ngIf="r.esPropia || isAdminUser">
+          <button *ngIf="r.esPropia" (click)="abrirFormResena(r)">✏️ Editar</button>
+          <button (click)="eliminarResena(r)">🗑️ Eliminar</button>
+        </div>
+      </div>
+
+      <p *ngIf="!cargandoResenas && resenas.length === 0" class="dv-resenas__vacio">
+        Todavía no hay reseñas de esta variante.
+      </p>
+
+      <div class="dv-resenas__pagination" *ngIf="resenasTotalPaginas > 1">
+        <button [disabled]="resenasPagina <= 1" (click)="anteriorPaginaResenas()">‹</button>
+        <span>{{ resenasPagina }} / {{ resenasTotalPaginas }}</span>
+        <button [disabled]="resenasPagina >= resenasTotalPaginas" (click)="siguientePaginaResenas()">›</button>
+      </div>
+    </div>
   </div>
 
   <!-- Acción admin: Independizar variante -->

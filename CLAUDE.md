@@ -3153,6 +3153,159 @@ Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cl
 
 ---
 
+## FEAT REPORTES — TAB "🎁 PROMOCIONES" (2026-07-13)
+
+> Primera de las 4 features nuevas documentadas en `CAMBIOS_FRONT.md` (2026-07-13). Endpoint
+> `GET /v1/reportes/ventas/promociones?desde=&hasta=` — combos vendidos, transacciones, venta y
+> ganancia total por promoción, ordenado ya por el back (más vendidas primero). Incluye promos
+> sin ninguna venta (todo en 0, `ultimaVenta: null`).
+
+**Nuevo 5º tab en `/reportes`**, mismo patrón que los otros 4 (tabla, sin chart — el doc del back
+solo pidió tabla + filtro de fechas opcional):
+- Fechas `desde`/`hasta` **opcionales** — sin ellas trae el histórico completo. Se auto-carga la
+  primera vez que se abre el tab (`promocionesCargadas` guard en `setTab()`, mismo patrón que evita
+  refetch innecesario del resto de tabs).
+- Tabla: Promoción, Combos vendidos, Transacciones, Total ($), Ganancia ($), Última venta —
+  filas con `combosVendidos === 0` se muestran atenuadas (`.rp-tr--sin-ventas`) para diferenciarlas
+  de las promos que sí se han vendido, sin ocultarlas (el back las manda a propósito).
+
+**⚠️ Backend en `dev`, todavía NO subido a `qa`** — el endpoint no va a responder en QA hasta que
+el back haga el push. Verificar con el back antes de probar en vivo.
+
+**Archivos modificados:**
+- `src/app/reportes/service/reportes.service.ts` → `PromocionReporte`, `getPromociones()`
+- `src/app/reportes/reportes.component.ts` → tab `'promociones'`, `buscarPromociones()`
+- `src/app/reportes/reportes.component.html` → tab button + panel con tabla
+- `src/app/reportes/reportes.component.scss` → `.rp-hint`, `.rp-tr--sin-ventas`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT CATÁLOGO — FILTROS PÚBLICOS (TALLA/COLOR/MARCA/PRECIO) (2026-07-13)
+
+> Segunda de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Endpoints
+> `GET /variantes/v1/buscar-filtrado` (público, combina termino+precioMin+precioMax+talla+color+marca
+> con AND, nunca 404 — `t: []` si no hay resultados) y `GET /variantes/v1/filtros-disponibles`
+> (público, valores reales del catálogo visible para armar los dropdowns + límites del precio).
+
+**Dónde:** `/variantes/buscar` (`BuscarComponent`) — visible para **cualquier usuario**, no solo
+admin (a diferencia de los checkboxes `mostrarConStock`/`mostrarSinStock`/etc. que siguen siendo
+admin-only y usan un endpoint distinto, `/admin/filtrar`).
+
+**Comportamiento:**
+- Al entrar al catálogo (modo general, `productoId === 0`) se llama `filtrosDisponibles()` una vez
+  para pintar los 3 `<select>` (talla/color/marca) y los límites del rango de precio.
+- Cualquier cambio en talla/color/marca/precio (`onFiltroPublicoChange()`) dispara
+  `buscarFiltrado()` con página 1. Se combina con `terminoBusqueda` si el usuario también escribió
+  texto — pero el buscador de texto simple (`/buscar`, cascada código→palabra clave→nombre) **sigue
+  intacto** cuando NO hay filtros públicos activos, tal como pide el contrato del back.
+- Precedencia cuando hay varios tipos de filtro a la vez: filtros admin (`/admin/filtrar`) >
+  filtros públicos (`/buscar-filtrado`) > buscador de texto simple (`/buscar`) — son 3 endpoints
+  distintos que el back no combina entre sí, así que el front tampoco los mezcla.
+- Barra de filtros públicos oculta cuando se navega "por producto" (`modoPorProducto`, viendo las
+  variantes de un producto específico) — no aplica en ese contexto.
+
+**Archivos modificados:**
+- `src/app/variante/models/variante.model.ts` → `IFiltrosDisponibles`
+- `src/app/variante/service/variante.service.ts` → `buscarFiltrado()`, `filtrosDisponibles()`
+- `src/app/variante/buscar/buscar.component.ts` → estado de filtros públicos, `aplicarFiltrosPublicos()`,
+  `limpiarFiltrosPublicos()`, `hayFiltrosPublicosActivos`, precedencia en `onBuscar()`/paginación/escáner
+- `src/app/variante/buscar/buscar.component.html` → `.vb-pub-filtros` (selects + rango de precio)
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-pub-filtros`, `.vb-pub-select`, `.vb-pub-input`, `.vb-pub-precio` (dark + light)
+
+**⚠️ Backend en `dev`, todavía NO subido a `qa`** — no va a responder en QA hasta que el back haga el push.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT FAVORITOS (2026-07-13)
+
+> Tercera de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Requiere estar logueado
+> **con perfil de Cliente completo** — si no, el back responde `400` con
+> `"Tu cuenta todavia no tiene un perfil de cliente completo"` (mismo patrón ya usado en otros
+> flujos de "datosCompletos"). Migración `migration_favoritos_resenas.sql` ya ejecutada.
+
+### Archivos nuevos — módulo lazy `/favoritos`
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/favoritos/service/favorito.service.ts` | 4 endpoints: `agregar()`, `quitar()` (ambos idempotentes), `listar()` (paginado, mismo shape que `/variantes/buscar`), `listarIds()` |
+| `src/app/favoritos/favoritos.component.ts/.html/.scss` | Pantalla "❤️ Mis favoritos" — grid de cards con imagen, precio, stock, botón agregar/quitar carrito y botón quitar de favoritos. Prefijo BEM `fv-`, dark/light completo |
+| `src/app/favoritos/favoritos.module.ts` | Módulo lazy — importa `SharedModule` (para el pipe `imagenSrc`) |
+| `src/app/favoritos/favoritos-routing.module.ts` | Ruta raíz `''` → `FavoritosComponent` |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/favoritos`, guards `AuthGuard + CarritoGuard` (mismo criterio que `/promociones` — cualquier logueado, no exclusivo admin) |
+| `src/app/navbar/navbar.component.html` | Link "❤️ Favoritos" para `!isAnonymous`, junto a "🎁 Promociones" |
+| `src/app/variante/buscar/buscar.component.ts` | `roles`, `isAnonymous`, `favoritosIds: Set<number>` (poblado con `listarIds()` al detectar sesión no-anónima), `esFavorito()`, `toggleFavorito()` (optimista: cambia el Set de inmediato, revierte solo si el back falla) |
+| `src/app/variante/buscar/buscar.component.html` | Botón corazón (❤️/🤍) sobre la imagen de cada card, solo si `!isAnonymous` |
+| `src/app/variante/buscar/buscar.component.scss` | `.vb-card__heart` (esquina inferior derecha de la imagen — evita chocar con el checkbox de selección admin en la esquina superior izquierda y el badge "Deshabilitado" en la superior derecha) + animación `vb-heart-pop` |
+
+**Dónde se puede marcar/quitar favorito:** por ahora solo desde `/variantes/buscar` (el catálogo
+principal). No se agregó a `detalle-productos` ni a otras pantallas de variantes — si se necesita
+ahí también, es una extensión puntual del mismo patrón (`FavoritoService` ya es reusable).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT RESEÑAS Y CALIFICACIONES (2026-07-13)
+
+> Última de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Regla de negocio clave:
+> solo se puede reseñar lo que ya se compró (el back lo valida, el front no filtra nada de
+> antemano); una reseña por cliente por variante (usar editar, no crear otra); publicación
+> inmediata sin moderación previa; owner o ADMIN pueden borrar. Misma migración SQL que
+> favoritos, ya ejecutada.
+
+**Dónde:** integrado directo en `DetalleVarianteComponent` (`/variantes/detalle/...`), la ficha
+de producto que ya usan tanto clientes como admin — no se creó una pantalla nueva.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/resenas/models/resena.model.ts` | `IResena`, `IResenaPaginable`, `IResenaResumen` |
+| `src/app/resenas/service/resena.service.ts` | `crear()`, `editar()`, `eliminar()`, `listarPorVariante()`, `resumen()`, `misResenas()` |
+
+### Comportamiento en `DetalleVarianteComponent`
+
+- **Al seleccionar una variante** (`seleccionar()`): siempre se pide `resumen(varianteId)`
+  (promedio + conteo por estrella) — se muestra como estrellitas clicables junto al precio en el
+  header. El listado completo de comentarios **NO se pide de entrada** — solo cuando el usuario
+  abre la sección "⭐ Reseñas" (`toggleSeccionResenas()`), tal como sugiere el contrato del back
+  (evita traer todos los comentarios si solo se va a mostrar el promedio).
+- **Sección "⭐ Reseñas"** (colapsable): distribución por estrella (5★...1★), lista paginada de
+  reseñas con autor, fecha, estrellas y comentario. Cada reseña propia se resalta
+  (`.dv-resena-item--propia`) y muestra botón "✏️ Editar"; owner o admin ven "🗑️ Eliminar".
+- **Formulario crear/editar** (`abrirFormResena()`): selector de 1-5 estrellas clicables +
+  textarea opcional (máx. 500). Si el usuario ya tiene una reseña propia en la lista cargada
+  (`miResena` getter, busca `esPropia` en el array ya traído), el botón dice "Editar mi reseña" y
+  precarga el form con `PUT`; si no, "Escribir una reseña" crea con `POST`. Al guardar, recarga
+  la página 1 del listado y el resumen (para que el promedio se actualice al instante).
+- **Errores de negocio** (no compró / ya tiene reseña / calificación inválida) se muestran tal
+  cual vienen del back en un Swal — el front no intenta adivinar de antemano si el usuario puede
+  reseñar o no.
+- Botón "Escribir/Editar reseña" solo visible para usuarios logueados (`!isAnonymous`, mismo
+  patrón `roles` que ya se usa en `BuscarComponent` para favoritos).
+
+**Archivos modificados:**
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → estado y métodos de reseñas
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → estrellitas junto al precio + sección "⭐ Reseñas" completa
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-resumen-resenas`, `.dv-star`, `.dv-resenas`, `.dv-resena-form`, `.dv-resena-item` (dark + light)
+
+**No implementado en este alcance (opcional, mencionado en el doc del back pero no pedido):**
+pantalla dedicada "Mis reseñas" en el perfil del cliente — `ResenaService.misResenas()` ya existe
+y está lista para eso si se pide después.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
 ## FEAT F-14 — FILTROS ADMIN EN CATÁLOGO DE PRODUCTOS Y VARIANTES (2026-07-02)
 
 > Backend: endpoints nuevos `GET /v1/productos/admin/filtrar?filtro=...` y `GET /variantes/v1/admin/filtrar?filtro=...`.

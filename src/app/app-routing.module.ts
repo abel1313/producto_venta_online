@@ -91,6 +91,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
+    path: 'favoritos',
+    loadChildren: () => import('./favoritos/favoritos.module').then(m => m.FavoritosModule),
+    canActivate: [AuthGuard, CarritoGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

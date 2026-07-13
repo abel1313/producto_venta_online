@@ -5462,3 +5462,405 @@ dónde lo sacó el front):
 
 **Solo ADMIN** (mismo matcher genérico de `/variantes/**`). Contrato completo también en
 `PLAN_MEJORAS.md` sección 16. **En `dev`, pendiente de subir a `qa`/`main`.**
+
+---
+
+## 🆕 Reporte de promociones — cuántos combos se han vendido y ganancia por promoción (2026-07-13)
+
+**Endpoint nuevo, no existía nada parecido antes:**
+
+```
+GET /v1/reportes/ventas/promociones?desde=2026-07-01&hasta=2026-07-31
+Authorization: Bearer <token admin>
+```
+
+`desde` y `hasta` son **opcionales** (`yyyy-MM-dd`). Sin ellos, trae el histórico completo desde
+que existe la promoción. Si se manda solo uno de los dos, filtra solo por ese límite.
+
+**Solo ADMIN** — mismo matcher genérico ya existente (`/v1/reportes/**` → `hasRole("ADMIN")`), no
+requirió tocar `SecurityConfig`.
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "promocionId": 7,
+      "descripcion": "Combo Jean + Blusa",
+      "combosVendidos": 14,
+      "numeroTransacciones": 9,
+      "ventaTotal": 4900.00,
+      "gananciaTotal": 1750.00,
+      "ultimaVenta": "2026-07-12"
+    },
+    {
+      "promocionId": 3,
+      "descripcion": "Combo Verano",
+      "combosVendidos": 0,
+      "numeroTransacciones": 0,
+      "ventaTotal": 0.0,
+      "gananciaTotal": 0.0,
+      "ultimaVenta": null
+    }
+  ]
+}
+```
+Ordenado por `combosVendidos` descendente (los más vendidos primero). **Incluye promociones sin
+ninguna venta** (aparecen con todo en 0 y `ultimaVenta: null`) — así el admin ve también las que no
+han pegado, no solo las exitosas.
+
+**Qué significa cada campo:**
+- `combosVendidos`: número de combos completos vendidos, **no piezas sueltas**. Si el combo es
+  Jean+Blusa y se vendieron 14 combos, son 28 filas de venta por dentro (14 jeans + 14 blusas), pero
+  el campo ya reporta 14 — el cálculo evita contar de más cuando el combo tiene varias piezas.
+- `numeroTransacciones`: en cuántas ventas/pedidos distintos apareció esta promoción (un cliente que
+  compra 2 combos en un solo ticket cuenta como 1 transacción con 2 combos).
+- `ventaTotal` / `gananciaTotal`: suma real de lo vendido y la ganancia de esa promoción en el rango
+  de fechas — viene directo de los registros de venta ya guardados (`detalle_venta_variantes`), no
+  es una estimación.
+- `ultimaVenta`: fecha (sin hora) de la venta más reciente que incluyó esta promoción.
+
+**No es un cambio de contrato de nada existente** — es un endpoint nuevo, no toca `/promociones/**`
+ni ningún flujo de venta/carrito ya documentado.
+
+**Falta hacer:**
+- ⏳ Subir de `dev` a `qa` (por ahora solo en `dev`).
+- ⏳ No hay pantalla en el front para esto todavía — hay que armar una vista nueva (ej. dentro de
+  "🎁 Gestión Promociones" o como pestaña "Reportes"), no reemplaza ni modifica ninguna pantalla
+  existente.
+- Sugerido para la vista: tabla con las columnas de arriba, filtro de rango de fechas (opcional,
+  puede arrancar sin filtro mostrando todo), ordenado ya viene del back por más vendidos.
+
+**Archivos back:** `PromocionReporteDto.java` (nuevo), `IPromocionRepository.java` (query
+`reportePromociones`), `ReporteVentasServiceImpl.java` / `IReporteVentasService.java`,
+`ReporteVentasController.java`.
+
+---
+
+## 🆕 Filtros de búsqueda en el catálogo público (2026-07-13)
+
+**Primera de 3 mejoras acordadas para la página pública** (filtros → favoritos → reseñas, se van
+agregando una por una). **No requiere correr ningún SQL** — no se tocó ninguna tabla, son queries
+nuevas sobre columnas que ya existen.
+
+### 1. Catálogo filtrado
+
+```
+GET /variantes/v1/buscar-filtrado?termino=&precioMin=&precioMax=&talla=&color=&marca=&pagina=1&size=10
+```
+
+Pública (no requiere login), igual que `/variantes/v1/buscar`. **Todos los parámetros son
+opcionales** — mandar solo los que el usuario haya elegido, el resto se omite o se manda vacío:
+
+| Parámetro | Tipo | Notas |
+|---|---|---|
+| `termino` | string | Busca en nombre de producto, marca, palabra clave y código de barras (como hoy) |
+| `precioMin` / `precioMax` | number | Filtra por `producto.precioVenta`. Se puede mandar solo uno de los dos |
+| `talla` | string | **Match exacto** (no `LIKE`) — pensado para venir de un dropdown, no de texto libre |
+| `color` | string | Match exacto, mismo criterio que talla |
+| `marca` | string | Match exacto, mismo criterio que talla |
+| `pagina` / `size` | int | Igual que el resto de endpoints paginados |
+
+Todos los filtros se combinan con **AND** (ej. `talla=M&color=Azul` → solo variantes M Y azules).
+
+**Diferencia importante con `/variantes/v1/buscar` (el buscador de texto que ya existe):**
+`/buscar` hace una cascada (busca por código → si no hay nada por palabra clave → si no hay nada
+por nombre) y **lanza error 404 si no encuentra nada**. `/buscar-filtrado` es un único query con
+todos los filtros combinados y **devuelve lista vacía `"t": []`** si no hay resultados — no hay que
+capturar un error para el caso "sin resultados", solo revisar si `t` viene vacío. Uno no reemplaza
+al otro: `/buscar` sigue igual para el buscador de texto simple; `/buscar-filtrado` es para cuando
+el usuario además aplica filtros.
+
+**Response 200** — mismo shape que `/variantes/v1/buscar` (no cambia nada de `VarianteResumenDto`):
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 3,
+    "totalRegistros": 27,
+    "t": [
+      {
+        "id": 12, "talla": "M", "descripcion": "...", "color": "Azul", "presentacion": "...",
+        "stock": 8, "marca": "Levi's", "contenidoNeto": null, "imagenUrl": "...",
+        "precio": 300.00, "codigoBarras": "GLPD-066", "nombreProducto": "Jean Slim", "habilitado": "1"
+      }
+    ]
+  }
+}
+```
+
+**Mismas reglas de visibilidad que el resto del catálogo público:** solo variantes con
+`stock > 0`, producto habilitado, variante habilitada y con al menos una imagen — igual que
+`/variantes/v1/buscar` para clientes no-admin.
+
+### 2. Valores disponibles para armar los filtros (dropdowns/slider)
+
+```
+GET /variantes/v1/filtros-disponibles
+```
+
+Pública, sin parámetros. Devuelve los valores que **realmente existen** en el catálogo visible
+ahora mismo, para que el front no tenga que adivinar qué mostrar en los dropdowns ni mostrar
+opciones que no van a dar resultados:
+
+```json
+{
+  "data": {
+    "tallas": ["CH", "M", "G", "32", "34"],
+    "colores": ["Azul", "Negro", "Rojo"],
+    "marcas": ["Levi's", "Zara", "Bershka"],
+    "precioMin": 89.0,
+    "precioMax": 1250.0
+  }
+}
+```
+`precioMin`/`precioMax` son el rango real del catálogo — úsalo para los límites del slider de
+precio. Si el catálogo estuviera vacío, las listas vienen vacías y los precios vienen `null`.
+
+**Sugerencia de flujo en el front:** al entrar a la pantalla de catálogo, llamar primero a
+`filtros-disponibles` para pintar los controles (dropdowns de talla/color/marca + slider de
+precio con esos límites), y usar `buscar-filtrado` cada vez que el usuario cambie algún filtro.
+
+**Archivos back:** `FiltrosDisponiblesDto.java` (nuevo), `IVarianteRepository.java`
+(`buscarVariantesPublicoFiltrado`, `findTallasDisponiblesPublico`, `findColoresDisponiblesPublico`,
+`findMarcasDisponiblesPublico`, `findRangoPreciosPublico`), `VarianteServiceImpl.java`,
+`VarianteController.java` (`/v1/buscar-filtrado`, `/v1/filtros-disponibles`).
+
+**⏳ Pendiente:** subir de `dev` a `qa` (por ahora solo en `dev`, sin push todavía).
+
+---
+
+## 🆕 Favoritos (2026-07-13)
+
+**Segunda de las 3 mejoras acordadas para la página pública.** Tabla nueva `favorito`.
+
+**⚠️ Requiere correr SQL antes de probar** — `src/main/resources/static/migration_favoritos_resenas.sql`
+(crea `favorito` y `resena`, ver sección de reseñas abajo). Correr en dev/qa/prod según se vaya
+subiendo cada ambiente.
+
+**Todo bajo `/v1/favoritos/**` requiere estar logueado.** Además, el usuario logueado necesita
+tener un `Cliente` asociado (no basta con tener cuenta de `Usuario`) — si el registro no se
+completó, cualquier llamada regresa `400` con `"Tu cuenta todavia no tiene un perfil de cliente
+completo"`. Es el mismo caso ya documentado para otros flujos de "datosCompletos".
+
+### 1. Agregar a favoritos
+
+```
+POST /v1/favoritos/{varianteId}
+Authorization: Bearer <token>
+```
+Sin body. Si ya estaba en favoritos, no truena ni duplica — simplemente no hace nada (idempotente).
+
+**Response 200:**
+```json
+{ "mensaje": "Agregado a favoritos", "code": 200, "data": "Agregado a favoritos" }
+```
+**Response 400:** `"No existe la variante con id: {id}"` si el id no existe.
+
+### 2. Quitar de favoritos
+
+```
+DELETE /v1/favoritos/{varianteId}
+Authorization: Bearer <token>
+```
+Idempotente también — si no estaba en favoritos, no truena.
+
+### 3. Listar mis favoritos (paginado, con datos completos de la variante)
+
+```
+GET /v1/favoritos?pagina=1&size=10
+Authorization: Bearer <token>
+```
+
+**Response 200** — mismo `VarianteResumenDto` que ya usa `/variantes/v1/buscar`, ordenado por fecha
+en que se agregó (más reciente primero):
+```json
+{
+  "data": {
+    "pagina": 1, "totalPaginas": 1, "totalRegistros": 3,
+    "t": [
+      { "id": 12, "talla": "M", "color": "Azul", "stock": 8, "marca": "Levi's",
+        "imagenUrl": "...", "precio": 300.00, "codigoBarras": "GLPD-066",
+        "nombreProducto": "Jean Slim", "habilitado": "1" }
+    ]
+  }
+}
+```
+
+### 4. Solo los IDs (para marcar el corazón en el catálogo sin pedir todo el objeto)
+
+```
+GET /v1/favoritos/ids
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{ "data": [12, 45, 89] }
+```
+**Uso sugerido:** al entrar a cualquier pantalla de catálogo, pedir esta lista una vez y guardarla
+en memoria del front; comparar cada `varianteId` visible contra este array para pintar el corazón
+lleno/vacío, en vez de preguntarle al back "¿es favorito?" variante por variante.
+
+**Archivos back:** `Favorito.java` (entidad nueva), `IFavoritoRepository.java`,
+`FavoritoServiceImpl.java`, `FavoritoController.java`, `resumenPorIds()` agregado a
+`VarianteServiceImpl.java` (reutiliza el armado de imágenes/precio que ya usa `/buscar`).
+
+---
+
+## 🆕 Reseñas y calificaciones (2026-07-13)
+
+**Tercera de las 3 mejoras.** Tabla nueva `resena`. **Mismo SQL que favoritos** (arriba) — un solo
+archivo crea las 2 tablas.
+
+**Regla de negocio clave: solo se puede reseñar lo que ya se compró.** El back valida que exista un
+registro de venta real (`detalle_venta_variantes`, mismas tablas que usa el reporte de ventas) del
+cliente logueado para esa variante — no basta con tenerla en el carrito ni con un pedido sin pagar.
+Si no compró, `POST` regresa `400` con `"Solo puedes resenar productos que hayas comprado"`.
+
+**Moderación: publicación inmediata, sin cola de aprobación.** La reseña se ve en el catálogo en
+cuanto se crea. El dueño puede editarla o borrarla cuando quiera; un ADMIN puede borrar cualquier
+reseña (mismo endpoint `DELETE`, el back decide el permiso según quién llama) — es la forma de
+quitar contenido inapropiado, no hay pantalla de "pendientes por aprobar". Si más adelante
+prefieren aprobación previa en vez de esto, avisen antes de que el front dependa de que todo se
+publique al instante.
+
+**Un cliente = una reseña por variante** (no puede dejar 5 reseñas del mismo producto) — para
+cambiar de opinión usa `PUT` (editar), no crear otra.
+
+### 1. Crear reseña
+
+```
+POST /v1/resenas
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "varianteId": 12, "calificacion": 5, "comentario": "Me encantó, talla exacta" }
+```
+`comentario` es opcional (puede ir `null` o vacío, solo calificación). `calificacion` es
+obligatorio, entero 1-5.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": 34,
+    "varianteId": 12,
+    "calificacion": 5,
+    "comentario": "Me encantó, talla exacta",
+    "fechaCreacion": "2026-07-13T18:40:00",
+    "nombreCliente": "Ana G.",
+    "esPropia": true
+  }
+}
+```
+`nombreCliente` ya viene recortado a nombre + inicial del apellido paterno (privacidad) — no
+mandar el nombre completo del cliente en ningún lado del front para esto.
+
+**Response 400:**
+- `"La calificacion debe ser un numero entre 1 y 5"`
+- `"Solo puedes resenar productos que hayas comprado"`
+- `"Ya dejaste una resena para este producto, puedes editarla en vez de crear otra"`
+- `"Tu cuenta todavia no tiene un perfil de cliente completo"`
+
+### 2. Editar mi reseña
+
+```
+PUT /v1/resenas/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "calificacion": 4, "comentario": "Actualizo: la talla me quedó algo grande" }
+```
+Solo el dueño puede editar la suya — `400` con `"No puedes editar la resena de otro cliente"` si
+se intenta con el id de otro. `varianteId` no se manda (no se puede reasignar una reseña a otra
+variante).
+
+**Response 200:** mismo shape que crear.
+
+### 3. Eliminar reseña
+
+```
+DELETE /v1/resenas/{id}
+Authorization: Bearer <token>
+```
+El dueño borra la suya. Un ADMIN puede borrar cualquiera (moderación) — mismo endpoint, el back
+distingue por rol. Si un cliente normal intenta borrar la de otro: `400` con `"No puedes eliminar
+la resena de otro cliente"`.
+
+**Response 200:**
+```json
+{ "mensaje": "Resena eliminada", "code": 200, "data": "Resena eliminada" }
+```
+
+### 4. Listar reseñas de un producto (pública, no requiere login)
+
+```
+GET /v1/resenas/variante/{varianteId}?pagina=1&size=10
+```
+Sin `Authorization`, funciona igual — pero si se manda el token, cada reseña trae `esPropia: true`
+en la que corresponde al usuario logueado (para mostrarle botones de editar/borrar solo en esa).
+Sin token, todas vienen con `esPropia: false`.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "pagina": 1, "totalPaginas": 1, "totalRegistros": 2,
+    "t": [
+      { "id": 34, "varianteId": 12, "calificacion": 5, "comentario": "Me encantó, talla exacta",
+        "fechaCreacion": "2026-07-13T18:40:00", "nombreCliente": "Ana G.", "esPropia": true },
+      { "id": 31, "varianteId": 12, "calificacion": 4, "comentario": null,
+        "fechaCreacion": "2026-07-10T12:00:00", "nombreCliente": "Luis M.", "esPropia": false }
+    ]
+  }
+}
+```
+Ordenado por más reciente primero.
+
+### 5. Resumen — promedio y conteo por estrella (para la ficha del producto)
+
+```
+GET /v1/resenas/variante/{varianteId}/resumen
+```
+Pública, sin parámetros de paginación (es un solo objeto).
+
+**Response 200:**
+```json
+{
+  "data": {
+    "varianteId": 12,
+    "promedio": 4.5,
+    "totalResenas": 2,
+    "conteoPorEstrella": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 1 }
+  }
+}
+```
+`conteoPorEstrella` siempre trae las 5 llaves (1 a 5) aunque no haya reseñas de esa calificación —
+no hay que validar `undefined` en el front, si no hay ninguna la clave existe con valor `0`.
+`promedio` viene `0.0` (no `null`) cuando `totalResenas` es `0` — mostrar el estado "sin reseñas
+todavía" cuando `totalResenas === 0`, no cuando `promedio === 0`.
+
+**Sugerencia de flujo:** llamar a `/resumen` al cargar la ficha del producto (para las estrellitas
+junto al precio) y a `/variante/{id}` (sin `/resumen`) solo cuando el usuario abre la sección de
+reseñas completa — son 2 llamadas separadas a propósito, para no traer todos los comentarios si
+solo se va a mostrar el promedio.
+
+### 6. Mis reseñas (requiere login)
+
+```
+GET /v1/resenas/mis-resenas?pagina=1&size=10
+Authorization: Bearer <token>
+```
+Mismo shape que el listado por variante, pero solo las del cliente logueado, de cualquier
+producto. Útil para una pantalla "Mis reseñas" en el perfil del cliente.
+
+**Archivos back:** `Resena.java` (entidad nueva), `IResenaRepository.java`, DTOs en
+`models/resenas/` (`ResenaRequestDto`, `ResenaEditarDto`, `ResenaResponseDto`, `ResenaResumenDto`),
+`ResenaServiceImpl.java`, `ResenaController.java`. También se agregó
+`existsByVariante_IdAndVenta_Cliente_Id` a `IDetalleVentaVarianteRepository.java` (valida la
+compra) y `currentUsuarioOpt()` a `AuthenticationUtils.java` (para que el listado público sepa
+"es mío" sin reventar cuando no hay token).
+
+**⏳ Pendiente:** correr `migration_favoritos_resenas.sql` en el ambiente que corresponda antes de
+probar, y subir de `dev` a `qa`.

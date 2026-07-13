@@ -50,6 +50,16 @@ export interface ProductoMasVendido {
   totalVendido:     number;
 }
 
+export interface PromocionReporte {
+  promocionId:         number;
+  descripcion:         string;
+  combosVendidos:      number;
+  numeroTransacciones: number;
+  ventaTotal:          number;
+  gananciaTotal:       number;
+  ultimaVenta:         string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private readonly base = `${environment.api_Url}/v1/reportes/ventas`;
@@ -79,6 +89,16 @@ export class ReportesService {
       .get<{ data: ProductoMasVendido[] }>(
         `${this.base}/productos-mas-vendidos?desde=${desde}&hasta=${hasta}&limite=${limite}`
       )
+      .pipe(map(r => r.data ?? []));
+  }
+
+  getPromociones(desde?: string, hasta?: string): Observable<PromocionReporte[]> {
+    const params: string[] = [];
+    if (desde) params.push(`desde=${desde}`);
+    if (hasta) params.push(`hasta=${hasta}`);
+    const qs = params.length ? `?${params.join('&')}` : '';
+    return this.http
+      .get<{ data: PromocionReporte[] }>(`${this.base}/promociones${qs}`)
       .pipe(map(r => r.data ?? []));
   }
 }

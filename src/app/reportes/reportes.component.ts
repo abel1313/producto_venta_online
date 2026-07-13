@@ -5,6 +5,7 @@ import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
 import {
   ProductoMasVendido,
+  PromocionReporte,
   ReporteCliente,
   ReporteDiario,
   ReporteMensual,
@@ -15,7 +16,7 @@ import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/mod
 
 Chart.register(...registerables);
 
-type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos';
+type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones';
 
 @Component({
   selector: 'app-reportes',
@@ -62,6 +63,13 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   cargandoVendidos = false;
   private pendingVendidos: ProductoMasVendido[] | null = null;
 
+  // — Promociones —
+  desdePromos = '';
+  hastaPromos = '';
+  promociones: PromocionReporte[] = [];
+  cargandoPromociones = false;
+  private promocionesCargadas = false;
+
   constructor(
     private readonly svc: ReportesService,
     private readonly clienteService: ClienteService,
@@ -107,6 +115,9 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (t === 'cliente' && this.reporteCliente) {
       setTimeout(() => this.renderClienteChart(this.reporteCliente!), 50);
+    }
+    if (t === 'promociones' && !this.promocionesCargadas) {
+      this.buscarPromociones();
     }
   }
 
@@ -337,6 +348,23 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
         },
       },
     } as any);
+  }
+
+  // ── PROMOCIONES ───────────────────────────────────────────────────────────
+
+  buscarPromociones(): void {
+    this.cargandoPromociones = true;
+    this.svc.getPromociones(this.desdePromos || undefined, this.hastaPromos || undefined).subscribe({
+      next: p => {
+        this.promociones = p;
+        this.cargandoPromociones = false;
+        this.promocionesCargadas = true;
+      },
+      error: err => {
+        this.cargandoPromociones = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el reporte de promociones.' });
+      },
+    });
   }
 
   // ── HELPERS ───────────────────────────────────────────────────────────────

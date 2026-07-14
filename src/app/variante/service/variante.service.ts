@@ -199,6 +199,12 @@ export class VarianteService {
   saveVentaDirecta(data: IVentaDirectaRequest): Observable<IVentaDirectaResponse> {
     return this.http.post<IVentaDirectaResponse>(`${environment.api_Url}/v1/ventas/save`, data);
   }
+
+  // "Agregar mi compra" — el cliente vincula a su cuenta una venta de mostrador que se
+  // registró con clienteSinRegistro. Requiere sesión (cualquier cliente, no admin).
+  reclamarVenta(codigo: string): Observable<{ data: string }> {
+    return this.http.post<{ data: string }>(`${environment.api_Url}/v1/ventas/reclamar`, { codigo });
+  }
 }
 
 export interface IVentaDirectaRequest {

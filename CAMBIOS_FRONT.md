@@ -1997,6 +1997,7 @@ y mostrar el texto de `mensaje`.
 | `Configuración de rifa no encontrada` | `configurarRifa.id` no existe |
 | `Esta rifa ya fue sorteada o está inactiva` | `activa=false` |
 | `El plazo de registro cerró el {fechaHoraLimite}` | ya pasó `fechaHoraLimite` y `forzar=false` (default) — reintentar con `?forzar=true` si el admin quiere forzar el registro |
+| `Este cliente ya está registrado en esta rifa` | **NUEVO (2026-07-13)** — `clientePedidoId` ya tiene un concursante en esta misma rifa. Antes este endpoint no lo validaba (solo lo validaba `/importarDePedidos`), así que un mismo cliente se podía registrar varias veces si se usaba el registro individual. `forzar=true` **no** evita este error — es una regla de integridad, no de plazo. |
 
 ### `POST /v1/concursante/importarDePedidos`
 | `mensaje` | Causa |
@@ -5917,3 +5918,80 @@ código de barras en venta directa) donde sí se necesita exacto, no parcial.
 fix y quedó un resultado vacío en caché, puede que sigas viendo "sin resultados" hasta que se
 limpie. Limpiar con `DELETE /v1/admin/cache` (ADMIN) después de desplegar, antes de volver a
 probar.
+
+---
+
+## 🆕 Reclamo de venta de mostrador — para que el cliente aparezca en la rifa (2026-07-13)
+
+**Problema que resuelve:** un cliente compra en mostrador pero, por cualquier razón, la venta se
+registra con `ClienteSinRegistro` en vez de con su cuenta real. Esa venta sí genera un Pedido por
+detrás (todo venta directa normal crea uno), pero queda ligado al registro "sin cuenta", no al
+cliente real — por lo que no se puede vincular su historial de compras a su perfil. Ahora el
+cliente puede "reclamar" esa venta desde la app y quedar vinculado.
+
+**Flujo:**
+1. Al guardar una venta directa (`POST /v1/ventas/save`) con `clienteSinRegistroDto` que trae
+   `correo_Electronico`, el backend genera un código UUID y lo **envía por correo** a esa
+   dirección (asunto "Reclama tu compra — Novedades Jade"). No se expone en la respuesta del save.
+2. El cliente inicia sesión en la app y captura ese código.
+
+### `POST /v1/ventas/reclamar` — NUEVO, requiere estar autenticado (cualquier cliente, no ADMIN)
+**Request:**
+```json
+{ "codigo": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }
+```
+**Response 200:**
+```json
+{ "data": "Compra vinculada a tu cuenta" }
+```
+
+**Errores (400, `mensaje`):**
+| `mensaje` | Causa |
+|---|---|
+| `Debes indicar el código` | body sin `codigo` o vacío |
+| `Código inválido` | no existe ninguna venta con ese `codigoReclamo` |
+| `Este código ya fue utilizado` | esa venta ya fue reclamada antes (un código solo sirve **una vez**) |
+| `Tu cuenta todavía no tiene un perfil de cliente completo` | el usuario logueado no tiene `Cliente` asociado |
+| `El correo de tu cuenta no coincide con el de esta compra` | el correo de la cuenta logueada no es el mismo al que se envió el código (capa extra de seguridad — evita reclamar con una cuenta distinta si el código se reenvía) |
+
+**Qué cambia en el backend al reclamar:** la `Venta.cliente` y el `Pedido.cliente` que la
+respalda quedan asignados al cliente autenticado (antes solo tenían `clienteSinRegistro`). Esto
+es lo que hace que, al armar una rifa con `GET /v1/concursante/clientesPorMes?mes=YYYY-MM`, ese
+cliente aparezca en la lista de compradores de ese mes — esa consulta lee de `pedidos`, no de
+`ventas`, por eso se propaga también al pedido. La rifa a la que puede entrar queda **limitada al
+mes de la venta**: si compró en enero, ese cliente solo aparece en `clientesPorMes?mes=2026-01`,
+no en meses posteriores.
+
+### ⚠️ Naming — no usar la palabra "reclamo" de cara al cliente
+
+El endpoint y los métodos internos se llaman `reclamar`/`reclamo` porque es el término técnico
+más corto, pero **en la UI del cliente no debe aparecer esa palabra** — en español "reclamo" se
+lee como queja/reclamación, no como "esta compra es mía, agrégala a mi cuenta". El correo que ya
+se envía usa el texto "Agregar mi compra"; el front debe seguir esa misma línea:
+
+| Elemento | Texto sugerido |
+|---|---|
+| Nombre de la pantalla/opción de menú | "Agregar mi compra" |
+| Botón de acción | "Agregar compra" |
+| Campo de captura | "Código de tu compra" (el UUID que llegó por correo) |
+| Mensaje de éxito | "Tu compra quedó agregada a tu cuenta" |
+| Error: código ya usado | "Este código ya fue usado" |
+| Error: código inválido | "No encontramos ese código, revisa que esté bien copiado" |
+| Error: correo no coincide | "Este código pertenece a otra cuenta" |
+
+### 📝 Flujo de UI sugerido (pendiente — para cuando se construya el front)
+
+Esto **todavía no está construido en el front**, queda anotado aquí para retomarlo:
+
+1. **Dónde vive:** dentro de "Mi cuenta" / perfil del cliente, como una opción más de menú
+   ("Agregar mi compra"), no como una pantalla que se muestre sola — el cliente entra ahí solo
+   cuando recibió el correo y decide capturar el código.
+2. **Pantalla:** un solo campo de texto para pegar/escribir el código + botón "Agregar compra".
+   No hace falta mostrar nada más (ni monto, ni productos) porque el backend no expone el detalle
+   de la venta en este endpoint, solo confirma o rechaza.
+3. **Alternativa a evaluar más adelante:** en vez de que el cliente tenga que ir a buscar la
+   opción en el menú, se le podría notificar dentro de la app (banner/notificación push) cuando
+   detecte que tiene un correo de este tipo pendiente — no implementado, es solo una idea a
+   futuro, no bloquea el llegar a construir la versión simple del punto 2.
+4. **Después de agregar exitosamente:** no hay nada más que mostrarle al cliente en el momento
+   (no ve si ganó o no rifa, eso es otro flujo, del admin) — solo el mensaje de éxito.

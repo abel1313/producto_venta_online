@@ -3917,3 +3917,66 @@ resolver sin antes darle "Cancelar cambio" explícitamente.
   `[attr.readonly]`/`[class.field-input--readonly]` cuando `codigoPendiente` es `true`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT "AGREGAR MI COMPRA" — RECLAMAR VENTA DE MOSTRADOR PARA RIFAS (2026-07-14)
+
+> Documentado por el back en `CAMBIOS_FRONT.md`, sección "🆕 Reclamo de venta de mostrador —
+> para que el cliente aparezca en la rifa". **Endpoints ya existían en el back antes de esta
+> sesión** — lo que faltaba era la pantalla del cliente, que no estaba construida.
+
+**Problema que resuelve:** si un cliente compra en mostrador y la venta queda registrada con
+`ClienteSinRegistro` (nombre suelto) en vez de con su cuenta real, ese cliente no puede después
+ser considerado para una rifa armada desde compras reales (`GET /v1/concursante/clientesPorMes`
+lee de `pedidos`, que solo tienen dueño real si la venta está vinculada a un `Cliente`).
+
+**Flujo:**
+1. Al guardar la venta directa (`POST /v1/ventas/save`) con `clienteSinRegistroDto.correo_Electronico`,
+   el back genera un código y lo envía por correo automáticamente (asunto "Reclama tu compra —
+   Novedades Jade") — esto ya pasaba antes de esta sesión, no se tocó nada aquí.
+2. **Nuevo en esta sesión:** el cliente entra a su cuenta → sidebar → "Agregar mi compra"
+   (`/clientes/agregar-compra`) → escribe el código → `POST /v1/ventas/reclamar` con
+   `{ codigo }` → si es válido, el back vincula `Venta.cliente` y `Pedido.cliente` a su cuenta.
+
+**⚠️ Regla de naming respetada:** el back llama al endpoint/campo "reclamar" internamente, pero
+esa palabra **no aparece en ningún texto visible al cliente** — la pantalla, el botón y los
+mensajes usan "Agregar mi compra" / "Agregar compra" / "Código de tu compra", tal como pidió el
+back explícitamente en su documento (en español "reclamo" se lee como queja, no como "esto es
+mío"). Los mensajes de error también siguen el texto sugerido por el back:
+
+| Mensaje crudo del back | Texto mostrado al cliente |
+|---|---|
+| `Este código ya fue utilizado` | "Este código ya fue usado." |
+| `Código inválido` | "No encontramos ese código, revisa que esté bien copiado." |
+| `El correo de tu cuenta no coincide con el de esta compra` | "Este código pertenece a otra cuenta." |
+| (cualquier otro, ej. perfil de cliente incompleto) | se muestra tal cual viene del back |
+
+**Pantalla:** un solo campo de texto + botón "Agregar compra", sin mostrar monto ni productos
+(el endpoint no expone el detalle de la venta, solo confirma o rechaza) — exactamente como
+sugirió el back. Tras éxito: mensaje "Tu compra quedó agregada a tu cuenta" + botones para
+agregar otro código o ir a "Mis datos".
+
+**No implementado (fuera de alcance, es una idea a evaluar a futuro según el propio doc del
+back):** notificación/banner dentro de la app cuando el cliente tiene un código pendiente sin
+capturar — el cliente debe ir manualmente a la opción del menú.
+
+**⚠️ Corrección importante de esta sesión:** en la conversación se llegó a asumir por error que
+también existía un endpoint de fallback para que el ADMIN asignara manualmente una venta a un
+cliente (ej. `POST /v1/ventas/{id}/asignarCliente`) — **ese endpoint no existe**, no está en
+`CAMBIOS_FRONT.md` ni se implementó. Si se necesita ese fallback (para cuando el cliente nunca
+reclama el código), hay que pedirlo formalmente al back — no está construido en ningún lado
+todavía.
+
+**Archivos nuevos:**
+- `src/app/clietes/agregar-compra/agregar-compra.component.ts/.html/.scss` → pantalla completa,
+  prefijo BEM `amc-`, dark/light
+
+**Archivos modificados:**
+- `src/app/variante/service/variante.service.ts` → `reclamarVenta(codigo)` → `POST /v1/ventas/reclamar`
+- `src/app/clietes/clietes.module.ts` → declara `AgregarCompraComponent`
+- `src/app/clietes/clietes-routing.module.ts` → ruta `agregar-compra`, guard `AuthGuard` (cualquier
+  usuario logueado, no admin-only)
+- `src/app/navbar/navbar.component.html` → link "Agregar mi compra" en `.sb-user-links`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

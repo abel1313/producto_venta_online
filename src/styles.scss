@@ -744,6 +744,49 @@ body.theme-dark, [data-theme="dark"] {
 }
 
 /* ════════════════════════════════════════════════════════════
+   AETHER — INTERACCIÓN PREMIUM (press-scale) + TOKENS GLASS
+   ────────────────────────────────────────────────────────────
+   Base tomada del "MPC Aether Premium Motion System" (Stitch),
+   adaptada a la paleta ámbar/crema ya homologada (nunca azul/
+   morado). Dos piezas, ambas globales a TODO el proyecto:
+
+   1) Micro-feedback táctil: cualquier botón (Bootstrap .btn,
+      PrimeNG .p-button, o BEM *-btn de cualquier componente)
+      se encoge levemente al presionar — igual que el
+      `.btn-primary:active { transform: scale(0.96) }` de Aether.
+      Los componentes que ya definen su propio :active (ej.
+      .btn-login con translateY) lo siguen ganando por
+      especificidad — esto es solo el default.
+
+   2) Tokens de vidrio reutilizables (--radius-premium,
+      .glass-panel) para usar puntualmente en componentes nuevos
+      o rediseñados — reutilizan --header-brand/-shadow/-border
+      (ya ámbar, ya con blur) en vez de inventar color nuevo.
+   ════════════════════════════════════════════════════════════ */
+:root {
+  --radius-premium: 24px;
+}
+
+button, .btn, .p-button, [class*="-btn"] {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+button:not(:disabled):not(.p-disabled):active,
+.btn:not(:disabled):active,
+.p-button:not(.p-disabled):active,
+[class*="-btn"]:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.glass-panel {
+  background: var(--header-brand);
+  backdrop-filter: var(--header-brand-filter, blur(20px));
+  -webkit-backdrop-filter: var(--header-brand-filter, blur(20px));
+  border: 1px solid var(--header-brand-border);
+  border-radius: var(--radius-premium);
+  box-shadow: 0 8px 32px var(--header-brand-shadow);
+}
+
+/* ════════════════════════════════════════════════════════════
    FORMATO 24 HORAS — inputs datetime-local y time
    Oculta el campo AM/PM en Chrome/Edge (webkit). Al ocultarlo,
    el campo de horas cambia automáticamente a rango 0–23.

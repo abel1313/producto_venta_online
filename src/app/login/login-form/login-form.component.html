@@ -1,5 +1,11 @@
 <div class="split-page">
 
+  <!-- ⚠️ BOTÓN DE PRUEBA — temporal, solo para comparar claro/oscuro en vivo -->
+  <button type="button" class="theme-test-btn" (click)="toggleThemeTest()"
+          [title]="(isDark$ | async) ? 'Probar modo claro' : 'Probar modo oscuro'">
+    {{ (isDark$ | async) ? '☀️' : '🌙' }}
+  </button>
+
   <!-- ── Panel izquierdo: imágenes ── -->
   <div class="split-images">
     <div class="img-slot img-slot--1">
@@ -35,6 +41,7 @@
 
   <!-- ── Panel derecho: formulario ── -->
   <div class="split-form">
+    <canvas #particlesCanvas class="particles-bg" *ngIf="(isDark$ | async)"></canvas>
     <div class="form-inner">
 
       <div class="brand">

@@ -148,6 +148,32 @@ $t:  all 0.22s ease;
 // ── Líneas de venta ────────────────────────────────────────────────
 .vd-lines { display: flex; flex-direction: column; gap: 8px; }
 
+// Combo de promoción en la venta — mismo bloque visual que .vd-line pero
+// destacado con el accent, para distinguirlo de una variante suelta.
+.vd-promo {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent);
+  border-radius: 10px; padding: 10px;
+
+  &__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  &__nombre {
+    font-size: .84rem; font-weight: 700; color: var(--card-text);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+
+  &__badge {
+    font-size: .68rem; font-weight: 700;
+    background: var(--app-accent); color: #fff;
+    border-radius: 99px; padding: 1px 8px; white-space: nowrap;
+  }
+
+  &__detalles {
+    font-size: .72rem; color: var(--card-text-muted); line-height: 1.35;
+  }
+}
+
 .vd-line {
   display: flex; align-items: center; gap: 10px;
   background: var(--card-bg); border: 1px solid var(--card-border);

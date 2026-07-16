@@ -4291,3 +4291,49 @@ Cambios de UI derivados:
 
 **Verificado con `ng build --configuration=development` sin errores.** ⚠️ No se probó en vivo:
 `/admin/promociones` requiere sesión de admin y backend corriendo.
+
+---
+
+## FIX VENTA DIRECTA — LAS PROMOS DEL CARRITO NO SE MOSTRABAN (2026-07-16)
+
+**Síntoma reportado:** admin crea una promoción → la agrega al carrito → `/variantes/carrito` →
+"💰 Cobrar ahora" → `/variantes/venta-directa` → **la promoción no aparece por ningún lado.**
+
+**Causa raíz — el template nunca renderizó las promos.** El `.ts` estaba completo desde el
+FEAT original (`promosCarrito` se pre-carga en `ngOnInit`, cuenta en `totalVenta`/`totalUnidades`,
+`puedeCobrar` acepta solo-promos, `ejecutarVenta()` las envía), pero
+`venta-directa.component.html` **solo usaba `tienePromos` para OCULTAR la sección de crédito** —
+nunca hubo un `*ngFor` que las listara. Confirmado con
+`git log -S "promosCarrito" -- venta-directa.component.html` → **cero commits**.
+
+⚠️ **No fue una regresión: nunca se implementó.** El commit `287f9dd` ("ocultar apartado/
+ir-pagando cuando hay promos en carrito") es el que introdujo `tienePromos` en ese HTML, pero
+solo para el `*ngIf` del crédito. Es fácil confundirlo con "ya se había arreglado".
+
+**Agravante — carrito con SOLO promos:** la condición del panel era
+`*ngIf="lineas.length > 0; else ventaVacia"`. Si el carrito traía únicamente combos (sin
+variantes sueltas), `lineas.length === 0` → se mostraba el estado vacío ("Agrega variantes desde
+el buscador") **y ni siquiera se pintaban los totales**, mientras el botón Cobrar sí estaba
+habilitado (porque `puedeCobrar` usa `lineas.length > 0 || tienePromos`). Pantalla vacía que sí
+cobra.
+
+**Fix:**
+- Condición del panel → `*ngIf="lineas.length > 0 || tienePromos; else ventaVacia"`.
+- Nueva sección `.vd-promo` que lista cada combo (descripción, `× N combo(s)`, el desglose de
+  piezas y el subtotal), destacada con `--app-accent` para distinguirla de una variante suelta.
+- Nuevo `quitarPromo(i)` en el `.ts` — hace `splice` solo del array local, **igual que
+  `quitarLinea()`**: el carrito real se limpia hasta el final en `limpiarTodo()` si
+  `cargadoDesdeCarrito`.
+
+**Revisado y descartado (no era bug):** `ngOnInit` lee `this.isAdminUser` de forma síncrona justo
+después de suscribirse a `authService.userRoles$`, lo que parecía una condición de carrera —
+pero `userRoles` es un `BehaviorSubject`, así que emite síncronamente al suscribir y el flag ya
+está listo. No tocar.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.html` → condición del panel + sección de promos
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `quitarPromo()`
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-promo`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo (requiere backend, sesión admin
+y una promo con stock).

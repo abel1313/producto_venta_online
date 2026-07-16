@@ -293,7 +293,30 @@
       <!-- ── LÍNEAS DE VENTA ───────────────────────────────────── -->
       <p class="vd-panel__title">🧾 Artículos</p>
 
-      <div *ngIf="lineas.length > 0; else ventaVacia" class="vd-lines">
+      <!-- El carrito puede traer SOLO promos (sin variantes sueltas) — por eso la
+           condición incluye tienePromos: si no, se veía el estado vacío y sin totales
+           aunque el botón Cobrar estuviera habilitado. -->
+      <div *ngIf="lineas.length > 0 || tienePromos; else ventaVacia" class="vd-lines">
+
+        <!-- ── Combos de promoción ── -->
+        <div class="vd-promo" *ngFor="let p of promosCarrito; let i = index">
+          <div class="vd-promo__body">
+            <span class="vd-promo__nombre">
+              🏷️ {{ p.descripcion }}
+              <span class="vd-promo__badge">× {{ p.cantidadCombos }} combo{{ p.cantidadCombos === 1 ? '' : 's' }}</span>
+            </span>
+            <div class="vd-promo__detalles">
+              <span *ngFor="let d of p.detalles; let j = index">
+                {{ d.cantidad }}× {{ d.nombreProducto || 'Variante ' + d.varianteId }}<span *ngIf="d.talla"> ({{ d.talla }})</span><span *ngIf="j < p.detalles.length - 1"> · </span>
+              </span>
+            </div>
+          </div>
+          <div class="vd-line__right">
+            <span class="vd-line__subtotal">{{ (p.precioTotal * p.cantidadCombos) | currency:'$' }}</span>
+            <button class="vd-line__del" (click)="quitarPromo(i)">✕</button>
+          </div>
+        </div>
+
         <div class="vd-line" *ngFor="let l of lineas; let i = index">
           <div class="vd-line__thumb"
                (click)="verImagen(l.variante.imagenUrl, labelVariante(l.variante))"

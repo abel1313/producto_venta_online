@@ -339,6 +339,10 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   quitarLinea(i: number): void { this.lineas.splice(i, 1); }
 
+  // Solo quita el combo de ESTA venta en curso, igual que quitarLinea(). El carrito
+  // real se limpia hasta el final, en limpiarTodo(), si la venta vino de ahí.
+  quitarPromo(i: number): void { this.promosCarrito.splice(i, 1); }
+
   limpiarVenta(): void {
     Swal.fire({
       title: '¿Limpiar la venta?', icon: 'warning',

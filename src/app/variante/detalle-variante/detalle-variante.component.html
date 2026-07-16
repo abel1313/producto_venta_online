@@ -228,11 +228,11 @@
     </div>
   </div>
 
-  <!-- Acción admin: Independizar variante -->
+  <!-- Acción admin: Convertir en modelo propio -->
   <div *ngIf="isAdminUser" class="dv-admin-actions">
     <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()" [disabled]="cargandoIndependizar">
       <span *ngIf="cargandoIndependizar"><span class="spinner-border spinner-border-sm"></span> Cargando…</span>
-      <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Independizar variante</span>
+      <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Convertir en modelo propio</span>
     </button>
   </div>
 
@@ -243,7 +243,7 @@
   <div class="dv-indep-modal" (click)="$event.stopPropagation()">
 
     <div class="dv-indep-modal__header">
-      <h3 class="dv-indep-modal__title">⚡ Independizar variante #{{ varianteSeleccionada?.id }}</h3>
+      <h3 class="dv-indep-modal__title">⚡ Convertir en modelo propio #{{ varianteSeleccionada?.id }}</h3>
       <button class="dv-indep-modal__close" (click)="cerrarIndependizar()" [disabled]="independizando">✕</button>
     </div>
 

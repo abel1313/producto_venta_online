@@ -114,7 +114,7 @@
     <div class="rf-card__head rf-card__head--blue">
       <span class="rf-card__step">B</span>
       <div>
-        <h4 class="rf-card__title">Variantes a rifar</h4>
+        <h4 class="rf-card__title">Productos a rifar</h4>
         <p class="rf-card__sub">{{ variantesRifa.length }} variante(s) agregada(s)</p>
       </div>
       <button class="rf-btn rf-btn--sm rf-btn--outline ms-auto"
@@ -199,7 +199,7 @@
           <div class="rf-search-box">
             <span>🔍</span>
             <input class="rf-search-input" type="text"
-                   placeholder="Buscar variante por nombre, color, talla o código…"
+                   placeholder="Buscar producto por nombre, color, talla o código…"
                    [value]="terminoBusca"
                    (input)="onBuscarVariante($event)"
                    autocomplete="off"
@@ -247,7 +247,7 @@
         <button class="rf-btn rf-btn--primary"
                 (click)="guardarVarianteRifa()"
                 [disabled]="!varianteParaAgregar || !palabraClaveInput.trim() || giroGanadorInput < 1 || guardandoVariante">
-          <span *ngIf="!guardandoVariante">✅ Confirmar variante</span>
+          <span *ngIf="!guardandoVariante">✅ Confirmar producto</span>
           <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
             <span class="spinner-border spinner-border-sm"></span> Guardando…
           </span>
@@ -777,7 +777,7 @@
     <p class="rf-transicion__clave">Palabra: "{{ ganadorActual.concursante.palabraClave }}"</p>
 
     <ng-container *ngIf="!ganadorActual.rifaTerminada">
-      <p class="rf-transicion__sub">¿Con qué participantes continúa la siguiente variante?</p>
+      <p class="rf-transicion__sub">¿Con qué participantes continúa el siguiente producto?</p>
       <div class="rf-modos">
         <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'RESTANTES'"
                 (click)="elegirModo('RESTANTES')">
@@ -801,7 +801,7 @@
 
       <!-- Form para nuevos participantes en modo NUEVOS -->
       <div class="rf-nuevos-form" *ngIf="modoElegido === 'NUEVOS' && mostrarFormNuevo">
-        <h6 class="rf-nuevos-form__title">➕ Agregar participante para la siguiente variante</h6>
+        <h6 class="rf-nuevos-form__title">➕ Agregar participante para el siguiente producto</h6>
         <form [formGroup]="participanteNuevoForm" class="rf-form-participante">
           <div class="rf-row">
             <div class="rf-field rf-field--flex1">

@@ -1,5 +1,5 @@
 <button class="vf-back" (click)="volver()">
-  <i class="pi pi-arrow-left"></i> Buscar variantes
+  <i class="pi pi-arrow-left"></i> Buscar productos
 </button>
 
 <div class="vf-page">
@@ -10,7 +10,7 @@
       <div class="vf-card__header-glow"></div>
       <span class="vf-card__header-icon">✏️</span>
       <div>
-        <h3 class="vf-card__title">Editar Variante <span class="vf-card__id">#{{ variante.id }}</span></h3>
+        <h3 class="vf-card__title">Editar Producto <span class="vf-card__id">#{{ variante.id }}</span></h3>
         <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
       </div>
     </div>
@@ -175,7 +175,7 @@
   <div class="vf-imgs" *ngIf="variante">
 
     <div class="vf-imgs__header">
-      <span class="vf-imgs__title">🖼️ Imágenes de la variante</span>
+      <span class="vf-imgs__title">🖼️ Imágenes del producto</span>
       <span class="vf-imgs__count" *ngIf="imagenesExistentes.length > 0">
         {{ imagenesExistentes.length }} cargadas
       </span>

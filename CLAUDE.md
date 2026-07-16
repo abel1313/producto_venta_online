@@ -4337,3 +4337,83 @@ está listo. No tocar.
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo (requiere backend, sesión admin
 y una promo con stock).
+
+---
+
+## 📖 TAXONOMÍA DE NOMBRES — CÓMO SE LLAMAN LAS COSAS (2026-07-16)
+
+> **Regla obligatoria para cualquier texto nuevo visible al usuario.** Antes de escribir una
+> etiqueta, título, botón o mensaje, revisar esta tabla.
+
+### El problema que resuelve
+
+El código tiene dos entidades y el negocio las llamaba igual, lo que causaba etiquetas
+confusas ("Productos" del cliente vs "Mis productos" de admin, y "variante" filtrándose a la
+vista, que al usuario no le dice nada).
+
+### Vocabulario oficial
+
+| Entidad (código) | Nombre visible | Qué es | Quién lo ve |
+|---|---|---|---|
+| `Producto` (padre) | **Modelo** | El agrupador: "Blusa Zara". Tiene nombre, precios base y categoría. | Solo admin |
+| `Variante` (SKU) | **Producto** | Lo que de verdad se vende: "Blusa Zara / M / Negro". Tiene **stock, precio y código de barras**. | Cliente y admin |
+| `palabraClave` | **Categoría** | — | Ambos |
+
+**La regla de oro:** *Modelo agrupa, Producto se vende.* Si tiene código de barras y stock, es
+un **Producto**.
+
+### ⚠️ El código NO se renombró — y es a propósito
+
+En el código, las rutas y la API, la entidad **sigue llamándose `variante`**
+(`/variantes/buscar`, `VarianteService`, `IVarianteResumen`, `GET /variantes/v1/...`).
+Solo se tradujo el **texto visible**. Renombrar el código sería un refactor de ~60 archivos
+que además **no eliminaría la inconsistencia**, porque el backend expone `/variantes/v1/...`
+de todos modos. Decisión explícita del usuario: solo lo visible.
+
+**Traducción mental al leer código:** `variante` → "producto"; `producto` → "modelo".
+
+### Menú (estado actual)
+
+| Etiqueta | Ruta | Nota |
+|---|---|---|
+| 🛍️ **Tienda** | `variantes/buscar` | Catálogo del cliente |
+| 📦 **Inventario** | *(accordion admin)* | Antes "Mis productos" |
+| ↳ 🔍 **Modelos** | `productos/buscar` | Antes "Ver todos" |
+| ↳ ➕ **Agregar modelo** | `productos/agregar` | |
+| ↳ 🧩 **Agregar producto** | `variantes/venta` | ⚠️ La ruta dice `venta` pero el componente es `AgregarComponent` — nombre heredado, no confiar en la ruta |
+| ↳ 🏷️ **Categorías** | `palabras-clave` | Antes "Palabras clave" — el form ya decía "Categoría" |
+| 🎡 **Rifa de productos** | `rifas/agregar` | |
+
+### Footer del sidebar — carrito
+
+Antes había **dos** carritos en el footer y confundían:
+
+| Botón | Antes | Ahora |
+|---|---|---|
+| Catálogo | "Productos" (pero navegaba a `/variantes/buscar` — engañoso) | **"Catálogo"** |
+| Limpiar | Limpiaba solo el carrito de **productos** | Limpia el carrito de **variantes + promos** (el que se ve) |
+| Carrito | Carrito de productos (`/productos/detalle-productos`) | **Eliminado del menú** |
+| Variantes | "Variantes" 🏷️ | **"Carrito"** 🛒 (`/variantes/carrito`) |
+
+**⚠️ El carrito viejo de productos NO se borró — sigue funcionando.** Se quitó solo del
+sidebar. Es seguro porque `/productos/buscar` **tiene su propio botón de carrito** con badge
+que lleva a `/productos/detalle-productos`: no queda huérfano, solo deja de competir en el
+menú. `limpiarSesionLocal()` (logout) sigue limpiando **ambos** carritos.
+
+Código muerto eliminado de `navbar.component.ts`: `countCarrito`, su suscripción a
+`carritoDetalle$`, y `revisarProductosCarrito()`.
+
+### 💡 Trampa de encoding al renombrar en lote
+
+Un script Perl que reemplace frases con acentos (`ó`, `—`, `…`) **debe llevar `use utf8;`** y
+leer/escribir con `:encoding(UTF-8)`. Sin `use utf8`, el patrón del script va en bytes y el
+archivo se lee decodificado → las frases con acentos **no coinciden y fallan en silencio**
+(pasó en la primera pasada: se aplicaron solo las frases ASCII).
+
+**Regla para renombrar etiquetas:** usar **frases completas**, nunca la palabra suelta —
+reemplazar `variante` a secas rompe bindings (`varianteSeleccionada`), rutas
+(`routerLink="variantes/..."`) y clases CSS. Verificar después con
+`git diff | grep -oE 'routerLink="[^"]*"'` que ninguna ruta haya cambiado.
+
+**Archivos modificados:** `navbar.component.html` + `.ts`, y ~20 templates con texto visible.
+**Verificado con `ng build` sin errores** y confirmando que ninguna ruta cambió.

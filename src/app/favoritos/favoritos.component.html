@@ -3,7 +3,7 @@
   <div class="fv-header">
     <div class="fv-header__content">
       <h4 class="fv-header__title">❤️ Mis favoritos</h4>
-      <small class="fv-header__sub">Variantes que guardaste para después</small>
+      <small class="fv-header__sub">Productos que guardaste para después</small>
     </div>
   </div>
 
@@ -12,7 +12,7 @@
   <div *ngIf="!cargando && variantes.length === 0" class="fv-empty">
     <span class="fv-empty__icon">💔</span>
     <p class="mb-0">Todavía no tienes favoritos.</p>
-    <p class="fv-empty__hint">Toca el corazón de cualquier variante en el catálogo para guardarla aquí.</p>
+    <p class="fv-empty__hint">Toca el corazón de cualquier producto en el catálogo para guardarlo aquí.</p>
     <a routerLink="/variantes/buscar" class="fv-btn fv-btn--primary">Ir al catálogo</a>
   </div>
 

@@ -6,7 +6,7 @@
       <div class="vf-card__header-glow"></div>
       <span class="vf-card__header-icon">🧩</span>
       <div>
-        <h3 class="vf-card__title">Nueva Variante</h3>
+        <h3 class="vf-card__title">Nuevo Producto</h3>
         <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
       </div>
     </div>
@@ -91,12 +91,12 @@
           <div class="vf-field vf-field--full">
             <label class="vf-label">Descripción</label>
             <textarea class="vf-input vf-textarea" formControlName="descripcion" rows="2"
-              placeholder="Descripción de la variante…"></textarea>
+              placeholder="Descripción del producto…"></textarea>
           </div>
 
           <!-- Nuevo — categoría que se aplica a todas las variantes del lote -->
           <div class="vf-field vf-field--full">
-            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(opcional — aplica a todas las variantes)</span></label>
+            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(opcional — aplica a todos los productos)</span></label>
             <app-palabra-clave-autocomplete
               [valorInicial]="palabraClaveSeleccionada"
               (seleccionada)="onPalabraClaveSeleccionada($event)">
@@ -135,7 +135,7 @@
         class="vf-btn-propagate-full"
         type="button"
         (click)="propagarCampos()"
-        title="Copia color, presentación, marca, contenido y descripción del formulario principal a todas las variantes extra">
+        title="Copia color, presentación, marca, contenido y descripción del formulario principal a todos los productos extra">
         ↓ Propagar campos del formulario principal a las {{ totalExtras }} variante(s) extra
       </button>
 
@@ -200,7 +200,7 @@
       <div class="vf-section">
         <p class="vf-section__label">
           Imágenes
-          <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todas las variantes</span>
+          <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todos los productos</span>
         </p>
 
         <!-- Input galería (oculto) -->

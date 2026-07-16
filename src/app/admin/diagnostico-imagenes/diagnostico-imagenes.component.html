@@ -92,7 +92,7 @@
             <input
               class="di-search-box__input"
               type="text"
-              placeholder="Buscar variante por nombre, color, talla o código (mín. 3 chars)…"
+              placeholder="Buscar producto por nombre, color, talla o código (mín. 3 chars)…"
               [value]="terminoVariante"
               (input)="onBuscarVariante($event)"
               autocomplete="off"
@@ -121,13 +121,13 @@
 
           <!-- Sin resultados -->
           <div class="di-no-results" *ngIf="!buscandoVariante && terminoVariante.length >= 3 && variantesEncontradas.length === 0 && !varianteSeleccionada && !resultadoVariante">
-            No se encontraron variantes con "{{ terminoVariante }}"
+            No se encontraron productos con "{{ terminoVariante }}"
           </div>
         </div>
 
         <!-- Variante seleccionada (chip) -->
         <div *ngIf="varianteSeleccionada" class="di-selected">
-          <span class="di-selected__label">Variante seleccionada:</span>
+          <span class="di-selected__label">Producto seleccionado:</span>
           <span class="di-selected__chip">
             {{ etiquetaVariante(varianteSeleccionada) }}
             <span class="di-selected__id">ID {{ varianteSeleccionada.id }}</span>

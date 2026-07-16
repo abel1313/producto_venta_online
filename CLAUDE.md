@@ -4344,12 +4344,40 @@ y una promo con stock).
 
 > **Regla obligatoria para cualquier texto nuevo visible al usuario.** Antes de escribir una
 > etiqueta, título, botón o mensaje, revisar esta tabla.
+>
+> 📄 **Versión para el equipo de back: `TAXONOMIA_NOMBRES_BACK.md`** (raíz del repo) — explica
+> la traducción y les pide anotar las entidades. **No les pide ningún cambio de código.**
 
-### El problema que resuelve
+### ⚠️ Impacto en backend: CERO (verificado)
 
-El código tiene dos entidades y el negocio las llamaba igual, lo que causaba etiquetas
-confusas ("Productos" del cliente vs "Mis productos" de admin, y "variante" filtrándose a la
-vista, que al usuario no le dice nada).
+En toda esta tanda (`c412b0e`..`69a5941`: paleta Aether, login, taxonomía, carrito, promos)
+**no se tocó ningún `.service.ts`** — confirmado con
+`git diff --stat c412b0e~1..HEAD -- 'src/**/*.service.ts'` → vacío.
+
+El **único** cambio de llamada HTTP fue en `gestion-promociones.component.ts`:
+`GET /variantes/v1/buscar` → `GET /variantes/v1/admin/filtrar?nombreOCodigo=…&conStock=true`.
+Ese endpoint **ya existía desde F-14 (2026-07-02)** y ya lo usaban `productos/all` y
+`variante/buscar` — no requiere nada del back. Todo lo demás fue CSS y texto.
+
+### El problema que resuelve — POR QUÉ se hizo este cambio
+
+El sistema creció por capas y los nombres se desincronizaron del negocio:
+
+1. **"Producto" significaba dos cosas.** El menú tenía "Productos" (que iba a
+   `/variantes/buscar`, el catálogo del cliente) y "Mis productos" (que iba a
+   `/productos/buscar`, el alta de admin) — **dos entidades distintas con el mismo nombre**.
+   Nadie podía saber cuál era cuál sin abrirlas.
+2. **"Variante" se filtraba a la pantalla** ("Rifa de variantes", "Gestionar variantes",
+   "Carrito de variantes"). Es un término técnico interno: al dueño del negocio y al cliente
+   no les dice nada. El usuario lo reportó textualmente: *"variantes se escucha feo"*.
+3. **Había dos carritos en el footer** compitiendo — uno de productos y otro de variantes — y
+   el cliente **nunca ve productos** (esas pantallas son admin-only), así que el carrito de
+   productos solo estorbaba en el menú.
+
+La causa de fondo: el dueño nombró primero "productos" al agrupador, y cuando después
+aparecieron las variantes (talla/color), ya no quedaba una palabra libre para lo que
+realmente se vende. Este cambio libera la palabra "Producto" para el SKU vendible —que es lo
+que el cliente entiende por producto— y le da un nombre propio al agrupador: **Modelo**.
 
 ### Vocabulario oficial
 

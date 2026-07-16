@@ -1722,3 +1722,92 @@ Body: { "username": "string, requerido" }
 este flujo funcione (la columna `correo_pendiente` no existe todavía en ninguna BD).
 
 **Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.
+---
+
+## 18. Reseñas — moverlas al pedido + recordatorio por correo (PENDIENTE, 2026-07-16)
+
+> Reportado por el dueño: *"si se supone que solo puedes dar reseña a productos que ya
+> compraste, ¿por qué puedes intentar dar reseñas a cualquier producto y al final decirte que
+> no lo puedes hacer porque no lo compraste?"*
+
+### 18.1 El problema (confirmado en código)
+
+Hoy en `/variantes/detalle/:id` el botón **"Escribir una reseña"** se muestra a **cualquier
+usuario logueado, en cualquier producto** (`*ngIf="!isAnonymous && !mostrarFormResena"`).
+El usuario elige estrellas, escribe el comentario, le da guardar… y **hasta ese momento** el
+backend responde `400 "no has comprado este producto"`.
+
+Fue una decisión explícita del FEAT original (2026-07-13): *"el front no intenta adivinar de
+antemano si el usuario puede reseñar o no"*. **Es la decisión equivocada desde el punto de
+vista de UX**: hace trabajar al usuario para rechazarlo al final.
+
+### 18.2 La solución acordada — reseñar desde el pedido, no desde el catálogo
+
+**Regla:** solo puedes reseñar lo que compraste ⇒ **el punto de entrada debe ser el lugar
+donde se ve lo que compraste: tus pedidos.** Ahí, por definición, todo es reseñable.
+
+| Pantalla | Antes | Propuesta |
+|---|---|---|
+| `/variantes/detalle/:id` (catálogo) | Botón "Escribir una reseña" + lista + promedio | **Solo lectura**: promedio, estrellas y las reseñas de la gente. **Sin botón de escribir.** |
+| `/pedidos/detalle/:id` (o `mis-pedidos`) | No hay reseñas | **Nuevo:** por cada artículo del pedido, botón **"⭐ Dejar reseña"** (o "✏️ Editar mi reseña" si ya la dejó) |
+
+Ventaja: desaparece por completo el error "no lo compraste" — se vuelve inalcanzable por diseño.
+
+### 18.3 ✅ Viabilidad — no requiere backend nuevo
+
+Verificado en código:
+
+| Dato | ¿Existe? |
+|---|---|
+| `PedidoDetalleItem.varianteId` (en `GET /v1/pedidos/{id}/detalle`) | ✅ **Sí** — es lo único que hace falta para llamar a `POST /v1/resenas` |
+| `ResenaService.crear/editar/eliminar/listarPorVariante/resumen/misResenas` | ✅ Ya existen |
+| `IResena.nombreCliente` + `esPropia` | ✅ Ya existen |
+
+⚠️ **Pero `mis-pedidos` (la LISTA) NO trae `varianteId`** — su `IDetalleQuery` solo tiene
+`nombre_producto`, `producto: number`, `cantidad`, `precio_unitario`, `sub_total`.
+Dos caminos:
+- **(a)** Poner el botón solo en **`detalle-pedido`** (que ya llama a `/detalle` y sí tiene
+  `varianteId`) → **cero cambios de back**. ← recomendado
+- **(b)** Pedir al back que agregue `varianteId` a `IDetalleQuery` para poder reseñar desde la
+  lista sin abrir el detalle.
+
+### 18.4 Sobre mostrar el nombre del autor — ya está resuelto
+
+Duda del dueño: *"no sé si que aparezca su nombre de usuario en la reseña"*.
+
+**Ya se muestra hoy** en `/variantes/detalle/:id`:
+```html
+<span class="dv-resena-item__autor">{{ r.nombreCliente }}<span *ngIf="r.esPropia"> (tú)</span></span>
+```
+El back ya manda `nombreCliente` en `IResena`. **No hay nada que hacer** salvo que se quiera
+cambiar QUÉ se muestra (ej. solo el nombre de pila, o iniciales) — eso sí sería cambio de back.
+
+**Decisión pendiente del dueño:** ¿se queda `nombreCliente` completo, o se acorta por privacidad
+(ej. "María G.")?
+
+### 18.5 ⏳ PENDIENTE — Recordatorio por correo para dejar reseña
+
+Idea del dueño: *"que por correo le envíe un recordatorio de que deje una reseña, no sé si
+enviar el link en el correo para que lo abra directamente a su producto"*.
+
+**Esto sí requiere backend** (envío de correo programado). Preguntas abiertas antes de pedirlo:
+
+1. **¿Cuándo se dispara?** ¿X días después de que el pedido pasa a ENTREGADO? ¿Al liquidar un
+   crédito? Hoy no hay ningún trigger de ese tipo.
+2. **¿A dónde apunta el link?**
+   - Opción A: al pedido → `/pedidos/detalle/{pedidoId}` (coherente con 18.2: se reseña desde
+     el pedido). ← recomendado
+   - Opción B: directo al producto → `/variantes/detalle/{varianteId}` ⚠️ pero según 18.2 ahí
+     ya NO habrá botón de escribir, así que el link no serviría para reseñar.
+3. **¿Requiere sesión?** El link va a caer en el `AuthGuard` → login. ¿Se acepta que tenga que
+   iniciar sesión, o se quiere un token de un solo uso en el correo (más trabajo de back)?
+4. **¿Solo si el correo está verificado?** (ver flujo de verificación al cobrar, 2026-07-16).
+5. **¿Uno por pedido o uno por producto?** Un pedido puede traer varios artículos.
+
+**Nada de esto está construido.** No pedirlo al back hasta cerrar las 5 preguntas.
+
+### 18.6 Alcance sugerido para cuando se retome
+
+1. Quitar el botón de escribir reseña de `/variantes/detalle/:id` (dejarlo solo lectura).
+2. Agregar "⭐ Dejar reseña" por artículo en `detalle-pedido` (camino **a**, sin back).
+3. Dejar 18.5 (correo) para después, cuando se respondan las preguntas.

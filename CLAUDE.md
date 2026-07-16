@@ -3304,6 +3304,22 @@ y está lista para eso si se pide después.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 
+> ### ⚠️ REVISADO 2026-07-16 — este diseño se va a cambiar (ver `PLAN_MEJORAS.md` §18)
+>
+> La decisión de arriba de *"el front no intenta adivinar de antemano si el usuario puede
+> reseñar o no"* resultó ser **un error de UX**: el botón "Escribir una reseña" aparece en
+> CUALQUIER producto para cualquier logueado, el usuario elige estrellas y escribe el
+> comentario, y **solo al guardar** el back le dice "no compraste este producto".
+>
+> **Acordado con el dueño:** el punto de entrada se mueve al **pedido** (donde por definición
+> todo es reseñable) y `/variantes/detalle/:id` queda **solo lectura** (promedio + reseñas de
+> la gente, sin botón de escribir). Así el error se vuelve inalcanzable por diseño.
+>
+> Viable sin backend nuevo: `GET /v1/pedidos/{id}/detalle` ya trae `varianteId`.
+> ⚠️ `mis-pedidos` (la lista) NO lo trae — por eso el botón iría en `detalle-pedido`.
+>
+> Pendiente aparte: recordatorio por correo para dejar reseña (5 preguntas abiertas en §18.5).
+
 ---
 
 ## FIX BUSCADORES — `.toLowerCase()` PISABA EL `appUppercase` (2026-07-13)

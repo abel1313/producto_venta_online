@@ -203,10 +203,11 @@
     <!-- Botones de carrito -->
     <div class="sb-cart-row" *ngIf="isAdminUser || countCarritoVariante > 0">
 
-      <!-- Navega a /variantes/buscar — el catálogo que ve el cliente -->
-      <button class="sb-cart-btn" (click)="regresarProducto()" title="Ir al catálogo">
+      <!-- Navega a /variantes/buscar. Debe decir "Tienda" igual que el ítem del
+           menú y el título de esa pantalla: es el mismo lugar, un solo nombre. -->
+      <button class="sb-cart-btn" (click)="regresarProducto()" title="Ir a la tienda">
         <img [src]="iconService.iconRegresar" alt="" class="sb-cart-icon">
-        <span class="sb-label">Catálogo</span>
+        <span class="sb-label">Tienda</span>
       </button>
 
       <button *ngIf="isAdminUser" class="sb-cart-btn" (click)="limpiarCarrito()" title="Limpiar carrito">

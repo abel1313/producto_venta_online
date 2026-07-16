@@ -466,6 +466,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.ejecutarVenta(0);
     } else if (this.clienteSeleccionado) {
       this.clienteResolvedId = this.clienteSeleccionado.id;
+      // Si el correo no está verificado, se OFRECE verificarlo — nunca se bloquea
+      // la venta: si el cliente no quiere o no trae el código a la mano, se cobra igual.
+      if (this.clienteSeleccionado.correoVerificado === false && this.clienteSeleccionado.correoElectronico) {
+        this.ofrecerVerificarCorreo();
+        return;
+      }
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
       // Sin cliente → preguntar si quiere agregar uno para la rifa
@@ -486,6 +492,85 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // ── Verificación de correo antes de cobrar ───────────────────────────────
+  // Se ofrece, no se exige: en mostrador el cliente puede no traer el correo a la
+  // mano. Cualquier salida que no sea "verificado con éxito" termina cobrando igual.
+  private ofrecerVerificarCorreo(): void {
+    const c = this.clienteSeleccionado!;
+    Swal.fire({
+      icon: 'question',
+      title: '⚠️ Correo sin verificar',
+      html: `
+        <p style="font-size:0.9rem;margin-bottom:6px">
+          El correo de <strong>${c.nombrePersona} ${c.apeidoPaterno ?? ''}</strong> no está verificado:
+        </p>
+        <p style="font-size:0.9rem;margin:0"><strong>${c.correoElectronico}</strong></p>
+        <p style="font-size:0.8rem;color:#64748b;margin-top:10px">
+          Verificarlo permite enviarle el ticket y que participe en las rifas.
+        </p>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '✉️ Verificar ahora',
+      cancelButtonText: 'No, solo cobrar',
+      reverseButtons: true
+    }).then(result => {
+      if (!result.isConfirmed) {
+        this.ejecutarVenta(this.clienteResolvedId); // el admin decidió no verificar
+        return;
+      }
+      // Enviar el código. Si el envío falla igual mostramos el input: puede que el
+      // cliente ya tuviera un código vigente de un intento anterior.
+      this.clienteService.enviarCodigoVerificacion(c.id).subscribe({
+        next:  () => this.pedirCodigoYCobrar(),
+        error: () => this.pedirCodigoYCobrar()
+      });
+    });
+  }
+
+  private pedirCodigoYCobrar(): void {
+    const c = this.clienteSeleccionado!;
+    Swal.fire({
+      title: 'Verificar correo',
+      html: `
+        <p style="margin-bottom:10px;font-size:0.88rem">
+          Se envió un código a <strong>${c.correoElectronico}</strong>.<br>
+          Pídele al cliente que te dicte el código de 6 dígitos.
+        </p>
+        <input id="swal-codigo-venta" type="text" inputmode="numeric" maxlength="6"
+               placeholder="123456"
+               style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
+                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
+                      outline:none;font-family:monospace">
+      `,
+      confirmButtonText: 'Verificar y cobrar',
+      showCancelButton: true,
+      cancelButtonText: 'Omitir y cobrar',
+      reverseButtons: true,
+      preConfirm: async () => {
+        const codigo = (document.getElementById('swal-codigo-venta') as HTMLInputElement)?.value ?? '';
+        if (codigo.length !== 6) {
+          Swal.showValidationMessage('Ingresa los 6 dígitos del código');
+          return false;
+        }
+        try {
+          await this.clienteService.verificarCorreo(c.id, codigo).toPromise();
+          return true;
+        } catch (err: any) {
+          const raw = err?.error;
+          const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
+          Swal.showValidationMessage(msg);
+          return false;
+        }
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        c.correoVerificado = true;   // refresca el badge del chip sin recargar
+      }
+      // Se cobra tanto si verificó como si omitió — la venta nunca se bloquea.
+      this.ejecutarVenta(this.clienteResolvedId);
+    });
   }
 
   private ejecutarVentaConAdmin(): void {

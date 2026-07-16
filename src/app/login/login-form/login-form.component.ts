@@ -36,82 +36,54 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private static readonly MESH_VERTEX_SRC = `
     attribute vec2 pos;
-    void main() { gl_Position = vec4(pos, 0, 1); }
+    varying vec2 v_texCoord;
+    void main() {
+      v_texCoord = pos * 0.5 + 0.5;
+      gl_Position = vec4(pos, 0.0, 1.0);
+    }
   `;
 
-  // Malla técnica azul cian animada — misma matemática exacta del shader que
-  // pasó el usuario (referencia "Aether Technical Mesh"), pero con el arreglo
-  // de 9 puntos "desenrollado" a variables p0..p8 en vez de indexar p[idx]/p[j]
-  // con variables no-constantes: WebGL1 (GLSL ES 1.00) rechaza ese acceso
-  // dinámico en tiempo de compilación (confirmado en pruebas — ver CLAUDE.md).
-  // El resultado visual es idéntico, solo cambia cómo está escrito.
+  // Malla técnica azul — segunda versión del shader (la que el usuario confirmó
+  // como "el código exacto"). A diferencia de la primera, no usa ningún arreglo
+  // indexado (vec2 p[9]) — cada línea se calcula "al vuelo" dentro del propio
+  // loop de la celda vecina, por eso compila sin cambios en WebGL1/GLSL ES 1.00
+  // (se revisó a propósito antes de integrarla, tras el bug de la primera versión).
   private static readonly MESH_FRAGMENT_SRC = `
     precision highp float;
     uniform float u_time;
     uniform vec2 u_resolution;
+    varying vec2 v_texCoord;
 
     float hash(vec2 p) {
-      p = fract(p * vec2(234.34, 435.345));
-      p += dot(p, p + 34.23);
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
       return fract(p.x * p.y);
     }
 
-    vec2 get_point(vec2 id, vec2 offset) {
-      float n = hash(id + offset);
-      return offset + 0.5 + 0.4 * vec2(cos(u_time * n), sin(u_time * n));
-    }
-
-    float pointMask(vec2 gv, vec2 p) {
-      return smoothstep(0.05, 0.03, distance(gv, p));
-    }
-
-    float lineMask(vec2 gv, vec2 pi, vec2 pj) {
-      float d2 = distance(pi, pj);
-      if (d2 >= 1.2) return 0.0;
-      float line = smoothstep(1.2, 0.0, d2);
-      float distToLine = length(gv - pi - (pj - pi) * clamp(dot(gv - pi, pj - pi) / dot(pj - pi, pj - pi), 0.0, 1.0));
-      return smoothstep(0.015, 0.0, distToLine) * line * 0.6;
-    }
-
     void main() {
-      vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.y, u_resolution.x);
-      uv *= 5.0;
-
-      vec2 gv = fract(uv) - 0.5;
-      vec2 id = floor(uv);
-
-      vec2 p0 = get_point(id, vec2(-1.0, -1.0));
-      vec2 p1 = get_point(id, vec2( 0.0, -1.0));
-      vec2 p2 = get_point(id, vec2( 1.0, -1.0));
-      vec2 p3 = get_point(id, vec2(-1.0,  0.0));
-      vec2 p4 = get_point(id, vec2( 0.0,  0.0));
-      vec2 p5 = get_point(id, vec2( 1.0,  0.0));
-      vec2 p6 = get_point(id, vec2(-1.0,  1.0));
-      vec2 p7 = get_point(id, vec2( 0.0,  1.0));
-      vec2 p8 = get_point(id, vec2( 1.0,  1.0));
+      vec2 uv = v_texCoord;
+      float scale = 8.0;
+      vec2 grid_uv = uv * scale;
+      vec2 id = floor(grid_uv);
+      vec2 gv = fract(grid_uv) - 0.5;
 
       float m = 0.0;
-      m += pointMask(gv, p0) + pointMask(gv, p1) + pointMask(gv, p2);
-      m += pointMask(gv, p3) + pointMask(gv, p4) + pointMask(gv, p5);
-      m += pointMask(gv, p6) + pointMask(gv, p7) + pointMask(gv, p8);
+      for (float y = -1.0; y <= 1.0; y++) {
+        for (float x = -1.0; x <= 1.0; x++) {
+          vec2 offs = vec2(x, y);
+          vec2 p_id = id + offs;
+          vec2 p1 = offs + sin(u_time * 0.5 + hash(p_id) * 6.28) * 0.4;
+          vec2 p2 = vec2(0.0) + sin(u_time * 0.5 + hash(id) * 6.28) * 0.4;
+          vec2 pa = gv - p1;
+          vec2 ba = p2 - p1;
+          float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+          float distLine = length(pa - ba * h);
+          m += smoothstep(0.02, 0.0, distLine) * 0.5 * (1.0 - h);
+        }
+      }
 
-      m += lineMask(gv, p0, p1) + lineMask(gv, p0, p2) + lineMask(gv, p0, p3);
-      m += lineMask(gv, p0, p4) + lineMask(gv, p0, p5) + lineMask(gv, p0, p6);
-      m += lineMask(gv, p0, p7) + lineMask(gv, p0, p8);
-      m += lineMask(gv, p1, p2) + lineMask(gv, p1, p3) + lineMask(gv, p1, p4);
-      m += lineMask(gv, p1, p5) + lineMask(gv, p1, p6) + lineMask(gv, p1, p7);
-      m += lineMask(gv, p1, p8);
-      m += lineMask(gv, p2, p3) + lineMask(gv, p2, p4) + lineMask(gv, p2, p5);
-      m += lineMask(gv, p2, p6) + lineMask(gv, p2, p7) + lineMask(gv, p2, p8);
-      m += lineMask(gv, p3, p4) + lineMask(gv, p3, p5) + lineMask(gv, p3, p6);
-      m += lineMask(gv, p3, p7) + lineMask(gv, p3, p8);
-      m += lineMask(gv, p4, p5) + lineMask(gv, p4, p6) + lineMask(gv, p4, p7);
-      m += lineMask(gv, p4, p8);
-      m += lineMask(gv, p5, p6) + lineMask(gv, p5, p7) + lineMask(gv, p5, p8);
-      m += lineMask(gv, p6, p7) + lineMask(gv, p6, p8);
-      m += lineMask(gv, p7, p8);
-
-      vec3 color = vec3(0.0, 0.6, 1.0) * m;
+      vec3 color = vec3(0.0, 0.47, 1.0) * m;
+      color += vec3(0.0, 0.1, 0.2) * (1.0 - length(uv - 0.5));
       gl_FragColor = vec4(color, 1.0);
     }
   `;

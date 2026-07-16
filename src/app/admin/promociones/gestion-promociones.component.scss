@@ -125,7 +125,6 @@
     color: var(--app-text);
     font-size: 0.88rem;
     &:hover { background: rgba(0,122,255,.1); }
-    &--sinstock { opacity: .6; }
   }
 
   &__img {
@@ -141,13 +140,13 @@
     font-weight: 400;
   }
 
+  // El buscador solo trae variantes con stock, así que siempre es verde.
   &__stock {
     margin-left: auto;
     white-space: nowrap;
     font-size: 0.78rem;
     font-weight: 600;
     color: #16a34a;
-    &--cero { color: #ef4444; }
   }
 
   &__precio {
@@ -157,7 +156,8 @@
   }
 }
 
-.gp-hint-duplicados {
+.gp-hint-duplicados,
+.gp-hint-sinresultados {
   font-size: 0.76rem;
   color: var(--app-text-muted, #626B94);
   margin: 6px 2px 0;

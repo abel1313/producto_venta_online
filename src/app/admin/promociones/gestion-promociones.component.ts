@@ -217,14 +217,27 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     if (this.terminoVariante.trim().length < 2) this.resultadosVariante = [];
   }
 
+  // Solo variantes CON stock: al armar el combo debes elegir sobre lo que existe hoy.
+  // Que el stock se agote después no es problema de aquí — el back recalcula
+  // `instanciasDisponibles` con el stock vivo y la promo se muestra sola como
+  // "Sin disponibilidad" en el catálogo, y la venta valida el stock al cobrar.
+  // Se usa adminFiltrar (no buscar) porque combina nombreOCodigo + conStock con AND.
   private buscarVariante(termino: string): void {
     this.buscandoVariante = true;
-    this.varianteService.buscar({ termino, pagina: 1, size: 8 }).subscribe({
+    this.varianteService.adminFiltrar({ nombreOCodigo: termino, conStock: true }, 1, 8).subscribe({
       next: res => {
         this.resultadosVariante = res?.t ?? [];
         this.buscandoVariante = false;
       },
-      error: () => { this.buscandoVariante = false; }
+      error: err => {
+        this.buscandoVariante = false;
+        this.resultadosVariante = [];
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo buscar',
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Error al buscar variantes.'
+        });
+      }
     });
   }
 

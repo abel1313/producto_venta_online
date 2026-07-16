@@ -4245,3 +4245,49 @@ botones, badges, alertas) en ambos temas — todo legible, sin texto invisible.
 `ng serve` bindea a `[::1]:4200` (IPv6), NO a `127.0.0.1`. Verificar con
 `curl http://[::1]:4200` — usar `127.0.0.1` da "Connection refused" aunque `netstat` muestre el
 puerto LISTENING, lo que parece un problema de red pero no lo es.
+
+---
+
+## FIX PROMOCIONES — EL BUSCADOR DE VARIANTES SOLO MUESTRA LAS QUE TIENEN STOCK (2026-07-16)
+
+**Cierra definitivamente el bug de la promo "ropa"** documentado en "FIX PROMOCIONES — BOTÓN
+'AGREGAR' ILEGIBLE EN DISABLED…" (2026-07-13) y en `PROMOCIONES.md` sección 6.
+
+**Contexto:** al armar un combo, el buscador usaba `VarianteService.buscar()` — el buscador
+general, sin filtro de stock. Mostraba TODAS las variantes, incluidas las de 0 piezas. El fix
+de julio solo agregó señalización visual (stock, `#ID`, atenuado, aviso de duplicados) pero
+**seguía permitiendo seleccionar una variante sin stock** → el combo nacía con
+`instanciasDisponibles = 0` y se veía "❌ Sin disponibilidad" en el catálogo, sin que el admin
+entendiera por qué. Fue exactamente lo que pasó con "ropa" (id 1): de 7 variantes hermanas
+indistinguibles del mismo producto, se eligieron las 2 que tenían `stock: 0`.
+
+**Criterio de negocio (definido por el usuario):** al **armar** la promoción solo deben
+aparecer variantes con stock — eliges sobre lo que existe hoy. Que el stock se agote después
+NO es problema de esta pantalla: el back recalcula `instanciasDisponibles` con el stock vivo
+(la promo se muestra sola como "Sin disponibilidad" en el catálogo) y **la validación real de
+stock ocurre al agregar a la venta / cobrar**. Por eso no hace falta ningún filtro extra ni
+revalidación aquí.
+
+**Fix:** `buscarVariante()` cambia de `buscar({ termino })` a
+`adminFiltrar({ nombreOCodigo: termino, conStock: true }, 1, 8)`. **No requiere backend nuevo** —
+`adminFiltrar` ya existía (ver "FEAT F-14") y combina `nombreOCodigo` + `conStock` con AND,
+devolviendo el mismo `IVarianteResumenPaginable`.
+
+Cambios de UI derivados:
+- Se eliminó el estado "❌ sin stock" del dropdown y sus estilos (`--sinstock`, `--cero`) —
+  código muerto: ya nunca llega una variante con 0.
+- Nuevo aviso `.gp-hint-sinresultados` cuando la búsqueda no arroja nada: aclara que **solo se
+  listan variantes con stock**, para que no parezca que el producto no existe.
+- Se conservan el stock por resultado, el `#ID` y el aviso de duplicados — siguen siendo útiles
+  para distinguir variantes hermanas con el stock repartido.
+- `buscarVariante()` ahora captura `err?.error?.mensaje` en un Swal (antes tragaba el error en
+  silencio — mismo patrón de la Lección #1 del módulo rifas).
+
+**Archivos modificados:**
+- `src/app/admin/promociones/gestion-promociones.component.ts` → `buscarVariante()`
+- `src/app/admin/promociones/gestion-promociones.component.html` → dropdown sin estado
+  "sin stock" + `.gp-hint-sinresultados`
+- `src/app/admin/promociones/gestion-promociones.component.scss` → limpia estilos muertos
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No se probó en vivo:
+`/admin/promociones` requiere sesión de admin y backend corriendo.

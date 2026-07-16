@@ -50,7 +50,7 @@
   }
 
   &:hover:not(.rp-tab--active) {
-    background: rgba(176,138,78,.08);
+    background: rgba(0,122,255,.08);
   }
 }
 
@@ -116,7 +116,7 @@
     border-bottom: 1px solid var(--card-border, rgba(0,0,0,.06));
 
     &:last-child { border-bottom: none; }
-    &:hover { background: rgba(176,138,78,.08); }
+    &:hover { background: rgba(0,122,255,.08); }
   }
 
   &__sub {
@@ -259,7 +259,7 @@
   }
 }
 
-.rp-tr--top3 td { background: rgba(176,138,78,.04); }
+.rp-tr--top3 td { background: rgba(0,122,255,.04); }
 
 .rp-rank {
   width: 2.5rem;
@@ -317,13 +317,13 @@
   .rp-page   { background: var(--app-bg); }
   .rp-input  { background: #27272a; color: #e2e8f0; border-color: rgba(255,255,255,.12); }
   .rp-table th { background: #27272a; }
-  .rp-tr--top3 td { background: rgba(176,138,78,.08); }
+  .rp-tr--top3 td { background: rgba(0,122,255,.08); }
   .rp-stat-card__val { color: #e2e8f0; }
   .rp-cliente-nombre { color: #e2e8f0; }
   .rp-dropdown {
     background: #27272a;
     border-color: rgba(255,255,255,.12);
-    &__item { color: #e2e8f0; border-color: rgba(255,255,255,.06); &:hover { background: rgba(176,138,78,.15); } }
+    &__item { color: #e2e8f0; border-color: rgba(255,255,255,.06); &:hover { background: rgba(0,122,255,.15); } }
     &__sub  { color: #94a3b8; }
   }
 }

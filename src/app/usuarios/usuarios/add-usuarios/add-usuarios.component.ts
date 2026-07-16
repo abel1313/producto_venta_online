@@ -284,7 +284,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
         <input id="swal-codigo-admin" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
@@ -390,7 +390,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
         <input id="swal-codigo-cambio" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar y guardar',

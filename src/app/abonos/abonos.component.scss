@@ -172,7 +172,7 @@
   font-size: 0.72rem;
   font-weight: 700;
 
-  &--apartado  { background: rgba(176,138,78,0.15); color: var(--app-accent); }
+  &--apartado  { background: rgba(0,122,255,0.15); color: var(--app-accent); }
   &--fiado     { background: rgba(234,179,8,0.15);  color: #ca8a04; }
   &--pagado    { background: rgba(34,197,94,0.15);  color: #16a34a; }
   &--cancelado { background: rgba(239,68,68,0.12);  color: #dc2626; }
@@ -382,7 +382,7 @@
   transition: all 0.15s;
 
   &--active {
-    background: rgba(176,138,78,0.15);
+    background: rgba(0,122,255,0.15);
     border-color: var(--app-accent);
     color: var(--app-accent);
     font-weight: 700;

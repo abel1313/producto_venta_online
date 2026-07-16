@@ -25,7 +25,7 @@
   transition: opacity .15s;
   &:disabled { opacity: .5; cursor: not-allowed; }
   &--primary {
-    background: linear-gradient(135deg, #8A6A38, #B08A4E);
+    background: linear-gradient(135deg, #5856D6, #007AFF);
     color: #fff;
     &:hover:not(:disabled) { opacity: .85; }
   }
@@ -124,7 +124,7 @@
     cursor: pointer;
     color: var(--app-text);
     font-size: 0.88rem;
-    &:hover { background: rgba(176,138,78,.1); }
+    &:hover { background: rgba(0,122,255,.1); }
     &--sinstock { opacity: .6; }
   }
 
@@ -137,7 +137,7 @@
   }
 
   &__id {
-    color: var(--app-text-muted, #7A6A58);
+    color: var(--app-text-muted, #626B94);
     font-weight: 400;
   }
 
@@ -159,7 +159,7 @@
 
 .gp-hint-duplicados {
   font-size: 0.76rem;
-  color: var(--app-text-muted, #7A6A58);
+  color: var(--app-text-muted, #626B94);
   margin: 6px 2px 0;
   line-height: 1.4;
 }
@@ -176,7 +176,7 @@
     grid-template-columns: 1fr 80px 120px 40px;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(176,138,78,.1);
+    background: rgba(0,122,255,.1);
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--app-text);

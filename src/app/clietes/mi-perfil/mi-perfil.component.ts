@@ -158,13 +158,13 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         <input id="swal-mp-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Verificar más tarde',
-      confirmButtonColor: '#B08A4E',
+      confirmButtonColor: '#007AFF',
       preConfirm: async () => {
         const codigo = (document.getElementById('swal-mp-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos'); return false; }

@@ -144,11 +144,6 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.themeSub?.unsubscribe();
   }
 
-  /** Botón de prueba (temporal) para ver claro/oscuro sin depender de la hora del sistema. */
-  toggleThemeTest(): void {
-    this.themeService.toggle();
-  }
-
   private iniciarParticulas(): void {
     const canvas = this.particlesCanvas?.nativeElement;
     if (!canvas) return;
@@ -296,8 +291,8 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
         <input id="swal-pwd-nueva" type="password" class="swal2-input" placeholder="Nueva contraseña">
         <input id="swal-pwd-confirm" type="password" class="swal2-input" placeholder="Confirmar nueva contraseña">
         <style>
-          .swal-pwd-reqs { margin-top: 10px; text-align: left; background: #fdf0f5; border: 1px solid #fad4e4; border-radius: 10px; padding: 12px 14px; }
-          .swal-pwd-reqs__title { font-size: 0.7rem; font-weight: 700; color: #B08A4E; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px; }
+          .swal-pwd-reqs { margin-top: 10px; text-align: left; background: #EFF5FF; border: 1px solid #C7DDFF; border-radius: 10px; padding: 12px 14px; }
+          .swal-pwd-reqs__title { font-size: 0.7rem; font-weight: 700; color: #007AFF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px; }
           .swal-req { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #dc2626; transition: color 0.2s; margin-bottom: 4px; }
           .swal-req__icon { color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
           .swal-req.met { color: #374151; }

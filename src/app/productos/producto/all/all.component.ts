@@ -676,8 +676,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       naranja:  'linear-gradient(135deg,#f4511e,#ff7043)',
       cafe:     'linear-gradient(135deg,#6d4c41,#8d6e63)',
     };
+    // Fallback = color de marca (Aether azul/morado). Los colores del map de
+    // arriba representan el color REAL del producto y no siguen la paleta.
     return map[(color ?? '').toLowerCase().trim()]
-      ?? 'linear-gradient(135deg,#8b1a4a,#c2255c)';
+      ?? 'linear-gradient(135deg,#007AFF,#5856D6)';
   }
 
   stockClase(stock: number): string {

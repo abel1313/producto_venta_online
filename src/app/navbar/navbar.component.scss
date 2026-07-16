@@ -5,13 +5,13 @@
 :host {
   --sb-w:           70px;          /* collapsed width */
   --sb-w-exp:       262px;         /* expanded width */
-  --sb-bg:          rgba(28, 27, 25, 0.88); /* cálido oscuro */
-  --sb-bg-item:     rgba(255,250,242,0.06);
-  --sb-bg-active:   rgba(176,138,78,0.22);
-  --sb-accent:      #C9A063;
-  --sb-text:        #F5F1EA;
+  --sb-bg:          rgba(11,15,36, 0.88); /* cálido oscuro */
+  --sb-bg-item:     rgba(225,235,255,0.06);
+  --sb-bg-active:   rgba(0,122,255,0.22);
+  --sb-accent:      #4A9EFF;
+  --sb-text:        #F1F4FF;
   --sb-text-active: #FFFFFF;
-  --sb-border:      rgba(255,250,242,0.08);
+  --sb-border:      rgba(225,235,255,0.08);
   --sb-trans:       0.28s cubic-bezier(0.4,0,0.2,1);
   --sb-radius:      10px;
   --sb-font:        'Poppins', sans-serif;
@@ -21,37 +21,37 @@
    TEMA CLARO — sidebar blanco con letras oscuras
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-light), :host-context([data-theme="light"]) {
-  --sb-bg:          rgba(255,250,242,0.97);
-  --sb-bg-item:     rgba(176,138,78,0.07);
-  --sb-bg-active:   rgba(176,138,78,0.14);
-  --sb-text:        #1C1B19;
-  --sb-text-active: #1C1B19;
-  --sb-border:      #E3DCCC;
+  --sb-bg:          rgba(225,235,255,0.97);
+  --sb-bg-item:     rgba(0,122,255,0.07);
+  --sb-bg-active:   rgba(0,122,255,0.14);
+  --sb-text:        #12172E;
+  --sb-text-active: #12172E;
+  --sb-border:      #DCE3F2;
 
   .sidebar {
     box-shadow: 2px 0 16px rgba(0,0,0,0.08);
   }
 
-  .sb-brand-text     { color: #1C1B19; }
-  .sb-subitem        { color: #7A6A58; &:hover { color: #B08A4E; background: rgba(176,138,78,0.10); } }
-  .sb-user-link      { color: #7A6A58; &:hover { color: #1C1B19; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: #B08A4E; } } }
+  .sb-brand-text     { color: #12172E; }
+  .sb-subitem        { color: #626B94; &:hover { color: #007AFF; background: rgba(0,122,255,0.10); } }
+  .sb-user-link      { color: #626B94; &:hover { color: #12172E; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: #007AFF; } } }
   .sb-logout         { color: #ef4444; }
-  .sb-username       { color: #1C1B19; }
-  .sb-cart-btn       { color: #7A6A58; &:hover { color: #1C1B19; } }
-  .sb-chevron        { color: #7A6A58; }
+  .sb-username       { color: #12172E; }
+  .sb-cart-btn       { color: #626B94; &:hover { color: #12172E; } }
+  .sb-chevron        { color: #626B94; }
 
   .sb-avatar {
-    background: #B08A4E;
-    box-shadow: 0 0 0 2px rgba(176,138,78,0.22);
+    background: #007AFF;
+    box-shadow: 0 0 0 2px rgba(0,122,255,0.22);
   }
 
   .sb-hamburger {
-    background: #B08A4E;
-    box-shadow: 0 4px 12px rgba(176,138,78,0.30);
+    background: #007AFF;
+    box-shadow: 0 4px 12px rgba(0,122,255,0.30);
   }
 
   .sidebar.mobile-open {
-    background: rgba(255,250,242,0.99) !important;
+    background: rgba(225,235,255,0.99) !important;
   }
 
   .sb-item--test {
@@ -59,7 +59,7 @@
     &.sb-item--v2 { border-color: #f59e0b; color: #b45309; background: rgba(245,158,11,0.08); }
   }
 
-  .sb-item--theme { border-color: #E3DCCC; }
+  .sb-item--theme { border-color: #DCE3F2; }
 }
 
 /* ════════════════════════════════════════════════════
@@ -67,7 +67,7 @@
    Solo sobreescribimos lo que necesita explícito
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  --sb-bg: rgba(28,27,25,0.92);
+  --sb-bg: rgba(11,15,36,0.92);
 }
 
 /* ── Hamburger (mobile only) ─────────────────────── */
@@ -87,10 +87,10 @@
   border-radius: 10px;
   font-size: 1.25rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(176,138,78,0.35);
+  box-shadow: 0 4px 12px rgba(0,122,255,0.35);
   transition: background 0.15s, transform 0.15s;
 
-  &:hover { background: #8A6A38; transform: scale(1.05); }
+  &:hover { background: #5856D6; transform: scale(1.05); }
   &:active { transform: scale(0.96); }
 }
 
@@ -384,7 +384,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(201,160,99,0.30);
+  box-shadow: 0 0 0 2px rgba(74,158,255,0.30);
 }
 
 .sb-user-info {
@@ -428,7 +428,7 @@
 
   &--pass {
     opacity: 0.75;
-    &:hover { opacity: 1; color: #D4B483; }
+    &:hover { opacity: 1; color: #7FBFFF; }
   }
 }
 

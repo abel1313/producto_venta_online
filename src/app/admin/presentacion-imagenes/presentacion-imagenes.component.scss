@@ -1,4 +1,4 @@
-$p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
+$p: #5856D6; $pd: #007AFF; $t: all 0.22s ease;
 
 .pi-page {
   min-height: 100vh;
@@ -50,7 +50,7 @@ $p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
 
   &--changed {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 3px rgba(176,138,78,.1);
+    box-shadow: 0 0 0 3px rgba(0,122,255,.1);
   }
 
   // ── Preview ──
@@ -89,7 +89,7 @@ $p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
 
   &__hover-overlay {
     position: absolute; inset: 0;
-    background: rgba(176,138,78,.55);
+    background: rgba(0,122,255,.55);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity .22s;
     color: #fff; font-size: .85rem; font-weight: 700;
@@ -104,7 +104,7 @@ $p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
 
   &__filename {
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    background: rgba(176,138,78,.06); border: 1px solid rgba(176,138,78,.15); border-radius: 8px;
+    background: rgba(0,122,255,.06); border: 1px solid rgba(0,122,255,.15); border-radius: 8px;
     padding: 4px 8px; font-size: .72rem; color: var(--app-accent); font-weight: 600;
     white-space: nowrap; overflow: hidden;
     span { overflow: hidden; text-overflow: ellipsis; }
@@ -165,7 +165,7 @@ $p: #8A6A38; $pd: #B08A4E; $t: all 0.22s ease;
   color: #fff; font-size: .8rem; font-weight: 700;
   cursor: pointer; transition: $t;
 
-  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(176,138,78,.35); }
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,122,255,.35); }
   &:disabled { opacity: .45; cursor: not-allowed; }
 }
 

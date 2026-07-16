@@ -1,5 +1,5 @@
-$p:  #8b1a4a;
-$pd: #c2255c;
+$p:  #007AFF;
+$pd: #5856D6;
 $t:  all 0.2s ease;
 
 .pka-wrap { position: relative; display: flex; flex-direction: column; gap: 6px; }
@@ -9,8 +9,8 @@ $t:  all 0.2s ease;
   background: #fff; border: 1.5px solid #e5e7eb;
   border-radius: 10px; padding: 9px 12px; transition: $t;
 
-  &:focus-within        { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(176,138,78,.12); }
-  &--seleccionada       { border-color: rgba(176,138,78,.4); background: var(--app-accent-soft); }
+  &:focus-within        { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+  &--seleccionada       { border-color: rgba(0,122,255,.4); background: var(--app-accent-soft); }
 
   &__icon  { font-size: .95rem; flex-shrink: 0; }
   &__input {
@@ -28,7 +28,7 @@ $t:  all 0.2s ease;
 
 .pka-chip {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(176,138,78,.08); border: 1px solid rgba(176,138,78,.2);
+  background: rgba(0,122,255,.08); border: 1px solid rgba(0,122,255,.2);
   border-radius: 20px; padding: 4px 12px;
   font-size: .82rem; font-weight: 600; color: var(--app-accent);
 
@@ -46,7 +46,7 @@ $t:  all 0.2s ease;
   padding: 10px 14px; cursor: pointer; transition: $t;
   border-bottom: 1px solid #f3f4f6;
   &:last-child { border-bottom: none; }
-  &:hover { background: #fff5f7; }
+  &:hover { background: #EFF5FF; }
 
   &__nombre { font-size: .88rem; font-weight: 600; color: #1f2937; }
   &__id     { font-size: .72rem; color: #9ca3af; }

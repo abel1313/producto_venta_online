@@ -142,10 +142,10 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
 
   &--edit {
-    background: linear-gradient(135deg, #B08A4E, #8A6A38);
+    background: linear-gradient(135deg, #007AFF, #5856D6);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(176, 138, 78, 0.3);
-    &:hover { box-shadow: 0 6px 20px rgba(176, 138, 78, 0.45); }
+    box-shadow: 0 4px 14px rgba(0,122,255, 0.3);
+    &:hover { box-shadow: 0 6px 20px rgba(0,122,255, 0.45); }
   }
 
   &--reset {
@@ -174,15 +174,15 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 :host-context(body.theme-light) {
   .au-card {
     box-shadow:
-      0 4px 20px rgba(176, 138, 78, 0.08),
+      0 4px 20px rgba(0,122,255, 0.08),
       0 1px 4px rgba(0, 0, 0, 0.05);
-    border-color: rgba(176, 138, 78, 0.12);
+    border-color: rgba(0,122,255, 0.12);
 
     &:hover {
       box-shadow:
-        0 10px 36px rgba(176, 138, 78, 0.16),
+        0 10px 36px rgba(0,122,255, 0.16),
         0 4px 10px rgba(0, 0, 0, 0.07);
-      border-color: rgba(176, 138, 78, 0.24);
+      border-color: rgba(0,122,255, 0.24);
     }
   }
 }

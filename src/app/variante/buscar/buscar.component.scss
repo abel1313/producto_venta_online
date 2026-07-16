@@ -1,6 +1,6 @@
 // ── Variables ──────────────────────────────────────────────────────
-$primary:    #8A6A38;
-$primary-d:  #B08A4E;
+$primary:    #5856D6;
+$primary-d:  #007AFF;
 $radius:     16px;
 $shadow:     0 4px 24px rgba(0, 0, 0, 0.13);
 $shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
@@ -351,7 +351,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:not(.vb-promo__card--no-link):hover {
       transform: translateY(-4px) scale(1.01);
-      box-shadow: 0 12px 36px rgba(176,138,78,0.25);
+      box-shadow: 0 12px 36px rgba(0,122,255,0.25);
     }
 
     &--no-link { cursor: default; }
@@ -407,7 +407,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     margin-top: 4px;
     font-size: 0.74rem;
     font-weight: 700;
-    color: var(--app-accent, #B08A4E);
+    color: var(--app-accent, #007AFF);
     letter-spacing: 0.03em;
   }
 
@@ -417,9 +417,9 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #B08A4E;
-    background: rgba(176,138,78,0.12);
-    border: 1px solid rgba(176,138,78,0.3);
+    color: #007AFF;
+    background: rgba(0,122,255,0.12);
+    border: 1px solid rgba(0,122,255,0.3);
     border-radius: 4px;
     padding: 1px 6px;
     margin-bottom: 2px;
@@ -432,7 +432,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(176,138,78,0.08), rgba(176,138,78,0.18));
+    background: linear-gradient(135deg, rgba(0,122,255,0.08), rgba(0,122,255,0.18));
   }
 
   &__ph-icon {
@@ -446,7 +446,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .vb-promo__card {
     box-shadow: 0 6px 24px rgba(0,0,0,0.35);
     &:not(.vb-promo__card--no-link):hover {
-      box-shadow: 0 12px 36px rgba(176,138,78,0.2);
+      box-shadow: 0 12px 36px rgba(0,122,255,0.2);
     }
   }
 
@@ -641,7 +641,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &--toggle {
     color: var(--app-accent);
     border-left: 1px solid var(--card-border);
-    &:hover { background: rgba(176,138,78,0.08); }
+    &:hover { background: rgba(0,122,255,0.08); }
   }
 }
 
@@ -716,7 +716,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Barra de lote ─────────────────────────────────────────────────
 .vb-lote-bar {
   background: var(--app-accent-soft);
-  border-bottom: 1px solid rgba(176,138,78,0.2);
+  border-bottom: 1px solid rgba(0,122,255,0.2);
   font-size: 0.875rem;
   padding: 0.65rem 1.25rem;
 
@@ -991,7 +991,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #475569;
     &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
     &--active {
-      background: rgba(176, 138, 78, 0.14);
+      background: rgba(0,122,255, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }
@@ -1020,7 +1020,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover &__box { border-color: rgba(0, 0, 0, 0.45); }
 
     &:has(input:checked) {
-      background: rgba(176, 138, 78, 0.14);
+      background: rgba(0,122,255, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }
@@ -1056,16 +1056,16 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, rgba(176,138,78,0.15) 0%, rgba(176,138,78,0.08) 100%);
-    border: 1px solid rgba(176,138,78,0.35);
+    background: linear-gradient(135deg, rgba(0,122,255,0.15) 0%, rgba(0,122,255,0.08) 100%);
+    border: 1px solid rgba(0,122,255,0.35);
     border-radius: 12px;
     text-decoration: none;
     color: inherit;
     transition: $transition;
 
     &:hover {
-      background: linear-gradient(135deg, rgba(176,138,78,0.24) 0%, rgba(176,138,78,0.14) 100%);
-      border-color: rgba(176,138,78,0.55);
+      background: linear-gradient(135deg, rgba(0,122,255,0.24) 0%, rgba(0,122,255,0.14) 100%);
+      border-color: rgba(0,122,255,0.55);
       text-decoration: none;
     }
   }
@@ -1098,10 +1098,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 :host-context(body.theme-light) {
   .vb-promo-banner__link {
-    background: linear-gradient(135deg, rgba(176,138,78,0.10) 0%, rgba(176,138,78,0.05) 100%);
-    border-color: rgba(176,138,78,0.28);
+    background: linear-gradient(135deg, rgba(0,122,255,0.10) 0%, rgba(0,122,255,0.05) 100%);
+    border-color: rgba(0,122,255,0.28);
     &:hover {
-      background: linear-gradient(135deg, rgba(176,138,78,0.18) 0%, rgba(176,138,78,0.10) 100%);
+      background: linear-gradient(135deg, rgba(0,122,255,0.18) 0%, rgba(0,122,255,0.10) 100%);
     }
   }
 }

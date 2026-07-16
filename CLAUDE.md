@@ -4089,11 +4089,9 @@ había compartido en el chat.
 - `login-form.component.scss`: `.particles-bg` (`position:absolute; inset:0; z-index:0;
   pointer-events:none`), `.split-form` con `position:relative` para contenerlo.
 
-**⚠️ Botón de prueba temporal (`.theme-test-btn`, ☀️/🌙 arriba a la derecha):** llama
-`ThemeService.toggle()` — el mismo método que usa el botón de tema del sidebar. Se agregó
-**solo para que el usuario pueda comparar claro/oscuro en el login sin esperar a que cambie la
-hora del sistema.** Marcado con comentarios `⚠️` en los 3 archivos (`.ts`/`.html`/`.scss`) —
-**pendiente quitarlo** una vez que el usuario confirme el diseño final del login.
+**Botón de prueba temporal (`.theme-test-btn`, ☀️/🌙):** se agregó para poder comparar
+claro/oscuro en el login sin esperar a que cambiara la hora del sistema. **Ya se eliminó**
+(2026-07-16) al confirmarse el diseño — el toggle de tema normal del sidebar sigue existiendo.
 
 **Verificado:** `ng build` sin errores + capturas Playwright con el botón de prueba real
 (no manipulación directa de clases) confirmando: partículas visibles y en movimiento entre dos
@@ -4160,3 +4158,90 @@ imagen estática).
 - `src/app/login/login-form/login-form.component.scss` → `.split-form` en oscuro vuelve a fondo
   sólido simple (la malla de puntos CSS quedó redundante — el shader ya pinta su propio negro +
   líneas, cubre todo el panel de forma opaca)
+
+---
+
+## HOMOLOGACIÓN DE PALETA — AETHER AZUL/MORADO (2026-07-16) ✅ COMPLETO
+
+> **⚠️ Esta sección REEMPLAZA a "HOMOLOGACIÓN DE PALETA — ÁMBAR/CREMA (2026-07-03)".**
+> El ámbar ya NO existe en el proyecto. Aquella sección se conserva solo como historial.
+
+**Cambio de marca:** tras aprobar el rediseño Aether del login, el usuario pidió la misma
+paleta y estilo para TODO el sistema ("los mismos colores que tenemos en el login para todo lo
+demás: ventas, usuarios, clientes, etc."). La paleta ámbar/crema (`#B08A4E`/`#C9A063`) fue
+reemplazada globalmente por azul/morado Aether.
+
+### Paleta canónica
+
+| | Claro | Oscuro |
+|---|---|---|
+| Accent | `#007AFF` | `#4A9EFF` (más brillante, para contraste sobre navy) |
+| Accent partner (gradientes) | `#5856D6` (morado) | `#5856D6` |
+| Fondo | `#F5F8FF` | `#0B0F24` |
+| Surface / cards | `#FFFFFF` | `#161B3A` |
+| Surface-alt | `#E8EDFB` | `#242B52` |
+| Texto | `#1C1E2E` | `#F1F4FF` |
+| Texto secundario | `#5A6285` | `#8890B8` |
+| Borde | `#DCE3F2` | `#2A3050` |
+| Placeholder | `#A3ABC9` | `#6C7499` |
+| Gradiente de marca | `linear-gradient(135deg, #007AFF, #5856D6)` | igual |
+
+**Regla (sin cambio):** NUNCA hardcodear hex — usar `var(--app-accent)`, `var(--card-bg)`,
+`var(--header-brand)`, etc. Ver [[project_variables_css]].
+
+### Enfoque: genérico, no componente por componente
+
+A petición explícita del usuario, el cambio se hizo **a nivel de variables globales**
+(`src/styles.scss`) en vez de rediseñar cada pantalla: todas las cards, inputs, buscadores,
+tablas y tipografía toman el color de ahí. Los 44 SCSS de componentes que tenían el ámbar
+hardcodeado se migraron con un **mapeo de paleta 1:1** (mismo método que el índigo→ámbar de
+julio), no reescribiéndolos.
+
+- `styles.scss` → bloques `body.theme-light` / `body.theme-dark` reescritos a mano (los valores
+  precisos por modo; ahí es donde importa la distinción de rol).
+- 44 SCSS de componentes + estilos inline de Swal en `.ts` → mapeo mecánico hex→hex.
+- **832 ocurrencias de ámbar → 0.** Verificado con grep.
+
+### ⚠️ Trampas encontradas (importante si se vuelve a cambiar la paleta)
+
+1. **4 hex tienen DOBLE ROL** — el mismo color se usa para cosas distintas según el tema:
+   `#1C1B19` (texto en claro / fondo en oscuro), `#F5F1EA` (fondo en claro / texto en oscuro),
+   `#7A6A58` y `#B8AE9C` (secundario ↔ placeholder). Un `sed` ciego los rompe. Se resolvió así:
+   en `styles.scss` se escribieron a mano los valores correctos por modo; en los componentes se
+   mapearon a un valor único válido para ambos roles — es seguro **porque ahí casi siempre son
+   solo el *fallback*** de `var(--app-text, #1C1B19)`, y la variable gana en tiempo de ejecución.
+
+2. **Sobrevivía una paleta ROSA/VINO anterior al ámbar** (`#8b1a4a` + `#c2255c`), que la
+   migración de julio no alcanzó: registro (`add-usuarios`), `palabras-clave`, `venta-directa`,
+   `detalle-producto`. También migrada a azul/morado (`#007AFF` + `#5856D6`, mismo par que el
+   gradiente del login).
+
+3. **NO todo color rosa/naranja/verde es "paleta"** — hay dos listas de colores que se dejaron
+   intactas a propósito:
+   - `all.component.ts` → `map[color]` traduce el **color REAL del producto**
+     (`rosa`, `morado`, `naranja`…) a un gradiente. Un producto rosa debe verse rosa.
+     Solo se cambió el **fallback** de marca.
+   - `all-usuarios.component.ts` → `avatarColor()` es una paleta de 8 gradientes distintos para
+     que cada usuario tenga un avatar de color diferente. No es marca, es variedad.
+   - Colores semánticos (`#ef4444` rojo, `#10b981` verde, badges de stock) — sin cambio.
+
+4. **Los Swal llevan sus colores inline en el `.ts`**, no en el SCSS del componente (SweetAlert2
+   inyecta su HTML en `document.body`, fuera del scope de estilos de Angular). Al migrar la
+   paleta hay que grepear también `--include="*.ts"`, no solo los SCSS.
+
+### Animación de fondo — SOLO en el login
+
+Decisión explícita del usuario: la malla técnica WebGL animada se queda **únicamente en el
+login**. El resto de las pantallas llevan la paleta azul pero **sin animación** (el shader
+consume GPU de forma continua y en pantallas de trabajo —tablas, formularios— distrae).
+
+**Verificado:** `ng build` sin errores + capturas Playwright de login y registro (las únicas
+pantallas alcanzables sin backend) en claro y oscuro, más una página de prueba que carga el
+`styles.css` compilado real para revisar los componentes genéricos (cards, inputs, tablas,
+botones, badges, alertas) en ambos temas — todo legible, sin texto invisible.
+
+### 💡 Nota de entorno — `ng serve` escucha en IPv6
+
+`ng serve` bindea a `[::1]:4200` (IPv6), NO a `127.0.0.1`. Verificar con
+`curl http://[::1]:4200` — usar `127.0.0.1` da "Connection refused" aunque `netstat` muestre el
+puerto LISTENING, lo que parece un problema de red pero no lo es.

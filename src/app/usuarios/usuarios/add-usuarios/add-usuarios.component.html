@@ -50,7 +50,9 @@
           <div class="input-wrap">
             <i class="pi pi-user input-icon"></i>
             <input class="field-input" formControlName="userName" type="text"
-                   placeholder="Nombre de usuario" autocomplete="username">
+                   placeholder="Nombre de usuario" autocomplete="username"
+                   [attr.readonly]="(textoCard === 'Actualizar usuario' && authService.isAdminService) ? true : null"
+                   [class.field-input--readonly]="textoCard === 'Actualizar usuario' && authService.isAdminService">
           </div>
           <div *ngIf="formRegistro.get('userName')?.invalid && formRegistro.get('userName')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
@@ -64,7 +66,10 @@
           <div class="input-wrap">
             <i class="pi pi-envelope input-icon"></i>
             <input class="field-input" formControlName="email" type="email"
-                   placeholder="correo@ejemplo.com" autocomplete="email">
+                   placeholder="correo@ejemplo.com" autocomplete="email"
+                   (blur)="onEmailBlur()"
+                   [attr.readonly]="codigoPendiente ? true : null"
+                   [class.field-input--readonly]="codigoPendiente">
           </div>
           <div *ngIf="formRegistro.get('email')?.invalid && formRegistro.get('email')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
@@ -73,7 +78,7 @@
           </div>
         </div>
 
-        <div class="field-wrap">
+        <div class="field-wrap" *ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)">
           <label class="field-label">Contraseña</label>
           <div class="input-wrap">
             <i class="pi pi-lock input-icon"></i>
@@ -121,7 +126,7 @@
           </div>
         </div>
 
-        <div class="field-wrap">
+        <div class="field-wrap" *ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)">
           <label class="field-label">Confirmar contraseña</label>
           <div class="input-wrap">
             <i class="pi pi-lock input-icon"></i>
@@ -155,9 +160,14 @@
               </div>
             </div>
           </div>
+          <button type="button" class="btn-admin-permisos" (click)="guardarPermisos()">
+            💾 Guardar permisos
+          </button>
         </div>
 
-        <button type="submit" class="btn-submit" [disabled]="formRegistro.invalid">
+        <button type="submit" class="btn-submit"
+                *ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)"
+                [disabled]="formRegistro.invalid">
           <span>{{ textoCard === 'Actualizar usuario' ? 'Actualizar' : 'Registrarse' }}</span>
           <i class="pi" [class.pi-check]="textoCard === 'Actualizar usuario'" [class.pi-arrow-right]="textoCard !== 'Actualizar usuario'"></i>
         </button>
@@ -169,6 +179,28 @@
           <button type="button" class="btn-admin-verify" (click)="verificarCorreoAdmin()">
             ✉️ Verificar correo
           </button>
+        </div>
+
+        <!-- Código de cambio de correo pendiente -->
+        <div class="au-codigo-pendiente" *ngIf="codigoPendiente && textoCard === 'Actualizar usuario'">
+          <div class="au-codigo-info">
+            <i class="pi pi-envelope"></i>
+            <span>Se envió un código a <strong>{{ correoNuevoPendiente }}</strong>. Ingrésalo antes de que caduque.</span>
+          </div>
+          <div class="au-codigo-acciones">
+            <button type="button" class="au-btn-codigo" (click)="reingresarCodigoCambioCorreo()">
+              <i class="pi pi-key"></i> Ingresar código
+            </button>
+            <button type="button" class="au-btn-reenviar"
+                    (click)="reenviarCodigoCambioCorreo()"
+                    [disabled]="cooldownReenvio > 0">
+              <i class="pi pi-refresh"></i>
+              {{ cooldownReenvio > 0 ? 'Reenviar en ' + cooldownReenvio + 's' : 'No llegó — Reenviar' }}
+            </button>
+            <button type="button" class="au-btn-cancelar-codigo" (click)="cancelarCambioCorreo()">
+              Cancelar cambio
+            </button>
+          </div>
         </div>
 
         <p class="footer-link" *ngIf="!authService.isAdminService">

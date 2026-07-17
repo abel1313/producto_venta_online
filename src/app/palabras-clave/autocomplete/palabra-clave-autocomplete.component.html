@@ -6,7 +6,8 @@
            placeholder="Buscar categoría… (ej. bolsa)"
            [(ngModel)]="termino"
            (input)="onInput()"
-           autocomplete="off" />
+           autocomplete="off"
+           appUppercase />
     <button *ngIf="termino" class="pka-search__clear" type="button" (click)="limpiar()">✕</button>
   </div>
 

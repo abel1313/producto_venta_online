@@ -9,6 +9,7 @@ export interface IPromocionDetalle {
   precioEnPromocion: number;
   imagenUrl?: string;
   existencias?: number; // stock actual de la variante — solo viene en GET /admin
+  codigoBarras?: string; // pendiente: el back aún no lo manda en /activas ni /admin
 }
 
 export interface IPromocion {

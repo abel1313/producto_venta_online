@@ -55,7 +55,7 @@
               </div>
               <div class="di-dropdown__sub">
                 <span *ngIf="p.marca">{{ p.marca }}</span>
-                <span *ngIf="p.codigoBarras" class="di-dropdown__code">{{ p.codigoBarras }}</span>
+                <span *ngIf="p.codigoBarras" class="di-dropdown__code">{{ p.codigoBarras | uppercase }}</span>
                 <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="p.stock === 0">
                   stock {{ p.stock }}
                 </span>
@@ -92,7 +92,7 @@
             <input
               class="di-search-box__input"
               type="text"
-              placeholder="Buscar variante por nombre, color, talla o código (mín. 3 chars)…"
+              placeholder="Buscar producto por nombre, color, talla o código (mín. 3 chars)…"
               [value]="terminoVariante"
               (input)="onBuscarVariante($event)"
               autocomplete="off"
@@ -110,7 +110,7 @@
                 <span class="di-dropdown__id">ID {{ v.id }}</span>
               </div>
               <div class="di-dropdown__sub">
-                <span *ngIf="v.codigoBarras" class="di-dropdown__code">{{ v.codigoBarras }}</span>
+                <span *ngIf="v.codigoBarras" class="di-dropdown__code">{{ v.codigoBarras | uppercase }}</span>
                 <span class="di-dropdown__stock" [class.di-dropdown__stock--low]="(v.stock ?? 0) === 0">
                   stock {{ v.stock ?? 0 }}
                 </span>
@@ -121,13 +121,13 @@
 
           <!-- Sin resultados -->
           <div class="di-no-results" *ngIf="!buscandoVariante && terminoVariante.length >= 3 && variantesEncontradas.length === 0 && !varianteSeleccionada && !resultadoVariante">
-            No se encontraron variantes con "{{ terminoVariante }}"
+            No se encontraron productos con "{{ terminoVariante }}"
           </div>
         </div>
 
         <!-- Variante seleccionada (chip) -->
         <div *ngIf="varianteSeleccionada" class="di-selected">
-          <span class="di-selected__label">Variante seleccionada:</span>
+          <span class="di-selected__label">Producto seleccionado:</span>
           <span class="di-selected__chip">
             {{ etiquetaVariante(varianteSeleccionada) }}
             <span class="di-selected__id">ID {{ varianteSeleccionada.id }}</span>

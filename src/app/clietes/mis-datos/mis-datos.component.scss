@@ -29,7 +29,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 1rem;
   padding: 1.4rem 1.75rem;
-  background: linear-gradient(135deg, #3D2C0C 0%, #8A6A38 55%, #B08A4E 100%);
+  background: linear-gradient(135deg, #3D2C0C 0%, #5856D6 55%, #007AFF 100%);
 }
 
 .md-header-icon {
@@ -81,7 +81,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--app-accent, #B08A4E);
+  color: var(--app-accent, #007AFF);
   padding-left: 2px;
 }
 
@@ -195,11 +195,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &::placeholder { color: #c4c9d4; }
 
   &:focus {
-    border-color: var(--app-accent, #B08A4E);
+    border-color: var(--app-accent, #007AFF);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.12);
+    box-shadow: 0 0 0 3px rgba(0,122,255, 0.12);
 
-    ~ .md-input-icon { color: var(--app-accent, #B08A4E); }
+    ~ .md-input-icon { color: var(--app-accent, #007AFF); }
   }
 
   &--date { color-scheme: light dark; }
@@ -250,7 +250,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-address-num {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--app-accent, #B08A4E);
+  color: var(--app-accent, #007AFF);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -275,7 +275,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   width: 0;
   height: 0;
 
-  &:checked + .md-toggle-slider { background: var(--app-accent, #B08A4E); }
+  &:checked + .md-toggle-slider { background: var(--app-accent, #007AFF); }
   &:checked + .md-toggle-slider::before { transform: translateX(18px); }
 }
 
@@ -319,17 +319,17 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1.5px solid rgba(176, 138, 78, 0.4);
-  background: rgba(176, 138, 78, 0.07);
-  color: var(--app-accent, #B08A4E);
+  border: 1.5px solid rgba(0,122,255, 0.4);
+  background: rgba(0,122,255, 0.07);
+  color: var(--app-accent, #007AFF);
   transition: $trans;
   font-family: inherit;
 
   .pi { font-size: 0.75rem; }
 
   &:hover {
-    background: rgba(176, 138, 78, 0.14);
-    border-color: rgba(176, 138, 78, 0.6);
+    background: rgba(0,122,255, 0.14);
+    border-color: rgba(0,122,255, 0.6);
   }
 }
 
@@ -378,19 +378,19 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .pi { font-size: 0.9rem; }
 
   &--save {
-    background: linear-gradient(135deg, #8A6A38, #B08A4E);
+    background: linear-gradient(135deg, #5856D6, #007AFF);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(176, 138, 78, 0.38);
+    box-shadow: 0 4px 14px rgba(0,122,255, 0.38);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(176, 138, 78, 0.48);
+      box-shadow: 0 8px 20px rgba(0,122,255, 0.48);
     }
 
     &:active:not(:disabled) { transform: translateY(0); }
 
     &:disabled {
-      background: linear-gradient(135deg, #C9A063, #B08A4E);
+      background: linear-gradient(135deg, #4A9EFF, #007AFF);
       cursor: not-allowed;
       box-shadow: none;
       opacity: 0.6;
@@ -418,7 +418,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:focus {
       background: rgba(255, 255, 255, 0.09);
       border-color: var(--app-accent);
-      box-shadow: 0 0 0 3px rgba(176, 138, 78, 0.18);
+      box-shadow: 0 0 0 3px rgba(0,122,255, 0.18);
     }
 
     &--date { color-scheme: dark; }

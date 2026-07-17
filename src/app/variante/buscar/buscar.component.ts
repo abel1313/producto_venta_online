@@ -6,11 +6,12 @@ import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
-import { IVarianteResumen } from '../models/variante.model';
+import { IFiltrosDisponibles, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
+import { FavoritoService } from 'src/app/favoritos/service/favorito.service';
 
 @Component({
   selector: 'app-buscar',
@@ -37,6 +38,17 @@ export class BuscarComponent implements OnInit, OnDestroy {
   mostrarSinImagenes = false;
   mostrarHabilitados = false;
   mostrarNoHabilitados = false;
+
+  // Filtros públicos del catálogo (talla/color/marca/precio) — visibles para cualquier usuario,
+  // combinables entre sí con AND. Independientes de los filtros admin de arriba (endpoints
+  // distintos en el back, no se combinan entre ellos).
+  filtrosDisponibles: IFiltrosDisponibles | null = null;
+  filtroTalla = '';
+  filtroColor = '';
+  filtroMarca = '';
+  filtroPrecioMin: number | null = null;
+  filtroPrecioMax: number | null = null;
+
   detalle: IDetalleVariante[] = [];
   escaneando       = false;
   seleccionados    = new Set<number>();
@@ -44,11 +56,17 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private controlesEscaner: IScannerControls | null = null;
 
   private productoId = 0;
+  get modoPorProducto(): boolean { return this.productoId > 0; }
   private reqId             = 0;
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
   hayPromos = false;
+
+  // Favoritos — solo usuarios logueados (con perfil de cliente completo, lo valida el back)
+  private roles: string[] = [];
+  get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
+  favoritosIds = new Set<number>();
 
   constructor(
     private readonly varianteService: VarianteService,
@@ -57,7 +75,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     readonly router: Router,
     private readonly compartirSvc: CompartirService,
-    private readonly promoService: PromocionService
+    private readonly promoService: PromocionService,
+    private readonly favoritoService: FavoritoService
   ) {}
 
   compartirImagen(v: IVarianteResumen): void {
@@ -76,15 +95,29 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
 
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
+      this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
+      if (!this.isAnonymous) {
+        this.favoritoService.listarIds().pipe(takeUntil(this.destroy$)).subscribe({
+          next: res => { this.favoritosIds = new Set(res?.data ?? []); },
+          error: () => { this.favoritosIds = new Set(); }
+        });
+      }
     });
 
     this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
+
+    this.varianteService.filtrosDisponibles().pipe(takeUntil(this.destroy$)).subscribe({
+      next: f => { this.filtrosDisponibles = f; },
+      error: () => { this.filtrosDisponibles = null; }
+    });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
       .subscribe((termino: string) => {
         if (this.hayFiltrosAdminActivos) {
           this.aplicarFiltrosAdmin(1);
+        } else if (this.hayFiltrosPublicosActivos) {
+          this.aplicarFiltrosPublicos(1);
         } else {
           this.buscarPagina(termino, 1);
         }
@@ -118,8 +151,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const valor = (event.target as HTMLInputElement).value;
     this.terminoBusqueda = valor;
     const termino = valor.trim();
-    if (termino.length === 0 && !this.hayFiltrosAdminActivos) { this.buscarPagina('', 1); return; }
-    if (termino.length > 0 && termino.length < 3) return;
+    const hayFiltros = this.hayFiltrosAdminActivos || this.hayFiltrosPublicosActivos;
+    if (termino.length === 0 && !hayFiltros) { this.buscarPagina('', 1); return; }
+    if (termino.length > 0 && termino.length < 3 && !hayFiltros) return;
     this.busquedaSubject.next(termino);
   }
 
@@ -218,6 +252,53 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Filtros públicos del catálogo (talla / color / marca / precio) ───
+
+  get hayFiltrosPublicosActivos(): boolean {
+    return !!this.filtroTalla || !!this.filtroColor || !!this.filtroMarca
+        || this.filtroPrecioMin !== null || this.filtroPrecioMax !== null;
+  }
+
+  onFiltroPublicoChange(): void {
+    this.seleccionados.clear();
+    this.aplicarFiltrosPublicos(1);
+  }
+
+  limpiarFiltrosPublicos(): void {
+    this.filtroTalla = '';
+    this.filtroColor = '';
+    this.filtroMarca = '';
+    this.filtroPrecioMin = null;
+    this.filtroPrecioMax = null;
+    this.varianteService.invalidarCache();
+    this.buscarPagina(this.terminoBusqueda, 1);
+  }
+
+  private aplicarFiltrosPublicos(pagina: number): void {
+    this.buscando = true;
+    this.varianteService.invalidarCache();
+    this.varianteService.buscarFiltrado({
+      termino: this.terminoBusqueda.trim() || undefined,
+      precioMin: this.filtroPrecioMin ?? undefined,
+      precioMax: this.filtroPrecioMax ?? undefined,
+      talla: this.filtroTalla || undefined,
+      color: this.filtroColor || undefined,
+      marca: this.filtroMarca || undefined,
+    }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        this.sinResultados = (res.t ?? []).length === 0;
+        this.variantes    = res.t ?? [];
+        this.totalPaginas = res.totalPaginas;
+        this.paginaActual = pagina;
+        this.buscando = false;
+      },
+      error: (err) => {
+        this.buscando = false;
+        Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
+      }
+    });
+  }
+
   private cargarResumen(pagina: number): void {
     this.buscando = true;
     this.varianteService.getPorProductoPaginadoResumen(this.productoId, pagina, 10)
@@ -240,6 +321,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
+    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -249,6 +331,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
     else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
+    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
@@ -267,6 +350,29 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   eliminarCarrito(v: IVarianteResumen): void {
     this.carritoVariante.eliminar(v.id);
+  }
+
+  // ── Favoritos ──────────────────────────────────────────────────────
+
+  esFavorito(v: IVarianteResumen): boolean {
+    return this.favoritosIds.has(v.id);
+  }
+
+  toggleFavorito(v: IVarianteResumen): void {
+    if (this.isAnonymous) return;
+    const eraFavorito = this.favoritosIds.has(v.id);
+    // Optimista: refleja el cambio de inmediato, revierte solo si el back falla.
+    if (eraFavorito) this.favoritosIds.delete(v.id);
+    else this.favoritosIds.add(v.id);
+
+    const obs = eraFavorito ? this.favoritoService.quitar(v.id) : this.favoritoService.agregar(v.id);
+    obs.pipe(takeUntil(this.destroy$)).subscribe({
+      error: err => {
+        if (eraFavorito) this.favoritosIds.add(v.id);
+        else this.favoritosIds.delete(v.id);
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo actualizar favoritos.' });
+      }
+    });
   }
 
   verCarrito(): void {
@@ -355,6 +461,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
             this.terminoBusqueda = codigo;
             if (this.hayFiltrosAdminActivos) {
               this.aplicarFiltrosAdmin(1);
+            } else if (this.hayFiltrosPublicosActivos) {
+              this.aplicarFiltrosPublicos(1);
             } else {
               this.buscarPagina(codigo, 1);
             }

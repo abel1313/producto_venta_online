@@ -1,5 +1,5 @@
-$p:  #8A6A38;
-$pd: #B08A4E;
+$p:  #5856D6;
+$pd: #007AFF;
 $t:  all 0.22s ease;
 
 // ── Página ─────────────────────────────────────────────────────────
@@ -58,8 +58,8 @@ $t:  all 0.22s ease;
 .ca-info {
   display: flex;
   gap: 12px;
-  background: rgba(176,138,78,0.08);
-  border: 1px solid rgba(176,138,78,0.25);
+  background: rgba(0,122,255,0.08);
+  border: 1px solid rgba(0,122,255,0.25);
   border-radius: 12px;
   padding: 12px 16px;
   font-size: 0.82rem;
@@ -74,7 +74,7 @@ $t:  all 0.22s ease;
       display: block;
       margin-top: 6px;
       font-size: 0.75rem;
-      background: rgba(176,138,78,0.1);
+      background: rgba(0,122,255,0.1);
       border-radius: 6px;
       padding: 4px 8px;
       word-break: break-all;
@@ -190,13 +190,13 @@ $t:  all 0.22s ease;
   &--upload {
     background: linear-gradient(135deg, $p, $pd);
     color: white;
-    box-shadow: 0 4px 16px rgba(176,138,78,0.35);
+    box-shadow: 0 4px 16px rgba(0,122,255,0.35);
     min-width: 160px;
     display: flex;
     align-items: center;
     justify-content: center;
 
-    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(176,138,78,0.5); }
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,122,255,0.5); }
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
 }

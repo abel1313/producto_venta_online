@@ -18,7 +18,6 @@ export class NavbarComponent implements OnInit {
   isAdminUser = false;
   usuario = '';
 
-  countCarrito = 0;
   countCarritoVariante = 0;
 
   // Sidebar state
@@ -43,10 +42,6 @@ export class NavbarComponent implements OnInit {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
     this.authService.userName$.subscribe(user => { this.usuario = user; });
-
-    this.serviceCarrito.carritoDetalle$.subscribe(detalle => {
-      this.countCarrito = detalle.reduce((sum, item) => sum + item.cantidad, 0);
-    });
 
     this.carritoVariante.carrito$.subscribe(items => {
       const v = items.reduce((s, i) => s + i.cantidad, 0);
@@ -111,8 +106,9 @@ export class NavbarComponent implements OnInit {
     this.authService.setRolesFromToken('');
     this.roles = [];
     this.usuario = '';
-    this.countCarrito = 0;
     this.countCarritoVariante = 0;
+    // Al cerrar sesión sí se limpian AMBOS carritos (el de productos también,
+    // aunque ya no se muestre en el footer — no debe quedar en localStorage).
     this.serviceCarrito.limpiarCarrito();
     this.carritoVariante.limpiar();
     this.closeMobile();
@@ -120,12 +116,14 @@ export class NavbarComponent implements OnInit {
   }
 
   // ── Carrito ────────────────────────────────────────────────────────
-  revisarProductosCarrito(): void { this.router.navigate(['/productos/detalle-productos']); }
   verCarritoVariante(): void { this.router.navigate(['/variantes/carrito']); }
   regresarProducto(): void { this.router.navigate(['/variantes/buscar']); }
+
+  // Limpia el carrito que el botón "Carrito" del footer muestra (variantes +
+  // promos). NO toca el carrito viejo de productos: ese se limpia desde
+  // /productos/detalle-productos, su propia pantalla.
   limpiarCarrito(): void {
-    this.countCarrito = 0;
-    this.serviceCarrito.limpiarCarrito();
+    this.carritoVariante.limpiar();
   }
 
   // ── Tema claro/oscuro ──────────────────────────────────────────────

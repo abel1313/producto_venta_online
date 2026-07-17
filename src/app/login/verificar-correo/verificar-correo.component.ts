@@ -148,7 +148,7 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
       showCancelButton: false,
       allowOutsideClick: false,
       allowEscapeKey: false,
-      preConfirm: () => {
+      preConfirm: async () => {
         const nueva   = (document.getElementById('swal-pwd-nueva')   as HTMLInputElement)?.value ?? '';
         const confirm = (document.getElementById('swal-pwd-confirm') as HTMLInputElement)?.value ?? '';
         if (nueva.length < 8) {
@@ -159,20 +159,17 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
           Swal.showValidationMessage('Las contraseñas no coinciden');
           return false;
         }
-        return nueva;
+        try {
+          await this.acceder.cambiarPassword(passwordActual, nueva).toPromise();
+          return true;
+        } catch (err: any) {
+          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.';
+          Swal.showValidationMessage(msg);
+          return false;
+        }
       }
     }).then(result => {
-      if (!result.isConfirmed || !result.value) return;
-      this.acceder.cambiarPassword(passwordActual, result.value as string).subscribe({
-        next: () => this.router.navigate(['/productos/buscar']),
-        error: (err: any) => {
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo cambiar',
-            text: err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.'
-          }).then(() => this.forzarCambioPassword(passwordActual));
-        }
-      });
+      if (result.isConfirmed) this.router.navigate(['/productos/buscar']);
     });
   }
 

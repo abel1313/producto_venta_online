@@ -29,28 +29,43 @@
 
     <!-- Buscador de variante -->
     <div class="gp-variante-search">
-      <label class="gp-label">Agregar variante al combo</label>
+      <label class="gp-label">Agregar producto al combo</label>
       <div class="gp-search-wrap">
         <input class="gp-input gp-input--search" type="text"
-               placeholder="Buscar variante por nombre, talla o color…"
+               placeholder="Buscar producto por nombre, talla o color…"
                [(ngModel)]="terminoVariante"
-               (input)="onInputVariante()">
+               (input)="onInputVariante()"
+               appUppercase>
         <span class="gp-search-spinner" *ngIf="buscandoVariante">⏳</span>
       </div>
+      <!-- Solo aparecen variantes CON stock (ver buscarVariante() en el .ts) -->
       <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">
-        <div class="gp-dropdown__item" *ngFor="let v of resultadosVariante"
+        <div class="gp-dropdown__item"
+             *ngFor="let v of resultadosVariante"
              (click)="seleccionarVariante(v)">
           <img *ngIf="v.imagenUrl" [src]="v.imagenUrl" class="gp-dropdown__img" alt="">
-          <span>{{ labelVariante(v) }}</span>
+          <span>{{ labelVariante(v) }} <small class="gp-dropdown__id">#{{ v.id }}</small></span>
+          <span class="gp-dropdown__stock">
+            {{ (v.stock ?? 0) }} pz{{ (v.stock ?? 0) === 1 ? '' : 's' }}
+          </span>
           <span class="gp-dropdown__precio">${{ v.precio | number:'1.2-2' }}</span>
         </div>
       </div>
+      <p class="gp-hint-sinresultados"
+         *ngIf="!buscandoVariante && terminoVariante.trim().length >= 2 && resultadosVariante.length === 0">
+        Sin resultados con stock disponible. Solo se muestran productos con piezas para armar el combo.
+      </p>
+      <p class="gp-hint-duplicados" *ngIf="resultadosVariante.length > 1">
+        ⚠️ Si ves varios productos idénticos (mismo nombre/talla/color), pueden ser registros
+        duplicados del mismo modelo con el stock repartido entre ellos — revisa el número de
+        piezas de cada una antes de elegir.
+      </p>
     </div>
 
     <!-- Tabla de piezas del combo -->
     <div class="gp-detalles" *ngIf="formDetalles.length > 0">
       <div class="gp-detalles__hdr">
-        <span>Variante</span>
+        <span>Producto</span>
         <span>Cant.</span>
         <span>Precio promo $</span>
         <span></span>
@@ -70,7 +85,7 @@
     </div>
 
     <div class="gp-form-empty" *ngIf="formDetalles.length === 0">
-      Busca y agrega variantes para armar el combo.
+      Busca y agrega productos para armar el combo.
     </div>
 
     <div class="gp-form-actions">
@@ -107,7 +122,7 @@
         </div>
         <ul class="gp-card__piezas-list">
           <li *ngFor="let d of (p.detalles ?? [])">
-            {{ d.nombreProducto ?? 'Variante #' + d.varianteId }}
+            {{ d.nombreProducto ?? 'Producto #' + d.varianteId }}
             <span *ngIf="d.talla"> · {{ d.talla }}</span>
             <span *ngIf="d.color"> · {{ d.color }}</span>
             — x{{ d.cantidad }} · ${{ d.precioEnPromocion | number:'1.2-2' }}

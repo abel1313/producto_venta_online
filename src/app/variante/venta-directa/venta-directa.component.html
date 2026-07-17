@@ -15,7 +15,7 @@
       <span>💰</span>
       <div>
         <h3 class="vd-header__name">Venta directa</h3>
-        <small class="vd-header__sub">Busca variantes, selecciona el pago y cobra</small>
+        <small class="vd-header__sub">Busca productos, selecciona el pago y cobra</small>
       </div>
     </div>
     <div class="vd-header__totals" *ngIf="lineas.length > 0">
@@ -30,7 +30,7 @@
     <!-- Panel izquierdo — Búsqueda de variantes                  -->
     <!-- ══════════════════════════════════════════════════════════ -->
     <div class="vd-panel vd-panel--left">
-      <p class="vd-panel__title">🔍 Buscar variante</p>
+      <p class="vd-panel__title">🔍 Buscar producto</p>
 
       <div class="vd-search">
         <span class="vd-search__icon">🔍</span>
@@ -65,7 +65,7 @@
                 {{ (v.stock ?? 0) === 0 ? 'Agotado' : v.stock + ' en stock' }}
               </span>
             </div>
-            <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras }}</span>
+            <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras | uppercase }}</span>
           </div>
           <button class="vd-btn-add"
                   [disabled]="(v.stock ?? 0) === 0"
@@ -121,8 +121,17 @@
           <span class="vd-required" *ngIf="!pagosYMesesId && !esCredito">*</span>
         </p>
 
+        <!-- Cargando -->
+        <p class="vd-pay-loading" *ngIf="cargandoPagos">Cargando formas de pago…</p>
+
+        <!-- Aviso cuando NO hay opciones (vacío o error) — explica por qué Cobrar está gris -->
+        <div class="vd-pay-error" *ngIf="!cargandoPagos && errorPagos && !esCredito">
+          <span>⚠️ {{ errorPagos }}</span>
+          <button type="button" class="vd-pay-retry" (click)="reintentarPagos()">Reintentar</button>
+        </div>
+
         <!-- Pago al contado -->
-        <p-dropdown *ngIf="!cargandoPagos && !esCredito"
+        <p-dropdown *ngIf="!cargandoPagos && !esCredito && opcionesEstructuradas.length > 0"
             [options]="opcionesEstructuradas"
             [(ngModel)]="tipoPagoActivo"
             optionLabel="formaPago"
@@ -293,7 +302,30 @@
       <!-- ── LÍNEAS DE VENTA ───────────────────────────────────── -->
       <p class="vd-panel__title">🧾 Artículos</p>
 
-      <div *ngIf="lineas.length > 0; else ventaVacia" class="vd-lines">
+      <!-- El carrito puede traer SOLO promos (sin variantes sueltas) — por eso la
+           condición incluye tienePromos: si no, se veía el estado vacío y sin totales
+           aunque el botón Cobrar estuviera habilitado. -->
+      <div *ngIf="lineas.length > 0 || tienePromos; else ventaVacia" class="vd-lines">
+
+        <!-- ── Combos de promoción ── -->
+        <div class="vd-promo" *ngFor="let p of promosCarrito; let i = index">
+          <div class="vd-promo__body">
+            <span class="vd-promo__nombre">
+              🏷️ {{ p.descripcion }}
+              <span class="vd-promo__badge">× {{ p.cantidadCombos }} combo{{ p.cantidadCombos === 1 ? '' : 's' }}</span>
+            </span>
+            <div class="vd-promo__detalles">
+              <span *ngFor="let d of p.detalles; let j = index">
+                {{ d.cantidad }}× {{ d.nombreProducto || 'Variante ' + d.varianteId }}<span *ngIf="d.talla"> ({{ d.talla }})</span><span *ngIf="j < p.detalles.length - 1"> · </span>
+              </span>
+            </div>
+          </div>
+          <div class="vd-line__right">
+            <span class="vd-line__subtotal">{{ (p.precioTotal * p.cantidadCombos) | currency:'$' }}</span>
+            <button class="vd-line__del" (click)="quitarPromo(i)">✕</button>
+          </div>
+        </div>
+
         <div class="vd-line" *ngFor="let l of lineas; let i = index">
           <div class="vd-line__thumb"
                (click)="verImagen(l.variante.imagenUrl, labelVariante(l.variante))"
@@ -329,7 +361,7 @@
 
       <ng-template #ventaVacia>
         <div class="vd-empty">
-          <span>🛒</span><p>Agrega variantes desde el buscador</p>
+          <span>🛒</span><p>Agrega productos desde el buscador</p>
         </div>
       </ng-template>
 

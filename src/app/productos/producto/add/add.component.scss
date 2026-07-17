@@ -4,8 +4,8 @@
   --header-brand-shadow: rgba(24,24,27,0.35);
 }
 
-$primary:   #8A6A38;
-$primary-d: #B08A4E;
+$primary:   #5856D6;
+$primary-d: #007AFF;
 $t: all 0.22s ease;
 
 // ── Página ─────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ $t: all 0.22s ease;
   &--gallery {
     background: var(--app-accent-soft);
     color: var(--app-accent);
-    &:hover { background: rgba(176,138,78,0.2); }
+    &:hover { background: rgba(0,122,255,0.2); }
   }
 
   &--camera {
@@ -374,19 +374,19 @@ $t: all 0.22s ease;
   padding: 15px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #8A6A38, #B08A4E);
+  background: linear-gradient(135deg, #5856D6, #007AFF);
   color: white;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: $t;
-  box-shadow: 0 6px 20px rgba(176,138,78,0.35);
+  box-shadow: 0 6px 20px rgba(0,122,255,0.35);
   margin-top: 6px;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(176,138,78,0.5);
+    box-shadow: 0 10px 28px rgba(0,122,255,0.5);
   }
 
   &:active:not(:disabled) { transform: translateY(0); }

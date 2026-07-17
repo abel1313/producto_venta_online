@@ -1728,6 +1728,46 @@ return throwError(error);
 
 ---
 
+### L-G2 — un `Swal.fire()` puede crearse en el DOM y quedar completamente invisible por z-index (2026-07-08)
+
+**Síntoma:** `Swal.fire()` se ejecuta sin ningún error en consola, el modal SÍ se crea en el DOM
+(`document.querySelectorAll('.swal2-container').length` devuelve `1`), pero el usuario no ve
+nada en pantalla — parece que "no pasa nada" al hacer una acción que debería mostrar un popup.
+
+**Causa:** SweetAlert2 usa `z-index: 1060` por defecto para `.swal2-container`. Varios
+componentes del proyecto usan `position: fixed` con z-index más alto que eso — `.split-page`
+(login) en `1100`, `navbar` en `1100`, y `chatbot`/`add-venta`/`venta-variante`/
+`detalle-productos` entre `10000` y `10002`. Si un `Swal.fire()` se abre mientras alguno de
+esos elementos está visible, el modal se crea en el DOM pero queda **dibujado detrás** de esa
+pantalla — invisible e inaccesible, sin ningún error, porque técnicamente no hay ningún fallo:
+solo perdió la pelea de stacking. Encontrado en vivo en el login: `debeCambiarPassword: true`
+hacía que `forzarCambioPassword()` llamara a `Swal.fire()` correctamente, pero `.split-page`
+(z-index 1100) lo tapaba por completo.
+
+**Cómo detectarlo:** en la consola del navegador, después de disparar la acción que debería
+abrir el Swal, correr `document.querySelectorAll('.swal2-container').length`. Si devuelve `1`
+(o más), el modal SÍ se creó — es un problema de z-index, no de lógica JS. Si devuelve `0`, el
+código nunca llegó a llamar `Swal.fire()` (ahí sí hay que revisar la lógica/el bundle
+desplegado).
+
+**Fix — NO bajar el z-index de cada componente uno por uno.** Se agregó una regla global en
+`src/styles.scss`, justo antes del bloque de estilos de SweetAlert2 existente:
+```scss
+.swal2-container {
+  z-index: 20000 !important;
+}
+```
+Un modal de este tipo debe **siempre** ganar, sin importar qué z-index tenga la pantalla
+debajo — por eso la regla es global y con `!important`, no un fix puntual por componente.
+
+**Regla a futuro:** si se agrega un componente nuevo con `position: fixed` y z-index alto
+(headers, overlays, banners), no hace falta preocuparse por SweetAlert2 — ya está cubierto
+globalmente. Si en el futuro se usa OTRA librería de modales/toasts, aplicar el mismo criterio:
+verificar su z-index por defecto contra los z-index más altos del proyecto (hoy el tope es
+`10002`, en `chatbot.component.scss`) y forzarlo por arriba en `styles.scss` si hace falta.
+
+---
+
 ## LECCIONES APRENDIDAS — MÓDULO RIFAS (errores recurrentes a evitar)
 
 > Registro de patrones que ya causaron bugs en este módulo. Antes de tocar `AgregarRifaComponent`
@@ -3113,6 +3153,312 @@ Al pulsar → Swal con input `email` (pre-relleno con `correoElectronico` del cl
 
 ---
 
+## FEAT REPORTES — TAB "🎁 PROMOCIONES" (2026-07-13)
+
+> Primera de las 4 features nuevas documentadas en `CAMBIOS_FRONT.md` (2026-07-13). Endpoint
+> `GET /v1/reportes/ventas/promociones?desde=&hasta=` — combos vendidos, transacciones, venta y
+> ganancia total por promoción, ordenado ya por el back (más vendidas primero). Incluye promos
+> sin ninguna venta (todo en 0, `ultimaVenta: null`).
+
+**Nuevo 5º tab en `/reportes`**, mismo patrón que los otros 4 (tabla, sin chart — el doc del back
+solo pidió tabla + filtro de fechas opcional):
+- Fechas `desde`/`hasta` **opcionales** — sin ellas trae el histórico completo. Se auto-carga la
+  primera vez que se abre el tab (`promocionesCargadas` guard en `setTab()`, mismo patrón que evita
+  refetch innecesario del resto de tabs).
+- Tabla: Promoción, Combos vendidos, Transacciones, Total ($), Ganancia ($), Última venta —
+  filas con `combosVendidos === 0` se muestran atenuadas (`.rp-tr--sin-ventas`) para diferenciarlas
+  de las promos que sí se han vendido, sin ocultarlas (el back las manda a propósito).
+
+**⚠️ Backend en `dev`, todavía NO subido a `qa`** — el endpoint no va a responder en QA hasta que
+el back haga el push. Verificar con el back antes de probar en vivo.
+
+**Archivos modificados:**
+- `src/app/reportes/service/reportes.service.ts` → `PromocionReporte`, `getPromociones()`
+- `src/app/reportes/reportes.component.ts` → tab `'promociones'`, `buscarPromociones()`
+- `src/app/reportes/reportes.component.html` → tab button + panel con tabla
+- `src/app/reportes/reportes.component.scss` → `.rp-hint`, `.rp-tr--sin-ventas`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT CATÁLOGO — FILTROS PÚBLICOS (TALLA/COLOR/MARCA/PRECIO) (2026-07-13)
+
+> Segunda de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Endpoints
+> `GET /variantes/v1/buscar-filtrado` (público, combina termino+precioMin+precioMax+talla+color+marca
+> con AND, nunca 404 — `t: []` si no hay resultados) y `GET /variantes/v1/filtros-disponibles`
+> (público, valores reales del catálogo visible para armar los dropdowns + límites del precio).
+
+**Dónde:** `/variantes/buscar` (`BuscarComponent`) — visible para **cualquier usuario**, no solo
+admin (a diferencia de los checkboxes `mostrarConStock`/`mostrarSinStock`/etc. que siguen siendo
+admin-only y usan un endpoint distinto, `/admin/filtrar`).
+
+**Comportamiento:**
+- Al entrar al catálogo (modo general, `productoId === 0`) se llama `filtrosDisponibles()` una vez
+  para pintar los 3 `<select>` (talla/color/marca) y los límites del rango de precio.
+- Cualquier cambio en talla/color/marca/precio (`onFiltroPublicoChange()`) dispara
+  `buscarFiltrado()` con página 1. Se combina con `terminoBusqueda` si el usuario también escribió
+  texto — pero el buscador de texto simple (`/buscar`, cascada código→palabra clave→nombre) **sigue
+  intacto** cuando NO hay filtros públicos activos, tal como pide el contrato del back.
+- Precedencia cuando hay varios tipos de filtro a la vez: filtros admin (`/admin/filtrar`) >
+  filtros públicos (`/buscar-filtrado`) > buscador de texto simple (`/buscar`) — son 3 endpoints
+  distintos que el back no combina entre sí, así que el front tampoco los mezcla.
+- Barra de filtros públicos oculta cuando se navega "por producto" (`modoPorProducto`, viendo las
+  variantes de un producto específico) — no aplica en ese contexto.
+
+**Archivos modificados:**
+- `src/app/variante/models/variante.model.ts` → `IFiltrosDisponibles`
+- `src/app/variante/service/variante.service.ts` → `buscarFiltrado()`, `filtrosDisponibles()`
+- `src/app/variante/buscar/buscar.component.ts` → estado de filtros públicos, `aplicarFiltrosPublicos()`,
+  `limpiarFiltrosPublicos()`, `hayFiltrosPublicosActivos`, precedencia en `onBuscar()`/paginación/escáner
+- `src/app/variante/buscar/buscar.component.html` → `.vb-pub-filtros` (selects + rango de precio)
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-pub-filtros`, `.vb-pub-select`, `.vb-pub-input`, `.vb-pub-precio` (dark + light)
+
+**⚠️ Backend en `dev`, todavía NO subido a `qa`** — no va a responder en QA hasta que el back haga el push.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT FAVORITOS (2026-07-13)
+
+> Tercera de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Requiere estar logueado
+> **con perfil de Cliente completo** — si no, el back responde `400` con
+> `"Tu cuenta todavia no tiene un perfil de cliente completo"` (mismo patrón ya usado en otros
+> flujos de "datosCompletos"). Migración `migration_favoritos_resenas.sql` ya ejecutada.
+
+### Archivos nuevos — módulo lazy `/favoritos`
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/favoritos/service/favorito.service.ts` | 4 endpoints: `agregar()`, `quitar()` (ambos idempotentes), `listar()` (paginado, mismo shape que `/variantes/buscar`), `listarIds()` |
+| `src/app/favoritos/favoritos.component.ts/.html/.scss` | Pantalla "❤️ Mis favoritos" — grid de cards con imagen, precio, stock, botón agregar/quitar carrito y botón quitar de favoritos. Prefijo BEM `fv-`, dark/light completo |
+| `src/app/favoritos/favoritos.module.ts` | Módulo lazy — importa `SharedModule` (para el pipe `imagenSrc`) |
+| `src/app/favoritos/favoritos-routing.module.ts` | Ruta raíz `''` → `FavoritosComponent` |
+
+### Archivos modificados
+
+| Archivo | Qué se agregó |
+|---|---|
+| `src/app/app-routing.module.ts` | Ruta lazy `/favoritos`, guards `AuthGuard + CarritoGuard` (mismo criterio que `/promociones` — cualquier logueado, no exclusivo admin) |
+| `src/app/navbar/navbar.component.html` | Link "❤️ Favoritos" para `!isAnonymous`, junto a "🎁 Promociones" |
+| `src/app/variante/buscar/buscar.component.ts` | `roles`, `isAnonymous`, `favoritosIds: Set<number>` (poblado con `listarIds()` al detectar sesión no-anónima), `esFavorito()`, `toggleFavorito()` (optimista: cambia el Set de inmediato, revierte solo si el back falla) |
+| `src/app/variante/buscar/buscar.component.html` | Botón corazón (❤️/🤍) sobre la imagen de cada card, solo si `!isAnonymous` |
+| `src/app/variante/buscar/buscar.component.scss` | `.vb-card__heart` (esquina inferior derecha de la imagen — evita chocar con el checkbox de selección admin en la esquina superior izquierda y el badge "Deshabilitado" en la superior derecha) + animación `vb-heart-pop` |
+
+**Dónde se puede marcar/quitar favorito:** por ahora solo desde `/variantes/buscar` (el catálogo
+principal). No se agregó a `detalle-productos` ni a otras pantallas de variantes — si se necesita
+ahí también, es una extensión puntual del mismo patrón (`FavoritoService` ya es reusable).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT RESEÑAS Y CALIFICACIONES (2026-07-13)
+
+> Última de las 4 features nuevas de `CAMBIOS_FRONT.md` (2026-07-13). Regla de negocio clave:
+> solo se puede reseñar lo que ya se compró (el back lo valida, el front no filtra nada de
+> antemano); una reseña por cliente por variante (usar editar, no crear otra); publicación
+> inmediata sin moderación previa; owner o ADMIN pueden borrar. Misma migración SQL que
+> favoritos, ya ejecutada.
+
+**Dónde:** integrado directo en `DetalleVarianteComponent` (`/variantes/detalle/...`), la ficha
+de producto que ya usan tanto clientes como admin — no se creó una pantalla nueva.
+
+### Archivos nuevos
+
+| Archivo | Qué hace |
+|---|---|
+| `src/app/resenas/models/resena.model.ts` | `IResena`, `IResenaPaginable`, `IResenaResumen` |
+| `src/app/resenas/service/resena.service.ts` | `crear()`, `editar()`, `eliminar()`, `listarPorVariante()`, `resumen()`, `misResenas()` |
+
+### Comportamiento en `DetalleVarianteComponent`
+
+- **Al seleccionar una variante** (`seleccionar()`): siempre se pide `resumen(varianteId)`
+  (promedio + conteo por estrella) — se muestra como estrellitas clicables junto al precio en el
+  header. El listado completo de comentarios **NO se pide de entrada** — solo cuando el usuario
+  abre la sección "⭐ Reseñas" (`toggleSeccionResenas()`), tal como sugiere el contrato del back
+  (evita traer todos los comentarios si solo se va a mostrar el promedio).
+- **Sección "⭐ Reseñas"** (colapsable): distribución por estrella (5★...1★), lista paginada de
+  reseñas con autor, fecha, estrellas y comentario. Cada reseña propia se resalta
+  (`.dv-resena-item--propia`) y muestra botón "✏️ Editar"; owner o admin ven "🗑️ Eliminar".
+- **Formulario crear/editar** (`abrirFormResena()`): selector de 1-5 estrellas clicables +
+  textarea opcional (máx. 500). Si el usuario ya tiene una reseña propia en la lista cargada
+  (`miResena` getter, busca `esPropia` en el array ya traído), el botón dice "Editar mi reseña" y
+  precarga el form con `PUT`; si no, "Escribir una reseña" crea con `POST`. Al guardar, recarga
+  la página 1 del listado y el resumen (para que el promedio se actualice al instante).
+- **Errores de negocio** (no compró / ya tiene reseña / calificación inválida) se muestran tal
+  cual vienen del back en un Swal — el front no intenta adivinar de antemano si el usuario puede
+  reseñar o no.
+- Botón "Escribir/Editar reseña" solo visible para usuarios logueados (`!isAnonymous`, mismo
+  patrón `roles` que ya se usa en `BuscarComponent` para favoritos).
+
+**Archivos modificados:**
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → estado y métodos de reseñas
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → estrellitas junto al precio + sección "⭐ Reseñas" completa
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-resumen-resenas`, `.dv-star`, `.dv-resenas`, `.dv-resena-form`, `.dv-resena-item` (dark + light)
+
+**No implementado en este alcance (opcional, mencionado en el doc del back pero no pedido):**
+pantalla dedicada "Mis reseñas" en el perfil del cliente — `ResenaService.misResenas()` ya existe
+y está lista para eso si se pide después.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+> ### ⚠️ REVISADO 2026-07-16 — este diseño se va a cambiar (ver `PLAN_MEJORAS.md` §18)
+>
+> La decisión de arriba de *"el front no intenta adivinar de antemano si el usuario puede
+> reseñar o no"* resultó ser **un error de UX**: el botón "Escribir una reseña" aparece en
+> CUALQUIER producto para cualquier logueado, el usuario elige estrellas y escribe el
+> comentario, y **solo al guardar** el back le dice "no compraste este producto".
+>
+> **Acordado con el dueño:** el punto de entrada se mueve al **pedido** (donde por definición
+> todo es reseñable) y `/variantes/detalle/:id` queda **solo lectura** (promedio + reseñas de
+> la gente, sin botón de escribir). Así el error se vuelve inalcanzable por diseño.
+>
+> Viable sin backend nuevo: `GET /v1/pedidos/{id}/detalle` ya trae `varianteId`.
+> ⚠️ `mis-pedidos` (la lista) NO lo trae — por eso el botón iría en `detalle-pedido`.
+>
+> Pendiente aparte: recordatorio por correo para dejar reseña (5 preguntas abiertas en §18.5).
+
+---
+
+## FIX VENTA DIRECTA — "COBRAR" NO SE HABILITA: DROPDOWN DE PAGO VACÍO SIN AVISO (2026-07-16)
+
+**Síntoma reportado (QA):** admin agrega una promoción + un cliente, y el botón "💰 Cobrar"
+nunca se habilita. El usuario lo atribuyó al correo sin verificar del cliente.
+
+**Diagnóstico — no era el correo.** `puedeCobrar` **nunca** revisa el correo:
+```ts
+tieneItems (lineas o promos) && tieneFormaPago (esCredito || pagosYMesesId !== null) && !procesando
+```
+Con promo, `esCredito` es false (las promos son solo contado), así que el botón exige
+`pagosYMesesId` → hay que **seleccionar una forma de pago**. Pero el usuario dijo *"no aparece
+ninguna opción"*: el dropdown estaba **vacío**.
+
+**Causa raíz:** el dropdown se llena de `GET /v1/pagos/opciones-estructuradas` en `cargarPagos()`
+(corre siempre en `ngOnInit`, NO depende de la promo — el dropdown vacío afecta a TODA venta
+directa, solo se notó con la promo). El handler de error era **silencioso**
+(`error: () => { this.cargandoPagos = false; }`) — mismo antipatrón de la Lección #1 de rifas:
+si el endpoint devuelve `data: []` o falla, el usuario ve un dropdown vacío y un botón gris
+permanente **sin ninguna explicación**.
+
+**Causa raíz de fondo (BACK/DATOS, no front):** en QA el endpoint devuelve vacío — **no hay
+formas de pago dadas de alta**. ⚠️ **No existe pantalla en el front para configurarlas**: no hay
+endpoints de escritura de `pagos` ni componente admin. Se dan de alta directo en la BD del
+backend. Hay que pedirle al back/DBA que seed-ee las formas de pago en QA.
+
+**Fix del front (surface del error, esto sí es nuestro):**
+- `cargarPagos()`: nuevo campo `errorPagos`. Si el back responde OK pero con `[]` → mensaje "No
+  hay formas de pago configuradas… pídele al administrador que las dé de alta". Si el request
+  falla → captura `err?.error?.mensaje`. Nuevo `reintentarPagos()`.
+- Template: aviso `.vd-pay-error` (rojo, con botón "Reintentar") + `.vd-pay-loading`, debajo del
+  título de forma de pago. El `p-dropdown` de contado ahora solo se muestra si
+  `opcionesEstructuradas.length > 0`.
+- SCSS: `.vd-pay-error`, `.vd-pay-retry`, `.vd-pay-loading` + variante dark.
+
+**⚠️ El flujo de verificación de correo al cobrar (commit `0f026a7`) NO tiene relación con este
+bug** y ya estaba bien: solo corre al hacer clic en Cobrar (dentro de `cobrar()`), y el botón
+tiene que habilitarse primero — cosa que no pasaba por el dropdown vacío. Una vez configuradas
+las formas de pago en QA, el flujo esperado (botón habilitado → clic → modal de correo si no
+está verificado → "No, solo cobrar" cobra igual) funcionará como se acordó.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `errorPagos`, `cargarPagos()`, `reintentarPagos()`
+- `src/app/variante/venta-directa/venta-directa.component.html` → aviso `.vd-pay-error` + guard del dropdown
+- `src/app/variante/venta-directa/venta-directa.component.scss` → estilos del aviso
+
+**Verificado con `ng build` sin errores.** ⚠️ La causa de fondo (formas de pago vacías en QA)
+es de backend/datos — el front ahora solo lo hace visible en vez de fallar en silencio.
+
+---
+
+## FIX BUSCADORES — `.toLowerCase()` PISABA EL `appUppercase` (2026-07-13)
+
+**Síntoma reportado:** en "Buscar producto" (`/productos/buscar`), el texto escrito en el
+buscador se veía en minúsculas aunque el proyecto usa mayúsculas en todos los inputs
+(`appUppercase`).
+
+**Causa raíz:** `UppercaseInputDirective` mutaba el DOM a mayúsculas correctamente, pero
+`AllComponent.buscarProductos()` hacía `(event.target as HTMLInputElement).value.toLowerCase()`
+y guardaba ese texto en minúsculas en `this.buscarProd`, que está bindeado con `[(ngModel)]` al
+mismo input — en el siguiente ciclo de detección de cambios, Angular reescribe el DOM con el
+valor del modelo (minúsculas), revirtiendo visualmente lo que el directive acababa de poner en
+mayúsculas. No era un bug del directive.
+
+**Grep de `.toLowerCase()` en manejadores de buscador — se encontró el mismo patrón en 5
+archivos** (mismo criterio que las lecciones del módulo rifas: cuando se corrige un patrón así,
+revisar TODOS los archivos con el mismo método antes de cerrar la tarea):
+
+| Archivo | Buscador |
+|---|---|
+| `productos/producto/all/all.component.ts` | Productos → Ver todos (el reportado) |
+| `productos/producto/busca/busca.component.ts` | Buscador secundario de productos |
+| `pedidos/mis-pedidos/mis-pedidos.component.ts` | Buscador de pedidos |
+| `usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts` | Buscador de usuarios |
+| `ventas/venta-producto/add-venta/add-venta.component.ts` | Buscador de venta de producto |
+
+**Fix:** se quitó `.toLowerCase()` en los 5 — ahora se guarda el valor tal cual llega del DOM
+(ya en mayúsculas gracias al directive).
+
+**Revisado y confirmado limpio (no tenían el bug):** `variante/buscar/buscar.component.ts`
+(`onBuscar`), `variante/agregar/agregar.component.ts` y `variante/update-variante/*.ts`
+(`onBuscarProducto`), `admin/promociones/gestion-promociones.component.ts` (`buscarVariante`).
+
+**Efecto colateral positivo:** como el backend en algunos casos comparaba el término tal cual
+contra `codigoBarras` (ver siguiente sección — bug de coincidencia exacta), mandar el término en
+minúsculas también contribuía a que búsquedas como "glpd" no encontraran `GLPD-066`. Este fix
+por sí solo ya ayuda en el buscador de Productos; el bug de fondo (coincidencia exacta vs.
+parcial) lo corrigió el back — ver siguiente sección.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.ts`
+- `src/app/productos/producto/busca/busca.component.ts`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts`
+- `src/app/usuarios/usuarios/buscar-usuarios/buscar-usuarios.component.ts`
+- `src/app/ventas/venta-producto/add-venta/add-venta.component.ts`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX BACK — BÚSQUEDA POR CÓDIGO DE BARRAS ERA EXACTA, NO PARCIAL (2026-07-13)
+
+> Sin cambios de contrato para el front — documentado aquí porque explica por completo el
+> síntoma "busco `glpd` y no aparece nada" reportado por el usuario, investigado en esta misma
+> sesión (se había descartado ya el bug de mayúsculas/minúsculas de la sección anterior, y se
+> había planteado como hipótesis alterna que las variantes sin imagen no aparecían en el
+> buscador — **esa hipótesis era incorrecta**, la causa real es esta).
+
+**Causa raíz (back, ya corregida):** el "paso 1" (código de barras) tanto de
+`ProductosServiceImpl.findNombreOrCodigoBarra` como de
+`VarianteServiceImpl.buscarPorCodigoBarrasPaginado` usaba coincidencia **exacta**
+(`= :codigoBarras`) en vez de `LIKE %texto%`. Escribir "glpd" nunca iba a encontrar "GLPD-066"
+porque no son iguales, solo uno contiene al otro. El filtro admin "con stock" nunca tuvo este
+bug (usa una query distinta, siempre fue `LIKE`) — por eso una variante con stock real aparecía
+ahí pero no en el buscador normal ni en el buscador de variantes de "Gestión Promociones" (que
+reutiliza `/variantes/v1/buscar`).
+
+**Fix del back:** paso 1 (código) ahora usa `LIKE %texto%`, igual que el paso 3 (nombre) y que
+los filtros admin. No cambia el contrato (mismos endpoints, mismo shape) — cambia el
+comportamiento: estos 2 endpoints ahora pueden regresar **más de un resultado** por código de
+barras cuando antes solo podían regresar 0 o exactamente 1.
+
+**Revisado en el front (sin cambios necesarios):** ningún componente que llama
+`getDataNombreCodigoBarra()` o `/variantes/v1/buscar` asume "si encontró por código, es un solo
+resultado" — todos pintan una lista/grid paginada normal (`all.component.ts`, `busca.component.ts`,
+`buscar.component.ts`, `agregar.component.ts`, `update-variante.component.ts`,
+`gestion-promociones.component.ts`, `add-venta.component.ts`), así que el cambio de "0 o 1" a
+"0 o N" no rompe nada existente.
+
+**⚠️ Antes de volver a probar:** estos buscadores están cacheados en el back (`@Cacheable`). Si
+se buscó "glpd" antes del fix del back, puede seguir devolviendo "sin resultados" hasta limpiar
+la caché — usar el botón "🗑️ Limpiar caché" en `/admin/cache`, o `DELETE /v1/admin/cache`.
+
+**Verificado con `ng build --configuration=development` sin errores** (no hubo cambios de código
+front en esta sección, solo el hallazgo documentado).
+
+---
+
 ## FEAT F-14 — FILTROS ADMIN EN CATÁLOGO DE PRODUCTOS Y VARIANTES (2026-07-02)
 
 > Backend: endpoints nuevos `GET /v1/productos/admin/filtrar?filtro=...` y `GET /variantes/v1/admin/filtrar?filtro=...`.
@@ -3252,6 +3598,172 @@ Todos los usos de `buscarClientes()` verificados — ninguno accesible para usua
 
 ---
 
+## FIX LOGIN — NO REDIRIGÍA COMO USUARIO NORMAL + MODAL DE CAMBIO DE CONTRASEÑA MEZCLADO ENTRE SESIONES (2026-07-08)
+
+**Síntoma 1:** al iniciar sesión con un usuario normal (no admin), no pasaba nada — se quedaba
+en `/login`. Al recargar la página manualmente, ahí sí redirigía a `/variantes/buscar`.
+
+**Causa raíz:** `AdminGuardGuard` y `AuthGuard` redirigían con el patrón
+`this.router.navigate([...]); return false;` **desde dentro del propio guard**. Cuando este
+guard se dispara como consecuencia de OTRA navegación ya en curso (la que lanza
+`login-form.component.ts` con `this.router.navigate(['/productos/buscar'])` justo después del
+login), llamar a `.navigate()` de nuevo desde el guard entra en conflicto con esa navegación
+que ya está en vuelo y la redirección se pierde — patrón conocido de Angular, poco confiable.
+Al recargar la página no hay navegación "en curso" compitiendo (el token ya se hidrata antes
+vía `APP_INITIALIZER`/`bootstrapAuth` en `app.module.ts`), por eso ahí sí funcionaba.
+
+**Fix:** ambos guards ahora devuelven un `UrlTree` (`this.router.parseUrl(...)`) en vez de
+llamar `.navigate()` + `return false`. Es el patrón recomendado por Angular para redirecciones
+desde guards — le dice al Router "redirige ESTA navegación" en lugar de disparar una segunda
+navegación en paralelo.
+
+**Síntoma 2 (relacionado, mismo hallazgo en vivo):** con un usuario cuya contraseña había sido
+reseteada por un admin (`debeCambiarPassword: true`), el login "no reaccionaba" (síntoma 1).
+El usuario, sin recargar, sobrescribió los campos del formulario con credenciales de admin y
+volvió a dar "Entrar" — el segundo intento sí entró, pero mostrando el modal de cambio de
+contraseña **del usuario normal** encima de la sesión de admin ya cargada.
+
+**Causa raíz:** el botón "Entrar" solo se deshabilita si el formulario es inválido
+(`[disabled]="loginForm.invalid"`) — nada bloqueaba un segundo envío mientras el primer
+`POST /v1/auth/login` (o el flujo de `forzarCambioPassword()` que dispara) seguía sin resolver.
+Se pudieron disparar dos `onLogin()` superpuestos con credenciales distintas, y el Swal del
+primer intento (usuario normal, closure con SU contraseña) quedó abierto en el DOM por encima
+de la sesión de admin que sí navegó.
+
+**Fix:** nuevo campo `cargando` en `LoginFormComponent`. Se pone en `true` al entrar a
+`onLogin()` (con guard de re-entrada `if (this.cargando) return;`) y solo se libera en el
+`next`/`error` terminal — si `debeCambiarPassword` es `true`, sigue en `true` hasta que el
+Swal de `forzarCambioPassword()` se resuelve (`.then()`). El botón usa
+`[disabled]="loginForm.invalid || cargando"` — mismo patrón de guard de doble-submit ya usado
+en el resto del proyecto (sin spinner local, solo `[disabled]`, según la regla de
+"ELIMINACIÓN DE SPINNERS LOCALES").
+
+**Archivos modificados:**
+- `src/app/guard/admin-guard.guard.ts` → `canActivate(): boolean | UrlTree`, todas las
+  redirecciones devuelven `this.router.parseUrl(...)`
+- `src/app/auth.guard.ts` → mismo cambio
+- `src/app/login/login-form/login-form.component.ts` → campo `cargando`, guard de re-entrada
+  en `onLogin()`, se libera en los 3 puntos de salida (`next` sin `debeCambiar`, `next` sin
+  token, `error`, y `.then()` de `forzarCambioPassword`)
+- `src/app/login/login-form/login-form.component.html` → botón "Entrar"
+  `[disabled]="loginForm.invalid || cargando"`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+**⚠️ ACTUALIZACIÓN — el fix de arriba era necesario pero NO era la causa completa (mismo día,
+después de probar en vivo):** con Pedro (usuario cuya cuenta seguía con `debeCambiarPassword:
+true` de una prueba anterior), el login seguía sin mostrar ningún cambio en pantalla — ni el
+modal de cambio de contraseña, ni redirección, ni error. Se comprobó con
+`document.querySelectorAll('.swal2-container').length` (→ `1`) que el modal **sí se estaba
+creando** correctamente, pero era invisible: `.split-page` (el wrapper de toda la pantalla de
+login) tiene `z-index: 1100`, más alto que el `z-index: 1060` por defecto de SweetAlert2 — el
+login tapaba su propio modal. Causa raíz completa y fix (global, no solo login) documentados en
+**[[L-G2]]** ("LECCIONES APRENDIDAS — GLOBALES"). Este bug es el que en realidad explicaba el
+síntoma 2 de arriba (el modal del usuario normal "reapareciendo" mezclado con la sesión admin
+no era una condición de carrera activa — era el mismo Swal invisible que había quedado abierto
+todo el tiempo, tapado, hasta que algo con menor z-index dejaba de estar encima).
+
+**⚠️ SEGUNDA ACTUALIZACIÓN — el modal ya se veía, pero le faltaba el checklist de requisitos
+(mismo día):** una vez visible, el modal de `forzarCambioPassword()` solo tenía 2 inputs planos
+con un placeholder de texto — a diferencia del formulario de registro/edición de usuario
+(`add-usuarios.component.html`), que muestra un checklist en vivo (✓/○ por cada regla: mínimo 8
+caracteres, mayúscula, minúscula, número, carácter especial) + una barra de fortaleza. Además,
+`preConfirm` solo validaba longitud ≥ 8 y que coincidieran — **no** las mismas reglas que exige
+`passwordFuerte` (`src/app/validador/validador.ts`), dejando pasar al backend contraseñas que
+igual iban a ser rechazadas ahí, sin que el usuario supiera por qué hasta el rechazo.
+
+**Fix:** el `html` del Swal ahora incluye el mismo checklist (con un `<style>` embebido en el
+propio string del modal, ya que los estilos de un componente Angular NO llegan al DOM que
+SweetAlert2 inyecta directo en `document.body` — mismo motivo por el que otros Swal del proyecto
+como `mostrarSwalCambioCorreo` ya usan estilos inline). Un listener `input` agregado en
+`didOpen` recalcula los 5 requisitos en cada tecleo y actualiza clases/ícono/barra — mismas
+reglas exactas que `passwordFuerte`, extraídas a un método privado `cumpleRequisitos()` para no
+duplicar los 4 regex sueltos. `preConfirm` ahora llama `cumpleRequisitos()` en vez de solo
+chequear longitud, así el front rechaza una contraseña débil ANTES de mandarla al backend.
+
+**Archivos modificados (ambas actualizaciones de esta sesión):**
+- `src/styles.scss` → regla global `.swal2-container { z-index: 20000 !important; }`
+- `src/app/login/login-form/login-form.component.ts` → `forzarCambioPassword()` reescrito con
+  checklist + barra de fortaleza + `didOpen` + `cumpleRequisitos()`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT VARIANTES — INDEPENDIZAR VARIANTE EN SU PROPIO PRODUCTO (2026-07-08)
+
+> Diseño en `PLAN_MEJORAS.md` sección 16. El back implementó `POST /variantes/v1/{varianteId}/independizar`.
+
+**Qué hace:** Permite al admin "graduar" una variante para que sea su propio producto independiente.
+La variante NO se borra — se reasigna a un producto nuevo. Las imágenes se copian y el stock se transfiere. Todo en una sola transacción.
+
+**Flujo front:**
+1. Admin en `/variantes/detalle/{productoId}/{id}` → botón **"Independizar variante"** (solo admin, abajo de los botones de carrito)
+2. Modal con formulario prellenado desde variante (descripcion, marca, color, contenido, precio) + producto origen (nombre, precioCosto, precioRebaja, palabraClave)
+3. Campo obligatorio: nuevo `codigoBarras` (diferente al actual)
+4. Stock mostrado informacionalmente (no editable — el back lo calcula automáticamente)
+5. Al confirmar → `POST /variantes/v1/{varianteId}/independizar` → Swal con nuevo ID + botón "Ver variantes"
+6. Error 400/409 (código duplicado) → mensaje del back en la alerta del modal, el form sigue abierto para corregir
+
+**Archivos modificados:**
+- `src/app/variante/service/variante.service.ts` → `independizar(varianteId, body)`, interfaces `IIndependizarRequest`, `IIndependizarResponse`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → inyecta `ProductoService`; campos del modal; `abrirIndependizar()`, `cerrarIndependizar()`, `confirmarIndependizar()`
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → botón `.dv-btn--independizar` + modal overlay `.dv-indep-overlay`
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-admin-actions`, `.dv-btn--independizar`, `.dv-indep-*` con dark/light mode
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT USUARIOS/PERFIL — ADMIN EDIT FLOW + COMPONENTE MI PERFIL F-19 (2026-07-08)
+
+### 1. `add-usuarios` — flujo especial cuando admin edita usuario
+
+- **Contraseña/confirmar:** ocultos con `*ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)"` (admin no toca la contraseña de otro usuario)
+- **Username:** `[attr.readonly]="true"` cuando admin edita — campo visible pero no editable
+- **Email:** `(blur)="onEmailBlur()"` — si el valor cambió, muestra Swal de confirmación → `cambiarEmailAdmin()` (PUT updateUsuario con nuevo correo) → `enviarCodigoVerificacionUsuario()` → `mostrarSwalCodigoEmail()` con input de 6 dígitos → `verificarCorreoUsuario()`. Si cancela el Swal → revierte el campo al valor original (`emailOriginal`)
+- **Botón submit:** oculto para admin en modo edición (`*ngIf` igual que contraseñas)
+- **Botón "💾 Guardar permisos":** en `.admin-section`, guarda `enabled`/`rol` independientemente via `PUT /v1/usuarios/updateUsuario/{id}` (mismo endpoint que ya existía, backend ignora la contraseña)
+- `emailOriginal` se asigna en `ngOnInit()` cuando `textoCard === 'Actualizar usuario'`
+
+### 2. `AccederService.miPerfil(username, email)`
+
+Nuevo método → `PUT /v1/auth/mi-perfil` con body `{ username, email }`.
+
+### 3. `MiPerfilComponent` — ruta `/clientes/mi-perfil`
+
+**Sección "Datos de cuenta":**
+- `usernameCtrl` precargado desde `authService.userName$`
+- `emailCtrl` precargado desde `clienteService.getDataOneCliente(userId)` → `data.data.correoElectronico`
+- "Guardar cambios": si email no cambió → `acceder.miPerfil()` directo; si cambió → `flujoEmailChange()`: PUT mi-perfil → enviar código → Swal con input 6 dígitos → `verificarCorreoUsuario()`; si cancela verificación → correo guardado sin verificar (aviso `info`)
+
+**Sección "Cambiar contraseña":**
+- 3 campos (actual + nueva + confirmar) con toggles de visibilidad
+- Panel de requisitos en vivo (longitud, mayúscula, minúscula, número, especial) + barra de fortaleza
+- Botón habilitado solo cuando todos los requisitos se cumplen y las contraseñas coinciden
+- Llama `acceder.cambiarPassword(actual, nueva)`
+
+**Navbar:** link "Mi perfil" → `clientes/mi-perfil` en `.sb-user-links` (debajo de "Cambiar contraseña")
+
+### Archivos modificados/creados
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/login/acceder.service.ts` | + `miPerfil()` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` | `emailOriginal`, `onEmailBlur()`, `cambiarEmailAdmin()`, `mostrarSwalCodigoEmail()`, `guardarPermisos()` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` | `*ngIf` en password/confirm/submit; `readonly` en username; `blur` en email; botón guardar permisos |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` | `.btn-admin-permisos`, `.field-input--readonly` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.ts` | Nuevo componente |
+| `src/app/clietes/mi-perfil/mi-perfil.component.html` | Nuevo template |
+| `src/app/clietes/mi-perfil/mi-perfil.component.scss` | Nuevos estilos BEM + dark/light mode |
+| `src/app/clietes/clietes.module.ts` | + `MiPerfilComponent` en declarations |
+| `src/app/clietes/clietes-routing.module.ts` | + ruta `mi-perfil` con `AuthGuard` |
+| `src/app/navbar/navbar.component.html` | + link "Mi perfil" en user links |
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
 ## FEAT MÓDULO PROMOCIONES — COMBOS DE VARIANTES (2026-07-05)
 
 > Implementación completa del módulo de promociones según `PROMOCIONES.md`.
@@ -3311,3 +3823,691 @@ Todos los usos de `buscarClientes()` verificados — ninguno accesible para usua
 - Promos **no** usan localStorage (precios pueden vencer). Variantes conservan localStorage sin cambios.
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX PROMOCIONES — BOTÓN "AGREGAR" ILEGIBLE EN DISABLED + BUG DE DISPONIBILIDAD REPORTADO AL BACK (2026-07-13)
+
+**Síntoma 1 (front, corregido):** en `/promociones`, el botón "🛒 Agregar" deshabilitado no se
+veía en modo claro — parecía "sin letras". Causa: `.pm-btn:disabled` usaba `opacity: .45`, que
+desvanece fondo Y texto blanco casi hasta el blanco puro sobre la card blanca del modo claro.
+
+**Fix:** `.pm-btn:disabled` ahora usa colores explícitos en vez de `opacity` —
+`background: var(--card-border)`, `color: var(--app-text-muted)` — legible en ambos modos.
+
+**Síntoma 2 (no era bug — confirmado con curl a QA):** la promoción "ropa" (id 1) aparecía como
+"❌ Sin disponibilidad" aunque el producto "Mochila Prada" mostraba stock 5. Diagnóstico con
+`GET /variantes/v1/porProducto/326`: el producto tiene 7 variantes (mismo `codigoBarras`, talla y
+color — confirmado con el usuario que esto es diseño esperado, un producto puede tener varias
+variantes), con el stock repartido entre ellas (0,1,1,0,1,1,1 = 5). La promo apuntaba a
+`varianteId 277` y `117` — justo las dos que tienen `stock: 0` de las 7. `instanciasDisponibles = 0`
+es matemáticamente correcto para esa combinación; no hay nada que corregir en el back. El problema
+fue de UX al armar la promo: variantes hermanas indistinguibles en el buscador (mismo
+nombre/talla/color) hacían fácil elegir por accidente una sin stock. Detalle completo en
+`PROMOCIONES.md`, sección 6.
+
+**Mitigación de front aplicada (2026-07-13):** en "Gestión Promociones", el buscador de variantes
+del formulario ahora muestra **stock** e **ID** por resultado (antes solo nombre/talla/color/precio
+— indistinguibles entre duplicados) + aviso cuando hay resultados que se ven idénticos, para que el
+admin no vuelva a elegir por accidente una variante-fantasma con 0 stock al armar un combo.
+
+**Extra (2026-07-13):** en el modal "Ver detalle" de `/promociones` (catálogo cliente), cada pieza
+ahora muestra `ID #{varianteId}` cuando el usuario logueado es ADMIN, para poder ir a revisar el
+stock real de esa variante exacta. Se dejó preparado también `codigoBarras` en el modelo, pero
+**el back todavía no lo manda** en `GET /v1/promociones/activas` — por ahora cae en el fallback
+"código de barras no disponible aún" (ver `PROMOCIONES.md` para el detalle de qué falta agregar).
+
+**Archivos modificados:**
+- `src/app/promociones/promociones.component.scss` → `.pm-btn:disabled`, `.pm-modal__pieza-admin`
+- `src/app/promociones/promociones.component.ts` → `isAdminUser` vía `AuthService.userRoles$`
+- `src/app/promociones/promociones.component.html` → línea admin-only con ID/código de barras en el modal
+- `src/app/promociones/models/promocion.model.ts` → `IPromocionDetalle.codigoBarras?` (pendiente del back)
+- `src/app/admin/promociones/gestion-promociones.component.html` → dropdown con stock/ID + aviso
+- `src/app/admin/promociones/gestion-promociones.component.scss` → `.gp-dropdown__stock`, `.gp-dropdown__id`, `.gp-dropdown__item--sinstock`, `.gp-hint-duplicados`
+- `PROMOCIONES.md` → sección 6 (causa raíz confirmada — no era bug de back) y 7 (fix de contraste)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX USUARIOS/MI-PERFIL — CORREO PENDIENTE VIA GET ENDPOINT + BOTÓN REENVIAR (2026-07-08)
+
+> Eliminación total de `sessionStorage`/`localStorage` para persistir el estado de cambio de correo
+> pendiente. Reemplazado por consulta directa al backend, que ya guardaba ese estado en BD.
+
+### Problema resuelto
+
+**Bug de user-bleeding con sessionStorage:** la clave `cambio_correo_self` no distinguía usuario.
+Si el usuario A pedía un cambio de correo y cerraba sesión sin confirmar, el usuario B que iniciaba
+sesión en la misma pestaña veía el banner con el correo pendiente de A. Mismo riesgo en la pantalla
+admin de edición de usuario (clave `cambio_correo_admin_{id}` era más segura pero seguía usando
+sessionStorage sin necesidad).
+
+**Refresh de página perdía el estado:** si el usuario cerraba el modal de verificación de código y
+refrescaba la página antes de que los 15 min expiraran, el front olvidaba que había un código vigente.
+
+### Nuevos endpoints conectados
+
+| Método | URL | Quién lo llama |
+|---|---|---|
+| `GET` | `/v1/auth/cambio-correo-pendiente` | `mi-perfil` al cargar (`ngOnInit`) |
+| `GET` | `/v1/usuarios/{id}/cambio-correo-pendiente` | `add-usuarios` al cargar en modo edición |
+
+**Response:** `{ data: { pendiente: boolean, correoPendiente: string\|null, expiraEn: string\|null } }`
+Si `pendiente: true` → mostrar banner con `correoPendiente`; si `false` → no mostrar nada.
+
+### Botón "Reenviar código"
+
+Cuando el correo no llega, el usuario puede reenviar sin tener que cancelar y volver a editar el
+campo. Cooldown de 60s para evitar spam.
+
+- Campos nuevos: `cooldownReenvio = 0`, `private cooldownTimer`
+- Método `reenviarCodigo()` / `reenviarCodigoCambioCorreo()`: llama `solicitarCambioCorreo()` /
+  `solicitarCambioCorreoAdmin()` y arranca el countdown
+- `iniciarCooldown()`: setInterval de 1s decrementa hasta 0
+- `ngOnDestroy()`: limpia el timer en ambos componentes
+
+**Nota back:** si ya hay un código vigente para ese mismo correo nuevo, el back **no reenvía uno
+nuevo** — reutiliza el existente y responde `data: "Ya tienes un codigo vigente enviado a ese
+correo, revisa tu bandeja"`. El front lo trata igual que el envío normal (muestra el modal del
+código de todas formas). Esto evita que múltiples clics en "Reenviar" generen códigos que
+invalidan al anterior.
+
+### Archivos modificados
+
+| Archivo | Qué cambió |
+|---|---|
+| `src/app/login/acceder.service.ts` | + `cambioCorreoPendiente()` → `GET /v1/auth/cambio-correo-pendiente` |
+| `src/app/shared/usuario.service.ts` | + `cambioCorreoPendienteAdmin(id)` → `GET /v1/usuarios/{id}/cambio-correo-pendiente` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.ts` | Elimina `SK_SELF` y todo `sessionStorage.*`; `ngOnInit` llama `verificarCambioCorreoPendiente()`; + `reenviarCodigo()` con cooldown; + `ngOnDestroy` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.html` | + botón `mp-btn--reenviar` con contador en `mp-codigo-pendiente` |
+| `src/app/clietes/mi-perfil/mi-perfil.component.scss` | + `.mp-btn--reenviar` light + dark mode |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` | Elimina `skAdmin()` y todo `sessionStorage.*`; `ngOnInit` llama `cambioCorreoPendienteAdmin(id)`; + `reenviarCodigoCambioCorreo()` con cooldown; + `ngOnDestroy` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` | + botón `au-btn-reenviar` con contador en `au-codigo-pendiente` |
+| `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss` | + `.au-btn-reenviar` light + dark mode |
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX USUARIOS/ADD-USUARIOS — CAMPO DE CORREO NO DEBE MOSTRAR EL PENDIENTE SIN VERIFICAR (2026-07-08)
+
+> Reporte en vivo (QA): admin entra a `/usuarios/buscar` → selecciona a Pedro (que ya tenía un
+> código de cambio de correo pendiente, enviado antes de recargar la página) → el botón
+> "Ingresar código" **no aparecía** — solo aparecía si el admin volvía a editar el campo de
+> correo (disparando `onEmailBlur()` de nuevo).
+
+### Diagnóstico — esto NO era un bug de código
+
+El chequeo de "¿hay un cambio de correo pendiente?" al abrir la pantalla de edición
+(`ngOnInit()` → `usuario.cambioCorreoPendienteAdmin(id)` → si `pendiente:true` pone
+`codigoPendiente = true` y el botón "Ingresar código" aparece) **ya existía y funcionaba
+correctamente** — se implementó en el mismo commit de la sección anterior
+(`b7b5881`, 2026-07-08), y ese commit ya estaba empujado a `origin/qa` en el momento del reporte
+(confirmado con `git branch -r --contains b7b5881` → `origin/dev`, `origin/qa`).
+
+**Conclusión:** lo que el admin vio en `qa.shop.novedades-jade.com.mx` era casi seguro un
+**bundle desactualizado** — el código ya estaba en la rama `qa` pero el pipeline de CI/CD hacia
+el servidor QA es conocido por no dispararse solo (ver sección "CI/CD — ESTADO Y CONFIGURACIÓN
+DEL PIPELINE QA", pendiente sin resolver desde 2026-06-18). Mismo patrón que la Lección #9 del
+módulo chat: *"cuando el servidor QA no refleja los cambios del front, el problema casi siempre
+es que el bundle no se ha reconstruido — no que el código esté mal."* Antes de asumir que hay
+que tocar código, verificar con el admin: ¿el server QA ya corrió el `kubectl rollout restart`
+manual después del último push a `qa`? Si no, ese es el primer paso, no una nueva corrección.
+
+### Hallazgo real (sí era un bug) — el campo de correo mostraba el valor SIN VERIFICAR
+
+Al revisar el código para confirmar el diagnóstico de arriba, sí apareció un problema de diseño
+real: cuando había un cambio de correo pendiente, el campo del formulario **mostraba el correo
+NUEVO (sin verificar)** como si ya fuera el correo real guardado — tanto al detectar un pendiente
+existente en `ngOnInit()` (`this.formRegistro.get('email')?.setValue(data.correoPendiente)`)
+como justo después de solicitar un cambio nuevo en `onEmailBlur()`. Esto es engañoso (el campo
+aparenta tener ya guardado un correo que en realidad nadie confirmó) y frágil a futuro: si algún
+día se agrega un botón de "Guardar cambios" que envíe el valor del campo `email` del formulario,
+se guardaría el correo sin verificar saltándose todo el flujo de confirmación por código. Hoy no
+pasa (el único guardado disponible para admin, "💾 Guardar permisos", usa `this.updateUser.email`
+— el valor original — no el del form), pero es una trampa fácil de pisar después.
+
+**Fix:** el campo de correo ahora **siempre** muestra el correo actual/real (`emailOriginal`) —
+nunca el pendiente sin verificar. El banner "Se envió un código a **X**..." (ya existente) es la
+única fuente visual de "a qué correo va a cambiar". Además, el campo se vuelve `readonly`
+mientras `codigoPendiente` es `true` (mismo patrón visual que el campo `userName` en modo
+edición admin) — evita que el admin escriba un tercer correo encima de una solicitud sin
+resolver sin antes darle "Cancelar cambio" explícitamente.
+
+**Archivos modificados:**
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` → `ngOnInit()` ya no
+  hace `setValue(data.correoPendiente)`; `onEmailBlur()` revierte el campo a `emailOriginal`
+  justo después de solicitar el cambio
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.html` → campo de correo
+  `[attr.readonly]`/`[class.field-input--readonly]` cuando `codigoPendiente` es `true`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT "AGREGAR MI COMPRA" — RECLAMAR VENTA DE MOSTRADOR PARA RIFAS (2026-07-14)
+
+> Documentado por el back en `CAMBIOS_FRONT.md`, sección "🆕 Reclamo de venta de mostrador —
+> para que el cliente aparezca en la rifa". **Endpoints ya existían en el back antes de esta
+> sesión** — lo que faltaba era la pantalla del cliente, que no estaba construida.
+
+**Problema que resuelve:** si un cliente compra en mostrador y la venta queda registrada con
+`ClienteSinRegistro` (nombre suelto) en vez de con su cuenta real, ese cliente no puede después
+ser considerado para una rifa armada desde compras reales (`GET /v1/concursante/clientesPorMes`
+lee de `pedidos`, que solo tienen dueño real si la venta está vinculada a un `Cliente`).
+
+**Flujo:**
+1. Al guardar la venta directa (`POST /v1/ventas/save`) con `clienteSinRegistroDto.correo_Electronico`,
+   el back genera un código y lo envía por correo automáticamente (asunto "Reclama tu compra —
+   Novedades Jade") — esto ya pasaba antes de esta sesión, no se tocó nada aquí.
+2. **Nuevo en esta sesión:** el cliente entra a su cuenta → sidebar → "Agregar mi compra"
+   (`/clientes/agregar-compra`) → escribe el código → `POST /v1/ventas/reclamar` con
+   `{ codigo }` → si es válido, el back vincula `Venta.cliente` y `Pedido.cliente` a su cuenta.
+
+**⚠️ Regla de naming respetada:** el back llama al endpoint/campo "reclamar" internamente, pero
+esa palabra **no aparece en ningún texto visible al cliente** — la pantalla, el botón y los
+mensajes usan "Agregar mi compra" / "Agregar compra" / "Código de tu compra", tal como pidió el
+back explícitamente en su documento (en español "reclamo" se lee como queja, no como "esto es
+mío"). Los mensajes de error también siguen el texto sugerido por el back:
+
+| Mensaje crudo del back | Texto mostrado al cliente |
+|---|---|
+| `Este código ya fue utilizado` | "Este código ya fue usado." |
+| `Código inválido` | "No encontramos ese código, revisa que esté bien copiado." |
+| `El correo de tu cuenta no coincide con el de esta compra` | "Este código pertenece a otra cuenta." |
+| (cualquier otro, ej. perfil de cliente incompleto) | se muestra tal cual viene del back |
+
+**Pantalla:** un solo campo de texto + botón "Agregar compra", sin mostrar monto ni productos
+(el endpoint no expone el detalle de la venta, solo confirma o rechaza) — exactamente como
+sugirió el back. Tras éxito: mensaje "Tu compra quedó agregada a tu cuenta" + botones para
+agregar otro código o ir a "Mis datos".
+
+**No implementado (fuera de alcance, es una idea a evaluar a futuro según el propio doc del
+back):** notificación/banner dentro de la app cuando el cliente tiene un código pendiente sin
+capturar — el cliente debe ir manualmente a la opción del menú.
+
+**⚠️ Corrección importante de esta sesión:** en la conversación se llegó a asumir por error que
+también existía un endpoint de fallback para que el ADMIN asignara manualmente una venta a un
+cliente (ej. `POST /v1/ventas/{id}/asignarCliente`) — **ese endpoint no existe**, no está en
+`CAMBIOS_FRONT.md` ni se implementó. Si se necesita ese fallback (para cuando el cliente nunca
+reclama el código), hay que pedirlo formalmente al back — no está construido en ningún lado
+todavía.
+
+**Archivos nuevos:**
+- `src/app/clietes/agregar-compra/agregar-compra.component.ts/.html/.scss` → pantalla completa,
+  prefijo BEM `amc-`, dark/light
+
+**Archivos modificados:**
+- `src/app/variante/service/variante.service.ts` → `reclamarVenta(codigo)` → `POST /v1/ventas/reclamar`
+- `src/app/clietes/clietes.module.ts` → declara `AgregarCompraComponent`
+- `src/app/clietes/clietes-routing.module.ts` → ruta `agregar-compra`, guard `AuthGuard` (cualquier
+  usuario logueado, no admin-only)
+- `src/app/navbar/navbar.component.html` → link "Agregar mi compra" en `.sb-user-links`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT ESTILO "AETHER" — TOKENS GLASS GLOBALES + REDISEÑO LOGIN (2026-07-14)
+
+> Origen: MPC "Aether Premium Motion System" generado en Stitch (Google), pegado por el
+> usuario como referencia de diseño. **No se conectó ningún MCP** — Stitch no tiene una
+> función técnica para "exportar" el sistema a Claude; el propio Stitch aclaró que ese texto
+> ES el entregable (no hay tecnología de por medio). El servidor MCP `stitch` registrado en una
+> sesión anterior (`claude mcp add-json`, scope local) quedó sin uso para este propósito — su
+> endpoint además está roto del lado de Google (`$ref` sin resolver en su schema de tools).
+
+**Decisión de color confirmada con el usuario:** mantener la paleta ámbar/crema ya homologada
+(`#B08A4E`/`#C9A063`) — el spec original de Aether traía azul/morado estilo Apple
+(`#007AFF`/`#5856D6`), pero eso hubiera deshecho el rebrand de julio (ver "HOMOLOGACIÓN DE
+PALETA — ÁMBAR/CREMA"). Tampoco se adoptó Tailwind ni Three.js/shaders del spec original — el
+proyecto es Angular 14 + SCSS puro, sin esas dependencias, y no se agregaron.
+
+### 1. Tokens globales (`src/styles.scss`) — aplican a TODO el proyecto
+
+- `--radius-premium: 24px` — variable nueva para radios "premium" en tarjetas flotantes.
+- `.glass-panel` — clase de utilidad opcional que reutiliza `--header-brand` /
+  `--header-brand-filter` / `--header-brand-border` / `--header-brand-shadow` (ya ámbar, ya con
+  blur, definidos por tema) en vez de inventar color nuevo.
+- **Micro-interacción de botones (todo el proyecto, automático):** cualquier `button`, `.btn`
+  (Bootstrap), `.p-button` (PrimeNG) o clase BEM `*-btn` de cualquier componente
+  (`.pm-btn`, `.rf-btn`, `.ab-btn`, `.vd-btn`, etc.) se encoge levemente al presionar
+  (`transform: scale(0.96)` en `:active`) — mismo micro-feedback que el `.btn-primary:active`
+  de Aether. Los componentes que ya definían su propio `:active` (ej. `.btn-login` con
+  `translateY`) lo siguen ganando por especificidad — esto es solo el comportamiento por
+  defecto para los que no tenían nada propio.
+
+### 2. Rediseño de Login (`src/app/login/login-form/login-form.component.scss`)
+
+Pantalla piloto del look completo Aether-lite:
+- `.split-form` → de panel sólido opaco a **gradiente ámbar suave** (`--app-bg` → `--app-surface-2`).
+- `.form-inner` → se convierte en **tarjeta de cristal flotante**: `background: var(--header-brand)`
+  + `backdrop-filter: blur(20px)` + borde sutil + `border-radius: var(--radius-premium)` (24px)
+  + sombra difusa. Mismo token que ya usan los headers/buscadores de todo el sistema — cero
+  color nuevo.
+- `.field-input` → de caja completa con borde 2px a **borde inferior minimalista** (sin caja,
+  fondo transparente, solo `border-bottom`), foco cambia el color del borde a `--app-accent`
+  sin glow.
+- `.btn-login` → radio de 10px → 16px (más "premium", sigue usando el degradado ámbar +
+  hover/active propios que ya tenía).
+- `.brand-icon` → radio 16px → 20px. `.error-msg` → radio 8px → 12px.
+- Overrides `:host-context(theme-dark)`/`:host-context(theme-light)` actualizados para el nuevo
+  fondo en gradiente y el borde inferior transparente (antes seteaban `background`/`border-color`
+  para la caja completa que ya no existe).
+
+**Verificado:** `ng build --configuration=development` sin errores + captura visual con
+Playwright headless en `/login` (modo claro, oscuro y viewport móvil 390×844) — tarjeta de
+cristal, inputs y botón se ven correctos y legibles en los tres casos, sin errores de consola
+atribuibles al cambio (los `ERR_CONNECTION_REFUSED` vistos son por backend no corriendo en
+local, no por CSS).
+
+**Pendiente/no aplicado en esta sesión:** el resto de pantallas del proyecto (buscadores,
+formularios admin, modales) siguen con su estilo actual — solo el login se llevó al look
+completo de tarjeta de cristal + inputs minimalistas. Si se quiere extender el mismo
+tratamiento a otras pantallas, es trabajo puntual por componente (no un cambio global
+automático), dado que la mayoría de componentes tienen sus propios estilos de input/card
+hardcodeados por archivo.
+
+### Corrección — LOGIN pasa a azul/morado (color local, NO global) (2026-07-15)
+
+Tras ver la referencia real de Stitch (capturas de la app "AETHER" con fondo/tarjeta azul-morado
+y botón "SIGN IN"/"INICIAR SESIÓN"), el usuario aclaró: **el layout está bien** (mantener el
+split-screen con fotos de producto + tarjeta de cristal), lo que quería cambiar eran **los
+colores** — de ámbar a azul/morado (`#007AFF` → `#5856D6`, mismos valores del MPC original de
+Aether). Confirmado explícitamente que es **solo para el login** — el resto del proyecto (todo
+lo demás: buscadores, cards, botones, admin) se queda en ámbar/crema tal cual.
+
+**Cómo se implementó sin tocar el resto del proyecto:** `login-form.component.scss` ya NO usa
+las variables CSS globales `--app-accent`/`--header-brand` (que son ámbar y las usa toda la
+app) — se reemplazaron por una variable SCSS local `$accent: #007AFF` / `$accent-d: #5856D6` y
+valores hardcodeados de azul/morado directamente en este archivo, con sus propios overrides de
+`:host-context(theme-dark)`/`:host-context(theme-light)` (fondo navy profundo en oscuro, blanco
+azulado en claro). Cero cambios en `styles.scss` ni en ninguna variable global — el resto de la
+app sigue leyendo `--app-accent` ámbar sin verse afectado.
+
+**Archivos modificados:**
+- `src/app/login/login-form/login-form.component.scss` → reescritura completa de colores (azul/morado local, layout intacto)
+
+**Verificado:** `ng build` sin errores + capturas Playwright en claro, oscuro y con el formulario
+lleno (para ver el botón en su gradiente activo, no solo el estado disabled) — coincide con la
+referencia de Stitch.
+
+### Fondo animado de partículas (modo oscuro) + botón de prueba día/noche (2026-07-15)
+
+El usuario pidió replicar el efecto de "red de partículas" (puntos conectados por líneas que se
+mueven) visible en la captura de referencia de Stitch ("Galería de Productos Premium - Modo
+Oscuro"). **No se pudo abrir el link de Stitch** (`stitch.withgoogle.com/projects/...`) con
+`WebFetch` — es una SPA autenticada con Google, solo devuelve el cascarón vacío ("Stitch -
+Design with AI") sin contenido real; se implementó a partir de las capturas que el usuario ya
+había compartido en el chat.
+
+**Implementación — canvas 2D nativo, sin Three.js ni librerías nuevas:**
+- `login-form.component.ts`: `iniciarParticulas()`/`detenerParticulas()` — 55 partículas con
+  velocidad aleatoria, rebotan en los bordes del canvas, se dibujan líneas entre pares a menos
+  de 130px de distancia (opacidad proporcional a la distancia). Loop con `requestAnimationFrame`,
+  cancelado en `ngOnDestroy` y al pasar a modo claro. Reacciona a `ThemeService.isDark$`
+  (inyectado) — no duplica lógica de tema, reusa el servicio que ya usa el sidebar.
+- `login-form.component.html`: `<canvas #particlesCanvas class="particles-bg" *ngIf="(isDark$ | async)">`
+  dentro de `.split-form`, detrás de `.form-inner` (que ahora tiene `z-index:1` para quedar
+  encima). Solo existe en el DOM en modo oscuro — en claro se destruye solo (Angular `*ngIf`),
+  sin necesidad de ocultarlo manualmente.
+- `login-form.component.scss`: `.particles-bg` (`position:absolute; inset:0; z-index:0;
+  pointer-events:none`), `.split-form` con `position:relative` para contenerlo.
+
+**Botón de prueba temporal (`.theme-test-btn`, ☀️/🌙):** se agregó para poder comparar
+claro/oscuro en el login sin esperar a que cambiara la hora del sistema. **Ya se eliminó**
+(2026-07-16) al confirmarse el diseño — el toggle de tema normal del sidebar sigue existiendo.
+
+**Verificado:** `ng build` sin errores + capturas Playwright con el botón de prueba real
+(no manipulación directa de clases) confirmando: partículas visibles y en movimiento entre dos
+capturas consecutivas en oscuro, canvas ausente en claro, sin errores de consola atribuibles al
+cambio.
+
+**Archivos modificados:**
+- `src/app/login/login-form/login-form.component.ts` → `ThemeService` inyectado, partículas, `toggleThemeTest()`
+- `src/app/login/login-form/login-form.component.html` → `<canvas>` + botón de prueba
+- `src/app/login/login-form/login-form.component.scss` → `.particles-bg`, `.theme-test-btn`
+
+**Ajuste — malla de puntos de fondo (2026-07-15):** con una segunda captura de referencia
+("Galería de Productos Premium - Modo Oscuro") se confirmó que el efecto real tiene DOS capas:
+una malla de puntitos fijos estilo papel cuadriculado (estática) + la red de líneas azules
+animada encima. Se agregó la malla como textura CSS pura (`radial-gradient` repetido cada 22px,
+sin JS) en el fondo de `.split-form` solo en modo oscuro, y se subió un poco la opacidad de las
+líneas/nodos del canvas (`0.18→0.26` líneas, `0.6→0.85` nodos) para que se vean más nítidos
+sobre el fondo casi negro (`#05060F→#0E1330`, antes era azul marino más claro).
+
+### Reemplazo — malla técnica con shader WebGL en vez de canvas 2D (2026-07-15)
+
+El usuario pasó el código completo de un shader WebGL (fragment shader GLSL, generado por la
+IA de Stitch) como "referencia definitiva" de cómo debían verse y moverse las líneas, pidiendo
+aplicarlo **tal cual**. Se integró reemplazando por completo el canvas 2D de partículas
+(`iniciarParticulas`/`detenerParticulas`) por un pipeline WebGL real: compila un vertex +
+fragment shader, dibuja un quad de pantalla completa, y anima una malla de 9 puntos por celda
+(retícula tipo Voronoi) con conexiones entre puntos cercanos — cian sobre negro, exactamente el
+algoritmo que mandó el usuario (`hash()`, `get_point()`, mismas constantes `0.05/0.03`, `1.2`,
+`0.015`, `0.6`).
+
+**⚠️ El código del usuario NO compilaba tal cual — bug real, no de nuestro lado.** El shader
+original indexaba un arreglo (`vec2 p[9]`) con variables no-constantes: `p[idx]` (incrementada
+manualmente con `idx++`) y `p[j]` (índice de un loop interno `for (int j=i+1; ...)`, inicializado
+con una expresión no-constante `i+1`). **WebGL1 (GLSL ES 1.00) prohíbe esto en tiempo de
+compilación** — es una restricción real del estándar, no específica de este navegador; se
+confirmó con `gl.getShaderInfoLog()` (ver método de diagnóstico abajo). Se probó primero
+`canvas.getContext('webgl2')` esperando que relajara la regla — **no ayudó**: sin un pragma
+`#version 300 es` explícito, ANGLE compila el shader como GLSL ES 1.00 de todas formas, con la
+misma restricción, sin importar si el contexto es WebGL1 o WebGL2.
+
+**Fix aplicado:** se "desenrolló" el arreglo dinámico a 9 variables fijas `p0`..`p8` (cada una
+con su propio offset `vec2` literal) y las 36 comparaciones de pares (`i<j` de 9 puntos) a
+llamadas explícitas `lineMask(gv, pX, pY)` con índices literales — **misma matemática exacta,
+mismo resultado visual**, solo reescrito para que el compilador lo acepte. Es el patrón estándar
+para portar shaders generados por IA (que suelen probarse contra compiladores más permisivos,
+como GLSL de escritorio o Shadertoy) a WebGL1, que es mucho más estricto con indexado dinámico
+de arreglos.
+
+**Método de diagnóstico agregado (queda permanente, no es debug temporal):** `iniciarParticulas()`
+ahora valida `gl.getShaderParameter(shader, gl.COMPILE_STATUS)` y
+`gl.getProgramParameter(program, gl.LINK_STATUS)`, con `console.warn(gl.getShaderInfoLog(...))` si
+falla — WebGL falla en silencio (no lanza excepción JS), así que sin esto un shader roto se ve
+simplemente como "no aparece nada" sin ninguna pista. Si en el futuro se toca este shader y dejan
+de verse las líneas, revisar la consola del navegador primero.
+
+**Verificado:** `ng build` sin errores + capturas Playwright confirmando: sin warnings de
+compilación de shader en consola, malla cian nítida sobre negro puro visible, y los nodos
+cambian de posición entre dos capturas consecutivas (confirma que la animación corre, no es una
+imagen estática).
+
+**Archivos modificados:**
+- `src/app/login/login-form/login-form.component.ts` → reemplaza el canvas 2D por WebGL
+  (`MESH_VERTEX_SRC`, `MESH_FRAGMENT_SRC`, `iniciarParticulas()`/`detenerParticulas()` reescritos)
+- `src/app/login/login-form/login-form.component.scss` → `.split-form` en oscuro vuelve a fondo
+  sólido simple (la malla de puntos CSS quedó redundante — el shader ya pinta su propio negro +
+  líneas, cubre todo el panel de forma opaca)
+
+---
+
+## HOMOLOGACIÓN DE PALETA — AETHER AZUL/MORADO (2026-07-16) ✅ COMPLETO
+
+> **⚠️ Esta sección REEMPLAZA a "HOMOLOGACIÓN DE PALETA — ÁMBAR/CREMA (2026-07-03)".**
+> El ámbar ya NO existe en el proyecto. Aquella sección se conserva solo como historial.
+
+**Cambio de marca:** tras aprobar el rediseño Aether del login, el usuario pidió la misma
+paleta y estilo para TODO el sistema ("los mismos colores que tenemos en el login para todo lo
+demás: ventas, usuarios, clientes, etc."). La paleta ámbar/crema (`#B08A4E`/`#C9A063`) fue
+reemplazada globalmente por azul/morado Aether.
+
+### Paleta canónica
+
+| | Claro | Oscuro |
+|---|---|---|
+| Accent | `#007AFF` | `#4A9EFF` (más brillante, para contraste sobre navy) |
+| Accent partner (gradientes) | `#5856D6` (morado) | `#5856D6` |
+| Fondo | `#F5F8FF` | `#0B0F24` |
+| Surface / cards | `#FFFFFF` | `#161B3A` |
+| Surface-alt | `#E8EDFB` | `#242B52` |
+| Texto | `#1C1E2E` | `#F1F4FF` |
+| Texto secundario | `#5A6285` | `#8890B8` |
+| Borde | `#DCE3F2` | `#2A3050` |
+| Placeholder | `#A3ABC9` | `#6C7499` |
+| Gradiente de marca | `linear-gradient(135deg, #007AFF, #5856D6)` | igual |
+
+**Regla (sin cambio):** NUNCA hardcodear hex — usar `var(--app-accent)`, `var(--card-bg)`,
+`var(--header-brand)`, etc. Ver [[project_variables_css]].
+
+### Enfoque: genérico, no componente por componente
+
+A petición explícita del usuario, el cambio se hizo **a nivel de variables globales**
+(`src/styles.scss`) en vez de rediseñar cada pantalla: todas las cards, inputs, buscadores,
+tablas y tipografía toman el color de ahí. Los 44 SCSS de componentes que tenían el ámbar
+hardcodeado se migraron con un **mapeo de paleta 1:1** (mismo método que el índigo→ámbar de
+julio), no reescribiéndolos.
+
+- `styles.scss` → bloques `body.theme-light` / `body.theme-dark` reescritos a mano (los valores
+  precisos por modo; ahí es donde importa la distinción de rol).
+- 44 SCSS de componentes + estilos inline de Swal en `.ts` → mapeo mecánico hex→hex.
+- **832 ocurrencias de ámbar → 0.** Verificado con grep.
+
+### ⚠️ Trampas encontradas (importante si se vuelve a cambiar la paleta)
+
+1. **4 hex tienen DOBLE ROL** — el mismo color se usa para cosas distintas según el tema:
+   `#1C1B19` (texto en claro / fondo en oscuro), `#F5F1EA` (fondo en claro / texto en oscuro),
+   `#7A6A58` y `#B8AE9C` (secundario ↔ placeholder). Un `sed` ciego los rompe. Se resolvió así:
+   en `styles.scss` se escribieron a mano los valores correctos por modo; en los componentes se
+   mapearon a un valor único válido para ambos roles — es seguro **porque ahí casi siempre son
+   solo el *fallback*** de `var(--app-text, #1C1B19)`, y la variable gana en tiempo de ejecución.
+
+2. **Sobrevivía una paleta ROSA/VINO anterior al ámbar** (`#8b1a4a` + `#c2255c`), que la
+   migración de julio no alcanzó: registro (`add-usuarios`), `palabras-clave`, `venta-directa`,
+   `detalle-producto`. También migrada a azul/morado (`#007AFF` + `#5856D6`, mismo par que el
+   gradiente del login).
+
+3. **NO todo color rosa/naranja/verde es "paleta"** — hay dos listas de colores que se dejaron
+   intactas a propósito:
+   - `all.component.ts` → `map[color]` traduce el **color REAL del producto**
+     (`rosa`, `morado`, `naranja`…) a un gradiente. Un producto rosa debe verse rosa.
+     Solo se cambió el **fallback** de marca.
+   - `all-usuarios.component.ts` → `avatarColor()` es una paleta de 8 gradientes distintos para
+     que cada usuario tenga un avatar de color diferente. No es marca, es variedad.
+   - Colores semánticos (`#ef4444` rojo, `#10b981` verde, badges de stock) — sin cambio.
+
+4. **Los Swal llevan sus colores inline en el `.ts`**, no en el SCSS del componente (SweetAlert2
+   inyecta su HTML en `document.body`, fuera del scope de estilos de Angular). Al migrar la
+   paleta hay que grepear también `--include="*.ts"`, no solo los SCSS.
+
+### Animación de fondo — SOLO en el login
+
+Decisión explícita del usuario: la malla técnica WebGL animada se queda **únicamente en el
+login**. El resto de las pantallas llevan la paleta azul pero **sin animación** (el shader
+consume GPU de forma continua y en pantallas de trabajo —tablas, formularios— distrae).
+
+**Verificado:** `ng build` sin errores + capturas Playwright de login y registro (las únicas
+pantallas alcanzables sin backend) en claro y oscuro, más una página de prueba que carga el
+`styles.css` compilado real para revisar los componentes genéricos (cards, inputs, tablas,
+botones, badges, alertas) en ambos temas — todo legible, sin texto invisible.
+
+### 💡 Nota de entorno — `ng serve` escucha en IPv6
+
+`ng serve` bindea a `[::1]:4200` (IPv6), NO a `127.0.0.1`. Verificar con
+`curl http://[::1]:4200` — usar `127.0.0.1` da "Connection refused" aunque `netstat` muestre el
+puerto LISTENING, lo que parece un problema de red pero no lo es.
+
+---
+
+## FIX PROMOCIONES — EL BUSCADOR DE VARIANTES SOLO MUESTRA LAS QUE TIENEN STOCK (2026-07-16)
+
+**Cierra definitivamente el bug de la promo "ropa"** documentado en "FIX PROMOCIONES — BOTÓN
+'AGREGAR' ILEGIBLE EN DISABLED…" (2026-07-13) y en `PROMOCIONES.md` sección 6.
+
+**Contexto:** al armar un combo, el buscador usaba `VarianteService.buscar()` — el buscador
+general, sin filtro de stock. Mostraba TODAS las variantes, incluidas las de 0 piezas. El fix
+de julio solo agregó señalización visual (stock, `#ID`, atenuado, aviso de duplicados) pero
+**seguía permitiendo seleccionar una variante sin stock** → el combo nacía con
+`instanciasDisponibles = 0` y se veía "❌ Sin disponibilidad" en el catálogo, sin que el admin
+entendiera por qué. Fue exactamente lo que pasó con "ropa" (id 1): de 7 variantes hermanas
+indistinguibles del mismo producto, se eligieron las 2 que tenían `stock: 0`.
+
+**Criterio de negocio (definido por el usuario):** al **armar** la promoción solo deben
+aparecer variantes con stock — eliges sobre lo que existe hoy. Que el stock se agote después
+NO es problema de esta pantalla: el back recalcula `instanciasDisponibles` con el stock vivo
+(la promo se muestra sola como "Sin disponibilidad" en el catálogo) y **la validación real de
+stock ocurre al agregar a la venta / cobrar**. Por eso no hace falta ningún filtro extra ni
+revalidación aquí.
+
+**Fix:** `buscarVariante()` cambia de `buscar({ termino })` a
+`adminFiltrar({ nombreOCodigo: termino, conStock: true }, 1, 8)`. **No requiere backend nuevo** —
+`adminFiltrar` ya existía (ver "FEAT F-14") y combina `nombreOCodigo` + `conStock` con AND,
+devolviendo el mismo `IVarianteResumenPaginable`.
+
+Cambios de UI derivados:
+- Se eliminó el estado "❌ sin stock" del dropdown y sus estilos (`--sinstock`, `--cero`) —
+  código muerto: ya nunca llega una variante con 0.
+- Nuevo aviso `.gp-hint-sinresultados` cuando la búsqueda no arroja nada: aclara que **solo se
+  listan variantes con stock**, para que no parezca que el producto no existe.
+- Se conservan el stock por resultado, el `#ID` y el aviso de duplicados — siguen siendo útiles
+  para distinguir variantes hermanas con el stock repartido.
+- `buscarVariante()` ahora captura `err?.error?.mensaje` en un Swal (antes tragaba el error en
+  silencio — mismo patrón de la Lección #1 del módulo rifas).
+
+**Archivos modificados:**
+- `src/app/admin/promociones/gestion-promociones.component.ts` → `buscarVariante()`
+- `src/app/admin/promociones/gestion-promociones.component.html` → dropdown sin estado
+  "sin stock" + `.gp-hint-sinresultados`
+- `src/app/admin/promociones/gestion-promociones.component.scss` → limpia estilos muertos
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No se probó en vivo:
+`/admin/promociones` requiere sesión de admin y backend corriendo.
+
+---
+
+## FIX VENTA DIRECTA — LAS PROMOS DEL CARRITO NO SE MOSTRABAN (2026-07-16)
+
+**Síntoma reportado:** admin crea una promoción → la agrega al carrito → `/variantes/carrito` →
+"💰 Cobrar ahora" → `/variantes/venta-directa` → **la promoción no aparece por ningún lado.**
+
+**Causa raíz — el template nunca renderizó las promos.** El `.ts` estaba completo desde el
+FEAT original (`promosCarrito` se pre-carga en `ngOnInit`, cuenta en `totalVenta`/`totalUnidades`,
+`puedeCobrar` acepta solo-promos, `ejecutarVenta()` las envía), pero
+`venta-directa.component.html` **solo usaba `tienePromos` para OCULTAR la sección de crédito** —
+nunca hubo un `*ngFor` que las listara. Confirmado con
+`git log -S "promosCarrito" -- venta-directa.component.html` → **cero commits**.
+
+⚠️ **No fue una regresión: nunca se implementó.** El commit `287f9dd` ("ocultar apartado/
+ir-pagando cuando hay promos en carrito") es el que introdujo `tienePromos` en ese HTML, pero
+solo para el `*ngIf` del crédito. Es fácil confundirlo con "ya se había arreglado".
+
+**Agravante — carrito con SOLO promos:** la condición del panel era
+`*ngIf="lineas.length > 0; else ventaVacia"`. Si el carrito traía únicamente combos (sin
+variantes sueltas), `lineas.length === 0` → se mostraba el estado vacío ("Agrega variantes desde
+el buscador") **y ni siquiera se pintaban los totales**, mientras el botón Cobrar sí estaba
+habilitado (porque `puedeCobrar` usa `lineas.length > 0 || tienePromos`). Pantalla vacía que sí
+cobra.
+
+**Fix:**
+- Condición del panel → `*ngIf="lineas.length > 0 || tienePromos; else ventaVacia"`.
+- Nueva sección `.vd-promo` que lista cada combo (descripción, `× N combo(s)`, el desglose de
+  piezas y el subtotal), destacada con `--app-accent` para distinguirla de una variante suelta.
+- Nuevo `quitarPromo(i)` en el `.ts` — hace `splice` solo del array local, **igual que
+  `quitarLinea()`**: el carrito real se limpia hasta el final en `limpiarTodo()` si
+  `cargadoDesdeCarrito`.
+
+**Revisado y descartado (no era bug):** `ngOnInit` lee `this.isAdminUser` de forma síncrona justo
+después de suscribirse a `authService.userRoles$`, lo que parecía una condición de carrera —
+pero `userRoles` es un `BehaviorSubject`, así que emite síncronamente al suscribir y el flag ya
+está listo. No tocar.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.html` → condición del panel + sección de promos
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `quitarPromo()`
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-promo`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo (requiere backend, sesión admin
+y una promo con stock).
+
+---
+
+## 📖 TAXONOMÍA DE NOMBRES — CÓMO SE LLAMAN LAS COSAS (2026-07-16)
+
+> **Regla obligatoria para cualquier texto nuevo visible al usuario.** Antes de escribir una
+> etiqueta, título, botón o mensaje, revisar esta tabla.
+>
+> 📄 **Versión para el equipo de back: `TAXONOMIA_NOMBRES_BACK.md`** (raíz del repo) — explica
+> la traducción y les pide anotar las entidades. **No les pide ningún cambio de código.**
+
+### ⚠️ Impacto en backend: CERO (verificado)
+
+En toda esta tanda (`c412b0e`..`69a5941`: paleta Aether, login, taxonomía, carrito, promos)
+**no se tocó ningún `.service.ts`** — confirmado con
+`git diff --stat c412b0e~1..HEAD -- 'src/**/*.service.ts'` → vacío.
+
+El **único** cambio de llamada HTTP fue en `gestion-promociones.component.ts`:
+`GET /variantes/v1/buscar` → `GET /variantes/v1/admin/filtrar?nombreOCodigo=…&conStock=true`.
+Ese endpoint **ya existía desde F-14 (2026-07-02)** y ya lo usaban `productos/all` y
+`variante/buscar` — no requiere nada del back. Todo lo demás fue CSS y texto.
+
+### El problema que resuelve — POR QUÉ se hizo este cambio
+
+El sistema creció por capas y los nombres se desincronizaron del negocio:
+
+1. **"Producto" significaba dos cosas.** El menú tenía "Productos" (que iba a
+   `/variantes/buscar`, el catálogo del cliente) y "Mis productos" (que iba a
+   `/productos/buscar`, el alta de admin) — **dos entidades distintas con el mismo nombre**.
+   Nadie podía saber cuál era cuál sin abrirlas.
+2. **"Variante" se filtraba a la pantalla** ("Rifa de variantes", "Gestionar variantes",
+   "Carrito de variantes"). Es un término técnico interno: al dueño del negocio y al cliente
+   no les dice nada. El usuario lo reportó textualmente: *"variantes se escucha feo"*.
+3. **Había dos carritos en el footer** compitiendo — uno de productos y otro de variantes — y
+   el cliente **nunca ve productos** (esas pantallas son admin-only), así que el carrito de
+   productos solo estorbaba en el menú.
+
+La causa de fondo: el dueño nombró primero "productos" al agrupador, y cuando después
+aparecieron las variantes (talla/color), ya no quedaba una palabra libre para lo que
+realmente se vende. Este cambio libera la palabra "Producto" para el SKU vendible —que es lo
+que el cliente entiende por producto— y le da un nombre propio al agrupador: **Modelo**.
+
+### Vocabulario oficial
+
+| Entidad (código) | Nombre visible | Qué es | Quién lo ve |
+|---|---|---|---|
+| `Producto` (padre) | **Modelo** | El agrupador: "Blusa Zara". Tiene nombre, precios base y categoría. | Solo admin |
+| `Variante` (SKU) | **Producto** | Lo que de verdad se vende: "Blusa Zara / M / Negro". Tiene **stock, precio y código de barras**. | Cliente y admin |
+| `palabraClave` | **Categoría** | — | Ambos |
+
+**La regla de oro:** *Modelo agrupa, Producto se vende.* Si tiene código de barras y stock, es
+un **Producto**.
+
+### ⚠️ El código NO se renombró — y es a propósito
+
+En el código, las rutas y la API, la entidad **sigue llamándose `variante`**
+(`/variantes/buscar`, `VarianteService`, `IVarianteResumen`, `GET /variantes/v1/...`).
+Solo se tradujo el **texto visible**. Renombrar el código sería un refactor de ~60 archivos
+que además **no eliminaría la inconsistencia**, porque el backend expone `/variantes/v1/...`
+de todos modos. Decisión explícita del usuario: solo lo visible.
+
+**Traducción mental al leer código:** `variante` → "producto"; `producto` → "modelo".
+
+### Menú (estado actual)
+
+| Etiqueta | Ruta | Nota |
+|---|---|---|
+| 🛍️ **Tienda** | `variantes/buscar` | Catálogo del cliente |
+| 📦 **Inventario** | *(accordion admin)* | Antes "Mis productos" |
+| ↳ 🔍 **Modelos** | `productos/buscar` | Antes "Ver todos" |
+| ↳ ➕ **Agregar modelo** | `productos/agregar` | |
+| ↳ 🧩 **Agregar producto** | `variantes/venta` | ⚠️ La ruta dice `venta` pero el componente es `AgregarComponent` — nombre heredado, no confiar en la ruta |
+| ↳ 🏷️ **Categorías** | `palabras-clave` | Antes "Palabras clave" — el form ya decía "Categoría" |
+| 🎡 **Rifa de productos** | `rifas/agregar` | |
+
+### Footer del sidebar — carrito
+
+Antes había **dos** carritos en el footer y confundían:
+
+| Botón | Antes | Ahora |
+|---|---|---|
+| Catálogo | "Productos" (pero navegaba a `/variantes/buscar` — engañoso) | **"Catálogo"** |
+| Limpiar | Limpiaba solo el carrito de **productos** | Limpia el carrito de **variantes + promos** (el que se ve) |
+| Carrito | Carrito de productos (`/productos/detalle-productos`) | **Eliminado del menú** |
+| Variantes | "Variantes" 🏷️ | **"Carrito"** 🛒 (`/variantes/carrito`) |
+
+**⚠️ El carrito viejo de productos NO se borró — sigue funcionando.** Se quitó solo del
+sidebar. Es seguro porque `/productos/buscar` **tiene su propio botón de carrito** con badge
+que lleva a `/productos/detalle-productos`: no queda huérfano, solo deja de competir en el
+menú. `limpiarSesionLocal()` (logout) sigue limpiando **ambos** carritos.
+
+Código muerto eliminado de `navbar.component.ts`: `countCarrito`, su suscripción a
+`carritoDetalle$`, y `revisarProductosCarrito()`.
+
+### 💡 Trampa de encoding al renombrar en lote
+
+Un script Perl que reemplace frases con acentos (`ó`, `—`, `…`) **debe llevar `use utf8;`** y
+leer/escribir con `:encoding(UTF-8)`. Sin `use utf8`, el patrón del script va en bytes y el
+archivo se lee decodificado → las frases con acentos **no coinciden y fallan en silencio**
+(pasó en la primera pasada: se aplicaron solo las frases ASCII).
+
+**Regla para renombrar etiquetas:** usar **frases completas**, nunca la palabra suelta —
+reemplazar `variante` a secas rompe bindings (`varianteSeleccionada`), rutas
+(`routerLink="variantes/..."`) y clases CSS. Verificar después con
+`git diff | grep -oE 'routerLink="[^"]*"'` que ninguna ruta haya cambiado.
+
+**Archivos modificados:** `navbar.component.html` + `.ts`, y ~20 templates con texto visible.
+**Verificado con `ng build` sin errores** y confirmando que ninguna ruta cambió.

@@ -34,11 +34,11 @@ export class BuscaComponent implements OnInit {
 
 
   buscarProductos(event: KeyboardEvent) {
-    const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    const texto = (event.target as HTMLInputElement).value;
     this.buscarProd = texto;
 
     this.buscarPorNombreCodigoPostal(1,10,this.buscarProd);
-    
+
   }
 
   buscarPorNombreCodigoPostal(pagina: number, size: number, nombre: string): void {

@@ -13,6 +13,7 @@
     <button class="rp-tab" [class.rp-tab--active]="tab === 'mensual'"    (click)="setTab('mensual')">📆 Mensual</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    (click)="setTab('cliente')">👤 Por cliente</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" (click)="setTab('promociones')">🎁 Promociones</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
@@ -112,7 +113,8 @@
           <input type="text" class="rp-input" [(ngModel)]="terminoCliente"
                  (ngModelChange)="onTerminoClienteChange()"
                  placeholder="Escribe al menos 2 letras…"
-                 autocomplete="off" />
+                 autocomplete="off"
+                 appUppercase />
           <div *ngIf="mostrarDropdownCliente" class="rp-dropdown">
             <div *ngFor="let c of clientesSugeridos" class="rp-dropdown__item"
                  (click)="seleccionarCliente(c)">
@@ -230,6 +232,52 @@
     </div>
 
     <p *ngIf="masVendidos.length === 0 && !cargandoVendidos" class="rp-empty">Sin datos para ese rango. Ajusta las fechas y busca de nuevo.</p>
+  </div>
+
+  <!-- ── PROMOCIONES ─────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'promociones'" class="rp-panel">
+    <div class="rp-filtros rp-filtros--row">
+      <div class="rp-filtro-group">
+        <label class="rp-label">Desde (opcional)</label>
+        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="desdePromos" />
+      </div>
+      <div class="rp-filtro-group">
+        <label class="rp-label">Hasta (opcional)</label>
+        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="hastaPromos" />
+      </div>
+      <button class="rp-btn--primary" [disabled]="cargandoPromociones" (click)="buscarPromociones()">Buscar</button>
+    </div>
+
+    <p class="rp-hint">Sin fechas se muestra el histórico completo de cada promoción.</p>
+
+    <div *ngIf="cargandoPromociones" class="rp-loading">Cargando…</div>
+
+    <div *ngIf="promociones.length > 0 && !cargandoPromociones" class="rp-table-wrap">
+      <table class="rp-table">
+        <thead>
+          <tr>
+            <th>Promoción</th>
+            <th class="rp-table__num">Combos vendidos</th>
+            <th class="rp-table__num">Transacciones</th>
+            <th class="rp-table__num">Total ($)</th>
+            <th class="rp-table__num">Ganancia ($)</th>
+            <th>Última venta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of promociones" [class.rp-tr--sin-ventas]="p.combosVendidos === 0">
+            <td>{{ p.descripcion }}</td>
+            <td class="rp-table__num">{{ p.combosVendidos }}</td>
+            <td class="rp-table__num">{{ p.numeroTransacciones }}</td>
+            <td class="rp-table__num">${{ p.ventaTotal | number:'1.2-2' }}</td>
+            <td class="rp-table__num rp-table__num--green">${{ p.gananciaTotal | number:'1.2-2' }}</td>
+            <td>{{ p.ultimaVenta ? formatFecha(p.ultimaVenta) : '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p *ngIf="promociones.length === 0 && !cargandoPromociones" class="rp-empty">No hay promociones registradas todavía.</p>
   </div>
 
 </div>

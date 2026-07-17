@@ -122,6 +122,9 @@
             <strong class="pm-precio--promo">${{ d.precioEnPromocion | number:'1.2-2' }}</strong>
             <span *ngIf="d.cantidad > 1"> × {{ d.cantidad }}</span>
           </p>
+          <p class="pm-modal__pieza-admin" *ngIf="isAdminUser">
+            ID #{{ d.varianteId }} · {{ d.codigoBarras || 'código de barras no disponible aún' }}
+          </p>
         </div>
       </div>
 

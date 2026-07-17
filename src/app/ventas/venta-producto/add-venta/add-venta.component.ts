@@ -132,7 +132,7 @@ export class AddVentaComponent implements OnInit {
   }
 
   buscarProductos(event: KeyboardEvent) {
-    const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    const texto = (event.target as HTMLInputElement).value;
     this.buscarProd = texto;
     this.service.getDataNombreCodigoBarra(1, 10, texto).subscribe({
       next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },

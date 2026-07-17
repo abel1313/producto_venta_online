@@ -1,0 +1,48 @@
+<div class="amc-page">
+  <div class="amc-card">
+
+    <div class="amc-header">
+      <div class="amc-header-icon"><i class="pi pi-shopping-bag"></i></div>
+      <div>
+        <h2 class="amc-title">Agregar mi compra</h2>
+        <p class="amc-subtitle">¿Compraste en el local y no iniciaste sesión? Agrega esa compra a tu cuenta</p>
+      </div>
+    </div>
+
+    <div class="amc-body">
+
+      <ng-container *ngIf="!exito">
+        <p class="amc-hint">
+          Si te enviamos un correo con un código para tu compra, escríbelo aquí para agregarla a tu cuenta.
+        </p>
+
+        <div class="amc-field">
+          <label class="amc-label" for="amc-codigo">Código de tu compra</label>
+          <input id="amc-codigo" class="amc-input" type="text"
+                 [(ngModel)]="codigo"
+                 (keyup.enter)="agregarCompra()"
+                 placeholder="Pega o escribe el código que recibiste"
+                 autocomplete="off">
+        </div>
+
+        <p class="amc-error-msg" *ngIf="error">
+          <i class="pi pi-exclamation-circle"></i> {{ error }}
+        </p>
+
+        <button class="amc-btn" [disabled]="!codigo.trim() || enviando" (click)="agregarCompra()">
+          {{ enviando ? 'Agregando…' : 'Agregar compra' }}
+        </button>
+      </ng-container>
+
+      <div class="amc-exito" *ngIf="exito">
+        <i class="pi pi-check-circle amc-exito-icon"></i>
+        <p class="amc-exito-msg">Tu compra quedó agregada a tu cuenta</p>
+        <div class="amc-exito-actions">
+          <button class="amc-btn amc-btn--ghost" (click)="otroCodigo()">Agregar otro código</button>
+          <button class="amc-btn" (click)="irAMisDatos()">Ir a mis datos</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -21,7 +21,7 @@ paginaPrimera: number = 1;
   }
 
     buscarProductos(event: KeyboardEvent) {
-    const texto = (event.target as HTMLInputElement).value.toLowerCase();
+    const texto = (event.target as HTMLInputElement).value;
     this.buscarProd = texto;
     if (this.buscarProd == '') {
       this.paginaPrimera = 1;

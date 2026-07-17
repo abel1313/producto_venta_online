@@ -452,3 +452,122 @@ genérico**, ocultando el motivo real. Ya se corrigió — ahora esas validacion
 el mensaje específico. Detalle completo en `CAMBIOS_FRONT.md` → "Cambio de comportamiento
 (2026-07-06): errores de validación ya NO regresan 500".
 
+### 6. Bug reportado por el usuario (2026-07-13): promoción muestra "sin disponibilidad" con stock real
+
+**Síntoma:** en `/promociones` (catálogo del cliente), una promoción configurada aparece con
+"❌ Sin disponibilidad" y el botón "🛒 Agregar" deshabilitado, aunque el producto involucrado
+muestra stock disponible.
+
+**Confirmado que NO es un bug de front ni de cálculo.** `instanciasDisponibles` no se calcula ni
+se cachea en el front — se toma tal cual de `GET /v1/promociones/activas`. La fórmula documentada
+(`instanciasDisponibles = MIN( piso(variante.stock / detalle.cantidad) )`) está devolviendo el
+valor correcto **para los datos que existen en BD**. El problema real es de datos, no de lógica:
+
+**Causa raíz confirmada con datos reales de QA (promoción id 1, "ropa"):**
+
+```
+GET /v1/promociones/activas → instanciasDisponibles: 0
+  detalle 1 → varianteId 277 → "Mochila Prada · sin color"
+  detalle 2 → varianteId 117 → "Mochila Prada · sin color"
+
+GET /variantes/v1/getOne/277 → stock: 0   (producto.stock: 5)
+GET /variantes/v1/getOne/117 → stock: 0   (producto.stock: 5)
+
+GET /variantes/v1/porProducto/326 (todas las variantes de "Mochila Prada") →
+  id 117 → stock 0
+  id 165 → stock 1
+  id 213 → stock 1
+  id 277 → stock 0
+  id 340 → stock 1
+  id 403 → stock 1
+  id 489 → stock 1
+  (suma = 5, coincide con producto.stock)
+```
+
+**El producto "Mochila Prada" (id 326) tiene 7 filas de variante** — mismo `codigoBarras`
+(`GLPD-066`), mismo `talla: null`, mismo `color: "sin color"`, mismo `marca`. **Confirmado con el
+usuario (2026-07-13): esto NO es un bug de datos** — un producto puede tener legítimamente varias
+variantes (aunque en este caso particular no se distingan por talla/color/descripción, cada fila
+es una variante real e independiente, con su propio stock). El stock real del producto (5 piezas)
+está repartido entre esas 7 variantes. La promoción se armó apuntando a `varianteId 277` y `117`,
+que son, de las 7, las dos que tienen `stock: 0` — por eso `instanciasDisponibles = 0` es
+matemáticamente correcto para esa combinación específica de variantes, aunque el producto en
+general sí tenga piezas disponibles en otras de sus variantes.
+
+**No hay nada que pedirle al back aquí** — el cálculo de `instanciasDisponibles` funciona bien; el
+problema fue puramente de UX al armar la promo: cuando varias variantes del mismo producto se ven
+idénticas en el buscador (mismo nombre/talla/color), es fácil elegir por accidente una que tiene 0
+stock sin darse cuenta de que hay otras hermanas con stock disponible.
+
+**Fix aplicado en front (2026-07-13):** en "Gestión Promociones", el buscador de variantes ahora
+muestra el **stock** y el **ID** de cada resultado (antes solo mostraba nombre/talla/color/precio,
+indistinguibles entre variantes de un mismo producto) + un aviso cuando hay varios resultados que
+se ven idénticos, para que el admin pueda elegir a propósito una variante con stock real.
+
+**Pendiente manual (no requiere back):** editar la promo "ropa" (id 1) en Gestión Promociones y
+reemplazar las piezas `varianteId 277`/`117` por dos variantes del mismo producto que sí tengan
+stock (ej. 165, 213, 340, 403 o 489) — ahora el dropdown ya muestra ese dato para elegir bien.
+
+**Complemento de front (2026-07-13):** en el modal "Ver detalle" de `/promociones`, ahora se
+muestra `ID #{varianteId}` por pieza cuando el usuario logueado es ADMIN — así el admin puede ir
+directo a revisar el stock real de esa variante exacta sin adivinar cuál de las variantes
+"hermanas" es. El `varianteId` ya venía en la respuesta, así que esta parte no necesitó nada del
+back.
+
+### Petición formal al back: agregar `codigoBarras` a `GET /v1/promociones/activas`
+
+**Qué necesitamos que regrese:** un campo nuevo `codigoBarras` (string) dentro de cada objeto de
+`detalles[]`, junto a los que ya vienen (`varianteId`, `nombreProducto`, `talla`, `color`, etc.).
+
+**De dónde sale el dato:** ya existe en `Variante` — se confirmó con
+`GET /variantes/v1/getOne/{id}`, que devuelve `"codigoBarras": { "id": 323, "codigoBarras":
+"GLPD-066" }` (objeto anidado). Para la promoción basta con el string plano:
+`variante.codigoBarras.codigoBarras`.
+
+**Response esperado (ejemplo sobre la promo "ropa", id 1):**
+```json
+{
+  "detalles": [
+    {
+      "varianteId": 277,
+      "nombreProducto": "Mochila Prada",
+      "talla": null,
+      "color": "sin color",
+      "cantidad": 1,
+      "precioNormal": 400.0,
+      "precioEnPromocion": 100.0,
+      "imagenUrl": "...",
+      "codigoBarras": "GLPD-066"
+    }
+  ]
+}
+```
+
+**Condición para incluirlo — recomendación:** mandarlo **siempre**, sin filtrar por rol. No es un
+dato sensible (es el mismo código de barras visible en `/variantes/buscar` para cualquier
+usuario), y el front **ya** oculta esa línea a usuarios no-admin (`*ngIf="isAdminUser"` en
+`promociones.component.html`) — mandarlo siempre es más simple de implementar en el back (no
+requiere leer el rol del token dentro de `PromocionServiceImpl` ni bifurcar la respuesta) y no
+cambia el comportamiento visible para un cliente normal.
+
+*Alternativa si prefieren no exponerlo nunca a no-admins a nivel de payload (defensa en
+profundidad):* condicionar por rol del solicitante dentro del mismo endpoint
+`GET /v1/promociones/activas` — a diferencia de `existencias` (que hoy se resuelve con un
+endpoint aparte, `GET /v1/promociones/admin`), aquí se necesitaría leer el rol del JWT de quien
+llama y solo poblar `codigoBarras` si es `ROLE_ADMIN`, dejándolo `null` para el resto. Cualquiera
+de las dos opciones es compatible con el front tal como está — no requiere cambios adicionales de
+nuestro lado.
+
+**Dónde tocar en el front una vez esté listo:** ninguno — `IPromocionDetalle.codigoBarras?` y el
+template ya están preparados; en cuanto el campo llegue poblado, se muestra automático en vez del
+fallback "código de barras no disponible aún".
+
+### 7. Fix de front aplicado (2026-07-13): botón "Agregar" deshabilitado ilegible en modo claro
+
+No relacionado con el punto 6 (ese sigue pendiente de back) — hallazgo aparte durante la misma
+revisión. `.pm-btn:disabled` usaba `opacity: .45`, lo que desvanecía el texto blanco casi hasta
+desaparecer sobre la card blanca en modo claro, dando la falsa impresión de que el botón "no tenía
+letras" o estaba roto. Se reemplazó por colores explícitos (`background: var(--card-border)`,
+`color: var(--app-text-muted)`) legibles en ambos modos. Archivo:
+`src/app/promociones/promociones.component.scss`.
+

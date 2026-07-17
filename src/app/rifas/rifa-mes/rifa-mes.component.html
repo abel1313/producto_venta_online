@@ -268,7 +268,7 @@
   <div class="rm-card" *ngIf="paso === 'variante'">
     <div class="rm-card__head">
       <h4>🎁 Premio a rifar</h4>
-      <p>Selecciona qué variante se lleva el ganador.</p>
+      <p>Selecciona qué producto se lleva el ganador.</p>
     </div>
     <div class="rm-card__body">
 
@@ -282,7 +282,7 @@
         <div class="rm-search-box">
           <span>🔍</span>
           <input class="rm-search-input" type="text"
-                 placeholder="Buscar variante por nombre, talla, color o código…"
+                 placeholder="Buscar producto por nombre, talla, color o código…"
                  [value]="terminoBusca"
                  (input)="onBuscarVariante($event)"
                  autocomplete="off"
@@ -294,7 +294,7 @@
                *ngFor="let v of variantesBusqueda"
                (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
             <span class="rm-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
-            <span class="rm-dropdown__meta">Stock {{ v.stock }}<span *ngIf="v.codigoBarras"> · {{ v.codigoBarras }}</span></span>
+            <span class="rm-dropdown__meta">Stock {{ v.stock }}<span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span></span>
           </div>
         </div>
       </div>

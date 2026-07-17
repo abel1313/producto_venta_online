@@ -50,12 +50,12 @@
   display: flex;
   flex-direction: column;
   transition: box-shadow .2s;
-  &:hover { box-shadow: 0 8px 24px rgba(176,138,78,.18); }
+  &:hover { box-shadow: 0 8px 24px rgba(0,122,255,.18); }
 
   &__img-wrap {
     position: relative;
     height: 160px;
-    background: linear-gradient(135deg, rgba(61,44,12,.88) 0%, rgba(176,138,78,.72) 100%);
+    background: linear-gradient(135deg, rgba(12,20,60,.88) 0%, rgba(0,122,255,.72) 100%);
     &--placeholder { display: flex; align-items: center; justify-content: center; }
   }
 
@@ -169,12 +169,20 @@
   padding: 8px 14px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: opacity .15s;
-  &:disabled { opacity: .45; cursor: not-allowed; }
+  transition: opacity .15s, background .15s, color .15s;
   &--agregar  { background: var(--app-accent); color: #fff; flex: 1; &:hover:not(:disabled) { opacity: .85; } }
   &--detalle  { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
   &--quitar   { background: rgba(239,68,68,.1); color: #ef4444; padding: 6px 10px; }
   &--ghost    { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+
+  // Estado deshabilitado con colores explícitos — usar opacity aquí desvanecía el
+  // texto blanco casi hasta invisible sobre la card blanca en modo claro (--app-accent
+  // sobre fondo blanco a 45% de opacidad queda casi ilegible).
+  &:disabled {
+    cursor: not-allowed;
+    background: var(--card-border);
+    color: var(--app-text-muted, #626B94);
+  }
 }
 
 .pm-en-carrito {
@@ -275,6 +283,16 @@
     &-info { flex: 1; }
     &-nombre { margin: 0 0 4px; font-size: 0.88rem; color: var(--app-text); font-weight: 600; }
     &-precios { margin: 0; display: flex; align-items: center; gap: 8px; }
+    &-admin {
+      margin: 4px 0 0;
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: var(--app-text-muted, #626B94);
+      background: rgba(128,128,128,.08);
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
   }
 
   &__cantidad {
@@ -322,7 +340,7 @@
     font-size: 1.1rem;
     cursor: pointer;
     color: var(--app-text);
-    &:hover:not(:disabled) { background: rgba(176,138,78,.1); }
+    &:hover:not(:disabled) { background: rgba(0,122,255,.1); }
     &:disabled { opacity: .4; cursor: not-allowed; }
   }
 

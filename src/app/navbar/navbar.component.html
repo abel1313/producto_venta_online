@@ -29,28 +29,31 @@
       <span class="sb-label">Home</span>
     </a>
 
-    <!-- Productos (usuarios logueados) -->
+    <!-- Tienda = catálogo que ve el cliente. Apunta a /variantes/buscar: una
+         "variante" (talla/color/código de barras) ES el producto que se vende.
+         Ver taxonomía de nombres en CLAUDE.md. -->
     <a class="sb-item" *ngIf="!isAnonymous"
        routerLink="variantes/buscar" routerLinkActive="sb-item--active"
        (click)="closeMobile()">
       <span class="sb-icon">🛍️</span>
-      <span class="sb-label">Productos</span>
+      <span class="sb-label">Tienda</span>
     </a>
 
-    <!-- Mis productos (admin) — accordion -->
+    <!-- Inventario (admin) — accordion. "Modelo" agrupa (Blusa Zara),
+         "Producto" es lo que se vende (Blusa Zara / M / Negro). -->
     <div class="sb-group" *ngIf="isAdminUser"
          [class.sb-group--open]="openGroup === 'misproductos'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('misproductos')">
         <span class="sb-icon">📦</span>
-        <span class="sb-label">Mis productos</span>
+        <span class="sb-label">Inventario</span>
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="productos/buscar" (click)="closeMobile()">🔍 Ver todos</a>
-        <a class="sb-subitem" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar producto</a>
-        <a class="sb-subitem" routerLink="variantes/venta" (click)="closeMobile()">🧩 Gestionar variantes</a>
+        <a class="sb-subitem" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
+        <a class="sb-subitem" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
+        <a class="sb-subitem" routerLink="variantes/venta" (click)="closeMobile()">🧩 Agregar producto</a>
         <a class="sb-subitem" routerLink="variantes/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
-        <a class="sb-subitem" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Palabras clave</a>
+        <a class="sb-subitem" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
       </div>
     </div>
 
@@ -109,7 +112,7 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de variantes</a>
+        <a class="sb-subitem" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
         <a class="sb-subitem" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
         <a class="sb-subitem" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
       </div>
@@ -155,6 +158,14 @@
       <span class="sb-label">Promociones</span>
     </a>
 
+    <!-- Favoritos (todos los usuarios logueados) -->
+    <a class="sb-item" *ngIf="!isAnonymous"
+       routerLink="favoritos" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">❤️</span>
+      <span class="sb-label">Favoritos</span>
+    </a>
+
     <!-- Chat (usuarios logueados) -->
     <a class="sb-item" *ngIf="!isAnonymous && !isAdminUser"
        routerLink="chat" routerLinkActive="sb-item--active"
@@ -192,9 +203,11 @@
     <!-- Botones de carrito -->
     <div class="sb-cart-row" *ngIf="isAdminUser || countCarritoVariante > 0">
 
-      <button class="sb-cart-btn" (click)="regresarProducto()" title="Ir a productos">
+      <!-- Navega a /variantes/buscar. Debe decir "Tienda" igual que el ítem del
+           menú y el título de esa pantalla: es el mismo lugar, un solo nombre. -->
+      <button class="sb-cart-btn" (click)="regresarProducto()" title="Ir a la tienda">
         <img [src]="iconService.iconRegresar" alt="" class="sb-cart-icon">
-        <span class="sb-label">Productos</span>
+        <span class="sb-label">Tienda</span>
       </button>
 
       <button *ngIf="isAdminUser" class="sb-cart-btn" (click)="limpiarCarrito()" title="Limpiar carrito">
@@ -202,17 +215,13 @@
         <span class="sb-label">Limpiar</span>
       </button>
 
-      <button *ngIf="isAdminUser" class="sb-cart-btn sb-cart-btn--primary"
-              (click)="revisarProductosCarrito()" title="Ver carrito">
+      <!-- El carrito del sistema es el de VARIANTES (+ promos) — es lo único que
+           el cliente compra. El carrito viejo de productos sigue existiendo pero
+           solo se alcanza desde /productos/buscar, que tiene su propio botón. -->
+      <button *ngIf="countCarritoVariante > 0" class="sb-cart-btn sb-cart-btn--primary"
+              (click)="verCarritoVariante()" title="Ver carrito">
         <img [src]="iconService.iconCarrito" alt="" class="sb-cart-icon">
         <span class="sb-label">Carrito</span>
-        <span class="sb-badge" *ngIf="countCarrito > 0">{{ countCarrito }}</span>
-      </button>
-
-      <button *ngIf="countCarritoVariante > 0" class="sb-cart-btn sb-cart-btn--warn"
-              (click)="verCarritoVariante()" title="Variantes en carrito">
-        <span class="sb-icon">🏷️</span>
-        <span class="sb-label">Variantes</span>
         <span class="sb-badge">{{ countCarritoVariante }}</span>
       </button>
 
@@ -229,6 +238,12 @@
           </a>
           <a class="sb-user-link sb-user-link--pass" routerLink="clientes/cambiar-password" (click)="closeMobile()">
             <i class="pi pi-lock"></i> Cambiar contraseña
+          </a>
+          <a class="sb-user-link" routerLink="clientes/mi-perfil" (click)="closeMobile()">
+            <i class="pi pi-id-card"></i> Mi perfil
+          </a>
+          <a class="sb-user-link" routerLink="clientes/agregar-compra" (click)="closeMobile()">
+            <i class="pi pi-shopping-bag"></i> Agregar mi compra
           </a>
 
         </div>

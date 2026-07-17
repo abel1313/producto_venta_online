@@ -58,7 +58,7 @@
           <span class="br-card__value">{{ r.fechaHoraLimite | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
         <div class="br-card__row" *ngIf="r.totalVariantes">
-          <span class="br-card__label">Variantes</span>
+          <span class="br-card__label">Productos</span>
           <span class="br-card__value">{{ progreso(r) }}</span>
         </div>
         <div class="br-progress" *ngIf="r.totalVariantes">
@@ -105,7 +105,7 @@
           <span>{{ rifaDetalle.totalConcursantes }}</span>
         </div>
         <div class="br-detalle__row">
-          <span class="br-detalle__label">Variantes</span>
+          <span class="br-detalle__label">Productos</span>
           <span>{{ rifaDetalle.totalVariantes }}</span>
         </div>
 

@@ -6,7 +6,11 @@ import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
-import { VarianteService } from '../service/variante.service';
+import { IIndependizarRequest, VarianteService } from '../service/variante.service';
+import { ProductoService } from 'src/app/productos/service/producto.service';
+import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
+import { ResenaService } from 'src/app/resenas/service/resena.service';
+import { IResena, IResenaResumen } from 'src/app/resenas/models/resena.model';
 
 const PAGE_SIZE = 4;
 
@@ -28,6 +32,8 @@ export class DetalleVarianteComponent implements OnInit {
 
   // ── Eliminación de imágenes (solo admin) ──────────────────────────
   isAdminUser = false;
+  private roles: string[] = [];
+  get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
   imagenesParaEliminar = new Set<string>();
   eliminando = false;
 
@@ -40,16 +46,55 @@ export class DetalleVarianteComponent implements OnInit {
     { breakpoint: '575px',  numVisible: 1, numScroll: 1 },
   ];
 
+  // ── Modal Independizar ─────────────────────────────────────────────────────
+  mostrarModalIndependizar = false;
+  cargandoIndependizar = false;
+  independizando = false;
+  independizarError: string | null = null;
+  indepStockInfo = 0;
+  palabraClaveSeleccionadaIndep: IPalabraClave | null = null;
+  indepForm = {
+    nombre: '',
+    descripcion: '',
+    marca: '',
+    color: '',
+    contenido: '',
+    piezas: 0,
+    precioCosto: 0,
+    precioVenta: 0,
+    precioRebaja: 0,
+    palabraClaveId: null as number | null,
+    codigoBarras: '',
+  };
+
+  // ── Reseñas ──────────────────────────────────────────────────────────────
+  resenaResumen: IResenaResumen | null = null;
+  seccionResenasAbierta = false;
+  resenas: IResena[] = [];
+  resenasPagina = 1;
+  resenasTotalPaginas = 1;
+  cargandoResenas = false;
+  get miResena(): IResena | null { return this.resenas.find(r => r.esPropia) ?? null; }
+
+  mostrarFormResena = false;
+  editandoResenaId: number | null = null;
+  formCalificacion = 5;
+  formComentario = '';
+  guardandoResena = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly varianteService: VarianteService,
     private readonly carritoVariante: CarritoVarianteService,
     private readonly authService: AuthService,
+    private readonly productoService: ProductoService,
+    private readonly resenaService: ResenaService,
   ) {}
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
+      this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
 
@@ -95,6 +140,18 @@ export class DetalleVarianteComponent implements OnInit {
         this.paginasCargadas.add(1);
         this.cargaInicialCompletada = true;
       }
+    });
+
+    // Reseñas — el resumen (estrellitas) se carga siempre; el listado completo solo si el
+    // usuario abre la sección, para no traer todos los comentarios de entrada.
+    this.resenaResumen = null;
+    this.seccionResenasAbierta = false;
+    this.resenas = [];
+    this.resenasPagina = 1;
+    this.cerrarFormResena();
+    this.resenaService.resumen(v.id).subscribe({
+      next: res => { this.resenaResumen = res?.data ?? null; },
+      error: () => { this.resenaResumen = null; }
     });
   }
 
@@ -263,4 +320,234 @@ export class DetalleVarianteComponent implements OnInit {
   }
 
   volver(): void { this.router.navigate(['/variantes/buscar']); }
+
+  // ── Independizar variante ──────────────────────────────────────────────────
+
+  abrirIndependizar(): void {
+    if (!this.varianteSeleccionada || this.cargandoIndependizar) return;
+    const v = this.varianteSeleccionada;
+
+    this.indepStockInfo = v.stock;
+    this.independizarError = null;
+    this.cargandoIndependizar = true;
+
+    // Primero cargar producto — solo abrir el modal cuando todos los datos estén listos
+    this.productoService.getDataGeneric<any>(this.productoId).subscribe({
+      next: (res: any) => {
+        const p = res?.data ?? res;
+        const pkVariante = (v as any).palabraClave ?? null;
+        const pkProducto = p?.palabraClave ?? null;
+        const pk: IPalabraClave | null = pkVariante ?? pkProducto ?? null;
+        this.palabraClaveSeleccionadaIndep = pk;
+        this.indepForm = {
+          nombre:        p?.nombre ?? '',
+          descripcion:   v.descripcion ?? p?.descripcion ?? '',
+          marca:         v.marca ?? p?.marca ?? '',
+          color:         v.color ?? p?.color ?? '',
+          contenido:     v.contenidoNeto ?? p?.contenido ?? '',
+          piezas:        p?.piezas ?? 0,
+          precioCosto:   p?.precioCosto ?? 0,
+          precioVenta:   p?.precioVenta ?? v.precio ?? 0,
+          precioRebaja:  p?.precioRebaja ?? 0,
+          palabraClaveId: pk?.id ?? null,
+          codigoBarras:  '',
+        };
+        this.cargandoIndependizar = false;
+        this.mostrarModalIndependizar = true;
+      },
+      error: () => {
+        this.palabraClaveSeleccionadaIndep = null;
+        this.indepForm = {
+          nombre:        '',
+          descripcion:   v.descripcion ?? '',
+          marca:         v.marca ?? '',
+          color:         v.color ?? '',
+          contenido:     v.contenidoNeto ?? '',
+          piezas:        0,
+          precioCosto:   0,
+          precioVenta:   v.precio ?? 0,
+          precioRebaja:  0,
+          palabraClaveId: null,
+          codigoBarras:  '',
+        };
+        this.cargandoIndependizar = false;
+        this.mostrarModalIndependizar = true;
+      }
+    });
+  }
+
+  cerrarIndependizar(): void {
+    if (this.independizando) return;
+    this.mostrarModalIndependizar = false;
+    this.independizarError = null;
+    this.palabraClaveSeleccionadaIndep = null;
+  }
+
+  onPalabraClaveIndep(pk: IPalabraClave | null): void {
+    this.indepForm.palabraClaveId = pk?.id ?? null;
+  }
+
+  confirmarIndependizar(): void {
+    if (!this.varianteSeleccionada || this.independizando) return;
+    if (!this.indepForm.nombre.trim()) {
+      this.independizarError = 'El nombre del producto es obligatorio.';
+      return;
+    }
+    if (!this.indepForm.codigoBarras.trim()) {
+      this.independizarError = 'El código de barras es obligatorio.';
+      return;
+    }
+
+    this.independizando = true;
+    this.independizarError = null;
+
+    const body: IIndependizarRequest = {
+      nombre:        this.indepForm.nombre.trim(),
+      descripcion:   this.indepForm.descripcion || undefined,
+      marca:         this.indepForm.marca || undefined,
+      color:         this.indepForm.color || undefined,
+      contenido:     this.indepForm.contenido || undefined,
+      piezas:        this.indepForm.piezas || undefined,
+      precioCosto:   this.indepForm.precioCosto,
+      precioVenta:   this.indepForm.precioVenta,
+      precioRebaja:  this.indepForm.precioRebaja || undefined,
+      palabraClaveId: this.indepForm.palabraClaveId,
+      codigoBarras:  this.indepForm.codigoBarras.trim(),
+    };
+
+    this.varianteService.independizar(this.varianteSeleccionada.id, body).subscribe({
+      next: (res) => {
+        this.independizando = false;
+        this.mostrarModalIndependizar = false;
+        const d = res.data;
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Variante independizada',
+          html: `Producto nuevo creado con ID <strong>#${d.productoNuevoId}</strong><br>
+                 Código: <strong>${d.codigoBarras}</strong><br>
+                 Stock restante del producto origen: <strong>${d.stockProductoOrigenRestante}</strong>`,
+          showCancelButton: true,
+          confirmButtonText: '🔍 Ver variantes',
+          cancelButtonText: 'Cerrar',
+        }).then(result => {
+          if (result.isConfirmed) {
+            this.router.navigate(['/variantes/buscar']);
+          } else {
+            // Quitar la variante independizada de la lista y actualizar vista
+            this.variantes = this.variantes.filter(v => v.id !== this.varianteSeleccionada!.id);
+            if (this.variantes.length > 0) {
+              this.seleccionar(this.variantes[0]);
+            } else {
+              this.router.navigate(['/variantes/buscar']);
+            }
+          }
+        });
+      },
+      error: (err) => {
+        this.independizando = false;
+        this.independizarError = err?.error?.mensaje ?? 'No se pudo independizar la variante.';
+      }
+    });
+  }
+
+  // ── Reseñas ──────────────────────────────────────────────────────────────
+
+  toggleSeccionResenas(): void {
+    this.seccionResenasAbierta = !this.seccionResenasAbierta;
+    if (this.seccionResenasAbierta && this.resenas.length === 0) {
+      this.cargarResenas(1);
+    }
+  }
+
+  cargarResenas(pagina: number): void {
+    if (!this.varianteSeleccionada) return;
+    this.cargandoResenas = true;
+    this.resenaService.listarPorVariante(this.varianteSeleccionada.id, pagina, 10).subscribe({
+      next: res => {
+        this.resenas = res?.data?.t ?? [];
+        this.resenasTotalPaginas = res?.data?.totalPaginas ?? 1;
+        this.resenasPagina = pagina;
+        this.cargandoResenas = false;
+      },
+      error: () => { this.cargandoResenas = false; }
+    });
+  }
+
+  anteriorPaginaResenas(): void {
+    if (this.resenasPagina > 1) this.cargarResenas(this.resenasPagina - 1);
+  }
+
+  siguientePaginaResenas(): void {
+    if (this.resenasPagina < this.resenasTotalPaginas) this.cargarResenas(this.resenasPagina + 1);
+  }
+
+  estrellas(n: number): number[] {
+    const redondeado = Math.round(n);
+    return Array(5).fill(0).map((_, i) => i < redondeado ? 1 : 0);
+  }
+
+  abrirFormResena(existente?: IResena): void {
+    this.editandoResenaId = existente?.id ?? null;
+    this.formCalificacion = existente?.calificacion ?? 5;
+    this.formComentario   = existente?.comentario ?? '';
+    this.mostrarFormResena = true;
+  }
+
+  cerrarFormResena(): void {
+    this.mostrarFormResena = false;
+    this.editandoResenaId = null;
+    this.formCalificacion = 5;
+    this.formComentario = '';
+  }
+
+  guardarResena(): void {
+    if (!this.varianteSeleccionada || this.guardandoResena) return;
+    this.guardandoResena = true;
+
+    const obs = this.editandoResenaId
+      ? this.resenaService.editar(this.editandoResenaId, this.formCalificacion, this.formComentario)
+      : this.resenaService.crear(this.varianteSeleccionada.id, this.formCalificacion, this.formComentario);
+
+    obs.subscribe({
+      next: () => {
+        this.guardandoResena = false;
+        this.cerrarFormResena();
+        this.cargarResenas(1);
+        this.resenaService.resumen(this.varianteSeleccionada!.id).subscribe({
+          next: res => { this.resenaResumen = res?.data ?? null; },
+          error: () => {}
+        });
+      },
+      error: (err) => {
+        this.guardandoResena = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo guardar tu reseña', text: err?.error?.mensaje ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  eliminarResena(r: IResena): void {
+    Swal.fire({
+      title: '¿Eliminar reseña?',
+      text: r.esPropia ? 'Esta acción no se puede deshacer.' : `Se eliminará la reseña de ${r.nombreCliente}.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444',
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.resenaService.eliminar(r.id).subscribe({
+        next: () => {
+          this.resenas = this.resenas.filter(x => x.id !== r.id);
+          if (this.varianteSeleccionada) {
+            this.resenaService.resumen(this.varianteSeleccionada.id).subscribe({
+              next: res => { this.resenaResumen = res?.data ?? null; },
+              error: () => {}
+            });
+          }
+        },
+        error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo eliminar la reseña.' })
+      });
+    });
+  }
 }

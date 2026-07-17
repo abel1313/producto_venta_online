@@ -35,6 +35,7 @@
 
   <!-- ── Panel derecho: formulario ── -->
   <div class="split-form">
+    <canvas #particlesCanvas class="particles-bg" *ngIf="(isDark$ | async)"></canvas>
     <div class="form-inner">
 
       <div class="brand">
@@ -74,7 +75,7 @@
           {{ errorMessage }}
         </div>
 
-        <button type="submit" class="btn-login" [disabled]="loginForm.invalid">
+        <button type="submit" class="btn-login" [disabled]="loginForm.invalid || cargando">
           <span>Entrar</span>
           <i class="pi pi-arrow-right"></i>
         </button>

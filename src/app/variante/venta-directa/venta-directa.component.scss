@@ -1,5 +1,5 @@
-$p:  #8b1a4a;
-$pd: #c2255c;
+$p:  #007AFF;
+$pd: #5856D6;
 $t:  all 0.22s ease;
 
 // ── Wrapper ────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ $t:  all 0.22s ease;
   padding-right: 4px;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(176,138,78,.3); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0,122,255,.3); border-radius: 4px; }
 }
 
 .vd-result-row {
@@ -102,7 +102,7 @@ $t:  all 0.22s ease;
   border-radius: 10px; padding: 10px;
   transition: $t;
 
-  &:hover { border-color: var(--card-border); box-shadow: 0 2px 8px rgba(176,138,78,.08); }
+  &:hover { border-color: var(--card-border); box-shadow: 0 2px 8px rgba(0,122,255,.08); }
 
   &--agotado { opacity: .55; }
 
@@ -122,11 +122,11 @@ $t:  all 0.22s ease;
     &--ok { background: #dcfce7; color: #166534; }
     &--agotado { background: #fee2e2; color: #991b1b; }
   }
-  &__codigo { font-size: .7rem; color: #9ca3af; font-family: monospace; }
+  &__codigo { font-size: .7rem; color: var(--card-text-muted); font-family: monospace; }
 }
 
 .vd-btn-add {
-  background: linear-gradient(135deg, #B08A4E, #8A6A38); color: #fff;
+  background: linear-gradient(135deg, #007AFF, #5856D6); color: #fff;
   border: none; border-radius: 8px; padding: 8px 12px;
   cursor: pointer; font-size: 1rem; flex-shrink: 0;
   transition: $t;
@@ -136,17 +136,43 @@ $t:  all 0.22s ease;
 
 // ── Empty / Hint ───────────────────────────────────────────────────
 .vd-empty {
-  text-align: center; padding: 32px 20px; color: #9ca3af;
+  text-align: center; padding: 32px 20px; color: var(--card-text-muted);
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   span { font-size: 2.5rem; }
   p { margin: 0; font-size: .88rem; }
 }
 .vd-hint {
-  text-align: center; padding: 20px; color: #9ca3af; font-size: .82rem;
+  text-align: center; padding: 20px; color: var(--card-text-muted); font-size: .82rem;
 }
 
 // ── Líneas de venta ────────────────────────────────────────────────
 .vd-lines { display: flex; flex-direction: column; gap: 8px; }
+
+// Combo de promoción en la venta — mismo bloque visual que .vd-line pero
+// destacado con el accent, para distinguirlo de una variante suelta.
+.vd-promo {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--app-accent-soft);
+  border: 1px solid var(--app-accent);
+  border-radius: 10px; padding: 10px;
+
+  &__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  &__nombre {
+    font-size: .84rem; font-weight: 700; color: var(--card-text);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+
+  &__badge {
+    font-size: .68rem; font-weight: 700;
+    background: var(--app-accent); color: #fff;
+    border-radius: 99px; padding: 1px 8px; white-space: nowrap;
+  }
+
+  &__detalles {
+    font-size: .72rem; color: var(--card-text-muted); line-height: 1.35;
+  }
+}
 
 .vd-line {
   display: flex; align-items: center; gap: 10px;
@@ -170,7 +196,7 @@ $t:  all 0.22s ease;
   &__subtotal { font-size: .9rem; font-weight: 700; color: var(--app-accent); }
 
   &__del {
-    background: none; border: none; color: #9ca3af; cursor: pointer; font-size: .72rem;
+    background: none; border: none; color: var(--card-text-muted); cursor: pointer; font-size: .72rem;
     &:hover { color: #dc2626; }
   }
 }
@@ -215,14 +241,50 @@ $t:  all 0.22s ease;
   border-radius: 12px;
 }
 
+.vd-pay-loading {
+  font-size: .82rem;
+  color: var(--card-text-muted);
+  margin: 0;
+}
+
+.vd-pay-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: .82rem;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, .10);
+  border: 1px solid rgba(239, 68, 68, .30);
+  border-radius: 8px;
+  padding: 10px 12px;
+
+  .vd-pay-retry {
+    align-self: flex-start;
+    background: var(--app-accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+:host-context(body.theme-dark) .vd-pay-error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, .14);
+  border-color: rgba(239, 68, 68, .40);
+}
+
 .vd-required { color: var(--app-accent); font-weight: 700; margin-left: 4px; }
-.vd-optional { font-size: .72rem; color: #9ca3af; font-weight: 400; text-transform: none; margin-left: 6px; }
+.vd-optional { font-size: .72rem; color: var(--card-text-muted); font-weight: 400; text-transform: none; margin-left: 6px; }
 
 // ── Crédito ────────────────────────────────────────────────────────
 .vd-credit-divider {
   display: flex; align-items: center; gap: 10px; margin: 4px 0 2px;
   &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
-  span { font-size: .7rem; color: #9ca3af; white-space: nowrap; }
+  span { font-size: .7rem; color: var(--card-text-muted); white-space: nowrap; }
 }
 
 .vd-credit-btns {
@@ -238,10 +300,10 @@ $t:  all 0.22s ease;
   &:hover { border-color: var(--app-accent); color: var(--app-accent); }
 
   &--active {
-    background: rgba(176,138,78,.13);
+    background: rgba(0,122,255,.13);
     border-color: var(--app-accent);
     color: var(--app-accent);
-    box-shadow: 0 0 0 2px rgba(176,138,78,.18);
+    box-shadow: 0 0 0 2px rgba(0,122,255,.18);
   }
 }
 
@@ -282,7 +344,7 @@ $t:  all 0.22s ease;
   transition: all 0.15s;
 
   &--active {
-    background: rgba(176,138,78,0.15);
+    background: rgba(0,122,255,0.15);
     border-color: var(--app-accent);
     color: var(--app-accent);
     font-weight: 700;
@@ -395,11 +457,11 @@ $t:  all 0.22s ease;
 
 .vd-client-chip {
   display: flex; align-items: center; gap: 10px;
-  background: linear-gradient(135deg, rgba(176,138,78,.1), rgba(176,138,78,.06));
-  border: 1px solid rgba(176,138,78,.25); border-radius: 10px; padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(0,122,255,.1), rgba(0,122,255,.06));
+  border: 1px solid rgba(0,122,255,.25); border-radius: 10px; padding: 10px 14px;
 
-  &__name  { flex: 1; font-weight: 700; color: #1f2937; font-size: .9rem; }
-  &__phone { font-size: .78rem; color: #6b7280; }
+  &__name  { flex: 1; font-weight: 700; color: var(--card-text); font-size: .9rem; }
+  &__phone { font-size: .78rem; color: var(--card-text-muted); }
   &__clear {
     background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
     border-radius: 50%; width: 26px; height: 26px; color: #dc2626;
@@ -423,7 +485,7 @@ $t:  all 0.22s ease;
   display: flex; flex-direction: column; gap: 2px;
   border-bottom: 1px solid var(--card-border); transition: $t;
   &:last-child { border-bottom: none; }
-  &:hover { background: rgba(176,138,78,0.08); }
+  &:hover { background: rgba(0,122,255,0.08); }
   strong { font-size: .88rem; color: var(--card-text); }
   small  { font-size: .74rem; color: var(--card-text-muted); }
 }
@@ -448,10 +510,10 @@ $t:  all 0.22s ease;
 
 .vd-btn-cobrar {
   flex: 1; padding: 13px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, #B08A4E, #8A6A38); color: #fff;
+  background: linear-gradient(135deg, #007AFF, #5856D6); color: #fff;
   font-size: .95rem; font-weight: 700; cursor: pointer; transition: $t;
-  box-shadow: 0 5px 16px rgba(176,138,78,.35);
-  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(176,138,78,.5); }
+  box-shadow: 0 5px 16px rgba(0,122,255,.35);
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,122,255,.5); }
   &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 }
 
@@ -524,7 +586,7 @@ $t:  all 0.22s ease;
 
   &__header {
     display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(135deg, #8A6A38, #B08A4E);
+    background: linear-gradient(135deg, #5856D6, #007AFF);
     padding: 18px 20px; color: #fff;
   }
   &__icon  { font-size: 1.6rem; flex-shrink: 0; }
@@ -590,10 +652,10 @@ $t:  all 0.22s ease;
 
 // ── Botón agregar sin registro ─────────────────────────────────────
 .vd-btn-sinreg {
-  width: 100%; padding: 11px; border: 1.5px dashed rgba(176,138,78,.45);
-  border-radius: 10px; background: rgba(176,138,78,.06); color: var(--app-accent);
+  width: 100%; padding: 11px; border: 1.5px dashed rgba(0,122,255,.45);
+  border-radius: 10px; background: rgba(0,122,255,.06); color: var(--app-accent);
   font-size: .88rem; font-weight: 600; cursor: pointer; transition: $t;
-  &:hover { background: rgba(176,138,78,.12); border-color: var(--app-accent); }
+  &:hover { background: rgba(0,122,255,.12); border-color: var(--app-accent); }
 }
 
 // ── Valores adicionales adaptativos ────────────────────────────────

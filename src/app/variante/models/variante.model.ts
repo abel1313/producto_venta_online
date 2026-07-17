@@ -75,6 +75,14 @@ export interface IVarianteResumenPaginable {
   t: IVarianteResumen[];
 }
 
+export interface IFiltrosDisponibles {
+  tallas: string[];
+  colores: string[];
+  marcas: string[];
+  precioMin: number | null;
+  precioMax: number | null;
+}
+
 export interface IVarianteImagenDto {
   id?: string;
   base64: string | null;

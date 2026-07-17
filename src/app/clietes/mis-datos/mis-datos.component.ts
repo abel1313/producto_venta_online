@@ -22,11 +22,11 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService
   ) {
-
     this.formDatosCliente = this.fb.group({
       nombrePersona: ['abel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
       segundoNombre: ['', [Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
@@ -240,33 +240,32 @@ export class MisDatosComponent implements OnInit {
         <input id="swal-codigo-propio" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #B08A4E;border-radius:8px;
+                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      preConfirm: () => {
+      preConfirm: async () => {
         const codigo = (document.getElementById('swal-codigo-propio') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) {
           Swal.showValidationMessage('Ingresa los 6 dígitos del código');
           return false;
         }
-        return codigo;
-      }
-    }).then(result => {
-      if (!result.isConfirmed || !result.value) return;
-      this.clienteServoce.verificarCorreo(this.clienteId, result.value as string).subscribe({
-        next: () => {
-          this.correoVerificado = true;
-          Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue verificado correctamente.', timer: 2500, showConfirmButton: false });
-        },
-        error: (err: any) => {
+        try {
+          await this.clienteServoce.verificarCorreo(this.clienteId, codigo).toPromise();
+          return true;
+        } catch (err: any) {
           const raw = err?.error;
           const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message) ?? 'Código incorrecto o expirado.';
-          Swal.fire({ icon: 'error', title: 'Código inválido', text: msg });
+          Swal.showValidationMessage(msg);
+          return false;
         }
-      });
+      }
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.correoVerificado = true;
+      Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue verificado correctamente.', timer: 2500, showConfirmButton: false });
     });
   }
 

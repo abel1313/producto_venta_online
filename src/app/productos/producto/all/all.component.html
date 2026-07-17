@@ -76,8 +76,8 @@
         No habilitados
       </label>
       <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
-      <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel productos sin variantes">
-        📥 Excel sin variantes
+      <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
+        📥 Excel sin productos
       </button>
     </div>
 
@@ -181,7 +181,7 @@
 
           <div class="pl-card__detail-row" *ngIf="item.codigoBarras">
             <span class="pl-card__detail-label">Código</span>
-            <span class="pl-card__detail-val">{{ item.codigoBarras }}</span>
+            <span class="pl-card__detail-val">{{ item.codigoBarras | uppercase }}</span>
           </div>
 
           <div class="pl-card__detail-row" *ngIf="item.marca">
@@ -239,9 +239,9 @@
         </button>
 
         <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
-          [disabled]="item.stock === 0" title="Crear variantes a partir de este producto">
+          [disabled]="item.stock === 0" title="Crear productos a partir de este modelo">
           <span>🧩</span>
-          <span class="pl-btn-card__label">Variantes</span>
+          <span class="pl-btn-card__label">Productos</span>
         </button>
 
         <button *ngIf="isAdminUser && item.imagen?.urlImagen"

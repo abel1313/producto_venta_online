@@ -9,6 +9,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { MisDatosComponent } from './mis-datos/mis-datos.component';
 import { CambiarPasswordComponent } from './cambiar-password/cambiar-password.component';
+import { MiPerfilComponent } from './mi-perfil/mi-perfil.component';
+import { AgregarCompraComponent } from './agregar-compra/agregar-compra.component';
 import { NbAutocompleteModule, NbCardModule, NbDatepickerModule, NbFormFieldModule, NbSelectModule, NbStepperModule } from '@nebular/theme';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -24,7 +26,9 @@ import { SharedModule } from '../shared/shared.module';
     ClientesBuscarComponent,
     ClientesMostrarComponent,
     MisDatosComponent,
-    CambiarPasswordComponent
+    CambiarPasswordComponent,
+    MiPerfilComponent,
+    AgregarCompraComponent
   ],
   imports: [
     CommonModule,

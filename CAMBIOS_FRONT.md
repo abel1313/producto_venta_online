@@ -1997,6 +1997,7 @@ y mostrar el texto de `mensaje`.
 | `Configuración de rifa no encontrada` | `configurarRifa.id` no existe |
 | `Esta rifa ya fue sorteada o está inactiva` | `activa=false` |
 | `El plazo de registro cerró el {fechaHoraLimite}` | ya pasó `fechaHoraLimite` y `forzar=false` (default) — reintentar con `?forzar=true` si el admin quiere forzar el registro |
+| `Este cliente ya está registrado en esta rifa` | **NUEVO (2026-07-13)** — `clientePedidoId` ya tiene un concursante en esta misma rifa. Antes este endpoint no lo validaba (solo lo validaba `/importarDePedidos`), así que un mismo cliente se podía registrar varias veces si se usaba el registro individual. `forzar=true` **no** evita este error — es una regla de integridad, no de plazo. |
 
 ### `POST /v1/concursante/importarDePedidos`
 | `mensaje` | Causa |
@@ -4909,7 +4910,7 @@ en `mensaje`/`data`, igual que ya pasaba con otras validaciones (`404`, `409`, `
 
 ---
 
-## ⚠️ Cambio de contrato (2026-07-06): filtro admin combinado de productos/variantes + fix paginación por defecto
+## ✅ Cambio de contrato (2026-07-06, front actualizado 2026-07-07): filtro admin combinado de productos/variantes + fix paginación por defecto
 
 **1. `GET /productos/*` sin página/tamaño por defecto (bug, ya corregido).** Varios endpoints de
 `ProductosControllerImpl` (`obtenerProductos`, `buscarNombreOrCodigoBarra`, `admin/no-habilitados`,
@@ -4953,9 +4954,9 @@ GET /variantes/v1/admin/filtrar?habilitado=false&pagina=1&size=10
   `nombreOCodigo` sí se puede combinar libremente con cualquier combinación de los otros 3.
 - En variantes, `habilitado` filtra por el estado de la **variante** (`v.habilitado`), no del
   producto padre — coincide con el fix documentado arriba de `habilitar-lote`.
-- El front necesita actualizar la pantalla de filtros de admin (productos y variantes) para mandar
-  estos 4 parámetros en vez del enum `filtro` — el enum `FiltroCatalogoEnum` ya no existe en el
-  backend, cualquier request con `filtro=...` va a fallar (`400`, parámetro no reconocido).
+- **✅ Implementado en el front (2026-07-07):** `variante.service.ts` y `producto.service.ts`
+  traducen internamente el enum al nuevo formato de parámetros. Los componentes que llaman a
+  `adminFiltrar(...)` no cambian — la traducción ocurre dentro del servicio.
 
 ---
 
@@ -4986,6 +4987,113 @@ compone — ver contrato en `PROMOCIONES.md`, sección 7).
 
 **Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
 `dev`/`qa` por ahora.
+
+---
+
+## ✅ Fix (2026-07-07): campo `cantidad` en detalles de promoción activa
+
+**Causa raíz del bug "cantidad obligatoria":** `GET /v1/promociones/activas` devolvía los detalles
+de cada promo sin el campo `cantidad` (cuántas unidades de esa variante consume un combo). Cuando el
+front armaba la solicitud de venta hacía `d.cantidad * cantidadCombos`, y al ser `d.cantidad`
+`undefined`, el resultado era `NaN` → `null` en el JSON → el back rechazaba con *"La cantidad es
+obligatoria y debe ser mayor a 0"*.
+
+**Fix:** `PromocionDetalleActivaDto` ahora incluye `cantidad`. El front no necesita cambiar nada
+en `venta-directa.component.ts` — el cálculo ya era correcto, solo faltaba el dato del back.
+
+**Respuesta actualizada de `GET /v1/promociones/activas` — cada detalle ahora incluye `cantidad`:**
+```json
+{
+  "varianteId": 12,
+  "nombreProducto": "Jean Slim",
+  "talla": "M",
+  "color": "Azul",
+  "cantidad": 1,
+  "precioNormal": 300.00,
+  "precioEnPromocion": 220.00,
+  "imagenUrl": "..."
+}
+```
+
+**Archivos cambiados:** `PromocionDetalleActivaDto.java`, `PromocionServiceImpl.java`
+(método `toDetalleActivaDto`).
+
+---
+
+## ✅ Nuevo (2026-07-07): `existencias` por variante en `GET /v1/promociones/admin`
+
+**Qué es:** el endpoint `GET /v1/promociones/admin?pagina=&size=` ahora devuelve en cada detalle
+el stock actual (`existencias`) de la variante. Útil para que el panel admin muestre cuántos combos
+se pueden vender actualmente sin tener que ir a buscar el stock variante por variante.
+
+**Campo nuevo en cada detalle de la respuesta admin:**
+```json
+{
+  "varianteId": 12,
+  "nombreProducto": "Jean Slim",
+  "talla": "M",
+  "color": "Azul",
+  "cantidad": 1,
+  "precioEnPromocion": 220.00,
+  "imagenUrl": "...",
+  "existencias": 8
+}
+```
+`existencias` es el stock actual de esa variante. Para calcular cuántos combos completos se pueden
+vender: `Math.floor(existencias / cantidad)` por cada detalle → tomar el mínimo de todos.
+
+**El endpoint de clientes (`GET /v1/promociones/activas`) NO cambia:** sigue devolviendo
+`instanciasDisponibles` ya calculado en el back. El `existencias` crudo es solo para el panel admin.
+
+**Archivos cambiados:** `PromocionDetalleResponseDto.java` (campo `existencias` agregado),
+`PromocionServiceImpl.java` (método `toDetalleResponseDto` pasa `variante.getStock()`).
+
+**Cambios en el front (ya aplicados en esta sesión):**
+- `promocion.model.ts` — `IPromocionDetalle` tiene campo opcional `existencias?: number`.
+- Panel admin `gestion-promociones.component.html` — cada detalle muestra `(N en stock)` y el
+  encabezado de la tarjeta calcula `N combos disponibles` (mínimo entre las piezas).
+
+---
+
+## ✅ Nuevo (2026-07-07): fecha+hora completa y `productoId` en endpoints de pedidos
+
+**Motivo:** en `mis-pedidos` no se podía mostrar la hora de la compra porque el back nunca la
+guardaba (`pedidos.fecha_pedido` es columna `DATE`, sin hora). Se agregó una columna nueva
+`fecha_hora_registro` (`DATETIME`, aditiva, no reemplaza `fecha_pedido`) que se llena en cada
+pedido nuevo. **Pedidos creados antes de este cambio no tienen hora real** — el back rellena con
+medianoche (`00:00`) como fallback, no lo interpretes como que la compra fue a esa hora.
+
+**1. `GET /v1/pedidos/{id}/detalle` (`PedidoDetalleResponse`)** — dos campos nuevos:
+```json
+{
+  "fechaPedido": "2026-07-07",
+  "fechaHoraRegistro": "2026-07-07T14:32:10",
+  "detalles": [
+    { "id": 1, "productoId": 45, "varianteId": 12, "productoNombre": "Jean Slim", "talla": "M", "color": "Azul", "promocionId": 3, "promocionDescripcion": "Combo verano" }
+  ]
+}
+```
+- `fechaHoraRegistro`: ISO `LocalDateTime` (fecha+hora completa) — úsalo en vez de `fechaPedido`
+  para mostrar/formatear la hora de la compra en ticket y detalle.
+- `detalles[].productoId`: id real del producto (ya resuelto por el back incluso en líneas de
+  promoción/variante) — úsalo para armar la URL de imagen: `GET /imagen/v1/{productoId}`.
+  Antes este campo no existía en `detalles[]`, solo `varianteId`.
+
+**2. `GET /v1/pedidos/findPedido/{id}`, `findPedido/{idPedido}/{idCliente}`, `buscarClientePedido`**
+(la respuesta paginada que arma la lista de `mis-pedidos`, campo `pedido.detalles[].producto` /
+`pedido.fecha_pedido`): **NO cambia de forma (sigue siendo el mismo JSON con los mismos nombres de
+campo)**, solo cambia el **contenido** del string `fecha_pedido`: antes `"07/07/2026"`, ahora
+`"07/07/2026 14:32"` (agregó `HH:mm`). Si el front parsea esta fecha con un split fijo por `/`
+asumiendo solo `dd/mm/yyyy` (como el pipe `FechaEspanolPipe`), hay que actualizarlo para no rompa
+con el sufijo de hora.
+
+**Archivos cambiados:** `Pedido.java` (campo `fechaHoraRegistro`), `PedidoDetalleResponse.java`,
+`DetalleItemResponse.java` (campo `productoId`), `PedidoServiceImpl.java` (los 4 puntos donde se
+crea un pedido + `getDetallePedido()`), `VentaServiceImpl.java`, `AbonoServiceImpl.java`,
+`IPedidoRepository.java` (los 4 queries nativos), migración
+`migration_pedido_fecha_hora.sql` (**pendiente de aplicar en la BD** `inventario_key_qa`).
+- Panel admin `gestion-promociones.component.ts` — método `combosDisponibles(p)` calcula el
+  mínimo de `Math.floor(existencias / cantidad)` entre todas las piezas del combo.
 
 ---
 
@@ -5056,6 +5164,834 @@ en el interceptor/handler genérico:
 el error handler genérico ya muestra estos mensajes nuevos en el Swal. Es contrato de referencia
 para que sepan qué esperar al probar los 3 flujos y no se sorprendan con el `404` nuevo del caso B.
 
-**Estado:** cambio hecho localmente en rama `dev`, todavía sin commitear/pushear. Falta subir a
-`qa` y luego a `main` siguiendo el flujo normal (`dev → qa → main`); no se ha corrido ningún
-pipeline con este fix todavía.
+**Estado:** subiendo a `dev` para pruebas de QA. Falta subir a `main` siguiendo el flujo normal
+(`dev → qa → main`).
+
+---
+
+## 🔴 Fix crítico (2026-07-08): `PUT /v1/usuarios/updateUsuario/{id}` destruía la contraseña real del usuario
+
+**Bug reportado:** al editar el correo de un usuario desde el panel admin (`usuarios/update`) y dar
+"Actualizar", el back sobrescribía la contraseña real del usuario aunque el front no haya tocado
+ese campo — dejando la cuenta con una contraseña inservible.
+
+**Causa:** `UsuarioServiceImpl.updateUserDto()` hacía
+`existe.setPassword(passwordEncoder.encode(usuarioDto.getPassword()))` **sin validar** si
+`usuarioDto.getPassword()` venía `null`/vacío. Si el front no incluía el campo `password` en el
+body (el caso normal al editar solo correo/username/enabled), el back igual encriptaba ese valor
+vacío/null y lo guardaba como la contraseña real — efectivamente reseteándola sin que nadie lo
+pidiera.
+
+**Fix:** `updateUserDto()` **ya no toca el campo password en absoluto**, sin importar qué venga en
+el body. El único endpoint que puede cambiar la contraseña de un usuario sigue siendo
+`PUT /v1/usuarios/{id}/resetear-password` (genera una password aleatoria de 8 caracteres y la
+devuelve en la respuesta para que el admin se la comparta al usuario).
+
+**Acción requerida en el front:**
+- El campo `password` en el body de `PUT /v1/usuarios/updateUsuario/{id}` ya no tiene ningún
+  efecto — el back lo ignora. Se puede dejar de mandar.
+- **El formulario de edición de usuario (admin) no debe mostrar ningún campo de contraseña.** El
+  admin solo tiene 2 acciones válidas sobre la contraseña de otro usuario: el botón
+  "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) y nada más — no puede
+  fijar una contraseña arbitraria directamente.
+- El campo `username` en ese mismo formulario debe mostrarse **deshabilitado** (solo lectura) para
+  el admin — el update sigue aceptándolo en el body por compatibilidad, pero la UI no debería
+  permitir editarlo desde esta pantalla.
+
+**CORRECCIÓN (2026-07-08, segunda vuelta) — el diseño de correo de arriba cambió por completo.**
+La primera versión de este fix guardaba el correo de inmediato y solo reseteaba
+`correoVerificado`. El diseño real que se pidió es **verificar ANTES de guardar**: el correo NO se
+actualiza hasta que el código sea correcto; si el código falla/expira/se cancela, el correo real
+**nunca cambió** (no hace falta "revertir" nada porque nunca se tocó). Se agregó una columna nueva
+`usuario_modificacion.correo_pendiente` para esto — ver migración
+`migration_correo_pendiente_usuario.sql`, **pendiente de correr en dev/qa/prod**.
+
+> ⚠️ **No confundir con `Cliente.correoPendiente`** (perfil del cliente, `mis-datos`, ya existía de
+> antes) — es una columna distinta en otra tabla, con otra regla: ahí el admin SÍ puede aplicar el
+> correo directo sin verificar. Aquí (cuenta de login/`Usuario`), el admin también verifica.
+
+### 🐛 BUG CONFIRMADO EN QA (2026-07-08) — el front en `usuarios/update` llama al endpoint equivocado
+
+**Síntoma:** al cambiar el correo de otro usuario desde el panel admin, no llega ningún código al
+correo nuevo.
+
+**Causa confirmada con curl real:** el front está llamando
+`POST /v1/auth/enviar-codigo-verificacion` con body `{ "userName": "pedro" }` — **ese es el
+endpoint viejo** (verificación única post-registro, ver arriba). Ese endpoint:
+- No recibe ningún correo nuevo, solo `userName`.
+- Manda el código al correo que **ya está guardado**, no a uno nuevo.
+- Si ese correo ya está verificado (el caso normal para cualquier cuenta activa), responde `400`
+  con `"El correo ya esta verificado"` y no manda nada — por eso "no llega el correo".
+
+**Corrección necesaria en el front — reemplazar esa llamada:**
+
+| ❌ Está llamando (incorrecto para cambio de correo) | ✅ Debe llamar |
+|---|---|
+| `POST /v1/auth/enviar-codigo-verificacion` `{ "userName": "..." }` | `POST /v1/usuarios/{id}/solicitar-cambio-correo` `{ "correoNuevo": "..." }` (admin, `{id}` = id del usuario que se está editando, **no** el id del admin) |
+| `POST /v1/auth/verificar-correo` `{ "userName": "...", "codigo": "..." }` | `POST /v1/usuarios/{id}/confirmar-cambio-correo` `{ "codigo": "..." }` (admin) |
+
+Los endpoints `enviar-codigo-verificacion`/`verificar-correo` **solo sirven para la verificación
+única post-registro** — nunca para cambiar un correo ya existente, ni desde el panel admin ni
+desde self-service. Para self-service (el propio usuario cambia su correo) es la misma tabla pero
+con las rutas `/v1/auth/solicitar-cambio-correo` / `confirmar-cambio-correo` (sin `{id}`, ver el
+contrato completo abajo).
+
+**4 endpoints nuevos (2 admin, 2 self-service) — reemplazan el uso de
+`enviar-codigo-verificacion`/`verificar-correo` para este caso** (esos 2 endpoints viejos siguen
+existiendo tal cual, pero solo para la verificación inicial post-registro, no para cambios de
+correo posteriores):
+
+```
+# Admin — cambia el correo de OTRO usuario (por id)
+POST /v1/usuarios/{id}/solicitar-cambio-correo   Body: { "correoNuevo": "..." }
+POST /v1/usuarios/{id}/confirmar-cambio-correo   Body: { "codigo": "123456" }
+
+# Self-service — el propio usuario cambia SU correo (identificado por el JWT, sin id)
+POST /v1/auth/solicitar-cambio-correo            Body: { "correoNuevo": "..." }
+POST /v1/auth/confirmar-cambio-correo            Body: { "codigo": "123456" }
+```
+
+**Corrección de contrato (2026-07-08):** la primera versión de estos 4 endpoints devolvía texto
+plano (`"Codigo enviado al correo nuevo"`) en vez de JSON. Eso rompía el front porque el
+`HttpClient` esperaba JSON y tronaba al parsear un body que no lo era — el back sí mandaba el
+correo, pero el front mostraba error igual. Ya está corregido: ahora responden `ResponseGeneric<String>`,
+igual que el resto del API.
+
+- `solicitar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Codigo enviado al correo nuevo", "lista": null }`
+  (el código se manda a la dirección **nueva**, no a la actual). Leer el mensaje para mostrar desde `data` (o `mensaje` en el caso de error).
+  `400` con body `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }` si `correoNuevo` viene vacío o es igual al actual.
+  - **Nuevo (2026-07-08):** si ya había un código vigente (no expirado) para ese mismo correo nuevo — ej. el usuario le dio doble click al botón, o cerró el modal y volvió a intentar antes de que pasaran los 15 min — el back **ya no reenvía un correo nuevo**, reutiliza el código que ya mandó (evita que el usuario reciba varios correos con códigos distintos donde el último invalida a los anteriores). En ese caso `data` viene con el mensaje
+    `"Ya tienes un codigo vigente enviado a ese correo, revisa tu bandeja"` en vez de `"Codigo enviado al correo nuevo"` — sigue siendo `200`, el front puede mostrar cualquiera de los dos como texto informativo y abrir el modal del código igual en ambos casos.
+- `confirmar-cambio-correo` → `200` con body `{ "mensaje": "La peticion fue exitosa", "code": 200, "data": "Correo actualizado correctamente", "lista": null }`
+  — **solo en este momento** se actualiza el `email` real. `400` con `{ "mensaje": "<detalle del error>", "code": 404, "data": null, "lista": null }`
+  si el código es inválido/expiró — en ese caso el correo real sigue siendo el de antes, no hay que
+  hacer nada para "revertir" el campo en el front, solo mostrar `mensaje` y dejar el valor viejo.
+- El código **nunca viaja en la respuesta de la API** — solo llega por correo. El modal siempre
+  necesita un input para que el usuario/admin lo escriba.
+- Nota sobre el `code` del body en caso de error: viene `404` aunque el HTTP status real sea `400`
+  — es una particularidad de `ResponseGeneric` que ya existía en otros endpoints del API, no es
+  nuevo de esta corrección. Para detectar error en el front, usar el status HTTP (`400`), no el
+  campo `code` del body.
+
+**Front — flujo para las 2 pantallas (admin y self-service), idéntico salvo el endpoint:**
+1. Si el correo ingresado en el form es **igual** al actual → no pasa nada especial, se guarda
+   junto con los demás campos del form normal (o ni se manda, según cómo armes el form).
+2. Si es **distinto** → abrir modal, llamar `solicitar-cambio-correo` (con `{id}` si es admin, sin
+   nada si es self-service), mostrar input para el código, llamar `confirmar-cambio-correo`.
+3. Si `confirmar-cambio-correo` responde `200` → refrescar el campo `email` en pantalla con el
+   valor nuevo. Si responde `400` → mostrar el mensaje, dejar el campo como estaba, permitir
+   reintentar o cancelar.
+
+**Endpoint self-service — `PUT /v1/auth/mi-perfil` (ya NO incluye `email`):**
+
+```
+PUT /v1/auth/mi-perfil
+Authorization: Bearer <token del propio usuario>
+Content-Type: application/json
+
+Body: { "username": "string, requerido" }
+```
+Response éxito (200): `"Perfil actualizado correctamente"`. El correo se maneja exclusivamente con
+los 2 endpoints de arriba, nunca con este. Identifica la cuenta por el JWT — no hay que mandar
+ningún id.
+
+**Contraseña self-service — sin cambios respecto a la primera vuelta:** `PUT /v1/auth/cambiar-password`
+(`{ "passwordActual", "nuevaPassword" }`, ya existía antes de esta sesión) sigue siendo el único
+camino. Front: al detectar que el usuario está escribiendo en los campos de nueva contraseña, se
+debe mostrar el **mismo validador de reglas que usa el formulario de registro** (reusar ese
+componente), y solo permitir guardar si pasa esa validación y se ingresó la contraseña actual.
+
+**Resumen para el front — 2 pantallas distintas:**
+
+| Pantalla | Quién | Password | Username | Email |
+|---|---|---|---|---|
+| Admin edita a otro usuario (`usuarios/update`) | Solo ADMIN | Sin campo de password en el form. Solo botón "Restablecer contraseña" (`PUT /v1/usuarios/{id}/resetear-password`) | Deshabilitado (solo lectura) | Modal verificar-antes-de-guardar (`solicitar`/`confirmar-cambio-correo` con `{id}`) |
+| Usuario edita su propia cuenta ("Mi perfil") | Cualquier autenticado | Validador de registro + contraseña actual obligatoria, vía `PUT /v1/auth/cambiar-password` | Editable, `PUT /v1/auth/mi-perfil` | Modal verificar-antes-de-guardar (`solicitar`/`confirmar-cambio-correo` sin id) |
+
+**Pendiente:** correr `migration_correo_pendiente_usuario.sql` en todos los ambientes antes de que
+el flujo de correo funcione.
+
+**Solo en `dev` por ahora**, pendiente de subir a `qa`/`main`.
+
+---
+
+## 🆕 Consultar cambio de correo pendiente (2026-07-08) — reemplaza guardar estado en el navegador
+
+**Motivo:** se detectó que la implementación actual en el front (`mi-perfil.component.ts`) guarda
+el correo pendiente en `sessionStorage` (`cambio_correo_self`) para sobrevivir a un refresh de
+página mientras el código de verificación sigue vigente (15 min). Esto funciona pero tiene un bug:
+la clave de `sessionStorage` no distingue usuario — si el usuario A pide un cambio de correo y
+cierra sesión sin confirmar/cancelar, y el usuario B inicia sesión en la **misma pestaña**, al
+cargar `mi-perfil` se restaura el correo pendiente de A en el formulario de B. Además, el front
+adivina el tiempo de expiración (15 min contados desde el navegador) en vez de usar el real del
+back.
+
+**Se agregaron 2 endpoints GET para que el front deje de usar `sessionStorage`/`localStorage` para
+esto y consulte el estado real al back** (que ya lo persistía en BD, columna
+`usuario.correo_pendiente` + `usuario.codigo_verificacion_expira`):
+
+```
+GET /v1/auth/cambio-correo-pendiente              (self-service, identifica por JWT)
+GET /v1/usuarios/{id}/cambio-correo-pendiente     (admin, de OTRO usuario por id)
+```
+
+**Response (200), igual en ambos:**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "pendiente": true,
+    "correoPendiente": "nuevo@correo.com",
+    "expiraEn": "2026-07-08T14:35:00"
+  },
+  "lista": null
+}
+```
+- `pendiente: false` (con `correoPendiente`/`expiraEn` en `null`) si no hay cambio en curso, **o si
+  el código ya expiró** — en ese caso el front debe tratarlo como "no hay nada pendiente" (no
+  reabrir el modal), aunque el dato siga en BD hasta el próximo `solicitar-cambio-correo`.
+- `expiraEn` es la fecha/hora real de expiración (formato ISO local, sin zona) — úsala para mostrar
+  cuenta regresiva o decidir si vale la pena reabrir el modal, en vez de una regla fija de 15 min
+  del lado del front.
+
+**Acción pendiente para el front (no implementada por el back, es cambio de front):**
+- Reemplazar la lógica de `sessionStorage.getItem('cambio_correo_self')` en
+  `mi-perfil.component.ts` (`ngOnInit` → `restaurarCambioCorreoPendiente()`) por una llamada a
+  `GET /v1/auth/cambio-correo-pendiente` al cargar el componente. Si `pendiente: true`, mostrar el
+  banner/estado de "verificación en curso" con `correoPendiente`; si `false`, no mostrar nada — ya
+  no hace falta leer ni escribir `sessionStorage` para esto.
+- Aplicar el mismo cambio en la pantalla admin de edición de usuario (`usuarios/update`), usando
+  `GET /v1/usuarios/{id}/cambio-correo-pendiente` en vez de cualquier storage local equivalente que
+  tenga esa pantalla.
+- Ya no es necesario limpiar manualmente ninguna key de `sessionStorage`/`localStorage` al
+  confirmar o cancelar — simplemente dejar de mostrar el banner tras la respuesta del backend
+  (`confirmar-cambio-correo` exitoso, o el usuario cancela en el front sin llamar a nada, ya que el
+  back no expone un endpoint de "cancelar" — el pendiente se sobreescribe solo la próxima vez que
+  se llame `solicitar-cambio-correo`, o expira solo a los 15 min).
+
+**En `dev`, pendiente de subir a `qa`/`main`.**
+
+---
+
+## 🆕 Independizar una variante en su propio producto (2026-07-07)
+
+**Caso de uso:** el admin capturó mal el código de barras de un producto con varias variantes, o
+simplemente decide que una variante ya merece ser su propio producto. La variante conserva toda su
+info (talla, color, imagen, stock) — la operación crea un producto nuevo a partir de ella, con su
+propio código de barras.
+
+```
+POST /variantes/v1/{varianteId}/independizar
+Authorization: Bearer <token admin>
+Content-Type: application/json
+```
+
+**Request** — mismo shape que crear un producto normal, más el código de barras nuevo obligatorio.
+El front prellena estos campos abriendo el mismo formulario de "crear producto":
+
+```json
+{
+  "nombre": "string, requerido",
+  "descripcion": "string",
+  "marca": "string",
+  "color": "string",
+  "contenido": "string",
+  "piezas": 0.0,
+  "precioCosto": 0.0,
+  "precioVenta": 0.0,
+  "precioRebaja": 0.0,
+  "palabraClaveId": 1,
+  "codigoBarras": "string, requerido, debe ser nuevo (no existir ya en otro producto)",
+  "imagenPrincipalId": 123
+}
+```
+
+**Precarga de campos en el front** (el back solo recibe lo que venga en el body, no le importa de
+dónde lo sacó el front):
+
+| Campo | Prioridad 1 | Si viene null/vacío, cae a |
+|---|---|---|
+| `nombre` | — | **Producto origen** (la variante no tiene `nombre`) |
+| `descripcion` | Variante | Producto origen |
+| `marca` | Variante | Producto origen |
+| `color` | Variante | Producto origen |
+| `contenido` | Variante (`contenidoNeto`) | Producto origen (`contenido`) |
+| `piezas` | — | **Producto origen** (la variante no tiene `piezas`, es `NOT NULL` en BD) |
+| `precioCosto`/`precioVenta`/`precioRebaja` | — | Producto origen (la variante no tiene precio propio) |
+| `palabraClaveId` | Variante | Producto origen |
+| `codigoBarras` | — | **Siempre vacío** — es el dato nuevo que captura el admin |
+
+- `imagenPrincipalId` opcional — solo si la variante tenía más de una imagen y el admin quiere
+  elegir cuál queda como principal. Con 1 sola imagen el back la usa automático.
+- **No se manda `stock`** — se calcula solo, a partir del stock de la variante (se resta del
+  producto origen y se asigna al producto nuevo, sin duplicar ni perder unidades).
+- El campo `stock` no se muestra editable en el modal; si se quiere mostrar informativo, usar el
+  stock actual de la variante.
+
+**Response (éxito, 201):**
+```json
+{
+  "mensaje": "La peticion fue exitosa",
+  "code": 200,
+  "data": {
+    "productoNuevoId": 456,
+    "codigoBarras": "cod-nuevo-123",
+    "stockProductoOrigenRestante": 2
+  }
+}
+```
+
+**Errores esperados:**
+| Caso | HTTP | Mensaje |
+|---|---|---|
+| `varianteId` no existe | `404` | `"No existe la variante con id: {id}"` |
+| Código de barras vacío/no enviado | `404` | `"El codigo de barras es requerido"` |
+| Código de barras ya usado por otro producto | `409` | `"El codigo de barras {codigo} ya esta en uso por otro producto"` |
+
+**Flujo en el front:**
+1. Botón "Independizar" en el detalle de una variante (solo admin).
+2. Abre el formulario de "crear producto" prellenado según la tabla de arriba, todo editable.
+3. Campo obligatorio adicional: código de barras nuevo (distinto al del producto origen). El front
+   puede validar que no venga vacío; la validación de "no duplicado" la hace el back.
+4. Al confirmar, llama al endpoint. Si responde `409`/`400` por código duplicado, muestra el
+   mensaje tal cual y deja el formulario abierto — no se tocó stock ni la variante en ese caso.
+5. Tras éxito (`201`): refrescar el producto origen (usar `data.stockProductoOrigenRestante`, no
+   hace falta volver a pedir el producto completo), refrescar la lista de variantes del producto
+   origen (la variante ya no debe aparecer ahí), y navegar/mostrar el producto nuevo
+   (`data.productoNuevoId` + `data.codigoBarras`).
+
+**Solo ADMIN** (mismo matcher genérico de `/variantes/**`). Contrato completo también en
+`PLAN_MEJORAS.md` sección 16. **En `dev`, pendiente de subir a `qa`/`main`.**
+
+---
+
+## 🆕 Reporte de promociones — cuántos combos se han vendido y ganancia por promoción (2026-07-13)
+
+**Endpoint nuevo, no existía nada parecido antes:**
+
+```
+GET /v1/reportes/ventas/promociones?desde=2026-07-01&hasta=2026-07-31
+Authorization: Bearer <token admin>
+```
+
+`desde` y `hasta` son **opcionales** (`yyyy-MM-dd`). Sin ellos, trae el histórico completo desde
+que existe la promoción. Si se manda solo uno de los dos, filtra solo por ese límite.
+
+**Solo ADMIN** — mismo matcher genérico ya existente (`/v1/reportes/**` → `hasRole("ADMIN")`), no
+requirió tocar `SecurityConfig`.
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "promocionId": 7,
+      "descripcion": "Combo Jean + Blusa",
+      "combosVendidos": 14,
+      "numeroTransacciones": 9,
+      "ventaTotal": 4900.00,
+      "gananciaTotal": 1750.00,
+      "ultimaVenta": "2026-07-12"
+    },
+    {
+      "promocionId": 3,
+      "descripcion": "Combo Verano",
+      "combosVendidos": 0,
+      "numeroTransacciones": 0,
+      "ventaTotal": 0.0,
+      "gananciaTotal": 0.0,
+      "ultimaVenta": null
+    }
+  ]
+}
+```
+Ordenado por `combosVendidos` descendente (los más vendidos primero). **Incluye promociones sin
+ninguna venta** (aparecen con todo en 0 y `ultimaVenta: null`) — así el admin ve también las que no
+han pegado, no solo las exitosas.
+
+**Qué significa cada campo:**
+- `combosVendidos`: número de combos completos vendidos, **no piezas sueltas**. Si el combo es
+  Jean+Blusa y se vendieron 14 combos, son 28 filas de venta por dentro (14 jeans + 14 blusas), pero
+  el campo ya reporta 14 — el cálculo evita contar de más cuando el combo tiene varias piezas.
+- `numeroTransacciones`: en cuántas ventas/pedidos distintos apareció esta promoción (un cliente que
+  compra 2 combos en un solo ticket cuenta como 1 transacción con 2 combos).
+- `ventaTotal` / `gananciaTotal`: suma real de lo vendido y la ganancia de esa promoción en el rango
+  de fechas — viene directo de los registros de venta ya guardados (`detalle_venta_variantes`), no
+  es una estimación.
+- `ultimaVenta`: fecha (sin hora) de la venta más reciente que incluyó esta promoción.
+
+**No es un cambio de contrato de nada existente** — es un endpoint nuevo, no toca `/promociones/**`
+ni ningún flujo de venta/carrito ya documentado.
+
+**Falta hacer:**
+- ⏳ Subir de `dev` a `qa` (por ahora solo en `dev`).
+- ⏳ No hay pantalla en el front para esto todavía — hay que armar una vista nueva (ej. dentro de
+  "🎁 Gestión Promociones" o como pestaña "Reportes"), no reemplaza ni modifica ninguna pantalla
+  existente.
+- Sugerido para la vista: tabla con las columnas de arriba, filtro de rango de fechas (opcional,
+  puede arrancar sin filtro mostrando todo), ordenado ya viene del back por más vendidos.
+
+**Archivos back:** `PromocionReporteDto.java` (nuevo), `IPromocionRepository.java` (query
+`reportePromociones`), `ReporteVentasServiceImpl.java` / `IReporteVentasService.java`,
+`ReporteVentasController.java`.
+
+---
+
+## 🆕 Filtros de búsqueda en el catálogo público (2026-07-13)
+
+**Primera de 3 mejoras acordadas para la página pública** (filtros → favoritos → reseñas, se van
+agregando una por una). **No requiere correr ningún SQL** — no se tocó ninguna tabla, son queries
+nuevas sobre columnas que ya existen.
+
+### 1. Catálogo filtrado
+
+```
+GET /variantes/v1/buscar-filtrado?termino=&precioMin=&precioMax=&talla=&color=&marca=&pagina=1&size=10
+```
+
+Pública (no requiere login), igual que `/variantes/v1/buscar`. **Todos los parámetros son
+opcionales** — mandar solo los que el usuario haya elegido, el resto se omite o se manda vacío:
+
+| Parámetro | Tipo | Notas |
+|---|---|---|
+| `termino` | string | Busca en nombre de producto, marca, palabra clave y código de barras (como hoy) |
+| `precioMin` / `precioMax` | number | Filtra por `producto.precioVenta`. Se puede mandar solo uno de los dos |
+| `talla` | string | **Match exacto** (no `LIKE`) — pensado para venir de un dropdown, no de texto libre |
+| `color` | string | Match exacto, mismo criterio que talla |
+| `marca` | string | Match exacto, mismo criterio que talla |
+| `pagina` / `size` | int | Igual que el resto de endpoints paginados |
+
+Todos los filtros se combinan con **AND** (ej. `talla=M&color=Azul` → solo variantes M Y azules).
+
+**Diferencia importante con `/variantes/v1/buscar` (el buscador de texto que ya existe):**
+`/buscar` hace una cascada (busca por código → si no hay nada por palabra clave → si no hay nada
+por nombre) y **lanza error 404 si no encuentra nada**. `/buscar-filtrado` es un único query con
+todos los filtros combinados y **devuelve lista vacía `"t": []`** si no hay resultados — no hay que
+capturar un error para el caso "sin resultados", solo revisar si `t` viene vacío. Uno no reemplaza
+al otro: `/buscar` sigue igual para el buscador de texto simple; `/buscar-filtrado` es para cuando
+el usuario además aplica filtros.
+
+**Response 200** — mismo shape que `/variantes/v1/buscar` (no cambia nada de `VarianteResumenDto`):
+```json
+{
+  "data": {
+    "pagina": 1,
+    "totalPaginas": 3,
+    "totalRegistros": 27,
+    "t": [
+      {
+        "id": 12, "talla": "M", "descripcion": "...", "color": "Azul", "presentacion": "...",
+        "stock": 8, "marca": "Levi's", "contenidoNeto": null, "imagenUrl": "...",
+        "precio": 300.00, "codigoBarras": "GLPD-066", "nombreProducto": "Jean Slim", "habilitado": "1"
+      }
+    ]
+  }
+}
+```
+
+**Mismas reglas de visibilidad que el resto del catálogo público:** solo variantes con
+`stock > 0`, producto habilitado, variante habilitada y con al menos una imagen — igual que
+`/variantes/v1/buscar` para clientes no-admin.
+
+### 2. Valores disponibles para armar los filtros (dropdowns/slider)
+
+```
+GET /variantes/v1/filtros-disponibles
+```
+
+Pública, sin parámetros. Devuelve los valores que **realmente existen** en el catálogo visible
+ahora mismo, para que el front no tenga que adivinar qué mostrar en los dropdowns ni mostrar
+opciones que no van a dar resultados:
+
+```json
+{
+  "data": {
+    "tallas": ["CH", "M", "G", "32", "34"],
+    "colores": ["Azul", "Negro", "Rojo"],
+    "marcas": ["Levi's", "Zara", "Bershka"],
+    "precioMin": 89.0,
+    "precioMax": 1250.0
+  }
+}
+```
+`precioMin`/`precioMax` son el rango real del catálogo — úsalo para los límites del slider de
+precio. Si el catálogo estuviera vacío, las listas vienen vacías y los precios vienen `null`.
+
+**Sugerencia de flujo en el front:** al entrar a la pantalla de catálogo, llamar primero a
+`filtros-disponibles` para pintar los controles (dropdowns de talla/color/marca + slider de
+precio con esos límites), y usar `buscar-filtrado` cada vez que el usuario cambie algún filtro.
+
+**Archivos back:** `FiltrosDisponiblesDto.java` (nuevo), `IVarianteRepository.java`
+(`buscarVariantesPublicoFiltrado`, `findTallasDisponiblesPublico`, `findColoresDisponiblesPublico`,
+`findMarcasDisponiblesPublico`, `findRangoPreciosPublico`), `VarianteServiceImpl.java`,
+`VarianteController.java` (`/v1/buscar-filtrado`, `/v1/filtros-disponibles`).
+
+**⏳ Pendiente:** subir de `dev` a `qa` (por ahora solo en `dev`, sin push todavía).
+
+---
+
+## 🆕 Favoritos (2026-07-13)
+
+**Segunda de las 3 mejoras acordadas para la página pública.** Tabla nueva `favorito`.
+
+**⚠️ Requiere correr SQL antes de probar** — `src/main/resources/static/migration_favoritos_resenas.sql`
+(crea `favorito` y `resena`, ver sección de reseñas abajo). Correr en dev/qa/prod según se vaya
+subiendo cada ambiente.
+
+**Todo bajo `/v1/favoritos/**` requiere estar logueado.** Además, el usuario logueado necesita
+tener un `Cliente` asociado (no basta con tener cuenta de `Usuario`) — si el registro no se
+completó, cualquier llamada regresa `400` con `"Tu cuenta todavia no tiene un perfil de cliente
+completo"`. Es el mismo caso ya documentado para otros flujos de "datosCompletos".
+
+### 1. Agregar a favoritos
+
+```
+POST /v1/favoritos/{varianteId}
+Authorization: Bearer <token>
+```
+Sin body. Si ya estaba en favoritos, no truena ni duplica — simplemente no hace nada (idempotente).
+
+**Response 200:**
+```json
+{ "mensaje": "Agregado a favoritos", "code": 200, "data": "Agregado a favoritos" }
+```
+**Response 400:** `"No existe la variante con id: {id}"` si el id no existe.
+
+### 2. Quitar de favoritos
+
+```
+DELETE /v1/favoritos/{varianteId}
+Authorization: Bearer <token>
+```
+Idempotente también — si no estaba en favoritos, no truena.
+
+### 3. Listar mis favoritos (paginado, con datos completos de la variante)
+
+```
+GET /v1/favoritos?pagina=1&size=10
+Authorization: Bearer <token>
+```
+
+**Response 200** — mismo `VarianteResumenDto` que ya usa `/variantes/v1/buscar`, ordenado por fecha
+en que se agregó (más reciente primero):
+```json
+{
+  "data": {
+    "pagina": 1, "totalPaginas": 1, "totalRegistros": 3,
+    "t": [
+      { "id": 12, "talla": "M", "color": "Azul", "stock": 8, "marca": "Levi's",
+        "imagenUrl": "...", "precio": 300.00, "codigoBarras": "GLPD-066",
+        "nombreProducto": "Jean Slim", "habilitado": "1" }
+    ]
+  }
+}
+```
+
+### 4. Solo los IDs (para marcar el corazón en el catálogo sin pedir todo el objeto)
+
+```
+GET /v1/favoritos/ids
+Authorization: Bearer <token>
+```
+
+**Response 200:**
+```json
+{ "data": [12, 45, 89] }
+```
+**Uso sugerido:** al entrar a cualquier pantalla de catálogo, pedir esta lista una vez y guardarla
+en memoria del front; comparar cada `varianteId` visible contra este array para pintar el corazón
+lleno/vacío, en vez de preguntarle al back "¿es favorito?" variante por variante.
+
+**Archivos back:** `Favorito.java` (entidad nueva), `IFavoritoRepository.java`,
+`FavoritoServiceImpl.java`, `FavoritoController.java`, `resumenPorIds()` agregado a
+`VarianteServiceImpl.java` (reutiliza el armado de imágenes/precio que ya usa `/buscar`).
+
+---
+
+## 🆕 Reseñas y calificaciones (2026-07-13)
+
+**Tercera de las 3 mejoras.** Tabla nueva `resena`. **Mismo SQL que favoritos** (arriba) — un solo
+archivo crea las 2 tablas.
+
+**Regla de negocio clave: solo se puede reseñar lo que ya se compró.** El back valida que exista un
+registro de venta real (`detalle_venta_variantes`, mismas tablas que usa el reporte de ventas) del
+cliente logueado para esa variante — no basta con tenerla en el carrito ni con un pedido sin pagar.
+Si no compró, `POST` regresa `400` con `"Solo puedes resenar productos que hayas comprado"`.
+
+**Moderación: publicación inmediata, sin cola de aprobación.** La reseña se ve en el catálogo en
+cuanto se crea. El dueño puede editarla o borrarla cuando quiera; un ADMIN puede borrar cualquier
+reseña (mismo endpoint `DELETE`, el back decide el permiso según quién llama) — es la forma de
+quitar contenido inapropiado, no hay pantalla de "pendientes por aprobar". Si más adelante
+prefieren aprobación previa en vez de esto, avisen antes de que el front dependa de que todo se
+publique al instante.
+
+**Un cliente = una reseña por variante** (no puede dejar 5 reseñas del mismo producto) — para
+cambiar de opinión usa `PUT` (editar), no crear otra.
+
+### 1. Crear reseña
+
+```
+POST /v1/resenas
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "varianteId": 12, "calificacion": 5, "comentario": "Me encantó, talla exacta" }
+```
+`comentario` es opcional (puede ir `null` o vacío, solo calificación). `calificacion` es
+obligatorio, entero 1-5.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "id": 34,
+    "varianteId": 12,
+    "calificacion": 5,
+    "comentario": "Me encantó, talla exacta",
+    "fechaCreacion": "2026-07-13T18:40:00",
+    "nombreCliente": "Ana G.",
+    "esPropia": true
+  }
+}
+```
+`nombreCliente` ya viene recortado a nombre + inicial del apellido paterno (privacidad) — no
+mandar el nombre completo del cliente en ningún lado del front para esto.
+
+**Response 400:**
+- `"La calificacion debe ser un numero entre 1 y 5"`
+- `"Solo puedes resenar productos que hayas comprado"`
+- `"Ya dejaste una resena para este producto, puedes editarla en vez de crear otra"`
+- `"Tu cuenta todavia no tiene un perfil de cliente completo"`
+
+### 2. Editar mi reseña
+
+```
+PUT /v1/resenas/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "calificacion": 4, "comentario": "Actualizo: la talla me quedó algo grande" }
+```
+Solo el dueño puede editar la suya — `400` con `"No puedes editar la resena de otro cliente"` si
+se intenta con el id de otro. `varianteId` no se manda (no se puede reasignar una reseña a otra
+variante).
+
+**Response 200:** mismo shape que crear.
+
+### 3. Eliminar reseña
+
+```
+DELETE /v1/resenas/{id}
+Authorization: Bearer <token>
+```
+El dueño borra la suya. Un ADMIN puede borrar cualquiera (moderación) — mismo endpoint, el back
+distingue por rol. Si un cliente normal intenta borrar la de otro: `400` con `"No puedes eliminar
+la resena de otro cliente"`.
+
+**Response 200:**
+```json
+{ "mensaje": "Resena eliminada", "code": 200, "data": "Resena eliminada" }
+```
+
+### 4. Listar reseñas de un producto (pública, no requiere login)
+
+```
+GET /v1/resenas/variante/{varianteId}?pagina=1&size=10
+```
+Sin `Authorization`, funciona igual — pero si se manda el token, cada reseña trae `esPropia: true`
+en la que corresponde al usuario logueado (para mostrarle botones de editar/borrar solo en esa).
+Sin token, todas vienen con `esPropia: false`.
+
+**Response 200:**
+```json
+{
+  "data": {
+    "pagina": 1, "totalPaginas": 1, "totalRegistros": 2,
+    "t": [
+      { "id": 34, "varianteId": 12, "calificacion": 5, "comentario": "Me encantó, talla exacta",
+        "fechaCreacion": "2026-07-13T18:40:00", "nombreCliente": "Ana G.", "esPropia": true },
+      { "id": 31, "varianteId": 12, "calificacion": 4, "comentario": null,
+        "fechaCreacion": "2026-07-10T12:00:00", "nombreCliente": "Luis M.", "esPropia": false }
+    ]
+  }
+}
+```
+Ordenado por más reciente primero.
+
+### 5. Resumen — promedio y conteo por estrella (para la ficha del producto)
+
+```
+GET /v1/resenas/variante/{varianteId}/resumen
+```
+Pública, sin parámetros de paginación (es un solo objeto).
+
+**Response 200:**
+```json
+{
+  "data": {
+    "varianteId": 12,
+    "promedio": 4.5,
+    "totalResenas": 2,
+    "conteoPorEstrella": { "1": 0, "2": 0, "3": 0, "4": 1, "5": 1 }
+  }
+}
+```
+`conteoPorEstrella` siempre trae las 5 llaves (1 a 5) aunque no haya reseñas de esa calificación —
+no hay que validar `undefined` en el front, si no hay ninguna la clave existe con valor `0`.
+`promedio` viene `0.0` (no `null`) cuando `totalResenas` es `0` — mostrar el estado "sin reseñas
+todavía" cuando `totalResenas === 0`, no cuando `promedio === 0`.
+
+**Sugerencia de flujo:** llamar a `/resumen` al cargar la ficha del producto (para las estrellitas
+junto al precio) y a `/variante/{id}` (sin `/resumen`) solo cuando el usuario abre la sección de
+reseñas completa — son 2 llamadas separadas a propósito, para no traer todos los comentarios si
+solo se va a mostrar el promedio.
+
+### 6. Mis reseñas (requiere login)
+
+```
+GET /v1/resenas/mis-resenas?pagina=1&size=10
+Authorization: Bearer <token>
+```
+Mismo shape que el listado por variante, pero solo las del cliente logueado, de cualquier
+producto. Útil para una pantalla "Mis reseñas" en el perfil del cliente.
+
+**Archivos back:** `Resena.java` (entidad nueva), `IResenaRepository.java`, DTOs en
+`models/resenas/` (`ResenaRequestDto`, `ResenaEditarDto`, `ResenaResponseDto`, `ResenaResumenDto`),
+`ResenaServiceImpl.java`, `ResenaController.java`. También se agregó
+`existsByVariante_IdAndVenta_Cliente_Id` a `IDetalleVentaVarianteRepository.java` (valida la
+compra) y `currentUsuarioOpt()` a `AuthenticationUtils.java` (para que el listado público sepa
+"es mío" sin reventar cuando no hay token).
+
+**⏳ Pendiente:** correr `migration_favoritos_resenas.sql` en el ambiente que corresponda antes de
+probar, y subir de `dev` a `qa`.
+
+---
+
+## 🐛 Fix (2026-07-13): búsqueda por código de barras era EXACTA, no parcial — reportado por el usuario
+
+**Síntoma reportado:** buscar `glpd` en el buscador de productos no traía nada, aunque existe el
+producto "Mochila Prada" con código de barras `GLPD-066`. En variantes pasaba lo mismo con el
+buscador normal (`/variantes/v1/buscar`, usado también dentro del buscador de variantes de
+"Gestión Promociones") — pero el filtro admin "con stock" **sí** encontraba las variantes, aunque
+según el reporte "la promoción decía que no había productos" cuando en realidad el stock existía
+(1 de cada variante).
+
+**Causa raíz (una sola, repetida en 3 lugares):** el "paso 1" del buscador (código de barras) en
+`ProductosServiceImpl.findNombreOrCodigoBarra` y en `VarianteServiceImpl.buscarPorCodigoBarrasPaginado`
+(camino ADMIN) usaba métodos de Spring Data con **coincidencia EXACTA** (`= :codigoBarras`, o el
+derived method `findByProductoCodigoBarrasCodigoBarras` sin `Containing`) en vez de `LIKE
+%texto%`. Es decir: escribir `glpd` nunca iba a encontrar `GLPD-066` porque no son *iguales*, solo
+un texto que *contiene* al otro. Solo el nombre (paso 3) ya usaba `LIKE`, pero como "glpd" tampoco
+está en el nombre "Mochila Prada", tampoco aparecía por ahí — de ahí que pareciera que la búsqueda
+completa no funcionaba, cuando en realidad solo fallaba el primer paso (código) sin caer
+correctamente a nada más.
+
+**Por qué el filtro "con stock" (`/variantes/v1/admin/filtrar` y el equivalente de productos) sí
+funcionaba:** esos endpoints usan una query distinta (`buscarVariantesAdmin` / `buscarProductosAdmin`)
+que **siempre** fue `LIKE` — nunca tuvieron el bug. Por eso la variante con stock=1 sí aparecía ahí
+pero no en el buscador normal ni en el buscador de "Gestión Promociones" (que reutiliza
+`/variantes/v1/buscar`): dos implementaciones de "buscar" con comportamiento distinto para el mismo
+caso de uso.
+
+**Fix aplicado:** el paso 1 (código de barras) de ambos buscadores ahora usa `LIKE
+%texto%` igual que el paso 3 (nombre) y que los filtros admin — un código de barras completo
+(escaneado) sigue encontrando el match exacto igual que antes (`LIKE '%GLPD-066%'` también es
+`true` para el texto exacto), pero ahora **además** funciona escribir solo una parte.
+
+**No cambia el contrato** (mismos endpoints, mismo shape de response) — cambia el comportamiento:
+ahora estos 2 endpoints pueden regresar **más de un resultado** cuando antes el "paso 1" solo podía
+regresar 0 o exactamente 1 (coincidencia exacta). Si el front tenía lógica que asumía "si
+encontró por código, es un solo producto", hay que revisarla — ahora es una lista paginada normal
+como los otros pasos.
+
+**Archivos:** `IProductosRepository.java` (`findByCodigoBarrasContainingAdmin`,
+`findByCodigoBarrasPublicoContaining` nuevos), `ProductosServiceImpl.java`
+(`findNombreOrCodigoBarra`), `IVarianteRepository.java`
+(`findByProductoCodigoBarrasCodigoBarrasContainingIgnoreCase` nuevo), `VarianteServiceImpl.java`
+(`buscarPorCodigoBarrasPaginado`). Los métodos de coincidencia exacta **no se tocaron** — siguen
+existiendo y se usan a propósito en otros lugares (validar duplicados al guardar, escaneo de
+código de barras en venta directa) donde sí se necesita exacto, no parcial.
+
+**⚠️ Importante para probar el fix:** estos buscadores están cacheados (`@Cacheable`,
+`buscarNombreOrCodigoBarrasCache` / `variantesCodigoBarrasCache`). Si ya buscaste `glpd` antes del
+fix y quedó un resultado vacío en caché, puede que sigas viendo "sin resultados" hasta que se
+limpie. Limpiar con `DELETE /v1/admin/cache` (ADMIN) después de desplegar, antes de volver a
+probar.
+
+---
+
+## 🆕 Reclamo de venta de mostrador — para que el cliente aparezca en la rifa (2026-07-13)
+
+**Problema que resuelve:** un cliente compra en mostrador pero, por cualquier razón, la venta se
+registra con `ClienteSinRegistro` en vez de con su cuenta real. Esa venta sí genera un Pedido por
+detrás (todo venta directa normal crea uno), pero queda ligado al registro "sin cuenta", no al
+cliente real — por lo que no se puede vincular su historial de compras a su perfil. Ahora el
+cliente puede "reclamar" esa venta desde la app y quedar vinculado.
+
+**Flujo:**
+1. Al guardar una venta directa (`POST /v1/ventas/save`) con `clienteSinRegistroDto` que trae
+   `correo_Electronico`, el backend genera un código UUID y lo **envía por correo** a esa
+   dirección (asunto "Reclama tu compra — Novedades Jade"). No se expone en la respuesta del save.
+2. El cliente inicia sesión en la app y captura ese código.
+
+### `POST /v1/ventas/reclamar` — NUEVO, requiere estar autenticado (cualquier cliente, no ADMIN)
+**Request:**
+```json
+{ "codigo": "3fa85f64-5717-4562-b3fc-2c963f66afa6" }
+```
+**Response 200:**
+```json
+{ "data": "Compra vinculada a tu cuenta" }
+```
+
+**Errores (400, `mensaje`):**
+| `mensaje` | Causa |
+|---|---|
+| `Debes indicar el código` | body sin `codigo` o vacío |
+| `Código inválido` | no existe ninguna venta con ese `codigoReclamo` |
+| `Este código ya fue utilizado` | esa venta ya fue reclamada antes (un código solo sirve **una vez**) |
+| `Tu cuenta todavía no tiene un perfil de cliente completo` | el usuario logueado no tiene `Cliente` asociado |
+| `El correo de tu cuenta no coincide con el de esta compra` | el correo de la cuenta logueada no es el mismo al que se envió el código (capa extra de seguridad — evita reclamar con una cuenta distinta si el código se reenvía) |
+
+**Qué cambia en el backend al reclamar:** la `Venta.cliente` y el `Pedido.cliente` que la
+respalda quedan asignados al cliente autenticado (antes solo tenían `clienteSinRegistro`). Esto
+es lo que hace que, al armar una rifa con `GET /v1/concursante/clientesPorMes?mes=YYYY-MM`, ese
+cliente aparezca en la lista de compradores de ese mes — esa consulta lee de `pedidos`, no de
+`ventas`, por eso se propaga también al pedido. La rifa a la que puede entrar queda **limitada al
+mes de la venta**: si compró en enero, ese cliente solo aparece en `clientesPorMes?mes=2026-01`,
+no en meses posteriores.
+
+### ⚠️ Naming — no usar la palabra "reclamo" de cara al cliente
+
+El endpoint y los métodos internos se llaman `reclamar`/`reclamo` porque es el término técnico
+más corto, pero **en la UI del cliente no debe aparecer esa palabra** — en español "reclamo" se
+lee como queja/reclamación, no como "esta compra es mía, agrégala a mi cuenta". El correo que ya
+se envía usa el texto "Agregar mi compra"; el front debe seguir esa misma línea:
+
+| Elemento | Texto sugerido |
+|---|---|
+| Nombre de la pantalla/opción de menú | "Agregar mi compra" |
+| Botón de acción | "Agregar compra" |
+| Campo de captura | "Código de tu compra" (el UUID que llegó por correo) |
+| Mensaje de éxito | "Tu compra quedó agregada a tu cuenta" |
+| Error: código ya usado | "Este código ya fue usado" |
+| Error: código inválido | "No encontramos ese código, revisa que esté bien copiado" |
+| Error: correo no coincide | "Este código pertenece a otra cuenta" |
+
+### 📝 Flujo de UI sugerido (pendiente — para cuando se construya el front)
+
+Esto **todavía no está construido en el front**, queda anotado aquí para retomarlo:
+
+1. **Dónde vive:** dentro de "Mi cuenta" / perfil del cliente, como una opción más de menú
+   ("Agregar mi compra"), no como una pantalla que se muestre sola — el cliente entra ahí solo
+   cuando recibió el correo y decide capturar el código.
+2. **Pantalla:** un solo campo de texto para pegar/escribir el código + botón "Agregar compra".
+   No hace falta mostrar nada más (ni monto, ni productos) porque el backend no expone el detalle
+   de la venta en este endpoint, solo confirma o rechaza.
+3. **Alternativa a evaluar más adelante:** en vez de que el cliente tenga que ir a buscar la
+   opción en el menú, se le podría notificar dentro de la app (banner/notificación push) cuando
+   detecte que tiene un correo de este tipo pendiente — no implementado, es solo una idea a
+   futuro, no bloquea el llegar a construir la versión simple del punto 2.
+4. **Después de agregar exitosamente:** no hay nada más que mostrarle al cliente en el momento
+   (no ve si ganó o no rifa, eso es otro flujo, del admin) — solo el mensaje de éxito.

@@ -114,7 +114,7 @@
     <div class="rf-card__head rf-card__head--blue">
       <span class="rf-card__step">B</span>
       <div>
-        <h4 class="rf-card__title">Variantes a rifar</h4>
+        <h4 class="rf-card__title">Productos a rifar</h4>
         <p class="rf-card__sub">{{ variantesRifa.length }} variante(s) agregada(s)</p>
       </div>
       <button class="rf-btn rf-btn--sm rf-btn--outline ms-auto"
@@ -149,7 +149,7 @@
             </div>
             <div class="rf-var-card__row">
               <span class="rf-var-card__stock">Stock: {{ v.variante?.stock }}</span>
-              <span class="rf-var-card__codigo" *ngIf="v.variante?.codigoBarras">{{ v.variante?.codigoBarras }}</span>
+              <span class="rf-var-card__codigo" *ngIf="v.variante?.codigoBarras">{{ v.variante?.codigoBarras | uppercase }}</span>
             </div>
             <div class="rf-var-card__clave">🔑 {{ v.palabraClave }}</div>
             <div class="rf-var-card__giro">Giro ganador: {{ v.giroGanador }}</div>
@@ -188,7 +188,7 @@
           </div>
           <div class="rf-hover-modal__row" *ngIf="varianteHover.variante?.codigoBarras">
             <span class="rf-hover-modal__label">Código</span>
-            <span class="rf-hover-modal__code">{{ varianteHover.variante?.codigoBarras }}</span>
+            <span class="rf-hover-modal__code">{{ varianteHover.variante?.codigoBarras | uppercase }}</span>
           </div>
         </div>
       </div>
@@ -199,7 +199,7 @@
           <div class="rf-search-box">
             <span>🔍</span>
             <input class="rf-search-input" type="text"
-                   placeholder="Buscar variante por nombre, color, talla o código…"
+                   placeholder="Buscar producto por nombre, color, talla o código…"
                    [value]="terminoBusca"
                    (input)="onBuscarVariante($event)"
                    autocomplete="off"
@@ -212,7 +212,7 @@
               <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
               <span class="rf-dropdown__meta">
                 Stock {{ v.stock }}
-                <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras }}</span>
+                <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span>
               </span>
             </div>
           </div>
@@ -247,7 +247,7 @@
         <button class="rf-btn rf-btn--primary"
                 (click)="guardarVarianteRifa()"
                 [disabled]="!varianteParaAgregar || !palabraClaveInput.trim() || giroGanadorInput < 1 || guardandoVariante">
-          <span *ngIf="!guardandoVariante">✅ Confirmar variante</span>
+          <span *ngIf="!guardandoVariante">✅ Confirmar producto</span>
           <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
             <span class="spinner-border spinner-border-sm"></span> Guardando…
           </span>
@@ -777,7 +777,7 @@
     <p class="rf-transicion__clave">Palabra: "{{ ganadorActual.concursante.palabraClave }}"</p>
 
     <ng-container *ngIf="!ganadorActual.rifaTerminada">
-      <p class="rf-transicion__sub">¿Con qué participantes continúa la siguiente variante?</p>
+      <p class="rf-transicion__sub">¿Con qué participantes continúa el siguiente producto?</p>
       <div class="rf-modos">
         <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'RESTANTES'"
                 (click)="elegirModo('RESTANTES')">
@@ -801,7 +801,7 @@
 
       <!-- Form para nuevos participantes en modo NUEVOS -->
       <div class="rf-nuevos-form" *ngIf="modoElegido === 'NUEVOS' && mostrarFormNuevo">
-        <h6 class="rf-nuevos-form__title">➕ Agregar participante para la siguiente variante</h6>
+        <h6 class="rf-nuevos-form__title">➕ Agregar participante para el siguiente producto</h6>
         <form [formGroup]="participanteNuevoForm" class="rf-form-participante">
           <div class="rf-row">
             <div class="rf-field rf-field--flex1">
@@ -1005,7 +1005,7 @@
         </div>
         <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.codigoBarras">
           <span class="rf-var-modal__lbl">Código</span>
-          <span class="rf-var-modal__val" style="font-family:monospace; font-size:0.82rem">{{ varianteModal.variante!.codigoBarras }}</span>
+          <span class="rf-var-modal__val" style="font-family:monospace; font-size:0.82rem">{{ varianteModal.variante!.codigoBarras | uppercase }}</span>
         </div>
         <div class="rf-var-modal__row">
           <span class="rf-var-modal__lbl">Giro ganador</span>

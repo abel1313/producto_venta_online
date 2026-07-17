@@ -241,6 +241,42 @@ $t:  all 0.22s ease;
   border-radius: 12px;
 }
 
+.vd-pay-loading {
+  font-size: .82rem;
+  color: var(--card-text-muted);
+  margin: 0;
+}
+
+.vd-pay-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: .82rem;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, .10);
+  border: 1px solid rgba(239, 68, 68, .30);
+  border-radius: 8px;
+  padding: 10px 12px;
+
+  .vd-pay-retry {
+    align-self: flex-start;
+    background: var(--app-accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+:host-context(body.theme-dark) .vd-pay-error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, .14);
+  border-color: rgba(239, 68, 68, .40);
+}
+
 .vd-required { color: var(--app-accent); font-weight: 700; margin-left: 4px; }
 .vd-optional { font-size: .72rem; color: var(--card-text-muted); font-weight: 400; text-transform: none; margin-left: 6px; }
 

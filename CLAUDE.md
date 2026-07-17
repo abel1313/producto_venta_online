@@ -3322,6 +3322,56 @@ y está lista para eso si se pide después.
 
 ---
 
+## FIX VENTA DIRECTA — "COBRAR" NO SE HABILITA: DROPDOWN DE PAGO VACÍO SIN AVISO (2026-07-16)
+
+**Síntoma reportado (QA):** admin agrega una promoción + un cliente, y el botón "💰 Cobrar"
+nunca se habilita. El usuario lo atribuyó al correo sin verificar del cliente.
+
+**Diagnóstico — no era el correo.** `puedeCobrar` **nunca** revisa el correo:
+```ts
+tieneItems (lineas o promos) && tieneFormaPago (esCredito || pagosYMesesId !== null) && !procesando
+```
+Con promo, `esCredito` es false (las promos son solo contado), así que el botón exige
+`pagosYMesesId` → hay que **seleccionar una forma de pago**. Pero el usuario dijo *"no aparece
+ninguna opción"*: el dropdown estaba **vacío**.
+
+**Causa raíz:** el dropdown se llena de `GET /v1/pagos/opciones-estructuradas` en `cargarPagos()`
+(corre siempre en `ngOnInit`, NO depende de la promo — el dropdown vacío afecta a TODA venta
+directa, solo se notó con la promo). El handler de error era **silencioso**
+(`error: () => { this.cargandoPagos = false; }`) — mismo antipatrón de la Lección #1 de rifas:
+si el endpoint devuelve `data: []` o falla, el usuario ve un dropdown vacío y un botón gris
+permanente **sin ninguna explicación**.
+
+**Causa raíz de fondo (BACK/DATOS, no front):** en QA el endpoint devuelve vacío — **no hay
+formas de pago dadas de alta**. ⚠️ **No existe pantalla en el front para configurarlas**: no hay
+endpoints de escritura de `pagos` ni componente admin. Se dan de alta directo en la BD del
+backend. Hay que pedirle al back/DBA que seed-ee las formas de pago en QA.
+
+**Fix del front (surface del error, esto sí es nuestro):**
+- `cargarPagos()`: nuevo campo `errorPagos`. Si el back responde OK pero con `[]` → mensaje "No
+  hay formas de pago configuradas… pídele al administrador que las dé de alta". Si el request
+  falla → captura `err?.error?.mensaje`. Nuevo `reintentarPagos()`.
+- Template: aviso `.vd-pay-error` (rojo, con botón "Reintentar") + `.vd-pay-loading`, debajo del
+  título de forma de pago. El `p-dropdown` de contado ahora solo se muestra si
+  `opcionesEstructuradas.length > 0`.
+- SCSS: `.vd-pay-error`, `.vd-pay-retry`, `.vd-pay-loading` + variante dark.
+
+**⚠️ El flujo de verificación de correo al cobrar (commit `0f026a7`) NO tiene relación con este
+bug** y ya estaba bien: solo corre al hacer clic en Cobrar (dentro de `cobrar()`), y el botón
+tiene que habilitarse primero — cosa que no pasaba por el dropdown vacío. Una vez configuradas
+las formas de pago en QA, el flujo esperado (botón habilitado → clic → modal de correo si no
+está verificado → "No, solo cobrar" cobra igual) funcionará como se acordó.
+
+**Archivos modificados:**
+- `src/app/variante/venta-directa/venta-directa.component.ts` → `errorPagos`, `cargarPagos()`, `reintentarPagos()`
+- `src/app/variante/venta-directa/venta-directa.component.html` → aviso `.vd-pay-error` + guard del dropdown
+- `src/app/variante/venta-directa/venta-directa.component.scss` → estilos del aviso
+
+**Verificado con `ng build` sin errores.** ⚠️ La causa de fondo (formas de pago vacías en QA)
+es de backend/datos — el front ahora solo lo hace visible en vez de fallar en silencio.
+
+---
+
 ## FIX BUSCADORES — `.toLowerCase()` PISABA EL `appUppercase` (2026-07-13)
 
 **Síntoma reportado:** en "Buscar producto" (`/productos/buscar`), el texto escrito en el

@@ -64,6 +64,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   mesesSeleccionado:     IOpcionMesesDto | null = null;
   pagosYMesesId:         number | null = null;
   cargandoPagos          = false;
+  errorPagos             = '';   // motivo si no se cargaron las formas de pago
 
   // ── Crédito ────────────────────────────────────────────────────────
   tipoPedido:       'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
@@ -256,11 +257,27 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   private cargarPagos(): void {
     this.cargandoPagos = true;
+    this.errorPagos    = '';
     this.pagoService.getOpcionesEstructuradas().subscribe({
-      next: res => { this.opcionesEstructuradas = res.data ?? []; this.cargandoPagos = false; },
-      error: ()  => { this.cargandoPagos = false; }
+      next: res => {
+        this.opcionesEstructuradas = res.data ?? [];
+        this.cargandoPagos = false;
+        // Si el back respondió OK pero sin ninguna forma de pago, hay que avisarlo:
+        // sin opciones el admin no puede seleccionar pago y "Cobrar" nunca se habilita.
+        if (this.opcionesEstructuradas.length === 0) {
+          this.errorPagos = 'No hay formas de pago configuradas en el sistema. Pídele al administrador que las dé de alta antes de cobrar.';
+        }
+      },
+      error: err => {
+        this.cargandoPagos = false;
+        this.opcionesEstructuradas = [];
+        this.errorPagos = (err?.error?.mensaje ?? err?.error?.message)
+          ?? 'No se pudieron cargar las formas de pago. Revisa tu conexión e inténtalo de nuevo.';
+      }
     });
   }
+
+  reintentarPagos(): void { this.cargarPagos(); }
 
   seleccionarTipoPago(opcion: IOpcionPagoDto): void {
     this.tipoPagoActivo    = opcion;

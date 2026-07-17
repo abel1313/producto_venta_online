@@ -121,8 +121,17 @@
           <span class="vd-required" *ngIf="!pagosYMesesId && !esCredito">*</span>
         </p>
 
+        <!-- Cargando -->
+        <p class="vd-pay-loading" *ngIf="cargandoPagos">Cargando formas de pago…</p>
+
+        <!-- Aviso cuando NO hay opciones (vacío o error) — explica por qué Cobrar está gris -->
+        <div class="vd-pay-error" *ngIf="!cargandoPagos && errorPagos && !esCredito">
+          <span>⚠️ {{ errorPagos }}</span>
+          <button type="button" class="vd-pay-retry" (click)="reintentarPagos()">Reintentar</button>
+        </div>
+
         <!-- Pago al contado -->
-        <p-dropdown *ngIf="!cargandoPagos && !esCredito"
+        <p-dropdown *ngIf="!cargandoPagos && !esCredito && opcionesEstructuradas.length > 0"
             [options]="opcionesEstructuradas"
             [(ngModel)]="tipoPagoActivo"
             optionLabel="formaPago"

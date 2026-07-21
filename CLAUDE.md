@@ -4655,3 +4655,51 @@ tenía). Quedó en 6 320 líneas.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo: requiere la migración SQL corrida en el back.
+
+---
+
+## FEAT FILTROS ADMIN — `codigoGenerado` EN PRODUCTOS Y VARIANTES + LAYOUT 2 COLUMNAS (2026-07-21)
+
+> Cierra el pendiente de la sección "FEAT CARGA RÁPIDA DE IMÁGENES" — encontrar los borradores
+> que todavía tienen el código de barras autogenerado (`BRD-XXXXXXXXXXXX`) sin completar.
+
+### Filtro nuevo
+
+6.º checkbox-pareja (mismo patrón tri-estado que `conStock`/`conImagenes`/`habilitado`: ambos
+marcados o ninguno = no filtra por esa dimensión; exactamente uno marcado = filtra por ese valor)
+en los filtros admin de `productos/buscar` y `variantes/buscar`:
+- **"Código generado"** → `codigoGenerado=true` — solo borradores de carga rápida sin código real.
+- **"Código real"** → `codigoGenerado=false` — todo lo demás (incluye productos normales, que
+  nunca pasaron por carga rápida — el back los cuenta como "código real", no como caso aparte).
+
+Combina con AND con el resto de filtros — caso de uso típico para encontrar "pendientes de
+completar": marcar "Código generado" + "No habilitados" a la vez.
+
+### Layout — filtros en 2 columnas en vez de una fila
+
+`.pl-filtros` (`all.component.scss`) y `.vb-filtros` (`buscar.component.scss`) pasaron de
+`display: flex; flex-wrap: wrap;` a `display: grid; grid-template-columns: repeat(2, 1fr);` —
+los checkboxes (y los botones "Limpiar filtros"/"Excel" que viven en el mismo contenedor)
+quedan acomodados de 2 en 2 en vez de una fila larga que se envolvía de forma despareja.
+
+### Nota — reconciliación con trabajo ya iniciado en `dev`
+
+Al ir a implementar esto se encontró que ya existía un commit en `dev` (sin subir a `qa`) que
+traía la documentación del backend (`CAMBIOS_FRONT.md`) y el cambio en
+`variante.service.ts#adminFiltrar()` — pero **no** la parte de `producto.service.ts`, los
+`.ts`/`.html` con los checkboxes, ni el cambio de layout. Se hizo merge de `dev` a `qa` primero
+(conflicto trivial en `variante.service.ts`, misma línea agregada dos veces con distinto
+formato) y luego se completó lo que faltaba encima.
+
+**Archivos modificados:**
+- `src/app/productos/service/producto.service.ts` → `adminFiltrar()` + param `codigoGenerado`
+- `src/app/variante/service/variante.service.ts` → mismo cambio (ya venía de `dev`)
+- `src/app/productos/producto/all/all.component.ts` → `mostrarCodigoGenerado`/`mostrarCodigoReal`,
+  `paramCodigoGenerado`, extendido `hayFiltrosAdminActivos`/`toggleFiltroAdmin`/`limpiarFiltrosAdmin`
+- `src/app/variante/buscar/buscar.component.ts` → mismo cambio
+- `src/app/productos/producto/all/all.component.html` → 2 checkboxes nuevos
+- `src/app/variante/buscar/buscar.component.html` → 2 checkboxes nuevos
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtros` a grid 2 columnas
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtros` a grid 2 columnas
+
+**Verificado con `ng build --configuration=development` sin errores.**

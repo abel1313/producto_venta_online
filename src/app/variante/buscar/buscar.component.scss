@@ -102,10 +102,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Filtros admin ──────────────────────────────────────────────────
 .vb-filtros {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: center;
+  gap: 8px 12px;
   padding: 0 0 16px;
-  flex-wrap: wrap;
 }
 
 .vb-filtro-btn {

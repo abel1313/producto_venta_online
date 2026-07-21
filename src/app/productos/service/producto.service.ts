@@ -175,7 +175,7 @@ export class ProductoService {
     // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
     // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
     adminFiltrar(
-        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean },
+        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean },
         page: number, size: number
     ): Observable<IProductoPaginable<IProductoDTO[]>> {
         let params = new HttpParams()
@@ -186,6 +186,7 @@ export class ProductoService {
         if (filtros.conStock !== undefined) params = params.set('conStock', String(filtros.conStock));
         if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
         if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
+        if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
 
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }

@@ -65,6 +65,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   mostrarSinImagenes = false;
   mostrarHabilitados = false;
   mostrarNoHabilitados = false;
+  mostrarCodigoGenerado = false;
+  mostrarCodigoReal = false;
   sinResultados    = false;
   mensajeError     = '';
   seleccionados    = new Set<number>();
@@ -356,7 +358,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   get hayFiltrosAdminActivos(): boolean {
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes
-        || this.mostrarHabilitados || this.mostrarNoHabilitados;
+        || this.mostrarHabilitados || this.mostrarNoHabilitados
+        || this.mostrarCodigoGenerado || this.mostrarCodigoReal;
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
@@ -369,9 +372,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   private get paramHabilitado(): boolean | undefined {
     return this.mostrarHabilitados === this.mostrarNoHabilitados ? undefined : this.mostrarHabilitados;
   }
+  private get paramCodigoGenerado(): boolean | undefined {
+    return this.mostrarCodigoGenerado === this.mostrarCodigoReal ? undefined : this.mostrarCodigoGenerado;
+  }
 
   toggleFiltroAdmin(campo: 'mostrarConStock' | 'mostrarSinStock' | 'mostrarConImagenes'
-      | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'): void {
+      | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'
+      | 'mostrarCodigoGenerado' | 'mostrarCodigoReal'): void {
     this[campo] = !this[campo];
     this.aplicarFiltrosAdmin(1);
   }
@@ -383,6 +390,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrarSinImagenes = false;
     this.mostrarHabilitados = false;
     this.mostrarNoHabilitados = false;
+    this.mostrarCodigoGenerado = false;
+    this.mostrarCodigoReal = false;
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
@@ -396,7 +405,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       nombreOCodigo: this.buscarProd || undefined,
       conStock: this.paramConStock,
       conImagenes: this.paramConImagenes,
-      habilitado: this.paramHabilitado
+      habilitado: this.paramHabilitado,
+      codigoGenerado: this.paramCodigoGenerado
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;

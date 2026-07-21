@@ -75,6 +75,16 @@
         <span class="pl-filtro-check__box"></span>
         No habilitados
       </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
+        <span class="pl-filtro-check__box"></span>
+        Código generado
+      </label>
+      <label class="pl-filtro-check">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
+        <span class="pl-filtro-check__box"></span>
+        Código real
+      </label>
       <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
         📥 Excel sin productos

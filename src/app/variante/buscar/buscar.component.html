@@ -94,6 +94,16 @@
       <span class="vb-filtro-check__box"></span>
       No habilitadas
     </label>
+    <label class="vb-filtro-check">
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
+      <span class="vb-filtro-check__box"></span>
+      Código generado
+    </label>
+    <label class="vb-filtro-check">
+      <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
+      <span class="vb-filtro-check__box"></span>
+      Código real
+    </label>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
 

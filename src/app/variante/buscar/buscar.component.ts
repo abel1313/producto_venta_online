@@ -38,6 +38,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   mostrarSinImagenes = false;
   mostrarHabilitados = false;
   mostrarNoHabilitados = false;
+  mostrarCodigoGenerado = false;
+  mostrarCodigoReal = false;
 
   // Filtros públicos del catálogo (talla/color/marca/precio) — visibles para cualquier usuario,
   // combinables entre sí con AND. Independientes de los filtros admin de arriba (endpoints
@@ -194,7 +196,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   get hayFiltrosAdminActivos(): boolean {
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes
-        || this.mostrarHabilitados || this.mostrarNoHabilitados;
+        || this.mostrarHabilitados || this.mostrarNoHabilitados
+        || this.mostrarCodigoGenerado || this.mostrarCodigoReal;
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
@@ -207,9 +210,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private get paramHabilitado(): boolean | undefined {
     return this.mostrarHabilitados === this.mostrarNoHabilitados ? undefined : this.mostrarHabilitados;
   }
+  private get paramCodigoGenerado(): boolean | undefined {
+    return this.mostrarCodigoGenerado === this.mostrarCodigoReal ? undefined : this.mostrarCodigoGenerado;
+  }
 
   toggleFiltroAdmin(campo: 'mostrarConStock' | 'mostrarSinStock' | 'mostrarConImagenes'
-      | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'): void {
+      | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'
+      | 'mostrarCodigoGenerado' | 'mostrarCodigoReal'): void {
     if (!this.isAdminUser) return;
     this[campo] = !this[campo];
     this.seleccionados.clear();
@@ -223,6 +230,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.mostrarSinImagenes = false;
     this.mostrarHabilitados = false;
     this.mostrarNoHabilitados = false;
+    this.mostrarCodigoGenerado = false;
+    this.mostrarCodigoReal = false;
     this.seleccionados.clear();
     this.varianteService.invalidarCache();
     this.buscarPagina(this.terminoBusqueda, 1);
@@ -235,7 +244,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
       nombreOCodigo: this.terminoBusqueda || undefined,
       conStock: this.paramConStock,
       conImagenes: this.paramConImagenes,
-      habilitado: this.paramHabilitado
+      habilitado: this.paramHabilitado,
+      codigoGenerado: this.paramCodigoGenerado
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.sinResultados = false;

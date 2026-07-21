@@ -36,6 +36,11 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    path: 'carga-imagenes',
+    loadChildren: () => import('./carga-imagenes/carga-imagenes.module').then(m => m.CargaImagenesModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
     path: 'reportes',
     loadChildren: () => import('./reportes/reportes.module').then(m => m.ReportesModule),
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]

@@ -4511,3 +4511,103 @@ reemplazar `variante` a secas rompe bindings (`varianteSeleccionada`), rutas
 
 **Archivos modificados:** `navbar.component.html` + `.ts`, y ~20 templates con texto visible.
 **Verificado con `ng build` sin errores** y confirmando que ninguna ruta cambió.
+
+---
+
+## FEAT CARGA RÁPIDA DE IMÁGENES — PRODUCTO BORRADOR POR FOTO (2026-07-21)
+
+> Spec del back en `CAMBIOS_FRONT.md` § "🆕 Carga rápida de imágenes". Módulo lazy
+> `/carga-imagenes`, **solo admin**.
+
+**Qué resuelve:** antes había que llenar TODO el formulario de producto y subir la imagen en el
+mismo guardado — si el token expiraba a media captura, se perdía todo, incluida la foto. Ahora
+la foto va primero: cada imagen crea al instante un producto+variante borrador (stock 1,
+deshabilitado, código de barras temporal `BRD-XXXXXXXXXXXX`), y los datos se llenan después,
+campo por campo, sin volver a tocar la imagen.
+
+### Flujo
+
+1. **Capturar:** botón "📷 Tomar foto" (`capture="environment"` → cámara trasera en móvil) o
+   "🖼️ Elegir de galería o PC" (`multiple`). Cada archivo dispara su propio
+   `POST /v1/carga-imagenes/subir-imagen` — **una imagen por request**, sin esperar entre una y
+   otra (el back encola las subidas, máx. 6 en paralelo).
+2. **Polling:** los `productoId` que vuelven en `PENDIENTE` entran a un `Set`; `setInterval` de
+   2.5s consulta `GET /estado?productoIds=...` **solo con los pendientes** y saca cada uno que
+   deje de estar `PENDIENTE`. Cuando el Set queda vacío, `clearInterval` — no hay polling de
+   fondo indefinido.
+3. **Reintentar:** botón visible **solo** en tarjetas `FALLIDO` →
+   `POST /{productoId}/reintentar-imagen` (reutiliza el mismo producto, no crea un borrador
+   duplicado).
+4. **Completar:** clic en una tarjeta `EXITOSO` → modal con los campos →
+   `PUT /{productoId}/completar`. Dos botones: "💾 Guardar avance" (persiste lo que haya) y
+   "🚀 Guardar y publicar" (agrega `habilitar: true`).
+
+### Selección múltiple — las 10 fotos SÍ se suben
+
+`onArchivos()` itera **todos** los archivos del input y dispara un `POST /subir-imagen` por cada
+uno, sin esperar entre ellos. La regla de "ya subida" (abajo) solo descarta el **mismo archivo**,
+no limita cuántos distintos se mandan a la vez.
+
+Dos detalles se corrigieron justo por este caso — fallaban solo con varias fotos, con una sola
+pasaban desapercibidos:
+
+- **`enVuelo` es un contador, no un booleano.** Con un `subiendo = true/false` compartido, la
+  primera respuesta apagaba el indicador aunque quedaran 9 peticiones vivas.
+- **`erroresSubida` es un arreglo, no un string.** Con un solo campo, si fallaban 3 de 10 cada
+  error pisaba al anterior y solo se veía el último. Ahora se listan todos **con el nombre del
+  archivo** — con 10 fotos, "no se pudo subir" a secas no dice cuál.
+
+Un archivo que falla en el POST **no deja borrador** en el back: se vuelve a seleccionar y ya.
+
+### Regla — una foto ya subida no se vuelve a subir
+
+Cada archivo se identifica por una **firma** `nombre|size|lastModified`. Si ya existe una tarjeta
+con esa firma, se omite y sale un Swal informativo. Evita crear un producto borrador duplicado
+por cada intento accidental (el back **no** detecta imágenes repetidas — esta barrera es
+únicamente del front, y solo dentro de la sesión de captura).
+
+Complemento de la misma regla: **el botón de reintentar solo aparece si la imagen falló.** Una
+tarjeta `EXITOSO` no ofrece re-subir — para cambiar la imagen de un producto ya cargado se usa
+el flujo normal de edición de producto.
+
+### Admin-only en DOS capas
+
+- Ruta: `canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]` en `app-routing.module.ts` +
+  el mismo par de guards dentro de `carga-imagenes-routing.module.ts`.
+- Menú: el link vive dentro del accordion **📦 Inventario**, que ya es `*ngIf="isAdminUser"`.
+
+El back responde 403 a no-admin, pero el spec pide explícitamente que eso **no sea la única
+barrera** — si un cliente llega a ver el botón, es bug de UX aunque el request falle.
+
+### Detalles a no romper
+
+- **El código de barras autogenerado (`BRD-...`) NUNCA se muestra ni se precarga.** El campo
+  "Código de barras real" arranca vacío; al mandarlo, el back crea el código real y borra el
+  placeholder solo.
+- `limpiar()` quita del body los campos vacíos/null antes del PUT — el back interpreta ausente
+  como "no tocar este campo", así que mandar `''` pisaría un valor bueno con vacío.
+- `ngOnInit` llama `GET /fallidas` como red de seguridad: si el usuario recargó la página a
+  media carga y perdió los `productoId` en memoria, ahí aparecen los que quedaron rotos. Falla
+  en silencio a propósito — es un extra, no debe bloquear la captura.
+- `quitarTarjeta()` solo saca la tarjeta de la vista; **el borrador sigue existiendo en el back**
+  y se retoma desde `GET /v1/productos/admin/no-habilitados`.
+
+**⚠️ Requiere que el back corra `migration_carga_imagenes.sql`** (columnas `codigo_barras_generado`,
+`estado_imagen`, `mensaje_error_imagen` en `producto`). No corre sola (`ddl-auto: none`). Hasta
+entonces los endpoints no responden en dev/qa.
+
+**Archivos nuevos:** `src/app/carga-imagenes/` — `models/carga-imagen.model.ts`,
+`service/carga-imagenes.service.ts`, `carga-imagenes.component.ts/.html/.scss`,
+`carga-imagenes.module.ts`, `carga-imagenes-routing.module.ts` (prefijo BEM `ci-`, dark/light
+vía variables globales).
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta lazy),
+`src/app/navbar/navbar.component.html` (link en Inventario).
+
+**Aparte:** `CAMBIOS_FRONT.md` estaba duplicado (12 320 líneas = dos copias casi idénticas). Se
+conservó la **segunda** (la más nueva: incluye `codigoBarras` en promos, la expiración mensual
+del código de reclamo, y `POST /v1/ventas/{ventaId}/asignarCliente` — que la primera copia no
+tenía). Quedó en 6 320 líneas.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo: requiere la migración SQL corrida en el back.

@@ -1,0 +1,189 @@
+:host { display: block; }
+
+.ci-wrap { min-height: 100vh; background: var(--app-bg); color: var(--app-text); }
+
+/* Header — el contenido va en un wrapper centrado; los laterales
+   quedan libres para banners de promociones (regla del proyecto). */
+.ci-header {
+  background: var(--header-brand);
+  backdrop-filter: var(--header-brand-filter, blur(18px));
+  border-bottom: 1px solid var(--header-brand-border, var(--card-border));
+  box-shadow: 0 4px 20px var(--header-brand-shadow, rgba(0, 0, 0, 0.18));
+  padding: 18px 16px;
+
+  &__content { max-width: 1120px; margin: 0 auto; }
+
+  &__title {
+    h4    { margin: 0; font-weight: 700; font-size: 1.3rem; color: var(--app-text); }
+    small { display: block; margin-top: 4px; color: var(--app-text-muted); }
+  }
+}
+
+.ci-body { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* Acciones de captura */
+.ci-acciones {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px;
+}
+
+.ci-contador { font-size: .88rem; color: var(--app-text-muted); }
+
+.ci-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 16px; border: none; border-radius: 12px;
+  font-weight: 600; font-size: .92rem; cursor: pointer;
+  background: var(--app-accent); color: #fff;
+  transition: filter .15s ease, transform .15s ease;
+
+  &:hover:not(:disabled) { filter: brightness(1.08); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+
+  &--galeria { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
+  &--sm      { padding: 7px 12px; font-size: .82rem; border-radius: 10px; width: 100%; justify-content: center; }
+  &--retry   { background: #f59e0b; color: #fff; }
+  &--completar { background: var(--app-accent); }
+  &--ghost   { background: transparent; color: var(--app-text-muted); border: 1px solid var(--card-border); }
+  &--save    { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
+  &--pub     { background: #10b981; color: #fff; }
+}
+
+.ci-error {
+  position: relative;
+  margin: 10px 0; padding: 10px 34px 10px 14px; border-radius: 10px;
+  background: rgba(239, 68, 68, .12); border: 1px solid rgba(239, 68, 68, .35);
+  color: #ef4444; font-size: .9rem;
+
+  ul    { margin: 6px 0 4px; padding-left: 18px; }
+  li    { margin-bottom: 2px; word-break: break-word; }
+  small { display: block; opacity: .85; font-size: .8rem; }
+
+  &__close {
+    position: absolute; top: 8px; right: 8px;
+    border: none; background: transparent; color: inherit;
+    font-size: .85rem; cursor: pointer; line-height: 1;
+  }
+}
+
+.ci-hint {
+  margin: 0 0 16px; font-size: .84rem; color: var(--app-text-muted);
+  &--pub { margin-top: 12px; }
+}
+
+/* Grilla de tarjetas */
+.ci-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.ci-card {
+  position: relative;
+  background: var(--card-bg); border: 1.5px solid var(--card-border);
+  border-radius: 14px; overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+
+  &--ok    { border-color: rgba(16, 185, 129, .5); }
+  &--error { border-color: rgba(239, 68, 68, .5); }
+
+  &__close {
+    position: absolute; top: 6px; right: 6px; z-index: 2;
+    width: 26px; height: 26px; border: none; border-radius: 50%;
+    background: rgba(0, 0, 0, .55); color: #fff; font-size: .8rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  &__img {
+    height: 150px; background: var(--app-surface-2, var(--card-border));
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__sinimg { font-size: 2rem; opacity: .5; }
+
+  &__body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+
+  &__id  { color: var(--app-text-muted); font-size: .76rem; }
+
+  &__err { margin: 0; font-size: .78rem; color: #ef4444; line-height: 1.3; }
+}
+
+.ci-badge {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: .74rem; font-weight: 700;
+
+  &--pend  { background: rgba(245, 158, 11, .16); color: #f59e0b; }
+  &--ok    { background: rgba(16, 185, 129, .16); color: #10b981; }
+  &--error { background: rgba(239, 68, 68, .16);  color: #ef4444; }
+}
+
+/* Estado vacío */
+.ci-vacio {
+  text-align: center; padding: 60px 20px; color: var(--app-text-muted);
+  &__icon { font-size: 3rem; margin-bottom: 10px; }
+  p     { margin: 0 0 6px; font-weight: 600; color: var(--app-text); }
+  small { font-size: .84rem; }
+}
+
+/* Modal de completar */
+.ci-overlay {
+  position: fixed; inset: 0; z-index: 1050;
+  background: rgba(0, 0, 0, .6); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+
+.ci-modal {
+  background: var(--card-bg); color: var(--app-text);
+  border: 1.5px solid var(--card-border); border-radius: var(--radius-premium, 20px);
+  width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+
+  &__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; border-bottom: 1px solid var(--card-border);
+    h5 { margin: 0; font-weight: 700; font-size: 1.05rem; }
+  }
+
+  &__close {
+    border: none; background: transparent; color: var(--app-text-muted);
+    font-size: 1.1rem; cursor: pointer;
+  }
+
+  &__body { padding: 16px 18px; overflow-y: auto; }
+
+  &__preview {
+    height: 130px; border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+    background: var(--app-surface-2, var(--card-border));
+    img { width: 100%; height: 100%; object-fit: contain; }
+  }
+
+  &__footer {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+    padding: 14px 18px; border-top: 1px solid var(--card-border);
+  }
+}
+
+.ci-form {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.ci-field {
+  display: flex; flex-direction: column; gap: 5px;
+
+  &--full { grid-column: 1 / -1; }
+
+  label { font-size: .8rem; font-weight: 600; color: var(--app-text-muted); }
+
+  input, textarea {
+    padding: 9px 12px; border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--app-surface-2, transparent);
+    color: var(--app-text); font-size: .9rem; font-family: inherit;
+
+    &::placeholder { color: var(--app-text-placeholder, var(--app-text-muted)); }
+    &:focus { outline: none; border-color: var(--app-accent); }
+  }
+}
+
+@media (max-width: 480px) {
+  .ci-acciones .ci-btn { flex: 1 1 100%; justify-content: center; }
+}

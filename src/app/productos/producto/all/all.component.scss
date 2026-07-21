@@ -301,6 +301,20 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.82rem;
     &::placeholder { font-size: 0.82rem; }
   }
+
+  // Los filtros de 2 columnas en móvil: labels largos ("Código generado", "No habilitados")
+  // se dejan envolver a 2 líneas en vez de forzar overflow horizontal del contenedor —
+  // así SIEMPRE se ven las 8 opciones, sin scroll lateral ni corte de ninguna.
+  .pl-filtros { gap: 6px 8px; }
+  .pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
+    font-size: 0.72rem;
+    padding: 6px 8px;
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.25;
+  }
+  .pl-excel-btn { margin-left: 0; }
 }
 
 @media (max-width: 400px) {
@@ -492,9 +506,15 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pl-filtros {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  align-items: center;
+  align-items: stretch;
   gap: 8px 12px;
   padding: 0 24px 16px;
+}
+
+// min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
+// más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
+.pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
+  min-width: 0;
 }
 
 .pl-filtro-btn {

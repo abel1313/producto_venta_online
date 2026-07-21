@@ -104,9 +104,15 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-filtros {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  align-items: center;
+  align-items: stretch;
   gap: 8px 12px;
   padding: 0 0 16px;
+}
+
+// min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
+// más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
+.vb-filtro-btn, .vb-filtro-check {
+  min-width: 0;
 }
 
 .vb-filtro-btn {
@@ -950,6 +956,19 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .vb-search__input {
     font-size: 0.82rem;
     &::placeholder { font-size: 0.82rem; }
+  }
+
+  // Los filtros de 2 columnas en móvil: labels largos ("Código generado", "No habilitadas")
+  // se dejan envolver a 2 líneas en vez de forzar overflow horizontal del contenedor —
+  // así SIEMPRE se ven las 8 opciones, sin scroll lateral ni corte de ninguna.
+  .vb-filtros { gap: 6px 8px; }
+  .vb-filtro-check, .vb-filtro-btn {
+    font-size: 0.72rem;
+    padding: 6px 8px;
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.25;
   }
 }
 

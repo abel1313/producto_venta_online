@@ -4703,3 +4703,32 @@ formato) y luego se completó lo que faltaba encima.
 - `src/app/variante/buscar/buscar.component.scss` → `.vb-filtros` a grid 2 columnas
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+### FIX — el grid de 2 columnas se desbordaba en móvil y ocultaba filtros (mismo día)
+
+**Reportado:** con las 8 opciones ya en grid de 2 columnas, en el celular "ya no se ven todos
+los filtros".
+
+**Causa raíz:** `.pl-filtro-check`/`.vb-filtro-check` (y `.pl-filtro-btn`/`.vb-filtro-btn`) tienen
+`white-space: nowrap`. Un label largo como **"Código generado"** no cabe en el 50% de ancho de
+una columna en una pantalla de 320-375px — y como los ítems de un grid tienen por default
+`min-width: auto` (que con `nowrap` equivale al ancho completo del texto sin cortar), el
+navegador agranda esa columna más allá de su `1fr` para no partir el texto. Resultado: el grid
+completo se desborda del contenedor y las columnas/filtros que quedan más a la derecha salen del
+viewport — mismo mecanismo de "grid blowout" ya documentado en `ANALISIS_DISENO_MOVIL.md`.
+
+**Fix — dos partes:**
+1. `min-width: 0;` en los ítems del grid (`.pl-filtro-check`, `.pl-filtro-btn`, `.pl-excel-btn` /
+   `.vb-filtro-check`, `.vb-filtro-btn`) — permite que el navegador SÍ los encoja por debajo de su
+   ancho de contenido, en vez de forzar el desborde. Aplica siempre, no solo en móvil.
+2. Dentro del `@media (max-width: 576px)` ya existente en ambos componentes: se baja el
+   `font-size`/`padding` y se cambia `white-space: nowrap` → `white-space: normal` — un label que
+   de plano no entrena en una sola línea se envuelve a 2 líneas **dentro de su propia pastilla**,
+   en vez de desbordar el layout. Así las 8 opciones siempre son visibles y completas, sin scroll
+   lateral ni texto cortado, aunque alguna quede en 2 renglones dentro de su pill.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss`
+- `src/app/variante/buscar/buscar.component.scss`
+
+**Verificado con `ng build --configuration=development` sin errores.**

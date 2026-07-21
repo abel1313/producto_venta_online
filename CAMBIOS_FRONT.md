@@ -5033,6 +5033,85 @@ compone — ver contrato en `PROMOCIONES.md`, sección 7).
 
 ---
 
+## ✅ Fix (2026-07-21): `GET /variantes/v1/admin/filtrar?habilitado=...` ahora considera también el habilitado del producto padre
+
+**Reportado:** un producto deshabilitado (p. ej. un borrador de carga rápida, buscándolo por su
+código) no aparecía en
+`GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&habilitado=false&pagina=1&size=10`.
+
+**Antes (qué fallaba):** el filtro `habilitado` solo miraba el flag de la **variante**
+(`v.habilitado`). Los borradores de carga rápida nacen con el **producto** deshabilitado (`'0'`)
+pero su variante en `'1'`, así que:
+- con `habilitado=false` el borrador **no salía** (su variante está en `'1'`), y
+- con `habilitado=true` el borrador **sí salía** como si estuviera habilitado, aunque el producto
+  no lo está.
+
+Lo mismo aplicaba a cualquier producto deshabilitado desde el módulo de productos cuyas variantes
+siguieran en `'1'`.
+
+**Ahora:** el filtro usa el estado **efectivo** (variante Y producto):
+- `habilitado=true` → variante habilitada **y** producto habilitado.
+- `habilitado=false` → variante deshabilitada **o** producto deshabilitado (cualquiera de los dos
+  basta para considerarla "no habilitada").
+- omitido → sin filtro, igual que antes.
+
+**Además cambia el campo `habilitado` del response** (`VarianteResumenDto`, aplica a todos los
+listados de variantes que devuelven ese DTO): ahora refleja el estado efectivo — es `'1'` solo si
+la variante **y** su producto están habilitados. Antes un borrador podía llegar con
+`habilitado: '1'` aunque el producto estuviera deshabilitado; ya no.
+
+**Request y demás parámetros no cambian.** Esto reemplaza la regla documentada en la sección del
+2026-07-06 que decía "en variantes, `habilitado` filtra por el estado de la variante, no del
+producto padre" — esa regla ya no aplica.
+
+**Solo en `dev`/`qa` por ahora** — pendiente de subir a `main`.
+
+---
+
+## ✅ Nuevo (2026-07-21): parámetro `codigoGenerado` en los filtros admin de productos y variantes
+
+Se agregó un 5.º parámetro opcional a los dos filtros combinados de admin, para poder listar los
+productos que siguen con el **código de barras autogenerado** de la carga rápida (es decir, a los
+que todavía no se les asigna el código real vía `/completar`):
+
+**Request:**
+```
+GET /mis-productos/productos/admin/filtrar?codigoGenerado=true&page=1&size=10
+GET /mis-productos/variantes/v1/admin/filtrar?codigoGenerado=true&pagina=1&size=10
+```
+
+| Parámetro | Tipo | Significado |
+|---|---|---|
+| `codigoGenerado` | boolean, opcional | `true` = solo productos con código de barras autogenerado (borradores de carga rápida sin código real); `false` = solo productos con código real (incluye todos los productos normales, que nunca pasaron por carga rápida); **omitido** = cualquiera |
+
+- Se combina con AND con los otros 4 (`nombreOCodigo`, `conStock`, `conImagenes`, `habilitado`),
+  igual que hasta ahora. Ejemplo típico para la pantalla de "pendientes de completar":
+  `?codigoGenerado=true&habilitado=false`.
+- En variantes filtra por el flag del **producto padre** (el código de barras vive en el producto).
+
+**Comportamiento con el filtro omitido y los `NULL` (importante para el front):** en BD, los
+productos normales (que nunca pasaron por carga rápida) tienen `codigo_barras_generado = NULL`.
+El backend ya lo maneja — el front no tiene que tratar el `NULL` como caso aparte:
+
+```
+# solo texto, sin codigoGenerado → devuelve TODOS los que matcheen "369"
+# (autogenerados, código real y NULL — no se filtra por esa dimensión)
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&pagina=1&size=10
+
+# texto + solo los de código autogenerado
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=true&pagina=1&size=10
+
+# texto + solo los de código real — los NULL caen de este lado (cuentan como código real)
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=false&pagina=1&size=10
+```
+- **El response no cambia** — mismos DTOs de siempre. Los DTOs de listado no incluyen el flag
+  `codigoBarrasGenerado`; si el front lo llega a necesitar como badge en un listado mixto (sin
+  filtrar), se puede agregar después.
+
+**Solo en `dev`/`qa` por ahora** — pendiente de subir a `main`.
+
+---
+
 ## ✅ Fix (2026-07-07): campo `cantidad` en detalles de promoción activa
 
 **Causa raíz del bug "cantidad obligatoria":** `GET /v1/promociones/activas` devolvía los detalles
@@ -6317,4 +6396,33 @@ que se usa para el alta/edición normal de productos que ya nacen con su código
 `mensajeErrorImagen`), `IProductosRepository.java` / `IVarianteRepository.java` (queries nuevas de
 soporte), `migration_carga_imagenes.sql` (nuevo, pendiente de correr en dev/qa).
 
-**⏳ Pendiente:** correr la migración SQL en dev/qa, probar el flujo end-to-end, y push a `qa`.
+**🐛 Bug corregido (2026-07-21):** al probar en QA, las fotos fallaban con
+`Column 'nombre' cannot be null` — la tabla `producto` tiene varias columnas `NOT NULL`
+preexistentes (`nombre`, `precio_costo`, `piezas`, `precio_venta`, `precio_rebaja`; la migración
+de este flujo no las tocó) y `crearBorrador()` las dejaba en null porque el borrador nace
+intencionalmente vacío. Fix: el borrador ahora nace con placeholders — strings vacíos (`nombre`,
+`color` = `""`) y ceros (`precioCosto`, `piezas`, `precioVenta`, `precioRebaja` = `0`) — que se
+pisan en cuanto el front manda los datos reales via `PUT /completar`. **No cambia el contrato** —
+el front no tiene que hacer nada distinto; solo tener en cuenta que un borrador recién creado
+trae `nombre` vacío y precios en `0` (no null) si llega a pintarlos antes de completarlo.
+
+**🐛 Bug corregido #2 (2026-07-21):** ya con los borradores creándose bien, la subida de la
+imagen quedaba en `FALLIDO` con `403 Forbidden from POST .../v1/imagenes` — el backend le pasa
+el JWT del admin al microservicio de imágenes leyéndolo del contexto de seguridad del hilo del
+request, pero la subida corre en un hilo del pool async, que no hereda ese contexto → la llamada
+salía **sin** header `Authorization` y el micro la rechazaba con 403. Fix: el pool ahora propaga
+el contexto de seguridad del request al hilo async (`DelegatingSecurityContextAsyncTaskExecutor`),
+así la subida en segundo plano viaja con el mismo token del admin que subió la foto. **Sin cambio
+de contrato** — el front no hace nada distinto; las fotos que quedaron `FALLIDO` por este 403 se
+reintentan con `POST /{productoId}/reintentar-imagen` normalmente.
+
+**🐛 Bug corregido #3 (2026-07-21):** el borrador recién creado no aparecía en
+`GET /v1/productos/admin/no-habilitados` — ese listado está cacheado y crear el borrador no
+limpiaba la caché (solo se limpiaba cuando la imagen terminaba de subir con éxito; si la subida
+fallaba, el borrador no aparecía nunca hasta expirar la caché). Ahora crear el borrador también
+evicta la caché, así el listado de no-habilitados lo refleja de inmediato. Recordatorio: **los
+borradores no salen en el listado público/normal de productos** (nacen deshabilitados a
+propósito) — para verlos son `admin/no-habilitados` o `GET /v1/carga-imagenes/estado`. Si hace
+falta forzar la limpieza a mano en QA: `DELETE /v1/admin/cache` (ADMIN).
+
+**⏳ Pendiente:** probar el flujo end-to-end de nuevo en QA con el fix, y push a `qa`.

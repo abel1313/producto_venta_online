@@ -24,31 +24,75 @@
         <input type="file" accept="image/*" multiple hidden (change)="onArchivos($event)">
       </label>
 
-      <span class="ci-contador" *ngIf="enVuelo">
-        Enviando {{ enVuelo }} foto(s)…
-      </span>
-
       <span class="ci-contador" *ngIf="tarjetas.length">
         {{ totalExitosas }} lista(s)
-        <ng-container *ngIf="totalPendientes"> · {{ totalPendientes }} subiendo</ng-container>
+        <ng-container *ngIf="totalPendientes"> · {{ totalPendientes }} procesando</ng-container>
         <ng-container *ngIf="totalFallidas"> · {{ totalFallidas }} con error</ng-container>
       </span>
-    </div>
-
-    <div class="ci-error" *ngIf="erroresSubida.length">
-      <button type="button" class="ci-error__close" (click)="erroresSubida = []">✕</button>
-      <strong>{{ erroresSubida.length }} foto(s) no se pudieron subir:</strong>
-      <ul>
-        <li *ngFor="let e of erroresSubida">{{ e }}</li>
-      </ul>
-      <small>Vuelve a seleccionarlas para reintentar — no se creó ningún borrador para ellas.</small>
     </div>
 
     <p class="ci-hint">
       Una foto que ya subiste aquí no se vuelve a subir — evita crear productos borrador duplicados.
     </p>
 
-    <!-- Grilla -->
+    <!-- Bandeja: elegidas pero todavía NO subidas -->
+    <div class="ci-bandeja" *ngIf="seleccionadas.length">
+      <div class="ci-bandeja__head">
+        <strong>{{ seleccionadas.length }} imagen(es) por subir</strong>
+        <span class="ci-bandeja__peso">{{ formatoPeso(pesoTotal) }} en total</span>
+      </div>
+
+      <ul class="ci-lista">
+        <li class="ci-lista__item"
+            *ngFor="let s of seleccionadas; let i = index"
+            [class.ci-lista__item--error]="s.error">
+          <img class="ci-lista__thumb" [src]="s.preview" [alt]="s.nombre">
+
+          <div class="ci-lista__info">
+            <span class="ci-lista__nombre" [title]="s.nombre">{{ s.nombre }}</span>
+            <span class="ci-lista__meta">
+              {{ formatoPeso(s.tamano) }}
+              <ng-container *ngIf="s.subiendo"> · subiendo…</ng-container>
+            </span>
+            <span class="ci-lista__err" *ngIf="s.error">{{ s.error }}</span>
+          </div>
+
+          <button type="button" class="ci-lista__quitar"
+                  *ngIf="!s.subiendo"
+                  (click)="quitarSeleccionada(i)"
+                  title="Quitar de la lista">✕</button>
+        </li>
+      </ul>
+
+      <div class="ci-bandeja__msg" *ngIf="hayFallidasEnSeleccion && !enVuelo">
+        Las que aparecen en rojo no subieron — siguen aquí para reintentarlas.
+        Las que sí entraron ya están abajo como borradores.
+      </div>
+
+      <div class="ci-bandeja__acciones">
+        <button type="button" class="ci-btn ci-btn--ghost"
+                [disabled]="enVuelo > 0" (click)="limpiarSeleccion()">
+          Quitar todas
+        </button>
+
+        <button type="button" class="ci-btn ci-btn--pub"
+                *ngIf="!hayFallidasEnSeleccion"
+                [disabled]="enVuelo > 0" (click)="subirTodas()">
+          <ng-container *ngIf="!enVuelo">⬆️ Subir {{ seleccionadas.length }} imagen(es)</ng-container>
+          <ng-container *ngIf="enVuelo">Subiendo {{ enVuelo }}…</ng-container>
+        </button>
+
+        <button type="button" class="ci-btn ci-btn--retry"
+                *ngIf="hayFallidasEnSeleccion"
+                [disabled]="enVuelo > 0" (click)="reintentarFallidas()">
+          <ng-container *ngIf="!enVuelo">🔄 Reintentar las que fallaron</ng-container>
+          <ng-container *ngIf="enVuelo">Subiendo {{ enVuelo }}…</ng-container>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grilla de borradores ya creados -->
+    <h6 class="ci-subtitulo" *ngIf="tarjetas.length">Borradores creados</h6>
     <div class="ci-grid" *ngIf="tarjetas.length; else vacio">
       <div class="ci-card"
            *ngFor="let t of tarjetas"
@@ -93,10 +137,11 @@
     </div>
 
     <ng-template #vacio>
-      <div class="ci-vacio">
+      <div class="ci-vacio" *ngIf="!seleccionadas.length">
         <div class="ci-vacio__icon">📷</div>
         <p>Todavía no has subido ninguna foto.</p>
-        <small>Cada foto crea un producto borrador con stock 1, deshabilitado hasta que lo completes.</small>
+        <small>Selecciona las imágenes, revísalas y pulsa "Subir". Cada una crea un producto
+          borrador con stock 1, deshabilitado hasta que lo completes.</small>
       </div>
     </ng-template>
   </div>

@@ -28,6 +28,19 @@ export interface ICompletarProducto {
   habilitar?: boolean;
 }
 
+// Archivo elegido pero TODAVÍA NO subido. Vive en la bandeja de selección
+// hasta que el usuario pulsa "Subir". Si su subida falla, se queda aquí
+// (con `error`) para poder reintentarla sin volver a buscarla en el disco.
+export interface IArchivoSeleccionado {
+  file: File;
+  preview: string;      // ObjectURL para la miniatura
+  nombre: string;
+  tamano: number;       // bytes
+  firma: string;
+  subiendo: boolean;
+  error: string;
+}
+
 // Tarjeta de la grilla de captura. Vive solo en el front.
 export interface ITarjetaCaptura extends IEstadoCargaProducto {
   // Preview local (ObjectURL) para no esperar a que el back devuelva urlImagen

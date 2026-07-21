@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
-import { ICompletarProducto, IEstadoCargaProducto, ITarjetaCaptura } from './models/carga-imagen.model';
+import { IArchivoSeleccionado, ICompletarProducto, IEstadoCargaProducto, ITarjetaCaptura } from './models/carga-imagen.model';
 import { CargaImagenesService } from './service/carga-imagenes.service';
 
 @Component({
@@ -11,13 +11,16 @@ import { CargaImagenesService } from './service/carga-imagenes.service';
 })
 export class CargaImagenesComponent implements OnInit, OnDestroy {
 
+  // Bandeja de selección: elegidas pero aún NO subidas. El usuario las revisa
+  // (nombre, peso, miniatura) y decide; nada sale a la red hasta pulsar "Subir".
+  seleccionadas: IArchivoSeleccionado[] = [];
+
+  // Ya subidas — cada una es un producto borrador vivo en el back.
   tarjetas: ITarjetaCaptura[] = [];
+
   // Cuántos POST /subir-imagen siguen en vuelo. Es un contador, no un booleano:
   // al subir 10 fotos, la primera respuesta no debe apagar el indicador de las otras 9.
   enVuelo = 0;
-  // Los errores se acumulan: si fallan 3 de 10, el usuario debe verlos los 3,
-  // no solo el último (un string suelto se pisa a sí mismo).
-  erroresSubida: string[] = [];
 
   // Formulario de "completar borrador" — se abre sobre una tarjeta EXITOSO
   editando: ITarjetaCaptura | null = null;
@@ -41,50 +44,116 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void { this.detenerPolling(); }
+  ngOnDestroy(): void {
+    this.detenerPolling();
+    // Libera los ObjectURL de la bandeja; los de las tarjetas se liberan al quitarlas.
+    this.seleccionadas.forEach(s => URL.revokeObjectURL(s.preview));
+  }
 
-  // ---------- Selección de archivos ----------
+  // Peso legible: los archivos de cámara rondan los MB, no sirve verlos en bytes.
+  formatoPeso(bytes: number): string {
+    if (bytes < 1024) { return `${bytes} B`; }
+    if (bytes < 1024 * 1024) { return `${(bytes / 1024).toFixed(0)} KB`; }
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  // ---------- Selección (NO sube nada todavía) ----------
 
   onArchivos(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    input.value = ''; // permite volver a elegir el mismo archivo si se eliminó la tarjeta
+    // Se limpia el input para poder volver a elegir el mismo archivo si se quitó
+    // de la bandeja (si no, el navegador no dispara `change` con el mismo valor).
+    input.value = '';
 
     if (!files.length) { return; }
 
-    this.erroresSubida = [];
     const repetidos: string[] = [];
 
     files.forEach(f => {
       const firma = this.firmaDe(f);
-      // Regla: una foto que ya se subió en esta pantalla no se vuelve a subir —
-      // si no, se crearía un producto borrador duplicado por cada intento.
-      if (this.tarjetas.some(t => t.firma === firma)) {
+      // Una foto ya subida no se vuelve a subir (crearía un borrador duplicado),
+      // y tampoco se duplica dentro de la propia bandeja de selección.
+      if (this.tarjetas.some(t => t.firma === firma) ||
+          this.seleccionadas.some(s => s.firma === firma)) {
         repetidos.push(f.name);
         return;
       }
-      this.subirUna(f, firma);
+      this.seleccionadas.push({
+        file: f,
+        preview: URL.createObjectURL(f),
+        nombre: f.name,
+        tamano: f.size,
+        firma,
+        subiendo: false,
+        error: ''
+      });
     });
 
     if (repetidos.length) {
       Swal.fire({
         icon: 'info',
-        title: 'Imagen ya subida',
+        title: 'Imagen repetida',
         text: repetidos.length === 1
-          ? `"${repetidos[0]}" ya se subió en esta sesión — no se vuelve a subir.`
-          : `${repetidos.length} imágenes ya se habían subido en esta sesión y se omitieron.`
+          ? `"${repetidos[0]}" ya está en la lista o ya se subió — se omitió.`
+          : `${repetidos.length} imágenes ya estaban en la lista o ya se habían subido y se omitieron.`
       });
     }
   }
 
-  private subirUna(archivo: File, firma: string): void {
-    this.enVuelo++;
-    const preview = URL.createObjectURL(archivo);
+  quitarSeleccionada(i: number): void {
+    const s = this.seleccionadas[i];
+    if (!s || s.subiendo) { return; }
+    URL.revokeObjectURL(s.preview);
+    this.seleccionadas.splice(i, 1);
+  }
 
-    this.svc.subirImagen(archivo).subscribe({
+  limpiarSeleccion(): void {
+    if (this.enVuelo > 0) { return; }
+    this.seleccionadas.forEach(s => URL.revokeObjectURL(s.preview));
+    this.seleccionadas = [];
+  }
+
+  get pesoTotal(): number {
+    return this.seleccionadas.reduce((acc, s) => acc + s.tamano, 0);
+  }
+
+  get hayFallidasEnSeleccion(): boolean {
+    return this.seleccionadas.some(s => !!s.error);
+  }
+
+  // ---------- Subida ----------
+
+  // Sube TODA la bandeja. Cada archivo que entra bien sale de la lista;
+  // el que falla se queda con su error, así la bandeja solo queda vacía
+  // cuando de verdad subieron todas.
+  subirTodas(): void {
+    if (!this.seleccionadas.length || this.enVuelo > 0) { return; }
+    // Copia: el array original se va mutando conforme cada subida termina.
+    [...this.seleccionadas].forEach(s => this.subirUna(s));
+  }
+
+  // Reintenta solo las que quedaron con error, sin volver a mandar las que ya entraron.
+  reintentarFallidas(): void {
+    if (this.enVuelo > 0) { return; }
+    [...this.seleccionadas].filter(s => !!s.error).forEach(s => this.subirUna(s));
+  }
+
+  private subirUna(sel: IArchivoSeleccionado): void {
+    if (sel.subiendo) { return; }
+    sel.subiendo = true;
+    sel.error    = '';
+    this.enVuelo++;
+
+    this.svc.subirImagen(sel.file).subscribe({
       next: res => {
         this.enVuelo--;
-        this.tarjetas.unshift(this.aTarjeta(res, preview, archivo.name, firma));
+        // Entró: pasa de la bandeja a la grilla de borradores. El preview se
+        // reutiliza en la tarjeta (no se revoca aquí, la tarjeta lo sigue usando).
+        this.tarjetas.unshift(this.aTarjeta(res, sel.preview, sel.nombre, sel.firma));
+        const i = this.seleccionadas.indexOf(sel);
+        if (i >= 0) { this.seleccionadas.splice(i, 1); }
+
         if (res.estadoImagen === 'PENDIENTE') {
           this.pendientes.add(res.productoId);
           this.arrancarPolling();
@@ -92,10 +161,10 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.enVuelo--;
-        URL.revokeObjectURL(preview);
-        const motivo = (err?.error?.mensaje ?? err?.error?.message) ?? 'error de red';
-        // Se nombra el archivo: con 10 fotos, "no se pudo subir" a secas no dice cuál.
-        this.erroresSubida.push(`"${archivo.name}": ${motivo}`);
+        sel.subiendo = false;
+        // Se queda en la bandeja con su nombre, peso y miniatura visibles
+        // para poder reintentarla sin volver a buscarla en el disco.
+        sel.error = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo subir (error de red).';
       }
     });
   }

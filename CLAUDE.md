@@ -4542,22 +4542,36 @@ campo por campo, sin volver a tocar la imagen.
    `PUT /{productoId}/completar`. Dos botones: "💾 Guardar avance" (persiste lo que haya) y
    "🚀 Guardar y publicar" (agrega `habilitar: true`).
 
-### Selección múltiple — las 10 fotos SÍ se suben
+### Seleccionar → revisar → subir (la selección NO sube nada)
 
-`onArchivos()` itera **todos** los archivos del input y dispara un `POST /subir-imagen` por cada
-uno, sin esperar entre ellos. La regla de "ya subida" (abajo) solo descarta el **mismo archivo**,
-no limita cuántos distintos se mandan a la vez.
+Elegir archivos **no dispara ninguna petición**. Van a una *bandeja* (`seleccionadas`) donde se
+ven **miniatura, nombre y peso** de cada uno, más el peso total. El usuario puede quitar los que
+no quiera (`✕` por fila, o "Quitar todas") y recién entonces pulsa **"⬆️ Subir N imagen(es)"**.
 
-Dos detalles se corrigieron justo por este caso — fallaban solo con varias fotos, con una sola
-pasaban desapercibidos:
+Esto se cambió a propósito después de una primera versión que subía al instante al seleccionar:
+sin paso intermedio no había forma de ver qué se eligió ni de arrepentirse, y cada equivocación
+dejaba un producto borrador basura en la base.
 
-- **`enVuelo` es un contador, no un booleano.** Con un `subiendo = true/false` compartido, la
-  primera respuesta apagaba el indicador aunque quedaran 9 peticiones vivas.
-- **`erroresSubida` es un arreglo, no un string.** Con un solo campo, si fallaban 3 de 10 cada
-  error pisaba al anterior y solo se veía el último. Ahora se listan todos **con el nombre del
-  archivo** — con 10 fotos, "no se pudo subir" a secas no dice cuál.
+**La bandeja se vacía sola, y solo si TODAS subieron.** Cada archivo que entra bien se saca de
+`seleccionadas` y pasa a la grilla de borradores; el que falla **se queda en la bandeja** con su
+error en rojo, conservando miniatura/nombre/peso. Así:
 
-Un archivo que falla en el POST **no deja borrador** en el back: se vuelve a seleccionar y ya.
+- Bandeja vacía ⇒ todas subieron. No hace falta un flag aparte que pueda desincronizarse.
+- Si fallan algunas, el botón cambia a **"🔄 Reintentar las que fallaron"** (`reintentarFallidas()`),
+  que solo reenvía las que tienen `error` — nunca duplica las que ya entraron.
+- No hay que volver a buscar los archivos en el disco: el `File` sigue vivo en la bandeja.
+
+Un archivo que falla en el POST **no deja borrador** en el back — por eso es seguro reintentarlo.
+
+**`enVuelo` es un contador, no un booleano.** Con un `subiendo = true/false` compartido, la
+primera respuesta apagaba el indicador aunque quedaran 9 peticiones vivas. También es el guard
+que impide subir dos veces o mutar la bandeja a media subida (`subirTodas()`,
+`limpiarSeleccion()` y los botones salen temprano si `enVuelo > 0`).
+
+**Detalle de memoria:** el `ObjectURL` del preview **no se revoca** al subir con éxito — se lo
+queda la tarjeta del borrador, que lo sigue mostrando. Solo se revoca al quitar un archivo de la
+bandeja, al quitar una tarjeta, o en `ngOnDestroy`. Revocarlo en el `next` dejaría la miniatura
+rota.
 
 ### Regla — una foto ya subida no se vuelve a subir
 

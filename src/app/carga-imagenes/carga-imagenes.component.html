@@ -101,8 +101,17 @@
 
         <button class="ci-card__close" type="button" (click)="quitarTarjeta(t)" title="Quitar de la lista">✕</button>
 
+        <!-- Si la foto se subió en esta sesión se usa la miniatura local (ya saneada).
+             Si viene del back (ej. lista de fallidas al entrar), la URL apunta a un
+             endpoint protegido: un <img src> nativo no manda el JWT, por eso pasa
+             por el pipe `imagenSrc`, que la baja con HttpClient. -->
         <div class="ci-card__img">
-          <img *ngIf="t.previewLocal || t.urlImagen" [src]="t.previewLocal || t.urlImagen" [alt]="t.nombreArchivo">
+          <img *ngIf="t.previewLocal" [src]="t.previewLocal" [alt]="t.nombreArchivo">
+
+          <ng-container *ngIf="!t.previewLocal && t.urlImagen">
+            <img *ngIf="t.urlImagen | imagenSrc | async as src" [src]="src" [alt]="t.nombreArchivo">
+          </ng-container>
+
           <div class="ci-card__sinimg" *ngIf="!t.previewLocal && !t.urlImagen">📦</div>
         </div>
 
@@ -156,7 +165,10 @@
 
       <div class="ci-modal__body">
         <div class="ci-modal__preview">
-          <img [src]="editando.previewLocal || editando.urlImagen" alt="">
+          <img *ngIf="editando.previewLocal" [src]="editando.previewLocal" alt="">
+          <ng-container *ngIf="!editando.previewLocal && editando.urlImagen">
+            <img *ngIf="editando.urlImagen | imagenSrc | async as src" [src]="src" alt="">
+          </ng-container>
         </div>
 
         <div class="ci-error" *ngIf="errorForm">{{ errorForm }}</div>

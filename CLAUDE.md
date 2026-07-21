@@ -4573,6 +4573,36 @@ queda la tarjeta del borrador, que lo sigue mostrando. Solo se revoca al quitar 
 bandeja, al quitar una tarjeta, o en `ngOnDestroy`. Revocarlo en el `next` dejaría la miniatura
 rota.
 
+### ⚠️ Dos motivos por los que una miniatura sale rota aquí (ambos ya corregidos)
+
+**1. Angular 14 BLOQUEA las URLs `blob:`.** Su lista blanca de sanitización de URLs
+(`SAFE_URL_PATTERN` en `@angular/core`) es:
+
+```
+/^(?:(?:https?|mailto|data|ftp|tel|file|sms):|[^&:/?#]*(?:[/?#]|$))/gi
+```
+
+`blob:` **no está**. Un `[src]="objectUrl"` crudo se reescribe a `unsafe:blob:...` y el navegador
+no lo carga — la imagen sale rota **sin ningún error en consola**, que es lo que lo hace difícil
+de diagnosticar. Verificado corriendo el regex a mano contra `blob:http://localhost:4200/abc`
+→ no matchea.
+
+Fix: `sanitizer.bypassSecurityTrustUrl(objectUrl)` **al crear el objeto**, no en el template.
+Llamarlo desde un binding devuelve una instancia nueva en cada ciclo de detección de cambios y
+Angular no deja de repintar. Por eso cada item guarda **dos** campos: `preview`/`previewLocal`
+(el `SafeUrl`, para el `[src]`) y `previewUrl` (el string crudo, único que sirve para
+`URL.revokeObjectURL`).
+
+**2. `urlImagen` del back es un endpoint protegido.** Un `<img src>` nativo no pasa por
+`TokenInterceptor` — no manda el JWT y responde 401. Por eso **todo el proyecto** carga imágenes
+del servidor con `| imagenSrc | async`, que las baja por `HttpClient` (con token) y devuelve un
+`data:` URL. Aquí se usa el pipe solo cuando NO hay miniatura local: las fotos de la sesión ya
+tienen su blob saneado, y solo las que vienen de `GET /fallidas` al entrar necesitan el pipe.
+
+**Regla general:** en este proyecto, una imagen que viene del back **siempre** va con
+`| imagenSrc | async`; un archivo local **siempre** va con `bypassSecurityTrustUrl`. Nunca un
+`[src]` crudo con ninguno de los dos.
+
 ### Regla — una foto ya subida no se vuelve a subir
 
 Cada archivo se identifica por una **firma** `nombre|size|lastModified`. Si ya existe una tarjeta

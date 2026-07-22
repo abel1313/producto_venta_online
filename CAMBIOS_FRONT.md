@@ -6346,6 +6346,27 @@ borradores no salen en el listado público/normal de productos** (nacen deshabil
 propósito) — para verlos son `admin/no-habilitados` o `GET /v1/carga-imagenes/estado`. Si hace
 falta forzar la limpieza a mano en QA: `DELETE /v1/admin/cache` (ADMIN).
 
+**⚠️ Aclaración importante para el front (2026-07-21): no usar `POST /v1/productos/save` ni
+`PUT /v1/productos/update` para completar un borrador de carga rápida.** Se probó en QA editando
+un producto borrador (nace con 1 stock, 1 variante y código autogenerado `BRD-XXXXXXXXXXXX`) desde
+`POST /productos/save` mandando los datos reales + un código de barras nuevo. Resultado: **no
+actualizó el borrador, creó un producto duplicado nuevo** con su propio `id` y su propio
+`codigo_barras`, dejando el borrador original intacto (mismo código autogenerado, campos vacíos).
+
+Motivo: `/productos/save` y `/productos/update` (ambos llaman al mismo `saveProductoLote()`) buscan
+el producto a actualizar **por coincidencia exacta de código de barras**, nunca por `id` — es un
+upsert vía código de barras, pensado para alta/edición de productos que ya nacen con su código real
+(carga manual, Excel). Si mandas un código de barras que no existe todavía en la base (como el
+código real de un borrador, que aún no está registrado), el backend concluye que es un producto
+nuevo y lo crea, en vez de actualizar el borrador.
+
+**Regla para el front:** si el producto que se está editando todavía tiene código autogenerado
+(`codigoBarrasGenerado: true` en la respuesta de `GET /v1/carga-imagenes/estado` o del `Producto`
+devuelto), el guardado de esa pantalla **siempre** debe ir a `PUT /v1/carga-imagenes/{productoId}/completar`
+(ver punto 5 arriba) — nunca a `save`/`update`. Recién cuando el producto ya tiene su código real
+asignado (`codigoBarrasGenerado: false`) se puede volver a editar con el flujo normal de
+`save`/`update`.
+
 **⏳ Pendiente:** probar el flujo end-to-end de nuevo en QA con el fix, y push a `qa`.
 
 ---

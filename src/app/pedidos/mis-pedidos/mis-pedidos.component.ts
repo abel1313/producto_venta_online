@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
 import { IPedidoGenerico } from './models/IPedidoGenerico.model';
@@ -58,7 +59,8 @@ export class MisPedidosComponent implements OnInit {
     private readonly clienteService: ClienteService,
     private readonly authService: AuthService,
     private readonly pagoService: PagoService,
-    private readonly negocioService: NegocioService
+    private readonly negocioService: NegocioService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -134,17 +136,21 @@ export class MisPedidosComponent implements OnInit {
   cobrarAdmin(item: IPedidoGenerico) {
     // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
     // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
-    // El detalle del pedido ya tiene el formulario de abono listo para usar.
+    // Se manda directo a Créditos/Abonos con este pedido, que abre solo la card
+    // correspondiente para registrar el abono ahí — es la única pantalla que sí
+    // puede cobrar un crédito.
     if (item.pedido.tipoPedido === 'APARTADO' || item.pedido.tipoPedido === 'FIADO') {
       Swal.fire({
         icon: 'info',
         title: item.pedido.tipoPedido === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
         text: 'Este pedido se cobra registrando un abono, no desde este botón.',
         showCancelButton: true,
-        confirmButtonText: 'Ir al detalle para registrar abono',
+        confirmButtonText: 'Ir a Créditos / Abonos',
         cancelButtonText: 'Cerrar'
       }).then(res => {
-        if (res.isConfirmed) { this.irDetalle(item); }
+        if (res.isConfirmed) {
+          this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
+        }
       });
       return;
     }
@@ -376,6 +382,25 @@ export class MisPedidosComponent implements OnInit {
       }, err => console.error(err));
   }
 
+  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta
+  // con estado_pedido; para crédito no sabemos si ya tiene abonos sin pedir el detalle,
+  // así que se deja habilitado y se valida de verdad en puedeImprimir() al hacer clic.
+  puedeGenerarTicket(item: IPedidoGenerico): boolean {
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return true;
+    return item.pedido.estado_pedido === 'Entregado';
+  }
+
+  // Chequeo real, con el detalle completo — cubre el caso crédito sin abonos que
+  // puedeGenerarTicket() no puede detectar de antemano.
+  private puedeImprimir(d: PedidoDetalleResponse): boolean {
+    const esCredito = d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO';
+    if (esCredito) {
+      return d.estadoPedido === 'PAGADO' || (d.totalPagado ?? 0) > 0 || (d.abonos?.length ?? 0) > 0;
+    }
+    return d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO';
+  }
+
   imprimirTicketPedido(item: IPedidoGenerico): void {
     const pedidoId = item.pedido.id;
     if (this.imprimiendoTicket[pedidoId]) return;
@@ -387,6 +412,10 @@ export class MisPedidosComponent implements OnInit {
         const d = r?.data;
         if (!d) {
           Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+        if (!this.puedeImprimir(d)) {
+          Swal.fire({ icon: 'info', title: 'Todavía no hay ningún pago', text: 'Este pedido aún no se ha cobrado/recogido, o no tiene abonos registrados — no hay nada que imprimir todavía.' });
           return;
         }
 
@@ -472,6 +501,10 @@ export class MisPedidosComponent implements OnInit {
         const d = r?.data;
         if (!d) {
           Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+        if (!this.puedeImprimir(d)) {
+          Swal.fire({ icon: 'info', title: 'Todavía no hay ningún pago', text: 'Este pedido aún no se ha cobrado/recogido, o no tiene abonos registrados — no hay nada que enviar todavía.' });
           return;
         }
         const correoDefault = d.clienteCorreo || item.cliente.correoElectronico || '';

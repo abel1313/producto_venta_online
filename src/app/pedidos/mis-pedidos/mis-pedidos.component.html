@@ -106,14 +106,15 @@
             <i class="pi pi-dollar"></i> Cobrar
           </button>
           <button class="btn-card btn-ticket btn-icon-only"
-                  [disabled]="imprimiendoTicket[item.pedido.id]"
+                  [disabled]="imprimiendoTicket[item.pedido.id] || !puedeGenerarTicket(item)"
                   (click)="imprimirTicketPedido(item)"
-                  title="Imprimir ticket">
+                  [title]="puedeGenerarTicket(item) ? 'Imprimir ticket' : 'Primero hay que cobrar o recoger el pedido'">
             <i class="pi pi-print"></i>
           </button>
           <button class="btn-card btn-correo btn-icon-only" *ngIf="isAdminUser"
+                  [disabled]="!puedeGenerarTicket(item)"
                   (click)="enviarCorreoPedido(item)"
-                  title="Enviar comprobante por correo">
+                  [title]="puedeGenerarTicket(item) ? 'Enviar comprobante por correo' : 'Primero hay que cobrar o recoger el pedido'">
             <i class="pi pi-envelope"></i>
           </button>
           <button class="btn-card btn-cancelar"

@@ -254,6 +254,20 @@
     &::placeholder { color: var(--app-text-placeholder, var(--app-text-muted)); }
     &:focus { outline: none; border-color: var(--app-accent); }
   }
+
+  &__con-btn {
+    display: flex; gap: 6px;
+    input { flex: 1; min-width: 0; }
+  }
+}
+
+.ci-btn-generar {
+  flex: 0 0 auto; width: 38px;
+  border: 1px solid var(--card-border); border-radius: 10px;
+  background: var(--app-surface-2, transparent); color: var(--app-text);
+  font-size: 1rem; cursor: pointer;
+  transition: filter .15s ease;
+  &:hover { filter: brightness(1.15); }
 }
 
 @media (max-width: 480px) {

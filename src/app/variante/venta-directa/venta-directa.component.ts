@@ -39,6 +39,20 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   clienteForm: FormGroup;
   clienteSinRegistroModal: IClienteSinRegistro = null as any;
 
+  // ── Cliente sin registro — creación + verificación de correo (2026-07-22) ──
+  // Antes el modal solo guardaba el formulario en memoria; ahora crea el registro
+  // real en el back (POST /v1/clientes-sin-registro) para poder verificar el correo
+  // ANTES de cobrar — solo cuenta para la rifa si queda verificado o si dio teléfono.
+  clienteSinRegistroId: number | null = null;
+  clienteSinRegistroCorreoVerificado = false;
+  pasoClienteSinRegistro: 'form' | 'verificar' = 'form';
+  guardandoClienteSinRegistro = false;
+  enviandoCodigoCSR = false;
+  verificandoCodigoCSR = false;
+  codigoEnviadoCSR = false;
+  codigoVerificacionCSR = '';
+  errorClienteSinRegistro = '';
+
   // ── Búsqueda de variantes (panel izquierdo) ────────────────────────
   terminoVariante  = '';
   resultados:      IVarianteResumen[] = [];
@@ -155,19 +169,97 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   openModalSinRegistro() {
     this.modalClienteSinRegistro = true;
   }
+
+  // Cerrar (✕ o clic fuera). Si el registro YA se creó en el back (venimos del paso
+  // de verificación) equivale a "omitir verificación" — el registro ya existe con
+  // correoVerificado=false, así que se completa el flujo igual. Si todavía estamos
+  // en el formulario (nada creado aún), es un cancelar real.
   closeModalModalSinRegistro() {
+    if (this.clienteSinRegistroId && this.pasoClienteSinRegistro === 'verificar') {
+      this.finalizarModalClienteSinRegistro();
+      return;
+    }
     this.modalClienteSinRegistro = false;
+    this.pasoClienteSinRegistro = 'form';
     this.cobrarPendiente = false;
+    this.errorClienteSinRegistro = '';
   }
 
-  obtenerDatosClienteSinRegistro(): void {
-    this.clienteSinRegistroModal = this.clienteForm.value;
-    this.clienteSeleccionado = null;
-    this.terminoCliente = '';
-    this.clientes = [];
-    this.closeModalModalSinRegistro();
+  // Paso 1: crea el registro en el back (antes solo se guardaba en memoria).
+  // Si trae correo sin verificar, pasa al paso de verificación dentro del mismo
+  // modal; si no hay correo, cierra directo (nada que verificar).
+  guardarClienteSinRegistro(): void {
+    if (this.clienteForm.invalid || this.guardandoClienteSinRegistro) return;
+    this.guardandoClienteSinRegistro = true;
+    this.errorClienteSinRegistro = '';
+    const dto: IClienteSinRegistro = this.clienteForm.value;
 
-    this.actualizarCheckboxesTicket();
+    this.varianteService.crearClienteSinRegistro(dto).subscribe({
+      next: res => {
+        this.guardandoClienteSinRegistro = false;
+        this.clienteSinRegistroModal = dto;
+        this.clienteSinRegistroId = res.id;
+        this.clienteSinRegistroCorreoVerificado = res.correoVerificado;
+        this.clienteSeleccionado = null;
+        this.terminoCliente = '';
+        this.clientes = [];
+        this.actualizarCheckboxesTicket();
+
+        if (dto.correo_Electronico && !res.correoVerificado) {
+          this.pasoClienteSinRegistro = 'verificar';
+        } else {
+          this.finalizarModalClienteSinRegistro();
+        }
+      },
+      error: err => {
+        this.guardandoClienteSinRegistro = false;
+        this.errorClienteSinRegistro = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el cliente.';
+      }
+    });
+  }
+
+  // Paso 2: envía el código de 6 dígitos al correo ya guardado en el paso 1.
+  enviarCodigoCSR(): void {
+    if (!this.clienteSinRegistroId || this.enviandoCodigoCSR) return;
+    this.enviandoCodigoCSR = true;
+    this.errorClienteSinRegistro = '';
+    this.varianteService.enviarCodigoClienteSinRegistro(this.clienteSinRegistroId).subscribe({
+      next: () => { this.enviandoCodigoCSR = false; this.codigoEnviadoCSR = true; },
+      error: err => {
+        this.enviandoCodigoCSR = false;
+        this.errorClienteSinRegistro = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo enviar el código.';
+      }
+    });
+  }
+
+  // Paso 3: verifica el código capturado. El admin puede omitir este paso — el
+  // registro ya existe con correoVerificado=false y la venta se genera igual.
+  verificarCodigoCSR(): void {
+    if (!this.clienteSinRegistroId || this.codigoVerificacionCSR.length !== 6 || this.verificandoCodigoCSR) return;
+    this.verificandoCodigoCSR = true;
+    this.errorClienteSinRegistro = '';
+    this.varianteService.verificarCodigoClienteSinRegistro(this.clienteSinRegistroId, this.codigoVerificacionCSR).subscribe({
+      next: () => {
+        this.verificandoCodigoCSR = false;
+        this.clienteSinRegistroCorreoVerificado = true;
+        this.codigoVerificacionCSR = '';
+      },
+      error: err => {
+        this.verificandoCodigoCSR = false;
+        this.errorClienteSinRegistro = (err?.error?.mensaje ?? err?.error?.message) ?? 'Código incorrecto o expirado.';
+      }
+    });
+  }
+
+  // Cierra el modal (verificado o no) y, si venía de "cobrar sin cliente → agregar
+  // uno", retoma la venta pendiente.
+  private finalizarModalClienteSinRegistro(): void {
+    this.modalClienteSinRegistro = false;
+    this.pasoClienteSinRegistro = 'form';
+    this.codigoEnviadoCSR = false;
+    this.codigoVerificacionCSR = '';
+    this.errorClienteSinRegistro = '';
+
     if (this.cobrarPendiente) {
       this.cobrarPendiente = false;
       this.ejecutarVenta(0);
@@ -184,6 +276,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   limpiarClienteSinRegistro(): void {
     this.clienteSinRegistroModal = null as any;
+    this.clienteSinRegistroId = null;
+    this.clienteSinRegistroCorreoVerificado = false;
     this.clienteForm.reset();
   }
   ngOnInit(): void {
@@ -372,6 +466,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.lineas = [];
     this.clienteSeleccionado = null;
     this.clienteSinRegistroModal = null as any;
+    this.clienteSinRegistroId = null;
+    this.clienteSinRegistroCorreoVerificado = false;
+    this.pasoClienteSinRegistro = 'form';
+    this.codigoEnviadoCSR = false;
+    this.codigoVerificacionCSR = '';
+    this.errorClienteSinRegistro = '';
     this.clienteForm.reset();
     this.terminoCliente = '';
     this.clienteResolvedId = 0;
@@ -646,7 +746,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     const request: IVentaDirectaRequest = {
       usuarioId:     this.idUsuario,
       clienteId,
-      clienteSinRegistroDto: this.clienteSinRegistroModal,
+      // El registro ya se creó (y opcionalmente verificó) en el back al llenar el
+      // modal — se manda el id, nunca el DTO embebido (ver crearClienteSinRegistro()).
+      clienteSinRegistroId: this.clienteSinRegistroId ?? undefined,
       detalles: [...detallesVariantes, ...detallesPromos]
     };
 

@@ -628,8 +628,28 @@ $t:  all 0.22s ease;
   }
 
   &__error { font-size: .72rem; color: #dc2626; }
+  &__hint  { font-size: .72rem; color: var(--app-text-muted); margin-top: 2px; }
 
   &__actions { display: flex; gap: 10px; }
+
+  &__input--codigo {
+    text-align: center; font-size: 1.3rem; letter-spacing: 6px;
+    font-family: monospace; max-width: 160px;
+  }
+}
+
+.vd-error {
+  font-size: .82rem; color: #dc2626; background: rgba(220,38,38,.08);
+  border: 1px solid rgba(220,38,38,.25); border-radius: 8px; padding: 8px 12px;
+}
+
+.vd-verif-texto {
+  font-size: .88rem; color: var(--app-text); margin: 0 0 4px;
+}
+
+.vd-verif-ok {
+  font-size: .85rem; color: #16a34a; background: rgba(34,197,94,.1);
+  border: 1px solid rgba(34,197,94,.3); border-radius: 8px; padding: 10px 12px;
 }
 
 // ── Chip cliente sin registro ──────────────────────────────────────

@@ -5087,3 +5087,93 @@ abonos, solo no se estaba pintando.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo.
+
+---
+
+## FEAT — MOTIVO `ERROR_ADMIN` AL CANCELAR + VERIFICACIÓN DE CORREO EN CLIENTE SIN REGISTRO (2026-07-22)
+
+> Respuesta del back a la consulta de la sesión anterior, revisada en el repo compartido
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`). Cierra las 3 preguntas abiertas
+> de la consulta "mis-pedidos: cancelar sin afectar rifa, cobrar créditos, cliente sin registro
+> duplicado" — más un feature nuevo completo que salió de esa misma conversación.
+
+### 1. Motivo `ERROR_ADMIN` al cancelar un pedido — sin cambios de back
+
+El back confirmó: `motivo` es texto libre, y el score de la rifa **solo** penaliza cuando el
+valor es `TIMEOUT` o `NO_SE_PRESENTO`. Cualquier otro texto (como `ERROR_ADMIN`) ya no penaliza
+al cliente, sin que el back tuviera que agregar nada. Se agregó la tercera opción al `input:
+'radio'` de `cancelarPedido()` en `mis-pedidos.component.ts`.
+
+### 2. Cliente sin registro duplicado — confirmado que NO hay riesgo
+
+El back revisó el código: el import de participantes de rifa usa el **id de la fila** en
+`clientes_sin_registro`, no el nombre — dos personas con el mismo nombre generan filas
+independientes, sin fusión ni descarte por duplicado. No requirió ningún cambio.
+
+### 3. Detalle de pedido sin imagen — confirmado que no puede fallar por eso
+
+`GET /v1/pedidos/{id}/detalle` no llama a ningún servicio de imágenes — el DTO no tiene ese
+campo. Si en vivo se ve "sin productos", es por otra causa (recordar: ya se mejoró el manejo de
+error silencioso en esa pantalla en la sesión anterior).
+
+### 4. 🆕 Verificación de correo para "cliente sin registro" + elegibilidad de rifa
+
+De la pregunta 2 salió un feature bastante más grande: el back detectó que, para que un cliente
+sin registro cuente para la rifa del mes, ahora exige que su **correo esté verificado** (con
+código de 6 dígitos, mismo patrón que `Cliente`) **o** que haya dado **teléfono** (no verificable
+— no hay SMS/OTP en el proyecto, así que ahí basta con que no venga vacío). Si no cumple ninguna
+de las dos, el pedido se guarda igual (para reportes) pero no participa en esa rifa.
+
+**Antes:** el modal "Agregar cliente sin registro" en `venta-directa` solo guardaba el
+formulario en memoria — nunca llamaba al back hasta el final, junto con el `POST /v1/ventas/save`
+de la venta completa. No había forma de verificar nada antes de cobrar.
+
+**Ahora — 3 endpoints nuevos, flujo de 2 pasos dentro del mismo modal:**
+
+| Endpoint | Método | Cuándo |
+|---|---|---|
+| `/v1/clientes-sin-registro` | POST | Al confirmar el formulario (antes solo quedaba en memoria) |
+| `/v1/clientes-sin-registro/{id}/enviar-codigo` | POST | Botón "✉️ Enviar código de verificación" |
+| `/v1/clientes-sin-registro/{id}/verificar-codigo` | POST `{codigo}` | Botón "Verificar" |
+
+**Paso 1 (formulario, sin cambio visual):** al enviar, ahora sí crea el registro real en el back
+(antes era solo `this.clienteSinRegistroModal = this.clienteForm.value`). Si el cliente dio
+correo y no viene ya verificado → pasa al Paso 2 dentro del mismo modal. Si no dio correo → cierra
+directo, como antes.
+
+**Paso 2 (nuevo, solo si hay correo sin verificar):** botón para enviar el código, campo para
+capturarlo + "Verificar", badge "✅ Correo verificado" al lograrlo. El admin puede omitir este
+paso en cualquier momento (botón "Omitir y continuar", o cerrando el modal con ✕) — el registro
+ya existe en el back con `correoVerificado=false`, la venta se genera igual, solo que ese cliente
+no contará para la rifa salvo que haya dado teléfono.
+
+**`POST /v1/ventas/save`:** ahora manda `clienteSinRegistroId` (el `id` ya creado en el paso 1)
+en vez de `clienteSinRegistroDto` embebido. El campo DTO se queda en el modelo por compatibilidad
+del back, pero este componente ya no lo usa.
+
+**Chip del cliente en pantalla:** ahora muestra el mismo badge ✅/⚠️ que ya usaba el cliente
+registrado, según `clienteSinRegistroCorreoVerificado`.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → tercera opción `ERROR_ADMIN` en
+  `cancelarPedido()`
+- `src/app/variante/service/variante.service.ts` → `crearClienteSinRegistro()`,
+  `enviarCodigoClienteSinRegistro()`, `verificarCodigoClienteSinRegistro()`,
+  `IClienteSinRegistroCreado`, `IVentaDirectaRequest.clienteSinRegistroId?`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → estado de los 2 pasos,
+  `guardarClienteSinRegistro()` (reemplaza `obtenerDatosClienteSinRegistro()`),
+  `enviarCodigoCSR()`, `verificarCodigoCSR()`, `finalizarModalClienteSinRegistro()`,
+  `closeModalModalSinRegistro()` con lógica de "ya se creó, cerrar = omitir", `ejecutarVenta()`
+  manda `clienteSinRegistroId`
+- `src/app/variante/venta-directa/venta-directa.component.html` → modal en 2 pasos, badge de
+  verificación en el chip
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-error`, `.vd-verif-texto`,
+  `.vd-verif-ok`, `.vd-modal__hint`, `.vd-modal__input--codigo`
+
+**⚠️ Estado del back al momento de implementar esto:** el back reportó los endpoints
+"implementados en dev, compila OK" y la migración SQL **ya corrida en dev, qa y prod** — pero no
+confirmó explícitamente que el código ya esté commiteado/pusheado/desplegado. Si al probar en QA
+estos 3 endpoints nuevos dan 404, es cuestión de desplegar el back, no un bug del front.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back esté desplegado en el ambiente de prueba.

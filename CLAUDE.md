@@ -4732,3 +4732,46 @@ viewport — mismo mecanismo de "grid blowout" ya documentado en `ANALISIS_DISEN
 - `src/app/variante/buscar/buscar.component.scss`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX FILTROS ADMIN — 4 COLUMNAS EN PC, 1 COLUMNA EN MÓVIL (2026-07-21)
+
+**Síntoma:** tras el fix anterior (min-width:0 + wrap en móvil), los 8 filtros admin
+(`productos/buscar` y `variantes/buscar`) quedaban en **2 columnas siempre** — en PC se veían
+4 filas muy estiradas y separadas en vez de agruparse.
+
+**Fix:**
+- **PC (por defecto, `.pl-filtros`/`.vb-filtros`):** `grid-template-columns: repeat(2, 1fr)` →
+  `repeat(4, 1fr)`. Con los 8 filtros (con/sin stock, con/sin imágenes, habilitados/no
+  habilitados, código generado/real) quedan exactas **2 filas de 4**.
+- **Móvil (`@media max-width: 576px`):** `repeat(2, 1fr)` → `1fr` (una sola columna) — cada
+  filtro ocupa toda la fila, texto alineado a la izquierda (`text-align: left`,
+  `justify-content: flex-start`) en vez de centrado, como una lista. Ya no hace falta apretar
+  el texto a 2 líneas dentro de una pill angosta — con el ancho completo el label cabe en una
+  línea sin problema.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtros` (base + media 576px)
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtros` (base + media 576px)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX DOC — CAMBIOS_FRONT.md: SECCIONES 2026-07-21 FUERA DE ORDEN CRONOLÓGICO (2026-07-21)
+
+**Síntoma:** dos secciones nuevas (`Fix habilitado` + `Nuevo codigoGenerado`, ambas 2026-07-21)
+habían quedado insertadas **en medio** del documento, intercaladas entre contenido de 2026-07-07,
+en vez de al final donde ya vivía el resto de "Carga rápida de imágenes" (2026-07-20) y sus 3
+bugs corregidos (también 2026-07-21). No era duplicación literal (0 encabezados repetidos,
+verificado con grep) — era desorden: alguien pegó el bloque nuevo a mitad del archivo en vez de
+al final.
+
+**Fix:** se movieron esas 2 secciones (antes en la línea ~5036) al final del documento, justo
+después de los 3 "Bug corregido" de carga rápida de imágenes — mismo día, mismo tema (el filtro
+`codigoGenerado` es directamente para encontrar los borradores de carga rápida). Sin pérdida de
+contenido: mismo total de 6428 líneas, solo reordenado.
+
+**Verificado:** `grep -c "^## "` antes y después da el mismo número de encabezados, ninguno
+duplicado ni faltante.

@@ -128,6 +128,23 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
+    // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
+    // El detalle del pedido ya tiene el formulario de abono listo para usar.
+    if (item.pedido.tipoPedido === 'APARTADO' || item.pedido.tipoPedido === 'FIADO') {
+      Swal.fire({
+        icon: 'info',
+        title: item.pedido.tipoPedido === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
+        text: 'Este pedido se cobra registrando un abono, no desde este botón.',
+        showCancelButton: true,
+        confirmButtonText: 'Ir al detalle para registrar abono',
+        cancelButtonText: 'Cerrar'
+      }).then(res => {
+        if (res.isConfirmed) { this.irDetalle(item); }
+      });
+      return;
+    }
+
     this.pedidoACobrar = item;
     this.resetDialogo();
 

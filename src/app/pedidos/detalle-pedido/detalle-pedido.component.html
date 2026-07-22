@@ -33,6 +33,20 @@
 
   <!-- FORM DE ABONO (solo crédito) -->
   <div class="dp-abono-wrap" *ngIf="esCredito">
+
+    <!-- Historial de pagos ya registrados — viene en la misma respuesta del detalle -->
+    <div class="dp-abono-historial" *ngIf="(detalle?.abonos?.length ?? 0) > 0">
+      <p class="dp-abono-historial__title">📋 Pagos registrados</p>
+      <div class="dp-abono-historial__item" *ngFor="let a of detalle?.abonos">
+        <span class="dp-abono-historial__monto">{{ a.monto | currency:'$' }}</span>
+        <span class="dp-abono-historial__metodo">
+          {{ a.metodoPago === 'EFECTIVO' ? '💵 Efectivo' : a.metodoPago === 'TRANSFERENCIA' ? '🏦 Transferencia' : a.metodoPago }}
+        </span>
+        <span class="dp-abono-historial__fecha">{{ a.fechaPago | date:'dd/MM/yyyy' }}</span>
+        <span class="dp-abono-historial__nota" *ngIf="a.nota">"{{ a.nota }}"</span>
+      </div>
+    </div>
+
     <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono">
       💳 Registrar abono
     </button>

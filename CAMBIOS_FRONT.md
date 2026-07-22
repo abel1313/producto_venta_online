@@ -6367,6 +6367,33 @@ devuelto), el guardado de esa pantalla **siempre** debe ir a `PUT /v1/carga-imag
 asignado (`codigoBarrasGenerado: false`) se puede volver a editar con el flujo normal de
 `save`/`update`.
 
+**⚠️ No es solo un riesgo de carga rápida — reportado también en la edición NORMAL de productos
+(2026-07-21):** el admin reportó el mismo síntoma editando un producto normal (no un borrador):
+al guardar cambios, en vez de actualizar el producto existente **se creó uno nuevo** con los datos
+editados, y el original se quedó igual. La causa es la misma regla de arriba (`/save` y `/update`
+matchean por código de barras exacto, nunca por `id`) — solo que aquí el código enviado no
+coincidía con el guardado en BD por una razón del lado del front, no por tratarse de un borrador.
+
+**Mitigación aplicada en el front (`productos/producto/add/add.component.ts`):**
+1. Se encontró un bug real: `cargarProductoUpdate()` dispara el listener de `sinCodigoBarra` en
+   CADA carga del formulario (Angular emite `valueChanges` en todo `patchValue`, incluso sin
+   cambio de valor). Si el producto cargado llegaba sin código de barras, ese listener
+   **generaba uno nuevo aleatorio** aunque el admin no hubiera tocado nada — al guardar, ese
+   código nunca existe en BD → crea un producto duplicado. Corregido: la auto-generación ahora
+   solo ocurre cuando el admin activa el toggle "Generar código automático" a propósito, nunca
+   durante la carga inicial del formulario.
+2. Se agregó una guarda antes de guardar: si el código de barras que se va a enviar es distinto
+   al que tenía el producto cuando se abrió la pantalla de edición, se muestra una alerta
+   explicando el riesgo (crea un duplicado en vez de actualizar) y pide confirmación explícita
+   antes de continuar — cubre esta causa y cualquier otra que produzca el mismo desajuste
+   (edición manual del campo, etc.), sin depender de encontrar la causa raíz exacta en cada caso.
+
+**Pendiente de fondo (backend):** ambos endpoints (`/save` y `/update`) deberían matchear por
+`id` cuando se manda uno, y solo caer al upsert-por-código-de-barras cuando no hay `id` (alta
+nueva). Mientras eso no se resuela del lado del back, cualquier producto editado desde estas
+pantallas sigue en riesgo si el código de barras enviado no es idéntico al de BD — la mitigación
+del front (arriba) reduce el riesgo pero no lo elimina de raíz.
+
 **⏳ Pendiente:** probar el flujo end-to-end de nuevo en QA con el fix, y push a `qa`.
 
 ---

@@ -4795,3 +4795,62 @@ con grep, no hace falta ningún cambio de código.
 de carga rápida (`codigoBarrasGenerado: true`), esa pantalla debe seguir usando `/completar` hasta
 que el código ya sea real. Nunca asumir que "editar producto" siempre es `save`/`update` sin antes
 revisar ese flag.
+
+---
+
+## FIX PRODUCTOS/EDITAR — DUPLICABA EL PRODUCTO EN VEZ DE ACTUALIZARLO (2026-07-21)
+
+**Síntoma reportado:** al editar un producto normal (no un borrador de carga rápida) y guardar,
+en vez de actualizarlo se creaba un producto NUEVO con los datos editados — el producto original
+se quedaba intacto, sin los cambios.
+
+**Causa raíz (confirmada por el back en `CAMBIOS_FRONT.md`):** `AddComponent.guardar()` se usa
+tanto para crear como para editar (`esActualizar` solo cambia el mensaje/navegación) y **siempre**
+llama a `POST /v1/productos/save` — nunca a `PUT /v1/productos/update`. Pero además el back
+confirmó que **ambos endpoints comparten la misma lógica interna** (`saveProductoLote()`): buscan
+el producto a tocar **por código de barras exacto, nunca por `id`**. Si el código que se envía no
+coincide con el guardado en BD, el backend concluye "esto es nuevo" y crea un producto duplicado.
+
+**Bug concreto encontrado en el front que podía disparar esto:** `cargarProductoUpdate()` hace
+un solo `patchValue()` con todos los campos, incluido `sinCodigoBarra`. Angular emite
+`valueChanges` en **cada** `patchValue`, incluso si el valor no cambia. El listener de
+`sinCodigoBarra` (`initCodigoBarra()`) generaba un código de barras **aleatorio nuevo** cada vez
+que `sinCodigoBarra` quedaba en `true` — y eso pasaba automáticamente si el producto cargado no
+traía código, sin que el admin tocara nada. Al guardar, ese código recién inventado nunca existe
+en BD → producto duplicado garantizado para cualquier producto sin código de barras que se
+edite.
+
+**Fix aplicado — dos capas, `add.component.ts`:**
+1. **Cerrar el mecanismo de auto-generación en carga:** nuevo flag `cargandoDesdeUpdate`, en
+   `true` solo durante el `patchValue()` de `cargarProductoUpdate()`. El listener de
+   `sinCodigoBarra` ya NO genera un código nuevo mientras ese flag está activo — sigue
+   gestionando los validadores igual que antes (para que el form no quede en estado inválido),
+   solo deja de inventar un código. La auto-generación real (toggle "Generar código automático")
+   sigue funcionando igual cuando el admin lo activa a propósito.
+2. **Guarda genérica antes de guardar (cubre cualquier otra causa, no solo la de arriba):** se
+   captura `codigoBarrasOriginal` al cargar el producto para editar. En `guardar()`, si el código
+   que se va a enviar es distinto al original, se muestra un Swal explicando el riesgo ("esto crea
+   un producto duplicado, el original se queda igual") y pide confirmación explícita antes de
+   llamar al backend. La lógica de armar el request y llamar `saveProducto()` se extrajo a
+   `ejecutarGuardar()`, invocada directo si el código no cambió, o tras confirmar el Swal si sí
+   cambió.
+3. Se agregó `extraerCodigo()` — helper defensivo que lee el código de barras sea que llegue como
+   string plano (lo que realmente manda la grilla, `IProductoDTO.codigoBarras: string`) o como
+   objeto anidado (lo que declara el tipo `IProductoDTORec.codigoBarras: ICodigoBarra` — hay un
+   mismatch de tipos entre ambos DTOs que el cast `as IProductoDTORec` en `UpdateComponent` no
+   corrige en tiempo de ejecución). Evita quedar con `[object Object]` en el campo si algún día
+   cambia la forma del DTO.
+
+**Revisado — variantes NO tienen este riesgo:** `update-variante.component.ts` no usa
+`save`/`update` por código de barras para nada — actualiza por `id` con un endpoint distinto.
+Confirmado con grep, sin cambios necesarios ahí.
+
+**Pendiente de fondo, es del backend:** mientras `/productos/save` y `/productos/update` sigan
+matcheando por código de barras y no por `id`, el riesgo no desaparece del todo — la guarda del
+front avisa y bloquea el caso obvio, pero no puede saber si el código en BD cambió por otra vía
+mientras el admin tenía el formulario abierto. Ver nota completa en `CAMBIOS_FRONT.md`.
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo
+contra el backend real — no se pudo reproducir el escenario exacto sin sesión de admin y datos
+de prueba; la corrección se basa en el análisis del código y en lo que el back confirmó por
+escrito.

@@ -34,6 +34,16 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
+  // Código de barras que tenía el producto AL ABRIR la pantalla de editar.
+  // El backend (/productos/save y /productos/update) matchea por código de
+  // barras exacto, no por id — si el código que se envía difiere del que
+  // ya está en BD, se crea un producto duplicado en vez de actualizar este.
+  private codigoBarrasOriginal: string | null = null;
+  // true mientras cargarProductoUpdate() está corriendo su patchValue —
+  // evita que el listener de sinCodigoBarra regenere un código nuevo solo
+  // porque el producto cargado no traía código (ver initCodigoBarra()).
+  private cargandoDesdeUpdate = false;
+
   get esActualizar(): boolean { return this.nombreCard === 'Actualizar Producto'; }
 
   constructor(
@@ -96,8 +106,15 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.formProductos.get('sinCodigoBarra')!.valueChanges.subscribe((sinCodigo: boolean) => {
       const ctrl = this.formProductos.get('codigoBarras')!;
       if (sinCodigo) {
-        // Generar código automático basado en fecha
-        ctrl.setValue(this.generarCodigoBarras());
+        // patchValue() en cargarProductoUpdate() dispara este valueChanges
+        // aunque el admin no haya tocado nada — si el producto que se está
+        // editando llegó sin código, NO hay que inventarle uno nuevo aquí:
+        // el backend matchea por código exacto, y un código recién generado
+        // nunca existe en BD → crearía un producto duplicado al guardar.
+        // Solo se genera cuando el admin activa el toggle a propósito.
+        if (!this.cargandoDesdeUpdate) {
+          ctrl.setValue(this.generarCodigoBarras());
+        }
         ctrl.clearValidators();
       } else {
         // Limpiar para que el usuario ingrese el suyo
@@ -125,11 +142,29 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.palabraClaveSeleccionada = p;
   }
 
+  // El tipo declara `codigoBarras: ICodigoBarra` (objeto { id, codigoBarras }),
+  // pero el item que realmente llega desde la grilla (IProductoDTO) lo trae
+  // como string plano — el cast `as IProductoDTORec` en UpdateComponent no
+  // convierte el valor en tiempo de ejecución. Se soportan ambas formas para
+  // no quedar con "[object Object]" si algún día el DTO cambia de forma.
+  private extraerCodigo(cb: unknown): string {
+    if (!cb) return '';
+    if (typeof cb === 'string') return cb;
+    if (typeof cb === 'object' && 'codigoBarras' in (cb as any)) {
+      return (cb as any).codigoBarras ?? '';
+    }
+    return '';
+  }
+
   private cargarProductoUpdate(): void {
     const p = this.productoUpdate!;
-    const tieneCodigo = !!p.codigoBarras;
+    const codigo = this.extraerCodigo(p.codigoBarras);
+    const tieneCodigo = !!codigo;
+    this.codigoBarrasOriginal = codigo || null;
     // Precargar palabra clave si el producto ya tenía una asignada
     if (p.palabraClave) this.palabraClaveSeleccionada = p.palabraClave;
+
+    this.cargandoDesdeUpdate = true;
     this.formProductos.patchValue({
       nombre:        p.nombre,
       precioCosto:   p.precioVenta,
@@ -141,9 +176,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       stock:         p.stock,
       marca:         p.marca,
       contenido:     p.contenido,
-      codigoBarras:  p.codigoBarras ?? '',
+      codigoBarras:  codigo,
       sinCodigoBarra:!tieneCodigo
     });
+    this.cargandoDesdeUpdate = false;
   }
 
   // ── Guardar ────────────────────────────────────────────────────────
@@ -155,6 +191,36 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     }
     const raw = this.formProductos.getRawValue();
 
+    // El backend matchea por código de barras EXACTO, no por id (confirmado
+    // para /productos/save Y /productos/update). Si el código que se va a
+    // enviar cambió respecto al que tenía el producto al abrir esta
+    // pantalla, guardar así crea un producto duplicado en vez de actualizar
+    // este — sin importar la causa del cambio (edición manual, un espacio
+    // de más, etc.). Se avisa y se pide confirmación antes de mandar nada.
+    const codigoNuevo = (raw.codigoBarras ?? '').trim();
+    const codigoViejo = (this.codigoBarrasOriginal ?? '').trim();
+    if (this.esActualizar && codigoViejo && codigoNuevo !== codigoViejo) {
+      Swal.fire({
+        icon: 'warning',
+        title: '⚠️ El código de barras cambió',
+        html: `Este producto tenía el código <b>${codigoViejo}</b> y se va a guardar con
+               <b>${codigoNuevo}</b>.<br><br>El sistema busca el producto a actualizar por su
+               código de barras exacto — si lo cambias, en vez de actualizar este producto
+               <b>se crea uno nuevo</b> y este se queda igual, sin tus cambios.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, mantener el código nuevo',
+        cancelButtonText: 'Cancelar y revisar',
+        reverseButtons: true
+      }).then(res => {
+        if (res.isConfirmed) this.ejecutarGuardar(raw);
+      });
+      return;
+    }
+
+    this.ejecutarGuardar(raw);
+  }
+
+  private ejecutarGuardar(raw: any): void {
     const productoSave: IProducto = {
       nombre:         raw.nombre,
       precioCosto:    +raw.precioCosto,

@@ -40,15 +40,19 @@ export class CargaImagenesService {
       .pipe(map(r => r.data));
   }
 
-  // Red de seguridad si el front perdió la lista de productoId (recarga de página)
-  fallidas(): Observable<IEstadoCargaProducto[]> {
-    return this.http.get<ResponseGeneric<IEstadoCargaProducto[]>>(`${this.url}/fallidas`)
-      .pipe(map(r => r.data ?? []));
-  }
-
   // Cada campo no nulo pisa el valor actual — no hace falta reenviar todo el objeto
   completar(productoId: number, body: ICompletarProducto): Observable<any> {
     return this.http.put<ResponseGeneric<any>>(`${this.url}/${productoId}/completar`, body)
+      .pipe(map(r => r.data));
+  }
+
+  // Borra de verdad — no el soft-delete de productos normales: elimina el producto,
+  // su(s) variante(s), las relaciones producto_imagen/variante_imagen y la imagen (local
+  // + intenta borrarla también en el micro de imágenes, best-effort). El back responde 400
+  // si el producto ya tiene código de barras real (ya no es un borrador) — protección para
+  // no borrar por accidente algo que ya se completó.
+  descartar(productoId: number): Observable<any> {
+    return this.http.delete<ResponseGeneric<any>>(`${this.url}/${productoId}`)
       .pipe(map(r => r.data));
   }
 }

@@ -40,6 +40,72 @@ Los cambios del módulo de crédito/abonos (ventas, pedidos, abonos, cancelar, t
 
 ---
 
+## REGLA — SINCRONIZACIÓN `CAMBIOS_FRONT.md` CON REPO COMPARTIDO FRONT/BACK (2026-07-21)
+
+> Existe un repositorio **aparte**, fuera de este proyecto, que sirve de punto de encuentro entre
+> front y back: `D:\proyectos\documentos_front_back_nodevedaades_jade` (repo git propio, remoto
+> `github.com:abel1313/documentos_front_back_nodevedaades_jade.git`). Tiene su propia copia de
+> `CAMBIOS_FRONT.md` — ahí el back sube los cambios de API que le tocan al front, y ahí también
+> debe quedar reflejado lo que el front (yo) necesita preguntarle al back (dudas, consultas,
+> notas de bugs). Es el canal de ida y vuelta entre los dos equipos.
+
+### ⚠️ Corrección del flujo (mismo día, 2026-07-21) — el repo compartido es ahora la fuente primaria
+
+El usuario aclaró el flujo: **de aquí en adelante, cualquier duda/consulta mía para el back sobre
+`CAMBIOS_FRONT.md` se escribe directamente en la copia del repo compartido**
+(`D:\proyectos\documentos_front_back_nodevedaades_jade\CAMBIOS_FRONT.md`), no en la de este
+proyecto. La copia de este proyecto (`d:\proyectos\producto_venta_online\CAMBIOS_FRONT.md`) se
+actualiza **solo al final**, cuando el usuario diga que ya se terminó de revisar/discutir — momento
+en el que se pasa (sincroniza) todo lo nuevo del repo compartido hacia acá.
+
+### Flujo de trabajo (vigente)
+
+1. **Cuando el usuario diga "baja/revisa los cambios" (o equivalente)** → ir a
+   `D:\proyectos\documentos_front_back_nodevedaades_jade`, `git pull`, y diffear su
+   `CAMBIOS_FRONT.md` contra el de este proyecto (mismo método de diff-contra-HEAD que se usa para
+   deduplicar — ver `project_cambios_front_duplication` en memoria) para ver qué puso el back de
+   nuevo. **Solo revisar y reportar en el chat — todavía NO tocar el archivo de este proyecto.**
+2. **Cualquier duda/consulta nueva que yo tenga para el back** → escribirla directo en
+   `D:\proyectos\documentos_front_back_nodevedaades_jade\CAMBIOS_FRONT.md` (no en la copia de este
+   proyecto), dejar el commit listo en ese repo aparte (avisando antes de hacer `git push`, es un
+   repo con remoto propio en GitHub).
+3. **Cuando el usuario diga que ya se terminó** (la ronda de revisión/discusión) → recién ahí
+   sincronizar todo lo nuevo del repo compartido hacia `CAMBIOS_FRONT.md` de este proyecto, con el
+   mismo método de diff para no perder ni duplicar nada.
+4. Son dos repos git independientes (`producto_venta_online` vs
+   `documentos_front_back_nodevedaades_jade`) — la sincronización es copiar/mezclar contenido del
+   archivo, **no** un merge de git entre ambos.
+
+### 📡 Radar — pendiente de sincronizar a este proyecto (actualizado 2026-07-21)
+
+El repo compartido tiene contenido nuevo que **todavía no está en la copia de este proyecto**
+(no sincronizar hasta que el usuario diga "ya terminamos"):
+
+- **Respuesta completa del back a la "CONSULTA AL BACK" de carga rápida de imágenes** (sección
+  `## ✅ RESPUESTA DEL BACK a la consulta de arriba`, al final del archivo compartido). Resumen:
+  1. Nuevo endpoint **`DELETE /v1/carga-imagenes/{productoId}`** — borra el borrador de verdad
+     (producto + variante + imagen local + intenta borrar en el micro de imágenes). Responde
+     **400** si el producto ya tiene código real asignado (protección para no borrar algo ya
+     completado por accidente).
+  2. **No hace falta endpoint nuevo** para recuperar los pendientes (`EXITOSO` sin completar +
+     `FALLIDO`) al recargar la pantalla: combinar
+     `GET /v1/productos/admin/filtrar?codigoGenerado=true&habilitado=false` (pagina) +
+     `GET /v1/carga-imagenes/estado?productoIds=...` para clasificar por `estadoImagen`. El back
+     **recomienda migrar y dejar de usar `GET /fallidas`** (que no pagina y solo trae los
+     `FALLIDO`, no los `EXITOSO` sin completar).
+  3. `/fallidas` se queda sin paginar por ahora — recomendación es migrar al punto 2 en vez de
+     pedir paginación ahí.
+  4. El `DELETE` del punto 1 sí intenta borrar la imagen en el micro (9096) — best-effort, si falla
+     solo queda un warning en el log del back.
+  5. Sin límite de reintentos en `reintentar-imagen` — confirmado, no se agregó tope.
+  6. Sin limpieza automática/TTL todavía — backlog, no bloquea nada.
+- **✅ Ya implementado en el front (2026-07-22)** — ver sección
+  "FIX CARGA RÁPIDA DE IMÁGENES — DELETE REAL + RECUPERACIÓN DE EXITOSO SIN COMPLETAR" más abajo.
+  Pendiente solo sincronizar esta respuesta del back hacia el `CAMBIOS_FRONT.md` de este proyecto
+  (cuando el usuario diga que ya terminamos la ronda de revisión).
+
+---
+
 ## FIX — ELIMINACIÓN DE SPINNERS LOCALES EN COMPONENTES (2026-06-14)
 
 **Criterio:** solo debe existir el spinner global del `LoadingInterceptor` (overlay pantalla completa, `app-loading`). Todos los `spinner-border` locales dentro de componentes fueron eliminados.
@@ -4916,3 +4982,60 @@ borradores sigue siendo obligatorio `PUT /v1/carga-imagenes/{productoId}/complet
 
 **Verificado con `ng build --configuration=development` sin errores.** ⚠️ Sigue sin probarse en
 vivo — depende de que el fix del back ya esté desplegado en el ambiente donde se pruebe.
+
+---
+
+## FIX CARGA RÁPIDA DE IMÁGENES — DELETE REAL + RECUPERACIÓN DE `EXITOSO` SIN COMPLETAR (2026-07-22)
+
+> Respuesta del back a la "CONSULTA AL BACK" del 2026-07-21 (repo compartido
+> `documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`, sección
+> "✅ RESPUESTA DEL BACK a la consulta de arriba"). Cierra los 2 problemas reportados en vivo:
+> el "✕" no borraba nada de verdad, y las tarjetas `EXITOSO` (listas para completar) se perdían
+> de la vista al recargar o navegar fuera de `/carga-imagenes`.
+
+### 1. `quitarTarjeta()` ahora borra de verdad, con confirmación
+
+**Antes:** solo hacía `this.tarjetas = this.tarjetas.filter(...)` — sacaba la tarjeta de la
+vista pero el producto+variante+imagen seguían vivos en la base con `estadoImagen: FALLIDO`. La
+siguiente vez que se recargaba la pantalla, `GET /fallidas` la volvía a traer — "resucitaba".
+
+**Ahora:** llama al nuevo `DELETE /v1/carga-imagenes/{productoId}`
+(`CargaImagenesService.descartar()`), que sí borra producto + variante + imagen (local + intenta
+borrar también en el micro 9096, best-effort). Como pasó de ser una acción cosmética a una
+permanente, se agregó un `Swal` de confirmación antes de llamar al endpoint. Si el back responde
+`400` (el producto ya tiene código de barras real — protección para no borrar algo ya
+completado), se muestra el mensaje del back en un Swal de error y la tarjeta se queda tal cual.
+
+### 2. `ngOnInit()` ya no pierde los `EXITOSO` sin completar
+
+**Antes:** solo llamaba `GET /fallidas` — únicamente traía los borradores con imagen `FALLIDO`.
+Un borrador `EXITOSO` (imagen subida, esperando "Completar datos") solo vivía en el estado del
+componente Angular; al salir de la pantalla o recargar, desaparecía de la vista aunque el
+producto siguiera en la base, deshabilitado, con su imagen ya lista — exactamente el caso real
+confirmado en QA que motivó la consulta al back.
+
+**Ahora:** `ngOnInit()` llama a `cargarPendientes()`, que combina las dos llamadas que el back
+confirmó que ya alcanzan (no hizo falta ningún endpoint nuevo para esto):
+1. `ProductoService.adminFiltrar({ codigoGenerado: true, habilitado: false }, 1, 100)` — trae
+   TODOS los productos que siguen siendo borrador de carga rápida, sin importar el estado de su
+   imagen.
+2. Con los `idProducto` de esa respuesta, `CargaImagenesService.estado(ids)` — clasifica cada uno
+   por `estadoImagen` (`PENDIENTE`/`EXITOSO`/`FALLIDO`) y arranca el polling si alguno sigue
+   `PENDIENTE`.
+
+`CargaImagenesService.fallidas()` se eliminó del servicio — quedó sin ningún componente que lo
+llamara (confirmado con grep) y el back recomendó explícitamente dejar de usarlo a favor del
+combo de arriba.
+
+**Archivos modificados:**
+- `src/app/carga-imagenes/service/carga-imagenes.service.ts` → quita `fallidas()`, agrega
+  `descartar(productoId)` (`DELETE`)
+- `src/app/carga-imagenes/carga-imagenes.component.ts` → inyecta `ProductoService`;
+  `ngOnInit()` → `cargarPendientes()` (combo `adminFiltrar` + `estado`); `quitarTarjeta()` con
+  `Swal` de confirmación + llamada real al backend
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — requiere sesión de admin y borradores reales en el ambiente donde se
+pruebe. Pendiente: sincronizar esta respuesta del back hacia el `CAMBIOS_FRONT.md` de este
+proyecto cuando el usuario confirme que ya se terminó la ronda de revisión (ver regla de
+sincronización más arriba).

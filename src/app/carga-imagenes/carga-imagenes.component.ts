@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
+import { ProductoService } from '../productos/service/producto.service';
 import { IArchivoSeleccionado, ICompletarProducto, IEstadoCargaProducto, ITarjetaCaptura } from './models/carga-imagen.model';
 import { CargaImagenesService } from './service/carga-imagenes.service';
 
@@ -36,14 +37,37 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly svc: CargaImagenesService,
+    private readonly productoSvc: ProductoService,
     private readonly sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
-    // Red de seguridad: si en una sesión anterior quedaron borradores con imagen
-    // fallida, se muestran aquí para poder reintentarlos sin adivinar cuáles fueron.
-    this.svc.fallidas().subscribe({
-      next: res => res.forEach(r => this.tarjetas.push(this.aTarjeta(r, null, '', 'previo'))),
+    this.cargarPendientes();
+  }
+
+  // Red de seguridad al entrar/recargar: antes solo se pedía GET /fallidas, así que un
+  // borrador EXITOSO (imagen lista, esperando "Completar datos") se perdía de la vista al
+  // salir de la pantalla — el producto seguía vivo en la base, solo dejaba de mostrarse.
+  // El back recomendó dejar de usar /fallidas y combinar estas dos llamadas, que sí traen
+  // TODOS los pendientes (PENDIENTE + EXITOSO + FALLIDO), no solo los fallidos.
+  private cargarPendientes(): void {
+    this.productoSvc.adminFiltrar({ codigoGenerado: true, habilitado: false }, 1, 100).subscribe({
+      next: pag => {
+        const ids = (pag?.t ?? []).map(p => p.idProducto).filter((id): id is number => !!id);
+        if (!ids.length) { return; }
+
+        this.svc.estado(ids).subscribe({
+          next: estados => estados.forEach(r => {
+            if (this.tarjetas.some(t => t.productoId === r.productoId)) { return; }
+            this.tarjetas.push(this.aTarjeta(r, null, '', 'previo'));
+            if (r.estadoImagen === 'PENDIENTE') {
+              this.pendientes.add(r.productoId);
+              this.arrancarPolling();
+            }
+          }),
+          error: () => { /* no bloquea la captura — es solo un extra al entrar */ }
+        });
+      },
       error: () => { /* no bloquea la captura — es solo un extra al entrar */ }
     });
   }
@@ -312,12 +336,37 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   // ---------- Utilidades ----------
 
+  // Borra el borrador para siempre (producto + variante + imagen) — antes solo sacaba la
+  // tarjeta del array local, así que "reaparecía" en el siguiente GET /fallidas porque el
+  // producto seguía vivo en la base. Ahora sí es permanente, por eso pide confirmación.
   quitarTarjeta(t: ITarjetaCaptura): void {
-    // Solo la saca de la vista — el borrador sigue existiendo en el back
-    // y se puede retomar desde "productos no habilitados".
-    this.pendientes.delete(t.productoId);
-    if (t.previewUrl) { URL.revokeObjectURL(t.previewUrl); }
-    this.tarjetas = this.tarjetas.filter(x => x.productoId !== t.productoId);
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Descartar este borrador?',
+      text: 'Se borra el producto, su variante y la imagen para siempre — no se puede deshacer.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, descartar',
+      cancelButtonText: 'Cancelar'
+    }).then(res => {
+      if (!res.isConfirmed) { return; }
+
+      this.svc.descartar(t.productoId).subscribe({
+        next: () => {
+          this.pendientes.delete(t.productoId);
+          if (t.previewUrl) { URL.revokeObjectURL(t.previewUrl); }
+          this.tarjetas = this.tarjetas.filter(x => x.productoId !== t.productoId);
+        },
+        error: err => {
+          // El back responde 400 si el producto ya tiene código de barras real
+          // (ya no es un borrador) — protección para no borrar algo ya completado.
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo descartar',
+            text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.'
+          });
+        }
+      });
+    });
   }
 
   get totalExitosas(): number { return this.tarjetas.filter(t => t.estadoImagen === 'EXITOSO').length; }

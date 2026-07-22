@@ -6494,6 +6494,18 @@ GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=f
 
 ## ❓ CONSULTA AL BACK — falta endpoint para descartar un borrador de carga rápida (2026-07-21)
 
+### Endpoints que usa hoy `/carga-imagenes` (todos en `carga-imagenes.service.ts`)
+
+| Método | Endpoint | Para qué |
+|---|---|---|
+| `POST` | `/v1/carga-imagenes/subir-imagen` | Sube una foto → crea el producto+variante borrador |
+| `GET` | `/v1/carga-imagenes/estado?productoIds=` | Polling del estado de la imagen (PENDIENTE/EXITOSO/FALLIDO) |
+| `POST` | `/v1/carga-imagenes/{productoId}/reintentar-imagen` | Reintenta la imagen de un borrador que falló |
+| `GET` | `/v1/carga-imagenes/fallidas` | Lista los borradores con imagen FALLIDA (sin paginación, sin filtro de fecha) |
+| `PUT` | `/v1/carga-imagenes/{productoId}/completar` | Guarda los datos del producto (nombre, precio, código real, etc.) |
+
+**No existe ningún endpoint de borrado** para esta pantalla — es la raíz del problema de abajo.
+
 **Reportado por el admin:** subió varias fotos en `/carga-imagenes`; algunas quedaron listas para
 "Completar datos" (`EXITOSO`) y otras fallaron (`FALLIDO`, con botón "Reintentar"). Le dio "✕" a
 las fallidas esperando que desaparecieran para siempre. Al volver a entrar a la pantalla:
@@ -6534,3 +6546,26 @@ pieza del backend):**
 **Mientras no haya respuesta, el front seguirá con el gap:** los borradores fallidos "resucitan"
 cada vez que se recarga la pantalla (aunque se hayan descartado con "✕"), y los borradores listos
 para completar solo son visibles durante la misma sesión de captura en la que se subieron.
+
+### Dudas adicionales, mismo tema (no bloquean, pero conviene resolverlas antes de que crezca el uso)
+
+3. **`GET /fallidas` no tiene paginación ni filtro de fecha** — "devuelve todos los productos con
+   `estadoImagen = FALLIDO`, más recientes primero", sin límite. Si nunca se implementa el borrado
+   del punto 1, esta lista va a crecer indefinidamente con el uso real (pruebas, fotos borrosas,
+   productos que ya no interesan) y cada vez que un admin entre a `/carga-imagenes` va a cargar
+   más y más tarjetas viejas. ¿Conviene agregar paginación o un filtro `desde`/`hasta`, o el plan
+   es que el borrado del punto 1 mantenga la lista corta de forma natural?
+
+4. **¿Qué pasa con la imagen ya subida al microservicio de imágenes si el borrador se elimina?**
+   Si se implementa el `DELETE` del punto 1, ¿también borra la imagen del micro de imágenes
+   (9096), o solo el producto/variante en proyecto-key y la imagen queda huérfana allá?
+
+5. **¿Hay límite de reintentos en `POST /{productoId}/reintentar-imagen`?** Si una imagen falla
+   siempre (ej. archivo corrupto, formato no soportado), ¿el front debería dejar de ofrecer
+   "Reintentar" después de N intentos, o el backend ya limita/rechaza en algún punto? Hoy el
+   botón de reintentar no tiene tope, el admin puede darle indefinidamente.
+
+6. **¿Debería haber una limpieza automática de borradores abandonados** (nunca completados,
+   con semanas de antigüedad)? Con el tiempo estos van a acumularse en `admin/no-habilitados` y
+   en el filtro `codigoGenerado=true` sin que nadie los complete ni los borre — un TTL o un job
+   de limpieza periódico evitaría que esos listados se llenen de basura.

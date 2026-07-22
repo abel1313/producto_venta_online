@@ -216,7 +216,11 @@
 
           <div class="ci-field">
             <label>Código de barras real</label>
-            <input type="text" appUppercase [(ngModel)]="form.codigoBarras" placeholder="Escanéalo o escríbelo">
+            <div class="ci-field__con-btn">
+              <input type="text" appUppercase [(ngModel)]="form.codigoBarras" placeholder="Escanéalo o escríbelo">
+              <button type="button" class="ci-btn-generar" (click)="generarCodigoBarras()"
+                      title="Generar uno automático (fecha + números aleatorios)">🎲</button>
+            </div>
           </div>
 
           <div class="ci-field ci-field--full">

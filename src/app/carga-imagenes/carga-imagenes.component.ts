@@ -265,6 +265,20 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.form.palabraClaveId = pc?.id ?? undefined;
   }
 
+  // Mismo formato que "Agregar producto" (add.component.ts): MMDDAAAA +
+  // 5 dígitos aleatorios = 13 caracteres. Aquí es un botón puntual, no un
+  // toggle — el borrador ya tiene su código temporal BRD-...; esto solo
+  // rellena el campo del código REAL cuando el producto no trae uno propio
+  // (ej. viene de una foto suelta sin empaque/etiqueta legible).
+  generarCodigoBarras(): void {
+    const now  = new Date();
+    const mm   = String(now.getMonth() + 1).padStart(2, '0');
+    const dd   = String(now.getDate()).padStart(2, '0');
+    const yyyy = String(now.getFullYear());
+    const rand = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
+    this.form.codigoBarras = `${mm}${dd}${yyyy}${rand}`;
+  }
+
   guardarAvance(publicar: boolean): void {
     if (!this.editando || this.guardando) { return; }
     this.guardando = true;

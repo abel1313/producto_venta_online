@@ -4656,6 +4656,25 @@ tenía). Quedó en 6 320 líneas.
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo: requiere la migración SQL corrida en el back.
 
+### Extra — botón "generar código automático" en "Completar datos" (2026-07-21)
+
+No todos los borradores tienen un código de barras legible a la mano (foto suelta de una prenda
+sin etiqueta/empaque, por ejemplo) — el admin necesitaba la misma opción que ya existe en
+"Agregar producto" para inventarle uno. Se agregó el botón 🎲 junto al campo "Código de barras
+real" del modal de completar → `generarCodigoBarras()`, mismo formato que
+`AddComponent.generarCodigoBarras()` (`MMDDAAAA` + 5 dígitos aleatorios, 13 caracteres) — solo
+llena el campo, el admin sigue pudiendo editarlo antes de guardar. A diferencia del formulario de
+"Agregar producto" (que tiene un toggle "Generar código automático" con lógica de
+validadores/auto-regeneración), aquí es un botón puntual y nada más — no hay riesgo de
+duplicar nada porque este formulario siempre guarda con `PUT /completar` (matchea por `id`).
+
+**Archivos modificados:**
+- `src/app/carga-imagenes/carga-imagenes.component.ts` → `generarCodigoBarras()`
+- `src/app/carga-imagenes/carga-imagenes.component.html` → botón junto al campo
+- `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-field__con-btn`, `.ci-btn-generar`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
 ---
 
 ## FEAT FILTROS ADMIN — `codigoGenerado` EN PRODUCTOS Y VARIANTES + LAYOUT 2 COLUMNAS (2026-07-21)

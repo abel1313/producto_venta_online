@@ -14,6 +14,7 @@ import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
 import { NegocioService } from '../negocio/negocio.service';
+import { motivoCancelacionSwalFragment } from '../shared/motivo-cancelacion.util';
 
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
@@ -197,19 +198,25 @@ export class AbonosComponent implements OnInit, OnDestroy {
       ? `El producto ya fue entregado. La deuda de $${pedido.saldo.toFixed(2)} quedará registrada.`
       : `Pagó $${pedido.totalPagado.toFixed(2)} de $${pedido.totalPedido.toFixed(2)}. Se devolverá el stock.`;
 
+    // Grupo de botones (mismos 3 motivos que mis-pedidos) en vez del input de texto libre —
+    // consistente entre ambas pantallas de cancelación. Ver nota en CLAUDE.md: pendiente de
+    // confirmar con el back si estos valores afectan el score de rifa igual que en
+    // /v1/pedidos/delete/{id}, ya que este endpoint (/v1/abonos/{id}/cancelar) es distinto.
+    const motivoFrag = motivoCancelacionSwalFragment();
+
     Swal.fire({
       title: `¿Cancelar ${esFiado ? 'el crédito (ir pagando)' : 'el apartado'} de ${pedido.cliente}?`,
-      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>
-              <input id="swal-motivo" class="swal2-input" maxlength="30"
-                     placeholder="Motivo de cancelación (opcional)">`,
+      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton:    true,
       confirmButtonText:   esFiado ? 'Sí, registrar como incobrable' : 'Sí, cancelar y devolver stock',
       cancelButtonText:    'No',
-      confirmButtonColor:  '#ef4444'
+      confirmButtonColor:  '#ef4444',
+      didOpen:    motivoFrag.didOpen,
+      preConfirm: motivoFrag.preConfirm
     }).then(result => {
       if (!result.isConfirmed) return;
-      const motivo = (document.getElementById('swal-motivo') as HTMLInputElement)?.value?.trim() || undefined;
+      const motivo = result.value as string;
       this.abonoService.cancelar(pedido.pedidoId, { motivo }).subscribe({
         next: res => {
           const data     = res?.data;

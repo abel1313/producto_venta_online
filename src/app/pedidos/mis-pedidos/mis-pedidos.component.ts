@@ -105,7 +105,11 @@ export class MisPedidosComponent implements OnInit {
       input: 'radio',
       inputOptions: {
         NO_SE_PRESENTO: 'No se presentó',
-        CLIENTE_AVISO:  'El cliente avisó'
+        CLIENTE_AVISO:  'El cliente avisó',
+        // El back solo penaliza el score de rifa cuando motivo es TIMEOUT/NO_SE_PRESENTO —
+        // cualquier otro texto (como este) no cuenta en contra del cliente, confirmado por
+        // el back sin necesitar ningún cambio de su lado.
+        ERROR_ADMIN:    'Error al capturar (fue el admin, no el cliente)'
       },
       inputValue: 'NO_SE_PRESENTO',
       showCancelButton: true,

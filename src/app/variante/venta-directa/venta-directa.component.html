@@ -248,6 +248,10 @@
           <span class="vd-client-chip__name">
             {{ clienteSinRegistroModal.nombre_persona }} {{ clienteSinRegistroModal.apeido_Paterno }}
           </span>
+          <span *ngIf="clienteSinRegistroModal.correo_Electronico && clienteSinRegistroCorreoVerificado"
+                class="vd-verif-badge vd-verif-badge--ok" title="Correo verificado">✅</span>
+          <span *ngIf="clienteSinRegistroModal.correo_Electronico && !clienteSinRegistroCorreoVerificado"
+                class="vd-verif-badge vd-verif-badge--warn" title="Correo sin verificar — no cuenta para la rifa salvo que dé teléfono">⚠️</span>
           <span *ngIf="clienteSinRegistroModal.numero_Telefonico" class="vd-client-chip__phone">
             📱 {{ clienteSinRegistroModal.numero_Telefonico }}
           </span>
@@ -428,12 +432,15 @@
       <span class="vd-modal__icon">👤</span>
       <div>
         <h3 class="vd-modal__title">Cliente sin registro</h3>
-        <small class="vd-modal__sub">Datos para asignar a esta venta</small>
+        <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'form'">Datos para asignar a esta venta</small>
+        <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'verificar'">Verificar correo (opcional)</small>
       </div>
       <button class="vd-modal__close" (click)="closeModalModalSinRegistro()">&#10005;</button>
     </div>
 
-    <form [formGroup]="clienteForm" (ngSubmit)="obtenerDatosClienteSinRegistro()" class="vd-modal__form">
+    <!-- Paso 1: datos del cliente -->
+    <form *ngIf="pasoClienteSinRegistro === 'form'"
+          [formGroup]="clienteForm" (ngSubmit)="guardarClienteSinRegistro()" class="vd-modal__form">
       <div class="vd-modal__grid">
 
         <div class="vd-modal__field">
@@ -473,6 +480,7 @@
         <div class="vd-modal__field vd-modal__field--full">
           <label class="vd-modal__label">Correo electrónico</label>
           <input class="vd-modal__input" formControlName="correo_Electronico" type="email" placeholder="correo@ejemplo.com">
+          <small class="vd-modal__hint">Si lo da, se le va a pedir verificarlo con un código antes de cerrar este paso.</small>
         </div>
 
         <div class="vd-modal__field vd-modal__field--full">
@@ -482,13 +490,59 @@
 
       </div>
 
+      <div class="vd-error" *ngIf="errorClienteSinRegistro">{{ errorClienteSinRegistro }}</div>
+
       <div class="vd-modal__actions">
         <button type="button" class="vd-btn-limpiar" (click)="closeModalModalSinRegistro()">Cancelar</button>
-        <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid">
-          Guardar cliente
+        <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid || guardandoClienteSinRegistro">
+          {{ guardandoClienteSinRegistro ? 'Guardando…' : 'Guardar cliente' }}
         </button>
       </div>
     </form>
+
+    <!-- Paso 2: verificar correo (solo si dio correo y aún no está verificado) -->
+    <div *ngIf="pasoClienteSinRegistro === 'verificar'" class="vd-modal__form">
+      <p class="vd-verif-texto">
+        Correo registrado: <strong>{{ clienteSinRegistroModal.correo_Electronico }}</strong>
+      </p>
+
+      <div class="vd-verif-ok" *ngIf="clienteSinRegistroCorreoVerificado">
+        ✅ Correo verificado — este cliente ya cuenta para la rifa del mes.
+      </div>
+
+      <ng-container *ngIf="!clienteSinRegistroCorreoVerificado">
+        <button type="button" class="vd-btn-sinreg" *ngIf="!codigoEnviadoCSR"
+                [disabled]="enviandoCodigoCSR" (click)="enviarCodigoCSR()">
+          {{ enviandoCodigoCSR ? 'Enviando…' : '✉️ Enviar código de verificación' }}
+        </button>
+
+        <ng-container *ngIf="codigoEnviadoCSR">
+          <div class="vd-modal__field">
+            <label class="vd-modal__label">Código de 6 dígitos</label>
+            <input class="vd-modal__input vd-modal__input--codigo" type="text" inputmode="numeric" maxlength="6"
+                   placeholder="123456" [(ngModel)]="codigoVerificacionCSR" [ngModelOptions]="{standalone: true}">
+          </div>
+          <div class="vd-modal__actions">
+            <button type="button" class="vd-btn-limpiar" [disabled]="enviandoCodigoCSR" (click)="enviarCodigoCSR()">
+              {{ enviandoCodigoCSR ? 'Enviando…' : 'Reenviar código' }}
+            </button>
+            <button type="button" class="vd-btn-cobrar"
+                    [disabled]="codigoVerificacionCSR.length !== 6 || verificandoCodigoCSR"
+                    (click)="verificarCodigoCSR()">
+              {{ verificandoCodigoCSR ? 'Verificando…' : 'Verificar' }}
+            </button>
+          </div>
+        </ng-container>
+      </ng-container>
+
+      <div class="vd-error" *ngIf="errorClienteSinRegistro">{{ errorClienteSinRegistro }}</div>
+
+      <div class="vd-modal__actions">
+        <button type="button" class="vd-btn-limpiar" (click)="closeModalModalSinRegistro()">
+          {{ clienteSinRegistroCorreoVerificado ? 'Cerrar' : 'Omitir y continuar' }}
+        </button>
+      </div>
+    </div>
 
   </div>
 </div>

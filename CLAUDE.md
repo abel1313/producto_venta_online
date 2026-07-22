@@ -5177,3 +5177,80 @@ estos 3 endpoints nuevos dan 404, es cuestión de desplegar el back, no un bug d
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — depende de que el back esté desplegado en el ambiente de prueba.
+
+---
+
+## FIX — "COBRAR" CRÉDITO MANDA A `/ABONOS` (NO AL DETALLE) + "FIADO" → "IR PAGANDO" EN /ABONOS + TICKET SOLO CON PAGO (2026-07-22)
+
+> Reportado en vivo tras probar el fix anterior de "Cobrar crédito redirige a abono": el redirect
+> a `detalle-pedido` no era lo que se pedía — se esperaba ir directo a **Créditos / Abonos**
+> (`/abonos`), a la card exacta. Además `/abonos` seguía diciendo "Fiado" en 3 lugares (la
+> renombrada a "Ir pagando" de julio solo tocó `venta-variante`, no `abonos.component.html`), y
+> se pidió que imprimir/enviar ticket no esté disponible hasta que el pedido tenga algún pago.
+
+### 1. "Cobrar" en `mis-pedidos` ahora manda a `/abonos?pedidoId=N`, no al detalle
+
+`cobrarAdmin()` en `mis-pedidos.component.ts`: el botón "Ir a Créditos / Abonos" del Swal ahora
+navega con `router.navigate(['/abonos'], { queryParams: { pedidoId } })` en vez de
+`irDetalle(item)`.
+
+**`AbonosComponent`** lee ese query param una sola vez al iniciar (`route.queryParams.pipe(take(1))`)
+y se lo pasa a `cargarCuenta(pedidoIdAbrir)`: en cuanto llega la lista de `estadoCuenta`, busca el
+pedido por `pedidoId` y llama `abrirModal()` automáticamente — el admin llega y ya tiene el
+formulario de abono abierto, sin tener que buscar la card a mano. Si el pedido no aparece ahí
+(ya liquidado o cancelado), muestra un aviso en vez de fallar en silencio.
+
+### 2. "Fiado" → "Ir pagando" en `/abonos` (se había quedado fuera del rename de julio)
+
+3 badges (`ec.tipoPedido`/`p.tipoPedido`/`c.tipoPedido` === 'FIADO') decían "🤝 Fiado" — ahora
+dicen "💳 Ir pagando" (mismo ícono que ya se usa en `mis-pedidos`/`detalle-pedido`). El subtítulo
+del header ("Gestión de apartados y fiados") y el título del Swal de cancelar
+("¿Cancelar el fiado de X?") también se corrigieron. Las clases CSS (`ab-badge--fiado`,
+variable `esFiado`) se dejaron igual — son identificadores internos, no texto visible.
+
+### 3. Imprimir/enviar ticket ya no se puede antes de que haya algún pago
+
+**Antes:** en `mis-pedidos` y `detalle-pedido`, los botones 🖨️/📧 estaban siempre habilitados,
+sin importar si el pedido normal seguía "Pendiente" (nadie ha cobrado/recogido) o si un crédito
+todavía no tenía ni un abono.
+
+**`detalle-pedido`** (tiene el detalle completo cargado, `this.detalle.abonos` incluido): nuevo
+getter `puedeGenerarTicket` — para NORMAL exige `estado_pedido === 'Entregado'`; para crédito
+exige `estadoPedido === 'PAGADO'` **o** al menos un abono en `detalle.abonos`. Los 2 botones usan
+`[disabled]="!puedeGenerarTicket"` + `title` explicando por qué.
+
+**`mis-pedidos`** (la card de la lista NO trae info de abonos — solo `tipoPedido`/`estado_pedido`):
+- Para NORMAL sí se puede pre-deshabilitar con lo que ya hay en la lista → `puedeGenerarTicket(item)`
+  usa `estado_pedido === 'Entregado'`.
+- Para crédito **no hay forma de saber si ya tiene abonos sin pedir el detalle** — se deja el botón
+  habilitado, pero `imprimirTicketPedido()`/`enviarCorreoPedido()` ahora piden el detalle primero
+  (ya lo hacían) y, antes de continuar, llaman `puedeImprimir(d)` — si el crédito no tiene ni un
+  abono, corta con un aviso ("Todavía no hay ningún pago") en vez de generar el ticket.
+
+**Limitación conocida (anotada en el repo compartido):** el botón de un crédito sin abonos se ve
+igual de habilitado que uno con abonos en `mis-pedidos` — la protección real ocurre al hacer clic,
+no antes. Para que se vea deshabilitado de entrada (como en `detalle-pedido`) haría falta que el
+endpoint de lista incluya algo como `tienePagos`/`totalPagado` — se dejó como pregunta al back, no
+bloqueante.
+
+### 🔎 Investigado y no reproducido: "se agregó 2 veces Apartado"
+
+Se revisó `mis-pedidos.component.html`, `.ts`, y `abonos.component.html`/`.ts` completos — un solo
+badge `📦 Apartado` por card en cada pantalla, sin ningún `content:`/duplicado en el SCSS que lo
+repita. No se encontró la causa en el código. Si se sigue viendo, hace falta una captura o decir
+en qué pantalla exacta aparece duplicado — podría ser un problema de datos (el mismo pedido
+llegando 2 veces en la respuesta del back, o un doble `push` por scroll) más que de plantilla.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()` navega a `/abonos`;
+  `puedeGenerarTicket()`, `puedeImprimir()`, guard en `imprimirTicketPedido()`/`enviarCorreoPedido()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` en los 2 botones
+- `src/app/abonos/abonos.component.ts` → `ActivatedRoute`, `cargarCuenta(pedidoIdAbrir?)`, texto
+  del Swal de cancelar
+- `src/app/abonos/abonos.component.html` → "Ir pagando" en vez de "Fiado" (3 badges + subtítulo)
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `puedeGenerarTicket`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `[disabled]`/`[title]` en los
+  2 botones
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.

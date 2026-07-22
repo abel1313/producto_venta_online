@@ -5,7 +5,7 @@
     <div class="ab-header__content">
       <div class="ab-header__title">
         <h4>💳 Créditos y Abonos</h4>
-        <small>Gestión de apartados y fiados</small>
+        <small>Gestión de apartados y créditos (ir pagando)</small>
       </div>
       <div class="ab-tabs">
         <button class="ab-tab" [class.ab-tab--active]="tab === 'cuenta'" (click)="cambiarTab('cuenta')">
@@ -45,7 +45,7 @@
           <div class="ab-card__info">
             <span class="ab-badge" [class.ab-badge--apartado]="ec.tipoPedido === 'APARTADO'"
                                    [class.ab-badge--fiado]="ec.tipoPedido === 'FIADO'">
-              {{ ec.tipoPedido === 'APARTADO' ? '📦 Apartado' : '🤝 Fiado' }}
+              {{ ec.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
             <span class="ab-card__id">#{{ ec.pedidoId }}</span>
             <span class="ab-card__cliente">{{ ec.cliente }}</span>
@@ -122,7 +122,7 @@
             <span class="ab-badge ab-badge--pagado">✅ Pagado</span>
             <span class="ab-badge" [class.ab-badge--apartado]="p.tipoPedido === 'APARTADO'"
                                    [class.ab-badge--fiado]="p.tipoPedido === 'FIADO'">
-              {{ p.tipoPedido === 'APARTADO' ? '📦 Apartado' : '🤝 Fiado' }}
+              {{ p.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
             <span class="ab-card__id">#{{ p.pedidoId }}</span>
             <span class="ab-card__cliente">{{ p.cliente }}</span>
@@ -185,7 +185,7 @@
             <span class="ab-badge ab-badge--cancelado">✖ Cancelado</span>
             <span class="ab-badge" [class.ab-badge--apartado]="c.tipoPedido === 'APARTADO'"
                                    [class.ab-badge--fiado]="c.tipoPedido === 'FIADO'">
-              {{ c.tipoPedido === 'APARTADO' ? '📦 Apartado' : '🤝 Fiado' }}
+              {{ c.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
             <span class="ab-card__id">#{{ c.pedidoId }}</span>
             <span class="ab-card__cliente">{{ c.cliente }}</span>

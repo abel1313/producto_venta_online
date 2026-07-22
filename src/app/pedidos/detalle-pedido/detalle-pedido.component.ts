@@ -58,6 +58,16 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.detalle?.estadoPedido ?? this.pedido?.pedido?.estado_pedido ?? '';
   }
 
+  // Solo se puede imprimir/reenviar el ticket si ya hay algo que cobrar: NORMAL
+  // entregado, o crédito con al menos un abono registrado (o ya liquidado).
+  get puedeGenerarTicket(): boolean {
+    if (!this.detalle) return false;
+    if (this.esCredito) {
+      return this.estadoPedido === 'PAGADO' || (this.detalle.abonos?.length ?? 0) > 0;
+    }
+    return this.estadoPedido === 'Entregado' || this.estadoPedido === 'PAGADO';
+  }
+
   get fechaCompra(): string | null {
     return this.detalle?.fechaHoraRegistro ?? this.detalle?.fechaPedido ?? null;
   }

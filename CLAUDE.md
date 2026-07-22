@@ -5327,6 +5327,32 @@ u otro, si se agrega en el futuro) antes que del navegador.
 Angular) — se valida en el próximo deploy revisando con `curl -D -` que las respuestas ya
 incluyan `Cache-Control`. No requiere nada del backend.
 
+**⚠️ PENDIENTE DE CONFIRMAR — desplegado pero el usuario sigue sin ver el cambio en su navegador
+(2026-07-22, mismo día).** Confirmado con `curl -D -` en vivo que el servidor YA manda los
+headers nuevos (`index.html` → `no-cache, no-store, must-revalidate`; `main.<hash>.js` →
+`public, max-age=31536000, immutable`) — el deploy en sí está bien. Pero el usuario probó pedido
+#89 después de esto y "sigue igual" (el diálogo viejo de cobro, sin el Swal de redirección a
+`/abonos`).
+
+**Explicación más probable:** el fix de `Cache-Control` evita que el problema se repita **hacia
+adelante**, pero NO invalida retroactivamente lo que el navegador ya tenía guardado en caché
+**antes** de que el header existiera — esa copia vieja de `index.html` fue guardada sin ninguna
+instrucción de `Cache-Control` (el estado de antes del fix), así que el navegador la sigue
+tratando como "fresca" por su propia cuenta (heurística) durante un rato más, sin saber que el
+servidor ya cambió de política. Un solo hard-refresh (Ctrl+Shift+R) o probar en incógnito debería
+saltarse esa copia vieja una vez — de ahí en adelante, con el header ya puesto, no debería volver
+a pasar.
+
+**No confirmado todavía si el usuario ya probó con hard-refresh/incógnito DESPUÉS de este deploy
+específico** (sí lo había probado antes, contra el deploy anterior sin el fix de nginx). El
+usuario decidió dejarlo reposar un tiempo antes de volver a probar, en vez de seguir
+diagnosticando en el momento — retomar cuando lo pida.
+
+**Si al reintentar con hard-refresh sigue sin verse:** ahí sí buscar otra causa (CDN externo,
+Service Worker instalado en su navegador que Angular no debería tener pero conviene descartar
+con `chrome://serviceworker-internals` o Application → Service Workers en DevTools, o que esté
+probando contra una URL/pestaña distinta a la que cree).
+
 ---
 
 ## FIX — ENCONTRADO EL "2 VECES APARTADO" (badge de tipo + badge de estado repetidos) (2026-07-22)

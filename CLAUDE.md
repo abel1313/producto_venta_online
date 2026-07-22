@@ -5397,3 +5397,48 @@ NORMAL/Cancelado no cambian, siguen mostrando `estado_pedido` tal cual.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo.
+
+---
+
+## FIX — MOTIVO DE CANCELACIÓN: BOTONES EN VEZ DE RADIO/TEXTO LIBRE (2026-07-22)
+
+> El usuario reportó que el motivo de cancelación en `/abonos` era un `<input>` de texto libre
+> (opcional), mientras que en `mis-pedidos` era un `input:'radio'` nativo de SweetAlert2 (se ve
+> como checklist feo) — pidió unificar ambas pantallas con la misma lista de motivos, pero sin
+> que sea un radio/checkbox ni un `<select>` nativo — "algo más elegante".
+
+**Fix:** nuevo util compartido `src/app/shared/motivo-cancelacion.util.ts` —
+`motivoCancelacionSwalFragment()` genera un grupo de botones tipo "pill" (mismo lenguaje visual
+que ya usa el proyecto para método de pago EFECTIVO/TRANSFERENCIA) para inyectar dentro de un
+`Swal.fire({ html, didOpen, preConfirm })`. Usa variables CSS globales (`--app-accent`,
+`--card-bg`, `--card-border`, `--app-accent-soft`) en vez de colores fijos — sí cascadean hasta
+el DOM que SweetAlert2 inyecta en `document.body` (a diferencia de los estilos scoped de un
+componente Angular), así que respeta dark/light automáticamente sin código extra.
+
+**3 motivos, iguales en ambas pantallas:** "No se presentó" / "El cliente avisó" / "Error al
+capturar (fue el admin, no el cliente)" — mismos valores literales `NO_SE_PRESENTO` /
+`CLIENTE_AVISO` / `ERROR_ADMIN` que ya usaba `mis-pedidos`.
+
+- `mis-pedidos.component.ts` → `cancelarPedido()` reemplaza `input:'radio'` + `inputOptions` por
+  `motivoCancelacionSwalFragment()`. Mismo endpoint de siempre (`DELETE /v1/pedidos/delete/{id}
+  ?motivo=...`), mismo comportamiento — solo cambió la UI.
+- `abonos.component.ts` → `cancelarPedido()` reemplaza el `<input maxlength="30">` de texto libre
+  por el mismo grupo de botones. **Cambio de comportamiento:** antes el motivo era opcional
+  (podía dejarse vacío), ahora es una selección obligatoria de las 3 opciones — se perdió la
+  posibilidad de escribir un motivo custom. Si se necesita, se puede agregar una 4ª opción "Otro"
+  con texto libre condicional, pero no se hizo sin que el usuario lo pida.
+
+**⚠️ Pendiente de confirmar con el back:** la nota de la Lección global sobre `motivo` (texto
+libre, solo `TIMEOUT`/`NO_SE_PRESENTO` penalizan el score de rifa) se confirmó específicamente
+para `DELETE /v1/pedidos/delete/{id}` (usado por `mis-pedidos`). El endpoint que usa `abonos`
+(`PUT /v1/abonos/{pedidoId}/cancelar`) es **distinto** — no está confirmado si tiene la misma
+semántica de scoring para `motivo`, o si siquiera usa ese campo para algo más que guardarlo como
+texto. Anotado como pregunta en el repo compartido para que el back confirme.
+
+**Archivos modificados:**
+- `src/app/shared/motivo-cancelacion.util.ts` (nuevo)
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cancelarPedido()`
+- `src/app/abonos/abonos.component.ts` → `cancelarPedido()`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — pendiente además del hard-refresh por el bug de caché de nginx.

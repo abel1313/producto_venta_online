@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
+import { motivoCancelacionSwalFragment } from 'src/app/shared/motivo-cancelacion.util';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -100,26 +101,21 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // Grupo de botones en vez del input:'radio' nativo de SweetAlert2 (se veía como checklist
+    // feo) — mismos 3 motivos, mismo patrón visual de pills que el resto del proyecto.
+    const motivoFrag = motivoCancelacionSwalFragment();
+
     Swal.fire({
       title: '¿Por qué cancelas este pedido?',
-      html: `<p style="color:#6b7280;margin-bottom:4px">Pedido #${item.pedido.id}</p>`,
+      html: `<p style="color:var(--app-text-muted,#6b7280);margin:0 0 4px">Pedido #${item.pedido.id}</p>${motivoFrag.html}`,
       icon: 'warning',
-      input: 'radio',
-      inputOptions: {
-        NO_SE_PRESENTO: 'No se presentó',
-        CLIENTE_AVISO:  'El cliente avisó',
-        // El back solo penaliza el score de rifa cuando motivo es TIMEOUT/NO_SE_PRESENTO —
-        // cualquier otro texto (como este) no cuenta en contra del cliente, confirmado por
-        // el back sin necesitar ningún cambio de su lado.
-        ERROR_ADMIN:    'Error al capturar (fue el admin, no el cliente)'
-      },
-      inputValue: 'NO_SE_PRESENTO',
       showCancelButton: true,
       confirmButtonText: 'Cancelar pedido',
       cancelButtonText: 'No cancelar',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6b7280',
-      inputValidator: (value) => (!value ? 'Selecciona un motivo' : null)
+      didOpen: motivoFrag.didOpen,
+      preConfirm: motivoFrag.preConfirm
     }).then(result => {
       if (result.isConfirmed) {
         this.pedidoService.cancelarConMotivo(item.pedido.id, result.value).subscribe({

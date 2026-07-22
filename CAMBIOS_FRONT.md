@@ -6367,32 +6367,47 @@ devuelto), el guardado de esa pantalla **siempre** debe ir a `PUT /v1/carga-imag
 asignado (`codigoBarrasGenerado: false`) se puede volver a editar con el flujo normal de
 `save`/`update`.
 
-**⚠️ No es solo un riesgo de carga rápida — reportado también en la edición NORMAL de productos
-(2026-07-21):** el admin reportó el mismo síntoma editando un producto normal (no un borrador):
-al guardar cambios, en vez de actualizar el producto existente **se creó uno nuevo** con los datos
-editados, y el original se quedó igual. La causa es la misma regla de arriba (`/save` y `/update`
-matchean por código de barras exacto, nunca por `id`) — solo que aquí el código enviado no
-coincidía con el guardado en BD por una razón del lado del front, no por tratarse de un borrador.
+**🐛 Bug corregido (2026-07-21): editar un producto normal (no borrador) cambiando su código de
+barras creaba un duplicado en vez de actualizarlo.** Es el mismo problema del punto anterior pero
+para la edición normal de catálogo (fuera del flujo de carga rápida): `POST /productos/save` y
+`PUT /productos/update` buscaban el producto a actualizar **solo por coincidencia exacta de código
+de barras**. Si el usuario editaba un producto y le cambiaba el código de barras junto con el resto
+de los datos, el backend no encontraba ningún producto con ese código nuevo, concluía que era un
+producto nuevo y lo creaba — dejando el producto original intacto, sin los cambios.
 
-**Mitigación aplicada en el front (`productos/producto/add/add.component.ts`):**
-1. Se encontró un bug real: `cargarProductoUpdate()` dispara el listener de `sinCodigoBarra` en
-   CADA carga del formulario (Angular emite `valueChanges` en todo `patchValue`, incluso sin
-   cambio de valor). Si el producto cargado llegaba sin código de barras, ese listener
-   **generaba uno nuevo aleatorio** aunque el admin no hubiera tocado nada — al guardar, ese
-   código nunca existe en BD → crea un producto duplicado. Corregido: la auto-generación ahora
-   solo ocurre cuando el admin activa el toggle "Generar código automático" a propósito, nunca
-   durante la carga inicial del formulario.
-2. Se agregó una guarda antes de guardar: si el código de barras que se va a enviar es distinto
-   al que tenía el producto cuando se abrió la pantalla de edición, se muestra una alerta
-   explicando el riesgo (crea un duplicado en vez de actualizar) y pide confirmación explícita
-   antes de continuar — cubre esta causa y cualquier otra que produzca el mismo desajuste
-   (edición manual del campo, etc.), sin depender de encontrar la causa raíz exacta en cada caso.
+**Qué cambió:** ahora `guardarProducto()` primero busca el producto **por `id`** (si el front lo
+manda en el body). Si lo encuentra y el código de barras viene distinto al que ya tenía, crea el
+código de barras nuevo, lo asigna a ese mismo producto, y **elimina el código de barras anterior**
+(la relación producto↔código de barras es 1 a 1 única, así que el anterior siempre queda huérfano,
+nunca se pierde nada real). Si el código nuevo ya está en uso por otro producto, responde 400 con
+`ExceptionDuplicado`. Si el front no manda `id`, se mantiene el comportamiento anterior (búsqueda
+por código de barras) para no romper la carga por Excel.
 
-**Pendiente de fondo (backend):** ambos endpoints (`/save` y `/update`) deberían matchear por
-`id` cuando se manda uno, y solo caer al upsert-por-código-de-barras cuando no hay `id` (alta
-nueva). Mientras eso no se resuela del lado del back, cualquier producto editado desde estas
-pantallas sigue en riesgo si el código de barras enviado no es idéntico al de BD — la mitigación
-del front (arriba) reduce el riesgo pero no lo elimina de raíz.
+**Importante para el front:** a partir de ahora, el body de `save`/`update` **debe incluir el
+campo `id` del producto** cuando se está editando uno existente (antes se ignoraba). Sin `id`,
+si se cambia el código de barras se sigue creando un producto duplicado como antes.
+
+**Esto NO reemplaza el punto anterior sobre borradores de carga rápida.** Aunque técnicamente ya
+no se duplicaría el producto, `save`/`update` **no** resetean `codigoBarrasGenerado` a `false` ni
+validan el estado de la imagen — un borrador guardado por esta vía quedaría con el código real ya
+asignado pero con `codigoBarrasGenerado: true` inconsistente (bloquea habilitar, ensucia el filtro
+`codigoGenerado`). Para borradores sigue aplicando la regla de arriba: usar siempre
+`PUT /v1/carga-imagenes/{productoId}/completar`.
+
+**✅ Ya implementado en el front (`productos/producto/add/add.component.ts`), 2026-07-21:**
+- `ejecutarGuardar()` ahora manda `id: this.productoUpdate?.idProducto` en el body cuando
+  `esActualizar === true` — requisito nuevo del back de arriba. En modo "Agregar" no se manda
+  (el producto todavía no tiene `id`).
+- `IProductoDTORec` (modelo del formulario de edición) ganó el campo `idProducto?: number` para
+  poder leerlo con tipos — en runtime siempre viene poblado (mismo campo que usa `IProductoDTO`
+  de la grilla), solo faltaba declararlo.
+- La alerta que antes avisaba "esto crea un duplicado" al cambiar el código de barras **se quitó**
+  para productos normales — con `id` en el body ya no aplica, sería una alarma falsa que
+  molestaría al admin por una corrección de código legítima.
+- En su lugar, se agregó un **bloqueo específico para borradores de carga rápida**: si el código
+  de barras del producto que se está editando empieza con `BRD-` (autogenerado), la pantalla NO
+  deja guardar — muestra un aviso y un botón directo a **Carga rápida de imágenes** para
+  completarlo desde ahí, que es el único flujo seguro para ese caso (párrafo anterior).
 
 **⏳ Pendiente:** probar el flujo end-to-end de nuevo en QA con el fix, y push a `qa`.
 

@@ -4854,3 +4854,46 @@ mientras el admin tenía el formulario abierto. Ver nota completa en `CAMBIOS_FR
 contra el backend real — no se pudo reproducir el escenario exacto sin sesión de admin y datos
 de prueba; la corrección se basa en el análisis del código y en lo que el back confirmó por
 escrito.
+
+---
+
+## ACTUALIZACIÓN — EL BACK CORRIGIÓ LA CAUSA RAÍZ (2026-07-21, mismo día)
+
+> Continuación directa de la sección anterior. El back no solo confirmó el bug — lo arregló.
+
+**Qué cambió el back:** `guardarProducto()` (usado por `/productos/save` y `/productos/update`)
+ahora busca el producto **por `id` primero**, si el front lo manda en el body. Si lo encuentra y
+el código de barras viene distinto, crea el código nuevo, lo asigna a ESE producto y elimina el
+código anterior (relación 1 a 1, no se pierde nada). Si el front **no manda `id`**, se mantiene
+el comportamiento viejo (busca por código de barras) — para no romper la carga por Excel, que no
+tiene ids.
+
+**⚠️ Con una condición:** esto NO aplica a los borradores de carga rápida. `save`/`update` no
+resetean `codigoBarrasGenerado` ni validan el estado de la imagen — completar un borrador por
+esta vía lo deja en un estado inconsistente aunque técnicamente ya no se duplique. Para
+borradores sigue siendo obligatorio `PUT /v1/carga-imagenes/{productoId}/completar`.
+
+**Cambios aplicados en el front (`add.component.ts`), en respuesta al fix del back:**
+1. **`ejecutarGuardar()` ahora manda `id`** en el body cuando `esActualizar === true`
+   (`this.productoUpdate?.idProducto`) — es el requisito nuevo del back. En modo "Agregar" no se
+   manda, el producto todavía no existe.
+2. **`IProductoDTORec` ganó `idProducto?: number`** — en runtime siempre venía poblado (mismo
+   campo que ya usa la grilla, `IProductoDTO.idProducto`), solo faltaba declararlo en el tipo
+   para poder leerlo sin `any`.
+3. **Se quitó la alerta de "esto crea un duplicado"** para productos normales — con `id` en el
+   body ya no es cierto, y dejarla habría sido una alarma falsa cada vez que alguien corrige un
+   código de barras a propósito (caso legítimo).
+4. **Se agregó un bloqueo específico para borradores** (`esBorradorCargaRapida`, detecta el
+   prefijo `BRD-`): si el código actual es autogenerado, la pantalla de editar producto **no deja
+   guardar en absoluto** — muestra un aviso con botón directo a `/carga-imagenes`. No se ofrece
+   "continuar de todas formas" porque, aunque no duplicaría, sí dejaría el producto en estado
+   inconsistente (punto ⚠️ de arriba) — no hay ningún escenario válido para guardar un borrador
+   desde esta pantalla.
+
+**Archivos modificados:**
+- `src/app/productos/producto/add/add.component.ts` → `guardar()`, `ejecutarGuardar()`,
+  nuevo getter `esBorradorCargaRapida`
+- `src/app/productos/producto/models/producto.dto.model.ts` → `IProductoDTORec.idProducto?`
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ Sigue sin probarse en
+vivo — depende de que el fix del back ya esté desplegado en el ambiente donde se pruebe.

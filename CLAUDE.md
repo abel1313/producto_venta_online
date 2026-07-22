@@ -5442,3 +5442,52 @@ texto. Anotado como pregunta en el repo compartido para que el back confirme.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — pendiente además del hard-refresh por el bug de caché de nginx.
+
+---
+
+## FIX — "COBRAR" EN CRÉDITO SEGUÍA ABRIENDO EL DIÁLOGO NORMAL Y ERROREABA (2026-07-22)
+
+> Confirmado en vivo en QA (con hard-refresh, así que no era el bug de caché de nginx): al dar
+> "Cobrar" en un pedido APARTADO/FIADO desde `/pedidos`, seguía abriendo el diálogo normal de
+> forma de pago — al confirmar, el back lo rechazaba (`PUT /v1/pedidos/confirmar/{id}` no acepta
+> crédito) y el Swal de "Ir a Créditos / Abonos" nunca aparecía. Verifiqué antes que el bundle
+> desplegado en QA sí traía el código de la sección anterior ("Cobrar" crédito redirige a
+> abonos) — el código estaba bien, el problema era de **datos**, no de deploy.
+
+**Causa raíz:** `cobrarAdmin()` decide el redirect según `item.pedido.tipoPedido`, que viene de
+la **lista** (`GET /v1/pedidos/buscarClientePedido`). Revisando `CAMBIOS_FRONT.md`, el spec
+original del módulo de crédito (2026-06-27) solo confirma `tipoPedido` en la respuesta de
+`POST /savePedido`, `POST /ventas/save` y los reportes de `/abonos/reporte/*` — **nunca** en
+`buscarClientePedido`/`findPedido` (la lista que arma `mis-pedidos`). Lo más probable es que ese
+endpoint nunca lo haya mandado, así que `item.pedido.tipoPedido` llega `undefined` para pedidos
+de crédito y la condición `=== 'APARTADO' || === 'FIADO'` nunca se cumple.
+
+**Fix — dos capas, sin esperar confirmación del back:**
+
+1. **Chequeo real contra el detalle, no la lista.** `cobrarAdmin()` ya no confía ciegamente en
+   `item.pedido.tipoPedido` — solo lo usa como atajo optimista (si YA viene con el valor
+   correcto, evita una llamada extra). Si no, pide `GET /v1/pedidos/{id}/detalle` primero
+   (mismo endpoint que ya usan de forma confiable `imprimirTicketPedido()`/
+   `enviarCorreoPedido()` para lo mismo) y decide con `PedidoDetalleResponse.tipoPedido`, que sí
+   está confirmado en el spec. Solo si ese detalle falla (error de red) cae al diálogo normal
+   como antes — para no bloquear el cobro de un pedido NORMAL por un problema de conectividad.
+   Se extrajeron `irACobrarCredito()` y `abrirDialogoCobroNormal()` como métodos separados,
+   reutilizados por las dos rutas (atajo optimista y confirmación por detalle).
+
+2. **Red de seguridad en `confirmarCobro()`.** Si aun así el back rechaza el cobro (`error`
+   callback de `updateService()`), y el mensaje de error contiene "abono"/"apartado"/"fiado"
+   (case-insensitive), en vez del error genérico se ofrece el mismo Swal de "Ir a Créditos /
+   Abonos" — cubre cualquier caso donde ni el atajo ni el detalle lo hayan detectado a tiempo.
+   El error genérico ahora también muestra el mensaje real del back (antes era texto fijo sin
+   `err?.error?.mensaje`).
+
+**Pendiente de verificar con el back:** confirmar si `GET /v1/pedidos/buscarClientePedido` (y
+`findPedido`) realmente no manda `tipoPedido`, o si el campo llega con otro nombre/formato — el
+fix de arriba hace que el front funcione correctamente de cualquier forma, pero si el back lo
+agrega ahí también se ahorra la llamada extra a `/detalle` en el caso más común.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()` reescrito,
+  `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()` con fallback
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

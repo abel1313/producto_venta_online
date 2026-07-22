@@ -4775,3 +4775,23 @@ contenido: mismo total de 6428 líneas, solo reordenado.
 
 **Verificado:** `grep -c "^## "` antes y después da el mismo número de encabezados, ninguno
 duplicado ni faltante.
+
+---
+
+## NOTA BACK — NUNCA USAR `save`/`update` SOBRE UN BORRADOR DE CARGA RÁPIDA (2026-07-21)
+
+**Confirmado por el back tras probar en QA:** `POST /v1/productos/save` y `PUT /v1/productos/update`
+localizan el producto a tocar **por coincidencia exacta de código de barras**, nunca por `id` — es
+un upsert pensado para alta/edición manual (donde el producto ya nace con su código real). Si se le
+manda el código real de un borrador de carga rápida (que todavía no existe en la BD, porque el
+borrador sigue con el `BRD-XXXXXXXXXXXX` autogenerado), el backend concluye "código nuevo" y
+**crea un producto duplicado**, dejando el borrador original intacto y huérfano.
+
+**Ya cumplido en el front:** `carga-imagenes.component.ts` / `carga-imagenes.service.ts` solo usan
+`PUT /v1/carga-imagenes/{productoId}/completar` para guardar — nunca `save`/`update`. Verificado
+con grep, no hace falta ningún cambio de código.
+
+**Regla a futuro:** si se construye OTRA pantalla que edite un producto y ese producto puede venir
+de carga rápida (`codigoBarrasGenerado: true`), esa pantalla debe seguir usando `/completar` hasta
+que el código ya sea real. Nunca asumir que "editar producto" siempre es `save`/`update` sin antes
+revisar ese flag.

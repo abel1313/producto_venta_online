@@ -5263,6 +5263,72 @@ llegando 2 veces en la respuesta del back, o un doble `push` por scroll) más qu
 
 ---
 
+## FIX INFRA — NGINX SIN `Cache-Control` → EXPLICA TODOS LOS "NO SE VE EL CAMBIO EN QA" (2026-07-22)
+
+> Causa raíz real, encontrada al investigar por qué "Cobrar" en un pedido APARTADO seguía
+> mostrando el diálogo viejo en `qa.shop.novedades-jade.com.mx` aunque se verificó con evidencia
+> que: (a) el código estaba bien y committeado en `dev`/`qa`, (b) el pipeline CI/CD había
+> desplegado con éxito, y (c) el bundle real servido por el dominio (`647.fe48259a21561074.js`,
+> descargado directo con `curl` y grepeado) SÍ contenía el texto nuevo ("registrando un abono",
+> "Ir pagando", "Todavía no hay ningún pago"). Con el código, el deploy y el bundle en el
+> servidor confirmados correctos, lo único que quedaba era el navegador — y ahí apareció el bug
+> real, no en nuestro código.
+
+**Causa raíz:** `default.conf` (nginx dentro del contenedor, copiado por el `Dockerfile` tanto
+para `qa` como para `master`/producción — mismo archivo, un solo `server{}` sin distinción de
+rutas) no mandaba **ningún** header `Cache-Control` — ni en `index.html` ni en los bundles
+hasheados (`main.*.js`, `647.*.js`, etc.). Confirmado con `curl -D -` contra el dominio real: cero
+líneas `Cache-Control` en la respuesta.
+
+Sin ese header, el navegador aplica **cacheo heurístico** (RFC 7234) basado en `Last-Modified` —
+Chrome/Firefox pueden decidir que `index.html` sigue "fresco" por horas **sin hacer ninguna
+petición de red**, ni siquiera una condicional. Un F5 normal puede servir 100% desde el disco
+local sin tocar el servidor — solo un hard-refresh (Ctrl+Shift+R) o "Disable cache" en DevTools
+fuerza la revalidación. Esto explica, retroactivamente, **todas** las veces en el historial de
+este proyecto que se reportó "ya subiste el cambio pero en QA no se ve" y la causa terminaba
+siendo "hard refresh" — no era casualidad ni un capricho del navegador del usuario, era que el
+servidor nunca le decía al navegador que dejara de confiar en su copia vieja.
+
+**Fix — separar la política de caché por tipo de archivo:**
+```nginx
+location ~* \.(?:js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$ {
+  try_files $uri =404;
+  add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+location / {
+  try_files $uri /index.html;
+  add_header Cache-Control "no-cache, no-store, must-revalidate";
+  add_header Pragma "no-cache";
+}
+```
+- **Assets hasheados** (`main.<hash>.js`, `647.<hash>.js`, `styles.<hash>.css`, etc.) → caché
+  agresivo de 1 año + `immutable`. Es seguro: Angular cambia el hash del nombre de archivo cada
+  vez que el contenido cambia, así que un archivo con un nombre dado NUNCA cambia de contenido —
+  cachearlo para siempre no tiene downside y acelera cargas repetidas.
+- **`index.html`** (y cualquier ruta que caiga al fallback SPA, ej. `/pedidos/mis-pedidos`) →
+  `no-cache, no-store, must-revalidate`. Es el único archivo que DEBE revisarse en cada carga,
+  porque es el que apunta a los nombres de archivo hasheados — si se cachea, el navegador puede
+  quedarse pidiendo bundles viejos indefinidamente aunque esos bundles viejos ya ni siquiera
+  sigan en el servidor.
+
+**Aplica a QA y a producción por igual** — un solo `default.conf`, un solo `Dockerfile` para
+ambos workflows (`producto-actions-qa.yml` y `proyecto-front-actions.yml`).
+
+**Regla a futuro:** si se vuelve a reportar "ya subí el cambio pero no se ve", el primer paso ya
+NO es asumir hard-refresh del usuario — con este fix, index.html ya fuerza revalidación en cada
+carga. Si el síntoma reaparece, sospechar primero de: CDN/proxy externo que sí cachee (Cloudflare
+u otro, si se agrega en el futuro) antes que del navegador.
+
+**Archivos modificados:**
+- `default.conf` → 2 bloques `location` con `Cache-Control` diferenciado
+
+**Verificación pendiente:** este cambio no pasa por `ng build` (es config de nginx, no de
+Angular) — se valida en el próximo deploy revisando con `curl -D -` que las respuestas ya
+incluyan `Cache-Control`. No requiere nada del backend.
+
+---
+
 ## FIX — ENCONTRADO EL "2 VECES APARTADO" (badge de tipo + badge de estado repetidos) (2026-07-22)
 
 > Resuelve la sección de arriba "🔎 Investigado y no reproducido" — el usuario mandó el texto

@@ -5039,3 +5039,51 @@ combo de arriba.
 pruebe. Pendiente: sincronizar esta respuesta del back hacia el `CAMBIOS_FRONT.md` de este
 proyecto cuando el usuario confirme que ya se terminó la ronda de revisión (ver regla de
 sincronización más arriba).
+
+---
+
+## FIX MIS-PEDIDOS — COBRAR CRÉDITO REDIRIGE A ABONO + HISTORIAL DE PAGOS EN DETALLE (2026-07-22)
+
+> De la ronda de revisión de `/pedidos` y `/pedidos/mis-pedidos` documentada en el repo compartido
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`, sección "❓ CONSULTA AL BACK —
+> mis-pedidos..."). Estos 2 puntos no dependían del back — se implementaron directo; los otros 3
+> (cancelar sin afectar rifa, cliente sin registro duplicado, detalle vacío sin imagen) siguen
+> pendientes de respuesta del back.
+
+### 1. "Cobrar" en un pedido APARTADO/FIADO ya no manda el 404 de "se liquida por abonos"
+
+**Síntoma reportado:** el botón "Cobrar" de la card en `mis-pedidos` abría el diálogo de
+"Confirmar cobro" para CUALQUIER pedido, sin importar su tipo. Al confirmar un pedido FIADO, el
+back rechazaba con `PUT /v1/pedidos/confirmar/{id}` → 404
+`"Los pedidos de tipo FIADO se liquidan mediante abonos, no por esta vía"`.
+
+**Causa:** `cobrarAdmin()` nunca revisaba `item.pedido.tipoPedido` antes de abrir el diálogo — ese
+diálogo (dropdown de forma de pago + terminal MP) es exclusivamente para ventas `NORMAL`.
+
+**Fix:** `cobrarAdmin()` ahora revisa el tipo primero. Si es `APARTADO`/`FIADO`, en vez de abrir el
+diálogo muestra un Swal informativo ("Este pedido se cobra registrando un abono, no desde este
+botón") con un botón "Ir al detalle para registrar abono" → llama `irDetalle(item)`, que ya
+muestra `detalle-pedido` con su formulario de abono (`registrarAbono()`, mismo endpoint
+`POST /v1/abonos/{pedidoId}` que usa `/abonos`). Ningún endpoint nuevo — es el mismo flujo que ya
+existía, solo se dejó de esconder detrás de un botón que no aplicaba.
+
+### 2. Historial de pagos visible en el Detalle del pedido (crédito)
+
+**Antes:** `detalle-pedido` solo tenía el formulario para registrar un abono NUEVO — no había
+forma de ver los pagos que ya se habían hecho sin ir a `/abonos` a buscar el pedido.
+
+**Fix:** se agregó una sección "📋 Pagos registrados" arriba del formulario, dentro de
+`.dp-abono-wrap` (visible solo si `esCredito` y hay al menos un abono). **No hizo falta ninguna
+llamada nueva** — `PedidoDetalleResponse.abonos?: AbonoDetalleItem[]`
+(`GET /v1/pedidos/{id}/detalle`, ya usado por esta pantalla) ya traía el arreglo completo de
+abonos, solo no se estaba pintando.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → sección
+  `.dp-abono-historial` dentro de `.dp-abono-wrap`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-abono-historial` +
+  variantes
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.

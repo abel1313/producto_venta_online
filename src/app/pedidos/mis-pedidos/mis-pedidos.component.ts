@@ -382,6 +382,22 @@ export class MisPedidosComponent implements OnInit {
       }, err => console.error(err));
   }
 
+  // Para crédito el back guarda estado_pedido = 'APARTADO'/'FIADO' (el mismo valor que
+  // tipoPedido) hasta liquidarlo — mostrar ese texto crudo en el badge de estado repite
+  // exactamente lo que ya dice el badge de tipo ("📦 Apartado" + "APARTADO" abajo). Para
+  // crédito se muestra el estado de pago en su lugar; NORMAL/Cancelado no cambian.
+  estadoBadge(item: IPedidoGenerico): { icono: string; texto: string } {
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') {
+      return item.pedido.estado_pedido === 'PAGADO'
+        ? { icono: 'pi-check-circle', texto: 'Pagado' }
+        : { icono: 'pi-clock', texto: 'Por cobrar' };
+    }
+    const icono = item.pedido.estado_pedido === 'Entregado' ? 'pi-check-circle'
+      : item.pedido.estado_pedido === 'Cancelado' ? 'pi-times-circle' : 'pi-clock';
+    return { icono, texto: item.pedido.estado_pedido };
+  }
+
   // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta
   // con estado_pedido; para crédito no sabemos si ya tiene abonos sin pedir el detalle,
   // así que se deja habilitado y se valida de verdad en puedeImprimir() al hacer clic.

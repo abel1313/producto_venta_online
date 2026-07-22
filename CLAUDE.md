@@ -69,6 +69,12 @@ en el que se pasa (sincroniza) todo lo nuevo del repo compartido hacia acá.
    `D:\proyectos\documentos_front_back_nodevedaades_jade\CAMBIOS_FRONT.md` (no en la copia de este
    proyecto), dejar el commit listo en ese repo aparte (avisando antes de hacer `git push`, es un
    repo con remoto propio en GitHub).
+   - ⚠️ **Esto NO es solo para dudas — aplica también a cualquier fix/cambio que termine de
+     implementar que sea relevante para el back**, aunque haya sido 100% front y no haya
+     necesitado ningún cambio de su lado (ej. un bug causado por cómo el back manda un campo,
+     aunque la solución haya sido solo del front). Regla general: **cada vez que termine de
+     implementar algo en esta sesión de trabajo con el back, anotarlo ahí de una vez** —
+     no esperar a que el usuario lo pida cada vez.
 3. **Cuando el usuario diga que ya se terminó** (la ronda de revisión/discusión) → recién ahí
    sincronizar todo lo nuevo del repo compartido hacia `CAMBIOS_FRONT.md` de este proyecto, con el
    mismo método de diff para no perder ni duplicar nada.

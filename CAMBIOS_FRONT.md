@@ -6569,3 +6569,36 @@ para completar solo son visibles durante la misma sesión de captura en la que s
    con semanas de antigüedad)? Con el tiempo estos van a acumularse en `admin/no-habilitados` y
    en el filtro `codigoGenerado=true` sin que nadie los complete ni los borre — un TTL o un job
    de limpieza periódico evitaría que esos listados se llenen de basura.
+
+---
+
+## ✅ YA IMPLEMENTADO — Fix (2026-07-22): "Cobrar" en pedido a crédito seguía fallando en QA
+
+> Sincronizado desde el repo compartido (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`).
+> 100% front, ya en `dev` y `qa`.
+
+Probado en vivo en QA (con hard-refresh, no era el bug de caché de nginx): "Cobrar" en un pedido
+APARTADO/FIADO seguía abriendo el diálogo normal de forma de pago en vez del redirect a
+`/abonos`, y al confirmar el back lo rechazaba con error genérico.
+
+**Causa:** el redirect decidía con `item.pedido.tipoPedido`, que viene de la lista
+(`GET /v1/pedidos/buscarClientePedido`) — ese campo llega `undefined` ahí (el back confirmó que
+el DTO de la lista hoy solo trae `id`, `fecha_pedido`, `estado_pedido` y `detalles`, sin
+`tipoPedido` — contradice lo que se había asumido desde 2026-07-01 al agregar el badge "📦
+Apartado" en la card).
+
+**Fix:** `cobrarAdmin()` ya no confía solo en el campo de la lista — antes de decidir, pide
+`GET /v1/pedidos/{id}/detalle` (que sí trae `tipoPedido` confiable) y decide con ese dato. Si
+el detalle falla, cae al diálogo normal como antes. Además, si el back de todos modos rechaza
+el cobro con un mensaje que mencione "abono"/"apartado"/"fiado", se ofrece el mismo redirect en
+vez de un error genérico.
+
+**Pendiente de back (consulta ya enviada en el repo compartido):** confirmar si `tipoPedido`
+realmente no viene en `buscarClientePedido`/`findPedido` y, si no, agregarlo junto con el
+`totalPagado` que ya estaba pendiente ahí (mismo DTO, mismo viaje) — con eso el front deja de
+necesitar la llamada extra a `/detalle` y el badge "📦 Apartado" de la lista vuelve a mostrarse.
+
+**Archivos modificados:** `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` →
+`cobrarAdmin()`, `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**

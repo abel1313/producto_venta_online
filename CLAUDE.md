@@ -5353,6 +5353,18 @@ Service Worker instalado en su navegador que Angular no debería tener pero conv
 con `chrome://serviceworker-internals` o Application → Service Workers en DevTools, o que esté
 probando contra una URL/pestaña distinta a la que cree).
 
+**Más síntomas reportados el mismo día, misma sospecha (2026-07-22):** el usuario también
+reporta que en el **detalle** del pedido sigue apareciendo "Apartado" dos veces, y que al pasar
+el mouse sobre los íconos de imprimir ticket / enviar correo no aparece el tooltip de aviso
+("Primero hay que cobrar/recoger el pedido..."). Revisado el código de nuevo
+(`detalle-pedido.component.ts` líneas 52-79) — **la lógica ya está bien**: `estadoPedidoLabel`
+devuelve "Por cobrar"/"Pagado" en vez del `estadoPedido` crudo cuando `esCredito`, y los botones
+de imprimir/reenviar en `detalle-pedido.component.html` (líneas 25-34) ya tienen `[title]`
+condicional con ese texto. No hay nada que arreglar en el código — es el mismo síntoma que
+"Cobrar" no redirige: consistente con que sigue viendo la copia vieja cacheada por el navegador
+de antes del fix de nginx. No se toca código de nuevo hasta que el usuario confirme si persiste
+después de un hard-refresh real.
+
 ---
 
 ## FIX — ENCONTRADO EL "2 VECES APARTADO" (badge de tipo + badge de estado repetidos) (2026-07-22)

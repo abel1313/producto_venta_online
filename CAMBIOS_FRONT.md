@@ -6489,3 +6489,48 @@ GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=f
   filtrar), se puede agregar después.
 
 **Solo en `dev`/`qa` por ahora** — pendiente de subir a `main`.
+
+---
+
+## ❓ CONSULTA AL BACK — falta endpoint para descartar un borrador de carga rápida (2026-07-21)
+
+**Reportado por el admin:** subió varias fotos en `/carga-imagenes`; algunas quedaron listas para
+"Completar datos" (`EXITOSO`) y otras fallaron (`FALLIDO`, con botón "Reintentar"). Le dio "✕" a
+las fallidas esperando que desaparecieran para siempre. Al volver a entrar a la pantalla:
+- Las que le dio "✕" **volvieron a aparecer** con el botón "Reintentar".
+- Las que estaban listas para completar **ya no aparecen por ningún lado**.
+
+**Diagnóstico (confirmado en el código del front, no es un bug de UI aislado — es que falta una
+pieza del backend):**
+
+1. El botón "✕" (`quitarTarjeta()` en `carga-imagenes.component.ts`) **nunca llama a ningún
+   endpoint** — solo saca la tarjeta del array local en memoria. No existe ningún `DELETE` en
+   `carga-imagenes.service.ts` para eliminar un borrador de verdad. Como el producto+variante
+   sigue existiendo en BD con `estadoImagen: FALLIDO`, la próxima vez que se entra a la pantalla,
+   `GET /v1/carga-imagenes/fallidas` lo vuelve a traer — por eso "siempre aparece".
+
+2. `ngOnInit()` solo llama a `GET /v1/carga-imagenes/fallidas` como red de seguridad al recargar
+   — **no existe ningún endpoint para recuperar los borradores que ya subieron bien pero aún no
+   se completaron** (`EXITOSO`, sin `PUT /completar` todavía). Esas tarjetas solo viven en el
+   estado del componente Angular mientras la pantalla sigue abierta; al navegar a otra ruta o
+   recargar la página, se pierden de la vista — aunque el producto+variante sigue vivo en BD,
+   deshabilitado, con su imagen ya subida.
+
+**Lo que necesitamos del back — dos preguntas concretas:**
+
+1. **¿Existe (o se puede agregar) un endpoint para descartar/eliminar por completo un borrador de
+   carga rápida?** Pensado para cuando el admin decide que esa foto/producto no vale la pena
+   completar (ej. imagen borrosa, producto repetido, foto de prueba). Algo tipo
+   `DELETE /v1/carga-imagenes/{productoId}` que borre el producto, la variante y la imagen
+   asociada (si ya se subió). Sin esto, el front no tiene forma de que el "✕" sea permanente.
+
+2. **¿Cómo recupera el front, al recargar la pantalla, los borradores `EXITOSO` que aún no se
+   completaron (no solo los `FALLIDO`)?** ¿Ya existe un filtro que sirva para esto en
+   `GET /v1/productos/admin/filtrar` (ej. `codigoGenerado=true&habilitado=false`, sección de
+   arriba) que el front pueda usar para repoblar TODA la lista de pendientes al entrar a
+   `/carga-imagenes` (fallidos + exitosos-sin-completar), en vez de usar solo
+   `GET /v1/carga-imagenes/fallidas`? O si hace falta un endpoint dedicado, avisar.
+
+**Mientras no haya respuesta, el front seguirá con el gap:** los borradores fallidos "resucitan"
+cada vez que se recarga la pantalla (aunque se hayan descartado con "✕"), y los borradores listos
+para completar solo son visibles durante la misma sesión de captura en la que se subieron.

@@ -14,7 +14,7 @@
       <span class="detalle-header__estado"
         [class.estado--entregado]="estadoPedido === 'Entregado' || estadoPedido === 'PAGADO'"
         [class.estado--pendiente]="estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'">
-        {{ estadoPedido }}
+        {{ estadoPedidoLabel }}
       </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">
         🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs

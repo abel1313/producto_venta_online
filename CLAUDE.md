@@ -5254,3 +5254,36 @@ llegando 2 veces en la respuesta del back, o un doble `push` por scroll) más qu
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo.
+
+---
+
+## FIX — ENCONTRADO EL "2 VECES APARTADO" (badge de tipo + badge de estado repetidos) (2026-07-22)
+
+> Resuelve la sección de arriba "🔎 Investigado y no reproducido" — el usuario mandó el texto
+> exacto que veía en `detalle-pedido`: `📦 Apartado` seguido, en la misma cabecera, de `APARTADO`
+> en mayúsculas. Ahí estaba: no era un pedido duplicado, era el badge de tipo Y el badge de
+> **estado** mostrando prácticamente lo mismo.
+
+**Causa:** para pedidos a crédito, el back guarda `estado_pedido`/`estadoPedido` = `'APARTADO'` o
+`'FIADO'` (el mismo valor que `tipoPedido`) hasta que se liquidan — recién ahí cambia a
+`'PAGADO'`. El badge de **estado** (`detalle-header__estado` en detalle, `estado-badge` en la
+card de `mis-pedidos`) simplemente interpolaba ese valor crudo — para un Apartado sin pagar,
+mostraba literal "APARTADO" justo debajo/al lado del badge de **tipo** que ya dice "📦 Apartado".
+Mismo bug en las dos pantallas.
+
+**Fix:** para crédito, el badge de estado ya NO muestra el valor crudo — muestra el estado de
+pago real: **"Por cobrar"** (aún no hay nada pagado) o **"Pagado"** (`estadoPedido === 'PAGADO'`).
+NORMAL/Cancelado no cambian, siguen mostrando `estado_pedido` tal cual.
+
+- `detalle-pedido.component.ts` → nuevo getter `estadoPedidoLabel`
+- `mis-pedidos.component.ts` → nuevo método `estadoBadge(item)` (devuelve ícono + texto juntos,
+  reemplaza el `[ngClass]` inline que tenía el HTML)
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `estadoPedidoLabel`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → usa `estadoPedidoLabel`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `estadoBadge()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → usa `estadoBadge(item)`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.

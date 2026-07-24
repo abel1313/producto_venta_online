@@ -24,10 +24,14 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/findPedido/${idPedido}/${idCliente}?size=${size}&page=${page}`);
   }
 
-    buscarPedidoPorCliente(buscar: string, size: number, page: number, lugarEntregaId?: number | null): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
+    // tiposPedido: filtro por tipo (APARTADO/FIADO) — param repetido `&tipoPedido=X&tipoPedido=Y`,
+    // convención Spring @RequestParam List<String>. ⚠️ Pendiente de confirmar con el back si
+    // este endpoint ya lo soporta (consulta anotada en el repo compartido, 2026-07-24).
+    buscarPedidoPorCliente(buscar: string, size: number, page: number, lugarEntregaId?: number | null, tiposPedido?: string[]): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
     const queryBuscar = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
     const queryLugar  = lugarEntregaId ? `&lugarEntregaId=${lugarEntregaId}` : '';
-    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${queryBuscar}${queryLugar}`);
+    const queryTipo   = (tiposPedido ?? []).map(t => `&tipoPedido=${encodeURIComponent(t)}`).join('');
+    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${queryBuscar}${queryLugar}${queryTipo}`);
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {

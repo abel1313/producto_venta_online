@@ -5884,3 +5884,52 @@ pista visible. `LugarEntregaService.getAll()` ahora lee `res.data` directo.
 - `src/app/lugares-entrega/gestion/gestion-lugares.component.scss` → `.pk-table`, `.pk-pagination`, `.pk-btn--page` (reemplaza `.pk-list`/`.pk-item`)
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — PAGINACIÓN REAL EN MIS-PEDIDOS (ADMIN) + FILTRO POR TIPO (APARTADOS/IR PAGANDO) (2026-07-24)
+
+> El pedido original era confuso ("filtro de pedidos abiertos") — tras aclarar con el usuario,
+> lo que en realidad se necesitaba era: (1) la vista admin de `mis-pedidos` nunca tuvo
+> paginación real (cargaba una sola página de 10 y ya, sin forma de ver más), y (2) un filtro
+> por **tipo de pedido** (Apartados/Ir pagando), independiente del filtro de lugar, que se
+> combinan con AND cuando ambos están activos.
+
+### 1. Bug encontrado — admin nunca podía ver más de 10 pedidos
+
+`onScroll()` solo dispara `cargarMasPedidos()` (infinite scroll) para `!isAdminUser` — el admin
+nunca tuvo forma de pedir la página 2. `buscarPedidoAdmin()` además **reseteaba `page=0` en
+cada llamada**, así que ni siquiera el `page++` que hacía después servía para nada.
+
+**Fix:** paginación real tipo Anterior/Siguiente, mismo patrón que `variante/buscar` y el
+catálogo de `lugares-entrega`. `buscarPedidoAdmin(reset = true)`: `reset=true` (default, usado
+por cualquier búsqueda/filtro nuevo) vuelve a `page=0`; `reset=false` lo usan
+`paginaAnteriorAdmin()`/`paginaSiguienteAdmin()` para navegar sin perder los filtros activos.
+`totalPaginas` ya venía en la respuesta (`IPageable.totalPaginas`) — no hizo falta nada nuevo
+del back para esto.
+
+### 2. Filtro por tipo de pedido — 2 botones toggle, independientes del filtro de lugar
+
+"📦 Apartados" / "💳 Ir pagando" — mismo patrón visual pill que el filtro de lugar. Se combinan
+con AND: lugar=Zacazonapan + Apartados → apartados de Zacazonapan; solo Apartados (sin lugar) →
+todos los apartados; solo lugar (sin tipo) → todos los pedidos de ese lugar sin importar tipo.
+
+**⚠️ Requiere un query param nuevo que el back todavía no ha confirmado** —
+`buscarPedidoPorCliente()` ahora manda `&tipoPedido=APARTADO&tipoPedido=FIADO` (repetido, uno
+por cada checkbox activo — convención Spring `@RequestParam List<String>`) a
+`GET /v1/pedidos/buscarClientePedido`, pero **no está confirmado que el endpoint lo soporte
+todavía**. El front ya está listo — funcionará en cuanto el back lo agregue. Pregunta anotada
+en el repo compartido, con inventario completo de los endpoints que usa esta pantalla.
+
+**Archivos modificados:**
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + parámetro `tiposPedido`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `filtroApartado`/`filtroIrPagando`,
+  `toggleFiltroTipo()`, `buscarPedidoAdmin(reset)` reescrito, `paginaAnteriorAdmin()`,
+  `paginaSiguienteAdmin()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → botones de tipo, controles de
+  paginación
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.tipo-filtro-*`, `.mp-pagination`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ El filtro por tipo no tendrá efecto real hasta que el back confirme/agregue el parámetro —
+mientras tanto no rompe nada, el backend simplemente ignoraría un query param que no reconoce.

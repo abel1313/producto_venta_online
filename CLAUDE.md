@@ -5491,3 +5491,63 @@ agrega ahí también se ahorra la llamada extra a `/detalle` en el caso más com
   `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()` con fallback
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — CANCELAR PEDIDOS YA ENTREGADOS/PAGADOS = DEVOLUCIÓN (2026-07-24)
+
+> Respuesta del back del 2026-07-23 (repo compartido): ambos endpoints de cancelar
+> (`DELETE /v1/pedidos/delete/{id}` y `PUT /v1/abonos/{pedidoId}/cancelar`) ya permiten cancelar
+> un pedido en estado `Entregado`/`PAGADO` — antes lo bloqueaban por completo. Reglas nuevas:
+> solo ADMIN puede hacerlo, el motivo no puede ser `NO_SE_PRESENTO`/`TIMEOUT` (el cliente sí
+> cumplió, solo se devuelve el producto), el stock se regresa igual que una cancelación normal,
+> y la venta asociada se marca `"Devuelta"` (se excluye de reportes de ingresos). Mismas URLs y
+> shape de siempre — solo cambió qué estados aceptan y quién los puede llamar.
+
+**No es solo "un botón" — son 2 pantallas distintas:**
+
+1. **`mis-pedidos` (pedidos NORMAL entregados):** el botón "Cancelar" ya existía, solo estaba
+   `[disabled]` cuando `estado_pedido === 'Entregado'`, sin importar el rol. Ahora:
+   `[disabled]="!isAdminUser && estado_pedido === 'Entregado'"` — un cliente normal lo sigue
+   viendo deshabilitado (con `[title]` explicando por qué), un admin lo puede usar.
+   `cancelarPedido()`: si `estado_pedido === 'Entregado'`, arma el título como
+   "¿Cancelar (devolución)...?" y filtra `NO_SE_PRESENTO` de las opciones de motivo.
+
+2. **`/abonos` → pestaña "✅ Liquidados" (créditos ya PAGADOS):** acá **no existía ningún botón
+   de cancelar** — se agregó de cero (`.ab-card__actions` con "✖ Cancelar" junto a "▼ Abonos").
+   Como toda la ruta `/abonos` ya es admin-only (`AuthGuard + AdminGuardGuard`), no hace falta
+   chequear el rol otra vez ahí. Nuevo método `cancelarPedidoPagado(pedido: PedidoPagado)` —
+   mensaje "Ya se pagó por completo... Se devolverá el stock." (sin la rama "queda como deuda"
+   que sí aplica en `EstadoCuenta`, porque un `PAGADO` no tiene deuda), mismo filtro sin
+   `NO_SE_PRESENTO`.
+
+**Refactor:** `abonos.component.ts` — la lógica común de `cancelarPedido()` (Swal, llamada al
+back, ticket, refresco de listas) se extrajo a un privado `ejecutarCancelacion(opts)` con
+`opcionesMotivo?` y `onListaRefrescar()` parametrizables, para no duplicarla entre
+`cancelarPedido()` (Cuentas por cobrar) y `cancelarPedidoPagado()` (Liquidados).
+
+**Decisión de UX (confirmada con el usuario):** para el motivo de esta "devolución" se reusan
+las 2 opciones que ya existían (`CLIENTE_AVISO`/`ERROR_ADMIN`) — no se agregó una 3ª etiqueta
+tipo "Devolución de producto".
+
+**`motivo-cancelacion.util.ts`:** ya soportaba un parámetro `opciones` desde que se creó — no
+necesitó cambios, solo se le empezó a pasar una lista filtrada en estos 2 casos nuevos.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cancelarPedido()` con filtro de
+  motivo + título condicional
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` del botón
+  Cancelar ahora considera `isAdminUser`
+- `src/app/abonos/abonos.component.ts` → `ejecutarCancelacion()` (nuevo, privado),
+  `cancelarPedido()` refactorizado para usarlo, nuevo `cancelarPedidoPagado()`
+- `src/app/abonos/abonos.component.html` → botón "✖ Cancelar" en tab "Liquidados"
+
+**Pendiente (fuera de este cambio, anotado para después):** revisando esto se encontró que
+`detalle-pedido.component.ts` → `totalGeneral` lee `this.detalle.totalPedido`, un valor que se
+trae UNA vez al cargar la pantalla y nunca se refresca tras `reducirCantidad()` — aunque el back
+ya corrigió que `totalPedido` se recalcule bien server-side al quitar una línea
+(`DELETE /v1/pedidos/{id}/detalle/{productoId}`), el front lo sigue mostrando desactualizado
+hasta recargar. No corregido en este cambio — el usuario no lo pidió todavía.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.

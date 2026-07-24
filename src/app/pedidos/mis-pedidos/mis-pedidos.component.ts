@@ -13,7 +13,7 @@ import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
-import { motivoCancelacionSwalFragment } from 'src/app/shared/motivo-cancelacion.util';
+import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -101,12 +101,18 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // Ya entregado = devolución (el back ahora sí permite cancelar en este estado, pero solo
+    // admin y sin NO_SE_PRESENTO como motivo — el cliente sí cumplió, solo se devuelve el
+    // producto). El botón que dispara esto ya está protegido con !isAdminUser en el HTML.
+    const esDevolucion = item.pedido.estado_pedido === 'Entregado';
+    const opciones = esDevolucion ? MOTIVOS_CANCELACION.filter(o => o.value !== 'NO_SE_PRESENTO') : undefined;
+
     // Grupo de botones en vez del input:'radio' nativo de SweetAlert2 (se veía como checklist
-    // feo) — mismos 3 motivos, mismo patrón visual de pills que el resto del proyecto.
-    const motivoFrag = motivoCancelacionSwalFragment();
+    // feo) — mismos motivos, mismo patrón visual de pills que el resto del proyecto.
+    const motivoFrag = motivoCancelacionSwalFragment(opciones);
 
     Swal.fire({
-      title: '¿Por qué cancelas este pedido?',
+      title: esDevolucion ? '¿Cancelar (devolución) este pedido ya entregado?' : '¿Por qué cancelas este pedido?',
       html: `<p style="color:var(--app-text-muted,#6b7280);margin:0 0 4px">Pedido #${item.pedido.id}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton: true,

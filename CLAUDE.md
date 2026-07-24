@@ -5767,4 +5767,28 @@ por eso solo esos 2 se agregaron acá.
 ⚠️ No probado en vivo — la migración `migration_lugar_entrega.sql` seguía pendiente de correr
 en dev/qa/prod según el propio doc del back al momento de escribir esto.
 
+---
+
+## FIX ESTILOS — MODAL "ENTREGA" EN MIS-PEDIDOS SIN DISEÑO (2026-07-24)
+
+**Síntoma reportado:** el modal de "📍 Entrega" (agregado en la sección anterior) sí mostraba
+los 6 campos (receptor, dirección, fecha, lugar, Facebook, observaciones), pero visualmente era
+puro SweetAlert2 sin estilo — labels con `style` inline sueltos, inputs con la clase por defecto
+`swal2-input`/`swal2-select`/`swal2-textarea` apiladas una debajo de otra sin agrupación.
+
+**Fix:** se armó un `<style>` embebido dentro del propio `html` del Swal (necesario — los
+estilos scoped de un componente Angular no llegan al DOM que SweetAlert2 inyecta en
+`document.body`, mismo patrón ya usado en `motivo-cancelacion.util.ts` y
+`forzarCambioPassword()` del login) con clases propias `.mp-entrega-*`:
+- Cada campo con su label (con emoji identificador) arriba y el input/select/textarea abajo,
+  bordes redondeados y foco con el acento del tema (`var(--app-accent)`, `var(--card-bg)`,
+  `var(--card-border)` — dark/light automático, mismas variables globales de siempre).
+- Fecha y Lugar de entrega van en una fila de 2 columnas (`.mp-entrega-row`) para que el modal
+  no quede tan largo — el resto sigue en una sola columna.
+- `width: 480` explícito en el `Swal.fire()` para que el modal no se vea angosto con 2 columnas
+  adentro.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `mostrarModalEntrega()`
+
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

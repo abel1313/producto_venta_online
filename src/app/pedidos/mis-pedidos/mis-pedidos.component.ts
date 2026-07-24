@@ -178,23 +178,60 @@ export class MisPedidosComponent implements OnInit {
 
     Swal.fire({
       title: `📍 Info de entrega — Pedido #${pedidoId}`,
+      width: 480,
       html: `
-        <div style="text-align:left;display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Nombre de quien recibe</label>
-          <input id="sw-receptor" class="swal2-input" style="margin:0 0 6px" placeholder="Opcional" value="${nombreReceptor}">
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Dirección de entrega</label>
-          <textarea id="sw-direccion" class="swal2-textarea" style="margin:0 0 6px" placeholder="Opcional">${direccionEntrega}</textarea>
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Fecha de entrega</label>
-          <input id="sw-fecha" type="date" class="swal2-input" style="margin:0 0 6px" value="${fechaEntrega}">
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Lugar de entrega</label>
-          <select id="sw-lugar" class="swal2-select" style="margin:0 0 6px">
-            <option value="">Sin especificar</option>
-            ${opcionesLugar}
-          </select>
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Link de Facebook</label>
-          <input id="sw-facebook" class="swal2-input" style="margin:0 0 6px" placeholder="Opcional" value="${urlFacebook}">
-          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Observaciones</label>
-          <textarea id="sw-obs" class="swal2-textarea" style="margin:0" placeholder="Opcional">${observaciones}</textarea>
+        <style>
+          .mp-entrega-form { text-align:left; display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+          .mp-entrega-row { display:flex; gap:10px; }
+          .mp-entrega-row .mp-entrega-field { flex:1; min-width:0; }
+          .mp-entrega-field { display:flex; flex-direction:column; gap:4px; }
+          .mp-entrega-label {
+            font-size:.78rem; font-weight:600; color:var(--app-text-muted,#6b7280);
+            display:flex; align-items:center; gap:5px;
+          }
+          .mp-entrega-input, .mp-entrega-select, .mp-entrega-textarea {
+            width:100%; margin:0; box-sizing:border-box;
+            padding:9px 12px; border-radius:10px;
+            border:1.5px solid var(--card-border,#e5e7eb);
+            background:var(--card-bg,#fff); color:var(--app-text,#1f2937);
+            font-size:.88rem; font-family:inherit; transition:border-color .15s;
+          }
+          .mp-entrega-textarea { resize:vertical; min-height:44px; }
+          .mp-entrega-input:focus, .mp-entrega-select:focus, .mp-entrega-textarea:focus {
+            outline:none; border-color:var(--app-accent,#007AFF);
+            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,122,255,.12));
+          }
+        </style>
+        <div class="mp-entrega-form">
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">👤 Nombre de quien recibe</label>
+            <input id="sw-receptor" class="mp-entrega-input" placeholder="Opcional" value="${nombreReceptor}">
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">🏠 Dirección de entrega</label>
+            <textarea id="sw-direccion" class="mp-entrega-textarea" placeholder="Opcional">${direccionEntrega}</textarea>
+          </div>
+          <div class="mp-entrega-row">
+            <div class="mp-entrega-field">
+              <label class="mp-entrega-label">📅 Fecha de entrega</label>
+              <input id="sw-fecha" type="date" class="mp-entrega-input" value="${fechaEntrega}">
+            </div>
+            <div class="mp-entrega-field">
+              <label class="mp-entrega-label">📍 Lugar de entrega</label>
+              <select id="sw-lugar" class="mp-entrega-select">
+                <option value="">Sin especificar</option>
+                ${opcionesLugar}
+              </select>
+            </div>
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">📘 Link de Facebook</label>
+            <input id="sw-facebook" class="mp-entrega-input" placeholder="Opcional" value="${urlFacebook}">
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">📝 Observaciones</label>
+            <textarea id="sw-obs" class="mp-entrega-textarea" placeholder="Opcional">${observaciones}</textarea>
+          </div>
         </div>`,
       showCancelButton: true,
       confirmButtonText: '💾 Guardar',

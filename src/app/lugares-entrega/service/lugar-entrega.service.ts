@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { ILugarEntrega, ILugarEntregaRequest, ILugaresEntregaPaginable } from '../models/lugar-entrega.model';
+import { ILugarEntrega, ILugarEntregaRequest } from '../models/lugar-entrega.model';
 
 @Injectable({ providedIn: 'root' })
 export class LugarEntregaService {
@@ -12,11 +12,21 @@ export class LugarEntregaService {
 
   constructor(private readonly http: HttpClient) {}
 
-  // GET /lugares-entrega/getAll?page=0&size=50 — catálogo completo (para selects/autocomplete)
-  getAll(page = 0, size = 50): Observable<ILugarEntrega[]> {
+  // GET /lugares-entrega/getAll?page=0&size=N — CRUD genérico, pagina de verdad pero devuelve
+  // el arreglo PLANO de esa página (sin envolver en PginaDto — el back documentó mal el shape
+  // la primera vez, confirmado 2026-07-24: es { data: [...] }, no { data: { t: [...] } }).
+  // Sin total de registros en la respuesta, así que "hay más" se infiere por
+  // length === size (mismo criterio en gestion-lugares.component.ts).
+  //
+  // Dos usos distintos del mismo endpoint:
+  // - Selects/autocomplete (venta-directa, editar-entrega, filtro de pedidos): piden todo de
+  //   un jalón con size grande (default 200 acá) — no deben paginar.
+  // - Catálogo admin (gestion-lugares.component.ts): sí pagina de verdad, pasando su propio
+  //   page/size chico (10) con controles de página.
+  getAll(page = 0, size = 200): Observable<ILugarEntrega[]> {
     return this.http
-      .get<{ data: ILugaresEntregaPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
-      .pipe(map(res => res.data?.t ?? []));
+      .get<{ data: ILugarEntrega[] }>(`${this.url}/getAll?page=${page}&size=${size}`)
+      .pipe(map(res => res.data ?? []));
   }
 
   getOne(id: number): Observable<ILugarEntrega> {

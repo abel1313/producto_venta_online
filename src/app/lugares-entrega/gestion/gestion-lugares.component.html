@@ -28,20 +28,42 @@
     </button>
   </form>
 
-  <!-- Lista -->
-  <div *ngIf="!cargando && lugares.length === 0" class="pk-empty">
+  <!-- Vacío -->
+  <div *ngIf="!cargando && lugares.length === 0 && page === 0" class="pk-empty">
     Sin lugares de entrega — agrega el primero arriba
   </div>
 
-  <div class="pk-list" *ngIf="!cargando && lugares.length > 0">
-    <div class="pk-item" *ngFor="let l of lugares"
-         [class.pk-item--editando]="editandoId === l.id">
-      <span class="pk-item__nombre">{{ l.nombre }}</span>
-      <div class="pk-item__actions">
-        <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>
-        <button class="pk-btn pk-btn--del"  (click)="eliminar(l)"       title="Eliminar">🗑️</button>
-      </div>
+  <!-- Tabla paginada -->
+  <div class="pk-table-wrap" *ngIf="!cargando && lugares.length > 0">
+    <table class="pk-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th class="pk-table__col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of lugares" [class.pk-row--editando]="editandoId === l.id">
+          <td>{{ l.nombre }}</td>
+          <td class="pk-table__actions">
+            <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>
+            <button class="pk-btn pk-btn--del"  (click)="eliminar(l)"       title="Eliminar">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pk-pagination">
+      <button class="pk-btn pk-btn--page" [disabled]="page === 0" (click)="paginaAnterior()">← Anterior</button>
+      <span class="pk-pagination__info">Página {{ page + 1 }}</span>
+      <button class="pk-btn pk-btn--page" [disabled]="!haySiguiente" (click)="siguientePagina()">Siguiente →</button>
     </div>
+  </div>
+
+  <!-- Página vacía por haber eliminado el último item (no debería verse casi nunca, red de seguridad) -->
+  <div *ngIf="!cargando && lugares.length === 0 && page > 0" class="pk-empty">
+    Sin más lugares en esta página.
+    <button class="pk-btn pk-btn--page" (click)="paginaAnterior()">← Volver</button>
   </div>
 
 </div>

@@ -5839,3 +5839,48 @@ seguridad al hacer clic).
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `puedeGenerarTicket()` usa `totalPagado`
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — SHAPE REAL DE `getAll` LUGARES-ENTREGA + CATÁLOGO CON PAGINACIÓN REAL EN TABLA (2026-07-24)
+
+> Cierra la consulta de la sección anterior. El back confirmó que documentaron mal el shape la
+> primera vez (confundieron el patrón `PginaDto` con el del CRUD genérico) — la migración sí
+> corrió en QA y el endpoint sí respondía bien desde el principio; el bug era 100% de lectura
+> en el front.
+
+### 1. Shape real — `{ "data": [...] }`, no `{ "data": { "t": [...] } }`
+
+`GET /v1/lugares-entrega/getAll` (CRUD genérico) pagina de verdad con `page`/`size`, pero
+devuelve el arreglo **plano** de esa página — sin envolver en `PginaDto` (`t`/`pagina`/
+`totalPaginas`), a diferencia de otros endpoints como `palabras-clave/buscar`. Como el código
+original leía `res.data?.t ?? []` y `data` nunca tuvo esa forma, siempre caía al fallback
+`[]` — **sin ningún error HTTP ni de consola**, por eso el select se veía vacío sin ninguna
+pista visible. `LugarEntregaService.getAll()` ahora lee `res.data` directo.
+
+### 2. Dos usos distintos del mismo endpoint, con paginación distinta (aclarado por el back y
+### pedido explícito del usuario)
+
+- **Selects/autocomplete** (venta-directa, editar-entrega en mis-pedidos, checkout del
+  cliente, filtro de búsqueda de pedidos): necesitan **todas** las opciones de un jalón, sin
+  paginar — `getAll()` ahora tiene `size = 200` por default (antes 50), suficiente para un
+  catálogo de zonas/pueblos que no va a crecer a cientos de registros pronto.
+- **Catálogo admin** (`/lugares-entrega`, `GestionLugaresComponent`): rediseñado con
+  **paginación real** — tabla (`<table>`, columnas Nombre/Acciones) + controles "← Anterior" /
+  "Siguiente →", pidiendo su propio `page`/`size=10` en cada carga. Como el CRUD genérico no
+  devuelve total de registros, "hay página siguiente" se infiere con `length === size` (si la
+  página vino completa, probablemente hay más — mismo criterio que otros catálogos sin total
+  en este proyecto).
+- Antes de este cambio, `guardar()`/`eliminar()` parcheaban el arreglo local (`push`/`filter`)
+  en vez de recargar — con paginación real eso ya no tiene sentido (un alta puede caer en otra
+  página, una edición no cambia el orden) → ahora ambos llaman `cargar()` para refrescar la
+  página actual desde el servidor.
+
+**Archivos modificados:**
+- `src/app/lugares-entrega/models/lugar-entrega.model.ts` → elimina `ILugaresEntregaPaginable` (sin uso)
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts` → `getAll()` lee `res.data` directo, default `size=200`
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.ts` → paginación real (`page`, `size=10`, `haySiguiente`)
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.html` → tabla + controles de página
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.scss` → `.pk-table`, `.pk-pagination`, `.pk-btn--page` (reemplaza `.pk-list`/`.pk-item`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

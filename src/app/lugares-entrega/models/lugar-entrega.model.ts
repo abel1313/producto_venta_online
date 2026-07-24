@@ -9,11 +9,3 @@ export interface ILugarEntrega {
 export interface ILugarEntregaRequest {
   nombre: string;
 }
-
-// Respuesta paginada de GET /lugares-entrega/getAll
-export interface ILugaresEntregaPaginable {
-  pagina:          number;
-  totalPaginas:    number;
-  totalRegistros:  number;
-  t:               ILugarEntrega[];
-}

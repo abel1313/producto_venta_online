@@ -39,9 +39,9 @@ export class LugarEntregaService {
       .pipe(map(res => res.data));
   }
 
-  // DELETE /lugares-entrega/delete — body: { id } — solo ADMIN
+  // DELETE /lugares-entrega/delete — body: el id crudo (número JSON, NO { id }) — solo ADMIN
   delete(id: number): Observable<void> {
     return this.http
-      .delete<void>(`${this.url}/delete`, { body: { id } });
+      .delete<void>(`${this.url}/delete`, { body: id });
   }
 }

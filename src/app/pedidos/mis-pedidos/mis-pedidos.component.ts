@@ -582,12 +582,16 @@ export class MisPedidosComponent implements OnInit {
     return { icono, texto: item.pedido.estado_pedido };
   }
 
-  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta
-  // con estado_pedido; para crédito no sabemos si ya tiene abonos sin pedir el detalle,
-  // así que se deja habilitado y se valida de verdad en puedeImprimir() al hacer clic.
+  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
+  // estado_pedido; para crédito, el back confirmó (2026-07-24) que totalPagado ya viene en
+  // este mismo objeto — antes se dejaba habilitado siempre porque no había forma de saberlo
+  // de antemano. puedeImprimir() (con el detalle completo) sigue como red de seguridad al
+  // hacer clic, por si este dato llegara desactualizado entre la carga y el clic.
   puedeGenerarTicket(item: IPedidoGenerico): boolean {
     const tp = item.pedido.tipoPedido;
-    if (tp === 'APARTADO' || tp === 'FIADO') return true;
+    if (tp === 'APARTADO' || tp === 'FIADO') {
+      return (item.pedido.totalPagado ?? 0) > 0;
+    }
     return item.pedido.estado_pedido === 'Entregado';
   }
 

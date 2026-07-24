@@ -5792,3 +5792,50 @@ estilos scoped de un componente Angular no llegan al DOM que SweetAlert2 inyecta
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `mostrarModalEntrega()`
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — BODY DE DELETE LUGARES-ENTREGA + puedeGenerarTicket() CON totalPagado REAL (2026-07-24)
+
+> Correcciones del back tras revisar la respuesta de "lugares de entrega" del mismo día.
+
+### 1. `DELETE /v1/lugares-entrega/delete` — body incorrecto
+
+El back documentó primero `Body: { "id": 1 }`, y así lo implementé — pero corrigieron: el CRUD
+genérico espera el id **crudo** como valor JSON (`1`), no envuelto en objeto. Con `{ id }`
+truena con `JSON parse error: Cannot deserialize value of type 'java.lang.Integer' from Object
+value`. Mismo patrón que usan los demás catálogos genéricos del proyecto
+(`palabras-clave/delete`, que ya mandaba el id crudo). De paso el back corrigió un bug propio:
+el `delete()` genérico no borraba nada de verdad aunque respondiera 200 — ya arreglado de su
+lado, sin cambios adicionales necesarios acá.
+
+```typescript
+// ❌ antes
+delete(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.url}/delete`, { body: { id } });
+}
+// ✅ ahora
+delete(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.url}/delete`, { body: id });
+}
+```
+
+### 2. `nombreReceptor` confirmado en la lista de pedidos + `puedeGenerarTicket()` ya no asume `true`
+
+El back confirmó que `GET /v1/pedidos/buscarClientePedido` (y `buscarTodosLosPedidos`) ya
+incluye `nombreReceptor`, `tipoPedido`, `totalPagado`, `lugarEntregaId`, `lugarEntregaNombre` y
+`urlFacebook` en el objeto `pedido` de cada resultado — cierra dos preguntas que llevaban abiertas
+varias sesiones (`tipoPedido`/`totalPagado` en la lista).
+
+`nombreReceptor` en la card ya funcionaba sin cambios (el binding ya usaba `*ngIf`, simplemente
+antes no había dato — ahora sí lo hay). Lo que sí se aprovechó: `puedeGenerarTicket(item)` para
+crédito ya no asume `true` siempre (el compromiso que se había dejado porque antes no se sabía
+de antemano si el pedido tenía abonos) — ahora usa `(item.pedido.totalPagado ?? 0) > 0`, mismo
+criterio que ya usaba `puedeImprimir()` con el detalle completo (que se deja igual, como red de
+seguridad al hacer clic).
+
+**Archivos modificados:**
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts` → `delete()` body corregido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `puedeGenerarTicket()` usa `totalPagado`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

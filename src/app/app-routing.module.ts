@@ -65,7 +65,10 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
-    path: 'variantes',
+    // Ruta pública "Tienda" — antes /variantes, renombrada solo en la URL (el código interno
+    // sigue en src/app/variante/, sin tocar — mismo criterio ya usado para renombrar solo lo
+    // visible al usuario, extendido aquí a la URL del navegador).
+    path: 'tienda',
     loadChildren: () => import('./variante/agregar.module').then(m => m.AgregarModule),
     canActivate: [CarritoGuard]
   },

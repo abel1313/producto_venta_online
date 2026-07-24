@@ -86,10 +86,10 @@ export class FavoritosComponent implements OnInit {
   }
 
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/variantes/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id]);
   }
 
   verCarrito(): void {
-    this.router.navigate(['/variantes/carrito']);
+    this.router.navigate(['/tienda/carrito']);
   }
 }

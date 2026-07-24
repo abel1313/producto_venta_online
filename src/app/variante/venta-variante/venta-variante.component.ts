@@ -275,14 +275,14 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
                 confirmButtonColor: '#6366f1'
               }).then(r => {
                 if (r.isConfirmed) this.router.navigate(['/abonos']);
-                else this.router.navigate(['/variantes/buscar']);
+                else this.router.navigate(['/tienda/buscar']);
               });
             } else {
               Swal.fire({
                 icon: 'success',
                 title: 'Pedido registrado',
                 text: `Número de pedido: ${res.data.id}`,
-              }).then(() => this.router.navigate(['/variantes/buscar']));
+              }).then(() => this.router.navigate(['/tienda/buscar']));
             }
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: res?.mensaje ?? 'No se pudo guardar el pedido.' });
@@ -311,7 +311,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               confirmButtonText: '🔄 Ir al catálogo',
               showCancelButton: true,
               cancelButtonText: 'Cerrar'
-            }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
+            }).then(r => { if (r.isConfirmed) this.router.navigate(['/tienda/buscar']); });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo guardar el pedido.' });
           }
@@ -393,7 +393,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   // ── Ir a Venta Directa (admin) ────────────────────────────────────
 
   irAVentaDirecta(): void {
-    this.router.navigate(['/variantes/venta-directa']);
+    this.router.navigate(['/tienda/venta-directa']);
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────

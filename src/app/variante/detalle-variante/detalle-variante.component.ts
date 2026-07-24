@@ -319,7 +319,7 @@ export class DetalleVarianteComponent implements OnInit {
     });
   }
 
-  volver(): void { this.router.navigate(['/variantes/buscar']); }
+  volver(): void { this.router.navigate(['/tienda/buscar']); }
 
   // ── Independizar variante ──────────────────────────────────────────────────
 
@@ -431,14 +431,14 @@ export class DetalleVarianteComponent implements OnInit {
           cancelButtonText: 'Cerrar',
         }).then(result => {
           if (result.isConfirmed) {
-            this.router.navigate(['/variantes/buscar']);
+            this.router.navigate(['/tienda/buscar']);
           } else {
             // Quitar la variante independizada de la lista y actualizar vista
             this.variantes = this.variantes.filter(v => v.id !== this.varianteSeleccionada!.id);
             if (this.variantes.length > 0) {
               this.seleccionar(this.variantes[0]);
             } else {
-              this.router.navigate(['/variantes/buscar']);
+              this.router.navigate(['/tienda/buscar']);
             }
           }
         });

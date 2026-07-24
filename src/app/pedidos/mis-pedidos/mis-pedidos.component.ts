@@ -81,6 +81,17 @@ export class MisPedidosComponent implements OnInit {
     return tipos;
   }
 
+  // Resumen visible de qué filtros están activos ahora mismo, para que no quede a la
+  // adivinanza qué combinación se está usando (texto + lugar + tipo pueden combinarse).
+  get descripcionBusqueda(): string | null {
+    const partes: string[] = [];
+    if (this.buscarProd) partes.push(`texto "${this.buscarProd}"`);
+    if (this.lugarFiltroId && this.terminoLugar) partes.push(`lugar "${this.terminoLugar}"`);
+    if (this.filtroApartado)  partes.push('Apartados');
+    if (this.filtroIrPagando) partes.push('Ir pagando');
+    return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
+  }
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,

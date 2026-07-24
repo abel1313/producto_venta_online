@@ -5933,3 +5933,20 @@ en el repo compartido, con inventario completo de los endpoints que usa esta pan
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ El filtro por tipo no tendrá efecto real hasta que el back confirme/agregue el parámetro —
 mientras tanto no rompe nada, el backend simplemente ignoraría un query param que no reconoce.
+
+---
+
+## FEAT — RESUMEN VISIBLE DE FILTROS ACTIVOS EN MIS-PEDIDOS (2026-07-24)
+
+**Pedido del usuario:** con 3 filtros combinables ahora (texto, lugar, tipo), no quedaba claro
+a simple vista qué combinación estaba aplicada. Se agregó un getter `descripcionBusqueda`
+que arma un resumen tipo `"Buscando: texto "123" + lugar "Zacazonapan" + Apartados"` con lo
+que esté activo, mostrado como chip debajo de los filtros (solo admin, solo si hay al menos un
+filtro activo — si no hay ninguno, no se muestra nada).
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → getter `descripcionBusqueda`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → chip `.mp-descripcion-busqueda`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → estilos del chip
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

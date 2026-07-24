@@ -48,6 +48,11 @@
     </button>
   </div>
 
+  <!-- Resumen de filtros activos -->
+  <div class="mp-descripcion-busqueda" *ngIf="isAdminUser && descripcionBusqueda">
+    <i class="pi pi-filter"></i> {{ descripcionBusqueda }}
+  </div>
+
   <!-- Grid de pedidos -->
   <div class="scroll-container" (scroll)="onScroll($event)">
     <div class="pedidos-grid">

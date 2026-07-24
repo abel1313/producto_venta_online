@@ -242,6 +242,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return this.detalle.find(p => p.codigoBarras === producto.codigoBarras)?.cantidad ?? 0;
   }
 
+  // Stock real menos lo que ya está en el carrito — así el número que ve el usuario baja
+  // conforme agrega, en vez de quedarse fijo mientras el botón ya está deshabilitado.
+  stockDisponible(producto: IProductoDTO): number {
+    return Math.max(0, producto.stock - this.cantidadEnCarrito(producto));
+  }
+
   stockAgotadoEnCarrito(producto: IProductoDTO): boolean {
     return this.cantidadEnCarrito(producto) >= producto.stock;
   }

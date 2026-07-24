@@ -417,6 +417,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.carritoVariante.cantidadEnCarrito(v.id);
   }
 
+  // Stock real menos lo que ya está en el carrito — así el número que ve el usuario baja
+  // conforme agrega, en vez de quedarse fijo mientras el botón ya está deshabilitado.
+  stockDisponible(v: IVarianteResumen): number {
+    return Math.max(0, (v.stock ?? 0) - this.cantidadEnCarrito(v));
+  }
+
   stockAgotado(v: IVarianteResumen): boolean {
     const stock = v.stock ?? 0;
     return stock === 0 || this.cantidadEnCarrito(v) >= stock;

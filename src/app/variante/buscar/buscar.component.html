@@ -215,8 +215,8 @@
             <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
           </div>
         </div>
-        <span [class]="stockClase(v.stock ?? 0)" style="align-self: flex-start; font-size: 0.75rem;">
-          {{ (v.stock ?? 0) === 0 ? 'Agotado' : (v.stock ?? 0) + ' unidades' }}
+        <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
+          {{ stockDisponible(v) === 0 ? 'Agotado' : stockDisponible(v) + ' unidades' }}
         </span>
       </div>
 

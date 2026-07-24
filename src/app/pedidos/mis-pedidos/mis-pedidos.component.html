@@ -38,6 +38,10 @@
 
   <!-- Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) -->
   <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
+            (click)="toggleFiltroTipo('NORMAL')">
+      🛒 Normal
+    </button>
     <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
             (click)="toggleFiltroTipo('APARTADO')">
       📦 Apartados

@@ -5639,3 +5639,29 @@ internos sin necesitar `?.` en cada uno.
 ⚠️ No probado en vivo — depende de que el back haya corrido
 `migration_pedido_datos_entrega.sql` en el ambiente donde se pruebe (según su propio doc,
 pendiente al momento de escribir esto).
+
+---
+
+## FIX — STOCK VISIBLE NO BAJABA AL AGREGAR AL CARRITO (2026-07-24)
+
+**Síntoma:** en `productos/buscar` y `variantes/buscar`, si un producto tiene 10 de stock y se
+agrega 1 al carrito, el badge grande sigue diciendo "10 unidades" — solo un chip aparte
+("🛒 1 en carrito") indica lo agregado, y el botón "Agregar" se deshabilita correctamente al
+llegar al máximo, pero sin que el usuario entienda por qué (el número visible nunca bajó).
+
+**No era una diferencia entre las 2 pantallas** — ambas ya tenían exactamente la misma lógica
+(`cantidadEnCarrito(item) >= item.stock` para deshabilitar el botón), solo que el badge de
+"unidades" siempre mostraba el stock crudo de la BD sin restar lo ya agregado.
+
+**Fix:** nuevo método `stockDisponible(item)` en ambos componentes —
+`Math.max(0, stock - cantidadEnCarrito(item))` — y el badge grande ahora usa ese valor en vez
+del stock crudo. El chip "🛒 N en carrito (máx. X)" se deja igual (sigue mostrando el stock
+total real como referencia, es información complementaria, no contradictoria).
+
+**Archivos modificados:**
+- `src/app/variante/buscar/buscar.component.ts` → `stockDisponible(v)`
+- `src/app/variante/buscar/buscar.component.html` → badge usa `stockDisponible(v)`
+- `src/app/productos/producto/all/all.component.ts` → `stockDisponible(producto)`
+- `src/app/productos/producto/all/all.component.html` → badge usa `stockDisponible(item)`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

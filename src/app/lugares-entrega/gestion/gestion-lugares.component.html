@@ -1,0 +1,47 @@
+<div class="pk-wrap">
+
+  <div class="pk-header">
+    <h4 class="pk-header__title">📍 Catálogo de lugares de entrega</h4>
+    <small class="pk-header__sub">Zonas usadas para filtrar pedidos por lugar de entrega</small>
+  </div>
+
+  <!-- Formulario agregar / editar -->
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
+    <div class="pk-form__field">
+      <input class="pk-input"
+             formControlName="nombre"
+             type="text"
+             [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nuevo lugar…'"
+             autocomplete="off"
+             maxlength="80" />
+      <small class="pk-error" *ngIf="ctrl?.invalid && ctrl?.touched">
+        El nombre es obligatorio
+      </small>
+    </div>
+
+    <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
+      {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
+    </button>
+
+    <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
+      ✕ Cancelar
+    </button>
+  </form>
+
+  <!-- Lista -->
+  <div *ngIf="!cargando && lugares.length === 0" class="pk-empty">
+    Sin lugares de entrega — agrega el primero arriba
+  </div>
+
+  <div class="pk-list" *ngIf="!cargando && lugares.length > 0">
+    <div class="pk-item" *ngFor="let l of lugares"
+         [class.pk-item--editando]="editandoId === l.id">
+      <span class="pk-item__nombre">{{ l.nombre }}</span>
+      <div class="pk-item__actions">
+        <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>
+        <button class="pk-btn pk-btn--del"  (click)="eliminar(l)"       title="Eliminar">🗑️</button>
+      </div>
+    </div>
+  </div>
+
+</div>

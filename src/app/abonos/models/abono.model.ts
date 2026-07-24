@@ -67,6 +67,11 @@ export interface PedidoDetalleResponse {
   nombreReceptor?:    string | null;
   direccionEntrega?:  string | null;
   fechaRecogida?:     string | null;
+  // Lugar de entrega + link de Facebook (2026-07-24) — solo aparecen si el pedido los tiene
+  // asignados (el back usa @JsonInclude(NON_NULL) en este DTO).
+  lugarEntregaId?:     number | null;
+  lugarEntregaNombre?: string | null;
+  urlFacebook?:        string | null;
 }
 
 export interface PedidoDetalleItem {

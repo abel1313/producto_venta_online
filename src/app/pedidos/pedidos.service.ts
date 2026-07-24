@@ -24,9 +24,10 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/findPedido/${idPedido}/${idCliente}?size=${size}&page=${page}`);
   }
 
-    buscarPedidoPorCliente(buscar: string, size: number, page: number): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
-    const query = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
-    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${query}`);
+    buscarPedidoPorCliente(buscar: string, size: number, page: number, lugarEntregaId?: number | null): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
+    const queryBuscar = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
+    const queryLugar  = lugarEntregaId ? `&lugarEntregaId=${lugarEntregaId}` : '';
+    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${queryBuscar}${queryLugar}`);
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {
@@ -53,6 +54,8 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       direccionEntrega?: string;
       fechaEntrega?: string;
       observaciones?: string;
+      lugarEntregaId?: number;
+      urlFacebook?: string;
     }): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
     }

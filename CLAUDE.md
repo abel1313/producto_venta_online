@@ -5664,4 +5664,107 @@ total real como referencia, es información complementaria, no contradictoria).
 - `src/app/productos/producto/all/all.component.ts` → `stockDisponible(producto)`
 - `src/app/productos/producto/all/all.component.html` → badge usa `stockDisponible(item)`
 
+---
+
+## FEAT — CATÁLOGO "LUGARES DE ENTREGA" + LINK DE FACEBOOK POR PEDIDO (2026-07-24)
+
+> Respuesta del back del 2026-07-24 (repo compartido). Nuevo catálogo CRUD `/v1/lugares-entrega`
+> + campos `lugarEntregaId`/`urlFacebook` en `Pedido`, pensado para filtrar pedidos por zona en
+> vez de texto libre, y para ubicar/contactar al cliente (sobre todo `ClienteSinRegistro`) vía
+> Facebook. Van en el pedido, no en el cliente, mismo criterio que `nombreReceptor`/
+> `direccionEntrega` (pueden variar de una compra a otra).
+
+### 1. Catálogo nuevo — `src/app/lugares-entrega/`
+
+Clon exacto del patrón ya usado para `palabras-clave` (mismo `pk-*` SCSS, mismo flujo
+agregar/editar/eliminar inline): `LugarEntregaService` (`getAll`, `getOne`, `save`, `update`,
+`delete`) + `GestionLugaresComponent`, módulo lazy en `/lugares-entrega` (`AdminGuardGuard`).
+Link nuevo "📍 Lugares de entrega" en el navbar, junto a "🏷️ Categorías" dentro de Inventario.
+
+⚠️ Único endpoint con shape distinto a `palabras-clave`: `getAll` de lugares devuelve
+`{ data: { t: [...], pagina, totalPaginas, totalRegistros } }` (paginado, con `t`), mientras que
+`palabras-clave/getAll` devuelve `{ data: [...] }` (array plano) — ajustado en el `pipe(map())`
+del servicio.
+
+### 2. Decisión de UX (confirmada con el usuario) — dos estilos de selector distintos
+
+- **Elegir un lugar al crear/editar un pedido** (venta-directa, checkout del cliente, modal de
+  "Entrega" en mis-pedidos): `<select>` simple poblado con `GET /getAll` — es elegir de un
+  catálogo chico, no buscar.
+- **Filtrar la lista de pedidos por lugar** (`mis-pedidos`, búsqueda): autocomplete tipo
+  buscador — campo de texto que filtra localmente el catálogo ya cargado en memoria (no hay
+  endpoint de búsqueda de lugares, y el catálogo es chico, así que filtrar client-side es
+  suficiente) y despliega un dropdown con las coincidencias.
+
+### 3. `venta-directa` — select "Lugar de entrega" + input "Link de Facebook"
+
+Agregados a la sección `.vd-entrega` ya existente (junto a nombreReceptor/direccionEntrega/
+fechaEntrega/observaciones de la sesión anterior). Se cargan los lugares en `ngOnInit()` y se
+mandan siempre en `POST /v1/ventas/save` (`lugarEntregaId`, `urlFacebook`).
+
+### 4. `mis-pedidos` — 3 cambios
+
+- **Card:** nueva fila "📍 Recibe: {{ nombreReceptor }}" (si el pedido lo tiene) — antes ese
+  dato solo se veía abriendo el modal de "Entrega".
+- **Filtro por lugar:** input con dropdown autocomplete debajo del buscador de texto (solo
+  admin) → `onBuscarLugar()`/`seleccionarLugar()`/`limpiarFiltroLugar()`. Al elegir un lugar,
+  llama `buscarPedidoPorCliente(buscar, size, page, lugarEntregaId)` (nuevo 4º parámetro,
+  query `&lugarEntregaId=`).
+- **🐛 Bug encontrado de paso (no era de esta feature):** `buscarPedidoAdmin()` hacía
+  `this.pedidoGenerico.push(...)` **sin limpiar la lista primero** — cada tecla escrita en el
+  buscador iba ACUMULANDO resultados viejos en vez de reemplazarlos. Se agregó
+  `this.pedidoGenerico = []` al inicio del método. Se nota más ahora porque el filtro de lugar
+  vive en el mismo método, pero el bug ya afectaba la búsqueda de texto normal antes de este
+  cambio.
+- **Modal "Entrega":** se agregó `<select>` de lugar + input de link de Facebook, junto a los
+  campos que ya existían. `actualizarEntrega()` en `pedidos.service.ts` acepta los 2 campos
+  nuevos en el body.
+
+### 5. `detalle-pedido` — mostrar `lugarEntregaNombre` + `urlFacebook`
+
+En el panel `.dp-entrega` (solo lectura) ya existente: `lugarEntregaNombre` como texto, y
+`urlFacebook` como link `target="_blank"`.
+
+### 6. `venta-variante` (checkout del cliente, `POST /v1/pedidos/savePedido`)
+
+Select "Lugar de entrega" (opcional), visible solo para `!isAdminUser` — el admin sigue
+capturando estos datos en Venta Directa. **Sin campo de Facebook aquí** — el back dijo
+explícitamente que no aplica en el checkout público (el cliente compra para sí mismo), se omite
+del formulario aunque el campo exista en el DTO.
+
+⚠️ **Solo se agregó `lugarEntregaId` a `IPedidoVarianteDTO`, NO `nombreReceptor`/
+`direccionEntrega`/`fechaEntrega`** — la respuesta de la sesión anterior (2026-07-23) solo
+confirmó esos 3 campos para `VentaDirectaRequest`, nunca para `PedidosDTOPedido`/`savePedido`.
+La respuesta de hoy sí confirma `lugarEntregaId`/`urlFacebook` para ambos DTOs explícitamente,
+por eso solo esos 2 se agregaron acá.
+
+**Archivos nuevos:**
+- `src/app/lugares-entrega/models/lugar-entrega.model.ts`
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts`
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.ts/.html/.scss`
+- `src/app/lugares-entrega/lugares-entrega.module.ts`
+
+**Archivos modificados:**
+- `src/app/app-routing.module.ts` → ruta lazy `/lugares-entrega`
+- `src/app/navbar/navbar.component.html` → link en Inventario
+- `src/app/variante/service/variante.service.ts` → `IVentaDirectaRequest` + `lugarEntregaId`/`urlFacebook`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → campos + carga de catálogo
+- `src/app/variante/venta-directa/venta-directa.component.html` → select + input
+- `src/app/pedidos/mis-pedidos/models/IPedidoQuery.model.ts` → `totalPagado?`, `nombreReceptor?`,
+  `lugarEntregaId?`, `lugarEntregaNombre?`, `urlFacebook?`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → filtro autocomplete, fix de
+  `buscarPedidoAdmin()`, modal extendido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html/.scss` → fila "Recibe", filtro, estilos
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + 4º parámetro,
+  `actualizarEntrega()` + 2 campos
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + `lugarEntregaId`/
+  `lugarEntregaNombre`/`urlFacebook`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → panel de entrega ampliado
+- `src/app/variante/models/pedido-variante.model.ts` → `IPedidoVarianteDTO.lugarEntregaId?`
+- `src/app/variante/venta-variante/venta-variante.component.ts/.html` → select de lugar (cliente)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — la migración `migration_lugar_entrega.sql` seguía pendiente de correr
+en dev/qa/prod según el propio doc del back al momento de escribir esto.
+
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

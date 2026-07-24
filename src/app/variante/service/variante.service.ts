@@ -240,6 +240,8 @@ export interface IVentaDirectaRequest {
   nombreReceptor?: string;
   direccionEntrega?: string;
   fechaEntrega?: string;
+  lugarEntregaId?: number;
+  urlFacebook?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
   // Preferido: id de un ClienteSinRegistro ya creado/verificado (POST /v1/clientes-sin-registro).
   // clienteSinRegistroDto queda como fallback por compatibilidad — el flujo nuevo del front

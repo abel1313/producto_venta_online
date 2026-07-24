@@ -95,6 +95,12 @@
           <button class="btn-card btn-detalle" (click)="irDetalle(item)">
             <i class="pi pi-eye"></i> Detalle
           </button>
+          <button class="btn-card btn-entrega"
+                  [disabled]="item.pedido.estado_pedido === 'Cancelado'"
+                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
+                  (click)="abrirInfoEntrega(item)">
+            <i class="pi pi-map-marker"></i> Entrega
+          </button>
           <button class="btn-card btn-cobrar" *ngIf="isAdminUser"
                   [disabled]="item.pedido.estado_pedido === 'Entregado'"
                   (click)="cobrarAdmin(item)">

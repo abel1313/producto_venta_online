@@ -83,6 +83,11 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   // ── Crédito ────────────────────────────────────────────────────────
   tipoPedido:       'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
   observaciones     = '';
+
+  // ── Datos de entrega (2026-07-23) — opcionales, aplican a cualquier tipo de venta ─────
+  nombreReceptor    = '';
+  direccionEntrega  = '';
+  fechaEntrega      = '';
   readonly metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
   metodoPagoCredito: MetodoPago = 'EFECTIVO';
   montoInicial      = 0;
@@ -480,6 +485,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.estadoTerminal = 'idle';
     this.tipoPedido = 'NORMAL';
     this.observaciones = '';
+    this.nombreReceptor = '';
+    this.direccionEntrega = '';
+    this.fechaEntrega = '';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial = 0;
     this.montoDadoContado = 0;
@@ -749,13 +757,17 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       // El registro ya se creó (y opcionalmente verificó) en el back al llenar el
       // modal — se manda el id, nunca el DTO embebido (ver crearClienteSinRegistro()).
       clienteSinRegistroId: this.clienteSinRegistroId ?? undefined,
-      detalles: [...detallesVariantes, ...detallesPromos]
+      detalles: [...detallesVariantes, ...detallesPromos],
+      // Datos de entrega — opcionales, aplican a cualquier tipo de venta (no solo crédito).
+      observaciones:     this.observaciones || undefined,
+      nombreReceptor:    this.nombreReceptor || undefined,
+      direccionEntrega:  this.direccionEntrega || undefined,
+      fechaEntrega:      this.fechaEntrega || undefined
     };
 
     // Promos son solo de contado — bloquear crédito aunque el admin lo haya seleccionado
     if (this.esCredito && !this.tienePromos) {
       request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
-      request.observaciones = this.observaciones || undefined;
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;
       if (montoDadoSnap !== null) request.montoDado = montoDadoSnap;

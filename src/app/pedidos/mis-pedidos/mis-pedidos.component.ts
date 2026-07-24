@@ -135,6 +135,55 @@ export class MisPedidosComponent implements OnInit {
     });
   }
 
+  // Modal (Swal) para capturar/editar nombreReceptor, direccionEntrega, fechaEntrega y
+  // observaciones — PUT /v1/pedidos/{id}/entrega, no requiere admin (cualquiera puede editar
+  // su propio pedido), el back solo lo rechaza si el pedido ya está "cancelado".
+  abrirInfoEntrega(item: IPedidoGenerico): void {
+    const pedidoId = item.pedido.id;
+
+    this.pedidoService.getDetallePedido(pedidoId).subscribe({
+      next: r => this.mostrarModalEntrega(pedidoId, r?.data ?? null),
+      error: () => this.mostrarModalEntrega(pedidoId, null)
+    });
+  }
+
+  private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null): void {
+    const nombreReceptor   = actual?.nombreReceptor ?? '';
+    const direccionEntrega = actual?.direccionEntrega ?? '';
+    const fechaEntrega     = actual?.fechaRecogida ?? '';
+    const observaciones    = actual?.observaciones ?? '';
+
+    Swal.fire({
+      title: `📍 Info de entrega — Pedido #${pedidoId}`,
+      html: `
+        <div style="text-align:left;display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Nombre de quien recibe</label>
+          <input id="sw-receptor" class="swal2-input" style="margin:0 0 6px" placeholder="Opcional" value="${nombreReceptor}">
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Dirección de entrega</label>
+          <textarea id="sw-direccion" class="swal2-textarea" style="margin:0 0 6px" placeholder="Opcional">${direccionEntrega}</textarea>
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Fecha de entrega</label>
+          <input id="sw-fecha" type="date" class="swal2-input" style="margin:0 0 6px" value="${fechaEntrega}">
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Observaciones</label>
+          <textarea id="sw-obs" class="swal2-textarea" style="margin:0" placeholder="Opcional">${observaciones}</textarea>
+        </div>`,
+      showCancelButton: true,
+      confirmButtonText: '💾 Guardar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => ({
+        nombreReceptor:   (document.getElementById('sw-receptor') as HTMLInputElement)?.value?.trim() || undefined,
+        direccionEntrega: (document.getElementById('sw-direccion') as HTMLTextAreaElement)?.value?.trim() || undefined,
+        fechaEntrega:     (document.getElementById('sw-fecha') as HTMLInputElement)?.value || undefined,
+        observaciones:    (document.getElementById('sw-obs') as HTMLTextAreaElement)?.value?.trim() || undefined
+      })
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.pedidoService.actualizarEntrega(pedidoId, result.value).subscribe({
+        next: () => Swal.fire({ icon: 'success', title: 'Datos de entrega guardados', timer: 1800, showConfirmButton: false }),
+        error: err => Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la información de entrega.' })
+      });
+    });
+  }
+
   cobrarAdmin(item: IPedidoGenerico) {
     // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
     // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").

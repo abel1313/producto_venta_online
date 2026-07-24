@@ -140,6 +140,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         } else {
           item.subTotal = item.cantidad * item.precioUnitario;
         }
+        // El back ya recalcula totalPedido bien server-side, pero acá no se vuelve a pedir
+        // el detalle completo (para no perder el estado de la pantalla) — se recalcula igual
+        // localmente sumando los subtotales que quedan, así el total mostrado no se queda viejo.
+        if (this.detalle) {
+          this.detalle.totalPedido = this.detalle.detalles.reduce((sum, d) => sum + d.subTotal, 0);
+        }
         this.eliminando.delete(item);
       },
       error: (err) => {

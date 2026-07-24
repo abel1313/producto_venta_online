@@ -35,6 +35,20 @@
     </div>
   </div>
 
+  <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
+  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida)">
+    <p class="dp-entrega__title">📍 Datos de entrega</p>
+    <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
+      <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.direccionEntrega">
+      <strong>Dirección:</strong> {{ detalle.direccionEntrega }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
+      <strong>Fecha de entrega:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}
+    </p>
+  </div>
+
   <!-- FORM DE ABONO (solo crédito) -->
   <div class="dp-abono-wrap" *ngIf="esCredito">
 

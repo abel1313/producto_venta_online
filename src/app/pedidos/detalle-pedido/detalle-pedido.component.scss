@@ -294,6 +294,32 @@
   &:hover { box-shadow: 0 4px 14px rgba(0,122,255,.35); }
 }
 
+.dp-entrega {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  margin-bottom: 1rem;
+  padding: .7rem .9rem;
+  border-radius: 10px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+
+  &__title {
+    font-weight: 700;
+    font-size: .82rem;
+    color: var(--card-text);
+    margin: 0 0 .15rem;
+  }
+
+  &__item {
+    margin: 0;
+    font-size: .8rem;
+    color: var(--card-text-muted);
+
+    strong { color: var(--card-text); }
+  }
+}
+
 .dp-abono-historial {
   display: flex;
   flex-direction: column;

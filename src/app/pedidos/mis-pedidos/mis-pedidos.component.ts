@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
 import { IPedidoGenerico } from './models/IPedidoGenerico.model';
@@ -12,6 +13,7 @@ import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
+import { motivoCancelacionSwalFragment } from 'src/app/shared/motivo-cancelacion.util';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -58,7 +60,8 @@ export class MisPedidosComponent implements OnInit {
     private readonly clienteService: ClienteService,
     private readonly authService: AuthService,
     private readonly pagoService: PagoService,
-    private readonly negocioService: NegocioService
+    private readonly negocioService: NegocioService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -98,22 +101,21 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // Grupo de botones en vez del input:'radio' nativo de SweetAlert2 (se veía como checklist
+    // feo) — mismos 3 motivos, mismo patrón visual de pills que el resto del proyecto.
+    const motivoFrag = motivoCancelacionSwalFragment();
+
     Swal.fire({
       title: '¿Por qué cancelas este pedido?',
-      html: `<p style="color:#6b7280;margin-bottom:4px">Pedido #${item.pedido.id}</p>`,
+      html: `<p style="color:var(--app-text-muted,#6b7280);margin:0 0 4px">Pedido #${item.pedido.id}</p>${motivoFrag.html}`,
       icon: 'warning',
-      input: 'radio',
-      inputOptions: {
-        NO_SE_PRESENTO: 'No se presentó',
-        CLIENTE_AVISO:  'El cliente avisó'
-      },
-      inputValue: 'NO_SE_PRESENTO',
       showCancelButton: true,
       confirmButtonText: 'Cancelar pedido',
       cancelButtonText: 'No cancelar',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6b7280',
-      inputValidator: (value) => (!value ? 'Selecciona un motivo' : null)
+      didOpen: motivoFrag.didOpen,
+      preConfirm: motivoFrag.preConfirm
     }).then(result => {
       if (result.isConfirmed) {
         this.pedidoService.cancelarConMotivo(item.pedido.id, result.value).subscribe({
@@ -128,6 +130,50 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
+    // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
+    // ⚠️ `item.pedido.tipoPedido` viene de la LISTA (buscarClientePedido) — ese campo
+    // nunca se confirmó en el spec del back para ese endpoint (solo para savePedido,
+    // ventas/save y los reportes de abonos), así que puede llegar undefined aunque el
+    // pedido SÍ sea crédito. Por eso el chequeo real se hace contra el DETALLE
+    // (GET /{id}/detalle), que sí está confirmado — el de la lista solo se usa como
+    // atajo optimista para no pedir el detalle en pedidos NORMAL (el caso más común).
+    if (item.pedido.tipoPedido === 'APARTADO' || item.pedido.tipoPedido === 'FIADO') {
+      this.irACobrarCredito(item, item.pedido.tipoPedido);
+      return;
+    }
+
+    this.pedidoService.getDetallePedido(item.pedido.id).subscribe({
+      next: r => {
+        const tp = r?.data?.tipoPedido;
+        if (tp === 'APARTADO' || tp === 'FIADO') {
+          this.irACobrarCredito(item, tp);
+        } else {
+          this.abrirDialogoCobroNormal(item);
+        }
+      },
+      // Si falla el detalle, no bloquear el cobro normal — se sigue con el flujo de
+      // siempre; si en realidad era crédito, el back lo rechazará y el usuario lo verá.
+      error: () => this.abrirDialogoCobroNormal(item)
+    });
+  }
+
+  private irACobrarCredito(item: IPedidoGenerico, tipo: 'APARTADO' | 'FIADO'): void {
+    Swal.fire({
+      icon: 'info',
+      title: tipo === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
+      text: 'Este pedido se cobra registrando un abono, no desde este botón.',
+      showCancelButton: true,
+      confirmButtonText: 'Ir a Créditos / Abonos',
+      cancelButtonText: 'Cerrar'
+    }).then(res => {
+      if (res.isConfirmed) {
+        this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
+      }
+    });
+  }
+
+  private abrirDialogoCobroNormal(item: IPedidoGenerico): void {
     this.pedidoACobrar = item;
     this.resetDialogo();
 
@@ -165,9 +211,18 @@ export class MisPedidosComponent implements OnInit {
         this.mostrarDialogoCobro = false;
         Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
       },
-      () => {
+      (err) => {
         this.mostrarDialogoCobro = false;
-        Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', icon: 'error', draggable: true });
+        // Red de seguridad: si el back rechaza porque el pedido en realidad es
+        // crédito (APARTADO/FIADO), ofrecer el mismo redirect a Abonos en vez del
+        // error genérico — cubre el caso donde ni el campo de la lista ni el
+        // detalle lo detectaron a tiempo.
+        const msg: string = (err?.error?.mensaje ?? err?.error?.message ?? '').toLowerCase();
+        if (msg.includes('abono') || msg.includes('apartado') || msg.includes('fiado')) {
+          this.irACobrarCredito(item, item.pedido.tipoPedido === 'APARTADO' ? 'APARTADO' : 'FIADO');
+          return;
+        }
+        Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', text: err?.error?.mensaje ?? err?.error?.message ?? '', icon: 'error', draggable: true });
       }
     );
   }
@@ -355,6 +410,41 @@ export class MisPedidosComponent implements OnInit {
       }, err => console.error(err));
   }
 
+  // Para crédito el back guarda estado_pedido = 'APARTADO'/'FIADO' (el mismo valor que
+  // tipoPedido) hasta liquidarlo — mostrar ese texto crudo en el badge de estado repite
+  // exactamente lo que ya dice el badge de tipo ("📦 Apartado" + "APARTADO" abajo). Para
+  // crédito se muestra el estado de pago en su lugar; NORMAL/Cancelado no cambian.
+  estadoBadge(item: IPedidoGenerico): { icono: string; texto: string } {
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') {
+      return item.pedido.estado_pedido === 'PAGADO'
+        ? { icono: 'pi-check-circle', texto: 'Pagado' }
+        : { icono: 'pi-clock', texto: 'Por cobrar' };
+    }
+    const icono = item.pedido.estado_pedido === 'Entregado' ? 'pi-check-circle'
+      : item.pedido.estado_pedido === 'Cancelado' ? 'pi-times-circle' : 'pi-clock';
+    return { icono, texto: item.pedido.estado_pedido };
+  }
+
+  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta
+  // con estado_pedido; para crédito no sabemos si ya tiene abonos sin pedir el detalle,
+  // así que se deja habilitado y se valida de verdad en puedeImprimir() al hacer clic.
+  puedeGenerarTicket(item: IPedidoGenerico): boolean {
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return true;
+    return item.pedido.estado_pedido === 'Entregado';
+  }
+
+  // Chequeo real, con el detalle completo — cubre el caso crédito sin abonos que
+  // puedeGenerarTicket() no puede detectar de antemano.
+  private puedeImprimir(d: PedidoDetalleResponse): boolean {
+    const esCredito = d.tipoPedido === 'APARTADO' || d.tipoPedido === 'FIADO';
+    if (esCredito) {
+      return d.estadoPedido === 'PAGADO' || (d.totalPagado ?? 0) > 0 || (d.abonos?.length ?? 0) > 0;
+    }
+    return d.estadoPedido === 'Entregado' || d.estadoPedido === 'PAGADO';
+  }
+
   imprimirTicketPedido(item: IPedidoGenerico): void {
     const pedidoId = item.pedido.id;
     if (this.imprimiendoTicket[pedidoId]) return;
@@ -366,6 +456,10 @@ export class MisPedidosComponent implements OnInit {
         const d = r?.data;
         if (!d) {
           Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+        if (!this.puedeImprimir(d)) {
+          Swal.fire({ icon: 'info', title: 'Todavía no hay ningún pago', text: 'Este pedido aún no se ha cobrado/recogido, o no tiene abonos registrados — no hay nada que imprimir todavía.' });
           return;
         }
 
@@ -451,6 +545,10 @@ export class MisPedidosComponent implements OnInit {
         const d = r?.data;
         if (!d) {
           Swal.fire({ title: 'No se encontró el detalle del pedido', icon: 'warning' });
+          return;
+        }
+        if (!this.puedeImprimir(d)) {
+          Swal.fire({ icon: 'info', title: 'Todavía no hay ningún pago', text: 'Este pedido aún no se ha cobrado/recogido, o no tiene abonos registrados — no hay nada que enviar todavía.' });
           return;
         }
         const correoDefault = d.clienteCorreo || item.cliente.correoElectronico || '';

@@ -58,6 +58,26 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.detalle?.estadoPedido ?? this.pedido?.pedido?.estado_pedido ?? '';
   }
 
+  // Para crédito, `estadoPedido` crudo del back es 'APARTADO'/'FIADO' (mismo valor que
+  // tipoPedido) hasta liquidarlo — mostrarlo tal cual repite el badge de tipo que ya está
+  // arriba ("📦 Apartado" seguido de "APARTADO"). Se reemplaza por el estado de pago real.
+  get estadoPedidoLabel(): string {
+    if (this.esCredito) {
+      return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Por cobrar';
+    }
+    return this.estadoPedido;
+  }
+
+  // Solo se puede imprimir/reenviar el ticket si ya hay algo que cobrar: NORMAL
+  // entregado, o crédito con al menos un abono registrado (o ya liquidado).
+  get puedeGenerarTicket(): boolean {
+    if (!this.detalle) return false;
+    if (this.esCredito) {
+      return this.estadoPedido === 'PAGADO' || (this.detalle.abonos?.length ?? 0) > 0;
+    }
+    return this.estadoPedido === 'Entregado' || this.estadoPedido === 'PAGADO';
+  }
+
   get fechaCompra(): string | null {
     return this.detalle?.fechaHoraRegistro ?? this.detalle?.fechaPedido ?? null;
   }

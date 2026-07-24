@@ -294,6 +294,48 @@
   &:hover { box-shadow: 0 4px 14px rgba(0,122,255,.35); }
 }
 
+.dp-abono-historial {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-bottom: 1rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--card-border);
+
+  &__title {
+    font-weight: 700;
+    font-size: .85rem;
+    color: var(--card-text);
+    margin: 0 0 .2rem;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .6rem;
+    padding: .4rem .6rem;
+    border-radius: 8px;
+    background: var(--form-section-bg);
+    font-size: .8rem;
+  }
+
+  &__monto {
+    font-weight: 700;
+    color: var(--app-accent);
+  }
+
+  &__metodo, &__fecha {
+    color: var(--card-text-muted);
+  }
+
+  &__nota {
+    color: var(--card-text-muted);
+    font-style: italic;
+    flex-basis: 100%;
+  }
+}
+
 .dp-abono-form {
   display: flex;
   flex-direction: column;

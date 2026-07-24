@@ -4643,12 +4643,14 @@ el admin, no hay paso intermedio. No fue necesario cambiar código para esto, ya
 
 ---
 
-## ⏳ Promociones por variante / combos (2026-07-05) — código en dev, migración y pruebas pendientes
+## ✅ Promociones por variante / combos (2026-07-05+) — implementado en dev/qa/main, pruebas en curso
 
-> **Implementado en el código de `dev`, pero todavía no funciona en ningún ambiente.** Falta
-> correr `migration_promociones.sql` (crea las tablas nuevas) y hacer pruebas end-to-end antes de
-> que el front pueda integrar de verdad. Este aviso se quita de aquí en cuanto esté probado.
-> Diseño completo en `PROMOCIONES.md` en la raíz del repo.
+> **Implementado en el backend y en producción (`main`).** Migración `migration_promociones.sql` ya
+> corrida en dev/qa/main. Pruebas end-to-end en curso (filtro, listar promos, compra con combo).
+> Diseño completo en `PROMOCIONES.md` en la raíz del repo. El front consume los endpoints ya desde
+> hace varias semanas, pero puede haber campos/comportamientos nuevos que se agregaron después de
+> la primera integración — revisar esta sección completa, especialmente el punto sobre
+> `codigoBarras` (2026-07-13).
 
 **Qué es:** un combo de 1 o más variantes ya existentes (pueden ser productos distintos entre sí)
 que se venden juntas con precio rebajado por pieza. Cada pieza conserva su propio precio de oferta
@@ -4683,6 +4685,50 @@ modos llega un pedido con promoción y `tipoPedido` distinto de `NORMAL`.
 
 Ver `PROMOCIONES.md` para los JSON de request/response completos de cada endpoint y el flujo UX
 sugerido (catálogo, detalle de la promo, carrito, countdown de vencimiento calculado en el front).
+
+**Novedad (2026-07-13): campo `codigoBarras` en `GET /v1/promociones/activas` (solo ADMIN)**
+
+El endpoint `GET /v1/promociones/activas?pagina=&size=` ahora incluye en cada detalle del combo
+un campo opcional `codigoBarras` (null para clientes, poblado solo si el solicitante es ADMIN).
+Se agregó para que el admin pueda distinguir variantes "hermanas" de un mismo producto al armar
+las promociones (ej. "Jean Slim M" vs "Jean Slim L" — mismo nombre de producto, distinto código
+y talla). El cliente normal nunca ve este campo.
+
+```json
+{
+  "instanciasDisponibles": 15,
+  "variante": { ... },
+  "detalles": [
+    {
+      "varianteId": 245,
+      "productoNombre": "Jean Slim",
+      "talla": "M",
+      "color": "Azul",
+      "cantidad": 1,
+      "precioNormal": 250.00,
+      "precioEnPromocion": 220.00,
+      "imagenUrl": "...",
+      "codigoBarras": "JEAN-SLIM-M-AZUL"  // ← nuevo, solo para ADMIN
+    }
+  ]
+}
+```
+
+**Cambio en el front — Gestión de Promociones (2026-07-15): buscador de variantes**
+
+La pantalla `gestion-promociones.component.ts` cambió el endpoint para buscar variantes al armar
+un combo:
+- **Antes:** `GET /variantes/v1/buscar?termino=...` (público, con cascada en el back)
+- **Ahora:** `GET /variantes/v1/admin/filtrar?nombreOCodigo=...&conStock=true` (admin, OR en un
+  solo query)
+
+**Por qué:** el endpoint admin combina búsqueda de texto (nombre/código) con filtro de stock en
+un solo AND, en vez de la cascada vieja del buscador público que podía ocultar resultados. Además,
+para promociones **queremos solo variantes con stock** (de lo contrario una promo se quedaría
+inviable apenas se agote una de sus piezas). El filtro `conStock=true` asegura eso.
+
+**No es un cambio de contrato** — el response sigue siendo la misma lista paginada de variantes.
+Es solo dónde y cómo el front las pide.
 
 ---
 
@@ -4984,9 +5030,6 @@ más específico. Si el front tenía un caso de prueba fallando "por promociones
 usar este mensaje nuevo para identificar cuál de las 4 validaciones está chocando (lo más común:
 el front manda la promoción como **una sola línea** en vez de una línea por cada variante que la
 compone — ver contrato en `PROMOCIONES.md`, sección 7).
-
-**Aún pendiente de correr en producción** — igual que los cambios anteriores, esto solo está en
-`dev`/`qa` por ahora.
 
 ---
 
@@ -5525,10 +5568,9 @@ han pegado, no solo las exitosas.
 ni ningún flujo de venta/carrito ya documentado.
 
 **Falta hacer:**
-- ⏳ Subir de `dev` a `qa` (por ahora solo en `dev`).
 - ⏳ No hay pantalla en el front para esto todavía — hay que armar una vista nueva (ej. dentro de
   "🎁 Gestión Promociones" o como pestaña "Reportes"), no reemplaza ni modifica ninguna pantalla
-  existente.
+  existente. El endpoint ya está en dev/qa/main.
 - Sugerido para la vista: tabla con las columnas de arriba, filtro de rango de fechas (opcional,
   puede arrancar sin filtro mostrando todo), ordenado ya viene del back por más vendidos.
 
@@ -5951,6 +5993,7 @@ cliente puede "reclamar" esa venta desde la app y quedar vinculado.
 | `Debes indicar el código` | body sin `codigo` o vacío |
 | `Código inválido` | no existe ninguna venta con ese `codigoReclamo` |
 | `Este código ya fue utilizado` | esa venta ya fue reclamada antes (un código solo sirve **una vez**) |
+| `Este código ya expiró: solo es válido durante el mes de tu compra` | **NUEVO** — el código solo se puede usar dentro del **mes calendario** de la venta, no son N días desde la compra: si la venta fue el 29 de enero, el código expira el 31 de enero a las 23:59:59, igual que si hubiera sido el 1 de enero. Al llegar el 1 de febrero ya no sirve, aunque nunca se haya usado. (Este límite **no aplica** al fallback de asignación manual del admin — sección siguiente — que no tiene vencimiento.) |
 | `Tu cuenta todavía no tiene un perfil de cliente completo` | el usuario logueado no tiene `Cliente` asociado |
 | `El correo de tu cuenta no coincide con el de esta compra` | el correo de la cuenta logueada no es el mismo al que se envió el código (capa extra de seguridad — evita reclamar con una cuenta distinta si el código se reenvía) |
 
@@ -5961,6 +6004,31 @@ cliente aparezca en la lista de compradores de ese mes — esa consulta lee de `
 `ventas`, por eso se propaga también al pedido. La rifa a la que puede entrar queda **limitada al
 mes de la venta**: si compró en enero, ese cliente solo aparece en `clientesPorMes?mes=2026-01`,
 no en meses posteriores.
+
+### `POST /v1/ventas/{ventaId}/asignarCliente` — NUEVO, solo ADMIN
+
+Fallback para cuando el cliente nunca captura el UUID que le llegó por correo (se fue a spam, no
+quiso loguearse, etc.). El admin busca al cliente real y lo vincula manualmente a la venta, sin
+necesitar el código — el admin ya validó identidad al elegir al cliente en el buscador.
+
+**Request:**
+```json
+{ "clienteId": 123 }
+```
+**Response 200:**
+```json
+{ "data": "Cliente vinculado a la venta" }
+```
+
+**Errores (400, `mensaje`):**
+| `mensaje` | Causa |
+|---|---|
+| `Venta no encontrada` | `ventaId` no existe |
+| `Esta venta ya tiene un cliente asignado` | la venta ya tiene `cliente_id` (ya sea porque se vendió con cliente real desde el inicio, o porque ya fue reclamada/asignada antes) — no se puede reasignar por este medio |
+| `Cliente no encontrado` | `clienteId` no existe |
+
+Tiene el mismo efecto que el auto-reclamo del cliente: vincula `Venta.cliente` **y**
+`Pedido.cliente`, para que aparezca en `clientesPorMes` del mes correspondiente.
 
 ### ⚠️ Naming — no usar la palabra "reclamo" de cara al cliente
 
@@ -5995,3 +6063,542 @@ Esto **todavía no está construido en el front**, queda anotado aquí para reto
    futuro, no bloquea el llegar a construir la versión simple del punto 2.
 4. **Después de agregar exitosamente:** no hay nada más que mostrarle al cliente en el momento
    (no ve si ganó o no rifa, eso es otro flujo, del admin) — solo el mensaje de éxito.
+
+---
+
+## 🆕 Carga rápida de imágenes — producto + variante borrador por foto (2026-07-20)
+
+**Problema que resuelve:** hoy, para dar de alta un producto hay que llenar todo el formulario
+(nombre, precio, código de barras, etc.) **y** subir la imagen en el mismo guardado. Si se
+tarda llenando el formulario y el token expira, o cualquier otra cosa falla a la mitad, se pierde
+todo — incluida la imagen que ya se tenía lista. Este flujo nuevo separa las dos cosas: **primero
+se sube la imagen y el backend crea automáticamente un producto+variante "borrador"** (solo con
+stock=1, sin nombre/precio/nada más), y **después** se va llenando ese borrador campo por campo,
+tantas veces como haga falta, sin volver a tocar la imagen ni arriesgar perderla.
+
+Pensado para una pantalla de captura en lote: el usuario va tomando/seleccionando fotos una tras
+otra, cada una dispara su propio producto borrador en el backend, y luego el usuario entra a cada
+uno (o a una lista de "borradores pendientes de llenar") para completarlo con calma.
+
+**No hay una tabla/entidad nueva de seguimiento.** El estado de la imagen vive directo en la
+fila de `producto` (columnas `estado_imagen` / `mensaje_error_imagen`) — el producto y la
+variante se crean **de inmediato**, sincrónico, apenas se llama al endpoint; lo único que corre
+en segundo plano es la subida de la imagen al microservicio de imágenes (la parte lenta de red).
+Por eso el front recibe `productoId`/`varianteId` reales desde la primera respuesta, no un id de
+seguimiento aparte.
+
+**⚠️ Requiere correr `migration_carga_imagenes.sql` (carpeta `src/main/resources/static/`) antes
+de usar estos endpoints** — agrega a `producto` las columnas `codigo_barras_generado`,
+`estado_imagen` y `mensaje_error_imagen`. No se ejecuta solo (ddl-auto: none), hay que correrlo a
+mano en cada BD.
+
+**Todos los endpoints de esta sección requieren rol ADMIN — y la pantalla también.** No es
+una pantalla de cliente: es una herramienta de captura para quien da de alta el catálogo. El
+backend ya rechaza estos endpoints con 403 si el usuario no es ADMIN, pero **eso no basta**: el
+front debe además ocultar/bloquear la ruta y el ítem de menú para usuarios no-admin, igual que ya
+hace con el resto del panel de productos/variantes (mismo guard de ruta que usan `/productos` y
+`/variantes` hoy). Que el backend rechace la llamada no debe ser la única barrera — si un cliente
+normal llega a ver el botón o la ruta, es un bug de UX aunque el request final falle igual.
+
+**Dónde verlo:** Menú (panel admin) → **Productos** → nueva opción **Carga rápida de imágenes**
+(o como se llame en el menú actual de Productos/Variantes) → pantalla de captura en lote descrita
+en la sección "Notas para la pantalla nueva" más abajo.
+
+### 1. Subir una imagen → crea el borrador YA
+
+```
+POST /v1/carga-imagenes/subir-imagen
+Content-Type: multipart/form-data
+```
+| Parte | Tipo | Notas |
+|---|---|---|
+| `imagen` | file | Una sola imagen por request. Si el usuario selecciona 10 fotos, el front hace 10 requests (uno por foto), no un solo request con 10 archivos. |
+
+**Sí soporta subir muchas imágenes seguidas** — el front puede disparar todos los
+`POST /subir-imagen` de la sesión de captura sin esperar uno a uno (cada llamada responde casi de
+inmediato porque solo crea el producto+variante; la subida real de la imagen sigue en segundo
+plano). En el backend, esas subidas en segundo plano corren en un pool acotado (máx. 6 en
+paralelo, el resto se encola) para no saturar el servidor ni bombardear al microservicio de
+imágenes si se mandan 50-100 fotos de un jalón — no hace falta que el front limite cuántas manda
+a la vez, el backend ya absorbe eso.
+
+**Response 201** — el producto y la variante YA existen en la base al recibir esta respuesta:
+```json
+{
+  "data": {
+    "productoId": 812,
+    "varianteId": 1503,
+    "estadoImagen": "PENDIENTE",
+    "imagenId": null,
+    "urlImagen": null,
+    "mensajeErrorImagen": null
+  }
+}
+```
+
+Lo único que sigue en `PENDIENTE` es la imagen (se está subiendo al microservicio de imágenes en
+segundo plano, para no dejar la pantalla congelada si el usuario sube muchas fotos seguidas).
+Guarda `productoId` — es lo que se usa para preguntar el estado, completar el producto o
+reintentar la imagen si falla.
+
+### 2. Consultar el estado de una o varias imágenes (polling)
+
+```
+GET /v1/carga-imagenes/estado?productoIds=812&productoIds=813
+```
+(o `?productoIds=812,813` — Spring acepta ambas formas)
+
+**Response 200** — un elemento por cada `productoId` consultado:
+```json
+{
+  "data": [
+    {
+      "productoId": 812,
+      "varianteId": 1503,
+      "estadoImagen": "EXITOSO",
+      "imagenId": 9041,
+      "urlImagen": "https://.../v1/imagenes/file/9041",
+      "mensajeErrorImagen": null
+    },
+    {
+      "productoId": 813,
+      "varianteId": 1504,
+      "estadoImagen": "FALLIDO",
+      "imagenId": null,
+      "urlImagen": null,
+      "mensajeErrorImagen": "No se pudo subir la imagen al servicio de imagenes, intenta de nuevo"
+    }
+  ]
+}
+```
+
+**Valores de `estadoImagen`:**
+| Estado | Qué significa | Qué hacer en el front |
+|---|---|---|
+| `PENDIENTE` | La imagen todavía se está subiendo | Seguir preguntando (ej. cada 2-3 segundos) hasta que cambie |
+| `EXITOSO` | Imagen enlazada al producto+variante | Mostrar la miniatura (`urlImagen`) y dejar que el usuario entre a completar el producto (`productoId`) |
+| `FALLIDO` | La subida de la imagen falló | Mostrar el error y dar opción de **reintentar con otra/la misma foto** (ver punto 3) |
+
+**Cómo saber que una imagen ya terminó (y dejar de preguntar por ella):** el propio
+`estadoImagen` de la respuesta es la señal — mientras es `PENDIENTE` sigue en proceso; en cuanto
+la respuesta trae `EXITOSO` o `FALLIDO` para ese `productoId`, ya terminó (bien o mal) y no hace
+falta volver a consultarlo. El front debe llevar un set/array de "`productoId` todavía
+pendientes" e ir sacando de ahí cada uno que deje de venir en `PENDIENTE`, guardando el resultado
+(`urlImagen` si fue `EXITOSO`, `mensajeErrorImagen` si fue `FALLIDO`) para pintarlo en la grilla.
+Cuando el set de pendientes queda vacío, se detiene el `setInterval`/polling por completo —no
+hay que seguir llamando a `GET /estado` de fondo indefinidamente.
+
+Pseudocódigo del loop:
+```js
+let pendientes = new Set(idsSubidos); // todos los productoId que se acaban de subir
+const resultados = new Map();
+
+const intervalo = setInterval(async () => {
+  if (pendientes.size === 0) { clearInterval(intervalo); return; }
+
+  const { data } = await getEstado([...pendientes]);
+  for (const item of data) {
+    if (item.estadoImagen !== 'PENDIENTE') {
+      resultados.set(item.productoId, item); // EXITOSO o FALLIDO: ya terminó
+      pendientes.delete(item.productoId);     // se omite en la siguiente consulta
+      actualizarTarjetaEnLaGrilla(item);
+    }
+  }
+}, 2500);
+```
+
+**Sugerencia de flujo general:** el front dispara todas las subidas de la sesión de captura,
+guarda la lista de `productoId` en memoria (el set `pendientes` de arriba), y hace polling de
+`GET /estado` solo con los IDs que sigan pendientes cada pocos segundos, hasta vaciar el set.
+
+### 3. Reintentar la imagen de un borrador que falló
+
+```
+POST /v1/carga-imagenes/{productoId}/reintentar-imagen
+Content-Type: multipart/form-data
+```
+Mismo `imagen` como parte del form. A diferencia de subir una foto nueva, esto **reutiliza el
+mismo producto y variante** que ya existían (no crea un borrador duplicado) — pone
+`estadoImagen` de vuelta en `PENDIENTE` y vuelve a intentar la subida. Responde 202 con el mismo
+shape que el punto 2.
+
+### 4. Ver borradores con imagen fallida (por si el front perdió la lista de `productoId`)
+
+```
+GET /v1/carga-imagenes/fallidas
+```
+Sin parámetros. Devuelve todos los productos con `estadoImagen = FALLIDO`, más recientes primero
+— mismo shape que el punto 2. Pensado como red de seguridad: si el usuario cierra la app/recarga
+la página antes de que terminara el polling y perdió la lista de `productoId` en memoria, esta
+pantalla le permite ver "qué se quedó pendiente" sin tener que adivinar cuáles fotos sí entraron.
+
+### 5. Completar el producto borrador (ir llenando campos de a poco)
+
+```
+PUT /v1/carga-imagenes/{productoId}/completar
+```
+**Request** — todos los campos son opcionales, manda solo lo que el usuario ya llenó en ese
+momento (cada campo no nulo pisa el valor actual; no hace falta reenviar el objeto completo cada
+vez):
+```json
+{
+  "nombre": "Pantalón de mezclilla slim",
+  "precioCosto": 250.0,
+  "piezas": 1,
+  "color": "Azul",
+  "precioVenta": 450.0,
+  "precioRebaja": null,
+  "descripcion": "...",
+  "marca": "Levi's",
+  "contenido": null,
+  "palabraClaveId": 4,
+  "codigoBarras": null,
+  "habilitar": false
+}
+```
+
+**Response 200:** el `Producto` actualizado (entidad completa, incluye `id`, `stock`, etc.).
+
+**Sobre `codigoBarras`:** el producto borrador nace con un código de barras **temporal
+autogenerado** (formato `BRD-XXXXXXXXXXXX`), invisible para el usuario — es solo para que el
+producto sea válido en la base de datos mientras no tiene el código real. **No mostrar ni dejar
+editar ese código placeholder en el front.** Cuando el usuario finalmente escanee/capture el
+código de barras real, mándalo en `codigoBarras` en esta misma llamada: el backend detecta que el
+producto todavía tenía el código autogenerado, crea el código real, lo asigna, **y borra el
+placeholder anterior** — no hay que hacer nada extra desde el front para esa limpieza. Si el
+código de barras ya pertenece a otro producto, responde 400 con `mensaje`:
+`"El codigo de barras <código> ya esta en uso por otro producto"`.
+
+**Sobre `habilitar`:** el producto borrador nace **deshabilitado** (`habilitado='0'`) para que no
+aparezca roto en el catálogo público mientras le faltan datos — un producto con imagen y stock
+pero sin nombre ni precio no debe ser visible a un cliente. Manda `"habilitar": true` en esta
+misma llamada cuando el producto ya esté completo y listo para publicarse. El backend **rechaza**
+habilitarlo en dos casos (400 con `mensaje` explicando cuál):
+- Todavía tiene el código de barras autogenerado (no mandaste `codigoBarras` real todavía, o lo
+  mandaste en esta misma llamada — en ese caso sí se puede, se procesa el código antes de validar).
+- La imagen no quedó en `estadoImagen = EXITOSO` (sigue `PENDIENTE` o quedó `FALLIDO`) — no se
+  puede publicar un producto sin imagen funcionando.
+
+Si el front prefiere separar "guardar" de "publicar", también puede usar el endpoint que ya
+existía, `PUT /v1/productos/{id}/habilitar?habilitar=true`, una vez que el código de barras ya
+sea el real y la imagen esté en `EXITOSO`.
+
+**Por qué es un endpoint nuevo y no el `PUT /v1/productos/update` de siempre:** ese endpoint
+existente funciona por "upsert vía código de barras" (busca si ya existe un producto con ese
+código para decidir si crea o actualiza) y tiene una rama vieja pensada para lotes que, si el
+producto no tiene un código de barras "normal" todavía, puede terminar ignorando nombre/color/
+descripción o creando registros de lote inesperados. Este endpoint nuevo actualiza **directo por
+`productoId`**, sin esa lógica de por medio — está pensado específicamente para ir completando un
+borrador campo por campo sin sorpresas. No reemplaza `/v1/productos/update`, que sigue siendo el
+que se usa para el alta/edición normal de productos que ya nacen con su código de barras real.
+
+### Notas para la pantalla nueva (sugerencia de flujo)
+
+1. Pantalla de captura: el usuario selecciona/toma varias fotos. Cada una dispara
+   `POST /subir-imagen` de inmediato (no espera a que el usuario termine de elegir todas).
+2. El front muestra una grilla con las fotos y su estado (spinner mientras `PENDIENTE`, miniatura
+   cuando `EXITOSO`, ícono de error + botón "reintentar" cuando `FALLIDO`, que llama a
+   `POST /{productoId}/reintentar-imagen`), haciendo polling de `GET /estado` con todos los
+   `productoId` de la sesión.
+3. Al tocar una foto ya `EXITOSO`, se abre el formulario normal de edición de producto
+   (`productoId`), pero guardando con `PUT /{productoId}/completar` en vez del guardado de
+   siempre — así cada campo que el usuario llena se persiste al momento (por ejemplo al perder el
+   foco de cada input, o con un botón "Guardar avance"), sin esperar a que el formulario esté
+   100% lleno.
+4. Cuando el usuario termina de llenar todo y ya tiene el código de barras real, el último
+   guardado manda `codigoBarras` + `"habilitar": true` para publicar el producto.
+5. Los productos borrador que se queden sin terminar quedan deshabilitados y no contaminan el
+   catálogo — se pueden encontrar más tarde vía `GET /v1/productos/admin/no-habilitados` (ya
+   existía) para retomarlos.
+
+**Archivos back:** `CargaImagenesController.java`, `CargaImagenesServiceImpl.java`,
+`ICargaImagenService.java` (reescritos), `EstadoCargaProductoDto.java` / `CompletarProductoDto.java`
+(dtos nuevos), `Producto.java` (campos `codigoBarrasGenerado`, `estadoImagen`,
+`mensajeErrorImagen`), `IProductosRepository.java` / `IVarianteRepository.java` (queries nuevas de
+soporte), `migration_carga_imagenes.sql` (nuevo, pendiente de correr en dev/qa).
+
+**🐛 Bug corregido (2026-07-21):** al probar en QA, las fotos fallaban con
+`Column 'nombre' cannot be null` — la tabla `producto` tiene varias columnas `NOT NULL`
+preexistentes (`nombre`, `precio_costo`, `piezas`, `precio_venta`, `precio_rebaja`; la migración
+de este flujo no las tocó) y `crearBorrador()` las dejaba en null porque el borrador nace
+intencionalmente vacío. Fix: el borrador ahora nace con placeholders — strings vacíos (`nombre`,
+`color` = `""`) y ceros (`precioCosto`, `piezas`, `precioVenta`, `precioRebaja` = `0`) — que se
+pisan en cuanto el front manda los datos reales via `PUT /completar`. **No cambia el contrato** —
+el front no tiene que hacer nada distinto; solo tener en cuenta que un borrador recién creado
+trae `nombre` vacío y precios en `0` (no null) si llega a pintarlos antes de completarlo.
+
+**🐛 Bug corregido #2 (2026-07-21):** ya con los borradores creándose bien, la subida de la
+imagen quedaba en `FALLIDO` con `403 Forbidden from POST .../v1/imagenes` — el backend le pasa
+el JWT del admin al microservicio de imágenes leyéndolo del contexto de seguridad del hilo del
+request, pero la subida corre en un hilo del pool async, que no hereda ese contexto → la llamada
+salía **sin** header `Authorization` y el micro la rechazaba con 403. Fix: el pool ahora propaga
+el contexto de seguridad del request al hilo async (`DelegatingSecurityContextAsyncTaskExecutor`),
+así la subida en segundo plano viaja con el mismo token del admin que subió la foto. **Sin cambio
+de contrato** — el front no hace nada distinto; las fotos que quedaron `FALLIDO` por este 403 se
+reintentan con `POST /{productoId}/reintentar-imagen` normalmente.
+
+**🐛 Bug corregido #3 (2026-07-21):** el borrador recién creado no aparecía en
+`GET /v1/productos/admin/no-habilitados` — ese listado está cacheado y crear el borrador no
+limpiaba la caché (solo se limpiaba cuando la imagen terminaba de subir con éxito; si la subida
+fallaba, el borrador no aparecía nunca hasta expirar la caché). Ahora crear el borrador también
+evicta la caché, así el listado de no-habilitados lo refleja de inmediato. Recordatorio: **los
+borradores no salen en el listado público/normal de productos** (nacen deshabilitados a
+propósito) — para verlos son `admin/no-habilitados` o `GET /v1/carga-imagenes/estado`. Si hace
+falta forzar la limpieza a mano en QA: `DELETE /v1/admin/cache` (ADMIN).
+
+**⚠️ Aclaración importante para el front (2026-07-21): no usar `POST /v1/productos/save` ni
+`PUT /v1/productos/update` para completar un borrador de carga rápida.** Se probó en QA editando
+un producto borrador (nace con 1 stock, 1 variante y código autogenerado `BRD-XXXXXXXXXXXX`) desde
+`POST /productos/save` mandando los datos reales + un código de barras nuevo. Resultado: **no
+actualizó el borrador, creó un producto duplicado nuevo** con su propio `id` y su propio
+`codigo_barras`, dejando el borrador original intacto (mismo código autogenerado, campos vacíos).
+
+Motivo: `/productos/save` y `/productos/update` (ambos llaman al mismo `saveProductoLote()`) buscan
+el producto a actualizar **por coincidencia exacta de código de barras**, nunca por `id` — es un
+upsert vía código de barras, pensado para alta/edición de productos que ya nacen con su código real
+(carga manual, Excel). Si mandas un código de barras que no existe todavía en la base (como el
+código real de un borrador, que aún no está registrado), el backend concluye que es un producto
+nuevo y lo crea, en vez de actualizar el borrador.
+
+**Regla para el front:** si el producto que se está editando todavía tiene código autogenerado
+(`codigoBarrasGenerado: true` en la respuesta de `GET /v1/carga-imagenes/estado` o del `Producto`
+devuelto), el guardado de esa pantalla **siempre** debe ir a `PUT /v1/carga-imagenes/{productoId}/completar`
+(ver punto 5 arriba) — nunca a `save`/`update`. Recién cuando el producto ya tiene su código real
+asignado (`codigoBarrasGenerado: false`) se puede volver a editar con el flujo normal de
+`save`/`update`.
+
+**🐛 Bug corregido (2026-07-21): editar un producto normal (no borrador) cambiando su código de
+barras creaba un duplicado en vez de actualizarlo.** Es el mismo problema del punto anterior pero
+para la edición normal de catálogo (fuera del flujo de carga rápida): `POST /productos/save` y
+`PUT /productos/update` buscaban el producto a actualizar **solo por coincidencia exacta de código
+de barras**. Si el usuario editaba un producto y le cambiaba el código de barras junto con el resto
+de los datos, el backend no encontraba ningún producto con ese código nuevo, concluía que era un
+producto nuevo y lo creaba — dejando el producto original intacto, sin los cambios.
+
+**Qué cambió:** ahora `guardarProducto()` primero busca el producto **por `id`** (si el front lo
+manda en el body). Si lo encuentra y el código de barras viene distinto al que ya tenía, crea el
+código de barras nuevo, lo asigna a ese mismo producto, y **elimina el código de barras anterior**
+(la relación producto↔código de barras es 1 a 1 única, así que el anterior siempre queda huérfano,
+nunca se pierde nada real). Si el código nuevo ya está en uso por otro producto, responde 400 con
+`ExceptionDuplicado`. Si el front no manda `id`, se mantiene el comportamiento anterior (búsqueda
+por código de barras) para no romper la carga por Excel.
+
+**Importante para el front:** a partir de ahora, el body de `save`/`update` **debe incluir el
+campo `id` del producto** cuando se está editando uno existente (antes se ignoraba). Sin `id`,
+si se cambia el código de barras se sigue creando un producto duplicado como antes.
+
+**Esto NO reemplaza el punto anterior sobre borradores de carga rápida.** Aunque técnicamente ya
+no se duplicaría el producto, `save`/`update` **no** resetean `codigoBarrasGenerado` a `false` ni
+validan el estado de la imagen — un borrador guardado por esta vía quedaría con el código real ya
+asignado pero con `codigoBarrasGenerado: true` inconsistente (bloquea habilitar, ensucia el filtro
+`codigoGenerado`). Para borradores sigue aplicando la regla de arriba: usar siempre
+`PUT /v1/carga-imagenes/{productoId}/completar`.
+
+**✅ Ya implementado en el front (`productos/producto/add/add.component.ts`), 2026-07-21:**
+- `ejecutarGuardar()` ahora manda `id: this.productoUpdate?.idProducto` en el body cuando
+  `esActualizar === true` — requisito nuevo del back de arriba. En modo "Agregar" no se manda
+  (el producto todavía no tiene `id`).
+- `IProductoDTORec` (modelo del formulario de edición) ganó el campo `idProducto?: number` para
+  poder leerlo con tipos — en runtime siempre viene poblado (mismo campo que usa `IProductoDTO`
+  de la grilla), solo faltaba declararlo.
+- La alerta que antes avisaba "esto crea un duplicado" al cambiar el código de barras **se quitó**
+  para productos normales — con `id` en el body ya no aplica, sería una alarma falsa que
+  molestaría al admin por una corrección de código legítima.
+- En su lugar, se agregó un **bloqueo específico para borradores de carga rápida**: si el código
+  de barras del producto que se está editando empieza con `BRD-` (autogenerado), la pantalla NO
+  deja guardar — muestra un aviso y un botón directo a **Carga rápida de imágenes** para
+  completarlo desde ahí, que es el único flujo seguro para ese caso (párrafo anterior).
+
+**⏳ Pendiente:** probar el flujo end-to-end de nuevo en QA con el fix, y push a `qa`.
+
+---
+
+## ✅ Fix (2026-07-21): `GET /variantes/v1/admin/filtrar?habilitado=...` ahora considera también el habilitado del producto padre
+
+**Reportado:** un producto deshabilitado (p. ej. un borrador de carga rápida, buscándolo por su
+código) no aparecía en
+`GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&habilitado=false&pagina=1&size=10`.
+
+**Antes (qué fallaba):** el filtro `habilitado` solo miraba el flag de la **variante**
+(`v.habilitado`). Los borradores de carga rápida nacen con el **producto** deshabilitado (`'0'`)
+pero su variante en `'1'`, así que:
+- con `habilitado=false` el borrador **no salía** (su variante está en `'1'`), y
+- con `habilitado=true` el borrador **sí salía** como si estuviera habilitado, aunque el producto
+  no lo está.
+
+Lo mismo aplicaba a cualquier producto deshabilitado desde el módulo de productos cuyas variantes
+siguieran en `'1'`.
+
+**Ahora:** el filtro usa el estado **efectivo** (variante Y producto):
+- `habilitado=true` → variante habilitada **y** producto habilitado.
+- `habilitado=false` → variante deshabilitada **o** producto deshabilitado (cualquiera de los dos
+  basta para considerarla "no habilitada").
+- omitido → sin filtro, igual que antes.
+
+**Además cambia el campo `habilitado` del response** (`VarianteResumenDto`, aplica a todos los
+listados de variantes que devuelven ese DTO): ahora refleja el estado efectivo — es `'1'` solo si
+la variante **y** su producto están habilitados. Antes un borrador podía llegar con
+`habilitado: '1'` aunque el producto estuviera deshabilitado; ya no.
+
+**Request y demás parámetros no cambian.** Esto reemplaza la regla documentada en la sección del
+2026-07-06 que decía "en variantes, `habilitado` filtra por el estado de la variante, no del
+producto padre" — esa regla ya no aplica.
+
+**Solo en `dev`/`qa` por ahora** — pendiente de subir a `main`.
+
+---
+
+## ✅ Nuevo (2026-07-21): parámetro `codigoGenerado` en los filtros admin de productos y variantes
+
+Se agregó un 5.º parámetro opcional a los dos filtros combinados de admin, para poder listar los
+productos que siguen con el **código de barras autogenerado** de la carga rápida (es decir, a los
+que todavía no se les asigna el código real vía `/completar`):
+
+**Request:**
+```
+GET /mis-productos/productos/admin/filtrar?codigoGenerado=true&page=1&size=10
+GET /mis-productos/variantes/v1/admin/filtrar?codigoGenerado=true&pagina=1&size=10
+```
+
+| Parámetro | Tipo | Significado |
+|---|---|---|
+| `codigoGenerado` | boolean, opcional | `true` = solo productos con código de barras autogenerado (borradores de carga rápida sin código real); `false` = solo productos con código real (incluye todos los productos normales, que nunca pasaron por carga rápida); **omitido** = cualquiera |
+
+- Se combina con AND con los otros 4 (`nombreOCodigo`, `conStock`, `conImagenes`, `habilitado`),
+  igual que hasta ahora. Ejemplo típico para la pantalla de "pendientes de completar":
+  `?codigoGenerado=true&habilitado=false`.
+- En variantes filtra por el flag del **producto padre** (el código de barras vive en el producto).
+
+**Comportamiento con el filtro omitido y los `NULL` (importante para el front):** en BD, los
+productos normales (que nunca pasaron por carga rápida) tienen `codigo_barras_generado = NULL`.
+El backend ya lo maneja — el front no tiene que tratar el `NULL` como caso aparte:
+
+```
+# solo texto, sin codigoGenerado → devuelve TODOS los que matcheen "369"
+# (autogenerados, código real y NULL — no se filtra por esa dimensión)
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&pagina=1&size=10
+
+# texto + solo los de código autogenerado
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=true&pagina=1&size=10
+
+# texto + solo los de código real — los NULL caen de este lado (cuentan como código real)
+GET /mis-productos/variantes/v1/admin/filtrar?nombreOCodigo=369&codigoGenerado=false&pagina=1&size=10
+```
+- **El response no cambia** — mismos DTOs de siempre. Los DTOs de listado no incluyen el flag
+  `codigoBarrasGenerado`; si el front lo llega a necesitar como badge en un listado mixto (sin
+  filtrar), se puede agregar después.
+
+**Solo en `dev`/`qa` por ahora** — pendiente de subir a `main`.
+
+---
+
+## ❓ CONSULTA AL BACK — falta endpoint para descartar un borrador de carga rápida (2026-07-21)
+
+### Endpoints que usa hoy `/carga-imagenes` (todos en `carga-imagenes.service.ts`)
+
+| Método | Endpoint | Para qué |
+|---|---|---|
+| `POST` | `/v1/carga-imagenes/subir-imagen` | Sube una foto → crea el producto+variante borrador |
+| `GET` | `/v1/carga-imagenes/estado?productoIds=` | Polling del estado de la imagen (PENDIENTE/EXITOSO/FALLIDO) |
+| `POST` | `/v1/carga-imagenes/{productoId}/reintentar-imagen` | Reintenta la imagen de un borrador que falló |
+| `GET` | `/v1/carga-imagenes/fallidas` | Lista los borradores con imagen FALLIDA (sin paginación, sin filtro de fecha) |
+| `PUT` | `/v1/carga-imagenes/{productoId}/completar` | Guarda los datos del producto (nombre, precio, código real, etc.) |
+
+**No existe ningún endpoint de borrado** para esta pantalla — es la raíz del problema de abajo.
+
+**Reportado por el admin:** subió varias fotos en `/carga-imagenes`; algunas quedaron listas para
+"Completar datos" (`EXITOSO`) y otras fallaron (`FALLIDO`, con botón "Reintentar"). Le dio "✕" a
+las fallidas esperando que desaparecieran para siempre. Al volver a entrar a la pantalla:
+- Las que le dio "✕" **volvieron a aparecer** con el botón "Reintentar".
+- Las que estaban listas para completar **ya no aparecen por ningún lado**.
+
+**Diagnóstico (confirmado en el código del front, no es un bug de UI aislado — es que falta una
+pieza del backend):**
+
+1. El botón "✕" (`quitarTarjeta()` en `carga-imagenes.component.ts`) **nunca llama a ningún
+   endpoint** — solo saca la tarjeta del array local en memoria. No existe ningún `DELETE` en
+   `carga-imagenes.service.ts` para eliminar un borrador de verdad. Como el producto+variante
+   sigue existiendo en BD con `estadoImagen: FALLIDO`, la próxima vez que se entra a la pantalla,
+   `GET /v1/carga-imagenes/fallidas` lo vuelve a traer — por eso "siempre aparece".
+
+2. `ngOnInit()` solo llama a `GET /v1/carga-imagenes/fallidas` como red de seguridad al recargar
+   — **no existe ningún endpoint para recuperar los borradores que ya subieron bien pero aún no
+   se completaron** (`EXITOSO`, sin `PUT /completar` todavía). Esas tarjetas solo viven en el
+   estado del componente Angular mientras la pantalla sigue abierta; al navegar a otra ruta o
+   recargar la página, se pierden de la vista — aunque el producto+variante sigue vivo en BD,
+   deshabilitado, con su imagen ya subida.
+
+**Lo que necesitamos del back — dos preguntas concretas:**
+
+1. **¿Existe (o se puede agregar) un endpoint para descartar/eliminar por completo un borrador de
+   carga rápida?** Pensado para cuando el admin decide que esa foto/producto no vale la pena
+   completar (ej. imagen borrosa, producto repetido, foto de prueba). Algo tipo
+   `DELETE /v1/carga-imagenes/{productoId}` que borre el producto, la variante y la imagen
+   asociada (si ya se subió). Sin esto, el front no tiene forma de que el "✕" sea permanente.
+
+2. **¿Cómo recupera el front, al recargar la pantalla, los borradores `EXITOSO` que aún no se
+   completaron (no solo los `FALLIDO`)?** ¿Ya existe un filtro que sirva para esto en
+   `GET /v1/productos/admin/filtrar` (ej. `codigoGenerado=true&habilitado=false`, sección de
+   arriba) que el front pueda usar para repoblar TODA la lista de pendientes al entrar a
+   `/carga-imagenes` (fallidos + exitosos-sin-completar), en vez de usar solo
+   `GET /v1/carga-imagenes/fallidas`? O si hace falta un endpoint dedicado, avisar.
+
+**Mientras no haya respuesta, el front seguirá con el gap:** los borradores fallidos "resucitan"
+cada vez que se recarga la pantalla (aunque se hayan descartado con "✕"), y los borradores listos
+para completar solo son visibles durante la misma sesión de captura en la que se subieron.
+
+### Dudas adicionales, mismo tema (no bloquean, pero conviene resolverlas antes de que crezca el uso)
+
+3. **`GET /fallidas` no tiene paginación ni filtro de fecha** — "devuelve todos los productos con
+   `estadoImagen = FALLIDO`, más recientes primero", sin límite. Si nunca se implementa el borrado
+   del punto 1, esta lista va a crecer indefinidamente con el uso real (pruebas, fotos borrosas,
+   productos que ya no interesan) y cada vez que un admin entre a `/carga-imagenes` va a cargar
+   más y más tarjetas viejas. ¿Conviene agregar paginación o un filtro `desde`/`hasta`, o el plan
+   es que el borrado del punto 1 mantenga la lista corta de forma natural?
+
+4. **¿Qué pasa con la imagen ya subida al microservicio de imágenes si el borrador se elimina?**
+   Si se implementa el `DELETE` del punto 1, ¿también borra la imagen del micro de imágenes
+   (9096), o solo el producto/variante en proyecto-key y la imagen queda huérfana allá?
+
+5. **¿Hay límite de reintentos en `POST /{productoId}/reintentar-imagen`?** Si una imagen falla
+   siempre (ej. archivo corrupto, formato no soportado), ¿el front debería dejar de ofrecer
+   "Reintentar" después de N intentos, o el backend ya limita/rechaza en algún punto? Hoy el
+   botón de reintentar no tiene tope, el admin puede darle indefinidamente.
+
+6. **¿Debería haber una limpieza automática de borradores abandonados** (nunca completados,
+   con semanas de antigüedad)? Con el tiempo estos van a acumularse en `admin/no-habilitados` y
+   en el filtro `codigoGenerado=true` sin que nadie los complete ni los borre — un TTL o un job
+   de limpieza periódico evitaría que esos listados se llenen de basura.
+
+---
+
+## ✅ YA IMPLEMENTADO — Fix (2026-07-22): "Cobrar" en pedido a crédito seguía fallando en QA
+
+> Sincronizado desde el repo compartido (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`).
+> 100% front, ya en `dev` y `qa`.
+
+Probado en vivo en QA (con hard-refresh, no era el bug de caché de nginx): "Cobrar" en un pedido
+APARTADO/FIADO seguía abriendo el diálogo normal de forma de pago en vez del redirect a
+`/abonos`, y al confirmar el back lo rechazaba con error genérico.
+
+**Causa:** el redirect decidía con `item.pedido.tipoPedido`, que viene de la lista
+(`GET /v1/pedidos/buscarClientePedido`) — ese campo llega `undefined` ahí (el back confirmó que
+el DTO de la lista hoy solo trae `id`, `fecha_pedido`, `estado_pedido` y `detalles`, sin
+`tipoPedido` — contradice lo que se había asumido desde 2026-07-01 al agregar el badge "📦
+Apartado" en la card).
+
+**Fix:** `cobrarAdmin()` ya no confía solo en el campo de la lista — antes de decidir, pide
+`GET /v1/pedidos/{id}/detalle` (que sí trae `tipoPedido` confiable) y decide con ese dato. Si
+el detalle falla, cae al diálogo normal como antes. Además, si el back de todos modos rechaza
+el cobro con un mensaje que mencione "abono"/"apartado"/"fiado", se ofrece el mismo redirect en
+vez de un error genérico.
+
+**Pendiente de back (consulta ya enviada en el repo compartido):** confirmar si `tipoPedido`
+realmente no viene en `buscarClientePedido`/`findPedido` y, si no, agregarlo junto con el
+`totalPagado` que ya estaba pendiente ahí (mismo DTO, mismo viaje) — con eso el front deja de
+necesitar la llamada extra a `/detalle` y el badge "📦 Apartado" de la lista vuelve a mostrarse.
+
+**Archivos modificados:** `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` →
+`cobrarAdmin()`, `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**

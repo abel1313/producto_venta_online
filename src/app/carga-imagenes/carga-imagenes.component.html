@@ -1,0 +1,253 @@
+<div class="ci-wrap">
+
+  <!-- Header -->
+  <div class="ci-header">
+    <div class="ci-header__content">
+      <div class="ci-header__title">
+        <h4>📸 Carga rápida de imágenes</h4>
+        <small>Toma o selecciona fotos: cada una crea un producto borrador que puedes completar después.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="ci-body">
+
+    <!-- Acciones de captura -->
+    <div class="ci-acciones">
+      <label class="ci-btn ci-btn--camara">
+        📷 Tomar foto
+        <input type="file" accept="image/*" capture="environment" hidden (change)="onArchivos($event)">
+      </label>
+
+      <label class="ci-btn ci-btn--galeria">
+        🖼️ Elegir de galería o PC
+        <input type="file" accept="image/*" multiple hidden (change)="onArchivos($event)">
+      </label>
+
+      <span class="ci-contador" *ngIf="tarjetas.length">
+        {{ totalExitosas }} lista(s)
+        <ng-container *ngIf="totalPendientes"> · {{ totalPendientes }} procesando</ng-container>
+        <ng-container *ngIf="totalFallidas"> · {{ totalFallidas }} con error</ng-container>
+      </span>
+    </div>
+
+    <p class="ci-hint">
+      Una foto que ya subiste aquí no se vuelve a subir — evita crear productos borrador duplicados.
+    </p>
+
+    <!-- Bandeja: elegidas pero todavía NO subidas -->
+    <div class="ci-bandeja" *ngIf="seleccionadas.length">
+      <div class="ci-bandeja__head">
+        <strong>{{ seleccionadas.length }} imagen(es) por subir</strong>
+        <span class="ci-bandeja__peso">{{ formatoPeso(pesoTotal) }} en total</span>
+      </div>
+
+      <ul class="ci-lista">
+        <li class="ci-lista__item"
+            *ngFor="let s of seleccionadas; let i = index"
+            [class.ci-lista__item--error]="s.error">
+          <img class="ci-lista__thumb" [src]="s.preview" [alt]="s.nombre">
+
+          <div class="ci-lista__info">
+            <span class="ci-lista__nombre" [title]="s.nombre">{{ s.nombre }}</span>
+            <span class="ci-lista__meta">
+              {{ formatoPeso(s.tamano) }}
+              <ng-container *ngIf="s.subiendo"> · subiendo…</ng-container>
+            </span>
+            <span class="ci-lista__err" *ngIf="s.error">{{ s.error }}</span>
+          </div>
+
+          <button type="button" class="ci-lista__quitar"
+                  *ngIf="!s.subiendo"
+                  (click)="quitarSeleccionada(i)"
+                  title="Quitar de la lista">✕</button>
+        </li>
+      </ul>
+
+      <div class="ci-bandeja__msg" *ngIf="hayFallidasEnSeleccion && !enVuelo">
+        Las que aparecen en rojo no subieron — siguen aquí para reintentarlas.
+        Las que sí entraron ya están abajo como borradores.
+      </div>
+
+      <div class="ci-bandeja__acciones">
+        <button type="button" class="ci-btn ci-btn--ghost"
+                [disabled]="enVuelo > 0" (click)="limpiarSeleccion()">
+          Quitar todas
+        </button>
+
+        <button type="button" class="ci-btn ci-btn--pub"
+                *ngIf="!hayFallidasEnSeleccion"
+                [disabled]="enVuelo > 0" (click)="subirTodas()">
+          <ng-container *ngIf="!enVuelo">⬆️ Subir {{ seleccionadas.length }} imagen(es)</ng-container>
+          <ng-container *ngIf="enVuelo">Subiendo {{ enVuelo }}…</ng-container>
+        </button>
+
+        <button type="button" class="ci-btn ci-btn--retry"
+                *ngIf="hayFallidasEnSeleccion"
+                [disabled]="enVuelo > 0" (click)="reintentarFallidas()">
+          <ng-container *ngIf="!enVuelo">🔄 Reintentar las que fallaron</ng-container>
+          <ng-container *ngIf="enVuelo">Subiendo {{ enVuelo }}…</ng-container>
+        </button>
+      </div>
+    </div>
+
+    <!-- Grilla de borradores ya creados -->
+    <h6 class="ci-subtitulo" *ngIf="tarjetas.length">Borradores creados</h6>
+    <div class="ci-grid" *ngIf="tarjetas.length; else vacio">
+      <div class="ci-card"
+           *ngFor="let t of tarjetas"
+           [class.ci-card--ok]="t.estadoImagen === 'EXITOSO'"
+           [class.ci-card--error]="t.estadoImagen === 'FALLIDO'">
+
+        <button class="ci-card__close" type="button" (click)="quitarTarjeta(t)" title="Quitar de la lista">✕</button>
+
+        <!-- Si la foto se subió en esta sesión se usa la miniatura local (ya saneada).
+             Si viene del back (ej. lista de fallidas al entrar), la URL apunta a un
+             endpoint protegido: un <img src> nativo no manda el JWT, por eso pasa
+             por el pipe `imagenSrc`, que la baja con HttpClient. -->
+        <div class="ci-card__img">
+          <img *ngIf="t.previewLocal" [src]="t.previewLocal" [alt]="t.nombreArchivo">
+
+          <ng-container *ngIf="!t.previewLocal && t.urlImagen">
+            <img *ngIf="t.urlImagen | imagenSrc | async as src" [src]="src" [alt]="t.nombreArchivo">
+          </ng-container>
+
+          <div class="ci-card__sinimg" *ngIf="!t.previewLocal && !t.urlImagen">📦</div>
+        </div>
+
+        <div class="ci-card__body">
+          <div class="ci-card__estado">
+            <span class="ci-badge ci-badge--pend"  *ngIf="t.estadoImagen === 'PENDIENTE'">Subiendo…</span>
+            <span class="ci-badge ci-badge--ok"    *ngIf="t.estadoImagen === 'EXITOSO'">✓ Imagen lista</span>
+            <span class="ci-badge ci-badge--error" *ngIf="t.estadoImagen === 'FALLIDO'">✕ Falló</span>
+          </div>
+
+          <small class="ci-card__id">Producto #{{ t.productoId }}</small>
+
+          <p class="ci-card__err" *ngIf="t.estadoImagen === 'FALLIDO' && t.mensajeErrorImagen">
+            {{ t.mensajeErrorImagen }}
+          </p>
+
+          <!-- Solo se puede reintentar cuando la imagen falló -->
+          <label class="ci-btn ci-btn--sm ci-btn--retry"
+                 *ngIf="t.estadoImagen === 'FALLIDO' && !t.reintentando">
+            🔄 Reintentar con otra foto
+            <input type="file" accept="image/*" hidden (change)="onReintentar(t, $event)">
+          </label>
+
+          <button class="ci-btn ci-btn--sm ci-btn--completar"
+                  type="button"
+                  *ngIf="t.estadoImagen === 'EXITOSO'"
+                  (click)="abrirForm(t)">
+            ✏️ Completar datos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #vacio>
+      <div class="ci-vacio" *ngIf="!seleccionadas.length">
+        <div class="ci-vacio__icon">📷</div>
+        <p>Todavía no has subido ninguna foto.</p>
+        <small>Selecciona las imágenes, revísalas y pulsa "Subir". Cada una crea un producto
+          borrador con stock 1, deshabilitado hasta que lo completes.</small>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Modal: completar borrador -->
+  <div class="ci-overlay" *ngIf="editando" (click)="cerrarForm()">
+    <div class="ci-modal" (click)="$event.stopPropagation()">
+      <div class="ci-modal__header">
+        <h5>Completar producto #{{ editando.productoId }}</h5>
+        <button type="button" class="ci-modal__close" (click)="cerrarForm()">✕</button>
+      </div>
+
+      <div class="ci-modal__body">
+        <div class="ci-modal__preview">
+          <img *ngIf="editando.previewLocal" [src]="editando.previewLocal" alt="">
+          <ng-container *ngIf="!editando.previewLocal && editando.urlImagen">
+            <img *ngIf="editando.urlImagen | imagenSrc | async as src" [src]="src" alt="">
+          </ng-container>
+        </div>
+
+        <div class="ci-error" *ngIf="errorForm">{{ errorForm }}</div>
+
+        <div class="ci-form">
+          <div class="ci-field ci-field--full">
+            <label>Nombre del modelo</label>
+            <input type="text" appUppercase [(ngModel)]="form.nombre" placeholder="Ej. PANTALÓN DE MEZCLILLA SLIM">
+          </div>
+
+          <div class="ci-field">
+            <label>Marca</label>
+            <input type="text" appUppercase [(ngModel)]="form.marca">
+          </div>
+
+          <div class="ci-field">
+            <label>Color</label>
+            <input type="text" appUppercase [(ngModel)]="form.color">
+          </div>
+
+          <div class="ci-field">
+            <label>Precio costo</label>
+            <input type="number" min="0" [(ngModel)]="form.precioCosto">
+          </div>
+
+          <div class="ci-field">
+            <label>Precio venta</label>
+            <input type="number" min="0" [(ngModel)]="form.precioVenta">
+          </div>
+
+          <div class="ci-field">
+            <label>Precio rebaja</label>
+            <input type="number" min="0" [(ngModel)]="form.precioRebaja">
+          </div>
+
+          <div class="ci-field">
+            <label>Piezas</label>
+            <input type="number" min="1" [(ngModel)]="form.piezas">
+          </div>
+
+          <div class="ci-field">
+            <label>Contenido</label>
+            <input type="text" appUppercase [(ngModel)]="form.contenido">
+          </div>
+
+          <div class="ci-field">
+            <label>Código de barras real</label>
+            <div class="ci-field__con-btn">
+              <input type="text" appUppercase [(ngModel)]="form.codigoBarras" placeholder="Escanéalo o escríbelo">
+              <button type="button" class="ci-btn-generar" (click)="generarCodigoBarras()"
+                      title="Generar uno automático (fecha + números aleatorios)">🎲</button>
+            </div>
+          </div>
+
+          <div class="ci-field ci-field--full">
+            <label>Categoría</label>
+            <app-palabra-clave-autocomplete (seleccionada)="onPalabraClave($event)"></app-palabra-clave-autocomplete>
+          </div>
+
+          <div class="ci-field ci-field--full">
+            <label>Descripción</label>
+            <textarea rows="3" [(ngModel)]="form.descripcion"></textarea>
+          </div>
+        </div>
+
+        <p class="ci-hint ci-hint--pub">
+          Para publicar hace falta el código de barras real y que la imagen esté lista.
+        </p>
+      </div>
+
+      <div class="ci-modal__footer">
+        <button type="button" class="ci-btn ci-btn--ghost" (click)="cerrarForm()">Cerrar</button>
+        <button type="button" class="ci-btn ci-btn--save" [disabled]="guardando" (click)="guardarAvance(false)">
+          💾 Guardar avance
+        </button>
+        <button type="button" class="ci-btn ci-btn--pub" [disabled]="guardando" (click)="guardarAvance(true)">
+          🚀 Guardar y publicar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

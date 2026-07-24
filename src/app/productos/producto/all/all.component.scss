@@ -301,6 +301,19 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.82rem;
     &::placeholder { font-size: 0.82rem; }
   }
+
+  // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
+  // completo, con el texto alineado a la izquierda como una lista.
+  .pl-filtros { grid-template-columns: 1fr; gap: 6px; }
+  .pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    white-space: normal;
+    text-align: left;
+    justify-content: flex-start;
+    line-height: 1.25;
+  }
+  .pl-excel-btn { margin-left: 0; }
 }
 
 @media (max-width: 400px) {
@@ -489,12 +502,20 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Filtros admin ──────────────────────────────────────────────────
+// 8 filtros en PC: 4 columnas × 2 filas, para que no se vea tan estirado
+// como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
 .pl-filtros {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+  gap: 8px 12px;
   padding: 0 24px 16px;
-  flex-wrap: wrap;
+}
+
+// min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
+// más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
+.pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
+  min-width: 0;
 }
 
 .pl-filtro-btn {

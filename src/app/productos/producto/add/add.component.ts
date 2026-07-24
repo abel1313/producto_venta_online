@@ -34,6 +34,18 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
+  // Código de barras que tenía el producto AL ABRIR la pantalla de editar.
+  // Desde el fix del back (2026-07-21), save/update matchean por `id` cuando
+  // se manda (ver ejecutarGuardar) — cambiar el código ya no duplica un
+  // producto normal. Sigue usándose para detectar borradores de carga
+  // rápida (código autogenerado BRD-...), que NUNCA deben pasar por esta
+  // pantalla — ver esBorradorCargaRapida().
+  private codigoBarrasOriginal: string | null = null;
+  // true mientras cargarProductoUpdate() está corriendo su patchValue —
+  // evita que el listener de sinCodigoBarra regenere un código nuevo solo
+  // porque el producto cargado no traía código (ver initCodigoBarra()).
+  private cargandoDesdeUpdate = false;
+
   get esActualizar(): boolean { return this.nombreCard === 'Actualizar Producto'; }
 
   constructor(
@@ -96,8 +108,15 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.formProductos.get('sinCodigoBarra')!.valueChanges.subscribe((sinCodigo: boolean) => {
       const ctrl = this.formProductos.get('codigoBarras')!;
       if (sinCodigo) {
-        // Generar código automático basado en fecha
-        ctrl.setValue(this.generarCodigoBarras());
+        // patchValue() en cargarProductoUpdate() dispara este valueChanges
+        // aunque el admin no haya tocado nada — si el producto que se está
+        // editando llegó sin código, NO hay que inventarle uno nuevo aquí:
+        // el backend matchea por código exacto, y un código recién generado
+        // nunca existe en BD → crearía un producto duplicado al guardar.
+        // Solo se genera cuando el admin activa el toggle a propósito.
+        if (!this.cargandoDesdeUpdate) {
+          ctrl.setValue(this.generarCodigoBarras());
+        }
         ctrl.clearValidators();
       } else {
         // Limpiar para que el usuario ingrese el suyo
@@ -125,11 +144,29 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.palabraClaveSeleccionada = p;
   }
 
+  // El tipo declara `codigoBarras: ICodigoBarra` (objeto { id, codigoBarras }),
+  // pero el item que realmente llega desde la grilla (IProductoDTO) lo trae
+  // como string plano — el cast `as IProductoDTORec` en UpdateComponent no
+  // convierte el valor en tiempo de ejecución. Se soportan ambas formas para
+  // no quedar con "[object Object]" si algún día el DTO cambia de forma.
+  private extraerCodigo(cb: unknown): string {
+    if (!cb) return '';
+    if (typeof cb === 'string') return cb;
+    if (typeof cb === 'object' && 'codigoBarras' in (cb as any)) {
+      return (cb as any).codigoBarras ?? '';
+    }
+    return '';
+  }
+
   private cargarProductoUpdate(): void {
     const p = this.productoUpdate!;
-    const tieneCodigo = !!p.codigoBarras;
+    const codigo = this.extraerCodigo(p.codigoBarras);
+    const tieneCodigo = !!codigo;
+    this.codigoBarrasOriginal = codigo || null;
     // Precargar palabra clave si el producto ya tenía una asignada
     if (p.palabraClave) this.palabraClaveSeleccionada = p.palabraClave;
+
+    this.cargandoDesdeUpdate = true;
     this.formProductos.patchValue({
       nombre:        p.nombre,
       precioCosto:   p.precioVenta,
@@ -141,9 +178,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       stock:         p.stock,
       marca:         p.marca,
       contenido:     p.contenido,
-      codigoBarras:  p.codigoBarras ?? '',
+      codigoBarras:  codigo,
       sinCodigoBarra:!tieneCodigo
     });
+    this.cargandoDesdeUpdate = false;
   }
 
   // ── Guardar ────────────────────────────────────────────────────────
@@ -155,6 +193,40 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     }
     const raw = this.formProductos.getRawValue();
 
+    // Borrador de carga rápida (código autogenerado BRD-...): aunque el back
+    // ya matchea por id y no duplica, save/update NO resetean
+    // `codigoBarrasGenerado` ni validan el estado de la imagen — queda en un
+    // estado inconsistente (bloquea "habilitar", ensucia el filtro admin
+    // codigoGenerado). Para estos SIEMPRE hay que usar Carga rápida de
+    // imágenes → PUT /completar. Se bloquea por completo, no se ofrece
+    // continuar (ver CAMBIOS_FRONT.md, sección "Aclaración importante...").
+    if (this.esActualizar && this.esBorradorCargaRapida) {
+      Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Este producto es un borrador de Carga rápida de imágenes',
+        html: `Todavía tiene el código autogenerado <b>${this.codigoBarrasOriginal}</b>.
+               Esta pantalla no es la indicada para completarlo — usa
+               <b>📸 Carga rápida de imágenes</b> y el botón "✏️ Completar datos" de ese
+               borrador, para que el código real quede asignado correctamente.`,
+        confirmButtonText: 'Ir a Carga rápida de imágenes',
+        showCancelButton: true,
+        cancelButtonText: 'Quedarme aquí'
+      }).then(res => {
+        if (res.isConfirmed) this.router.navigate(['/carga-imagenes']);
+      });
+      return;
+    }
+
+    this.ejecutarGuardar(raw);
+  }
+
+  // true si el producto que se está editando nació de Carga rápida de
+  // imágenes y todavía no tiene su código de barras real asignado.
+  private get esBorradorCargaRapida(): boolean {
+    return !!this.codigoBarrasOriginal?.toUpperCase().startsWith('BRD-');
+  }
+
+  private ejecutarGuardar(raw: any): void {
     const productoSave: IProducto = {
       nombre:         raw.nombre,
       precioCosto:    +raw.precioCosto,
@@ -171,7 +243,12 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       codigoBarras:   { codigoBarras: raw.codigoBarras, id: 0 },
       listImagenes:      this.imagenesCargadas,
       palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
-      imagenPrincipalId: this.productoUpdate?.imagenPrincipalId ?? null
+      imagenPrincipalId: this.productoUpdate?.imagenPrincipalId ?? null,
+      // Requerido desde el fix del back (2026-07-21): sin id, save/update
+      // vuelve a matchear por código de barras y puede duplicar el producto
+      // si el código cambió. En modo "Agregar" no se manda (undefined) —
+      // ahí sí se busca por código porque el producto todavía no tiene id.
+      ...(this.esActualizar ? { id: this.productoUpdate?.idProducto } : {})
     };
 
     this.guardando = true;

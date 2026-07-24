@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize, take, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from '../auth/auth.service';
 import { IVarianteResumen } from '../variante/models/variante.model';
@@ -13,6 +14,7 @@ import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
 import { NegocioService } from '../negocio/negocio.service';
+import { motivoCancelacionSwalFragment } from '../shared/motivo-cancelacion.util';
 
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
@@ -93,12 +95,19 @@ export class AbonosComponent implements OnInit, OnDestroy {
     private readonly authService:     AuthService,
     private readonly varianteService: VarianteService,
     private readonly pedidosService:  PedidosService,
-    private readonly negocioService:  NegocioService
+    private readonly negocioService:  NegocioService,
+    private readonly route:           ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
-    this.cargarCuenta();
+
+    // Si se llega desde "Cobrar" en mis-pedidos con ?pedidoId=N, abrir directo esa
+    // card en cuanto cargue la lista — evita que el admin tenga que buscarla a mano.
+    this.route.queryParams.pipe(take(1), takeUntil(this.destroy$)).subscribe(params => {
+      const pedidoId = params['pedidoId'] ? Number(params['pedidoId']) : null;
+      this.cargarCuenta(pedidoId);
+    });
 
     this.transferSub$.pipe(
       debounceTime(400),
@@ -129,12 +138,28 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
   // ── Carga ─────────────────────────────────────────────────────────
 
-  cargarCuenta(): void {
+  // pedidoIdAbrir: cuando se llega desde "Cobrar" en mis-pedidos (?pedidoId=N), abre
+  // esa card automáticamente en cuanto termina de cargar la lista.
+  cargarCuenta(pedidoIdAbrir?: number | null): void {
     this.cargandoCuenta = true;
     this.abonoService.reporteEstadoCuenta()
       .pipe(finalize(() => this.cargandoCuenta = false))
       .subscribe({
-        next: res  => { this.estadoCuenta = res?.data ?? []; },
+        next: res  => {
+          this.estadoCuenta = res?.data ?? [];
+          if (pedidoIdAbrir) {
+            const match = this.estadoCuenta.find(ec => ec.pedidoId === pedidoIdAbrir);
+            if (match) {
+              this.abrirModal(match);
+            } else {
+              Swal.fire({
+                icon: 'info',
+                title: 'Ese pedido no está en cuentas por cobrar',
+                text: `El pedido #${pedidoIdAbrir} no aparece aquí — puede que ya esté liquidado o cancelado. Revisa las otras pestañas.`
+              });
+            }
+          }
+        },
         error: err => {
           Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar el estado de cuenta.' });
         }
@@ -173,19 +198,25 @@ export class AbonosComponent implements OnInit, OnDestroy {
       ? `El producto ya fue entregado. La deuda de $${pedido.saldo.toFixed(2)} quedará registrada.`
       : `Pagó $${pedido.totalPagado.toFixed(2)} de $${pedido.totalPedido.toFixed(2)}. Se devolverá el stock.`;
 
+    // Grupo de botones (mismos 3 motivos que mis-pedidos) en vez del input de texto libre —
+    // consistente entre ambas pantallas de cancelación. Ver nota en CLAUDE.md: pendiente de
+    // confirmar con el back si estos valores afectan el score de rifa igual que en
+    // /v1/pedidos/delete/{id}, ya que este endpoint (/v1/abonos/{id}/cancelar) es distinto.
+    const motivoFrag = motivoCancelacionSwalFragment();
+
     Swal.fire({
-      title: `¿Cancelar el ${esFiado ? 'fiado' : 'apartado'} de ${pedido.cliente}?`,
-      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>
-              <input id="swal-motivo" class="swal2-input" maxlength="30"
-                     placeholder="Motivo de cancelación (opcional)">`,
+      title: `¿Cancelar ${esFiado ? 'el crédito (ir pagando)' : 'el apartado'} de ${pedido.cliente}?`,
+      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton:    true,
       confirmButtonText:   esFiado ? 'Sí, registrar como incobrable' : 'Sí, cancelar y devolver stock',
       cancelButtonText:    'No',
-      confirmButtonColor:  '#ef4444'
+      confirmButtonColor:  '#ef4444',
+      didOpen:    motivoFrag.didOpen,
+      preConfirm: motivoFrag.preConfirm
     }).then(result => {
       if (!result.isConfirmed) return;
-      const motivo = (document.getElementById('swal-motivo') as HTMLInputElement)?.value?.trim() || undefined;
+      const motivo = result.value as string;
       this.abonoService.cancelar(pedido.pedidoId, { motivo }).subscribe({
         next: res => {
           const data     = res?.data;

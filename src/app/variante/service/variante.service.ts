@@ -154,7 +154,8 @@ export class VarianteService {
   // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
   // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
   adminFiltrar(
-    filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean },
+    filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean;
+               codigoGenerado?: boolean },
     pagina: number, size: number
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
@@ -165,6 +166,9 @@ export class VarianteService {
     if (filtros.conStock !== undefined) params = params.set('conStock', String(filtros.conStock));
     if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
     if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
+    // true = solo borradores de carga rápida con código autogenerado (BRD-...);
+    // false = solo código real; omitido = ambos. Filtra por el producto padre.
+    if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
 
     return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
       .pipe(map(res => res.data));
@@ -205,6 +209,25 @@ export class VarianteService {
   reclamarVenta(codigo: string): Observable<{ data: string }> {
     return this.http.post<{ data: string }>(`${environment.api_Url}/v1/ventas/reclamar`, { codigo });
   }
+
+  // ── Cliente sin registro con verificación de correo (2026-07-22) ─────────
+  // Antes "Agregar cliente sin registro" solo guardaba el formulario en memoria y se
+  // mandaba embebido (clienteSinRegistroDto) hasta el POST de la venta — sin verificar
+  // nada. Ahora se crea primero (con correoVerificado=false) para poder verificar el
+  // correo ANTES de cobrar; solo cuenta para la elegibilidad de rifa si queda verificado
+  // o si el cliente dio teléfono.
+  crearClienteSinRegistro(dto: IClienteSinRegistro): Observable<IClienteSinRegistroCreado> {
+    return this.http.post<{ data: IClienteSinRegistroCreado }>(`${environment.api_Url}/v1/clientes-sin-registro`, dto)
+      .pipe(map(r => r.data));
+  }
+
+  enviarCodigoClienteSinRegistro(id: number): Observable<any> {
+    return this.http.post<any>(`${environment.api_Url}/v1/clientes-sin-registro/${id}/enviar-codigo`, {});
+  }
+
+  verificarCodigoClienteSinRegistro(id: number, codigo: string): Observable<any> {
+    return this.http.post<any>(`${environment.api_Url}/v1/clientes-sin-registro/${id}/verificar-codigo`, { codigo });
+  }
 }
 
 export interface IVentaDirectaRequest {
@@ -215,6 +238,10 @@ export interface IVentaDirectaRequest {
   tipoPedido?:   'NORMAL' | 'APARTADO' | 'FIADO';
   observaciones?: string;
   clienteSinRegistroDto?: IClienteSinRegistro,
+  // Preferido: id de un ClienteSinRegistro ya creado/verificado (POST /v1/clientes-sin-registro).
+  // clienteSinRegistroDto queda como fallback por compatibilidad — el flujo nuevo del front
+  // siempre manda el id una vez que el modal ya lo creó.
+  clienteSinRegistroId?: number,
   detalles: {
     productoId:   number;
     varianteId:   number | null;
@@ -239,6 +266,23 @@ export interface IClienteSinRegistro {
       sexo: string;
       correo_Electronico: string;
       numero_Telefonico: string;
+}
+
+// Response de POST /v1/clientes-sin-registro — misma entidad, en camelCase real
+// (el request sigue en snake_case porque así lo espera el back en ese endpoint).
+export interface IClienteSinRegistroCreado {
+  id: number;
+  nombrePersona: string;
+  segundoNombre: string | null;
+  apeidoPaterno: string | null;
+  apeidoMaterno: string | null;
+  fechaNacimiento: string | null;
+  sexo: string | null;
+  correoElectronico: string | null;
+  numeroTelefonico: string | null;
+  correoVerificado: boolean;
+  codigoVerificacion: string | null;
+  codigoVerificacionExpira: string | null;
 }
 export interface IIndependizarRequest {
   nombre: string;

@@ -40,6 +40,78 @@ Los cambios del módulo de crédito/abonos (ventas, pedidos, abonos, cancelar, t
 
 ---
 
+## REGLA — SINCRONIZACIÓN `CAMBIOS_FRONT.md` CON REPO COMPARTIDO FRONT/BACK (2026-07-21)
+
+> Existe un repositorio **aparte**, fuera de este proyecto, que sirve de punto de encuentro entre
+> front y back: `D:\proyectos\documentos_front_back_nodevedaades_jade` (repo git propio, remoto
+> `github.com:abel1313/documentos_front_back_nodevedaades_jade.git`). Tiene su propia copia de
+> `CAMBIOS_FRONT.md` — ahí el back sube los cambios de API que le tocan al front, y ahí también
+> debe quedar reflejado lo que el front (yo) necesita preguntarle al back (dudas, consultas,
+> notas de bugs). Es el canal de ida y vuelta entre los dos equipos.
+
+### ⚠️ Corrección del flujo (mismo día, 2026-07-21) — el repo compartido es ahora la fuente primaria
+
+El usuario aclaró el flujo: **de aquí en adelante, cualquier duda/consulta mía para el back sobre
+`CAMBIOS_FRONT.md` se escribe directamente en la copia del repo compartido**
+(`D:\proyectos\documentos_front_back_nodevedaades_jade\CAMBIOS_FRONT.md`), no en la de este
+proyecto. La copia de este proyecto (`d:\proyectos\producto_venta_online\CAMBIOS_FRONT.md`) se
+actualiza **solo al final**, cuando el usuario diga que ya se terminó de revisar/discutir — momento
+en el que se pasa (sincroniza) todo lo nuevo del repo compartido hacia acá.
+
+### Flujo de trabajo (vigente)
+
+1. **Cuando el usuario diga "baja/revisa los cambios" (o equivalente)** → ir a
+   `D:\proyectos\documentos_front_back_nodevedaades_jade`, `git pull`, y diffear su
+   `CAMBIOS_FRONT.md` contra el de este proyecto (mismo método de diff-contra-HEAD que se usa para
+   deduplicar — ver `project_cambios_front_duplication` en memoria) para ver qué puso el back de
+   nuevo. **Solo revisar y reportar en el chat — todavía NO tocar el archivo de este proyecto.**
+2. **Cualquier duda/consulta nueva que yo tenga para el back** → escribirla directo en
+   `D:\proyectos\documentos_front_back_nodevedaades_jade\CAMBIOS_FRONT.md` (no en la copia de este
+   proyecto), dejar el commit listo en ese repo aparte (avisando antes de hacer `git push`, es un
+   repo con remoto propio en GitHub).
+   - ⚠️ **Esto NO es solo para dudas — aplica también a cualquier fix/cambio que termine de
+     implementar que sea relevante para el back**, aunque haya sido 100% front y no haya
+     necesitado ningún cambio de su lado (ej. un bug causado por cómo el back manda un campo,
+     aunque la solución haya sido solo del front). Regla general: **cada vez que termine de
+     implementar algo en esta sesión de trabajo con el back, anotarlo ahí de una vez** —
+     no esperar a que el usuario lo pida cada vez.
+3. **Cuando el usuario diga que ya se terminó** (la ronda de revisión/discusión) → recién ahí
+   sincronizar todo lo nuevo del repo compartido hacia `CAMBIOS_FRONT.md` de este proyecto, con el
+   mismo método de diff para no perder ni duplicar nada.
+4. Son dos repos git independientes (`producto_venta_online` vs
+   `documentos_front_back_nodevedaades_jade`) — la sincronización es copiar/mezclar contenido del
+   archivo, **no** un merge de git entre ambos.
+
+### 📡 Radar — pendiente de sincronizar a este proyecto (actualizado 2026-07-21)
+
+El repo compartido tiene contenido nuevo que **todavía no está en la copia de este proyecto**
+(no sincronizar hasta que el usuario diga "ya terminamos"):
+
+- **Respuesta completa del back a la "CONSULTA AL BACK" de carga rápida de imágenes** (sección
+  `## ✅ RESPUESTA DEL BACK a la consulta de arriba`, al final del archivo compartido). Resumen:
+  1. Nuevo endpoint **`DELETE /v1/carga-imagenes/{productoId}`** — borra el borrador de verdad
+     (producto + variante + imagen local + intenta borrar en el micro de imágenes). Responde
+     **400** si el producto ya tiene código real asignado (protección para no borrar algo ya
+     completado por accidente).
+  2. **No hace falta endpoint nuevo** para recuperar los pendientes (`EXITOSO` sin completar +
+     `FALLIDO`) al recargar la pantalla: combinar
+     `GET /v1/productos/admin/filtrar?codigoGenerado=true&habilitado=false` (pagina) +
+     `GET /v1/carga-imagenes/estado?productoIds=...` para clasificar por `estadoImagen`. El back
+     **recomienda migrar y dejar de usar `GET /fallidas`** (que no pagina y solo trae los
+     `FALLIDO`, no los `EXITOSO` sin completar).
+  3. `/fallidas` se queda sin paginar por ahora — recomendación es migrar al punto 2 en vez de
+     pedir paginación ahí.
+  4. El `DELETE` del punto 1 sí intenta borrar la imagen en el micro (9096) — best-effort, si falla
+     solo queda un warning en el log del back.
+  5. Sin límite de reintentos en `reintentar-imagen` — confirmado, no se agregó tope.
+  6. Sin limpieza automática/TTL todavía — backlog, no bloquea nada.
+- **✅ Ya implementado en el front (2026-07-22)** — ver sección
+  "FIX CARGA RÁPIDA DE IMÁGENES — DELETE REAL + RECUPERACIÓN DE EXITOSO SIN COMPLETAR" más abajo.
+  Pendiente solo sincronizar esta respuesta del back hacia el `CAMBIOS_FRONT.md` de este proyecto
+  (cuando el usuario diga que ya terminamos la ronda de revisión).
+
+---
+
 ## FIX — ELIMINACIÓN DE SPINNERS LOCALES EN COMPONENTES (2026-06-14)
 
 **Criterio:** solo debe existir el spinner global del `LoadingInterceptor` (overlay pantalla completa, `app-loading`). Todos los `spinner-border` locales dentro de componentes fueron eliminados.
@@ -4511,3 +4583,911 @@ reemplazar `variante` a secas rompe bindings (`varianteSeleccionada`), rutas
 
 **Archivos modificados:** `navbar.component.html` + `.ts`, y ~20 templates con texto visible.
 **Verificado con `ng build` sin errores** y confirmando que ninguna ruta cambió.
+
+---
+
+## FEAT CARGA RÁPIDA DE IMÁGENES — PRODUCTO BORRADOR POR FOTO (2026-07-21)
+
+> Spec del back en `CAMBIOS_FRONT.md` § "🆕 Carga rápida de imágenes". Módulo lazy
+> `/carga-imagenes`, **solo admin**.
+
+**Qué resuelve:** antes había que llenar TODO el formulario de producto y subir la imagen en el
+mismo guardado — si el token expiraba a media captura, se perdía todo, incluida la foto. Ahora
+la foto va primero: cada imagen crea al instante un producto+variante borrador (stock 1,
+deshabilitado, código de barras temporal `BRD-XXXXXXXXXXXX`), y los datos se llenan después,
+campo por campo, sin volver a tocar la imagen.
+
+### Flujo
+
+1. **Capturar:** botón "📷 Tomar foto" (`capture="environment"` → cámara trasera en móvil) o
+   "🖼️ Elegir de galería o PC" (`multiple`). Cada archivo dispara su propio
+   `POST /v1/carga-imagenes/subir-imagen` — **una imagen por request**, sin esperar entre una y
+   otra (el back encola las subidas, máx. 6 en paralelo).
+2. **Polling:** los `productoId` que vuelven en `PENDIENTE` entran a un `Set`; `setInterval` de
+   2.5s consulta `GET /estado?productoIds=...` **solo con los pendientes** y saca cada uno que
+   deje de estar `PENDIENTE`. Cuando el Set queda vacío, `clearInterval` — no hay polling de
+   fondo indefinido.
+3. **Reintentar:** botón visible **solo** en tarjetas `FALLIDO` →
+   `POST /{productoId}/reintentar-imagen` (reutiliza el mismo producto, no crea un borrador
+   duplicado).
+4. **Completar:** clic en una tarjeta `EXITOSO` → modal con los campos →
+   `PUT /{productoId}/completar`. Dos botones: "💾 Guardar avance" (persiste lo que haya) y
+   "🚀 Guardar y publicar" (agrega `habilitar: true`).
+
+### Seleccionar → revisar → subir (la selección NO sube nada)
+
+Elegir archivos **no dispara ninguna petición**. Van a una *bandeja* (`seleccionadas`) donde se
+ven **miniatura, nombre y peso** de cada uno, más el peso total. El usuario puede quitar los que
+no quiera (`✕` por fila, o "Quitar todas") y recién entonces pulsa **"⬆️ Subir N imagen(es)"**.
+
+Esto se cambió a propósito después de una primera versión que subía al instante al seleccionar:
+sin paso intermedio no había forma de ver qué se eligió ni de arrepentirse, y cada equivocación
+dejaba un producto borrador basura en la base.
+
+**La bandeja se vacía sola, y solo si TODAS subieron.** Cada archivo que entra bien se saca de
+`seleccionadas` y pasa a la grilla de borradores; el que falla **se queda en la bandeja** con su
+error en rojo, conservando miniatura/nombre/peso. Así:
+
+- Bandeja vacía ⇒ todas subieron. No hace falta un flag aparte que pueda desincronizarse.
+- Si fallan algunas, el botón cambia a **"🔄 Reintentar las que fallaron"** (`reintentarFallidas()`),
+  que solo reenvía las que tienen `error` — nunca duplica las que ya entraron.
+- No hay que volver a buscar los archivos en el disco: el `File` sigue vivo en la bandeja.
+
+Un archivo que falla en el POST **no deja borrador** en el back — por eso es seguro reintentarlo.
+
+**`enVuelo` es un contador, no un booleano.** Con un `subiendo = true/false` compartido, la
+primera respuesta apagaba el indicador aunque quedaran 9 peticiones vivas. También es el guard
+que impide subir dos veces o mutar la bandeja a media subida (`subirTodas()`,
+`limpiarSeleccion()` y los botones salen temprano si `enVuelo > 0`).
+
+**Detalle de memoria:** el `ObjectURL` del preview **no se revoca** al subir con éxito — se lo
+queda la tarjeta del borrador, que lo sigue mostrando. Solo se revoca al quitar un archivo de la
+bandeja, al quitar una tarjeta, o en `ngOnDestroy`. Revocarlo en el `next` dejaría la miniatura
+rota.
+
+### ⚠️ Dos motivos por los que una miniatura sale rota aquí (ambos ya corregidos)
+
+**1. Angular 14 BLOQUEA las URLs `blob:`.** Su lista blanca de sanitización de URLs
+(`SAFE_URL_PATTERN` en `@angular/core`) es:
+
+```
+/^(?:(?:https?|mailto|data|ftp|tel|file|sms):|[^&:/?#]*(?:[/?#]|$))/gi
+```
+
+`blob:` **no está**. Un `[src]="objectUrl"` crudo se reescribe a `unsafe:blob:...` y el navegador
+no lo carga — la imagen sale rota **sin ningún error en consola**, que es lo que lo hace difícil
+de diagnosticar. Verificado corriendo el regex a mano contra `blob:http://localhost:4200/abc`
+→ no matchea.
+
+Fix: `sanitizer.bypassSecurityTrustUrl(objectUrl)` **al crear el objeto**, no en el template.
+Llamarlo desde un binding devuelve una instancia nueva en cada ciclo de detección de cambios y
+Angular no deja de repintar. Por eso cada item guarda **dos** campos: `preview`/`previewLocal`
+(el `SafeUrl`, para el `[src]`) y `previewUrl` (el string crudo, único que sirve para
+`URL.revokeObjectURL`).
+
+**2. `urlImagen` del back es un endpoint protegido.** Un `<img src>` nativo no pasa por
+`TokenInterceptor` — no manda el JWT y responde 401. Por eso **todo el proyecto** carga imágenes
+del servidor con `| imagenSrc | async`, que las baja por `HttpClient` (con token) y devuelve un
+`data:` URL. Aquí se usa el pipe solo cuando NO hay miniatura local: las fotos de la sesión ya
+tienen su blob saneado, y solo las que vienen de `GET /fallidas` al entrar necesitan el pipe.
+
+**Regla general:** en este proyecto, una imagen que viene del back **siempre** va con
+`| imagenSrc | async`; un archivo local **siempre** va con `bypassSecurityTrustUrl`. Nunca un
+`[src]` crudo con ninguno de los dos.
+
+### Regla — una foto ya subida no se vuelve a subir
+
+Cada archivo se identifica por una **firma** `nombre|size|lastModified`. Si ya existe una tarjeta
+con esa firma, se omite y sale un Swal informativo. Evita crear un producto borrador duplicado
+por cada intento accidental (el back **no** detecta imágenes repetidas — esta barrera es
+únicamente del front, y solo dentro de la sesión de captura).
+
+Complemento de la misma regla: **el botón de reintentar solo aparece si la imagen falló.** Una
+tarjeta `EXITOSO` no ofrece re-subir — para cambiar la imagen de un producto ya cargado se usa
+el flujo normal de edición de producto.
+
+### Admin-only en DOS capas
+
+- Ruta: `canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]` en `app-routing.module.ts` +
+  el mismo par de guards dentro de `carga-imagenes-routing.module.ts`.
+- Menú: el link vive dentro del accordion **📦 Inventario**, que ya es `*ngIf="isAdminUser"`.
+
+El back responde 403 a no-admin, pero el spec pide explícitamente que eso **no sea la única
+barrera** — si un cliente llega a ver el botón, es bug de UX aunque el request falle.
+
+### Detalles a no romper
+
+- **El código de barras autogenerado (`BRD-...`) NUNCA se muestra ni se precarga.** El campo
+  "Código de barras real" arranca vacío; al mandarlo, el back crea el código real y borra el
+  placeholder solo.
+- `limpiar()` quita del body los campos vacíos/null antes del PUT — el back interpreta ausente
+  como "no tocar este campo", así que mandar `''` pisaría un valor bueno con vacío.
+- `ngOnInit` llama `GET /fallidas` como red de seguridad: si el usuario recargó la página a
+  media carga y perdió los `productoId` en memoria, ahí aparecen los que quedaron rotos. Falla
+  en silencio a propósito — es un extra, no debe bloquear la captura.
+- `quitarTarjeta()` solo saca la tarjeta de la vista; **el borrador sigue existiendo en el back**
+  y se retoma desde `GET /v1/productos/admin/no-habilitados`.
+
+**⚠️ Requiere que el back corra `migration_carga_imagenes.sql`** (columnas `codigo_barras_generado`,
+`estado_imagen`, `mensaje_error_imagen` en `producto`). No corre sola (`ddl-auto: none`). Hasta
+entonces los endpoints no responden en dev/qa.
+
+**Archivos nuevos:** `src/app/carga-imagenes/` — `models/carga-imagen.model.ts`,
+`service/carga-imagenes.service.ts`, `carga-imagenes.component.ts/.html/.scss`,
+`carga-imagenes.module.ts`, `carga-imagenes-routing.module.ts` (prefijo BEM `ci-`, dark/light
+vía variables globales).
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta lazy),
+`src/app/navbar/navbar.component.html` (link en Inventario).
+
+**Aparte:** `CAMBIOS_FRONT.md` estaba duplicado (12 320 líneas = dos copias casi idénticas). Se
+conservó la **segunda** (la más nueva: incluye `codigoBarras` en promos, la expiración mensual
+del código de reclamo, y `POST /v1/ventas/{ventaId}/asignarCliente` — que la primera copia no
+tenía). Quedó en 6 320 líneas.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo: requiere la migración SQL corrida en el back.
+
+### Extra — botón "generar código automático" en "Completar datos" (2026-07-21)
+
+No todos los borradores tienen un código de barras legible a la mano (foto suelta de una prenda
+sin etiqueta/empaque, por ejemplo) — el admin necesitaba la misma opción que ya existe en
+"Agregar producto" para inventarle uno. Se agregó el botón 🎲 junto al campo "Código de barras
+real" del modal de completar → `generarCodigoBarras()`, mismo formato que
+`AddComponent.generarCodigoBarras()` (`MMDDAAAA` + 5 dígitos aleatorios, 13 caracteres) — solo
+llena el campo, el admin sigue pudiendo editarlo antes de guardar. A diferencia del formulario de
+"Agregar producto" (que tiene un toggle "Generar código automático" con lógica de
+validadores/auto-regeneración), aquí es un botón puntual y nada más — no hay riesgo de
+duplicar nada porque este formulario siempre guarda con `PUT /completar` (matchea por `id`).
+
+**Archivos modificados:**
+- `src/app/carga-imagenes/carga-imagenes.component.ts` → `generarCodigoBarras()`
+- `src/app/carga-imagenes/carga-imagenes.component.html` → botón junto al campo
+- `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-field__con-btn`, `.ci-btn-generar`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FEAT FILTROS ADMIN — `codigoGenerado` EN PRODUCTOS Y VARIANTES + LAYOUT 2 COLUMNAS (2026-07-21)
+
+> Cierra el pendiente de la sección "FEAT CARGA RÁPIDA DE IMÁGENES" — encontrar los borradores
+> que todavía tienen el código de barras autogenerado (`BRD-XXXXXXXXXXXX`) sin completar.
+
+### Filtro nuevo
+
+6.º checkbox-pareja (mismo patrón tri-estado que `conStock`/`conImagenes`/`habilitado`: ambos
+marcados o ninguno = no filtra por esa dimensión; exactamente uno marcado = filtra por ese valor)
+en los filtros admin de `productos/buscar` y `variantes/buscar`:
+- **"Código generado"** → `codigoGenerado=true` — solo borradores de carga rápida sin código real.
+- **"Código real"** → `codigoGenerado=false` — todo lo demás (incluye productos normales, que
+  nunca pasaron por carga rápida — el back los cuenta como "código real", no como caso aparte).
+
+Combina con AND con el resto de filtros — caso de uso típico para encontrar "pendientes de
+completar": marcar "Código generado" + "No habilitados" a la vez.
+
+### Layout — filtros en 2 columnas en vez de una fila
+
+`.pl-filtros` (`all.component.scss`) y `.vb-filtros` (`buscar.component.scss`) pasaron de
+`display: flex; flex-wrap: wrap;` a `display: grid; grid-template-columns: repeat(2, 1fr);` —
+los checkboxes (y los botones "Limpiar filtros"/"Excel" que viven en el mismo contenedor)
+quedan acomodados de 2 en 2 en vez de una fila larga que se envolvía de forma despareja.
+
+### Nota — reconciliación con trabajo ya iniciado en `dev`
+
+Al ir a implementar esto se encontró que ya existía un commit en `dev` (sin subir a `qa`) que
+traía la documentación del backend (`CAMBIOS_FRONT.md`) y el cambio en
+`variante.service.ts#adminFiltrar()` — pero **no** la parte de `producto.service.ts`, los
+`.ts`/`.html` con los checkboxes, ni el cambio de layout. Se hizo merge de `dev` a `qa` primero
+(conflicto trivial en `variante.service.ts`, misma línea agregada dos veces con distinto
+formato) y luego se completó lo que faltaba encima.
+
+**Archivos modificados:**
+- `src/app/productos/service/producto.service.ts` → `adminFiltrar()` + param `codigoGenerado`
+- `src/app/variante/service/variante.service.ts` → mismo cambio (ya venía de `dev`)
+- `src/app/productos/producto/all/all.component.ts` → `mostrarCodigoGenerado`/`mostrarCodigoReal`,
+  `paramCodigoGenerado`, extendido `hayFiltrosAdminActivos`/`toggleFiltroAdmin`/`limpiarFiltrosAdmin`
+- `src/app/variante/buscar/buscar.component.ts` → mismo cambio
+- `src/app/productos/producto/all/all.component.html` → 2 checkboxes nuevos
+- `src/app/variante/buscar/buscar.component.html` → 2 checkboxes nuevos
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtros` a grid 2 columnas
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtros` a grid 2 columnas
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+### FIX — el grid de 2 columnas se desbordaba en móvil y ocultaba filtros (mismo día)
+
+**Reportado:** con las 8 opciones ya en grid de 2 columnas, en el celular "ya no se ven todos
+los filtros".
+
+**Causa raíz:** `.pl-filtro-check`/`.vb-filtro-check` (y `.pl-filtro-btn`/`.vb-filtro-btn`) tienen
+`white-space: nowrap`. Un label largo como **"Código generado"** no cabe en el 50% de ancho de
+una columna en una pantalla de 320-375px — y como los ítems de un grid tienen por default
+`min-width: auto` (que con `nowrap` equivale al ancho completo del texto sin cortar), el
+navegador agranda esa columna más allá de su `1fr` para no partir el texto. Resultado: el grid
+completo se desborda del contenedor y las columnas/filtros que quedan más a la derecha salen del
+viewport — mismo mecanismo de "grid blowout" ya documentado en `ANALISIS_DISENO_MOVIL.md`.
+
+**Fix — dos partes:**
+1. `min-width: 0;` en los ítems del grid (`.pl-filtro-check`, `.pl-filtro-btn`, `.pl-excel-btn` /
+   `.vb-filtro-check`, `.vb-filtro-btn`) — permite que el navegador SÍ los encoja por debajo de su
+   ancho de contenido, en vez de forzar el desborde. Aplica siempre, no solo en móvil.
+2. Dentro del `@media (max-width: 576px)` ya existente en ambos componentes: se baja el
+   `font-size`/`padding` y se cambia `white-space: nowrap` → `white-space: normal` — un label que
+   de plano no entrena en una sola línea se envuelve a 2 líneas **dentro de su propia pastilla**,
+   en vez de desbordar el layout. Así las 8 opciones siempre son visibles y completas, sin scroll
+   lateral ni texto cortado, aunque alguna quede en 2 renglones dentro de su pill.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss`
+- `src/app/variante/buscar/buscar.component.scss`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX FILTROS ADMIN — 4 COLUMNAS EN PC, 1 COLUMNA EN MÓVIL (2026-07-21)
+
+**Síntoma:** tras el fix anterior (min-width:0 + wrap en móvil), los 8 filtros admin
+(`productos/buscar` y `variantes/buscar`) quedaban en **2 columnas siempre** — en PC se veían
+4 filas muy estiradas y separadas en vez de agruparse.
+
+**Fix:**
+- **PC (por defecto, `.pl-filtros`/`.vb-filtros`):** `grid-template-columns: repeat(2, 1fr)` →
+  `repeat(4, 1fr)`. Con los 8 filtros (con/sin stock, con/sin imágenes, habilitados/no
+  habilitados, código generado/real) quedan exactas **2 filas de 4**.
+- **Móvil (`@media max-width: 576px`):** `repeat(2, 1fr)` → `1fr` (una sola columna) — cada
+  filtro ocupa toda la fila, texto alineado a la izquierda (`text-align: left`,
+  `justify-content: flex-start`) en vez de centrado, como una lista. Ya no hace falta apretar
+  el texto a 2 líneas dentro de una pill angosta — con el ancho completo el label cabe en una
+  línea sin problema.
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss` → `.pl-filtros` (base + media 576px)
+- `src/app/variante/buscar/buscar.component.scss` → `.vb-filtros` (base + media 576px)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## FIX DOC — CAMBIOS_FRONT.md: SECCIONES 2026-07-21 FUERA DE ORDEN CRONOLÓGICO (2026-07-21)
+
+**Síntoma:** dos secciones nuevas (`Fix habilitado` + `Nuevo codigoGenerado`, ambas 2026-07-21)
+habían quedado insertadas **en medio** del documento, intercaladas entre contenido de 2026-07-07,
+en vez de al final donde ya vivía el resto de "Carga rápida de imágenes" (2026-07-20) y sus 3
+bugs corregidos (también 2026-07-21). No era duplicación literal (0 encabezados repetidos,
+verificado con grep) — era desorden: alguien pegó el bloque nuevo a mitad del archivo en vez de
+al final.
+
+**Fix:** se movieron esas 2 secciones (antes en la línea ~5036) al final del documento, justo
+después de los 3 "Bug corregido" de carga rápida de imágenes — mismo día, mismo tema (el filtro
+`codigoGenerado` es directamente para encontrar los borradores de carga rápida). Sin pérdida de
+contenido: mismo total de 6428 líneas, solo reordenado.
+
+**Verificado:** `grep -c "^## "` antes y después da el mismo número de encabezados, ninguno
+duplicado ni faltante.
+
+---
+
+## NOTA BACK — NUNCA USAR `save`/`update` SOBRE UN BORRADOR DE CARGA RÁPIDA (2026-07-21)
+
+**Confirmado por el back tras probar en QA:** `POST /v1/productos/save` y `PUT /v1/productos/update`
+localizan el producto a tocar **por coincidencia exacta de código de barras**, nunca por `id` — es
+un upsert pensado para alta/edición manual (donde el producto ya nace con su código real). Si se le
+manda el código real de un borrador de carga rápida (que todavía no existe en la BD, porque el
+borrador sigue con el `BRD-XXXXXXXXXXXX` autogenerado), el backend concluye "código nuevo" y
+**crea un producto duplicado**, dejando el borrador original intacto y huérfano.
+
+**Ya cumplido en el front:** `carga-imagenes.component.ts` / `carga-imagenes.service.ts` solo usan
+`PUT /v1/carga-imagenes/{productoId}/completar` para guardar — nunca `save`/`update`. Verificado
+con grep, no hace falta ningún cambio de código.
+
+**Regla a futuro:** si se construye OTRA pantalla que edite un producto y ese producto puede venir
+de carga rápida (`codigoBarrasGenerado: true`), esa pantalla debe seguir usando `/completar` hasta
+que el código ya sea real. Nunca asumir que "editar producto" siempre es `save`/`update` sin antes
+revisar ese flag.
+
+---
+
+## FIX PRODUCTOS/EDITAR — DUPLICABA EL PRODUCTO EN VEZ DE ACTUALIZARLO (2026-07-21)
+
+**Síntoma reportado:** al editar un producto normal (no un borrador de carga rápida) y guardar,
+en vez de actualizarlo se creaba un producto NUEVO con los datos editados — el producto original
+se quedaba intacto, sin los cambios.
+
+**Causa raíz (confirmada por el back en `CAMBIOS_FRONT.md`):** `AddComponent.guardar()` se usa
+tanto para crear como para editar (`esActualizar` solo cambia el mensaje/navegación) y **siempre**
+llama a `POST /v1/productos/save` — nunca a `PUT /v1/productos/update`. Pero además el back
+confirmó que **ambos endpoints comparten la misma lógica interna** (`saveProductoLote()`): buscan
+el producto a tocar **por código de barras exacto, nunca por `id`**. Si el código que se envía no
+coincide con el guardado en BD, el backend concluye "esto es nuevo" y crea un producto duplicado.
+
+**Bug concreto encontrado en el front que podía disparar esto:** `cargarProductoUpdate()` hace
+un solo `patchValue()` con todos los campos, incluido `sinCodigoBarra`. Angular emite
+`valueChanges` en **cada** `patchValue`, incluso si el valor no cambia. El listener de
+`sinCodigoBarra` (`initCodigoBarra()`) generaba un código de barras **aleatorio nuevo** cada vez
+que `sinCodigoBarra` quedaba en `true` — y eso pasaba automáticamente si el producto cargado no
+traía código, sin que el admin tocara nada. Al guardar, ese código recién inventado nunca existe
+en BD → producto duplicado garantizado para cualquier producto sin código de barras que se
+edite.
+
+**Fix aplicado — dos capas, `add.component.ts`:**
+1. **Cerrar el mecanismo de auto-generación en carga:** nuevo flag `cargandoDesdeUpdate`, en
+   `true` solo durante el `patchValue()` de `cargarProductoUpdate()`. El listener de
+   `sinCodigoBarra` ya NO genera un código nuevo mientras ese flag está activo — sigue
+   gestionando los validadores igual que antes (para que el form no quede en estado inválido),
+   solo deja de inventar un código. La auto-generación real (toggle "Generar código automático")
+   sigue funcionando igual cuando el admin lo activa a propósito.
+2. **Guarda genérica antes de guardar (cubre cualquier otra causa, no solo la de arriba):** se
+   captura `codigoBarrasOriginal` al cargar el producto para editar. En `guardar()`, si el código
+   que se va a enviar es distinto al original, se muestra un Swal explicando el riesgo ("esto crea
+   un producto duplicado, el original se queda igual") y pide confirmación explícita antes de
+   llamar al backend. La lógica de armar el request y llamar `saveProducto()` se extrajo a
+   `ejecutarGuardar()`, invocada directo si el código no cambió, o tras confirmar el Swal si sí
+   cambió.
+3. Se agregó `extraerCodigo()` — helper defensivo que lee el código de barras sea que llegue como
+   string plano (lo que realmente manda la grilla, `IProductoDTO.codigoBarras: string`) o como
+   objeto anidado (lo que declara el tipo `IProductoDTORec.codigoBarras: ICodigoBarra` — hay un
+   mismatch de tipos entre ambos DTOs que el cast `as IProductoDTORec` en `UpdateComponent` no
+   corrige en tiempo de ejecución). Evita quedar con `[object Object]` en el campo si algún día
+   cambia la forma del DTO.
+
+**Revisado — variantes NO tienen este riesgo:** `update-variante.component.ts` no usa
+`save`/`update` por código de barras para nada — actualiza por `id` con un endpoint distinto.
+Confirmado con grep, sin cambios necesarios ahí.
+
+**Pendiente de fondo, es del backend:** mientras `/productos/save` y `/productos/update` sigan
+matcheando por código de barras y no por `id`, el riesgo no desaparece del todo — la guarda del
+front avisa y bloquea el caso obvio, pero no puede saber si el código en BD cambió por otra vía
+mientras el admin tenía el formulario abierto. Ver nota completa en `CAMBIOS_FRONT.md`.
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo
+contra el backend real — no se pudo reproducir el escenario exacto sin sesión de admin y datos
+de prueba; la corrección se basa en el análisis del código y en lo que el back confirmó por
+escrito.
+
+---
+
+## ACTUALIZACIÓN — EL BACK CORRIGIÓ LA CAUSA RAÍZ (2026-07-21, mismo día)
+
+> Continuación directa de la sección anterior. El back no solo confirmó el bug — lo arregló.
+
+**Qué cambió el back:** `guardarProducto()` (usado por `/productos/save` y `/productos/update`)
+ahora busca el producto **por `id` primero**, si el front lo manda en el body. Si lo encuentra y
+el código de barras viene distinto, crea el código nuevo, lo asigna a ESE producto y elimina el
+código anterior (relación 1 a 1, no se pierde nada). Si el front **no manda `id`**, se mantiene
+el comportamiento viejo (busca por código de barras) — para no romper la carga por Excel, que no
+tiene ids.
+
+**⚠️ Con una condición:** esto NO aplica a los borradores de carga rápida. `save`/`update` no
+resetean `codigoBarrasGenerado` ni validan el estado de la imagen — completar un borrador por
+esta vía lo deja en un estado inconsistente aunque técnicamente ya no se duplique. Para
+borradores sigue siendo obligatorio `PUT /v1/carga-imagenes/{productoId}/completar`.
+
+**Cambios aplicados en el front (`add.component.ts`), en respuesta al fix del back:**
+1. **`ejecutarGuardar()` ahora manda `id`** en el body cuando `esActualizar === true`
+   (`this.productoUpdate?.idProducto`) — es el requisito nuevo del back. En modo "Agregar" no se
+   manda, el producto todavía no existe.
+2. **`IProductoDTORec` ganó `idProducto?: number`** — en runtime siempre venía poblado (mismo
+   campo que ya usa la grilla, `IProductoDTO.idProducto`), solo faltaba declararlo en el tipo
+   para poder leerlo sin `any`.
+3. **Se quitó la alerta de "esto crea un duplicado"** para productos normales — con `id` en el
+   body ya no es cierto, y dejarla habría sido una alarma falsa cada vez que alguien corrige un
+   código de barras a propósito (caso legítimo).
+4. **Se agregó un bloqueo específico para borradores** (`esBorradorCargaRapida`, detecta el
+   prefijo `BRD-`): si el código actual es autogenerado, la pantalla de editar producto **no deja
+   guardar en absoluto** — muestra un aviso con botón directo a `/carga-imagenes`. No se ofrece
+   "continuar de todas formas" porque, aunque no duplicaría, sí dejaría el producto en estado
+   inconsistente (punto ⚠️ de arriba) — no hay ningún escenario válido para guardar un borrador
+   desde esta pantalla.
+
+**Archivos modificados:**
+- `src/app/productos/producto/add/add.component.ts` → `guardar()`, `ejecutarGuardar()`,
+  nuevo getter `esBorradorCargaRapida`
+- `src/app/productos/producto/models/producto.dto.model.ts` → `IProductoDTORec.idProducto?`
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ Sigue sin probarse en
+vivo — depende de que el fix del back ya esté desplegado en el ambiente donde se pruebe.
+
+---
+
+## FIX CARGA RÁPIDA DE IMÁGENES — DELETE REAL + RECUPERACIÓN DE `EXITOSO` SIN COMPLETAR (2026-07-22)
+
+> Respuesta del back a la "CONSULTA AL BACK" del 2026-07-21 (repo compartido
+> `documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`, sección
+> "✅ RESPUESTA DEL BACK a la consulta de arriba"). Cierra los 2 problemas reportados en vivo:
+> el "✕" no borraba nada de verdad, y las tarjetas `EXITOSO` (listas para completar) se perdían
+> de la vista al recargar o navegar fuera de `/carga-imagenes`.
+
+### 1. `quitarTarjeta()` ahora borra de verdad, con confirmación
+
+**Antes:** solo hacía `this.tarjetas = this.tarjetas.filter(...)` — sacaba la tarjeta de la
+vista pero el producto+variante+imagen seguían vivos en la base con `estadoImagen: FALLIDO`. La
+siguiente vez que se recargaba la pantalla, `GET /fallidas` la volvía a traer — "resucitaba".
+
+**Ahora:** llama al nuevo `DELETE /v1/carga-imagenes/{productoId}`
+(`CargaImagenesService.descartar()`), que sí borra producto + variante + imagen (local + intenta
+borrar también en el micro 9096, best-effort). Como pasó de ser una acción cosmética a una
+permanente, se agregó un `Swal` de confirmación antes de llamar al endpoint. Si el back responde
+`400` (el producto ya tiene código de barras real — protección para no borrar algo ya
+completado), se muestra el mensaje del back en un Swal de error y la tarjeta se queda tal cual.
+
+### 2. `ngOnInit()` ya no pierde los `EXITOSO` sin completar
+
+**Antes:** solo llamaba `GET /fallidas` — únicamente traía los borradores con imagen `FALLIDO`.
+Un borrador `EXITOSO` (imagen subida, esperando "Completar datos") solo vivía en el estado del
+componente Angular; al salir de la pantalla o recargar, desaparecía de la vista aunque el
+producto siguiera en la base, deshabilitado, con su imagen ya lista — exactamente el caso real
+confirmado en QA que motivó la consulta al back.
+
+**Ahora:** `ngOnInit()` llama a `cargarPendientes()`, que combina las dos llamadas que el back
+confirmó que ya alcanzan (no hizo falta ningún endpoint nuevo para esto):
+1. `ProductoService.adminFiltrar({ codigoGenerado: true, habilitado: false }, 1, 100)` — trae
+   TODOS los productos que siguen siendo borrador de carga rápida, sin importar el estado de su
+   imagen.
+2. Con los `idProducto` de esa respuesta, `CargaImagenesService.estado(ids)` — clasifica cada uno
+   por `estadoImagen` (`PENDIENTE`/`EXITOSO`/`FALLIDO`) y arranca el polling si alguno sigue
+   `PENDIENTE`.
+
+`CargaImagenesService.fallidas()` se eliminó del servicio — quedó sin ningún componente que lo
+llamara (confirmado con grep) y el back recomendó explícitamente dejar de usarlo a favor del
+combo de arriba.
+
+**Archivos modificados:**
+- `src/app/carga-imagenes/service/carga-imagenes.service.ts` → quita `fallidas()`, agrega
+  `descartar(productoId)` (`DELETE`)
+- `src/app/carga-imagenes/carga-imagenes.component.ts` → inyecta `ProductoService`;
+  `ngOnInit()` → `cargarPendientes()` (combo `adminFiltrar` + `estado`); `quitarTarjeta()` con
+  `Swal` de confirmación + llamada real al backend
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — requiere sesión de admin y borradores reales en el ambiente donde se
+pruebe. Pendiente: sincronizar esta respuesta del back hacia el `CAMBIOS_FRONT.md` de este
+proyecto cuando el usuario confirme que ya se terminó la ronda de revisión (ver regla de
+sincronización más arriba).
+
+---
+
+## FIX MIS-PEDIDOS — COBRAR CRÉDITO REDIRIGE A ABONO + HISTORIAL DE PAGOS EN DETALLE (2026-07-22)
+
+> De la ronda de revisión de `/pedidos` y `/pedidos/mis-pedidos` documentada en el repo compartido
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`, sección "❓ CONSULTA AL BACK —
+> mis-pedidos..."). Estos 2 puntos no dependían del back — se implementaron directo; los otros 3
+> (cancelar sin afectar rifa, cliente sin registro duplicado, detalle vacío sin imagen) siguen
+> pendientes de respuesta del back.
+
+### 1. "Cobrar" en un pedido APARTADO/FIADO ya no manda el 404 de "se liquida por abonos"
+
+**Síntoma reportado:** el botón "Cobrar" de la card en `mis-pedidos` abría el diálogo de
+"Confirmar cobro" para CUALQUIER pedido, sin importar su tipo. Al confirmar un pedido FIADO, el
+back rechazaba con `PUT /v1/pedidos/confirmar/{id}` → 404
+`"Los pedidos de tipo FIADO se liquidan mediante abonos, no por esta vía"`.
+
+**Causa:** `cobrarAdmin()` nunca revisaba `item.pedido.tipoPedido` antes de abrir el diálogo — ese
+diálogo (dropdown de forma de pago + terminal MP) es exclusivamente para ventas `NORMAL`.
+
+**Fix:** `cobrarAdmin()` ahora revisa el tipo primero. Si es `APARTADO`/`FIADO`, en vez de abrir el
+diálogo muestra un Swal informativo ("Este pedido se cobra registrando un abono, no desde este
+botón") con un botón "Ir al detalle para registrar abono" → llama `irDetalle(item)`, que ya
+muestra `detalle-pedido` con su formulario de abono (`registrarAbono()`, mismo endpoint
+`POST /v1/abonos/{pedidoId}` que usa `/abonos`). Ningún endpoint nuevo — es el mismo flujo que ya
+existía, solo se dejó de esconder detrás de un botón que no aplicaba.
+
+### 2. Historial de pagos visible en el Detalle del pedido (crédito)
+
+**Antes:** `detalle-pedido` solo tenía el formulario para registrar un abono NUEVO — no había
+forma de ver los pagos que ya se habían hecho sin ir a `/abonos` a buscar el pedido.
+
+**Fix:** se agregó una sección "📋 Pagos registrados" arriba del formulario, dentro de
+`.dp-abono-wrap` (visible solo si `esCredito` y hay al menos un abono). **No hizo falta ninguna
+llamada nueva** — `PedidoDetalleResponse.abonos?: AbonoDetalleItem[]`
+(`GET /v1/pedidos/{id}/detalle`, ya usado por esta pantalla) ya traía el arreglo completo de
+abonos, solo no se estaba pintando.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → sección
+  `.dp-abono-historial` dentro de `.dp-abono-wrap`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-abono-historial` +
+  variantes
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.
+
+---
+
+## FEAT — MOTIVO `ERROR_ADMIN` AL CANCELAR + VERIFICACIÓN DE CORREO EN CLIENTE SIN REGISTRO (2026-07-22)
+
+> Respuesta del back a la consulta de la sesión anterior, revisada en el repo compartido
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`). Cierra las 3 preguntas abiertas
+> de la consulta "mis-pedidos: cancelar sin afectar rifa, cobrar créditos, cliente sin registro
+> duplicado" — más un feature nuevo completo que salió de esa misma conversación.
+
+### 1. Motivo `ERROR_ADMIN` al cancelar un pedido — sin cambios de back
+
+El back confirmó: `motivo` es texto libre, y el score de la rifa **solo** penaliza cuando el
+valor es `TIMEOUT` o `NO_SE_PRESENTO`. Cualquier otro texto (como `ERROR_ADMIN`) ya no penaliza
+al cliente, sin que el back tuviera que agregar nada. Se agregó la tercera opción al `input:
+'radio'` de `cancelarPedido()` en `mis-pedidos.component.ts`.
+
+### 2. Cliente sin registro duplicado — confirmado que NO hay riesgo
+
+El back revisó el código: el import de participantes de rifa usa el **id de la fila** en
+`clientes_sin_registro`, no el nombre — dos personas con el mismo nombre generan filas
+independientes, sin fusión ni descarte por duplicado. No requirió ningún cambio.
+
+### 3. Detalle de pedido sin imagen — confirmado que no puede fallar por eso
+
+`GET /v1/pedidos/{id}/detalle` no llama a ningún servicio de imágenes — el DTO no tiene ese
+campo. Si en vivo se ve "sin productos", es por otra causa (recordar: ya se mejoró el manejo de
+error silencioso en esa pantalla en la sesión anterior).
+
+### 4. 🆕 Verificación de correo para "cliente sin registro" + elegibilidad de rifa
+
+De la pregunta 2 salió un feature bastante más grande: el back detectó que, para que un cliente
+sin registro cuente para la rifa del mes, ahora exige que su **correo esté verificado** (con
+código de 6 dígitos, mismo patrón que `Cliente`) **o** que haya dado **teléfono** (no verificable
+— no hay SMS/OTP en el proyecto, así que ahí basta con que no venga vacío). Si no cumple ninguna
+de las dos, el pedido se guarda igual (para reportes) pero no participa en esa rifa.
+
+**Antes:** el modal "Agregar cliente sin registro" en `venta-directa` solo guardaba el
+formulario en memoria — nunca llamaba al back hasta el final, junto con el `POST /v1/ventas/save`
+de la venta completa. No había forma de verificar nada antes de cobrar.
+
+**Ahora — 3 endpoints nuevos, flujo de 2 pasos dentro del mismo modal:**
+
+| Endpoint | Método | Cuándo |
+|---|---|---|
+| `/v1/clientes-sin-registro` | POST | Al confirmar el formulario (antes solo quedaba en memoria) |
+| `/v1/clientes-sin-registro/{id}/enviar-codigo` | POST | Botón "✉️ Enviar código de verificación" |
+| `/v1/clientes-sin-registro/{id}/verificar-codigo` | POST `{codigo}` | Botón "Verificar" |
+
+**Paso 1 (formulario, sin cambio visual):** al enviar, ahora sí crea el registro real en el back
+(antes era solo `this.clienteSinRegistroModal = this.clienteForm.value`). Si el cliente dio
+correo y no viene ya verificado → pasa al Paso 2 dentro del mismo modal. Si no dio correo → cierra
+directo, como antes.
+
+**Paso 2 (nuevo, solo si hay correo sin verificar):** botón para enviar el código, campo para
+capturarlo + "Verificar", badge "✅ Correo verificado" al lograrlo. El admin puede omitir este
+paso en cualquier momento (botón "Omitir y continuar", o cerrando el modal con ✕) — el registro
+ya existe en el back con `correoVerificado=false`, la venta se genera igual, solo que ese cliente
+no contará para la rifa salvo que haya dado teléfono.
+
+**`POST /v1/ventas/save`:** ahora manda `clienteSinRegistroId` (el `id` ya creado en el paso 1)
+en vez de `clienteSinRegistroDto` embebido. El campo DTO se queda en el modelo por compatibilidad
+del back, pero este componente ya no lo usa.
+
+**Chip del cliente en pantalla:** ahora muestra el mismo badge ✅/⚠️ que ya usaba el cliente
+registrado, según `clienteSinRegistroCorreoVerificado`.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → tercera opción `ERROR_ADMIN` en
+  `cancelarPedido()`
+- `src/app/variante/service/variante.service.ts` → `crearClienteSinRegistro()`,
+  `enviarCodigoClienteSinRegistro()`, `verificarCodigoClienteSinRegistro()`,
+  `IClienteSinRegistroCreado`, `IVentaDirectaRequest.clienteSinRegistroId?`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → estado de los 2 pasos,
+  `guardarClienteSinRegistro()` (reemplaza `obtenerDatosClienteSinRegistro()`),
+  `enviarCodigoCSR()`, `verificarCodigoCSR()`, `finalizarModalClienteSinRegistro()`,
+  `closeModalModalSinRegistro()` con lógica de "ya se creó, cerrar = omitir", `ejecutarVenta()`
+  manda `clienteSinRegistroId`
+- `src/app/variante/venta-directa/venta-directa.component.html` → modal en 2 pasos, badge de
+  verificación en el chip
+- `src/app/variante/venta-directa/venta-directa.component.scss` → `.vd-error`, `.vd-verif-texto`,
+  `.vd-verif-ok`, `.vd-modal__hint`, `.vd-modal__input--codigo`
+
+**⚠️ Estado del back al momento de implementar esto:** el back reportó los endpoints
+"implementados en dev, compila OK" y la migración SQL **ya corrida en dev, qa y prod** — pero no
+confirmó explícitamente que el código ya esté commiteado/pusheado/desplegado. Si al probar en QA
+estos 3 endpoints nuevos dan 404, es cuestión de desplegar el back, no un bug del front.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back esté desplegado en el ambiente de prueba.
+
+---
+
+## FIX — "COBRAR" CRÉDITO MANDA A `/ABONOS` (NO AL DETALLE) + "FIADO" → "IR PAGANDO" EN /ABONOS + TICKET SOLO CON PAGO (2026-07-22)
+
+> Reportado en vivo tras probar el fix anterior de "Cobrar crédito redirige a abono": el redirect
+> a `detalle-pedido` no era lo que se pedía — se esperaba ir directo a **Créditos / Abonos**
+> (`/abonos`), a la card exacta. Además `/abonos` seguía diciendo "Fiado" en 3 lugares (la
+> renombrada a "Ir pagando" de julio solo tocó `venta-variante`, no `abonos.component.html`), y
+> se pidió que imprimir/enviar ticket no esté disponible hasta que el pedido tenga algún pago.
+
+### 1. "Cobrar" en `mis-pedidos` ahora manda a `/abonos?pedidoId=N`, no al detalle
+
+`cobrarAdmin()` en `mis-pedidos.component.ts`: el botón "Ir a Créditos / Abonos" del Swal ahora
+navega con `router.navigate(['/abonos'], { queryParams: { pedidoId } })` en vez de
+`irDetalle(item)`.
+
+**`AbonosComponent`** lee ese query param una sola vez al iniciar (`route.queryParams.pipe(take(1))`)
+y se lo pasa a `cargarCuenta(pedidoIdAbrir)`: en cuanto llega la lista de `estadoCuenta`, busca el
+pedido por `pedidoId` y llama `abrirModal()` automáticamente — el admin llega y ya tiene el
+formulario de abono abierto, sin tener que buscar la card a mano. Si el pedido no aparece ahí
+(ya liquidado o cancelado), muestra un aviso en vez de fallar en silencio.
+
+### 2. "Fiado" → "Ir pagando" en `/abonos` (se había quedado fuera del rename de julio)
+
+3 badges (`ec.tipoPedido`/`p.tipoPedido`/`c.tipoPedido` === 'FIADO') decían "🤝 Fiado" — ahora
+dicen "💳 Ir pagando" (mismo ícono que ya se usa en `mis-pedidos`/`detalle-pedido`). El subtítulo
+del header ("Gestión de apartados y fiados") y el título del Swal de cancelar
+("¿Cancelar el fiado de X?") también se corrigieron. Las clases CSS (`ab-badge--fiado`,
+variable `esFiado`) se dejaron igual — son identificadores internos, no texto visible.
+
+### 3. Imprimir/enviar ticket ya no se puede antes de que haya algún pago
+
+**Antes:** en `mis-pedidos` y `detalle-pedido`, los botones 🖨️/📧 estaban siempre habilitados,
+sin importar si el pedido normal seguía "Pendiente" (nadie ha cobrado/recogido) o si un crédito
+todavía no tenía ni un abono.
+
+**`detalle-pedido`** (tiene el detalle completo cargado, `this.detalle.abonos` incluido): nuevo
+getter `puedeGenerarTicket` — para NORMAL exige `estado_pedido === 'Entregado'`; para crédito
+exige `estadoPedido === 'PAGADO'` **o** al menos un abono en `detalle.abonos`. Los 2 botones usan
+`[disabled]="!puedeGenerarTicket"` + `title` explicando por qué.
+
+**`mis-pedidos`** (la card de la lista NO trae info de abonos — solo `tipoPedido`/`estado_pedido`):
+- Para NORMAL sí se puede pre-deshabilitar con lo que ya hay en la lista → `puedeGenerarTicket(item)`
+  usa `estado_pedido === 'Entregado'`.
+- Para crédito **no hay forma de saber si ya tiene abonos sin pedir el detalle** — se deja el botón
+  habilitado, pero `imprimirTicketPedido()`/`enviarCorreoPedido()` ahora piden el detalle primero
+  (ya lo hacían) y, antes de continuar, llaman `puedeImprimir(d)` — si el crédito no tiene ni un
+  abono, corta con un aviso ("Todavía no hay ningún pago") en vez de generar el ticket.
+
+**Limitación conocida (anotada en el repo compartido):** el botón de un crédito sin abonos se ve
+igual de habilitado que uno con abonos en `mis-pedidos` — la protección real ocurre al hacer clic,
+no antes. Para que se vea deshabilitado de entrada (como en `detalle-pedido`) haría falta que el
+endpoint de lista incluya algo como `tienePagos`/`totalPagado` — se dejó como pregunta al back, no
+bloqueante.
+
+### 🔎 Investigado y no reproducido: "se agregó 2 veces Apartado"
+
+Se revisó `mis-pedidos.component.html`, `.ts`, y `abonos.component.html`/`.ts` completos — un solo
+badge `📦 Apartado` por card en cada pantalla, sin ningún `content:`/duplicado en el SCSS que lo
+repita. No se encontró la causa en el código. Si se sigue viendo, hace falta una captura o decir
+en qué pantalla exacta aparece duplicado — podría ser un problema de datos (el mismo pedido
+llegando 2 veces en la respuesta del back, o un doble `push` por scroll) más que de plantilla.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()` navega a `/abonos`;
+  `puedeGenerarTicket()`, `puedeImprimir()`, guard en `imprimirTicketPedido()`/`enviarCorreoPedido()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` en los 2 botones
+- `src/app/abonos/abonos.component.ts` → `ActivatedRoute`, `cargarCuenta(pedidoIdAbrir?)`, texto
+  del Swal de cancelar
+- `src/app/abonos/abonos.component.html` → "Ir pagando" en vez de "Fiado" (3 badges + subtítulo)
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `puedeGenerarTicket`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `[disabled]`/`[title]` en los
+  2 botones
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.
+
+---
+
+## FIX INFRA — NGINX SIN `Cache-Control` → EXPLICA TODOS LOS "NO SE VE EL CAMBIO EN QA" (2026-07-22)
+
+> Causa raíz real, encontrada al investigar por qué "Cobrar" en un pedido APARTADO seguía
+> mostrando el diálogo viejo en `qa.shop.novedades-jade.com.mx` aunque se verificó con evidencia
+> que: (a) el código estaba bien y committeado en `dev`/`qa`, (b) el pipeline CI/CD había
+> desplegado con éxito, y (c) el bundle real servido por el dominio (`647.fe48259a21561074.js`,
+> descargado directo con `curl` y grepeado) SÍ contenía el texto nuevo ("registrando un abono",
+> "Ir pagando", "Todavía no hay ningún pago"). Con el código, el deploy y el bundle en el
+> servidor confirmados correctos, lo único que quedaba era el navegador — y ahí apareció el bug
+> real, no en nuestro código.
+
+**Causa raíz:** `default.conf` (nginx dentro del contenedor, copiado por el `Dockerfile` tanto
+para `qa` como para `master`/producción — mismo archivo, un solo `server{}` sin distinción de
+rutas) no mandaba **ningún** header `Cache-Control` — ni en `index.html` ni en los bundles
+hasheados (`main.*.js`, `647.*.js`, etc.). Confirmado con `curl -D -` contra el dominio real: cero
+líneas `Cache-Control` en la respuesta.
+
+Sin ese header, el navegador aplica **cacheo heurístico** (RFC 7234) basado en `Last-Modified` —
+Chrome/Firefox pueden decidir que `index.html` sigue "fresco" por horas **sin hacer ninguna
+petición de red**, ni siquiera una condicional. Un F5 normal puede servir 100% desde el disco
+local sin tocar el servidor — solo un hard-refresh (Ctrl+Shift+R) o "Disable cache" en DevTools
+fuerza la revalidación. Esto explica, retroactivamente, **todas** las veces en el historial de
+este proyecto que se reportó "ya subiste el cambio pero en QA no se ve" y la causa terminaba
+siendo "hard refresh" — no era casualidad ni un capricho del navegador del usuario, era que el
+servidor nunca le decía al navegador que dejara de confiar en su copia vieja.
+
+**Fix — separar la política de caché por tipo de archivo:**
+```nginx
+location ~* \.(?:js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$ {
+  try_files $uri =404;
+  add_header Cache-Control "public, max-age=31536000, immutable";
+}
+
+location / {
+  try_files $uri /index.html;
+  add_header Cache-Control "no-cache, no-store, must-revalidate";
+  add_header Pragma "no-cache";
+}
+```
+- **Assets hasheados** (`main.<hash>.js`, `647.<hash>.js`, `styles.<hash>.css`, etc.) → caché
+  agresivo de 1 año + `immutable`. Es seguro: Angular cambia el hash del nombre de archivo cada
+  vez que el contenido cambia, así que un archivo con un nombre dado NUNCA cambia de contenido —
+  cachearlo para siempre no tiene downside y acelera cargas repetidas.
+- **`index.html`** (y cualquier ruta que caiga al fallback SPA, ej. `/pedidos/mis-pedidos`) →
+  `no-cache, no-store, must-revalidate`. Es el único archivo que DEBE revisarse en cada carga,
+  porque es el que apunta a los nombres de archivo hasheados — si se cachea, el navegador puede
+  quedarse pidiendo bundles viejos indefinidamente aunque esos bundles viejos ya ni siquiera
+  sigan en el servidor.
+
+**Aplica a QA y a producción por igual** — un solo `default.conf`, un solo `Dockerfile` para
+ambos workflows (`producto-actions-qa.yml` y `proyecto-front-actions.yml`).
+
+**Regla a futuro:** si se vuelve a reportar "ya subí el cambio pero no se ve", el primer paso ya
+NO es asumir hard-refresh del usuario — con este fix, index.html ya fuerza revalidación en cada
+carga. Si el síntoma reaparece, sospechar primero de: CDN/proxy externo que sí cachee (Cloudflare
+u otro, si se agrega en el futuro) antes que del navegador.
+
+**Archivos modificados:**
+- `default.conf` → 2 bloques `location` con `Cache-Control` diferenciado
+
+**Verificación pendiente:** este cambio no pasa por `ng build` (es config de nginx, no de
+Angular) — se valida en el próximo deploy revisando con `curl -D -` que las respuestas ya
+incluyan `Cache-Control`. No requiere nada del backend.
+
+**⚠️ PENDIENTE DE CONFIRMAR — desplegado pero el usuario sigue sin ver el cambio en su navegador
+(2026-07-22, mismo día).** Confirmado con `curl -D -` en vivo que el servidor YA manda los
+headers nuevos (`index.html` → `no-cache, no-store, must-revalidate`; `main.<hash>.js` →
+`public, max-age=31536000, immutable`) — el deploy en sí está bien. Pero el usuario probó pedido
+#89 después de esto y "sigue igual" (el diálogo viejo de cobro, sin el Swal de redirección a
+`/abonos`).
+
+**Explicación más probable:** el fix de `Cache-Control` evita que el problema se repita **hacia
+adelante**, pero NO invalida retroactivamente lo que el navegador ya tenía guardado en caché
+**antes** de que el header existiera — esa copia vieja de `index.html` fue guardada sin ninguna
+instrucción de `Cache-Control` (el estado de antes del fix), así que el navegador la sigue
+tratando como "fresca" por su propia cuenta (heurística) durante un rato más, sin saber que el
+servidor ya cambió de política. Un solo hard-refresh (Ctrl+Shift+R) o probar en incógnito debería
+saltarse esa copia vieja una vez — de ahí en adelante, con el header ya puesto, no debería volver
+a pasar.
+
+**No confirmado todavía si el usuario ya probó con hard-refresh/incógnito DESPUÉS de este deploy
+específico** (sí lo había probado antes, contra el deploy anterior sin el fix de nginx). El
+usuario decidió dejarlo reposar un tiempo antes de volver a probar, en vez de seguir
+diagnosticando en el momento — retomar cuando lo pida.
+
+**Si al reintentar con hard-refresh sigue sin verse:** ahí sí buscar otra causa (CDN externo,
+Service Worker instalado en su navegador que Angular no debería tener pero conviene descartar
+con `chrome://serviceworker-internals` o Application → Service Workers en DevTools, o que esté
+probando contra una URL/pestaña distinta a la que cree).
+
+**Más síntomas reportados el mismo día, misma sospecha (2026-07-22):** el usuario también
+reporta que en el **detalle** del pedido sigue apareciendo "Apartado" dos veces, y que al pasar
+el mouse sobre los íconos de imprimir ticket / enviar correo no aparece el tooltip de aviso
+("Primero hay que cobrar/recoger el pedido..."). Revisado el código de nuevo
+(`detalle-pedido.component.ts` líneas 52-79) — **la lógica ya está bien**: `estadoPedidoLabel`
+devuelve "Por cobrar"/"Pagado" en vez del `estadoPedido` crudo cuando `esCredito`, y los botones
+de imprimir/reenviar en `detalle-pedido.component.html` (líneas 25-34) ya tienen `[title]`
+condicional con ese texto. No hay nada que arreglar en el código — es el mismo síntoma que
+"Cobrar" no redirige: consistente con que sigue viendo la copia vieja cacheada por el navegador
+de antes del fix de nginx. No se toca código de nuevo hasta que el usuario confirme si persiste
+después de un hard-refresh real.
+
+---
+
+## FIX — ENCONTRADO EL "2 VECES APARTADO" (badge de tipo + badge de estado repetidos) (2026-07-22)
+
+> Resuelve la sección de arriba "🔎 Investigado y no reproducido" — el usuario mandó el texto
+> exacto que veía en `detalle-pedido`: `📦 Apartado` seguido, en la misma cabecera, de `APARTADO`
+> en mayúsculas. Ahí estaba: no era un pedido duplicado, era el badge de tipo Y el badge de
+> **estado** mostrando prácticamente lo mismo.
+
+**Causa:** para pedidos a crédito, el back guarda `estado_pedido`/`estadoPedido` = `'APARTADO'` o
+`'FIADO'` (el mismo valor que `tipoPedido`) hasta que se liquidan — recién ahí cambia a
+`'PAGADO'`. El badge de **estado** (`detalle-header__estado` en detalle, `estado-badge` en la
+card de `mis-pedidos`) simplemente interpolaba ese valor crudo — para un Apartado sin pagar,
+mostraba literal "APARTADO" justo debajo/al lado del badge de **tipo** que ya dice "📦 Apartado".
+Mismo bug en las dos pantallas.
+
+**Fix:** para crédito, el badge de estado ya NO muestra el valor crudo — muestra el estado de
+pago real: **"Por cobrar"** (aún no hay nada pagado) o **"Pagado"** (`estadoPedido === 'PAGADO'`).
+NORMAL/Cancelado no cambian, siguen mostrando `estado_pedido` tal cual.
+
+- `detalle-pedido.component.ts` → nuevo getter `estadoPedidoLabel`
+- `mis-pedidos.component.ts` → nuevo método `estadoBadge(item)` (devuelve ícono + texto juntos,
+  reemplaza el `[ngClass]` inline que tenía el HTML)
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `estadoPedidoLabel`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → usa `estadoPedidoLabel`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `estadoBadge()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → usa `estadoBadge(item)`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.
+
+---
+
+## FIX — MOTIVO DE CANCELACIÓN: BOTONES EN VEZ DE RADIO/TEXTO LIBRE (2026-07-22)
+
+> El usuario reportó que el motivo de cancelación en `/abonos` era un `<input>` de texto libre
+> (opcional), mientras que en `mis-pedidos` era un `input:'radio'` nativo de SweetAlert2 (se ve
+> como checklist feo) — pidió unificar ambas pantallas con la misma lista de motivos, pero sin
+> que sea un radio/checkbox ni un `<select>` nativo — "algo más elegante".
+
+**Fix:** nuevo util compartido `src/app/shared/motivo-cancelacion.util.ts` —
+`motivoCancelacionSwalFragment()` genera un grupo de botones tipo "pill" (mismo lenguaje visual
+que ya usa el proyecto para método de pago EFECTIVO/TRANSFERENCIA) para inyectar dentro de un
+`Swal.fire({ html, didOpen, preConfirm })`. Usa variables CSS globales (`--app-accent`,
+`--card-bg`, `--card-border`, `--app-accent-soft`) en vez de colores fijos — sí cascadean hasta
+el DOM que SweetAlert2 inyecta en `document.body` (a diferencia de los estilos scoped de un
+componente Angular), así que respeta dark/light automáticamente sin código extra.
+
+**3 motivos, iguales en ambas pantallas:** "No se presentó" / "El cliente avisó" / "Error al
+capturar (fue el admin, no el cliente)" — mismos valores literales `NO_SE_PRESENTO` /
+`CLIENTE_AVISO` / `ERROR_ADMIN` que ya usaba `mis-pedidos`.
+
+- `mis-pedidos.component.ts` → `cancelarPedido()` reemplaza `input:'radio'` + `inputOptions` por
+  `motivoCancelacionSwalFragment()`. Mismo endpoint de siempre (`DELETE /v1/pedidos/delete/{id}
+  ?motivo=...`), mismo comportamiento — solo cambió la UI.
+- `abonos.component.ts` → `cancelarPedido()` reemplaza el `<input maxlength="30">` de texto libre
+  por el mismo grupo de botones. **Cambio de comportamiento:** antes el motivo era opcional
+  (podía dejarse vacío), ahora es una selección obligatoria de las 3 opciones — se perdió la
+  posibilidad de escribir un motivo custom. Si se necesita, se puede agregar una 4ª opción "Otro"
+  con texto libre condicional, pero no se hizo sin que el usuario lo pida.
+
+**⚠️ Pendiente de confirmar con el back:** la nota de la Lección global sobre `motivo` (texto
+libre, solo `TIMEOUT`/`NO_SE_PRESENTO` penalizan el score de rifa) se confirmó específicamente
+para `DELETE /v1/pedidos/delete/{id}` (usado por `mis-pedidos`). El endpoint que usa `abonos`
+(`PUT /v1/abonos/{pedidoId}/cancelar`) es **distinto** — no está confirmado si tiene la misma
+semántica de scoring para `motivo`, o si siquiera usa ese campo para algo más que guardarlo como
+texto. Anotado como pregunta en el repo compartido para que el back confirme.
+
+**Archivos modificados:**
+- `src/app/shared/motivo-cancelacion.util.ts` (nuevo)
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cancelarPedido()`
+- `src/app/abonos/abonos.component.ts` → `cancelarPedido()`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — pendiente además del hard-refresh por el bug de caché de nginx.
+
+---
+
+## FIX — "COBRAR" EN CRÉDITO SEGUÍA ABRIENDO EL DIÁLOGO NORMAL Y ERROREABA (2026-07-22)
+
+> Confirmado en vivo en QA (con hard-refresh, así que no era el bug de caché de nginx): al dar
+> "Cobrar" en un pedido APARTADO/FIADO desde `/pedidos`, seguía abriendo el diálogo normal de
+> forma de pago — al confirmar, el back lo rechazaba (`PUT /v1/pedidos/confirmar/{id}` no acepta
+> crédito) y el Swal de "Ir a Créditos / Abonos" nunca aparecía. Verifiqué antes que el bundle
+> desplegado en QA sí traía el código de la sección anterior ("Cobrar" crédito redirige a
+> abonos) — el código estaba bien, el problema era de **datos**, no de deploy.
+
+**Causa raíz:** `cobrarAdmin()` decide el redirect según `item.pedido.tipoPedido`, que viene de
+la **lista** (`GET /v1/pedidos/buscarClientePedido`). Revisando `CAMBIOS_FRONT.md`, el spec
+original del módulo de crédito (2026-06-27) solo confirma `tipoPedido` en la respuesta de
+`POST /savePedido`, `POST /ventas/save` y los reportes de `/abonos/reporte/*` — **nunca** en
+`buscarClientePedido`/`findPedido` (la lista que arma `mis-pedidos`). Lo más probable es que ese
+endpoint nunca lo haya mandado, así que `item.pedido.tipoPedido` llega `undefined` para pedidos
+de crédito y la condición `=== 'APARTADO' || === 'FIADO'` nunca se cumple.
+
+**Fix — dos capas, sin esperar confirmación del back:**
+
+1. **Chequeo real contra el detalle, no la lista.** `cobrarAdmin()` ya no confía ciegamente en
+   `item.pedido.tipoPedido` — solo lo usa como atajo optimista (si YA viene con el valor
+   correcto, evita una llamada extra). Si no, pide `GET /v1/pedidos/{id}/detalle` primero
+   (mismo endpoint que ya usan de forma confiable `imprimirTicketPedido()`/
+   `enviarCorreoPedido()` para lo mismo) y decide con `PedidoDetalleResponse.tipoPedido`, que sí
+   está confirmado en el spec. Solo si ese detalle falla (error de red) cae al diálogo normal
+   como antes — para no bloquear el cobro de un pedido NORMAL por un problema de conectividad.
+   Se extrajeron `irACobrarCredito()` y `abrirDialogoCobroNormal()` como métodos separados,
+   reutilizados por las dos rutas (atajo optimista y confirmación por detalle).
+
+2. **Red de seguridad en `confirmarCobro()`.** Si aun así el back rechaza el cobro (`error`
+   callback de `updateService()`), y el mensaje de error contiene "abono"/"apartado"/"fiado"
+   (case-insensitive), en vez del error genérico se ofrece el mismo Swal de "Ir a Créditos /
+   Abonos" — cubre cualquier caso donde ni el atajo ni el detalle lo hayan detectado a tiempo.
+   El error genérico ahora también muestra el mensaje real del back (antes era texto fijo sin
+   `err?.error?.mensaje`).
+
+**Pendiente de verificar con el back:** confirmar si `GET /v1/pedidos/buscarClientePedido` (y
+`findPedido`) realmente no manda `tipoPedido`, o si el campo llega con otro nombre/formato — el
+fix de arriba hace que el front funcione correctamente de cualquier forma, pero si el back lo
+agrega ahí también se ahorra la llamada extra a `/detalle` en el caso más común.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()` reescrito,
+  `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()` con fallback
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

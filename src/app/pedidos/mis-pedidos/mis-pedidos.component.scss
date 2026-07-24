@@ -116,6 +116,87 @@ $cancelado-to:   #dc2626;
   }
 }
 
+// ── Filtro por lugar de entrega (autocomplete) ─────────────────────────────
+.lugar-filtro-wrap {
+  position: relative;
+  max-width: 420px;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 575px) { max-width: 100%; }
+}
+
+.lugar-filtro-input-wrap {
+  position: relative;
+}
+
+.lugar-filtro-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.lugar-filtro-input {
+  width: 100%;
+  padding: 0.55rem 2.2rem 0.55rem 2.4rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  background: #fff;
+  transition: $transition;
+  outline: none;
+
+  &:focus {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 4px rgba(0,122,255,0.12);
+  }
+}
+
+.lugar-filtro-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover { color: #dc2626; }
+}
+
+.lugar-filtro-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  max-height: 220px;
+  overflow-y: auto;
+
+  &__item {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    color: #1f2937;
+    cursor: pointer;
+    &:hover { background: var(--app-accent-soft); }
+  }
+
+  &__empty {
+    padding: 0.55rem 1rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+}
+
 // ── Scroll container ────────────────────────────────────────────────────────
 .scroll-container {
   height: 80vh;

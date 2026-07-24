@@ -20,6 +20,8 @@ import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
+import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -88,6 +90,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   nombreReceptor    = '';
   direccionEntrega  = '';
   fechaEntrega      = '';
+  lugarEntregaId: number | null = null;
+  urlFacebook       = '';
+  lugares: ILugarEntrega[] = [];
   readonly metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
   metodoPagoCredito: MetodoPago = 'EFECTIVO';
   montoInicial      = 0;
@@ -155,6 +160,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly abonoService:    AbonoService,
     private readonly negocioService:  NegocioService,
     private readonly pedidosService:  PedidosService,
+    private readonly lugarEntregaService: LugarEntregaService,
     private fb: FormBuilder
   ) {
 
@@ -324,6 +330,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     // Cargar formas de pago al iniciar
     this.cargarPagos();
 
+    // Catálogo de lugares de entrega, para el select de la sección de datos de entrega
+    this.lugarEntregaService.getAll().subscribe({
+      next: data => { this.lugares = data; },
+      error: () => {}
+    });
+
     // Búsqueda de variantes con debounce
     this.varianteSub = this.varSub$.pipe(
       filter(t => t.trim().length >= 3),
@@ -488,6 +500,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.nombreReceptor = '';
     this.direccionEntrega = '';
     this.fechaEntrega = '';
+    this.lugarEntregaId = null;
+    this.urlFacebook = '';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial = 0;
     this.montoDadoContado = 0;
@@ -762,7 +776,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       observaciones:     this.observaciones || undefined,
       nombreReceptor:    this.nombreReceptor || undefined,
       direccionEntrega:  this.direccionEntrega || undefined,
-      fechaEntrega:      this.fechaEntrega || undefined
+      fechaEntrega:      this.fechaEntrega || undefined,
+      lugarEntregaId:    this.lugarEntregaId ?? undefined,
+      urlFacebook:       this.urlFacebook || undefined
     };
 
     // Promos son solo de contado — bloquear crédito aunque el admin lo haya seleccionado

@@ -128,6 +128,14 @@
                   placeholder="Dirección de entrega"></textarea>
         <input type="date" class="vd-entrega__input" style="margin-top:6px"
                [(ngModel)]="fechaEntrega">
+        <select class="vd-entrega__input" style="margin-top:6px"
+                [(ngModel)]="lugarEntregaId">
+          <option [ngValue]="null">Lugar de entrega — sin especificar</option>
+          <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
+        </select>
+        <input type="text" class="vd-entrega__input" style="margin-top:6px"
+               [(ngModel)]="urlFacebook"
+               placeholder="Link de Facebook (opcional)">
         <div class="vd-observaciones" style="margin-top:6px">
           <textarea class="vd-observaciones__input"
                     [(ngModel)]="observaciones"

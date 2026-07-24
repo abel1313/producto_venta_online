@@ -14,6 +14,8 @@ import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/t
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
+import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -55,13 +57,21 @@ export class MisPedidosComponent implements OnInit {
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
 
+  // ── Filtro por lugar de entrega (autocomplete, solo admin) ──────────────
+  lugares: ILugarEntrega[] = [];
+  terminoLugar = '';
+  lugaresFiltrados: ILugarEntrega[] = [];
+  mostrarDropdownLugar = false;
+  lugarFiltroId: number | null = null;
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
     private readonly authService: AuthService,
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly lugarEntregaService: LugarEntregaService
   ) {}
 
   ngOnInit(): void {
@@ -73,6 +83,13 @@ export class MisPedidosComponent implements OnInit {
 
     this.negocioService.getContactosPublicos().subscribe({
       next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      error: () => {}
+    });
+
+    // Catálogo de lugares — lo necesita cualquier usuario (admin filtra la lista, cualquiera
+    // puede elegir lugar en el modal de "Entrega" de su propio pedido).
+    this.lugarEntregaService.getAll().subscribe({
+      next: data => { this.lugares = data; },
       error: () => {}
     });
 
@@ -152,6 +169,12 @@ export class MisPedidosComponent implements OnInit {
     const direccionEntrega = actual?.direccionEntrega ?? '';
     const fechaEntrega     = actual?.fechaRecogida ?? '';
     const observaciones    = actual?.observaciones ?? '';
+    const lugarEntregaId   = actual?.lugarEntregaId ?? null;
+    const urlFacebook      = actual?.urlFacebook ?? '';
+
+    const opcionesLugar = this.lugares.map(l =>
+      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
+    ).join('');
 
     Swal.fire({
       title: `📍 Info de entrega — Pedido #${pedidoId}`,
@@ -163,6 +186,13 @@ export class MisPedidosComponent implements OnInit {
           <textarea id="sw-direccion" class="swal2-textarea" style="margin:0 0 6px" placeholder="Opcional">${direccionEntrega}</textarea>
           <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Fecha de entrega</label>
           <input id="sw-fecha" type="date" class="swal2-input" style="margin:0 0 6px" value="${fechaEntrega}">
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Lugar de entrega</label>
+          <select id="sw-lugar" class="swal2-select" style="margin:0 0 6px">
+            <option value="">Sin especificar</option>
+            ${opcionesLugar}
+          </select>
+          <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Link de Facebook</label>
+          <input id="sw-facebook" class="swal2-input" style="margin:0 0 6px" placeholder="Opcional" value="${urlFacebook}">
           <label style="font-size:.82rem;color:var(--app-text-muted,#6b7280)">Observaciones</label>
           <textarea id="sw-obs" class="swal2-textarea" style="margin:0" placeholder="Opcional">${observaciones}</textarea>
         </div>`,
@@ -173,6 +203,8 @@ export class MisPedidosComponent implements OnInit {
         nombreReceptor:   (document.getElementById('sw-receptor') as HTMLInputElement)?.value?.trim() || undefined,
         direccionEntrega: (document.getElementById('sw-direccion') as HTMLTextAreaElement)?.value?.trim() || undefined,
         fechaEntrega:     (document.getElementById('sw-fecha') as HTMLInputElement)?.value || undefined,
+        lugarEntregaId:   Number((document.getElementById('sw-lugar') as HTMLSelectElement)?.value) || undefined,
+        urlFacebook:      (document.getElementById('sw-facebook') as HTMLInputElement)?.value?.trim() || undefined,
         observaciones:    (document.getElementById('sw-obs') as HTMLTextAreaElement)?.value?.trim() || undefined
       })
     }).then(result => {
@@ -456,13 +488,45 @@ export class MisPedidosComponent implements OnInit {
   buscarPedidoAdmin() {
     this.size = 10;
     this.page = 0;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page)
+    // Cada búsqueda/filtro nuevo reemplaza la lista — antes se acumulaba con push() sin
+    // limpiar primero, así que tecla a tecla se iban duplicando los resultados viejos.
+    this.pedidoGenerico = [];
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId)
       .subscribe(sus => {
         this.resposeGenericPedido = sus;
         this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
         this.page++;
         this.cargando = false;
       }, err => console.error(err));
+  }
+
+  // ── Filtro por lugar de entrega (autocomplete simple, catálogo pequeño → filtrado local) ──
+  onBuscarLugar(): void {
+    const t = this.terminoLugar.trim().toLowerCase();
+    this.lugaresFiltrados = t
+      ? this.lugares.filter(l => l.nombre.toLowerCase().includes(t))
+      : this.lugares;
+    this.mostrarDropdownLugar = true;
+  }
+
+  seleccionarLugar(l: ILugarEntrega): void {
+    this.lugarFiltroId = l.id;
+    this.terminoLugar = l.nombre;
+    this.mostrarDropdownLugar = false;
+    this.buscarPedidoAdmin();
+  }
+
+  limpiarFiltroLugar(): void {
+    this.lugarFiltroId = null;
+    this.terminoLugar = '';
+    this.mostrarDropdownLugar = false;
+    this.buscarPedidoAdmin();
+  }
+
+  // El (mousedown) de seleccionarLugar() necesita disparar ANTES que este (blur) — un delay
+  // corto es el patrón estándar para que el clic en el dropdown no se pierda.
+  cerrarDropdownLugarConDelay(): void {
+    setTimeout(() => { this.mostrarDropdownLugar = false; }, 200);
   }
 
   // Para crédito el back guarda estado_pedido = 'APARTADO'/'FIADO' (el mismo valor que

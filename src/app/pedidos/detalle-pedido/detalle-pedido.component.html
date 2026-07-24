@@ -36,7 +36,7 @@
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
-  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida)">
+  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.lugarEntregaNombre || detalle.urlFacebook)">
     <p class="dp-entrega__title">📍 Datos de entrega</p>
     <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
       <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
@@ -44,8 +44,15 @@
     <p class="dp-entrega__item" *ngIf="detalle.direccionEntrega">
       <strong>Dirección:</strong> {{ detalle.direccionEntrega }}
     </p>
+    <p class="dp-entrega__item" *ngIf="detalle.lugarEntregaNombre">
+      <strong>Lugar:</strong> {{ detalle.lugarEntregaNombre }}
+    </p>
     <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
       <strong>Fecha de entrega:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.urlFacebook">
+      <strong>Facebook:</strong>
+      <a [href]="detalle.urlFacebook" target="_blank" rel="noopener">{{ detalle.urlFacebook }}</a>
     </p>
   </div>
 

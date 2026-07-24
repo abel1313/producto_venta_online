@@ -16,6 +16,26 @@
     </div>
   </div>
 
+  <!-- Filtro por lugar de entrega (autocomplete, solo admin) -->
+  <div class="lugar-filtro-wrap" *ngIf="isAdminUser">
+    <div class="lugar-filtro-input-wrap">
+      <i class="pi pi-map-marker lugar-filtro-icon"></i>
+      <input type="text" class="lugar-filtro-input" placeholder="Filtrar por lugar de entrega…"
+             [(ngModel)]="terminoLugar"
+             (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
+             (blur)="cerrarDropdownLugarConDelay()">
+      <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
+    </div>
+    <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
+      <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
+        {{ l.nombre }}
+      </div>
+      <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
+        Sin coincidencias
+      </div>
+    </div>
+  </div>
+
   <!-- Grid de pedidos -->
   <div class="scroll-container" (scroll)="onScroll($event)">
     <div class="pedidos-grid">
@@ -56,6 +76,14 @@
             <div class="info-content">
               <span class="info-label">Cliente</span>
               <span class="info-value">{{ item.cliente.nombreCliente }}</span>
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="item.pedido.nombreReceptor">
+            <i class="pi pi-map-marker info-icon"></i>
+            <div class="info-content">
+              <span class="info-label">Recibe</span>
+              <span class="info-value">{{ item.pedido.nombreReceptor }}</span>
             </div>
           </div>
 

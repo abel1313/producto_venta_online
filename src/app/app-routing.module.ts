@@ -91,6 +91,12 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    // Gestión del catálogo de lugares de entrega — solo admin
+    path: 'lugares-entrega',
+    loadChildren: () => import('./lugares-entrega/lugares-entrega.module').then(m => m.LugaresEntregaModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
     path: 'promociones',
     loadChildren: () => import('./promociones/promociones.module').then(m => m.PromocionesModule),
     canActivate: [AuthGuard, CarritoGuard]

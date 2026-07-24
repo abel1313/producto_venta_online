@@ -6032,3 +6032,59 @@ warnings nuevos.
 ⚠️ **No se agregó redirect de `/variantes/*` → `/tienda/*`** para links/bookmarks viejos — no se
 pidió y este es un sistema interno sin URLs indexadas públicamente. Si hace falta después, es un
 único `{ path: 'variantes', redirectTo: 'tienda', pathMatch: 'prefix' }` — trivial de agregar.
+
+---
+
+## ⚠️ RENOMBRAR ENDPOINT DEL BACKEND `/variantes` → `/tienda` — SOLO EN `dev`, NO EN `qa` (2026-07-24)
+
+> Continuación directa de la sección anterior. El usuario aclaró que no solo quería la URL del
+> navegador — también quiere que el endpoint REAL del backend cambie de `/variantes/...` a
+> `/tienda/...`. A diferencia del rename de arriba, **esto sí requiere que el back haga el mismo
+> cambio de su lado** — sin eso, este cambio del front rompería TODO lo relacionado a variantes
+> (buscar, guardar, imágenes, independizar, etc.) en cualquier ambiente donde se despliegue.
+
+**Por eso, instrucción explícita del usuario: este cambio se sube a `dev` pero NO se hace merge
+a `qa` todavía** — se queda esperando a que el back confirme que ya renombró y desplegó su lado
+antes de promoverlo. Mientras tanto, `qa` sigue apuntando a `variante.service.ts` con `/variantes`
+(el commit anterior), y funciona con normalidad.
+
+### Alcance real — solo 3 archivos en todo el front
+
+A diferencia de lo que parecía al principio, **no** es un refactor grande: casi todos los
+endpoints de variantes cuelgan de una sola constante base en `variante.service.ts` (25
+métodos la usan vía `${this.url}/...`), así que cambiar esa única línea repropaga el rename a
+absolutamente todos ellos. Solo 2 archivos más tenían la URL del backend escrita aparte:
+
+| Archivo | Antes | Ahora |
+|---|---|---|
+| `src/app/variante/service/variante.service.ts:11` | `${environment.api_Url}/variantes` | `${environment.api_Url}/tienda` |
+| `src/app/chatbot/chatbot.service.ts:45` | `${environment.api_Url}/variantes/v1/imagenes` | `${environment.api_Url}/tienda/v1/imagenes` |
+| `src/app/rifas/service/rifa.service.ts:34` | `${this.url}/variantes/v1/buscar?...` | `${this.url}/tienda/v1/buscar?...` |
+
+Ejemplo concreto de lo que cambia en cualquiera de los ~25 métodos de `VarianteService` (todos
+siguen el mismo patrón, solo cambia la constante base):
+```typescript
+// Antes: GET /variantes/1  (buscaba/traía la variante con id 1)
+// Ahora: GET /tienda/1     (misma función, mismo id, prefijo nuevo)
+getOne(id: number): Observable<...> {
+  return this.http.get(`${this.url}/${id}`); // this.url ya trae el prefijo nuevo
+}
+```
+
+**También actualizado (cosmético, sin llamada HTTP real):**
+`admin/diagnostico-imagenes/diagnostico-imagenes.component.html` — el texto de referencia que
+muestra en pantalla `/variantes/admin/diagnostico-imagenes/{varianteId}` ahora dice
+`/tienda/admin/diagnostico-imagenes/{varianteId}` para que coincida con la llamada real.
+
+**Confirmado que NO hay que tocar (son otro dominio, solo comparten la palabra "variantes"):**
+`producto.service.ts` → `/admin/sin-variantes/reporte` y `/compartir-imagenes-variantes` — son
+sub-rutas del controlador de **productos** (Modelo), no del prefijo `/variantes` que se está
+renombrando. Cambiarlas no tendría sentido semántico ("sin-variantes" = "sin combinaciones",
+no es parte del prefijo de la API de variantes).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos** — el
+build no valida que el backend responda, así que compila igual sin importar si el back ya hizo
+su parte o no.
+
+**Pregunta precisa mandada al back** (repo compartido) con el mapeo completo de qué prefijo
+esperar y ejemplos antes/después — ver `CAMBIOS_FRONT.md`.

@@ -29,9 +29,10 @@ export class RifaService {
   constructor(private readonly http: HttpClient) {}
 
   // ── 1. Buscar variante ─────────────────────────────────────────────
+  // ⚠️ Ver nota de renombrado /variantes → /tienda en variante.service.ts — mismo criterio.
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
-      `${this.url}/variantes/v1/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+      `${this.url}/tienda/v1/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 

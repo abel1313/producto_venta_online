@@ -8,7 +8,12 @@ import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
-  private readonly url = `${environment.api_Url}/variantes`;
+  // ⚠️ Endpoint del backend renombrado 2026-07-24: antes /variantes, ahora /tienda —
+  // SOLO tiene efecto cuando el back haga el mismo cambio de su lado (ver CLAUDE.md y
+  // CAMBIOS_FRONT.md). Este archivo se sube a `dev` pero NO se promueve a `qa`/prod hasta
+  // que el back confirme que ya está desplegado — de lo contrario cada llamada de este
+  // servicio (25 métodos) daría 404 en cualquier ambiente donde el back siga en /variantes.
+  private readonly url = `${environment.api_Url}/tienda`;
 
   // Para pasar la variante al componente de edición
   private _varianteUpdate = new BehaviorSubject<IVariante | null>(null);

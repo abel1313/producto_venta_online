@@ -47,25 +47,71 @@ $t:  all 0.2s ease;
   &--edit   { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
   &--del    { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer;
                &:hover { filter: brightness(0.8); } }
+  &--page   { background: #f3f4f6; color: #374151; padding: 7px 14px; font-size: .8rem;
+               &:hover:not(:disabled) { background: #e5e7eb; }
+               &:disabled { opacity: .4; cursor: not-allowed; } }
 }
 
-.pk-empty { color: #9ca3af; font-size: .84rem; text-align: center; padding: 24px 0; }
+.pk-empty {
+  color: #9ca3af; font-size: .84rem; text-align: center; padding: 24px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
 
-.pk-list {
+.pk-table-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
-.pk-item {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #fff; border: 1.5px solid #e5e7eb;
-  border-radius: 10px; padding: 10px 14px;
-  transition: $t;
+.pk-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
 
-  &:hover       { border-color: #C7DDFF; }
-  &--editando   { border-color: var(--app-accent); background: var(--app-accent-soft); }
+  thead th {
+    text-align: left;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #9ca3af;
+    background: #f9fafb;
+    padding: 10px 14px;
+    border-bottom: 1.5px solid #e5e7eb;
+  }
 
-  &__nombre  { font-size: .9rem; color: #1f2937; font-weight: 600; }
-  &__actions { display: flex; gap: 4px; }
+  tbody tr {
+    transition: $t;
+    &:hover { background: #f9fafb; }
+    &:not(:last-child) td { border-bottom: 1px solid #f0f1f3; }
+  }
+
+  td {
+    padding: 10px 14px;
+    font-size: .9rem;
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  .pk-row--editando td { background: var(--app-accent-soft); }
+}
+
+.pk-table__col-actions { width: 1%; }
+
+.pk-table__actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.pk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  &__info { font-size: .82rem; color: #6b7280; font-weight: 600; }
 }

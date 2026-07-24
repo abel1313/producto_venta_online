@@ -4,7 +4,10 @@ import Swal from 'sweetalert2';
 import { ILugarEntrega } from '../models/lugar-entrega.model';
 import { LugarEntregaService } from '../service/lugar-entrega.service';
 
-// Componente CRUD para el catálogo de lugares de entrega — solo accesible para admin
+// Componente CRUD para el catálogo de lugares de entrega — solo accesible para admin.
+// Con paginación real (tabla + controles de página) a diferencia del select que usan las
+// demás pantallas (venta-directa, editar-entrega, filtro de pedidos), que piden todo de un
+// jalón — ver nota en LugarEntregaService.getAll().
 @Component({
   selector: 'app-gestion-lugares',
   templateUrl: './gestion-lugares.component.html',
@@ -21,6 +24,12 @@ export class GestionLugaresComponent implements OnInit {
 
   form!: FormGroup;
 
+  // El CRUD genérico no devuelve total de registros — "hay siguiente página" se infiere:
+  // si la página actual llegó completa (length === size), probablemente hay más.
+  page = 0;
+  readonly size = 10;
+  haySiguiente = false;
+
   constructor(
     private readonly svc: LugarEntregaService,
     private readonly fb:  FormBuilder
@@ -35,10 +44,29 @@ export class GestionLugaresComponent implements OnInit {
 
   cargar(): void {
     this.cargando = true;
-    this.svc.getAll().subscribe({
-      next: data => { this.lugares = data; this.cargando = false; },
-      error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar lugares', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de lugares.', timer: 2000, showConfirmButton: false }); }
+    this.svc.getAll(this.page, this.size).subscribe({
+      next: data => {
+        this.lugares = data;
+        this.haySiguiente = data.length === this.size;
+        this.cargando = false;
+      },
+      error: (err) => {
+        this.cargando = false;
+        Swal.fire({ icon: 'error', title: 'Error al cargar lugares', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de lugares.', timer: 2000, showConfirmButton: false });
+      }
     });
+  }
+
+  paginaAnterior(): void {
+    if (this.page === 0) return;
+    this.page--;
+    this.cargar();
+  }
+
+  siguientePagina(): void {
+    if (!this.haySiguiente) return;
+    this.page++;
+    this.cargar();
   }
 
   iniciarEdicion(l: ILugarEntrega): void {
@@ -61,15 +89,12 @@ export class GestionLugaresComponent implements OnInit {
       : this.svc.save({ nombre });
 
     op$.subscribe({
-      next: guardado => {
+      next: () => {
         this.guardando = false;
-        if (this.editandoId !== null) {
-          const idx = this.lugares.findIndex(l => l.id === this.editandoId);
-          if (idx !== -1) this.lugares[idx] = guardado;
-        } else {
-          this.lugares.push(guardado);
-        }
         this.cancelarEdicion();
+        // Recarga la página actual en vez de parchear el arreglo local — con paginación real,
+        // un alta puede pertenecer a otra página y una edición no cambia el orden mostrado.
+        this.cargar();
         Swal.fire({ icon: 'success', title: 'Guardado', timer: 1200, showConfirmButton: false });
       },
       error: err => {
@@ -94,7 +119,10 @@ export class GestionLugaresComponent implements OnInit {
       if (!r.isConfirmed) return;
       this.svc.delete(l.id).subscribe({
         next: () => {
-          this.lugares = this.lugares.filter(x => x.id !== l.id);
+          // Si se elimina el último ítem de una página que no es la primera, retrocede una
+          // página para no quedar viendo una tabla vacía.
+          if (this.lugares.length === 1 && this.page > 0) this.page--;
+          this.cargar();
           Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1200, showConfirmButton: false });
         },
         error: err => Swal.fire({ icon: 'error', title: 'Error al eliminar', text: (err?.error?.mensaje ?? err?.error?.message) ?? undefined })

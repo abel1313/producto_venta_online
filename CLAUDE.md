@@ -5442,3 +5442,112 @@ texto. Anotado como pregunta en el repo compartido para que el back confirme.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — pendiente además del hard-refresh por el bug de caché de nginx.
+
+---
+
+## FIX — "COBRAR" EN CRÉDITO SEGUÍA ABRIENDO EL DIÁLOGO NORMAL Y ERROREABA (2026-07-22)
+
+> Confirmado en vivo en QA (con hard-refresh, así que no era el bug de caché de nginx): al dar
+> "Cobrar" en un pedido APARTADO/FIADO desde `/pedidos`, seguía abriendo el diálogo normal de
+> forma de pago — al confirmar, el back lo rechazaba (`PUT /v1/pedidos/confirmar/{id}` no acepta
+> crédito) y el Swal de "Ir a Créditos / Abonos" nunca aparecía. Verifiqué antes que el bundle
+> desplegado en QA sí traía el código de la sección anterior ("Cobrar" crédito redirige a
+> abonos) — el código estaba bien, el problema era de **datos**, no de deploy.
+
+**Causa raíz:** `cobrarAdmin()` decide el redirect según `item.pedido.tipoPedido`, que viene de
+la **lista** (`GET /v1/pedidos/buscarClientePedido`). Revisando `CAMBIOS_FRONT.md`, el spec
+original del módulo de crédito (2026-06-27) solo confirma `tipoPedido` en la respuesta de
+`POST /savePedido`, `POST /ventas/save` y los reportes de `/abonos/reporte/*` — **nunca** en
+`buscarClientePedido`/`findPedido` (la lista que arma `mis-pedidos`). Lo más probable es que ese
+endpoint nunca lo haya mandado, así que `item.pedido.tipoPedido` llega `undefined` para pedidos
+de crédito y la condición `=== 'APARTADO' || === 'FIADO'` nunca se cumple.
+
+**Fix — dos capas, sin esperar confirmación del back:**
+
+1. **Chequeo real contra el detalle, no la lista.** `cobrarAdmin()` ya no confía ciegamente en
+   `item.pedido.tipoPedido` — solo lo usa como atajo optimista (si YA viene con el valor
+   correcto, evita una llamada extra). Si no, pide `GET /v1/pedidos/{id}/detalle` primero
+   (mismo endpoint que ya usan de forma confiable `imprimirTicketPedido()`/
+   `enviarCorreoPedido()` para lo mismo) y decide con `PedidoDetalleResponse.tipoPedido`, que sí
+   está confirmado en el spec. Solo si ese detalle falla (error de red) cae al diálogo normal
+   como antes — para no bloquear el cobro de un pedido NORMAL por un problema de conectividad.
+   Se extrajeron `irACobrarCredito()` y `abrirDialogoCobroNormal()` como métodos separados,
+   reutilizados por las dos rutas (atajo optimista y confirmación por detalle).
+
+2. **Red de seguridad en `confirmarCobro()`.** Si aun así el back rechaza el cobro (`error`
+   callback de `updateService()`), y el mensaje de error contiene "abono"/"apartado"/"fiado"
+   (case-insensitive), en vez del error genérico se ofrece el mismo Swal de "Ir a Créditos /
+   Abonos" — cubre cualquier caso donde ni el atajo ni el detalle lo hayan detectado a tiempo.
+   El error genérico ahora también muestra el mensaje real del back (antes era texto fijo sin
+   `err?.error?.mensaje`).
+
+**Pendiente de verificar con el back:** confirmar si `GET /v1/pedidos/buscarClientePedido` (y
+`findPedido`) realmente no manda `tipoPedido`, o si el campo llega con otro nombre/formato — el
+fix de arriba hace que el front funcione correctamente de cualquier forma, pero si el back lo
+agrega ahí también se ahorra la llamada extra a `/detalle` en el caso más común.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cobrarAdmin()` reescrito,
+  `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()` con fallback
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — CANCELAR PEDIDOS YA ENTREGADOS/PAGADOS = DEVOLUCIÓN (2026-07-24)
+
+> Respuesta del back del 2026-07-23 (repo compartido): ambos endpoints de cancelar
+> (`DELETE /v1/pedidos/delete/{id}` y `PUT /v1/abonos/{pedidoId}/cancelar`) ya permiten cancelar
+> un pedido en estado `Entregado`/`PAGADO` — antes lo bloqueaban por completo. Reglas nuevas:
+> solo ADMIN puede hacerlo, el motivo no puede ser `NO_SE_PRESENTO`/`TIMEOUT` (el cliente sí
+> cumplió, solo se devuelve el producto), el stock se regresa igual que una cancelación normal,
+> y la venta asociada se marca `"Devuelta"` (se excluye de reportes de ingresos). Mismas URLs y
+> shape de siempre — solo cambió qué estados aceptan y quién los puede llamar.
+
+**No es solo "un botón" — son 2 pantallas distintas:**
+
+1. **`mis-pedidos` (pedidos NORMAL entregados):** el botón "Cancelar" ya existía, solo estaba
+   `[disabled]` cuando `estado_pedido === 'Entregado'`, sin importar el rol. Ahora:
+   `[disabled]="!isAdminUser && estado_pedido === 'Entregado'"` — un cliente normal lo sigue
+   viendo deshabilitado (con `[title]` explicando por qué), un admin lo puede usar.
+   `cancelarPedido()`: si `estado_pedido === 'Entregado'`, arma el título como
+   "¿Cancelar (devolución)...?" y filtra `NO_SE_PRESENTO` de las opciones de motivo.
+
+2. **`/abonos` → pestaña "✅ Liquidados" (créditos ya PAGADOS):** acá **no existía ningún botón
+   de cancelar** — se agregó de cero (`.ab-card__actions` con "✖ Cancelar" junto a "▼ Abonos").
+   Como toda la ruta `/abonos` ya es admin-only (`AuthGuard + AdminGuardGuard`), no hace falta
+   chequear el rol otra vez ahí. Nuevo método `cancelarPedidoPagado(pedido: PedidoPagado)` —
+   mensaje "Ya se pagó por completo... Se devolverá el stock." (sin la rama "queda como deuda"
+   que sí aplica en `EstadoCuenta`, porque un `PAGADO` no tiene deuda), mismo filtro sin
+   `NO_SE_PRESENTO`.
+
+**Refactor:** `abonos.component.ts` — la lógica común de `cancelarPedido()` (Swal, llamada al
+back, ticket, refresco de listas) se extrajo a un privado `ejecutarCancelacion(opts)` con
+`opcionesMotivo?` y `onListaRefrescar()` parametrizables, para no duplicarla entre
+`cancelarPedido()` (Cuentas por cobrar) y `cancelarPedidoPagado()` (Liquidados).
+
+**Decisión de UX (confirmada con el usuario):** para el motivo de esta "devolución" se reusan
+las 2 opciones que ya existían (`CLIENTE_AVISO`/`ERROR_ADMIN`) — no se agregó una 3ª etiqueta
+tipo "Devolución de producto".
+
+**`motivo-cancelacion.util.ts`:** ya soportaba un parámetro `opciones` desde que se creó — no
+necesitó cambios, solo se le empezó a pasar una lista filtrada en estos 2 casos nuevos.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cancelarPedido()` con filtro de
+  motivo + título condicional
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` del botón
+  Cancelar ahora considera `isAdminUser`
+- `src/app/abonos/abonos.component.ts` → `ejecutarCancelacion()` (nuevo, privado),
+  `cancelarPedido()` refactorizado para usarlo, nuevo `cancelarPedidoPagado()`
+- `src/app/abonos/abonos.component.html` → botón "✖ Cancelar" en tab "Liquidados"
+
+**Pendiente (fuera de este cambio, anotado para después):** revisando esto se encontró que
+`detalle-pedido.component.ts` → `totalGeneral` lee `this.detalle.totalPedido`, un valor que se
+trae UNA vez al cargar la pantalla y nunca se refresca tras `reducirCantidad()` — aunque el back
+ya corrigió que `totalPedido` se recalcule bien server-side al quitar una línea
+(`DELETE /v1/pedidos/{id}/detalle/{productoId}`), el front lo sigue mostrando desactualizado
+hasta recargar. No corregido en este cambio — el usuario no lo pidió todavía.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.

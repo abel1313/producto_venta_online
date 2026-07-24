@@ -13,7 +13,7 @@ import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
-import { motivoCancelacionSwalFragment } from 'src/app/shared/motivo-cancelacion.util';
+import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -101,12 +101,18 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // Ya entregado = devolución (el back ahora sí permite cancelar en este estado, pero solo
+    // admin y sin NO_SE_PRESENTO como motivo — el cliente sí cumplió, solo se devuelve el
+    // producto). El botón que dispara esto ya está protegido con !isAdminUser en el HTML.
+    const esDevolucion = item.pedido.estado_pedido === 'Entregado';
+    const opciones = esDevolucion ? MOTIVOS_CANCELACION.filter(o => o.value !== 'NO_SE_PRESENTO') : undefined;
+
     // Grupo de botones en vez del input:'radio' nativo de SweetAlert2 (se veía como checklist
-    // feo) — mismos 3 motivos, mismo patrón visual de pills que el resto del proyecto.
-    const motivoFrag = motivoCancelacionSwalFragment();
+    // feo) — mismos motivos, mismo patrón visual de pills que el resto del proyecto.
+    const motivoFrag = motivoCancelacionSwalFragment(opciones);
 
     Swal.fire({
-      title: '¿Por qué cancelas este pedido?',
+      title: esDevolucion ? '¿Cancelar (devolución) este pedido ya entregado?' : '¿Por qué cancelas este pedido?',
       html: `<p style="color:var(--app-text-muted,#6b7280);margin:0 0 4px">Pedido #${item.pedido.id}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton: true,
@@ -132,25 +138,48 @@ export class MisPedidosComponent implements OnInit {
   cobrarAdmin(item: IPedidoGenerico) {
     // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
     // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
-    // Se manda directo a Créditos/Abonos con este pedido, que abre solo la card
-    // correspondiente para registrar el abono ahí — es la única pantalla que sí
-    // puede cobrar un crédito.
+    // ⚠️ `item.pedido.tipoPedido` viene de la LISTA (buscarClientePedido) — ese campo
+    // nunca se confirmó en el spec del back para ese endpoint (solo para savePedido,
+    // ventas/save y los reportes de abonos), así que puede llegar undefined aunque el
+    // pedido SÍ sea crédito. Por eso el chequeo real se hace contra el DETALLE
+    // (GET /{id}/detalle), que sí está confirmado — el de la lista solo se usa como
+    // atajo optimista para no pedir el detalle en pedidos NORMAL (el caso más común).
     if (item.pedido.tipoPedido === 'APARTADO' || item.pedido.tipoPedido === 'FIADO') {
-      Swal.fire({
-        icon: 'info',
-        title: item.pedido.tipoPedido === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
-        text: 'Este pedido se cobra registrando un abono, no desde este botón.',
-        showCancelButton: true,
-        confirmButtonText: 'Ir a Créditos / Abonos',
-        cancelButtonText: 'Cerrar'
-      }).then(res => {
-        if (res.isConfirmed) {
-          this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
-        }
-      });
+      this.irACobrarCredito(item, item.pedido.tipoPedido);
       return;
     }
 
+    this.pedidoService.getDetallePedido(item.pedido.id).subscribe({
+      next: r => {
+        const tp = r?.data?.tipoPedido;
+        if (tp === 'APARTADO' || tp === 'FIADO') {
+          this.irACobrarCredito(item, tp);
+        } else {
+          this.abrirDialogoCobroNormal(item);
+        }
+      },
+      // Si falla el detalle, no bloquear el cobro normal — se sigue con el flujo de
+      // siempre; si en realidad era crédito, el back lo rechazará y el usuario lo verá.
+      error: () => this.abrirDialogoCobroNormal(item)
+    });
+  }
+
+  private irACobrarCredito(item: IPedidoGenerico, tipo: 'APARTADO' | 'FIADO'): void {
+    Swal.fire({
+      icon: 'info',
+      title: tipo === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
+      text: 'Este pedido se cobra registrando un abono, no desde este botón.',
+      showCancelButton: true,
+      confirmButtonText: 'Ir a Créditos / Abonos',
+      cancelButtonText: 'Cerrar'
+    }).then(res => {
+      if (res.isConfirmed) {
+        this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
+      }
+    });
+  }
+
+  private abrirDialogoCobroNormal(item: IPedidoGenerico): void {
     this.pedidoACobrar = item;
     this.resetDialogo();
 
@@ -188,9 +217,18 @@ export class MisPedidosComponent implements OnInit {
         this.mostrarDialogoCobro = false;
         Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
       },
-      () => {
+      (err) => {
         this.mostrarDialogoCobro = false;
-        Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', icon: 'error', draggable: true });
+        // Red de seguridad: si el back rechaza porque el pedido en realidad es
+        // crédito (APARTADO/FIADO), ofrecer el mismo redirect a Abonos en vez del
+        // error genérico — cubre el caso donde ni el campo de la lista ni el
+        // detalle lo detectaron a tiempo.
+        const msg: string = (err?.error?.mensaje ?? err?.error?.message ?? '').toLowerCase();
+        if (msg.includes('abono') || msg.includes('apartado') || msg.includes('fiado')) {
+          this.irACobrarCredito(item, item.pedido.tipoPedido === 'APARTADO' ? 'APARTADO' : 'FIADO');
+          return;
+        }
+        Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', text: err?.error?.mensaje ?? err?.error?.message ?? '', icon: 'error', draggable: true });
       }
     );
   }

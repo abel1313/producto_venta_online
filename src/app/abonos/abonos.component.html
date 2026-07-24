@@ -128,9 +128,12 @@
             <span class="ab-card__cliente">{{ p.cliente }}</span>
             <span class="ab-card__tel" *ngIf="p.telefono">📞 {{ p.telefono }}</span>
           </div>
-          <button class="ab-btn ab-btn--detalle" (click)="toggleDetallePagado(p.pedidoId)">
-            {{ expandidoPagadoId === p.pedidoId ? '▲ Ocultar' : '▼ Abonos' }}
-          </button>
+          <div class="ab-card__actions">
+            <button class="ab-btn ab-btn--cancelar" (click)="cancelarPedidoPagado(p)">✖ Cancelar</button>
+            <button class="ab-btn ab-btn--detalle" (click)="toggleDetallePagado(p.pedidoId)">
+              {{ expandidoPagadoId === p.pedidoId ? '▲ Ocultar' : '▼ Abonos' }}
+            </button>
+          </div>
         </div>
 
         <div class="ab-card__montos">

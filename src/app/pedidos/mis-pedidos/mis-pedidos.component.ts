@@ -65,17 +65,20 @@ export class MisPedidosComponent implements OnInit {
   lugarFiltroId: number | null = null;
 
   // ── Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) ─────────
+  filtroNormal    = false;
   filtroApartado  = false;
   filtroIrPagando = false;
 
-  toggleFiltroTipo(tipo: 'APARTADO' | 'FIADO'): void {
-    if (tipo === 'APARTADO') this.filtroApartado = !this.filtroApartado;
+  toggleFiltroTipo(tipo: 'NORMAL' | 'APARTADO' | 'FIADO'): void {
+    if (tipo === 'NORMAL') this.filtroNormal = !this.filtroNormal;
+    else if (tipo === 'APARTADO') this.filtroApartado = !this.filtroApartado;
     else this.filtroIrPagando = !this.filtroIrPagando;
     this.buscarPedidoAdmin();
   }
 
   private get tiposPedidoFiltro(): string[] {
     const tipos: string[] = [];
+    if (this.filtroNormal)    tipos.push('NORMAL');
     if (this.filtroApartado)  tipos.push('APARTADO');
     if (this.filtroIrPagando) tipos.push('FIADO');
     return tipos;
@@ -87,6 +90,7 @@ export class MisPedidosComponent implements OnInit {
     const partes: string[] = [];
     if (this.buscarProd) partes.push(`texto "${this.buscarProd}"`);
     if (this.lugarFiltroId && this.terminoLugar) partes.push(`lugar "${this.terminoLugar}"`);
+    if (this.filtroNormal)    partes.push('Normal');
     if (this.filtroApartado)  partes.push('Apartados');
     if (this.filtroIrPagando) partes.push('Ir pagando');
     return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;

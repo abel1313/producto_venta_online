@@ -5950,3 +5950,36 @@ filtro activo — si no hay ninguno, no se muestra nada).
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → estilos del chip
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — 3ER CHECKBOX "NORMAL" EN FILTRO DE TIPO + BÚSQUEDA POR ID CONFIRMADA (2026-07-24)
+
+> Respuesta del back a la consulta de la sección anterior: `tipoPedido` en
+> `buscarClientePedido` ya está implementado tal cual lo mandaba el front (sin cambios acá).
+> Encontraron 2 cosas al probar en vivo:
+
+### 1. Faltaba el checkbox "NORMAL"
+
+El back soporta los 3 valores (`NORMAL`/`APARTADO`/`FIADO`) pero el front solo tenía 2
+checkboxes ("Apartados"/"Ir pagando"). Se agregó "🛒 Normal" como tercera opción —
+`toggleFiltroTipo()` ahora acepta los 3 valores, `tiposPedidoFiltro` y `descripcionBusqueda`
+los incluyen. Ninguno marcado sigue significando "sin filtro de tipo" (no hay que mandar los 3
+explícitos para ese caso).
+
+### 2. `buscar` ahora también encuentra por id de pedido — sin cambios en el front
+
+El back confirmó que el "número de pedido" que ve el admin **es** `pedido.id` (no hay folio
+aparte) y agregó: si `buscar` es puramente numérico, además de la búsqueda de texto ya
+existente (nombre/correo/teléfono del cliente) también compara contra `pedido.id` exacto. Como
+el admin ya mandaba `buscarProd` tal cual al parámetro `buscar` (sin lógica especial para
+números), esto "ya funciona" sin tocar nada del front — antes `buscar=1` solo encontraba
+resultados por coincidencia casual (ej. un teléfono que contenía "1"), ahora además compara
+contra el id real.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `filtroNormal`, `toggleFiltroTipo()`
+  acepta `'NORMAL'`, `tiposPedidoFiltro`/`descripcionBusqueda` actualizados
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → 3er botón "🛒 Normal"
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

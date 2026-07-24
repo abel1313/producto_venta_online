@@ -33,7 +33,7 @@
          "variante" (talla/color/código de barras) ES el producto que se vende.
          Ver taxonomía de nombres en CLAUDE.md. -->
     <a class="sb-item" *ngIf="!isAnonymous"
-       routerLink="variantes/buscar" routerLinkActive="sb-item--active"
+       routerLink="tienda/buscar" routerLinkActive="sb-item--active"
        (click)="closeMobile()">
       <span class="sb-icon">🛍️</span>
       <span class="sb-label">Tienda</span>
@@ -51,9 +51,9 @@
       <div class="sb-submenu">
         <a class="sb-subitem" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
         <a class="sb-subitem" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
-        <a class="sb-subitem" routerLink="variantes/venta" (click)="closeMobile()">🧩 Agregar producto</a>
+        <a class="sb-subitem" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
         <a class="sb-subitem" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
-        <a class="sb-subitem" routerLink="variantes/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
+        <a class="sb-subitem" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
         <a class="sb-subitem" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
         <a class="sb-subitem" routerLink="lugares-entrega" (click)="closeMobile()">📍 Lugares de entrega</a>
       </div>
@@ -83,7 +83,7 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="variantes/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
+        <a class="sb-subitem" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
         <a class="sb-subitem" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
         <a class="sb-subitem" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
         <a class="sb-subitem" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos y Ventas</a>

@@ -116,8 +116,8 @@ export class NavbarComponent implements OnInit {
   }
 
   // ── Carrito ────────────────────────────────────────────────────────
-  verCarritoVariante(): void { this.router.navigate(['/variantes/carrito']); }
-  regresarProducto(): void { this.router.navigate(['/variantes/buscar']); }
+  verCarritoVariante(): void { this.router.navigate(['/tienda/carrito']); }
+  regresarProducto(): void { this.router.navigate(['/tienda/buscar']); }
 
   // Limpia el carrito que el botón "Carrito" del footer muestra (variantes +
   // promos). NO toca el carrito viejo de productos: ese se limpia desde

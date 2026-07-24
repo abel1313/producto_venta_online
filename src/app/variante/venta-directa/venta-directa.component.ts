@@ -299,7 +299,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.idUsuario = id;
     });
 
-    // Pre-cargar items del carrito si el admin llega desde /variantes/carrito
+    // Pre-cargar items del carrito si el admin llega desde /tienda/carrito
     if (this.isAdminUser && this.lineas.length === 0) {
       const itemsCarrito = this.carritoService.obtener();
       const promosCarrito = this.carritoService.obtenerPromos();
@@ -911,7 +911,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
             confirmButtonText: '🔄 Ir al catálogo',
             showCancelButton: true,
             cancelButtonText: 'Cerrar'
-          }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/tienda/buscar']); });
         } else {
           Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: msg || 'No se pudo procesar la venta.' });
         }

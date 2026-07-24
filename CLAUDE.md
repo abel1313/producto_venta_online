@@ -5983,3 +5983,52 @@ contra el id real.
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → 3er botón "🛒 Normal"
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## RENOMBRAR RUTA — `/variantes` → `/tienda` (SOLO LA URL) (2026-07-24)
+
+> El usuario ya no quería que la URL del catálogo público dijera "variantes" — extensión del
+> mismo criterio de la sección "TAXONOMÍA DE NOMBRES" (2026-07-16): renombrar solo lo visible
+> al usuario, sin tocar código interno. Ahí ya se había dicho explícitamente "solo lo visible",
+> pero esa decisión nunca se planteó para la URL del navegador — el usuario la reabrió ahora
+> puntualmente para este caso.
+
+**Por qué esto NO es lo mismo que el refactor de ~60 archivos que se descartó en julio:** ese
+descarte era sobre renombrar el **código interno** (carpetas, clases, `VarianteService`, los
+endpoints que llaman al back `/variantes/v1/...`) — un cambio inútil porque el backend sigue
+exponiendo `/variantes/v1/...` de todos modos. La URL del **router de Angular** (`app-routing.module.ts`
+→ `path: 'variantes'`) es 100% independiente de eso — es solo cómo se ve la URL en el navegador,
+no toca ninguna llamada al backend. Por eso este cambio sí se hizo, sin pedirle nada al back.
+
+**Qué cambió:** `path: 'variantes'` → `path: 'tienda'` en `app-routing.module.ts` (coincide con
+la etiqueta "🛍️ Tienda" que ya tenía el menú). Todas las sub-rutas (`buscar`, `venta`, `carrito`,
+`detalle/:id`, `update`, `cargar-excel`, `venta-directa`) son relativas a ese path padre —
+`agregar-routing.module.ts` no necesitó ningún cambio.
+
+**Qué NO cambió (a propósito):** carpeta `src/app/variante/`, nombres de componentes/servicios
+(`VarianteService`, `BuscarComponent`, etc.), y ninguna llamada al backend (`/variantes/v1/...`
+sigue igual — confirmado que ninguno de los archivos tocados mezclaba rutas de front con
+llamadas al back antes de hacer el reemplazo, para no romper ninguna por accidente).
+
+**Archivos con `routerLink`/`router.navigate()` actualizados de `/variantes/...` → `/tienda/...`
+(13 archivos, ~25 ocurrencias):**
+- `src/app/app-routing.module.ts` → `path: 'tienda'`
+- `src/app/navbar/navbar.component.html` / `.ts`
+- `src/app/favoritos/favoritos.component.html` / `.ts`
+- `src/app/auth/usuarios.guard.ts`
+- `src/app/guard/admin-guard.guard.ts`
+- `src/app/clietes/clientes-add/clientes-add.component.ts`
+- `src/app/variante/buscar/buscar.component.ts`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts`
+- `src/app/variante/update-variante/update-variante.component.ts`
+- `src/app/variante/venta-directa/venta-directa.component.ts`
+- `src/app/variante/venta-variante/venta-variante.component.ts` / `.html`
+
+**Verificado:** grep exhaustivo de `/variantes/` como ruta de front (excluyendo `/variantes/v1/`
+del back) → cero resultados restantes. `ng build --configuration=development` sin errores ni
+warnings nuevos.
+
+⚠️ **No se agregó redirect de `/variantes/*` → `/tienda/*`** para links/bookmarks viejos — no se
+pidió y este es un sistema interno sin URLs indexadas públicamente. Si hace falta después, es un
+único `{ path: 'variantes', redirectTo: 'tienda', pathMatch: 'prefix' }` — trivial de agregar.

@@ -386,25 +386,25 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   verCarrito(): void {
-    this.router.navigate(['/variantes/carrito']);
+    this.router.navigate(['/tienda/carrito']);
   }
 
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/variantes/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id]);
   }
 
   editarVariante(v: IVarianteResumen): void {
     this.varianteService.getOne(v.id).subscribe({
       next: variante => {
         this.varianteService.setVarianteUpdate(variante);
-        this.router.navigate(['/variantes/update']);
+        this.router.navigate(['/tienda/update']);
       },
       error: () => {
         // Si falla, navega con los datos que tenemos
         this.varianteService.setVarianteUpdate({ id: v.id, talla: v.talla, color: v.color,
           marca: v.marca, presentacion: v.presentacion, stock: v.stock, descripcion: v.descripcion,
           contenidoNeto: v.contenidoNeto } as any);
-        this.router.navigate(['/variantes/update']);
+        this.router.navigate(['/tienda/update']);
       }
     });
   }

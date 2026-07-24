@@ -5551,3 +5551,91 @@ hasta recargar. No corregido en este cambio — el usuario no lo pidió todavía
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo.
+
+---
+
+## FIX + FEAT — TOTAL DESACTUALIZADO EN DETALLE + DATOS DE ENTREGA (nombreReceptor/dirección/fecha) (2026-07-24)
+
+> Cierra los 3 puntos pendientes de la respuesta grande del back del 2026-07-23 (ver sección
+> "FEAT — CANCELAR PEDIDOS YA ENTREGADOS/PAGADOS" arriba, apartado "Pendiente").
+
+### 1. Fix — total desactualizado en `detalle-pedido` tras quitar una línea
+
+`reducirCantidad()` solo actualizaba el `item` individual (`item.subTotal`) pero nunca
+`this.detalle.totalPedido` — el total mostrado en el header (`totalGeneral`) se quedaba con el
+valor de la carga inicial. El back ya corrigió su cálculo server-side, pero no sirve de nada si
+el front no lo vuelve a pedir. En vez de recargar todo el detalle (perdería el estado de
+`eliminando`, scroll, etc.), se recalcula localmente sumando los subtotales que quedan:
+
+```typescript
+if (this.detalle) {
+  this.detalle.totalPedido = this.detalle.detalles.reduce((sum, d) => sum + d.subTotal, 0);
+}
+```
+
+### 2. Feat — botón "📍 Entrega" en la card de `mis-pedidos` (no en el detalle)
+
+Decisión del usuario: el punto de entrada para capturar/editar `nombreReceptor`,
+`direccionEntrega`, `fechaEntrega` y `observaciones` va en la **card de la lista** (`mis-pedidos`),
+no dentro de `detalle-pedido`. Nuevo botón "📍 Entrega" en el footer de cada card → abre un Swal
+(mismo patrón ya usado en el proyecto para formularios cortos — motivo de cancelación, código de
+verificación, etc.) con 4 campos, precargados desde `GET /{id}/detalle` si ya había algo
+capturado. Al guardar, llama al endpoint nuevo del back:
+
+```typescript
+actualizarEntrega(pedidoId, body): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+  return this.http.put(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
+}
+```
+
+Deshabilitado (con `[title]` explicando por qué) cuando `estado_pedido === 'Cancelado'` — mismo
+límite que impone el back. No requiere admin (cualquiera puede editar su propio pedido, según
+confirmó el back).
+
+### 3. Feat — campos de entrega en `venta-directa` al crear la venta
+
+`nombreReceptor`, `direccionEntrega`, `fechaEntrega` — 3 campos nuevos opcionales, visibles
+siempre que haya algo que cobrar (`lineas.length > 0 || tienePromos`), **no solo en crédito**.
+Se mandan siempre en `POST /v1/ventas/save` junto con `observaciones`.
+
+**Bonus del bug que el back arregló:** `observaciones` antes solo se mostraba/enviaba en la
+sección de crédito del formulario — el back confirmó que antes ignoraba ese campo en venta al
+**contado** sin importar lo que mandara el front, y ya lo arregló. Se movió el textarea de
+"Observaciones" fuera del bloque `*ngIf="esCredito"` a la nueva sección de datos de entrega,
+visible siempre, para aprovechar el fix.
+
+### 4. Mostrar los datos de entrega en `detalle-pedido` (solo lectura)
+
+El back ya los devuelve en `GET /v1/pedidos/{id}/detalle` — se agregó un panel "📍 Datos de
+entrega" (solo si hay al menos un dato capturado) arriba del bloque de abonos. Sin botón de
+editar ahí — la edición vive únicamente en la card de `mis-pedidos` (punto 2), por decisión
+explícita del usuario.
+
+**Nota técnica Angular:** dentro de un `*ngIf` con condición OR de accesos opcionales
+(`detalle?.a || detalle?.b`), el compilador de Ivy NO narrowea `detalle` a non-null para los
+`*ngIf` hijos — sigue pidiendo `?.`/chequeo explícito y tira `TS2531: Object is possibly 'null'`
+si se usa `.` a secas. Hubo que escribir la condición como `detalle && (detalle.a || detalle.b)`
+(con `&&` en vez de solo el OR de opcionales) para que el narrowing sí se propague a los `*ngIf`
+internos sin necesitar `?.` en cada uno.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `reducirCantidad()` recalcula
+  `totalPedido`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` / `.scss` → panel `.dp-entrega`
+  de solo lectura
+- `src/app/pedidos/pedidos.service.ts` → `actualizarEntrega()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `abrirInfoEntrega()`,
+  `mostrarModalEntrega()` (privado)
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` / `.scss` → botón `.btn-entrega`
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + `observaciones`,
+  `nombreReceptor`, `direccionEntrega`, `fechaRecogida`
+- `src/app/variante/service/variante.service.ts` → `IVentaDirectaRequest` + 3 campos
+- `src/app/variante/venta-directa/venta-directa.component.ts` → campos `nombreReceptor`,
+  `direccionEntrega`, `fechaEntrega`; `ejecutarVenta()` los manda siempre (no solo crédito)
+- `src/app/variante/venta-directa/venta-directa.component.html` / `.scss` → sección
+  `.vd-entrega`, observaciones movido fuera de `esCredito`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back haya corrido
+`migration_pedido_datos_entrega.sql` en el ambiente donde se pruebe (según su propio doc,
+pendiente al momento de escribir esto).

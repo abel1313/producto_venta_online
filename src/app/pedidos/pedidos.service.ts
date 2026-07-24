@@ -45,6 +45,18 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.get<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/detalle`);
     }
 
+    // Editar nombreReceptor/direccionEntrega/fechaEntrega/observaciones después de creado el
+    // pedido — todos los campos opcionales, solo se actualiza lo que se mande (null = no
+    // tocar). No requiere ser admin. El back rechaza si el pedido está "cancelado".
+    actualizarEntrega(pedidoId: number, body: {
+      nombreReceptor?: string;
+      direccionEntrega?: string;
+      fechaEntrega?: string;
+      observaciones?: string;
+    }): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
+    }
+
     reenviarComprobante(pedidoId: number, body: { correo: string; ticketHtml: string }): Observable<any> {
       return this.http.post<any>(`${this.url}/v1/pedidos/${pedidoId}/notificar`, body);
     }

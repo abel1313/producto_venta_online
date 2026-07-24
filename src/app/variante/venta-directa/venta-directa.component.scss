@@ -318,6 +318,21 @@ $t:  all 0.22s ease;
   }
 }
 
+.vd-entrega {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--card-border);
+
+  &__input {
+    width: 100%; resize: vertical;
+    padding: 8px 12px; border-radius: 8px;
+    border: 1.5px solid var(--input-border); background: var(--input-bg);
+    color: var(--input-text); font-size: .88rem;
+    &::placeholder { color: var(--input-placeholder); }
+    &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  }
+}
+
 .vd-credit-info {
   font-size: .78rem; color: #d97706;
   background: rgba(217,119,6,.1); border: 1px solid rgba(217,119,6,.25);

@@ -408,6 +408,16 @@ $cancelado-to:   #dc2626;
   &:not(:disabled):hover { background: #d1fae5; }
 }
 
+.btn-entrega {
+  background: #fff7ed;
+  color: #c2410c;
+  &:not(:disabled):hover { background: #ffedd5; }
+}
+
+:host-context(body.theme-dark) {
+  .btn-entrega { background: rgba(194,65,12,0.16); color: #fb923c; &:not(:disabled):hover { background: rgba(194,65,12,0.26); } }
+}
+
 // ── Panel Terminal Mercado Pago ─────────────────────────────────────────────
 .mp-terminal {
   margin-top: 1.25rem;

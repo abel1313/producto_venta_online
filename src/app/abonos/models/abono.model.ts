@@ -60,6 +60,13 @@ export interface PedidoDetalleResponse {
   montoDado?:        number | null;
   abonos?:           AbonoDetalleItem[];
   detalles:          PedidoDetalleItem[];
+  // Datos de entrega (2026-07-23) — nombreReceptor/direccionEntrega nuevos; fechaRecogida se
+  // reutiliza como fecha en que se va a entregar el pedido. Se editan con
+  // PUT /v1/pedidos/{id}/entrega (PedidosService.actualizarEntrega()).
+  observaciones?:     string | null;
+  nombreReceptor?:    string | null;
+  direccionEntrega?:  string | null;
+  fechaRecogida?:     string | null;
 }
 
 export interface PedidoDetalleItem {

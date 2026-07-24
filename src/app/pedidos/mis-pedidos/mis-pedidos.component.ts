@@ -64,6 +64,23 @@ export class MisPedidosComponent implements OnInit {
   mostrarDropdownLugar = false;
   lugarFiltroId: number | null = null;
 
+  // ── Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) ─────────
+  filtroApartado  = false;
+  filtroIrPagando = false;
+
+  toggleFiltroTipo(tipo: 'APARTADO' | 'FIADO'): void {
+    if (tipo === 'APARTADO') this.filtroApartado = !this.filtroApartado;
+    else this.filtroIrPagando = !this.filtroIrPagando;
+    this.buscarPedidoAdmin();
+  }
+
+  private get tiposPedidoFiltro(): string[] {
+    const tipos: string[] = [];
+    if (this.filtroApartado)  tipos.push('APARTADO');
+    if (this.filtroIrPagando) tipos.push('FIADO');
+    return tipos;
+  }
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
@@ -522,19 +539,36 @@ export class MisPedidosComponent implements OnInit {
     this.mostrarDetalle = mostrar;
   }
 
-  buscarPedidoAdmin() {
+  // Admin: paginación real (Anterior/Siguiente), no infinite scroll — mismo patrón que
+  // variante/buscar y el catálogo de lugares-entrega. `reset=true` (default) es una búsqueda/
+  // filtro nuevo → vuelve a la página 0; `reset=false` lo usan paginaAnteriorAdmin()/
+  // paginaSiguienteAdmin() para navegar sin perder los filtros activos.
+  buscarPedidoAdmin(reset: boolean = true) {
     this.size = 10;
-    this.page = 0;
-    // Cada búsqueda/filtro nuevo reemplaza la lista — antes se acumulaba con push() sin
-    // limpiar primero, así que tecla a tecla se iban duplicando los resultados viejos.
-    this.pedidoGenerico = [];
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId)
-      .subscribe(sus => {
-        this.resposeGenericPedido = sus;
-        this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
-        this.page++;
-        this.cargando = false;
-      }, err => console.error(err));
+    if (reset) this.page = 0;
+    this.cargando = true;
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId, this.tiposPedidoFiltro)
+      .subscribe({
+        next: sus => {
+          this.resposeGenericPedido = sus;
+          this.pedidoGenerico = sus.data?.list || [];
+          this.totalPaginas = sus.data?.totalPaginas ?? 0;
+          this.cargando = false;
+        },
+        error: err => { this.cargando = false; console.error(err); }
+      });
+  }
+
+  paginaAnteriorAdmin(): void {
+    if (this.page <= 0) return;
+    this.page--;
+    this.buscarPedidoAdmin(false);
+  }
+
+  paginaSiguienteAdmin(): void {
+    if (this.page + 1 >= this.totalPaginas) return;
+    this.page++;
+    this.buscarPedidoAdmin(false);
   }
 
   // ── Filtro por lugar de entrega (autocomplete simple, catálogo pequeño → filtrado local) ──

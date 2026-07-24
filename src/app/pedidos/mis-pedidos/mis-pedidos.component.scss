@@ -197,6 +197,60 @@ $cancelado-to:   #dc2626;
   }
 }
 
+// ── Filtro por tipo de pedido (Apartados / Ir pagando) ─────────────────────
+.tipo-filtro-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tipo-filtro-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 50px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { border-color: var(--app-accent); }
+
+  &--active {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
+  }
+}
+
+// ── Paginación admin (Anterior/Siguiente) ───────────────────────────────────
+.mp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 1rem;
+
+  &__btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: 50px;
+    border: none;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover:not(:disabled) { background: #e5e7eb; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__info { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
+}
+
 // ── Scroll container ────────────────────────────────────────────────────────
 .scroll-container {
   height: 80vh;

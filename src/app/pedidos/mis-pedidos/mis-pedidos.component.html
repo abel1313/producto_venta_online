@@ -36,6 +36,18 @@
     </div>
   </div>
 
+  <!-- Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) -->
+  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
+            (click)="toggleFiltroTipo('APARTADO')">
+      📦 Apartados
+    </button>
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
+            (click)="toggleFiltroTipo('FIADO')">
+      💳 Ir pagando
+    </button>
+  </div>
+
   <!-- Grid de pedidos -->
   <div class="scroll-container" (scroll)="onScroll($event)">
     <div class="pedidos-grid">
@@ -156,6 +168,13 @@
 
       </div>
     </div>
+  </div>
+
+  <!-- Paginación real (admin) — Anterior/Siguiente, no infinite scroll -->
+  <div class="mp-pagination" *ngIf="isAdminUser && pedidoGenerico.length > 0">
+    <button class="mp-pagination__btn" [disabled]="page === 0 || cargando" (click)="paginaAnteriorAdmin()">← Anterior</button>
+    <span class="mp-pagination__info">Página {{ page + 1 }} de {{ totalPaginas || 1 }}</span>
+    <button class="mp-pagination__btn" [disabled]="page + 1 >= totalPaginas || cargando" (click)="paginaSiguienteAdmin()">Siguiente →</button>
   </div>
 
   <!-- Estado vacío -->

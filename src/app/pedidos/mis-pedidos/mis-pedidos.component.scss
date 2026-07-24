@@ -225,6 +225,21 @@ $cancelado-to:   #dc2626;
   }
 }
 
+// ── Resumen de filtros activos ──────────────────────────────────────────────
+.mp-descripcion-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  background: var(--app-accent-soft);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
 // ── Paginación admin (Anterior/Siguiente) ───────────────────────────────────
 .mp-pagination {
   display: flex;

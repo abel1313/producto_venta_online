@@ -314,6 +314,18 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1.25;
   }
   .pl-excel-btn { margin-left: 0; }
+
+  // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .pl-grid con
+  // auto-fill/minmax(270px) siempre colapsaba a una sola columna.
+  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+
+// Hueco entre "móvil" (576px) y "PC" (900px, donde .pl-grid ya pasa a 3 columnas):
+// sin este bloque, .pl-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
+// white-space:nowrap, un label largo ("Código generado") no cabía en un ancho de
+// tablet/celular grande y el texto se desbordaba encimado sobre la siguiente pill.
+@media (min-width: 577px) and (max-width: 899px) {
+  .pl-filtros { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 400px) {

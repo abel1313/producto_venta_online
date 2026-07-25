@@ -6088,3 +6088,73 @@ su parte o no.
 
 **Pregunta precisa mandada al back** (repo compartido) con el mapeo completo de qué prefijo
 esperar y ejemplos antes/después — ver `CAMBIOS_FRONT.md`.
+
+---
+
+## FIX MÓVIL — FILTROS TRASLAPADOS EN TABLET/CELULAR GRANDE + CARDS DE 2 EN 2 (2026-07-24)
+
+> Reportado con 2 capturas: en PC (`productos/buscar`) se veía bien, pero en móvil los 8
+> checkboxes de filtro aparecían con el texto encimado/ilegible ("Con sto ck Sin stock Con
+> im ágesnimágenes...") y las cards de producto se veían de 1 en 1 en vez de 2 en 2.
+
+### Causa raíz — hueco entre breakpoints, no un bug del código nuevo
+
+Ya existían 2 fixes previos para `.pl-filtros`/`.vb-filtros` (sección "FIX FILTROS ADMIN — 4
+COLUMNAS EN PC, 1 COLUMNA EN MÓVIL", 2026-07-21): `≤576px` → 1 columna con texto que envuelve
+(`white-space: normal`), `>576px` (cualquier ancho, incluido tablet/celular grande en
+horizontal) → `repeat(4, 1fr)` con `white-space: nowrap`. **El bug real**: no había ningún
+nivel intermedio. Un viewport de, digamos, 650px (tablet chica, celular grande, o el propio
+DevTools en modo responsive con un ancho no exactamente "móvil") caía en la rama de 4 columnas
+— 4 columnas de ~150px cada una son demasiado angostas para un label como "Código generado" con
+`nowrap`, y el texto se desborda visualmente encima de la pill vecina. Mismo mecanismo ya
+documentado como "grid blowout" en la sesión de julio, pero esta vez por falta de un breakpoint
+intermedio, no por `min-width` faltante (eso ya estaba corregido).
+
+**Fix — 3 niveles en vez de 2**, en ambos archivos (`all.component.scss` para "Productos"
+admin, `buscar.component.scss` para "Tienda" pública — mismo patrón clonado en las dos):
+```scss
+@media (max-width: 576px)                      { .pl-filtros { grid-template-columns: 1fr; } }
+@media (min-width: 577px) and (max-width: 899px) { .pl-filtros { grid-template-columns: repeat(2, 1fr); } }
+// (sin media query = desktop, ya existía) .pl-filtros { grid-template-columns: repeat(4, 1fr); }
+```
+El nivel de 2 columnas (577–899px) usa el mismo tamaño de fuente que desktop — con 2 columnas
+en vez de 4, cada pill tiene el doble de ancho disponible, suficiente para casi cualquier label
+sin necesitar `white-space: normal` ahí. Nunca hay un punto intermedio sin cubrir.
+
+### Cards de producto — 2 por fila en vez de 1
+
+`.pl-grid`/`.vb-grid` usaban `grid-template-columns: repeat(auto-fill, minmax(270px, 1fr))` —
+por diseño, con `minmax(270px,...)`, cualquier viewport bajo ~560px (270×2 + gap) colapsa a 1
+sola columna automáticamente. Pedido explícito del usuario: en móvil deben verse de 2 en 2.
+Fix — dentro del `@media (max-width: 576px)` ya existente:
+```scss
+.pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+```
+**Por qué esto no rompe el contenido de la card:** el footer de botones (`.pl-btn-card`, 6
+acciones: Agregar/Quitar/Carrito/Detalle/Actualizar/Productos) ya usa
+`flex-wrap: wrap` + `flex: 1 0 50px` — con la card a la mitad de ancho, los botones simplemente
+envuelven a 2-3 filas en vez de una, en lugar de desbordar o cortarse. `&__detail-val` (los
+valores de nombre/código/marca) ya tiene `text-overflow: ellipsis` — un valor largo se trunca
+con "…" en vez de desbordar. No hizo falta ningún ajuste adicional de tipografía.
+
+### 📖 Lección para no repetir este patrón
+
+**Regla a futuro para cualquier grid de filtros/cards con columnas fijas (`repeat(N, 1fr)`) que
+cambie de N a 1 en un solo breakpoint:** si el contenido de cada celda tiene `white-space:
+nowrap` (pills, badges, botones con texto fijo), **nunca** saltar directo de "1 columna" a "N
+columnas" en un solo punto de quiebre — casi siempre hay un rango de anchos intermedios
+(tablet, celular grande en horizontal, ventana de navegador redimensionada a mano) donde N
+columnas ya no caben cómodas pero el CSS no sabe que debe bajar a menos. Agregar SIEMPRE un
+nivel intermedio (2 columnas) entre "móvil" y "desktop" para grids de 3+ columnas, o usar
+`repeat(auto-fit, minmax(...))` en vez de un número fijo cuando el contenido lo permita (mejor
+aún, porque se adapta solo sin necesitar breakpoints manuales — no se usó acá porque los
+labels de los filtros no tienen un ancho mínimo natural cómodo con `minmax()`, pero si se
+rediseña este componente de nuevo, considerarlo primero).
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss` → breakpoint intermedio en `.pl-filtros`, `.pl-grid` a 2 columnas en móvil
+- `src/app/variante/buscar/buscar.component.scss` → mismo fix en `.vb-filtros`/`.vb-grid`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en dispositivo real — verificar con DevTools en varios anchos (375px, 650px,
+768px, 900px+) antes de dar por cerrado.

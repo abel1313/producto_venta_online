@@ -6158,3 +6158,31 @@ rediseña este componente de nuevo, considerarlo primero).
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en dispositivo real — verificar con DevTools en varios anchos (375px, 650px,
 768px, 900px+) antes de dar por cerrado.
+
+---
+
+## FIX — CONFIRMACIÓN DE CANCELAR PEDIDO: 400+MENSAJE + DESHABILITAR SI YA CANCELADO (2026-07-27)
+
+> Respuesta del back en el repo compartido (preguntas hechas por otra sesión/agente, no en esta
+> conversación) sobre `DELETE /v1/pedidos/delete/{id}`: antes devolvía 500 vacío al rechazar la
+> cancelación, ahora devuelve 400 con `{ mensaje }`. También corrigieron que cancelar un FIADO
+> activo desde `mis-pedidos` devolvía stock indebido (esa regla ya existía en `/abonos`, no en
+> este endpoint) — 100% backend, sin acción del front.
+
+**Revisado — ya funcionaba sin cambios:** `cancelarPedido()` en `mis-pedidos.component.ts` ya
+leía `err?.error?.mensaje ?? err?.error?.message` en el `error` callback (patrón establecido
+desde las lecciones del módulo rifas) — el mensaje nuevo del 400 ya se muestra automático, sin
+tocar código. `cancelarConMotivo()` está tipado `Observable<any>`, así que el nuevo body de
+éxito (`{ response: "..." }`, antes vacío) tampoco rompe nada.
+
+**Mejora aplicada** (recomendación opcional del back, no bloqueante): el botón "Cancelar" en la
+card de `mis-pedidos` solo se deshabilitaba para `estado_pedido === 'Entregado'` + no-admin —
+un pedido **ya cancelado** seguía mostrando el botón activo (antes de este fix, el back
+devolvía 500 vacío al intentarlo; ahora al menos muestra el mensaje claro). Se agregó
+`estado_pedido === 'Cancelado'` a la condición de `[disabled]`, con su propio `[title]`.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` del botón
+  Cancelar incluye `estado_pedido === 'Cancelado'`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

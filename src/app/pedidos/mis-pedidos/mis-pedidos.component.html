@@ -168,8 +168,8 @@
             <i class="pi pi-envelope"></i>
           </button>
           <button class="btn-card btn-cancelar"
-                  [disabled]="!isAdminUser && item.pedido.estado_pedido === 'Entregado'"
-                  [title]="!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : ''"
+                  [disabled]="item.pedido.estado_pedido === 'Cancelado' || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"
+                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'Este pedido ya está cancelado' : (!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : '')"
                   (click)="cancelarPedido(item)">
             <i class="pi pi-times"></i> Cancelar
           </button>

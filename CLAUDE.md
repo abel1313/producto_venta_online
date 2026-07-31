@@ -6186,3 +6186,193 @@ devolvía 500 vacío al intentarlo; ahora al menos muestra el mensaje claro). Se
   Cancelar incluye `estado_pedido === 'Cancelado'`
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## HOMOLOGACIÓN DE PALETA — JADE (SOLO MODO OSCURO) — EN PROGRESO (2026-07-30)
+
+> Tras varias rondas de exploración visual en un artifact (ver conversación — se probaron paletas
+> "boutique tranquilas" y una versión bold fucsia/tinta con movimiento real: marquee, glow en
+> hover, paginador con resplandor). El usuario confirmó: **le gustó el diseño con movimiento**,
+> **no le gustó el fucsia**, y eligió **verde jade** con un selector de color interactivo en el
+> propio artifact (probó Jade/Cobalto/Ámbar/Carmín/Cian en vivo). Aplica **solo a `body.theme-dark`**
+> — el modo claro sigue pendiente de decisión, no se tocó.
+
+### Color elegido
+`--app-accent` en modo oscuro: `#4A9EFF` (azul Aether) → **`#00D97E`** (jade eléctrico — literal
+al nombre de la tienda, nunca antes probado: fue ámbar → azul/morado Aether → jade).
+
+### Rampa de tonos jade usada en gradientes de 2-3 stops
+| Rol | Hex | Reemplaza a |
+|---|---|---|
+| Jade brillante (= `--app-accent`) | `#00D97E` | `#4A9EFF` |
+| Jade medio (stop oscuro de gradientes 2 colores) | `#009A5C` | `#007AFF` |
+| Jade profundo (stop extra en gradientes de 3 colores) | `#00693F` | `#5856D6` (morado) |
+| Texto/chip claro sobre fondo oscuro | `#6EEBB0` | `#7FBFFF` |
+
+### Archivos modificados — núcleo global (`styles.scss`)
+Bloque `body.theme-dark, [data-theme="dark"]` — variables canónicas (`--color-accent`,
+`--app-accent`, `--app-accent-soft`, `--input-focus-border`, `--input-focus-shadow`,
+`--header-brand-border`) + los overrides puntuales ya existentes de Bootstrap forms/SweetAlert2/
+PrimeNG dropdown/glassmorphism global que tenían el azul **hardcodeado dentro del propio bloque
+`body.theme-dark`** (mayor especificidad que el bloque genérico de PrimeNG agregado en la sesión
+anterior — por eso ganaban sobre `var(--app-accent)` y había que tocarlos aparte).
+
+### Archivos modificados — componentes con el gradiente Aether hardcodeado (14 archivos)
+Mismo patrón en todos: `background: linear-gradient(135deg, #007AFF, #4A9EFF)` (o variantes de
+ángulo/orden) → `linear-gradient(135deg, #009A5C, #00D97E)`.
+
+- `src/app/admin/chat-admin/chat-admin.component.scss`
+- `src/app/chat/chat-usuario/chat-usuario.component.scss`
+- `src/app/chatbot/chatbot.component.scss` (+ `.cb-card__precio` color)
+- `src/app/clietes/clientes-add/clientes-add.component.scss`
+- `src/app/clietes/mi-perfil/mi-perfil.component.scss`
+- `src/app/clietes/mis-datos/mis-datos.component.scss`
+- `src/app/login/verificar-correo/verificar-correo.component.scss`
+- `src/app/navbar/navbar.component.scss` (`--sb-accent` local + 2 usos más)
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` (`.dp-btn-reenviar`/`.dp-tipo-badge--fiado`)
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss`
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.scss` (2 gradientes, 135deg y 90deg)
+- `src/app/rifas/rifa-mes/rifa-mes.component.scss`
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss`
+- `src/app/variante/agregar/agregar.component.scss` (gradiente de 3 stops, incluía el morado `#5856D6`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### ⚠️ PENDIENTE — segunda capa: morado `#5856D6` suelto en ~20 archivos más
+
+Al terminar el barrido de arriba, un grep de `#5856D6` (el "accent-2" morado de la vieja pareja
+Aether azul+morado) encontró que sigue presente en **~20 archivos adicionales** no cubiertos por
+esta pasada — probablemente usado como color secundario de gradiente en botones/badges puntuales,
+independiente del `#4A9EFF` que ya se migró. **No se tocó todavía** — es un barrido más grande y
+no se quería hacer a ciegas sin confirmar antes con el usuario si:
+1. Se migra igual a jade (consistencia total), o
+2. Se deja como detalle secundario (algunos usos podrían ser intencionales, no todos ligados al
+   acento principal).
+
+**Excepción confirmada que NO se debe tocar:** `src/app/login/login-form/login-form.component.scss`
+usa su propia paleta azul/morado local (`$accent`/`$accent-d`) **a propósito, solo para el login**
+— ver sección "Corrección — LOGIN pasa a azul/morado (color local, NO global)" más arriba. Verificar
+cada archivo del grep antes de tocarlo, no asumir que todos aplican.
+
+### Pendiente — modo claro (`body.theme-light`)
+Sin decisión todavía. El usuario pidió primero ver claro el análisis del oscuro antes de decidir
+si el modo claro lleva la misma energía, una versión más tranquila, o casi no se usa por ahora.
+
+### Pendiente — ticker de promociones (el elemento "marquee" del artifact)
+Discutido pero no implementado. Plan acordado: entidad nueva `TickerPromocion` (texto, enlace de
+texto libre, orden, activo), CRUD admin igual patrón que "Lugares de entrega", endpoint público
+`GET /ticker/activos` que consume un componente de ticker nuevo en el layout. El campo `enlace`
+es texto libre (el propio admin decide a dónde manda cada texto, ej. `/promociones` o
+`/tienda/buscar?termino=bolsa`) — evita depender de que el back etiquete promociones por
+categoría. Falta: escribir la especificación formal al repo compartido y confirmar con el back.
+
+---
+
+## HOMOLOGACIÓN JADE — COMPLETADA EN AMBOS TEMAS + 3 BUGS QUE SOLO SE VIERON EN CAPTURA (2026-07-30)
+
+> Continuación directa de la sección anterior (que había quedado a medias: solo el bloque
+> `theme-dark` de `styles.scss` y 14 componentes). Esta pasada cierra la migración completa y
+> corrige 3 problemas reales que **el `ng build` no detecta** — solo aparecieron al levantar
+> `ng serve` y tomar capturas con Playwright.
+
+### 1. Barrido completo de la pareja Aether (54 archivos)
+
+Quedaban **123 usos de `#007AFF` + ~80 de `#5856D6`** escritos a mano en los componentes (no
+leían la variable), así que la app se veía mezclada: acento jade con botones/headers azules.
+Mapeo mecánico 1:1 (mismo método que la migración ámbar→azul):
+
+| Antes | Ahora | Rol |
+|---|---|---|
+| `#007AFF` | `#00875A` | acento principal claro — **contraste 4.55:1 sobre blanco, mejor que el azul (4.02:1)** |
+| `#5856D6` | `#005C3D` | jade profundo (stop oscuro de gradientes) |
+| `#4A9EFF` | `#00D97E` | jade brillante (acento oscuro) |
+| `#7FBFFF` | `#6EEBB0` | texto/chip claro sobre fondo oscuro |
+| `#4FC3F7` / `#34309A` | `#4FE0A8` / `#00432C` | extremos de gradientes del registro |
+| `#3D2C0C` / `#5c0f31` | `#00301F` / `#003D28` | restos de ámbar/vino dentro de gradientes de marca |
+
+### 2. Neutros: de azul marino a sesgo jade (13 archivos)
+
+**El paso que hace que se vea "diseñado" y no solo recoloreado.** Los grises/fondos seguían
+siendo azul marino heredado de Aether (`#0B0F24`, `#161B3A`, `#F5F8FF`, `#DCE3F2`, `#12172E`…):
+un neutro azulado junto a un acento verde se ve turbio. Se inclinaron hacia jade **manteniendo
+la misma luminosidad** para no romper contrastes ya validados:
+
+| Rol | Antes (azul) | Ahora (jade) |
+|---|---|---|
+| Fondo oscuro | `#0B0F24` | `#081410` |
+| Superficie oscura | `#161B3A` | `#0F2119` |
+| Borde oscuro | `#2A3050` | `#1E3A2D` |
+| Texto claro | `#F1F4FF` | `#EDF7F1` |
+| Fondo claro | `#F5F8FF` | `#F3FAF6` |
+| Superficie-2 clara | `#E8EDFB` | `#E3F2EA` |
+| Borde claro | `#DCE3F2` | `#D5E8DD` |
+| Texto oscuro | `#12172E` | `#12241D` |
+
+**Se dejó intacto a propósito:** la familia slate de Tailwind (`#1E293B`, `#64748B`, `#94A3B8`,
+`#E2E8F0`, `#F1F5F9`) — lee como gris neutro, no como azul, y tocarla eran ~280 ocurrencias de
+riesgo sin beneficio visible.
+
+### 3. 🐛 Los 3 bugs que el build NO detecta (encontrados en captura)
+
+#### 3.1 — Los botones de Bootstrap seguían AZULES en todas las pantallas
+**Causa raíz:** en `angular.json`, `bootstrap.min.css` está listado **DESPUÉS** de
+`src/styles.scss`. Con la misma especificidad, Bootstrap siempre gana — por eso el proyecto
+arrastra tantos `!important`. `.btn-primary` de BS 5.3 hardcodea `--bs-btn-bg:#0d6efd`.
+
+**Fix (sin `!important` y sin cambiar el orden de carga):** ganar por **especificidad**, que es
+determinista e independiente del orden — `.btn.btn-primary` = (0,2,0) > `.btn-primary` = (0,1,0).
+Se redefinen las custom properties `--bs-btn-*` apuntando a `--app-accent` (así respeta
+hover/active/disabled en vez de pisarlos). Para las utilidades (`.text-primary`, `.bg-primary`,
+`.link-primary`) basta redefinir `--bs-primary-rgb`/`--bs-link-color` **dentro de los bloques
+`body.theme-*`** — `body.theme-light` = (0,1,1) es más específico que el `:root` = (0,1,0) donde
+Bootstrap las declara.
+
+> ⚠️ **NO se movió `src/styles.scss` al final del array de `angular.json`.** Es el arreglo
+> arquitectónicamente correcto, pero haría que decenas de reglas sin `!important` empiecen a
+> ganar donde hoy pierden, cambiando pantallas de forma impredecible sin poder probarlas todas
+> (no hay backend local). Si algún día se hace, verificar pantalla por pantalla.
+
+#### 3.2 — Texto blanco sobre jade brillante = ilegible
+El paginador activo (`.p-paginator-page.p-highlight`) usaba `color: #fff` sobre el acento. En
+claro el acento es oscuro (`#00875A`) y funcionaba; en oscuro es brillante (`#00D97E`) y el
+blanco encima quedaba ilegible. **Fix:** nueva variable **`--app-accent-ink`** = el color del
+texto que va ENCIMA del acento (`#FFFFFF` en claro, `#062015` en oscuro). Usarla siempre en vez
+de `#fff` hardcodeado sobre `var(--app-accent)`.
+
+También nuevas: `--app-accent-hover` y `--app-accent-rgb` (para los anillos de foco de Bootstrap).
+
+#### 3.3 — Dos verdes distintos significando cosas distintas
+Con la marca en jade, los badges chocaron: "Apartado"/"Ir pagando" usaban `var(--app-accent)`
+(verde) y "Pagado" usaba verde de éxito (`#16a34a`) — indistinguibles de un vistazo.
+
+**Regla nueva: el color semántico es independiente del acento de marca.** Como el azul salió de
+la paleta, quedó libre para significar "en curso":
+
+| Estado | Claro | Oscuro | Significado |
+|---|---|---|---|
+| Apartado | `#b45309` ámbar | `#fbbf24` | esperando |
+| Ir pagando | `#2563eb` azul | `#60a5fa` | en curso |
+| Pagado | `#16a34a` verde | `#4ade80` | éxito |
+| Cancelado | `#dc2626` rojo | `#f87171` | error |
+
+Archivos: `abonos.component.scss`, `pedidos/mis-pedidos/*.scss`, `pedidos/detalle-pedido/*.scss`.
+
+### 📖 Lección — `ng build` no valida diseño
+
+Los 3 bugs de arriba compilaban perfecto. **Al terminar una migración de paleta, levantar
+`ng serve` y tomar capturas en claro Y oscuro antes de dar por cerrado.** Receta que funcionó
+(sin backend, sin sesión):
+1. `ng serve` → escucha en **`[::1]:4200` (IPv6)**, no en `127.0.0.1` (ver nota de entorno).
+2. Playwright instalado **en el scratchpad**, no en el proyecto (`npm i playwright` en el repo
+   falla con ERESOLVE por conflicto de peer deps).
+3. Navegar a una pantalla pública (`/usuarios/registrar`), forzar el tema con
+   `document.body.className = 'theme-dark'`, y capturar.
+4. Para revisar los componentes genéricos sin necesitar login, inyectar una vitrina de HTML en
+   el `body` de la app ya cargada — hereda los estilos compilados reales.
+
+**Excepción confirmada, NO tocar:** `src/app/login/login-form/login-form.component.scss` conserva
+su paleta azul/morado local a propósito (ver sección del login más arriba).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+capturas en claro y oscuro de `/usuarios/registrar` + vitrina de componentes.

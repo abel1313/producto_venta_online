@@ -140,9 +140,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #5856D6, #007AFF) !important;
+    background: linear-gradient(135deg, #005C3D, #00875A) !important;
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,122,255,0.40); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,135,90,0.40); }
   }
 
   &--outline {
@@ -166,11 +166,11 @@
     width: 100%;
     padding: 16px 36px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg, #5856D6, #007AFF) !important;
+    background: linear-gradient(135deg, #005C3D, #00875A) !important;
     color: #fff !important;
-    box-shadow: 0 8px 24px rgba(0,122,255,0.35);
+    box-shadow: 0 8px 24px rgba(0,135,90,0.35);
     border-radius: 12px;
-    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,122,255,0.45); }
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,135,90,0.45); }
   }
 
   &--sortear {
@@ -193,7 +193,7 @@
   border-radius: 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  &--purple { background: rgba(0,122,255,0.12); color: var(--app-accent); border: 1px solid rgba(0,122,255,0.28); }
+  &--purple { background: rgba(0,135,90,0.12); color: var(--app-accent); border: 1px solid rgba(0,135,90,0.28); }
 }
 
 // ── Switch ─────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@
   font-size: 0.82rem;
   font-weight: 600;
   &--done    { background: rgba(22, 101, 52, 0.12); color: #166534; }
-  &--current { background: linear-gradient(135deg, #5856D6, #007AFF); color: #fff; }
+  &--current { background: linear-gradient(135deg, #005C3D, #00875A); color: #fff; }
   &--pending { background: var(--form-section-bg); color: var(--card-text-muted); }
 }
 
@@ -623,7 +623,7 @@
   display: flex;
   flex-direction: column;
 
-  &:hover { box-shadow: 0 4px 16px rgba(0,122,255,0.22); }
+  &:hover { box-shadow: 0 4px 16px rgba(0,135,90,0.22); }
 
   &__img {
     height: 100px;
@@ -668,7 +668,7 @@
   &__codigo { font-size: 0.7rem;  color: var(--card-text-muted); font-family: monospace; }
 
   &__clave { font-size: 0.75rem; font-weight: 700; color: var(--app-accent);
-             background: rgba(0,122,255,0.12); border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
+             background: rgba(0,135,90,0.12); border-radius: 10px; padding: 2px 8px; width: fit-content; margin-top: 4px; }
 
   &__giro { font-size: 0.72rem; color: var(--card-text-muted); margin-top: 2px; }
 
@@ -751,8 +751,8 @@
 
 // ── Chip seleccionado ──────────────────────────────────────────────
 .rf-chip-seleccionado {
-  background: rgba(0,122,255,0.12);
-  border: 1px solid rgba(0,122,255,0.35);
+  background: rgba(0,135,90,0.12);
+  border: 1px solid rgba(0,135,90,0.35);
   border-radius: 10px;
   padding: 8px 14px;
   font-size: 0.85rem;
@@ -827,8 +827,8 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: rgba(0,122,255, 0.06);
-  border: 1px solid rgba(0,122,255, 0.18);
+  background: rgba(0,135,90, 0.06);
+  border: 1px solid rgba(0,135,90, 0.18);
   border-radius: 10px;
   margin-top: 4px;
 }
@@ -837,7 +837,7 @@
 :host-context(body.theme-light) {
   // Círculo de paso (A/B/C): invisible sobre fondo claro → tinte ámbar
   .rf-card__step {
-    background: rgba(0,122,255, 0.18);
+    background: rgba(0,135,90, 0.18);
     color: var(--app-accent);
   }
   // Botón outline dentro del head del card: borde visible sobre blanco
@@ -854,7 +854,7 @@
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rf-btn--primary {
-    background: linear-gradient(135deg, #007AFF, #4A9EFF) !important;
+    background: linear-gradient(135deg, #009A5C, #00D97E) !important;
     color: #fff !important;
   }
 
@@ -951,7 +951,7 @@
   }
 
   &__badge {
-    background: rgba(0,122,255,0.12);
+    background: rgba(0,135,90,0.12);
     color: var(--app-accent);
     font-size: 0.72rem;
     font-weight: 700;
@@ -1050,7 +1050,7 @@
 
 .rf-resumen__clave {
   font-size: 0.72rem;
-  background: rgba(0,122,255,0.12);
+  background: rgba(0,135,90,0.12);
   color: var(--app-accent);
   border-radius: 10px;
   padding: 2px 8px;
@@ -1187,9 +1187,9 @@
   cursor: pointer;
   transition: box-shadow 0.18s;
 
-  &:hover { box-shadow: 0 4px 16px rgba(0,122,255,0.22); }
+  &:hover { box-shadow: 0 4px 16px rgba(0,135,90,0.22); }
 
-  &--empty { &:hover { box-shadow: 0 4px 16px rgba(0,122,255,0.22); } }
+  &--empty { &:hover { box-shadow: 0 4px 16px rgba(0,135,90,0.22); } }
 }
 
 .rf-premio-img__hint {
@@ -1319,7 +1319,7 @@
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--app-accent);
-    background: rgba(0,122,255,0.1);
+    background: rgba(0,135,90,0.1);
     padding: 3px 10px;
     border-radius: 20px;
   }
@@ -1338,8 +1338,8 @@
 
   // Header del panel activo (expandido)
   &--active {
-    background: linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(138,106,56,0.05) 100%);
-    border-bottom: 1px solid rgba(0,122,255,0.2);
+    background: linear-gradient(135deg, rgba(0,135,90,0.08) 0%, rgba(138,106,56,0.05) 100%);
+    border-bottom: 1px solid rgba(0,135,90,0.2);
     cursor: default;
   }
 }

@@ -84,7 +84,7 @@ export class DetalleProductoComponent implements OnInit {
 
   compartirImagnesVariante(imagenes: ImagenUpdateDto[]) {
     if(!this.existeImagenes) {
-      Swal.fire({ icon: 'info', title: 'No hay imágenes para compartir', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+      Swal.fire({ icon: 'info', title: 'No hay imágenes para compartir', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
       return;
     }
     Swal.fire({
@@ -94,22 +94,22 @@ export class DetalleProductoComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, compartir',
       cancelButtonText: 'No, cancelar',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then((res) => {
       if(!res.isConfirmed){
-        Swal.fire({ icon: 'info', title: 'Acción cancelada', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+        Swal.fire({ icon: 'info', title: 'Acción cancelada', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         return;
       }
       const compartirImagenesVarianteDto: CompartirImagenesVarianteDto = {
         idProducto: this.idProducto
       };
       this.service.compartirImagenesVariante(compartirImagenesVarianteDto).subscribe((result) => {
-          Swal.fire({ icon: 'success', title: 'Imágenes compartidas exitosamente', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'success', title: 'Imágenes compartidas exitosamente', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         // Handle the result if needed
         }, error=>{
           console.error('Error al compartir imágenes', error);
-          Swal.fire({ icon: 'error', title: 'Error al compartir imágenes', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });    
+          Swal.fire({ icon: 'error', title: 'Error al compartir imágenes', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });    
         });
     });
   }
@@ -175,7 +175,7 @@ toggleMarcar(img: ImagenUpdateDto): void {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -199,11 +199,11 @@ toggleMarcar(img: ImagenUpdateDto): void {
               if (!this.paginasCargadas.has(i)) { this.cargarPagina(i); break; }
             }
           }
-          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         },
         error: () => {
           this.eliminando = false;
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });

@@ -230,8 +230,8 @@ export class MisPedidosComponent implements OnInit {
           }
           .mp-entrega-textarea { resize:vertical; min-height:44px; }
           .mp-entrega-input:focus, .mp-entrega-select:focus, .mp-entrega-textarea:focus {
-            outline:none; border-color:var(--app-accent,#007AFF);
-            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,122,255,.12));
+            outline:none; border-color:var(--app-accent,#00875A);
+            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,135,90,.12));
           }
         </style>
         <div class="mp-entrega-form">

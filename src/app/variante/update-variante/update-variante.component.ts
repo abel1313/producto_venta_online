@@ -359,7 +359,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed || !img.id || !this.variante?.id) return;
@@ -374,7 +374,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.eliminandoExistente.delete(img.id!);
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });

@@ -1,5 +1,5 @@
-$p:  #007AFF;
-$pd: #5856D6;
+$p:  #00875A;
+$pd: #005C3D;
 $t:  all 0.22s ease;
 
 // ── Wrapper ────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ $t:  all 0.22s ease;
   padding-right: 4px;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(0,122,255,.3); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0,135,90,.3); border-radius: 4px; }
 }
 
 .vd-result-row {
@@ -102,7 +102,7 @@ $t:  all 0.22s ease;
   border-radius: 10px; padding: 10px;
   transition: $t;
 
-  &:hover { border-color: var(--card-border); box-shadow: 0 2px 8px rgba(0,122,255,.08); }
+  &:hover { border-color: var(--card-border); box-shadow: 0 2px 8px rgba(0,135,90,.08); }
 
   &--agotado { opacity: .55; }
 
@@ -126,7 +126,7 @@ $t:  all 0.22s ease;
 }
 
 .vd-btn-add {
-  background: linear-gradient(135deg, #007AFF, #5856D6); color: #fff;
+  background: linear-gradient(135deg, #00875A, #005C3D); color: #fff;
   border: none; border-radius: 8px; padding: 8px 12px;
   cursor: pointer; font-size: 1rem; flex-shrink: 0;
   transition: $t;
@@ -300,10 +300,10 @@ $t:  all 0.22s ease;
   &:hover { border-color: var(--app-accent); color: var(--app-accent); }
 
   &--active {
-    background: rgba(0,122,255,.13);
+    background: rgba(0,135,90,.13);
     border-color: var(--app-accent);
     color: var(--app-accent);
-    box-shadow: 0 0 0 2px rgba(0,122,255,.18);
+    box-shadow: 0 0 0 2px rgba(0,135,90,.18);
   }
 }
 
@@ -359,7 +359,7 @@ $t:  all 0.22s ease;
   transition: all 0.15s;
 
   &--active {
-    background: rgba(0,122,255,0.15);
+    background: rgba(0,135,90,0.15);
     border-color: var(--app-accent);
     color: var(--app-accent);
     font-weight: 700;
@@ -472,8 +472,8 @@ $t:  all 0.22s ease;
 
 .vd-client-chip {
   display: flex; align-items: center; gap: 10px;
-  background: linear-gradient(135deg, rgba(0,122,255,.1), rgba(0,122,255,.06));
-  border: 1px solid rgba(0,122,255,.25); border-radius: 10px; padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(0,135,90,.1), rgba(0,135,90,.06));
+  border: 1px solid rgba(0,135,90,.25); border-radius: 10px; padding: 10px 14px;
 
   &__name  { flex: 1; font-weight: 700; color: var(--card-text); font-size: .9rem; }
   &__phone { font-size: .78rem; color: var(--card-text-muted); }
@@ -500,7 +500,7 @@ $t:  all 0.22s ease;
   display: flex; flex-direction: column; gap: 2px;
   border-bottom: 1px solid var(--card-border); transition: $t;
   &:last-child { border-bottom: none; }
-  &:hover { background: rgba(0,122,255,0.08); }
+  &:hover { background: rgba(0,135,90,0.08); }
   strong { font-size: .88rem; color: var(--card-text); }
   small  { font-size: .74rem; color: var(--card-text-muted); }
 }
@@ -525,10 +525,10 @@ $t:  all 0.22s ease;
 
 .vd-btn-cobrar {
   flex: 1; padding: 13px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, #007AFF, #5856D6); color: #fff;
+  background: linear-gradient(135deg, #00875A, #005C3D); color: #fff;
   font-size: .95rem; font-weight: 700; cursor: pointer; transition: $t;
-  box-shadow: 0 5px 16px rgba(0,122,255,.35);
-  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,122,255,.5); }
+  box-shadow: 0 5px 16px rgba(0,135,90,.35);
+  &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,135,90,.5); }
   &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 }
 
@@ -601,7 +601,7 @@ $t:  all 0.22s ease;
 
   &__header {
     display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(135deg, #5856D6, #007AFF);
+    background: linear-gradient(135deg, #005C3D, #00875A);
     padding: 18px 20px; color: #fff;
   }
   &__icon  { font-size: 1.6rem; flex-shrink: 0; }
@@ -687,10 +687,10 @@ $t:  all 0.22s ease;
 
 // ── Botón agregar sin registro ─────────────────────────────────────
 .vd-btn-sinreg {
-  width: 100%; padding: 11px; border: 1.5px dashed rgba(0,122,255,.45);
-  border-radius: 10px; background: rgba(0,122,255,.06); color: var(--app-accent);
+  width: 100%; padding: 11px; border: 1.5px dashed rgba(0,135,90,.45);
+  border-radius: 10px; background: rgba(0,135,90,.06); color: var(--app-accent);
   font-size: .88rem; font-weight: 600; cursor: pointer; transition: $t;
-  &:hover { background: rgba(0,122,255,.12); border-color: var(--app-accent); }
+  &:hover { background: rgba(0,135,90,.12); border-color: var(--app-accent); }
 }
 
 // ── Valores adicionales adaptativos ────────────────────────────────

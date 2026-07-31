@@ -172,7 +172,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -182,11 +182,11 @@ export class UpdateComponent implements OnInit, OnDestroy {
         next: (res: any) => {
           this.eliminando.delete(item.dto.id);
           this.displayImages = this.displayImages.filter(v => v.dto.id !== item.dto.id);
-          Swal.fire({ icon: 'success', title: res?.data ?? 'Imagen eliminada', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'success', title: res?.data ?? 'Imagen eliminada', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         },
         error: () => {
           this.eliminando.delete(item.dto.id);
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });

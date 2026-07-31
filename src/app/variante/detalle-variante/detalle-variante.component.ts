@@ -297,7 +297,7 @@ export class DetalleVarianteComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -309,11 +309,11 @@ export class DetalleVarianteComponent implements OnInit {
           this.displayImages = this.displayImages.filter(img => !img.id || !this.imagenesParaEliminar.has(img.id));
           this.imagenesParaEliminar.clear();
           this.eliminando = false;
-          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         },
         error: () => {
           this.eliminando = false;
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });

@@ -695,7 +695,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     // Fallback = color de marca (Aether azul/morado). Los colores del map de
     // arriba representan el color REAL del producto y no siguen la paleta.
     return map[(color ?? '').toLowerCase().trim()]
-      ?? 'linear-gradient(135deg,#007AFF,#5856D6)';
+      ?? 'linear-gradient(135deg,#00875A,#005C3D)';
   }
 
   stockClase(stock: number): string {

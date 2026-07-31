@@ -1,5 +1,5 @@
 ﻿$t: all 0.2s ease;
-$accent: #007AFF;  // ámbar — botones primarios en rifa-mes
+$accent: #00875A;  // ámbar — botones primarios en rifa-mes
 
 .rm-page {
   max-width: 860px;
@@ -41,7 +41,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   &__label { font-size: 0.72rem; color: var(--card-text-muted); white-space: nowrap; transition: $t; }
 
   &--active &__num  { background: $accent; color: #fff; }
-  &--active &__label { color: #5856D6; font-weight: 700; }
+  &--active &__label { color: #005C3D; font-weight: 700; }
   &--done &__num    { background: rgba(22, 101, 52, 0.15); color: #166534; }
   &--done &__label  { color: #166534; }
 
@@ -113,9 +113,9 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #5856D6, $accent);
+    background: linear-gradient(135deg, #005C3D, $accent);
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,122,255,0.40); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,135,90,0.40); }
   }
   &--outline {
     background: transparent; border: 1.5px solid var(--input-border); color: var(--app-text);
@@ -167,7 +167,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   padding: 5px 0;
   border-bottom: 1px solid var(--card-border);
 
-  &--selected { background: rgba(0,122,255, 0.08); border-radius: 6px; padding: 5px 6px; }
+  &--selected { background: rgba(0,135,90, 0.08); border-radius: 6px; padding: 5px 6px; }
   &--vacio    { background: rgba(252, 211, 77, 0.08); }
 }
 
@@ -188,7 +188,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   vertical-align: middle;
 }
 .rm-badge-real   { background: rgba(34, 197, 94, 0.18); color: #166534; }
-.rm-badge-prueba { background: rgba(0,122,255,0.12); color: var(--app-accent); }
+.rm-badge-prueba { background: rgba(0,135,90,0.12); color: var(--app-accent); }
 
 .rm-checkbox-label {
   display: flex;
@@ -218,8 +218,8 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   flex-direction: column;
   gap: 4px;
   padding: 12px 16px;
-  background: rgba(0,122,255, 0.06);
-  border: 1px solid rgba(0,122,255, 0.18);
+  background: rgba(0,135,90, 0.06);
+  border: 1px solid rgba(0,135,90, 0.18);
   border-radius: 10px;
   margin-top: 4px;
 }
@@ -260,7 +260,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   font-size: 0.85rem;
   margin-bottom: 10px;
   &--warn { background: rgba(252, 211, 77, 0.12); border: 1px solid rgba(252, 211, 77, 0.4); color: #92400e; }
-  &--info { background: rgba(0,122,255, 0.08); border: 1px solid rgba(0,122,255, 0.3); color: var(--app-text); }
+  &--info { background: rgba(0,135,90, 0.08); border: 1px solid rgba(0,135,90, 0.3); color: var(--app-text); }
 }
 
 // -- Manual form
@@ -271,8 +271,8 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
   display: flex;
   gap: 14px;
   align-items: center;
-  background: rgba(0,122,255, 0.08);
-  border: 1px solid rgba(0,122,255, 0.3);
+  background: rgba(0,135,90, 0.08);
+  border: 1px solid rgba(0,135,90, 0.3);
   border-radius: 10px;
   padding: 12px 16px;
 
@@ -383,8 +383,8 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
 
 // ── Tema DÍA ───────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .rm-step--active .rm-step__num   { background: #007AFF; }
-  .rm-step--active .rm-step__label { color: #5856D6; }
+  .rm-step--active .rm-step__num   { background: #00875A; }
+  .rm-step--active .rm-step__label { color: #005C3D; }
   // Botón outline dentro del card head: borde visible sobre blanco
   .rm-card__head .rm-btn--outline {
     border-color: rgba(0, 0, 0, 0.18);
@@ -399,7 +399,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rm-btn--primary {
-    background: linear-gradient(135deg, #007AFF, #4A9EFF);
+    background: linear-gradient(135deg, #009A5C, #00D97E);
     color: #fff;
   }
 
@@ -418,7 +418,7 @@ $accent: #007AFF;  // ámbar — botones primarios en rifa-mes
 
   // Saved/edit config
   .rm-saved-badge { background: rgba(34,197,94,0.10); color: #4ade80; border-color: rgba(74,222,128,0.20); }
-  .rm-edit-config { background: rgba(0,122,255,0.08); border-color: rgba(0,122,255,0.22); }
+  .rm-edit-config { background: rgba(0,135,90,0.08); border-color: rgba(0,135,90,0.22); }
 
   // Stepper: paso completado
   .rm-step--done .rm-step__num   { background: rgba(34,197,94,0.18); color: #4ade80; }

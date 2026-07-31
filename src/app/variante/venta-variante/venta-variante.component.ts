@@ -338,10 +338,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         <input id="swal-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:160px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;outline:none">
+                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;outline:none">
         <div id="swal-resend" style="margin-top:12px;font-size:0.85rem;color:#64748b">
           ¿No llegó?
-          <span id="swal-resend-btn" style="color:#007AFF;cursor:pointer;text-decoration:underline">
+          <span id="swal-resend-btn" style="color:#00875A;cursor:pointer;text-decoration:underline">
             Reenviar código
           </span>
         </div>
@@ -349,7 +349,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#007AFF',
+      confirmButtonColor: '#00875A',
       didOpen: () => {
         const btn = document.getElementById('swal-resend-btn');
         if (btn) {

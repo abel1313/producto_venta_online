@@ -22,7 +22,7 @@ export class CacheComponent {
       confirmButtonText: 'Sí, limpiar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -38,7 +38,7 @@ export class CacheComponent {
             title: `¡${this.cachesLimpiadas.length} cachés limpiadas!`,
             timer: 1800,
             showConfirmButton: false,
-            background: '#1e1b4b',
+            background: '#0F2A20',
             color: '#fff'
           });
         },
@@ -50,7 +50,7 @@ export class CacheComponent {
             text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo limpiar la caché.',
             timer: 2000,
             showConfirmButton: false,
-            background: '#1e1b4b',
+            background: '#0F2A20',
             color: '#fff'
           });
         }

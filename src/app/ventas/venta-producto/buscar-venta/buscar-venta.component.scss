@@ -8,13 +8,13 @@
 
 // ── Botones Bootstrap ──────────────────────────────────────────────────────
 .btn-primary {
-  background: var(--app-accent, #007AFF);
-  border-color: var(--app-accent, #007AFF);
+  background: var(--app-accent, #00875A);
+  border-color: var(--app-accent, #00875A);
   font-weight: 600;
   border-radius: 8px;
   transition: background 0.15s, border-color 0.15s;
 
-  &:hover, &:focus { background: #5856D6; border-color: #5856D6; }
+  &:hover, &:focus { background: #005C3D; border-color: #005C3D; }
 }
 
 // ── Labels / totales ───────────────────────────────────────────────────────
@@ -31,10 +31,10 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
   --ag-border-color: #e2e8f0;
   --ag-header-foreground-color: #1e293b;
   --ag-foreground-color: #374151;
-  --ag-row-hover-color: rgba(0,122,255, 0.06);
-  --ag-selected-row-background-color: rgba(0,122,255, 0.12);
-  --ag-range-selection-border-color: var(--app-accent, #007AFF);
-  --ag-input-focus-border-color: var(--app-accent, #007AFF);
+  --ag-row-hover-color: rgba(0,135,90, 0.06);
+  --ag-selected-row-background-color: rgba(0,135,90, 0.12);
+  --ag-range-selection-border-color: var(--app-accent, #00875A);
+  --ag-input-focus-border-color: var(--app-accent, #00875A);
 
   border-radius: 12px;
   overflow: hidden;
@@ -56,12 +56,12 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
     --ag-header-foreground-color: #e2e8f0;
     --ag-foreground-color: #cbd5e1;
     --ag-row-hover-color: rgba(255, 255, 255, 0.04);
-    --ag-selected-row-background-color: rgba(0,122,255, 0.15);
+    --ag-selected-row-background-color: rgba(0,135,90, 0.15);
     --ag-icon-color: #94a3b8;
     --ag-header-column-resize-handle-color: rgba(255, 255, 255, 0.2);
     --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.06);
     --ag-input-border-color: rgba(255, 255, 255, 0.15);
-    --ag-input-focus-border-color: var(--app-accent, #007AFF);
+    --ag-input-focus-border-color: var(--app-accent, #00875A);
 
     border-color: rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
@@ -81,6 +81,6 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
   .btn-primary {
     background: var(--app-accent);
     border-color: var(--app-accent);
-    &:hover { background: #5856D6; border-color: #5856D6; }
+    &:hover { background: #005C3D; border-color: #005C3D; }
   }
 }

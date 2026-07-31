@@ -38,7 +38,7 @@
   &--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(0,122,255,0.18);
+    box-shadow: 0 2px 8px rgba(0,135,90,0.18);
   }
 
   &:hover:not(&--active) { color: var(--app-text); }
@@ -95,13 +95,13 @@
   padding: 9px 20px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #5856D6, #007AFF);
+  background: linear-gradient(135deg, #005C3D, #00875A);
   color: #fff !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s;
-  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,122,255,0.3); }
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,135,90,0.3); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
@@ -169,7 +169,7 @@
 
   &__bar {
     height: 100%;
-    background: linear-gradient(90deg, #5856D6, #007AFF);
+    background: linear-gradient(90deg, #005C3D, #00875A);
     border-radius: 3px;
     transition: width 0.3s ease;
     min-width: 4px;
@@ -181,13 +181,13 @@
   padding: 9px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #5856D6, #007AFF);
+  background: linear-gradient(135deg, #005C3D, #00875A);
   color: #fff !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s;
-  &:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,122,255,0.3); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,135,90,0.3); }
 }
 
 // ── Selector DIARIA/MENSUAL ────────────────────────────────────────
@@ -213,7 +213,7 @@
   &--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(0,122,255,0.18);
+    box-shadow: 0 2px 8px rgba(0,135,90,0.18);
   }
 
   &:hover:not(&--active) { color: var(--app-text); }
@@ -221,7 +221,7 @@
 
 // ── Header de card con colores de estado ───────────────────────────
 .br-card__header {
-  background: linear-gradient(135deg, rgba(12,20,60,0.92) 0%, rgba(0,122,255,0.78) 100%);
+  background: linear-gradient(135deg, rgba(12,20,60,0.92) 0%, rgba(0,135,90,0.78) 100%);
 
   &--activa    { background: linear-gradient(135deg, #166534, #15803d); }
   &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
@@ -251,9 +251,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #5856D6, #007AFF);
+    background: linear-gradient(135deg, #005C3D, #00875A);
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,122,255,0.35); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,135,90,0.35); }
   }
 
   &--secondary {
@@ -264,9 +264,9 @@
   }
 
   &--recover {
-    background: linear-gradient(135deg, #5856D6, #007AFF);
+    background: linear-gradient(135deg, #005C3D, #00875A);
     color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,122,255,0.35); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,135,90,0.35); }
   }
 
   &:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
@@ -394,17 +394,17 @@
   .br-tab--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(0,122,255,0.25);
+    box-shadow: 0 2px 8px rgba(0,135,90,0.25);
   }
 
   // Botones de acción: ámbar en noche
   .br-btn--filtro,
   .br-btn {
-    background: linear-gradient(135deg, #007AFF, #4A9EFF);
+    background: linear-gradient(135deg, #009A5C, #00D97E);
   }
 
   // Barra de progreso: ámbar
   .br-progress__bar {
-    background: linear-gradient(90deg, #007AFF, #4A9EFF);
+    background: linear-gradient(90deg, #009A5C, #00D97E);
   }
 }

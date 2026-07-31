@@ -1,5 +1,5 @@
-$p:  #5856D6;
-$pd: #007AFF;
+$p:  #005C3D;
+$pd: #00875A;
 $t:  all 0.25s ease;
 
 // ── Página ─────────────────────────────────────────────────────────
@@ -220,11 +220,11 @@ $t:  all 0.25s ease;
   &--save {
     background: linear-gradient(135deg, $p, $pd);
     color: #fff;
-    box-shadow: 0 5px 16px rgba(0,122,255,.32);
+    box-shadow: 0 5px 16px rgba(0,135,90,.32);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(0,122,255,.48);
+      box-shadow: 0 8px 22px rgba(0,135,90,.48);
     }
 
     &:disabled { opacity: .45; cursor: not-allowed; transform: none; }

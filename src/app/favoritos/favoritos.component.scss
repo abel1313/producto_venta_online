@@ -47,7 +47,7 @@
   display: flex;
   flex-direction: column;
   transition: box-shadow .2s;
-  &:hover { box-shadow: 0 8px 24px rgba(0,122,255,.16); }
+  &:hover { box-shadow: 0 8px 24px rgba(0,135,90,.16); }
 
   &__img-wrap {
     position: relative;
@@ -105,7 +105,7 @@
   text-decoration: none;
   display: inline-block;
   transition: opacity .15s, background .15s, color .15s;
-  &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #626B94); }
+  &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #5F8375); }
   &--add    { background: var(--app-accent); color: #fff; &:hover:not(:disabled) { opacity: .85; } }
   &--remove { background: rgba(239,68,68,.1); color: #ef4444; }
   &--primary { background: var(--app-accent); color: #fff; padding: 9px 22px; }

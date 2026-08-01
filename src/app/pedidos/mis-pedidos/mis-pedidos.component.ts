@@ -656,6 +656,18 @@ export class MisPedidosComponent implements OnInit {
     return { icono, texto: item.pedido.estado_pedido };
   }
 
+  // El botón "Cobrar" solo comparaba contra 'Entregado' (venta normal) — un crédito ya
+  // liquidado (estado_pedido = 'PAGADO') o un pedido cancelado seguían mostrando el botón
+  // clickeable, y al hacer clic el back lo rechazaba (o mandaba a Abonos, que a su vez decía
+  // "ya está pagado"). Mismo criterio de tipoPedido que ya usan estadoBadge()/puedeGenerarTicket().
+  pedidoYaCobrado(item: IPedidoGenerico): boolean {
+    const estado = item.pedido.estado_pedido;
+    if (estado === 'Cancelado') return true;
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO';
+    return estado === 'Entregado';
+  }
+
   // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
   // estado_pedido; para crédito, el back confirmó (2026-07-24) que totalPagado ya viene en
   // este mismo objeto — antes se dejaba habilitado siempre porque no había forma de saberlo
@@ -759,6 +771,9 @@ export class MisPedidosComponent implements OnInit {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      // Historial completo con fecha por abono (queda vacío en una venta normal sin
+      // abonos — no cambia nada ahí, ticket.util.ts solo lo usa si viene con datos).
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
       articulos: d.detalles.map(det => ({
@@ -871,6 +886,7 @@ export class MisPedidosComponent implements OnInit {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
       articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),

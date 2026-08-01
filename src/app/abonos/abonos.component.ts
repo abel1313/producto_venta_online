@@ -483,6 +483,14 @@ export class AbonosComponent implements OnInit, OnDestroy {
       totalPagado:    tipo === 'liquidado' ? pedido.totalPedido : pedido.totalPagado,
       saldoPendiente: tipo === 'liquidado' ? 0 : pedido.saldo,
       abonoHoy:       body.monto,
+      // Historial completo con fecha por abono — detalle.abonos trae los previos (se
+      // cargó al abrir el modal, antes de este registro); se le agrega el de hoy al
+      // final para que el ticket muestre "Abono 1 (fecha)", "Abono 2 (fecha)"... en vez
+      // de solo el acumulado.
+      abonos: [
+        ...(detalle.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
+        { monto: body.monto, fecha: body.fechaPago ?? new Date().toISOString() }
+      ],
       metodoPago:     metodoPago,
       montoDado:      montoDado > 0 ? montoDado : null,
       cambio:         cambio > 0 ? cambio : null

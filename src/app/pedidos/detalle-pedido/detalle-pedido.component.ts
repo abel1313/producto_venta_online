@@ -68,6 +68,14 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.estadoPedido;
   }
 
+  // "Registrar abono" seguía apareciendo clickeable en un crédito ya liquidado — esCredito
+  // solo mira tipoPedido (APARTADO/FIADO), que no cambia al pagarse; hacía falta chequear
+  // también el estado. El historial de pagos sí se sigue mostrando (útil de consultar),
+  // solo se oculta el botón de registrar uno nuevo.
+  get yaLiquidado(): boolean {
+    return this.esCredito && this.estadoPedido === 'PAGADO';
+  }
+
   // Solo se puede imprimir/reenviar el ticket si ya hay algo que cobrar: NORMAL
   // entregado, o crédito con al menos un abono registrado (o ya liquidado).
   get puedeGenerarTicket(): boolean {

@@ -295,6 +295,20 @@
   &:hover { box-shadow: 0 4px 14px rgba(0,135,90,.35); }
 }
 
+.dp-abono-liquidado {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem 1rem;
+  border-radius: 8px;
+  background: rgba(22,163,74,.10);
+  border: 1px solid rgba(22,163,74,.3);
+  color: #16a34a;
+  font-weight: 600;
+  font-size: .85rem;
+  margin: 0 0 .5rem;
+}
+
 .dp-entrega {
   display: flex;
   flex-direction: column;
@@ -525,5 +539,10 @@
       color: #fca5a5;
       border-color: rgba(252, 165, 165, 0.5);
     }
+  }
+  .dp-abono-liquidado {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #86efac;
   }
 }

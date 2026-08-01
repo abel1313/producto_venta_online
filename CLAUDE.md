@@ -6745,3 +6745,24 @@ renderizar en su navegador/SO, o algo funcional (en escritorio ese input abre el
 archivos normal, no una cámara — `capture="environment"` es soporte de navegador/dispositivo).
 **No inventar un tercer fix a ciegas sin la captura** — mismo patrón que ya pasó 2 veces en esta
 sesión (Clientes, buscador de mis-pedidos): una descripción en texto sola no bastó para acertar.
+
+### Actualización — captura recibida, el texto SÍ se ve en la imagen (mismo día)
+
+El usuario mandó la captura pedida. **En la imagen el texto "Tomar foto" se ve blanco y
+legible**, mismo peso/tamaño que "Elegir de galería o PC" — sin ningún problema visible de
+contraste ahí. Se le preguntó si el reporte era sobre la función de cámara (en escritorio
+`capture="environment"` no abre cámara real, es comportamiento normal del navegador, no un bug)
+— confirmó que no, que es específicamente que "no se ve el texto".
+
+**Contradicción sin resolver:** contraste calculado a mano (blanco sobre `#00875A`, acento en
+modo claro) da ~4.6:1 — pasa AA incluso para texto normal, y el texto se ve bien en la captura
+que el usuario mismo mandó. Hipótesis más probable: la pestaña donde lo prueba en vivo sigue
+con una versión vieja en caché (aunque la captura que mandó sí muestre la versión nueva) — no
+se puede descartar sin que confirme después de un hard-refresh real.
+
+**Reforzado de todos modos, sin esperar confirmación de la causa:** `.ci-btn` sube de
+`font-weight: 600` a `700` + `text-shadow: 0 1px 2px rgba(0,0,0,.25)` — no hace daño en ningún
+tema, y cubre el caso de que el contraste real percibido sea más débil que lo calculado (brillo
+de pantalla, iluminación ambiente, etc.).
+
+**Archivo modificado:** `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`

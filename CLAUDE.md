@@ -6603,3 +6603,79 @@ cuerpo ya blanquean/oscurecen exactamente igual, sin ningún cuadro perceptible.
 **Archivo modificado:** `src/app/clietes/clientes-buscar/clientes-buscar.component.scss`
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## SEGUNDA RONDA — 4 FIXES TRAS PROBAR EN VIVO LO DE HOY (2026-08-01)
+
+> El usuario probó todo lo de la ronda anterior en QA y reportó 4 puntos concretos más.
+
+### 1. Buscador de `mis-pedidos` se veía muy corto, texto cortado (solo PC)
+
+**Causa raíz — bug clásico de flexbox:** al meter el buscador dentro de `.mp-filtro-grupo`
+(`display:flex`) en la sesión anterior, `.search-bar`/`.lugar-filtro-wrap` (los flex items
+directos) no tenían ningún `flex-basis` propio — solo su HIJO (`.search-input-wrap`) tenía
+`max-width:420px`. `max-width` es un TOPE, no un ancho — sin una base de la que partir, el
+navegador colapsaba el flex item al tamaño mínimo por defecto de un `<input>` (~180px),
+cortando el placeholder "Buscar por número de pedido…" a la mitad. Confirmado reproduciendo
+con Playwright + la fuente Poppins real antes de aplicar el fix (se veía "Buscar por número de
+p" cortado exactamente como reportó el usuario).
+
+**Fix:** `.search-bar`/`.lugar-filtro-wrap` ganan `flex: 0 1 420px` (basis 420px, no crece, sí
+puede encoger) — con eso `width:100%` del input hijo ya tiene de dónde resolver su ancho.
+
+**Segundo bug encontrado al verificar en móvil:** con `flex-direction:column` (el override de
+`@media max-width:575px`), el eje principal pasa a ser VERTICAL — un `flex-basis` en px pensado
+para ANCHO en PC se interpreta como ALTO en móvil, dejando un hueco de ~420px de alto debajo del
+buscador. Fix: dentro del media query, `.mp-filtro-grupo > .search-bar, > .lugar-filtro-wrap { flex: 0 1 auto; }` resetea la base a automática en columna.
+
+**Verificado con capturas reales** (Playwright + Poppins + `dist/styles.css`, 1200px y 375px)
+antes de subir — texto completo visible en PC, sin hueco en móvil.
+
+### 2. `mis-pedidos` — "Cobrar" seguía clickeable en un pedido ya pagado
+
+**Síntoma:** un pedido a crédito ya liquidado (`estado_pedido = 'PAGADO'`) seguía mostrando el
+botón "Cobrar" habilitado → mandaba a `/abonos`, que a su vez decía "este pedido ya está
+pagado". El `[disabled]` del botón solo comparaba contra `estado_pedido === 'Entregado'`
+(venta normal) — nunca contempló el estado `PAGADO` de un crédito.
+
+**Fix:** nuevo método `pedidoYaCobrado(item)` — cubre `PAGADO` (crédito liquidado),
+`Entregado` (venta normal ya cobrada) y `Cancelado` (que tampoco se cubría antes). El botón
+ahora se deshabilita en los 3 casos, con `[title]` explicando por qué.
+
+### 3. Ticket de abono — falta historial con fecha por cada abono
+
+**Pedido del usuario:** en vez de solo "Abonos previos: $X", mostrar cada abono por separado
+con su fecha — "Abono 1 (15/06/2026): $100", "Abono 2 (27/06/2026): $100"... hasta liquidar.
+
+**Fix:** `ticket.util.ts` → nueva interfaz `ITicketAbonoItem { monto, fecha }` +
+`ITicketData.abonos?: ITicketAbonoItem[]`. Si se manda, `generarHtmlTicket()` imprime un
+renglón numerado por abono (con fecha) en vez de las líneas agregadas "Abonos previos"/"Abono
+de hoy" (que se conservan como fallback si no se manda el array — no rompe nada donde no se
+conecte). Conectado en los 3 lugares que arman tickets de abono:
+- `abonos.component.ts` → `buildTicketDataFromDetalle()`: `detalle.abonos` (previos, ya
+  cargados al abrir el modal) + el de hoy (`body.monto`, fecha de hoy) al final.
+- `mis-pedidos.component.ts` → `buildAndPrintTicket()`/`enviarComprobanteConDatos()`: usa
+  `PedidoDetalleResponse.abonos` directo (ya viene completo del back en cualquier reimpresión).
+- `detalle-pedido.component.ts` → mismo patrón en sus 2 puntos de armado de ticket.
+
+### 4. Confirmado — el header de `clientes/buscar` sigue con el fix aplicado
+
+Se verificó que el cambio de la sección anterior (`background: var(--page-bg)`) sigue en el
+código y ya está pusheado — no se revirtió ni se perdió. Pendiente aclarar con el usuario si lo
+que reporta como "sigue igual, en PC no se ve nada" es sobre ESTA pantalla o sobre el ticker de
+promociones ("la línea que se movía arriba") que se discutió en una sesión anterior y nunca se
+llegó a implementar — quedó como duda abierta, ver conversación.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.mp-filtro-grupo`,
+  `.search-bar`, `.lugar-filtro-wrap`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `pedidoYaCobrado()`,
+  `abonos` en `buildAndPrintTicket()`/`enviarComprobanteConDatos()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` de Cobrar
+- `src/app/shared/ticket.util.ts` → `ITicketAbonoItem`, `ITicketData.abonos`,
+  `generarHtmlTicket()` con renglón por abono
+- `src/app/abonos/abonos.component.ts` → `buildTicketDataFromDetalle()` arma `abonos`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `abonos` en sus 2 tickets
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

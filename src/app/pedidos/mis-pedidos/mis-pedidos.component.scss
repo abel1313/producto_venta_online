@@ -94,16 +94,31 @@ $cancelado-to:   #dc2626;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+
+    // En flex-direction:column el eje principal es vertical — un flex-basis en
+    // px (ej. 420px, puesto para el ancho en PC) se interpreta como ALTO acá,
+    // dejando un hueco enorme debajo del buscador. Se resetea a auto: cada
+    // fila ocupa solo lo que su contenido necesita.
+    > .search-bar, > .lugar-filtro-wrap {
+      flex: 0 1 auto;
+    }
   }
 }
 
 // ── Buscador ───────────────────────────────────────────────────────────────
+// flex: 1 1 320px — dentro de .mp-filtro-grupo (flex row), sin esto el buscador
+// no tiene una base de ancho definida y el navegador lo colapsa al tamaño
+// mínimo por defecto de un <input> (~180px), cortando el placeholder aunque
+// .search-input-wrap tenga max-width:420px (max-width no es un ancho, solo
+// un tope — sin flex-basis no hay de dónde partir para crecer hasta ahí).
 .search-bar {
   margin-bottom: 0;
+  flex: 0 1 420px;
 }
 
 .search-input-wrap {
   position: relative;
+  width: 100%;
   max-width: 420px;
 
   @media (max-width: 575px) { max-width: 100%; }
@@ -137,8 +152,10 @@ $cancelado-to:   #dc2626;
 // ── Filtro por lugar de entrega (autocomplete) ─────────────────────────────
 .lugar-filtro-wrap {
   position: relative;
+  width: 100%;
   max-width: 420px;
   margin-bottom: 0;
+  flex: 0 1 420px; // mismo fix de flex-basis que .search-bar — ver comentario ahí
 
   @media (max-width: 575px) { max-width: 100%; }
 }

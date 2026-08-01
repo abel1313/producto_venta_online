@@ -7,63 +7,64 @@
     </a>
   </div>
 
-  <!-- Buscador principal — por número de pedido (o texto del cliente) -->
-  <div class="search-bar">
-    <div class="search-input-wrap">
-      <i class="pi pi-search search-icon"></i>
-      <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
-             (keyup)="buscarProductos($event)" appUppercase>
+  <!-- Grupo 1: buscador de texto (número de pedido) + su filtro asociado (Pagados/Cancelados).
+       PC: uno junto al otro en la misma fila. Móvil: buscador arriba, filtro abajo. -->
+  <div class="mp-filtro-grupo">
+    <div class="search-bar">
+      <div class="search-input-wrap">
+        <i class="pi pi-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
+               (keyup)="buscarProductos($event)" appUppercase>
+      </div>
+    </div>
+
+    <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
+              (click)="toggleFiltroEstado('PAGADO')">
+        ✅ Pagados
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
+              (click)="toggleFiltroEstado('CANCELADO')">
+        ❌ Cancelados
+      </button>
     </div>
   </div>
 
-  <!-- Filtro por tipo de pedido: cada grupo de filtro va junto con sus propios botones,
-       separado de los demás grupos (antes tipo/estado hubieran quedado mezclados). -->
-  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
-            (click)="toggleFiltroTipo('NORMAL')">
-      🛒 Normal
-    </button>
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
-            (click)="toggleFiltroTipo('APARTADO')">
-      📦 Apartados
-    </button>
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
-            (click)="toggleFiltroTipo('FIADO')">
-      💳 Ir pagando
-    </button>
-  </div>
-
-  <!-- Filtro por estado (Pagados/Cancelados) — grupo propio, dimensión distinta a "tipo".
-       Se combina con AND contra tipo/lugar. -->
-  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
-            (click)="toggleFiltroEstado('PAGADO')">
-      ✅ Pagados
-    </button>
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
-            (click)="toggleFiltroEstado('CANCELADO')">
-      ❌ Cancelados
-    </button>
-  </div>
-
-  <!-- Filtro por lugar de entrega (autocomplete, solo admin) — es "el otro buscador",
-       va después de los grupos de botones -->
-  <div class="lugar-filtro-wrap" *ngIf="isAdminUser">
-    <div class="lugar-filtro-input-wrap">
-      <i class="pi pi-map-marker lugar-filtro-icon"></i>
-      <input type="text" class="lugar-filtro-input" placeholder="Filtrar por lugar de entrega…"
-             [(ngModel)]="terminoLugar"
-             (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
-             (blur)="cerrarDropdownLugarConDelay()">
-      <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
+  <!-- Grupo 2: buscador de lugar de entrega ("el otro buscador") + su filtro asociado
+       (Normal/Apartados/Ir pagando). Mismo criterio de agrupación que el grupo 1. -->
+  <div class="mp-filtro-grupo" *ngIf="isAdminUser">
+    <div class="lugar-filtro-wrap">
+      <div class="lugar-filtro-input-wrap">
+        <i class="pi pi-map-marker lugar-filtro-icon"></i>
+        <input type="text" class="lugar-filtro-input" placeholder="Filtrar por lugar de entrega…"
+               [(ngModel)]="terminoLugar"
+               (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
+               (blur)="cerrarDropdownLugarConDelay()">
+        <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
+      </div>
+      <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
+        <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
+          {{ l.nombre }}
+        </div>
+        <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
+          Sin coincidencias
+        </div>
+      </div>
     </div>
-    <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
-      <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
-        {{ l.nombre }}
-      </div>
-      <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
-        Sin coincidencias
-      </div>
+
+    <div class="tipo-filtro-wrap">
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
+              (click)="toggleFiltroTipo('NORMAL')">
+        🛒 Normal
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
+              (click)="toggleFiltroTipo('APARTADO')">
+        📦 Apartados
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
+              (click)="toggleFiltroTipo('FIADO')">
+        💳 Ir pagando
+      </button>
     </div>
   </div>
 

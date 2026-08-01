@@ -79,9 +79,27 @@ $cancelado-to:   #dc2626;
   .pi { font-size: 0.85rem; }
 }
 
+// ── Grupo buscador + su filtro asociado ─────────────────────────────────────
+// Cada buscador (texto por número de pedido / lugar de entrega) va emparejado
+// con los botones de filtro que le corresponden: PC en la misma fila, uno
+// junto al otro; móvil apilados (buscador arriba, filtro abajo), en ese orden.
+.mp-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 575px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
 // ── Buscador ───────────────────────────────────────────────────────────────
 .search-bar {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .search-input-wrap {
@@ -120,7 +138,7 @@ $cancelado-to:   #dc2626;
 .lugar-filtro-wrap {
   position: relative;
   max-width: 420px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 
   @media (max-width: 575px) { max-width: 100%; }
 }
@@ -201,7 +219,7 @@ $cancelado-to:   #dc2626;
 .tipo-filtro-wrap {
   display: flex;
   gap: 8px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   flex-wrap: wrap;
 }
 

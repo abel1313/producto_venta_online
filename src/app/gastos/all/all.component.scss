@@ -352,10 +352,10 @@
   transition: all 0.18s;
 
   &--primary {
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
-    color: #fff !important;
+    background: var(--app-accent);
+    color: var(--app-accent-ink) !important;
 
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3); }
+    &:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
     &:disabled             { opacity: 0.45; cursor: not-allowed; transform: none !important; }
   }
 

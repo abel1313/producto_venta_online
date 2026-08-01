@@ -713,6 +713,19 @@ body.theme-dark, [data-theme="dark"] {
   }
 }
 
+/* SweetAlert2 trae su propio botón de confirmar morado por defecto
+   (--swal2-confirm-button-background-color: #7066e0), y nunca se había
+   sobreescrito — cualquier Swal.fire() que NO pase confirmButtonColor
+   explícito (la mayoría) salía morado en vez de jade. Los que sí pasan un
+   color explícito (ej. rojo #d33 en confirmaciones destructivas) no se ven
+   afectados: ese valor se aplica inline y gana sobre esta variable. */
+.swal2-popup {
+  --swal2-confirm-button-background-color: var(--app-accent) !important;
+}
+.swal2-styled.swal2-confirm {
+  color: var(--app-accent-ink) !important;
+}
+
 /* ════════════════════════════════════════════════════════════
    BOOTSTRAP — botones/enlaces de marca en jade
    ────────────────────────────────────────────────────────────

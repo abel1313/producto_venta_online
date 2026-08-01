@@ -32,7 +32,10 @@
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 16px; border: none; border-radius: 12px;
   font-weight: 600; font-size: .92rem; cursor: pointer;
-  background: var(--app-accent); color: #fff;
+  // var(--app-accent-ink) en vez de #fff fijo: en modo oscuro el acento es jade
+  // brillante (#00D97E) y texto blanco encima queda ilegible — --app-accent-ink ya
+  // resuelve el color correcto por tema (blanco en claro, oscuro en oscuro).
+  background: var(--app-accent); color: var(--app-accent-ink);
   transition: filter .15s ease, transform .15s ease;
 
   &:hover:not(:disabled) { filter: brightness(1.08); }
@@ -41,7 +44,7 @@
   &--galeria { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--sm      { padding: 7px 12px; font-size: .82rem; border-radius: 10px; width: 100%; justify-content: center; }
   &--retry   { background: #f59e0b; color: #fff; }
-  &--completar { background: var(--app-accent); }
+  &--completar { background: var(--app-accent); color: var(--app-accent-ink); }
   &--ghost   { background: transparent; color: var(--app-text-muted); border: 1px solid var(--card-border); }
   &--save    { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--pub     { background: #10b981; color: #fff; }

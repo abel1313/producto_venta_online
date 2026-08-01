@@ -55,8 +55,13 @@ export function generarHtmlTicket(d: ITicketData): string {
     : `<div class="fila"><span>MÉTODO:</span><span>${(d.metodoPago || 'N/A').toUpperCase()}</span></div>`;
 
   const filaTotal       = d.total != null ? `<div class="fila total"><span>TOTAL:</span><span>${fmt(d.total)}</span></div>` : '';
+  // En un ticket de abono, "totalPagado" es lo pagado ANTES del abono de hoy — la
+  // etiqueta "Ya pagado" ahí se prestaba a leerse como "ya pagado en total" (incluyendo
+  // el abono de hoy), que es justo el número que NO es. "Abonos previos" deja claro que
+  // es el acumulado antes de esta visita.
+  const labelPagado     = d.tipo === 'abono' ? 'Abonos previos:' : 'Ya pagado:';
   const filaTotalPagado = d.totalPagado != null && d.tipo !== 'liquidado'
-    ? `<div class="fila"><span>Ya pagado:</span><span>${fmt(d.totalPagado)}</span></div>` : '';
+    ? `<div class="fila"><span>${labelPagado}</span><span>${fmt(d.totalPagado)}</span></div>` : '';
   const filaAbono       = d.abonoHoy != null ? `<div class="fila"><span>Abono de hoy:</span><span>${fmt(d.abonoHoy)}</span></div>` : '';
   const filaSaldo       = d.saldoPendiente != null && d.saldoPendiente > 0
     ? `<div class="fila"><span>Saldo pendiente:</span><span>${fmt(d.saldoPendiente)}</span></div>` : '';

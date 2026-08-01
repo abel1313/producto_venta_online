@@ -69,3 +69,13 @@ $t:  all 0.2s ease;
   &__nombre  { font-size: .9rem; color: #1f2937; font-weight: 600; }
   &__actions { display: flex; gap: 4px; }
 }
+
+.pk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+
+  &__info { font-size: .82rem; color: #6b7280; font-weight: 600; }
+}

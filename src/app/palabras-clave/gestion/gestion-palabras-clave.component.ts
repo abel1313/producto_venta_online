@@ -21,6 +21,13 @@ export class GestionPalabrasClave implements OnInit {
 
   form!: FormGroup;
 
+  // El CRUD genérico no devuelve total de registros — "hay siguiente página" se infiere:
+  // si la página actual llegó completa (length === size), probablemente hay más. Mismo
+  // patrón que gestion-lugares.component.ts (mismo endpoint genérico).
+  page = 0;
+  readonly size = 10;
+  haySiguiente = false;
+
   constructor(
     private readonly svc: PalabraClaveService,
     private readonly fb:  FormBuilder
@@ -35,10 +42,26 @@ export class GestionPalabrasClave implements OnInit {
 
   cargar(): void {
     this.cargando = true;
-    this.svc.getAll().subscribe({
-      next: data => { this.palabras = data; this.cargando = false; },
+    this.svc.getAll(this.page, this.size).subscribe({
+      next: data => {
+        this.palabras = data;
+        this.haySiguiente = data.length === this.size;
+        this.cargando = false;
+      },
       error: (err) => { this.cargando = false; Swal.fire({ icon: 'error', title: 'Error al cargar categorías', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la lista de categorías.', timer: 2000, showConfirmButton: false }); }
     });
+  }
+
+  paginaAnterior(): void {
+    if (this.page === 0) return;
+    this.page--;
+    this.cargar();
+  }
+
+  siguientePagina(): void {
+    if (!this.haySiguiente) return;
+    this.page++;
+    this.cargar();
   }
 
   iniciarEdicion(p: IPalabraClave): void {
@@ -61,16 +84,12 @@ export class GestionPalabrasClave implements OnInit {
       : this.svc.save({ nombre });
 
     op$.subscribe({
-      next: guardada => {
+      next: () => {
         this.guardando = false;
-        if (this.editandoId !== null) {
-          // Actualiza el item en la lista sin recargar todo
-          const idx = this.palabras.findIndex(p => p.id === this.editandoId);
-          if (idx !== -1) this.palabras[idx] = guardada;
-        } else {
-          this.palabras.push(guardada);
-        }
         this.cancelarEdicion();
+        // Recarga la página actual en vez de parchear el arreglo local — con paginación
+        // real, un alta puede pertenecer a otra página y una edición no cambia el orden.
+        this.cargar();
         Swal.fire({ icon: 'success', title: 'Guardado', timer: 1200, showConfirmButton: false });
       },
       error: err => {
@@ -95,7 +114,10 @@ export class GestionPalabrasClave implements OnInit {
       if (!r.isConfirmed) return;
       this.svc.delete(p.id).subscribe({
         next: () => {
-          this.palabras = this.palabras.filter(x => x.id !== p.id);
+          // Si se elimina el último ítem de una página que no es la primera, retrocede
+          // una página para no quedar viendo una tabla vacía.
+          if (this.palabras.length === 1 && this.page > 0) this.page--;
+          this.cargar();
           Swal.fire({ icon: 'success', title: 'Eliminada', timer: 1200, showConfirmButton: false });
         },
         error: () => Swal.fire({ icon: 'error', title: 'Error al eliminar' })

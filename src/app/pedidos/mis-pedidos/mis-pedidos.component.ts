@@ -84,8 +84,31 @@ export class MisPedidosComponent implements OnInit {
     return tipos;
   }
 
+  // ── Filtro por estado (Pagados/Cancelados) — dimensión distinta a "tipo de
+  // pedido": un mismo pedido APARTADO puede terminar PAGADO o CANCELADO. Se
+  // combina con AND contra tipo/lugar (ej. Apartados + Cancelados = apartados
+  // que se cancelaron). Confirmado con el back: `&estadoPedido=` repetible,
+  // valores PAGADO/CANCELADO se combinan entre sí con OR, case-insensitive.
+  // ⚠️ Implementado y compilando en el back solo en `dev` al momento de este
+  // cambio — no tiene efecto real hasta que desplieguen a `qa`/producción.
+  filtroPagados    = false;
+  filtroCancelados = false;
+
+  toggleFiltroEstado(estado: 'PAGADO' | 'CANCELADO'): void {
+    if (estado === 'PAGADO') this.filtroPagados = !this.filtroPagados;
+    else this.filtroCancelados = !this.filtroCancelados;
+    this.buscarPedidoAdmin();
+  }
+
+  private get estadosPedidoFiltro(): string[] {
+    const estados: string[] = [];
+    if (this.filtroPagados)    estados.push('PAGADO');
+    if (this.filtroCancelados) estados.push('CANCELADO');
+    return estados;
+  }
+
   // Resumen visible de qué filtros están activos ahora mismo, para que no quede a la
-  // adivinanza qué combinación se está usando (texto + lugar + tipo pueden combinarse).
+  // adivinanza qué combinación se está usando (texto + lugar + tipo + estado pueden combinarse).
   get descripcionBusqueda(): string | null {
     const partes: string[] = [];
     if (this.buscarProd) partes.push(`texto "${this.buscarProd}"`);
@@ -93,6 +116,8 @@ export class MisPedidosComponent implements OnInit {
     if (this.filtroNormal)    partes.push('Normal');
     if (this.filtroApartado)  partes.push('Apartados');
     if (this.filtroIrPagando) partes.push('Ir pagando');
+    if (this.filtroPagados)    partes.push('Pagados');
+    if (this.filtroCancelados) partes.push('Cancelados');
     return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
   }
 
@@ -562,7 +587,7 @@ export class MisPedidosComponent implements OnInit {
     this.size = 10;
     if (reset) this.page = 0;
     this.cargando = true;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId, this.tiposPedidoFiltro)
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId, this.tiposPedidoFiltro, this.estadosPedidoFiltro)
       .subscribe({
         next: sus => {
           this.resposeGenericPedido = sus;

@@ -6492,3 +6492,53 @@ confundiría. `computeActiveGroup()` usa `clean === path || clean.startsWith(pat
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — necesita sesión real navegando entre pantallas para confirmar.
+
+---
+
+## FEAT — FILTRO PAGADOS/CANCELADOS EN MIS-PEDIDOS + REORGANIZACIÓN DE FILTROS (2026-08-01)
+
+> Respuesta del back (repo compartido, commit `c0c0e44`) a las 2 consultas de la sección
+> anterior: (1) `saldoRestante` en `POST /v1/abonos/{pedidoId}` SÍ es posterior al abono — el
+> fix de front (calcular en local) se queda igual, no hay que revertirlo, solo no confiar el
+> número en pantalla mostrado si viene de OTRA sesión (el de `data.saldoRestante` sí es
+> confiable si se quiere usar). El $200 raro del ticket reportado se explica por front cacheado
+> o un dato desfasado puntual — el back corrió un script de diagnóstico de su lado, sin acción
+> nuestra. (2) El filtro por estado **ya está implementado y compilando en `dev` del back**
+> (todavía no en `qa`) — contrato confirmado:
+
+```
+GET /v1/pedidos/buscarClientePedido?...&estadoPedido=PAGADO&estadoPedido=CANCELADO
+```
+- Repetible — varios valores del mismo parámetro se combinan con **OR** entre ellos.
+- Se combina con **AND** contra `tipoPedido`/`lugarEntregaId` (igual que ya funciona hoy entre
+  esos dos).
+- Comparación case-insensitive del lado del back — el front puede mandar `PAGADO`/`CANCELADO`
+  como sea.
+- Si se omite, no filtra por estado — retrocompatible.
+
+**Fix conectado (100% front, ya listo para cuando el back despliegue a `qa`):**
+- `pedidos.service.ts` → `buscarPedidoPorCliente()` gana un 6º parámetro `estadosPedido?: string[]`,
+  arma `&estadoPedido=` repetido.
+- `mis-pedidos.component.ts` → `filtroPagados`/`filtroCancelados`, `toggleFiltroEstado()`,
+  `estadosPedidoFiltro` getter (mismo patrón que `tiposPedidoFiltro`) — dimensión separada, no
+  se mezcla con `toggleFiltroTipo()`. `descripcionBusqueda` incluye Pagados/Cancelados.
+- Botones "✅ Pagados" / "❌ Cancelados" en `mis-pedidos.component.html`.
+
+**Reorganización de los bloques de filtro (pedido del usuario):** cada grupo de filtro ahora
+vive en su propio bloque separado, en vez de mezclar los botones nuevos dentro del grupo de
+tipo. Orden final: buscador de texto → grupo "tipo" (Normal/Apartados/Ir pagando) → grupo
+"estado" (Pagados/Cancelados, nuevo) → filtro de lugar (autocomplete, es "el otro buscador") →
+resumen de filtros activos. `.tipo-filtro-wrap` ya usa `flex-wrap: wrap`, así que en móvil cada
+grupo envuelve sus propios botones de forma independiente sin mezclarse con el grupo vecino.
+
+**⚠️ No probado en vivo — ni el filtro (el back no lo ha desplegado a `qa` todavía) ni el
+reordenamiento visual en un celular real.** Si el orden/agrupación no es exactamente lo que se
+pidió, ajustar con una captura de referencia en vez de otra ronda de descripción en texto — ya
+pasó dos veces en esta sesión que una descripción sola no bastó para acertar a la primera.
+
+**Archivos modificados:**
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + `estadosPedido`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → filtro de estado
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → botones + reordenamiento de bloques
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

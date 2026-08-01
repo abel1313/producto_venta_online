@@ -72,7 +72,11 @@
       </div>
     </div>
 
-    <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono">
+    <p class="dp-abono-liquidado" *ngIf="yaLiquidado">
+      ✅ Este pedido ya está pagado por completo — no se pueden registrar más abonos.
+    </p>
+
+    <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono && !yaLiquidado">
       💳 Registrar abono
     </button>
 

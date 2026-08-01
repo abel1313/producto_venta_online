@@ -6696,3 +6696,31 @@ llegó a implementar — quedó como duda abierta, ver conversación.
 - `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `abonos` en sus 2 tickets
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — `detalle-pedido`: "REGISTRAR ABONO" SEGUÍA CLICKEABLE EN UN CRÉDITO YA LIQUIDADO (2026-08-01)
+
+> El usuario confirmó que en `mis-pedidos` (lista) y en el detalle, imprimir/enviar ticket ya
+> funcionan bien (gatilla correctamente contra "no cancelado + ya tiene pagos"). El único bug
+> real reportado en esta ronda: en el detalle de un pedido a crédito **ya pagado por completo**,
+> el botón "💳 Registrar abono" seguía apareciendo y era clickeable.
+
+**Causa raíz:** `.dp-abono-wrap` (todo el bloque de abonos) se muestra con `*ngIf="esCredito"`,
+y `esCredito` solo mira `tipoPedido` (`APARTADO`/`FIADO`) — ese valor NO cambia cuando el
+crédito se liquida, así que el bloque completo (incluido el botón de registrar) seguía
+visible para siempre, sin importar el estado real de pago.
+
+**Fix:** nuevo getter `yaLiquidado` (`esCredito && estadoPedido === 'PAGADO'`). El botón
+"Registrar abono" ahora lleva `*ngIf="!mostrarFormAbono && !yaLiquidado"`, y en su lugar se
+muestra un aviso "✅ Este pedido ya está pagado por completo — no se pueden registrar más
+abonos." El **historial de pagos sigue mostrándose igual** (útil de consultar) — solo se oculta
+la acción de registrar uno nuevo, no todo el bloque.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `yaLiquidado`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `*ngIf` del botón + aviso
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-abono-liquidado`
+  (claro + oscuro)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

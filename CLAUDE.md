@@ -6260,12 +6260,29 @@ Sin decisión todavía. El usuario pidió primero ver claro el análisis del osc
 si el modo claro lleva la misma energía, una versión más tranquila, o casi no se usa por ahora.
 
 ### Pendiente — ticker de promociones (el elemento "marquee" del artifact)
-Discutido pero no implementado. Plan acordado: entidad nueva `TickerPromocion` (texto, enlace de
-texto libre, orden, activo), CRUD admin igual patrón que "Lugares de entrega", endpoint público
-`GET /ticker/activos` que consume un componente de ticker nuevo en el layout. El campo `enlace`
-es texto libre (el propio admin decide a dónde manda cada texto, ej. `/promociones` o
-`/tienda/buscar?termino=bolsa`) — evita depender de que el back etiquete promociones por
-categoría. Falta: escribir la especificación formal al repo compartido y confirmar con el back.
+
+> ⚠️ Reconfirmado con el usuario el 2026-08-01 — la sesión donde se discutió esto por primera
+> vez quedó documentada arriba con un plan más elaborado (entidad `TickerPromocion` con
+> enlace/orden/activo, CRUD admin) que el usuario, al preguntarle de nuevo, **no reconoció** —
+> ese nivel de detalle no fue lo que se acordó con él directamente, probablemente se sobre-
+> diseñó en esa sesión sin su confirmación explícita. **No asumir ese plan como válido.**
+
+**Lo confirmado directamente con el usuario:** una barra fija arriba de la pantalla con texto
+que se desliza de derecha a izquierda sin parar (estilo noticiero de TV), y una pantalla para
+que el admin escriba/edite ese texto (ej. "🎉 Promo perfumes esta semana"). Nada de enlaces,
+orden ni catálogo de múltiples entradas — solo el texto deslizante y dónde editarlo. Esto es
+lo único confirmado; cualquier detalle adicional (¿un solo texto o varios rotando?, ¿el
+componente vive en `styles.scss`/`app.component` o es condicional por pantalla?) no se ha
+preguntado todavía.
+
+**Nunca se implementó — verificado con grep de "ticker"/"marquee" en todo `src/app`, cero
+resultados.** El elemento que el usuario vio "moverse arriba para perfumes, promociones, etc."
+solo existió como maqueta visual dentro de un artifact de exploración de diseño (la misma
+sesión donde se decidió la paleta jade) — nunca se llevó al código real de la app.
+
+**Estado:** dejado pendiente a petición explícita del usuario (2026-08-01) — no implementar
+hasta que lo pida. Cuando se retome, empezar simple (texto fijo editable + animación CSS) y
+preguntar el resto de los detalles antes de diseñar de más otra vez.
 
 ---
 

@@ -3,10 +3,24 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { AuthenticateService } from '../auth.service';
 import { AccederService } from '../login/acceder.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { CarritoService } from '../services/carrito/carrito.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
 import { ThemeService } from '../services/theme/theme.service';
+
+// Mapeo ruta → grupo del accordion, para que la sección de la ruta activa se
+// recuerde entre navegaciones en vez de cerrarse siempre (ver comentario en
+// ngOnInit). Cada entrada es el routerLink tal cual aparece en el template.
+const GROUP_ROUTES: { group: string; paths: string[] }[] = [
+  { group: 'misproductos', paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave', 'lugares-entrega'] },
+  { group: 'pedidos',      paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
+  { group: 'ventas',       paths: ['tienda/venta-directa', 'ventas/buscar', 'abonos', 'gastos/buscar'] },
+  { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
+  { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
+  { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
+  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones'] },
+];
 
 @Component({
   selector: 'app-navbar',
@@ -24,6 +38,10 @@ export class NavbarComponent implements OnInit {
   isExpanded = false;
   openGroup: string | null = null;
   isMobileOpen = false;
+
+  // Grupo del accordion que corresponde a la ruta actual — se recalcula en cada
+  // navegación y es lo que "recuerda" la sección activa (ver onMouseEnter/Leave).
+  private activeGroup: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -57,6 +75,35 @@ export class NavbarComponent implements OnInit {
     window.addEventListener('storage', () => {
       this.serviceCarrito.validarCarrito();
     });
+
+    // La sección del menú que corresponde a la ruta activa se "recuerda": al
+    // navegar a /pedidos/mis-pedidos, por ejemplo, el grupo "Pedidos" queda
+    // marcado como el que se debe mostrar abierto la próxima vez que se
+    // expanda el sidebar (hover en desktop, tap en móvil) — no se resetea a
+    // cerrado en cada navegación como antes. Cambiar a otra sección reemplaza
+    // cuál es la "activa" (un solo grupo abierto a la vez, igual que antes).
+    this.activeGroup = this.computeActiveGroup(this.router.url);
+    this.openGroup = this.activeGroup;
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
+      this.activeGroup = this.computeActiveGroup((e as NavigationEnd).urlAfterRedirects);
+      // Solo re-sincroniza si el sidebar no está con un grupo abierto manualmente
+      // a media navegación (ej. el usuario está explorando otra sección con el
+      // mouse encima sin haber hecho clic en un link) — en la práctica, como
+      // cada click de subitem navega, esto simplemente sigue a la ruta activa.
+      this.openGroup = this.activeGroup;
+    });
+  }
+
+  // Ruta (sin querystring, sin "/" inicial) → nombre del grupo del accordion al
+  // que pertenece, o null si la ruta no vive dentro de ningún grupo (ej. Tienda,
+  // Promociones, Favoritos, que son links directos fuera del accordion).
+  private computeActiveGroup(url: string): string | null {
+    const clean = (url ?? '').split('?')[0].replace(/^\//, '');
+    const candidatos = GROUP_ROUTES
+      .flatMap(g => g.paths.map(path => ({ group: g.group, path })))
+      .sort((a, b) => b.path.length - a.path.length);
+    const hit = candidatos.find(c => clean === c.path || clean.startsWith(c.path + '/'));
+    return hit?.group ?? null;
   }
 
   hasRole(...allowedRoles: string[]): boolean {
@@ -70,11 +117,18 @@ export class NavbarComponent implements OnInit {
   get username(): string { return this.usuario; }
 
   // ── Sidebar expand/collapse (desktop hover) ────────────────────────
-  onMouseEnter(): void { this.isExpanded = true; }
+  onMouseEnter(): void {
+    this.isExpanded = true;
+    // Al expandir, siempre vuelve a mostrar la sección de la ruta activa —
+    // no lo que haya quedado manualmente abierto en un hover anterior.
+    this.openGroup = this.activeGroup;
+  }
 
   onMouseLeave(): void {
     this.isExpanded = false;
-    this.openGroup = null;
+    // Ya no se resetea a null: se recuerda la sección activa para la próxima
+    // vez que se expanda el sidebar, en vez de perderla cada vez.
+    this.openGroup = this.activeGroup;
   }
 
   // ── Accordion ──────────────────────────────────────────────────────
@@ -90,7 +144,7 @@ export class NavbarComponent implements OnInit {
 
   closeMobile(): void {
     this.isMobileOpen = false;
-    this.openGroup = null;
+    this.openGroup = this.activeGroup;
   }
 
   // ── Auth ───────────────────────────────────────────────────────────

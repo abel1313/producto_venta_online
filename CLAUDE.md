@@ -6445,3 +6445,50 @@ capturas en claro y oscuro de `/usuarios/registrar` + vitrina de componentes.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — pendiente que el usuario confirme en QA tras el deploy.
+
+---
+
+## FEAT NAVBAR — LA SECCIÓN ACTIVA DEL MENÚ SE RECUERDA ENTRE NAVEGACIONES (2026-08-01)
+
+> Pedido del usuario: al entrar a, por ejemplo, Pedidos → Mis pedidos, navegar a otra pantalla y
+> volver a mostrar el sidebar, quería seguir viendo "Pedidos" expandido/marcado — no que el
+> accordion se resetee a cerrado cada vez. Elegir otra sección debe reemplazar cuál está
+> "activa" (un solo grupo a la vez, como ya funcionaba), solo que ahora persiste.
+
+**Antes:** `openGroup` (qué grupo del accordion está expandido) solo cambiaba por clic manual
+(`toggleGroup()`) y se reseteaba a `null` en `onMouseLeave()` (desktop) y `closeMobile()`
+(móvil) — es decir, cada vez que el mouse salía del sidebar o se cerraba en móvil (típicamente
+justo después de hacer clic en un link y navegar), la sección quedaba completamente cerrada sin
+importar en qué pantalla estuviera parado el usuario.
+
+**Fix:** nuevo campo privado `activeGroup`, recalculado en cada navegación
+(`router.events.pipe(filter(e => e instanceof NavigationEnd))`) contra un mapa
+`GROUP_ROUTES` (ruta → nombre de grupo, mismo criterio de agrupación ya documentado en
+"REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR"). `onMouseEnter()`, `onMouseLeave()` y
+`closeMobile()` ya no ponen `openGroup` en `null` — lo sincronizan con `activeGroup`, así que la
+sección de la ruta en la que el usuario está siempre es la que se muestra abierta la próxima vez
+que se expanda el sidebar. `toggleGroup()` (clic manual) no cambió — el usuario sigue pudiendo
+explorar otra sección sin navegar durante el hover actual; al salir del sidebar o navegar,
+vuelve a sincronizarse con la ruta real.
+
+**Extra:** cada `<a class="sb-subitem">` ganó `routerLinkActive="sb-subitem--active"` (mismo
+patrón que ya usaban los links directos fuera del accordion — Promociones, Favoritos, etc.) para
+que el sub-item exacto de la página donde está el usuario quede resaltado, no solo el grupo.
+Nueva clase `.sb-subitem--active` en el SCSS, mismo estilo que `.sb-item--active`.
+
+**Cuidado con prefijos de ruta ambiguos:** `tienda/venta` (Agregar producto, grupo Inventario) es
+prefijo literal de `tienda/venta-directa` (grupo Ventas) — un `startsWith` ingenuo los
+confundiría. `computeActiveGroup()` usa `clean === path || clean.startsWith(path + '/')`
+(con el `/` como límite) para no matchear un prefijo suelto como si fuera hijo de otra ruta.
+`routerLinkActive` de Angular no tiene este problema (compara segmentos de ruta, no substrings).
+
+**Archivos modificados:**
+- `src/app/navbar/navbar.component.ts` → `GROUP_ROUTES`, `activeGroup`,
+  `computeActiveGroup()`, `ngOnInit()` suscrito a `NavigationEnd`, `onMouseEnter()`/
+  `onMouseLeave()`/`closeMobile()` sincronizan con `activeGroup` en vez de resetear a `null`
+- `src/app/navbar/navbar.component.html` → `routerLinkActive="sb-subitem--active"` en los 27
+  `<a class="sb-subitem">`
+- `src/app/navbar/navbar.component.scss` → `.sb-subitem--active`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — necesita sesión real navegando entre pantallas para confirmar.

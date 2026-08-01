@@ -286,6 +286,12 @@
     background: var(--sb-bg-item);
     color: var(--sb-text-active);
   }
+
+  &.sb-subitem--active {
+    background: var(--sb-bg-active);
+    color: #fff;
+    font-weight: 600;
+  }
 }
 
 /* ── Theme toggle button ───────────────────────────── */

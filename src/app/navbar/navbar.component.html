@@ -49,13 +49,13 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
-        <a class="sb-subitem" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
-        <a class="sb-subitem" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
-        <a class="sb-subitem" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
-        <a class="sb-subitem" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
-        <a class="sb-subitem" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
-        <a class="sb-subitem" routerLink="lugares-entrega" (click)="closeMobile()">📍 Lugares de entrega</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Lugares de entrega</a>
       </div>
     </div>
 
@@ -68,8 +68,8 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
-        <a class="sb-subitem" *ngIf="isAdminUser"
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" *ngIf="isAdminUser"
            routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
       </div>
     </div>
@@ -83,10 +83,10 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
-        <a class="sb-subitem" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
-        <a class="sb-subitem" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
-        <a class="sb-subitem" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos y Ventas</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="ventas/buscar" (click)="closeMobile()">🔍 Buscar ventas</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos y Ventas</a>
       </div>
     </div>
 
@@ -99,9 +99,9 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
-        <a class="sb-subitem" routerLink="reportes" (click)="closeMobile()">📈 Reportes</a>
-        <a class="sb-subitem" routerLink="clientes/buscar" (click)="closeMobile()">👥 Clientes</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="clientes/buscar" (click)="closeMobile()">👥 Clientes</a>
       </div>
     </div>
 
@@ -114,9 +114,9 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
-        <a class="sb-subitem" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
-        <a class="sb-subitem" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
       </div>
     </div>
 
@@ -129,10 +129,10 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
-        <a class="sb-subitem" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
-        <a class="sb-subitem" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
-        <a class="sb-subitem" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
       </div>
     </div>
 
@@ -145,10 +145,10 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
-        <a class="sb-subitem" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
-        <a class="sb-subitem" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
-        <a class="sb-subitem" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
       </div>
     </div>
 

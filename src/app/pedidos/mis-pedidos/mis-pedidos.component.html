@@ -7,7 +7,7 @@
     </a>
   </div>
 
-  <!-- Buscador -->
+  <!-- Buscador principal — por número de pedido (o texto del cliente) -->
   <div class="search-bar">
     <div class="search-input-wrap">
       <i class="pi pi-search search-icon"></i>
@@ -16,7 +16,38 @@
     </div>
   </div>
 
-  <!-- Filtro por lugar de entrega (autocomplete, solo admin) -->
+  <!-- Filtro por tipo de pedido: cada grupo de filtro va junto con sus propios botones,
+       separado de los demás grupos (antes tipo/estado hubieran quedado mezclados). -->
+  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
+            (click)="toggleFiltroTipo('NORMAL')">
+      🛒 Normal
+    </button>
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
+            (click)="toggleFiltroTipo('APARTADO')">
+      📦 Apartados
+    </button>
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
+            (click)="toggleFiltroTipo('FIADO')">
+      💳 Ir pagando
+    </button>
+  </div>
+
+  <!-- Filtro por estado (Pagados/Cancelados) — grupo propio, dimensión distinta a "tipo".
+       Se combina con AND contra tipo/lugar. -->
+  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
+            (click)="toggleFiltroEstado('PAGADO')">
+      ✅ Pagados
+    </button>
+    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
+            (click)="toggleFiltroEstado('CANCELADO')">
+      ❌ Cancelados
+    </button>
+  </div>
+
+  <!-- Filtro por lugar de entrega (autocomplete, solo admin) — es "el otro buscador",
+       va después de los grupos de botones -->
   <div class="lugar-filtro-wrap" *ngIf="isAdminUser">
     <div class="lugar-filtro-input-wrap">
       <i class="pi pi-map-marker lugar-filtro-icon"></i>
@@ -34,22 +65,6 @@
         Sin coincidencias
       </div>
     </div>
-  </div>
-
-  <!-- Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) -->
-  <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
-            (click)="toggleFiltroTipo('NORMAL')">
-      🛒 Normal
-    </button>
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
-            (click)="toggleFiltroTipo('APARTADO')">
-      📦 Apartados
-    </button>
-    <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
-            (click)="toggleFiltroTipo('FIADO')">
-      💳 Ir pagando
-    </button>
   </div>
 
   <!-- Resumen de filtros activos -->

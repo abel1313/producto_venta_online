@@ -6571,3 +6571,35 @@ en vez de después de que el usuario lo viera mal.
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.mp-filtro-grupo`, márgenes
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — `clientes/buscar`: HEADER SE VEÍA COMO UN CUADRO BLANCO DISTINTO AL FONDO (2026-08-01)
+
+> Cierra el punto 7 pendiente de "RONDA DE FIXES DE UI REPORTADOS EN QA" — el usuario mandó una
+> captura real de QA que sí confirmó el bug (mi vitrina anterior con datos de prueba no lo
+> reprodujo porque usaba `--header-brand`, la misma variable, pero sin comparar visualmente
+> contra el cuerpo real de la página con tarjetas).
+
+**Causa raíz:** `.cb-header` usaba `background: var(--header-brand)` — el glass semi-transparente
+(blanco al 78% de opacidad en modo claro) que ya se documentó como patrón de diseño intencional
+("DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE"), usado también en `productos/all` y
+`variante/buscar`. El efecto es sutil pero real: blanco translúcido sobre el fondo sólido mint
+de la página (`--page-bg`) se ve perceptiblemente más claro/blanco que el mint puro del cuerpo
+— exactamente el "cuadro blanco" que describió el usuario.
+
+**Decisión de alcance (confirmada con el usuario):** arreglar **solo `clientes/buscar`**, no
+tocar `productos/all`/`variante/buscar` ni la variable global `--header-brand` — son pantallas
+que nadie ha reportado con este problema y usan el mismo patrón a propósito en otro contexto
+(headers con banners laterales reservados para promociones).
+
+**Fix:** `.cb-header` cambia de `background: var(--header-brand)` (glass) a
+`background: var(--page-bg)` (sólido, mismo tono exacto que el cuerpo de la página) — el header
+deja de tener ningún contraste con el resto, se ve como un solo color continuo.
+
+**Verificado con capturas reales** (Playwright, claro y oscuro) — confirmado que el header y el
+cuerpo ya blanquean/oscurecen exactamente igual, sin ningún cuadro perceptible.
+
+**Archivo modificado:** `src/app/clietes/clientes-buscar/clientes-buscar.component.scss`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

@@ -6724,3 +6724,24 @@ la acción de registrar uno nuevo, no todo el bloque.
   (claro + oscuro)
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## ❓ SIN RESOLVER — "Tomar foto" (carga-imágenes) sigue sin verse bien tras 2 rondas de fix (2026-08-01)
+
+El usuario reportó por tercera vez que el botón "📷 Tomar foto" no se ve como debería. Ya se
+corrigió el contraste (`color: #fff` fijo → `var(--app-accent-ink)`) hace 2 sesiones — confirmado
+en el código que el fix sigue ahí, no se revirtió. Revisado el HTML completo: es un `<label>`
+con un `<input type="file" hidden>` adentro, sin `*ngIf` ni dependencia de ningún dato del
+servidor — no hay ninguna razón por la que esto dependa del back.
+
+**Anotado en el repo compartido** (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`)
+por transparencia, a petición del usuario — sin ninguna pista concreta de que sea un tema de
+backend, se les preguntó si ven algo que se nos esté escapando.
+
+**Sigue bloqueado por falta de una captura de pantalla del usuario** — sin eso no se puede
+diagnosticar con precisión si el problema real es de contraste (¿todavía?), el emoji 📷 sin
+renderizar en su navegador/SO, o algo funcional (en escritorio ese input abre el selector de
+archivos normal, no una cámara — `capture="environment"` es soporte de navegador/dispositivo).
+**No inventar un tercer fix a ciegas sin la captura** — mismo patrón que ya pasó 2 veces en esta
+sesión (Clientes, buscador de mis-pedidos): una descripción en texto sola no bastó para acertar.

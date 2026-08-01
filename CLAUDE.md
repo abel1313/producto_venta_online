@@ -6542,3 +6542,32 @@ pasó dos veces en esta sesión que una descripción sola no bastó para acertar
 - `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → botones + reordenamiento de bloques
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### Corrección — agrupación real, no solo separación (mismo día)
+
+El usuario aclaró: el reordenamiento de arriba (grupos separados en bloques distintos, uno
+debajo del otro) no era lo pedido — cada buscador va **emparejado** con su filtro
+correspondiente, en la misma fila en PC:
+
+- **Grupo 1:** buscador de texto (número de pedido) + botones "✅ Pagados"/"❌ Cancelados".
+- **Grupo 2:** buscador de lugar de entrega ("el otro buscador") + botones
+  "🛒 Normal"/"📦 Apartados"/"💳 Ir pagando".
+
+**PC:** cada grupo en una fila — buscador a la izquierda, sus botones a la derecha, en el mismo
+renglón. **Móvil (`≤575px`):** cada grupo se apila — buscador arriba, sus botones justo debajo,
+después el siguiente grupo completo.
+
+**Fix:** nueva clase `.mp-filtro-grupo` (`display:flex; align-items:center; gap:14px;
+flex-wrap:wrap`, con `flex-direction:column` en `≤575px`) envolviendo cada par
+buscador+filtro. Se quitó el `margin-bottom` individual de `.search-bar`/`.lugar-filtro-wrap`/
+`.tipo-filtro-wrap` (ahora lo maneja el grupo, para no duplicar espacio).
+
+**Verificado con capturas reales** (Playwright + el `dist/styles.css` recién compilado, 1200px
+y 375px de ancho) — la primera vez en esta sesión que se confirma un layout así ANTES de subirlo,
+en vez de después de que el usuario lo viera mal.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → estructura por grupo
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.mp-filtro-grupo`, márgenes
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

@@ -370,7 +370,15 @@ export class AbonosComponent implements OnInit, OnDestroy {
         next: res => {
           const data = res?.data;
 
-          pedidoSnap.saldo       = data?.saldoRestante ?? +(pedidoSnap.saldo - body.monto).toFixed(2);
+          // Saldo/total pagado SIEMPRE se calculan en local (saldo que ya teníamos,
+          // cargado fresco al abrir el modal, menos el monto que se acaba de abonar) —
+          // no se confía en `data.saldoRestante` para el número: visto en vivo, el back
+          // podía devolverlo reflejando el saldo de ANTES de este abono en vez de
+          // después, y el ticket impreso terminaba mostrando cifras que no cuadraban
+          // con lo que el cliente acababa de pagar (ej. "ya pagó 100 + abonó 100 hoy"
+          // pero "saldo pendiente 200" en vez de 100). Solo se usa `data.estadoPedido`
+          // (categórico, no numérico) para saber si quedó liquidado.
+          pedidoSnap.saldo       = +(pedidoSnap.saldo - body.monto).toFixed(2);
           pedidoSnap.totalPagado = +(pedidoSnap.totalPedido - pedidoSnap.saldo).toFixed(2);
           if (data) pedidoSnap.abonos.push(data);
 

@@ -30,6 +30,24 @@ export class AppComponent implements OnInit, AfterViewInit {
               private readonly themeService: ThemeService,
   ) {
     this.themeService.init(); // aplica la clase al body antes de pintar la vista
+
+    // Select-on-focus global para TODOS los inputs de precio/monto/cantidad
+    // (type="number") de la app. Antes, al dar clic en un campo con "0", el cursor se
+    // posicionaba pero no seleccionaba nada — había que borrar el 0 a mano o "atinarle"
+    // exacto para escribir encima. Con esto, el valor completo queda seleccionado al
+    // enfocar, así que escribir directo lo reemplaza. Un solo listener global (no un
+    // directive por input) porque el pedido explícito fue "para todos los montos" —
+    // tocar cada template de precio/cantidad de la app sería un cambio de docenas de
+    // archivos para el mismo comportamiento.
+    document.addEventListener('focusin', (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (target instanceof HTMLInputElement && target.type === 'number') {
+        // setTimeout(0): en algunos navegadores (sobre todo móvil) el foco nativo
+        // todavía no terminó de asentarse cuando dispara 'focusin' — seleccionar en el
+        // mismo tick a veces no aplica. Correrlo después del ciclo actual es más fiable.
+        setTimeout(() => target.select(), 0);
+      }
+    }, true);
   }
 
 

@@ -193,6 +193,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     const correoDisponibleSnap = this.correoDisponible;
     const enviarCorreoSnap     = this.enviarCorreo;
     const pedidoId             = this.pedido.pedido.id;
+    // Saldo ANTES de este abono — this.detalle todavía no se recarga (cargarDetalleCompleto()
+    // es async, no resuelve a tiempo para el texto del Swal de abajo).
+    const totalPedidoSnap      = this.detalle?.totalPedido ?? 0;
+    const totalPagadoPrevio    = this.detalle?.totalPagado ?? 0;
 
     this.abonoService.registrarAbono(pedidoId, body).subscribe({
       next: res => {
@@ -202,13 +206,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.mostrarFormAbono = false;
         this.enviarCorreo   = false;
         this.cargarDetalleCompleto();
-        const liquidado     = data?.estadoPedido === 'PAGADO' || (data?.saldoRestante != null && data.saldoRestante <= 0);
-        const txtCambio     = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
+        // Saldo calculado en local (saldo previo - este abono), no `data.saldoRestante` —
+        // visto en vivo, el back podía devolver ese campo reflejando el saldo de ANTES del
+        // abono en vez de después, mostrando un mensaje que no cuadraba con lo recién pagado.
+        const saldoCalculado = +(totalPedidoSnap - totalPagadoPrevio - body.monto).toFixed(2);
+        const liquidado      = data?.estadoPedido === 'PAGADO' || saldoCalculado <= 0;
+        const txtCambio      = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
 
         const titulo = liquidado ? '¡Pedido liquidado!' : 'Abono registrado';
         const texto  = liquidado
           ? `El pedido #${pedidoId} ha sido liquidado.${txtCambio}`
-          : `${data?.saldoRestante != null ? `Saldo restante: $${data.saldoRestante.toFixed(2)}.` : ''}${txtCambio}`;
+          : `Saldo restante: $${saldoCalculado.toFixed(2)}.${txtCambio}`;
 
         Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(() => {
           if (correoDisponibleSnap && enviarCorreoSnap) {

@@ -6376,3 +6376,72 @@ su paleta azul/morado local a propósito (ver sección del login más arriba).
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
 capturas en claro y oscuro de `/usuarios/registrar` + vitrina de componentes.
+
+---
+
+## RONDA DE FIXES DE UI REPORTADOS EN QA (2026-08-01)
+
+> Detalle completo, causa raíz y estado de cada punto en `REVISION_UI_2026-08-01.md` (creado en
+> la raíz del repo). Resumen aquí; 2 puntos se anotaron en el repo compartido para el back
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`).
+
+**Corregidos (100% front):**
+1. **Modales de SweetAlert2 salían con el botón de confirmar morado** — la librería trae su
+   propio `#7066e0` por defecto y nunca se había sobreescrito ese color específico (sí estaban
+   ya en jade el fondo/texto/inputs del popup). Fix global en `styles.scss`:
+   `--swal2-confirm-button-background-color: var(--app-accent)` + `var(--app-accent-ink)` para
+   el texto. Resuelve de un jalón el morado en carga-imágenes (botón "✕" descartar) Y el modal
+   "Info entrega" de `mis-pedidos` — mismo bug, mismo fix, sin tocar ninguno de esos dos
+   componentes directamente.
+2. **"Tomar foto" (carga-imágenes) ilegible en modo oscuro** — `.ci-btn` tenía `color: #fff`
+   fijo en vez de `var(--app-accent-ink)` (mismo bug "3.2" ya documentado en la migración jade,
+   que no se había aplicado aquí). ⚠️ Grep de `background: var(--app-accent)` + `color: #fff`
+   encontró **18 archivos más** con el mismo riesgo, sin tocar — ver detalle en
+   `REVISION_UI_2026-08-01.md` punto 2.
+3. **`palabras-clave` sin paginación** — clonado el patrón de paginación real ya usado en
+   `lugares-entrega` (mismo endpoint CRUD genérico, `page`/`size=10`,
+   `haySiguiente = length === size`). `gestion-palabras-clave.component.ts/html/scss`.
+4. **Inputs de precio/monto — había que borrar el "0" a mano para escribir.** Un solo listener
+   global en `app.component.ts` (`focusin` sobre `document`) selecciona el contenido de
+   cualquier `input[type="number"]` de la app al enfocarlo — cubre venta directa, abonos,
+   gastos, precios de producto/variante, y cualquier campo numérico nuevo, sin tocar templates
+   uno por uno.
+5. **Botón azul suelto en `gastos/buscar`** — `.ga-btn--primary` tenía un gradiente azul
+   (`#1e40af, #3b82f6`) que no era ni siquiera el azul de Aether, quedó fuera de todas las
+   migraciones anteriores. → `var(--app-accent)` + `var(--app-accent-ink)`.
+6. **Saldo pendiente incorrecto en el ticket de abono** — `registrarAbono()` en
+   `abonos.component.ts` confiaba en `data.saldoRestante` (respuesta del back) para el número
+   mostrado; si ese campo refleja el saldo de ANTES del abono en vez de después, el ticket sale
+   con "ya pagado"/"saldo pendiente" desfasados (ejemplo real: total 300, ya pagado 100, abono
+   hoy 100 → mostraba saldo 200 en vez de 100). Fix defensivo: el saldo se calcula SIEMPRE en
+   local (saldo previo cargado al abrir el modal, menos el monto que se acaba de abonar) —
+   `data.saldoRestante` ya no se usa para el número, solo `data.estadoPedido` para el flag de
+   liquidado. Mismo fix en el mensaje de `detalle-pedido.component.ts` (no imprime ticket pero
+   tenía el mismo riesgo). Además, la etiqueta "Ya pagado" en tickets tipo `abono` ahora dice
+   **"Abonos previos"** (pedido explícito del usuario — menos ambiguo, deja claro que es antes
+   de hoy) — otros tipos de ticket (venta/liquidado) no cambian.
+
+**Sin resolver, necesitan algo externo:**
+7. **`clientes/buscar` — "cuadrito verde" junto a "Clientes"** — revisé el código completo del
+   header (`.cb-header`, patrón glass estándar del proyecto) y no encontré ningún elemento
+   que calce con la descripción. Anotado como ❓ pendiente de una captura para diagnosticar bien
+   en vez de adivinar un fix.
+8. **Filtro por estado (Pagado/Cancelado) en `mis-pedidos`** — pedido del usuario, junto a los
+   filtros de tipo (Normal/Apartado/Ir pagando) que ya funcionan bien. `buscarClientePedido` no
+   tiene ningún parámetro para filtrar por `estado_pedido` hoy — con paginación real de
+   servidor, filtrarlo en el front sobre lo que ya llegó daría resultados incompletos. Pregunta
+   mandada al back pidiendo un parámetro nuevo tipo `&estadoPedido=`, mismo patrón que
+   `tipoPedido`. El front ya está listo para conectarlo en cuanto exista.
+
+**Archivos modificados:**
+- `src/styles.scss` → fix global de color de botón Swal
+- `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`/`.ci-btn--completar`
+- `src/app/palabras-clave/gestion/gestion-palabras-clave.component.ts/.html/.scss` → paginación
+- `src/app/app.component.ts` → listener global `focusin` select-on-focus
+- `src/app/gastos/all/all.component.scss` → `.ga-btn--primary`
+- `src/app/abonos/abonos.component.ts` → `registrarAbono()` cálculo local de saldo
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `registrarAbono()` mismo fix
+- `src/app/shared/ticket.util.ts` → label "Abonos previos" en tickets tipo `abono`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — pendiente que el usuario confirme en QA tras el deploy.

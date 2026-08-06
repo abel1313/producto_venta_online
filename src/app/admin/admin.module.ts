@@ -9,6 +9,7 @@ import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
+import { PublicarFacebookComponent } from './redes-sociales/publicar-facebook.component';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -19,7 +20,8 @@ import { SharedModule } from '../shared/shared.module';
     DiagnosticoImagenesComponent,
     ReconciliacionImagenesComponent,
     ChatAdminComponent,
-    GestionPromocionesComponent
+    GestionPromocionesComponent,
+    PublicarFacebookComponent
   ],
   imports: [
     CommonModule,

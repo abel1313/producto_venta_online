@@ -6766,3 +6766,100 @@ tema, y cubre el caso de que el contraste real percibido sea más débil que lo 
 de pantalla, iluminación ambiente, etc.).
 
 **Archivo modificado:** `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`
+
+---
+
+## FEAT REDES SOCIALES — PUBLICAR PRODUCTO EN FACEBOOK (FOTO Y VIDEO) (2026-08-05)
+
+> Contrato documentado por el back en el repo compartido (`CAMBIOS_FRONT.md`, secciones
+> "📘 Endpoint nuevo — Publicar variante en Facebook" y "— Publicar VIDEO..."). Primer paso de
+> la integración con redes: solo **Facebook feed**, solo **ADMIN**. Instagram y TikTok quedan
+> para después; Historias y Reels **no existen** todavía (son flujos distintos de la Graph API).
+
+### Endpoints conectados
+
+| Método | URL | Archivo |
+|---|---|---|
+| `POST` | `/v1/redes-sociales/facebook/publicar` | opcional (cae a la imagen principal de la variante) |
+| `POST` | `/v1/redes-sociales/facebook/publicar-video` | **obligatorio** (el catálogo no guarda video) |
+
+Ambos son **`multipart/form-data`**, no JSON. Campos: `varianteId`, `descripcion` (texto libre,
+sale tal cual como caption), `scheduledPublishTime` opcional (ISO LocalDateTime, mín. 10 min y
+máx. 6 meses a futuro). El de foto acepta además `imagenId` (otra imagen ya guardada) o
+`imagenNueva` (archivo suelto que **no** se guarda en la galería del producto; gana sobre
+`imagenId`). Tope de 200 MB por archivo. Respuesta: `data.estado` es `PUBLICADA` o `PROGRAMADA`,
+y `data.postIdFacebook` arma el link `https://www.facebook.com/{postIdFacebook}`.
+
+### ⚠️ No setear `Content-Type` a mano
+
+El body es un `FormData` — el browser pone `multipart/form-data` con su propio `boundary`.
+Verificado que `TokenInterceptor` solo agrega `Authorization` y `withCredentials`, no toca el
+`Content-Type`, así que no hizo falta ninguna excepción ahí.
+
+### Subida con barra de progreso — y por qué NO usa el overlay global
+
+`RedesSocialesService.enviar()` usa `reportProgress: true` + `observe: 'events'` y traduce los
+eventos a `{ tipo: 'subiendo' | 'procesando' | 'listo', porcentaje }`. Dos detalles que importan:
+
+1. **Se filtran los eventos que no son `UploadProgress` ni `HttpResponse`.** Si se mapearan
+   todos, el evento `ResponseHeader` (que llega DESPUÉS de terminar la subida) regresaría la
+   barra a 0 justo al final.
+2. **`procesando` es una fase real, no cosmética.** Cuando la subida llega al 100%, el archivo
+   apenas llegó al back — que ahora lo manda a Facebook y **puede tardar hasta 5 minutos** (ese
+   es el timeout que el back declaró). No hay nada que medir ahí, así que la barra se queda al
+   100% con una animación de pulso y el texto cambia a "Enviándolo a Facebook…". Sin esa
+   distinción, un video pesado se ve como una pantalla congelada.
+
+Se agregó `/redes-sociales/` a `LoadingInterceptor.skipUrls` (junto a `/chatbot/`): el overlay
+global de pantalla completa taparía TODA la app durante esos minutos sin decir nada. La pantalla
+muestra su propia barra en su lugar.
+
+### Previews locales — dos trampas ya conocidas, aplicadas aquí
+
+- **Archivo local** (`imagenNueva` / `video`) → `URL.createObjectURL()` + `bypassSecurityTrustUrl`
+  **al crear**, nunca desde el binding (llamarlo en el template devuelve una instancia nueva por
+  ciclo de detección y Angular repinta sin parar). Angular 14 **bloquea** las URLs `blob:` crudas
+  — sin el bypass la imagen sale rota **sin ningún error en consola**.
+- **Imagen que viene del back** (`imagenUrl` de la variante o de la galería) → `| imagenSrc | async`,
+  porque un `<img src>` nativo no pasa por `TokenInterceptor` y el endpoint responde 401.
+
+Se guardan los dos: el `SafeUrl` para el `[src]` y el string crudo aparte, porque
+`URL.revokeObjectURL` solo acepta el string. Se revoca al quitar el archivo y en `ngOnDestroy`.
+
+### Decisiones de UX
+
+- **Los opcionales se OMITEN, no se mandan vacíos.** Si se manda `imagenId: ''`, el back lo toma
+  como valor y descarta la imagen principal — por eso el servicio solo hace `append` cuando hay
+  algo real que mandar.
+- **El código de barras va en la descripción sugerida por defecto** (es lo que le permite a un
+  cliente pedir ese producto exacto), pero la pantalla avisa que queda visible en un post público
+  y el texto es totalmente editable para borrarlo.
+- **"La principal" queda deshabilitada si el producto no tiene imagen** — el back respondería 400.
+  Se muestra el aviso en vez de dejar mandar una petición que ya se sabe que falla.
+- **La fecha se valida en el front** con los mismos límites que el back (10 min / 6 meses), por lo
+  mismo. `datetime-local` entrega `2026-08-05T18:30`; se le agrega `:00` para el LocalDateTime.
+- **La galería de imágenes guardadas falla en silencio** a propósito: sin esa lista el admin
+  igual puede publicar con la principal o subiendo una nueva, no vale bloquear la pantalla.
+
+### Lo que NO existe (por si se da por hecho)
+
+No hay endpoint para listar publicaciones ya hechas de un producto, ni para editar o borrar un
+post desde acá — cada llamada crea una publicación nueva. Tampoco Historia ni Reel.
+
+### Archivos nuevos
+- `src/app/redes-sociales/models/publicacion.model.ts`
+- `src/app/redes-sociales/service/redes-sociales.service.ts`
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` / `.html` / `.scss` (prefijo BEM
+  `fb-`, todo el color por variables globales + matices `:host-context` por tema)
+
+### Archivos modificados
+- `src/app/loading.interceptor.ts` → `/redes-sociales/` en `skipUrls`
+- `src/app/admin/admin-routing.module.ts` → ruta `admin/facebook`
+- `src/app/admin/admin.module.ts` → declara el componente
+- `src/app/navbar/navbar.component.html` → link "📘 Publicar en Facebook" en 🛠️ Sistema
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo.** Además del backend desplegado, depende de que la app de Meta tenga
+aprobado `pages_manage_posts`: mientras esté en modo desarrollo, Facebook solo acepta publicar en
+páginas donde el dueño del token esté agregado como Admin/Developer/Tester de la app — si no,
+responde 400 y la pantalla mostrará ese mensaje del back tal cual.

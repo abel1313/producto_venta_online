@@ -70,8 +70,7 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
           this.acceder.login({ userName: this.userName, password: this.password } as any).subscribe({
             next: (res: any) => {
               const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
-              // Igual que en `login-form`: el back usó los dos nombres en distintas fechas.
-              const debeCambiar: boolean = res?.passwordTemporal ?? res?.debeCambiarPassword ?? false;
+              const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
               if (token) {
                 this.carritoVariante.limpiar();
                 this.carritoService.limpiarCarrito();

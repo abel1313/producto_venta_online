@@ -6961,3 +6961,59 @@ poner los dos.
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — el back todavía no despliega su lado, así que hoy no hay forma de
 reproducir ninguno de los escenarios (403 por contraseña temporal, 401 masivo del refresh).
+
+---
+
+## FEAT LEGAL — PÁGINA PÚBLICA DE POLÍTICA DE PRIVACIDAD `/privacidad` (2026-08-05)
+
+**Por qué existe:** Meta la exige en **Configuración → Básico** de la app de Facebook. Sin una
+URL de política de privacidad **accesible sin iniciar sesión**, Meta no deja ni siquiera generar
+el token de prueba en el Graph API Explorer — o sea, bloquea por completo la configuración de
+credenciales y, con ella, toda la función de "Publicar en Facebook". El back lo reportó como su
+bloqueo actual en el repo compartido (2026-08-05) y no existía ninguna página de este tipo en
+todo el proyecto (verificado con grep).
+
+**⚠️ La ruta NO lleva guards, a propósito.** Ni `AuthGuard` ni `CarritoGuard`. Meta abre la URL
+con un bot anónimo; si se topa con un redirect al login la da por inválida. Si alguna vez se
+agrega un guard global, hay que exceptuar esta ruta.
+
+**⚠️ Antes de publicar hay que confirmar `correoContacto`** en `privacidad.component.ts` —
+está en `contacto@novedades-jade.com.mx` como valor por defecto y tiene que ser una cuenta que
+alguien realmente lea: es a donde van a escribir los clientes que quieran consultar, corregir o
+eliminar sus datos.
+
+**Contenido:** redactado a partir de lo que el sistema realmente recaba (cuenta, contacto,
+pedidos, datos de entrega, chat), no genérico de plantilla. Incluye una sección explícita de
+redes sociales aclarando que solo se publican productos del catálogo y **nunca datos de
+clientes** — relevante porque es justo lo que Meta va a revisar.
+
+**Archivos nuevos:** `src/app/legal/privacidad/privacidad.component.ts` / `.html` / `.scss`
+(prefijo BEM `pv-`, color por variables globales, dark/light automático)
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta pública `privacidad`),
+`src/app/app.module.ts` (declara el componente)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## RESPUESTAS DEL BACK — 2026-08-05 (cierran 3 preguntas abiertas)
+
+1. **`scheduledPublishTime`:** el servidor corre en `America/Mexico_City` (`ENV TZ` en su
+   Dockerfile, aplica a qa y prod). Como el admin está en esa misma zona, **no hay que convertir
+   nada** — se manda el `LocalDateTime` tal cual sale del date-time picker. La implementación
+   actual ya lo hace así; sin cambios.
+
+2. **Omitir el part vacío era correcto y es obligatorio.** Si se mandara `imagenId` como string
+   vacío, el back intenta convertir `""` a `Long`, falla, y cae en el manejador genérico →
+   **500 feo**, no un 400 claro. Ellos lo anotaron como mejora pendiente de su lado; mientras
+   tanto el front NO debe mandar el part cuando no aplique.
+
+3. **El campo del login es `debeCambiarPassword`, no `passwordTemporal`.** `AuthResponse.java`
+   solo expone `accessToken` y `debeCambiarPassword`; `passwordTemporal` es un campo interno de
+   la entidad `Usuario` que nunca viaja al front. **Se quitó el fallback** que se había puesto
+   por precaución en `login-form.component.ts` y `verificar-correo.component.ts`.
+
+4. **`seguridad.exigir-header-refresh` sigue en `false`** en todos los ambientes. El front ya
+   manda `X-Requested-With`, así que pueden encenderlo cuando quieran — pero recordar que
+   conviene hacerlo **después** de que esto llegue a producción.

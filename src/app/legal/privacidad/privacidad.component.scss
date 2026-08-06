@@ -1,0 +1,80 @@
+// Página pública de Política de Privacidad. Documento de lectura larga: se prioriza
+// legibilidad (medida de línea corta, buen interlineado) por encima de cualquier adorno.
+// El color sale de las variables globales, así que dark/light funciona solo.
+
+.pv-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 64px;
+  color: var(--app-text);
+  line-height: 1.65;
+}
+
+.pv-header {
+  margin-bottom: 36px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--app-accent);
+}
+
+.pv-title {
+  margin: 0 0 6px;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.pv-sub {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--app-text-muted, #64748b);
+}
+
+.pv-sec {
+  margin-bottom: 30px;
+
+  h2 {
+    margin: 0 0 10px;
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: var(--app-accent);
+  }
+
+  p {
+    margin: 0 0 12px;
+    font-size: 0.95rem;
+  }
+
+  ul {
+    margin: 0 0 12px;
+    padding-left: 22px;
+  }
+
+  li {
+    margin-bottom: 7px;
+    font-size: 0.95rem;
+  }
+
+  strong { font-weight: 700; }
+}
+
+.pv-footer {
+  margin-top: 44px;
+  padding-top: 20px;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.86rem;
+  color: var(--app-text-muted, #64748b);
+
+  p { margin: 0 0 4px; }
+}
+
+a {
+  color: var(--app-accent);
+  text-decoration: underline;
+
+  &:hover { opacity: .8; }
+}
+
+@media (max-width: 576px) {
+  .pv-wrap { padding: 24px 16px 48px; }
+  .pv-title { font-size: 1.5rem; }
+}

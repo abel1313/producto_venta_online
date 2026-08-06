@@ -228,11 +228,9 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
         const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
-        // Se leen los dos nombres a propósito: el back documentó `debeCambiarPassword` en
-        // julio y `passwordTemporal` en la tanda de seguridad de 2026-07-31, sin decir si es
-        // un rename o dos campos distintos. Si el front se queda con el nombre equivocado, el
-        // usuario recibe 403 en TODOS los endpoints y la app se ve rota sin explicación.
-        const debeCambiar: boolean = res?.passwordTemporal ?? res?.debeCambiarPassword ?? false;
+        // El back confirmó (2026-08-05) que `AuthResponse` solo expone `debeCambiarPassword`.
+        // `passwordTemporal` es el campo interno de la entidad Usuario y nunca viaja al front.
+        const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
         if (token) {
           this.carritoVariante.limpiar();
           this.carritoService.limpiarCarrito();

@@ -15,8 +15,11 @@ import { Observable } from 'rxjs';
 export class LoadingInterceptor implements HttpInterceptor {
   constructor(private loadingService: LoadingService) {}
 
-  // URLs que no deben mostrar el spinner global
-  private readonly skipUrls = ['/chatbot/'];
+  // URLs que no deben mostrar el spinner global.
+  // `/redes-sociales/`: publicar en Facebook sube el archivo y luego espera a que el back
+  // lo mande a Meta — hasta 5 minutos para un video. El overlay taparía toda la app ese
+  // rato sin decir nada; esa pantalla muestra su propia barra de progreso.
+  private readonly skipUrls = ['/chatbot/', '/redes-sociales/'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.skipUrls.some(url => req.url.includes(url))) {

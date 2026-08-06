@@ -7,6 +7,7 @@ import { DiagnosticoImagenesComponent } from './diagnostico-imagenes/diagnostico
 import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/reconciliacion-imagenes.component';
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
+import { PublicarFacebookComponent } from './redes-sociales/publicar-facebook.component';
 
 const routes: Routes = [
   { path: 'cache',                   component: CacheComponent },
@@ -15,7 +16,8 @@ const routes: Routes = [
   { path: 'diagnostico-imagenes',    component: DiagnosticoImagenesComponent },
   { path: 'reconciliacion-imagenes', component: ReconciliacionImagenesComponent },
   { path: 'chat',                    component: ChatAdminComponent },
-  { path: 'promociones',             component: GestionPromocionesComponent }
+  { path: 'promociones',             component: GestionPromocionesComponent },
+  { path: 'facebook',                component: PublicarFacebookComponent }
 ];
 
 @NgModule({

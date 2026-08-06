@@ -8,6 +8,7 @@ import { UsuariosGuard } from './auth/usuarios.guard';
 import { SinRegistroGuard } from './guard/sin-registro.guard';
 import { AdminGuardGuard } from './guard/admin-guard.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
+import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 
 const routes: Routes = [
   {
@@ -115,6 +116,12 @@ const routes: Routes = [
   },
     {
     path: 'qr', component: QrVentasJadeComponent
+  },
+  {
+    // PÚBLICA a propósito — sin AuthGuard ni CarritoGuard. Meta exige poder abrir la URL de la
+    // política de privacidad sin iniciar sesión; si se topa con un redirect al login, la
+    // rechaza y no deja configurar la app de Facebook.
+    path: 'privacidad', component: PrivacidadComponent
   },
   {
     path: '', redirectTo: 'productos/buscar', pathMatch: 'full'

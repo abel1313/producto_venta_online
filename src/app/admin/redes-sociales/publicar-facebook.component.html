@@ -1,0 +1,233 @@
+<div class="fb-wrap">
+
+  <!-- ── HEADER ───────────────────────────────────────────────────────── -->
+  <div class="fb-header">
+    <div class="fb-header__title">
+      <h4>📘 Publicar en Facebook</h4>
+      <small>Sube una foto o un video de un producto a la página del negocio</small>
+    </div>
+  </div>
+
+  <!-- ── PASO 1 · ELEGIR PRODUCTO ─────────────────────────────────────── -->
+  <div class="fb-card">
+    <h5 class="fb-card__title">1 · Elige el producto</h5>
+
+    <div *ngIf="!seleccionado">
+      <div class="fb-search-wrap">
+        <input class="fb-input" type="text"
+               placeholder="Buscar por nombre, código, talla o color…"
+               [(ngModel)]="termino" (input)="onInput()" appUppercase>
+        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
+      </div>
+
+      <div class="fb-dropdown" *ngIf="resultados.length > 0">
+        <div class="fb-dropdown__item" *ngFor="let v of resultados" (click)="seleccionar(v)">
+          <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+            <img class="fb-dropdown__img" [src]="src" alt="">
+          </ng-container>
+          <span class="fb-dropdown__txt">
+            {{ etiqueta(v) }} <small class="fb-dropdown__id">#{{ v.id }}</small>
+          </span>
+          <span class="fb-dropdown__precio" *ngIf="v.precio != null">${{ v.precio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <p class="fb-hint"
+         *ngIf="!buscando && termino.trim().length >= 2 && resultados.length === 0">
+        Sin resultados. Prueba con otro nombre o con el código de barras.
+      </p>
+    </div>
+
+    <!-- Producto ya elegido -->
+    <div class="fb-sel" *ngIf="seleccionado">
+      <ng-container *ngIf="seleccionado.imagenUrl | imagenSrc | async as src">
+        <img class="fb-sel__img" [src]="src" alt="">
+      </ng-container>
+      <div class="fb-sel__info">
+        <strong>{{ etiqueta(seleccionado) }}</strong>
+        <small>#{{ seleccionado.id }}
+          <ng-container *ngIf="seleccionado.codigoBarras"> · {{ seleccionado.codigoBarras }}</ng-container>
+        </small>
+      </div>
+      <button class="fb-btn fb-btn--ghost" (click)="limpiarSeleccion()" [disabled]="publicando">
+        Cambiar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── PASO 2 · CONTENIDO ───────────────────────────────────────────── -->
+  <div class="fb-card" *ngIf="seleccionado">
+    <h5 class="fb-card__title">2 · Qué vas a publicar</h5>
+
+    <div class="fb-tipo">
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'foto'"
+              (click)="setTipo('foto')" [disabled]="publicando">📷 Foto</button>
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'video'"
+              (click)="setTipo('video')" [disabled]="publicando">🎬 Video</button>
+    </div>
+
+    <!-- ····· FOTO ····· -->
+    <div *ngIf="tipo === 'foto'">
+      <label class="fb-label">De dónde sale la imagen</label>
+
+      <div class="fb-origen">
+        <button class="fb-origen__btn" [class.fb-origen__btn--on]="origenImagen === 'principal'"
+                (click)="setOrigenImagen('principal')" [disabled]="publicando || !tieneImagenPrincipal">
+          La principal
+        </button>
+        <button class="fb-origen__btn" [class.fb-origen__btn--on]="origenImagen === 'guardada'"
+                (click)="setOrigenImagen('guardada')"
+                [disabled]="publicando || imagenesGuardadas.length === 0">
+          Otra ya guardada
+        </button>
+        <button class="fb-origen__btn" [class.fb-origen__btn--on]="origenImagen === 'nueva'"
+                (click)="setOrigenImagen('nueva')" [disabled]="publicando">
+          Subir una nueva
+        </button>
+      </div>
+
+      <p class="fb-hint" *ngIf="!tieneImagenPrincipal && origenImagen === 'principal'">
+        ⚠️ Este producto no tiene imagen principal guardada. Elige otra opción o el back
+        va a rechazar la publicación.
+      </p>
+
+      <!-- Galería de imágenes guardadas -->
+      <div *ngIf="origenImagen === 'guardada'">
+        <p class="fb-hint" *ngIf="cargandoImagenes">Cargando imágenes…</p>
+        <div class="fb-galeria" *ngIf="!cargandoImagenes">
+          <div class="fb-galeria__item" *ngFor="let img of imagenesGuardadas"
+               [class.fb-galeria__item--on]="imagenIdSel === img.id"
+               (click)="elegirGuardada(img)">
+            <ng-container *ngIf="img.urlImagen | imagenSrc | async as src">
+              <img [src]="src" [alt]="img.nombreImagen">
+            </ng-container>
+            <span class="fb-galeria__check" *ngIf="imagenIdSel === img.id">✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subir imagen nueva -->
+      <div *ngIf="origenImagen === 'nueva'">
+        <p class="fb-hint">
+          Solo para esta publicación — no se guarda en la galería del producto. Sirve
+          cuando quieres una foto con mejor ángulo o calidad que la del catálogo.
+        </p>
+
+        <label class="fb-file" *ngIf="!archivoImagen">
+          <input type="file" accept="image/*" (change)="onArchivoImagen($event)" hidden>
+          🖼️ Elegir imagen
+        </label>
+        <label class="fb-file fb-file--alt" *ngIf="!archivoImagen">
+          <input type="file" accept="image/*" capture="environment"
+                 (change)="onArchivoImagen($event)" hidden>
+          📷 Tomar foto
+        </label>
+
+        <div class="fb-archivo" *ngIf="archivoImagen">
+          <img class="fb-archivo__preview" *ngIf="previewImagen" [src]="previewImagen" alt="">
+          <div class="fb-archivo__info">
+            <strong>{{ archivoImagen.name }}</strong>
+            <small>{{ pesoLegible(archivoImagen) }}</small>
+          </div>
+          <button class="fb-btn fb-btn--quitar" (click)="quitarImagenNueva()" [disabled]="publicando">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ····· VIDEO ····· -->
+    <div *ngIf="tipo === 'video'">
+      <p class="fb-hint">
+        El video es obligatorio y no se guarda en el catálogo — es exclusivo de esta
+        publicación. Máximo {{ limiteMb }} MB.
+      </p>
+
+      <label class="fb-file" *ngIf="!archivoVideo">
+        <input type="file" accept="video/*" (change)="onArchivoVideo($event)" hidden>
+        🎬 Elegir video
+      </label>
+
+      <div class="fb-archivo" *ngIf="archivoVideo">
+        <video class="fb-archivo__preview" *ngIf="previewVideo" [src]="previewVideo" controls muted></video>
+        <div class="fb-archivo__info">
+          <strong>{{ archivoVideo.name }}</strong>
+          <small>{{ pesoLegible(archivoVideo) }}</small>
+        </div>
+        <button class="fb-btn fb-btn--quitar" (click)="quitarVideo()" [disabled]="publicando">✕</button>
+      </div>
+    </div>
+
+    <!-- ····· DESCRIPCIÓN ····· -->
+    <label class="fb-label fb-label--sep">Texto del post</label>
+    <textarea class="fb-textarea" rows="6" [(ngModel)]="descripcion"
+              [disabled]="publicando"
+              placeholder="Lo que escribas aquí es exactamente lo que se ve en Facebook."></textarea>
+    <p class="fb-hint">
+      ℹ️ Se publica tal cual. Si dejas el código de barras, cualquiera que vea el post
+      podrá leerlo — bórralo si no quieres que sea público.
+    </p>
+  </div>
+
+  <!-- ── PASO 3 · CUÁNDO ──────────────────────────────────────────────── -->
+  <div class="fb-card" *ngIf="seleccionado">
+    <h5 class="fb-card__title">3 · Cuándo</h5>
+
+    <div class="fb-tipo">
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="!programar"
+              (click)="programar = false" [disabled]="publicando">⚡ Ahora</button>
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="programar"
+              (click)="programar = true" [disabled]="publicando">📅 Programar</button>
+    </div>
+
+    <div class="fb-field" *ngIf="programar">
+      <label class="fb-label">Fecha y hora</label>
+      <input class="fb-input" type="datetime-local"
+             [(ngModel)]="fechaProgramada" [disabled]="publicando">
+      <p class="fb-error" *ngIf="errorFecha">{{ errorFecha }}</p>
+      <p class="fb-hint" *ngIf="!errorFecha">
+        Entre 10 minutos y 6 meses a futuro.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── PUBLICAR ─────────────────────────────────────────────────────── -->
+  <div class="fb-card fb-card--accion" *ngIf="seleccionado && !resultado">
+    <button class="fb-btn fb-btn--primary fb-btn--lg"
+            [disabled]="!puedePublicar" (click)="publicar()">
+      {{ programar ? '📅 Programar publicación' : '🚀 Publicar ahora' }}
+    </button>
+
+    <div class="fb-progreso" *ngIf="publicando">
+      <div class="fb-progreso__barra">
+        <div class="fb-progreso__fill"
+             [class.fb-progreso__fill--indet]="faseEnvio === 'procesando'"
+             [style.width.%]="faseEnvio === 'procesando' ? 100 : progreso"></div>
+      </div>
+      <small *ngIf="faseEnvio === 'subiendo'">Subiendo… {{ progreso }}%</small>
+      <small *ngIf="faseEnvio === 'procesando'">
+        Archivo recibido. Enviándolo a Facebook — un video puede tardar varios minutos,
+        no cierres esta pantalla.
+      </small>
+    </div>
+  </div>
+
+  <!-- ── RESULTADO ────────────────────────────────────────────────────── -->
+  <div class="fb-card fb-resultado" *ngIf="resultado">
+    <h5 class="fb-card__title">
+      {{ resultado.estado === 'PROGRAMADA' ? '📅 Programada' : '✅ Publicada' }}
+    </h5>
+
+    <p class="fb-resultado__linea" *ngIf="resultado.estado === 'PROGRAMADA'">
+      Se publicará el <strong>{{ formatoFecha(resultado.scheduledPublishTime) }}</strong>.
+    </p>
+    <p class="fb-resultado__linea" *ngIf="resultado.estado === 'PUBLICADA'">
+      Publicada el <strong>{{ formatoFecha(resultado.fechaPublicacion) }}</strong>.
+    </p>
+
+    <div class="fb-resultado__acciones">
+      <a class="fb-btn fb-btn--primary" *ngIf="linkPost"
+         [href]="linkPost" target="_blank" rel="noopener">Ver en Facebook ↗</a>
+      <button class="fb-btn fb-btn--ghost" (click)="nuevaPublicacion()">Publicar otra cosa</button>
+    </div>
+  </div>
+
+</div>

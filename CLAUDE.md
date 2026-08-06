@@ -6766,3 +6766,254 @@ tema, y cubre el caso de que el contraste real percibido sea más débil que lo 
 de pantalla, iluminación ambiente, etc.).
 
 **Archivo modificado:** `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`
+
+---
+
+## FEAT REDES SOCIALES — PUBLICAR PRODUCTO EN FACEBOOK (FOTO Y VIDEO) (2026-08-05)
+
+> Contrato documentado por el back en el repo compartido (`CAMBIOS_FRONT.md`, secciones
+> "📘 Endpoint nuevo — Publicar variante en Facebook" y "— Publicar VIDEO..."). Primer paso de
+> la integración con redes: solo **Facebook feed**, solo **ADMIN**. Instagram y TikTok quedan
+> para después; Historias y Reels **no existen** todavía (son flujos distintos de la Graph API).
+
+### Endpoints conectados
+
+| Método | URL | Archivo |
+|---|---|---|
+| `POST` | `/v1/redes-sociales/facebook/publicar` | opcional (cae a la imagen principal de la variante) |
+| `POST` | `/v1/redes-sociales/facebook/publicar-video` | **obligatorio** (el catálogo no guarda video) |
+
+Ambos son **`multipart/form-data`**, no JSON. Campos: `varianteId`, `descripcion` (texto libre,
+sale tal cual como caption), `scheduledPublishTime` opcional (ISO LocalDateTime, mín. 10 min y
+máx. 6 meses a futuro). El de foto acepta además `imagenId` (otra imagen ya guardada) o
+`imagenNueva` (archivo suelto que **no** se guarda en la galería del producto; gana sobre
+`imagenId`). Tope de 200 MB por archivo. Respuesta: `data.estado` es `PUBLICADA` o `PROGRAMADA`,
+y `data.postIdFacebook` arma el link `https://www.facebook.com/{postIdFacebook}`.
+
+### ⚠️ No setear `Content-Type` a mano
+
+El body es un `FormData` — el browser pone `multipart/form-data` con su propio `boundary`.
+Verificado que `TokenInterceptor` solo agrega `Authorization` y `withCredentials`, no toca el
+`Content-Type`, así que no hizo falta ninguna excepción ahí.
+
+### Subida con barra de progreso — y por qué NO usa el overlay global
+
+`RedesSocialesService.enviar()` usa `reportProgress: true` + `observe: 'events'` y traduce los
+eventos a `{ tipo: 'subiendo' | 'procesando' | 'listo', porcentaje }`. Dos detalles que importan:
+
+1. **Se filtran los eventos que no son `UploadProgress` ni `HttpResponse`.** Si se mapearan
+   todos, el evento `ResponseHeader` (que llega DESPUÉS de terminar la subida) regresaría la
+   barra a 0 justo al final.
+2. **`procesando` es una fase real, no cosmética.** Cuando la subida llega al 100%, el archivo
+   apenas llegó al back — que ahora lo manda a Facebook y **puede tardar hasta 5 minutos** (ese
+   es el timeout que el back declaró). No hay nada que medir ahí, así que la barra se queda al
+   100% con una animación de pulso y el texto cambia a "Enviándolo a Facebook…". Sin esa
+   distinción, un video pesado se ve como una pantalla congelada.
+
+Se agregó `/redes-sociales/` a `LoadingInterceptor.skipUrls` (junto a `/chatbot/`): el overlay
+global de pantalla completa taparía TODA la app durante esos minutos sin decir nada. La pantalla
+muestra su propia barra en su lugar.
+
+### Previews locales — dos trampas ya conocidas, aplicadas aquí
+
+- **Archivo local** (`imagenNueva` / `video`) → `URL.createObjectURL()` + `bypassSecurityTrustUrl`
+  **al crear**, nunca desde el binding (llamarlo en el template devuelve una instancia nueva por
+  ciclo de detección y Angular repinta sin parar). Angular 14 **bloquea** las URLs `blob:` crudas
+  — sin el bypass la imagen sale rota **sin ningún error en consola**.
+- **Imagen que viene del back** (`imagenUrl` de la variante o de la galería) → `| imagenSrc | async`,
+  porque un `<img src>` nativo no pasa por `TokenInterceptor` y el endpoint responde 401.
+
+Se guardan los dos: el `SafeUrl` para el `[src]` y el string crudo aparte, porque
+`URL.revokeObjectURL` solo acepta el string. Se revoca al quitar el archivo y en `ngOnDestroy`.
+
+### Decisiones de UX
+
+- **Los opcionales se OMITEN, no se mandan vacíos.** Si se manda `imagenId: ''`, el back lo toma
+  como valor y descarta la imagen principal — por eso el servicio solo hace `append` cuando hay
+  algo real que mandar.
+- **El código de barras va en la descripción sugerida por defecto** (es lo que le permite a un
+  cliente pedir ese producto exacto), pero la pantalla avisa que queda visible en un post público
+  y el texto es totalmente editable para borrarlo.
+- **"La principal" queda deshabilitada si el producto no tiene imagen** — el back respondería 400.
+  Se muestra el aviso en vez de dejar mandar una petición que ya se sabe que falla.
+- **La fecha se valida en el front** con los mismos límites que el back (10 min / 6 meses), por lo
+  mismo. `datetime-local` entrega `2026-08-05T18:30`; se le agrega `:00` para el LocalDateTime.
+- **La galería de imágenes guardadas falla en silencio** a propósito: sin esa lista el admin
+  igual puede publicar con la principal o subiendo una nueva, no vale bloquear la pantalla.
+
+### Lo que NO existe (por si se da por hecho)
+
+No hay endpoint para listar publicaciones ya hechas de un producto, ni para editar o borrar un
+post desde acá — cada llamada crea una publicación nueva. Tampoco Historia ni Reel.
+
+### Archivos nuevos
+- `src/app/redes-sociales/models/publicacion.model.ts`
+- `src/app/redes-sociales/service/redes-sociales.service.ts`
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` / `.html` / `.scss` (prefijo BEM
+  `fb-`, todo el color por variables globales + matices `:host-context` por tema)
+
+### Archivos modificados
+- `src/app/loading.interceptor.ts` → `/redes-sociales/` en `skipUrls`
+- `src/app/admin/admin-routing.module.ts` → ruta `admin/facebook`
+- `src/app/admin/admin.module.ts` → declara el componente
+- `src/app/navbar/navbar.component.html` → link "📘 Publicar en Facebook" en 🛠️ Sistema
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo.** Además del backend desplegado, depende de que la app de Meta tenga
+aprobado `pages_manage_posts`: mientras esté en modo desarrollo, Facebook solo acepta publicar en
+páginas donde el dueño del token esté agregado como Admin/Developer/Tester de la app — si no,
+responde 400 y la pantalla mostrará ese mensaje del back tal cual.
+
+---
+
+## FIX SEGURIDAD AUTH — LOS 6 PUNTOS DEL CHECKLIST DEL BACK (2026-08-05)
+
+> Cierra la sección "🔐 CORRECCIONES DE SEGURIDAD EN AUTENTICACIÓN — 2026-07-31 (acción
+> requerida en el front)" del repo compartido, que llevaba una semana sin atender. **Nada de
+> esto se rompe hoy** — el back todavía tiene esos cambios sin desplegar — pero el día que
+> desplieguen, 4 de los 6 puntos rompen la app de golpe.
+
+### 1. `passwordTemporal` vs `debeCambiarPassword` — se leen LOS DOS
+
+El back documentó `debeCambiarPassword` el 2026-07-04 y `passwordTemporal` el 2026-07-31, sin
+aclarar si es un rename o dos campos distintos. Con el campo equivocado el front nunca detecta
+la contraseña temporal y el usuario recibe **403 en TODOS los endpoints** salvo cuatro de auth
+— la app se ve completamente rota sin ninguna pista de por qué.
+
+Se lee `res?.passwordTemporal ?? res?.debeCambiarPassword ?? false` en `login-form` y en
+`verificar-correo`. Funciona con cualquiera de los dos nombres. **Pregunta abierta al back**
+para poder quitar el que sobre.
+
+### 2. Cambiar la contraseña ahora MATA la sesión — hay que volver al login
+
+El back invalida el refresh token en el instante (los 3 caminos: cambiar, restablecer y el
+reseteo de un admin). Quedarse dentro de la app deja al usuario con una sesión muerta que
+revienta en el siguiente refresh.
+
+Estaban mal **3 de los 4 lugares**:
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Modal forzado del login (`forzarCambioPassword`) | entraba a `/productos/buscar` ❌ | cierra sesión → `/login` |
+| Mismo modal en `verificar-correo` | igual ❌ | cierra sesión → `/login` |
+| `/clientes/cambiar-password` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/clientes/mi-perfil` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/olvide-password` | ya iba a `/login` ✅ | sin cambio |
+
+**Nuevo `SesionService`** (`src/app/shared/sesion.service.ts`) con `cerrarSesionLocal(destino)`:
+limpia el access token, los roles y **ambos** carritos, y navega. Existe para tener un solo
+lugar donde se define "cerrar sesión localmente" — `NavbarComponent.limpiarSesionLocal()` se
+refactorizó para usarlo también (antes tenía su propia copia, y con 5 copias iban a divergir).
+**No** llama a `POST /v1/auth/logout`: en un cambio de contraseña el back ya mató la sesión.
+
+### 3. El 401 del primer refresh tras el despliegue → login sin error feo
+
+Al desplegar, **todos** los refresh tokens viejos dejan de servir de golpe (les faltan `jti` y
+`sessionId`), así que el primer refresh de cada usuario responde 401. El interceptor ya
+redirigía al login, pero **además propagaba el error** → cada componente mostraba su
+`Swal.fire({icon:'error'})` encima de la redirección.
+
+Ahora devuelve **`EMPTY`** en vez de propagar. Trade-off consciente: un `.subscribe({ next })`
+en vuelo no se entera de nada — aceptable, porque el componente se destruye al navegar. El
+overlay global sí se apaga bien: `LoadingInterceptor` usa `finalize()`, que corre también al
+completar, no solo al fallar.
+
+### 4. No reintentar el refresh con un token ya rotado
+
+El back rota el refresh token de verdad; si le llega uno ya usado lo interpreta como **token
+robado y cierra la sesión completa**. El guard `isRefreshing` solo cubría refreshes
+*simultáneos* — pero después de un refresh fallido, `isRefreshing` volvía a `false` y el
+siguiente 401 disparaba otro intento.
+
+Nuevo flag **`sesionMuerta`**: se enciende cuando un refresh falla y corta cualquier intento
+posterior (navega al login y devuelve `EMPTY`). Se apaga solo cuando vuelve a haber access
+token, o sea cuando el usuario se logueó de nuevo — se detecta en `intercept()`, sin acoplar
+el interceptor al flujo de login.
+
+### 5. Header `X-Requested-With: XMLHttpRequest` en refresh y logout
+
+Nueva constante `CSRF_ENDPOINTS = ['/auth/refresh', '/auth/logout']` en el interceptor. Se
+manda siempre; hoy el back lo tiene **apagado** (`seguridad.exigir-header-refresh: false`), así
+que mandarlo de más no molesta.
+
+⚠️ **El orden importa y no se puede invertir:** primero se despliega esto, después se le avisa
+al back, y **recién ahí** ellos lo encienden. Si lo encienden antes, todos los usuarios pierden
+la sesión a los 15 minutos (cuando expira su access token).
+
+### 6. Contraseña mínima de 8 caracteres — ya estaba
+
+Verificado en los 5 formularios: `cambiar-password`, `olvide-password`, `add-usuarios` (registro
+y edición), `mi-perfil` (`reqLongitud`) y el modal forzado del login (`cumpleRequisitos`, que
+sí valida `length >= 8`). **Ojo:** el validador `passwordFuerte` de `src/app/validador/validador.ts`
+**no** valida longitud — solo mayúscula/minúscula/número/especial. La longitud siempre viene de
+un `Validators.minLength(8)` aparte. Si se agrega un formulario de contraseña nuevo, hay que
+poner los dos.
+
+**Archivos nuevos:** `src/app/shared/sesion.service.ts`
+
+**Archivos modificados:** `src/app/token/TokenInterceptor .ts`,
+`src/app/login/login-form/login-form.component.ts`,
+`src/app/login/verificar-correo/verificar-correo.component.ts`,
+`src/app/clietes/cambiar-password/cambiar-password.component.ts`,
+`src/app/clietes/mi-perfil/mi-perfil.component.ts`,
+`src/app/navbar/navbar.component.ts` (usa `SesionService` + `admin/facebook` en `GROUP_ROUTES`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — el back todavía no despliega su lado, así que hoy no hay forma de
+reproducir ninguno de los escenarios (403 por contraseña temporal, 401 masivo del refresh).
+
+---
+
+## FEAT LEGAL — PÁGINA PÚBLICA DE POLÍTICA DE PRIVACIDAD `/privacidad` (2026-08-05)
+
+**Por qué existe:** Meta la exige en **Configuración → Básico** de la app de Facebook. Sin una
+URL de política de privacidad **accesible sin iniciar sesión**, Meta no deja ni siquiera generar
+el token de prueba en el Graph API Explorer — o sea, bloquea por completo la configuración de
+credenciales y, con ella, toda la función de "Publicar en Facebook". El back lo reportó como su
+bloqueo actual en el repo compartido (2026-08-05) y no existía ninguna página de este tipo en
+todo el proyecto (verificado con grep).
+
+**⚠️ La ruta NO lleva guards, a propósito.** Ni `AuthGuard` ni `CarritoGuard`. Meta abre la URL
+con un bot anónimo; si se topa con un redirect al login la da por inválida. Si alguna vez se
+agrega un guard global, hay que exceptuar esta ruta.
+
+**⚠️ Antes de publicar hay que confirmar `correoContacto`** en `privacidad.component.ts` —
+está en `contacto@novedades-jade.com.mx` como valor por defecto y tiene que ser una cuenta que
+alguien realmente lea: es a donde van a escribir los clientes que quieran consultar, corregir o
+eliminar sus datos.
+
+**Contenido:** redactado a partir de lo que el sistema realmente recaba (cuenta, contacto,
+pedidos, datos de entrega, chat), no genérico de plantilla. Incluye una sección explícita de
+redes sociales aclarando que solo se publican productos del catálogo y **nunca datos de
+clientes** — relevante porque es justo lo que Meta va a revisar.
+
+**Archivos nuevos:** `src/app/legal/privacidad/privacidad.component.ts` / `.html` / `.scss`
+(prefijo BEM `pv-`, color por variables globales, dark/light automático)
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta pública `privacidad`),
+`src/app/app.module.ts` (declara el componente)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## RESPUESTAS DEL BACK — 2026-08-05 (cierran 3 preguntas abiertas)
+
+1. **`scheduledPublishTime`:** el servidor corre en `America/Mexico_City` (`ENV TZ` en su
+   Dockerfile, aplica a qa y prod). Como el admin está en esa misma zona, **no hay que convertir
+   nada** — se manda el `LocalDateTime` tal cual sale del date-time picker. La implementación
+   actual ya lo hace así; sin cambios.
+
+2. **Omitir el part vacío era correcto y es obligatorio.** Si se mandara `imagenId` como string
+   vacío, el back intenta convertir `""` a `Long`, falla, y cae en el manejador genérico →
+   **500 feo**, no un 400 claro. Ellos lo anotaron como mejora pendiente de su lado; mientras
+   tanto el front NO debe mandar el part cuando no aplique.
+
+3. **El campo del login es `debeCambiarPassword`, no `passwordTemporal`.** `AuthResponse.java`
+   solo expone `accessToken` y `debeCambiarPassword`; `passwordTemporal` es un campo interno de
+   la entidad `Usuario` que nunca viaja al front. **Se quitó el fallback** que se había puesto
+   por precaución en `login-form.component.ts` y `verificar-correo.component.ts`.
+
+4. **`seguridad.exigir-header-refresh` sigue en `false`** en todos los ambientes. El front ya
+   manda `X-Requested-With`, así que pueden encenderlo cuando quieran — pero recordar que
+   conviene hacerlo **después** de que esto llegue a producción.

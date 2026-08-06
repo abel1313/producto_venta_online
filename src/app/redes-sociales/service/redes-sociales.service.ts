@@ -1,0 +1,104 @@
+import { HttpClient, HttpEvent, HttpEventType, HttpResponse } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
+import {
+  IPublicacionRed,
+  IPublicarFotoRequest,
+  IPublicarVideoRequest
+} from '../models/publicacion.model';
+
+/** Lo que el componente necesita saber mientras sube: % de avance o el resultado final. */
+export interface IProgresoPublicacion {
+  /**
+   * `subiendo`   → el archivo va en camino, `porcentaje` avanza.
+   * `procesando` → ya llegó completo al back, que ahora lo manda a Facebook. Puede
+   *                tardar minutos y NO hay forma de medirlo: aquí la barra se queda
+   *                al 100% y hay que cambiar el texto para que no parezca colgado.
+   * `listo`      → respuesta final del back.
+   */
+  tipo: 'subiendo' | 'procesando' | 'listo';
+  /** 0-100. */
+  porcentaje: number;
+  /** Solo viene cuando `tipo === 'listo'`. */
+  publicacion?: IPublicacionRed;
+}
+
+@Injectable({ providedIn: 'root' })
+export class RedesSocialesService {
+
+  private readonly url = `${environment.api_Url}/v1/redes-sociales/facebook`;
+
+  constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Publica una foto en el feed de la página. Solo ADMIN.
+   *
+   * Si no se manda `imagenNueva` ni `imagenId`, el back usa la imagen principal ya
+   * guardada de la variante (y responde 400 si la variante no tiene ninguna).
+   */
+  publicarFoto(req: IPublicarFotoRequest): Observable<IProgresoPublicacion> {
+    const form = new FormData();
+    form.append('varianteId', String(req.varianteId));
+    form.append('descripcion', req.descripcion);
+    // Los opcionales se OMITEN cuando no aplican — mandar el part vacío haría que el
+    // back lo tome como valor y descarte la imagen principal.
+    if (req.imagenNueva)          form.append('imagenNueva', req.imagenNueva, req.imagenNueva.name);
+    else if (req.imagenId)        form.append('imagenId', req.imagenId);
+    if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
+
+    return this.enviar(`${this.url}/publicar`, form);
+  }
+
+  /**
+   * Publica un video en el feed de la página. Solo ADMIN.
+   *
+   * ⚠️ El archivo es obligatorio en cada llamada — el catálogo no guarda video de
+   * variantes, así que no hay a qué caer por defecto. Puede tardar varios minutos:
+   * el back espera hasta 5 antes de dar timeout hacia Facebook.
+   */
+  publicarVideo(req: IPublicarVideoRequest): Observable<IProgresoPublicacion> {
+    const form = new FormData();
+    form.append('varianteId', String(req.varianteId));
+    form.append('descripcion', req.descripcion);
+    form.append('video', req.video, req.video.name);
+    if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
+
+    return this.enviar(`${this.url}/publicar-video`, form);
+  }
+
+  /**
+   * `reportProgress` + `observe: 'events'` para poder pintar una barra de avance real —
+   * sin esto, una subida de video de 200 MB se ve como una pantalla congelada varios
+   * minutos. Ver también `LoadingInterceptor.skipUrls`, que excluye estas rutas del
+   * overlay global (taparía toda la app durante la subida).
+   */
+  private enviar(url: string, form: FormData): Observable<IProgresoPublicacion> {
+    return this.http.post<{ data: IPublicacionRed }>(url, form, {
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
+      // Solo interesan estos dos tipos de evento. Los demás (`Sent`, `ResponseHeader`,
+      // `DownloadProgress`) se descartan: si se mapearan, uno de ellos llegaría DESPUÉS
+      // de terminar la subida y regresaría la barra a 0.
+      filter((e: HttpEvent<{ data: IPublicacionRed }>) =>
+        e.type === HttpEventType.UploadProgress || e instanceof HttpResponse),
+      map((evento: HttpEvent<{ data: IPublicacionRed }>) => {
+        if (evento.type === HttpEventType.UploadProgress) {
+          // `total` puede venir undefined si el server no anuncia el tamaño.
+          const porcentaje = evento.total ? Math.round((evento.loaded / evento.total) * 100) : 0;
+          return {
+            tipo: porcentaje >= 100 ? 'procesando' : 'subiendo',
+            porcentaje
+          } as IProgresoPublicacion;
+        }
+        return {
+          tipo: 'listo',
+          porcentaje: 100,
+          publicacion: (evento as HttpResponse<{ data: IPublicacionRed }>).body?.data
+        } as IProgresoPublicacion;
+      })
+    );
+  }
+}

@@ -8,6 +8,7 @@ import { filter } from 'rxjs/operators';
 import { CarritoService } from '../services/carrito/carrito.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
 import { ThemeService } from '../services/theme/theme.service';
+import { SesionService } from '../shared/sesion.service';
 
 // Mapeo ruta → grupo del accordion, para que la sección de la ruta activa se
 // recuerde entre navegaciones en vez de cerrarse siempre (ver comentario en
@@ -19,7 +20,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
   { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
   { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
-  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones'] },
+  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/facebook'] },
 ];
 
 @Component({
@@ -52,6 +53,7 @@ export class NavbarComponent implements OnInit {
     public readonly serviceCarrito: CarritoService,
     private readonly carritoVariante: CarritoVarianteService,
     public readonly themeService: ThemeService,
+    private readonly sesion: SesionService,
   ) { }
 
   ngOnInit(): void {
@@ -156,17 +158,14 @@ export class NavbarComponent implements OnInit {
   }
 
   private limpiarSesionLocal(): void {
-    this.auth.clearAccessToken();
-    this.authService.setRolesFromToken('');
+    // El borrado en sí vive en SesionService — mismo código que usan las 4 pantallas de
+    // cambio de contraseña, para que no se separen con el tiempo. Aquí solo queda lo que es
+    // propio del sidebar (su estado visual).
     this.roles = [];
     this.usuario = '';
     this.countCarritoVariante = 0;
-    // Al cerrar sesión sí se limpian AMBOS carritos (el de productos también,
-    // aunque ya no se muestre en el footer — no debe quedar en localStorage).
-    this.serviceCarrito.limpiarCarrito();
-    this.carritoVariante.limpiar();
     this.closeMobile();
-    this.router.navigate(['/login']);
+    this.sesion.cerrarSesionLocal();
   }
 
   // ── Carrito ────────────────────────────────────────────────────────

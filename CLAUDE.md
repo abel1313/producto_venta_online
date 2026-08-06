@@ -7020,7 +7020,12 @@ clientes** — relevante porque es justo lo que Meta va a revisar.
 
 ---
 
-## ⏸️ PAUSADO — PUBLICAR EN FACEBOOK: LINK OCULTO DEL MENÚ (2026-08-05)
+## ⏸️ PAUSADO — PUBLICAR EN FACEBOOK: SACADO DE `dev` Y `qa` (2026-08-05)
+
+> **Nota:** en un primer momento solo se ocultó el link del menú (commit `2b57b12`). Poco después
+> se decidió sacar el feature completo de `dev`/`qa`, igual que hizo el back — ver
+> "ACTUALIZACIÓN" al final de esta sección. El resto de la sección describe el contexto, que
+> sigue siendo válido.
 
 El back **sacó de `dev` y `qa`** los endpoints `POST /v1/redes-sociales/facebook/publicar` y
 `/publicar-video` (repo compartido, commit `c834e85`), mientras se resuelve la configuración de
@@ -7056,3 +7061,39 @@ dónde se quedó):
 **Archivo modificado:** `src/app/navbar/navbar.component.html`
 
 **Verificado con `ng build --configuration=development` sin errores.**
+
+### ACTUALIZACIÓN (mismo día) — se sacó el feature completo, no solo el link
+
+Ocultar el link dejaba ~1300 líneas de código muerto en `dev`/`qa` apuntando a endpoints que ya
+no existen. Se sacó todo, replicando lo que hizo el back.
+
+**Respaldo primero:** rama **`backup/facebook-redes-sociales`** (pusheada al remoto), creada
+desde `dev` con el feature todavía dentro. Mismo nombre que usó el back en `proyecto_key`, a
+propósito, para que las dos ramas se encuentren juntas al retomar.
+
+> ⚠️ **No se usó `git stash`** aunque así se pidió: el código ya estaba commiteado y pusheado a
+> `dev` y `qa`, así que no había nada en el árbol de trabajo que guardar. Y un stash vive solo en
+> la máquina local, no viaja al remoto — se habría perdido con cualquier `git clean` o al cambiar
+> de equipo. Una rama publicada cumple lo mismo y es recuperable desde cualquier lado.
+
+**Qué se eliminó:**
+
+| Archivo | Qué se hizo |
+|---|---|
+| `src/app/redes-sociales/` (modelo + servicio) | borrado |
+| `src/app/admin/redes-sociales/` (componente `.ts`/`.html`/`.scss`) | borrado |
+| `src/app/admin/admin-routing.module.ts` | quitada la ruta `facebook` + import |
+| `src/app/admin/admin.module.ts` | quitada la declaración + import |
+| `src/app/navbar/navbar.component.html` | quitado el link (queda solo un comentario) |
+| `src/app/navbar/navbar.component.ts` | quitado `admin/facebook` de `GROUP_ROUTES` |
+| `src/app/loading.interceptor.ts` | quitado `/redes-sociales/` de `skipUrls` |
+
+**⚠️ Al reactivar, no olvidar `skipUrls`.** Es lo más fácil de pasar por alto porque no truena
+nada: sin `/redes-sociales/` ahí, el overlay global de carga tapa la app entera durante los
+minutos que tarda la subida de un video, sin decir nada. Es un archivo aparte del feature.
+
+**Qué NO se tocó:** la página pública `/privacidad` — sigue haciendo falta para la app de Meta al
+retomar, y de todos modos conviene tenerla publicada.
+
+**Verificado:** grep de `redes-sociales|PublicarFacebook|admin/facebook` en `src/app` → sin
+resultados fuera de los comentarios. `ng build --configuration=development` sin errores.

@@ -26,7 +26,7 @@ export class UsuariosGuard implements CanActivate {
       }
       if ((payload.roles || []).length === 0) return true;
 
-      this.router.navigate(['/variantes/buscar']);
+      this.router.navigate(['/tienda/buscar']);
       return false;
     } catch {
       this.auth.clearAccessToken();

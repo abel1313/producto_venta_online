@@ -16,6 +16,9 @@ export class LoadingInterceptor implements HttpInterceptor {
   constructor(private loadingService: LoadingService) {}
 
   // URLs que no deben mostrar el spinner global
+  // (`/redes-sociales/` se quitó 2026-08-05 junto con el feature de Facebook — al
+  //  reactivarlo hay que volver a agregarlo, si no el overlay tapa toda la app durante
+  //  los minutos que tarda la subida de un video).
   private readonly skipUrls = ['/chatbot/'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {

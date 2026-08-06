@@ -67,7 +67,7 @@
   padding: .45rem 1rem;
   border: none;
   border-radius: 8px;
-  background: rgba(0,122,255,.12);
+  background: rgba(0,135,90,.12);
   color: var(--app-accent);
   font-weight: 600;
   font-size: .875rem;
@@ -76,7 +76,7 @@
   white-space: nowrap;
 
   &:hover {
-    background: rgba(0,122,255,.22);
+    background: rgba(0,135,90,.22);
   }
 }
 
@@ -147,7 +147,7 @@
     border-radius: 50px;
     font-size: .68rem;
     font-weight: 700;
-    background: rgba(0,122,255, 0.15);
+    background: rgba(0,135,90, 0.15);
     color: var(--app-accent);
     margin-bottom: .15rem;
   }
@@ -262,9 +262,10 @@
     color: #b45309;
   }
 
+  // Azul = "en curso" (semántico, no marca) — ver nota en abonos.component.scss.
   &--fiado {
-    background: rgba(0,122,255, 0.15);
-    color: var(--app-accent);
+    background: rgba(37,99,235, 0.13);
+    color: #2563eb;
   }
 }
 
@@ -284,14 +285,54 @@
   padding: .55rem 1.2rem;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #007AFF, #5856D6);
+  background: linear-gradient(135deg, #00875A, #005C3D);
   color: #fff;
   font-weight: 700;
   font-size: .85rem;
   cursor: pointer;
   transition: box-shadow .18s;
 
-  &:hover { box-shadow: 0 4px 14px rgba(0,122,255,.35); }
+  &:hover { box-shadow: 0 4px 14px rgba(0,135,90,.35); }
+}
+
+.dp-abono-liquidado {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem 1rem;
+  border-radius: 8px;
+  background: rgba(22,163,74,.10);
+  border: 1px solid rgba(22,163,74,.3);
+  color: #16a34a;
+  font-weight: 600;
+  font-size: .85rem;
+  margin: 0 0 .5rem;
+}
+
+.dp-entrega {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  margin-bottom: 1rem;
+  padding: .7rem .9rem;
+  border-radius: 10px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+
+  &__title {
+    font-weight: 700;
+    font-size: .82rem;
+    color: var(--card-text);
+    margin: 0 0 .15rem;
+  }
+
+  &__item {
+    margin: 0;
+    font-size: .8rem;
+    color: var(--card-text-muted);
+
+    strong { color: var(--card-text); }
+  }
 }
 
 .dp-abono-historial {
@@ -397,7 +438,7 @@
   transition: background .15s, border-color .15s;
 
   &--active {
-    background: rgba(0,122,255,.14);
+    background: rgba(0,135,90,.14);
     border-color: var(--app-accent);
     color: var(--app-accent);
   }
@@ -453,7 +494,7 @@
   padding: .45rem 1.1rem;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #007AFF, #5856D6);
+  background: linear-gradient(135deg, #00875A, #005C3D);
   color: #fff;
   font-size: .82rem;
   font-weight: 700;
@@ -461,12 +502,12 @@
   transition: box-shadow .15s;
 
   &:disabled { opacity: .55; cursor: not-allowed; }
-  &:not(:disabled):hover { box-shadow: 0 3px 10px rgba(0,122,255,.35); }
+  &:not(:disabled):hover { box-shadow: 0 3px 10px rgba(0,135,90,.35); }
 }
 
 .dp-btn-reenviar, .dp-btn-imprimir {
   padding: .38rem .9rem;
-  border: 1px solid rgba(0,122,255,.5);
+  border: 1px solid rgba(0,135,90,.5);
   border-radius: 8px;
   background: transparent;
   color: var(--app-accent);
@@ -476,7 +517,7 @@
   white-space: nowrap;
   transition: background .15s;
 
-  &:hover { background: rgba(0,122,255,.08); }
+  &:hover { background: rgba(0,135,90,.08); }
 
   &:disabled {
     opacity: .5;
@@ -485,9 +526,9 @@
 }
 
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  .dp-btn-reenviar, .dp-btn-imprimir { color: #7FBFFF; border-color: rgba(212,180,131,.4); }
+  .dp-btn-reenviar, .dp-btn-imprimir { color: #6EEBB0; border-color: rgba(212,180,131,.4); }
   .dp-tipo-badge--apartado { background: rgba(251,146,60,.2); color: #fbbf24; }
-  .dp-tipo-badge--fiado    { background: rgba(74,158,255,.2); color: #7FBFFF; }
+  .dp-tipo-badge--fiado    { background: rgba(96,165,250,.18); color: #60a5fa; }
   .dp-cambio {
     background: rgba(74, 222, 128, 0.22);
     color: #86efac;
@@ -498,5 +539,10 @@
       color: #fca5a5;
       border-color: rgba(252, 165, 165, 0.5);
     }
+  }
+  .dp-abono-liquidado {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: rgba(74, 222, 128, 0.4);
+    color: #86efac;
   }
 }

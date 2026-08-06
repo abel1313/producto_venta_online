@@ -8,6 +8,7 @@ import { UsuariosGuard } from './auth/usuarios.guard';
 import { SinRegistroGuard } from './guard/sin-registro.guard';
 import { AdminGuardGuard } from './guard/admin-guard.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
+import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 
 const routes: Routes = [
   {
@@ -65,7 +66,10 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
-    path: 'variantes',
+    // Ruta pública "Tienda" — antes /variantes, renombrada solo en la URL (el código interno
+    // sigue en src/app/variante/, sin tocar — mismo criterio ya usado para renombrar solo lo
+    // visible al usuario, extendido aquí a la URL del navegador).
+    path: 'tienda',
     loadChildren: () => import('./variante/agregar.module').then(m => m.AgregarModule),
     canActivate: [CarritoGuard]
   },
@@ -91,6 +95,12 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    // Gestión del catálogo de lugares de entrega — solo admin
+    path: 'lugares-entrega',
+    loadChildren: () => import('./lugares-entrega/lugares-entrega.module').then(m => m.LugaresEntregaModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
     path: 'promociones',
     loadChildren: () => import('./promociones/promociones.module').then(m => m.PromocionesModule),
     canActivate: [AuthGuard, CarritoGuard]
@@ -106,6 +116,12 @@ const routes: Routes = [
   },
     {
     path: 'qr', component: QrVentasJadeComponent
+  },
+  {
+    // PÚBLICA a propósito — sin AuthGuard ni CarritoGuard. Meta exige poder abrir la URL de la
+    // política de privacidad sin iniciar sesión; si se topa con un redirect al login, la
+    // rechaza y no deja configurar la app de Facebook.
+    path: 'privacidad', component: PrivacidadComponent
   },
   {
     path: '', redirectTo: 'productos/buscar', pathMatch: 'full'

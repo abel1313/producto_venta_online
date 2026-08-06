@@ -60,59 +60,75 @@ nb-card, nb-menu, nb-select {
 body.theme-light, [data-theme="light"] {
   color-scheme: light;
   /* ── Paleta de marca — variables canónicas ── */
-  --color-bg:           #F5F8FF;
+  --color-bg:           #F3FAF6;
   --color-surface:      #FFFFFF;
-  --color-surface-alt:  #E8EDFB;
-  --color-text:         #1C1E2E;
-  --color-text-secondary: #5A6285;
-  --color-accent:       #007AFF;
-  --color-border:       #DCE3F2;
+  --color-surface-alt:  #E3F2EA;
+  --color-text:         #152420;
+  --color-text-secondary: #55736A;
+  --color-accent:       #00875A;
+  --color-border:       #D5E8DD;
   --color-success-bg:   #E4E9E4;
   --color-success-text: #3A4A3D;
   --color-warning-bg:   #F1E1E1;
   --color-warning-text: #8A3A3A;
 
   /* ── Base (aliases a la paleta) ── */
-  --app-bg:            #F5F8FF;
+  --app-bg:            #F3FAF6;
   --app-surface:       #FFFFFF;
-  --app-surface-2:     #E8EDFB;
-  --app-text:          #1C1E2E;
-  --app-text-muted:    #5A6285;
-  --app-border:        #DCE3F2;
-  --app-accent:        #007AFF;
-  --app-accent-soft:   rgba(0,122,255,0.10);
+  --app-surface-2:     #E3F2EA;
+  --app-text:          #152420;
+  --app-text-muted:    #55736A;
+  --app-border:        #D5E8DD;
+  --app-accent:        #00875A;
+  --app-accent-soft:   rgba(0,135,90,0.10);
+  /* Tinta = color del TEXTO que va encima del acento. En claro el acento es
+     oscuro (#00875A) → texto blanco. En oscuro el acento es brillante → texto
+     casi negro. Sin esto, un botón jade brillante con texto blanco queda
+     ilegible (se detectó en la captura del paginador). */
+  --app-accent-ink:    #FFFFFF;
+  --app-accent-hover:  #006B47;
+  --app-accent-rgb:    0, 135, 90;
+
+  /* Bootstrap lee estas para .text-primary / .bg-primary / .link-primary /
+     anillos de foco. Declaradas aquí (body.theme-* = mayor especificidad que
+     el :root de Bootstrap) para que sigan el acento del sistema. */
+  --bs-primary:        #00875A;
+  --bs-primary-rgb:    0, 135, 90;
+  --bs-link-color:     #00875A;
+  --bs-link-color-rgb: 0, 135, 90;
+  --bs-link-hover-color: #006B47;
   --app-shadow:        0 1px 4px rgba(0,0,0,0.08);
 
   /* ── Página (fondo principal) ── */
-  --page-bg:           #F5F8FF;
+  --page-bg:           #F3FAF6;
 
   /* ── Cards / paneles ── */
   --card-bg:           #FFFFFF;
-  --card-text:         #1C1E2E;
-  --card-text-muted:   #5A6285;
-  --card-border:       #DCE3F2;
+  --card-text:         #152420;
+  --card-text-muted:   #55736A;
+  --card-border:       #D5E8DD;
   --card-shadow:       0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
   --card-radius:       14px;
 
   /* ── Inputs / buscadores / textareas ── */
   --input-bg:          #FFFFFF;
-  --input-text:        #1C1E2E;
-  --input-border:      #DCE3F2;
-  --input-placeholder: #A3ABC9;
-  --input-focus-border: #007AFF;
-  --input-focus-shadow: 0 0 0 3px rgba(0,122,255,0.18);
+  --input-text:        #152420;
+  --input-border:      #D5E8DD;
+  --input-placeholder: #9DBAAD;
+  --input-focus-border: #00875A;
+  --input-focus-shadow: 0 0 0 3px rgba(0,135,90,0.18);
 
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #FFFFFF;
-  --form-section-bg:   #E8EDFB;
+  --form-section-bg:   #E3F2EA;
 
   /* ── Cabeceras — glassmorphism Aether (mismo cristal del login) ── */
   --header-brand:        rgba(255, 255, 255, 0.78);
-  --header-brand-shadow: rgba(0, 122, 255, 0.12);
-  --header-brand-border: rgba(0, 122, 255, 0.16);
+  --header-brand-shadow: rgba(0, 135, 90, 0.12);
+  --header-brand-border: rgba(0, 135, 90, 0.16);
   --header-brand-filter: blur(20px) saturate(150%);
-  --header-text:         #1C1E2E;
-  --header-text-muted:   #5A6285;
+  --header-text:         #152420;
+  --header-text-muted:   #55736A;
 }
 
 /* ════════════════════════════════════════════════
@@ -121,59 +137,70 @@ body.theme-light, [data-theme="light"] {
 body.theme-dark, [data-theme="dark"] {
   color-scheme: dark;
   /* ── Paleta de marca — variables canónicas ── */
-  --color-bg:           #0B0F24;
-  --color-surface:      #161B3A;
-  --color-surface-alt:  #242B52;
-  --color-text:         #F1F4FF;
-  --color-text-secondary: #8890B8;
-  --color-accent:       #4A9EFF;
-  --color-border:       #2A3050;
+  --color-bg:           #081410;
+  --color-surface:      #0F2119;
+  --color-surface-alt:  #193227;
+  --color-text:         #EDF7F1;
+  --color-text-secondary: #88A99A;
+  --color-accent:       #00D97E;
+  --color-border:       #1E3A2D;
   --color-success-bg:   #233326;
   --color-success-text: #8FB894;
   --color-warning-bg:   #3A2323;
   --color-warning-text: #D48B8B;
 
   /* ── Base (aliases a la paleta) ── */
-  --app-bg:            #0B0F24;
-  --app-surface:       #161B3A;
-  --app-surface-2:     #242B52;
-  --app-text:          #F1F4FF;
-  --app-text-muted:    #8890B8;
-  --app-border:        #2A3050;
-  --app-accent:        #4A9EFF;
-  --app-accent-soft:   rgba(74,158,255,0.14);
+  --app-bg:            #081410;
+  --app-surface:       #0F2119;
+  --app-surface-2:     #193227;
+  --app-text:          #EDF7F1;
+  --app-text-muted:    #88A99A;
+  --app-border:        #1E3A2D;
+  --app-accent:        #00D97E;
+  --app-accent-soft:   rgba(0,217,126,0.14);
+  /* Acento brillante → la tinta encima debe ser oscura, no blanca. */
+  --app-accent-ink:    #062015;
+  --app-accent-hover:  #2EE698;
+  --app-accent-rgb:    0, 217, 126;
+
+  /* Ver nota en el bloque claro — Bootstrap usa estas para utilidades/enlaces. */
+  --bs-primary:        #00D97E;
+  --bs-primary-rgb:    0, 217, 126;
+  --bs-link-color:     #00D97E;
+  --bs-link-color-rgb: 0, 217, 126;
+  --bs-link-hover-color: #2EE698;
   --app-shadow:        0 1px 4px rgba(0,0,0,0.40);
 
   /* ── Página (fondo principal) ── */
-  --page-bg:           #0B0F24;
+  --page-bg:           #081410;
 
   /* ── Cards / paneles ── */
-  --card-bg:           #161B3A;
-  --card-text:         #F1F4FF;
-  --card-text-muted:   #8890B8;
-  --card-border:       #2A3050;
+  --card-bg:           #0F2119;
+  --card-text:         #EDF7F1;
+  --card-text-muted:   #88A99A;
+  --card-border:       #1E3A2D;
   --card-shadow:       0 4px 20px rgba(0,0,0,0.45);
   --card-radius:       14px;
 
   /* ── Inputs / buscadores / textareas ── */
-  --input-bg:          rgba(225,235,255,0.06);
-  --input-text:        #F1F4FF;
-  --input-border:      #2A3050;
-  --input-placeholder: #6C7499;
-  --input-focus-border: #4A9EFF;
-  --input-focus-shadow: 0 0 0 3px rgba(74,158,255,0.22);
+  --input-bg:          rgba(225,255,240,0.06);
+  --input-text:        #EDF7F1;
+  --input-border:      #1E3A2D;
+  --input-placeholder: #688A7C;
+  --input-focus-border: #00D97E;
+  --input-focus-shadow: 0 0 0 3px rgba(0,217,126,0.22);
 
   /* ── Formularios de guardado/actualización ── */
-  --form-bg:           #161B3A;
-  --form-section-bg:   #242B52;
+  --form-bg:           #0F2119;
+  --form-section-bg:   #193227;
 
   /* ── Cabeceras — dark glass Aether (mismo cristal del login) ── */
-  --header-brand:        rgba(15, 20, 45, 0.72);
+  --header-brand:        rgba(10, 26, 20, 0.72);
   --header-brand-shadow: rgba(0, 0, 0, 0.55);
-  --header-brand-border: rgba(88, 86, 214, 0.28);
+  --header-brand-border: rgba(0, 217, 126, 0.28);
   --header-brand-filter: blur(20px);
-  --header-text:         #F1F4FF;
-  --header-text-muted:   #8890B8;
+  --header-text:         #EDF7F1;
+  --header-text-muted:   #88A99A;
 }
 
 /* ── Transición suave al cambiar de tema ──── */
@@ -280,177 +307,177 @@ label {
 body.theme-dark {
 
   /* ── Tipografía general ────────────────── */
-  color: #F1F4FF;
-  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #F1F4FF; }
+  color: #EDF7F1;
+  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #EDF7F1; }
 
   /* ── Bootstrap cards ───────────────────── */
   .card {
-    background: rgba(225,235,255,0.05) !important;
+    background: rgba(225,255,240,0.05) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    border: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
     box-shadow: 0 4px 24px rgba(0,0,0,0.45) !important;
   }
   .card-header {
-    background: rgba(225,235,255,0.06) !important;
-    border-bottom: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.06) !important;
+    border-bottom: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
-  .card-body { color: #F1F4FF !important; }
-  .card-title { color: #F1F4FF !important; }
+  .card-body { color: #EDF7F1 !important; }
+  .card-title { color: #EDF7F1 !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
-    background: rgba(225,235,255,0.05) !important;
-    border: 1px solid #2A3050 !important;
+    background: rgba(225,255,240,0.05) !important;
+    border: 1px solid #1E3A2D !important;
     backdrop-filter: blur(12px);
-    color: #F1F4FF !important;
+    color: #EDF7F1 !important;
   }
   nb-card-header {
-    background: rgba(225,235,255,0.05) !important;
-    border-bottom: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.05) !important;
+    border-bottom: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
-  nb-card-body { color: #F1F4FF !important; }
+  nb-card-body { color: #EDF7F1 !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: #F1F4FF !important;
+    color: #EDF7F1 !important;
     --bs-table-bg: transparent;
-    --bs-table-striped-bg: rgba(225,235,255,0.03);
-    --bs-table-hover-bg: rgba(225,235,255,0.06);
-    --bs-table-border-color: #2A3050;
+    --bs-table-striped-bg: rgba(225,255,240,0.03);
+    --bs-table-hover-bg: rgba(225,255,240,0.06);
+    --bs-table-border-color: #1E3A2D;
   }
   .table thead th {
-    background: rgba(225,235,255,0.06) !important;
-    color: #959DC0 !important;
-    border-color: #2A3050 !important;
+    background: rgba(225,255,240,0.06) !important;
+    color: #93B3A4 !important;
+    border-color: #1E3A2D !important;
   }
-  .table td, .table th { border-color: rgba(42,48,80,0.7) !important; }
+  .table td, .table th { border-color: rgba(30,58,45,0.7) !important; }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
-    background: rgba(225,235,255,0.06) !important;
-    border-color: #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.06) !important;
+    border-color: #1E3A2D !important;
+    color: #EDF7F1 !important;
     &:focus {
-      background: rgba(225,235,255,0.09) !important;
-      border-color: #4A9EFF !important;
-      box-shadow: 0 0 0 3px rgba(74,158,255,0.22) !important;
+      background: rgba(225,255,240,0.09) !important;
+      border-color: #00D97E !important;
+      box-shadow: 0 0 0 3px rgba(0,217,126,0.22) !important;
     }
-    &::placeholder { color: #626B94 !important; }
+    &::placeholder { color: #5F8375 !important; }
   }
   .input-group-text {
-    background: rgba(225,235,255,0.06) !important;
-    border-color: #2A3050 !important;
-    color: #959DC0 !important;
+    background: rgba(225,255,240,0.06) !important;
+    border-color: #1E3A2D !important;
+    color: #93B3A4 !important;
   }
-  label { color: #959DC0 !important; }
+  label { color: #93B3A4 !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {
-    background: rgba(11,15,36,0.97) !important;
+    background: rgba(8,20,16,0.97) !important;
     backdrop-filter: blur(16px);
-    border: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    border: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
   .modal-header {
-    border-bottom: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    border-bottom: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
-  .modal-footer { border-top: 1px solid #2A3050 !important; }
+  .modal-footer { border-top: 1px solid #1E3A2D !important; }
   .btn-close { filter: invert(1); }
 
   /* ── Bootstrap dropdowns ───────────────── */
   .dropdown-menu {
-    background: rgba(11,15,36,0.97) !important;
+    background: rgba(8,20,16,0.97) !important;
     backdrop-filter: blur(12px);
-    border: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    border: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
   .dropdown-item {
-    color: #E8EDFB !important;
-    &:hover { background: rgba(225,235,255,0.08) !important; color: #fff !important; }
+    color: #E3F2EA !important;
+    &:hover { background: rgba(225,255,240,0.08) !important; color: #fff !important; }
   }
-  .dropdown-divider { border-color: #2A3050 !important; }
+  .dropdown-divider { border-color: #1E3A2D !important; }
 
   /* ── PrimeNG ───────────────────────────── */
   .p-card {
-    background: rgba(225,235,255,0.05) !important;
-    border: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.05) !important;
+    border: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
   .p-datatable .p-datatable-thead > tr > th {
-    background: rgba(225,235,255,0.06) !important;
-    color: #959DC0 !important;
-    border-color: #2A3050 !important;
+    background: rgba(225,255,240,0.06) !important;
+    color: #93B3A4 !important;
+    border-color: #1E3A2D !important;
   }
   .p-datatable .p-datatable-tbody > tr {
     background: transparent !important;
-    color: #F1F4FF !important;
-    &:hover { background: rgba(225,235,255,0.05) !important; }
+    color: #EDF7F1 !important;
+    &:hover { background: rgba(225,255,240,0.05) !important; }
   }
-  .p-datatable .p-datatable-tbody > tr > td { border-color: rgba(42,48,80,0.6) !important; }
+  .p-datatable .p-datatable-tbody > tr > td { border-color: rgba(30,58,45,0.6) !important; }
   .p-inputtext {
-    background: rgba(225,235,255,0.06) !important;
-    border-color: #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.06) !important;
+    border-color: #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
   .p-dropdown {
-    background: #141A33 !important;
-    border-color: #2A3050 !important;
-    color: #F1F4FF !important;
+    background: #0D1E17 !important;
+    border-color: #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
-  .p-dropdown-label { color: #F1F4FF !important; }
-  .p-dropdown-trigger { color: #959DC0 !important; }
+  .p-dropdown-label { color: #EDF7F1 !important; }
+  .p-dropdown-trigger { color: #93B3A4 !important; }
   .p-dropdown-panel {
-    background: #161B3A !important;
-    border: 1px solid #2A3050 !important;
+    background: #0F2119 !important;
+    border: 1px solid #1E3A2D !important;
     box-shadow: 0 8px 32px rgba(0,0,0,0.55) !important;
   }
-  .p-dropdown-items-wrapper { background: #161B3A !important; }
+  .p-dropdown-items-wrapper { background: #0F2119 !important; }
   .p-dropdown-item {
-    color: #F1F4FF !important;
+    color: #EDF7F1 !important;
     background: transparent !important;
-    &:hover { background: rgba(74,158,255,0.16) !important; color: #7FBFFF !important; }
+    &:hover { background: rgba(0,217,126,0.16) !important; color: #6EEBB0 !important; }
   }
-  .p-dropdown-item.p-highlight { background: rgba(74,158,255,0.20) !important; color: #7FBFFF !important; }
+  .p-dropdown-item.p-highlight { background: rgba(0,217,126,0.20) !important; color: #6EEBB0 !important; }
   .p-dialog .p-dialog-header {
-    background: rgba(11,15,36,0.97) !important;
-    border-bottom: 1px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(8,20,16,0.97) !important;
+    border-bottom: 1px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
   .p-dialog .p-dialog-content {
-    background: rgba(11,15,36,0.95) !important;
-    color: #F1F4FF !important;
+    background: rgba(8,20,16,0.95) !important;
+    color: #EDF7F1 !important;
   }
   .p-dialog .p-dialog-footer {
-    background: rgba(11,15,36,0.97) !important;
-    border-top: 1px solid #2A3050 !important;
+    background: rgba(8,20,16,0.97) !important;
+    border-top: 1px solid #1E3A2D !important;
   }
 
   /* ── AG Grid ────────────────────────────── */
   .ag-theme-alpine {
-    --ag-background-color:        rgba(225,235,255,0.04);
-    --ag-header-background-color: rgba(225,235,255,0.07);
-    --ag-odd-row-background-color: rgba(225,235,255,0.02);
-    --ag-row-hover-color:         rgba(225,235,255,0.06);
-    --ag-border-color:            #2A3050;
-    --ag-foreground-color:        #F1F4FF;
-    --ag-header-foreground-color: #959DC0;
+    --ag-background-color:        rgba(225,255,240,0.04);
+    --ag-header-background-color: rgba(225,255,240,0.07);
+    --ag-odd-row-background-color: rgba(225,255,240,0.02);
+    --ag-row-hover-color:         rgba(225,255,240,0.06);
+    --ag-border-color:            #1E3A2D;
+    --ag-foreground-color:        #EDF7F1;
+    --ag-header-foreground-color: #93B3A4;
   }
 
   /* ── Bootstrap alerts ──────────────────── */
   .alert {
-    background: rgba(225,235,255,0.06) !important;
-    border-color: #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.06) !important;
+    border-color: #1E3A2D !important;
+    color: #EDF7F1 !important;
   }
 
   /* ── Badges neutros ────────────────────── */
-  .badge.bg-light { background: rgba(225,235,255,0.12) !important; color: #F1F4FF !important; }
-  .text-muted { color: #626B94 !important; }
+  .badge.bg-light { background: rgba(225,255,240,0.12) !important; color: #EDF7F1 !important; }
+  .text-muted { color: #5F8375 !important; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -459,152 +486,152 @@ body.theme-dark {
 body.theme-light {
 
   /* ── Tipografía ────────────────────────── */
-  color: #12172E;
-  h1, h2, h3, h4, h5, h6 { color: #12172E; }
-  p, span, label, td, th, li { color: #12172E; }
+  color: #12241D;
+  h1, h2, h3, h4, h5, h6 { color: #12241D; }
+  p, span, label, td, th, li { color: #12241D; }
 
   /* ── Bootstrap cards ───────────────────── */
   .card {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    border: 1px solid #D5E8DD !important;
+    color: #12241D !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
     border-radius: 14px !important;
   }
   .card-header {
-    background: #E8EDFB !important;
-    border-bottom: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    background: #E3F2EA !important;
+    border-bottom: 1px solid #D5E8DD !important;
+    color: #12241D !important;
   }
-  .card-title { color: #12172E !important; font-weight: 700 !important; }
+  .card-title { color: #12241D !important; font-weight: 700 !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    border: 1px solid #D5E8DD !important;
+    color: #12241D !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
     border-radius: 14px !important;
   }
   nb-card-header {
-    background: #E8EDFB !important;
-    border-bottom: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    background: #E3F2EA !important;
+    border-bottom: 1px solid #D5E8DD !important;
+    color: #12241D !important;
   }
-  nb-card-body { color: #12172E !important; }
+  nb-card-body { color: #12241D !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: #12172E !important;
+    color: #12241D !important;
     --bs-table-bg: #FFFFFF;
-    --bs-table-striped-bg: #F1F4FF;
-    --bs-table-hover-bg: #E8EDFB;
-    --bs-table-border-color: #DCE3F2;
+    --bs-table-striped-bg: #EDF7F1;
+    --bs-table-hover-bg: #E3F2EA;
+    --bs-table-border-color: #D5E8DD;
   }
   .table thead th {
-    background: #E8EDFB !important;
-    color: #626B94 !important;
-    border-color: #DCE3F2 !important;
+    background: #E3F2EA !important;
+    color: #5F8375 !important;
+    border-color: #D5E8DD !important;
   }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
     background: #FFFFFF !important;
-    border-color: #DCE3F2 !important;
-    color: #12172E !important;
+    border-color: #D5E8DD !important;
+    color: #12241D !important;
     &:focus {
-      border-color: #007AFF !important;
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.18) !important;
+      border-color: #00875A !important;
+      box-shadow: 0 0 0 3px rgba(0,135,90,0.18) !important;
     }
   }
   .input-group-text {
-    background: #E8EDFB !important;
-    border-color: #DCE3F2 !important;
-    color: #626B94 !important;
+    background: #E3F2EA !important;
+    border-color: #D5E8DD !important;
+    color: #5F8375 !important;
   }
-  label { color: #626B94 !important; }
+  label { color: #5F8375 !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
+    border: 1px solid #D5E8DD !important;
     border-radius: 16px !important;
     box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
-    color: #12172E !important;
+    color: #12241D !important;
   }
   .modal-header {
-    border-bottom: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    border-bottom: 1px solid #D5E8DD !important;
+    color: #12241D !important;
   }
-  .modal-footer { border-top: 1px solid #DCE3F2 !important; }
+  .modal-footer { border-top: 1px solid #D5E8DD !important; }
 
   /* ── Bootstrap dropdowns ───────────────── */
   .dropdown-menu {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
+    border: 1px solid #D5E8DD !important;
     box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
     border-radius: 12px !important;
   }
   .dropdown-item {
-    color: #12172E !important;
-    &:hover { background: #E8EDFB !important; color: #007AFF !important; }
+    color: #12241D !important;
+    &:hover { background: #E3F2EA !important; color: #00875A !important; }
   }
 
   /* ── PrimeNG ───────────────────────────── */
   .p-card {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    border: 1px solid #D5E8DD !important;
+    color: #12241D !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
   }
   .p-datatable .p-datatable-thead > tr > th {
-    background: #E8EDFB !important;
-    color: #626B94 !important;
-    border-color: #DCE3F2 !important;
+    background: #E3F2EA !important;
+    color: #5F8375 !important;
+    border-color: #D5E8DD !important;
   }
   .p-datatable .p-datatable-tbody > tr {
     background: #FFFFFF !important;
-    color: #12172E !important;
-    &:hover { background: #F1F4FF !important; }
+    color: #12241D !important;
+    &:hover { background: #EDF7F1 !important; }
   }
-  .p-datatable .p-datatable-tbody > tr > td { border-color: #E8EDFB !important; }
+  .p-datatable .p-datatable-tbody > tr > td { border-color: #E3F2EA !important; }
   .p-inputtext {
     background: #FFFFFF !important;
-    border-color: #DCE3F2 !important;
-    color: #12172E !important;
+    border-color: #D5E8DD !important;
+    color: #12241D !important;
   }
   .p-dropdown {
     background: #FFFFFF !important;
-    border-color: #DCE3F2 !important;
-    color: #12172E !important;
+    border-color: #D5E8DD !important;
+    color: #12241D !important;
   }
   .p-dropdown-panel {
     background: #FFFFFF !important;
-    border: 1px solid #DCE3F2 !important;
+    border: 1px solid #D5E8DD !important;
     box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
   }
-  .p-dropdown-item { color: #12172E !important; &:hover { background: #E8EDFB !important; color: #007AFF !important; } }
+  .p-dropdown-item { color: #12241D !important; &:hover { background: #E3F2EA !important; color: #00875A !important; } }
   .p-dialog .p-dialog-header {
     background: #FFFFFF !important;
-    border-bottom: 1px solid #DCE3F2 !important;
-    color: #12172E !important;
+    border-bottom: 1px solid #D5E8DD !important;
+    color: #12241D !important;
   }
-  .p-dialog .p-dialog-content { background: #FFFFFF !important; color: #12172E !important; }
-  .p-dialog .p-dialog-footer { background: #E8EDFB !important; border-top: 1px solid #DCE3F2 !important; }
+  .p-dialog .p-dialog-content { background: #FFFFFF !important; color: #12241D !important; }
+  .p-dialog .p-dialog-footer { background: #E3F2EA !important; border-top: 1px solid #D5E8DD !important; }
 
   /* ── AG Grid ────────────────────────────── */
   .ag-theme-alpine {
     --ag-background-color:        #FFFFFF;
-    --ag-header-background-color: #E8EDFB;
-    --ag-odd-row-background-color: #F1F4FF;
-    --ag-row-hover-color:         #E8EDFB;
-    --ag-border-color:            #DCE3F2;
-    --ag-foreground-color:        #12172E;
-    --ag-header-foreground-color: #626B94;
+    --ag-header-background-color: #E3F2EA;
+    --ag-odd-row-background-color: #EDF7F1;
+    --ag-row-hover-color:         #E3F2EA;
+    --ag-border-color:            #D5E8DD;
+    --ag-foreground-color:        #12241D;
+    --ag-header-foreground-color: #5F8375;
   }
 
   /* ── Badges y texto ────────────────────── */
-  .text-muted { color: #626B94 !important; }
+  .text-muted { color: #5F8375 !important; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -625,26 +652,26 @@ body.theme-light {
 body.theme-light, [data-theme="light"] {
   .swal2-popup {
     background: #FFFFFF !important;
-    color: #12172E !important;
+    color: #12241D !important;
     border-radius: 24px !important;
-    border: 1px solid rgba(0,122,255, 0.22) !important;
+    border: 1px solid rgba(0,135,90, 0.22) !important;
     box-shadow:
-      0 8px 32px rgba(0,122,255, 0.12),
+      0 8px 32px rgba(0,135,90, 0.12),
       0 2px 8px rgba(0, 0, 0, 0.07) !important;
   }
-  .swal2-title         { color: #12172E !important; }
+  .swal2-title         { color: #12241D !important; }
   .swal2-html-container,
-  .swal2-content       { color: #626B94 !important; }
+  .swal2-content       { color: #5F8375 !important; }
   .swal2-input,
   .swal2-file          {
-    background: #E8EDFB !important;
-    border: 1.5px solid #DCE3F2 !important;
-    color: #12172E !important;
+    background: #E3F2EA !important;
+    border: 1.5px solid #D5E8DD !important;
+    color: #12241D !important;
     border-radius: 10px !important;
     box-shadow: none !important;
     &:focus {
-      border-color: #007AFF !important;
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.18) !important;
+      border-color: #00875A !important;
+      box-shadow: 0 0 0 3px rgba(0,135,90,0.18) !important;
     }
   }
   .swal2-validation-message {
@@ -656,33 +683,188 @@ body.theme-light, [data-theme="light"] {
 
 body.theme-dark, [data-theme="dark"] {
   .swal2-popup {
-    background: #161B3A !important;
-    color: #F1F4FF !important;
+    background: #0F2119 !important;
+    color: #EDF7F1 !important;
     border-radius: 24px !important;
-    border: 1px solid #2A3050 !important;
+    border: 1px solid #1E3A2D !important;
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55) !important;
   }
-  .swal2-title         { color: #F1F4FF !important; }
+  .swal2-title         { color: #EDF7F1 !important; }
   .swal2-html-container,
-  .swal2-content       { color: #959DC0 !important; }
+  .swal2-content       { color: #93B3A4 !important; }
   .swal2-input,
   .swal2-file          {
-    background: rgba(225,235,255,0.06) !important;
-    border: 1.5px solid #2A3050 !important;
-    color: #F1F4FF !important;
+    background: rgba(225,255,240,0.06) !important;
+    border: 1.5px solid #1E3A2D !important;
+    color: #EDF7F1 !important;
     border-radius: 10px !important;
     box-shadow: none !important;
-    &::placeholder     { color: #626B94 !important; }
+    &::placeholder     { color: #5F8375 !important; }
     &:focus {
-      border-color: #4A9EFF !important;
-      box-shadow: 0 0 0 3px rgba(74,158,255,0.22) !important;
+      border-color: #00D97E !important;
+      box-shadow: 0 0 0 3px rgba(0,217,126,0.22) !important;
     }
   }
-  .swal2-label         { color: #959DC0 !important; }
+  .swal2-label         { color: #93B3A4 !important; }
   .swal2-validation-message {
     background: rgba(239,68,68,0.12) !important;
     color: #fca5a5 !important;
     border-color: rgba(239,68,68,0.3) !important;
+  }
+}
+
+/* SweetAlert2 trae su propio botón de confirmar morado por defecto
+   (--swal2-confirm-button-background-color: #7066e0), y nunca se había
+   sobreescrito — cualquier Swal.fire() que NO pase confirmButtonColor
+   explícito (la mayoría) salía morado en vez de jade. Los que sí pasan un
+   color explícito (ej. rojo #d33 en confirmaciones destructivas) no se ven
+   afectados: ese valor se aplica inline y gana sobre esta variable. */
+.swal2-popup {
+  --swal2-confirm-button-background-color: var(--app-accent) !important;
+}
+.swal2-styled.swal2-confirm {
+  color: var(--app-accent-ink) !important;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BOOTSTRAP — botones/enlaces de marca en jade
+   ────────────────────────────────────────────────────────────
+   Bootstrap 5.3 trae su azul de fábrica (#0d6efd) y NO lo toma
+   de nuestras variables — `.btn-primary` y `.btn-outline-primary`
+   salían azules en TODAS las pantallas aunque el resto del
+   sistema ya fuera jade. BS 5.3 expone custom properties por
+   botón (`--bs-btn-*`), así que se redefinen apuntando a
+   `--app-accent` en vez de sobreescribir background/color con
+   `!important` (que rompería los estados hover/active/disabled).
+   Al leer la variable, sirve para claro y oscuro sin duplicar.
+   ════════════════════════════════════════════════════════════ */
+/* ⚠️ ORDEN DE CARGA — en `angular.json`, `bootstrap.min.css` va DESPUÉS de
+   `src/styles.scss`. Con la misma especificidad, Bootstrap siempre gana (por eso
+   el proyecto arrastra tantos `!important`). Aquí NO se cambia el orden (movería
+   la balanza en ~50 pantallas sin poder probarlas todas); se gana por
+   especificidad, que es determinista e independiente del orden:
+     `.btn.btn-primary`  = (0,2,0)  >  `.btn-primary` de Bootstrap = (0,1,0)
+   Las utilidades (`.text-primary`, `.bg-primary`…) sí leen `--bs-primary-rgb`,
+   así que basta redefinirla en los bloques de tema (`body.theme-*` = (0,1,1),
+   más específico que el `:root` = (0,1,0) donde la declara Bootstrap). */
+.btn.btn-primary {
+  --bs-btn-bg:                  var(--app-accent);
+  --bs-btn-border-color:        var(--app-accent);
+  --bs-btn-hover-bg:            var(--app-accent-hover);
+  --bs-btn-hover-border-color:  var(--app-accent-hover);
+  --bs-btn-active-bg:           var(--app-accent-hover);
+  --bs-btn-active-border-color: var(--app-accent-hover);
+  --bs-btn-disabled-bg:         var(--app-accent);
+  --bs-btn-disabled-border-color: var(--app-accent);
+  --bs-btn-color:               var(--app-accent-ink);
+  --bs-btn-hover-color:         var(--app-accent-ink);
+  --bs-btn-active-color:        var(--app-accent-ink);
+  --bs-btn-disabled-color:      var(--app-accent-ink);
+  --bs-btn-focus-shadow-rgb:    var(--app-accent-rgb);
+}
+
+.btn.btn-outline-primary {
+  --bs-btn-color:               var(--app-accent);
+  --bs-btn-border-color:        var(--app-accent);
+  --bs-btn-hover-bg:            var(--app-accent);
+  --bs-btn-hover-border-color:  var(--app-accent);
+  --bs-btn-hover-color:         var(--app-accent-ink);
+  --bs-btn-active-bg:           var(--app-accent);
+  --bs-btn-active-border-color: var(--app-accent);
+  --bs-btn-active-color:        var(--app-accent-ink);
+  --bs-btn-disabled-color:      var(--app-accent);
+  --bs-btn-disabled-border-color: var(--app-accent);
+  --bs-btn-focus-shadow-rgb:    var(--app-accent-rgb);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRIMENG p-table / p-paginator — tema propio del sistema
+   ────────────────────────────────────────────────────────────
+   El tema instalado (lara-light-blue) trae un blanco/gris fijo
+   de fábrica, sin relación con --card-bg/--app-text del sistema
+   ni con el tema claro/oscuro — por eso el pie de paginación se
+   ve blanco puro y desconectado, sobre todo en modo oscuro.
+   Usado por: variante/venta-variante (carrito),
+   productos/detalle-productos, reportes.
+   Como usa las mismas variables que ya cambian por tema, un
+   solo bloque cubre claro y oscuro — no hace falta duplicarlo.
+   ════════════════════════════════════════════════════════════ */
+.p-datatable {
+  .p-datatable-wrapper {
+    background: var(--card-bg);
+    border-radius: var(--card-radius, 12px);
+  }
+  .p-datatable-thead > tr > th {
+    background: var(--form-section-bg) !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--card-border) !important;
+  }
+  .p-datatable-tbody > tr {
+    background: var(--card-bg) !important;
+    color: var(--app-text) !important;
+  }
+  .p-datatable-tbody > tr > td {
+    border-color: var(--card-border) !important;
+  }
+  .p-datatable-tbody > tr:hover {
+    background: var(--form-section-bg) !important;
+  }
+  .p-datatable-footer,
+  .p-datatable-header {
+    background: var(--card-bg) !important;
+    color: var(--app-text) !important;
+    border-color: var(--card-border) !important;
+  }
+}
+
+.p-paginator {
+  background: var(--card-bg) !important;
+  color: var(--app-text-muted) !important;
+  border-top: 1px solid var(--card-border) !important;
+  border-radius: 0 0 var(--card-radius, 12px) var(--card-radius, 12px);
+
+  .p-paginator-first,
+  .p-paginator-prev,
+  .p-paginator-next,
+  .p-paginator-last,
+  .p-paginator-page,
+  .p-paginator-current {
+    background: transparent !important;
+    color: var(--app-text-muted) !important;
+    border-color: transparent !important;
+    min-width: 2.2rem;
+  }
+  .p-paginator-page.p-highlight {
+    background: var(--app-accent) !important;
+    color: var(--app-accent-ink) !important;
+    border-radius: 8px;
+    font-weight: 700;
+  }
+  .p-paginator-first:not(.p-disabled):hover,
+  .p-paginator-prev:not(.p-disabled):hover,
+  .p-paginator-next:not(.p-disabled):hover,
+  .p-paginator-last:not(.p-disabled):hover,
+  .p-paginator-page:not(.p-highlight):hover {
+    background: var(--form-section-bg) !important;
+    color: var(--app-text) !important;
+    border-radius: 8px;
+  }
+  .p-dropdown {
+    background: var(--card-bg) !important;
+    border-color: var(--card-border) !important;
+    .p-dropdown-label { color: var(--app-text) !important; }
+    .p-dropdown-trigger { color: var(--app-text-muted) !important; }
+  }
+}
+
+.p-dropdown-panel {
+  background: var(--card-bg) !important;
+  color: var(--app-text) !important;
+  border: 1px solid var(--card-border) !important;
+  .p-dropdown-item {
+    color: var(--app-text) !important;
+    &.p-highlight { background: var(--app-accent-soft) !important; color: var(--app-accent) !important; }
+    &:not(.p-highlight):hover { background: var(--form-section-bg) !important; }
   }
 }
 
@@ -702,19 +884,19 @@ body.theme-dark, [data-theme="dark"] {
 body.theme-light, [data-theme="light"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="pl-card__head"]) {
-    background:          rgba(225,235,255, 0.82) !important;
+    background:          rgba(225,255,240, 0.82) !important;
     backdrop-filter:     blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
     box-shadow:
-      0 8px 32px rgba(0,122,255, 0.12),
+      0 8px 32px rgba(0,135,90, 0.12),
       0 2px 8px rgba(0, 0, 0, 0.05) !important;
-    border-bottom:       1px solid rgba(0,122,255, 0.22) !important;
-    color:               #12172E !important;
+    border-bottom:       1px solid rgba(0,135,90, 0.22) !important;
+    color:               #12241D !important;
   }
 
   [class*="-header__content"] *,
   [class*="-card__head"]:not([class*="pl-card__head"]) * {
-    color: #12172E !important;
+    color: #12241D !important;
   }
 
   [class*="-header__content"] small,
@@ -723,7 +905,7 @@ body.theme-light, [data-theme="light"] {
   [class*="-card__head"]:not([class*="pl-card__head"]) [class*="__subtitle"],
   [class*="-header__content"] [class*="__sub"],
   [class*="-card__head"]:not([class*="pl-card__head"]) [class*="__sub"] {
-    color: #626B94 !important;
+    color: #5F8375 !important;
   }
 }
 
@@ -731,15 +913,15 @@ body.theme-light, [data-theme="light"] {
 body.theme-dark, [data-theme="dark"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="pl-card__head"]) {
-    background:          rgba(11,15,36, 0.80) !important;
+    background:          rgba(8,20,16, 0.80) !important;
     backdrop-filter:     blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     box-shadow:          0 6px 28px rgba(0, 0, 0, 0.50) !important;
-    border-bottom:       1px solid rgba(74,158,255, 0.15) !important;
-    color:               #F1F4FF !important;
+    border-bottom:       1px solid rgba(0,217,126, 0.15) !important;
+    color:               #EDF7F1 !important;
 
-    h4, h5, h6     { color: #F1F4FF !important; }
-    small           { color: #959DC0 !important; }
+    h4, h5, h6     { color: #EDF7F1 !important; }
+    small           { color: #93B3A4 !important; }
   }
 }
 

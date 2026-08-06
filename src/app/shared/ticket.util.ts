@@ -5,6 +5,11 @@ export interface ITicketArticulo {
   subTotal:       number;
 }
 
+export interface ITicketAbonoItem {
+  monto: number;
+  fecha?: string | null;
+}
+
 export interface ITicketData {
   tipo:            'venta' | 'abono' | 'liquidado' | 'cancelacion';
   numero:          number;
@@ -15,6 +20,11 @@ export interface ITicketData {
   totalPagado?:    number | null;
   saldoPendiente?: number | null;
   abonoHoy?:       number | null;
+  // Historial completo de abonos de este pedido, en orden (incluye el de hoy si ya se
+  // registró). Si se manda, reemplaza las líneas agregadas "Abonos previos"/"Abono de
+  // hoy" por un renglón "Abono N: fecha — monto" por cada uno, para que se vea en qué
+  // fecha se dio cada pago, no solo el acumulado.
+  abonos?:         ITicketAbonoItem[] | null;
   metodoPago:      string;
   montoDado?:      number | null;
   cambio?:         number | null;
@@ -54,10 +64,24 @@ export function generarHtmlTicket(d: ITicketData): string {
        <div class="fila"><span>CAMBIO:</span><span>${fmt(d.cambio)}</span></div>`
     : `<div class="fila"><span>MÉTODO:</span><span>${(d.metodoPago || 'N/A').toUpperCase()}</span></div>`;
 
-  const filaTotal       = d.total != null ? `<div class="fila total"><span>TOTAL:</span><span>${fmt(d.total)}</span></div>` : '';
-  const filaTotalPagado = d.totalPagado != null && d.tipo !== 'liquidado'
-    ? `<div class="fila"><span>Ya pagado:</span><span>${fmt(d.totalPagado)}</span></div>` : '';
-  const filaAbono       = d.abonoHoy != null ? `<div class="fila"><span>Abono de hoy:</span><span>${fmt(d.abonoHoy)}</span></div>` : '';
+  const filaTotal = d.total != null ? `<div class="fila total"><span>TOTAL:</span><span>${fmt(d.total)}</span></div>` : '';
+
+  // Si hay historial completo, se listan los abonos uno por uno con su fecha ("Abono 1",
+  // "Abono 2"...) en vez de solo el acumulado — así se ve en qué fecha se dio cada pago.
+  const filaHistorialAbonos = (d.abonos && d.abonos.length)
+    ? d.abonos.map((a, i) =>
+        `<div class="fila"><span>Abono ${i + 1} (${fmtFecha(a.fecha)}):</span><span>${fmt(a.monto)}</span></div>`
+      ).join('')
+    : '';
+
+  // Fallback (sin historial detallado): línea agregada, como antes. "Abonos previos" en
+  // vez de "Ya pagado" — ese número es lo pagado ANTES del abono de hoy, no el total.
+  const labelPagado     = d.tipo === 'abono' ? 'Abonos previos:' : 'Ya pagado:';
+  const filaTotalPagado = !filaHistorialAbonos && d.totalPagado != null && d.tipo !== 'liquidado'
+    ? `<div class="fila"><span>${labelPagado}</span><span>${fmt(d.totalPagado)}</span></div>` : '';
+  const filaAbono       = !filaHistorialAbonos && d.abonoHoy != null
+    ? `<div class="fila"><span>Abono de hoy:</span><span>${fmt(d.abonoHoy)}</span></div>` : '';
+
   const filaSaldo       = d.saldoPendiente != null && d.saldoPendiente > 0
     ? `<div class="fila"><span>Saldo pendiente:</span><span>${fmt(d.saldoPendiente)}</span></div>` : '';
   const filaLiquidado   = d.tipo === 'liquidado' ? `<div class="centro bold">✅ PAGADO COMPLETAMENTE</div>` : '';
@@ -83,7 +107,7 @@ export function generarHtmlTicket(d: ITicketData): string {
     <div class="linea"></div>
     ${filasArticulos}
     <div class="linea"></div>
-    ${filaTotal}${filaTotalPagado}${filaAbono}${filaSaldo}${filaLiquidado}${filaMotivo}
+    ${filaTotal}${filaHistorialAbonos}${filaTotalPagado}${filaAbono}${filaSaldo}${filaLiquidado}${filaMotivo}
     <div class="linea"></div>
     ${filaPago}
     <div class="linea"></div>

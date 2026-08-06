@@ -114,6 +114,37 @@
         </label>
       </div>
 
+      <!-- ── DATOS DE ENTREGA — opcionales, aplican a cualquier tipo de venta (no solo crédito) -->
+      <div class="vd-entrega" *ngIf="lineas.length > 0 || tienePromos">
+        <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
+          📍 Datos de entrega <span class="vd-optional">(opcional)</span>
+        </p>
+        <input type="text" class="vd-entrega__input"
+               [(ngModel)]="nombreReceptor"
+               placeholder="Nombre de quien recibe">
+        <textarea class="vd-entrega__input" style="margin-top:6px"
+                  [(ngModel)]="direccionEntrega"
+                  rows="2"
+                  placeholder="Dirección de entrega"></textarea>
+        <input type="date" class="vd-entrega__input" style="margin-top:6px"
+               [(ngModel)]="fechaEntrega">
+        <select class="vd-entrega__input" style="margin-top:6px"
+                [(ngModel)]="lugarEntregaId">
+          <option [ngValue]="null">Lugar de entrega — sin especificar</option>
+          <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
+        </select>
+        <input type="text" class="vd-entrega__input" style="margin-top:6px"
+               [(ngModel)]="urlFacebook"
+               placeholder="Link de Facebook (opcional)">
+        <div class="vd-observaciones" style="margin-top:6px">
+          <textarea class="vd-observaciones__input"
+                    [(ngModel)]="observaciones"
+                    rows="2"
+                    placeholder="Observaciones — acuerdo de pago, cómo se encargó, etc.…">
+          </textarea>
+        </div>
+      </div>
+
       <!-- ── FORMA DE PAGO ─────────────────────────────────────── -->
       <div class="vd-pay-section">
         <p class="vd-panel__title">
@@ -220,14 +251,6 @@
             </div>
           </ng-container>
 
-          <div class="vd-observaciones" style="margin-top:10px">
-            <label class="vd-panel__title" style="display:block;margin-bottom:6px">📝 Observaciones <span class="vd-optional">(opcional)</span></label>
-            <textarea class="vd-observaciones__input"
-                      [(ngModel)]="observaciones"
-                      rows="2"
-                      placeholder="Acuerdo de pago, fecha del siguiente abono, etc.…">
-            </textarea>
-          </div>
           <div class="vd-credit-info">
             ℹ️ Los abonos siguientes se registran en <strong>Créditos / Abonos</strong> — sin pagos a meses.
           </div>

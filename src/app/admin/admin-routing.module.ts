@@ -16,6 +16,8 @@ const routes: Routes = [
   { path: 'reconciliacion-imagenes', component: ReconciliacionImagenesComponent },
   { path: 'chat',                    component: ChatAdminComponent },
   { path: 'promociones',             component: GestionPromocionesComponent }
+  // ⏸️ 'facebook' (Publicar en Facebook) se sacó 2026-08-05 — el back pausó el feature.
+  //    Código completo en la rama `backup/facebook-redes-sociales`.
 ];
 
 @NgModule({

@@ -65,13 +65,13 @@ $cancelado-to:   #dc2626;
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
-  background: linear-gradient(135deg, #5856D6, #007AFF);
+  background: linear-gradient(135deg, #005C3D, #00875A);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(0,122,255,0.28);
+  box-shadow: 0 4px 12px rgba(0,135,90,0.28);
   transition: $transition;
 
   &:hover {
-    box-shadow: 0 6px 18px rgba(0,122,255,0.42);
+    box-shadow: 0 6px 18px rgba(0,135,90,0.42);
     transform: translateY(-1px);
     color: #fff;
   }
@@ -79,13 +79,46 @@ $cancelado-to:   #dc2626;
   .pi { font-size: 0.85rem; }
 }
 
-// ── Buscador ───────────────────────────────────────────────────────────────
-.search-bar {
+// ── Grupo buscador + su filtro asociado ─────────────────────────────────────
+// Cada buscador (texto por número de pedido / lugar de entrega) va emparejado
+// con los botones de filtro que le corresponden: PC en la misma fila, uno
+// junto al otro; móvil apilados (buscador arriba, filtro abajo), en ese orden.
+.mp-filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
   margin-bottom: 1.5rem;
+
+  @media (max-width: 575px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    // En flex-direction:column el eje principal es vertical — un flex-basis en
+    // px (ej. 420px, puesto para el ancho en PC) se interpreta como ALTO acá,
+    // dejando un hueco enorme debajo del buscador. Se resetea a auto: cada
+    // fila ocupa solo lo que su contenido necesita.
+    > .search-bar, > .lugar-filtro-wrap {
+      flex: 0 1 auto;
+    }
+  }
+}
+
+// ── Buscador ───────────────────────────────────────────────────────────────
+// flex: 1 1 320px — dentro de .mp-filtro-grupo (flex row), sin esto el buscador
+// no tiene una base de ancho definida y el navegador lo colapsa al tamaño
+// mínimo por defecto de un <input> (~180px), cortando el placeholder aunque
+// .search-input-wrap tenga max-width:420px (max-width no es un ancho, solo
+// un tope — sin flex-basis no hay de dónde partir para crecer hasta ahí).
+.search-bar {
+  margin-bottom: 0;
+  flex: 0 1 420px;
 }
 
 .search-input-wrap {
   position: relative;
+  width: 100%;
   max-width: 420px;
 
   @media (max-width: 575px) { max-width: 100%; }
@@ -112,8 +145,160 @@ $cancelado-to:   #dc2626;
 
   &:focus {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 4px rgba(0,122,255,0.12);
+    box-shadow: 0 0 0 4px rgba(0,135,90,0.12);
   }
+}
+
+// ── Filtro por lugar de entrega (autocomplete) ─────────────────────────────
+.lugar-filtro-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 0;
+  flex: 0 1 420px; // mismo fix de flex-basis que .search-bar — ver comentario ahí
+
+  @media (max-width: 575px) { max-width: 100%; }
+}
+
+.lugar-filtro-input-wrap {
+  position: relative;
+}
+
+.lugar-filtro-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.lugar-filtro-input {
+  width: 100%;
+  padding: 0.55rem 2.2rem 0.55rem 2.4rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  background: #fff;
+  transition: $transition;
+  outline: none;
+
+  &:focus {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 4px rgba(0,135,90,0.12);
+  }
+}
+
+.lugar-filtro-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+
+  &:hover { color: #dc2626; }
+}
+
+.lugar-filtro-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  max-height: 220px;
+  overflow-y: auto;
+
+  &__item {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    color: #1f2937;
+    cursor: pointer;
+    &:hover { background: var(--app-accent-soft); }
+  }
+
+  &__empty {
+    padding: 0.55rem 1rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+}
+
+// ── Filtro por tipo de pedido (Apartados / Ir pagando) ─────────────────────
+.tipo-filtro-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.tipo-filtro-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 50px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { border-color: var(--app-accent); }
+
+  &--active {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
+  }
+}
+
+// ── Resumen de filtros activos ──────────────────────────────────────────────
+.mp-descripcion-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  background: var(--app-accent-soft);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
+// ── Paginación admin (Anterior/Siguiente) ───────────────────────────────────
+.mp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 1rem;
+
+  &__btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: 50px;
+    border: none;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover:not(:disabled) { background: #e5e7eb; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__info { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
 }
 
 // ── Scroll container ────────────────────────────────────────────────────────
@@ -184,7 +369,7 @@ $cancelado-to:   #dc2626;
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
 .card-head {
-  background: linear-gradient(135deg, #5856D6, #007AFF);
+  background: linear-gradient(135deg, #005C3D, #00875A);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
@@ -219,8 +404,10 @@ $cancelado-to:   #dc2626;
     color: #fff;
   }
 
+  // Azul = "en curso". No usa el acento jade: ese está reservado a la marca, y
+  // si lo usara chocaría con el verde de "Pagado" (ver nota en abonos.component.scss).
   &--fiado {
-    background: rgba(0,122,255,0.85);
+    background: rgba(37,99,235,0.85);
     color: #fff;
   }
 }
@@ -309,8 +496,8 @@ $cancelado-to:   #dc2626;
   margin-top: 0.5rem;
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(0,122,255,0.07), rgba(138,106,56,0.12));
-  border: 1px solid rgba(0,122,255,0.18);
+  background: linear-gradient(135deg, rgba(0,135,90,0.07), rgba(138,106,56,0.12));
+  border: 1px solid rgba(0,135,90,0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -397,9 +584,9 @@ $cancelado-to:   #dc2626;
 }
 
 .btn-ticket {
-  background: rgba(0,122,255,0.1);
+  background: rgba(0,135,90,0.1);
   color: var(--app-accent);
-  &:not(:disabled):hover { background: rgba(0,122,255,0.18); }
+  &:not(:disabled):hover { background: rgba(0,135,90,0.18); }
 }
 
 .btn-correo {
@@ -408,12 +595,22 @@ $cancelado-to:   #dc2626;
   &:not(:disabled):hover { background: #d1fae5; }
 }
 
+.btn-entrega {
+  background: #fff7ed;
+  color: #c2410c;
+  &:not(:disabled):hover { background: #ffedd5; }
+}
+
+:host-context(body.theme-dark) {
+  .btn-entrega { background: rgba(194,65,12,0.16); color: #fb923c; &:not(:disabled):hover { background: rgba(194,65,12,0.26); } }
+}
+
 // ── Panel Terminal Mercado Pago ─────────────────────────────────────────────
 .mp-terminal {
   margin-top: 1.25rem;
   border-radius: 14px;
-  border: 2px solid rgba(0,122,255,0.25);
-  background: linear-gradient(135deg, rgba(0,122,255,0.06) 0%, rgba(0,122,255,0.1) 100%);
+  border: 2px solid rgba(0,135,90,0.25);
+  background: linear-gradient(135deg, rgba(0,135,90,0.06) 0%, rgba(0,135,90,0.1) 100%);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -524,10 +721,10 @@ $cancelado-to:   #dc2626;
 
   &--send {
     flex: 1;
-    background: linear-gradient(135deg, #5856D6, #007AFF);
+    background: linear-gradient(135deg, #005C3D, #00875A);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(0,122,255,0.3);
-    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(0,122,255,0.45); }
+    box-shadow: 0 4px 14px rgba(0,135,90,0.3);
+    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(0,135,90,0.45); }
   }
 
   &--cancel {

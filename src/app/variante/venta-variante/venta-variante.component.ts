@@ -12,6 +12,8 @@ import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { IItemPromoCarrito } from 'src/app/promociones/models/promocion.model';
 import { VarianteService } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
+import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 @Component({
   selector: 'app-venta-variante',
@@ -52,14 +54,23 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly clienteService: ClienteService,
     private readonly router: Router,
-    private readonly usuarioService: UsuarioService
+    private readonly usuarioService: UsuarioService,
+    private readonly lugarEntregaService: LugarEntregaService
   ) {}
+
+  lugares: ILugarEntrega[] = [];
+  lugarEntregaId: number | null = null;
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
     this.authService.userId$.subscribe(id => { this.idUsuario = id; });
+
+    this.lugarEntregaService.getAll().subscribe({
+      next: data => { this.lugares = data; },
+      error: () => {}
+    });
 
     this.carritoService.carrito$.subscribe(items => {
       this.carrito = items;
@@ -224,6 +235,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       estadoPedido:  esCreditoPedido ? this.tipoPedido : 'Pendiente',
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
+      lugarEntregaId: this.lugarEntregaId ?? undefined,
       detalles:      [...detallesVariantes, ...detallesPromos]
     };
 
@@ -263,14 +275,14 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
                 confirmButtonColor: '#6366f1'
               }).then(r => {
                 if (r.isConfirmed) this.router.navigate(['/abonos']);
-                else this.router.navigate(['/variantes/buscar']);
+                else this.router.navigate(['/tienda/buscar']);
               });
             } else {
               Swal.fire({
                 icon: 'success',
                 title: 'Pedido registrado',
                 text: `Número de pedido: ${res.data.id}`,
-              }).then(() => this.router.navigate(['/variantes/buscar']));
+              }).then(() => this.router.navigate(['/tienda/buscar']));
             }
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: res?.mensaje ?? 'No se pudo guardar el pedido.' });
@@ -299,7 +311,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               confirmButtonText: '🔄 Ir al catálogo',
               showCancelButton: true,
               cancelButtonText: 'Cerrar'
-            }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
+            }).then(r => { if (r.isConfirmed) this.router.navigate(['/tienda/buscar']); });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo guardar el pedido.' });
           }
@@ -326,10 +338,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         <input id="swal-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:160px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;outline:none">
+                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;outline:none">
         <div id="swal-resend" style="margin-top:12px;font-size:0.85rem;color:#64748b">
           ¿No llegó?
-          <span id="swal-resend-btn" style="color:#007AFF;cursor:pointer;text-decoration:underline">
+          <span id="swal-resend-btn" style="color:#00875A;cursor:pointer;text-decoration:underline">
             Reenviar código
           </span>
         </div>
@@ -337,7 +349,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#007AFF',
+      confirmButtonColor: '#00875A',
       didOpen: () => {
         const btn = document.getElementById('swal-resend-btn');
         if (btn) {
@@ -381,7 +393,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   // ── Ir a Venta Directa (admin) ────────────────────────────────────
 
   irAVentaDirecta(): void {
-    this.router.navigate(['/variantes/venta-directa']);
+    this.router.navigate(['/tienda/venta-directa']);
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────

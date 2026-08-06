@@ -31,8 +31,16 @@
 .ci-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 16px; border: none; border-radius: 12px;
-  font-weight: 600; font-size: .92rem; cursor: pointer;
-  background: var(--app-accent); color: #fff;
+  font-weight: 700; font-size: .92rem; cursor: pointer;
+  // var(--app-accent-ink) en vez de #fff fijo: en modo oscuro el acento es jade
+  // brillante (#00D97E) y texto blanco encima queda ilegible — --app-accent-ink ya
+  // resuelve el color correcto por tema (blanco en claro, oscuro en oscuro).
+  // text-shadow + font-weight 700 (antes 600): refuerzo de contraste — el usuario
+  // reportó 3 veces seguidas que el texto de este botón no se veía bien, aunque en
+  // captura la relación de contraste calculada ya era aceptable (~4.6:1 en claro).
+  // No hace daño reforzarlo por si el problema real es más sutil de lo medido.
+  background: var(--app-accent); color: var(--app-accent-ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition: filter .15s ease, transform .15s ease;
 
   &:hover:not(:disabled) { filter: brightness(1.08); }
@@ -41,7 +49,7 @@
   &--galeria { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--sm      { padding: 7px 12px; font-size: .82rem; border-radius: 10px; width: 100%; justify-content: center; }
   &--retry   { background: #f59e0b; color: #fff; }
-  &--completar { background: var(--app-accent); }
+  &--completar { background: var(--app-accent); color: var(--app-accent-ink); }
   &--ghost   { background: transparent; color: var(--app-text-muted); border: 1px solid var(--card-border); }
   &--save    { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--pub     { background: #10b981; color: #fff; }

@@ -29,7 +29,7 @@
   </form>
 
   <!-- Lista -->
-  <div *ngIf="!cargando && palabras.length === 0" class="pk-empty">
+  <div *ngIf="!cargando && palabras.length === 0 && page === 0" class="pk-empty">
     Sin palabras clave — agrega la primera arriba
   </div>
 
@@ -42,6 +42,18 @@
         <button class="pk-btn pk-btn--del"  (click)="eliminar(p)"       title="Eliminar">🗑️</button>
       </div>
     </div>
+
+    <div class="pk-pagination">
+      <button class="pk-btn pk-btn--page" [disabled]="page === 0" (click)="paginaAnterior()">← Anterior</button>
+      <span class="pk-pagination__info">Página {{ page + 1 }}</span>
+      <button class="pk-btn pk-btn--page" [disabled]="!haySiguiente" (click)="siguientePagina()">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- Página vacía por haber eliminado el último item (no debería verse casi nunca, red de seguridad) -->
+  <div *ngIf="!cargando && palabras.length === 0 && page > 0" class="pk-empty">
+    Sin más categorías en esta página.
+    <button class="pk-btn pk-btn--page" (click)="paginaAnterior()">← Volver</button>
   </div>
 
 </div>

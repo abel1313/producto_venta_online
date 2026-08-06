@@ -60,6 +60,18 @@ export interface PedidoDetalleResponse {
   montoDado?:        number | null;
   abonos?:           AbonoDetalleItem[];
   detalles:          PedidoDetalleItem[];
+  // Datos de entrega (2026-07-23) — nombreReceptor/direccionEntrega nuevos; fechaRecogida se
+  // reutiliza como fecha en que se va a entregar el pedido. Se editan con
+  // PUT /v1/pedidos/{id}/entrega (PedidosService.actualizarEntrega()).
+  observaciones?:     string | null;
+  nombreReceptor?:    string | null;
+  direccionEntrega?:  string | null;
+  fechaRecogida?:     string | null;
+  // Lugar de entrega + link de Facebook (2026-07-24) — solo aparecen si el pedido los tiene
+  // asignados (el back usa @JsonInclude(NON_NULL) en este DTO).
+  lugarEntregaId?:     number | null;
+  lugarEntregaNombre?: string | null;
+  urlFacebook?:        string | null;
 }
 
 export interface PedidoDetalleItem {

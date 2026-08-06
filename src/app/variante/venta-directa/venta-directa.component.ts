@@ -20,6 +20,8 @@ import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
+import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 interface ILineaVenta {
   variante: IVarianteResumen;
@@ -83,6 +85,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   // ── Crédito ────────────────────────────────────────────────────────
   tipoPedido:       'NORMAL' | 'APARTADO' | 'FIADO' = 'NORMAL';
   observaciones     = '';
+
+  // ── Datos de entrega (2026-07-23) — opcionales, aplican a cualquier tipo de venta ─────
+  nombreReceptor    = '';
+  direccionEntrega  = '';
+  fechaEntrega      = '';
+  lugarEntregaId: number | null = null;
+  urlFacebook       = '';
+  lugares: ILugarEntrega[] = [];
   readonly metodosCredito: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
   metodoPagoCredito: MetodoPago = 'EFECTIVO';
   montoInicial      = 0;
@@ -150,6 +160,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly abonoService:    AbonoService,
     private readonly negocioService:  NegocioService,
     private readonly pedidosService:  PedidosService,
+    private readonly lugarEntregaService: LugarEntregaService,
     private fb: FormBuilder
   ) {
 
@@ -288,7 +299,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.idUsuario = id;
     });
 
-    // Pre-cargar items del carrito si el admin llega desde /variantes/carrito
+    // Pre-cargar items del carrito si el admin llega desde /tienda/carrito
     if (this.isAdminUser && this.lineas.length === 0) {
       const itemsCarrito = this.carritoService.obtener();
       const promosCarrito = this.carritoService.obtenerPromos();
@@ -318,6 +329,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
     // Cargar formas de pago al iniciar
     this.cargarPagos();
+
+    // Catálogo de lugares de entrega, para el select de la sección de datos de entrega
+    this.lugarEntregaService.getAll().subscribe({
+      next: data => { this.lugares = data; },
+      error: () => {}
+    });
 
     // Búsqueda de variantes con debounce
     this.varianteSub = this.varSub$.pipe(
@@ -480,6 +497,11 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.estadoTerminal = 'idle';
     this.tipoPedido = 'NORMAL';
     this.observaciones = '';
+    this.nombreReceptor = '';
+    this.direccionEntrega = '';
+    this.fechaEntrega = '';
+    this.lugarEntregaId = null;
+    this.urlFacebook = '';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial = 0;
     this.montoDadoContado = 0;
@@ -658,7 +680,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         <input id="swal-codigo-venta" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
+                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar y cobrar',
@@ -749,13 +771,19 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       // El registro ya se creó (y opcionalmente verificó) en el back al llenar el
       // modal — se manda el id, nunca el DTO embebido (ver crearClienteSinRegistro()).
       clienteSinRegistroId: this.clienteSinRegistroId ?? undefined,
-      detalles: [...detallesVariantes, ...detallesPromos]
+      detalles: [...detallesVariantes, ...detallesPromos],
+      // Datos de entrega — opcionales, aplican a cualquier tipo de venta (no solo crédito).
+      observaciones:     this.observaciones || undefined,
+      nombreReceptor:    this.nombreReceptor || undefined,
+      direccionEntrega:  this.direccionEntrega || undefined,
+      fechaEntrega:      this.fechaEntrega || undefined,
+      lugarEntregaId:    this.lugarEntregaId ?? undefined,
+      urlFacebook:       this.urlFacebook || undefined
     };
 
     // Promos son solo de contado — bloquear crédito aunque el admin lo haya seleccionado
     if (this.esCredito && !this.tienePromos) {
       request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
-      request.observaciones = this.observaciones || undefined;
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;
       if (montoDadoSnap !== null) request.montoDado = montoDadoSnap;
@@ -883,7 +911,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
             confirmButtonText: '🔄 Ir al catálogo',
             showCancelButton: true,
             cancelButtonText: 'Cerrar'
-          }).then(r => { if (r.isConfirmed) this.router.navigate(['/variantes/buscar']); });
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/tienda/buscar']); });
         } else {
           Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: msg || 'No se pudo procesar la venta.' });
         }

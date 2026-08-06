@@ -6,7 +6,10 @@
   z-index: 10;
   width: 100%;
   padding: 12px 20px;
-  background: var(--header-brand);
+  // Sólido, no el glass translúcido de var(--header-brand) — con --page-bg
+  // (el mismo tono sólido del cuerpo de la página) el header se ve como "un
+  // solo color" en vez de un cuadro blanco/lavado distinto al resto.
+  background: var(--page-bg);
   box-shadow: 0 2px 12px rgba(0,0,0,.18);
 
   &__content {

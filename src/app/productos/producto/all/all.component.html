@@ -175,8 +175,8 @@
             </span>
           </div>
         </div>
-        <span [class]="stockClase(item.stock)" style="align-self:flex-start;font-size:0.75rem;">
-          {{ item.stock === 0 ? 'Agotado' : item.stock + ' unidades' }}
+        <span [class]="stockClase(stockDisponible(item))" style="align-self:flex-start;font-size:0.75rem;">
+          {{ stockDisponible(item) === 0 ? 'Agotado' : stockDisponible(item) + ' unidades' }}
         </span>
       </div>
 

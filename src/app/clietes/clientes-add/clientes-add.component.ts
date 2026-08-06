@@ -124,7 +124,7 @@ export class ClientesAddComponent implements OnInit, OnDestroy {
           confirmButtonColor: '#4f46e5'
         }).then(() => {
           this.$hideComponent.emit(true);
-          if (this.idUsuario) this.router.navigate(['/variantes/buscar']);
+          if (this.idUsuario) this.router.navigate(['/tienda/buscar']);
         });
       },
       error: (err) => {
@@ -138,7 +138,7 @@ export class ClientesAddComponent implements OnInit, OnDestroy {
   omitirVerificacion(): void {
     this.clearTimer();
     this.$hideComponent.emit(true);
-    if (this.idUsuario) this.router.navigate(['/variantes/buscar']);
+    if (this.idUsuario) this.router.navigate(['/tienda/buscar']);
   }
 
   private startCooldown(seconds: number): void {

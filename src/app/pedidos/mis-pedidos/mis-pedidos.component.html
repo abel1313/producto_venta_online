@@ -7,13 +7,70 @@
     </a>
   </div>
 
-  <!-- Buscador -->
-  <div class="search-bar">
-    <div class="search-input-wrap">
-      <i class="pi pi-search search-icon"></i>
-      <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
-             (keyup)="buscarProductos($event)" appUppercase>
+  <!-- Grupo 1: buscador de texto (número de pedido) + su filtro asociado (Pagados/Cancelados).
+       PC: uno junto al otro en la misma fila. Móvil: buscador arriba, filtro abajo. -->
+  <div class="mp-filtro-grupo">
+    <div class="search-bar">
+      <div class="search-input-wrap">
+        <i class="pi pi-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
+               (keyup)="buscarProductos($event)" appUppercase>
+      </div>
     </div>
+
+    <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
+              (click)="toggleFiltroEstado('PAGADO')">
+        ✅ Pagados
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
+              (click)="toggleFiltroEstado('CANCELADO')">
+        ❌ Cancelados
+      </button>
+    </div>
+  </div>
+
+  <!-- Grupo 2: buscador de lugar de entrega ("el otro buscador") + su filtro asociado
+       (Normal/Apartados/Ir pagando). Mismo criterio de agrupación que el grupo 1. -->
+  <div class="mp-filtro-grupo" *ngIf="isAdminUser">
+    <div class="lugar-filtro-wrap">
+      <div class="lugar-filtro-input-wrap">
+        <i class="pi pi-map-marker lugar-filtro-icon"></i>
+        <input type="text" class="lugar-filtro-input" placeholder="Filtrar por lugar de entrega…"
+               [(ngModel)]="terminoLugar"
+               (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
+               (blur)="cerrarDropdownLugarConDelay()">
+        <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
+      </div>
+      <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
+        <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
+          {{ l.nombre }}
+        </div>
+        <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
+          Sin coincidencias
+        </div>
+      </div>
+    </div>
+
+    <div class="tipo-filtro-wrap">
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
+              (click)="toggleFiltroTipo('NORMAL')">
+        🛒 Normal
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
+              (click)="toggleFiltroTipo('APARTADO')">
+        📦 Apartados
+      </button>
+      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
+              (click)="toggleFiltroTipo('FIADO')">
+        💳 Ir pagando
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumen de filtros activos -->
+  <div class="mp-descripcion-busqueda" *ngIf="isAdminUser && descripcionBusqueda">
+    <i class="pi pi-filter"></i> {{ descripcionBusqueda }}
   </div>
 
   <!-- Grid de pedidos -->
@@ -59,6 +116,14 @@
             </div>
           </div>
 
+          <div class="info-row" *ngIf="item.pedido.nombreReceptor">
+            <i class="pi pi-map-marker info-icon"></i>
+            <div class="info-content">
+              <span class="info-label">Recibe</span>
+              <span class="info-value">{{ item.pedido.nombreReceptor }}</span>
+            </div>
+          </div>
+
           <div class="info-row" *ngIf="item.cliente.correoElectronico">
             <i class="pi pi-envelope info-icon"></i>
             <div class="info-content">
@@ -95,8 +160,15 @@
           <button class="btn-card btn-detalle" (click)="irDetalle(item)">
             <i class="pi pi-eye"></i> Detalle
           </button>
+          <button class="btn-card btn-entrega"
+                  [disabled]="item.pedido.estado_pedido === 'Cancelado'"
+                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
+                  (click)="abrirInfoEntrega(item)">
+            <i class="pi pi-map-marker"></i> Entrega
+          </button>
           <button class="btn-card btn-cobrar" *ngIf="isAdminUser"
-                  [disabled]="item.pedido.estado_pedido === 'Entregado'"
+                  [disabled]="pedidoYaCobrado(item)"
+                  [title]="pedidoYaCobrado(item) ? 'Este pedido ya está pagado' : ''"
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> Cobrar
           </button>
@@ -113,7 +185,8 @@
             <i class="pi pi-envelope"></i>
           </button>
           <button class="btn-card btn-cancelar"
-                  [disabled]="item.pedido.estado_pedido === 'Entregado'"
+                  [disabled]="item.pedido.estado_pedido === 'Cancelado' || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"
+                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'Este pedido ya está cancelado' : (!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : '')"
                   (click)="cancelarPedido(item)">
             <i class="pi pi-times"></i> Cancelar
           </button>
@@ -121,6 +194,13 @@
 
       </div>
     </div>
+  </div>
+
+  <!-- Paginación real (admin) — Anterior/Siguiente, no infinite scroll -->
+  <div class="mp-pagination" *ngIf="isAdminUser && pedidoGenerico.length > 0">
+    <button class="mp-pagination__btn" [disabled]="page === 0 || cargando" (click)="paginaAnteriorAdmin()">← Anterior</button>
+    <span class="mp-pagination__info">Página {{ page + 1 }} de {{ totalPaginas || 1 }}</span>
+    <button class="mp-pagination__btn" [disabled]="page + 1 >= totalPaginas || cargando" (click)="paginaSiguienteAdmin()">Siguiente →</button>
   </div>
 
   <!-- Estado vacío -->

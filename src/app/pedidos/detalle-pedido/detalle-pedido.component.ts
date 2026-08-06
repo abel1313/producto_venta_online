@@ -68,6 +68,14 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.estadoPedido;
   }
 
+  // "Registrar abono" seguía apareciendo clickeable en un crédito ya liquidado — esCredito
+  // solo mira tipoPedido (APARTADO/FIADO), que no cambia al pagarse; hacía falta chequear
+  // también el estado. El historial de pagos sí se sigue mostrando (útil de consultar),
+  // solo se oculta el botón de registrar uno nuevo.
+  get yaLiquidado(): boolean {
+    return this.esCredito && this.estadoPedido === 'PAGADO';
+  }
+
   // Solo se puede imprimir/reenviar el ticket si ya hay algo que cobrar: NORMAL
   // entregado, o crédito con al menos un abono registrado (o ya liquidado).
   get puedeGenerarTicket(): boolean {
@@ -140,6 +148,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         } else {
           item.subTotal = item.cantidad * item.precioUnitario;
         }
+        // El back ya recalcula totalPedido bien server-side, pero acá no se vuelve a pedir
+        // el detalle completo (para no perder el estado de la pantalla) — se recalcula igual
+        // localmente sumando los subtotales que quedan, así el total mostrado no se queda viejo.
+        if (this.detalle) {
+          this.detalle.totalPedido = this.detalle.detalles.reduce((sum, d) => sum + d.subTotal, 0);
+        }
         this.eliminando.delete(item);
       },
       error: (err) => {
@@ -187,6 +201,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     const correoDisponibleSnap = this.correoDisponible;
     const enviarCorreoSnap     = this.enviarCorreo;
     const pedidoId             = this.pedido.pedido.id;
+    // Saldo ANTES de este abono — this.detalle todavía no se recarga (cargarDetalleCompleto()
+    // es async, no resuelve a tiempo para el texto del Swal de abajo).
+    const totalPedidoSnap      = this.detalle?.totalPedido ?? 0;
+    const totalPagadoPrevio    = this.detalle?.totalPagado ?? 0;
 
     this.abonoService.registrarAbono(pedidoId, body).subscribe({
       next: res => {
@@ -196,13 +214,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.mostrarFormAbono = false;
         this.enviarCorreo   = false;
         this.cargarDetalleCompleto();
-        const liquidado     = data?.estadoPedido === 'PAGADO' || (data?.saldoRestante != null && data.saldoRestante <= 0);
-        const txtCambio     = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
+        // Saldo calculado en local (saldo previo - este abono), no `data.saldoRestante` —
+        // visto en vivo, el back podía devolver ese campo reflejando el saldo de ANTES del
+        // abono en vez de después, mostrando un mensaje que no cuadraba con lo recién pagado.
+        const saldoCalculado = +(totalPedidoSnap - totalPagadoPrevio - body.monto).toFixed(2);
+        const liquidado      = data?.estadoPedido === 'PAGADO' || saldoCalculado <= 0;
+        const txtCambio      = cambioMostrar > 0 ? ` Cambio al cliente: $${cambioMostrar.toFixed(2)}.` : '';
 
         const titulo = liquidado ? '¡Pedido liquidado!' : 'Abono registrado';
         const texto  = liquidado
           ? `El pedido #${pedidoId} ha sido liquidado.${txtCambio}`
-          : `${data?.saldoRestante != null ? `Saldo restante: $${data.saldoRestante.toFixed(2)}.` : ''}${txtCambio}`;
+          : `Saldo restante: $${saldoCalculado.toFixed(2)}.${txtCambio}`;
 
         Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(() => {
           if (correoDisponibleSnap && enviarCorreoSnap) {
@@ -309,6 +331,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
@@ -387,6 +410,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
       articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),

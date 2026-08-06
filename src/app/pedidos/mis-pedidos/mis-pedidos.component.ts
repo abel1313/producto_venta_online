@@ -13,7 +13,9 @@ import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
-import { motivoCancelacionSwalFragment } from 'src/app/shared/motivo-cancelacion.util';
+import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
+import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -55,13 +57,78 @@ export class MisPedidosComponent implements OnInit {
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
 
+  // ── Filtro por lugar de entrega (autocomplete, solo admin) ──────────────
+  lugares: ILugarEntrega[] = [];
+  terminoLugar = '';
+  lugaresFiltrados: ILugarEntrega[] = [];
+  mostrarDropdownLugar = false;
+  lugarFiltroId: number | null = null;
+
+  // ── Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) ─────────
+  filtroNormal    = false;
+  filtroApartado  = false;
+  filtroIrPagando = false;
+
+  toggleFiltroTipo(tipo: 'NORMAL' | 'APARTADO' | 'FIADO'): void {
+    if (tipo === 'NORMAL') this.filtroNormal = !this.filtroNormal;
+    else if (tipo === 'APARTADO') this.filtroApartado = !this.filtroApartado;
+    else this.filtroIrPagando = !this.filtroIrPagando;
+    this.buscarPedidoAdmin();
+  }
+
+  private get tiposPedidoFiltro(): string[] {
+    const tipos: string[] = [];
+    if (this.filtroNormal)    tipos.push('NORMAL');
+    if (this.filtroApartado)  tipos.push('APARTADO');
+    if (this.filtroIrPagando) tipos.push('FIADO');
+    return tipos;
+  }
+
+  // ── Filtro por estado (Pagados/Cancelados) — dimensión distinta a "tipo de
+  // pedido": un mismo pedido APARTADO puede terminar PAGADO o CANCELADO. Se
+  // combina con AND contra tipo/lugar (ej. Apartados + Cancelados = apartados
+  // que se cancelaron). Confirmado con el back: `&estadoPedido=` repetible,
+  // valores PAGADO/CANCELADO se combinan entre sí con OR, case-insensitive.
+  // ⚠️ Implementado y compilando en el back solo en `dev` al momento de este
+  // cambio — no tiene efecto real hasta que desplieguen a `qa`/producción.
+  filtroPagados    = false;
+  filtroCancelados = false;
+
+  toggleFiltroEstado(estado: 'PAGADO' | 'CANCELADO'): void {
+    if (estado === 'PAGADO') this.filtroPagados = !this.filtroPagados;
+    else this.filtroCancelados = !this.filtroCancelados;
+    this.buscarPedidoAdmin();
+  }
+
+  private get estadosPedidoFiltro(): string[] {
+    const estados: string[] = [];
+    if (this.filtroPagados)    estados.push('PAGADO');
+    if (this.filtroCancelados) estados.push('CANCELADO');
+    return estados;
+  }
+
+  // Resumen visible de qué filtros están activos ahora mismo, para que no quede a la
+  // adivinanza qué combinación se está usando (texto + lugar + tipo + estado pueden combinarse).
+  get descripcionBusqueda(): string | null {
+    const partes: string[] = [];
+    if (this.buscarProd) partes.push(`texto "${this.buscarProd}"`);
+    if (this.lugarFiltroId && this.terminoLugar) partes.push(`lugar "${this.terminoLugar}"`);
+    if (this.filtroNormal)    partes.push('Normal');
+    if (this.filtroApartado)  partes.push('Apartados');
+    if (this.filtroIrPagando) partes.push('Ir pagando');
+    if (this.filtroPagados)    partes.push('Pagados');
+    if (this.filtroCancelados) partes.push('Cancelados');
+    return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
+  }
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
     private readonly authService: AuthService,
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly lugarEntregaService: LugarEntregaService
   ) {}
 
   ngOnInit(): void {
@@ -73,6 +140,13 @@ export class MisPedidosComponent implements OnInit {
 
     this.negocioService.getContactosPublicos().subscribe({
       next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      error: () => {}
+    });
+
+    // Catálogo de lugares — lo necesita cualquier usuario (admin filtra la lista, cualquiera
+    // puede elegir lugar en el modal de "Entrega" de su propio pedido).
+    this.lugarEntregaService.getAll().subscribe({
+      next: data => { this.lugares = data; },
       error: () => {}
     });
 
@@ -101,12 +175,18 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // Ya entregado = devolución (el back ahora sí permite cancelar en este estado, pero solo
+    // admin y sin NO_SE_PRESENTO como motivo — el cliente sí cumplió, solo se devuelve el
+    // producto). El botón que dispara esto ya está protegido con !isAdminUser en el HTML.
+    const esDevolucion = item.pedido.estado_pedido === 'Entregado';
+    const opciones = esDevolucion ? MOTIVOS_CANCELACION.filter(o => o.value !== 'NO_SE_PRESENTO') : undefined;
+
     // Grupo de botones en vez del input:'radio' nativo de SweetAlert2 (se veía como checklist
-    // feo) — mismos 3 motivos, mismo patrón visual de pills que el resto del proyecto.
-    const motivoFrag = motivoCancelacionSwalFragment();
+    // feo) — mismos motivos, mismo patrón visual de pills que el resto del proyecto.
+    const motivoFrag = motivoCancelacionSwalFragment(opciones);
 
     Swal.fire({
-      title: '¿Por qué cancelas este pedido?',
+      title: esDevolucion ? '¿Cancelar (devolución) este pedido ya entregado?' : '¿Por qué cancelas este pedido?',
       html: `<p style="color:var(--app-text-muted,#6b7280);margin:0 0 4px">Pedido #${item.pedido.id}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton: true,
@@ -126,6 +206,107 @@ export class MisPedidosComponent implements OnInit {
           error: (err) => Swal.fire({ title: 'Error al cancelar el pedido', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cancelar el pedido.', icon: 'error' })
         });
       }
+    });
+  }
+
+  // Modal (Swal) para capturar/editar nombreReceptor, direccionEntrega, fechaEntrega y
+  // observaciones — PUT /v1/pedidos/{id}/entrega, no requiere admin (cualquiera puede editar
+  // su propio pedido), el back solo lo rechaza si el pedido ya está "cancelado".
+  abrirInfoEntrega(item: IPedidoGenerico): void {
+    const pedidoId = item.pedido.id;
+
+    this.pedidoService.getDetallePedido(pedidoId).subscribe({
+      next: r => this.mostrarModalEntrega(pedidoId, r?.data ?? null),
+      error: () => this.mostrarModalEntrega(pedidoId, null)
+    });
+  }
+
+  private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null): void {
+    const nombreReceptor   = actual?.nombreReceptor ?? '';
+    const direccionEntrega = actual?.direccionEntrega ?? '';
+    const fechaEntrega     = actual?.fechaRecogida ?? '';
+    const observaciones    = actual?.observaciones ?? '';
+    const lugarEntregaId   = actual?.lugarEntregaId ?? null;
+    const urlFacebook      = actual?.urlFacebook ?? '';
+
+    const opcionesLugar = this.lugares.map(l =>
+      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
+    ).join('');
+
+    Swal.fire({
+      title: `📍 Info de entrega — Pedido #${pedidoId}`,
+      width: 480,
+      html: `
+        <style>
+          .mp-entrega-form { text-align:left; display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+          .mp-entrega-row { display:flex; gap:10px; }
+          .mp-entrega-row .mp-entrega-field { flex:1; min-width:0; }
+          .mp-entrega-field { display:flex; flex-direction:column; gap:4px; }
+          .mp-entrega-label {
+            font-size:.78rem; font-weight:600; color:var(--app-text-muted,#6b7280);
+            display:flex; align-items:center; gap:5px;
+          }
+          .mp-entrega-input, .mp-entrega-select, .mp-entrega-textarea {
+            width:100%; margin:0; box-sizing:border-box;
+            padding:9px 12px; border-radius:10px;
+            border:1.5px solid var(--card-border,#e5e7eb);
+            background:var(--card-bg,#fff); color:var(--app-text,#1f2937);
+            font-size:.88rem; font-family:inherit; transition:border-color .15s;
+          }
+          .mp-entrega-textarea { resize:vertical; min-height:44px; }
+          .mp-entrega-input:focus, .mp-entrega-select:focus, .mp-entrega-textarea:focus {
+            outline:none; border-color:var(--app-accent,#00875A);
+            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,135,90,.12));
+          }
+        </style>
+        <div class="mp-entrega-form">
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">👤 Nombre de quien recibe</label>
+            <input id="sw-receptor" class="mp-entrega-input" placeholder="Opcional" value="${nombreReceptor}">
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">🏠 Dirección de entrega</label>
+            <textarea id="sw-direccion" class="mp-entrega-textarea" placeholder="Opcional">${direccionEntrega}</textarea>
+          </div>
+          <div class="mp-entrega-row">
+            <div class="mp-entrega-field">
+              <label class="mp-entrega-label">📅 Fecha de entrega</label>
+              <input id="sw-fecha" type="date" class="mp-entrega-input" value="${fechaEntrega}">
+            </div>
+            <div class="mp-entrega-field">
+              <label class="mp-entrega-label">📍 Lugar de entrega</label>
+              <select id="sw-lugar" class="mp-entrega-select">
+                <option value="">Sin especificar</option>
+                ${opcionesLugar}
+              </select>
+            </div>
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">📘 Link de Facebook</label>
+            <input id="sw-facebook" class="mp-entrega-input" placeholder="Opcional" value="${urlFacebook}">
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">📝 Observaciones</label>
+            <textarea id="sw-obs" class="mp-entrega-textarea" placeholder="Opcional">${observaciones}</textarea>
+          </div>
+        </div>`,
+      showCancelButton: true,
+      confirmButtonText: '💾 Guardar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => ({
+        nombreReceptor:   (document.getElementById('sw-receptor') as HTMLInputElement)?.value?.trim() || undefined,
+        direccionEntrega: (document.getElementById('sw-direccion') as HTMLTextAreaElement)?.value?.trim() || undefined,
+        fechaEntrega:     (document.getElementById('sw-fecha') as HTMLInputElement)?.value || undefined,
+        lugarEntregaId:   Number((document.getElementById('sw-lugar') as HTMLSelectElement)?.value) || undefined,
+        urlFacebook:      (document.getElementById('sw-facebook') as HTMLInputElement)?.value?.trim() || undefined,
+        observaciones:    (document.getElementById('sw-obs') as HTMLTextAreaElement)?.value?.trim() || undefined
+      })
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.pedidoService.actualizarEntrega(pedidoId, result.value).subscribe({
+        next: () => Swal.fire({ icon: 'success', title: 'Datos de entrega guardados', timer: 1800, showConfirmButton: false }),
+        error: err => Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la información de entrega.' })
+      });
     });
   }
 
@@ -398,16 +579,65 @@ export class MisPedidosComponent implements OnInit {
     this.mostrarDetalle = mostrar;
   }
 
-  buscarPedidoAdmin() {
+  // Admin: paginación real (Anterior/Siguiente), no infinite scroll — mismo patrón que
+  // variante/buscar y el catálogo de lugares-entrega. `reset=true` (default) es una búsqueda/
+  // filtro nuevo → vuelve a la página 0; `reset=false` lo usan paginaAnteriorAdmin()/
+  // paginaSiguienteAdmin() para navegar sin perder los filtros activos.
+  buscarPedidoAdmin(reset: boolean = true) {
     this.size = 10;
-    this.page = 0;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page)
-      .subscribe(sus => {
-        this.resposeGenericPedido = sus;
-        this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
-        this.page++;
-        this.cargando = false;
-      }, err => console.error(err));
+    if (reset) this.page = 0;
+    this.cargando = true;
+    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId, this.tiposPedidoFiltro, this.estadosPedidoFiltro)
+      .subscribe({
+        next: sus => {
+          this.resposeGenericPedido = sus;
+          this.pedidoGenerico = sus.data?.list || [];
+          this.totalPaginas = sus.data?.totalPaginas ?? 0;
+          this.cargando = false;
+        },
+        error: err => { this.cargando = false; console.error(err); }
+      });
+  }
+
+  paginaAnteriorAdmin(): void {
+    if (this.page <= 0) return;
+    this.page--;
+    this.buscarPedidoAdmin(false);
+  }
+
+  paginaSiguienteAdmin(): void {
+    if (this.page + 1 >= this.totalPaginas) return;
+    this.page++;
+    this.buscarPedidoAdmin(false);
+  }
+
+  // ── Filtro por lugar de entrega (autocomplete simple, catálogo pequeño → filtrado local) ──
+  onBuscarLugar(): void {
+    const t = this.terminoLugar.trim().toLowerCase();
+    this.lugaresFiltrados = t
+      ? this.lugares.filter(l => l.nombre.toLowerCase().includes(t))
+      : this.lugares;
+    this.mostrarDropdownLugar = true;
+  }
+
+  seleccionarLugar(l: ILugarEntrega): void {
+    this.lugarFiltroId = l.id;
+    this.terminoLugar = l.nombre;
+    this.mostrarDropdownLugar = false;
+    this.buscarPedidoAdmin();
+  }
+
+  limpiarFiltroLugar(): void {
+    this.lugarFiltroId = null;
+    this.terminoLugar = '';
+    this.mostrarDropdownLugar = false;
+    this.buscarPedidoAdmin();
+  }
+
+  // El (mousedown) de seleccionarLugar() necesita disparar ANTES que este (blur) — un delay
+  // corto es el patrón estándar para que el clic en el dropdown no se pierda.
+  cerrarDropdownLugarConDelay(): void {
+    setTimeout(() => { this.mostrarDropdownLugar = false; }, 200);
   }
 
   // Para crédito el back guarda estado_pedido = 'APARTADO'/'FIADO' (el mismo valor que
@@ -426,12 +656,28 @@ export class MisPedidosComponent implements OnInit {
     return { icono, texto: item.pedido.estado_pedido };
   }
 
-  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta
-  // con estado_pedido; para crédito no sabemos si ya tiene abonos sin pedir el detalle,
-  // así que se deja habilitado y se valida de verdad en puedeImprimir() al hacer clic.
+  // El botón "Cobrar" solo comparaba contra 'Entregado' (venta normal) — un crédito ya
+  // liquidado (estado_pedido = 'PAGADO') o un pedido cancelado seguían mostrando el botón
+  // clickeable, y al hacer clic el back lo rechazaba (o mandaba a Abonos, que a su vez decía
+  // "ya está pagado"). Mismo criterio de tipoPedido que ya usan estadoBadge()/puedeGenerarTicket().
+  pedidoYaCobrado(item: IPedidoGenerico): boolean {
+    const estado = item.pedido.estado_pedido;
+    if (estado === 'Cancelado') return true;
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO';
+    return estado === 'Entregado';
+  }
+
+  // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
+  // estado_pedido; para crédito, el back confirmó (2026-07-24) que totalPagado ya viene en
+  // este mismo objeto — antes se dejaba habilitado siempre porque no había forma de saberlo
+  // de antemano. puedeImprimir() (con el detalle completo) sigue como red de seguridad al
+  // hacer clic, por si este dato llegara desactualizado entre la carga y el clic.
   puedeGenerarTicket(item: IPedidoGenerico): boolean {
     const tp = item.pedido.tipoPedido;
-    if (tp === 'APARTADO' || tp === 'FIADO') return true;
+    if (tp === 'APARTADO' || tp === 'FIADO') {
+      return (item.pedido.totalPagado ?? 0) > 0;
+    }
     return item.pedido.estado_pedido === 'Entregado';
   }
 
@@ -525,6 +771,9 @@ export class MisPedidosComponent implements OnInit {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      // Historial completo con fecha por abono (queda vacío en una venta normal sin
+      // abonos — no cambia nada ahí, ticket.util.ts solo lo usa si viene con datos).
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
       articulos: d.detalles.map(det => ({
@@ -637,6 +886,7 @@ export class MisPedidosComponent implements OnInit {
       total:          d.totalPedido,
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
+      abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
       articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),

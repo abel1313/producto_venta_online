@@ -5491,3 +5491,1609 @@ agrega ahí también se ahorra la llamada extra a `/detalle` en el caso más com
   `irACobrarCredito()`, `abrirDialogoCobroNormal()`, `confirmarCobro()` con fallback
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — CANCELAR PEDIDOS YA ENTREGADOS/PAGADOS = DEVOLUCIÓN (2026-07-24)
+
+> Respuesta del back del 2026-07-23 (repo compartido): ambos endpoints de cancelar
+> (`DELETE /v1/pedidos/delete/{id}` y `PUT /v1/abonos/{pedidoId}/cancelar`) ya permiten cancelar
+> un pedido en estado `Entregado`/`PAGADO` — antes lo bloqueaban por completo. Reglas nuevas:
+> solo ADMIN puede hacerlo, el motivo no puede ser `NO_SE_PRESENTO`/`TIMEOUT` (el cliente sí
+> cumplió, solo se devuelve el producto), el stock se regresa igual que una cancelación normal,
+> y la venta asociada se marca `"Devuelta"` (se excluye de reportes de ingresos). Mismas URLs y
+> shape de siempre — solo cambió qué estados aceptan y quién los puede llamar.
+
+**No es solo "un botón" — son 2 pantallas distintas:**
+
+1. **`mis-pedidos` (pedidos NORMAL entregados):** el botón "Cancelar" ya existía, solo estaba
+   `[disabled]` cuando `estado_pedido === 'Entregado'`, sin importar el rol. Ahora:
+   `[disabled]="!isAdminUser && estado_pedido === 'Entregado'"` — un cliente normal lo sigue
+   viendo deshabilitado (con `[title]` explicando por qué), un admin lo puede usar.
+   `cancelarPedido()`: si `estado_pedido === 'Entregado'`, arma el título como
+   "¿Cancelar (devolución)...?" y filtra `NO_SE_PRESENTO` de las opciones de motivo.
+
+2. **`/abonos` → pestaña "✅ Liquidados" (créditos ya PAGADOS):** acá **no existía ningún botón
+   de cancelar** — se agregó de cero (`.ab-card__actions` con "✖ Cancelar" junto a "▼ Abonos").
+   Como toda la ruta `/abonos` ya es admin-only (`AuthGuard + AdminGuardGuard`), no hace falta
+   chequear el rol otra vez ahí. Nuevo método `cancelarPedidoPagado(pedido: PedidoPagado)` —
+   mensaje "Ya se pagó por completo... Se devolverá el stock." (sin la rama "queda como deuda"
+   que sí aplica en `EstadoCuenta`, porque un `PAGADO` no tiene deuda), mismo filtro sin
+   `NO_SE_PRESENTO`.
+
+**Refactor:** `abonos.component.ts` — la lógica común de `cancelarPedido()` (Swal, llamada al
+back, ticket, refresco de listas) se extrajo a un privado `ejecutarCancelacion(opts)` con
+`opcionesMotivo?` y `onListaRefrescar()` parametrizables, para no duplicarla entre
+`cancelarPedido()` (Cuentas por cobrar) y `cancelarPedidoPagado()` (Liquidados).
+
+**Decisión de UX (confirmada con el usuario):** para el motivo de esta "devolución" se reusan
+las 2 opciones que ya existían (`CLIENTE_AVISO`/`ERROR_ADMIN`) — no se agregó una 3ª etiqueta
+tipo "Devolución de producto".
+
+**`motivo-cancelacion.util.ts`:** ya soportaba un parámetro `opciones` desde que se creó — no
+necesitó cambios, solo se le empezó a pasar una lista filtrada en estos 2 casos nuevos.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `cancelarPedido()` con filtro de
+  motivo + título condicional
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` del botón
+  Cancelar ahora considera `isAdminUser`
+- `src/app/abonos/abonos.component.ts` → `ejecutarCancelacion()` (nuevo, privado),
+  `cancelarPedido()` refactorizado para usarlo, nuevo `cancelarPedidoPagado()`
+- `src/app/abonos/abonos.component.html` → botón "✖ Cancelar" en tab "Liquidados"
+
+**Pendiente (fuera de este cambio, anotado para después):** revisando esto se encontró que
+`detalle-pedido.component.ts` → `totalGeneral` lee `this.detalle.totalPedido`, un valor que se
+trae UNA vez al cargar la pantalla y nunca se refresca tras `reducirCantidad()` — aunque el back
+ya corrigió que `totalPedido` se recalcule bien server-side al quitar una línea
+(`DELETE /v1/pedidos/{id}/detalle/{productoId}`), el front lo sigue mostrando desactualizado
+hasta recargar. No corregido en este cambio — el usuario no lo pidió todavía.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo.
+
+---
+
+## FIX + FEAT — TOTAL DESACTUALIZADO EN DETALLE + DATOS DE ENTREGA (nombreReceptor/dirección/fecha) (2026-07-24)
+
+> Cierra los 3 puntos pendientes de la respuesta grande del back del 2026-07-23 (ver sección
+> "FEAT — CANCELAR PEDIDOS YA ENTREGADOS/PAGADOS" arriba, apartado "Pendiente").
+
+### 1. Fix — total desactualizado en `detalle-pedido` tras quitar una línea
+
+`reducirCantidad()` solo actualizaba el `item` individual (`item.subTotal`) pero nunca
+`this.detalle.totalPedido` — el total mostrado en el header (`totalGeneral`) se quedaba con el
+valor de la carga inicial. El back ya corrigió su cálculo server-side, pero no sirve de nada si
+el front no lo vuelve a pedir. En vez de recargar todo el detalle (perdería el estado de
+`eliminando`, scroll, etc.), se recalcula localmente sumando los subtotales que quedan:
+
+```typescript
+if (this.detalle) {
+  this.detalle.totalPedido = this.detalle.detalles.reduce((sum, d) => sum + d.subTotal, 0);
+}
+```
+
+### 2. Feat — botón "📍 Entrega" en la card de `mis-pedidos` (no en el detalle)
+
+Decisión del usuario: el punto de entrada para capturar/editar `nombreReceptor`,
+`direccionEntrega`, `fechaEntrega` y `observaciones` va en la **card de la lista** (`mis-pedidos`),
+no dentro de `detalle-pedido`. Nuevo botón "📍 Entrega" en el footer de cada card → abre un Swal
+(mismo patrón ya usado en el proyecto para formularios cortos — motivo de cancelación, código de
+verificación, etc.) con 4 campos, precargados desde `GET /{id}/detalle` si ya había algo
+capturado. Al guardar, llama al endpoint nuevo del back:
+
+```typescript
+actualizarEntrega(pedidoId, body): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+  return this.http.put(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
+}
+```
+
+Deshabilitado (con `[title]` explicando por qué) cuando `estado_pedido === 'Cancelado'` — mismo
+límite que impone el back. No requiere admin (cualquiera puede editar su propio pedido, según
+confirmó el back).
+
+### 3. Feat — campos de entrega en `venta-directa` al crear la venta
+
+`nombreReceptor`, `direccionEntrega`, `fechaEntrega` — 3 campos nuevos opcionales, visibles
+siempre que haya algo que cobrar (`lineas.length > 0 || tienePromos`), **no solo en crédito**.
+Se mandan siempre en `POST /v1/ventas/save` junto con `observaciones`.
+
+**Bonus del bug que el back arregló:** `observaciones` antes solo se mostraba/enviaba en la
+sección de crédito del formulario — el back confirmó que antes ignoraba ese campo en venta al
+**contado** sin importar lo que mandara el front, y ya lo arregló. Se movió el textarea de
+"Observaciones" fuera del bloque `*ngIf="esCredito"` a la nueva sección de datos de entrega,
+visible siempre, para aprovechar el fix.
+
+### 4. Mostrar los datos de entrega en `detalle-pedido` (solo lectura)
+
+El back ya los devuelve en `GET /v1/pedidos/{id}/detalle` — se agregó un panel "📍 Datos de
+entrega" (solo si hay al menos un dato capturado) arriba del bloque de abonos. Sin botón de
+editar ahí — la edición vive únicamente en la card de `mis-pedidos` (punto 2), por decisión
+explícita del usuario.
+
+**Nota técnica Angular:** dentro de un `*ngIf` con condición OR de accesos opcionales
+(`detalle?.a || detalle?.b`), el compilador de Ivy NO narrowea `detalle` a non-null para los
+`*ngIf` hijos — sigue pidiendo `?.`/chequeo explícito y tira `TS2531: Object is possibly 'null'`
+si se usa `.` a secas. Hubo que escribir la condición como `detalle && (detalle.a || detalle.b)`
+(con `&&` en vez de solo el OR de opcionales) para que el narrowing sí se propague a los `*ngIf`
+internos sin necesitar `?.` en cada uno.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `reducirCantidad()` recalcula
+  `totalPedido`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` / `.scss` → panel `.dp-entrega`
+  de solo lectura
+- `src/app/pedidos/pedidos.service.ts` → `actualizarEntrega()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `abrirInfoEntrega()`,
+  `mostrarModalEntrega()` (privado)
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` / `.scss` → botón `.btn-entrega`
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + `observaciones`,
+  `nombreReceptor`, `direccionEntrega`, `fechaRecogida`
+- `src/app/variante/service/variante.service.ts` → `IVentaDirectaRequest` + 3 campos
+- `src/app/variante/venta-directa/venta-directa.component.ts` → campos `nombreReceptor`,
+  `direccionEntrega`, `fechaEntrega`; `ejecutarVenta()` los manda siempre (no solo crédito)
+- `src/app/variante/venta-directa/venta-directa.component.html` / `.scss` → sección
+  `.vd-entrega`, observaciones movido fuera de `esCredito`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back haya corrido
+`migration_pedido_datos_entrega.sql` en el ambiente donde se pruebe (según su propio doc,
+pendiente al momento de escribir esto).
+
+---
+
+## FIX — STOCK VISIBLE NO BAJABA AL AGREGAR AL CARRITO (2026-07-24)
+
+**Síntoma:** en `productos/buscar` y `variantes/buscar`, si un producto tiene 10 de stock y se
+agrega 1 al carrito, el badge grande sigue diciendo "10 unidades" — solo un chip aparte
+("🛒 1 en carrito") indica lo agregado, y el botón "Agregar" se deshabilita correctamente al
+llegar al máximo, pero sin que el usuario entienda por qué (el número visible nunca bajó).
+
+**No era una diferencia entre las 2 pantallas** — ambas ya tenían exactamente la misma lógica
+(`cantidadEnCarrito(item) >= item.stock` para deshabilitar el botón), solo que el badge de
+"unidades" siempre mostraba el stock crudo de la BD sin restar lo ya agregado.
+
+**Fix:** nuevo método `stockDisponible(item)` en ambos componentes —
+`Math.max(0, stock - cantidadEnCarrito(item))` — y el badge grande ahora usa ese valor en vez
+del stock crudo. El chip "🛒 N en carrito (máx. X)" se deja igual (sigue mostrando el stock
+total real como referencia, es información complementaria, no contradictoria).
+
+**Archivos modificados:**
+- `src/app/variante/buscar/buscar.component.ts` → `stockDisponible(v)`
+- `src/app/variante/buscar/buscar.component.html` → badge usa `stockDisponible(v)`
+- `src/app/productos/producto/all/all.component.ts` → `stockDisponible(producto)`
+- `src/app/productos/producto/all/all.component.html` → badge usa `stockDisponible(item)`
+
+---
+
+## FEAT — CATÁLOGO "LUGARES DE ENTREGA" + LINK DE FACEBOOK POR PEDIDO (2026-07-24)
+
+> Respuesta del back del 2026-07-24 (repo compartido). Nuevo catálogo CRUD `/v1/lugares-entrega`
+> + campos `lugarEntregaId`/`urlFacebook` en `Pedido`, pensado para filtrar pedidos por zona en
+> vez de texto libre, y para ubicar/contactar al cliente (sobre todo `ClienteSinRegistro`) vía
+> Facebook. Van en el pedido, no en el cliente, mismo criterio que `nombreReceptor`/
+> `direccionEntrega` (pueden variar de una compra a otra).
+
+### 1. Catálogo nuevo — `src/app/lugares-entrega/`
+
+Clon exacto del patrón ya usado para `palabras-clave` (mismo `pk-*` SCSS, mismo flujo
+agregar/editar/eliminar inline): `LugarEntregaService` (`getAll`, `getOne`, `save`, `update`,
+`delete`) + `GestionLugaresComponent`, módulo lazy en `/lugares-entrega` (`AdminGuardGuard`).
+Link nuevo "📍 Lugares de entrega" en el navbar, junto a "🏷️ Categorías" dentro de Inventario.
+
+⚠️ Único endpoint con shape distinto a `palabras-clave`: `getAll` de lugares devuelve
+`{ data: { t: [...], pagina, totalPaginas, totalRegistros } }` (paginado, con `t`), mientras que
+`palabras-clave/getAll` devuelve `{ data: [...] }` (array plano) — ajustado en el `pipe(map())`
+del servicio.
+
+### 2. Decisión de UX (confirmada con el usuario) — dos estilos de selector distintos
+
+- **Elegir un lugar al crear/editar un pedido** (venta-directa, checkout del cliente, modal de
+  "Entrega" en mis-pedidos): `<select>` simple poblado con `GET /getAll` — es elegir de un
+  catálogo chico, no buscar.
+- **Filtrar la lista de pedidos por lugar** (`mis-pedidos`, búsqueda): autocomplete tipo
+  buscador — campo de texto que filtra localmente el catálogo ya cargado en memoria (no hay
+  endpoint de búsqueda de lugares, y el catálogo es chico, así que filtrar client-side es
+  suficiente) y despliega un dropdown con las coincidencias.
+
+### 3. `venta-directa` — select "Lugar de entrega" + input "Link de Facebook"
+
+Agregados a la sección `.vd-entrega` ya existente (junto a nombreReceptor/direccionEntrega/
+fechaEntrega/observaciones de la sesión anterior). Se cargan los lugares en `ngOnInit()` y se
+mandan siempre en `POST /v1/ventas/save` (`lugarEntregaId`, `urlFacebook`).
+
+### 4. `mis-pedidos` — 3 cambios
+
+- **Card:** nueva fila "📍 Recibe: {{ nombreReceptor }}" (si el pedido lo tiene) — antes ese
+  dato solo se veía abriendo el modal de "Entrega".
+- **Filtro por lugar:** input con dropdown autocomplete debajo del buscador de texto (solo
+  admin) → `onBuscarLugar()`/`seleccionarLugar()`/`limpiarFiltroLugar()`. Al elegir un lugar,
+  llama `buscarPedidoPorCliente(buscar, size, page, lugarEntregaId)` (nuevo 4º parámetro,
+  query `&lugarEntregaId=`).
+- **🐛 Bug encontrado de paso (no era de esta feature):** `buscarPedidoAdmin()` hacía
+  `this.pedidoGenerico.push(...)` **sin limpiar la lista primero** — cada tecla escrita en el
+  buscador iba ACUMULANDO resultados viejos en vez de reemplazarlos. Se agregó
+  `this.pedidoGenerico = []` al inicio del método. Se nota más ahora porque el filtro de lugar
+  vive en el mismo método, pero el bug ya afectaba la búsqueda de texto normal antes de este
+  cambio.
+- **Modal "Entrega":** se agregó `<select>` de lugar + input de link de Facebook, junto a los
+  campos que ya existían. `actualizarEntrega()` en `pedidos.service.ts` acepta los 2 campos
+  nuevos en el body.
+
+### 5. `detalle-pedido` — mostrar `lugarEntregaNombre` + `urlFacebook`
+
+En el panel `.dp-entrega` (solo lectura) ya existente: `lugarEntregaNombre` como texto, y
+`urlFacebook` como link `target="_blank"`.
+
+### 6. `venta-variante` (checkout del cliente, `POST /v1/pedidos/savePedido`)
+
+Select "Lugar de entrega" (opcional), visible solo para `!isAdminUser` — el admin sigue
+capturando estos datos en Venta Directa. **Sin campo de Facebook aquí** — el back dijo
+explícitamente que no aplica en el checkout público (el cliente compra para sí mismo), se omite
+del formulario aunque el campo exista en el DTO.
+
+⚠️ **Solo se agregó `lugarEntregaId` a `IPedidoVarianteDTO`, NO `nombreReceptor`/
+`direccionEntrega`/`fechaEntrega`** — la respuesta de la sesión anterior (2026-07-23) solo
+confirmó esos 3 campos para `VentaDirectaRequest`, nunca para `PedidosDTOPedido`/`savePedido`.
+La respuesta de hoy sí confirma `lugarEntregaId`/`urlFacebook` para ambos DTOs explícitamente,
+por eso solo esos 2 se agregaron acá.
+
+**Archivos nuevos:**
+- `src/app/lugares-entrega/models/lugar-entrega.model.ts`
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts`
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.ts/.html/.scss`
+- `src/app/lugares-entrega/lugares-entrega.module.ts`
+
+**Archivos modificados:**
+- `src/app/app-routing.module.ts` → ruta lazy `/lugares-entrega`
+- `src/app/navbar/navbar.component.html` → link en Inventario
+- `src/app/variante/service/variante.service.ts` → `IVentaDirectaRequest` + `lugarEntregaId`/`urlFacebook`
+- `src/app/variante/venta-directa/venta-directa.component.ts` → campos + carga de catálogo
+- `src/app/variante/venta-directa/venta-directa.component.html` → select + input
+- `src/app/pedidos/mis-pedidos/models/IPedidoQuery.model.ts` → `totalPagado?`, `nombreReceptor?`,
+  `lugarEntregaId?`, `lugarEntregaNombre?`, `urlFacebook?`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → filtro autocomplete, fix de
+  `buscarPedidoAdmin()`, modal extendido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html/.scss` → fila "Recibe", filtro, estilos
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + 4º parámetro,
+  `actualizarEntrega()` + 2 campos
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + `lugarEntregaId`/
+  `lugarEntregaNombre`/`urlFacebook`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → panel de entrega ampliado
+- `src/app/variante/models/pedido-variante.model.ts` → `IPedidoVarianteDTO.lugarEntregaId?`
+- `src/app/variante/venta-variante/venta-variante.component.ts/.html` → select de lugar (cliente)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — la migración `migration_lugar_entrega.sql` seguía pendiente de correr
+en dev/qa/prod según el propio doc del back al momento de escribir esto.
+
+---
+
+## FIX ESTILOS — MODAL "ENTREGA" EN MIS-PEDIDOS SIN DISEÑO (2026-07-24)
+
+**Síntoma reportado:** el modal de "📍 Entrega" (agregado en la sección anterior) sí mostraba
+los 6 campos (receptor, dirección, fecha, lugar, Facebook, observaciones), pero visualmente era
+puro SweetAlert2 sin estilo — labels con `style` inline sueltos, inputs con la clase por defecto
+`swal2-input`/`swal2-select`/`swal2-textarea` apiladas una debajo de otra sin agrupación.
+
+**Fix:** se armó un `<style>` embebido dentro del propio `html` del Swal (necesario — los
+estilos scoped de un componente Angular no llegan al DOM que SweetAlert2 inyecta en
+`document.body`, mismo patrón ya usado en `motivo-cancelacion.util.ts` y
+`forzarCambioPassword()` del login) con clases propias `.mp-entrega-*`:
+- Cada campo con su label (con emoji identificador) arriba y el input/select/textarea abajo,
+  bordes redondeados y foco con el acento del tema (`var(--app-accent)`, `var(--card-bg)`,
+  `var(--card-border)` — dark/light automático, mismas variables globales de siempre).
+- Fecha y Lugar de entrega van en una fila de 2 columnas (`.mp-entrega-row`) para que el modal
+  no quede tan largo — el resto sigue en una sola columna.
+- `width: 480` explícito en el `Swal.fire()` para que el modal no se vea angosto con 2 columnas
+  adentro.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `mostrarModalEntrega()`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — BODY DE DELETE LUGARES-ENTREGA + puedeGenerarTicket() CON totalPagado REAL (2026-07-24)
+
+> Correcciones del back tras revisar la respuesta de "lugares de entrega" del mismo día.
+
+### 1. `DELETE /v1/lugares-entrega/delete` — body incorrecto
+
+El back documentó primero `Body: { "id": 1 }`, y así lo implementé — pero corrigieron: el CRUD
+genérico espera el id **crudo** como valor JSON (`1`), no envuelto en objeto. Con `{ id }`
+truena con `JSON parse error: Cannot deserialize value of type 'java.lang.Integer' from Object
+value`. Mismo patrón que usan los demás catálogos genéricos del proyecto
+(`palabras-clave/delete`, que ya mandaba el id crudo). De paso el back corrigió un bug propio:
+el `delete()` genérico no borraba nada de verdad aunque respondiera 200 — ya arreglado de su
+lado, sin cambios adicionales necesarios acá.
+
+```typescript
+// ❌ antes
+delete(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.url}/delete`, { body: { id } });
+}
+// ✅ ahora
+delete(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.url}/delete`, { body: id });
+}
+```
+
+### 2. `nombreReceptor` confirmado en la lista de pedidos + `puedeGenerarTicket()` ya no asume `true`
+
+El back confirmó que `GET /v1/pedidos/buscarClientePedido` (y `buscarTodosLosPedidos`) ya
+incluye `nombreReceptor`, `tipoPedido`, `totalPagado`, `lugarEntregaId`, `lugarEntregaNombre` y
+`urlFacebook` en el objeto `pedido` de cada resultado — cierra dos preguntas que llevaban abiertas
+varias sesiones (`tipoPedido`/`totalPagado` en la lista).
+
+`nombreReceptor` en la card ya funcionaba sin cambios (el binding ya usaba `*ngIf`, simplemente
+antes no había dato — ahora sí lo hay). Lo que sí se aprovechó: `puedeGenerarTicket(item)` para
+crédito ya no asume `true` siempre (el compromiso que se había dejado porque antes no se sabía
+de antemano si el pedido tenía abonos) — ahora usa `(item.pedido.totalPagado ?? 0) > 0`, mismo
+criterio que ya usaba `puedeImprimir()` con el detalle completo (que se deja igual, como red de
+seguridad al hacer clic).
+
+**Archivos modificados:**
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts` → `delete()` body corregido
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `puedeGenerarTicket()` usa `totalPagado`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — SHAPE REAL DE `getAll` LUGARES-ENTREGA + CATÁLOGO CON PAGINACIÓN REAL EN TABLA (2026-07-24)
+
+> Cierra la consulta de la sección anterior. El back confirmó que documentaron mal el shape la
+> primera vez (confundieron el patrón `PginaDto` con el del CRUD genérico) — la migración sí
+> corrió en QA y el endpoint sí respondía bien desde el principio; el bug era 100% de lectura
+> en el front.
+
+### 1. Shape real — `{ "data": [...] }`, no `{ "data": { "t": [...] } }`
+
+`GET /v1/lugares-entrega/getAll` (CRUD genérico) pagina de verdad con `page`/`size`, pero
+devuelve el arreglo **plano** de esa página — sin envolver en `PginaDto` (`t`/`pagina`/
+`totalPaginas`), a diferencia de otros endpoints como `palabras-clave/buscar`. Como el código
+original leía `res.data?.t ?? []` y `data` nunca tuvo esa forma, siempre caía al fallback
+`[]` — **sin ningún error HTTP ni de consola**, por eso el select se veía vacío sin ninguna
+pista visible. `LugarEntregaService.getAll()` ahora lee `res.data` directo.
+
+### 2. Dos usos distintos del mismo endpoint, con paginación distinta (aclarado por el back y
+### pedido explícito del usuario)
+
+- **Selects/autocomplete** (venta-directa, editar-entrega en mis-pedidos, checkout del
+  cliente, filtro de búsqueda de pedidos): necesitan **todas** las opciones de un jalón, sin
+  paginar — `getAll()` ahora tiene `size = 200` por default (antes 50), suficiente para un
+  catálogo de zonas/pueblos que no va a crecer a cientos de registros pronto.
+- **Catálogo admin** (`/lugares-entrega`, `GestionLugaresComponent`): rediseñado con
+  **paginación real** — tabla (`<table>`, columnas Nombre/Acciones) + controles "← Anterior" /
+  "Siguiente →", pidiendo su propio `page`/`size=10` en cada carga. Como el CRUD genérico no
+  devuelve total de registros, "hay página siguiente" se infiere con `length === size` (si la
+  página vino completa, probablemente hay más — mismo criterio que otros catálogos sin total
+  en este proyecto).
+- Antes de este cambio, `guardar()`/`eliminar()` parcheaban el arreglo local (`push`/`filter`)
+  en vez de recargar — con paginación real eso ya no tiene sentido (un alta puede caer en otra
+  página, una edición no cambia el orden) → ahora ambos llaman `cargar()` para refrescar la
+  página actual desde el servidor.
+
+**Archivos modificados:**
+- `src/app/lugares-entrega/models/lugar-entrega.model.ts` → elimina `ILugaresEntregaPaginable` (sin uso)
+- `src/app/lugares-entrega/service/lugar-entrega.service.ts` → `getAll()` lee `res.data` directo, default `size=200`
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.ts` → paginación real (`page`, `size=10`, `haySiguiente`)
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.html` → tabla + controles de página
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.scss` → `.pk-table`, `.pk-pagination`, `.pk-btn--page` (reemplaza `.pk-list`/`.pk-item`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — PAGINACIÓN REAL EN MIS-PEDIDOS (ADMIN) + FILTRO POR TIPO (APARTADOS/IR PAGANDO) (2026-07-24)
+
+> El pedido original era confuso ("filtro de pedidos abiertos") — tras aclarar con el usuario,
+> lo que en realidad se necesitaba era: (1) la vista admin de `mis-pedidos` nunca tuvo
+> paginación real (cargaba una sola página de 10 y ya, sin forma de ver más), y (2) un filtro
+> por **tipo de pedido** (Apartados/Ir pagando), independiente del filtro de lugar, que se
+> combinan con AND cuando ambos están activos.
+
+### 1. Bug encontrado — admin nunca podía ver más de 10 pedidos
+
+`onScroll()` solo dispara `cargarMasPedidos()` (infinite scroll) para `!isAdminUser` — el admin
+nunca tuvo forma de pedir la página 2. `buscarPedidoAdmin()` además **reseteaba `page=0` en
+cada llamada**, así que ni siquiera el `page++` que hacía después servía para nada.
+
+**Fix:** paginación real tipo Anterior/Siguiente, mismo patrón que `variante/buscar` y el
+catálogo de `lugares-entrega`. `buscarPedidoAdmin(reset = true)`: `reset=true` (default, usado
+por cualquier búsqueda/filtro nuevo) vuelve a `page=0`; `reset=false` lo usan
+`paginaAnteriorAdmin()`/`paginaSiguienteAdmin()` para navegar sin perder los filtros activos.
+`totalPaginas` ya venía en la respuesta (`IPageable.totalPaginas`) — no hizo falta nada nuevo
+del back para esto.
+
+### 2. Filtro por tipo de pedido — 2 botones toggle, independientes del filtro de lugar
+
+"📦 Apartados" / "💳 Ir pagando" — mismo patrón visual pill que el filtro de lugar. Se combinan
+con AND: lugar=Zacazonapan + Apartados → apartados de Zacazonapan; solo Apartados (sin lugar) →
+todos los apartados; solo lugar (sin tipo) → todos los pedidos de ese lugar sin importar tipo.
+
+**⚠️ Requiere un query param nuevo que el back todavía no ha confirmado** —
+`buscarPedidoPorCliente()` ahora manda `&tipoPedido=APARTADO&tipoPedido=FIADO` (repetido, uno
+por cada checkbox activo — convención Spring `@RequestParam List<String>`) a
+`GET /v1/pedidos/buscarClientePedido`, pero **no está confirmado que el endpoint lo soporte
+todavía**. El front ya está listo — funcionará en cuanto el back lo agregue. Pregunta anotada
+en el repo compartido, con inventario completo de los endpoints que usa esta pantalla.
+
+**Archivos modificados:**
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + parámetro `tiposPedido`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `filtroApartado`/`filtroIrPagando`,
+  `toggleFiltroTipo()`, `buscarPedidoAdmin(reset)` reescrito, `paginaAnteriorAdmin()`,
+  `paginaSiguienteAdmin()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → botones de tipo, controles de
+  paginación
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.tipo-filtro-*`, `.mp-pagination`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ El filtro por tipo no tendrá efecto real hasta que el back confirme/agregue el parámetro —
+mientras tanto no rompe nada, el backend simplemente ignoraría un query param que no reconoce.
+
+---
+
+## FEAT — RESUMEN VISIBLE DE FILTROS ACTIVOS EN MIS-PEDIDOS (2026-07-24)
+
+**Pedido del usuario:** con 3 filtros combinables ahora (texto, lugar, tipo), no quedaba claro
+a simple vista qué combinación estaba aplicada. Se agregó un getter `descripcionBusqueda`
+que arma un resumen tipo `"Buscando: texto "123" + lugar "Zacazonapan" + Apartados"` con lo
+que esté activo, mostrado como chip debajo de los filtros (solo admin, solo si hay al menos un
+filtro activo — si no hay ninguno, no se muestra nada).
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → getter `descripcionBusqueda`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → chip `.mp-descripcion-busqueda`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → estilos del chip
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — 3ER CHECKBOX "NORMAL" EN FILTRO DE TIPO + BÚSQUEDA POR ID CONFIRMADA (2026-07-24)
+
+> Respuesta del back a la consulta de la sección anterior: `tipoPedido` en
+> `buscarClientePedido` ya está implementado tal cual lo mandaba el front (sin cambios acá).
+> Encontraron 2 cosas al probar en vivo:
+
+### 1. Faltaba el checkbox "NORMAL"
+
+El back soporta los 3 valores (`NORMAL`/`APARTADO`/`FIADO`) pero el front solo tenía 2
+checkboxes ("Apartados"/"Ir pagando"). Se agregó "🛒 Normal" como tercera opción —
+`toggleFiltroTipo()` ahora acepta los 3 valores, `tiposPedidoFiltro` y `descripcionBusqueda`
+los incluyen. Ninguno marcado sigue significando "sin filtro de tipo" (no hay que mandar los 3
+explícitos para ese caso).
+
+### 2. `buscar` ahora también encuentra por id de pedido — sin cambios en el front
+
+El back confirmó que el "número de pedido" que ve el admin **es** `pedido.id` (no hay folio
+aparte) y agregó: si `buscar` es puramente numérico, además de la búsqueda de texto ya
+existente (nombre/correo/teléfono del cliente) también compara contra `pedido.id` exacto. Como
+el admin ya mandaba `buscarProd` tal cual al parámetro `buscar` (sin lógica especial para
+números), esto "ya funciona" sin tocar nada del front — antes `buscar=1` solo encontraba
+resultados por coincidencia casual (ej. un teléfono que contenía "1"), ahora además compara
+contra el id real.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `filtroNormal`, `toggleFiltroTipo()`
+  acepta `'NORMAL'`, `tiposPedidoFiltro`/`descripcionBusqueda` actualizados
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → 3er botón "🛒 Normal"
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## RENOMBRAR RUTA — `/variantes` → `/tienda` (SOLO LA URL) (2026-07-24)
+
+> El usuario ya no quería que la URL del catálogo público dijera "variantes" — extensión del
+> mismo criterio de la sección "TAXONOMÍA DE NOMBRES" (2026-07-16): renombrar solo lo visible
+> al usuario, sin tocar código interno. Ahí ya se había dicho explícitamente "solo lo visible",
+> pero esa decisión nunca se planteó para la URL del navegador — el usuario la reabrió ahora
+> puntualmente para este caso.
+
+**Por qué esto NO es lo mismo que el refactor de ~60 archivos que se descartó en julio:** ese
+descarte era sobre renombrar el **código interno** (carpetas, clases, `VarianteService`, los
+endpoints que llaman al back `/variantes/v1/...`) — un cambio inútil porque el backend sigue
+exponiendo `/variantes/v1/...` de todos modos. La URL del **router de Angular** (`app-routing.module.ts`
+→ `path: 'variantes'`) es 100% independiente de eso — es solo cómo se ve la URL en el navegador,
+no toca ninguna llamada al backend. Por eso este cambio sí se hizo, sin pedirle nada al back.
+
+**Qué cambió:** `path: 'variantes'` → `path: 'tienda'` en `app-routing.module.ts` (coincide con
+la etiqueta "🛍️ Tienda" que ya tenía el menú). Todas las sub-rutas (`buscar`, `venta`, `carrito`,
+`detalle/:id`, `update`, `cargar-excel`, `venta-directa`) son relativas a ese path padre —
+`agregar-routing.module.ts` no necesitó ningún cambio.
+
+**Qué NO cambió (a propósito):** carpeta `src/app/variante/`, nombres de componentes/servicios
+(`VarianteService`, `BuscarComponent`, etc.), y ninguna llamada al backend (`/variantes/v1/...`
+sigue igual — confirmado que ninguno de los archivos tocados mezclaba rutas de front con
+llamadas al back antes de hacer el reemplazo, para no romper ninguna por accidente).
+
+**Archivos con `routerLink`/`router.navigate()` actualizados de `/variantes/...` → `/tienda/...`
+(13 archivos, ~25 ocurrencias):**
+- `src/app/app-routing.module.ts` → `path: 'tienda'`
+- `src/app/navbar/navbar.component.html` / `.ts`
+- `src/app/favoritos/favoritos.component.html` / `.ts`
+- `src/app/auth/usuarios.guard.ts`
+- `src/app/guard/admin-guard.guard.ts`
+- `src/app/clietes/clientes-add/clientes-add.component.ts`
+- `src/app/variante/buscar/buscar.component.ts`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts`
+- `src/app/variante/update-variante/update-variante.component.ts`
+- `src/app/variante/venta-directa/venta-directa.component.ts`
+- `src/app/variante/venta-variante/venta-variante.component.ts` / `.html`
+
+**Verificado:** grep exhaustivo de `/variantes/` como ruta de front (excluyendo `/variantes/v1/`
+del back) → cero resultados restantes. `ng build --configuration=development` sin errores ni
+warnings nuevos.
+
+⚠️ **No se agregó redirect de `/variantes/*` → `/tienda/*`** para links/bookmarks viejos — no se
+pidió y este es un sistema interno sin URLs indexadas públicamente. Si hace falta después, es un
+único `{ path: 'variantes', redirectTo: 'tienda', pathMatch: 'prefix' }` — trivial de agregar.
+
+---
+
+## ⚠️ RENOMBRAR ENDPOINT DEL BACKEND `/variantes` → `/tienda` — SOLO EN `dev`, NO EN `qa` (2026-07-24)
+
+> Continuación directa de la sección anterior. El usuario aclaró que no solo quería la URL del
+> navegador — también quiere que el endpoint REAL del backend cambie de `/variantes/...` a
+> `/tienda/...`. A diferencia del rename de arriba, **esto sí requiere que el back haga el mismo
+> cambio de su lado** — sin eso, este cambio del front rompería TODO lo relacionado a variantes
+> (buscar, guardar, imágenes, independizar, etc.) en cualquier ambiente donde se despliegue.
+
+**Por eso, instrucción explícita del usuario: este cambio se sube a `dev` pero NO se hace merge
+a `qa` todavía** — se queda esperando a que el back confirme que ya renombró y desplegó su lado
+antes de promoverlo. Mientras tanto, `qa` sigue apuntando a `variante.service.ts` con `/variantes`
+(el commit anterior), y funciona con normalidad.
+
+### Alcance real — solo 3 archivos en todo el front
+
+A diferencia de lo que parecía al principio, **no** es un refactor grande: casi todos los
+endpoints de variantes cuelgan de una sola constante base en `variante.service.ts` (25
+métodos la usan vía `${this.url}/...`), así que cambiar esa única línea repropaga el rename a
+absolutamente todos ellos. Solo 2 archivos más tenían la URL del backend escrita aparte:
+
+| Archivo | Antes | Ahora |
+|---|---|---|
+| `src/app/variante/service/variante.service.ts:11` | `${environment.api_Url}/variantes` | `${environment.api_Url}/tienda` |
+| `src/app/chatbot/chatbot.service.ts:45` | `${environment.api_Url}/variantes/v1/imagenes` | `${environment.api_Url}/tienda/v1/imagenes` |
+| `src/app/rifas/service/rifa.service.ts:34` | `${this.url}/variantes/v1/buscar?...` | `${this.url}/tienda/v1/buscar?...` |
+
+Ejemplo concreto de lo que cambia en cualquiera de los ~25 métodos de `VarianteService` (todos
+siguen el mismo patrón, solo cambia la constante base):
+```typescript
+// Antes: GET /variantes/1  (buscaba/traía la variante con id 1)
+// Ahora: GET /tienda/1     (misma función, mismo id, prefijo nuevo)
+getOne(id: number): Observable<...> {
+  return this.http.get(`${this.url}/${id}`); // this.url ya trae el prefijo nuevo
+}
+```
+
+**También actualizado (cosmético, sin llamada HTTP real):**
+`admin/diagnostico-imagenes/diagnostico-imagenes.component.html` — el texto de referencia que
+muestra en pantalla `/variantes/admin/diagnostico-imagenes/{varianteId}` ahora dice
+`/tienda/admin/diagnostico-imagenes/{varianteId}` para que coincida con la llamada real.
+
+**Confirmado que NO hay que tocar (son otro dominio, solo comparten la palabra "variantes"):**
+`producto.service.ts` → `/admin/sin-variantes/reporte` y `/compartir-imagenes-variantes` — son
+sub-rutas del controlador de **productos** (Modelo), no del prefijo `/variantes` que se está
+renombrando. Cambiarlas no tendría sentido semántico ("sin-variantes" = "sin combinaciones",
+no es parte del prefijo de la API de variantes).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos** — el
+build no valida que el backend responda, así que compila igual sin importar si el back ya hizo
+su parte o no.
+
+**Pregunta precisa mandada al back** (repo compartido) con el mapeo completo de qué prefijo
+esperar y ejemplos antes/después — ver `CAMBIOS_FRONT.md`.
+
+---
+
+## FIX MÓVIL — FILTROS TRASLAPADOS EN TABLET/CELULAR GRANDE + CARDS DE 2 EN 2 (2026-07-24)
+
+> Reportado con 2 capturas: en PC (`productos/buscar`) se veía bien, pero en móvil los 8
+> checkboxes de filtro aparecían con el texto encimado/ilegible ("Con sto ck Sin stock Con
+> im ágesnimágenes...") y las cards de producto se veían de 1 en 1 en vez de 2 en 2.
+
+### Causa raíz — hueco entre breakpoints, no un bug del código nuevo
+
+Ya existían 2 fixes previos para `.pl-filtros`/`.vb-filtros` (sección "FIX FILTROS ADMIN — 4
+COLUMNAS EN PC, 1 COLUMNA EN MÓVIL", 2026-07-21): `≤576px` → 1 columna con texto que envuelve
+(`white-space: normal`), `>576px` (cualquier ancho, incluido tablet/celular grande en
+horizontal) → `repeat(4, 1fr)` con `white-space: nowrap`. **El bug real**: no había ningún
+nivel intermedio. Un viewport de, digamos, 650px (tablet chica, celular grande, o el propio
+DevTools en modo responsive con un ancho no exactamente "móvil") caía en la rama de 4 columnas
+— 4 columnas de ~150px cada una son demasiado angostas para un label como "Código generado" con
+`nowrap`, y el texto se desborda visualmente encima de la pill vecina. Mismo mecanismo ya
+documentado como "grid blowout" en la sesión de julio, pero esta vez por falta de un breakpoint
+intermedio, no por `min-width` faltante (eso ya estaba corregido).
+
+**Fix — 3 niveles en vez de 2**, en ambos archivos (`all.component.scss` para "Productos"
+admin, `buscar.component.scss` para "Tienda" pública — mismo patrón clonado en las dos):
+```scss
+@media (max-width: 576px)                      { .pl-filtros { grid-template-columns: 1fr; } }
+@media (min-width: 577px) and (max-width: 899px) { .pl-filtros { grid-template-columns: repeat(2, 1fr); } }
+// (sin media query = desktop, ya existía) .pl-filtros { grid-template-columns: repeat(4, 1fr); }
+```
+El nivel de 2 columnas (577–899px) usa el mismo tamaño de fuente que desktop — con 2 columnas
+en vez de 4, cada pill tiene el doble de ancho disponible, suficiente para casi cualquier label
+sin necesitar `white-space: normal` ahí. Nunca hay un punto intermedio sin cubrir.
+
+### Cards de producto — 2 por fila en vez de 1
+
+`.pl-grid`/`.vb-grid` usaban `grid-template-columns: repeat(auto-fill, minmax(270px, 1fr))` —
+por diseño, con `minmax(270px,...)`, cualquier viewport bajo ~560px (270×2 + gap) colapsa a 1
+sola columna automáticamente. Pedido explícito del usuario: en móvil deben verse de 2 en 2.
+Fix — dentro del `@media (max-width: 576px)` ya existente:
+```scss
+.pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+```
+**Por qué esto no rompe el contenido de la card:** el footer de botones (`.pl-btn-card`, 6
+acciones: Agregar/Quitar/Carrito/Detalle/Actualizar/Productos) ya usa
+`flex-wrap: wrap` + `flex: 1 0 50px` — con la card a la mitad de ancho, los botones simplemente
+envuelven a 2-3 filas en vez de una, en lugar de desbordar o cortarse. `&__detail-val` (los
+valores de nombre/código/marca) ya tiene `text-overflow: ellipsis` — un valor largo se trunca
+con "…" en vez de desbordar. No hizo falta ningún ajuste adicional de tipografía.
+
+### 📖 Lección para no repetir este patrón
+
+**Regla a futuro para cualquier grid de filtros/cards con columnas fijas (`repeat(N, 1fr)`) que
+cambie de N a 1 en un solo breakpoint:** si el contenido de cada celda tiene `white-space:
+nowrap` (pills, badges, botones con texto fijo), **nunca** saltar directo de "1 columna" a "N
+columnas" en un solo punto de quiebre — casi siempre hay un rango de anchos intermedios
+(tablet, celular grande en horizontal, ventana de navegador redimensionada a mano) donde N
+columnas ya no caben cómodas pero el CSS no sabe que debe bajar a menos. Agregar SIEMPRE un
+nivel intermedio (2 columnas) entre "móvil" y "desktop" para grids de 3+ columnas, o usar
+`repeat(auto-fit, minmax(...))` en vez de un número fijo cuando el contenido lo permita (mejor
+aún, porque se adapta solo sin necesitar breakpoints manuales — no se usó acá porque los
+labels de los filtros no tienen un ancho mínimo natural cómodo con `minmax()`, pero si se
+rediseña este componente de nuevo, considerarlo primero).
+
+**Archivos modificados:**
+- `src/app/productos/producto/all/all.component.scss` → breakpoint intermedio en `.pl-filtros`, `.pl-grid` a 2 columnas en móvil
+- `src/app/variante/buscar/buscar.component.scss` → mismo fix en `.vb-filtros`/`.vb-grid`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en dispositivo real — verificar con DevTools en varios anchos (375px, 650px,
+768px, 900px+) antes de dar por cerrado.
+
+---
+
+## FIX — CONFIRMACIÓN DE CANCELAR PEDIDO: 400+MENSAJE + DESHABILITAR SI YA CANCELADO (2026-07-27)
+
+> Respuesta del back en el repo compartido (preguntas hechas por otra sesión/agente, no en esta
+> conversación) sobre `DELETE /v1/pedidos/delete/{id}`: antes devolvía 500 vacío al rechazar la
+> cancelación, ahora devuelve 400 con `{ mensaje }`. También corrigieron que cancelar un FIADO
+> activo desde `mis-pedidos` devolvía stock indebido (esa regla ya existía en `/abonos`, no en
+> este endpoint) — 100% backend, sin acción del front.
+
+**Revisado — ya funcionaba sin cambios:** `cancelarPedido()` en `mis-pedidos.component.ts` ya
+leía `err?.error?.mensaje ?? err?.error?.message` en el `error` callback (patrón establecido
+desde las lecciones del módulo rifas) — el mensaje nuevo del 400 ya se muestra automático, sin
+tocar código. `cancelarConMotivo()` está tipado `Observable<any>`, así que el nuevo body de
+éxito (`{ response: "..." }`, antes vacío) tampoco rompe nada.
+
+**Mejora aplicada** (recomendación opcional del back, no bloqueante): el botón "Cancelar" en la
+card de `mis-pedidos` solo se deshabilitaba para `estado_pedido === 'Entregado'` + no-admin —
+un pedido **ya cancelado** seguía mostrando el botón activo (antes de este fix, el back
+devolvía 500 vacío al intentarlo; ahora al menos muestra el mensaje claro). Se agregó
+`estado_pedido === 'Cancelado'` a la condición de `[disabled]`, con su propio `[title]`.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` del botón
+  Cancelar incluye `estado_pedido === 'Cancelado'`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## HOMOLOGACIÓN DE PALETA — JADE (SOLO MODO OSCURO) — EN PROGRESO (2026-07-30)
+
+> Tras varias rondas de exploración visual en un artifact (ver conversación — se probaron paletas
+> "boutique tranquilas" y una versión bold fucsia/tinta con movimiento real: marquee, glow en
+> hover, paginador con resplandor). El usuario confirmó: **le gustó el diseño con movimiento**,
+> **no le gustó el fucsia**, y eligió **verde jade** con un selector de color interactivo en el
+> propio artifact (probó Jade/Cobalto/Ámbar/Carmín/Cian en vivo). Aplica **solo a `body.theme-dark`**
+> — el modo claro sigue pendiente de decisión, no se tocó.
+
+### Color elegido
+`--app-accent` en modo oscuro: `#4A9EFF` (azul Aether) → **`#00D97E`** (jade eléctrico — literal
+al nombre de la tienda, nunca antes probado: fue ámbar → azul/morado Aether → jade).
+
+### Rampa de tonos jade usada en gradientes de 2-3 stops
+| Rol | Hex | Reemplaza a |
+|---|---|---|
+| Jade brillante (= `--app-accent`) | `#00D97E` | `#4A9EFF` |
+| Jade medio (stop oscuro de gradientes 2 colores) | `#009A5C` | `#007AFF` |
+| Jade profundo (stop extra en gradientes de 3 colores) | `#00693F` | `#5856D6` (morado) |
+| Texto/chip claro sobre fondo oscuro | `#6EEBB0` | `#7FBFFF` |
+
+### Archivos modificados — núcleo global (`styles.scss`)
+Bloque `body.theme-dark, [data-theme="dark"]` — variables canónicas (`--color-accent`,
+`--app-accent`, `--app-accent-soft`, `--input-focus-border`, `--input-focus-shadow`,
+`--header-brand-border`) + los overrides puntuales ya existentes de Bootstrap forms/SweetAlert2/
+PrimeNG dropdown/glassmorphism global que tenían el azul **hardcodeado dentro del propio bloque
+`body.theme-dark`** (mayor especificidad que el bloque genérico de PrimeNG agregado en la sesión
+anterior — por eso ganaban sobre `var(--app-accent)` y había que tocarlos aparte).
+
+### Archivos modificados — componentes con el gradiente Aether hardcodeado (14 archivos)
+Mismo patrón en todos: `background: linear-gradient(135deg, #007AFF, #4A9EFF)` (o variantes de
+ángulo/orden) → `linear-gradient(135deg, #009A5C, #00D97E)`.
+
+- `src/app/admin/chat-admin/chat-admin.component.scss`
+- `src/app/chat/chat-usuario/chat-usuario.component.scss`
+- `src/app/chatbot/chatbot.component.scss` (+ `.cb-card__precio` color)
+- `src/app/clietes/clientes-add/clientes-add.component.scss`
+- `src/app/clietes/mi-perfil/mi-perfil.component.scss`
+- `src/app/clietes/mis-datos/mis-datos.component.scss`
+- `src/app/login/verificar-correo/verificar-correo.component.scss`
+- `src/app/navbar/navbar.component.scss` (`--sb-accent` local + 2 usos más)
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` (`.dp-btn-reenviar`/`.dp-tipo-badge--fiado`)
+- `src/app/rifas/agregar-rifa/agregar-rifa.component.scss`
+- `src/app/rifas/buscar-rifa/buscar-rifa.component.scss` (2 gradientes, 135deg y 90deg)
+- `src/app/rifas/rifa-mes/rifa-mes.component.scss`
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.scss`
+- `src/app/variante/agregar/agregar.component.scss` (gradiente de 3 stops, incluía el morado `#5856D6`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### ⚠️ PENDIENTE — segunda capa: morado `#5856D6` suelto en ~20 archivos más
+
+Al terminar el barrido de arriba, un grep de `#5856D6` (el "accent-2" morado de la vieja pareja
+Aether azul+morado) encontró que sigue presente en **~20 archivos adicionales** no cubiertos por
+esta pasada — probablemente usado como color secundario de gradiente en botones/badges puntuales,
+independiente del `#4A9EFF` que ya se migró. **No se tocó todavía** — es un barrido más grande y
+no se quería hacer a ciegas sin confirmar antes con el usuario si:
+1. Se migra igual a jade (consistencia total), o
+2. Se deja como detalle secundario (algunos usos podrían ser intencionales, no todos ligados al
+   acento principal).
+
+**Excepción confirmada que NO se debe tocar:** `src/app/login/login-form/login-form.component.scss`
+usa su propia paleta azul/morado local (`$accent`/`$accent-d`) **a propósito, solo para el login**
+— ver sección "Corrección — LOGIN pasa a azul/morado (color local, NO global)" más arriba. Verificar
+cada archivo del grep antes de tocarlo, no asumir que todos aplican.
+
+### Pendiente — modo claro (`body.theme-light`)
+Sin decisión todavía. El usuario pidió primero ver claro el análisis del oscuro antes de decidir
+si el modo claro lleva la misma energía, una versión más tranquila, o casi no se usa por ahora.
+
+### Pendiente — ticker de promociones (el elemento "marquee" del artifact)
+
+> ⚠️ Reconfirmado con el usuario el 2026-08-01 — la sesión donde se discutió esto por primera
+> vez quedó documentada arriba con un plan más elaborado (entidad `TickerPromocion` con
+> enlace/orden/activo, CRUD admin) que el usuario, al preguntarle de nuevo, **no reconoció** —
+> ese nivel de detalle no fue lo que se acordó con él directamente, probablemente se sobre-
+> diseñó en esa sesión sin su confirmación explícita. **No asumir ese plan como válido.**
+
+**Lo confirmado directamente con el usuario:** una barra fija arriba de la pantalla con texto
+que se desliza de derecha a izquierda sin parar (estilo noticiero de TV), y una pantalla para
+que el admin escriba/edite ese texto (ej. "🎉 Promo perfumes esta semana"). Nada de enlaces,
+orden ni catálogo de múltiples entradas — solo el texto deslizante y dónde editarlo. Esto es
+lo único confirmado; cualquier detalle adicional (¿un solo texto o varios rotando?, ¿el
+componente vive en `styles.scss`/`app.component` o es condicional por pantalla?) no se ha
+preguntado todavía.
+
+**Nunca se implementó — verificado con grep de "ticker"/"marquee" en todo `src/app`, cero
+resultados.** El elemento que el usuario vio "moverse arriba para perfumes, promociones, etc."
+solo existió como maqueta visual dentro de un artifact de exploración de diseño (la misma
+sesión donde se decidió la paleta jade) — nunca se llevó al código real de la app.
+
+**Estado:** dejado pendiente a petición explícita del usuario (2026-08-01) — no implementar
+hasta que lo pida. Cuando se retome, empezar simple (texto fijo editable + animación CSS) y
+preguntar el resto de los detalles antes de diseñar de más otra vez.
+
+---
+
+## HOMOLOGACIÓN JADE — COMPLETADA EN AMBOS TEMAS + 3 BUGS QUE SOLO SE VIERON EN CAPTURA (2026-07-30)
+
+> Continuación directa de la sección anterior (que había quedado a medias: solo el bloque
+> `theme-dark` de `styles.scss` y 14 componentes). Esta pasada cierra la migración completa y
+> corrige 3 problemas reales que **el `ng build` no detecta** — solo aparecieron al levantar
+> `ng serve` y tomar capturas con Playwright.
+
+### 1. Barrido completo de la pareja Aether (54 archivos)
+
+Quedaban **123 usos de `#007AFF` + ~80 de `#5856D6`** escritos a mano en los componentes (no
+leían la variable), así que la app se veía mezclada: acento jade con botones/headers azules.
+Mapeo mecánico 1:1 (mismo método que la migración ámbar→azul):
+
+| Antes | Ahora | Rol |
+|---|---|---|
+| `#007AFF` | `#00875A` | acento principal claro — **contraste 4.55:1 sobre blanco, mejor que el azul (4.02:1)** |
+| `#5856D6` | `#005C3D` | jade profundo (stop oscuro de gradientes) |
+| `#4A9EFF` | `#00D97E` | jade brillante (acento oscuro) |
+| `#7FBFFF` | `#6EEBB0` | texto/chip claro sobre fondo oscuro |
+| `#4FC3F7` / `#34309A` | `#4FE0A8` / `#00432C` | extremos de gradientes del registro |
+| `#3D2C0C` / `#5c0f31` | `#00301F` / `#003D28` | restos de ámbar/vino dentro de gradientes de marca |
+
+### 2. Neutros: de azul marino a sesgo jade (13 archivos)
+
+**El paso que hace que se vea "diseñado" y no solo recoloreado.** Los grises/fondos seguían
+siendo azul marino heredado de Aether (`#0B0F24`, `#161B3A`, `#F5F8FF`, `#DCE3F2`, `#12172E`…):
+un neutro azulado junto a un acento verde se ve turbio. Se inclinaron hacia jade **manteniendo
+la misma luminosidad** para no romper contrastes ya validados:
+
+| Rol | Antes (azul) | Ahora (jade) |
+|---|---|---|
+| Fondo oscuro | `#0B0F24` | `#081410` |
+| Superficie oscura | `#161B3A` | `#0F2119` |
+| Borde oscuro | `#2A3050` | `#1E3A2D` |
+| Texto claro | `#F1F4FF` | `#EDF7F1` |
+| Fondo claro | `#F5F8FF` | `#F3FAF6` |
+| Superficie-2 clara | `#E8EDFB` | `#E3F2EA` |
+| Borde claro | `#DCE3F2` | `#D5E8DD` |
+| Texto oscuro | `#12172E` | `#12241D` |
+
+**Se dejó intacto a propósito:** la familia slate de Tailwind (`#1E293B`, `#64748B`, `#94A3B8`,
+`#E2E8F0`, `#F1F5F9`) — lee como gris neutro, no como azul, y tocarla eran ~280 ocurrencias de
+riesgo sin beneficio visible.
+
+### 3. 🐛 Los 3 bugs que el build NO detecta (encontrados en captura)
+
+#### 3.1 — Los botones de Bootstrap seguían AZULES en todas las pantallas
+**Causa raíz:** en `angular.json`, `bootstrap.min.css` está listado **DESPUÉS** de
+`src/styles.scss`. Con la misma especificidad, Bootstrap siempre gana — por eso el proyecto
+arrastra tantos `!important`. `.btn-primary` de BS 5.3 hardcodea `--bs-btn-bg:#0d6efd`.
+
+**Fix (sin `!important` y sin cambiar el orden de carga):** ganar por **especificidad**, que es
+determinista e independiente del orden — `.btn.btn-primary` = (0,2,0) > `.btn-primary` = (0,1,0).
+Se redefinen las custom properties `--bs-btn-*` apuntando a `--app-accent` (así respeta
+hover/active/disabled en vez de pisarlos). Para las utilidades (`.text-primary`, `.bg-primary`,
+`.link-primary`) basta redefinir `--bs-primary-rgb`/`--bs-link-color` **dentro de los bloques
+`body.theme-*`** — `body.theme-light` = (0,1,1) es más específico que el `:root` = (0,1,0) donde
+Bootstrap las declara.
+
+> ⚠️ **NO se movió `src/styles.scss` al final del array de `angular.json`.** Es el arreglo
+> arquitectónicamente correcto, pero haría que decenas de reglas sin `!important` empiecen a
+> ganar donde hoy pierden, cambiando pantallas de forma impredecible sin poder probarlas todas
+> (no hay backend local). Si algún día se hace, verificar pantalla por pantalla.
+
+#### 3.2 — Texto blanco sobre jade brillante = ilegible
+El paginador activo (`.p-paginator-page.p-highlight`) usaba `color: #fff` sobre el acento. En
+claro el acento es oscuro (`#00875A`) y funcionaba; en oscuro es brillante (`#00D97E`) y el
+blanco encima quedaba ilegible. **Fix:** nueva variable **`--app-accent-ink`** = el color del
+texto que va ENCIMA del acento (`#FFFFFF` en claro, `#062015` en oscuro). Usarla siempre en vez
+de `#fff` hardcodeado sobre `var(--app-accent)`.
+
+También nuevas: `--app-accent-hover` y `--app-accent-rgb` (para los anillos de foco de Bootstrap).
+
+#### 3.3 — Dos verdes distintos significando cosas distintas
+Con la marca en jade, los badges chocaron: "Apartado"/"Ir pagando" usaban `var(--app-accent)`
+(verde) y "Pagado" usaba verde de éxito (`#16a34a`) — indistinguibles de un vistazo.
+
+**Regla nueva: el color semántico es independiente del acento de marca.** Como el azul salió de
+la paleta, quedó libre para significar "en curso":
+
+| Estado | Claro | Oscuro | Significado |
+|---|---|---|---|
+| Apartado | `#b45309` ámbar | `#fbbf24` | esperando |
+| Ir pagando | `#2563eb` azul | `#60a5fa` | en curso |
+| Pagado | `#16a34a` verde | `#4ade80` | éxito |
+| Cancelado | `#dc2626` rojo | `#f87171` | error |
+
+Archivos: `abonos.component.scss`, `pedidos/mis-pedidos/*.scss`, `pedidos/detalle-pedido/*.scss`.
+
+### 📖 Lección — `ng build` no valida diseño
+
+Los 3 bugs de arriba compilaban perfecto. **Al terminar una migración de paleta, levantar
+`ng serve` y tomar capturas en claro Y oscuro antes de dar por cerrado.** Receta que funcionó
+(sin backend, sin sesión):
+1. `ng serve` → escucha en **`[::1]:4200` (IPv6)**, no en `127.0.0.1` (ver nota de entorno).
+2. Playwright instalado **en el scratchpad**, no en el proyecto (`npm i playwright` en el repo
+   falla con ERESOLVE por conflicto de peer deps).
+3. Navegar a una pantalla pública (`/usuarios/registrar`), forzar el tema con
+   `document.body.className = 'theme-dark'`, y capturar.
+4. Para revisar los componentes genéricos sin necesitar login, inyectar una vitrina de HTML en
+   el `body` de la app ya cargada — hereda los estilos compilados reales.
+
+**Excepción confirmada, NO tocar:** `src/app/login/login-form/login-form.component.scss` conserva
+su paleta azul/morado local a propósito (ver sección del login más arriba).
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+capturas en claro y oscuro de `/usuarios/registrar` + vitrina de componentes.
+
+---
+
+## RONDA DE FIXES DE UI REPORTADOS EN QA (2026-08-01)
+
+> Detalle completo, causa raíz y estado de cada punto en `REVISION_UI_2026-08-01.md` (creado en
+> la raíz del repo). Resumen aquí; 2 puntos se anotaron en el repo compartido para el back
+> (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`).
+
+**Corregidos (100% front):**
+1. **Modales de SweetAlert2 salían con el botón de confirmar morado** — la librería trae su
+   propio `#7066e0` por defecto y nunca se había sobreescrito ese color específico (sí estaban
+   ya en jade el fondo/texto/inputs del popup). Fix global en `styles.scss`:
+   `--swal2-confirm-button-background-color: var(--app-accent)` + `var(--app-accent-ink)` para
+   el texto. Resuelve de un jalón el morado en carga-imágenes (botón "✕" descartar) Y el modal
+   "Info entrega" de `mis-pedidos` — mismo bug, mismo fix, sin tocar ninguno de esos dos
+   componentes directamente.
+2. **"Tomar foto" (carga-imágenes) ilegible en modo oscuro** — `.ci-btn` tenía `color: #fff`
+   fijo en vez de `var(--app-accent-ink)` (mismo bug "3.2" ya documentado en la migración jade,
+   que no se había aplicado aquí). ⚠️ Grep de `background: var(--app-accent)` + `color: #fff`
+   encontró **18 archivos más** con el mismo riesgo, sin tocar — ver detalle en
+   `REVISION_UI_2026-08-01.md` punto 2.
+3. **`palabras-clave` sin paginación** — clonado el patrón de paginación real ya usado en
+   `lugares-entrega` (mismo endpoint CRUD genérico, `page`/`size=10`,
+   `haySiguiente = length === size`). `gestion-palabras-clave.component.ts/html/scss`.
+4. **Inputs de precio/monto — había que borrar el "0" a mano para escribir.** Un solo listener
+   global en `app.component.ts` (`focusin` sobre `document`) selecciona el contenido de
+   cualquier `input[type="number"]` de la app al enfocarlo — cubre venta directa, abonos,
+   gastos, precios de producto/variante, y cualquier campo numérico nuevo, sin tocar templates
+   uno por uno.
+5. **Botón azul suelto en `gastos/buscar`** — `.ga-btn--primary` tenía un gradiente azul
+   (`#1e40af, #3b82f6`) que no era ni siquiera el azul de Aether, quedó fuera de todas las
+   migraciones anteriores. → `var(--app-accent)` + `var(--app-accent-ink)`.
+6. **Saldo pendiente incorrecto en el ticket de abono** — `registrarAbono()` en
+   `abonos.component.ts` confiaba en `data.saldoRestante` (respuesta del back) para el número
+   mostrado; si ese campo refleja el saldo de ANTES del abono en vez de después, el ticket sale
+   con "ya pagado"/"saldo pendiente" desfasados (ejemplo real: total 300, ya pagado 100, abono
+   hoy 100 → mostraba saldo 200 en vez de 100). Fix defensivo: el saldo se calcula SIEMPRE en
+   local (saldo previo cargado al abrir el modal, menos el monto que se acaba de abonar) —
+   `data.saldoRestante` ya no se usa para el número, solo `data.estadoPedido` para el flag de
+   liquidado. Mismo fix en el mensaje de `detalle-pedido.component.ts` (no imprime ticket pero
+   tenía el mismo riesgo). Además, la etiqueta "Ya pagado" en tickets tipo `abono` ahora dice
+   **"Abonos previos"** (pedido explícito del usuario — menos ambiguo, deja claro que es antes
+   de hoy) — otros tipos de ticket (venta/liquidado) no cambian.
+
+**Sin resolver, necesitan algo externo:**
+7. **`clientes/buscar` — "cuadrito verde" junto a "Clientes"** — revisé el código completo del
+   header (`.cb-header`, patrón glass estándar del proyecto) y no encontré ningún elemento
+   que calce con la descripción. Anotado como ❓ pendiente de una captura para diagnosticar bien
+   en vez de adivinar un fix.
+8. **Filtro por estado (Pagado/Cancelado) en `mis-pedidos`** — pedido del usuario, junto a los
+   filtros de tipo (Normal/Apartado/Ir pagando) que ya funcionan bien. `buscarClientePedido` no
+   tiene ningún parámetro para filtrar por `estado_pedido` hoy — con paginación real de
+   servidor, filtrarlo en el front sobre lo que ya llegó daría resultados incompletos. Pregunta
+   mandada al back pidiendo un parámetro nuevo tipo `&estadoPedido=`, mismo patrón que
+   `tipoPedido`. El front ya está listo para conectarlo en cuanto exista.
+
+**Archivos modificados:**
+- `src/styles.scss` → fix global de color de botón Swal
+- `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`/`.ci-btn--completar`
+- `src/app/palabras-clave/gestion/gestion-palabras-clave.component.ts/.html/.scss` → paginación
+- `src/app/app.component.ts` → listener global `focusin` select-on-focus
+- `src/app/gastos/all/all.component.scss` → `.ga-btn--primary`
+- `src/app/abonos/abonos.component.ts` → `registrarAbono()` cálculo local de saldo
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `registrarAbono()` mismo fix
+- `src/app/shared/ticket.util.ts` → label "Abonos previos" en tickets tipo `abono`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — pendiente que el usuario confirme en QA tras el deploy.
+
+---
+
+## FEAT NAVBAR — LA SECCIÓN ACTIVA DEL MENÚ SE RECUERDA ENTRE NAVEGACIONES (2026-08-01)
+
+> Pedido del usuario: al entrar a, por ejemplo, Pedidos → Mis pedidos, navegar a otra pantalla y
+> volver a mostrar el sidebar, quería seguir viendo "Pedidos" expandido/marcado — no que el
+> accordion se resetee a cerrado cada vez. Elegir otra sección debe reemplazar cuál está
+> "activa" (un solo grupo a la vez, como ya funcionaba), solo que ahora persiste.
+
+**Antes:** `openGroup` (qué grupo del accordion está expandido) solo cambiaba por clic manual
+(`toggleGroup()`) y se reseteaba a `null` en `onMouseLeave()` (desktop) y `closeMobile()`
+(móvil) — es decir, cada vez que el mouse salía del sidebar o se cerraba en móvil (típicamente
+justo después de hacer clic en un link y navegar), la sección quedaba completamente cerrada sin
+importar en qué pantalla estuviera parado el usuario.
+
+**Fix:** nuevo campo privado `activeGroup`, recalculado en cada navegación
+(`router.events.pipe(filter(e => e instanceof NavigationEnd))`) contra un mapa
+`GROUP_ROUTES` (ruta → nombre de grupo, mismo criterio de agrupación ya documentado en
+"REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR"). `onMouseEnter()`, `onMouseLeave()` y
+`closeMobile()` ya no ponen `openGroup` en `null` — lo sincronizan con `activeGroup`, así que la
+sección de la ruta en la que el usuario está siempre es la que se muestra abierta la próxima vez
+que se expanda el sidebar. `toggleGroup()` (clic manual) no cambió — el usuario sigue pudiendo
+explorar otra sección sin navegar durante el hover actual; al salir del sidebar o navegar,
+vuelve a sincronizarse con la ruta real.
+
+**Extra:** cada `<a class="sb-subitem">` ganó `routerLinkActive="sb-subitem--active"` (mismo
+patrón que ya usaban los links directos fuera del accordion — Promociones, Favoritos, etc.) para
+que el sub-item exacto de la página donde está el usuario quede resaltado, no solo el grupo.
+Nueva clase `.sb-subitem--active` en el SCSS, mismo estilo que `.sb-item--active`.
+
+**Cuidado con prefijos de ruta ambiguos:** `tienda/venta` (Agregar producto, grupo Inventario) es
+prefijo literal de `tienda/venta-directa` (grupo Ventas) — un `startsWith` ingenuo los
+confundiría. `computeActiveGroup()` usa `clean === path || clean.startsWith(path + '/')`
+(con el `/` como límite) para no matchear un prefijo suelto como si fuera hijo de otra ruta.
+`routerLinkActive` de Angular no tiene este problema (compara segmentos de ruta, no substrings).
+
+**Archivos modificados:**
+- `src/app/navbar/navbar.component.ts` → `GROUP_ROUTES`, `activeGroup`,
+  `computeActiveGroup()`, `ngOnInit()` suscrito a `NavigationEnd`, `onMouseEnter()`/
+  `onMouseLeave()`/`closeMobile()` sincronizan con `activeGroup` en vez de resetear a `null`
+- `src/app/navbar/navbar.component.html` → `routerLinkActive="sb-subitem--active"` en los 27
+  `<a class="sb-subitem">`
+- `src/app/navbar/navbar.component.scss` → `.sb-subitem--active`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — necesita sesión real navegando entre pantallas para confirmar.
+
+---
+
+## FEAT — FILTRO PAGADOS/CANCELADOS EN MIS-PEDIDOS + REORGANIZACIÓN DE FILTROS (2026-08-01)
+
+> Respuesta del back (repo compartido, commit `c0c0e44`) a las 2 consultas de la sección
+> anterior: (1) `saldoRestante` en `POST /v1/abonos/{pedidoId}` SÍ es posterior al abono — el
+> fix de front (calcular en local) se queda igual, no hay que revertirlo, solo no confiar el
+> número en pantalla mostrado si viene de OTRA sesión (el de `data.saldoRestante` sí es
+> confiable si se quiere usar). El $200 raro del ticket reportado se explica por front cacheado
+> o un dato desfasado puntual — el back corrió un script de diagnóstico de su lado, sin acción
+> nuestra. (2) El filtro por estado **ya está implementado y compilando en `dev` del back**
+> (todavía no en `qa`) — contrato confirmado:
+
+```
+GET /v1/pedidos/buscarClientePedido?...&estadoPedido=PAGADO&estadoPedido=CANCELADO
+```
+- Repetible — varios valores del mismo parámetro se combinan con **OR** entre ellos.
+- Se combina con **AND** contra `tipoPedido`/`lugarEntregaId` (igual que ya funciona hoy entre
+  esos dos).
+- Comparación case-insensitive del lado del back — el front puede mandar `PAGADO`/`CANCELADO`
+  como sea.
+- Si se omite, no filtra por estado — retrocompatible.
+
+**Fix conectado (100% front, ya listo para cuando el back despliegue a `qa`):**
+- `pedidos.service.ts` → `buscarPedidoPorCliente()` gana un 6º parámetro `estadosPedido?: string[]`,
+  arma `&estadoPedido=` repetido.
+- `mis-pedidos.component.ts` → `filtroPagados`/`filtroCancelados`, `toggleFiltroEstado()`,
+  `estadosPedidoFiltro` getter (mismo patrón que `tiposPedidoFiltro`) — dimensión separada, no
+  se mezcla con `toggleFiltroTipo()`. `descripcionBusqueda` incluye Pagados/Cancelados.
+- Botones "✅ Pagados" / "❌ Cancelados" en `mis-pedidos.component.html`.
+
+**Reorganización de los bloques de filtro (pedido del usuario):** cada grupo de filtro ahora
+vive en su propio bloque separado, en vez de mezclar los botones nuevos dentro del grupo de
+tipo. Orden final: buscador de texto → grupo "tipo" (Normal/Apartados/Ir pagando) → grupo
+"estado" (Pagados/Cancelados, nuevo) → filtro de lugar (autocomplete, es "el otro buscador") →
+resumen de filtros activos. `.tipo-filtro-wrap` ya usa `flex-wrap: wrap`, así que en móvil cada
+grupo envuelve sus propios botones de forma independiente sin mezclarse con el grupo vecino.
+
+**⚠️ No probado en vivo — ni el filtro (el back no lo ha desplegado a `qa` todavía) ni el
+reordenamiento visual en un celular real.** Si el orden/agrupación no es exactamente lo que se
+pidió, ajustar con una captura de referencia en vez de otra ronda de descripción en texto — ya
+pasó dos veces en esta sesión que una descripción sola no bastó para acertar a la primera.
+
+**Archivos modificados:**
+- `src/app/pedidos/pedidos.service.ts` → `buscarPedidoPorCliente()` + `estadosPedido`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → filtro de estado
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → botones + reordenamiento de bloques
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### Corrección — agrupación real, no solo separación (mismo día)
+
+El usuario aclaró: el reordenamiento de arriba (grupos separados en bloques distintos, uno
+debajo del otro) no era lo pedido — cada buscador va **emparejado** con su filtro
+correspondiente, en la misma fila en PC:
+
+- **Grupo 1:** buscador de texto (número de pedido) + botones "✅ Pagados"/"❌ Cancelados".
+- **Grupo 2:** buscador de lugar de entrega ("el otro buscador") + botones
+  "🛒 Normal"/"📦 Apartados"/"💳 Ir pagando".
+
+**PC:** cada grupo en una fila — buscador a la izquierda, sus botones a la derecha, en el mismo
+renglón. **Móvil (`≤575px`):** cada grupo se apila — buscador arriba, sus botones justo debajo,
+después el siguiente grupo completo.
+
+**Fix:** nueva clase `.mp-filtro-grupo` (`display:flex; align-items:center; gap:14px;
+flex-wrap:wrap`, con `flex-direction:column` en `≤575px`) envolviendo cada par
+buscador+filtro. Se quitó el `margin-bottom` individual de `.search-bar`/`.lugar-filtro-wrap`/
+`.tipo-filtro-wrap` (ahora lo maneja el grupo, para no duplicar espacio).
+
+**Verificado con capturas reales** (Playwright + el `dist/styles.css` recién compilado, 1200px
+y 375px de ancho) — la primera vez en esta sesión que se confirma un layout así ANTES de subirlo,
+en vez de después de que el usuario lo viera mal.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → estructura por grupo
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.mp-filtro-grupo`, márgenes
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — `clientes/buscar`: HEADER SE VEÍA COMO UN CUADRO BLANCO DISTINTO AL FONDO (2026-08-01)
+
+> Cierra el punto 7 pendiente de "RONDA DE FIXES DE UI REPORTADOS EN QA" — el usuario mandó una
+> captura real de QA que sí confirmó el bug (mi vitrina anterior con datos de prueba no lo
+> reprodujo porque usaba `--header-brand`, la misma variable, pero sin comparar visualmente
+> contra el cuerpo real de la página con tarjetas).
+
+**Causa raíz:** `.cb-header` usaba `background: var(--header-brand)` — el glass semi-transparente
+(blanco al 78% de opacidad en modo claro) que ya se documentó como patrón de diseño intencional
+("DISEÑO DEFINITIVO — HEADER EN DARK/LIGHT MODE"), usado también en `productos/all` y
+`variante/buscar`. El efecto es sutil pero real: blanco translúcido sobre el fondo sólido mint
+de la página (`--page-bg`) se ve perceptiblemente más claro/blanco que el mint puro del cuerpo
+— exactamente el "cuadro blanco" que describió el usuario.
+
+**Decisión de alcance (confirmada con el usuario):** arreglar **solo `clientes/buscar`**, no
+tocar `productos/all`/`variante/buscar` ni la variable global `--header-brand` — son pantallas
+que nadie ha reportado con este problema y usan el mismo patrón a propósito en otro contexto
+(headers con banners laterales reservados para promociones).
+
+**Fix:** `.cb-header` cambia de `background: var(--header-brand)` (glass) a
+`background: var(--page-bg)` (sólido, mismo tono exacto que el cuerpo de la página) — el header
+deja de tener ningún contraste con el resto, se ve como un solo color continuo.
+
+**Verificado con capturas reales** (Playwright, claro y oscuro) — confirmado que el header y el
+cuerpo ya blanquean/oscurecen exactamente igual, sin ningún cuadro perceptible.
+
+**Archivo modificado:** `src/app/clietes/clientes-buscar/clientes-buscar.component.scss`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## SEGUNDA RONDA — 4 FIXES TRAS PROBAR EN VIVO LO DE HOY (2026-08-01)
+
+> El usuario probó todo lo de la ronda anterior en QA y reportó 4 puntos concretos más.
+
+### 1. Buscador de `mis-pedidos` se veía muy corto, texto cortado (solo PC)
+
+**Causa raíz — bug clásico de flexbox:** al meter el buscador dentro de `.mp-filtro-grupo`
+(`display:flex`) en la sesión anterior, `.search-bar`/`.lugar-filtro-wrap` (los flex items
+directos) no tenían ningún `flex-basis` propio — solo su HIJO (`.search-input-wrap`) tenía
+`max-width:420px`. `max-width` es un TOPE, no un ancho — sin una base de la que partir, el
+navegador colapsaba el flex item al tamaño mínimo por defecto de un `<input>` (~180px),
+cortando el placeholder "Buscar por número de pedido…" a la mitad. Confirmado reproduciendo
+con Playwright + la fuente Poppins real antes de aplicar el fix (se veía "Buscar por número de
+p" cortado exactamente como reportó el usuario).
+
+**Fix:** `.search-bar`/`.lugar-filtro-wrap` ganan `flex: 0 1 420px` (basis 420px, no crece, sí
+puede encoger) — con eso `width:100%` del input hijo ya tiene de dónde resolver su ancho.
+
+**Segundo bug encontrado al verificar en móvil:** con `flex-direction:column` (el override de
+`@media max-width:575px`), el eje principal pasa a ser VERTICAL — un `flex-basis` en px pensado
+para ANCHO en PC se interpreta como ALTO en móvil, dejando un hueco de ~420px de alto debajo del
+buscador. Fix: dentro del media query, `.mp-filtro-grupo > .search-bar, > .lugar-filtro-wrap { flex: 0 1 auto; }` resetea la base a automática en columna.
+
+**Verificado con capturas reales** (Playwright + Poppins + `dist/styles.css`, 1200px y 375px)
+antes de subir — texto completo visible en PC, sin hueco en móvil.
+
+### 2. `mis-pedidos` — "Cobrar" seguía clickeable en un pedido ya pagado
+
+**Síntoma:** un pedido a crédito ya liquidado (`estado_pedido = 'PAGADO'`) seguía mostrando el
+botón "Cobrar" habilitado → mandaba a `/abonos`, que a su vez decía "este pedido ya está
+pagado". El `[disabled]` del botón solo comparaba contra `estado_pedido === 'Entregado'`
+(venta normal) — nunca contempló el estado `PAGADO` de un crédito.
+
+**Fix:** nuevo método `pedidoYaCobrado(item)` — cubre `PAGADO` (crédito liquidado),
+`Entregado` (venta normal ya cobrada) y `Cancelado` (que tampoco se cubría antes). El botón
+ahora se deshabilita en los 3 casos, con `[title]` explicando por qué.
+
+### 3. Ticket de abono — falta historial con fecha por cada abono
+
+**Pedido del usuario:** en vez de solo "Abonos previos: $X", mostrar cada abono por separado
+con su fecha — "Abono 1 (15/06/2026): $100", "Abono 2 (27/06/2026): $100"... hasta liquidar.
+
+**Fix:** `ticket.util.ts` → nueva interfaz `ITicketAbonoItem { monto, fecha }` +
+`ITicketData.abonos?: ITicketAbonoItem[]`. Si se manda, `generarHtmlTicket()` imprime un
+renglón numerado por abono (con fecha) en vez de las líneas agregadas "Abonos previos"/"Abono
+de hoy" (que se conservan como fallback si no se manda el array — no rompe nada donde no se
+conecte). Conectado en los 3 lugares que arman tickets de abono:
+- `abonos.component.ts` → `buildTicketDataFromDetalle()`: `detalle.abonos` (previos, ya
+  cargados al abrir el modal) + el de hoy (`body.monto`, fecha de hoy) al final.
+- `mis-pedidos.component.ts` → `buildAndPrintTicket()`/`enviarComprobanteConDatos()`: usa
+  `PedidoDetalleResponse.abonos` directo (ya viene completo del back en cualquier reimpresión).
+- `detalle-pedido.component.ts` → mismo patrón en sus 2 puntos de armado de ticket.
+
+### 4. Confirmado — el header de `clientes/buscar` sigue con el fix aplicado
+
+Se verificó que el cambio de la sección anterior (`background: var(--page-bg)`) sigue en el
+código y ya está pusheado — no se revirtió ni se perdió. Pendiente aclarar con el usuario si lo
+que reporta como "sigue igual, en PC no se ve nada" es sobre ESTA pantalla o sobre el ticker de
+promociones ("la línea que se movía arriba") que se discutió en una sesión anterior y nunca se
+llegó a implementar — quedó como duda abierta, ver conversación.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.scss` → `.mp-filtro-grupo`,
+  `.search-bar`, `.lugar-filtro-wrap`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `pedidoYaCobrado()`,
+  `abonos` en `buildAndPrintTicket()`/`enviarComprobanteConDatos()`
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.html` → `[disabled]`/`[title]` de Cobrar
+- `src/app/shared/ticket.util.ts` → `ITicketAbonoItem`, `ITicketData.abonos`,
+  `generarHtmlTicket()` con renglón por abono
+- `src/app/abonos/abonos.component.ts` → `buildTicketDataFromDetalle()` arma `abonos`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `abonos` en sus 2 tickets
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FIX — `detalle-pedido`: "REGISTRAR ABONO" SEGUÍA CLICKEABLE EN UN CRÉDITO YA LIQUIDADO (2026-08-01)
+
+> El usuario confirmó que en `mis-pedidos` (lista) y en el detalle, imprimir/enviar ticket ya
+> funcionan bien (gatilla correctamente contra "no cancelado + ya tiene pagos"). El único bug
+> real reportado en esta ronda: en el detalle de un pedido a crédito **ya pagado por completo**,
+> el botón "💳 Registrar abono" seguía apareciendo y era clickeable.
+
+**Causa raíz:** `.dp-abono-wrap` (todo el bloque de abonos) se muestra con `*ngIf="esCredito"`,
+y `esCredito` solo mira `tipoPedido` (`APARTADO`/`FIADO`) — ese valor NO cambia cuando el
+crédito se liquida, así que el bloque completo (incluido el botón de registrar) seguía
+visible para siempre, sin importar el estado real de pago.
+
+**Fix:** nuevo getter `yaLiquidado` (`esCredito && estadoPedido === 'PAGADO'`). El botón
+"Registrar abono" ahora lleva `*ngIf="!mostrarFormAbono && !yaLiquidado"`, y en su lugar se
+muestra un aviso "✅ Este pedido ya está pagado por completo — no se pueden registrar más
+abonos." El **historial de pagos sigue mostrándose igual** (útil de consultar) — solo se oculta
+la acción de registrar uno nuevo, no todo el bloque.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → getter `yaLiquidado`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `*ngIf` del botón + aviso
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.scss` → `.dp-abono-liquidado`
+  (claro + oscuro)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## ❓ SIN RESOLVER — "Tomar foto" (carga-imágenes) sigue sin verse bien tras 2 rondas de fix (2026-08-01)
+
+El usuario reportó por tercera vez que el botón "📷 Tomar foto" no se ve como debería. Ya se
+corrigió el contraste (`color: #fff` fijo → `var(--app-accent-ink)`) hace 2 sesiones — confirmado
+en el código que el fix sigue ahí, no se revirtió. Revisado el HTML completo: es un `<label>`
+con un `<input type="file" hidden>` adentro, sin `*ngIf` ni dependencia de ningún dato del
+servidor — no hay ninguna razón por la que esto dependa del back.
+
+**Anotado en el repo compartido** (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`)
+por transparencia, a petición del usuario — sin ninguna pista concreta de que sea un tema de
+backend, se les preguntó si ven algo que se nos esté escapando.
+
+**Sigue bloqueado por falta de una captura de pantalla del usuario** — sin eso no se puede
+diagnosticar con precisión si el problema real es de contraste (¿todavía?), el emoji 📷 sin
+renderizar en su navegador/SO, o algo funcional (en escritorio ese input abre el selector de
+archivos normal, no una cámara — `capture="environment"` es soporte de navegador/dispositivo).
+**No inventar un tercer fix a ciegas sin la captura** — mismo patrón que ya pasó 2 veces en esta
+sesión (Clientes, buscador de mis-pedidos): una descripción en texto sola no bastó para acertar.
+
+### Actualización — captura recibida, el texto SÍ se ve en la imagen (mismo día)
+
+El usuario mandó la captura pedida. **En la imagen el texto "Tomar foto" se ve blanco y
+legible**, mismo peso/tamaño que "Elegir de galería o PC" — sin ningún problema visible de
+contraste ahí. Se le preguntó si el reporte era sobre la función de cámara (en escritorio
+`capture="environment"` no abre cámara real, es comportamiento normal del navegador, no un bug)
+— confirmó que no, que es específicamente que "no se ve el texto".
+
+**Contradicción sin resolver:** contraste calculado a mano (blanco sobre `#00875A`, acento en
+modo claro) da ~4.6:1 — pasa AA incluso para texto normal, y el texto se ve bien en la captura
+que el usuario mismo mandó. Hipótesis más probable: la pestaña donde lo prueba en vivo sigue
+con una versión vieja en caché (aunque la captura que mandó sí muestre la versión nueva) — no
+se puede descartar sin que confirme después de un hard-refresh real.
+
+**Reforzado de todos modos, sin esperar confirmación de la causa:** `.ci-btn` sube de
+`font-weight: 600` a `700` + `text-shadow: 0 1px 2px rgba(0,0,0,.25)` — no hace daño en ningún
+tema, y cubre el caso de que el contraste real percibido sea más débil que lo calculado (brillo
+de pantalla, iluminación ambiente, etc.).
+
+**Archivo modificado:** `src/app/carga-imagenes/carga-imagenes.component.scss` → `.ci-btn`
+
+---
+
+## FEAT REDES SOCIALES — PUBLICAR PRODUCTO EN FACEBOOK (FOTO Y VIDEO) (2026-08-05)
+
+> Contrato documentado por el back en el repo compartido (`CAMBIOS_FRONT.md`, secciones
+> "📘 Endpoint nuevo — Publicar variante en Facebook" y "— Publicar VIDEO..."). Primer paso de
+> la integración con redes: solo **Facebook feed**, solo **ADMIN**. Instagram y TikTok quedan
+> para después; Historias y Reels **no existen** todavía (son flujos distintos de la Graph API).
+
+### Endpoints conectados
+
+| Método | URL | Archivo |
+|---|---|---|
+| `POST` | `/v1/redes-sociales/facebook/publicar` | opcional (cae a la imagen principal de la variante) |
+| `POST` | `/v1/redes-sociales/facebook/publicar-video` | **obligatorio** (el catálogo no guarda video) |
+
+Ambos son **`multipart/form-data`**, no JSON. Campos: `varianteId`, `descripcion` (texto libre,
+sale tal cual como caption), `scheduledPublishTime` opcional (ISO LocalDateTime, mín. 10 min y
+máx. 6 meses a futuro). El de foto acepta además `imagenId` (otra imagen ya guardada) o
+`imagenNueva` (archivo suelto que **no** se guarda en la galería del producto; gana sobre
+`imagenId`). Tope de 200 MB por archivo. Respuesta: `data.estado` es `PUBLICADA` o `PROGRAMADA`,
+y `data.postIdFacebook` arma el link `https://www.facebook.com/{postIdFacebook}`.
+
+### ⚠️ No setear `Content-Type` a mano
+
+El body es un `FormData` — el browser pone `multipart/form-data` con su propio `boundary`.
+Verificado que `TokenInterceptor` solo agrega `Authorization` y `withCredentials`, no toca el
+`Content-Type`, así que no hizo falta ninguna excepción ahí.
+
+### Subida con barra de progreso — y por qué NO usa el overlay global
+
+`RedesSocialesService.enviar()` usa `reportProgress: true` + `observe: 'events'` y traduce los
+eventos a `{ tipo: 'subiendo' | 'procesando' | 'listo', porcentaje }`. Dos detalles que importan:
+
+1. **Se filtran los eventos que no son `UploadProgress` ni `HttpResponse`.** Si se mapearan
+   todos, el evento `ResponseHeader` (que llega DESPUÉS de terminar la subida) regresaría la
+   barra a 0 justo al final.
+2. **`procesando` es una fase real, no cosmética.** Cuando la subida llega al 100%, el archivo
+   apenas llegó al back — que ahora lo manda a Facebook y **puede tardar hasta 5 minutos** (ese
+   es el timeout que el back declaró). No hay nada que medir ahí, así que la barra se queda al
+   100% con una animación de pulso y el texto cambia a "Enviándolo a Facebook…". Sin esa
+   distinción, un video pesado se ve como una pantalla congelada.
+
+Se agregó `/redes-sociales/` a `LoadingInterceptor.skipUrls` (junto a `/chatbot/`): el overlay
+global de pantalla completa taparía TODA la app durante esos minutos sin decir nada. La pantalla
+muestra su propia barra en su lugar.
+
+### Previews locales — dos trampas ya conocidas, aplicadas aquí
+
+- **Archivo local** (`imagenNueva` / `video`) → `URL.createObjectURL()` + `bypassSecurityTrustUrl`
+  **al crear**, nunca desde el binding (llamarlo en el template devuelve una instancia nueva por
+  ciclo de detección y Angular repinta sin parar). Angular 14 **bloquea** las URLs `blob:` crudas
+  — sin el bypass la imagen sale rota **sin ningún error en consola**.
+- **Imagen que viene del back** (`imagenUrl` de la variante o de la galería) → `| imagenSrc | async`,
+  porque un `<img src>` nativo no pasa por `TokenInterceptor` y el endpoint responde 401.
+
+Se guardan los dos: el `SafeUrl` para el `[src]` y el string crudo aparte, porque
+`URL.revokeObjectURL` solo acepta el string. Se revoca al quitar el archivo y en `ngOnDestroy`.
+
+### Decisiones de UX
+
+- **Los opcionales se OMITEN, no se mandan vacíos.** Si se manda `imagenId: ''`, el back lo toma
+  como valor y descarta la imagen principal — por eso el servicio solo hace `append` cuando hay
+  algo real que mandar.
+- **El código de barras va en la descripción sugerida por defecto** (es lo que le permite a un
+  cliente pedir ese producto exacto), pero la pantalla avisa que queda visible en un post público
+  y el texto es totalmente editable para borrarlo.
+- **"La principal" queda deshabilitada si el producto no tiene imagen** — el back respondería 400.
+  Se muestra el aviso en vez de dejar mandar una petición que ya se sabe que falla.
+- **La fecha se valida en el front** con los mismos límites que el back (10 min / 6 meses), por lo
+  mismo. `datetime-local` entrega `2026-08-05T18:30`; se le agrega `:00` para el LocalDateTime.
+- **La galería de imágenes guardadas falla en silencio** a propósito: sin esa lista el admin
+  igual puede publicar con la principal o subiendo una nueva, no vale bloquear la pantalla.
+
+### Lo que NO existe (por si se da por hecho)
+
+No hay endpoint para listar publicaciones ya hechas de un producto, ni para editar o borrar un
+post desde acá — cada llamada crea una publicación nueva. Tampoco Historia ni Reel.
+
+### Archivos nuevos
+- `src/app/redes-sociales/models/publicacion.model.ts`
+- `src/app/redes-sociales/service/redes-sociales.service.ts`
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` / `.html` / `.scss` (prefijo BEM
+  `fb-`, todo el color por variables globales + matices `:host-context` por tema)
+
+### Archivos modificados
+- `src/app/loading.interceptor.ts` → `/redes-sociales/` en `skipUrls`
+- `src/app/admin/admin-routing.module.ts` → ruta `admin/facebook`
+- `src/app/admin/admin.module.ts` → declara el componente
+- `src/app/navbar/navbar.component.html` → link "📘 Publicar en Facebook" en 🛠️ Sistema
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo.** Además del backend desplegado, depende de que la app de Meta tenga
+aprobado `pages_manage_posts`: mientras esté en modo desarrollo, Facebook solo acepta publicar en
+páginas donde el dueño del token esté agregado como Admin/Developer/Tester de la app — si no,
+responde 400 y la pantalla mostrará ese mensaje del back tal cual.
+
+---
+
+## FIX SEGURIDAD AUTH — LOS 6 PUNTOS DEL CHECKLIST DEL BACK (2026-08-05)
+
+> Cierra la sección "🔐 CORRECCIONES DE SEGURIDAD EN AUTENTICACIÓN — 2026-07-31 (acción
+> requerida en el front)" del repo compartido, que llevaba una semana sin atender. **Nada de
+> esto se rompe hoy** — el back todavía tiene esos cambios sin desplegar — pero el día que
+> desplieguen, 4 de los 6 puntos rompen la app de golpe.
+
+### 1. `passwordTemporal` vs `debeCambiarPassword` — se leen LOS DOS
+
+El back documentó `debeCambiarPassword` el 2026-07-04 y `passwordTemporal` el 2026-07-31, sin
+aclarar si es un rename o dos campos distintos. Con el campo equivocado el front nunca detecta
+la contraseña temporal y el usuario recibe **403 en TODOS los endpoints** salvo cuatro de auth
+— la app se ve completamente rota sin ninguna pista de por qué.
+
+Se lee `res?.passwordTemporal ?? res?.debeCambiarPassword ?? false` en `login-form` y en
+`verificar-correo`. Funciona con cualquiera de los dos nombres. **Pregunta abierta al back**
+para poder quitar el que sobre.
+
+### 2. Cambiar la contraseña ahora MATA la sesión — hay que volver al login
+
+El back invalida el refresh token en el instante (los 3 caminos: cambiar, restablecer y el
+reseteo de un admin). Quedarse dentro de la app deja al usuario con una sesión muerta que
+revienta en el siguiente refresh.
+
+Estaban mal **3 de los 4 lugares**:
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Modal forzado del login (`forzarCambioPassword`) | entraba a `/productos/buscar` ❌ | cierra sesión → `/login` |
+| Mismo modal en `verificar-correo` | igual ❌ | cierra sesión → `/login` |
+| `/clientes/cambiar-password` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/clientes/mi-perfil` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/olvide-password` | ya iba a `/login` ✅ | sin cambio |
+
+**Nuevo `SesionService`** (`src/app/shared/sesion.service.ts`) con `cerrarSesionLocal(destino)`:
+limpia el access token, los roles y **ambos** carritos, y navega. Existe para tener un solo
+lugar donde se define "cerrar sesión localmente" — `NavbarComponent.limpiarSesionLocal()` se
+refactorizó para usarlo también (antes tenía su propia copia, y con 5 copias iban a divergir).
+**No** llama a `POST /v1/auth/logout`: en un cambio de contraseña el back ya mató la sesión.
+
+### 3. El 401 del primer refresh tras el despliegue → login sin error feo
+
+Al desplegar, **todos** los refresh tokens viejos dejan de servir de golpe (les faltan `jti` y
+`sessionId`), así que el primer refresh de cada usuario responde 401. El interceptor ya
+redirigía al login, pero **además propagaba el error** → cada componente mostraba su
+`Swal.fire({icon:'error'})` encima de la redirección.
+
+Ahora devuelve **`EMPTY`** en vez de propagar. Trade-off consciente: un `.subscribe({ next })`
+en vuelo no se entera de nada — aceptable, porque el componente se destruye al navegar. El
+overlay global sí se apaga bien: `LoadingInterceptor` usa `finalize()`, que corre también al
+completar, no solo al fallar.
+
+### 4. No reintentar el refresh con un token ya rotado
+
+El back rota el refresh token de verdad; si le llega uno ya usado lo interpreta como **token
+robado y cierra la sesión completa**. El guard `isRefreshing` solo cubría refreshes
+*simultáneos* — pero después de un refresh fallido, `isRefreshing` volvía a `false` y el
+siguiente 401 disparaba otro intento.
+
+Nuevo flag **`sesionMuerta`**: se enciende cuando un refresh falla y corta cualquier intento
+posterior (navega al login y devuelve `EMPTY`). Se apaga solo cuando vuelve a haber access
+token, o sea cuando el usuario se logueó de nuevo — se detecta en `intercept()`, sin acoplar
+el interceptor al flujo de login.
+
+### 5. Header `X-Requested-With: XMLHttpRequest` en refresh y logout
+
+Nueva constante `CSRF_ENDPOINTS = ['/auth/refresh', '/auth/logout']` en el interceptor. Se
+manda siempre; hoy el back lo tiene **apagado** (`seguridad.exigir-header-refresh: false`), así
+que mandarlo de más no molesta.
+
+⚠️ **El orden importa y no se puede invertir:** primero se despliega esto, después se le avisa
+al back, y **recién ahí** ellos lo encienden. Si lo encienden antes, todos los usuarios pierden
+la sesión a los 15 minutos (cuando expira su access token).
+
+### 6. Contraseña mínima de 8 caracteres — ya estaba
+
+Verificado en los 5 formularios: `cambiar-password`, `olvide-password`, `add-usuarios` (registro
+y edición), `mi-perfil` (`reqLongitud`) y el modal forzado del login (`cumpleRequisitos`, que
+sí valida `length >= 8`). **Ojo:** el validador `passwordFuerte` de `src/app/validador/validador.ts`
+**no** valida longitud — solo mayúscula/minúscula/número/especial. La longitud siempre viene de
+un `Validators.minLength(8)` aparte. Si se agrega un formulario de contraseña nuevo, hay que
+poner los dos.
+
+**Archivos nuevos:** `src/app/shared/sesion.service.ts`
+
+**Archivos modificados:** `src/app/token/TokenInterceptor .ts`,
+`src/app/login/login-form/login-form.component.ts`,
+`src/app/login/verificar-correo/verificar-correo.component.ts`,
+`src/app/clietes/cambiar-password/cambiar-password.component.ts`,
+`src/app/clietes/mi-perfil/mi-perfil.component.ts`,
+`src/app/navbar/navbar.component.ts` (usa `SesionService` + `admin/facebook` en `GROUP_ROUTES`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — el back todavía no despliega su lado, así que hoy no hay forma de
+reproducir ninguno de los escenarios (403 por contraseña temporal, 401 masivo del refresh).
+
+---
+
+## FEAT LEGAL — PÁGINA PÚBLICA DE POLÍTICA DE PRIVACIDAD `/privacidad` (2026-08-05)
+
+**Por qué existe:** Meta la exige en **Configuración → Básico** de la app de Facebook. Sin una
+URL de política de privacidad **accesible sin iniciar sesión**, Meta no deja ni siquiera generar
+el token de prueba en el Graph API Explorer — o sea, bloquea por completo la configuración de
+credenciales y, con ella, toda la función de "Publicar en Facebook". El back lo reportó como su
+bloqueo actual en el repo compartido (2026-08-05) y no existía ninguna página de este tipo en
+todo el proyecto (verificado con grep).
+
+**⚠️ La ruta NO lleva guards, a propósito.** Ni `AuthGuard` ni `CarritoGuard`. Meta abre la URL
+con un bot anónimo; si se topa con un redirect al login la da por inválida. Si alguna vez se
+agrega un guard global, hay que exceptuar esta ruta.
+
+**⚠️ Antes de publicar hay que confirmar `correoContacto`** en `privacidad.component.ts` —
+está en `contacto@novedades-jade.com.mx` como valor por defecto y tiene que ser una cuenta que
+alguien realmente lea: es a donde van a escribir los clientes que quieran consultar, corregir o
+eliminar sus datos.
+
+**Contenido:** redactado a partir de lo que el sistema realmente recaba (cuenta, contacto,
+pedidos, datos de entrega, chat), no genérico de plantilla. Incluye una sección explícita de
+redes sociales aclarando que solo se publican productos del catálogo y **nunca datos de
+clientes** — relevante porque es justo lo que Meta va a revisar.
+
+**Archivos nuevos:** `src/app/legal/privacidad/privacidad.component.ts` / `.html` / `.scss`
+(prefijo BEM `pv-`, color por variables globales, dark/light automático)
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta pública `privacidad`),
+`src/app/app.module.ts` (declara el componente)
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+---
+
+## RESPUESTAS DEL BACK — 2026-08-05 (cierran 3 preguntas abiertas)
+
+1. **`scheduledPublishTime`:** el servidor corre en `America/Mexico_City` (`ENV TZ` en su
+   Dockerfile, aplica a qa y prod). Como el admin está en esa misma zona, **no hay que convertir
+   nada** — se manda el `LocalDateTime` tal cual sale del date-time picker. La implementación
+   actual ya lo hace así; sin cambios.
+
+2. **Omitir el part vacío era correcto y es obligatorio.** Si se mandara `imagenId` como string
+   vacío, el back intenta convertir `""` a `Long`, falla, y cae en el manejador genérico →
+   **500 feo**, no un 400 claro. Ellos lo anotaron como mejora pendiente de su lado; mientras
+   tanto el front NO debe mandar el part cuando no aplique.
+
+3. **El campo del login es `debeCambiarPassword`, no `passwordTemporal`.** `AuthResponse.java`
+   solo expone `accessToken` y `debeCambiarPassword`; `passwordTemporal` es un campo interno de
+   la entidad `Usuario` que nunca viaja al front. **Se quitó el fallback** que se había puesto
+   por precaución en `login-form.component.ts` y `verificar-correo.component.ts`.
+
+4. **`seguridad.exigir-header-refresh` sigue en `false`** en todos los ambientes. El front ya
+   manda `X-Requested-With`, así que pueden encenderlo cuando quieran — pero recordar que
+   conviene hacerlo **después** de que esto llegue a producción.
+
+---
+
+## ⏸️ PAUSADO — PUBLICAR EN FACEBOOK: SACADO DE `dev` Y `qa` (2026-08-05)
+
+> **Nota:** en un primer momento solo se ocultó el link del menú (commit `2b57b12`). Poco después
+> se decidió sacar el feature completo de `dev`/`qa`, igual que hizo el back — ver
+> "ACTUALIZACIÓN" al final de esta sección. El resto de la sección describe el contexto, que
+> sigue siendo válido.
+
+El back **sacó de `dev` y `qa`** los endpoints `POST /v1/redes-sociales/facebook/publicar` y
+`/publicar-video` (repo compartido, commit `c834e85`), mientras se resuelve la configuración de
+la app de Meta. Su código quedó respaldado en la rama `backup/facebook-redes-sociales` de
+`proyecto_key`.
+
+**Problema que esto creaba del lado del front:** la pantalla ya estaba mergeada a `qa` y su link
+visible en el menú 🛠️ Sistema. Cualquier admin que entrara iba a recibir **404 al publicar**, sin
+ninguna pista de por qué.
+
+**Qué se hizo:** se comentó **solo el link del navbar**. La ruta `/admin/facebook`, el componente,
+el servicio y los modelos **siguen intactos en el código** — no tiene sentido borrar trabajo que
+está documentado y listo, y que el back también conservó en una rama. Para reactivar: descomentar
+una línea en `navbar.component.html`.
+
+**Se dejó tal cual (no se tocó):** la página pública `/privacidad`. Sigue siendo necesaria para
+la app de Meta cuando se retome, y de todas formas es buena práctica tenerla.
+
+**Estado de la configuración de Meta al momento de pausar** (por si se retoma y hay que recordar
+dónde se quedó):
+- App `novedadesJade`, ID `1017171384561253`, en modo **Publicada**.
+- Caso de uso **"Administrar todos los aspectos de tu página"** ya agregado, con
+  `pages_manage_posts` y `pages_read_engagement` en "Listo para la prueba".
+- **Bloqueo real:** no se pudo generar el Page Access Token — el popup de consentimiento de
+  Facebook (`facebook.com/privacy/consent/?flow=user_cookie_choice_v2`) entra en bucle infinito
+  (`ERR_TOO_MANY_REDIRECTS`), tanto en Brave como en Chrome. Se descartó: cookies de terceros
+  (ya permitidas globalmente), cookies viejas (borradas). **Sospecha principal sin confirmar:**
+  alguna extensión del navegador (bloqueador de anuncios/rastreo) rompiendo ese flujo.
+- El aviso "Currently ineligible for submission — Ícono de la app (1024×1024)" **NO era el
+  bloqueo** — solo impide mandar la app a revisión, trámite que no hace falta para publicar en
+  la página propia siendo admin de la app.
+
+**Archivo modificado:** `src/app/navbar/navbar.component.html`
+
+**Verificado con `ng build --configuration=development` sin errores.**
+
+### ACTUALIZACIÓN (mismo día) — se sacó el feature completo, no solo el link
+
+Ocultar el link dejaba ~1300 líneas de código muerto en `dev`/`qa` apuntando a endpoints que ya
+no existen. Se sacó todo, replicando lo que hizo el back.
+
+**Respaldo primero:** rama **`backup/facebook-redes-sociales`** (pusheada al remoto), creada
+desde `dev` con el feature todavía dentro. Mismo nombre que usó el back en `proyecto_key`, a
+propósito, para que las dos ramas se encuentren juntas al retomar.
+
+> ⚠️ **No se usó `git stash`** aunque así se pidió: el código ya estaba commiteado y pusheado a
+> `dev` y `qa`, así que no había nada en el árbol de trabajo que guardar. Y un stash vive solo en
+> la máquina local, no viaja al remoto — se habría perdido con cualquier `git clean` o al cambiar
+> de equipo. Una rama publicada cumple lo mismo y es recuperable desde cualquier lado.
+
+**Qué se eliminó:**
+
+| Archivo | Qué se hizo |
+|---|---|
+| `src/app/redes-sociales/` (modelo + servicio) | borrado |
+| `src/app/admin/redes-sociales/` (componente `.ts`/`.html`/`.scss`) | borrado |
+| `src/app/admin/admin-routing.module.ts` | quitada la ruta `facebook` + import |
+| `src/app/admin/admin.module.ts` | quitada la declaración + import |
+| `src/app/navbar/navbar.component.html` | quitado el link (queda solo un comentario) |
+| `src/app/navbar/navbar.component.ts` | quitado `admin/facebook` de `GROUP_ROUTES` |
+| `src/app/loading.interceptor.ts` | quitado `/redes-sociales/` de `skipUrls` |
+
+**⚠️ Al reactivar, no olvidar `skipUrls`.** Es lo más fácil de pasar por alto porque no truena
+nada: sin `/redes-sociales/` ahí, el overlay global de carga tapa la app entera durante los
+minutos que tarda la subida de un video, sin decir nada. Es un archivo aparte del feature.
+
+**Qué NO se tocó:** la página pública `/privacidad` — sigue haciendo falta para la app de Meta al
+retomar, y de todos modos conviene tenerla publicada.
+
+**Verificado:** grep de `redes-sociales|PublicarFacebook|admin/facebook` en `src/app` → sin
+resultados fuera de los comentarios. `ng build --configuration=development` sin errores.

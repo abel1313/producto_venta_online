@@ -35,6 +35,27 @@
     </div>
   </div>
 
+  <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
+  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.lugarEntregaNombre || detalle.urlFacebook)">
+    <p class="dp-entrega__title">📍 Datos de entrega</p>
+    <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
+      <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.direccionEntrega">
+      <strong>Dirección:</strong> {{ detalle.direccionEntrega }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.lugarEntregaNombre">
+      <strong>Lugar:</strong> {{ detalle.lugarEntregaNombre }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
+      <strong>Fecha de entrega:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.urlFacebook">
+      <strong>Facebook:</strong>
+      <a [href]="detalle.urlFacebook" target="_blank" rel="noopener">{{ detalle.urlFacebook }}</a>
+    </p>
+  </div>
+
   <!-- FORM DE ABONO (solo crédito) -->
   <div class="dp-abono-wrap" *ngIf="esCredito">
 
@@ -51,7 +72,11 @@
       </div>
     </div>
 
-    <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono">
+    <p class="dp-abono-liquidado" *ngIf="yaLiquidado">
+      ✅ Este pedido ya está pagado por completo — no se pueden registrar más abonos.
+    </p>
+
+    <button class="dp-btn-abono" (click)="abrirFormAbono()" *ngIf="!mostrarFormAbono && !yaLiquidado">
       💳 Registrar abono
     </button>
 

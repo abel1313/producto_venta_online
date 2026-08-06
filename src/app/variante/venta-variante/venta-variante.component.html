@@ -57,7 +57,7 @@
     <ng-template pTemplate="emptymessage">
       <tr>
         <td colspan="9" class="text-center text-muted py-4">
-          El carrito está vacío — agrega variantes desde <a routerLink="/variantes/buscar">buscar</a>.
+          El carrito está vacío — agrega variantes desde <a routerLink="/tienda/buscar">buscar</a>.
         </td>
       </tr>
     </ng-template>
@@ -95,6 +95,17 @@
       ⚠️ Las promociones son solo de contado — no se puede generar crédito cuando hay promos en el carrito.
     </div>
   </ng-container>
+
+  <!-- Lugar de entrega (opcional, solo cliente — el admin lo captura en Venta Directa) -->
+  <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio">
+    <div class="col-12 col-sm-6">
+      <label class="form-label small mb-1">📍 Lugar de entrega (opcional)</label>
+      <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId">
+        <option [ngValue]="null">Sin especificar</option>
+        <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
+      </select>
+    </div>
+  </div>
 
   <!-- Total + botones -->
   <div class="row mt-2 mb-2 px-3">

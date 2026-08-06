@@ -14,5 +14,6 @@ export interface IPedidoVarianteDTO {
   fechaPedido: string;
   //fechaRecogida: string;
   observaciones: string;
+  lugarEntregaId?: number;
   detalles: IPedidoVarianteDetalleDTO[];
 }

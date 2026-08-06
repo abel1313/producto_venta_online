@@ -94,7 +94,7 @@
         color: #475569;
         background: transparent;
         border: none;
-        &:hover { background: rgba(0,122,255,0.08); color: var(--app-accent); }
+        &:hover { background: rgba(0,135,90,0.08); color: var(--app-accent); }
       }
 
       .p-paginator-page.p-highlight {
@@ -116,8 +116,8 @@
       border-color: #e2e8f0;
       .p-dropdown-item {
         color: #1e293b;
-        &:hover { background: rgba(0,122,255,0.07); }
-        &.p-highlight { background: rgba(0,122,255,0.12); color: var(--app-accent); }
+        &:hover { background: rgba(0,135,90,0.07); }
+        &.p-highlight { background: rgba(0,135,90,0.12); color: var(--app-accent); }
       }
     }
   }
@@ -170,7 +170,7 @@
       .p-dropdown-item {
         color: #e2e8f0;
         &:hover { background: rgba(255,255,255,0.07); }
-        &.p-highlight { background: rgba(0,122,255,0.3); color: var(--app-accent); }
+        &.p-highlight { background: rgba(0,135,90,0.3); color: var(--app-accent); }
       }
     }
 
@@ -199,12 +199,12 @@
       border-color: rgba(255,255,255,0.15);
       color: #e2e8f0;
       &::placeholder { color: rgba(148,163,184,0.6); }
-      &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
+      &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(0,135,90,0.2); }
     }
 
     .btn-primary { background: var(--app-accent); border-color: var(--app-accent); }
     .btn-outline-secondary { color: #94a3b8; border-color: rgba(255,255,255,0.2); }
-    .card-header.bg-primary { background: linear-gradient(135deg, #3D2C0C, #5856D6) !important; }
+    .card-header.bg-primary { background: linear-gradient(135deg, #00301F, #005C3D) !important; }
   }
 }
 

@@ -297,7 +297,7 @@ export class DetalleVarianteComponent implements OnInit {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -309,17 +309,17 @@ export class DetalleVarianteComponent implements OnInit {
           this.displayImages = this.displayImages.filter(img => !img.id || !this.imagenesParaEliminar.has(img.id));
           this.imagenesParaEliminar.clear();
           this.eliminando = false;
-          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'success', title: 'Imágenes eliminadas', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         },
         error: () => {
           this.eliminando = false;
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });
   }
 
-  volver(): void { this.router.navigate(['/variantes/buscar']); }
+  volver(): void { this.router.navigate(['/tienda/buscar']); }
 
   // ── Independizar variante ──────────────────────────────────────────────────
 
@@ -431,14 +431,14 @@ export class DetalleVarianteComponent implements OnInit {
           cancelButtonText: 'Cerrar',
         }).then(result => {
           if (result.isConfirmed) {
-            this.router.navigate(['/variantes/buscar']);
+            this.router.navigate(['/tienda/buscar']);
           } else {
             // Quitar la variante independizada de la lista y actualizar vista
             this.variantes = this.variantes.filter(v => v.id !== this.varianteSeleccionada!.id);
             if (this.variantes.length > 0) {
               this.seleccionar(this.variantes[0]);
             } else {
-              this.router.navigate(['/variantes/buscar']);
+              this.router.navigate(['/tienda/buscar']);
             }
           }
         });

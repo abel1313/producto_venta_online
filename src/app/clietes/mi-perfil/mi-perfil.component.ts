@@ -4,6 +4,7 @@ import { take } from 'rxjs/operators';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
+import { SesionService } from 'src/app/shared/sesion.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -37,7 +38,8 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   constructor(
     private readonly acceder:        AccederService,
     private readonly authService:    AuthService,
-    private readonly clienteService: ClienteService
+    private readonly clienteService: ClienteService,
+    private readonly sesion:         SesionService
   ) {}
 
   ngOnInit(): void {
@@ -158,13 +160,13 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         <input id="swal-mp-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #007AFF;border-radius:8px;
+                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Verificar más tarde',
-      confirmButtonColor: '#007AFF',
+      confirmButtonColor: '#00875A',
       preConfirm: async () => {
         const codigo = (document.getElementById('swal-mp-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos'); return false; }
@@ -244,7 +246,9 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         this.passActualCtrl.setValue('');
         this.passNuevaCtrl.setValue('');
         this.passConfCtrl.setValue('');
-        Swal.fire({ icon: 'success', title: '¡Contraseña cambiada!', text: 'Tu contraseña fue actualizada.', timer: 2000, showConfirmButton: false });
+        // El back invalida el refresh token al cambiar la contraseña (seguridad 2026-07-31).
+        this.sesion.cerrarSesionLocal();
+        Swal.fire({ icon: 'success', title: '¡Contraseña cambiada!', text: 'Vuelve a iniciar sesión con tu nueva contraseña.' });
       },
       error: (err: any) => {
         this.guardandoPass = false;

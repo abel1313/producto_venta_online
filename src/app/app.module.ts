@@ -21,6 +21,7 @@ import { NbThemeModule, NbLayoutModule } from '@nebular/theme';
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { LoadingComponent } from './loading/loading.component';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
+import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { FormsModule } from '@angular/forms';
@@ -70,6 +71,7 @@ export function bootstrapAuth(
     HomeComponent,
     LoadingComponent,
     QrVentasJadeComponent,
+    PrivacidadComponent,
     ChatbotComponent,
   ],
   imports: [

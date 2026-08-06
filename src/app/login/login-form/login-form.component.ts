@@ -10,6 +10,7 @@ import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentac
 import { CarritoVarianteService } from 'src/app/variante/service/carrito-variante.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { ThemeService } from 'src/app/services/theme/theme.service';
+import { SesionService } from 'src/app/shared/sesion.service';
 
 @Component({
   selector: 'app-login-form',
@@ -113,7 +114,8 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly presentacion:         PresentacionService,
     private readonly carritoVariante:      CarritoVarianteService,
     private readonly carritoService:       CarritoService,
-    private readonly themeService:         ThemeService
+    private readonly themeService:         ThemeService,
+    private readonly sesion:               SesionService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -226,6 +228,8 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.acceder.login(credentials).subscribe({
       next: (res: any) => {
         const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
+        // El back confirmó (2026-08-05) que `AuthResponse` solo expone `debeCambiarPassword`.
+        // `passwordTemporal` es el campo interno de la entidad Usuario y nunca viaja al front.
         const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
         if (token) {
           this.carritoVariante.limpiar();
@@ -365,7 +369,16 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }).then(result => {
       this.cargando = false;
-      if (result.isConfirmed) this.router.navigate(['/productos/buscar']);
+      if (!result.isConfirmed) return;
+      // Cambiar la contraseña invalida el refresh token en el instante (seguridad del back,
+      // 2026-07-31). Entrar a la app aquí dejaría al usuario con una sesión ya muerta: el
+      // siguiente refresh responde 401. Hay que volver a iniciar sesión con la nueva.
+      this.sesion.cerrarSesionLocal();
+      Swal.fire({
+        icon: 'success',
+        title: '¡Contraseña actualizada!',
+        text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+      });
     });
   }
 }

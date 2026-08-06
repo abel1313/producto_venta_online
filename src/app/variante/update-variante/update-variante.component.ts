@@ -79,7 +79,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       .subscribe(variante => {
         if (!variante) {
           if (!this.variante) {
-            this.router.navigate(['/variantes/buscar']);
+            this.router.navigate(['/tienda/buscar']);
           }
           return;
         }
@@ -285,7 +285,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
-  volver(): void { this.router.navigate(['/variantes/buscar']); }
+  volver(): void { this.router.navigate(['/tienda/buscar']); }
 
   imageSrc(img: IVarianteImagenDto): string {
     if (img?.urlImagen) return img.urlImagen;
@@ -359,7 +359,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ef4444',
-      background: '#1e1b4b',
+      background: '#0F2A20',
       color: '#fff'
     }).then(result => {
       if (!result.isConfirmed || !img.id || !this.variante?.id) return;
@@ -374,7 +374,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.eliminandoExistente.delete(img.id!);
-          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#1e1b4b', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Error al eliminar', timer: 2000, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
         }
       });
     });
@@ -446,7 +446,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         this.varianteService.clearVarianteUpdate();
         this.guardando = false;
         Swal.fire({ icon: 'success', title: '¡Variante actualizada!', timer: 1600, showConfirmButton: false })
-          .then(() => this.router.navigate(['/variantes/buscar']));
+          .then(() => this.router.navigate(['/tienda/buscar']));
       },
       error: (err) => {
         this.guardando = false;

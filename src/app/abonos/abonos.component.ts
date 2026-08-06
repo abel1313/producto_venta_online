@@ -14,7 +14,7 @@ import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
 import { NegocioService } from '../negocio/negocio.service';
-import { motivoCancelacionSwalFragment } from '../shared/motivo-cancelacion.util';
+import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
 
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
@@ -198,18 +198,56 @@ export class AbonosComponent implements OnInit, OnDestroy {
       ? `El producto ya fue entregado. La deuda de $${pedido.saldo.toFixed(2)} quedará registrada.`
       : `Pagó $${pedido.totalPagado.toFixed(2)} de $${pedido.totalPedido.toFixed(2)}. Se devolverá el stock.`;
 
+    this.ejecutarCancelacion({
+      pedidoId:          pedido.pedidoId,
+      cliente:           pedido.cliente,
+      totalPedido:       pedido.totalPedido,
+      tituloPregunta:    `¿Cancelar ${esFiado ? 'el crédito (ir pagando)' : 'el apartado'} de ${pedido.cliente}?`,
+      msgDetalle,
+      confirmButtonText: esFiado ? 'Sí, registrar como incobrable' : 'Sí, cancelar y devolver stock',
+      onListaRefrescar:  () => this.cargarCuenta()
+    });
+  }
+
+  // Devolución — pedido de crédito ya LIQUIDADO (tab "Liquidados"). El back confirmó que ahora
+  // sí se puede cancelar un pedido ya PAGADO (antes lo bloqueaba por completo), pero: exige que
+  // quien cancele sea admin (toda /abonos ya es admin-only por guard de ruta, así que se cumple
+  // solo con estar aquí) y no deja usar NO_SE_PRESENTO como motivo — el cliente sí cumplió,
+  // solo se está devolviendo el producto. El stock siempre se regresa (ya está pagado).
+  cancelarPedidoPagado(pedido: PedidoPagado): void {
+    this.ejecutarCancelacion({
+      pedidoId:          pedido.pedidoId,
+      cliente:           pedido.cliente,
+      totalPedido:       pedido.totalPedido,
+      tituloPregunta:    `¿Cancelar (devolución) el pedido de ${pedido.cliente}?`,
+      msgDetalle:        `Ya se pagó por completo ($${pedido.totalPedido.toFixed(2)}). Se devolverá el stock.`,
+      confirmButtonText: 'Sí, cancelar y devolver stock',
+      opcionesMotivo:    MOTIVOS_CANCELACION.filter(o => o.value !== 'NO_SE_PRESENTO'),
+      onListaRefrescar:  () => this.cargarPagados()
+    });
+  }
+
+  private ejecutarCancelacion(opts: {
+    pedidoId: number;
+    cliente: string;
+    totalPedido: number;
+    tituloPregunta: string;
+    msgDetalle: string;
+    confirmButtonText: string;
+    opcionesMotivo?: IMotivoOpcion[];
+    onListaRefrescar: () => void;
+  }): void {
     // Grupo de botones (mismos 3 motivos que mis-pedidos) en vez del input de texto libre —
-    // consistente entre ambas pantallas de cancelación. Ver nota en CLAUDE.md: pendiente de
-    // confirmar con el back si estos valores afectan el score de rifa igual que en
-    // /v1/pedidos/delete/{id}, ya que este endpoint (/v1/abonos/{id}/cancelar) es distinto.
-    const motivoFrag = motivoCancelacionSwalFragment();
+    // consistente entre ambas pantallas de cancelación. El back confirmó que motivo aquí usa
+    // la misma columna/regla de score de rifa que /v1/pedidos/delete/{id}.
+    const motivoFrag = motivoCancelacionSwalFragment(opts.opcionesMotivo);
 
     Swal.fire({
-      title: `¿Cancelar ${esFiado ? 'el crédito (ir pagando)' : 'el apartado'} de ${pedido.cliente}?`,
-      html:  `<p style="margin:0 0 12px">${msgDetalle}</p>${motivoFrag.html}`,
+      title: opts.tituloPregunta,
+      html:  `<p style="margin:0 0 12px">${opts.msgDetalle}</p>${motivoFrag.html}`,
       icon: 'warning',
       showCancelButton:    true,
-      confirmButtonText:   esFiado ? 'Sí, registrar como incobrable' : 'Sí, cancelar y devolver stock',
+      confirmButtonText:   opts.confirmButtonText,
       cancelButtonText:    'No',
       confirmButtonColor:  '#ef4444',
       didOpen:    motivoFrag.didOpen,
@@ -217,23 +255,23 @@ export class AbonosComponent implements OnInit, OnDestroy {
     }).then(result => {
       if (!result.isConfirmed) return;
       const motivo = result.value as string;
-      this.abonoService.cancelar(pedido.pedidoId, { motivo }).subscribe({
+      this.abonoService.cancelar(opts.pedidoId, { motivo }).subscribe({
         next: res => {
           const data     = res?.data;
           const stockMsg = data?.stockDevuelto ? ' El stock fue devuelto.' : '';
-          this.cargarCuenta();
+          opts.onListaRefrescar();
           this.cancelados = [];
 
-          // Intentar obtener detalle para ticket D
-          this.pedidosService.getDetallePedido(pedido.pedidoId).subscribe({
+          // Intentar obtener detalle para ticket
+          this.pedidosService.getDetallePedido(opts.pedidoId).subscribe({
             next: detRes => {
               const det = detRes?.data;
               const htmlTicket = det ? generarHtmlTicket({
                 tipo:      'cancelacion',
-                numero:    pedido.pedidoId,
-                cliente:   pedido.cliente,
+                numero:    opts.pedidoId,
+                cliente:   opts.cliente,
                 articulos: det.detalles.map(d => ({ cantidad: d.cantidad, productoNombre: d.productoNombre, talla: d.talla, subTotal: d.subTotal })),
-                total:     pedido.totalPedido,
+                total:     opts.totalPedido,
                 metodoPago: 'N/A',
                 motivo:    motivo ?? null,
                 qrTienda:   this.qrTienda,
@@ -332,7 +370,15 @@ export class AbonosComponent implements OnInit, OnDestroy {
         next: res => {
           const data = res?.data;
 
-          pedidoSnap.saldo       = data?.saldoRestante ?? +(pedidoSnap.saldo - body.monto).toFixed(2);
+          // Saldo/total pagado SIEMPRE se calculan en local (saldo que ya teníamos,
+          // cargado fresco al abrir el modal, menos el monto que se acaba de abonar) —
+          // no se confía en `data.saldoRestante` para el número: visto en vivo, el back
+          // podía devolverlo reflejando el saldo de ANTES de este abono en vez de
+          // después, y el ticket impreso terminaba mostrando cifras que no cuadraban
+          // con lo que el cliente acababa de pagar (ej. "ya pagó 100 + abonó 100 hoy"
+          // pero "saldo pendiente 200" en vez de 100). Solo se usa `data.estadoPedido`
+          // (categórico, no numérico) para saber si quedó liquidado.
+          pedidoSnap.saldo       = +(pedidoSnap.saldo - body.monto).toFixed(2);
           pedidoSnap.totalPagado = +(pedidoSnap.totalPedido - pedidoSnap.saldo).toFixed(2);
           if (data) pedidoSnap.abonos.push(data);
 
@@ -437,6 +483,14 @@ export class AbonosComponent implements OnInit, OnDestroy {
       totalPagado:    tipo === 'liquidado' ? pedido.totalPedido : pedido.totalPagado,
       saldoPendiente: tipo === 'liquidado' ? 0 : pedido.saldo,
       abonoHoy:       body.monto,
+      // Historial completo con fecha por abono — detalle.abonos trae los previos (se
+      // cargó al abrir el modal, antes de este registro); se le agrega el de hoy al
+      // final para que el ticket muestre "Abono 1 (fecha)", "Abono 2 (fecha)"... en vez
+      // de solo el acumulado.
+      abonos: [
+        ...(detalle.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
+        { monto: body.monto, fecha: body.fechaPago ?? new Date().toISOString() }
+      ],
       metodoPago:     metodoPago,
       montoDado:      montoDado > 0 ? montoDado : null,
       cambio:         cambio > 0 ? cambio : null

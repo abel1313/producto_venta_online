@@ -24,9 +24,16 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/findPedido/${idPedido}/${idCliente}?size=${size}&page=${page}`);
   }
 
-    buscarPedidoPorCliente(buscar: string, size: number, page: number): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
-    const query = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
-    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${query}`);
+    // tiposPedido: filtro por tipo (APARTADO/FIADO) — param repetido `&tipoPedido=X&tipoPedido=Y`,
+    // convención Spring @RequestParam List<String>. ⚠️ Pendiente de confirmar con el back si
+    // este endpoint ya lo soporta (consulta anotada en el repo compartido, 2026-07-24).
+    buscarPedidoPorCliente(buscar: string, size: number, page: number, lugarEntregaId?: number | null, tiposPedido?: string[], estadosPedido?: string[]): Observable<ResponseGeneric<IPageable<IPedidoGenerico[]>>> {
+    const queryBuscar = buscar ? `&buscar=${encodeURIComponent(buscar)}` : '';
+    const queryLugar  = lugarEntregaId ? `&lugarEntregaId=${lugarEntregaId}` : '';
+    const queryTipo   = (tiposPedido ?? []).map(t => `&tipoPedido=${encodeURIComponent(t)}`).join('');
+    // Repetible, OR entre valores (PAGADO/CANCELADO), AND contra tipo/lugar — confirmado con el back.
+    const queryEstado = (estadosPedido ?? []).map(e => `&estadoPedido=${encodeURIComponent(e)}`).join('');
+    return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${queryBuscar}${queryLugar}${queryTipo}${queryEstado}`);
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {
@@ -43,6 +50,20 @@ export class PedidosService extends CrudGenericService<IPedidos> {
 
     getDetallePedido(pedidoId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.get<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/detalle`);
+    }
+
+    // Editar nombreReceptor/direccionEntrega/fechaEntrega/observaciones después de creado el
+    // pedido — todos los campos opcionales, solo se actualiza lo que se mande (null = no
+    // tocar). No requiere ser admin. El back rechaza si el pedido está "cancelado".
+    actualizarEntrega(pedidoId: number, body: {
+      nombreReceptor?: string;
+      direccionEntrega?: string;
+      fechaEntrega?: string;
+      observaciones?: string;
+      lugarEntregaId?: number;
+      urlFacebook?: string;
+    }): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
     }
 
     reenviarComprobante(pedidoId: number, body: { correo: string; ticketHtml: string }): Observable<any> {

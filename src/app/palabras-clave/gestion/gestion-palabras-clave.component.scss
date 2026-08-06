@@ -1,5 +1,5 @@
-$p:  #007AFF;
-$pd: #5856D6;
+$p:  #00875A;
+$pd: #005C3D;
 $t:  all 0.2s ease;
 
 .pk-wrap {
@@ -30,7 +30,7 @@ $t:  all 0.2s ease;
   border: 1.5px solid #e5e7eb; border-radius: 10px;
   font-size: .9rem; color: #1f2937; outline: none;
   transition: $t; box-sizing: border-box;
-  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(0,135,90,.12); }
 }
 
 .pk-error { font-size: .72rem; color: #dc2626; }
@@ -68,4 +68,14 @@ $t:  all 0.2s ease;
 
   &__nombre  { font-size: .9rem; color: #1f2937; font-weight: 600; }
   &__actions { display: flex; gap: 4px; }
+}
+
+.pk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+
+  &__info { font-size: .82rem; color: #6b7280; font-weight: 600; }
 }

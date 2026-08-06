@@ -1,6 +1,6 @@
 // ── Variables ──────────────────────────────────────────────────────
-$primary:      #5856D6;
-$primary-d:    #007AFF;
+$primary:      #005C3D;
+$primary-d:    #00875A;
 $radius:       16px;
 $shadow:       0 4px 24px rgba(0, 0, 0, 0.13);
 $shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
@@ -314,6 +314,18 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1.25;
   }
   .pl-excel-btn { margin-left: 0; }
+
+  // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .pl-grid con
+  // auto-fill/minmax(270px) siempre colapsaba a una sola columna.
+  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
+
+// Hueco entre "móvil" (576px) y "PC" (900px, donde .pl-grid ya pasa a 3 columnas):
+// sin este bloque, .pl-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
+// white-space:nowrap, un label largo ("Código generado") no cabía en un ancho de
+// tablet/celular grande y el texto se desbordaba encimado sobre la siguiente pill.
+@media (min-width: 577px) and (max-width: 899px) {
+  .pl-filtros { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 400px) {
@@ -371,7 +383,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__img-wrap {
     width: 100%;
-    height: 180px;
+    aspect-ratio: 3 / 4;
     overflow: hidden;
     background: var(--form-section-bg);
     display: flex;
@@ -397,7 +409,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, rgba(12,20,60, 0.88) 0%, rgba(0,122,255, 0.72) 100%);
+    background: linear-gradient(135deg, rgba(12,20,60, 0.88) 0%, rgba(0,135,90, 0.72) 100%);
     backdrop-filter: blur(6px);
   }
 
@@ -698,7 +710,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.75rem;
   padding: 0.65rem 1.25rem;
   background: var(--app-accent-soft);
-  border-bottom: 1px solid rgba(0,122,255,0.2);
+  border-bottom: 1px solid rgba(0,135,90,0.2);
   font-size: 0.875rem;
 
   &__check {
@@ -776,10 +788,10 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(255, 255, 255, 0.60);
     backdrop-filter: blur(20px) saturate(180%);
     box-shadow:
-      0 8px 32px rgba(0,122,255, 0.14),
+      0 8px 32px rgba(0,135,90, 0.14),
       0 2px 8px rgba(0, 0, 0, 0.06),
       inset 0 0 0 1px rgba(255, 255, 255, 0.80);
-    border: 1px solid rgba(0,122,255, 0.20);
+    border: 1px solid rgba(0,135,90, 0.20);
   }
   .pl-header__inner        { color: #1e293b; }
   .pl-header__title h4     { color: #1e293b; }
@@ -807,7 +819,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #475569;
     &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
     &--active {
-      background: rgba(0,122,255, 0.14);
+      background: rgba(0,135,90, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }
@@ -826,7 +838,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover &__box { border-color: rgba(0, 0, 0, 0.45); }
 
     &:has(input:checked) {
-      background: rgba(0,122,255, 0.14);
+      background: rgba(0,135,90, 0.14);
       color: var(--app-accent);
       border-color: transparent;
     }

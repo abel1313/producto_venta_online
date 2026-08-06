@@ -149,7 +149,12 @@
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en Facebook</a>
+        <!-- ⏸️ PAUSADO 2026-08-05 — el back sacó de dev/qa los endpoints
+             /v1/redes-sociales/facebook/publicar y /publicar-video mientras se
+             resuelve la configuración de la app de Meta. La pantalla y su ruta
+             (/admin/facebook) siguen en el código, solo se oculta el link para que
+             nadie entre y choque con un 404. Para reactivar: descomentar esto. -->
+        <!-- <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en Facebook</a> -->
       </div>
     </div>
 

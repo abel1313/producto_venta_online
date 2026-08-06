@@ -7017,3 +7017,42 @@ clientes** — relevante porque es justo lo que Meta va a revisar.
 4. **`seguridad.exigir-header-refresh` sigue en `false`** en todos los ambientes. El front ya
    manda `X-Requested-With`, así que pueden encenderlo cuando quieran — pero recordar que
    conviene hacerlo **después** de que esto llegue a producción.
+
+---
+
+## ⏸️ PAUSADO — PUBLICAR EN FACEBOOK: LINK OCULTO DEL MENÚ (2026-08-05)
+
+El back **sacó de `dev` y `qa`** los endpoints `POST /v1/redes-sociales/facebook/publicar` y
+`/publicar-video` (repo compartido, commit `c834e85`), mientras se resuelve la configuración de
+la app de Meta. Su código quedó respaldado en la rama `backup/facebook-redes-sociales` de
+`proyecto_key`.
+
+**Problema que esto creaba del lado del front:** la pantalla ya estaba mergeada a `qa` y su link
+visible en el menú 🛠️ Sistema. Cualquier admin que entrara iba a recibir **404 al publicar**, sin
+ninguna pista de por qué.
+
+**Qué se hizo:** se comentó **solo el link del navbar**. La ruta `/admin/facebook`, el componente,
+el servicio y los modelos **siguen intactos en el código** — no tiene sentido borrar trabajo que
+está documentado y listo, y que el back también conservó en una rama. Para reactivar: descomentar
+una línea en `navbar.component.html`.
+
+**Se dejó tal cual (no se tocó):** la página pública `/privacidad`. Sigue siendo necesaria para
+la app de Meta cuando se retome, y de todas formas es buena práctica tenerla.
+
+**Estado de la configuración de Meta al momento de pausar** (por si se retoma y hay que recordar
+dónde se quedó):
+- App `novedadesJade`, ID `1017171384561253`, en modo **Publicada**.
+- Caso de uso **"Administrar todos los aspectos de tu página"** ya agregado, con
+  `pages_manage_posts` y `pages_read_engagement` en "Listo para la prueba".
+- **Bloqueo real:** no se pudo generar el Page Access Token — el popup de consentimiento de
+  Facebook (`facebook.com/privacy/consent/?flow=user_cookie_choice_v2`) entra en bucle infinito
+  (`ERR_TOO_MANY_REDIRECTS`), tanto en Brave como en Chrome. Se descartó: cookies de terceros
+  (ya permitidas globalmente), cookies viejas (borradas). **Sospecha principal sin confirmar:**
+  alguna extensión del navegador (bloqueador de anuncios/rastreo) rompiendo ese flujo.
+- El aviso "Currently ineligible for submission — Ícono de la app (1024×1024)" **NO era el
+  bloqueo** — solo impide mandar la app a revisión, trámite que no hace falta para publicar en
+  la página propia siendo admin de la app.
+
+**Archivo modificado:** `src/app/navbar/navbar.component.html`
+
+**Verificado con `ng build --configuration=development` sin errores.**

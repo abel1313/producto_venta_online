@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject, TimeoutError } from 'rxjs';
+import { Observable, throwError, BehaviorSubject, EMPTY } from 'rxjs';
 import { AuthenticateService } from '../auth.service';
 import { AuthService } from '../auth/auth.service';
 import { catchError, switchMap, filter, take, timeout, finalize } from 'rxjs/operators';
@@ -8,6 +8,12 @@ import { environment } from 'src/environments/environment';
 import { Router } from '@angular/router';
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/registrar', '/auth/logout'];
+
+// Endpoints que el backend puede exigir con `X-Requested-With: XMLHttpRequest` para cerrar el
+// hueco de CSRF (`seguridad.exigir-header-refresh` en su YML). Hoy lo tienen APAGADO — mandar
+// el header de más no molesta, y así el día que lo enciendan no se cae nadie.
+// ⚠️ El orden importa: primero desplegamos esto, luego avisamos, y recién ahí lo encienden.
+const CSRF_ENDPOINTS = ['/auth/refresh', '/auth/logout'];
 
 // Sentinel para notificar a los requests en cola que el refresh falló
 const REFRESH_FAILED = '__REFRESH_FAILED__';
@@ -17,6 +23,14 @@ export class TokenInterceptor implements HttpInterceptor {
 
   private isRefreshing = false;
   private refreshToken$ = new BehaviorSubject<string | null>(null);
+
+  /**
+   * Se enciende cuando un refresh falla. Mientras esté en `true` NO se vuelve a intentar
+   * renovar: el backend rota el refresh token de verdad, y si le mandamos uno que ya se usó
+   * lo interpreta como token robado y **cierra la sesión completa** del usuario. Se apaga
+   * solo cuando vuelve a haber un access token (o sea, cuando el usuario se logueó de nuevo).
+   */
+  private sesionMuerta = false;
 
   constructor(
     private readonly authService: AuthenticateService,
@@ -28,10 +42,18 @@ export class TokenInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const isAuthEndpoint = AUTH_ENDPOINTS.some(e => req.url.includes(e));
     if (isAuthEndpoint) {
-      return next.handle(req.clone({ withCredentials: true }));
+      return next.handle(req.clone({
+        withCredentials: true,
+        setHeaders: CSRF_ENDPOINTS.some(e => req.url.includes(e))
+          ? { 'X-Requested-With': 'XMLHttpRequest' }
+          : {}
+      }));
     }
 
     const token = this.authService.getAccessToken();
+
+    // Hay token de nuevo ⇒ el usuario volvió a iniciar sesión ⇒ se puede volver a refrescar.
+    if (token && this.sesionMuerta) this.sesionMuerta = false;
     const authReq = token
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` }, withCredentials: true })
       : req.clone({ withCredentials: true });
@@ -64,15 +86,22 @@ export class TokenInterceptor implements HttpInterceptor {
   }
 
   private handleRefresh(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // La sesión ya murió — reintentar el refresh con un token ya rotado hace que el backend
+    // cierre la sesión completa por sospecha de robo. Se corta aquí y se manda al login.
+    if (this.sesionMuerta) {
+      this.router.navigate(['/login']);
+      return EMPTY;
+    }
+
     if (this.isRefreshing) {
       // Requests en cola: esperan el token o el sentinel de fallo
       return this.refreshToken$.pipe(
         filter(token => token !== null),
         take(1),
         switchMap(token => {
-          if (token === REFRESH_FAILED) {
-            return throwError(new HttpErrorResponse({ status: 401, statusText: 'Session expired' }));
-          }
+          // EMPTY (y no un error) a propósito: el usuario ya va camino al login, y así ningún
+          // componente muestra su Swal de "Error al cargar…" encima de la redirección.
+          if (token === REFRESH_FAILED) return EMPTY;
           return next.handle(req.clone({
             setHeaders: { Authorization: `Bearer ${token}` },
             withCredentials: true
@@ -97,12 +126,8 @@ export class TokenInterceptor implements HttpInterceptor {
 
         // Si el back respondió 200 pero sin token — tratar como fallo
         if (!token) {
-          this.isRefreshing = false;
-          this.authService.clearAccessToken();
-          this.refreshToken$.next(REFRESH_FAILED);
-          setTimeout(() => this.refreshToken$.next(null), 0);
-          this.router.navigate(['/login']);
-          return throwError(new HttpErrorResponse({ status: 401, statusText: 'Token vacío en refresh' }));
+          this.matarSesion();
+          return EMPTY;
         }
 
         this.isRefreshing = false;
@@ -114,18 +139,19 @@ export class TokenInterceptor implements HttpInterceptor {
           withCredentials: true
         }));
       }),
-      catchError(err => {
+      catchError(() => {
         // Refresh token expirado (401/403), timeout u otro error de red
-        // → limpiar sesión y redirigir al login automáticamente
-        this.isRefreshing = false;
-        this.authService.clearAccessToken();
-        this.refreshToken$.next(REFRESH_FAILED);
-        setTimeout(() => this.refreshToken$.next(null), 0);
-        const finalErr = err instanceof TimeoutError
-          ? new HttpErrorResponse({ status: 0, statusText: 'Refresh timeout — sesión expirada' })
-          : err;
-        this.router.navigate(['/login']);
-        return throwError(finalErr);
+        // → limpiar sesión y redirigir al login automáticamente.
+        //
+        // Se devuelve EMPTY en vez de propagar el error: al desplegar los cambios de
+        // seguridad del back, TODOS los refresh tokens viejos dejan de servir de golpe y el
+        // primer refresh de cada usuario responde 401. Si se propagara, cada componente
+        // mostraría su Swal de error justo mientras lo mandamos al login. El costo de esta
+        // decisión: un `.subscribe({ next })` en vuelo no se entera de nada — aceptable,
+        // porque el componente se destruye al navegar. El overlay global sí se apaga bien,
+        // `LoadingInterceptor` usa `finalize()`, que corre también al completar.
+        this.matarSesion();
+        return EMPTY;
       }),
       finalize(() => {
         // Si el observable fue cancelado (unsubscribe) antes de que switchMap o catchError
@@ -138,5 +164,15 @@ export class TokenInterceptor implements HttpInterceptor {
         }
       })
     );
+  }
+
+  /** Limpia el token, libera la cola de requests y manda al login. */
+  private matarSesion(): void {
+    this.isRefreshing = false;
+    this.sesionMuerta = true;
+    this.authService.clearAccessToken();
+    this.refreshToken$.next(REFRESH_FAILED);
+    setTimeout(() => this.refreshToken$.next(null), 0);
+    this.router.navigate(['/login']);
   }
 }

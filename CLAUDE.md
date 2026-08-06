@@ -6863,3 +6863,101 @@ post desde acá — cada llamada crea una publicación nueva. Tampoco Historia n
 aprobado `pages_manage_posts`: mientras esté en modo desarrollo, Facebook solo acepta publicar en
 páginas donde el dueño del token esté agregado como Admin/Developer/Tester de la app — si no,
 responde 400 y la pantalla mostrará ese mensaje del back tal cual.
+
+---
+
+## FIX SEGURIDAD AUTH — LOS 6 PUNTOS DEL CHECKLIST DEL BACK (2026-08-05)
+
+> Cierra la sección "🔐 CORRECCIONES DE SEGURIDAD EN AUTENTICACIÓN — 2026-07-31 (acción
+> requerida en el front)" del repo compartido, que llevaba una semana sin atender. **Nada de
+> esto se rompe hoy** — el back todavía tiene esos cambios sin desplegar — pero el día que
+> desplieguen, 4 de los 6 puntos rompen la app de golpe.
+
+### 1. `passwordTemporal` vs `debeCambiarPassword` — se leen LOS DOS
+
+El back documentó `debeCambiarPassword` el 2026-07-04 y `passwordTemporal` el 2026-07-31, sin
+aclarar si es un rename o dos campos distintos. Con el campo equivocado el front nunca detecta
+la contraseña temporal y el usuario recibe **403 en TODOS los endpoints** salvo cuatro de auth
+— la app se ve completamente rota sin ninguna pista de por qué.
+
+Se lee `res?.passwordTemporal ?? res?.debeCambiarPassword ?? false` en `login-form` y en
+`verificar-correo`. Funciona con cualquiera de los dos nombres. **Pregunta abierta al back**
+para poder quitar el que sobre.
+
+### 2. Cambiar la contraseña ahora MATA la sesión — hay que volver al login
+
+El back invalida el refresh token en el instante (los 3 caminos: cambiar, restablecer y el
+reseteo de un admin). Quedarse dentro de la app deja al usuario con una sesión muerta que
+revienta en el siguiente refresh.
+
+Estaban mal **3 de los 4 lugares**:
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Modal forzado del login (`forzarCambioPassword`) | entraba a `/productos/buscar` ❌ | cierra sesión → `/login` |
+| Mismo modal en `verificar-correo` | igual ❌ | cierra sesión → `/login` |
+| `/clientes/cambiar-password` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/clientes/mi-perfil` | se quedaba en la pantalla ❌ | cierra sesión → `/login` |
+| `/olvide-password` | ya iba a `/login` ✅ | sin cambio |
+
+**Nuevo `SesionService`** (`src/app/shared/sesion.service.ts`) con `cerrarSesionLocal(destino)`:
+limpia el access token, los roles y **ambos** carritos, y navega. Existe para tener un solo
+lugar donde se define "cerrar sesión localmente" — `NavbarComponent.limpiarSesionLocal()` se
+refactorizó para usarlo también (antes tenía su propia copia, y con 5 copias iban a divergir).
+**No** llama a `POST /v1/auth/logout`: en un cambio de contraseña el back ya mató la sesión.
+
+### 3. El 401 del primer refresh tras el despliegue → login sin error feo
+
+Al desplegar, **todos** los refresh tokens viejos dejan de servir de golpe (les faltan `jti` y
+`sessionId`), así que el primer refresh de cada usuario responde 401. El interceptor ya
+redirigía al login, pero **además propagaba el error** → cada componente mostraba su
+`Swal.fire({icon:'error'})` encima de la redirección.
+
+Ahora devuelve **`EMPTY`** en vez de propagar. Trade-off consciente: un `.subscribe({ next })`
+en vuelo no se entera de nada — aceptable, porque el componente se destruye al navegar. El
+overlay global sí se apaga bien: `LoadingInterceptor` usa `finalize()`, que corre también al
+completar, no solo al fallar.
+
+### 4. No reintentar el refresh con un token ya rotado
+
+El back rota el refresh token de verdad; si le llega uno ya usado lo interpreta como **token
+robado y cierra la sesión completa**. El guard `isRefreshing` solo cubría refreshes
+*simultáneos* — pero después de un refresh fallido, `isRefreshing` volvía a `false` y el
+siguiente 401 disparaba otro intento.
+
+Nuevo flag **`sesionMuerta`**: se enciende cuando un refresh falla y corta cualquier intento
+posterior (navega al login y devuelve `EMPTY`). Se apaga solo cuando vuelve a haber access
+token, o sea cuando el usuario se logueó de nuevo — se detecta en `intercept()`, sin acoplar
+el interceptor al flujo de login.
+
+### 5. Header `X-Requested-With: XMLHttpRequest` en refresh y logout
+
+Nueva constante `CSRF_ENDPOINTS = ['/auth/refresh', '/auth/logout']` en el interceptor. Se
+manda siempre; hoy el back lo tiene **apagado** (`seguridad.exigir-header-refresh: false`), así
+que mandarlo de más no molesta.
+
+⚠️ **El orden importa y no se puede invertir:** primero se despliega esto, después se le avisa
+al back, y **recién ahí** ellos lo encienden. Si lo encienden antes, todos los usuarios pierden
+la sesión a los 15 minutos (cuando expira su access token).
+
+### 6. Contraseña mínima de 8 caracteres — ya estaba
+
+Verificado en los 5 formularios: `cambiar-password`, `olvide-password`, `add-usuarios` (registro
+y edición), `mi-perfil` (`reqLongitud`) y el modal forzado del login (`cumpleRequisitos`, que
+sí valida `length >= 8`). **Ojo:** el validador `passwordFuerte` de `src/app/validador/validador.ts`
+**no** valida longitud — solo mayúscula/minúscula/número/especial. La longitud siempre viene de
+un `Validators.minLength(8)` aparte. Si se agrega un formulario de contraseña nuevo, hay que
+poner los dos.
+
+**Archivos nuevos:** `src/app/shared/sesion.service.ts`
+
+**Archivos modificados:** `src/app/token/TokenInterceptor .ts`,
+`src/app/login/login-form/login-form.component.ts`,
+`src/app/login/verificar-correo/verificar-correo.component.ts`,
+`src/app/clietes/cambiar-password/cambiar-password.component.ts`,
+`src/app/clietes/mi-perfil/mi-perfil.component.ts`,
+`src/app/navbar/navbar.component.ts` (usa `SesionService` + `admin/facebook` en `GROUP_ROUTES`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — el back todavía no despliega su lado, así que hoy no hay forma de
+reproducir ninguno de los escenarios (403 por contraseña temporal, 401 masivo del refresh).

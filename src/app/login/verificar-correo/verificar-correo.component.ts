@@ -6,6 +6,7 @@ import { AuthenticateService as AuthStorage } from 'src/app/auth.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { CarritoVarianteService } from 'src/app/variante/service/carrito-variante.service';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
+import { SesionService } from 'src/app/shared/sesion.service';
 
 @Component({
   selector: 'app-verificar-correo',
@@ -31,7 +32,8 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     private readonly authStorage:    AuthStorage,
     private readonly authService:    AuthService,
     private readonly carritoVariante: CarritoVarianteService,
-    private readonly carritoService:  CarritoService
+    private readonly carritoService:  CarritoService,
+    private readonly sesion:          SesionService
   ) {}
 
   ngOnInit(): void {
@@ -68,7 +70,8 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
           this.acceder.login({ userName: this.userName, password: this.password } as any).subscribe({
             next: (res: any) => {
               const token: string = res?.response?.accessToken ?? res?.accessToken ?? res?.token ?? '';
-              const debeCambiar: boolean = res?.debeCambiarPassword ?? false;
+              // Igual que en `login-form`: el back usó los dos nombres en distintas fechas.
+              const debeCambiar: boolean = res?.passwordTemporal ?? res?.debeCambiarPassword ?? false;
               if (token) {
                 this.carritoVariante.limpiar();
                 this.carritoService.limpiarCarrito();
@@ -169,7 +172,14 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
         }
       }
     }).then(result => {
-      if (result.isConfirmed) this.router.navigate(['/productos/buscar']);
+      if (!result.isConfirmed) return;
+      // El back invalida el refresh token al cambiar la contraseña — hay que volver a entrar.
+      this.sesion.cerrarSesionLocal();
+      Swal.fire({
+        icon: 'success',
+        title: '¡Contraseña actualizada!',
+        text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+      });
     });
   }
 

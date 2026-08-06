@@ -4,6 +4,7 @@ import { take } from 'rxjs/operators';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
+import { SesionService } from 'src/app/shared/sesion.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -37,7 +38,8 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   constructor(
     private readonly acceder:        AccederService,
     private readonly authService:    AuthService,
-    private readonly clienteService: ClienteService
+    private readonly clienteService: ClienteService,
+    private readonly sesion:         SesionService
   ) {}
 
   ngOnInit(): void {
@@ -244,7 +246,9 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         this.passActualCtrl.setValue('');
         this.passNuevaCtrl.setValue('');
         this.passConfCtrl.setValue('');
-        Swal.fire({ icon: 'success', title: '¡Contraseña cambiada!', text: 'Tu contraseña fue actualizada.', timer: 2000, showConfirmButton: false });
+        // El back invalida el refresh token al cambiar la contraseña (seguridad 2026-07-31).
+        this.sesion.cerrarSesionLocal();
+        Swal.fire({ icon: 'success', title: '¡Contraseña cambiada!', text: 'Vuelve a iniciar sesión con tu nueva contraseña.' });
       },
       error: (err: any) => {
         this.guardandoPass = false;

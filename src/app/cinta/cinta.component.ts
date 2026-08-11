@@ -2,8 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
-import { ITickerItem } from './models/ticker.model';
-import { TickerService } from './service/ticker.service';
+import { ICintaItem } from './models/cinta.model';
+import { CintaService } from './service/cinta.service';
 
 /**
  * Cinta de promociones que corre de derecha a izquierda arriba del contenido.
@@ -15,24 +15,24 @@ import { TickerService } from './service/ticker.service';
 const RUTAS_OCULTAS = ['/login', '/usuarios/registrar', '/privacidad', '/verificar-correo', '/olvide-password'];
 
 @Component({
-  selector: 'app-ticker',
-  templateUrl: './ticker.component.html',
-  styleUrls: ['./ticker.component.scss']
+  selector: 'app-cinta',
+  templateUrl: './cinta.component.html',
+  styleUrls: ['./cinta.component.scss']
 })
-export class TickerComponent implements OnInit, OnDestroy {
+export class CintaComponent implements OnInit, OnDestroy {
 
-  items: ITickerItem[] = [];
+  items: ICintaItem[] = [];
   visible = true;
 
   private destroy$ = new Subject<void>();
 
   constructor(
-    private readonly ticker: TickerService,
+    private readonly cinta: CintaService,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    this.ticker.activos$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);
+    this.cinta.activos$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);
 
     this.evaluarRuta(this.router.url);
     this.router.events.pipe(

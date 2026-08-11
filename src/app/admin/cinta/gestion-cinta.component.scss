@@ -1,13 +1,13 @@
-// Gestión de la cinta de promociones. Prefijo BEM `gt-`.
+// Gestión de la cinta de promociones. Prefijo BEM `gca-`.
 // Color por variables globales → dark/light automático.
 
-.gt-wrap {
+.gca-wrap {
   max-width: 720px;
   margin: 0 auto;
   padding: 24px 16px;
 }
 
-.gt-header {
+.gca-header {
   margin-bottom: 20px;
   &__title {
     h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
@@ -15,7 +15,7 @@
   }
 }
 
-.gt-aviso {
+.gca-aviso {
   border-left: 3px solid var(--app-accent);
   background: var(--app-accent-soft);
   border-radius: 0 10px 10px 0;
@@ -26,7 +26,7 @@
   color: var(--app-text);
 }
 
-.gt-card {
+.gca-card {
   background: var(--form-section-bg, var(--app-surface));
   border: 1.5px solid var(--card-border);
   border-radius: 14px;
@@ -45,7 +45,7 @@
   &__title { margin: 0; font-size: 0.98rem; font-weight: 700; color: var(--app-text); }
 }
 
-.gt-label {
+.gca-label {
   display: block;
   font-size: 0.82rem;
   font-weight: 600;
@@ -54,13 +54,13 @@
   margin-bottom: 8px;
 }
 
-.gt-add {
+.gca-add {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.gt-input {
+.gca-input {
   flex: 1 1 260px;
   min-width: 0;
   border: 1.5px solid var(--card-border);
@@ -81,7 +81,7 @@
   &--edit { flex: 1 1 200px; }
 }
 
-.gt-hint {
+.gca-hint {
   margin: 10px 0 0;
   font-size: 0.78rem;
   line-height: 1.45;
@@ -90,7 +90,7 @@
   &--pie { text-align: center; margin-top: 4px; }
 }
 
-.gt-vacio {
+.gca-vacio {
   margin: 0;
   padding: 18px 4px;
   text-align: center;
@@ -99,7 +99,7 @@
 }
 
 // ── Filas de la lista ────────────────────────────────────────────────
-.gt-fila {
+.gca-fila {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -109,7 +109,7 @@
   &:last-child { border-bottom: none; }
 
   // Desactivada: se conserva pero se nota que no sale en la cinta.
-  &--off .gt-fila__texto {
+  &--off .gca-fila__texto {
     opacity: .45;
     text-decoration: line-through;
   }
@@ -134,7 +134,7 @@
   }
 }
 
-.gt-icono {
+.gca-icono {
   border: none;
   background: transparent;
   cursor: pointer;
@@ -151,7 +151,7 @@
   &--del:hover:not(:disabled) { background: rgba(239, 68, 68, .14); }
 }
 
-.gt-btn {
+.gca-btn {
   border: none;
   border-radius: 8px;
   padding: 9px 18px;
@@ -180,8 +180,8 @@
 }
 
 @media (max-width: 576px) {
-  .gt-wrap { padding: 16px 12px; }
-  .gt-card { padding: 16px; }
-  .gt-fila { flex-wrap: wrap; }
-  .gt-fila__texto { flex: 1 1 100%; white-space: normal; }
+  .gca-wrap { padding: 16px 12px; }
+  .gca-card { padding: 16px; }
+  .gca-fila { flex-wrap: wrap; }
+  .gca-fila__texto { flex: 1 1 100%; white-space: normal; }
 }

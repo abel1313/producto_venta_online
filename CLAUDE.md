@@ -7100,7 +7100,7 @@ resultados fuera de los comentarios. `ng build --configuration=development` sin 
 
 ---
 
-## FEAT — CINTA DE PROMOCIONES (TICKER) — FASE DUMMY (2026-08-05)
+## FEAT — CINTA DE PROMOCIONES — FASE DUMMY (2026-08-05)
 
 > Cierra el pendiente que arrastraba la sección "Pendiente — ticker de promociones". El usuario
 > mostró el artifact de exploración de diseño donde la cinta corre arriba y pidió: **hacerlo
@@ -7109,7 +7109,7 @@ resultados fuera de los comentarios. `ng build --configuration=development` sin 
 
 ### Alcance de esta fase — SIN BACKEND, a propósito
 
-`TickerService` guarda todo en **`localStorage`** (clave `ticker_promos`). **Lo que edite el admin
+`CintaService` guarda todo en **`localStorage`** (clave `cinta_promos`). **Lo que edite el admin
 vive solo en su navegador**: otro usuario, otra computadora o modo incógnito ven los valores por
 defecto. No es un bug — es el alcance acordado para poder afinar diseño y comportamiento antes de
 pedirle un endpoint al back.
@@ -7117,7 +7117,7 @@ pedirle un endpoint al back.
 La pantalla de administración lo dice en un aviso visible, para que nadie lo descubra por las malas.
 
 **Para conectar el backend después:** reemplazar el cuerpo de los 5 métodos públicos de
-`TickerService` por llamadas HTTP y borrar `leer()`/`guardar()`. Ni la cinta ni la pantalla de
+`CintaService` por llamadas HTTP y borrar `leer()`/`guardar()`. Ni la cinta ni la pantalla de
 administración se enteran — ambas solo consumen `items$` / `activos$`.
 
 ### Cómo está hecha la cinta
@@ -7138,26 +7138,26 @@ administración se enteran — ambas solo consumen `items$` / `activos$`.
 
 ### Dónde NO se muestra
 
-`RUTAS_OCULTAS` en `ticker.component.ts`: `/login`, `/usuarios/registrar`, `/privacidad`,
+`RUTAS_OCULTAS` en `cinta.component.ts`: `/login`, `/usuarios/registrar`, `/privacidad`,
 `/verificar-correo`, `/olvide-password`. Son pantallas a página completa con diseño propio (el
 login incluso pinta su malla WebGL); una cinta comercial encima se ve fuera de lugar.
 
-### Pantalla de administración — `/admin/ticker`
+### Pantalla de administración — `/admin/cinta`
 
 Link "📢 Cinta de promociones" en 🛠️ Sistema. Agregar, editar en línea, subir/bajar el orden,
 ocultar sin borrar (👁️/🚫), eliminar con confirmación, y restaurar las frases originales. Los
 cambios se ven en la cinta **al instante**, sin recargar (BehaviorSubject).
 
 ### Archivos nuevos
-- `src/app/ticker/models/ticker.model.ts` (+ `TICKER_DEFAULTS`)
-- `src/app/ticker/service/ticker.service.ts`
-- `src/app/ticker/ticker.component.ts` / `.html` / `.scss` (BEM `tk-`)
-- `src/app/admin/ticker/gestion-ticker.component.ts` / `.html` / `.scss` (BEM `gt-`)
+- `src/app/cinta/models/cinta.model.ts` (+ `CINTA_DEFAULTS`)
+- `src/app/cinta/service/cinta.service.ts`
+- `src/app/cinta/cinta.component.ts` / `.html` / `.scss` (BEM `cta-`)
+- `src/app/admin/cinta/gestion-cinta.component.ts` / `.html` / `.scss` (BEM `gca-`)
 
 ### Archivos modificados
-- `src/app/app.component.html` → `<app-ticker>` arriba del `router-outlet`
-- `src/app/app.module.ts` → declara `TickerComponent`
-- `src/app/admin/admin.module.ts` + `admin-routing.module.ts` → pantalla `/admin/ticker`
+- `src/app/app.component.html` → `<app-cinta>` arriba del `router-outlet`
+- `src/app/app.module.ts` → declara `CintaComponent`
+- `src/app/admin/admin.module.ts` + `admin-routing.module.ts` → pantalla `/admin/cinta`
 - `src/app/navbar/navbar.component.html` + `.ts` → link y `GROUP_ROUTES`
 
 **Verificado con `ng build` sin errores, y además EN VIVO con `ng serve` + Playwright**
@@ -7170,3 +7170,88 @@ confirmó que **de verdad se mueve** comparando el `transform` computado del tra
   texto — **se preguntó antes y el usuario no reconoció ese plan**, así que no se implementó nada
   de enlaces/orden avanzado sin confirmarlo.
 - Velocidad, tamaño y colores: ajustables, es lo que toca afinar en las siguientes vueltas.
+
+---
+
+## RENOMBRAR — "TICKER" → "CINTA" (antes de que existiera el backend) (2026-08-10)
+
+**Por qué:** el dueño vio "Cinta de promociones" en el menú, entró y la dirección decía
+`/admin/ticker` — y preguntó de una *"¿por qué le pusiste ticket si ya tenemos algo que se llama
+ticket, no se vaya a confundir?"*. Tiene razón: **"ticker" se lee prácticamente igual que
+"ticket"**, y en este sistema `ticket` ya significa otra cosa muy concreta y muy usada — el
+comprobante de venta (`src/app/shared/ticket.util.ts`, "🖨️ Imprimir ticket",
+`POST /v1/pedidos/{id}/notificar`). *Ticker* es el término correcto en inglés para un letrero
+corredizo, pero acá solo estorbaba.
+
+**Se renombró TODO, no solo la etiqueta visible** — al revés de lo que se decidió con
+`variante`/`producto` en la "TAXONOMÍA DE NOMBRES" (2026-07-16), donde solo se tradujo el texto
+visible porque renombrar el código eran ~60 archivos y el backend seguía exponiendo `/variantes`
+de todos modos. Acá la situación es la opuesta y por eso la decisión también:
+
+- Es una feature **nueva**, de 7 archivos, con 5 días de vida.
+- **El backend todavía no había construido nada.** La consulta pidiendo los endpoints estaba
+  commiteada pero **sin pushear** — se alcanzó a corregir antes de que ellos vieran `/v1/ticker/`.
+  Si se dejaba pasar, ese nombre quedaba en su tabla y en sus rutas para siempre.
+
+| Antes | Ahora |
+|---|---|
+| `src/app/ticker/` | `src/app/cinta/` |
+| `TickerComponent` / `app-ticker` | `CintaComponent` / `app-cinta` |
+| `TickerService` | `CintaService` |
+| `ITickerItem` / `TICKER_DEFAULTS` | `ICintaItem` / `CINTA_DEFAULTS` |
+| `src/app/admin/ticker/gestion-ticker.component.*` | `src/app/admin/cinta/gestion-cinta.component.*` |
+| `GestionTickerComponent` | `GestionCintaComponent` |
+| ruta `/admin/ticker` | ruta `/admin/cinta` |
+| BEM `tk-` / `gt-` | BEM `cta-` / `gca-` |
+| `localStorage['ticker_promos']` | `localStorage['cinta_promos']` |
+
+**Prefijos BEM — se verificaron las colisiones antes de elegir**, no se eligieron a ojo:
+`cp-` ya lo usa `cambiar-password` y `cn-` ya lo usa `config-negocio`. Quedaron libres `cta-`
+(cinta) y `gca-` (gestión cinta). Comando: `for p in cta gca cn gc; do grep -rl "\b$p-[a-z]" src/ | wc -l; done`.
+
+**⚠️ Efecto colateral aceptado:** al cambiar la clave de `localStorage`, lo que el admin hubiera
+guardado bajo `ticker_promos` deja de leerse y reaparecen las frases de fábrica. Es irrelevante
+en fase dummy (esos datos no salían de un navegador de todos modos), pero **si esto se hiciera
+después de conectar el backend, sí habría que migrar**.
+
+### 🐛 Trampa al renombrar en lote: `grep -rl` alcanza los binarios de `src/assets/`
+
+El primer intento hizo `sed -i` sobre la salida de `grep -rl "...\btk\b..."` en todo `src/` — y
+**7 imágenes de `src/assets/imagenes/` entraron en la lista** (un `.jpg` contiene por casualidad
+bytes que matchean patrones cortos como `tk` o `gt-`). `sed` las reescribió y las dejó
+corruptas. Se detectó con `git status --porcelain src/assets/` y se revirtió con
+`git checkout -- src/assets/imagenes/` antes de commitear nada.
+
+**Regla:** al renombrar en lote con `sed`, restringir SIEMPRE por extensión
+(`grep -rl --include="*.ts" --include="*.html" --include="*.scss"`) o excluir `assets/`. Y
+revisar `git status` **antes** de `git add`, especialmente si el patrón tiene menos de 4
+caracteres.
+
+**Otra trampa (Windows):** `git mv src/app/ticker src/app/cinta` falló con *"Permission denied"*
+porque un proceso `node` tenía tomada la carpeta (un `ng serve` de una sesión anterior). Renombrar
+la carpeta pide lock exclusivo; mover **los archivos uno por uno** a un directorio nuevo sí
+funcionó, sin tener que matar el proceso.
+
+### Consulta al back (commit `96aad86` del repo compartido, sin pushear todavía)
+
+Se pide el CRUD del catálogo (`texto`, `activo`, `orden`) — mismo patrón que `lugares-entrega` —
+más dos campos de destino (`destinoTipo`, `destinoValor`) para que cada frase lleve a algún lado
+al hacerle clic. **Se les pide explícitamente que NO guarden la ruta del front**: guardan *qué*
+mostrar (`PROMOCIONES` / `BUSQUEDA` / `PRODUCTO` / `EXTERNO` / `NINGUNO`) y el front sabe *dónde*
+vive — precedente directo del rename `/variantes` → `/tienda`, que habría roto en silencio
+cualquier URL guardada como texto en la base.
+
+Dos puntos del contrato que importan:
+- **`GET /v1/cinta/activos` NO puede ser admin-only** — la cinta se pinta para el cliente; con
+  rol ADMIN le saldría vacía y con un 403 en consola en cada carga.
+- **`BUSQUEDA` no necesita endpoint nuevo**: el buscador del catálogo ya hace cascada
+  código de barras → palabra clave → nombre, y las categorías son justo "BLUSAS"/"BOLSAS", así
+  que mandar el texto tal cual devuelve la categoría completa.
+
+**⏳ Pendiente del lado del front, para cuando exista el endpoint:** el catálogo
+(`buscar.component.ts:128`) hoy solo lee `?productoId=` de los query params — hay que agregarle
+el parámetro del término de búsqueda para que `destinoTipo: BUSQUEDA` funcione. Y en la pantalla
+de administración, un botón **"probar"** junto al destino que corra la búsqueda y diga cuántos
+resultados da, para no publicar una frase que lleve a un catálogo vacío.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**

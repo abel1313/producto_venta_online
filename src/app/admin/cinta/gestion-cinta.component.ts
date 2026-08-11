@@ -2,17 +2,17 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
-import { ITickerItem } from 'src/app/ticker/models/ticker.model';
-import { TickerService } from 'src/app/ticker/service/ticker.service';
+import { ICintaItem } from 'src/app/cinta/models/cinta.model';
+import { CintaService } from 'src/app/cinta/service/cinta.service';
 
 @Component({
-  selector: 'app-gestion-ticker',
-  templateUrl: './gestion-ticker.component.html',
-  styleUrls: ['./gestion-ticker.component.scss']
+  selector: 'app-gestion-cinta',
+  templateUrl: './gestion-cinta.component.html',
+  styleUrls: ['./gestion-cinta.component.scss']
 })
-export class GestionTickerComponent implements OnInit, OnDestroy {
+export class GestionCintaComponent implements OnInit, OnDestroy {
 
-  items: ITickerItem[] = [];
+  items: ICintaItem[] = [];
 
   nuevoTexto = '';
 
@@ -21,10 +21,10 @@ export class GestionTickerComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private readonly ticker: TickerService) {}
+  constructor(private readonly cinta: CintaService) {}
 
   ngOnInit(): void {
-    this.ticker.items$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);
+    this.cinta.items$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);
   }
 
   ngOnDestroy(): void {
@@ -38,18 +38,18 @@ export class GestionTickerComponent implements OnInit, OnDestroy {
 
   agregar(): void {
     if (!this.nuevoTexto.trim()) return;
-    this.ticker.agregar(this.nuevoTexto);
+    this.cinta.agregar(this.nuevoTexto);
     this.nuevoTexto = '';
   }
 
-  editar(item: ITickerItem): void {
+  editar(item: ICintaItem): void {
     this.editandoId = item.id;
     this.textoEditado = item.texto;
   }
 
   guardarEdicion(): void {
     if (this.editandoId === null || !this.textoEditado.trim()) return;
-    this.ticker.actualizar(this.editandoId, this.textoEditado);
+    this.cinta.actualizar(this.editandoId, this.textoEditado);
     this.cancelarEdicion();
   }
 
@@ -58,11 +58,11 @@ export class GestionTickerComponent implements OnInit, OnDestroy {
     this.textoEditado = '';
   }
 
-  toggle(item: ITickerItem): void { this.ticker.toggleActivo(item.id); }
-  subir(item: ITickerItem): void  { this.ticker.mover(item.id, -1); }
-  bajar(item: ITickerItem): void  { this.ticker.mover(item.id, 1); }
+  toggle(item: ICintaItem): void { this.cinta.toggleActivo(item.id); }
+  subir(item: ICintaItem): void  { this.cinta.mover(item.id, -1); }
+  bajar(item: ICintaItem): void  { this.cinta.mover(item.id, 1); }
 
-  eliminar(item: ITickerItem): void {
+  eliminar(item: ICintaItem): void {
     Swal.fire({
       icon: 'warning',
       title: '¿Quitar esta frase?',
@@ -70,7 +70,7 @@ export class GestionTickerComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, quitar',
       cancelButtonText: 'Cancelar'
-    }).then(r => { if (r.isConfirmed) this.ticker.eliminar(item.id); });
+    }).then(r => { if (r.isConfirmed) this.cinta.eliminar(item.id); });
   }
 
   restaurar(): void {
@@ -81,6 +81,6 @@ export class GestionTickerComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, restaurar',
       cancelButtonText: 'Cancelar'
-    }).then(r => { if (r.isConfirmed) this.ticker.restaurar(); });
+    }).then(r => { if (r.isConfirmed) this.cinta.restaurar(); });
   }
 }

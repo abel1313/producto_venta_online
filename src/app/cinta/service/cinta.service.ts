@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ITickerItem, TICKER_DEFAULTS } from '../models/ticker.model';
+import { ICintaItem, CINTA_DEFAULTS } from '../models/cinta.model';
 
-const STORAGE_KEY = 'ticker_promos';
+const STORAGE_KEY = 'cinta_promos';
 
 /**
  * Fuente de las frases de la cinta de promociones.
@@ -20,24 +20,24 @@ const STORAGE_KEY = 'ticker_promos';
  * la pantalla de administración se enteran — ambos solo consumen `items$` / `activos$`.
  */
 @Injectable({ providedIn: 'root' })
-export class TickerService {
+export class CintaService {
 
-  private readonly _items = new BehaviorSubject<ITickerItem[]>(this.leer());
+  private readonly _items = new BehaviorSubject<ICintaItem[]>(this.leer());
 
   /** Todas las frases, incluidas las desactivadas. Lo usa la pantalla de administración. */
-  readonly items$: Observable<ITickerItem[]> = this._items.asObservable();
+  readonly items$: Observable<ICintaItem[]> = this._items.asObservable();
 
   /** Solo las que se deben ver corriendo. Lo usa la cinta. */
-  readonly activos$: Observable<ITickerItem[]> = this._items.pipe(
+  readonly activos$: Observable<ICintaItem[]> = this._items.pipe(
     map(items => items.filter(i => i.activo && i.texto.trim() !== ''))
   );
 
-  get items(): ITickerItem[] { return this._items.getValue(); }
+  get items(): ICintaItem[] { return this._items.getValue(); }
 
   agregar(texto: string): void {
     const limpio = texto.trim();
     if (!limpio) return;
-    const nuevo: ITickerItem = { id: this.siguienteId(), texto: limpio, activo: true };
+    const nuevo: ICintaItem = { id: this.siguienteId(), texto: limpio, activo: true };
     this.persistir([...this.items, nuevo]);
   }
 
@@ -67,12 +67,12 @@ export class TickerService {
 
   /** Vuelve a las frases de fábrica. */
   restaurar(): void {
-    this.persistir(TICKER_DEFAULTS.map(i => ({ ...i })));
+    this.persistir(CINTA_DEFAULTS.map(i => ({ ...i })));
   }
 
   // ── Persistencia local (se va cuando llegue el backend) ────────────────
 
-  private persistir(items: ITickerItem[]): void {
+  private persistir(items: ICintaItem[]): void {
     this._items.next(items);
     this.guardar(items);
   }
@@ -81,20 +81,20 @@ export class TickerService {
     return this.items.reduce((max, i) => Math.max(max, i.id), 0) + 1;
   }
 
-  private leer(): ITickerItem[] {
+  private leer(): ICintaItem[] {
     try {
       const crudo = localStorage.getItem(STORAGE_KEY);
-      if (!crudo) return TICKER_DEFAULTS.map(i => ({ ...i }));
+      if (!crudo) return CINTA_DEFAULTS.map(i => ({ ...i }));
       const parsed = JSON.parse(crudo);
       // Si alguien dejó basura en localStorage, mejor caer a los defaults que romper
       // el layout de toda la app por una cinta decorativa.
-      return Array.isArray(parsed) && parsed.length ? parsed : TICKER_DEFAULTS.map(i => ({ ...i }));
+      return Array.isArray(parsed) && parsed.length ? parsed : CINTA_DEFAULTS.map(i => ({ ...i }));
     } catch {
-      return TICKER_DEFAULTS.map(i => ({ ...i }));
+      return CINTA_DEFAULTS.map(i => ({ ...i }));
     }
   }
 
-  private guardar(items: ITickerItem[]): void {
+  private guardar(items: ICintaItem[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch { /* cuota llena o modo restringido — no vale tirar la app por esto */ }

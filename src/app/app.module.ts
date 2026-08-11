@@ -25,7 +25,7 @@ import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { FormsModule } from '@angular/forms';
-import { TickerComponent } from './ticker/ticker.component';
+import { CintaComponent } from './cinta/cinta.component';
 export function bootstrapAuth(
   acceder: AccederService,
   auth: AuthenticateService,
@@ -68,7 +68,7 @@ export function bootstrapAuth(
   declarations: [
     AppComponent,
     NavbarComponent,
-    TickerComponent,
+    CintaComponent,
     PaginaNoDisponibleComponent,
     HomeComponent,
     LoadingComponent,

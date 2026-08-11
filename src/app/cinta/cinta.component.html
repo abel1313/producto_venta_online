@@ -4,20 +4,20 @@
   el ciclo se reinicia sin salto visible. Con una sola copia se vería un hueco al final.
   El `aria-hidden` va en la copia para que un lector de pantalla no lea todo dos veces.
 -->
-<div class="tk" *ngIf="visible && items.length > 0">
-  <div class="tk__track" [style.animation-duration]="duracion">
+<div class="cta" *ngIf="visible && items.length > 0">
+  <div class="cta__track" [style.animation-duration]="duracion">
 
-    <div class="tk__grupo">
+    <div class="cta__grupo">
       <ng-container *ngFor="let item of items">
-        <span class="tk__item">{{ item.texto }}</span>
-        <span class="tk__sep" aria-hidden="true">✦</span>
+        <span class="cta__item">{{ item.texto }}</span>
+        <span class="cta__sep" aria-hidden="true">✦</span>
       </ng-container>
     </div>
 
-    <div class="tk__grupo" aria-hidden="true">
+    <div class="cta__grupo" aria-hidden="true">
       <ng-container *ngFor="let item of items">
-        <span class="tk__item">{{ item.texto }}</span>
-        <span class="tk__sep">✦</span>
+        <span class="cta__item">{{ item.texto }}</span>
+        <span class="cta__sep">✦</span>
       </ng-container>
     </div>
 

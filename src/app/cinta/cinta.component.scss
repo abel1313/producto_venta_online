@@ -1,0 +1,92 @@
+// Cinta de promociones. Prefijo BEM `cta-`.
+// El color sale de las variables globales, así que dark/light funciona solo.
+
+.cta {
+  position: relative;
+  overflow: hidden;          // recorta el track, que es más ancho que la pantalla
+  margin: -16px -20px 16px;  // se come el padding de .page-content para ir de borde a borde
+  padding: 9px 0;
+  background: var(--app-surface-2, var(--card-bg));
+  border-bottom: 1px solid var(--card-border);
+  user-select: none;
+
+  // Difuminado en los extremos: las frases entran y salen desvaneciéndose en vez de
+  // aparecer cortadas de golpe contra el borde.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  &::before {
+    left: 0;
+    background: linear-gradient(to right, var(--app-surface-2, var(--card-bg)), transparent);
+  }
+  &::after {
+    right: 0;
+    background: linear-gradient(to left, var(--app-surface-2, var(--card-bg)), transparent);
+  }
+
+  &:hover .cta__track { animation-play-state: paused; }
+}
+
+.cta__track {
+  display: flex;
+  width: max-content;        // deja que crezca según el contenido, sin envolver
+  animation-name: cta-desplazar;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  // La duración la pone el componente (crece con la cantidad de frases).
+}
+
+.cta__grupo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cta__item {
+  padding: 0 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--app-text);
+}
+
+.cta__sep {
+  padding: 0 18px;
+  font-size: 0.66rem;
+  color: var(--app-accent);
+  flex-shrink: 0;
+}
+
+@keyframes cta-desplazar {
+  from { transform: translateX(0); }
+  // -50% = exactamente el ancho de una copia, porque hay dos copias idénticas.
+  to   { transform: translateX(-50%); }
+}
+
+// Accesibilidad: a quien pidió menos movimiento en su sistema no se le mueve nada.
+// La cinta sigue ahí y se puede leer, simplemente queda quieta.
+@media (prefers-reduced-motion: reduce) {
+  .cta__track { animation: none; }
+  .cta        { overflow-x: auto; }
+}
+
+@media (max-width: 767.98px) {
+  .cta {
+    // En móvil NO se sube al tope: `.page-content` reserva 60px arriba para el botón
+    // hamburguesa, que es `position: fixed`. Con margin-top negativo la cinta le quedaría
+    // por debajo y taparía el botón.
+    margin: 0 -12px 14px;
+    padding: 8px 0;
+  }
+  .cta__item { font-size: 0.7rem; letter-spacing: 0.09em; }
+  .cta__sep  { padding: 0 13px; }
+}

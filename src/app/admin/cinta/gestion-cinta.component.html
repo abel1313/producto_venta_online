@@ -1,0 +1,86 @@
+<div class="gca-wrap">
+
+  <div class="gca-header">
+    <div class="gca-header__title">
+      <h4>📢 Cinta de promociones</h4>
+      <small>Las frases que van corriendo arriba de la pantalla</small>
+    </div>
+  </div>
+
+  <!-- Falla visible: si el endpoint no responde, hay que decir por qué y ofrecer reintentar,
+       no dejar una lista vacía que parece "todavía no has escrito nada". -->
+  <div class="gca-aviso gca-aviso--error" *ngIf="error">
+    <strong>⚠️ {{ error }}</strong>
+    <button class="gca-btn gca-btn--ghost gca-btn--sm" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <!-- ── Agregar ────────────────────────────────────────────────── -->
+  <div class="gca-card">
+    <label class="gca-label">Nueva frase</label>
+    <div class="gca-add">
+      <input class="gca-input" type="text" [attr.maxlength]="maxLargo"
+             placeholder="Ej. Envíos a todo México"
+             [(ngModel)]="nuevoTexto"
+             (keyup.enter)="agregar()">
+      <button class="gca-btn gca-btn--primary"
+              [disabled]="!nuevoTexto.trim() || guardando" (click)="agregar()">
+        + Agregar
+      </button>
+    </div>
+    <p class="gca-hint">Frases cortas funcionan mejor — la cinta se lee de reojo, no se detiene a leer.</p>
+  </div>
+
+  <!-- ── Lista ──────────────────────────────────────────────────── -->
+  <div class="gca-card">
+    <div class="gca-card__head">
+      <h5 class="gca-card__title">Frases · {{ activos }} de {{ items.length }} visibles</h5>
+      <button class="gca-btn gca-btn--ghost" *ngIf="puedeSembrar"
+              [disabled]="guardando" (click)="sembrarSugeridas()">✨ Cargar frases sugeridas</button>
+    </div>
+
+    <p class="gca-vacio" *ngIf="cargando">Cargando…</p>
+
+    <p class="gca-vacio" *ngIf="!cargando && !error && items.length === 0">
+      Todavía no hay ninguna frase. Agrega una arriba, o carga las sugeridas para empezar.
+    </p>
+
+    <div class="gca-fila" *ngFor="let item of items; let i = index"
+         [class.gca-fila--off]="!item.activo">
+
+      <!-- Modo lectura -->
+      <ng-container *ngIf="editandoId !== item.id">
+        <span class="gca-fila__texto">{{ item.texto }}</span>
+
+        <div class="gca-fila__acciones">
+          <button class="gca-icono" title="Subir"  [disabled]="i === 0 || guardando"                (click)="subir(item)">↑</button>
+          <button class="gca-icono" title="Bajar"  [disabled]="i === items.length - 1 || guardando" (click)="bajar(item)">↓</button>
+          <button class="gca-icono" title="Editar" [disabled]="guardando" (click)="editar(item)">✏️</button>
+          <button class="gca-icono" [disabled]="guardando"
+                  [title]="item.activo ? 'Ocultar de la cinta' : 'Mostrar en la cinta'"
+                  (click)="toggle(item)">{{ item.activo ? '👁️' : '🚫' }}</button>
+          <button class="gca-icono gca-icono--del" title="Quitar" [disabled]="guardando" (click)="eliminar(item)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <!-- Modo edición -->
+      <ng-container *ngIf="editandoId === item.id">
+        <input class="gca-input gca-input--edit" type="text" [attr.maxlength]="maxLargo"
+               [(ngModel)]="textoEditado"
+               (keyup.enter)="guardarEdicion()"
+               (keyup.escape)="cancelarEdicion()">
+        <div class="gca-fila__acciones">
+          <button class="gca-btn gca-btn--primary gca-btn--sm"
+                  [disabled]="!textoEditado.trim() || guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="gca-btn gca-btn--ghost gca-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+
+  <p class="gca-hint gca-hint--pie">
+    Los cambios se ven en la cinta al instante, sin recargar. Si pasas el mouse por encima
+    de la cinta, se detiene para que puedas leerla.
+  </p>
+
+</div>

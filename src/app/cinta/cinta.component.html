@@ -1,0 +1,25 @@
+<!--
+  La lista se repite DOS VECES a propósito: el track se desplaza exactamente -50%, así que
+  cuando la primera copia termina de salir, la segunda está justo donde arrancó la primera y
+  el ciclo se reinicia sin salto visible. Con una sola copia se vería un hueco al final.
+  El `aria-hidden` va en la copia para que un lector de pantalla no lea todo dos veces.
+-->
+<div class="cta" *ngIf="visible && items.length > 0">
+  <div class="cta__track" [style.animation-duration]="duracion">
+
+    <div class="cta__grupo">
+      <ng-container *ngFor="let item of items">
+        <span class="cta__item">{{ item.texto }}</span>
+        <span class="cta__sep" aria-hidden="true">✦</span>
+      </ng-container>
+    </div>
+
+    <div class="cta__grupo" aria-hidden="true">
+      <ng-container *ngFor="let item of items">
+        <span class="cta__item">{{ item.texto }}</span>
+        <span class="cta__sep">✦</span>
+      </ng-container>
+    </div>
+
+  </div>
+</div>

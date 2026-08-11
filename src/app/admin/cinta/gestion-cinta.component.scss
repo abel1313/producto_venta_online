@@ -1,0 +1,205 @@
+// Gestión de la cinta de promociones. Prefijo BEM `gca-`.
+// Color por variables globales → dark/light automático.
+
+.gca-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.gca-header {
+  margin-bottom: 20px;
+  &__title {
+    h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
+    small { color: var(--app-text-muted, #64748b); }
+  }
+}
+
+.gca-aviso {
+  border-left: 3px solid var(--app-accent);
+  background: var(--app-accent-soft);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--app-text);
+
+  // Falla de carga. Rojo semántico, independiente del acento de marca.
+  &--error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    border-left-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+  }
+}
+
+:host-context(body.theme-dark) {
+  .gca-aviso--error {
+    border-left-color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+  }
+}
+
+.gca-card {
+  background: var(--form-section-bg, var(--app-surface));
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 18px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  &__title { margin: 0; font-size: 0.98rem; font-weight: 700; color: var(--app-text); }
+}
+
+.gca-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--app-text);
+  opacity: .75;
+  margin-bottom: 8px;
+}
+
+.gca-add {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gca-input {
+  flex: 1 1 260px;
+  min-width: 0;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--app-text);
+
+  &:focus {
+    outline: none;
+    border-color: var(--input-focus-border, var(--app-accent));
+    box-shadow: var(--input-focus-shadow);
+  }
+  &::placeholder { color: var(--app-placeholder, #94a3b8); }
+
+  &--edit { flex: 1 1 200px; }
+}
+
+.gca-hint {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--app-text-muted, #64748b);
+
+  &--pie { text-align: center; margin-top: 4px; }
+}
+
+.gca-vacio {
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--app-text-muted, #64748b);
+}
+
+// ── Filas de la lista ────────────────────────────────────────────────
+.gca-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+
+  // Desactivada: se conserva pero se nota que no sale en la cinta.
+  &--off .gca-fila__texto {
+    opacity: .45;
+    text-decoration: line-through;
+  }
+
+  &__texto {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--app-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+}
+
+.gca-icono {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.92rem;
+  line-height: 1;
+  padding: 6px 7px;
+  border-radius: 7px;
+  color: var(--app-text);
+  transition: background .12s;
+
+  &:hover:not(:disabled) { background: var(--app-accent-soft); }
+  &:disabled { opacity: .28; cursor: not-allowed; }
+
+  &--del:hover:not(:disabled) { background: rgba(239, 68, 68, .14); }
+}
+
+.gca-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity .15s;
+
+  &:disabled { opacity: .45; cursor: not-allowed; }
+
+  &--primary {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    &:hover:not(:disabled) { opacity: .87; }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--app-text);
+    border: 1.5px solid var(--card-border);
+    &:hover:not(:disabled) { background: var(--app-accent-soft); }
+  }
+
+  &--sm { padding: 6px 12px; font-size: 0.8rem; }
+}
+
+@media (max-width: 576px) {
+  .gca-wrap { padding: 16px 12px; }
+  .gca-card { padding: 16px; }
+  .gca-fila { flex-wrap: wrap; }
+  .gca-fila__texto { flex: 1 1 100%; white-space: normal; }
+}

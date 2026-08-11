@@ -7097,3 +7097,76 @@ retomar, y de todos modos conviene tenerla publicada.
 
 **Verificado:** grep de `redes-sociales|PublicarFacebook|admin/facebook` en `src/app` → sin
 resultados fuera de los comentarios. `ng build --configuration=development` sin errores.
+
+---
+
+## FEAT — CINTA DE PROMOCIONES (TICKER) — FASE DUMMY (2026-08-05)
+
+> Cierra el pendiente que arrastraba la sección "Pendiente — ticker de promociones". El usuario
+> mostró el artifact de exploración de diseño donde la cinta corre arriba y pidió: **hacerlo
+> primero en dummy y después ir perfeccionándolo**, con una pantalla donde él mismo configure
+> las frases.
+
+### Alcance de esta fase — SIN BACKEND, a propósito
+
+`TickerService` guarda todo en **`localStorage`** (clave `ticker_promos`). **Lo que edite el admin
+vive solo en su navegador**: otro usuario, otra computadora o modo incógnito ven los valores por
+defecto. No es un bug — es el alcance acordado para poder afinar diseño y comportamiento antes de
+pedirle un endpoint al back.
+
+La pantalla de administración lo dice en un aviso visible, para que nadie lo descubra por las malas.
+
+**Para conectar el backend después:** reemplazar el cuerpo de los 5 métodos públicos de
+`TickerService` por llamadas HTTP y borrar `leer()`/`guardar()`. Ni la cinta ni la pantalla de
+administración se enteran — ambas solo consumen `items$` / `activos$`.
+
+### Cómo está hecha la cinta
+
+- **El truco del bucle sin salto:** la lista se renderiza **dos veces** dentro del track y la
+  animación desplaza exactamente `translateX(-50%)`. Cuando la primera copia termina de salir, la
+  segunda está justo donde arrancó la primera → reinicio invisible. Con una sola copia se ve un
+  hueco al final de cada vuelta. La segunda copia lleva `aria-hidden` para que un lector de
+  pantalla no lea todo dos veces.
+- **Velocidad constante:** la duración la calcula el componente (`items.length * 6s`, mínimo 18s).
+  Si fuera fija, más frases = texto más veloz e ilegible.
+- **Pausa al pasar el mouse** (`animation-play-state: paused`) para poder leerla.
+- **`prefers-reduced-motion`:** no se anima nada; la cinta se queda quieta y con scroll horizontal.
+- **Full-bleed:** `margin: -16px -20px 16px` se come el padding de `.page-content` para ir de borde
+  a borde. ⚠️ En móvil el margen superior es **0, no negativo** — `.page-content` reserva 60px
+  arriba para el botón hamburguesa, que es `position: fixed`; con margen negativo la cinta le
+  quedaría encima y lo taparía.
+
+### Dónde NO se muestra
+
+`RUTAS_OCULTAS` en `ticker.component.ts`: `/login`, `/usuarios/registrar`, `/privacidad`,
+`/verificar-correo`, `/olvide-password`. Son pantallas a página completa con diseño propio (el
+login incluso pinta su malla WebGL); una cinta comercial encima se ve fuera de lugar.
+
+### Pantalla de administración — `/admin/ticker`
+
+Link "📢 Cinta de promociones" en 🛠️ Sistema. Agregar, editar en línea, subir/bajar el orden,
+ocultar sin borrar (👁️/🚫), eliminar con confirmación, y restaurar las frases originales. Los
+cambios se ven en la cinta **al instante**, sin recargar (BehaviorSubject).
+
+### Archivos nuevos
+- `src/app/ticker/models/ticker.model.ts` (+ `TICKER_DEFAULTS`)
+- `src/app/ticker/service/ticker.service.ts`
+- `src/app/ticker/ticker.component.ts` / `.html` / `.scss` (BEM `tk-`)
+- `src/app/admin/ticker/gestion-ticker.component.ts` / `.html` / `.scss` (BEM `gt-`)
+
+### Archivos modificados
+- `src/app/app.component.html` → `<app-ticker>` arriba del `router-outlet`
+- `src/app/app.module.ts` → declara `TickerComponent`
+- `src/app/admin/admin.module.ts` + `admin-routing.module.ts` → pantalla `/admin/ticker`
+- `src/app/navbar/navbar.component.html` + `.ts` → link y `GROUP_ROUTES`
+
+**Verificado con `ng build` sin errores, y además EN VIVO con `ng serve` + Playwright**
+(recordar la lección: `ng build` no valida diseño). Capturas en claro y oscuro sobre `/home`, y se
+confirmó que **de verdad se mueve** comparando el `transform` computado del track en dos momentos
+(`-106px` → `-131px`), no solo que el elemento exista.
+
+### Pendiente de decidir con el usuario (fase 2)
+- ¿Las frases llevan enlace? (ej. "Promo en bolsas" que lleve al catálogo filtrado). Hoy son solo
+  texto — **se preguntó antes y el usuario no reconoció ese plan**, así que no se implementó nada
+  de enlaces/orden avanzado sin confirmarlo.
+- Velocidad, tamaño y colores: ajustables, es lo que toca afinar en las siguientes vueltas.

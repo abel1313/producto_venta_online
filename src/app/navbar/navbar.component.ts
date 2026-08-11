@@ -20,7 +20,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
   { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
   { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
-  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones'] },
+  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/ticker'] },
 ];
 
 @Component({

@@ -1,0 +1,82 @@
+<div class="gt-wrap">
+
+  <div class="gt-header">
+    <div class="gt-header__title">
+      <h4>📢 Cinta de promociones</h4>
+      <small>Las frases que van corriendo arriba de la pantalla</small>
+    </div>
+  </div>
+
+  <!-- Aviso honesto del alcance actual — mejor decirlo que dejar que lo descubran -->
+  <div class="gt-aviso">
+    <strong>⚠️ Por ahora esto se guarda solo en este navegador.</strong>
+    Lo que escribas aquí no lo ven los clientes ni tus otros dispositivos todavía — falta
+    conectarlo al servidor. Sirve para dejar la cinta como la quieres y después pasarla.
+  </div>
+
+  <!-- ── Agregar ────────────────────────────────────────────────── -->
+  <div class="gt-card">
+    <label class="gt-label">Nueva frase</label>
+    <div class="gt-add">
+      <input class="gt-input" type="text" maxlength="60"
+             placeholder="Ej. Envíos a todo México"
+             [(ngModel)]="nuevoTexto"
+             (keyup.enter)="agregar()">
+      <button class="gt-btn gt-btn--primary" [disabled]="!nuevoTexto.trim()" (click)="agregar()">
+        + Agregar
+      </button>
+    </div>
+    <p class="gt-hint">Frases cortas funcionan mejor — la cinta se lee de reojo, no se detiene a leer.</p>
+  </div>
+
+  <!-- ── Lista ──────────────────────────────────────────────────── -->
+  <div class="gt-card">
+    <div class="gt-card__head">
+      <h5 class="gt-card__title">Frases · {{ activos }} de {{ items.length }} visibles</h5>
+      <button class="gt-btn gt-btn--ghost" (click)="restaurar()">↺ Restaurar originales</button>
+    </div>
+
+    <p class="gt-vacio" *ngIf="items.length === 0">
+      No hay ninguna frase. Agrega una arriba y aparecerá al instante en la cinta.
+    </p>
+
+    <div class="gt-fila" *ngFor="let item of items; let i = index"
+         [class.gt-fila--off]="!item.activo">
+
+      <!-- Modo lectura -->
+      <ng-container *ngIf="editandoId !== item.id">
+        <span class="gt-fila__texto">{{ item.texto }}</span>
+
+        <div class="gt-fila__acciones">
+          <button class="gt-icono" title="Subir"  [disabled]="i === 0"                (click)="subir(item)">↑</button>
+          <button class="gt-icono" title="Bajar"  [disabled]="i === items.length - 1" (click)="bajar(item)">↓</button>
+          <button class="gt-icono" title="Editar" (click)="editar(item)">✏️</button>
+          <button class="gt-icono"
+                  [title]="item.activo ? 'Ocultar de la cinta' : 'Mostrar en la cinta'"
+                  (click)="toggle(item)">{{ item.activo ? '👁️' : '🚫' }}</button>
+          <button class="gt-icono gt-icono--del" title="Quitar" (click)="eliminar(item)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <!-- Modo edición -->
+      <ng-container *ngIf="editandoId === item.id">
+        <input class="gt-input gt-input--edit" type="text" maxlength="60"
+               [(ngModel)]="textoEditado"
+               (keyup.enter)="guardarEdicion()"
+               (keyup.escape)="cancelarEdicion()">
+        <div class="gt-fila__acciones">
+          <button class="gt-btn gt-btn--primary gt-btn--sm"
+                  [disabled]="!textoEditado.trim()" (click)="guardarEdicion()">Guardar</button>
+          <button class="gt-btn gt-btn--ghost gt-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+
+  <p class="gt-hint gt-hint--pie">
+    Los cambios se ven en la cinta al instante, sin recargar. Si pasas el mouse por encima
+    de la cinta, se detiene para que puedas leerla.
+  </p>
+
+</div>

@@ -24,6 +24,24 @@
   font-size: 0.84rem;
   line-height: 1.5;
   color: var(--app-text);
+
+  // Falla de carga. Rojo semántico, independiente del acento de marca.
+  &--error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    border-left-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+  }
+}
+
+:host-context(body.theme-dark) {
+  .gca-aviso--error {
+    border-left-color: #f87171;
+    background: rgba(248, 113, 113, 0.12);
+  }
 }
 
 .gca-card {

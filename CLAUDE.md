@@ -7255,3 +7255,109 @@ de administración, un botón **"probar"** junto al destino que corra la búsque
 resultados da, para no publicar una frase que lleve a un catálogo vacío.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+---
+
+## FEAT — CINTA DE PROMOCIONES CONECTADA AL BACKEND `/v1/cinta` (2026-08-10)
+
+> Cierra la fase dummy (`localStorage`) documentada arriba. El back entregó el catálogo en su
+> `dev`/`qa`; el contrato completo está en el repo compartido (`CAMBIOS_FRONT.md`).
+
+### ⚠️ El back recortó el alcance: v1 SIN destino clickeable
+
+La consulta pedía además `destinoTipo`/`destinoValor` para que cada frase llevara a algún lado al
+hacerle clic. **El back decidió no incluirlo en esta primera entrega** — solo texto, activo y
+orden. Avisan que agregarlo después será una migración aditiva (columnas nuevas), no un cambio de
+contrato. **No implementar nada de destinos hasta que existan esos campos**: hoy las frases se
+pintan como texto no clickeable, que es exactamente lo que devuelve el backend.
+
+### Endpoints
+
+| Método | URL | Quién |
+|---|---|---|
+| `GET` | `/v1/cinta/activos` | **público, sin auth ni login** — solo activas, ya ordenadas, cacheado 1h |
+| `GET` | `/v1/cinta/getAll?page=0&size=200` | ADMIN — `page`/`size` **obligatorios**, el CRUD genérico no tiene defaults |
+| `GET` | `/v1/cinta/getOne/{id}` | ADMIN |
+| `POST` | `/v1/cinta/save` | ADMIN — `{ texto, activo, orden }` |
+| `PUT` | `/v1/cinta/update/{id}` | ADMIN — objeto completo **con `id` en el body** |
+| `DELETE` | `/v1/cinta/delete` | ADMIN — body: el id crudo (`1`), **NO** `{ id: 1 }` (igual que `lugares-entrega`) |
+
+`texto` es requerido y máx. 120 — fuera de rango responde 400 con el motivo en `mensaje`.
+
+### ⚠️ DOS listas separadas — no unificarlas nunca
+
+`CintaService` mantiene **dos** `BehaviorSubject`, y es por permisos, no por descuido:
+
+- `activos$` ← `GET /activos` (público) → lo consume **la cinta**, que se pinta también para el
+  cliente y hasta para el visitante sin sesión.
+- `items$` ← `GET /getAll` (ADMIN) → lo consume **la pantalla de administración**, única que
+  necesita ver también las frases apagadas.
+
+Colgar la cinta de `items$` "para ahorrarse una llamada" le daría **403 en cada carga a cualquier
+usuario que no sea admin**, y la vería vacía.
+
+### `/activos` falla en silencio a propósito
+
+`cargarActivos()` lleva `catchError(() => of([]))`. Se pide en el arranque de la app, en TODAS las
+pantallas y para cualquier visitante: si el endpoint no está arriba, lo peor que puede pasar es
+que la cinta no aparezca (`*ngIf="items.length > 0"`). **Nunca un Swal ni un throw** — es un
+adorno, no puede ensuciar la consola de un cliente ni bloquear nada. En la pantalla de admin es al
+revés: ahí el error SÍ se propaga y se muestra, con botón de reintentar.
+
+También se agregó `/v1/cinta/activos` a `LoadingInterceptor.skipUrls` — corre en cada carga y no
+tiene por qué tapar la pantalla con el overlay global. Las rutas de admin de `/v1/cinta` **no** se
+saltan: ahí sí es una acción del usuario y el overlay es correcto.
+
+### Reordenar: renumerar por posición, NO intercambiar los dos `orden`
+
+El back no armó endpoint de reordenamiento en lote, así que hay que mandar un `update` por fila
+que cambia de lugar. `CintaService.mover()` **renumera la lista completa por índice** y manda solo
+las filas cuyo `orden` realmente cambió (normalmente dos, vía `forkJoin`).
+
+Intercambiar los dos `orden` entre sí parece más directo pero **se rompe si dos filas comparten el
+mismo `orden`** — fácil de provocar si un reordenamiento anterior quedó a medias (el propio back
+advirtió de ese riesgo al no dar endpoint en lote). Con valores iguales, el "intercambio" no
+movería nada y el botón se vería muerto sin ningún error. Renumerar por índice siempre deja la
+lista consistente.
+
+### La tabla nace VACÍA — el botón de sugeridas solo aparece si no hay nada
+
+El back dejó `cinta_promocion` vacía a propósito y pidió que las frases las diéramos de alta
+nosotros. La pantalla tiene **"✨ Cargar frases sugeridas"** (`CINTA_SUGERIDAS`, los 6 textos que
+antes eran los defaults del dummy), pero **visible solo cuando la lista está vacía**
+(getter `puedeSembrar`): cada carga hace `POST`, no reemplaza nada, así que un clic de más las
+duplicaría. Por lo mismo desapareció el viejo "↺ Restaurar originales" — con backend real ya no
+significa restaurar, significa duplicar.
+
+### Guard de doble-submit en toda la cadena (Lección #10)
+
+`GestionCintaComponent.ejecutar()` corre mutación → recarga. `guardando` se libera **solo al
+terminar la recarga**, no en el `next` de la mutación: entre una y otra el botón se rehabilitaría
+y un segundo clic mandaría la misma alta/edición con datos ya guardados.
+
+Se recarga del servidor en vez de parchar el arreglo local porque `orden` e `id` los decide el
+back — parchando a mano se desincroniza en cuanto un reordenamiento toca más filas de las
+esperadas. Tras cada mutación se llama también `cargarActivos()` para que la cinta de arriba se
+refresque sin recargar la página.
+
+### 💡 `[maxlength]` no es bindeable en un `<input>` de Angular
+
+`[maxlength]="maxLargo"` truena con *"Can't bind to 'maxlength' since it isn't a known property of
+'input'"* — no existe como propiedad del DOM, solo como atributo. Va `[attr.maxlength]="maxLargo"`.
+
+**Archivos modificados:**
+- `src/app/cinta/models/cinta.model.ts` → `ICintaItem` gana `orden`; nuevo `ICintaRequest`;
+  `CINTA_DEFAULTS` → `CINTA_SUGERIDAS` (`string[]`, ya no son "de fábrica")
+- `src/app/cinta/service/cinta.service.ts` → reescrito sobre `HttpClient`, sin `localStorage`
+- `src/app/cinta/cinta.component.ts` → `cargarActivos()` en `ngOnInit`
+- `src/app/admin/cinta/gestion-cinta.component.ts` → CRUD contra el backend, `ejecutar()`,
+  `sembrarSugeridas()`, estados `cargando`/`guardando`/`error`
+- `src/app/admin/cinta/gestion-cinta.component.html` → aviso de error con reintentar, botón de
+  sugeridas condicionado, `[disabled]` por `guardando`, `[attr.maxlength]`
+- `src/app/admin/cinta/gestion-cinta.component.scss` → `.gca-aviso--error` (claro + oscuro)
+- `src/app/loading.interceptor.ts` → `/v1/cinta/activos` en `skipUrls`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo:** el back todavía no corre `migration_cinta_promocion.sql` en QA, así que
+los endpoints no responden. Hasta entonces la cinta no se va a ver — que es el comportamiento
+esperado (falla en silencio), no un bug.

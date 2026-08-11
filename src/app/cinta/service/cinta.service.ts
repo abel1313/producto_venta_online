@@ -1,102 +1,128 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { ICintaItem, CINTA_DEFAULTS } from '../models/cinta.model';
-
-const STORAGE_KEY = 'cinta_promos';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
+import { ICintaItem, ICintaRequest } from '../models/cinta.model';
 
 /**
- * Fuente de las frases de la cinta de promociones.
+ * Catálogo de frases de la cinta de promociones — `/v1/cinta` (mismo patrón que
+ * `lugares-entrega`).
  *
- * ⚠️ FASE DUMMY — todo vive en `localStorage`, sin backend. Se hizo así a propósito para
- * poder afinar el comportamiento y el diseño antes de pedirle un endpoint al back.
+ * ⚠️ **Hay DOS listas y no son intercambiables**, por una razón de permisos:
  *
- * **Lo que implica hoy:** lo que edite el admin se guarda **solo en su navegador**. Otro
- * usuario, otra computadora o el mismo admin en modo incógnito ven los valores por defecto.
- * No es un bug de esta fase, es el alcance acordado.
+ * - `activos$` ← `GET /activos`, **público, sin auth**. Es la que consume la cinta, que se
+ *   pinta también para el cliente (y hasta para el visitante sin sesión).
+ * - `items$` ← `GET /getAll`, **solo ADMIN**. Es la que consume la pantalla de administración,
+ *   porque es la única que trae también las frases apagadas.
  *
- * **Para conectar el backend después** basta con reemplazar el cuerpo de los 5 métodos
- * públicos por llamadas HTTP y quitar `leer()`/`guardar()`. Ni el componente de la cinta ni
- * la pantalla de administración se enteran — ambos solo consumen `items$` / `activos$`.
+ * Si la cinta se colgara de `items$` para "ahorrarse una llamada", a cualquier cliente le
+ * saldría un 403 en cada carga y la vería vacía.
  */
 @Injectable({ providedIn: 'root' })
 export class CintaService {
 
-  private readonly _items = new BehaviorSubject<ICintaItem[]>(this.leer());
+  private readonly url = `${environment.api_Url}/v1/cinta`;
 
-  /** Todas las frases, incluidas las desactivadas. Lo usa la pantalla de administración. */
+  private readonly _activos = new BehaviorSubject<ICintaItem[]>([]);
+  private readonly _items   = new BehaviorSubject<ICintaItem[]>([]);
+
+  /** Solo las que se ven corriendo, ya ordenadas por el back. */
+  readonly activos$: Observable<ICintaItem[]> = this._activos.asObservable();
+
+  /** Todas, incluidas las apagadas. Solo ADMIN. */
   readonly items$: Observable<ICintaItem[]> = this._items.asObservable();
 
-  /** Solo las que se deben ver corriendo. Lo usa la cinta. */
-  readonly activos$: Observable<ICintaItem[]> = this._items.pipe(
-    map(items => items.filter(i => i.activo && i.texto.trim() !== ''))
-  );
+  constructor(private readonly http: HttpClient) {}
 
   get items(): ICintaItem[] { return this._items.getValue(); }
 
-  agregar(texto: string): void {
-    const limpio = texto.trim();
-    if (!limpio) return;
-    const nuevo: ICintaItem = { id: this.siguienteId(), texto: limpio, activo: true };
-    this.persistir([...this.items, nuevo]);
+  /**
+   * Carga la cinta visible. **Falla en silencio a propósito**: esto corre en el arranque de
+   * la app, en TODAS las pantallas y para cualquier visitante. Si el endpoint no está arriba
+   * (hoy mismo: falta correr `migration_cinta_promocion.sql` en QA), lo peor que puede pasar
+   * es que la cinta no aparezca — jamás un Swal de error ni un throw que ensucie la consola
+   * de un cliente por un adorno.
+   */
+  cargarActivos(): void {
+    this.http.get<{ data: ICintaItem[] }>(`${this.url}/activos`).pipe(
+      map(res => res?.data ?? []),
+      catchError(() => of([] as ICintaItem[]))
+    ).subscribe(items => this._activos.next(items));
   }
 
-  actualizar(id: number, texto: string): void {
-    const limpio = texto.trim();
-    if (!limpio) return;
-    this.persistir(this.items.map(i => i.id === id ? { ...i, texto: limpio } : i));
+  /**
+   * Carga TODAS para la pantalla de administración. Acá el error SÍ se propaga — el admin
+   * tiene que enterarse de por qué no ve su lista.
+   *
+   * `page`/`size` van siempre: el CRUD genérico del back no tiene valores por defecto y sin
+   * ellos responde error. Se pide `size` grande a propósito para traerlas todas de un jalón
+   * — son pocas frases y la pantalla las muestra juntas para poder reordenarlas.
+   */
+  cargarTodas(): Observable<ICintaItem[]> {
+    return this.http.get<{ data: ICintaItem[] }>(`${this.url}/getAll?page=0&size=200`).pipe(
+      map(res => res?.data ?? []),
+      tap(items => this._items.next(items))
+    );
   }
 
-  toggleActivo(id: number): void {
-    this.persistir(this.items.map(i => i.id === id ? { ...i, activo: !i.activo } : i));
+  crear(texto: string): Observable<ICintaItem> {
+    const body: ICintaRequest = { texto: texto.trim(), activo: true, orden: this.siguienteOrden() };
+    return this.http.post<{ data: ICintaItem }>(`${this.url}/save`, body).pipe(map(r => r.data));
   }
 
-  eliminar(id: number): void {
-    this.persistir(this.items.filter(i => i.id !== id));
+  /** `update` pide el objeto completo, con `id` incluido en el body. */
+  actualizar(item: ICintaItem): Observable<ICintaItem> {
+    return this.http
+      .put<{ data: ICintaItem }>(`${this.url}/update/${item.id}`, item)
+      .pipe(map(r => r.data));
   }
 
-  /** Sube o baja una frase. `delta` es -1 (subir) o +1 (bajar). */
-  mover(id: number, delta: -1 | 1): void {
+  /** El id va como número JSON crudo en el body, NO `{ id }` — igual que `lugares-entrega`. */
+  eliminar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/delete`, { body: id });
+  }
+
+  /**
+   * Sube o baja una frase. `delta` es -1 (subir) o +1 (bajar).
+   *
+   * El back no armó un endpoint de reordenamiento en lote, así que hay que mandar un `update`
+   * por cada fila que cambia de lugar.
+   *
+   * **No intercambia los dos `orden` entre sí, renumera la lista completa por posición.**
+   * Intercambiarlos parece más directo, pero se rompe si dos filas comparten el mismo `orden`
+   * (fácil de provocar: si dos altas salen con el mismo número, o si un intercambio anterior
+   * quedó a medias) — ahí el "intercambio" no movería nada y el botón se vería muerto.
+   * Renumerar por índice siempre deja la lista consistente, y de todos modos solo se mandan
+   * las filas cuyo `orden` realmente cambió (normalmente dos).
+   */
+  mover(id: number, delta: -1 | 1): Observable<unknown> {
     const lista = [...this.items];
     const desde = lista.findIndex(i => i.id === id);
     const hasta = desde + delta;
-    if (desde < 0 || hasta < 0 || hasta >= lista.length) return;
+    if (desde < 0 || hasta < 0 || hasta >= lista.length) return of(null);
+
     [lista[desde], lista[hasta]] = [lista[hasta], lista[desde]];
-    this.persistir(lista);
+
+    const cambiadas = lista
+      .map((item, idx) => ({ ...item, orden: idx }))
+      .filter((item, idx) => item.orden !== lista[idx].orden);
+
+    if (!cambiadas.length) return of(null);
+    return forkJoin(cambiadas.map(item => this.actualizar(item)));
   }
 
-  /** Vuelve a las frases de fábrica. */
-  restaurar(): void {
-    this.persistir(CINTA_DEFAULTS.map(i => ({ ...i })));
+  /** Alta en lote de las frases sugeridas, respetando el orden en que vienen. */
+  crearVarias(textos: string[]): Observable<ICintaItem[]> {
+    const base = this.siguienteOrden();
+    return forkJoin(
+      textos.map((texto, idx) => this.http
+        .post<{ data: ICintaItem }>(`${this.url}/save`, { texto, activo: true, orden: base + idx })
+        .pipe(map(r => r.data)))
+    );
   }
 
-  // ── Persistencia local (se va cuando llegue el backend) ────────────────
-
-  private persistir(items: ICintaItem[]): void {
-    this._items.next(items);
-    this.guardar(items);
-  }
-
-  private siguienteId(): number {
-    return this.items.reduce((max, i) => Math.max(max, i.id), 0) + 1;
-  }
-
-  private leer(): ICintaItem[] {
-    try {
-      const crudo = localStorage.getItem(STORAGE_KEY);
-      if (!crudo) return CINTA_DEFAULTS.map(i => ({ ...i }));
-      const parsed = JSON.parse(crudo);
-      // Si alguien dejó basura en localStorage, mejor caer a los defaults que romper
-      // el layout de toda la app por una cinta decorativa.
-      return Array.isArray(parsed) && parsed.length ? parsed : CINTA_DEFAULTS.map(i => ({ ...i }));
-    } catch {
-      return CINTA_DEFAULTS.map(i => ({ ...i }));
-    }
-  }
-
-  private guardar(items: ICintaItem[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch { /* cuota llena o modo restringido — no vale tirar la app por esto */ }
+  private siguienteOrden(): number {
+    return this.items.reduce((max, i) => Math.max(max, i.orden ?? 0), -1) + 1;
   }
 }

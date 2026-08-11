@@ -33,6 +33,10 @@ export class CintaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cinta.activos$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);
+    // Una sola llamada por carga de la app: este componente se monta una vez en
+    // `app.component.html`, no por ruta. Si falla, el servicio deja la lista vacía y la cinta
+    // simplemente no se pinta (`*ngIf` en el template).
+    this.cinta.cargarActivos();
 
     this.evaluarRuta(this.router.url);
     this.router.events.pipe(

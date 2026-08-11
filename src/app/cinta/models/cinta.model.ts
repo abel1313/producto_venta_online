@@ -1,26 +1,38 @@
 /**
  * Frase de la cinta de promociones que corre en la parte de arriba de la pantalla.
  *
- * ⚠️ FASE DUMMY (2026-08-05): esto todavía NO viene del backend. `CintaService` lo guarda
- * en `localStorage` para que el admin pueda editarlo y ver que persiste. Cuando se le pida
- * el endpoint al back, lo único que cambia es de dónde salen y a dónde se guardan los datos
- * — la forma de este modelo y toda la pantalla se quedan igual.
+ * Viene del catálogo `/v1/cinta` del backend (mismo patrón que `lugares-entrega`).
  */
 export interface ICintaItem {
-  /** Identificador local. Al conectar el backend será el id real de la fila. */
   id: number;
-  /** El texto que se ve corriendo. Se muestra tal cual, en mayúsculas por CSS. */
+  /** El texto que se ve corriendo. Máx. 120 — el back responde 400 si se pasa o va vacío. */
   texto: string;
   /** Desactivado = se conserva en la lista del admin pero no sale en la cinta. */
   activo: boolean;
+  /** Posición en la cinta. El back devuelve `/activos` ya ordenado por este campo. */
+  orden: number;
 }
 
-/** Lo que se ve la primera vez, antes de que el admin toque nada. */
-export const CINTA_DEFAULTS: ICintaItem[] = [
-  { id: 1, texto: 'Bolsas',                activo: true },
-  { id: 2, texto: 'Blusas',                activo: true },
-  { id: 3, texto: 'Pantalones',            activo: true },
-  { id: 4, texto: 'Perfumes 10 ml',        activo: true },
-  { id: 5, texto: 'Envíos a todo México',  activo: true },
-  { id: 6, texto: 'Promos de temporada',   activo: true }
+/** Lo que se manda en `save` / `update` (el `id` va en la URL, salvo en `update`). */
+export interface ICintaRequest {
+  texto: string;
+  activo: boolean;
+  orden: number;
+}
+
+/**
+ * Frases sugeridas para arrancar.
+ *
+ * ⚠️ NO son datos de fábrica: el back dejó la tabla `cinta_promocion` **vacía** a propósito y
+ * pidió que las diéramos de alta nosotros. La pantalla de administración ofrece cargarlas de
+ * un jalón, pero **solo cuando la lista está vacía** — si el botón estuviera siempre visible,
+ * un clic de más las duplicaría (cada carga hace `POST`, no reemplaza nada).
+ */
+export const CINTA_SUGERIDAS: string[] = [
+  'Bolsas',
+  'Blusas',
+  'Pantalones',
+  'Perfumes 10 ml',
+  'Envíos a todo México',
+  'Promos de temporada'
 ];

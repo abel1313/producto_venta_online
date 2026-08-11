@@ -19,7 +19,10 @@ export class LoadingInterceptor implements HttpInterceptor {
   // (`/redes-sociales/` se quitó 2026-08-05 junto con el feature de Facebook — al
   //  reactivarlo hay que volver a agregarlo, si no el overlay tapa toda la app durante
   //  los minutos que tarda la subida de un video).
-  private readonly skipUrls = ['/chatbot/'];
+  // `/v1/cinta/activos` va acá porque se pide en el arranque de CADA carga de la app: es un
+  // adorno y no tiene por qué tapar la pantalla con el overlay mientras responde. Las demás
+  // rutas de `/v1/cinta` (las del admin) NO se saltan — ahí sí es una acción del usuario.
+  private readonly skipUrls = ['/chatbot/', '/v1/cinta/activos'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.skipUrls.some(url => req.url.includes(url))) {

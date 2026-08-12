@@ -7423,3 +7423,64 @@ desde el front — confirmado con grep.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo contra QA.
+
+---
+
+## FIX — COMPARTIR POR WHATSAPP/FACEBOOK: LA VISTA PREVIA NO MOSTRABA NINGUNA IMAGEN (2026-08-12)
+
+**Hay que separar dos cosas que se confunden**, porque solo una estaba rota:
+
+| | Qué es | Estado |
+|---|---|---|
+| **Botón 📤 de la app** (`CompartirService`) | Manda **el archivo de la foto** por el menú del sistema | ✅ Ya funcionaba |
+| **Pegar el link** de un producto en WhatsApp | WhatsApp arma su tarjetita leyendo los meta tags de `index.html` | ❌ Sin imagen |
+
+### La vista previa del link nunca mostró foto — ni la genérica
+
+`og:image` apuntaba a `/assets/og-image.jpg`, y **ese archivo no existía**. Verificado contra
+producción: `GET https://shop.novedades-jade.com.mx/assets/og-image.jpg` → **404**.
+
+Dos problemas más en el mismo bloque:
+1. **La URL era relativa.** WhatsApp y Facebook piden la página desde SUS servidores, así que una
+   ruta como `/assets/...` no la resuelven — `og:image` tiene que ser absoluta (`https://...`).
+   Aunque el archivo hubiera existido, la tarjeta habría salido igual sin foto.
+2. **Faltaba `og:url`** (y `og:site_name`), que es lo que usan para canonicalizar la tarjeta.
+
+**Fix:** se creó `src/assets/og-image.jpg` (copia de `venta-bolsas.jpg`, 360 KB — por debajo del
+límite de ~600 KB que WhatsApp tolera para la vista previa) y se pasaron `og:image`/`twitter:image`
+a URL absoluta, más `og:url`, `og:site_name`, `og:image:type` y `og:image:alt`.
+
+⚠️ **Es una imagen FIJA, la misma para toda la tienda.** Compartir el link de una blusa muestra
+esa foto genérica, no la blusa. Que salga la foto del producto compartido **requiere render en
+servidor (SSR) o un servicio que sirva meta tags por producto**: los bots de WhatsApp/Facebook
+**no ejecutan JavaScript**, y este build es 100% cliente
+(`@angular-devkit/build-angular:browser`, sin `@angular/ssr` ni `@nguniversal`) — solo leen el
+`index.html` tal cual. El back lo confirmó por su lado y ofreció planearlo si se pide.
+
+### Bug del botón compartir en computadora
+
+`puedeCompartirArchivo()` preguntaba solo `navigator.share && navigator.canShare`, sin verificar
+**este archivo en concreto**. En Windows, Chrome y Edge sí exponen esas APIs pero varios no
+aceptan archivos → se entraba por la rama de móvil, `navigator.share({ files })` fallaba, y el
+`catch` terminaba **descargando la imagen sin avisar**: el admin daba clic en compartir y le
+aparecía un archivo en Descargas en vez del cuadro con la imagen para copiarla.
+
+**Fix:** `navigator.canShare({ files: [archivo] })`, que es la pregunta correcta.
+
+### Conectado el resolver público `varianteId → productoId`
+
+El back entregó `GET /tienda/v1/variante/{varianteId}/producto-id` → `{ data: { productoId } }`,
+público. `DetalleVarianteComponent` ya lo usa cuando el `productoId` no viene en la URL (link
+directo), con **`catchError` que cae a `getOne` como respaldo** mientras el endpoint termina de
+desplegarse en todos los ambientes — así funciona antes y después del deploy del back. Cuando
+esté en QA y prod, ese `catchError` se puede quitar.
+
+**Archivos modificados:**
+- `src/index.html` → bloque Open Graph corregido
+- `src/assets/og-image.jpg` → **archivo nuevo** (antes se referenciaba sin existir)
+- `src/app/shared/compartir.service.ts` → `puedeCompartirArchivo(archivo)`
+- `src/app/variante/service/variante.service.ts` → `resolverProductoId()`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → usa el resolver
+
+**Verificado:** `ng build --configuration=production` sin errores, y confirmado que el build de
+salida trae `dist/assets/og-image.jpg` y la URL absoluta en `dist/index.html`.

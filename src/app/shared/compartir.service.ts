@@ -30,7 +30,7 @@ export class CompartirService {
     const archivo = new File([blob], nombre, { type: blob.type });
 
     // ── Móvil: Web Share API con archivo ──────────────────────────────
-    if (this.puedeCompartirArchivo()) {
+    if (this.puedeCompartirArchivo(archivo)) {
       try {
         await navigator.share({
           files: [archivo],
@@ -83,8 +83,19 @@ export class CompartirService {
 
   // ── Helpers privados ───────────────────────────────────────────────
 
-  private puedeCompartirArchivo(): boolean {
-    return !!navigator.share && !!navigator.canShare;
+  /**
+   * Hay que preguntar por ESTE archivo en concreto, no solo si el navegador "sabe compartir".
+   *
+   * En Windows, Chrome y Edge sí exponen `navigator.share`/`canShare`, pero varios no aceptan
+   * archivos. Con el chequeo genérico anterior entrábamos por la rama de móvil igual,
+   * `navigator.share({ files })` fallaba, y el `catch` terminaba **descargando la imagen sin
+   * avisar** — el admin daba clic en compartir y le aparecía un archivo en Descargas, en vez
+   * del cuadro con la imagen para copiarla.
+   */
+  private puedeCompartirArchivo(archivo: File): boolean {
+    return !!navigator.share
+        && !!navigator.canShare
+        && navigator.canShare({ files: [archivo] });
   }
 
   private descargarArchivo(archivo: File): void {

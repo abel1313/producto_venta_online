@@ -55,9 +55,22 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
+  // ⚠️ ADMIN-only desde 2026-08-11 (devuelve la entidad cruda, con `precioCosto`). No usarlo
+  // desde ninguna pantalla pública — ver `resolverProductoId()` justo abajo.
   getOne(id: number): Observable<IVariante> {
     return this.http.get<{ data: IVariante }>(`${this.url}/v1/getOne/${id}`)
       .pipe(map(res => res.data));
+  }
+
+  /**
+   * Resuelve a qué producto pertenece una variante. **Público** — existe justamente para que la
+   * ficha de producto no tenga que llamar `getOne` (que ya es ADMIN-only) solo para conseguir
+   * este dato. Es lo único que hace falta cuando alguien entra por un link directo.
+   */
+  resolverProductoId(varianteId: number): Observable<number> {
+    return this.http
+      .get<{ data: { productoId: number } }>(`${this.url}/v1/variante/${varianteId}/producto-id`)
+      .pipe(map(res => res.data.productoId));
   }
 
   getPorProducto(productoId: number): Observable<IVarianteDto[]> {

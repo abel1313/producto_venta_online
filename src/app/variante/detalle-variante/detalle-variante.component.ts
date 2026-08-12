@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
@@ -105,22 +105,23 @@ export class DetalleVarianteComponent implements OnInit {
     const productoIdParam = params.get('productoId');
     const varianteIdParam = params.get('id');
 
-    // El catálogo y favoritos mandan el `productoId` en la URL a propósito, para NO tener que
+    // El catálogo y favoritos mandan el `productoId` en la URL a propósito, para no tener que
     // preguntárselo al back: `GET /tienda/v1/getOne/{id}` pasó a ser ADMIN-only (2026-08-11,
-    // devolvía la entidad cruda con `precioCosto`) y esta pantalla es pública. Llamarlo aquí
-    // le devuelve 401/403 a cualquier cliente y la ficha se queda vacía.
+    // devolvía la entidad cruda con `precioCosto`) y esta pantalla es pública.
     //
-    // El `getOne` solo queda como último recurso: link directo o marcador, sin haber pasado por
-    // el catálogo. Para admin funciona; para un cliente falla y por eso ahora se avisa en
-    // pantalla en vez de dejarla en blanco. El back está preparando un endpoint público que
-    // resuelva `varianteId → productoId` — cuando exista, se cambia aquí y este caso también
-    // queda cubierto.
+    // Cuando NO viene (link directo o marcador, típico link compartido por WhatsApp/Facebook)
+    // se resuelve con el endpoint público `resolverProductoId`. El `getOne` queda solo como
+    // respaldo mientras ese endpoint termina de desplegarse: hoy sigue funcionando para admin,
+    // y para un cliente falla mostrando aviso en vez de dejar la pantalla en blanco. Una vez
+    // que el resolver esté en todos los ambientes, este `catchError` se puede quitar.
     const productoIdConocido = productoIdParam ?? this.route.snapshot.queryParamMap.get('productoId');
 
     const productoId$ = productoIdConocido
       ? of(+productoIdConocido)
-      : this.varianteService.getOne(+varianteIdParam!).pipe(
-          switchMap(v => of(v.producto?.id!))
+      : this.varianteService.resolverProductoId(+varianteIdParam!).pipe(
+          catchError(() => this.varianteService.getOne(+varianteIdParam!).pipe(
+            switchMap(v => of(v.producto?.id!))
+          ))
         );
 
     productoId$.pipe(

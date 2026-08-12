@@ -779,3 +779,32 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   .dv-resena-form__textarea { background: #f9fafb; }
 }
 
+
+// Aviso cuando no se pudo resolver la ficha (link directo sin productoId, producto sin
+// variantes, o error de red). Antes esto no existía y la pantalla quedaba vacía.
+.dv-error {
+  max-width: 520px;
+  margin: 48px auto;
+  padding: 28px 24px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+
+  &__texto {
+    margin: 0 0 18px;
+    color: var(--app-text);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  &__btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+  }
+}

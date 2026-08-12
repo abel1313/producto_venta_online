@@ -1,3 +1,10 @@
+<!-- Sin esto, cualquier fallo al resolver la ficha dejaba la pantalla completamente en blanco:
+     todo el contenido cuelga del *ngIf de abajo. -->
+<div *ngIf="errorCarga && !varianteSeleccionada" class="dv-error">
+  <p class="dv-error__texto">{{ errorCarga }}</p>
+  <button class="dv-error__btn" (click)="volver()">Ir a la tienda</button>
+</div>
+
 <div *ngIf="varianteSeleccionada" class="dv-wrapper">
 
   <!-- Botón volver -->

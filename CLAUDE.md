@@ -7361,3 +7361,65 @@ refresque sin recargar la página.
 ⚠️ **No probado en vivo:** el back todavía no corre `migration_cinta_promocion.sql` en QA, así que
 los endpoints no responden. Hasta entonces la cinta no se va a ver — que es el comportamiento
 esperado (falla en silencio), no un bug.
+
+---
+
+## FIX — LA FICHA DE PRODUCTO LLAMABA A `getOne`, QUE PASÓ A SER ADMIN-ONLY (2026-08-12)
+
+**Reportado por el back** (repo compartido, 2026-08-11): cerraron `/tienda/getAll`,
+`/tienda/v1/getAll`, `/tienda/getOne/{id}` y `/tienda/v1/getOne/{id}` — antes eran públicos y
+devolvían la entidad `Variantes` cruda, que arrastra el `Producto` completo **incluidos
+`precioCosto` y `precioRebaja`**. Con `getAll?size=1000` y sin login se podía sacar el margen
+completo de la tienda. Pidieron avisar si alguna pantalla los usaba sin login.
+
+### Sí los usaba — y era la ficha de producto, que es pública
+
+`DetalleVarianteComponent` (`/tienda/detalle/:id`, **sin guard**) llamaba
+`GET /tienda/v1/getOne/{varianteId}` con un solo fin: averiguar a qué producto pertenece la
+variante, para después pedir `getPorProducto(productoId)` (que sigue público y es de donde sale
+todo lo que se pinta). Ni un precio, ni ningún otro campo de esa respuesta.
+
+Con el endpoint cerrado, a un cliente le devuelve 401/403 → sin `productoId` → **ficha vacía**.
+Y como el `subscribe` tenía `error: () => {}`, no se veía ni un mensaje: pantalla en blanco.
+
+**Verificado en vivo:** `QA → 401`, `PROD → 200` (el cierre todavía no estaba desplegado en
+producción). El back confirmó por escrito que **no promueve `qa → main` hasta que este fix esté
+arriba**.
+
+### Fix
+
+1. **El `productoId` viaja en la URL.** `BuscarComponent.irDetalle()` y
+   `FavoritosComponent.irDetalle()` navegan con `queryParams: { productoId }` — ya lo tienen en
+   `IVarianteResumen.productoId`, no cuesta nada. `DetalleVarianteComponent` lo lee
+   (`paramMap` primero, luego `queryParamMap`) y **solo llama a `getOne` si no lo tiene**.
+2. **El error se ve.** Nuevo campo `errorCarga` + bloque `.dv-error` en el template. Iba
+   obligado: **todo el contenido de esa pantalla cuelga de `*ngIf="varianteSeleccionada"`**, así
+   que cualquier fallo la dejaba literalmente en blanco. Con 401/403 el mensaje es específico
+   ("no pudimos abrir este producto desde un enlace directo, búscalo en la tienda").
+
+### ⏳ Lo que este fix NO cubre
+
+**El link directo o marcador** — entrar a `/tienda/detalle/{varianteId}` sin pasar por el
+catálogo, que es justo el caso de un link compartido por WhatsApp o Facebook. Ahí no hay de dónde
+sacar el `productoId` y sigue cayendo en `getOne` (funciona para admin, falla para cliente — ahora
+con mensaje en vez de pantalla blanca).
+
+El back ya está construyendo un endpoint público para eso; quedaron en pasar el request/response
+antes de que lo usemos. **Cuando exista, cambiar el fallback de `getOne` por ese endpoint** en
+`DetalleVarianteComponent.ngOnInit()` y este caso queda cerrado.
+
+### Sin riesgo en el resto
+
+`VarianteService.getAll()` no lo llama ningún componente (método muerto) y `/actuator` no se toca
+desde el front — confirmado con grep.
+
+**Archivos modificados:**
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → lee `productoId` de query
+  param, `getOne` solo como fallback, `errorCarga`
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → bloque `.dv-error`
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-error`
+- `src/app/variante/buscar/buscar.component.ts` → `irDetalle()` manda `productoId`
+- `src/app/favoritos/favoritos.component.ts` → `irDetalle()` manda `productoId`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo contra QA.

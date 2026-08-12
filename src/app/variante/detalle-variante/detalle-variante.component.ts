@@ -76,6 +76,9 @@ export class DetalleVarianteComponent implements OnInit {
   cargandoResenas = false;
   get miResena(): IResena | null { return this.resenas.find(r => r.esPropia) ?? null; }
 
+  /** Falla al resolver la ficha. Antes se tragaba en silencio y la pantalla quedaba en blanco. */
+  errorCarga: string | null = null;
+
   mostrarFormResena = false;
   editandoResenaId: number | null = null;
   formCalificacion = 5;
@@ -102,8 +105,20 @@ export class DetalleVarianteComponent implements OnInit {
     const productoIdParam = params.get('productoId');
     const varianteIdParam = params.get('id');
 
-    const productoId$ = productoIdParam
-      ? of(+productoIdParam)
+    // El catálogo y favoritos mandan el `productoId` en la URL a propósito, para NO tener que
+    // preguntárselo al back: `GET /tienda/v1/getOne/{id}` pasó a ser ADMIN-only (2026-08-11,
+    // devolvía la entidad cruda con `precioCosto`) y esta pantalla es pública. Llamarlo aquí
+    // le devuelve 401/403 a cualquier cliente y la ficha se queda vacía.
+    //
+    // El `getOne` solo queda como último recurso: link directo o marcador, sin haber pasado por
+    // el catálogo. Para admin funciona; para un cliente falla y por eso ahora se avisa en
+    // pantalla en vez de dejarla en blanco. El back está preparando un endpoint público que
+    // resuelva `varianteId → productoId` — cuando exista, se cambia aquí y este caso también
+    // queda cubierto.
+    const productoIdConocido = productoIdParam ?? this.route.snapshot.queryParamMap.get('productoId');
+
+    const productoId$ = productoIdConocido
+      ? of(+productoIdConocido)
       : this.varianteService.getOne(+varianteIdParam!).pipe(
           switchMap(v => of(v.producto?.id!))
         );
@@ -120,8 +135,13 @@ export class DetalleVarianteComponent implements OnInit {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
+        else this.errorCarga = 'Este producto ya no está disponible.';
       },
-      error: () => {}
+      error: err => {
+        this.errorCarga = (err?.status === 401 || err?.status === 403)
+          ? 'No pudimos abrir este producto desde un enlace directo. Búscalo en la tienda para verlo.'
+          : (err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cargar el producto.');
+      }
     });
   }
 

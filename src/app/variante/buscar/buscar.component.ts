@@ -389,8 +389,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.router.navigate(['/tienda/carrito']);
   }
 
+  // Se manda el `productoId` que ya viene en el resumen para que la ficha no tenga que pedirlo
+  // con `getOne`, que es ADMIN-only desde 2026-08-11 y le daría 403 a un cliente.
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/tienda/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id], {
+      queryParams: v.productoId ? { productoId: v.productoId } : {}
+    });
   }
 
   editarVariante(v: IVarianteResumen): void {

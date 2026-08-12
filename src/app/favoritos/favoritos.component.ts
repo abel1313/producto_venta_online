@@ -85,8 +85,12 @@ export class FavoritosComponent implements OnInit {
     return stock === 0 || this.cantidadEnCarrito(v) >= stock;
   }
 
+  // Igual que en el catálogo: se manda el `productoId` para que la ficha no llame a `getOne`
+  // (ADMIN-only desde 2026-08-11) y no se rompa para un cliente.
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/tienda/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id], {
+      queryParams: v.productoId ? { productoId: v.productoId } : {}
+    });
   }
 
   verCarrito(): void {

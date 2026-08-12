@@ -7484,3 +7484,29 @@ esté en QA y prod, ese `catchError` se puede quitar.
 
 **Verificado:** `ng build --configuration=production` sin errores, y confirmado que el build de
 salida trae `dist/assets/og-image.jpg` y la URL absoluta en `dist/index.html`.
+
+### Compartir en computadora: botón "📋 Copiar imagen" (2026-08-12)
+
+**Por qué no puede ser automático:** una página web **no puede** meterle la imagen a WhatsApp Web
+— son sitios distintos y el navegador lo prohíbe. No hay forma de saltarse eso. Lo más cerca es
+dejar la imagen en el portapapeles de un clic, para que el admin solo pegue con `Ctrl + V`.
+
+Antes el diálogo de escritorio solo decía "clic derecho → copiar imagen". Ahora, si el navegador
+lo soporta (`navigator.clipboard.write` + `ClipboardItem`), aparece un botón que la copia directo;
+si no, cae al texto de siempre.
+
+**Dos detalles que hacen que funcione, y sin los cuales falla en silencio:**
+
+1. **La copia va dentro del listener del clic del botón.** El navegador exige un gesto *reciente*
+   del usuario para escribir en el portapapeles, y el clic original del botón de compartir ya
+   expiró después de esperar la descarga de la imagen. Copiar fuera de ese listener tira
+   `NotAllowedError`.
+2. **Hay que convertir el JPEG a PNG** (`aPng()`, vía canvas). El portapapeles solo acepta
+   `image/png` para imágenes: pasarle el JPEG tal cual también tira `NotAllowedError`. Por eso el
+   helper existe aunque parezca un rodeo innecesario.
+
+**Archivo modificado:** `src/app/shared/compartir.service.ts` → `didOpen` con el botón, `aPng()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+⚠️ No probado en un navegador real — el comportamiento del portapapeles varía por navegador y el
+botón está protegido con `try/catch` que cae al mensaje de clic derecho si falla.

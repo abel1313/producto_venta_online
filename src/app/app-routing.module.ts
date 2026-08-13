@@ -101,11 +101,13 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
-    // Flores eternas — catálogos de administración. La pantalla del cliente (configurador del
-    // ramo) todavía no existe: falta el endpoint del back para confirmar el ramo como pedido.
+    // Flores eternas — el módulo mezcla pantallas admin (catálogos) y una pública (vitrina de
+    // ramos armados), así que el guard de admin ya NO va aquí arriba: vive solo en la ruta
+    // 'catalogos' dentro de flores-routing.module.ts. Mismo nivel que "Tienda" — sin AuthGuard,
+    // un visitante sin sesión también puede ver los ramos armados.
     path: 'flores',
     loadChildren: () => import('./flores/flores.module').then(m => m.FloresModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [CarritoGuard]
   },
   {
     path: 'promociones',

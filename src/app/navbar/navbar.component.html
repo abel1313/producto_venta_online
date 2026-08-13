@@ -186,6 +186,15 @@
       <span class="sb-label">Favoritos</span>
     </a>
 
+    <!-- Ramos de flores eternas (todos los usuarios logueados) — vitrina pública, distinta del
+         accordion "Flores eternas" de arriba, que es solo admin (catálogos de configuración) -->
+    <a class="sb-item" *ngIf="!isAnonymous"
+       routerLink="flores/ramos" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🌹</span>
+      <span class="sb-label">Ramos de flores</span>
+    </a>
+
     <!-- Chat (usuarios logueados) -->
     <a class="sb-item" *ngIf="!isAnonymous && !isAdminUser"
        routerLink="chat" routerLinkActive="sb-item--active"

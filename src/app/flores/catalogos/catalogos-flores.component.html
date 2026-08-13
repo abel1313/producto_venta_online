@@ -219,6 +219,12 @@
                title="A partir de cuántas flores se agrega solo al cobro"
                [(ngModel)]="nuevoAccesorio.umbralActivacion">
       </div>
+      <div class="fl-field" *ngIf="nuevoAccesorio.esPapel">
+        <label class="fl-lbl">Flores por pliego</label>
+        <input class="fl-input fl-input--num" type="number" min="1" placeholder="Vacío = precio fijo"
+               title="El precio de arriba pasa a ser 'precio por pliego'. Vacío = precio fijo único, como antes."
+               [(ngModel)]="nuevoAccesorio.floresPorPliego">
+      </div>
       <div class="fl-field">
         <label class="fl-lbl">Opciones</label>
         <div class="fl-checks">
@@ -235,6 +241,11 @@
               (click)="agregarAccesorio()">+ Agregar</button>
     </div>
 
+    <p class="fl-hint" *ngIf="nuevoAccesorio.esPapel">
+      Con «flores por pliego» configurado, el precio de arriba se cobra <b>por cada pliego</b>
+      (redondeando siempre hacia arriba), no como monto fijo único.
+    </p>
+
     <p class="fl-vacio" *ngIf="accesorios.length === 0">Todavía no hay accesorios.</p>
 
     <div class="fl-fila" *ngFor="let a of accesorios" [class.fl-fila--off]="!a.activo">
@@ -244,8 +255,9 @@
           <span class="fl-badge" *ngIf="a.esPapel">papel</span>
           <span class="fl-badge fl-badge--alt" *ngIf="a.admiteTextoLibre">texto libre</span>
           <span class="fl-badge" *ngIf="a.umbralActivacion">automático desde {{ a.umbralActivacion }}</span>
+          <span class="fl-badge" *ngIf="a.esPapel && a.floresPorPliego">{{ a.floresPorPliego }} flores/pliego</span>
         </span>
-        <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}</span>
+        <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}{{ a.esPapel && a.floresPorPliego ? ' /pliego' : '' }}</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(a)">✏️</button>
           <button class="fl-ico" [disabled]="guardando"
@@ -268,6 +280,12 @@
           <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
                  title="A partir de cuántas flores se agrega solo al cobro"
                  [(ngModel)]="editAccesorio.umbralActivacion">
+        </div>
+        <div class="fl-field" *ngIf="editAccesorio.esPapel">
+          <label class="fl-lbl">Flores por pliego</label>
+          <input class="fl-input fl-input--num" type="number" min="1" placeholder="Vacío = precio fijo"
+                 title="El precio de arriba pasa a ser 'precio por pliego'. Vacío = precio fijo único, como antes."
+                 [(ngModel)]="editAccesorio.floresPorPliego">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>

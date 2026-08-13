@@ -32,7 +32,7 @@ export class CatalogosFloresComponent implements OnInit {
   nuevoTipo       = { nombre: '', precioPorFlor: null as number | null };
   nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null };
   nuevoColor      = { tipoFlorId: 0, nombre: '', stock: null as number | null };
-  nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null };
+  nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null, floresPorPliego: null as number | null };
   nuevaFrase      = { texto: '', precio: null as number | null };
 
   // Edición en línea
@@ -127,7 +127,7 @@ export class CatalogosFloresComponent implements OnInit {
     if (!n || (this.nuevoAccesorio.precio ?? 0) < 0 || this.guardando) return;
     this.ejecutar(
       this.flores.accesorioSave({ ...this.nuevoAccesorio, precio: this.nuevoAccesorio.precio ?? 0, nombre: n, activo: true }),
-      () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null }; },
+      () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null, floresPorPliego: null }; },
       'No se pudo agregar el accesorio.'
     );
   }

@@ -7736,3 +7736,115 @@ etiqueta aparte. Lo ideal, ambas.
 **Verificado visualmente** con Playwright sobre una vitrina estática del template real
 (`ng build` compila igual con o sin etiquetas — esto no lo detecta el build, es la misma lección
 de "ng build no valida diseño").
+
+---
+
+## FLORES ETERNAS — PRECIO DEL PAPEL POR PLIEGO EN EL CATÁLOGO DE ACCESORIOS (2026-08-13)
+
+> Conecta el contrato del back documentado en `## 🟡 BACK — el precio del papel ahora escala con
+> la cantidad de flores...` del repo compartido. Migración `migration_flores_eternas_papel_pliego.sql`
+> ya corrida en QA y prod (confirmado por el dueño).
+
+**Qué cambió:** `AccesorioRamo` gana `floresPorPliego: number | null` — solo aplica al accesorio
+marcado `esPapel=true`. Configurado, `precio` deja de ser un monto fijo y pasa a significar
+**precio por pliego**: el costo real es `ceil(cantidadFlores / floresPorPliego) × precio` (un
+pliego empezado se cobra completo). `null` = comportamiento de antes, precio fijo único sin
+importar la cantidad — 100% retrocompatible.
+
+**Front — pestaña 🎀 Accesorios de `catalogos-flores` (`/flores/catalogos`):**
+- Nuevo campo "Flores por pliego" en el form de alta y en la edición inline, **visible solo
+  cuando `esPapel` está marcado** (no aplica a ningún otro accesorio).
+- Badge `{{ floresPorPliego }} flores/pliego` + sufijo `/pliego` en el precio de la fila, cuando
+  aplica.
+- `ICalcularPrecioResponse` e `IRamoArmado` (`flores.model.ts`) ganan `pliegosPapel` y
+  `precioUnitarioPapel` — todavía sin consumir en ninguna pantalla porque el configurador del
+  cliente y la pantalla de Ramos armados no existen aún (ver pendientes más abajo).
+
+**⚠️ Advertencia dejada documentada en el modelo, para cuando se arme el configurador del
+cliente:** al mandar la línea del papel en `POST /v1/pedidos/savePedido`, hay que usar
+`cantidad = pliegosPapel ?? 1` y `precioUnitario = precioUnitarioPapel ?? precioPapel` — **nunca**
+`precioUnitario = precioPapel` (el total ya multiplicado) cuando `pliegosPapel` no es `null`. El
+back valida que `precioUnitario` coincida exacto con el precio de catálogo del producto interno
+(que ahora es el precio *por pliego*), y rechaza el pedido si no coincide.
+
+**Acción pendiente del dueño en QA/prod** (no es del front): editar el accesorio marcado como
+papel y ponerle `floresPorPliego`; y volver a guardar (sin cambios) cualquier `RamoArmado` que ya
+existiera antes de este cambio, porque quedó con `precioPapel`/`precioTotal` congelados con la
+fórmula vieja.
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IAccesorioRamo.floresPorPliego`,
+  `ICalcularPrecioResponse`/`IRamoArmado` con `pliegosPapel`/`precioUnitarioPapel`
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → `nuevoAccesorio.floresPorPliego`
+- `src/app/flores/catalogos/catalogos-flores.component.html` → campo condicional + badge
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### Aclaración pendiente — modelo de configuración vs. flujo del cliente
+
+El dueño preguntó si el flujo va a ser: él configura las flores que lleva, los accesorios y el
+precio de cada flor y de las demás cosas que puede llevar el ramo — **confirmado que sí**, así
+es como ya está: `Tipos de flor` (especie + precio por flor), `Colores` (stock por color, hereda
+precio de la especie), `Accesorios` (cada uno con su propio precio, uno puede ser "el papel"),
+`Frases de listón` (precio por frase). Eso es **Flujo A** — el cliente arma su propio ramo desde
+esos catálogos, con el total calculado en vivo por `POST /v1/flores/calcular-precio`.
+
+Aparte existe **Flujo B**: el dueño también puede preconfigurar `RamoArmado`, ramos completos ya
+armados con precio fijo, para que el cliente simplemente elija uno sin armar nada — el dueño
+confirmó que YA corrió las migraciones y puede dar de alta ramos armados, pero preguntó **dónde
+se le muestran al cliente esos ramos ya armados** (en la tienda, o dentro del propio configurador
+como una opción rápida). El dueño eligió empezar por esta pieza (Flujo B) — ver sección siguiente,
+ya construida. El configurador del cliente (Flujo A, "arma tu propio ramo") sigue sin construirse.
+
+---
+
+## FLORES ETERNAS — VITRINA PÚBLICA DE RAMOS ARMADOS (Flujo B) (2026-08-13)
+
+**Ruta pública nueva:** `/flores/ramos` → `VitrinaFloresComponent`. Lista los `RamoArmado`
+activos (`GET /v1/ramos-armados/activos`, paginado) en un grid de cards — imagen (o placeholder
+🌹 si `imagenUrl` es `null`), nombre, especie+color+cantidad, precio total, badges de "papel
+incluido" y "N accesorio(s)". Clic en "Ver detalle" abre un modal con el desglose línea por línea
+(flores, papel —con el desglose de pliegos si `pliegosPapel`/`precioUnitarioPapel` vienen, ver
+sección de arriba—, cada accesorio, total).
+
+**⚠️ Sin botón de compra/carrito todavía, a propósito.** `RamoArmado` no expone ningún
+`varianteId` resuelto (ni del color, ni del papel, ni de los accesorios) — esos solo se obtienen
+llamando `POST /v1/flores/calcular-precio` en el momento. Conectar esto al carrito/checkout real
+es una pieza aparte y más riesgosa (toca `savePedido`, dinero real) — se dejó fuera de esta
+entrega para no adivinar la arquitectura de cobro sin confirmarla primero. Lo que hay hoy en su
+lugar: botón **"💬 Pedir"** que abre WhatsApp del negocio (mismo dato — `whatsappUrl` — que ya
+alimenta el QR de los tickets, vía `NegocioService.getContactosPublicos()`) o, si no está
+configurado, un aviso genérico con el nombre y precio del ramo.
+
+**Guards — cambio de estructura:** antes `/flores` completo (módulo `FloresModule`) tenía
+`AdminGuardGuard` en `app-routing.module.ts`, porque solo existía la pantalla de catálogos. Con
+la vitrina pública agregada, el guard de admin se movió **adentro** de
+`flores-routing.module.ts`, solo en la ruta `catalogos` — el módulo en sí ahora solo lleva
+`CarritoGuard` (mismo nivel que "Tienda": ni admin ni login son requisito, un visitante anónimo
+también puede ver los ramos armados). El default `'' → redirectTo` cambió de `'catalogos'` a
+`'ramos'`, porque ahora el tráfico mayoritario de esa ruta es del cliente, no del admin (el link
+del sidebar admin sigue apuntando directo a `flores/catalogos`, así que esto no le afecta).
+
+**Menú:** nuevo link directo "🌹 Ramos de flores" (`flores/ramos`), visible para
+`!isAnonymous` — mismo patrón que Promociones/Favoritos, fuera del accordion admin "Flores
+eternas" (que se queda con un solo ítem, "🌸 Catálogos", intacto).
+
+**Archivos nuevos:**
+- `src/app/flores/vitrina/vitrina-flores.component.ts/.html/.scss` (BEM `vr-`)
+
+**Archivos modificados:**
+- `src/app/app-routing.module.ts` → guard de `/flores` bajado a `[CarritoGuard]`
+- `src/app/flores/flores-routing.module.ts` → ruta `ramos` pública, `AdminGuardGuard` movido a
+  `catalogos`, default `'' → 'ramos'`
+- `src/app/flores/flores.module.ts` → declara `VitrinaFloresComponent`
+- `src/app/navbar/navbar.component.html` → link "🌹 Ramos de flores"
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+capturas Playwright (mock de `GET /v1/ramos-armados/activos` + `GET /v1/negocio/contactos`) en
+claro y oscuro — grid, badges, y el modal de detalle con el desglose de pliegos se ven correctos
+en ambos temas, sin errores de consola atribuibles al cambio.
+
+**Pendiente:** el configurador del cliente (Flujo A) y la integración de compra real de un
+`RamoArmado` (Flujo B, "Pedir" → carrito/checkout en vez de WhatsApp) — ambas quedaron fuera de
+esta entrega, son decisiones de arquitectura de cobro que hay que confirmar con el dueño antes de
+construir.

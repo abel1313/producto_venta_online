@@ -29,11 +29,11 @@ export class CatalogosFloresComponent implements OnInit {
   error: string | null = null;
 
   // Altas
-  nuevoTipo       = { nombre: '', precioPorFlor: 0 };
-  nuevaCantidad   = { tipoFlorId: 0, cantidad: 0 };
-  nuevoColor      = { tipoFlorId: 0, nombre: '', stock: 0 };
-  nuevoAccesorio  = { nombre: '', precio: 0, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null };
-  nuevaFrase      = { texto: '', precio: 0 };
+  nuevoTipo       = { nombre: '', precioPorFlor: null as number | null };
+  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null };
+  nuevoColor      = { tipoFlorId: 0, nombre: '', stock: null as number | null };
+  nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null };
+  nuevaFrase      = { texto: '', precio: null as number | null };
 
   // Edición en línea
   editandoId: number | null = null;
@@ -94,10 +94,10 @@ export class CatalogosFloresComponent implements OnInit {
 
   agregarTipo(): void {
     const n = this.nuevoTipo.nombre.trim();
-    if (!n || this.nuevoTipo.precioPorFlor <= 0 || this.guardando) return;
+    if (!n || !this.nuevoTipo.precioPorFlor || this.nuevoTipo.precioPorFlor <= 0 || this.guardando) return;
     this.ejecutar(
       this.flores.tipoSave({ nombre: n, precioPorFlor: this.nuevoTipo.precioPorFlor, activo: true }),
-      () => { this.nuevoTipo = { nombre: '', precioPorFlor: 0 }; },
+      () => { this.nuevoTipo = { nombre: '', precioPorFlor: null }; },
       'No se pudo agregar el tipo de flor.'
     );
   }
@@ -106,38 +106,38 @@ export class CatalogosFloresComponent implements OnInit {
     const n = this.nuevoColor.nombre.trim();
     if (!this.nuevoColor.tipoFlorId || !n || this.guardando) return;
     this.ejecutar(
-      this.flores.colorSave({ tipoFlor: { id: this.nuevoColor.tipoFlorId }, nombre: n, stock: this.nuevoColor.stock, activo: true }),
-      () => { this.nuevoColor = { tipoFlorId: 0, nombre: '', stock: 0 }; },
+      this.flores.colorSave({ tipoFlor: { id: this.nuevoColor.tipoFlorId }, nombre: n, stock: this.nuevoColor.stock ?? 0, activo: true }),
+      () => { this.nuevoColor = { tipoFlorId: 0, nombre: '', stock: null }; },
       'No se pudo agregar el color.'
     );
   }
 
   agregarCantidad(): void {
     const { tipoFlorId, cantidad } = this.nuevaCantidad;
-    if (!tipoFlorId || cantidad <= 0 || this.guardando) return;
+    if (!tipoFlorId || !cantidad || cantidad <= 0 || this.guardando) return;
     this.ejecutar(
       this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, activo: true }),
-      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: 0 }; },
+      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null }; },
       'No se pudo agregar la cantidad.'
     );
   }
 
   agregarAccesorio(): void {
     const n = this.nuevoAccesorio.nombre.trim();
-    if (!n || this.nuevoAccesorio.precio < 0 || this.guardando) return;
+    if (!n || (this.nuevoAccesorio.precio ?? 0) < 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.accesorioSave({ ...this.nuevoAccesorio, nombre: n, activo: true }),
-      () => { this.nuevoAccesorio = { nombre: '', precio: 0, admiteTextoLibre: false, esPapel: false, umbralActivacion: null }; },
+      this.flores.accesorioSave({ ...this.nuevoAccesorio, precio: this.nuevoAccesorio.precio ?? 0, nombre: n, activo: true }),
+      () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null }; },
       'No se pudo agregar el accesorio.'
     );
   }
 
   agregarFrase(): void {
     const t = this.nuevaFrase.texto.trim();
-    if (!t || this.nuevaFrase.precio < 0 || this.guardando) return;
+    if (!t || (this.nuevaFrase.precio ?? 0) < 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.fraseSave({ texto: t, precio: this.nuevaFrase.precio, activo: true }),
-      () => { this.nuevaFrase = { texto: '', precio: 0 }; },
+      this.flores.fraseSave({ texto: t, precio: this.nuevaFrase.precio ?? 0, activo: true }),
+      () => { this.nuevaFrase = { texto: '', precio: null }; },
       'No se pudo agregar la frase.'
     );
   }

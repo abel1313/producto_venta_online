@@ -7712,3 +7712,27 @@ El contrato ya está completo — no quedan dudas abiertas con el back. Falta co
 ⚠️ **No probado contra QA:** al terminar, el backend de QA estaba respondiendo 502 (desplegando,
 presumiblemente la migración `migration_flores_eternas_multicolor.sql`, que el back reportó como
 pendiente). Sin esa migración no existen `ColorFlor`, `umbralActivacion` ni `esCatalogoInterno`.
+
+### FIX — los formularios se veían como casillas con "0" sin decir qué eran (2026-08-13)
+
+**Reportado al probar en QA:** *"dice tipo flor bien, después dice 0 pero no dice qué… en color
+lo mismo, cantidad dice 0 0 que no sé qué"*.
+
+**Causa:** cada campo se apoyaba únicamente en su `placeholder` para identificarse, pero los
+numéricos arrancaban con valor `0` — y **el placeholder solo se ve cuando el campo está vacío**.
+Resultado: filas de casillas con "0" y ninguna pista de qué era cada una.
+
+**Fix, dos partes:**
+1. **Etiqueta visible por campo** (`.fl-field` + `.fl-lbl`) — no desaparece al escribir, que es
+   justo lo que fallaba del placeholder.
+2. **Los numéricos arrancan vacíos** (`null`, no `0`), así el ejemplo en gris (`0.00`, `Ej. 12`,
+   `Vacío = nunca`) sí se ve. Las guardas de validación pasaron a `!campo` en vez de `campo <= 0`,
+   y al guardar se manda `?? 0` donde el 0 es un valor legítimo (stock, precio de accesorio).
+
+**Lección aplicable a cualquier formulario nuevo:** un `placeholder` NO sirve como etiqueta en un
+campo numérico inicializado en 0 — nunca se llega a ver. O se deja el campo vacío, o se pone
+etiqueta aparte. Lo ideal, ambas.
+
+**Verificado visualmente** con Playwright sobre una vitrina estática del template real
+(`ng build` compila igual con o sin etiquetas — esto no lo detecta el build, es la misma lección
+de "ng build no valida diseño").

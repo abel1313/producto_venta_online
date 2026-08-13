@@ -22,12 +22,23 @@
 
   <!-- ── TIPOS DE FLOR ─────────────────────────────────────────────── -->
   <div class="fl-card" *ngIf="tab === 'tipos' && !cargando">
+    <p class="fl-hint">
+      La especie define el precio por flor y qué cantidades forman bien el círculo. El color se
+      configura aparte, en la pestaña «Colores».
+    </p>
+
     <div class="fl-add">
-      <input class="fl-input" type="text" placeholder="Nombre (ej. Rosa eterna)" [(ngModel)]="nuevoTipo.nombre">
-      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio por flor"
-             [(ngModel)]="nuevoTipo.precioPorFlor">
+      <div class="fl-field">
+        <label class="fl-lbl">Nombre de la especie</label>
+        <input class="fl-input" type="text" placeholder="Ej. Rosa eterna" [(ngModel)]="nuevoTipo.nombre">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Precio por flor ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="0.00"
+               [(ngModel)]="nuevoTipo.precioPorFlor">
+      </div>
       <button class="fl-btn fl-btn--primary"
-              [disabled]="!nuevoTipo.nombre.trim() || nuevoTipo.precioPorFlor <= 0 || guardando"
+              [disabled]="!nuevoTipo.nombre.trim() || !nuevoTipo.precioPorFlor || guardando"
               (click)="agregarTipo()">+ Agregar</button>
     </div>
 
@@ -65,12 +76,21 @@
     </p>
 
     <div class="fl-add" *ngIf="tiposActivos.length > 0">
-      <select class="fl-input" [(ngModel)]="nuevoColor.tipoFlorId">
-        <option [ngValue]="0" disabled>Especie…</option>
-        <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
-      </select>
-      <input class="fl-input" type="text" placeholder="Color (ej. Rojo)" [(ngModel)]="nuevoColor.nombre">
-      <input class="fl-input fl-input--num" type="number" min="0" placeholder="Existencias" [(ngModel)]="nuevoColor.stock">
+      <div class="fl-field">
+        <label class="fl-lbl">Especie</label>
+        <select class="fl-input" [(ngModel)]="nuevoColor.tipoFlorId">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
+        </select>
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Color</label>
+        <input class="fl-input" type="text" placeholder="Ej. Rojo" [(ngModel)]="nuevoColor.nombre">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Existencias</label>
+        <input class="fl-input fl-input--num" type="number" min="0" placeholder="0" [(ngModel)]="nuevoColor.stock">
+      </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoColor.tipoFlorId || !nuevoColor.nombre.trim() || guardando"
               (click)="agregarColor()">+ Agregar</button>
@@ -113,14 +133,20 @@
     </p>
 
     <div class="fl-add" *ngIf="tiposActivos.length > 0">
-      <select class="fl-input" [(ngModel)]="nuevaCantidad.tipoFlorId">
-        <option [ngValue]="0" disabled>Tipo de flor…</option>
-        <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
-      </select>
-      <input class="fl-input fl-input--num" type="number" min="1" placeholder="Cantidad"
-             [(ngModel)]="nuevaCantidad.cantidad">
+      <div class="fl-field">
+        <label class="fl-lbl">Especie</label>
+        <select class="fl-input" [(ngModel)]="nuevaCantidad.tipoFlorId">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
+        </select>
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Cuántas flores</label>
+        <input class="fl-input fl-input--num" type="number" min="1" placeholder="Ej. 12"
+               [(ngModel)]="nuevaCantidad.cantidad">
+      </div>
       <button class="fl-btn fl-btn--primary"
-              [disabled]="!nuevaCantidad.tipoFlorId || nuevaCantidad.cantidad <= 0 || guardando"
+              [disabled]="!nuevaCantidad.tipoFlorId || !nuevaCantidad.cantidad || guardando"
               (click)="agregarCantidad()">+ Agregar</button>
     </div>
 
@@ -163,18 +189,32 @@
     </p>
 
     <div class="fl-add">
-      <input class="fl-input" type="text" placeholder="Nombre (ej. Corona)" [(ngModel)]="nuevoAccesorio.nombre">
-      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio"
-             [(ngModel)]="nuevoAccesorio.precio">
-      <label class="fl-check">
-        <input type="checkbox" [(ngModel)]="nuevoAccesorio.admiteTextoLibre"> Texto libre
-      </label>
-      <label class="fl-check" [class.fl-check--off]="yaHayPapel">
-        <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
-      </label>
-      <input class="fl-input fl-input--num" type="number" min="0" placeholder="Desde (opcional)"
-             title="A partir de cuántas flores se agrega solo al cobro"
-             [(ngModel)]="nuevoAccesorio.umbralActivacion">
+      <div class="fl-field">
+        <label class="fl-lbl">Nombre</label>
+        <input class="fl-input" type="text" placeholder="Ej. Corona" [(ngModel)]="nuevoAccesorio.nombre">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Precio ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="0.00"
+               [(ngModel)]="nuevoAccesorio.precio">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Se cobra solo desde</label>
+        <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
+               title="A partir de cuántas flores se agrega solo al cobro"
+               [(ngModel)]="nuevoAccesorio.umbralActivacion">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Opciones</label>
+        <div class="fl-checks">
+          <label class="fl-check">
+            <input type="checkbox" [(ngModel)]="nuevoAccesorio.admiteTextoLibre"> Texto libre
+          </label>
+          <label class="fl-check" [class.fl-check--off]="yaHayPapel">
+            <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
+          </label>
+        </div>
+      </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoAccesorio.nombre.trim() || guardando"
               (click)="agregarAccesorio()">+ Agregar</button>
@@ -220,9 +260,15 @@
     </p>
 
     <div class="fl-add">
-      <input class="fl-input" type="text" placeholder="Frase (ej. Feliz cumpleaños)" [(ngModel)]="nuevaFrase.texto">
-      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio"
-             [(ngModel)]="nuevaFrase.precio">
+      <div class="fl-field">
+        <label class="fl-lbl">Frase</label>
+        <input class="fl-input" type="text" placeholder="Ej. Feliz cumpleaños" [(ngModel)]="nuevaFrase.texto">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Precio ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="0.00"
+               [(ngModel)]="nuevaFrase.precio">
+      </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevaFrase.texto.trim() || guardando"
               (click)="agregarFrase()">+ Agregar</button>

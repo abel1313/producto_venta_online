@@ -198,8 +198,10 @@
   <!-- ── ACCESORIOS ────────────────────────────────────────────────── -->
   <div class="fl-card" *ngIf="tab === 'accesorios' && !cargando">
     <p class="fl-hint">
-      El accesorio marcado como <b>papel</b> se cobra automáticamente cuando el ramo pasa del
-      número que pongas en <b>«desde»</b>. Déjalo vacío para que nunca se agregue solo. Solo puede
+      Aquí solo se da de alta el accesorio y su precio — el auto-agregado por cantidad de flores
+      solo existe para el que marques como <b>«Es el papel»</b> (los demás son opcionales, se
+      eligen a mano al armar el ramo). Marca esa casilla primero para ver los 2 campos que
+      dependen de ella: <b>«Se cobra solo desde»</b> y <b>«Flores por pliego»</b>. Solo puede
       haber un accesorio marcado como papel.
     </p>
 
@@ -214,6 +216,17 @@
                [(ngModel)]="nuevoAccesorio.precio">
       </div>
       <div class="fl-field">
+        <label class="fl-lbl">Opciones</label>
+        <div class="fl-checks">
+          <label class="fl-check">
+            <input type="checkbox" [(ngModel)]="nuevoAccesorio.admiteTextoLibre"> Texto libre
+          </label>
+          <label class="fl-check" [class.fl-check--off]="yaHayPapel">
+            <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
+          </label>
+        </div>
+      </div>
+      <div class="fl-field" *ngIf="nuevoAccesorio.esPapel">
         <label class="fl-lbl">Se cobra solo desde</label>
         <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
                title="A partir de cuántas flores se agrega solo al cobro"
@@ -224,17 +237,6 @@
         <input class="fl-input fl-input--num" type="number" min="1" placeholder="Vacío = precio fijo"
                title="El precio de arriba pasa a ser 'precio por pliego'. Vacío = precio fijo único, como antes."
                [(ngModel)]="nuevoAccesorio.floresPorPliego">
-      </div>
-      <div class="fl-field">
-        <label class="fl-lbl">Opciones</label>
-        <div class="fl-checks">
-          <label class="fl-check">
-            <input type="checkbox" [(ngModel)]="nuevoAccesorio.admiteTextoLibre"> Texto libre
-          </label>
-          <label class="fl-check" [class.fl-check--off]="yaHayPapel">
-            <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
-          </label>
-        </div>
       </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoAccesorio.nombre.trim() || guardando"
@@ -254,7 +256,7 @@
           {{ a.nombre }}
           <span class="fl-badge" *ngIf="a.esPapel">papel</span>
           <span class="fl-badge fl-badge--alt" *ngIf="a.admiteTextoLibre">texto libre</span>
-          <span class="fl-badge" *ngIf="a.umbralActivacion">automático desde {{ a.umbralActivacion }}</span>
+          <span class="fl-badge" *ngIf="a.esPapel && a.umbralActivacion">automático desde {{ a.umbralActivacion }}</span>
           <span class="fl-badge" *ngIf="a.esPapel && a.floresPorPliego">{{ a.floresPorPliego }} flores/pliego</span>
         </span>
         <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}{{ a.esPapel && a.floresPorPliego ? ' /pliego' : '' }}</span>
@@ -276,6 +278,11 @@
           <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editAccesorio.precio">
         </div>
         <div class="fl-field">
+          <label class="fl-check">
+            <input type="checkbox" [(ngModel)]="editAccesorio.esPapel"> Es el papel
+          </label>
+        </div>
+        <div class="fl-field" *ngIf="editAccesorio.esPapel">
           <label class="fl-lbl">Se cobra solo desde</label>
           <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
                  title="A partir de cuántas flores se agrega solo al cobro"

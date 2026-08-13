@@ -8057,3 +8057,71 @@ sesión vía `ng.getComponent()`, hover + click reales sobre el sidebar — no e
 lado, solo se abre el acordeón) confirmando: como admin aparecen los 4 ítems juntos; como cliente
 logueado (sin rol admin) aparecen solo los 2 primeros, sin ver "Catálogos" ni "Administrar ramos
 armados".
+
+---
+
+## FLORES ETERNAS — "SE COBRA SOLO DESDE" SOLO TENÍA EFECTO EN EL PAPEL, PERO SE PODÍA CONFIGURAR EN CUALQUIER ACCESORIO (2026-08-13)
+
+> El dueño mandó una captura de "Catálogos → Accesorios" con "corona" marcada a la vez como
+> `PAPEL` y `AUTOMÁTICO DESDE 10`, y "pasta" con `AUTOMÁTICO DESDE 1` pero sin la marca de papel.
+> Confirmó por escrito con el back
+> (`CAMBIOS_FRONT.md`, sección "🟢 Umbral del papel"): *"El accesorio marcado `esPapel` se agrega
+> solo cuando `cantidadFinal > umbralActivacion`"* — **solo ese accesorio**, ninguno más. El campo
+> nunca fue genérico por diseño del back.
+
+**Causa raíz — el formulario dejaba configurar el umbral en CUALQUIER accesorio, sin avisar que
+no serviría de nada ahí.** El dueño puso `umbralActivacion=1` en "pasta" (sin marcar `esPapel`)
+esperando que se auto-agregara — nunca iba a pasar, el campo se guarda pero el back lo ignora
+para cualquier accesorio que no sea el marcado papel. Y para lograr que "corona" sí se
+auto-agregara, terminó marcándola como `esPapel=true` — lo cual tiene un efecto colateral real,
+no solo de nombre: el sistema empieza a tratar a "corona" como si fuera el envoltorio en todos
+lados (resumen del cliente, ticket, reportes dirían "📄 Papel" en vez de "Corona").
+
+**Aclarado con el dueño:** el auto-agregado por cantidad de flores **no va en Catálogos** — va
+en el momento de armar el ramo (ya sea "Ramos armados" admin o "Arma tu ramo" del cliente), que
+es exactamente donde ya está implementado (`papelForzado` en ambos componentes, fuerza el
+checkbox del papel cuando la cantidad cruza el umbral). Catálogos → Accesorios es solo para dar
+de alta accesorios sueltos con su precio — el resto (corona, luces, etc.) se eligen a mano al
+armar el ramo, sin umbral propio, salvo que el back agregue esa función más adelante (se anotó
+como consulta al back — ver `CAMBIOS_FRONT.md` del repo compartido).
+
+**Fix — los 2 campos que solo sirven para el papel («Se cobra solo desde» y «Flores por
+pliego») ahora solo aparecen cuando la casilla «Es el papel» está marcada** (antes «Se cobra
+solo desde» estaba siempre visible, aunque solo «Flores por pliego» ya tenía esa protección) —
+tanto en el formulario de alta como en el de edición en línea. Si se desmarca «Es el papel», el
+front limpia esos 2 valores antes de guardar (`agregarAccesorio()`/`guardarEdicion()`), para no
+dejar un número guardado sin efecto que confunda después. El badge «automático desde N» de la
+lista también se corrigió para solo mostrarse en el accesorio que de verdad tiene ese
+comportamiento (`*ngIf="a.esPapel && a.umbralActivacion"`, antes era `*ngIf="a.umbralActivacion"`
+a secas — por eso "pasta" mostraba el badge aunque no hiciera nada).
+
+**Bug adicional encontrado de paso — el formulario de EDICIÓN no tenía forma de cambiar «Es el
+papel».** Ese checkbox solo existía en el formulario de ALTA — una vez creado el accesorio, no
+había manera de corregir el dato desde la UI (habría que borrar y crear de nuevo). Se agregó el
+checkbox también al formulario de edición — es lo que le permite al dueño ahora desmarcar
+"corona" sin perder el resto de sus datos.
+
+**Pendiente — el dueño no confirmó todavía si corrige el dato de "corona"/"pasta" ya cargado en
+QA** (se le explicó el problema y quedó en verlo, no se tocó ningún dato desde aquí).
+
+**Consulta aparte al back, ya escrita en el repo compartido pero sin subir (pendiente de que el
+dueño confirme el push):** por qué `POST /v1/flores/validar-cantidad` devolvió `valida: true`
+para una cantidad (10) que no estaba entre las únicas 2 registradas en `/v1/cantidades-flor`
+para esa especie (48 y 62) — no se pudo determinar desde el front si es un bug o si esa pantalla
+no es realmente la fuente de verdad de la validación.
+
+**Archivos modificados:**
+- `src/app/flores/catalogos/catalogos-flores.component.html` → hint reescrito; "Se cobra solo
+  desde" ahora condicional a `esPapel` (alta y edición); checkbox "Es el papel" agregado a
+  edición; badge de la lista corregido
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → `agregarAccesorio()` y la rama de
+  accesorio en `guardarEdicion()` limpian `umbralActivacion`/`floresPorPliego` cuando `!esPapel`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.** No se
+pudo verificar visualmente con Playwright esta vez — el truco de inyección de sesión + navegación
+fuera de zona (que sí funcionó para otras pantallas admin esta semana) esta vez dejó el
+componente en un estado donde `setTab()` no actualizaba la vista de forma confiable al
+interactuar por script (aun cuando los datos sí cargaban) — parece un artefacto propio del método
+de prueba, no del código (el patrón `*ngIf="condición" `usado es idéntico al que ya funcionaba
+para "Flores por pliego" en el mismo formulario). Revisado el diff a mano con cuidado en su
+lugar. Pendiente confirmar visualmente la próxima vez que se toque esta pantalla.

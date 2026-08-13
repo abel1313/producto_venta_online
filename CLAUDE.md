@@ -7901,3 +7901,119 @@ selects ya poblados y los accesorios preseleccionados se ven correctos en claro 
 vitrina estática contra `dist/styles.css`, que solo refleja variables/estilos GLOBALES — el SCSS
 scoped de un componente Angular se inyecta en runtime, nunca aparece en ese archivo; para
 componentes admin nuevos, verificar contra la app real corriendo, no contra un HTML suelto).
+
+---
+
+## FLORES ETERNAS — CONFIGURADOR DEL CLIENTE (Flujo A, la pieza que faltaba) (2026-08-13)
+
+> El dueño explicó paso a paso, con mucho detalle, cómo esperaba que funcionara el armado libre
+> del cliente — confirmando que coincide con el Flujo A ya documentado (especie → cantidad →
+> colores → accesorios → listón, con el papel incluido solo cuando cruza el umbral). Esta es esa
+> pantalla. La vitrina de ramos ya armados (Flujo B) y esta pantalla son **independientes** — un
+> ramo armado con "Ramos armados" no aparece aquí ni viceversa, cada una alimenta su propia parte
+> del negocio.
+
+**Ruta nueva:** `/flores/configurar` → `ConfigurarRamoComponent`, **pública** (mismo nivel que
+`/flores/ramos` — ni admin ni login hacen falta para *armar* el ramo y ver el precio; el login
+solo se exige al *confirmar* el pedido, igual que en `venta-variante`). Link "🌷 Arma tu ramo" en
+el sidebar junto a "🌹 Ramos de flores", y botón "🌷 Armar el mío" en el header de la vitrina.
+
+### El flujo, en 6 pasos (cada uno solo aparece cuando el anterior está resuelto)
+
+1. **Especie** — select de `tipos-flor` activos, con su precio por flor visible.
+2. **Cantidad** — el cliente escribe cuántas flores quiere y da "Validar" →
+   `POST /v1/flores/validar-cantidad`. Si no "cierra el círculo", aparecen botones **"Usar N
+   ($precio)"** con las alternativas que manda el back (`alternativaMenor`/`alternativaMayor`) —
+   un clic ahí confirma esa cantidad directo, sin que el cliente tenga que volver a escribirla.
+3. **Repartir entre colores** — `GET /v1/colores-flor/por-tipo-flor/{id}` (el endpoint que el
+   back construyó justo para esto, ya filtra activos). Un input por color con su stock visible;
+   un contador de "faltan N" / "te pasaste por N" hasta que la suma cierre exacto.
+4. **Accesorios** — checkbox + cantidad por cada uno. El marcado `esPapel` es especial: si
+   `cantidadConfirmada > umbralActivacion` del accesorio, el checkbox se **fuerza marcado y se
+   deshabilita** con el badge "incluido por la cantidad de flores" — el cliente no puede
+   desmarcarlo. Por debajo del umbral, es opcional como cualquier otro.
+5. **Listón** (opcional) — sin listón / frase predefinida con precio / frase propia. La frase
+   personalizada no tiene precio todavía — se muestra el aviso del back tal cual
+   (`avisoFrasePendiente`), sin inventar ningún monto.
+6. **Entrega** (opcional) — lugar de entrega o "recoger en tienda", mutuamente excluyentes (mismo
+   patrón ya usado en `venta-variante`).
+
+**Resumen en vivo:** cada cambio relevante (reparto, accesorios, listón, entrega) dispara —
+debounced 450ms — `POST /v1/flores/calcular-precio`, que trae ya resueltos los `varianteId` de
+cada línea (colores, papel, accesorios, listón). El resumen se pinta línea por línea con el mismo
+lenguaje visual que el detalle de la vitrina — incluye el desglose de pliegos del papel
+(`pliegosPapel × precioUnitarioPapel`) cuando aplica.
+
+### Checkout — se reutilizó el flujo real, no se inventó uno nuevo
+
+Confirmar el pedido arma las líneas desde la ÚLTIMA respuesta de `calcular-precio` (nunca se
+recalculan los precios a mano en el front) y llama `VarianteService.guardarPedidoVariante()` —
+el mismo endpoint (`POST /v1/pedidos/savePedido`) que usa `venta-variante` para cualquier compra
+normal del cliente. Se copió **tal cual** su manejo ya probado de:
+- Resolver el cliente (`idUsuario` → `buscarClientePorIdUsuario` → si no está registrado, manda a
+  `/clientes/agregar`; si no hay sesión, manda a `/usuarios/registrar`).
+- Verificación de correo (`enviarCodigoVerificacion` + Swal con reenviar, igual que
+  `venta-variante`).
+- Los 3 mensajes de error ya conocidos del back: "verificar", "completar tus datos", "no es
+  válido" (precio desactualizado).
+
+**⚠️ Detalle importante replicado del papel-por-pliego (ver sección de arriba):** la línea del
+papel se arma con `cantidad = pliegosPapel ?? 1` y `precioUnitario = precioUnitarioPapel ??
+precioPapel` — nunca el total ya multiplicado, porque el back valida el precio unitario contra
+el catálogo (que es el precio *por pliego*).
+
+**Después de guardar el pedido:** si hubo listón (de cualquier tipo) o se eligió
+lugar/recoger-en-tienda, se llama `POST /v1/flores/pedidos/{pedidoId}/detalle` para dejar esa
+info en el ticket de producción — si esa llamada falla, el pedido YA quedó bien guardado y
+cobrado, así que se muestra éxito igual (no se bloquea al cliente por un detalle que el admin
+puede completar después a mano).
+
+### Lección de esta sesión — `router.navigateByUrl()` fuera de la zona de Angular no dispara las llamadas HTTP de `ngOnInit`
+
+Para probar pantallas **admin** (guardadas) en sesiones anteriores, se venía usando el truco de
+`window.ng.getComponent(navbarEl)` + `nav.router.navigateByUrl(...)` desde `page.evaluate()` para
+saltarse el login real. Con esta pantalla **pública** (sin guard), el mismo truco hizo que
+`ngOnInit()` nunca disparara ninguna llamada HTTP — ni una — aunque el componente sí se
+renderizaba (comprobado leyendo el estado real del componente vía `ng.getComponent()`:
+`cargandoCatalogo`/`errorCatalogo`/`tipos` se quedaban en sus valores iniciales, como si
+`ngOnInit` jamás hubiera corrido). La consola marcaba la pista: *"Navigation triggered outside
+Angular zone, did you forget to call 'ngZone.run()'?"*.
+
+**Diagnóstico:** en las pantallas admin, `AdminGuardGuard`/`AuthGuard` corren antes de activar la
+ruta — ese paso sí re-entra a la zona de Angular correctamente. Sin ningún guard de por medio
+(como esta pantalla pública), la navegación completa —incluida la construcción del componente—
+queda fuera de zona, y ahí las peticiones de `ngOnInit` no llegan a dispararse.
+
+**Fix del método de prueba (no del componente — el componente está bien):** para pantallas
+**públicas**, verificar con un `page.goto()` directo a la URL (carga de página completa, dentro
+del bootstrap normal de Angular) en vez del truco de inyección + `navigateByUrl`. Ese truco sigue
+sirviendo, pero solo para pantallas detrás de un guard.
+
+**Segunda trampa del mismo lote:** `page.selectOption(selector, '1')` fallaba con "did not find
+some options" contra un `<select>` con `*ngFor` + `[ngValue]` — Angular renderiza esos `<option>`
+con `value="idx: valor"` internamente (no el valor plano), así que Playwright nunca encuentra un
+`<option value="1">` literal. Fix: `page.selectOption(selector, { index: N })` (posición, no
+value) — ya lo eran los mismos `<option>` que en `ramos-admin` y `catalogos-flores`, esto no se
+había topado antes en esta sesión simplemente porque nunca se había hecho `selectOption()` contra
+uno de ellos (las pruebas anteriores solo abrían formularios ya precargados vía "Editar").
+
+**Archivos nuevos:**
+- `src/app/flores/configurar/configurar-ramo.component.ts/.html/.scss` (BEM `cr-`)
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta pública `configurar`
+- `src/app/flores/flores.module.ts` → declara `ConfigurarRamoComponent`
+- `src/app/navbar/navbar.component.html` → link "🌷 Arma tu ramo"
+- `src/app/flores/vitrina/vitrina-flores.component.html` → botón "🌷 Armar el mío" en el header
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+Playwright contra la app real (`page.goto` directo, sin inyección de sesión — la pantalla es
+pública) mockeando los 6 endpoints que usa (`tipos-flor`, `accesorios-ramo`, `frases-liston`,
+`colores-flor/por-tipo-flor`, `lugares-entrega`, `validar-cantidad`, `calcular-precio`): probado
+el camino completo (especie → cantidad no válida → sugerencia → repartir colores → accesorios →
+listón → resumen) y, por separado, el caso del **papel forzado** (cantidad por encima del
+umbral: checkbox marcado y deshabilitado con el badge, precio con el desglose de pliegos) — los
+dos en claro y oscuro, sin errores de consola atribuibles al cambio. **No probado el checkout
+real** (`guardarPedidoVariante`/verificación de correo) contra un backend de verdad — depende de
+que el back tenga corrido `migration_flores_eternas_multicolor.sql` y
+`migration_flores_eternas_papel_pliego.sql` en el ambiente donde se pruebe.

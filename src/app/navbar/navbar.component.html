@@ -196,6 +196,15 @@
       <span class="sb-label">Ramos de flores</span>
     </a>
 
+    <!-- Armar tu propio ramo (todos los usuarios logueados) — configurador libre, distinto de
+         "Ramos de flores" (que solo muestra combos ya armados por el admin) -->
+    <a class="sb-item" *ngIf="!isAnonymous"
+       routerLink="flores/configurar" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🌷</span>
+      <span class="sb-label">Arma tu ramo</span>
+    </a>
+
     <!-- Chat (usuarios logueados) -->
     <a class="sb-item" *ngIf="!isAnonymous && !isAdminUser"
        routerLink="chat" routerLinkActive="sb-item--active"

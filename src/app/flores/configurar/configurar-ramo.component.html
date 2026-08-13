@@ -1,0 +1,212 @@
+<div class="cr-wrap">
+
+  <div class="cr-header">
+    <div class="cr-header__inner">
+      <h4>🌷 Arma tu propio ramo</h4>
+      <small>Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
+    </div>
+  </div>
+
+  <div class="cr-aviso cr-aviso--error" *ngIf="errorCatalogo">
+    <strong>⚠️ {{ errorCatalogo }}</strong>
+    <button class="cr-btn cr-btn--ghost" (click)="cargarCatalogo()">Reintentar</button>
+  </div>
+
+  <p class="cr-loading" *ngIf="cargandoCatalogo">Cargando catálogo…</p>
+
+  <div class="cr-form" *ngIf="!cargandoCatalogo && !errorCatalogo">
+
+    <!-- Paso 1 — especie -->
+    <div class="cr-step">
+      <div class="cr-step__num">1</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Qué flor quieres?</label>
+        <select class="cr-input" [(ngModel)]="tipoSeleccionadoId" (ngModelChange)="onCambiarEspecie()">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let t of tipos" [ngValue]="t.id">{{ t.nombre }} — ${{ t.precioPorFlor | number:'1.2-2' }} c/u</option>
+        </select>
+        <p class="cr-hint" *ngIf="tipos.length === 0">Todavía no hay flores disponibles para armar un ramo.</p>
+      </div>
+    </div>
+
+    <!-- Paso 2 — cantidad -->
+    <div class="cr-step" *ngIf="tipoSeleccionadoId">
+      <div class="cr-step__num">2</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Cuántas flores quieres?</label>
+        <div class="cr-cantidad-row">
+          <input class="cr-input cr-input--num" type="number" min="1" placeholder="Ej. 24"
+                 [(ngModel)]="cantidadDeseada" (ngModelChange)="onCambiarCantidadDeseada()">
+          <button class="cr-btn cr-btn--primary" [disabled]="!cantidadDeseada || validandoCantidad" (click)="validarCantidad()">
+            {{ validandoCantidad ? 'Validando…' : 'Validar' }}
+          </button>
+        </div>
+
+        <div class="cr-validacion cr-validacion--ok" *ngIf="cantidadConfirmada">
+          ✅ {{ cantidadConfirmada }} flores — cantidad válida
+        </div>
+
+        <div class="cr-validacion cr-validacion--warn" *ngIf="resultadoValidacion && !resultadoValidacion.valida">
+          <p>{{ resultadoValidacion.mensaje || 'Esa cantidad no forma bien el ramo.' }}</p>
+          <div class="cr-alternativas">
+            <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMenor" (click)="usarAlternativa(resultadoValidacion.alternativaMenor)">
+              Usar {{ resultadoValidacion.alternativaMenor }} (${{ resultadoValidacion.precioAlternativaMenor | number:'1.2-2' }})
+            </button>
+            <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMayor" (click)="usarAlternativa(resultadoValidacion.alternativaMayor)">
+              Usar {{ resultadoValidacion.alternativaMayor }} (${{ resultadoValidacion.precioAlternativaMayor | number:'1.2-2' }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 3 — repartir entre colores -->
+    <div class="cr-step" *ngIf="cantidadConfirmada">
+      <div class="cr-step__num">3</div>
+      <div class="cr-step__body">
+        <label class="cr-label">Reparte tus {{ cantidadConfirmada }} flores entre colores</label>
+        <p class="cr-hint" *ngIf="cargandoColores">Cargando colores…</p>
+        <p class="cr-hint" *ngIf="!cargandoColores && coloresDisponibles.length === 0">
+          Esta especie todavía no tiene colores disponibles.
+        </p>
+
+        <div class="cr-color-row" *ngFor="let r of reparto">
+          <span class="cr-color-row__nombre">{{ r.color.nombre }}</span>
+          <span class="cr-color-row__stock">{{ r.color.stock }} disp.</span>
+          <input class="cr-input cr-input--num" type="number" min="0" [max]="r.color.stock"
+                 [(ngModel)]="r.cantidad" (ngModelChange)="onCambiarReparto(r)">
+        </div>
+
+        <p class="cr-restante" *ngIf="reparto.length > 0"
+           [class.cr-restante--ok]="restante === 0"
+           [class.cr-restante--warn]="restante !== 0">
+          {{ restante === 0 ? '✅ Ya repartiste todas tus flores' :
+             (restante > 0 ? 'Faltan ' + restante + ' flores por repartir' : 'Te pasaste por ' + (-restante) + ' flores') }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Paso 4 — accesorios -->
+    <div class="cr-step" *ngIf="repartoCompleto && seleccionAccesorios.length > 0">
+      <div class="cr-step__num">4</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Quieres algún accesorio?</label>
+        <div class="cr-accesorio-row" *ngFor="let s of seleccionAccesorios">
+          <label class="cr-check">
+            <input type="checkbox" [(ngModel)]="s.seleccionado"
+                   [disabled]="s.accesorio.esPapel && papelForzado"
+                   (ngModelChange)="toggleAccesorio(s)">
+            {{ s.accesorio.nombre }} —
+            ${{ s.accesorio.precio | number:'1.2-2' }}{{ s.accesorio.esPapel && s.accesorio.floresPorPliego ? '/pliego' : '' }}
+            <span class="cr-badge" *ngIf="s.accesorio.esPapel && papelForzado">incluido por la cantidad de flores</span>
+          </label>
+          <input class="cr-input cr-input--num" type="number" min="1"
+                 *ngIf="s.seleccionado && !s.accesorio.esPapel"
+                 [(ngModel)]="s.cantidad" (ngModelChange)="onCambiarCantidadAccesorio()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 5 — listón -->
+    <div class="cr-step" *ngIf="repartoCompleto">
+      <div class="cr-step__num">5</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Lleva listón con frase? (opcional)</label>
+        <div class="cr-liston-opciones">
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="ninguno" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Sin listón
+          </label>
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="predefinida" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Elegir una frase
+          </label>
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="personalizada" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Escribir mi propia frase
+          </label>
+        </div>
+
+        <select class="cr-input" *ngIf="listonModo === 'predefinida'"
+                [(ngModel)]="fraseSeleccionadaId" (ngModelChange)="onCambiarListon()">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let f of frases" [ngValue]="f.id">{{ f.texto }} — ${{ f.precio | number:'1.2-2' }}</option>
+        </select>
+
+        <div *ngIf="listonModo === 'personalizada'">
+          <textarea class="cr-input" rows="2" maxlength="120" placeholder="Escribe tu frase…"
+                    [(ngModel)]="fraseTexto" (ngModelChange)="onCambiarListon()"></textarea>
+          <p class="cr-hint">El precio de una frase personalizada se confirma después con nosotros — no se cobra un monto fijo aquí.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 6 — entrega -->
+    <div class="cr-step" *ngIf="repartoCompleto">
+      <div class="cr-step__num">6</div>
+      <div class="cr-step__body">
+        <label class="cr-label">Entrega (opcional)</label>
+        <select class="cr-input" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarChange()" [disabled]="recogerEnLocal">
+          <option [ngValue]="null">Sin especificar</option>
+          <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
+        </select>
+        <label class="cr-check cr-check--block">
+          <input type="checkbox" [(ngModel)]="recogerEnLocal" (ngModelChange)="onRecogerEnLocalChange()">
+          Voy a recoger en la tienda
+        </label>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="cr-resumen" *ngIf="repartoCompleto">
+      <h5 class="cr-resumen__titulo">Resumen de tu ramo</h5>
+
+      <p class="cr-hint" *ngIf="calculando">Calculando…</p>
+      <div class="cr-aviso cr-aviso--error" *ngIf="errorCalculo">{{ errorCalculo }}</div>
+
+      <ng-container *ngIf="calculo && !calculando">
+        <div class="cr-linea">
+          <span>{{ calculo.cantidadFinal }} flores</span>
+          <span>${{ calculo.precioBase | number:'1.2-2' }}</span>
+        </div>
+        <div class="cr-linea" *ngIf="calculo.papelObligatorioAplicado">
+          <span>
+            📄 Papel
+            <small *ngIf="calculo.pliegosPapel">({{ calculo.pliegosPapel }} pliego(s) × ${{ calculo.precioUnitarioPapel | number:'1.2-2' }})</small>
+          </span>
+          <span>${{ calculo.precioPapel | number:'1.2-2' }}</span>
+        </div>
+        <div class="cr-linea" *ngFor="let a of calculo.accesoriosCalculados">
+          <span>🎀 {{ a.nombre }}<small *ngIf="a.cantidad > 1"> × {{ a.cantidad }}</small></span>
+          <span>${{ a.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="cr-linea" *ngFor="let l of calculo.listonesCalculados">
+          <span>🎗️ {{ l.texto }}</span>
+          <span>{{ l.precio != null ? ('$' + (l.precio | number:'1.2-2')) : 'Por confirmar' }}</span>
+        </div>
+        <div class="cr-linea" *ngIf="calculo.costoEnvio != null">
+          <span>🚚 Envío</span>
+          <span>${{ calculo.costoEnvio | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="cr-linea cr-linea--total">
+          <span>Total{{ calculo.tieneListonPendienteValidacion ? ' (provisional)' : '' }}</span>
+          <span>${{ calculo.total | number:'1.2-2' }}</span>
+        </div>
+
+        <p class="cr-aviso-frase" *ngIf="calculo.tieneListonPendienteValidacion">
+          ℹ️ {{ calculo.avisoFrasePendiente }}
+        </p>
+
+        <button class="cr-btn cr-btn--confirmar" [disabled]="guardando" (click)="confirmarPedido()">
+          {{ guardando ? 'Guardando…' : '💐 Confirmar mi ramo' }}
+        </button>
+      </ng-container>
+
+      <p class="cr-hint" *ngIf="!calculo && !calculando && !errorCalculo">
+        Preparando el resumen de tu ramo…
+      </p>
+    </div>
+
+  </div>
+</div>

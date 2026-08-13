@@ -1,0 +1,199 @@
+<div class="fl-wrap">
+
+  <div class="fl-header">
+    <h4 class="fl-header__title">🌹 Catálogos de flores eternas</h4>
+    <small class="fl-header__sub">Lo que el cliente podrá elegir al armar su ramo</small>
+  </div>
+
+  <div class="fl-aviso fl-aviso--error" *ngIf="error">
+    <strong>⚠️ {{ error }}</strong>
+    <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <div class="fl-tabs">
+    <button class="fl-tab" [class.fl-tab--active]="tab === 'tipos'"      (click)="setTab('tipos')">🌸 Tipos de flor</button>
+    <button class="fl-tab" [class.fl-tab--active]="tab === 'cantidades'" (click)="setTab('cantidades')">🔢 Cantidades</button>
+    <button class="fl-tab" [class.fl-tab--active]="tab === 'accesorios'" (click)="setTab('accesorios')">🎀 Accesorios</button>
+    <button class="fl-tab" [class.fl-tab--active]="tab === 'frases'"     (click)="setTab('frases')">💬 Frases de listón</button>
+  </div>
+
+  <p class="fl-vacio" *ngIf="cargando">Cargando…</p>
+
+  <!-- ── TIPOS DE FLOR ─────────────────────────────────────────────── -->
+  <div class="fl-card" *ngIf="tab === 'tipos' && !cargando">
+    <div class="fl-add">
+      <input class="fl-input" type="text" placeholder="Nombre (ej. Rosa eterna)" [(ngModel)]="nuevoTipo.nombre">
+      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio por flor"
+             [(ngModel)]="nuevoTipo.precioPorFlor">
+      <button class="fl-btn fl-btn--primary"
+              [disabled]="!nuevoTipo.nombre.trim() || nuevoTipo.precioPorFlor <= 0 || guardando"
+              (click)="agregarTipo()">+ Agregar</button>
+    </div>
+
+    <p class="fl-vacio" *ngIf="tipos.length === 0">Todavía no hay tipos de flor.</p>
+
+    <div class="fl-fila" *ngFor="let t of tipos" [class.fl-fila--off]="!t.activo">
+      <ng-container *ngIf="editandoId !== t.id">
+        <span class="fl-fila__txt">{{ t.nombre }}</span>
+        <span class="fl-fila__precio">${{ t.precioPorFlor | number:'1.2-2' }} c/u</span>
+        <div class="fl-acciones">
+          <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(t)">✏️</button>
+          <button class="fl-ico" [disabled]="guardando"
+                  [title]="t.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(t)">{{ t.activo ? '👁️' : '🚫' }}</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(t, t.nombre)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="editandoId === t.id && editTipo">
+        <input class="fl-input" type="text" [(ngModel)]="editTipo.nombre">
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editTipo.precioPorFlor">
+        <div class="fl-acciones">
+          <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ── CANTIDADES VÁLIDAS ────────────────────────────────────────── -->
+  <div class="fl-card" *ngIf="tab === 'cantidades' && !cargando">
+    <p class="fl-hint">
+      Son las cantidades con las que el círculo del ramo queda bien formado. Si el cliente pide
+      otra, el sistema le ofrece la más cercana hacia abajo y hacia arriba.
+    </p>
+
+    <div class="fl-add" *ngIf="tiposActivos.length > 0">
+      <select class="fl-input" [(ngModel)]="nuevaCantidad.tipoFlorId">
+        <option [ngValue]="0" disabled>Tipo de flor…</option>
+        <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
+      </select>
+      <input class="fl-input fl-input--num" type="number" min="1" placeholder="Cantidad"
+             [(ngModel)]="nuevaCantidad.cantidad">
+      <button class="fl-btn fl-btn--primary"
+              [disabled]="!nuevaCantidad.tipoFlorId || nuevaCantidad.cantidad <= 0 || guardando"
+              (click)="agregarCantidad()">+ Agregar</button>
+    </div>
+
+    <p class="fl-aviso" *ngIf="tiposActivos.length === 0">
+      ⚠️ Primero da de alta al menos un tipo de flor en la pestaña anterior.
+    </p>
+
+    <p class="fl-vacio" *ngIf="cantidades.length === 0">Todavía no hay cantidades configuradas.</p>
+
+    <div class="fl-fila" *ngFor="let c of cantidades" [class.fl-fila--off]="!c.activo">
+      <ng-container *ngIf="editandoId !== c.id">
+        <span class="fl-fila__txt">{{ c.tipoFlor?.nombre ?? '—' }}</span>
+        <span class="fl-fila__precio">{{ c.cantidad }} flores</span>
+        <div class="fl-acciones">
+          <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(c)">✏️</button>
+          <button class="fl-ico" [disabled]="guardando"
+                  [title]="c.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(c)">{{ c.activo ? '👁️' : '🚫' }}</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando"
+                  (click)="eliminar(c, c.cantidad + ' flores')">🗑️</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="editandoId === c.id && editCantidad">
+        <span class="fl-fila__txt">{{ editCantidad.tipoFlor?.nombre }}</span>
+        <input class="fl-input fl-input--num" type="number" min="1" [(ngModel)]="editCantidad.cantidad">
+        <div class="fl-acciones">
+          <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ── ACCESORIOS ────────────────────────────────────────────────── -->
+  <div class="fl-card" *ngIf="tab === 'accesorios' && !cargando">
+    <p class="fl-hint">
+      El accesorio marcado como <b>papel</b> se cobra automáticamente cuando el ramo lleva más de
+      10 flores. Debe haber solo uno marcado así.
+    </p>
+
+    <div class="fl-add">
+      <input class="fl-input" type="text" placeholder="Nombre (ej. Corona)" [(ngModel)]="nuevoAccesorio.nombre">
+      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio"
+             [(ngModel)]="nuevoAccesorio.precio">
+      <label class="fl-check">
+        <input type="checkbox" [(ngModel)]="nuevoAccesorio.admiteTextoLibre"> Texto libre
+      </label>
+      <label class="fl-check" [class.fl-check--off]="yaHayPapel">
+        <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
+      </label>
+      <button class="fl-btn fl-btn--primary"
+              [disabled]="!nuevoAccesorio.nombre.trim() || guardando"
+              (click)="agregarAccesorio()">+ Agregar</button>
+    </div>
+
+    <p class="fl-vacio" *ngIf="accesorios.length === 0">Todavía no hay accesorios.</p>
+
+    <div class="fl-fila" *ngFor="let a of accesorios" [class.fl-fila--off]="!a.activo">
+      <ng-container *ngIf="editandoId !== a.id">
+        <span class="fl-fila__txt">
+          {{ a.nombre }}
+          <span class="fl-badge" *ngIf="a.esPapel">papel</span>
+          <span class="fl-badge fl-badge--alt" *ngIf="a.admiteTextoLibre">texto libre</span>
+        </span>
+        <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}</span>
+        <div class="fl-acciones">
+          <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(a)">✏️</button>
+          <button class="fl-ico" [disabled]="guardando"
+                  [title]="a.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(a)">{{ a.activo ? '👁️' : '🚫' }}</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(a, a.nombre)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="editandoId === a.id && editAccesorio">
+        <input class="fl-input" type="text" [(ngModel)]="editAccesorio.nombre">
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editAccesorio.precio">
+        <div class="fl-acciones">
+          <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ── FRASES DE LISTÓN ──────────────────────────────────────────── -->
+  <div class="fl-card" *ngIf="tab === 'frases' && !cargando">
+    <p class="fl-hint">
+      Frases con precio ya definido. Si el cliente escribe una frase suya, el precio queda
+      pendiente de validar y se le pide anticipo.
+    </p>
+
+    <div class="fl-add">
+      <input class="fl-input" type="text" placeholder="Frase (ej. Feliz cumpleaños)" [(ngModel)]="nuevaFrase.texto">
+      <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Precio"
+             [(ngModel)]="nuevaFrase.precio">
+      <button class="fl-btn fl-btn--primary"
+              [disabled]="!nuevaFrase.texto.trim() || guardando"
+              (click)="agregarFrase()">+ Agregar</button>
+    </div>
+
+    <p class="fl-vacio" *ngIf="frases.length === 0">Todavía no hay frases.</p>
+
+    <div class="fl-fila" *ngFor="let f of frases" [class.fl-fila--off]="!f.activo">
+      <ng-container *ngIf="editandoId !== f.id">
+        <span class="fl-fila__txt">{{ f.texto }}</span>
+        <span class="fl-fila__precio">${{ f.precio | number:'1.2-2' }}</span>
+        <div class="fl-acciones">
+          <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(f)">✏️</button>
+          <button class="fl-ico" [disabled]="guardando"
+                  [title]="f.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(f)">{{ f.activo ? '👁️' : '🚫' }}</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(f, f.texto)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="editandoId === f.id && editFrase">
+        <input class="fl-input" type="text" [(ngModel)]="editFrase.texto">
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editFrase.precio">
+        <div class="fl-acciones">
+          <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+</div>

@@ -12,6 +12,7 @@
 
   <div class="fl-tabs">
     <button class="fl-tab" [class.fl-tab--active]="tab === 'tipos'"      (click)="setTab('tipos')">🌸 Tipos de flor</button>
+    <button class="fl-tab" [class.fl-tab--active]="tab === 'colores'"    (click)="setTab('colores')">🎨 Colores</button>
     <button class="fl-tab" [class.fl-tab--active]="tab === 'cantidades'" (click)="setTab('cantidades')">🔢 Cantidades</button>
     <button class="fl-tab" [class.fl-tab--active]="tab === 'accesorios'" (click)="setTab('accesorios')">🎀 Accesorios</button>
     <button class="fl-tab" [class.fl-tab--active]="tab === 'frases'"     (click)="setTab('frases')">💬 Frases de listón</button>
@@ -47,6 +48,55 @@
       <ng-container *ngIf="editandoId === t.id && editTipo">
         <input class="fl-input" type="text" [(ngModel)]="editTipo.nombre">
         <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editTipo.precioPorFlor">
+        <div class="fl-acciones">
+          <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
+          <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+
+  <!-- ── COLORES ───────────────────────────────────────────────────── -->
+  <div class="fl-card" *ngIf="tab === 'colores' && !cargando">
+    <p class="fl-hint">
+      Es lo que el cliente elige de verdad. El precio y las cantidades válidas los hereda de la
+      especie — aquí solo se define el color y cuántas hay disponibles.
+    </p>
+
+    <div class="fl-add" *ngIf="tiposActivos.length > 0">
+      <select class="fl-input" [(ngModel)]="nuevoColor.tipoFlorId">
+        <option [ngValue]="0" disabled>Especie…</option>
+        <option *ngFor="let t of tiposActivos" [ngValue]="t.id">{{ t.nombre }}</option>
+      </select>
+      <input class="fl-input" type="text" placeholder="Color (ej. Rojo)" [(ngModel)]="nuevoColor.nombre">
+      <input class="fl-input fl-input--num" type="number" min="0" placeholder="Existencias" [(ngModel)]="nuevoColor.stock">
+      <button class="fl-btn fl-btn--primary"
+              [disabled]="!nuevoColor.tipoFlorId || !nuevoColor.nombre.trim() || guardando"
+              (click)="agregarColor()">+ Agregar</button>
+    </div>
+
+    <p class="fl-aviso" *ngIf="tiposActivos.length === 0">
+      ⚠️ Primero da de alta al menos una especie en la pestaña «Tipos de flor».
+    </p>
+
+    <p class="fl-vacio" *ngIf="colores.length === 0">Todavía no hay colores.</p>
+
+    <div class="fl-fila" *ngFor="let co of colores" [class.fl-fila--off]="!co.activo">
+      <ng-container *ngIf="editandoId !== co.id">
+        <span class="fl-fila__txt">{{ co.tipoFlor?.nombre ?? '—' }} · <b>{{ co.nombre }}</b></span>
+        <span class="fl-fila__precio">{{ co.stock }} disponibles</span>
+        <div class="fl-acciones">
+          <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(co)">✏️</button>
+          <button class="fl-ico" [disabled]="guardando"
+                  [title]="co.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(co)">{{ co.activo ? '👁️' : '🚫' }}</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(co, co.nombre)">🗑️</button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="editandoId === co.id && editColor">
+        <input class="fl-input" type="text" [(ngModel)]="editColor.nombre">
+        <input class="fl-input fl-input--num" type="number" min="0" [(ngModel)]="editColor.stock">
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
@@ -107,8 +157,9 @@
   <!-- ── ACCESORIOS ────────────────────────────────────────────────── -->
   <div class="fl-card" *ngIf="tab === 'accesorios' && !cargando">
     <p class="fl-hint">
-      El accesorio marcado como <b>papel</b> se cobra automáticamente cuando el ramo lleva más de
-      10 flores. Debe haber solo uno marcado así.
+      El accesorio marcado como <b>papel</b> se cobra automáticamente cuando el ramo pasa del
+      número que pongas en <b>«desde»</b>. Déjalo vacío para que nunca se agregue solo. Solo puede
+      haber un accesorio marcado como papel.
     </p>
 
     <div class="fl-add">
@@ -121,6 +172,9 @@
       <label class="fl-check" [class.fl-check--off]="yaHayPapel">
         <input type="checkbox" [(ngModel)]="nuevoAccesorio.esPapel" [disabled]="yaHayPapel"> Es el papel
       </label>
+      <input class="fl-input fl-input--num" type="number" min="0" placeholder="Desde (opcional)"
+             title="A partir de cuántas flores se agrega solo al cobro"
+             [(ngModel)]="nuevoAccesorio.umbralActivacion">
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoAccesorio.nombre.trim() || guardando"
               (click)="agregarAccesorio()">+ Agregar</button>
@@ -134,6 +188,7 @@
           {{ a.nombre }}
           <span class="fl-badge" *ngIf="a.esPapel">papel</span>
           <span class="fl-badge fl-badge--alt" *ngIf="a.admiteTextoLibre">texto libre</span>
+          <span class="fl-badge" *ngIf="a.umbralActivacion">automático desde {{ a.umbralActivacion }}</span>
         </span>
         <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}</span>
         <div class="fl-acciones">
@@ -147,6 +202,8 @@
       <ng-container *ngIf="editandoId === a.id && editAccesorio">
         <input class="fl-input" type="text" [(ngModel)]="editAccesorio.nombre">
         <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editAccesorio.precio">
+        <input class="fl-input fl-input--num" type="number" min="0" placeholder="Desde"
+               title="A partir de cuántas flores se agrega solo" [(ngModel)]="editAccesorio.umbralActivacion">
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>

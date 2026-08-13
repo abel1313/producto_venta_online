@@ -7608,3 +7608,107 @@ del cliente** cuando se haga.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ **No probado en vivo** — depende de que el back confirme el estado del módulo en QA.
+
+---
+
+## FLORES ETERNAS — MULTICOLOR: CATÁLOGO DE COLORES + UMBRAL CONFIGURABLE (2026-08-13)
+
+> Segunda ronda del módulo. El back rehízo el modelo para soportar ramos de varios colores y
+> respondió las 5 dudas abiertas. Esto actualiza lo que ya estaba y agrega lo que faltaba.
+
+### ⚠️ Cambio de modelo: la especie y el color se separaron
+
+Antes "Rosa roja" y "Rosa blanca" tenían que ser dos `TipoFlor` distintos, lo que obligaba a
+duplicar precio y cantidades válidas por cada color. Ahora:
+
+| | Qué es | Tiene |
+|---|---|---|
+| `TipoFlor` | La **especie** ("Rosa eterna") | Precio por flor + tabla de cantidades válidas |
+| `ColorFlor` (nuevo) | Un **color vendible** de esa especie | Stock propio + variante interna |
+
+`ColorFlor` **hereda** precio y cantidades de la especie — no los duplica. **`TipoFlor` ya no
+tiene stock ni variante propia**; lo vendible es el color.
+
+Confirmado por el back: **la validación del círculo es por el total de la especie**, sin importar
+cómo se reparta entre colores — que era nuestra sospecha, pero no la asumimos.
+
+### Contrato de cálculo — cambió la forma del request
+
+`calcular-precio` ya no recibe `tipoFlorId` + `cantidadFinal`, sino una lista:
+
+```json
+{ "colores": [ { "colorFlorId": 1, "cantidad": 6 }, { "colorFlorId": 2, "cantidad": 6 } ], ... }
+```
+
+Un ramo de un solo color es una lista de una entrada. **Todos los colores deben ser de la misma
+especie**, si no responde 400. La respuesta trae `coloresCalculados[]` — **una línea por color,
+cada una con su `varianteId`** — y al armar `savePedido` va una línea de detalle por cada una
+(mismo patrón que ya se usaba para accesorios).
+
+`validar-cantidad` **no cambió**: sigue siendo por especie.
+
+### El umbral del papel ahora lo mueve el dueño
+
+Antes estaba fijo en el código del back (>10 flores), así que cambiarlo exigía un despliegue.
+Ahora `AccesorioRamo.umbralActivacion` es un campo editable desde la pantalla de accesorios:
+el accesorio marcado `esPapel` se agrega solo cuando `cantidadFinal > umbralActivacion`.
+**`null` = nunca se agrega solo** (queda opcional siempre).
+
+⚠️ **El dueño todavía no ha definido el número.** Describió el comportamiento ("con 1 flor se
+pregunta, con 2 o 3 ya va incluido") pero no confirmó si el corte es 2, 3 o 4. Hasta que lo
+diga, el campo se queda vacío y el papel nunca se agrega automático.
+
+### El anticipo: el back eliminó un número que era falso
+
+`calcular-precio` devolvía `montoAnticipoSugerido` = 50% del total del ramo completo. **No
+representaba nada real** — el anticipo es sobre el precio de la frase personalizada, que en ese
+momento todavía no existe. El back lo quitó; ahora solo devuelve `avisoFrasePendiente` (texto,
+sin monto).
+
+El monto real nace **solo** al aprobar la frase (`validar-frase`), que crea un pedido `APARTADO`
+separado y devuelve `pedidoAnticipoId` + `montoAnticipo`. El cobro se registra con el módulo de
+abonos que ya existe: `POST /v1/abonos/{pedidoAnticipoId}`.
+
+**Regla para la pantalla:** el texto que se le muestra al cliente al cotizar **no debe mencionar
+ningún número**. Usar `avisoFrasePendiente` tal cual viene.
+
+### Variantes sombra — el back las excluyó de todos lados
+
+Cada color de flor crea por dentro un producto/variante real (así `savePedido` funciona sin
+cambios). Se reportó el riesgo de que aparecieran en la tienda y el back agregó
+`Producto.esCatalogoInterno`, aplicado en: buscador público, filtros de admin, listados generales,
+**chatbot** y **reporte de más vendidos** (estos dos los encontraron ellos, no estaban en el
+reporte). Los selectores de promoción y rifa quedan cubiertos porque reusan el buscador general.
+
+**Decisión del dueño registrada:** flores en sección aparte, y **no se venden flores por unidad**.
+
+⚠️ **Riesgo residual que dejaron abierto:** si un admin edita el stock de una variante interna
+desde la pantalla normal de variantes (sabiéndose el id), se desincroniza con lo que muestra el
+catálogo de colores — no hay sincronización en ese sentido. Ahora es improbable porque ya no
+aparecen en ningún buscador, pero no es imposible.
+
+### Lo implementado en esta ronda
+
+- **Modelos:** `IColorFlor`/`IColorFlorRequest`, `umbralActivacion` en accesorios, `colorFlorId` +
+  `imagenUrl` en ramos armados, `colores[]`/`coloresCalculados[]` en el cálculo,
+  `avisoFrasePendiente` (fuera `montoAnticipoSugerido`), y las interfaces del ticket de producción
+  y de la bandeja de frases.
+- **Servicio:** CRUD de colores + `coloresPorTipoFlor()`, `guardarDetalleRamo()`,
+  `obtenerDetalleRamo()`, `frasesPendientes()`, `validarFrase()`.
+- **Pantalla de catálogos:** pestaña nueva **🎨 Colores** (especie + color + existencias) y el
+  campo **«desde»** en accesorios para el umbral.
+
+### Lo que sigue faltando (pantallas, no contrato)
+
+El contrato ya está completo — no quedan dudas abiertas con el back. Falta construir:
+1. **Configurador del cliente** (elegir especie → cantidad → repartir entre colores → accesorios →
+   listón → total en vivo → `savePedido` + ticket de producción).
+2. **Bandeja de frases pendientes** (admin): listar, aprobar con precio, y enlazar el anticipo con
+   `/abonos`.
+3. **Ramos preconfigurados** (admin + catálogo público) — decisión de negocio pendiente: el dueño
+   dijo "solo ramos configurables" y falta confirmar si eso excluye los preconfigurados.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado contra QA:** al terminar, el backend de QA estaba respondiendo 502 (desplegando,
+presumiblemente la migración `migration_flores_eternas_multicolor.sql`, que el back reportó como
+pendiente). Sin esa migración no existen `ColorFlor`, `umbralActivacion` ni `esCatalogoInterno`.

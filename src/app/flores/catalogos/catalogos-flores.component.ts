@@ -126,7 +126,18 @@ export class CatalogosFloresComponent implements OnInit {
     const n = this.nuevoAccesorio.nombre.trim();
     if (!n || (this.nuevoAccesorio.precio ?? 0) < 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.accesorioSave({ ...this.nuevoAccesorio, precio: this.nuevoAccesorio.precio ?? 0, nombre: n, activo: true }),
+      this.flores.accesorioSave({
+        ...this.nuevoAccesorio,
+        precio: this.nuevoAccesorio.precio ?? 0,
+        nombre: n,
+        activo: true,
+        // "Se cobra solo desde" / "Flores por pliego" solo tienen efecto real en el back cuando
+        // esPapel=true (confirmado por el back) — si el campo quedó con un valor de un toggle
+        // anterior, se limpia acá para no guardar un número que después nadie sabría por qué
+        // está ahí ni qué hace (no hace nada, en un accesorio que no es el papel).
+        umbralActivacion: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.umbralActivacion : null,
+        floresPorPliego: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.floresPorPliego : null
+      }),
       () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null, floresPorPliego: null }; },
       'No se pudo agregar el accesorio.'
     );
@@ -180,6 +191,11 @@ export class CatalogosFloresComponent implements OnInit {
         activo: this.editCantidad.activo
       });
     } else if (this.editAccesorio && this.editAccesorio.nombre.trim()) {
+      // Mismo criterio que agregarAccesorio(): estos 2 campos no hacen nada si esPapel es false.
+      if (!this.editAccesorio.esPapel) {
+        this.editAccesorio.umbralActivacion = null;
+        this.editAccesorio.floresPorPliego = null;
+      }
       accion = this.flores.accesorioUpdate(this.editAccesorio);
     } else if (this.editFrase && this.editFrase.texto.trim()) {
       accion = this.flores.fraseUpdate(this.editFrase);

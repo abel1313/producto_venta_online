@@ -7510,3 +7510,101 @@ si no, cae al texto de siempre.
 **Verificado con `ng build --configuration=development` sin errores.**
 ⚠️ No probado en un navegador real — el comportamiento del portapapeles varía por navegador y el
 botón está protegido con `try/catch` que cae al mensaje de clic derecho si falla.
+
+---
+
+## FEAT MÓDULO FLORES ETERNAS — CATÁLOGOS DE ADMINISTRACIÓN (2026-08-13)
+
+> Primera etapa del módulo nuevo del back (`CAMBIOS_FRONT.md`, 2026-08-12): ramos de rosas
+> eternas configurables. Es una **línea de producto aparte**, no tiene relación con el catálogo
+> de bolsas/blusas/perfumes.
+
+### ⚠️ Alcance — solo administración, y por qué
+
+Se hicieron **únicamente los catálogos de admin**. La pantalla del cliente (configurador del ramo
+con precio en vivo) **NO se hizo a propósito**: el back no entregó todavía el endpoint para
+confirmar un ramo cotizado como pedido real (falta decidir cómo se engancha con
+`Pedido`/`DetallePedido`). Construirla ahora dejaría una pantalla que calcula un precio bonito y
+termina en un botón que no puede hacer nada.
+
+Además, sin catálogos cargados no hay nada que cotizar ni que probar — así que este era el orden
+obligado de todos modos.
+
+### Endpoints conectados (`FloresService`)
+
+| Catálogo | Base URL | Paginación |
+|---|---|---|
+| Tipos de flor | `/v1/tipos-flor` | `page` **base-0** + `size` |
+| Cantidades válidas | `/v1/cantidades-flor` | `page` **base-0** + `size` |
+| Accesorios | `/v1/accesorios-ramo` | `page` **base-0** + `size` |
+| Frases de listón | `/v1/frases-liston` | `page` **base-0** + `size` |
+| Ramos preconfigurados | `/v1/ramos-armados` | `pagina` **base-1** + `size` |
+| Motor de cálculo | `/v1/flores/validar-cantidad`, `/v1/flores/calcular-precio` | — |
+
+⚠️ **Las dos convenciones de paginación conviven a propósito** y el back lo advirtió: los 4
+catálogos usan el CRUD genérico (base-0) y ramos-armados usa rutas propias estilo
+`/v1/promociones` (base-1). No "corregir" una por la otra.
+
+Reglas ya conocidas del CRUD genérico, iguales que en `lugares-entrega` y `cinta`: `getAll` exige
+`page`/`size` (sin default), `delete` recibe el id **crudo** en el body (`1`, no `{ id: 1 }`), y
+`save`/`update` reciben la entidad completa.
+
+### Reglas de negocio que la UI tiene que respetar
+
+- **El papel se cobra solo** cuando el ramo lleva **más de 10 flores** — el back lo agrega, el
+  front no lo manda ni se lo pregunta al cliente. Con 10 o menos es un accesorio opcional más.
+  Por eso el accesorio marcado `esPapel` es especial: **debe haber máximo uno activo**, y la
+  pantalla ya bloquea marcar un segundo (`yaHayPapel`).
+- **Frase de listón personalizada** → el precio no existe todavía: el total es **provisional**,
+  se pide **50% de anticipo** y hay que mostrar el `avisoNoReembolso` **tal cual viene del back**.
+  Es política de negocio, no redacción libre del front.
+- **Cantidades válidas** son las que "cierran bien el círculo". Si el cliente pide otra, el back
+  ofrece la más cercana hacia abajo y hacia arriba.
+
+### Decisiones de diseño
+
+- **Una sola pantalla con 4 pestañas**, no 4 entradas de menú. Son catálogos diminutos; cuatro
+  links separados serían ruido en el sidebar (ver "REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR").
+- **Grupo propio en el menú (🌹 Flores eternas)**, no dentro de Inventario: es una línea de
+  producto aparte con sus propios catálogos — mismo criterio por el que Rifas es un grupo aparte
+  aunque también genere dinero.
+- **Los 4 catálogos se cargan juntos** con un `forkJoin` aunque solo se vea una pestaña: son
+  listas chicas y el alta de cantidades necesita los tipos de flor para su selector. Cargarlos por
+  separado obligaría a recargar al cambiar de pestaña.
+- **`ICantidadFlor.tipoFlor` es opcional** (`tipoFlor?:`) aunque el back siempre lo mande — es un
+  objeto anidado de otra tabla. Lección #2 del módulo rifas: si un solo renglón llega con eso en
+  `null`, un acceso directo tira `TypeError` a media `*ngFor` y **desaparece el resto de la
+  lista** (se ve como "solo aparece el primero", que despista muchísimo).
+- **Guard de doble-submit en toda la cadena** (Lección #10): `ejecutar()` corre mutación →
+  recarga, y `guardando` se libera **solo al terminar la recarga**.
+
+### ⚠️ VERIFICADO EN QA: los GET "públicos" responden 401
+
+El back documentó que los GET de los 4 catálogos y los 2 de cálculo son **públicos, sin login**
+(el cliente configura su ramo sin sesión). Comprobado hoy contra QA sin token:
+
+```
+/v1/tipos-flor/getAll        → 401
+/v1/flores/validar-cantidad  → 401
+/v1/cinta/activos            → 200   ← este sí es público y sí está desplegado
+```
+
+⚠️ **El 401 no prueba por sí solo que falte el `permitAll`**: una ruta inventada
+(`/v1/no-existe-nada/getAll`) también responde 401, así que ese código es la respuesta genérica
+para todo lo no permitido — o sea, no distingue "no desplegado" de "requiere token". Lo que sí
+dice algo es la comparación con `cinta/activos`: público y desplegado, responde 200.
+
+**Conclusión: o el módulo no está en QA todavía, o le falta el `permitAll`.** Reportado al back.
+No bloquea esta entrega (las pantallas son admin y mandan token), pero **sí bloquearía la pantalla
+del cliente** cuando se haga.
+
+**Archivos nuevos:** `src/app/flores/models/flores.model.ts`,
+`src/app/flores/service/flores.service.ts`,
+`src/app/flores/catalogos/catalogos-flores.component.ts/.html/.scss` (BEM `fl-`),
+`src/app/flores/flores.module.ts`, `src/app/flores/flores-routing.module.ts`
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta lazy `/flores`),
+`src/app/navbar/navbar.component.html` + `.ts` (grupo 🌹 + `GROUP_ROUTES`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo** — depende de que el back confirme el estado del módulo en QA.

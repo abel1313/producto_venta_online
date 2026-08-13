@@ -120,6 +120,20 @@
       </div>
     </div>
 
+    <!-- Flores eternas (admin) — accordion. Grupo propio, no va dentro de Inventario: es una
+         línea de producto aparte con sus propios catálogos, mismo criterio que Rifas. -->
+    <div class="sb-group" *ngIf="isAdminUser"
+         [class.sb-group--open]="openGroup === 'flores'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('flores')">
+        <span class="sb-icon">🌹</span>
+        <span class="sb-label">Flores eternas</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
+      </div>
+    </div>
+
     <!-- Imágenes (admin) — accordion: las 4 herramientas de imágenes, separadas de Sistema -->
     <div class="sb-group" *ngIf="isAdminUser"
          [class.sb-group--open]="openGroup === 'imagenes'">

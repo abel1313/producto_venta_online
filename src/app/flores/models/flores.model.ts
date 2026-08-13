@@ -89,6 +89,13 @@ export interface IAccesorioRamo {
    * cambiarlo exigía un despliegue. Ahora el dueño lo edita desde la pantalla de accesorios.
    */
   umbralActivacion: number | null;
+  /**
+   * Solo aplica al accesorio marcado `esPapel=true`. Configurado, `precio` deja de ser un monto
+   * fijo y pasa a significar **precio por pliego** — el costo real se calcula como
+   * `ceil(cantidadFlores / floresPorPliego) × precio` (un pliego empezado se cobra completo).
+   * `null` = comportamiento de antes, precio fijo único sin importar la cantidad.
+   */
+  floresPorPliego: number | null;
   activo: boolean;
 }
 
@@ -138,6 +145,13 @@ export interface IRamoArmado {
   /** Lo calcula el back solo cuando `cantidad > 10` — el front no lo manda ni lo agrega. */
   papelIncluido: boolean;
   precioPapel: number;
+  /**
+   * Cuántos pliegos se cobraron y el precio por pliego exacto — `null` si no aplicó papel o si
+   * el accesorio no tiene `floresPorPliego` configurado (comportamiento de precio fijo de antes).
+   * `precioPapel` sigue siendo el total ya multiplicado, no hace falta recalcularlo.
+   */
+  pliegosPapel: number | null;
+  precioUnitarioPapel: number | null;
   accesorios: IRamoAccesorioCalculado[];
   precioTotal: number;
   activo: boolean;
@@ -215,6 +229,16 @@ export interface ICalcularPrecioResponse {
   coloresCalculados: IColorCalculado[];
   papelObligatorioAplicado: boolean;
   precioPapel: number;
+  /**
+   * Cuántos pliegos se cobraron y el precio por pliego exacto — `null` si no aplicó papel o el
+   * accesorio no tiene `floresPorPliego` configurado. ⚠️ Al armar la línea real de
+   * `POST /v1/pedidos/savePedido` para `papelVarianteId`, hay que mandar
+   * `cantidad = pliegosPapel ?? 1` y `precioUnitario = precioUnitarioPapel ?? precioPapel` —
+   * NUNCA `precioUnitario = precioPapel` cuando `pliegosPapel` no es null, porque el back valida
+   * que coincida exacto con el precio de catálogo (que es el precio *por pliego*, no el total).
+   */
+  pliegosPapel: number | null;
+  precioUnitarioPapel: number | null;
   papelVarianteId: number | null;
   accesoriosCalculados: (IRamoAccesorioCalculado & { agregadoAutomaticoPorRegla: boolean; varianteId: number })[];
   subtotalAccesorios: number;

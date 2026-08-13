@@ -5,8 +5,10 @@ import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
   IAccesorioRamo, ICalcularPrecioRequest, ICalcularPrecioResponse, ICantidadFlor,
-  ICantidadFlorRequest, IFraseListon, IRamoArmado, IRamoArmadoPaginable, IRamoArmadoRequest,
-  ITipoFlor, IValidarCantidadRequest, IValidarCantidadResponse
+  ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IFraseListon, IFrasesPendientesPaginable,
+  IRamoArmado, IRamoArmadoPaginable, IRamoArmadoRequest, IRamoPedidoDetalle,
+  IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadRequest, IValidarCantidadResponse,
+  IValidarFraseRequest, IValidarFraseResponse
 } from '../models/flores.model';
 
 /**
@@ -26,6 +28,7 @@ export class FloresService {
   private readonly base = environment.api_Url;
 
   private readonly urlTipos      = `${this.base}/v1/tipos-flor`;
+  private readonly urlColores    = `${this.base}/v1/colores-flor`;
   private readonly urlCantidades = `${this.base}/v1/cantidades-flor`;
   private readonly urlAccesorios = `${this.base}/v1/accesorios-ramo`;
   private readonly urlFrases     = `${this.base}/v1/frases-liston`;
@@ -71,6 +74,32 @@ export class FloresService {
 
   cantidadDelete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.urlCantidades}/delete`, { body: id });
+  }
+
+  // ── Colores de flor ────────────────────────────────────────────────────────
+
+  coloresGetAll(page = 0, size = 200): Observable<IColorFlor[]> {
+    return this.http.get<{ data: IColorFlor[] }>(`${this.urlColores}/getAll?page=${page}&size=${size}`)
+      .pipe(map(r => r?.data ?? []));
+  }
+
+  /** Colores activos de una especie. Es el que alimenta el selector de color del cliente. */
+  coloresPorTipoFlor(tipoFlorId: number): Observable<IColorFlor[]> {
+    return this.http.get<{ data: IColorFlor[] }>(`${this.urlColores}/por-tipo-flor/${tipoFlorId}`)
+      .pipe(map(r => r?.data ?? []));
+  }
+
+  colorSave(body: IColorFlorRequest): Observable<IColorFlor> {
+    return this.http.post<{ data: IColorFlor }>(`${this.urlColores}/save`, body).pipe(map(r => r.data));
+  }
+
+  colorUpdate(body: IColorFlorRequest): Observable<IColorFlor> {
+    return this.http.put<{ data: IColorFlor }>(`${this.urlColores}/update/${body.id}`, body)
+      .pipe(map(r => r.data));
+  }
+
+  colorDelete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.urlColores}/delete`, { body: id });
   }
 
   // ── Accesorios ─────────────────────────────────────────────────────────────
@@ -148,6 +177,39 @@ export class FloresService {
 
   calcularPrecio(body: ICalcularPrecioRequest): Observable<ICalcularPrecioResponse> {
     return this.http.post<{ data: ICalcularPrecioResponse }>(`${this.urlCalculo}/calcular-precio`, body)
+      .pipe(map(r => r.data));
+  }
+
+  // ── Ticket de producción del ramo + frases pendientes ──────────────────────
+
+  /** Se llama DESPUÉS de `savePedido`. Ver nota en `IRamoPedidoDetalleRequest`. */
+  guardarDetalleRamo(pedidoId: number, body: IRamoPedidoDetalleRequest): Observable<IRamoPedidoDetalle> {
+    return this.http
+      .post<{ data: IRamoPedidoDetalle }>(`${this.urlCalculo}/pedidos/${pedidoId}/detalle`, body)
+      .pipe(map(r => r.data));
+  }
+
+  obtenerDetalleRamo(pedidoId: number): Observable<IRamoPedidoDetalle> {
+    return this.http
+      .get<{ data: IRamoPedidoDetalle }>(`${this.urlCalculo}/pedidos/${pedidoId}/detalle`)
+      .pipe(map(r => r.data));
+  }
+
+  /** Bandeja de frases por aprobar — ADMIN. `pagina` base-1. */
+  frasesPendientes(pagina = 1, size = 10): Observable<IFrasesPendientesPaginable> {
+    return this.http
+      .get<{ data: IFrasesPendientesPaginable }>(`${this.urlCalculo}/pedidos/frases-pendientes?pagina=${pagina}&size=${size}`)
+      .pipe(map(r => r.data));
+  }
+
+  /**
+   * Aprueba (con precio) o rechaza una frase personalizada. Al aprobar, el back crea solo el
+   * pedido APARTADO del anticipo y devuelve su id — el cobro se registra después con
+   * `POST /v1/abonos/{pedidoAnticipoId}`, el flujo de abonos que ya existe.
+   */
+  validarFrase(detalleId: number, body: IValidarFraseRequest): Observable<IValidarFraseResponse> {
+    return this.http
+      .put<{ data: IValidarFraseResponse }>(`${this.urlCalculo}/pedidos/detalle/${detalleId}/validar-frase`, body)
       .pipe(map(r => r.data));
   }
 }

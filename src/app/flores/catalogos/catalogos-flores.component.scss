@@ -235,3 +235,41 @@
   .fl-input, .fl-input--num { flex: 1 1 auto; }
   .fl-fila__txt { flex: 1 1 100%; }
 }
+
+// Etiqueta visible por campo.
+//
+// ⚠️ Motivo, para no repetir el error: antes cada campo se apoyaba solo en su `placeholder`,
+// pero los numéricos arrancaban en 0 — y el placeholder únicamente se ve cuando el campo está
+// VACÍO. Resultado: casillas con "0" y ninguna pista de qué eran. Los numéricos ahora arrancan
+// en null y además cada campo lleva su etiqueta, que no desaparece al escribir.
+.fl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 180px;
+  min-width: 0;
+
+  .fl-input { flex: 1 1 auto; width: 100%; }
+}
+
+.fl-lbl {
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--app-text);
+  opacity: .7;
+}
+
+.fl-checks {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 38px;
+}
+
+.fl-add { align-items: flex-end; }
+
+@media (max-width: 575px) {
+  .fl-field { flex: 1 1 auto; }
+}

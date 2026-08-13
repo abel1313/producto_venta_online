@@ -57,8 +57,14 @@
       </ng-container>
 
       <ng-container *ngIf="editandoId === t.id && editTipo">
-        <input class="fl-input" type="text" [(ngModel)]="editTipo.nombre">
-        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editTipo.precioPorFlor">
+        <div class="fl-field">
+          <label class="fl-lbl">Nombre de la especie</label>
+          <input class="fl-input" type="text" [(ngModel)]="editTipo.nombre">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Precio por flor ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editTipo.precioPorFlor">
+        </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
@@ -115,8 +121,14 @@
       </ng-container>
 
       <ng-container *ngIf="editandoId === co.id && editColor">
-        <input class="fl-input" type="text" [(ngModel)]="editColor.nombre">
-        <input class="fl-input fl-input--num" type="number" min="0" [(ngModel)]="editColor.stock">
+        <div class="fl-field">
+          <label class="fl-lbl">Color</label>
+          <input class="fl-input" type="text" [(ngModel)]="editColor.nombre">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Existencias</label>
+          <input class="fl-input fl-input--num" type="number" min="0" [(ngModel)]="editColor.stock">
+        </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
@@ -171,7 +183,10 @@
 
       <ng-container *ngIf="editandoId === c.id && editCantidad">
         <span class="fl-fila__txt">{{ editCantidad.tipoFlor?.nombre }}</span>
-        <input class="fl-input fl-input--num" type="number" min="1" [(ngModel)]="editCantidad.cantidad">
+        <div class="fl-field">
+          <label class="fl-lbl">Cuántas flores</label>
+          <input class="fl-input fl-input--num" type="number" min="1" [(ngModel)]="editCantidad.cantidad">
+        </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
@@ -240,10 +255,20 @@
       </ng-container>
 
       <ng-container *ngIf="editandoId === a.id && editAccesorio">
-        <input class="fl-input" type="text" [(ngModel)]="editAccesorio.nombre">
-        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editAccesorio.precio">
-        <input class="fl-input fl-input--num" type="number" min="0" placeholder="Desde"
-               title="A partir de cuántas flores se agrega solo" [(ngModel)]="editAccesorio.umbralActivacion">
+        <div class="fl-field">
+          <label class="fl-lbl">Nombre</label>
+          <input class="fl-input" type="text" [(ngModel)]="editAccesorio.nombre">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Precio ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editAccesorio.precio">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Se cobra solo desde</label>
+          <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
+                 title="A partir de cuántas flores se agrega solo al cobro"
+                 [(ngModel)]="editAccesorio.umbralActivacion">
+        </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>
@@ -289,8 +314,14 @@
       </ng-container>
 
       <ng-container *ngIf="editandoId === f.id && editFrase">
-        <input class="fl-input" type="text" [(ngModel)]="editFrase.texto">
-        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editFrase.precio">
+        <div class="fl-field">
+          <label class="fl-lbl">Frase</label>
+          <input class="fl-input" type="text" [(ngModel)]="editFrase.texto">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Precio ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editFrase.precio">
+        </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
           <button class="fl-btn fl-btn--ghost fl-btn--sm" (click)="cancelarEdicion()">Cancelar</button>

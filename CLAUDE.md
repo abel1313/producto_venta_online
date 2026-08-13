@@ -7848,3 +7848,56 @@ en ambos temas, sin errores de consola atribuibles al cambio.
 `RamoArmado` (Flujo B, "Pedir" → carrito/checkout en vez de WhatsApp) — ambas quedaron fuera de
 esta entrega, son decisiones de arquitectura de cobro que hay que confirmar con el dueño antes de
 construir.
+
+---
+
+## FLORES ETERNAS — PANTALLA ADMIN "RAMOS ARMADOS" (Flujo B, la mitad que faltaba) (2026-08-13)
+
+> El dueño ya había cargado el catálogo base (tipos/colores/accesorios/cantidades) y reportó que
+> la vitrina `/flores/ramos` seguía diciendo "no hay". Causa: `FloresService` ya tenía los métodos
+> (`ramoCrear`, `ramosAdmin`, `ramoEditar`, `ramoToggleActivo`) desde que se escribió el modelo,
+> pero **ninguna pantalla los llamaba** — no existía forma de armar un `RamoArmado` de verdad.
+> Confirmado con grep: cero componentes usaban esos métodos antes de este cambio.
+
+**Ruta nueva:** `/flores/ramos-admin` → `GestionRamosFloresComponent`, admin-only
+(`AuthGuard + AdminGuardGuard`, mismo patrón que `catalogos`). Link "🎁 Ramos armados" agregado
+como segundo ítem del accordion "🌹 Flores eternas" (junto a "🌸 Catálogos").
+
+**Flujo del formulario:** el admin elige **Especie** primero (`tipos`) — eso filtra los selects
+de **Color** y **Cuántas flores** a solo las opciones activas de esa especie (`coloresDeLaEspecie`
+/`cantidadesDeLaEspecie`, filtrando client-side por `tipoFlor?.id`, mismos catálogos ya cargados
+para `catalogos-flores`). Cambiar de especie limpia color/cantidad (`onCambiarEspecie()`) para no
+dejar una combinación inválida sin que se note. Debajo, checkboxes de **accesorios** — el marcado
+`esPapel` no pide cantidad (el back la calcula sola según las flores del ramo), el resto sí.
+`imagenUrl` es un input de texto plano (mismo criterio que `RamoArmado.imagenUrl` — el admin sube
+la imagen por fuera, no pasa por micro_imagenes todavía).
+
+**Al editar:** `RamoArmado` (la respuesta) no expone `tipoFlorId` ni `cantidadFlorValidaId`
+directos — solo `colorFlorId` y `cantidad` (el total de flores ya calculado). Se reconstruyen así:
+la especie sale de `colores.find(c => c.id === r.colorFlorId)?.tipoFlor?.id`; la cantidad exacta
+se busca por coincidencia (`cantidades.find(c => c.tipoFlor?.id === especie && c.cantidad ===
+r.cantidad)`) — si no calza con ninguna cantidad válida activa (por ejemplo si se desactivó
+después de crear el ramo), el select de cantidad queda sin preseleccionar y el admin debe
+elegirla de nuevo antes de guardar.
+
+**Sin `delete`, solo ocultar:** igual que Promociones, `RamoArmado` no tiene endpoint de borrado
+— `toggleActivo()` (🟢 Visible / ⚫ Oculto) es la única forma de retirarlo de la vitrina.
+
+**Archivos nuevos:**
+- `src/app/flores/ramos-admin/gestion-ramos-flores.component.ts/.html/.scss` (BEM `ra-`)
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta `ramos-admin`
+- `src/app/flores/flores.module.ts` → declara `GestionRamosFloresComponent`
+- `src/app/navbar/navbar.component.html` + `.ts` → link + `GROUP_ROUTES`
+
+**Verificado con `ng build` sin errores**, y con Playwright contra la app real (`ng serve`,
+sesión admin inyectada vía el injector de Angular en modo dev — `window.ng.getComponent()` sobre
+`app-navbar` para llamar `AuthenticateService.setAccessToken()` +
+`AuthService.setRolesFromToken()` con un JWT de prueba, sin tocar ningún backend) con las 4
+llamadas de catálogo y `ramos-admin` mockeadas — lista, badges, y el formulario de edición con los
+selects ya poblados y los accesorios preseleccionados se ven correctos en claro y oscuro.
+**Esta vez sí verificado el CSS propio del componente** (a diferencia del primer intento con una
+vitrina estática contra `dist/styles.css`, que solo refleja variables/estilos GLOBALES — el SCSS
+scoped de un componente Angular se inyecta en runtime, nunca aparece en ese archivo; para
+componentes admin nuevos, verificar contra la app real corriendo, no contra un HTML suelto).

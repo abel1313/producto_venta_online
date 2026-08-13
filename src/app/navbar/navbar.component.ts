@@ -19,7 +19,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'ventas',       paths: ['tienda/venta-directa', 'ventas/buscar', 'abonos', 'gastos/buscar'] },
   { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
   { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
-  { group: 'flores',       paths: ['flores/catalogos', 'flores/ramos-admin'] },
+  { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/ramos-admin'] },
   { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
   { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta'] },
 ];

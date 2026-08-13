@@ -8017,3 +8017,43 @@ dos en claro y oscuro, sin errores de consola atribuibles al cambio. **No probad
 real** (`guardarPedidoVariante`/verificación de correo) contra un backend de verdad — depende de
 que el back tenga corrido `migration_flores_eternas_multicolor.sql` y
 `migration_flores_eternas_papel_pliego.sql` en el ambiente donde se pruebe.
+
+---
+
+## FLORES ETERNAS — UN SOLO ACORDEÓN EN EL MENÚ PARA TODO (2026-08-13)
+
+> El dueño, tras ver las pantallas repartidas en el sidebar: "todo lo que tenga que ver con
+> rosas eternas hay que tenerlas juntas".
+
+**Antes:** "Flores eternas" existían en el sidebar como **3 lugares distintos**: un acordeón
+admin-only con "🌸 Catálogos" + "🎁 Ramos armados", y dos links sueltos fuera de cualquier
+acordeón ("🌹 Ramos de flores" y "🌷 Arma tu ramo", visibles a cualquier logueado) — mezclados
+entre Favoritos y Chat, sin relación visual con el resto de lo que era "flores".
+
+**Ahora:** un único acordeón **"🌹 Flores eternas"**, visible a **cualquier usuario logueado**
+(antes el acordeón completo era `*ngIf="isAdminUser"`) con los 4 ítems juntos, en este orden:
+1. 🌹 Ramos de flores (`flores/ramos`) — todos
+2. 🌷 Arma tu ramo (`flores/configurar`) — todos
+3. 🌸 Catálogos (`flores/catalogos`) — **solo admin**, dentro de un `<ng-container
+   *ngIf="isAdminUser">` adentro del mismo `<div class="sb-submenu">`
+4. 🎁 Administrar ramos armados (`flores/ramos-admin`, antes decía solo "Ramos armados" — se
+   renombró para no confundirse con el ítem 1 "Ramos de flores") — **solo admin**
+
+Las rutas de admin NO cambiaron — siguen protegidas por `AdminGuardGuard` en
+`flores-routing.module.ts` exactamente igual que antes. Este cambio es solo de **presentación en
+el menú**: quién ve cada link, y que estén agrupados. Un cliente sin rol admin ve el acordeón con
+solo los primeros 2 ítems; un admin ve los 4.
+
+**Archivos modificados:**
+- `src/app/navbar/navbar.component.html` → un solo `<div class="sb-group">` para `flores` en vez
+  de 3 bloques separados
+- `src/app/navbar/navbar.component.ts` → `GROUP_ROUTES['flores']` ahora incluye las 4 rutas
+  (antes solo las 2 de admin) — así el acordeón "recuerda" quedar abierto sin importar en cuál de
+  las 4 pantallas esté parado el usuario
+
+**Verificado con `ng build` sin errores**, y con Playwright contra la app real (inyección de
+sesión vía `ng.getComponent()`, hover + click reales sobre el sidebar — no el truco de
+`router.navigateByUrl()` fuera de zona, que aquí no hacía falta porque no se navega a ningún
+lado, solo se abre el acordeón) confirmando: como admin aparecen los 4 ítems juntos; como cliente
+logueado (sin rol admin) aparecen solo los 2 primeros, sin ver "Catálogos" ni "Administrar ramos
+armados".

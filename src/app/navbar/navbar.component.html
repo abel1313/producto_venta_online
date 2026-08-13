@@ -120,9 +120,12 @@
       </div>
     </div>
 
-    <!-- Flores eternas (admin) — accordion. Grupo propio, no va dentro de Inventario: es una
-         línea de producto aparte con sus propios catálogos, mismo criterio que Rifas. -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <!-- Flores eternas — accordion único, visible a cualquier logueado (las 2 primeras las ve
+         cualquiera; las 2 de administración solo aparecen si es admin, dentro del MISMO grupo).
+         Antes estaban repartidas: 2 sueltas fuera del acordeón + 2 en un acordeón admin-only
+         aparte — se unificaron a pedido del dueño ("todo lo que tenga que ver con rosas eternas
+         hay que tenerlas juntas"). -->
+    <div class="sb-group" *ngIf="!isAnonymous"
          [class.sb-group--open]="openGroup === 'flores'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('flores')">
         <span class="sb-icon">🌹</span>
@@ -130,8 +133,12 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos-admin" (click)="closeMobile()">🎁 Ramos armados</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos" (click)="closeMobile()">🌹 Ramos de flores</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/configurar" (click)="closeMobile()">🌷 Arma tu ramo</a>
+        <ng-container *ngIf="isAdminUser">
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos-admin" (click)="closeMobile()">🎁 Administrar ramos armados</a>
+        </ng-container>
       </div>
     </div>
 
@@ -185,24 +192,6 @@
        (click)="closeMobile()">
       <span class="sb-icon">❤️</span>
       <span class="sb-label">Favoritos</span>
-    </a>
-
-    <!-- Ramos de flores eternas (todos los usuarios logueados) — vitrina pública, distinta del
-         accordion "Flores eternas" de arriba, que es solo admin (catálogos de configuración) -->
-    <a class="sb-item" *ngIf="!isAnonymous"
-       routerLink="flores/ramos" routerLinkActive="sb-item--active"
-       (click)="closeMobile()">
-      <span class="sb-icon">🌹</span>
-      <span class="sb-label">Ramos de flores</span>
-    </a>
-
-    <!-- Armar tu propio ramo (todos los usuarios logueados) — configurador libre, distinto de
-         "Ramos de flores" (que solo muestra combos ya armados por el admin) -->
-    <a class="sb-item" *ngIf="!isAnonymous"
-       routerLink="flores/configurar" routerLinkActive="sb-item--active"
-       (click)="closeMobile()">
-      <span class="sb-icon">🌷</span>
-      <span class="sb-label">Arma tu ramo</span>
     </a>
 
     <!-- Chat (usuarios logueados) -->

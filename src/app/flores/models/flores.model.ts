@@ -470,6 +470,25 @@ export interface IRamoPedidoDetalle extends IRamoPedidoDetalleRequest {
   fraseListonEstado?: string;
 }
 
+/**
+ * `POST /v1/flores/pedidos/{pedidoId}/revalidar-antes-de-pagar` — autenticado, sin body.
+ *
+ * Se llama **antes** de `POST /v1/abonos/{pedidoId}`: si el pago de un ramo urgente llega después
+ * de la hora límite, el back agrega el cargo al pedido y devuelve el total ya actualizado. Es
+ * idempotente — llamarlo dos veces no vuelve a cobrar.
+ *
+ * **Se puede llamar en CUALQUIER pedido**, no solo de flores: para los demás responde 200 con
+ * `cargoRecienAplicado: false` y el total tal cual (así lo dejó el back a petición nuestra, para
+ * no tener que adivinar de antemano qué pedido es de flores). Solo un pedido inexistente da error.
+ */
+export interface IRevalidarPagoResponse {
+  /** `true` = el total cambió y hay que cobrar `totalActual`, no lo que se tenía calculado. */
+  cargoRecienAplicado: boolean;
+  cargoAgregado: number | null;
+  totalActual: number;
+  mensaje: string | null;
+}
+
 /** Fila de la bandeja de frases por aprobar (`GET /v1/flores/pedidos/frases-pendientes`). */
 export interface IFrasePendiente {
   /** El id que se manda a `validar-frase` — NO es el del pedido. */

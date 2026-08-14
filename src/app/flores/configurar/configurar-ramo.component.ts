@@ -98,8 +98,6 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
-  /** `userId$` emite varias veces; las zonas se piden una sola. */
-  private lugaresPedidos = false;
 
   private destroy$ = new Subject<void>();
 
@@ -116,20 +114,14 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarCatalogo();
 
-    this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => {
-      this.idUsuario = id;
-      // ⚠️ `GET /v1/lugares-entrega/getAll` responde 401 sin sesión, y el TokenInterceptor manda
-      // al login ante CUALQUIER 401. Pedirlo aquí sin sesión sacaba de la pantalla al visitante
-      // anónimo apenas entraba — y esta pantalla es pública a propósito (arma su ramo y solo se
-      // le pide cuenta al confirmar). Sin sesión se queda sin selector de zona, que es una
-      // degradación aceptable; con sesión se carga una sola vez.
-      if (id && !this.lugaresPedidos) {
-        this.lugaresPedidos = true;
-        this.lugarEntregaService.getAll().subscribe({
-          next: d => { this.lugares = d; },
-          error: () => { /* opcional — sin zonas el resto del formulario sigue funcionando */ }
-        });
-      }
+    this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
+
+    // `GET /v1/lugares-entrega/getAll` ya es público (el back lo abrió a petición nuestra: antes
+    // exigía sesión y, como el TokenInterceptor manda al login ante cualquier 401, expulsaba del
+    // configurador al visitante sin cuenta). Ahora se pide siempre, como el resto del catálogo.
+    this.lugarEntregaService.getAll().subscribe({
+      next: d => { this.lugares = d; },
+      error: () => { /* opcional — sin zonas el resto del formulario sigue funcionando */ }
     });
 
     this.recalcular$.pipe(debounceTime(450), takeUntil(this.destroy$)).subscribe(() => this.ejecutarCalculo());
@@ -463,10 +455,6 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     return !this.lugarEntregaId && !this.recogerEnLocal;
   }
 
-  /** Sin sesión no se pueden listar las zonas (el endpoint las protege) — ver `ngOnInit`. */
-  get sinSesion(): boolean {
-    return !this.idUsuario;
-  }
 
   /**
    * El cliente pidió entrega urgente, ese tamaño **sí** tiene cargo configurado… y el cálculo

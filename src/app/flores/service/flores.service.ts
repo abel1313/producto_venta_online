@@ -8,7 +8,8 @@ import {
   ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IFechasDisponiblesRequest,
   IFechasDisponiblesResponse, IFraseListon, IFrasesPendientesPaginable,
   IRamoArmado, IRamoArmadoPaginable, IRamoArmadoRequest, IRamoPedidoDetalle,
-  IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadRequest, IValidarCantidadResponse,
+  IRamoPedidoDetalleRequest, IRevalidarPagoResponse, ITipoFlor, IValidarCantidadRequest,
+  IValidarCantidadResponse,
   IValidarFraseRequest, IValidarFraseResponse
 } from '../models/flores.model';
 
@@ -209,6 +210,16 @@ export class FloresService {
   guardarDetalleRamo(pedidoId: number, body: IRamoPedidoDetalleRequest): Observable<IRamoPedidoDetalle> {
     return this.http
       .post<{ data: IRamoPedidoDetalle }>(`${this.urlCalculo}/pedidos/${pedidoId}/detalle`, body)
+      .pipe(map(r => r.data));
+  }
+
+  /**
+   * Se llama ANTES de `POST /v1/abonos/{pedidoId}`, en CUALQUIER pedido — para los que no son
+   * de flores responde 200 sin cambios. Ver `IRevalidarPagoResponse`.
+   */
+  revalidarAntesDePagar(pedidoId: number): Observable<IRevalidarPagoResponse> {
+    return this.http
+      .post<{ data: IRevalidarPagoResponse }>(`${this.urlCalculo}/pedidos/${pedidoId}/revalidar-antes-de-pagar`, {})
       .pipe(map(r => r.data));
   }
 

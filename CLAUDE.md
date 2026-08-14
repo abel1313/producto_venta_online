@@ -8982,3 +8982,55 @@ repo compartido):
   el cliente.
 
 **Nada implementado todavía** — sin el cambio del back, el front no tiene dónde guardar.
+
+---
+
+## CONECTADO — `revalidar-antes-de-pagar` + zonas públicas (2026-08-14)
+
+El back resolvió los dos pendientes técnicos que teníamos abiertos.
+
+### 1. `revalidar-antes-de-pagar` ahora es tolerante → conectado en `/abonos`
+
+Eligieron la opción 3 que habíamos propuesto: para un pedido que **no** es de flores responde
+`200` con `cargoRecienAplicado: false` en vez de `400`. Así el front **lo llama siempre**, sin
+tener que adivinar de antemano qué pedido es un ramo — que era justo lo que no podíamos resolver
+(`/abonos` trabaja con pedidos de todo tipo y no los distingue).
+
+`AbonosComponent.registrarAbono()` se partió en dos:
+- `registrarAbono()` → revalida primero. Si `cargoRecienAplicado`, **no cobra**: avisa con el
+  mensaje del back, muestra el `totalActual` y recarga la lista para que el saldo en pantalla deje
+  de ser el viejo. El admin decide si cobra con el monto nuevo.
+- `ejecutarAbono()` → el cobro de siempre, sin cambios.
+
+**Si la revalidación falla por red, se cobra igual** — no vale bloquear un abono normal por un
+endpoint que para la mayoría de los pedidos no hace nada.
+
+⚠️ **`detalle-pedido` también registra abonos y NO quedó conectado.** Es el otro punto de cobro
+(botón "💳 Registrar abono" dentro del detalle). Pendiente aplicarle el mismo patrón.
+
+### 2. `GET /v1/lugares-entrega/getAll` ya es público → se revirtió el rodeo
+
+El back lo pasó a `permitAll()`. Se quitó el guard que cargaba las zonas solo con sesión (y el
+getter `sinSesion` y el flag `lugaresPedidos`, que quedaron sin uso). Ahora se piden siempre, como
+el resto del catálogo.
+
+De paso aclararon algo que no sabíamos: **un cliente logueado no-admin sí podía leerlas** — el
+`authenticated()` anterior no distinguía rol. El único afectado era el visitante sin sesión.
+
+### ⏳ Verificación pendiente — QA estaba caído (502)
+
+Al terminar, QA respondía **502 en todo** (redespliegue). **No se pudo confirmar en vivo** ni que
+las zonas ya sean públicas ni que `revalidar-antes-de-pagar` responda 200 en un pedido normal.
+Compila y el código está listo; falta la comprobación contra el servidor.
+
+### ❓ Devuelto al dueño — las 5 preguntas del pedido pendiente
+
+El back leyó la petición de guardar el pedido sin verificar y **la regresó sin implementar**: dice
+que son decisiones de negocio, no trabajo técnico. Siguen abiertas (ver la sección de pendientes
+más arriba): stock, reportes, caducidad, cómo distinguirlo y cómo verifica el cliente después.
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IRevalidarPagoResponse`
+- `src/app/flores/service/flores.service.ts` → `revalidarAntesDePagar()`
+- `src/app/abonos/abonos.component.ts` → `registrarAbono()` revalida; nuevo `ejecutarAbono()`
+- `src/app/flores/configurar/configurar-ramo.component.ts` / `.html` → zonas sin guard de sesión

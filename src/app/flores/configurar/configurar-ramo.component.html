@@ -191,10 +191,8 @@
           Voy a recoger en la tienda
         </label>
 
-        <!-- Sin sesión el catálogo de zonas responde 401 y no se puede listar (ver ngOnInit). Se
-             dice explícitamente en vez de dejar el selector vacío sin explicación. -->
-        <p class="cr-hint" *ngIf="sinSesion && lugares.length === 0">
-          Para elegir zona de entrega necesitas iniciar sesión. También puedes marcar
+        <p class="cr-hint" *ngIf="lugares.length === 0">
+          Todavía no hay zonas de entrega dadas de alta. Puedes marcar
           <b>«Voy a recoger en la tienda»</b> y seguir.
         </p>
 

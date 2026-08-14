@@ -8936,3 +8936,49 @@ Opciones si se quiere recuperar esas ventas — **no implementado, requiere deci
 - `src/app/flores/configurar/configurar-ramo.component.ts` → aviso al cancelar el código
 
 **Verificado con `ng build` sin errores.**
+
+---
+
+## ⏳ PEDIDO PENDIENTE POR CORREO SIN VERIFICAR — pedido al back, sin implementar (2026-08-14)
+
+Decisión del dueño sobre la pregunta anterior: quiere la **opción 1** — que el pedido **se guarde
+como pendiente** aunque el cliente no verifique su correo.
+
+| Situación | Cliente | Admin |
+|---|---|---|
+| Pidió pero no verificó | Ve su pedido, pendiente de confirmar | Igual, y **por qué** está pendiente |
+| Vuelve y verifica | Pasa a pedido normal | Normal |
+| Vuelve y lo cancela | Deja de verlo | **Sigue viéndolo**, marcado "cancelado por el cliente" |
+| Nunca vuelve | Sigue guardado | Sigue guardado, con el contacto para llamarle |
+
+### ⚠️ El alcance NO es solo flores
+
+`savePedido` lo usan **las dos** pantallas de cliente: `configurar-ramo` (flores) y
+`venta-variante` (carrito normal). El dueño lo planteó hablando de flores, pero el cambio afecta
+**todos los pedidos de cliente**. Preguntado a él y al back; **no asumir que es solo flores**.
+
+### Bloqueado — depende del back
+
+Hoy `savePedido` **rechaza** con 400 si `correoVerificado` es `false`, así que el front no puede
+guardar nada por su cuenta. Preguntas abiertas que ellos tienen que resolver (ver el detalle en el
+repo compartido):
+
+1. ¿El pendiente **aparta stock**? Si sí, quien nunca verifica bloquea inventario; si no, al
+   verificar días después el stock puede haberse acabado.
+2. ¿Cuenta en reportes/dashboard? (nuestra opinión: no hasta confirmarse — decisión suya)
+3. ¿Caduca? El dueño dijo "se queda guardado", pero sin caducidad la lista se llena de pedidos
+   muertos.
+4. ¿Cómo lo distingue el front — estado nuevo, campo aparte, reusar `motivo_cancelacion`?
+5. ¿El cliente puede verificar **desde el pedido ya creado** en "Mis pedidos"?
+
+### Trabajo de front que quedará pendiente cuando contesten
+
+- `configurar-ramo` y `venta-variante`: el 400 deja de ser error — el pedido ya quedó guardado, así
+  que el mensaje cambia de *"tu ramo no se registró"* a *"quedó registrado, confírmalo con el
+  código"*. ⚠️ **El aviso que se agregó hoy al cancelar el código tendrá que reescribirse** — dice
+  justo lo contrario de lo que pasará.
+- `mis-pedidos` (cliente): distintivo "pendiente de confirmar" + botones verificar / cancelar.
+- `mis-pedidos` (admin): mismo pedido visible con el motivo, y que **no desaparezca** al cancelarlo
+  el cliente.
+
+**Nada implementado todavía** — sin el cambio del back, el front no tiene dónde guardar.

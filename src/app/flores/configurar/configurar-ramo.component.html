@@ -111,13 +111,25 @@
       <div class="cr-step__body">
         <label class="cr-label">¿Quieres algún accesorio?</label>
 
-        <!-- El papel NO se lista: va por default cuando el ramo está en el rango y se cobra por
-             dentro (decisión del dueño). Ver `accesoriosSeleccionables`. -->
+        <!-- Hay que decirlo explícito: sin papel el ramo se entrega distinto, no es solo "más
+             barato". El dueño lo pidió con esas palabras. -->
+        <p class="cr-nota" *ngIf="papelEsOpcional">
+          📄 Si no eliges el papel, el ramo se entrega <b>sin papel</b> — solo las rosas enrolladas.
+        </p>
+
+        <!-- El papel solo se lista cuando NO va por default (ver `accesoriosSeleccionables`).
+             Y cuando aparece se dice QUE se cobra, pero no CUÁNTO: el monto depende de los
+             pliegos y el dueño no quiere anticipar esa cuenta al cliente. -->
         <div class="cr-accesorio-row" *ngFor="let s of accesoriosSeleccionables">
           <label class="cr-check">
             <input type="checkbox" [(ngModel)]="s.seleccionado"
                    (ngModelChange)="toggleAccesorio(s)">
-            {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
+            <ng-container *ngIf="!s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
+            </ng-container>
+            <ng-container *ngIf="s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} <small>(tiene costo)</small>
+            </ng-container>
           </label>
           <input class="cr-input cr-input--num" type="number" min="1"
                  *ngIf="s.seleccionado && !s.accesorio.esPapel"

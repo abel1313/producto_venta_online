@@ -316,8 +316,19 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     return !!this.accesorioPapel && !this.papelForzado;
   }
 
-  /** `true` cuando la cantidad ya cruzó el umbral del admin — el papel deja de ser opcional. */
+  /**
+   * `true` cuando el papel va incluido por default — deja de ser una decisión del cliente.
+   *
+   * **Quien decide es el back**, no esta pantalla: si el front lo escondiera creyendo que va
+   * incluido y el back no lo agregara, el ramo saldría sin papel y sin cobro. Por eso, en cuanto
+   * hay cálculo, manda `papelObligatorioAplicado` y no la cuenta local.
+   *
+   * La cuenta local solo sirve de anticipo mientras el cálculo viaja (evita que la casilla
+   * aparezca y desaparezca). Replica la misma fórmula del back —**estrictamente mayor**, con
+   * umbral 20 un ramo de 20 no lo lleva— justo para que ese anticipo no contradiga lo que llega.
+   */
   get papelForzado(): boolean {
+    if (this.calculo) return this.calculo.papelObligatorioAplicado === true;
     const papel = this.accesorioPapel;
     if (!papel || papel.umbralActivacion == null || this.cantidadConfirmada == null) return false;
     return this.cantidadConfirmada > papel.umbralActivacion;

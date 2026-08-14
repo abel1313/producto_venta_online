@@ -8501,3 +8501,60 @@ no se sabe contra qué catálogo hacer el redondeo hacia arriba.
 `ConfigEntregasComponent` recorta al leer (`aInput`) y completa al guardar (`aBack`).
 
 **Verificado con `ng build` sin errores.** ⚠️ La pantalla no se ha probado guardando contra QA.
+
+---
+
+## FIX FLORES — EL PAPEL SALÍA COMO CASILLA OPCIONAL EN UN RAMO QUE YA TENÍA PLIEGOS (2026-08-14)
+
+**Reportado con captura:** en «Arma tu ramo», con 20 flores, el paso 4 mostraba
+`☐ Papel (tiene costo)` como opción. El dueño: *"ya habíamos quedado que entre 1 y 5 flores
+entonces sí se ponía el papel, porque cuando configuro los ramos ya puse cuántos pliegos usaría"*.
+
+**No era un bug de código — eran dos configuraciones sin coordinar.** Verificado en QA:
+
+| Dónde se configura | Valor |
+|---|---|
+| Accesorios → Papel → «Obligatorio con más de» | **20** |
+| Cantidades → 20 flores → pliegos | 3 |
+| Cantidades → 48 flores → pliegos | 5 |
+| Cantidades → 62 flores → pliegos | 7 |
+
+El corte estaba en 20 y la comparación del back es **estrictamente mayor**, así que un ramo de
+exactamente 20 cae del lado "opcional" — aunque tenga sus 3 pliegos ya registrados. Los de 48 y
+62 sí entraban solos. El dueño configuró los pliegos por tamaño esperando que eso bastara; el
+umbral es un segundo número, en otra pestaña, que nadie cruzaba con el primero.
+
+### Lo que se hizo
+
+1. **Alerta en Catálogos → Accesorios** que detecta la incoherencia: lista los tamaños que tienen
+   pliegos configurados pero quedan **por debajo o igual** al umbral (`<=`, porque el back usa
+   `>`), y dice qué número poner. Getters `papel`, `tamanosSinPapelAutomatico`,
+   `menorTamanoConPliegos`.
+2. **`papelForzado` en el configurador ahora obedece al back.** Antes calculaba el umbral por su
+   cuenta; ahora, en cuanto hay cálculo, usa `calculo.papelObligatorioAplicado`. La cuenta local
+   queda solo como anticipo mientras el request viaja (evita que la casilla parpadee).
+
+   ⚠️ **Esto importa más de lo que parece:** quien agrega y cobra el papel es el back. Si el front
+   lo escondiera por su cuenta creyendo que va incluido y el back no lo agregara, **el ramo saldría
+   sin papel y sin cobro** — el cliente nunca lo eligió y nadie lo facturó. Esconder ≠ incluir.
+
+### Acción del dueño (es dato, no código)
+
+Poner «Obligatorio con más de» en **5** para que el papel se pregunte solo en ramos de 1 a 5
+flores y vaya incluido de 6 en adelante. Con el umbral en 20 el ramo de 20 seguirá saliendo como
+opcional por más que tenga pliegos.
+
+### Propuesta anotada al back
+
+Que el papel se derive de **`CantidadFlorValida.pliegos`**: si el tamaño tiene pliegos
+configurados, lleva papel; si no, se pregunta. Un solo lugar donde configurarlo, imposible de
+desalinear — hoy son dos números en dos pestañas distintas que tienen que concordar a mano.
+Es sugerencia, la decisión es suya.
+
+**Archivos modificados:**
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → 3 getters nuevos
+- `src/app/flores/catalogos/catalogos-flores.component.html` → alerta de incoherencia
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `papelForzado`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y el
+estado real de QA comprobado con curl antes de tocar nada (no se asumió del documento).

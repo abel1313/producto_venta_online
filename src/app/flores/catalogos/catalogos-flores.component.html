@@ -280,6 +280,20 @@
       Para que un ramo de 20 ya lo incluya, pon 19. Solo puede haber un accesorio marcado como papel.
     </p>
 
+    <!-- Son dos configuraciones separadas que tienen que concordar (los pliegos se registran en
+         «Cantidades» y el corte aquí) y nada lo verificaba. Ya pasó: el ramo de 20 tenía pliegos
+         pero el umbral estaba en 20, así que al cliente le salía el papel como casilla opcional. -->
+    <p class="fl-aviso" *ngIf="tamanosSinPapelAutomatico.length > 0">
+      ⚠️ Estos tamaños ya tienen <b>pliegos configurados</b> pero <b>no van a llevar papel
+      automático</b>, porque quedan por debajo del corte de {{ papel?.umbralActivacion }}:
+      <b><span *ngFor="let c of tamanosSinPapelAutomatico; let i = index">{{ i > 0 ? ', ' : '' }}{{ c.cantidad }} flores</span></b>.
+      Al cliente le va a salir el papel como casilla opcional.
+      <br>
+      Para que vayan incluidos, ponle a «Obligatorio con más de» un número
+      <b>menor que {{ menorTamanoConPliegos }}</b> — por ejemplo <b>5</b>, si solo quieres
+      preguntar por el papel en ramos de 1 a 5 flores.
+    </p>
+
     <div class="fl-add">
       <div class="fl-field">
         <label class="fl-lbl">Nombre</label>

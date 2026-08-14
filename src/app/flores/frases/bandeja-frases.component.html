@@ -1,0 +1,57 @@
+<div class="fp-wrap">
+
+  <div class="fp-header">
+    <h4 class="fp-header__title">🎗️ Frases de listón por aprobar</h4>
+    <small class="fp-header__sub">Ponle precio a las frases que los clientes escribieron ellos mismos</small>
+  </div>
+
+  <div class="fp-aviso fp-aviso--error" *ngIf="error">
+    <strong>{{ error }}</strong>
+    <button class="fp-btn fp-btn--ghost" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <p class="fp-hint">
+    Cuando un cliente escribe su propia frase, no hay precio de catálogo que cobrarle: <b>su ramo ya
+    quedó vendido y guardado</b>, con un total provisional, y la frase espera aquí. Al aprobarla se
+    genera un <b>pedido aparte para el anticipo</b> — el ramo original no se toca.
+  </p>
+
+  <p class="fp-vacio" *ngIf="cargando">Cargando…</p>
+
+  <p class="fp-vacio" *ngIf="!cargando && !error && frases.length === 0">
+    ✅ No hay frases esperando precio.
+  </p>
+
+  <div class="fp-card" *ngFor="let f of frases">
+    <div class="fp-card__frase">«{{ f.fraseTexto }}»</div>
+
+    <div class="fp-card__meta">
+      <span>👤 {{ f.clienteNombre }}</span>
+      <span>📅 {{ f.fechaPedido }}</span>
+      <button class="fp-link" (click)="verPedido(f)">Pedido #{{ f.pedidoId }}</button>
+    </div>
+
+    <div class="fp-card__acciones">
+      <div class="fp-field">
+        <label class="fp-lbl">Precio de la frase ($)</label>
+        <input class="fp-input" type="number" min="0" step="0.01" placeholder="0.00"
+               [(ngModel)]="precios[f.detalleId]">
+      </div>
+      <button class="fp-btn fp-btn--primary"
+              [disabled]="procesandoId !== null"
+              (click)="aprobar(f)">
+        {{ procesandoId === f.detalleId ? 'Guardando…' : '✓ Aprobar' }}
+      </button>
+      <button class="fp-btn fp-btn--ghost"
+              [disabled]="procesandoId !== null"
+              (click)="rechazar(f)">✕ Rechazar</button>
+    </div>
+  </div>
+
+  <div class="fp-pagination" *ngIf="!cargando && frases.length > 0 && totalPaginas > 1">
+    <button class="fp-btn fp-btn--page" [disabled]="pagina === 1" (click)="paginaAnterior()">← Anterior</button>
+    <span class="fp-pagination__info">Página {{ pagina }} de {{ totalPaginas }}</span>
+    <button class="fp-btn fp-btn--page" [disabled]="pagina >= totalPaginas" (click)="paginaSiguiente()">Siguiente →</button>
+  </div>
+
+</div>

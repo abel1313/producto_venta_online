@@ -71,6 +71,14 @@ export interface ICantidadFlor {
    * fijo de siempre. Si tiene valor, **gana sobre la fórmula**.
    */
   pliegos: number | null;
+  /**
+   * Cuánto se cobra por armar un ramo de este tamaño (uno de 62 da más trabajo que uno de 20).
+   *
+   * ⚠️ **Nunca se le muestra al cliente como línea aparte** — decisión del dueño: *"que vaya todo
+   * junto"*. El back ya lo suma dentro de `total`; lo devuelve en `precioManoDeObra` solo de
+   * forma informativa, para admin o reportes. `null` = todavía sin configurar.
+   */
+  manoDeObra: number | null;
   activo: boolean;
 }
 
@@ -79,6 +87,7 @@ export interface ICantidadFlorRequest {
   tipoFlor: { id: number };
   cantidad: number;
   pliegos: number | null;
+  manoDeObra: number | null;
   activo: boolean;
 }
 
@@ -108,6 +117,17 @@ export interface IAccesorioRamo {
    * `null` = comportamiento de antes, precio fijo único sin importar la cantidad.
    */
   floresPorPliego: number | null;
+  /**
+   * Cuántos pliegos cobrar cuando la cantidad del ramo NO está registrada en `cantidades-flor`.
+   * Solo aplica al accesorio marcado `esPapel`.
+   *
+   * Prioridad que usa el back para decidir los pliegos:
+   * 1. `CantidadFlorValida.pliegos` (si esa cantidad exacta existe)
+   * 2. la fórmula `floresPorPliego`
+   * 3. **este campo** — respaldo para cualquier cantidad suelta
+   * 4. si nada está configurado: precio fijo único, como antes
+   */
+  pliegosPorDefecto: number | null;
   activo: boolean;
 }
 
@@ -252,6 +272,12 @@ export interface ICalcularPrecioResponse {
   pliegosPapel: number | null;
   precioUnitarioPapel: number | null;
   papelVarianteId: number | null;
+  /**
+   * ⚠️ **Informativo — NO mostrárselo al cliente.** Ya viene sumado dentro de `total`; existe
+   * solo por si se arma una pantalla de admin o un reporte. El cliente ve un precio de ramo, sin
+   * desglose de mano de obra.
+   */
+  precioManoDeObra: number | null;
   accesoriosCalculados: (IRamoAccesorioCalculado & { agregadoAutomaticoPorRegla: boolean; varianteId: number })[];
   subtotalAccesorios: number;
   listonesCalculados: (IListonCalculado & { varianteId?: number | null })[];

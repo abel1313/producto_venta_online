@@ -30,9 +30,9 @@ export class CatalogosFloresComponent implements OnInit {
 
   // Altas
   nuevoTipo       = { nombre: '', precioPorFlor: null as number | null };
-  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null, pliegos: null as number | null };
+  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null, pliegos: null as number | null, manoDeObra: null as number | null };
   nuevoColor      = { tipoFlorId: 0, nombre: '', stock: null as number | null };
-  nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null, floresPorPliego: null as number | null };
+  nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null, floresPorPliego: null as number | null, pliegosPorDefecto: null as number | null };
   nuevaFrase      = { texto: '', precio: null as number | null };
 
   // Edición en línea
@@ -116,8 +116,8 @@ export class CatalogosFloresComponent implements OnInit {
     const { tipoFlorId, cantidad } = this.nuevaCantidad;
     if (!tipoFlorId || !cantidad || cantidad <= 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, activo: true }),
-      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null }; },
+      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, manoDeObra: this.nuevaCantidad.manoDeObra, activo: true }),
+      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null, manoDeObra: null }; },
       'No se pudo agregar la cantidad.'
     );
   }
@@ -136,9 +136,10 @@ export class CatalogosFloresComponent implements OnInit {
         // anterior, se limpia acá para no guardar un número que después nadie sabría por qué
         // está ahí ni qué hace (no hace nada, en un accesorio que no es el papel).
         umbralActivacion: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.umbralActivacion : null,
-        floresPorPliego: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.floresPorPliego : null
+        floresPorPliego: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.floresPorPliego : null,
+        pliegosPorDefecto: this.nuevoAccesorio.esPapel ? this.nuevoAccesorio.pliegosPorDefecto : null
       }),
-      () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null, floresPorPliego: null }; },
+      () => { this.nuevoAccesorio = { nombre: '', precio: null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null, floresPorPliego: null, pliegosPorDefecto: null }; },
       'No se pudo agregar el accesorio.'
     );
   }
@@ -189,6 +190,7 @@ export class CatalogosFloresComponent implements OnInit {
         tipoFlor: { id: this.editCantidad.tipoFlor.id },
         cantidad: this.editCantidad.cantidad,
         pliegos: this.editCantidad.pliegos,
+        manoDeObra: this.editCantidad.manoDeObra,
         activo: this.editCantidad.activo
       });
     } else if (this.editAccesorio && this.editAccesorio.nombre.trim()) {
@@ -196,6 +198,7 @@ export class CatalogosFloresComponent implements OnInit {
       if (!this.editAccesorio.esPapel) {
         this.editAccesorio.umbralActivacion = null;
         this.editAccesorio.floresPorPliego = null;
+        this.editAccesorio.pliegosPorDefecto = null;
       }
       accion = this.flores.accesorioUpdate(this.editAccesorio);
     } else if (this.editFrase && this.editFrase.texto.trim()) {
@@ -222,7 +225,7 @@ export class CatalogosFloresComponent implements OnInit {
       case 'cantidades': {
         const c = item as ICantidadFlor;
         if (!c.tipoFlor) return;   // renglón inconsistente: sin tipo no se puede reenviar
-        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, activo });
+        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, manoDeObra: c.manoDeObra, activo });
         break;
       }
       case 'accesorios': accion = this.flores.accesorioUpdate({ ...(item as IAccesorioRamo), activo }); break;

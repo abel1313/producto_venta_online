@@ -379,7 +379,21 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         }
       }
     }).then(result => {
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        // Cerrar en silencio dejaba al cliente sin saber si su pedido se generó o no. NO se
+        // generó: el back rechaza el guardado mientras el correo no esté verificado, así que no
+        // quedó nada. Su carrito sí sigue en pantalla y puede reintentar.
+        Swal.fire({
+          icon: 'info',
+          title: 'Tu pedido no se generó',
+          html: `<p>Necesitamos verificar tu correo antes de tomarlo, así que
+                 <b>no guardamos nada</b>.</p>
+                 <p>Tu carrito sigue aquí — vuelve a pulsar el botón y te mandamos el código
+                 otra vez.</p>`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
       Swal.fire({
         icon: 'success',
         title: '¡Correo verificado!',

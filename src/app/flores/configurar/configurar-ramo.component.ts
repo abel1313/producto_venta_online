@@ -857,9 +857,12 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'info',
           title: 'Tu ramo no se registró',
-          html: `<p>Necesitamos verificar tu correo antes de tomar el pedido.</p>
-                 <p>Tu ramo sigue armado aquí — cuando quieras, vuelve a pulsar
-                 <b>«Confirmar mi ramo»</b> y te mandamos el código otra vez.</p>`,
+          html: `<p>Necesitamos verificar tu correo antes de tomar el pedido, así que
+                 <b>no guardamos nada</b>.</p>
+                 <p>Sigue armado en esta pantalla: pulsa <b>«Confirmar mi ramo»</b> y te mandamos
+                 el código otra vez. Pero <b>si sales, tendrás que armarlo de nuevo</b> — y la
+                 fecha de entrega se cuenta desde el momento en que confirmas, así que dejarlo
+                 para después puede correrla.</p>`,
           confirmButtonText: 'Entendido'
         });
         return;

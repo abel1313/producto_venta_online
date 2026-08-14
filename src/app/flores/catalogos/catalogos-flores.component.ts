@@ -30,7 +30,7 @@ export class CatalogosFloresComponent implements OnInit {
 
   // Altas
   nuevoTipo       = { nombre: '', precioPorFlor: null as number | null };
-  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null };
+  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null, pliegos: null as number | null };
   nuevoColor      = { tipoFlorId: 0, nombre: '', stock: null as number | null };
   nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null, floresPorPliego: null as number | null };
   nuevaFrase      = { texto: '', precio: null as number | null };
@@ -116,8 +116,8 @@ export class CatalogosFloresComponent implements OnInit {
     const { tipoFlorId, cantidad } = this.nuevaCantidad;
     if (!tipoFlorId || !cantidad || cantidad <= 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, activo: true }),
-      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null }; },
+      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, activo: true }),
+      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null }; },
       'No se pudo agregar la cantidad.'
     );
   }
@@ -188,6 +188,7 @@ export class CatalogosFloresComponent implements OnInit {
         id: this.editCantidad.id,
         tipoFlor: { id: this.editCantidad.tipoFlor.id },
         cantidad: this.editCantidad.cantidad,
+        pliegos: this.editCantidad.pliegos,
         activo: this.editCantidad.activo
       });
     } else if (this.editAccesorio && this.editAccesorio.nombre.trim()) {
@@ -221,7 +222,7 @@ export class CatalogosFloresComponent implements OnInit {
       case 'cantidades': {
         const c = item as ICantidadFlor;
         if (!c.tipoFlor) return;   // renglón inconsistente: sin tipo no se puede reenviar
-        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, activo });
+        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, activo });
         break;
       }
       case 'accesorios': accion = this.flores.accesorioUpdate({ ...(item as IAccesorioRamo), activo }); break;

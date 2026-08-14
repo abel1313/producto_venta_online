@@ -109,8 +109,22 @@
           <label class="cr-check">
             <input type="checkbox" [(ngModel)]="s.seleccionado"
                    (ngModelChange)="toggleAccesorio(s)">
-            {{ s.accesorio.nombre }} —
-            ${{ s.accesorio.precio | number:'1.2-2' }}{{ s.accesorio.esPapel && s.accesorio.floresPorPliego ? '/pliego' : '' }}
+            <!-- El papel se cobra por PLIEGO, y cuántos lleva depende del tamaño del ramo. Poner
+                 solo `precio` decía "$5.00" cuando el cobro real de un ramo de 20 son $15 (3
+                 pliegos) — el cliente marcaba la casilla y el total le subía otra cosa. -->
+            <ng-container *ngIf="!s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
+            </ng-container>
+            <ng-container *ngIf="s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} —
+              <ng-container *ngIf="pliegosDelRamo">
+                {{ pliegosDelRamo }} pliego(s) × ${{ s.accesorio.precio | number:'1.2-2' }} =
+                <b>${{ precioPapelEstimado | number:'1.2-2' }}</b>
+              </ng-container>
+              <ng-container *ngIf="!pliegosDelRamo">
+                ${{ s.accesorio.precio | number:'1.2-2' }} por pliego
+              </ng-container>
+            </ng-container>
           </label>
           <input class="cr-input cr-input--num" type="number" min="1"
                  *ngIf="s.seleccionado && !s.accesorio.esPapel"

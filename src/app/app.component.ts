@@ -39,14 +39,42 @@ export class AppComponent implements OnInit, AfterViewInit {
     // directive por input) porque el pedido explícito fue "para todos los montos" —
     // tocar cada template de precio/cantidad de la app sería un cambio de docenas de
     // archivos para el mismo comportamiento.
+    //
+    // ⚠️ El `focusin` por sí solo NO alcanza cuando se llega con CLIC, que es el caso normal.
+    // La secuencia del navegador es: mousedown → focusin (seleccionamos todo) → mouseup, y ese
+    // mouseup coloca el cursor y **borra la selección** que acabábamos de hacer. Resultado: con
+    // Tab funcionaba, con clic seguía apareciendo el "0" y había que borrarlo a mano.
+    // Por eso además se cancela ese primer mouseup (ver abajo).
+    let recienEnfocado: HTMLInputElement | null = null;
+    let arrastreDesde: { x: number; y: number } | null = null;
+
     document.addEventListener('focusin', (event: Event) => {
       const target = event.target as HTMLElement;
       if (target instanceof HTMLInputElement && target.type === 'number') {
+        recienEnfocado = target;
         // setTimeout(0): en algunos navegadores (sobre todo móvil) el foco nativo
         // todavía no terminó de asentarse cuando dispara 'focusin' — seleccionar en el
         // mismo tick a veces no aplica. Correrlo después del ciclo actual es más fiable.
         setTimeout(() => target.select(), 0);
       }
+    }, true);
+
+    document.addEventListener('mousedown', (event: MouseEvent) => {
+      arrastreDesde = { x: event.clientX, y: event.clientY };
+    }, true);
+
+    document.addEventListener('mouseup', (event: MouseEvent) => {
+      if (!recienEnfocado || event.target !== recienEnfocado) { recienEnfocado = null; return; }
+
+      // Si el usuario ARRASTRÓ, quiso seleccionar un pedazo a propósito — se respeta.
+      // Solo se cancela el clic simple, que es el que borraría la selección completa.
+      const movido = arrastreDesde
+        && (Math.abs(event.clientX - arrastreDesde.x) > 3 || Math.abs(event.clientY - arrastreDesde.y) > 3);
+
+      // Solo el PRIMER mouseup tras enfocar: si ya está dentro del campo y vuelve a hacer clic,
+      // debe poder colocar el cursor donde quiera, como en cualquier input.
+      if (!movido) event.preventDefault();
+      recienEnfocado = null;
     }, true);
   }
 

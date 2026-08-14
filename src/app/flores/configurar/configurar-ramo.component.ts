@@ -214,8 +214,30 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
    */
   get mensajeCantidad(): string {
     const r = this.resultadoValidacion;
-    const aplica = r && r.valida && r.cantidadSolicitada === this.cantidadConfirmada;
+    const aplica = r && r.cantidadSolicitada === this.cantidadConfirmada;
     return (aplica && r!.mensaje) ? r!.mensaje! : 'cantidad válida';
+  }
+
+  /**
+   * El cliente decidió seguir con una cantidad que el back marcó como dudosa. No es un error
+   * —se puede vender— pero tampoco es un "✅ todo bien": se muestra en tono de aviso para que
+   * no crea que el ramo va a quedar como los de tamaño estándar.
+   */
+  get cantidadConAviso(): boolean {
+    const r = this.resultadoValidacion;
+    return !!r && !r.valida && r.cantidadSolicitada === this.cantidadConfirmada;
+  }
+
+  /**
+   * Sigue con la cantidad que el cliente pidió, aunque no sea una de las registradas.
+   *
+   * El back solo advierte ("puede no quedar bien formado") y acepta cobrarla — verificado contra
+   * QA: `calcular-precio` con 22 flores responde 200 y cobra $555. Sin este botón, la pantalla
+   * convertía esa advertencia en un bloqueo y obligaba a bajarse a la alternativa más cercana.
+   */
+  continuarDeTodosModos(): void {
+    const n = this.resultadoValidacion?.cantidadSolicitada;
+    if (n) this.confirmarCantidad(n);
   }
 
   usarAlternativa(cantidad: number | null): void {

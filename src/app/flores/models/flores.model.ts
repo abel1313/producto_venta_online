@@ -98,6 +98,29 @@ export interface ICantidadFlor {
    * Es lo que **bloquea** un pedido imposible: un ramo de 100 flores para mañana no se puede.
    * `null` = sin restricción de tiempo para este tamaño.
    */
+  // ── Configuración de entrega (agregada por el back 2026-08-14) ────────────
+  //
+  // Cuánto tarda en armar un ramo de este tamaño y a qué hora lo entrega. Con esto,
+  // `POST /v1/flores/fechas-disponibles` puede decirle al cliente qué fechas puede elegir, en vez
+  // de dejarlo pedir algo imposible y rechazarlo después.
+  //
+  // ⚠️ Las horas viajan como `HH:mm:ss` ("16:00:00"), pero un `<input type="time">` solo entiende
+  // `HH:mm` — hay que recortar al leer y volver a completar al guardar (ver `ConfigEntregasComponent`).
+  /** Días que tarda sin prisa. `null` = ese tamaño todavía no tiene plazo configurado. */
+  diasNormal: number | null;
+  horaEntregaNormal: string | null;
+  /**
+   * Todo el bloque urgente es opcional: si viene `null`, ese tamaño **no se puede apurar** por
+   * ningún motivo y al cliente no se le muestra el botón de urgente.
+   */
+  diasUrgente: number | null;
+  horaEntregaUrgente: string | null;
+  /**
+   * Hora límite para pedir Y PARA PAGAR. Si el pago se pasa de esta hora, el pedido se recotiza
+   * con el cargo urgente — por eso hay que llamar `revalidar-antes-de-pagar` antes del abono.
+   */
+  horaLimitePedido: string | null;
+  cargoUrgente: number | null;
   horasMinimasAnticipacion: number | null;
   /**
    * Lo que se cobra de más cuando el ramo se pide **de un día para otro**. Un monto que el dueño
@@ -118,6 +141,12 @@ export interface ICantidadFlorRequest {
   manoDeObra: number | null;
   horasMinimasAnticipacion: number | null;
   precioUrgencia: number | null;
+  diasNormal: number | null;
+  horaEntregaNormal: string | null;
+  diasUrgente: number | null;
+  horaEntregaUrgente: string | null;
+  horaLimitePedido: string | null;
+  cargoUrgente: number | null;
   activo: boolean;
 }
 

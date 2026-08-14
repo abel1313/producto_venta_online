@@ -116,7 +116,10 @@ export class CatalogosFloresComponent implements OnInit {
     const { tipoFlorId, cantidad } = this.nuevaCantidad;
     if (!tipoFlorId || !cantidad || cantidad <= 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, manoDeObra: this.nuevaCantidad.manoDeObra, horasMinimasAnticipacion: this.nuevaCantidad.horasMinimasAnticipacion, precioUrgencia: this.nuevaCantidad.precioUrgencia, activo: true }),
+      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, manoDeObra: this.nuevaCantidad.manoDeObra, horasMinimasAnticipacion: this.nuevaCantidad.horasMinimasAnticipacion, precioUrgencia: this.nuevaCantidad.precioUrgencia,
+        // Los plazos de entrega se configuran en su propia pantalla; aquí nacen vacíos.
+        diasNormal: null, horaEntregaNormal: null, diasUrgente: null, horaEntregaUrgente: null,
+        horaLimitePedido: null, cargoUrgente: null, activo: true }),
       () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null, manoDeObra: null, horasMinimasAnticipacion: null, precioUrgencia: null }; },
       'No se pudo agregar la cantidad.'
     );
@@ -193,6 +196,14 @@ export class CatalogosFloresComponent implements OnInit {
         manoDeObra: this.editCantidad.manoDeObra,
         horasMinimasAnticipacion: this.editCantidad.horasMinimasAnticipacion,
         precioUrgencia: this.editCantidad.precioUrgencia,
+        // ⚠️ Se reenvían tal cual: el CRUD genérico REEMPLAZA el registro, así que omitirlos
+        // borraría la configuración de entrega hecha en la pantalla de Entregas.
+        diasNormal: this.editCantidad.diasNormal,
+        horaEntregaNormal: this.editCantidad.horaEntregaNormal,
+        diasUrgente: this.editCantidad.diasUrgente,
+        horaEntregaUrgente: this.editCantidad.horaEntregaUrgente,
+        horaLimitePedido: this.editCantidad.horaLimitePedido,
+        cargoUrgente: this.editCantidad.cargoUrgente,
         activo: this.editCantidad.activo
       });
     } else if (this.editAccesorio && this.editAccesorio.nombre.trim()) {
@@ -227,7 +238,9 @@ export class CatalogosFloresComponent implements OnInit {
       case 'cantidades': {
         const c = item as ICantidadFlor;
         if (!c.tipoFlor) return;   // renglón inconsistente: sin tipo no se puede reenviar
-        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, manoDeObra: c.manoDeObra, horasMinimasAnticipacion: c.horasMinimasAnticipacion, precioUrgencia: c.precioUrgencia, activo });
+        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, manoDeObra: c.manoDeObra, horasMinimasAnticipacion: c.horasMinimasAnticipacion, precioUrgencia: c.precioUrgencia,
+          diasNormal: c.diasNormal, horaEntregaNormal: c.horaEntregaNormal, diasUrgente: c.diasUrgente,
+          horaEntregaUrgente: c.horaEntregaUrgente, horaLimitePedido: c.horaLimitePedido, cargoUrgente: c.cargoUrgente, activo });
         break;
       }
       case 'accesorios': accion = this.flores.accesorioUpdate({ ...(item as IAccesorioRamo), activo }); break;

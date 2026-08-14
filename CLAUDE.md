@@ -8299,3 +8299,28 @@ manual de un pedazo del texto).
 resultado con y sin el arreglo (el clic sintético no reproduce el borrado de selección del clic
 real). **Falta comprobarlo a mano en un navegador**: dar clic en un campo con "0", escribir, y
 confirmar que reemplaza en vez de quedar "025".
+
+### FIX — el aviso de "no cierra el círculo" bloqueaba en vez de avisar (2026-08-14)
+
+**Reportado:** *"puse 22 y me dijo que 20 se armaba, pero yo había elegido 22"*.
+
+**El back solo ADVIERTE, no prohíbe.** Su mensaje literal es *"Con 22 flores el circulo **puede**
+no quedar bien formado"*, y `calcular-precio` acepta y cobra esa cantidad sin chistar —
+verificado en QA: 22 flores → 200, total $555.
+
+Pero la pantalla solo ofrecía las dos alternativas ("Usar 20" / "Usar 48"): **no había forma de
+seguir con lo pedido**. Quien quería 22 terminaba llevándose 20 sin haberlo decidido.
+
+**Fix:** tercer botón **"Seguir con N"** con su precio, visualmente distinto de las alternativas
+(borde, no relleno) para que no parezca la opción recomendada ni quede escondida. Nuevo método
+`continuarDeTodosModos()`.
+
+Y como al continuar la cantidad NO es una de las válidas, el recuadro de confirmación deja de ser
+un ✅ verde: pasa a ⚠️ ámbar (`cantidadConAviso`) mostrando el mensaje real del back, para que el
+cliente no crea que su ramo va a quedar como los de tamaño estándar. `mensajeCantidad` ya no
+exige `valida` para mostrar el mensaje del back — así el aviso viaja tal cual en los dos casos.
+
+**Lección (segunda vez en este módulo):** cuando el back manda un mensaje con "puede", es una
+advertencia, no un bloqueo. Antes se había perdido la distinción entre sus tres mensajes por
+mostrar un texto genérico; ahora se perdía la distinción entre "avisar" y "prohibir". El criterio
+es el mismo: **la decisión es del usuario, el sistema informa.**

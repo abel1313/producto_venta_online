@@ -271,3 +271,32 @@
 :host-context(body.theme-light) {
   .cr-step, .cr-resumen { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
+
+// El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni
+// rojo: se puede vender, pero no es lo mismo que una cantidad que sí cierra el círculo.
+.cr-validacion--aviso {
+  border-left: 3px solid #b45309;
+  background: rgba(180, 83, 9, .1);
+  color: var(--app-text);
+}
+
+// Tercera opción del bloque de advertencia: seguir con lo que el cliente pidió. Se ve distinta
+// de las alternativas sugeridas para que no parezca "la opción correcta" ni quede escondida.
+.cr-btn--seguir {
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--app-text);
+}
+
+.cr-sub {
+  margin: 8px 0 6px;
+  font-size: .8rem;
+  opacity: .8;
+}
+
+:host-context(body.theme-dark) {
+  .cr-validacion--aviso {
+    border-left-color: #fbbf24;
+    background: rgba(251, 191, 36, .12);
+  }
+}

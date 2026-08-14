@@ -47,18 +47,32 @@
              "forma bien el círculo" cuando sí está registrada). Antes decía un genérico
              "cantidad válida" y esa distinción se perdía — hizo pensar que el back validaba
              mal una cantidad de 10 cuando en realidad estaba avisando que iba por unidad. -->
-        <div class="cr-validacion cr-validacion--ok" *ngIf="cantidadConfirmada">
-          ✅ {{ cantidadConfirmada }} flores — {{ mensajeCantidad }}
+        <div class="cr-validacion" *ngIf="cantidadConfirmada"
+             [class.cr-validacion--ok]="!cantidadConAviso"
+             [class.cr-validacion--aviso]="cantidadConAviso">
+          {{ cantidadConAviso ? '⚠️' : '✅' }} {{ cantidadConfirmada }} flores — {{ mensajeCantidad }}
         </div>
 
+        <!-- El back AVISA, no prohíbe: su mensaje dice "puede no quedar bien formado", y de hecho
+             `calcular-precio` acepta y cobra esa cantidad sin problema (probado con 22 → $555).
+             Antes esta pantalla convertía ese aviso en un bloqueo: solo dejaba elegir una de las
+             dos alternativas, así que quien pedía 22 terminaba llevándose 20 sin quererlo.
+             La decisión vuelve a ser del cliente. -->
         <div class="cr-validacion cr-validacion--warn" *ngIf="resultadoValidacion && !resultadoValidacion.valida">
           <p>{{ resultadoValidacion.mensaje || 'Esa cantidad no forma bien el ramo.' }}</p>
+          <p class="cr-sub" *ngIf="resultadoValidacion.alternativaMenor || resultadoValidacion.alternativaMayor">
+            Estas cantidades sí forman bien el círculo:
+          </p>
           <div class="cr-alternativas">
             <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMenor" (click)="usarAlternativa(resultadoValidacion.alternativaMenor)">
               Usar {{ resultadoValidacion.alternativaMenor }} (${{ resultadoValidacion.precioAlternativaMenor | number:'1.2-2' }})
             </button>
             <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMayor" (click)="usarAlternativa(resultadoValidacion.alternativaMayor)">
               Usar {{ resultadoValidacion.alternativaMayor }} (${{ resultadoValidacion.precioAlternativaMayor | number:'1.2-2' }})
+            </button>
+            <button class="cr-btn cr-btn--seguir" (click)="continuarDeTodosModos()">
+              Seguir con {{ resultadoValidacion.cantidadSolicitada }}
+              (${{ resultadoValidacion.precioCantidadSolicitada | number:'1.2-2' }})
             </button>
           </div>
         </div>

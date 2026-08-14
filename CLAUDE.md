@@ -8733,3 +8733,58 @@ mismo `qa → main` pendiente. Reportado; no bloquea porque las pruebas van en Q
 - `src/app/flores/configurar/configurar-ramo.component.html` → aviso + `[disabled]`
 
 **Verificado con `ng build` sin errores.**
+
+---
+
+## ⏳ PENDIENTES ABIERTOS — FLORES ETERNAS (anotados 2026-08-14)
+
+> El dueño está **en fase de pruebas** en QA. Estos 4 puntos se revisan **antes de publicar**, no
+> ahora. Ninguno bloquea las pruebas.
+
+### 1. 🔴 El cargo urgente no se cobra — esperando despliegue del back
+
+`calcular-precio` devuelve `precioUrgencia: null` y `requiereAnticipo: false` aunque el front
+mande `urgente:true` y el tamaño tenga su cargo. Descartado el nombre del campo (4 variantes),
+la configuración del dueño y el front (payload capturado). Su arreglo existe pero no está en QA.
+
+**Consecuencia si se publica así:** el ramo urgente se arma con prisa **gratis y de contado**, sin
+el 50% de anticipo. El front avisa y pide confirmación, pero deja continuar.
+
+**Se resuelve solo** cuando el back despliegue — el aviso desaparece sin tocar código.
+
+### 2. 🟠 En PRODUCCIÓN los GET de flores piden token
+
+`/v1/tipos-flor/getAll` y `/v1/flores/fechas-disponibles` responden
+`404 "Token invalido o expirado"` en prod; en QA responden 200 sin token. Como `/flores/ramos` y
+`/flores/configurar` son **rutas públicas** del front, hoy un visitante sin cuenta vería la
+pantalla rota en producción. Probablemente el mismo `qa → main` pendiente.
+
+**Revisar antes de publicar flores.** No afecta las pruebas en QA.
+
+### 3. 🟡 `revalidar-antes-de-pagar` sin conectar
+
+Falta saber **cómo distingue `/abonos` un pedido de flores** de una venta normal, para llamarlo
+solo cuando toca. Se propusieron 3 opciones al back (flag en el detalle del pedido, o que el
+endpoint responda 200 en vez de error). Hasta entonces, **un pago tardío de un ramo urgente no se
+recotiza** — conserva el precio del momento en que se cotizó.
+
+### 4. 🟡 Bandeja de frases pendientes (admin)
+
+`frasesPendientes()` y `validarFrase()` ya existen en `FloresService`; **falta la pantalla**. Sin
+ella, una frase personalizada queda cotizada como "por confirmar" y nadie puede aprobarle precio.
+
+---
+
+### Lección — avisar no es prohibir (se repitió en esta sesión)
+
+Al detectar que el cargo urgente no se aplicaba, lo primero que se hizo fue **deshabilitar el
+botón de confirmar**. Estaba mal por dos motivos:
+
+1. **Impedía probar** justo lo que el dueño estaba probando.
+2. Contradice una regla que este mismo proyecto ya tenía escrita, del bloque de la cantidad que
+   "no cierra el círculo": *el back avisa, no prohíbe — la decisión es del usuario*.
+
+Corregido: aviso visible + `Swal` de confirmación explicando qué se deja de cobrar, y el botón
+sigue habilitado. **Regla:** ante una incoherencia de datos, informar con claridad y dejar
+decidir; reservar el bloqueo duro para lo que de plano no puede funcionar (ej. no hay fecha de
+entrega posible, que sí bloquea).

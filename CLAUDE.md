@@ -8788,3 +8788,60 @@ Corregido: aviso visible + `Swal` de confirmación explicando qué se deja de co
 sigue habilitado. **Regla:** ante una incoherencia de datos, informar con claridad y dejar
 decidir; reservar el bloqueo duro para lo que de plano no puede funcionar (ej. no hay fecha de
 entrega posible, que sí bloquea).
+
+---
+
+## ✅ EL CARGO URGENTE YA SE COBRA + FIX: LA PANTALLA PÚBLICA EXPULSABA AL VISITANTE (2026-08-14)
+
+### 1. El back desplegó — verificado contra QA
+
+`calcular-precio` ya aplica el cargo. Ramo de 20 con urgencia:
+
+```
+precioBase 500 + papel 15 (3 pliegos × $5) + urgencia 50  =  total 565
+requiereAnticipo: true    montoAnticipoSugerido: 282.50   (= 565 / 2)
+```
+
+Sin urgencia sigue en 515 y sin anticipo. **El aviso defensivo (`cargoUrgenteNoAplicado`) se apagó
+solo**, como estaba previsto — no hubo que tocar nada.
+
+Probado también en pantalla contra el QA real (no con datos simulados): el resumen muestra la
+línea "⚡ Entrega urgente $50.00", el total 565 y la nota del anticipo de $282.50.
+
+### 2. 🔴 Fix — "Arma tu ramo" echaba al login a quien no tuviera sesión
+
+**Encontrado al probar contra el backend real** — con datos simulados era invisible, porque todo
+respondía 200.
+
+`ngOnInit` pedía `GET /v1/lugares-entrega/getAll` para llenar el selector de zona. Ese endpoint
+**responde 401 sin sesión**, y el `TokenInterceptor` manda al login ante **cualquier** 401: el
+visitante anónimo entraba a la pantalla y salía disparado a `/login` antes de ver nada.
+
+La pantalla es pública **a propósito** (arma su ramo y solo se le pide cuenta al confirmar), así
+que esto rompía todo el flujo de un cliente nuevo. **El dueño no lo veía porque prueba con sesión
+de admin.**
+
+**Fix:** las zonas se piden solo cuando ya hay sesión (dentro de la suscripción a `userId$`, una
+sola vez). Sin sesión, el visitante se queda sin selector de zona — degradación aceptable, porque
+para confirmar necesita cuenta de todos modos.
+
+**Verificado:** visitante anónimo entra, arma el ramo completo y llega al total. El único 401 que
+queda es `/v1/auth/refresh`, que es el intento normal de rehidratar sesión y no redirige.
+
+⚠️ **Pedido al back:** que `GET /v1/lugares-entrega/getAll` sea público de lectura, como ya lo son
+los catálogos de flores. Son nombres de zona y costo de envío — nada sensible — y sin ellos el
+cliente anónimo no puede ver cuánto le cuesta el envío ni cómo afecta su fecha de entrega.
+
+**Revisado:** `vitrina-flores` (la otra pantalla pública) no tiene el problema —
+`ramos-armados/activos` y `negocio/contactos` sí son públicos.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → carga de zonas condicionada a sesión
+
+### 💡 Lección — probar con mocks no basta para pantallas públicas
+
+Toda la verificación anterior de esta pantalla se hizo con endpoints simulados que devolvían 200,
+y por eso el 401 nunca apareció. **Para una pantalla pública hay que probarla al menos una vez
+contra el backend real y sin sesión.** Truco usado: `page.route()` de Playwright reenviando lo que
+el front pide a `localhost:9091` hacia el QA real (`fetch` + `fulfill` — `continue({url})` no
+sirve, no deja cambiar http→https).

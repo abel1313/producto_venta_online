@@ -8193,3 +8193,47 @@ una línea de su lado. Falta que lo decida el dueño.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
 la forma real de la respuesta comprobada en QA con `curl` (no asumida del documento).
+
+### Pliegos de papel por ramo — configurable desde Cantidades (2026-08-14)
+
+**El dueño lo pidió así:** *"cuántos pliegos necesito para cada ramo, es decir para el de 48
+flores, eso se debe configurar"*, y remarcó que **no lo sabe todavía** — *"cuando lo sepa lo puedo
+configurar"*.
+
+**Por qué NO es una fórmula:** ya existía `AccesorioRamo.floresPorPliego`, que calcula
+`ceil(cantidad / floresPorPliego)`. No le sirve: el papel que lleva un ramo no es proporcional al
+número de flores — depende de cómo se arma y del tamaño del pliego que compran. Él sabe que el de
+48 lleva 4 y el de 62 lleva 5, y eso no sigue una proporción.
+
+**Lo que entregó el back:** campo `pliegos: number | null` en `CantidadFlorValida`, por el mismo
+CRUD de siempre (`/v1/cantidades-flor`). Migración ya corrida en **QA y producción**.
+
+**Prioridad (implementada por el back):** `pliegos` explícito **gana** sobre la fórmula. Si es
+`null` → cae a `floresPorPliego`; si tampoco hay → precio fijo de siempre. Ninguna combinación
+rompe ni cobra distinto a lo de antes. `RamoArmado` lo hereda solo (ya referencia
+`cantidadFlorValidaId`), y el configurador libre lo usa cuando la cantidad final coincide exacto
+con una `CantidadFlorValida` que lo tenga configurado.
+
+**⚠️ `AccesorioRamo.precio` del papel es el precio de UN pliego** — confirmado por el back en su
+código. Hoy está en `$5.00` funcionando como precio fijo único porque no hay pliegos configurados
+en ningún lado. **Pendiente del dueño:** confirmar si ese $5 es lo que cuesta un pliego o si lo
+puso pensando en un total.
+
+**Front — lo agregado:**
+- `ICantidadFlor`/`ICantidadFlorRequest` → campo `pliegos`
+- Pestaña **Cantidades**: input "Pliegos de papel" (placeholder *"Aún no lo sé"*) al agregar y al
+  editar, más un badge por renglón que distingue **"N pliego(s)"** de **"pliegos sin configurar"**
+  — el dueño va a llenar esto poco a poco, así que necesita ver de un vistazo cuáles le faltan.
+  El badge de pendiente es gris neutro, NO rojo: estar vacío es el estado esperado, no un error.
+- Configurador y ramos armados: **sin cambios**, ya leían `pliegosPapel`/`precioPapel` del back.
+
+### El papel desaparece de las opciones cuando ya va incluido
+
+Antes se mostraba en la lista de accesorios como casilla marcada y bloqueada, con un badge
+"incluido por la cantidad". Generaba la duda de *"¿por qué no la puedo quitar?"*. Ahora, cuando
+`papelForzado` es true, se saca de la lista (getter `accesoriosSeleccionables`) y se muestra un
+aviso — el cobro sigue visible en el resumen con su desglose de pliegos.
+
+**Verificado contra QA que NO se cobra doble** cuando el front igual lo manda en `accesorios`: el
+back deduplica (48 flores con y sin mandarlo → mismo total, $1,205). Por eso no se tocó la lógica
+del request.

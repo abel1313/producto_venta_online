@@ -273,3 +273,14 @@
 @media (max-width: 575px) {
   .fl-field { flex: 1 1 auto; }
 }
+
+// "pliegos sin configurar" — es un estado normal y esperado (el dueño lo va llenando con el
+// tiempo), no un error. Por eso gris neutro y no rojo de advertencia.
+.fl-badge--pend {
+  background: var(--card-border);
+  color: var(--app-text);
+  opacity: .7;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}

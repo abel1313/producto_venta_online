@@ -60,6 +60,17 @@ export interface ICantidadFlor {
    */
   tipoFlor?: ITipoFlor;
   cantidad: number;
+  /**
+   * Cuántos pliegos de papel lleva un ramo de esta cantidad. Lo pone el dueño a mano — el papel
+   * NO es proporcional a las flores (depende de cómo se arma el ramo y del tamaño del pliego),
+   * por eso es un número explícito y no una división.
+   *
+   * `null` = todavía no se sabe, y es el estado normal durante un buen rato: el dueño lo va
+   * llenando conforme arma ramos reales y cuenta los pliegos que gastó. Con `null`, el back cae
+   * a la fórmula `AccesorioRamo.floresPorPliego` si está configurada, y si tampoco, al precio
+   * fijo de siempre. Si tiene valor, **gana sobre la fórmula**.
+   */
+  pliegos: number | null;
   activo: boolean;
 }
 
@@ -67,6 +78,7 @@ export interface ICantidadFlorRequest {
   id?: number;
   tipoFlor: { id: number };
   cantidad: number;
+  pliegos: number | null;
   activo: boolean;
 }
 

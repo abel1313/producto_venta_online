@@ -142,6 +142,9 @@
     <p class="fl-hint">
       Son las cantidades con las que el círculo del ramo queda bien formado. Si el cliente pide
       otra, el sistema le ofrece la más cercana hacia abajo y hacia arriba.
+      <br>
+      Los <b>pliegos</b> son cuántos lleva un ramo de ese tamaño — no se calcula solo, lo pones tú.
+      Puedes dejarlo vacío y llenarlo después, cuando sepas cuántos gastas.
     </p>
 
     <div class="fl-add" *ngIf="tiposActivos.length > 0">
@@ -157,6 +160,12 @@
         <input class="fl-input fl-input--num" type="number" min="1" placeholder="Ej. 12"
                [(ngModel)]="nuevaCantidad.cantidad">
       </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Pliegos de papel</label>
+        <input class="fl-input fl-input--num" type="number" min="0" placeholder="Aún no lo sé"
+               title="Cuántos pliegos lleva un ramo de esta cantidad. Se puede llenar después."
+               [(ngModel)]="nuevaCantidad.pliegos">
+      </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevaCantidad.tipoFlorId || !nuevaCantidad.cantidad || guardando"
               (click)="agregarCantidad()">+ Agregar</button>
@@ -170,7 +179,13 @@
 
     <div class="fl-fila" *ngFor="let c of cantidades" [class.fl-fila--off]="!c.activo">
       <ng-container *ngIf="editandoId !== c.id">
-        <span class="fl-fila__txt">{{ c.tipoFlor?.nombre ?? '—' }}</span>
+        <span class="fl-fila__txt">
+          {{ c.tipoFlor?.nombre ?? '—' }}
+          <!-- Se distingue "ya lo configuró" de "todavía no lo sabe": el dueño va a llenar esto
+               poco a poco, así necesita ver de un vistazo cuáles le faltan. -->
+          <span class="fl-badge" *ngIf="c.pliegos">{{ c.pliegos }} pliego(s)</span>
+          <span class="fl-badge fl-badge--pend" *ngIf="!c.pliegos">pliegos sin configurar</span>
+        </span>
         <span class="fl-fila__precio">{{ c.cantidad }} flores</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(c)">✏️</button>
@@ -186,6 +201,12 @@
         <div class="fl-field">
           <label class="fl-lbl">Cuántas flores</label>
           <input class="fl-input fl-input--num" type="number" min="1" [(ngModel)]="editCantidad.cantidad">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Pliegos de papel</label>
+          <input class="fl-input fl-input--num" type="number" min="0" placeholder="Aún no lo sé"
+                 title="Cuántos pliegos lleva un ramo de esta cantidad"
+                 [(ngModel)]="editCantidad.pliegos">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>

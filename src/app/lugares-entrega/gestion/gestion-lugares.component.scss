@@ -115,3 +115,18 @@ $t:  all 0.2s ease;
 
   &__info { font-size: .82rem; color: #6b7280; font-weight: 600; }
 }
+
+// Campos numéricos del formulario (envío / horas extra). Más angostos que el de nombre para que
+// la fila no se sienta como tres campos del mismo peso — el nombre es el principal.
+.pk-form__field--num {
+  flex: 0 1 150px;
+  min-width: 0;
+}
+
+// Datos secundarios en la fila de la tabla (costo de envío, horas extra).
+.pk-meta {
+  margin-left: 8px;
+  opacity: .65;
+  font-size: .78rem;
+  white-space: nowrap;
+}

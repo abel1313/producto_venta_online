@@ -8353,3 +8353,52 @@ mismo total— pero es más limpio no depender de eso.
 había dicho que con 1 o 2 flores *"se le pregunta si quiere papel"*. Con este cambio ya no se
 pregunta nunca. Si quiere recuperar esa pregunta para ramos chicos, es volver a listarlo solo
 cuando `!papelForzado` — pero entonces vuelve a ser visible, que es justo lo que pidió quitar.
+
+### Campos de configuración de urgencia + costo del material (2026-08-14)
+
+Tres cosas que el back confirmó y ya se pueden llenar desde las pantallas. **No conectan ningún
+cobro por sí solas** — por eso se agregaron sin esperar al redespliegue de QA.
+
+| Pantalla | Campo | Para qué |
+|---|---|---|
+| Tipos de flor | **Costo del material ($)** (`precioCosto`) | Lo que a él le cuesta la flor. No se le muestra al cliente: el back lo sincroniza al producto sombra y de ahí sale el margen en los reportes de ganancia, igual que cualquier producto |
+| Cantidades | **Mínimo de horas** (`horasMinimasAnticipacion`) | Por debajo de eso el pedido **se rechaza** (un ramo de 100 para mañana no se puede) |
+| Cantidades | **Extra de un día para otro ($)** (`precioUrgencia`) | Lo que se cobra de más cuando sí se puede pero es con prisa |
+| Lugares de entrega | **Envío ($)** y **Horas extra** | Solo los usa flores eternas — marcados con 🌹 en la pantalla para que no se lean como algo que afecte a todos los pedidos |
+
+⚠️ **`horasMinimasAnticipacion` y `precioUrgencia` NO son lo mismo, y confundirlos cuesta dinero:**
+la primera decide si **se puede**; la segunda, si **se cobra extra**. Un ramo que no da tiempo se
+rechaza, no se cobra más caro.
+
+**El campo de mano de obra en Cantidades se dejó pero en desuso** (placeholder "Va en el precio
+por flor"). La mano de obra terminó yendo dentro de `TipoFlor.precioPorFlor` — decisión del dueño,
+y además escala sola con el tamaño del ramo. No se quitó de la pantalla por si cambia de opinión;
+el back lo ignora mientras esté en `null`.
+
+### El contrato de urgencia — lo que falta conectar y por qué está en pausa
+
+El back entregó el flujo completo, **pero QA todavía corre un build anterior al fix** (lo
+confirmaron probando en vivo: llega `precioUrgencia` pero no `entregaValida` ni `requiereAnticipo`).
+Hasta que redesplieguen, ese build **todavía tiene el bug del 150%**.
+
+Contrato ya acordado, para cuando se conecte:
+
+```
+calcular-precio  → entregaValida:false + mensajeEntrega   → NO se puede pedir, corregir fecha
+                 → requiereAnticipo:true                   → savePedido con tipoPedido:'APARTADO'
+                 → montoAnticipoSugerido (50% del total)   → POST /v1/abonos/{pedidoId}
+```
+
+**El 50% es enganche del total, no dinero extra** — ramo de $960 → $480 ahora, $480 al entregar.
+Lo confirmó el dueño con números después de que la primera redacción del back sugería cobrar 150%.
+
+`precioUrgencia`, igual que `precioManoDeObra`: **sumado en `total`, sin línea aparte** para el
+cliente.
+
+**Archivos modificados:** `flores.model.ts` (`precioCosto`, `horasMinimasAnticipacion`,
+`precioUrgencia`, `fechaHoraEntrega`, y los 4 campos nuevos del response),
+`lugar-entrega.model.ts` (`costoEnvio`, `horasExtraAnticipacion`),
+`catalogos-flores.component.ts/.html`, `gestion-lugares.component.ts/.html/.scss`.
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado contra QA: estaba en 502 (redesplegando)
+durante todo el cambio.

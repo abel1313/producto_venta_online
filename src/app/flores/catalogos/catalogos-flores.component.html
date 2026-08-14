@@ -35,7 +35,14 @@
       <div class="fl-field">
         <label class="fl-lbl">Precio por flor ($)</label>
         <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="0.00"
+               title="Lo que le cobras al cliente. Aquí va incluida tu mano de obra."
                [(ngModel)]="nuevoTipo.precioPorFlor">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Costo del material ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Opcional"
+               title="Lo que a ti te cuesta la flor. No se le muestra al cliente — sirve para calcular tu ganancia."
+               [(ngModel)]="nuevoTipo.precioCosto">
       </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoTipo.nombre.trim() || !nuevoTipo.precioPorFlor || guardando"
@@ -64,6 +71,12 @@
         <div class="fl-field">
           <label class="fl-lbl">Precio por flor ($)</label>
           <input class="fl-input fl-input--num" type="number" min="0" step="0.01" [(ngModel)]="editTipo.precioPorFlor">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Costo del material ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Opcional"
+                 title="Lo que a ti te cuesta la flor. No se le muestra al cliente."
+                 [(ngModel)]="editTipo.precioCosto">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
@@ -145,6 +158,12 @@
       <br>
       Los <b>pliegos</b> son cuántos lleva un ramo de ese tamaño — no se calcula solo, lo pones tú.
       Puedes dejarlo vacío y llenarlo después, cuando sepas cuántos gastas.
+      <br>
+      El <b>mínimo de horas</b> es cuánta anticipación necesitas para armarlo: por debajo de eso,
+      el cliente no puede pedirlo (un ramo de 100 para mañana, por ejemplo). El <b>extra de un día
+      para otro</b> es lo que cobras de más cuando sí se puede pero es con prisa.
+      <br>
+      <small>La <b>mano de obra</b> ya no se llena aquí — va dentro del precio por flor de la especie.</small>
     </p>
 
     <div class="fl-add" *ngIf="tiposActivos.length > 0">
@@ -168,9 +187,21 @@
       </div>
       <div class="fl-field">
         <label class="fl-lbl">Mano de obra ($)</label>
-        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Aún no lo sé"
-               title="Se suma al precio del ramo sin que el cliente lo vea desglosado"
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Va en el precio por flor"
+               title="Ya no hace falta: la mano de obra va dentro del precio por flor de la especie"
                [(ngModel)]="nuevaCantidad.manoDeObra">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Mínimo de horas</label>
+        <input class="fl-input fl-input--num" type="number" min="0" placeholder="Sin límite"
+               title="Menos de estas horas de anticipación, este tamaño NO se puede pedir"
+               [(ngModel)]="nuevaCantidad.horasMinimasAnticipacion">
+      </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Extra de un día para otro ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Sin extra"
+               title="Lo que se cobra de más si lo piden de un día para otro"
+               [(ngModel)]="nuevaCantidad.precioUrgencia">
       </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevaCantidad.tipoFlorId || !nuevaCantidad.cantidad || guardando"
@@ -191,8 +222,9 @@
                poco a poco, así necesita ver de un vistazo cuáles le faltan. -->
           <span class="fl-badge" *ngIf="c.pliegos">{{ c.pliegos }} pliego(s)</span>
           <span class="fl-badge fl-badge--pend" *ngIf="!c.pliegos">pliegos sin configurar</span>
-          <span class="fl-badge" *ngIf="c.manoDeObra">mano de obra ${{ c.manoDeObra | number:'1.2-2' }}</span>
-          <span class="fl-badge fl-badge--pend" *ngIf="!c.manoDeObra">sin mano de obra</span>
+          <span class="fl-badge" *ngIf="c.horasMinimasAnticipacion">mín. {{ c.horasMinimasAnticipacion }} h</span>
+          <span class="fl-badge" *ngIf="c.precioUrgencia">urgente +${{ c.precioUrgencia | number:'1.2-2' }}</span>
+          <span class="fl-badge fl-badge--pend" *ngIf="!c.horasMinimasAnticipacion && !c.precioUrgencia">sin reglas de tiempo</span>
         </span>
         <span class="fl-fila__precio">{{ c.cantidad }} flores</span>
         <div class="fl-acciones">
@@ -217,10 +249,16 @@
                  [(ngModel)]="editCantidad.pliegos">
         </div>
         <div class="fl-field">
-          <label class="fl-lbl">Mano de obra ($)</label>
-          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Aún no lo sé"
-                 title="Se suma al precio del ramo sin que el cliente lo vea desglosado"
-                 [(ngModel)]="editCantidad.manoDeObra">
+          <label class="fl-lbl">Mínimo de horas</label>
+          <input class="fl-input fl-input--num" type="number" min="0" placeholder="Sin límite"
+                 title="Menos de estas horas de anticipación, este tamaño NO se puede pedir"
+                 [(ngModel)]="editCantidad.horasMinimasAnticipacion">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Extra de un día para otro ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Sin extra"
+                 title="Lo que se cobra de más si lo piden de un día para otro"
+                 [(ngModel)]="editCantidad.precioUrgencia">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>

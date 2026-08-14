@@ -111,34 +111,13 @@
       <div class="cr-step__body">
         <label class="cr-label">¿Quieres algún accesorio?</label>
 
-        <!-- Cuando la cantidad ya cruzó el umbral, el papel deja de ser una opción: el back lo
-             agrega solo. Mostrarlo aquí como casilla bloqueada solo confundía ("¿por qué no la
-             puedo quitar?"). Se saca de la lista y se avisa; el cobro sigue visible en el
-             resumen de abajo, con su desglose de pliegos. -->
-        <p class="cr-nota" *ngIf="papelForzado">
-          📄 El papel va incluido por la cantidad de flores — lo verás desglosado en el total.
-        </p>
-
+        <!-- El papel NO se lista: va por default cuando el ramo está en el rango y se cobra por
+             dentro (decisión del dueño). Ver `accesoriosSeleccionables`. -->
         <div class="cr-accesorio-row" *ngFor="let s of accesoriosSeleccionables">
           <label class="cr-check">
             <input type="checkbox" [(ngModel)]="s.seleccionado"
                    (ngModelChange)="toggleAccesorio(s)">
-            <!-- El papel se cobra por PLIEGO, y cuántos lleva depende del tamaño del ramo. Poner
-                 solo `precio` decía "$5.00" cuando el cobro real de un ramo de 20 son $15 (3
-                 pliegos) — el cliente marcaba la casilla y el total le subía otra cosa. -->
-            <ng-container *ngIf="!s.accesorio.esPapel">
-              {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
-            </ng-container>
-            <ng-container *ngIf="s.accesorio.esPapel">
-              {{ s.accesorio.nombre }} —
-              <ng-container *ngIf="pliegosDelRamo">
-                {{ pliegosDelRamo }} pliego(s) × ${{ s.accesorio.precio | number:'1.2-2' }} =
-                <b>${{ precioPapelEstimado | number:'1.2-2' }}</b>
-              </ng-container>
-              <ng-container *ngIf="!pliegosDelRamo">
-                ${{ s.accesorio.precio | number:'1.2-2' }} por pliego
-              </ng-container>
-            </ng-container>
+            {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
           </label>
           <input class="cr-input cr-input--num" type="number" min="1"
                  *ngIf="s.seleccionado && !s.accesorio.esPapel"
@@ -205,16 +184,12 @@
       <div class="cr-aviso cr-aviso--error" *ngIf="errorCalculo">{{ errorCalculo }}</div>
 
       <ng-container *ngIf="calculo && !calculando">
+        <!-- El papel va DENTRO de esta línea, sin renglón propio: el dueño lo quiere invisible
+             para el cliente. Si se mostrara aparte, o peor, si no se sumara aquí, las líneas no
+             darían el total y el cliente notaría el descuadre. Ver `subtotalFlores`. -->
         <div class="cr-linea">
           <span>{{ calculo.cantidadFinal }} flores</span>
-          <span>${{ calculo.precioBase | number:'1.2-2' }}</span>
-        </div>
-        <div class="cr-linea" *ngIf="calculo.papelObligatorioAplicado">
-          <span>
-            📄 Papel
-            <small *ngIf="calculo.pliegosPapel">({{ calculo.pliegosPapel }} pliego(s) × ${{ calculo.precioUnitarioPapel | number:'1.2-2' }})</small>
-          </span>
-          <span>${{ calculo.precioPapel | number:'1.2-2' }}</span>
+          <span>${{ subtotalFlores | number:'1.2-2' }}</span>
         </div>
         <div class="cr-linea" *ngFor="let a of calculo.accesoriosCalculados">
           <span>🎀 {{ a.nombre }}<small *ngIf="a.cantidad > 1"> × {{ a.cantidad }}</small></span>

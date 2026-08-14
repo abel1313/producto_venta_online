@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Server: nginx/1.28.0 (Ubuntu)
+Date: Thu, 06 Aug 2026 05:29:23 GMT
+Content-Type: application/javascript
+Content-Length: 3311810
+Connection: keep-alive
+Last-Modified: Thu, 06 Aug 2026 05:21:21 GMT
+ETag: "6a7419d1-3288c2"
+Cache-Control: public, max-age=31536000, immutable
+Accept-Ranges: bytes
+

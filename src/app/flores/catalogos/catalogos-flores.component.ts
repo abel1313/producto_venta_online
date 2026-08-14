@@ -49,6 +49,36 @@ export class CatalogosFloresComponent implements OnInit {
 
   setTab(t: Tab): void { this.tab = t; this.cancelarEdicion(); }
 
+  /** El accesorio marcado como papel — es el único al que le aplican umbral y pliegos. */
+  get papel(): IAccesorioRamo | undefined {
+    return this.accesorios.find(a => a.esPapel && a.activo);
+  }
+
+  /**
+   * Tamaños que tienen pliegos configurados pero **quedan por debajo del umbral**, así que el
+   * papel NO se les va a poner solo.
+   *
+   * Existe porque son dos configuraciones separadas que tienen que concordar y nada lo verifica:
+   * el dueño registra los pliegos por tamaño en «Cantidades» y el corte en «Accesorios». Ya pasó
+   * en QA — el ramo de 20 tenía 3 pliegos y el umbral estaba en 20, así que al cliente le salía
+   * el papel como casilla opcional en vez de ir incluido. Desde fuera parecía un bug del
+   * configurador, pero eran los dos números sin coordinar.
+   *
+   * ⚠️ La comparación es `<=` porque el back usa **estrictamente mayor**: con umbral 20, un ramo
+   * de exactamente 20 tampoco lo lleva.
+   */
+  get tamanosSinPapelAutomatico(): ICantidadFlor[] {
+    const u = this.papel?.umbralActivacion;
+    if (u == null) return [];
+    return this.cantidades.filter(c => c.activo && c.pliegos != null && c.cantidad <= u);
+  }
+
+  /** El tamaño más chico que ya tiene pliegos — el umbral tiene que quedar por debajo de él. */
+  get menorTamanoConPliegos(): number | null {
+    const cs = this.cantidades.filter(c => c.activo && c.pliegos != null).map(c => c.cantidad);
+    return cs.length ? Math.min(...cs) : null;
+  }
+
   /**
    * Se cargan los 4 catálogos juntos aunque solo se vea uno: son listas chicas, y el alta de
    * cantidades necesita los tipos de flor para su selector. Traerlos por separado obligaría a

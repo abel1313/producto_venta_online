@@ -58,7 +58,12 @@
              Antes esta pantalla convertía ese aviso en un bloqueo: solo dejaba elegir una de las
              dos alternativas, así que quien pedía 22 terminaba llevándose 20 sin quererlo.
              La decisión vuelve a ser del cliente. -->
-        <div class="cr-validacion cr-validacion--warn" *ngIf="resultadoValidacion && !resultadoValidacion.valida">
+        <!-- `!cantidadConfirmada`: una vez que el cliente ya decidió (tomó una alternativa o
+             siguió con la suya), la advertencia de la cantidad rechazada sobra. Sin esto queda
+             el "✅ 20 flores" arriba y justo debajo el "con 22 el círculo puede no quedar bien"
+             con sus botones, como si todavía hubiera algo que elegir. -->
+        <div class="cr-validacion cr-validacion--warn"
+             *ngIf="resultadoValidacion && !resultadoValidacion.valida && !cantidadConfirmada">
           <p>{{ resultadoValidacion.mensaje || 'Esa cantidad no forma bien el ramo.' }}</p>
           <p class="cr-sub" *ngIf="resultadoValidacion.alternativaMenor || resultadoValidacion.alternativaMayor">
             Estas cantidades sí forman bien el círculo:

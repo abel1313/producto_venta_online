@@ -8,6 +8,7 @@ import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { NegocioService } from 'src/app/negocio/negocio.service';
+import { FloresService } from 'src/app/flores/service/flores.service';
 import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
@@ -102,7 +103,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly pedidosService: PedidosService,
     private readonly abonoService:   AbonoService,
     private readonly authService:    AuthService,
-    private readonly negocioService: NegocioService
+    private readonly negocioService: NegocioService,
+    private readonly floresService:  FloresService
   ) {}
 
   ngOnInit(): void {
@@ -183,12 +185,40 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.mostrarFormAbono = false;
   }
 
+  /**
+   * Mismo patrón que `/abonos`: revalidar el reloj antes de cobrar. Si es un ramo urgente y el
+   * pago llega tarde, el back agrega el cargo y el total sube — cobrar el monto viejo dejaría el
+   * pedido corto. Se llama en **todos** los pedidos (el back responde 200 sin cambios para los
+   * que no son de flores), y si falla por red se cobra igual.
+   *
+   * ⚠️ Este es el **segundo** punto de cobro de la app; el otro es `/abonos`. Lo que se toque
+   * aquí hay que revisarlo allá y al revés.
+   */
   registrarAbono(): void {
     if (this.registrandoAbono) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
       Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
       return;
     }
+    this.registrandoAbono = true;
+    this.floresService.revalidarAntesDePagar(this.pedido.pedido.id).subscribe({
+      next: r => {
+        if (!r?.cargoRecienAplicado) { this.ejecutarAbono(); return; }
+        this.registrandoAbono = false;
+        this.mostrarFormAbono = false;
+        Swal.fire({
+          icon: 'warning',
+          title: 'El total de este pedido cambió',
+          html: `<p>${r.mensaje ?? 'Se aplicó el cargo por entrega urgente porque el pago llegó después de la hora límite.'}</p>
+                 <p>Nuevo total: <b>$${r.totalActual.toFixed(2)}</b></p>`,
+          confirmButtonText: 'Entendido'
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: () => { this.ejecutarAbono(); }
+    });
+  }
+
+  private ejecutarAbono(): void {
     this.registrandoAbono = true;
     const body: AbonoRequest = {
       monto:      this.abonoForm.monto,

@@ -9076,3 +9076,50 @@ en el otro** (misma lección que ya está anotada para `agregar-rifa` / `rifa-me
 - `src/app/variante/venta-variante/venta-variante.component.ts` → mensaje nuevo al cancelar
 
 **Verificado con `ng build` sin errores.**
+
+---
+
+## 📋 ESTADO DE PENDIENTES — FLORES ETERNAS (revisado 2026-08-14, fin de sesión)
+
+Reemplaza a la sección "⏳ PENDIENTES ABIERTOS" de más arriba, que quedó desactualizada.
+
+### ✅ Cerrados hoy
+
+| | Cómo se cerró |
+|---|---|
+| Cargo urgente no se cobraba | El back desplegó. Verificado: ramo de 20 → 500 + 15 papel + 50 urgencia = **565**, anticipo 282.50. El aviso defensivo se apagó solo |
+| `revalidar-antes-de-pagar` sin conectar | El back lo hizo tolerante (200 para pedidos que no son de flores) → conectado en **los dos** puntos de cobro: `/abonos` y `detalle-pedido` |
+| Zonas expulsaban al visitante anónimo | El back abrió el GET a `permitAll()` → se revirtió el rodeo |
+| Pedido pendiente sin verificar | **Cancelado por el dueño** — no se guarda nada, solo se avisa |
+
+### 🔴 Bloqueante ahora mismo — el backend de QA está caído
+
+`https://qa.backend.novedades-jade.com.mx` responde **502 en todo** (hasta `/v1/cinta/activos`).
+**Producción responde 200**, y los dos sitios de front cargan bien — es solo el backend de QA.
+
+**Bloquea toda prueba en vivo.** Queda sin verificar contra el servidor (el código está listo y
+compila):
+- Que las zonas ya carguen para un visitante sin cuenta.
+- Que `revalidar-antes-de-pagar` responda 200 en un pedido normal (no de flores).
+
+### 🟠 Antes de publicar flores
+
+**En producción los GET de flores piden token.** `/v1/tipos-flor/getAll` y
+`/v1/flores/fechas-disponibles` responden `404 "Token invalido o expirado"` en prod; en QA son
+públicos. Como `/flores/ramos` y `/flores/configurar` son **rutas públicas del front**, hoy un
+visitante sin cuenta vería la pantalla rota en producción. Es el mismo `qa → main` pendiente.
+
+### 🟡 Funcionalidad que falta construir
+
+1. **Bandeja de frases pendientes (admin).** `frasesPendientes()` y `validarFrase()` ya existen en
+   `FloresService`; **falta la pantalla**. Sin ella, una frase personalizada queda "por confirmar"
+   y nadie puede aprobarle precio. Es la única pieza del módulo que sigue sin construirse.
+2. **Los ramos preconfigurados (`RamoArmado`) no validan ni cobran urgencia** — lo señaló el back.
+   Si alguien pide un ramo ya armado "para mañana", no hay bloqueo de fecha ni cargo. Solo el
+   configurador libre lo maneja.
+
+### ⚙️ Configuración que le toca al dueño
+
+**Bajar el umbral del papel a 5** en Catálogos → Accesorios. Con el corte en 20 (el valor actual),
+un ramo de exactamente 20 sigue mostrando el papel como casilla opcional en vez de ir incluido.
+La pantalla ya se lo avisa con la alerta que cruza pliegos contra umbral.

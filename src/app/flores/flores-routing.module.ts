@@ -19,6 +19,20 @@ const routes: Routes = [
   { path: 'catalogos', component: CatalogosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
   { path: 'entregas',  component: ConfigEntregasComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
   { path: 'ramos-admin', component: GestionRamosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
+  /**
+   * Misma pantalla que `/lugares-entrega` (Inventario), con su propia dirección.
+   *
+   * El catálogo de zonas se usa desde los dos menús, pero el sidebar resuelve el grupo activo
+   * por la URL: con una sola ruta compartida, entrar desde Flores dejaba el acordeón abierto en
+   * Inventario. Con una dirección propia, cada menú se queda donde el usuario lo dejó.
+   *
+   * Carga el mismo módulo — no se duplica la pantalla, solo el punto de entrada.
+   */
+  {
+    path: 'zonas',
+    loadChildren: () => import('../lugares-entrega/lugares-entrega.module').then(m => m.LugaresEntregaModule),
+    canActivate: [AuthGuard, AdminGuardGuard]
+  },
   { path: '', redirectTo: 'ramos', pathMatch: 'full' }
 ];
 

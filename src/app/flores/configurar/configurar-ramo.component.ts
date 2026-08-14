@@ -862,7 +862,20 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         }
       }
     }).then(result => {
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        // Cerrar el diálogo en silencio dejaba al cliente mirando su ramo sin saber si se
+        // registró o no. El pedido NO existe: el back rechazó el guardado por correo sin
+        // verificar, así que no se guardó nada. Se le dice, y su ramo sigue armado en pantalla.
+        Swal.fire({
+          icon: 'info',
+          title: 'Tu ramo no se registró',
+          html: `<p>Necesitamos verificar tu correo antes de tomar el pedido.</p>
+                 <p>Tu ramo sigue armado aquí — cuando quieras, vuelve a pulsar
+                 <b>«Confirmar mi ramo»</b> y te mandamos el código otra vez.</p>`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
       Swal.fire({
         icon: 'success',
         title: '¡Correo verificado!',

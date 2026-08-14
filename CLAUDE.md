@@ -8886,3 +8886,53 @@ detalle y se vuelve un bloqueo de venta.
 Para probar con sesión hay que **simular solo el endpoint protegido** (aquí `lugares-entrega`) y
 dejar el resto apuntando a QA. Con el token de prueba, la llamada real devuelve 401 → el
 interceptor manda a `/login` y la prueba mide otra pantalla sin avisar.
+
+---
+
+## ACLARACIÓN — QUÉ PASA SI EL CLIENTE NO CONFIRMA EL CÓDIGO DEL CORREO (2026-08-14)
+
+Pregunta del dueño. Verificado en el código, no de memoria.
+
+### El pedido NO se crea
+
+El orden real de los pasos es al revés de lo que parece:
+
+1. El cliente pulsa "Confirmar mi ramo" → `POST /v1/pedidos/savePedido`
+2. El back **rechaza** con 400 `"…verificar…"` porque el correo del cliente no está verificado —
+   **no guarda nada**
+3. Recién ahí el front manda el código y abre el diálogo
+4. Si verifica → se **vuelve a llamar** `savePedido`, y esta vez sí se crea
+
+O sea: mientras no verifique, **no existe pedido, ni apartado, ni stock reservado**. No queda
+basura en la base. Si cierra el navegador a medias, tampoco.
+
+**Es una sola vez por cliente**: `Cliente.correoVerificado` queda en `true` y no se le vuelve a
+pedir en compras siguientes.
+
+### Hueco tapado — cancelar el diálogo era silencioso
+
+El `.then()` hacía `if (!result.isConfirmed) return;` — el diálogo se cerraba sin decir nada y el
+cliente se quedaba viendo su ramo **sin saber si se registró o no**. Ahora sale un aviso: *"Tu ramo
+no se registró… sigue armado aquí, vuelve a pulsar Confirmar y te mandamos el código otra vez"*.
+
+La configuración del ramo **no se pierde** (`resetTodo()` solo corre en `completarExito`), y
+`guardando` ya se liberaba en el `error`, así que el botón queda listo para reintentar.
+
+Reintentar **no genera spam de correos**: el back reutiliza el código vigente si ya mandó uno al
+mismo correo (responde *"Ya tienes un codigo vigente…"`).
+
+### ⚠️ Decisión de negocio pendiente — la venta se pierde sin rastro
+
+Si el cliente nunca verifica (correo en spam, dirección mal escrita, se aburre), **el dueño no se
+entera de nada**: no hay pedido, ni aviso, ni registro del intento. Alguien armó un ramo de $565 y
+se fue, y no queda ni el nombre.
+
+Opciones si se quiere recuperar esas ventas — **no implementado, requiere decisión y backend**:
+1. Guardar el pedido como "pendiente de confirmar" y que el admin lo vea en una bandeja.
+2. Registrar solo el intento (nombre + contacto + total) para poder llamarle.
+3. Dejarlo como está: si no verifica su correo, no hay venta.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → aviso al cancelar el código
+
+**Verificado con `ng build` sin errores.**

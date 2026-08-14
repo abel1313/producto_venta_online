@@ -9123,3 +9123,69 @@ visitante sin cuenta vería la pantalla rota en producción. Es el mismo `qa →
 **Bajar el umbral del papel a 5** en Catálogos → Accesorios. Con el corte en 20 (el valor actual),
 un ramo de exactamente 20 sigue mostrando el papel como casilla opcional en vez de ir incluido.
 La pantalla ya se lo avisa con la alerta que cruza pliegos contra umbral.
+
+---
+
+## FEAT FLORES — BANDEJA DE FRASES DE LISTÓN POR APROBAR (2026-08-14)
+
+Última pieza del módulo que faltaba construir. Ruta `/flores/frases` (admin), link
+"🎗️ Frases por aprobar" en el grupo de Flores. Prefijo BEM `fp-`.
+
+### Por qué existe
+
+Cuando el cliente **escribe su propia frase** en vez de elegir una del catálogo, no hay precio de
+catálogo que cobrarle. El ramo se cotiza con `tieneListonPendienteValidacion: true` y un total
+**provisional**, y la frase queda esperando precio. Sin esta pantalla, esa opción **no se podía
+vender**: la frase quedaba en la base y nadie podía aprobarla.
+
+### ⚠️ Este caso SÍ guarda el pedido — no confundirlo con el del correo sin verificar
+
+Son dos cosas distintas que se parecen:
+
+| | Correo sin verificar | Frase personalizada |
+|---|---|---|
+| ¿Se guarda el pedido? | **No**, el back lo rechaza | **Sí**, se vende con total provisional |
+| Qué queda pendiente | Todo — no existe nada | Solo el precio de la frase |
+| Estado | Cancelado (ver sección 🛑) | **Esta pantalla** |
+
+Confirmado con el dueño en voz alta, porque él mismo hizo la conexión: *"ahí sí sería necesario
+guardar su ramo, solo quedaría pendiente la frase, ¿no?"*.
+
+### Detalles de implementación
+
+- **Aprobar exige precio** (`precioAsignado > 0`) — sin él, aviso y no se manda nada.
+- **`procesandoId` es por fila**, no un booleano global: bloquea toda la lista mientras una
+  petición está en vuelo, para que un doble clic no apruebe dos frases distintas.
+- Al aprobar, el back **no toca el pedido original**: crea un pedido `APARTADO` aparte solo con
+  esa frase. La pantalla ofrece **ir a cobrar el anticipo de una vez**
+  (`/abonos?pedidoId={pedidoAnticipoId}`, reusando el query param que ya existía) — si el dueño
+  tiene que buscar ese pedido a mano después, se queda sin cobrar.
+- Rechazar pide confirmación y aclara que **el ramo sigue en pie**, solo se descarta la frase.
+
+### ⏳ Pendiente del back (3 preguntas, ninguna bloquea)
+
+1. **Aviso al dueño cuando entra una frase nueva** — lo pidió explícitamente y **no existe**. Hoy
+   nadie le avisa: si no entra a la bandeja por su cuenta, la frase se queda ahí y el ramo no se
+   termina de cobrar. Se pidió correo al admin al guardar un `RamoPedidoDetalle` con
+   `fraseListonPersonalizada`.
+2. **¿Se le avisa al cliente cuando ya tiene precio?** Se fue con un total provisional; si nadie
+   le dice, no sabe cuánto debe ni que ya puede pagar.
+3. **¿Para qué es `anticipoPagado`** en `IValidarFraseRequest`? Está en el contrato sin documentar
+   y **hoy no se manda**. Si es "ya me lo pagó en efectivo, no generes el pedido del anticipo",
+   se agrega un checkbox a la bandeja.
+
+### 💡 Trampa de encoding, tercera vez en el proyecto
+
+Insertar un emoji con `perl -0pi -e` en el HTML **lo dobla-codifica** (`🎗️` → `ðï¸`), incluso con
+`-CSD`: la cadena del shell ya viene en UTF-8 y perl la vuelve a codificar. Se reparó sustituyendo
+los bytes rotos por los correctos en modo binario. **Regla: para texto con emoji o acentos, usar
+la herramienta de edición, no `perl`/`sed`.**
+
+**Archivos nuevos:** `src/app/flores/frases/bandeja-frases.component.ts/.html/.scss`
+
+**Archivos modificados:** `flores.module.ts`, `flores-routing.module.ts`,
+`navbar.component.html` + `.ts` (link y `GROUP_ROUTES`)
+
+**Verificado con `ng build` y en pantalla** (Playwright, sesión admin, endpoints simulados porque
+QA sigue caído): la lista carga, aprobar sin precio reclama, con precio manda
+`{aprobar:true, precioAsignado:120}` al `detalleId` correcto y ofrece ir a cobrar el anticipo.

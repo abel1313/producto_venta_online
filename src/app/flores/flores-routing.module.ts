@@ -5,6 +5,7 @@ import { ConfigEntregasComponent } from './entregas/config-entregas.component';
 import { VitrinaFloresComponent } from './vitrina/vitrina-flores.component';
 import { GestionRamosFloresComponent } from './ramos-admin/gestion-ramos-flores.component';
 import { ConfigurarRamoComponent } from './configurar/configurar-ramo.component';
+import { BandejaFrasesComponent } from './frases/bandeja-frases.component';
 import { AuthGuard } from '../auth.guard';
 import { AdminGuardGuard } from '../guard/admin-guard.guard';
 
@@ -19,6 +20,7 @@ const routes: Routes = [
   { path: 'catalogos', component: CatalogosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
   { path: 'entregas',  component: ConfigEntregasComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
   { path: 'ramos-admin', component: GestionRamosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'frases', component: BandejaFrasesComponent, canActivate: [AuthGuard, AdminGuardGuard] },
   /**
    * Misma pantalla que `/lugares-entrega` (Inventario), con su propia dirección.
    *

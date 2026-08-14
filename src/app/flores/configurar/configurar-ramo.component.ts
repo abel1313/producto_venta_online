@@ -739,7 +739,46 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     };
     this.flores.guardarDetalleRamo(pedidoId, body).subscribe({
       next: () => this.completarExito(pedidoId),
-      error: () => this.completarExito(pedidoId)
+      error: () => {
+        // Tragar el error está bien para la zona o la fecha: el pedido YA quedó cobrado y el
+        // admin puede completarlos a mano desde el detalle.
+        //
+        // ⚠️ Con la frase NO: su texto vive **únicamente** en esta llamada. Si falla, se pierde
+        // para siempre (la pantalla se resetea al salir), el ramo se arma sin listón y nadie se
+        // entera — ni el cliente, que ya lo dio por hecho, ni el dueño, que nunca la ve en la
+        // bandeja. Por eso aquí sí se avisa y se ofrece reintentar.
+        if (!hayFrase) { this.completarExito(pedidoId); return; }
+        this.avisarFraseNoGuardada(pedidoId, body);
+      }
+    });
+  }
+
+  /**
+   * La frase no se pudo guardar. Se le muestra al cliente **su propio texto** para que no se
+   * pierda aunque cierre, y se le deja reintentar sin volver a armar el ramo.
+   */
+  private avisarFraseNoGuardada(pedidoId: number, body: IRamoPedidoDetalleRequest): void {
+    const texto = body.fraseListonPersonalizada
+      ?? this.frases.find(f => f.id === body.fraseListonPredefinidaId)?.texto
+      ?? '';
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Tu ramo quedó registrado, pero la frase no',
+      html: `<p>El pedido <b>#${pedidoId}</b> está guardado, pero no pudimos guardar la frase del
+             listón.</p>` +
+            (texto ? `<p>Es esta: <b style="font-style:italic">«${texto}»</b><br>
+                      <small>Guárdala por si acaso.</small></p>` : '') +
+            `<p>Puedes reintentar ahora o decírnosla cuando confirmemos tu pedido.</p>`,
+      showCancelButton: true,
+      confirmButtonText: 'Reintentar',
+      cancelButtonText: 'Así está bien'
+    }).then(r => {
+      if (!r.isConfirmed) { this.completarExito(pedidoId); return; }
+      this.flores.guardarDetalleRamo(pedidoId, body).subscribe({
+        next: () => this.completarExito(pedidoId),
+        error: () => this.avisarFraseNoGuardada(pedidoId, body)
+      });
     });
   }
 

@@ -9189,3 +9189,47 @@ la herramienta de edición, no `perl`/`sed`.**
 **Verificado con `ng build` y en pantalla** (Playwright, sesión admin, endpoints simulados porque
 QA sigue caído): la lista carga, aprobar sin precio reclama, con precio manda
 `{aprobar:true, precioAsignado:120}` al `detalleId` correcto y ofrece ir a cobrar el anticipo.
+
+---
+
+## FIX FLORES — LA FRASE SE PODÍA PERDER EN SILENCIO (2026-08-14)
+
+Encontrado al verificar en el código la pregunta del dueño (*"¿el ramo no quedaría guardado en
+caso de que ponga una frase nueva?"*). **La respuesta a su pregunta es que sí se guarda** — pero
+revisando el camino apareció otra cosa.
+
+### El agujero
+
+El pedido se crea en dos llamadas:
+
+1. `POST /v1/pedidos/savePedido` → crea el pedido con las líneas que **sí** tienen precio.
+2. `POST /v1/flores/pedidos/{id}/detalle` → guarda la frase, la zona y la fecha.
+
+La segunda tenía `error: () => this.completarExito(pedidoId)` — **fallaba en silencio** y el
+cliente veía igual *"¡Tu ramo quedó registrado!"*.
+
+Para la zona o la fecha eso está bien: el pedido ya quedó cobrado y el admin las completa a mano
+desde el detalle. **Para la frase no**, y es un caso distinto de verdad:
+
+- Su texto **vive únicamente en esa llamada** — si falla, se pierde para siempre (la pantalla se
+  resetea al salir).
+- El ramo se arma **sin listón**, y el cliente ya lo daba por hecho.
+- **Nadie se entera**: no llega a la bandeja de frases, así que el dueño tampoco la ve.
+
+O sea: el cliente paga, se va contento, y el ramo sale mal sin que nadie lo note hasta la entrega.
+
+### El fix
+
+Si falla **y había frase**, se avisa mostrando **su propio texto** (para que pueda copiarlo aunque
+cierre) y se ofrece **reintentar** sin volver a armar el ramo. Si no había frase, se conserva el
+comportamiento silencioso de antes, que ahí sí es correcto.
+
+Nuevo `avisarFraseNoGuardada()` — se llama a sí mismo si el reintento vuelve a fallar, así que el
+cliente puede insistir sin quedarse atorado.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `finalizarConDetalleRamo()`,
+  nuevo `avisarFraseNoGuardada()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No se pudo forzar el fallo contra QA (sigue caído);
+el camino de error no está probado en vivo.

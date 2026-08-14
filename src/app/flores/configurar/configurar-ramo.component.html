@@ -42,8 +42,13 @@
           </button>
         </div>
 
+        <!-- Se muestra el `mensaje` del back TAL CUAL, no un texto propio: distingue tres casos
+             ("se cobra por unidad" cuando la cantidad es menor a la más chica registrada, vs
+             "forma bien el círculo" cuando sí está registrada). Antes decía un genérico
+             "cantidad válida" y esa distinción se perdía — hizo pensar que el back validaba
+             mal una cantidad de 10 cuando en realidad estaba avisando que iba por unidad. -->
         <div class="cr-validacion cr-validacion--ok" *ngIf="cantidadConfirmada">
-          ✅ {{ cantidadConfirmada }} flores — cantidad válida
+          ✅ {{ cantidadConfirmada }} flores — {{ mensajeCantidad }}
         </div>
 
         <div class="cr-validacion cr-validacion--warn" *ngIf="resultadoValidacion && !resultadoValidacion.valida">

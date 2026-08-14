@@ -197,6 +197,20 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * El texto que acompaña a la cantidad confirmada. Sale del `mensaje` del back, que distingue
+   * "se cobra por unidad" (cantidad menor a la más chica registrada) de "forma bien el círculo"
+   * (cantidad sí registrada) — una diferencia que le importa al cliente y al dueño.
+   *
+   * Solo se usa cuando la cantidad confirmada es la que se validó: si el cliente eligió una de
+   * las alternativas sugeridas, ese mensaje ya no aplica (hablaba de la cantidad rechazada).
+   */
+  get mensajeCantidad(): string {
+    const r = this.resultadoValidacion;
+    const aplica = r && r.valida && r.cantidadSolicitada === this.cantidadConfirmada;
+    return (aplica && r!.mensaje) ? r!.mensaje! : 'cantidad válida';
+  }
+
   usarAlternativa(cantidad: number | null): void {
     if (!cantidad) return;
     this.confirmarCantidad(cantidad);

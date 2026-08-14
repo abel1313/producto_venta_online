@@ -84,9 +84,25 @@ export class FloresService {
   }
 
   /** Colores activos de una especie. Es el que alimenta el selector de color del cliente. */
+  /**
+   * ⚠️ **Este endpoint devuelve el arreglo en `lista`, NO en `data`** — es el único de todo el
+   * módulo que lo hace así. Verificado contra QA (2026-08-13):
+   *
+   * ```
+   * GET /v1/colores-flor/por-tipo-flor/1  → { data: null,  lista: [ {...}, {...} ] }
+   * GET /v1/colores-flor/getAll           → { data: [...], lista: null }
+   * ```
+   *
+   * Leer `data` acá devolvía SIEMPRE lista vacía, y el configurador mostraba "esta especie
+   * todavía no tiene colores disponibles" aunque el catálogo sí los tuviera dados de alta —
+   * sin ningún error en consola, porque la petición respondía 200 correctamente.
+   *
+   * Se leen los dos campos por si algún día lo normalizan: así funciona antes y después.
+   */
   coloresPorTipoFlor(tipoFlorId: number): Observable<IColorFlor[]> {
-    return this.http.get<{ data: IColorFlor[] }>(`${this.urlColores}/por-tipo-flor/${tipoFlorId}`)
-      .pipe(map(r => r?.data ?? []));
+    return this.http
+      .get<{ data: IColorFlor[] | null; lista: IColorFlor[] | null }>(`${this.urlColores}/por-tipo-flor/${tipoFlorId}`)
+      .pipe(map(r => r?.lista ?? r?.data ?? []));
   }
 
   colorSave(body: IColorFlorRequest): Observable<IColorFlor> {

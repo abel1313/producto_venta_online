@@ -8324,3 +8324,32 @@ exige `valida` para mostrar el mensaje del back — así el aviso viaja tal cual
 advertencia, no un bloqueo. Antes se había perdido la distinción entre sus tres mensajes por
 mostrar un texto genérico; ahora se perdía la distinción entre "avisar" y "prohibir". El criterio
 es el mismo: **la decisión es del usuario, el sistema informa.**
+
+### FIX — el papel se oculta POR COMPLETO al cliente (2026-08-14)
+
+**Corrección del dueño**, tras el fix anterior: *"el papel no se muestra en el armado del ramo
+para el cliente, ese va por default si está en el rango pero **se cobra internamente**, y lo
+sigues mostrando como 3 × 15"*.
+
+El fix previo solo lo sacaba de la lista **cuando era automático**, y además le había puesto el
+desglose "3 pliego(s) × $5.00 = $15.00". Seguía visible en dos lados:
+1. La lista de accesorios, cuando NO era automático (el caso del ramo de 20 con umbral 20).
+2. El resumen, como renglón propio `📄 Papel (3 pliego(s) × $5.00) — $15.00`.
+
+**Ahora:** el papel **nunca** aparece — ni como opción, ni como línea, ni como aviso. No es una
+decisión del cliente en ningún caso: si el ramo está en rango, el back lo agrega y se cobra por
+dentro; si no lo está, no se cobra.
+
+⚠️ **El costo NO se esconde del total, se funde en la línea de flores** (`subtotalFlores` =
+`precioBase + precioPapel`). Quitar el renglón sin sumarlo ahí habría dejado un descuadre visible:
+las líneas no darían el total y el cliente lo notaría. **Verificado contra QA** (48 flores +
+Corona): línea de flores $1,225 + accesorios $50 = **$1,275**, igual al `total` del back.
+
+También se dejó de mandar el papel en `accesorios` (antes se auto-marcaba). El back lo agrega
+solo; mandarlo era inofensivo porque deduplica —probado: 48 flores con y sin mandarlo dan el
+mismo total— pero es más limpio no depender de eso.
+
+**Conflicto con una instrucción anterior, pendiente de aclarar:** al describir el flujo, el dueño
+había dicho que con 1 o 2 flores *"se le pregunta si quiere papel"*. Con este cambio ya no se
+pregunta nunca. Si quiere recuperar esa pregunta para ramos chicos, es volver a listarlo solo
+cuando `!papelForzado` — pero entonces vuelve a ser visible, que es justo lo que pidió quitar.

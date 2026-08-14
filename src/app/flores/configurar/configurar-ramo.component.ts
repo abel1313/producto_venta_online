@@ -282,31 +282,26 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cuántos pliegos lleva el ramo de la cantidad ya confirmada, según lo que el dueño configuró
-   * en el catálogo. `null` si esa cantidad no está registrada (venta por unidad) o si todavía no
-   * le puso el número — ahí el back cae a su respaldo y no podemos anticipar el total.
+   * Lo que ve el cliente como precio del ramo: las flores **con el papel ya adentro**.
+   *
+   * Decisión del dueño: *"el papel no se muestra en el armado del ramo para el cliente, va por
+   * default si está en el rango pero se cobra internamente"*. Por eso no hay línea de papel en
+   * el resumen — pero su costo tiene que estar en algún lado, o las líneas visibles no sumarían
+   * el total y el cliente notaría el descuadre.
    */
-  get pliegosDelRamo(): number | null {
-    if (this.cantidadConfirmada == null) return null;
-    return this.cantidades.find(c => c.cantidad === this.cantidadConfirmada)?.pliegos ?? null;
-  }
-
-  /** Lo que de verdad se va a cobrar por el papel: pliegos × precio unitario. */
-  get precioPapelEstimado(): number | null {
-    const papel = this.accesorioPapel;
-    if (!papel) return null;
-    const pliegos = this.pliegosDelRamo;
-    return pliegos ? pliegos * papel.precio : papel.precio;
+  get subtotalFlores(): number {
+    if (!this.calculo) return 0;
+    return this.calculo.precioBase + (this.calculo.papelObligatorioAplicado ? (this.calculo.precioPapel ?? 0) : 0);
   }
 
   /**
-   * Los accesorios que el cliente puede elegir de verdad. Cuando el papel ya es obligatorio por
-   * la cantidad, se saca de la lista: no es una decisión suya y verlo como casilla bloqueada
-   * solo generaba la duda de "¿por qué no la puedo quitar?". El cobro sigue visible en el
-   * resumen, con el desglose de pliegos.
+   * Los accesorios que el cliente puede elegir. **El papel nunca aparece aquí**: no es una
+   * decisión del cliente en ningún caso — si el ramo está en el rango, el back lo agrega solo y
+   * se cobra por dentro; si no lo está, no se cobra. Mostrarlo solo generaba preguntas
+   * ("¿por qué no la puedo quitar?", "¿por qué me subió el total?").
    */
   get accesoriosSeleccionables(): { accesorio: IAccesorioRamo; seleccionado: boolean; cantidad: number }[] {
-    return this.seleccionAccesorios.filter(s => !(s.accesorio.esPapel && this.papelForzado));
+    return this.seleccionAccesorios.filter(s => !s.accesorio.esPapel);
   }
 
   /** `true` cuando la cantidad ya cruzó el umbral del admin — el papel deja de ser opcional. */
@@ -316,16 +311,18 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     return this.cantidadConfirmada > papel.umbralActivacion;
   }
 
+  /**
+   * El papel ya no se marca desde la lista: el back lo agrega solo cuando la cantidad está en
+   * rango. Se deja en `false` a propósito para NO mandarlo en `accesorios` — si se mandara, el
+   * back lo dedupe igual (probado: 48 flores con y sin mandarlo dan el mismo total), pero es más
+   * limpio no depender de esa deduplicación.
+   */
   private actualizarPapelObligatorio(): void {
-    if (!this.papelForzado) return;
-    const papel = this.accesorioPapel;
-    const entry = this.seleccionAccesorios.find(s => s.accesorio.id === papel?.id);
-    if (entry) entry.seleccionado = true;
+    const entry = this.seleccionAccesorios.find(s => s.accesorio.esPapel);
+    if (entry) entry.seleccionado = false;
   }
 
-  toggleAccesorio(entry: IAccesorioSeleccion): void {
-    // Si el papel ya es obligatorio por la cantidad, no se puede desmarcar desde aquí.
-    if (entry.accesorio.esPapel && this.papelForzado) { entry.seleccionado = true; return; }
+  toggleAccesorio(_entry: IAccesorioSeleccion): void {
     this.pedirRecalculo();
   }
 

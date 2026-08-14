@@ -8125,3 +8125,71 @@ interactuar por script (aun cuando los datos sí cargaban) — parece un artefac
 de prueba, no del código (el patrón `*ngIf="condición" `usado es idéntico al que ya funcionaba
 para "Flores por pliego" en el mismo formulario). Revisado el diff a mano con cuidado en su
 lugar. Pendiente confirmar visualmente la próxima vez que se toque esta pantalla.
+---
+
+## FIX FLORES — EL CONFIGURADOR NO VEÍA LOS COLORES: `lista` vs `data` (2026-08-14)
+
+> Dos bugs distintos que se reportaron juntos como "colores y cantidades no aparecen bien aunque
+> están registrados". Solo uno era un bug de verdad; el otro era un mensaje mal mostrado que hizo
+> parecer bug algo que no lo era.
+
+### 1. 🔴 `colores-flor/por-tipo-flor` devuelve el arreglo en `lista`, no en `data`
+
+El configurador decía **"esta especie todavía no tiene colores disponibles"** aunque el catálogo
+sí tuviera colores dados de alta. `FloresService.coloresPorTipoFlor()` leía `r?.data`, y ese
+endpoint deja `data` en `null`.
+
+**Verificado contra QA antes de tocar nada:**
+```
+GET /v1/colores-flor/por-tipo-flor/1  → { "data": null,  "lista": [ {...}, {...} ] }
+GET /v1/colores-flor/getAll           → { "data": [...], "lista": null }
+```
+
+⚠️ **Es el único endpoint del módulo que lo hace así.** Se auditaron los demás uno por uno
+(`tipos-flor/getAll`, `cantidades-flor/getAll`, `accesorios-ramo/getAll`, `frases-liston/getAll`,
+`ramos-armados/activos`, `validar-cantidad`): **todos devuelven en `data`, con `lista: null`**.
+No hace falta cambiar ningún otro.
+
+Lo insidioso del bug: la petición respondía **200 correctamente**, así que no había ningún error
+en consola ni en la red — solo una lista vacía. Por eso se investigó primero del lado del back.
+
+**Fix:** leer `r?.lista ?? r?.data ?? []` — los dos campos, por si algún día lo normalizan; así
+funciona antes y después del cambio.
+
+### 2. 🟠 El front pisaba el mensaje del back y borraba una distinción importante
+
+El dueño reportó que `validar-cantidad` daba por buena una cantidad (10) que no estaba
+registrada. **No era un bug del back:** la regla es que las cantidades **por debajo de la más
+chica registrada** se aceptan como "venta por unidad" (para vender 1 o 2 flores sueltas sin tener
+que registrar cada número). Todo lo demás sí valida estricto.
+
+El back ya distingue los tres casos en el campo `mensaje`:
+- `"Cantidad aceptada tal cual, se cobra por unidad."`
+- `"Esta cantidad forma bien el circulo."`
+- `"Con 55 flores el circulo puede no quedar bien formado."`
+
+Pero el template mostraba un genérico **"— cantidad válida"** hardcodeado, ignorando ese campo.
+Con eso, un "se cobra por unidad" se veía idéntico a un "forma bien el círculo" — de ahí la
+confusión y toda la ronda de consultas.
+
+**Fix:** nuevo getter `mensajeCantidad` que muestra el `mensaje` del back tal cual. Solo aplica
+cuando la cantidad confirmada es la que se validó: si el cliente eligió una de las alternativas
+sugeridas, ese mensaje hablaba de la cantidad rechazada y ya no corresponde.
+
+**Regla general que deja esto:** cuando el back manda un `mensaje` pensado para el usuario final,
+mostrarlo tal cual en vez de escribir uno propio — si no, se pierden distinciones que el back sí
+está haciendo, y se investiga como bug algo que solo estaba mal presentado.
+
+### ⚠️ Decisión de negocio pendiente (el back la dejó abierta)
+
+¿La venta "por unidad" para cantidades chicas se mantiene, o **cualquier** cantidad no registrada
+debe rechazarse y sugerir la alternativa más cercana? El back dice que quitarlo es un cambio de
+una línea de su lado. Falta que lo decida el dueño.
+
+**Archivos modificados:**
+- `src/app/flores/service/flores.service.ts` → `coloresPorTipoFlor()` lee `lista`
+- `src/app/flores/configurar/configurar-ramo.component.ts` → getter `mensajeCantidad`
+- `src/app/flores/configurar/configurar-ramo.component.html` → usa el mensaje del back
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+la forma real de la respuesta comprobada en QA con `curl` (no asumida del documento).

@@ -8402,3 +8402,65 @@ cliente.
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado contra QA: estaba en 502 (redesplegando)
 durante todo el cambio.
+
+## FEAT FLORES — PANTALLA DE CONFIGURACIÓN DE ENTREGAS (2026-08-14)
+
+> ⚠️ **Construida contra un contrato que el back todavía NO implementó.** Es deliberado: el dueño
+> llevaba varias vueltas de diseño hablado y necesitaba ver la pantalla para corregirla antes de
+> que nadie construyera la tabla. La pantalla carga, se puede revisar y criticar; **guardar no
+> funciona** hasta que existan los endpoints, y lo dice con un aviso visible.
+
+### La regla de negocio que implementa
+
+El dueño da de alta, **por tamaño de ramo**, cuánto tarda en armarlo y a qué hora lo entrega:
+
+```
+Ramo de 48
+  Normal:   3 días, entrego a las 16:00
+  Urgente:  1 día, entrego a las 18:00, pedir antes de las 12:00, +$300
+```
+
+Con eso, la pantalla del cliente podrá ofrecerle **solo fechas que el taller sí puede cumplir**
+(un calendario que deshabilita lo imposible) en vez de dejarlo pedir cualquier cosa y rechazarla
+después. Fue propuesta del dueño y es mejor que lo que se venía diseñando: **el error no puede
+ocurrir**, así que se cae la necesidad de rechazar y recotizar.
+
+### Reglas que hay que respetar al tocar esto
+
+- **El redondeo es HACIA ARRIBA.** Una cantidad sin configuración propia usa la del tamaño
+  configurado **inmediato superior** — 37 flores se maneja con las reglas del 48. Confirmado
+  explícitamente por el dueño. El porqué, para que no se "optimice" después: un ramo de 30 da más
+  trabajo que uno de 24; tomar las reglas del 24 comprometería al taller a un plazo que no puede
+  cumplir. Redondear hacia arriba siempre juega a favor del taller.
+- **Si piden más que el tamaño más grande configurado, se bloquea** y se le pide al cliente que
+  contacte al admin. Es el único caso sin salida.
+- **El bloque urgente es opcional.** Hay tamaños que no se pueden apurar por ningún motivo (el de
+  100 para mañana). Sin `diasUrgente`, al cliente no se le muestra el botón de urgente.
+- **La hora límite no es cosmética.** Vale para pedir *y para pagar*: si el pago se pasa de esa
+  hora, el pedido se recotiza con el cargo urgente. Esa validación **tiene que vivir en el
+  servidor** — si queda solo en el front, el cliente deja la pantalla abierta y paga después con
+  el precio viejo.
+
+### Por qué NO se guardó en `localStorage` mientras llega el back
+
+Se consideró y se descartó: es exactamente el error que ya se cometió con la cinta de promociones
+(fase dummy), donde los datos vivían en un solo navegador y el dueño no lo notaba hasta que abría
+la app en otro lado. Mejor una pantalla que dice claramente "todavía no se puede guardar".
+
+### Decisión de modelo todavía abierta
+
+Se le propuso al back que esta configuración **cuelgue de `CantidadFlorValida`** (el 48 ya está
+dado de alta ahí con sus pliegos) en vez de ser una tabla nueva — para que el dueño no registre el
+mismo tamaño en dos lugares y se le desalineen. Si aceptan, esto deja de ser una pantalla aparte y
+se vuelve una pestaña más de Catálogos. **Por eso el servicio está aislado en su propio archivo:**
+si cambia el modelo, se toca `ConfigEntregaService` y la pantalla queda igual.
+
+**Archivos nuevos:** `src/app/flores/models/config-entrega.model.ts`,
+`src/app/flores/service/config-entrega.service.ts`,
+`src/app/flores/entregas/config-entregas.component.ts/.html/.scss` (BEM `ce-`).
+
+**Archivos modificados:** `flores.module.ts`, `flores-routing.module.ts` (ruta `flores/entregas`),
+`navbar.component.html` + `.ts` (link "🚚 Entregas" en el grupo 🌹).
+
+**Verificado con `ng build` sin errores**, y revisado visualmente con una vitrina estática del
+template real (Playwright) — el build no valida diseño.

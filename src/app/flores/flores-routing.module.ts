@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { CatalogosFloresComponent } from './catalogos/catalogos-flores.component';
+import { ConfigEntregasComponent } from './entregas/config-entregas.component';
 import { VitrinaFloresComponent } from './vitrina/vitrina-flores.component';
 import { GestionRamosFloresComponent } from './ramos-admin/gestion-ramos-flores.component';
 import { ConfigurarRamoComponent } from './configurar/configurar-ramo.component';
@@ -16,6 +17,7 @@ const routes: Routes = [
   // Admin — catálogos de configuración y armado de ramos. El guard vive aquí, no en el módulo,
   // porque 'ramos'/'configurar' son públicas (ver comentario en app-routing.module.ts).
   { path: 'catalogos', component: CatalogosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'entregas',  component: ConfigEntregasComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
   { path: 'ramos-admin', component: GestionRamosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
   { path: '', redirectTo: 'ramos', pathMatch: 'full' }
 ];

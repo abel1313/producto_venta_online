@@ -1,0 +1,138 @@
+<div class="ce-wrap">
+
+  <div class="ce-header">
+    <h4 class="ce-header__title">🚚 Configuración de entregas</h4>
+    <small class="ce-header__sub">Cuánto tardas en armar cada ramo y a qué hora lo entregas</small>
+  </div>
+
+  <!-- Aviso honesto del estado real: la pantalla existe para validar el diseño, todavía no
+       para usarse. Mejor decirlo que dejar que lo descubra con un error. -->
+  <div class="ce-aviso">
+    <strong>⚠️ Todavía no se puede guardar.</strong>
+    El backend para esta pantalla aún no existe — está pedida y en espera. Por ahora sirve para
+    revisar que los campos sean los correctos antes de que se construya.
+  </div>
+
+  <div class="ce-aviso ce-aviso--error" *ngIf="error">
+    <strong>{{ error }}</strong>
+    <button class="ce-btn ce-btn--ghost ce-btn--sm" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <p class="ce-hint">
+    El cliente solo va a poder elegir fechas que tú puedas cumplir. Si pide una cantidad que no
+    tenga su propia configuración, se usa la del <b>tamaño inmediato superior</b> — un ramo de 37
+    se maneja con las reglas del de 48.
+  </p>
+
+  <!-- ── Formulario ─────────────────────────────────────────────────── -->
+  <div class="ce-card">
+    <h5 class="ce-card__title">{{ editandoId ? 'Editar configuración' : 'Nueva configuración' }}</h5>
+
+    <div class="ce-field ce-field--full">
+      <label class="ce-lbl">Ramo</label>
+      <select class="ce-input" [(ngModel)]="form.cantidadFlorValidaId" [disabled]="editandoId !== null">
+        <option [ngValue]="0" disabled>Elige un tamaño…</option>
+        <option *ngFor="let c of cantidadesDisponibles" [ngValue]="c.id">
+          {{ c.cantidad }} flores{{ c.tipoFlor ? ' · ' + c.tipoFlor.nombre : '' }}
+        </option>
+      </select>
+      <small class="ce-nota" *ngIf="cantidadesDisponibles.length === 0 && !cargando">
+        Ya configuraste todos los tamaños que tienes dados de alta. Para agregar otro, primero
+        créalo en Catálogos → Cantidades.
+      </small>
+    </div>
+
+    <!-- Entrega normal -->
+    <div class="ce-bloque">
+      <h6 class="ce-bloque__titulo">Entrega normal</h6>
+      <div class="ce-row">
+        <div class="ce-field">
+          <label class="ce-lbl">Días que tardas</label>
+          <input class="ce-input" type="number" min="0" placeholder="Ej. 3" [(ngModel)]="form.diasNormal">
+        </div>
+        <div class="ce-field">
+          <label class="ce-lbl">Lo entregas a las</label>
+          <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaNormal">
+        </div>
+      </div>
+      <p class="ce-nota" *ngIf="form.diasNormal && form.horaEntregaNormal">
+        Si te lo piden hoy, lo entregas en <b>{{ form.diasNormal }} día(s)</b> a las
+        <b>{{ form.horaEntregaNormal }}</b>. Sin cargo extra.
+      </p>
+    </div>
+
+    <!-- Entrega urgente (opcional) -->
+    <div class="ce-bloque">
+      <h6 class="ce-bloque__titulo">Entrega urgente</h6>
+      <label class="ce-check">
+        <input type="checkbox" [(ngModel)]="form.ofreceUrgente">
+        <b>Este ramo se puede apurar</b>
+      </label>
+      <p class="ce-nota">
+        Déjalo sin marcar si este tamaño no se puede entregar más rápido por ningún motivo — al
+        cliente no se le mostrará la opción de urgente.
+      </p>
+
+      <div *ngIf="form.ofreceUrgente">
+        <div class="ce-row">
+          <div class="ce-field">
+            <label class="ce-lbl">Días que tardas</label>
+            <input class="ce-input" type="number" min="0" placeholder="Ej. 1" [(ngModel)]="form.diasUrgente">
+          </div>
+          <div class="ce-field">
+            <label class="ce-lbl">Lo entregas a las</label>
+            <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaUrgente">
+          </div>
+        </div>
+        <div class="ce-row">
+          <div class="ce-field">
+            <label class="ce-lbl">Te lo tienen que pedir antes de</label>
+            <input class="ce-input" type="time" [(ngModel)]="form.horaLimitePedido">
+          </div>
+          <div class="ce-field">
+            <label class="ce-lbl">Cargo extra ($)</label>
+            <input class="ce-input" type="number" min="0" step="0.01" placeholder="Ej. 300"
+                   [(ngModel)]="form.cargoUrgente">
+          </div>
+        </div>
+        <p class="ce-nota ce-nota--warn">
+          ⏰ El <b>pago</b> también tiene que quedar antes de esa hora. Si se pasa, el pedido se
+          recotiza con el cargo urgente.
+        </p>
+      </div>
+    </div>
+
+    <div class="ce-acciones">
+      <button class="ce-btn ce-btn--primary" [disabled]="!formValido || guardando" (click)="guardar()">
+        {{ editandoId ? '💾 Guardar cambios' : '+ Agregar' }}
+      </button>
+      <button class="ce-btn ce-btn--ghost" *ngIf="editandoId !== null" (click)="cancelar()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ── Lista ──────────────────────────────────────────────────────── -->
+  <p class="ce-vacio" *ngIf="cargando">Cargando…</p>
+
+  <p class="ce-vacio" *ngIf="!cargando && !error && configs.length === 0">
+    Todavía no hay ninguna configuración de entrega.
+  </p>
+
+  <div class="ce-card" *ngFor="let c of configs">
+    <div class="ce-fila">
+      <span class="ce-fila__titulo">{{ nombreCantidad(c) }}</span>
+      <div class="ce-acciones">
+        <button class="ce-ico" title="Editar" [disabled]="guardando" (click)="editar(c)">✏️</button>
+        <button class="ce-ico ce-ico--del" title="Quitar" [disabled]="guardando" (click)="eliminar(c)">🗑️</button>
+      </div>
+    </div>
+    <div class="ce-detalle">
+      <span class="ce-badge">Normal: {{ c.diasNormal }} día(s) · {{ c.horaEntregaNormal }}</span>
+      <span class="ce-badge ce-badge--urg" *ngIf="c.diasUrgente">
+        Urgente: {{ c.diasUrgente }} día(s) · {{ c.horaEntregaUrgente }} · pedir antes de
+        {{ c.horaLimitePedido }} · +${{ c.cargoUrgente | number:'1.2-2' }}
+      </span>
+      <span class="ce-badge ce-badge--pend" *ngIf="!c.diasUrgente">No se puede apurar</span>
+    </div>
+  </div>
+
+</div>

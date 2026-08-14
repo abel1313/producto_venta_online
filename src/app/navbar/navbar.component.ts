@@ -19,7 +19,9 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'ventas',       paths: ['tienda/venta-directa', 'ventas/buscar', 'abonos', 'gastos/buscar'] },
   { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
   { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
-  { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin'] },
+  // 'flores/zonas' es la misma pantalla que 'lugares-entrega' de Inventario, con ruta propia
+  // justamente para que el acordeón no salte de grupo al entrar desde aquí.
+  { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/zonas'] },
   { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
   { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta'] },
 ];

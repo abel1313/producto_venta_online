@@ -8634,3 +8634,54 @@ entonces, el cobro tardío de un ramo urgente no se recotiza.**
 **Verificado con `ng build` sin errores** y **en vivo con `ng serve` + Playwright** (claro y
 oscuro, con los endpoints mockeados simulando el back ya corregido): las líneas suman el total
 exacto, el papel no aparece en accesorios, y el botón urgente cambia fecha, cargo y anticipo.
+
+---
+
+## FIX MENÚ — «Zonas y envío» de Flores saltaba el acordeón a Inventario (2026-08-14)
+
+**Reportado:** al entrar a *Flores eternas → 📍 Zonas y envío*, el menú se quedaba abierto en
+**Inventario**, no en Flores.
+
+**Causa:** las dos entradas apuntaban a la misma URL (`/lugares-entrega`) y el sidebar resuelve el
+grupo activo **por la ruta** (`GROUP_ROUTES` en `navbar.component.ts`). Con una ruta compartida no
+hay forma de saber desde qué menú entró el usuario — `computeActiveGroup()` devolvía siempre
+`misproductos`, que es donde esa ruta estaba registrada.
+
+**Fix:** la entrada de Flores tiene ahora su **propia dirección**, `/flores/zonas`, declarada en
+`flores-routing.module.ts` como alias que carga el mismo `LugaresEntregaModule`. Cada menú
+conserva su contexto y `routerLinkActive` resalta solo el subitem correcto.
+
+**No duplica la pantalla ni el código:** webpack detectó que el módulo ahora cuelga de dos puntos
+de entrada y lo movió a un chunk compartido (`default-src_app_lugares-entrega_...`). Es un punto
+de entrada más, no una copia.
+
+**Alternativa descartada:** distinguir por query param (`/lugares-entrega?desde=flores`). Obligaba
+a meter el query param en `computeActiveGroup()` y a configurar `routerLinkActiveOptions` con
+`queryParams: 'exact'` en **ambos** links para que no se resaltaran los dos a la vez. Más piezas
+acopladas para el mismo resultado.
+
+### ⚠️ Trampa del método de prueba — navegar fuera de la zona de Angular ensucia el diagnóstico
+
+Verificando con Playwright vía `router.navigateByUrl()` desde `page.evaluate()`, los componentes
+**se acumulaban en el DOM** (4 navegaciones = 4 componentes vivos), lo que parecía una fuga grave
+introducida por la ruta nueva. **Era artefacto del método:** la navegación ocurre fuera de la zona
+de Angular, no corre el ciclo de detección de cambios y el `router-outlet` nunca destruye la vista
+anterior. Con **clics reales sobre el menú** hay exactamente un componente por vez.
+
+Es la contraparte de la lección ya anotada para pantallas públicas (ahí `ngOnInit` ni siquiera
+disparaba las peticiones). **Regla:** el truco de inyectar sesión + `navigateByUrl` sirve para
+*llegar* a una pantalla guardada, pero **nunca** para concluir nada sobre montaje/destrucción de
+componentes — para eso, clic real.
+
+Segundo detalle del mismo método: el JWT de prueba necesita el claim **`roles`** (no `role`) y
+`idUsuario`, que es lo que lee `AuthService.setRolesFromToken()`; con la clave equivocada el guard
+de admin redirige a `/tienda/buscar` y la prueba mide otra pantalla sin avisar.
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta alias `zonas`
+- `src/app/navbar/navbar.component.html` → el link de Flores apunta a `flores/zonas`
+- `src/app/navbar/navbar.component.ts` → `flores/zonas` en `GROUP_ROUTES`
+- `src/app/flores/entregas/config-entregas.component.html` → el enlace del texto también
+
+**Verificado con `ng build` y con clics reales en el menú:** `/flores/zonas` → grupo `flores`;
+`/lugares-entrega` → grupo `misproductos`; un solo componente montado en cada caso.

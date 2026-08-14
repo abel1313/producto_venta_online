@@ -208,3 +208,25 @@
   .ce-row   { flex-direction: column; }
   .ce-field { flex: 1 1 auto; }
 }
+
+// Los campos de hora necesitan más ancho del que les daría el flex por defecto: el navegador
+// recorta el "a. m. / p. m." cuando el input no está enfocado, y desde afuera parece que la hora
+// está incompleta (o peor, se confunde 6 de la mañana con 6 de la tarde).
+.ce-input[type="time"] {
+  min-width: 170px;
+}
+
+// Confirmación en palabras de la hora elegida. Redundante a propósito: es el dato que más se
+// presta a error en toda la pantalla.
+.ce-hora-eco {
+  margin-top: 4px;
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.ce-link {
+  color: var(--app-accent);
+  font-weight: 600;
+  text-decoration: underline;
+}

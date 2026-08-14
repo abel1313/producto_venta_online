@@ -16,6 +16,10 @@
     se maneja con las reglas del de 48.
     <br>
     <b>Un tamaño sin plazos no se puede pedir</b>: al cliente se le pide que te contacte.
+    <br>
+    📍 Las <b>zonas de entrega y su precio</b> se configuran aparte, en
+    <a routerLink="/lugares-entrega" class="ce-link">Lugares de entrega</a> — ahí pones Luvianos
+    en $0 y Tejupilco en $150, por ejemplo.
   </p>
 
   <p class="ce-vacio" *ngIf="cargando">Cargando…</p>
@@ -72,6 +76,7 @@
           <div class="ce-field">
             <label class="ce-lbl">Lo entregas a las</label>
             <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaNormal">
+            <span class="ce-hora-eco" *ngIf="eco(form.horaEntregaNormal)">{{ eco(form.horaEntregaNormal) }}</span>
           </div>
         </div>
         <p class="ce-nota" *ngIf="form.diasNormal && form.horaEntregaNormal">
@@ -100,12 +105,14 @@
             <div class="ce-field">
               <label class="ce-lbl">Lo entregas a las</label>
               <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaUrgente">
+              <span class="ce-hora-eco" *ngIf="eco(form.horaEntregaUrgente)">{{ eco(form.horaEntregaUrgente) }}</span>
             </div>
           </div>
           <div class="ce-row">
             <div class="ce-field">
               <label class="ce-lbl">Te lo tienen que pedir antes de</label>
               <input class="ce-input" type="time" [(ngModel)]="form.horaLimitePedido">
+              <span class="ce-hora-eco" *ngIf="eco(form.horaLimitePedido)">{{ eco(form.horaLimitePedido) }}</span>
             </div>
             <div class="ce-field">
               <label class="ce-lbl">Cargo extra ($)</label>
@@ -120,9 +127,19 @@
         </div>
       </div>
 
+      <!-- Sin esto, el botón se queda gris y no hay forma de saber qué falta. Pasa sobre todo con
+           los campos de hora: si no se elige a.m./p.m., el campo se ve lleno pero está vacío. -->
+      <p class="ce-nota ce-nota--warn" *ngIf="faltantes.length > 0">
+        Falta {{ faltantes.join(', ') }}.
+        <span *ngIf="faltaAlgunaHora">
+          Si el campo se ve lleno, revisa que hayas elegido <b>a.m. / p.m.</b> — sin esa parte la
+          hora no queda guardada.
+        </span>
+      </p>
+
       <div class="ce-acciones">
         <button class="ce-btn ce-btn--primary" [disabled]="!formValido || guardando" (click)="guardar()">
-          💾 Guardar
+          {{ guardando ? 'Guardando…' : '💾 Guardar' }}
         </button>
         <button class="ce-btn ce-btn--ghost" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
       </div>

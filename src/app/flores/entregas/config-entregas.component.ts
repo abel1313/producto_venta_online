@@ -107,10 +107,49 @@ export class ConfigEntregasComponent implements OnInit {
     this.form = this.vacio();
   }
 
+  /**
+   * Qué falta por llenar, en palabras. Se muestra junto al botón.
+   *
+   * ⚠️ Existe porque un botón deshabilitado **sin decir por qué** deja al usuario atorado, y aquí
+   * pasa fácil: un `<input type="time">` tiene tres partes (hora, minutos y a.m./p.m.) y si la
+   * última no se llena, **el campo se ve lleno pero su valor es cadena vacía**. Desde afuera
+   * parece que todo está completo y el botón sigue gris sin explicación.
+   */
+  get faltantes(): string[] {
+    const f: string[] = [];
+    if (!this.form.diasNormal) f.push('los días de la entrega normal');
+    if (!this.form.horaEntregaNormal) f.push('la hora de la entrega normal');
+    if (this.form.ofreceUrgente) {
+      if (!this.form.diasUrgente) f.push('los días de la entrega urgente');
+      if (!this.form.horaEntregaUrgente) f.push('la hora de la entrega urgente');
+      if (!this.form.horaLimitePedido) f.push('la hora límite para pedir');
+    }
+    return f;
+  }
+
+  /**
+   * Convierte "18:00" en "6:00 p.m." para mostrarlo debajo del campo.
+   *
+   * El `<input type="time">` recorta el "a. m./p. m." cuando no está enfocado, así que desde
+   * afuera no se distingue las 6 de la mañana de las 6 de la tarde — y en esta pantalla esa
+   * confusión significa entregar un ramo 12 horas tarde.
+   */
+  eco(hora: string): string {
+    if (!hora || hora.length < 4) return '';
+    const [h, m] = hora.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return '';
+    const suf = h < 12 ? 'a.m.' : 'p.m.';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${suf}`;
+  }
+
+  /** Si lo que falta es una hora, conviene avisar del a.m./p.m. — es la causa más común. */
+  get faltaAlgunaHora(): boolean {
+    return this.faltantes.some(f => f.includes('hora'));
+  }
+
   get formValido(): boolean {
-    if (!this.form.diasNormal || !this.form.horaEntregaNormal) return false;
-    if (!this.form.ofreceUrgente) return true;
-    return !!this.form.diasUrgente && !!this.form.horaEntregaUrgente && !!this.form.horaLimitePedido;
+    return this.faltantes.length === 0;
   }
 
   guardar(): void {

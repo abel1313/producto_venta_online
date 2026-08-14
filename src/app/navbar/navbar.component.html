@@ -138,6 +138,9 @@
         <ng-container *ngIf="isAdminUser">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/entregas" (click)="closeMobile()">🚚 Entregas</a>
+        <!-- Misma pantalla que vive en Inventario: las zonas las usan los pedidos normales Y las
+             flores, pero el dueño las busca aquí porque es donde configura el envío del ramo. -->
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Zonas y envío</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos-admin" (click)="closeMobile()">🎁 Administrar ramos armados</a>
         </ng-container>
       </div>

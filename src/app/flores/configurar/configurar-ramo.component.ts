@@ -544,6 +544,30 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   confirmarPedido(): void {
     if (!this.calculo || this.guardando) return;
 
+    // Avisar, no prohibir (misma regla que "Seguir con N" en el paso 2): bloquear en seco impide
+    // probar el flujo urgente completo, y el riesgo real solo existe con un cliente de verdad.
+    // Quien decide es quien vende.
+    if (this.cargoUrgenteNoAplicado) {
+      const cargo = this.fechas?.cargoUrgencia ?? 0;
+      Swal.fire({
+        icon: 'warning',
+        title: 'La urgencia no se está cobrando',
+        html: `<p>Este ramo lleva entrega urgente, pero el sistema <b>no está sumando los
+               $${cargo.toFixed(2)}</b> del cargo.</p>
+               <p>Además el pedido va a quedar <b>de contado</b>, sin el 50% de anticipo que
+               normalmente se pide para apurar un ramo.</p>`,
+        showCancelButton: true,
+        confirmButtonText: 'Continuar de todos modos',
+        cancelButtonText: 'Cancelar'
+      }).then(r => { if (r.isConfirmed) this.confirmarPedidoConfirmado(); });
+      return;
+    }
+    this.confirmarPedidoConfirmado();
+  }
+
+  private confirmarPedidoConfirmado(): void {
+    if (!this.calculo) return;
+
     const avisoFrase = this.calculo.tieneListonPendienteValidacion
       ? `<p style="color:#b45309;margin-top:10px">${this.calculo.avisoFrasePendiente ?? 'El precio de tu frase queda pendiente de aprobación.'}</p>`
       : '';

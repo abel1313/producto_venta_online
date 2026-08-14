@@ -307,15 +307,15 @@
         </div>
 
         <!-- Se pidió urgente, hay cargo configurado, y el cálculo no lo trae: el ramo se armaría
-             con prisa sin cobrar el extra. Mejor no dejar cerrar la venta. Ver
-             `cargoUrgenteNoAplicado` — se apaga solo cuando el back lo devuelva. -->
+             con prisa sin cobrar el extra. Se AVISA, no se prohíbe — confirmar pide una
+             confirmación aparte. Ver `cargoUrgenteNoAplicado`: se apaga solo cuando el back
+             devuelva el cargo. -->
         <div class="cr-aviso cr-aviso--warn" *ngIf="cargoUrgenteNoAplicado">
-          ⚠️ La entrega urgente todavía no se puede cobrar en línea. Quítala para continuar con tu
-          pedido, o contáctanos y la vemos contigo.
+          ⚠️ La entrega urgente no se está sumando al total en este momento.
         </div>
 
         <button class="cr-btn cr-btn--confirmar"
-                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || cargoUrgenteNoAplicado"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false"
                 (click)="confirmarPedido()">
           {{ guardando ? 'Guardando…' : '💐 Confirmar mi ramo' }}
         </button>

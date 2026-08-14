@@ -4,8 +4,8 @@ import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
-  IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFraseListon, IListonRequest,
-  IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
+  IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFechasDisponiblesResponse, IFraseListon,
+  IListonRequest, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { AuthService } from '../../auth/auth.service';
@@ -81,6 +81,13 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Paso 6 — entrega ─────────────────────────────────────────────────────
   lugarEntregaId: number | null = null;
   recogerEnLocal = false;
+  /** Cuándo puede entregarse este tamaño. Ver `consultarFechas()`. */
+  fechas: IFechasDisponiblesResponse | null = null;
+  consultandoFechas = false;
+  errorFechas: string | null = null;
+  urgente = false;
+  fechaEntrega = '';   // yyyy-MM-dd
+  horaEntrega = '';    // HH:mm
 
   // ── Cálculo en vivo ──────────────────────────────────────────────────────
   calculo: ICalcularPrecioResponse | null = null;
@@ -159,6 +166,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.coloresDisponibles = [];
     this.reparto = [];
     this.calculo = null;
+    this.limpiarFechas();
     if (!this.tipoSeleccionadoId) return;
 
     this.cargandoColores = true;
@@ -181,6 +189,16 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.cantidadConfirmada = null;
     this.reparto = [];
     this.calculo = null;
+    this.limpiarFechas();
+  }
+
+  /** El plazo depende del tamaño: si cambia la cantidad o la especie, el anterior ya no vale. */
+  private limpiarFechas(): void {
+    this.fechas = null;
+    this.errorFechas = null;
+    this.urgente = false;
+    this.fechaEntrega = '';
+    this.horaEntrega = '';
   }
 
   validarCantidad(): void {
@@ -252,6 +270,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     // escribirlo a mano si no hay entre qué elegir.
     if (this.reparto.length === 1) this.reparto[0].cantidad = cantidad;
     this.actualizarPapelObligatorio();
+    this.consultarFechas();
     this.pedirRecalculo();
   }
 
@@ -363,12 +382,91 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   onRecogerEnLocalChange(): void {
     if (this.recogerEnLocal) this.lugarEntregaId = null;
-    this.pedirRecalculo();
+    this.consultarFechas();
   }
 
   onLugarChange(): void {
     if (this.lugarEntregaId) this.recogerEnLocal = false;
-    this.pedirRecalculo();
+    // La zona puede sumar horas de anticipación, así que el plazo cambia con ella.
+    this.consultarFechas();
+  }
+
+  /** El cliente pidió (o canceló) la entrega apurada. Cambia la fecha y el cargo. */
+  toggleUrgente(): void {
+    this.urgente = !this.urgente;
+    this.consultarFechas();
+  }
+
+  /**
+   * Le pregunta al taller desde cuándo puede entregar este tamaño.
+   *
+   * Solo depende de (especie, cantidad, zona, urgente) — **no** del reparto entre colores, así
+   * que se llama al confirmar la cantidad y no en cada tecla del paso 3.
+   *
+   * ⚠️ Si responde `primeraFechaValida: null`, el ramo **no se puede pedir** (piden más que el
+   * tamaño máximo configurado, o urgente en un tamaño que no se puede apurar). Ahí se muestra el
+   * `mensaje` del back tal cual y se bloquea el botón de confirmar.
+   */
+  private consultarFechas(): void {
+    if (!this.tipoSeleccionadoId || !this.cantidadConfirmada) return;
+    this.consultandoFechas = true;
+    this.errorFechas = null;
+    this.flores.fechasDisponibles({
+      tipoFlorId: this.tipoSeleccionadoId,
+      cantidad: this.cantidadConfirmada,
+      lugarEntregaId: this.lugarEntregaId ?? null,
+      urgente: this.urgente
+    }).subscribe({
+      next: r => {
+        this.consultandoFechas = false;
+        this.fechas = r;
+        if (r.primeraFechaValida) {
+          // Se preselecciona lo más pronto posible: es lo que la mayoría quiere, y de paso deja
+          // el formulario completo sin que el cliente tenga que elegir nada.
+          this.fechaEntrega = r.primeraFechaValida.slice(0, 10);
+          this.horaEntrega = r.horasDisponibles?.[0] ?? r.primeraFechaValida.slice(11, 16);
+        } else {
+          this.fechaEntrega = '';
+          this.horaEntrega = '';
+          // Pedir urgente un tamaño que no se puede apurar deja el botón encendido y sin fecha:
+          // se regresa solo a normal para que el cliente no quede atorado.
+          if (this.urgente) this.urgente = false;
+        }
+        this.pedirRecalculo();
+      },
+      error: err => {
+        this.consultandoFechas = false;
+        this.fechas = null;
+        this.errorFechas = this.msg(err, 'No se pudo consultar la fecha de entrega.');
+      }
+    });
+  }
+
+  onCambiarFecha(): void { this.pedirRecalculo(); }
+
+  /** Lo que se manda al back: `2026-08-17T18:00:00`. */
+  get fechaHoraEntrega(): string | null {
+    return (this.fechaEntrega && this.horaEntrega) ? `${this.fechaEntrega}T${this.horaEntrega}:00` : null;
+  }
+
+  /** No se puede entregar antes de esto — alimenta el `min` del calendario. */
+  get minFecha(): string {
+    return this.fechas?.primeraFechaValida?.slice(0, 10) ?? '';
+  }
+
+  /** El taller no puede con este ramo: no hay fecha que ofrecer. */
+  get entregaBloqueada(): boolean {
+    return !!this.fechas && this.fechas.primeraFechaValida == null;
+  }
+
+  /** "domingo 17 de agosto, 6:00 p.m." — el ISO crudo no se le enseña al cliente. */
+  fechaLegible(iso: string | null): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dia = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+    const hora = d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${dia}, ${hora}`;
   }
 
   // ── Cálculo en vivo ──────────────────────────────────────────────────────
@@ -403,7 +501,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       accesorios: accesoriosReq,
       listones,
       lugarEntregaId: this.lugarEntregaId ?? undefined,
-      recogerEnLocal: this.recogerEnLocal || undefined
+      recogerEnLocal: this.recogerEnLocal || undefined,
+      // Sin estos dos, un ramo urgente se entregaría en la fecha apurada pero cobrado como
+      // normal y de contado — el cargo y el enganche del 50% dependen de que lleguen aquí.
+      fechaHoraEntrega: this.fechaHoraEntrega,
+      urgente: this.urgente
     }).subscribe({
       next: r => { this.calculo = r; this.calculando = false; },
       error: err => {
@@ -502,10 +604,15 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       detalles.push({ producto: { id: 0 }, cantidad: 1, precioUnitario: this.calculo.costoEnvio, subTotal: this.calculo.costoEnvio, varianteId: this.calculo.envioVarianteId });
     }
 
+    // Un ramo urgente nace APARTADO: el cliente deja el 50% de enganche para que el taller lo
+    // empiece, no paga el 100% de contado. Para APARTADO el back espera que `estadoPedido` traiga
+    // el MISMO valor que `tipoPedido`, no 'Pendiente' (mismo criterio que venta-variante).
+    const conAnticipo = this.calculo.requiereAnticipo === true;
+
     const pedido: IPedidoVarianteDTO = {
       cliente: { id: clienteId },
-      tipoPedido: 'NORMAL',
-      estadoPedido: 'Pendiente',
+      tipoPedido: conAnticipo ? 'APARTADO' : 'NORMAL',
+      estadoPedido: conAnticipo ? 'APARTADO' : 'Pendiente',
       fechaPedido: new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
@@ -555,7 +662,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   private finalizarConDetalleRamo(pedidoId: number): void {
     const hayFrase = this.listonModo !== 'ninguno';
     const hayEntrega = !!this.lugarEntregaId || this.recogerEnLocal;
-    if (!hayFrase && !hayEntrega) { this.completarExito(pedidoId); return; }
+    // La fecha OBLIGA a llamar: es en esta llamada donde el back guarda la `fechaLimitePago` y el
+    // `cargoUrgenteMonto` del pedido. Sin eso, `revalidar-antes-de-pagar` no tiene contra qué
+    // comparar y un pago tardío nunca se recotizaría.
+    const hayFecha = !!this.fechaHoraEntrega;
+    if (!hayFrase && !hayEntrega && !hayFecha) { this.completarExito(pedidoId); return; }
 
     const body: IRamoPedidoDetalleRequest = {
       ramoArmadoId: null,
@@ -563,7 +674,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fraseListonPredefinidaId: this.listonModo === 'predefinida' ? this.fraseSeleccionadaId : null,
       fraseListonPersonalizada: this.listonModo === 'personalizada' ? this.fraseTexto.trim() : null,
       lugarEntregaId: this.lugarEntregaId ?? null,
-      recogerEnLocal: this.recogerEnLocal
+      recogerEnLocal: this.recogerEnLocal,
+      fechaHoraEntrega: this.fechaHoraEntrega,
+      urgente: this.urgente
     };
     this.flores.guardarDetalleRamo(pedidoId, body).subscribe({
       next: () => this.completarExito(pedidoId),
@@ -574,10 +687,20 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   private completarExito(pedidoId: number): void {
     this.guardando = false;
     const provisional = this.calculo?.tieneListonPendienteValidacion;
+    const anticipo = this.calculo?.requiereAnticipo ? this.calculo?.montoAnticipoSugerido : null;
+    const fecha = this.fechaLegible(this.fechaHoraEntrega);
+
     Swal.fire({
       icon: 'success',
       title: '¡Tu ramo quedó registrado!',
       html: `<p>Pedido #${pedidoId}</p>` +
+            (fecha ? `<p>Entrega: <b>${fecha}</b></p>` : '') +
+            // El anticipo NO es dinero extra: es la mitad del total, la otra mitad se paga al
+            // entregar. Decirlo evita que el cliente lea "$X más" y se asuste.
+            (anticipo != null
+              ? `<p style="color:#b45309">Para empezar a armarlo te pedimos <b>$${anticipo.toFixed(2)}</b>
+                 de anticipo (la mitad del total). El resto se paga al entregar.</p>`
+              : '') +
             (provisional ? `<p style="color:#b45309">${this.calculo?.avisoFrasePendiente ?? 'El precio final de tu frase se confirma pronto.'}</p>` : ''),
       confirmButtonText: 'Ver mis pedidos'
     }).then(() => {
@@ -600,6 +723,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.lugarEntregaId = null;
     this.recogerEnLocal = false;
     this.calculo = null;
+    this.fechas = null;
+    this.errorFechas = null;
+    this.urgente = false;
+    this.fechaEntrega = '';
+    this.horaEntrega = '';
   }
 
   // ── Verificación de correo — copia exacta del flujo ya probado en

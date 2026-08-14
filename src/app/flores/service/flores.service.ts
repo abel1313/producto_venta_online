@@ -5,7 +5,8 @@ import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
   IAccesorioRamo, ICalcularPrecioRequest, ICalcularPrecioResponse, ICantidadFlor,
-  ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IFraseListon, IFrasesPendientesPaginable,
+  ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IFechasDisponiblesRequest,
+  IFechasDisponiblesResponse, IFraseListon, IFrasesPendientesPaginable,
   IRamoArmado, IRamoArmadoPaginable, IRamoArmadoRequest, IRamoPedidoDetalle,
   IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadRequest, IValidarCantidadResponse,
   IValidarFraseRequest, IValidarFraseResponse
@@ -193,6 +194,12 @@ export class FloresService {
 
   calcularPrecio(body: ICalcularPrecioRequest): Observable<ICalcularPrecioResponse> {
     return this.http.post<{ data: ICalcularPrecioResponse }>(`${this.urlCalculo}/calcular-precio`, body)
+      .pipe(map(r => r.data));
+  }
+
+  /** Desde cuándo puede entregarse ese tamaño. Ver `IFechasDisponiblesResponse`. */
+  fechasDisponibles(body: IFechasDisponiblesRequest): Observable<IFechasDisponiblesResponse> {
+    return this.http.post<{ data: IFechasDisponiblesResponse }>(`${this.urlCalculo}/fechas-disponibles`, body)
       .pipe(map(r => r.data));
   }
 

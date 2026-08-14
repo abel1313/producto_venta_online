@@ -222,8 +222,10 @@
       Aquí solo se da de alta el accesorio y su precio — el auto-agregado por cantidad de flores
       solo existe para el que marques como <b>«Es el papel»</b> (los demás son opcionales, se
       eligen a mano al armar el ramo). Marca esa casilla primero para ver los 2 campos que
-      dependen de ella: <b>«Se cobra solo desde»</b> y <b>«Flores por pliego»</b>. Solo puede
-      haber un accesorio marcado como papel.
+      dependen de ella: <b>«Obligatorio con más de»</b> y <b>«Flores por pliego»</b>.
+      <br>
+      ⚠️ Ese número es <b>estrictamente mayor</b>: si pones 20, el papel entra a partir de 21.
+      Para que un ramo de 20 ya lo incluya, pon 19. Solo puede haber un accesorio marcado como papel.
     </p>
 
     <div class="fl-add">
@@ -248,9 +250,9 @@
         </div>
       </div>
       <div class="fl-field" *ngIf="nuevoAccesorio.esPapel">
-        <label class="fl-lbl">Se cobra solo desde</label>
+        <label class="fl-lbl">Obligatorio con más de</label>
         <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
-               title="A partir de cuántas flores se agrega solo al cobro"
+               title="Se agrega solo cuando el ramo tiene MÁS flores que este número — con 20, aplica desde 21"
                [(ngModel)]="nuevoAccesorio.umbralActivacion">
       </div>
       <div class="fl-field" *ngIf="nuevoAccesorio.esPapel">
@@ -277,7 +279,7 @@
           {{ a.nombre }}
           <span class="fl-badge" *ngIf="a.esPapel">papel</span>
           <span class="fl-badge fl-badge--alt" *ngIf="a.admiteTextoLibre">texto libre</span>
-          <span class="fl-badge" *ngIf="a.esPapel && a.umbralActivacion">automático desde {{ a.umbralActivacion }}</span>
+          <span class="fl-badge" *ngIf="a.esPapel && a.umbralActivacion">automático con más de {{ a.umbralActivacion }}</span>
           <span class="fl-badge" *ngIf="a.esPapel && a.floresPorPliego">{{ a.floresPorPliego }} flores/pliego</span>
         </span>
         <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}{{ a.esPapel && a.floresPorPliego ? ' /pliego' : '' }}</span>
@@ -304,9 +306,9 @@
           </label>
         </div>
         <div class="fl-field" *ngIf="editAccesorio.esPapel">
-          <label class="fl-lbl">Se cobra solo desde</label>
+          <label class="fl-lbl">Obligatorio con más de</label>
           <input class="fl-input fl-input--num" type="number" min="0" placeholder="Vacío = nunca"
-                 title="A partir de cuántas flores se agrega solo al cobro"
+                 title="Se agrega solo cuando el ramo tiene MÁS flores que este número — con 20, aplica desde 21"
                  [(ngModel)]="editAccesorio.umbralActivacion">
         </div>
         <div class="fl-field" *ngIf="editAccesorio.esPapel">

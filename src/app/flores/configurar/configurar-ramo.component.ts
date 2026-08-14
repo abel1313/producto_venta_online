@@ -5,7 +5,7 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFraseListon, IListonRequest,
-  IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse
+  IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { AuthService } from '../../auth/auth.service';
@@ -51,6 +51,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   tipos: ITipoFlor[] = [];
   accesorios: IAccesorioRamo[] = [];
   frases: IFraseListon[] = [];
+  cantidades: ICantidadFlor[] = [];
   lugares: ILugarEntrega[] = [];
   cargandoCatalogo = false;
   errorCatalogo: string | null = null;
@@ -127,12 +128,18 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     forkJoin({
       tipos:      this.flores.tiposGetAll(),
       accesorios: this.flores.accesoriosGetAll(),
-      frases:     this.flores.frasesGetAll()
+      frases:     this.flores.frasesGetAll(),
+      // Se traen las cantidades para poder decirle al cliente cuánto le va a costar el papel
+      // ANTES de que lo marque: el precio del accesorio es por pliego, y cuántos pliegos lleva
+      // depende del tamaño del ramo (`CantidadFlorValida.pliegos`). Sin esto, la casilla decía
+      // "$5.00" cuando el cobro real de un ramo de 20 son $15 (3 pliegos).
+      cantidades: this.flores.cantidadesGetAll()
     }).subscribe({
       next: r => {
         this.tipos      = r.tipos.filter(t => t.activo);
         this.accesorios = r.accesorios.filter(a => a.activo);
         this.frases     = r.frases.filter(f => f.activo);
+        this.cantidades = r.cantidades.filter(c => c.activo);
         this.seleccionAccesorios = this.accesorios.map(a => ({ accesorio: a, seleccionado: false, cantidad: 1 }));
         this.cargandoCatalogo = false;
       },
@@ -250,6 +257,24 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   get accesorioPapel(): IAccesorioRamo | undefined {
     return this.accesorios.find(a => a.esPapel);
+  }
+
+  /**
+   * Cuántos pliegos lleva el ramo de la cantidad ya confirmada, según lo que el dueño configuró
+   * en el catálogo. `null` si esa cantidad no está registrada (venta por unidad) o si todavía no
+   * le puso el número — ahí el back cae a su respaldo y no podemos anticipar el total.
+   */
+  get pliegosDelRamo(): number | null {
+    if (this.cantidadConfirmada == null) return null;
+    return this.cantidades.find(c => c.cantidad === this.cantidadConfirmada)?.pliegos ?? null;
+  }
+
+  /** Lo que de verdad se va a cobrar por el papel: pliegos × precio unitario. */
+  get precioPapelEstimado(): number | null {
+    const papel = this.accesorioPapel;
+    if (!papel) return null;
+    const pliegos = this.pliegosDelRamo;
+    return pliegos ? pliegos * papel.precio : papel.precio;
   }
 
   /**

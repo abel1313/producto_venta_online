@@ -8237,3 +8237,65 @@ aviso — el cobro sigue visible en el resumen con su desglose de pliegos.
 **Verificado contra QA que NO se cobra doble** cuando el front igual lo manda en `accesorios`: el
 back deduplica (48 flores con y sin mandarlo → mismo total, $1,205). Por eso no se tocó la lógica
 del request.
+
+### FIX — el umbral del papel es ESTRICTAMENTE MAYOR, y la etiqueta decía lo contrario (2026-08-14)
+
+**Reportado:** *"eligió el de 20, ya lleva configurado el papel, no debería aparecer"* — pero el
+papel seguía saliendo en «¿Quieres algún accesorio?».
+
+**No era el filtro** (`accesoriosSeleccionables` funciona). Era la semántica del umbral.
+Comprobado contra QA con el umbral en 20:
+
+```
+ramo de 19 → papel automático: NO
+ramo de 20 → papel automático: NO   ← el caso reportado
+ramo de 21 → papel automático: SÍ
+```
+
+El back compara `cantidadFinal > umbralActivacion` (**estrictamente mayor**), pero la etiqueta
+del catálogo decía **«Se cobra solo desde»**, que se lee inclusivo. El dueño puso 20 esperando
+"de 20 en adelante" y obtuvo "a partir de 21".
+
+**Fix (solo texto, sin tocar la lógica):** la etiqueta pasa a **«Obligatorio con más de»**, el
+badge del listado a "automático con más de N", y el hint explica el caso borde: *"si pones 20, el
+papel entra a partir de 21; para que un ramo de 20 ya lo incluya, pon 19"*.
+
+⚠️ **Pendiente de decidir:** si conviene pedirle al back que sea `>=` en vez de `>`. Es más
+natural de leer ("desde 20" = 20 incluido) pero cambia el comportamiento de lo ya configurado.
+No se pidió todavía.
+
+### FIX — el papel mostraba $5 cuando el cobro real eran $15
+
+**Reportado:** *"cuando no sea un ramo seleccionado sí aparece que si quiere papel, pero no
+aparece el precio"*.
+
+La casilla mostraba `accesorio.precio` = **$5.00**, pero ese precio es **por pliego**. Con el
+dueño ya configurando `pliegos` por cantidad (20→3, 48→5, 62→7), un ramo de 20 cobra **$15**.
+Verificado en QA: marcar el papel con 20 flores devuelve `accesoriosCalculados: ["Papel $15"]`.
+O sea el cliente veía $5, marcaba, y el total le subía $15.
+
+**Fix:** el configurador ahora carga también `cantidades-flor` (público) y calcula lo que se va a
+cobrar **antes** de que el cliente marque la casilla:
+
+```
+Papel — 3 pliego(s) × $5.00 = $15.00     ← cuando la cantidad tiene pliegos configurados
+Papel — $5.00 por pliego                 ← cuando no (venta por unidad o sin configurar)
+```
+
+Getters nuevos: `pliegosDelRamo` (busca la cantidad confirmada en el catálogo) y
+`precioPapelEstimado`. Los demás accesorios siguen mostrando su precio plano — solo el papel se
+cobra por pliego.
+
+### ⚠️ Select-on-focus en inputs numéricos — arreglo aplicado pero SIN verificar
+
+El listener global de `app.component.ts` usaba solo `focusin` + `select()`. Con **clic** eso no
+alcanza: la secuencia es `mousedown → focusin (seleccionamos) → mouseup`, y ese mouseup coloca el
+cursor y **borra la selección**. Funcionaba con Tab, no con clic — que es como se usa siempre.
+
+Se agregó cancelar ese primer `mouseup` (con detección de arrastre, para no romper la selección
+manual de un pedazo del texto).
+
+⚠️ **La verificación automática no fue concluyente:** el test con Playwright dio el mismo
+resultado con y sin el arreglo (el clic sintético no reproduce el borrado de selección del clic
+real). **Falta comprobarlo a mano en un navegador**: dar clic en un campo con "0", escribir, y
+confirmar que reemplaza en vez de quedar "025".

@@ -8464,3 +8464,40 @@ si cambia el modelo, se toca `ConfigEntregaService` y la pantalla queda igual.
 
 **Verificado con `ng build` sin errores**, y revisado visualmente con una vitrina estática del
 template real (Playwright) — el build no valida diseño.
+
+### La configuración de entregas cuelga de `CantidadFlorValida` (2026-08-14)
+
+El back aceptó la propuesta: **no hay tabla ni endpoints propios.** Los 6 campos
+(`diasNormal`, `horaEntregaNormal`, `diasUrgente`, `horaEntregaUrgente`, `horaLimitePedido`,
+`cargoUrgente`) se agregaron a `CantidadFlorValida` y se guardan con `/v1/cantidades-flor` de
+siempre. Migración ya corrida en QA y prod; verificado con curl que los 6 llegan en el `getAll`.
+
+Se borraron `config-entrega.model.ts` y `config-entrega.service.ts`, que se habían escrito como
+contrato provisional mientras el back decidía.
+
+**🐛 Bug que atajó el compilador — y que habría borrado datos:** el CRUD genérico **reemplaza el
+registro completo**. Los 3 puntos donde `catalogos-flores` guarda una cantidad (alta, edición
+inline y toggle de activo) no mandaban los campos nuevos, así que **editar los pliegos desde
+Catálogos habría borrado la configuración de entrega** hecha en la otra pantalla. Ahora los tres
+reenvían los 6 campos tal cual venían.
+
+⚠️ **Regla para cualquier campo que se agregue a `CantidadFlorValida` de aquí en adelante:** hay
+que reenviarlo en TODOS los puntos que llaman `cantidadUpdate`, no solo en la pantalla que lo
+edita. Son 4 hoy (3 en catálogos + 1 en entregas).
+
+### Endpoints nuevos del back, ya operativos en QA
+
+| Endpoint | Para qué |
+|---|---|
+| `POST /v1/flores/fechas-disponibles` | **Público.** Devuelve `primeraFechaValida`, `horasDisponibles`, `cantidadAplicada`, `cargoUrgencia`, `ofreceUrgente`, `mensaje`. Es lo que va a alimentar el calendario del cliente |
+| `POST /v1/flores/pedidos/{pedidoId}/revalidar-antes-de-pagar` | Se llama **antes** de `POST /v1/abonos/{pedidoId}`. Si el pago se pasó de la hora límite, agrega el cargo urgente y devuelve `totalActual` — hay que abonar **ese** monto, no el calculado antes. Es idempotente |
+
+⚠️ `fechas-disponibles` pide **`tipoFlorId`** además de la cantidad — el back lo agregó a la
+propuesta original y tiene razón: `CantidadFlorValida` es por (especie, cantidad), y sin la especie
+no se sabe contra qué catálogo hacer el redondeo hacia arriba.
+
+⚠️ **Las horas viajan como `HH:mm:ss`** ("16:00:00") pero un `<input type="time">` solo entiende
+`HH:mm` — si se le pasa el valor con segundos **el campo se queda vacío sin avisar**. Por eso
+`ConfigEntregasComponent` recorta al leer (`aInput`) y completa al guardar (`aBack`).
+
+**Verificado con `ng build` sin errores.** ⚠️ La pantalla no se ha probado guardando contra QA.

@@ -306,8 +306,16 @@
           ⚠️ {{ calculo.mensajeEntrega || 'La fecha que elegiste ya no se puede cumplir — elige otra.' }}
         </div>
 
+        <!-- Se pidió urgente, hay cargo configurado, y el cálculo no lo trae: el ramo se armaría
+             con prisa sin cobrar el extra. Mejor no dejar cerrar la venta. Ver
+             `cargoUrgenteNoAplicado` — se apaga solo cuando el back lo devuelva. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="cargoUrgenteNoAplicado">
+          ⚠️ La entrega urgente todavía no se puede cobrar en línea. Quítala para continuar con tu
+          pedido, o contáctanos y la vemos contigo.
+        </div>
+
         <button class="cr-btn cr-btn--confirmar"
-                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || cargoUrgenteNoAplicado"
                 (click)="confirmarPedido()">
           {{ guardando ? 'Guardando…' : '💐 Confirmar mi ramo' }}
         </button>

@@ -444,6 +444,29 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   onCambiarFecha(): void { this.pedirRecalculo(); }
 
+  /**
+   * El cliente pidió entrega urgente, ese tamaño **sí** tiene cargo configurado… y el cálculo
+   * volvió sin cobrarlo. O sea: el taller correría el ramo con prisa **gratis**, y encima el
+   * pedido nacería de contado en vez de apartado con su 50%.
+   *
+   * Pasa hoy en QA: `fechas-disponibles` devuelve `cargoUrgencia: 300` y `calcular-precio`, con
+   * los mismos datos y en el mismo instante, devuelve `precioUrgencia: null` — el arreglo del
+   * back existe pero no está desplegado.
+   *
+   * No se "arregla" sumando el cargo aquí: el front no puede crear la línea del pedido (no hay
+   * variante para la urgencia), así que enseñaría un total distinto al que se cobra. Se prefiere
+   * bloquear la venta antes que cobrar de menos.
+   *
+   * ⚠️ **Se apaga solo** cuando el back empiece a devolver `precioUrgencia` — no hay que acordarse
+   * de quitar nada.
+   */
+  get cargoUrgenteNoAplicado(): boolean {
+    return this.urgente
+      && !!this.fechas?.cargoUrgencia
+      && !!this.calculo
+      && !this.calculo.precioUrgencia;
+  }
+
   /** Lo que se manda al back: `2026-08-17T18:00:00`. */
   get fechaHoraEntrega(): string | null {
     return (this.fechaEntrega && this.horaEntrega) ? `${this.fechaEntrega}T${this.horaEntrega}:00` : null;

@@ -8685,3 +8685,51 @@ de admin redirige a `/tienda/buscar` y la prueba mide otra pantalla sin avisar.
 
 **Verificado con `ng build` y con clics reales en el menú:** `/flores/zonas` → grupo `flores`;
 `/lugares-entrega` → grupo `misproductos`; un solo componente montado en cada caso.
+
+---
+
+## FIX FLORES — BLOQUEO DEFENSIVO CUANDO EL CARGO URGENTE NO SE APLICA (2026-08-14)
+
+**Situación:** el dueño probando en vivo reporta que el cargo urgente no sube el total. Tercera
+verificación contra QA, con todo descartado:
+
+| Qué se descartó | Cómo |
+|---|---|
+| El nombre del campo | 4 variantes (`urgente`, `esUrgente`, `entregaUrgente`, `"true"`) → idéntico |
+| La configuración del dueño | `fechas-disponibles` devuelve `cargoUrgencia: 50` para ese mismo tamaño |
+| El front | Payload capturado del navegador: manda `urgente:true` + `fechaHoraEntrega` |
+
+Queda solo el despliegue del back. **Su arreglo existe pero no está en QA.**
+
+### El riesgo no era cosmético — por eso se bloquea la venta
+
+Con `requiereAnticipo: false`, un ramo urgente **no solo se cobra sin el extra: nace `NORMAL` en
+vez de `APARTADO`**. El taller lo arma con prisa, gratis, y sin haber recibido el 50% de enganche.
+
+Nuevo getter `cargoUrgenteNoAplicado`: pidió urgente **+** el tamaño tiene cargo **+** el cálculo
+volvió sin él → aviso visible y botón de confirmar deshabilitado.
+
+**⚠️ Por qué NO se suma el cargo en el front**, que era lo tentador: la urgencia **no tiene
+`varianteId`** (a diferencia del papel, los accesorios o el envío), así que el front no puede
+crear su línea en `savePedido`. Sumarlo solo al total mostrado enseñaría un número distinto al que
+se cobra — peor que no vender.
+
+**Se apaga solo** en cuanto el back devuelva `precioUrgencia`. No hay que acordarse de quitarlo.
+
+### 🟠 Hallazgo aparte — en PRODUCCIÓN los GET de flores piden token
+
+```
+PROD  GET  /v1/cinta/activos              → 200 (público, ok)
+PROD  GET  /v1/tipos-flor/getAll          → 404 "Token invalido o expirado"
+PROD  POST /v1/flores/fechas-disponibles  → 404 "Token invalido o expirado"
+```
+
+En QA responden 200 sin token. Como `/flores/ramos` y `/flores/configurar` son **rutas públicas**
+del front, tal como está prod un visitante sin cuenta vería la pantalla rota. Probablemente el
+mismo `qa → main` pendiente. Reportado; no bloquea porque las pruebas van en QA.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `cargoUrgenteNoAplicado`
+- `src/app/flores/configurar/configurar-ramo.component.html` → aviso + `[disabled]`
+
+**Verificado con `ng build` sin errores.**

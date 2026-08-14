@@ -19,7 +19,19 @@
 export interface ITipoFlor {
   id: number;
   nombre: string;
+  /**
+   * Lo que se le cobra al cliente por flor. **Incluye la mano de obra** — decisión del dueño:
+   * en vez de un campo aparte, mete su trabajo aquí (ej. $10 de flor + $15 de trabajo = $25).
+   * Así escala solo con el tamaño del ramo, sin necesidad de modelar nada.
+   */
   precioPorFlor: number;
+  /**
+   * Lo que a él le cuesta la flor (solo el material). No se le muestra al cliente ni entra en
+   * ningún cálculo de venta: sirve para que el sistema saque el margen, igual que con cualquier
+   * otro producto — el back lo sincroniza al producto sombra de cada color y de ahí lo leen los
+   * reportes de ganancia.
+   */
+  precioCosto?: number | null;
   activo: boolean;
 }
 
@@ -79,6 +91,22 @@ export interface ICantidadFlor {
    * forma informativa, para admin o reportes. `null` = todavía sin configurar.
    */
   manoDeObra: number | null;
+  /**
+   * Mínimo de horas entre "ahora" y la entrega para poder armar un ramo de este tamaño (sin
+   * contar la zona, que suma aparte con `LugarEntrega.horasExtraAnticipacion`).
+   *
+   * Es lo que **bloquea** un pedido imposible: un ramo de 100 flores para mañana no se puede.
+   * `null` = sin restricción de tiempo para este tamaño.
+   */
+  horasMinimasAnticipacion: number | null;
+  /**
+   * Lo que se cobra de más cuando el ramo se pide **de un día para otro**. Un monto que el dueño
+   * configura por tamaño, no un cálculo.
+   *
+   * ⚠️ No confundir con `horasMinimasAnticipacion`: esa decide si **se puede**; esta, si **se
+   * cobra extra**. Un ramo que no se puede en ese plazo se rechaza, no se cobra más caro.
+   */
+  precioUrgencia: number | null;
   activo: boolean;
 }
 
@@ -88,6 +116,8 @@ export interface ICantidadFlorRequest {
   cantidad: number;
   pliegos: number | null;
   manoDeObra: number | null;
+  horasMinimasAnticipacion: number | null;
+  precioUrgencia: number | null;
   activo: boolean;
 }
 
@@ -227,6 +257,14 @@ export interface IListonRequest {
 
 export interface ICalcularPrecioRequest {
   /**
+   * Cuándo la quiere el cliente. Opcional: **sin este campo no se valida el tiempo ni se cobra
+   * urgencia**, y todo se comporta como antes.
+   *
+   * Formato ISO `LocalDateTime` (`2026-08-20T12:00:00`). Se vuelve a mandar después en
+   * `guardarDetalleRamo` — el back no confía en lo ya cotizado y revalida en el servidor.
+   */
+  fechaHoraEntrega?: string | null;
+  /**
    * Cómo se reparte la cantidad entre colores. Un ramo de un solo color es una lista de una
    * entrada. **Todos los colores deben ser de la misma especie**, si no el back responde 400.
    */
@@ -278,6 +316,31 @@ export interface ICalcularPrecioResponse {
    * desglose de mano de obra.
    */
   precioManoDeObra: number | null;
+  /**
+   * `false` cuando no da tiempo de armar el ramo para la fecha/hora pedida (contando la zona).
+   * El resto de la respuesta viene calculado igual, para poder seguir mostrando el precio
+   * mientras el cliente corrige la fecha — pero **el pedido no se debe poder generar**.
+   */
+  entregaValida?: boolean;
+  /** El motivo, cuando `entregaValida` es `false`. Mostrarlo tal cual. */
+  mensajeEntrega?: string | null;
+  /**
+   * Lo que se cobra de más por ser de un día para otro. Ya sumado en `total`.
+   * ⚠️ **Sin línea aparte para el cliente**, mismo criterio que `precioManoDeObra`.
+   */
+  precioUrgencia?: number | null;
+  /**
+   * `true` cuando aplicó `precioUrgencia`. Es la señal para crear el pedido como **APARTADO**
+   * (`tipoPedido: 'APARTADO'` en `savePedido`) en vez de cobrarlo completo.
+   */
+  requiereAnticipo?: boolean;
+  /**
+   * El 50% de `total` (envío incluido) que el cliente paga como enganche.
+   *
+   * ⚠️ **No es dinero adicional**: sale del total. Ej. ramo $960 → paga $480 ahora y $480 al
+   * entregar. Se registra con `POST /v1/abonos/{pedidoId}`, el flujo de crédito de siempre.
+   */
+  montoAnticipoSugerido?: number | null;
   accesoriosCalculados: (IRamoAccesorioCalculado & { agregadoAutomaticoPorRegla: boolean; varianteId: number })[];
   subtotalAccesorios: number;
   listonesCalculados: (IListonCalculado & { varianteId?: number | null })[];

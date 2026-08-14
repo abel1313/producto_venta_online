@@ -29,8 +29,8 @@ export class CatalogosFloresComponent implements OnInit {
   error: string | null = null;
 
   // Altas
-  nuevoTipo       = { nombre: '', precioPorFlor: null as number | null };
-  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null, pliegos: null as number | null, manoDeObra: null as number | null };
+  nuevoTipo       = { nombre: '', precioPorFlor: null as number | null, precioCosto: null as number | null };
+  nuevaCantidad   = { tipoFlorId: 0, cantidad: null as number | null, pliegos: null as number | null, manoDeObra: null as number | null, horasMinimasAnticipacion: null as number | null, precioUrgencia: null as number | null };
   nuevoColor      = { tipoFlorId: 0, nombre: '', stock: null as number | null };
   nuevoAccesorio  = { nombre: '', precio: null as number | null, admiteTextoLibre: false, esPapel: false, umbralActivacion: null as number | null, floresPorPliego: null as number | null, pliegosPorDefecto: null as number | null };
   nuevaFrase      = { texto: '', precio: null as number | null };
@@ -96,8 +96,8 @@ export class CatalogosFloresComponent implements OnInit {
     const n = this.nuevoTipo.nombre.trim();
     if (!n || !this.nuevoTipo.precioPorFlor || this.nuevoTipo.precioPorFlor <= 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.tipoSave({ nombre: n, precioPorFlor: this.nuevoTipo.precioPorFlor, activo: true }),
-      () => { this.nuevoTipo = { nombre: '', precioPorFlor: null }; },
+      this.flores.tipoSave({ nombre: n, precioPorFlor: this.nuevoTipo.precioPorFlor, precioCosto: this.nuevoTipo.precioCosto, activo: true }),
+      () => { this.nuevoTipo = { nombre: '', precioPorFlor: null, precioCosto: null }; },
       'No se pudo agregar el tipo de flor.'
     );
   }
@@ -116,8 +116,8 @@ export class CatalogosFloresComponent implements OnInit {
     const { tipoFlorId, cantidad } = this.nuevaCantidad;
     if (!tipoFlorId || !cantidad || cantidad <= 0 || this.guardando) return;
     this.ejecutar(
-      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, manoDeObra: this.nuevaCantidad.manoDeObra, activo: true }),
-      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null, manoDeObra: null }; },
+      this.flores.cantidadSave({ tipoFlor: { id: tipoFlorId }, cantidad, pliegos: this.nuevaCantidad.pliegos, manoDeObra: this.nuevaCantidad.manoDeObra, horasMinimasAnticipacion: this.nuevaCantidad.horasMinimasAnticipacion, precioUrgencia: this.nuevaCantidad.precioUrgencia, activo: true }),
+      () => { this.nuevaCantidad = { tipoFlorId: 0, cantidad: null, pliegos: null, manoDeObra: null, horasMinimasAnticipacion: null, precioUrgencia: null }; },
       'No se pudo agregar la cantidad.'
     );
   }
@@ -191,6 +191,8 @@ export class CatalogosFloresComponent implements OnInit {
         cantidad: this.editCantidad.cantidad,
         pliegos: this.editCantidad.pliegos,
         manoDeObra: this.editCantidad.manoDeObra,
+        horasMinimasAnticipacion: this.editCantidad.horasMinimasAnticipacion,
+        precioUrgencia: this.editCantidad.precioUrgencia,
         activo: this.editCantidad.activo
       });
     } else if (this.editAccesorio && this.editAccesorio.nombre.trim()) {
@@ -225,7 +227,7 @@ export class CatalogosFloresComponent implements OnInit {
       case 'cantidades': {
         const c = item as ICantidadFlor;
         if (!c.tipoFlor) return;   // renglón inconsistente: sin tipo no se puede reenviar
-        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, manoDeObra: c.manoDeObra, activo });
+        accion = this.flores.cantidadUpdate({ id: c.id, tipoFlor: { id: c.tipoFlor.id }, cantidad: c.cantidad, pliegos: c.pliegos, manoDeObra: c.manoDeObra, horasMinimasAnticipacion: c.horasMinimasAnticipacion, precioUrgencia: c.precioUrgencia, activo });
         break;
       }
       case 'accesorios': accion = this.flores.accesorioUpdate({ ...(item as IAccesorioRamo), activo }); break;

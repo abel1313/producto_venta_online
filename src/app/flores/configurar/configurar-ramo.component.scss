@@ -300,3 +300,81 @@
     background: rgba(251, 191, 36, .12);
   }
 }
+
+// ── Paso 6: fecha de entrega ─────────────────────────────────────────────
+// Ámbar (no rojo): que este tamaño no tenga plazo no es un error del cliente ni una falla — es
+// que el taller no se puede comprometer, y el mensaje lo manda a contactarnos.
+.cr-aviso--warn {
+  background: rgba(180, 83, 9, .1);
+  border: 1px solid rgba(180, 83, 9, .28);
+  color: var(--app-text);
+  margin: 10px 0 0;
+  display: block;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.cr-fecha-min {
+  margin: 12px 0 0;
+  font-size: .88rem;
+  color: var(--app-text);
+}
+
+.cr-fecha-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.cr-fecha-campo {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.cr-sub-label {
+  display: block;
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--app-text-muted, #5F8375);
+  margin-bottom: 4px;
+}
+
+// Ámbar en vez del verde de marca: es un extra que cuesta dinero, no el camino por defecto.
+// Encendido se rellena, para que se note de un vistazo que está activo.
+.cr-btn--urgente {
+  margin-top: 12px;
+  background: transparent;
+  border: 1.5px solid #b45309;
+  color: #b45309;
+  font-weight: 700;
+
+  small { font-weight: 600; }
+}
+
+.cr-btn--urgente-on {
+  background: #b45309;
+  color: #fff;
+}
+
+.cr-nota-urgente {
+  margin: 8px 0 0;
+  font-size: .8rem;
+  line-height: 1.45;
+  color: var(--app-text-muted, #5F8375);
+}
+
+:host-context(body.theme-dark) {
+  .cr-aviso--warn {
+    background: rgba(251, 191, 36, .12);
+    border-color: rgba(251, 191, 36, .3);
+  }
+  .cr-btn--urgente {
+    border-color: #fbbf24;
+    color: #fbbf24;
+  }
+  .cr-btn--urgente-on {
+    background: #fbbf24;
+    color: #12241D;
+  }
+}

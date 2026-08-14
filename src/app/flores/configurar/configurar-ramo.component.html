@@ -181,7 +181,7 @@
     <div class="cr-step" *ngIf="repartoCompleto">
       <div class="cr-step__num">6</div>
       <div class="cr-step__body">
-        <label class="cr-label">Entrega (opcional)</label>
+        <label class="cr-label">¿Dónde y cuándo lo quieres?</label>
         <select class="cr-input" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarChange()" [disabled]="recogerEnLocal">
           <option [ngValue]="null">Sin especificar</option>
           <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
@@ -190,6 +190,60 @@
           <input type="checkbox" [(ngModel)]="recogerEnLocal" (ngModelChange)="onRecogerEnLocalChange()">
           Voy a recoger en la tienda
         </label>
+
+        <p class="cr-hint" *ngIf="consultandoFechas">Consultando fechas de entrega…</p>
+        <div class="cr-aviso cr-aviso--error" *ngIf="errorFechas">{{ errorFechas }}</div>
+
+        <!-- Sin fecha posible no hay nada que elegir: se muestra el mensaje del back tal cual
+             (dirige al cliente a contactar por WhatsApp) y el botón de confirmar queda bloqueado
+             más abajo. Pasa cuando piden más que el tamaño máximo configurado. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="entregaBloqueada">
+          ⚠️ {{ fechas?.mensaje || 'Todavía no podemos comprometer una fecha para este tamaño de ramo. Contáctanos y lo vemos contigo.' }}
+        </div>
+
+        <ng-container *ngIf="fechas && fechas.primeraFechaValida && !consultandoFechas">
+          <p class="cr-fecha-min">
+            🗓️ Lo más pronto que podemos entregarlo: <b>{{ fechaLegible(fechas.primeraFechaValida) }}</b>
+          </p>
+
+          <!-- El plazo puede venir de un tamaño mayor (37 se arma como 48). Decirlo evita que
+               parezca un error cuando la fecha no cuadra con el número que escribió. -->
+          <p class="cr-hint" *ngIf="cantidadConfirmada && fechas.cantidadAplicada !== cantidadConfirmada">
+            Se usa el plazo del ramo de {{ fechas.cantidadAplicada }} flores, que es el tamaño en el
+            que entra el tuyo.
+          </p>
+
+          <div class="cr-fecha-row">
+            <div class="cr-fecha-campo">
+              <label class="cr-sub-label">Día</label>
+              <input class="cr-input" type="date" [min]="minFecha"
+                     [(ngModel)]="fechaEntrega" (ngModelChange)="onCambiarFecha()">
+            </div>
+            <div class="cr-fecha-campo">
+              <label class="cr-sub-label">Hora</label>
+              <select class="cr-input" [(ngModel)]="horaEntrega" (ngModelChange)="onCambiarFecha()">
+                <option *ngFor="let h of fechas.horasDisponibles" [ngValue]="h">{{ h }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- El cargo sale de `fechas.cargoUrgencia`, pero quien lo cobra es el back cuando se
+               le manda `urgente:true` en `calcular-precio`. Ver `ejecutarCalculo()`. -->
+          <button class="cr-btn cr-btn--urgente" *ngIf="fechas.ofreceUrgente || urgente"
+                  [class.cr-btn--urgente-on]="urgente" (click)="toggleUrgente()">
+            <ng-container *ngIf="!urgente">
+              ⚡ Lo necesito antes
+              <small *ngIf="fechas.cargoUrgencia"> (+${{ fechas.cargoUrgencia | number:'1.2-2' }})</small>
+            </ng-container>
+            <ng-container *ngIf="urgente">✓ Entrega urgente — quitar</ng-container>
+          </button>
+
+          <p class="cr-nota-urgente" *ngIf="urgente">
+            Los ramos urgentes se apartan con el <b>50% de anticipo</b> y el resto se paga al
+            entregar. Si el pago se hace después de la hora límite, la fecha y el precio se
+            vuelven a calcular.
+          </p>
+        </ng-container>
       </div>
     </div>
 
@@ -221,6 +275,15 @@
           <span>${{ calculo.costoEnvio | number:'1.2-2' }}</span>
         </div>
 
+        <!-- Este SÍ lleva línea propia, a diferencia del papel y la mano de obra: el cliente lo
+             eligió a propósito en un botón que ya le decía el precio. Esconderlo después sería
+             raro. Ojo: `subtotalFlores` no lo incluye, justamente para que no se cobre dos veces
+             en la vista. -->
+        <div class="cr-linea" *ngIf="calculo.precioUrgencia">
+          <span>⚡ Entrega urgente</span>
+          <span>${{ calculo.precioUrgencia | number:'1.2-2' }}</span>
+        </div>
+
         <div class="cr-linea cr-linea--total">
           <span>Total{{ calculo.tieneListonPendienteValidacion ? ' (provisional)' : '' }}</span>
           <span>${{ calculo.total | number:'1.2-2' }}</span>
@@ -230,7 +293,22 @@
           ℹ️ {{ calculo.avisoFrasePendiente }}
         </p>
 
-        <button class="cr-btn cr-btn--confirmar" [disabled]="guardando" (click)="confirmarPedido()">
+        <!-- El anticipo NO es dinero extra: es la mitad del total. Decirlo así evita que se lea
+             como un cargo aparte encima del precio. -->
+        <p class="cr-aviso-frase" *ngIf="calculo.requiereAnticipo && calculo.montoAnticipoSugerido != null">
+          💳 Para apartarlo se deja <b>${{ calculo.montoAnticipoSugerido | number:'1.2-2' }}</b> de
+          anticipo (la mitad del total); el resto se paga al entregar.
+        </p>
+
+        <!-- El back revalida el plazo por su cuenta al cotizar: aunque el calendario de arriba
+             ya filtre, la fecha pudo quedar obsoleta si el cliente se tardó armando el ramo. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="calculo.entregaValida === false">
+          ⚠️ {{ calculo.mensajeEntrega || 'La fecha que elegiste ya no se puede cumplir — elige otra.' }}
+        </div>
+
+        <button class="cr-btn cr-btn--confirmar"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false"
+                (click)="confirmarPedido()">
           {{ guardando ? 'Guardando…' : '💐 Confirmar mi ramo' }}
         </button>
       </ng-container>

@@ -8558,3 +8558,79 @@ Es sugerencia, la decisión es suya.
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y el
 estado real de QA comprobado con curl antes de tocar nada (no se asumió del documento).
+
+---
+
+## FEAT FLORES — CALENDARIO DE ENTREGA + ENTREGA URGENTE EN EL CONFIGURADOR (2026-08-14)
+
+> Conecta `POST /v1/flores/fechas-disponibles` y cierra lo que el back pidió en su commit del
+> mismo día: **mandar `urgente` en `calcular-precio`**, sin lo cual el cargo no se cobra y el
+> pedido no nace con anticipo.
+
+### El paso 6 dejó de ser un select suelto
+
+Antes solo preguntaba la zona. Ahora consulta el plazo real del taller y **preselecciona lo más
+pronto posible**. El `<input type="date">` lleva `min` en `primeraFechaValida` y la hora sale de
+`horasDisponibles` — el cliente **no puede elegir una fecha que el taller no vaya a cumplir**,
+que era justo el punto del rediseño (el error deja de ser posible en vez de rechazarse después).
+
+- `primeraFechaValida: null` → se muestra el `mensaje` del back tal cual (lo manda a WhatsApp) y
+  se bloquea el botón de confirmar.
+- **Si vino `null` porque pidió urgente**, el front se regresa solo a normal — si no, quedaría con
+  el botón encendido y sin ninguna fecha, sin entender por qué.
+- Botón «⚡ Lo necesito antes» solo con `ofreceUrgente: true`, con el cargo en la etiqueta.
+
+### Detalles que no son obvios
+
+- **`consultarFechas()` se llama al confirmar la cantidad, no en el paso 3.** El plazo depende de
+  (especie, cantidad, zona, urgente) — **no** del reparto entre colores. Colgarlo del reparto
+  dispararía un request por cada tecla.
+- **La zona cambia el plazo** (`LugarEntrega.horasExtraAnticipacion`), por eso `onLugarChange()`
+  vuelve a consultar en vez de solo recalcular el precio.
+- **`precioUrgencia` SÍ lleva línea propia en el resumen**, a diferencia del papel y la mano de
+  obra, que van fundidos en la línea de flores (ver `subtotalFlores`). El cliente lo eligió a
+  propósito en un botón que ya le decía el precio; escondérselo después sería raro. ⚠️ Por eso
+  `subtotalFlores` **no** lo incluye — si se agrega ahí, se cobra dos veces en la vista.
+- **`requiereAnticipo` → el pedido nace `APARTADO`**, con `estadoPedido: 'APARTADO'` (no
+  `'Pendiente'`) — el back espera que para crédito ambos campos traigan el mismo valor, igual que
+  en `venta-variante`.
+- **La llamada a `.../detalle` ahora es obligatoria cuando hay fecha**, aunque no haya frase ni
+  zona: es ahí donde el back guarda `fechaLimitePago` y `cargoUrgenteMonto`. Sin eso,
+  `revalidar-antes-de-pagar` no tiene contra qué comparar y un pago tardío nunca se recotizaría.
+- El anticipo se explica como **"la mitad del total"**, no como un cargo aparte — es el mismo
+  malentendido del 150% que ya se corrigió una vez.
+
+### 🔴 El fix del back NO está en QA (verificado, no asumido)
+
+`calcular-precio` con `urgente:true` sigue devolviendo `precioUrgencia: null`,
+`requiereAnticipo: false`, `total: 1225`. Probado también sin `fechaHoraEntrega` — idéntico.
+
+**No es falta de configuración:** `fechas-disponibles`, contra el mismo tamaño y en el mismo
+momento, sí devuelve `cargoUrgencia: 300`. Un endpoint ve el `cargoUrgente` del tamaño y el otro
+no → QA quedó con el build anterior. Reportado en el repo compartido.
+
+**No rompe nada mientras tanto:** el front ya manda `urgente` y el back lo ignora, así que el ramo
+se cobra como normal. En cuanto desplieguen, empieza a cobrarse solo sin tocar el front.
+
+### ⏳ Pendiente — `revalidar-antes-de-pagar` sin conectar
+
+Está claro cuándo llamarlo (antes de `POST /v1/abonos/{pedidoId}`, usando el `totalActual` que
+devuelva). **Lo que falta es cómo saber que toca llamarlo:** quien cobra es el admin desde
+`/abonos`, y esa pantalla no distingue un ramo de flores de una venta de blusas. Se le
+preguntó al back si pueden marcar el pedido (ej. `esRamoFlores` en `GET /v1/pedidos/{id}/detalle`)
+o si el endpoint puede responder 200 en vez de error para pedidos que no son de flores. **Hasta
+entonces, el cobro tardío de un ramo urgente no se recotiza.**
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IFechasDisponiblesRequest/Response`,
+  `ICalcularPrecioRequest.urgente`, `IRamoPedidoDetalleRequest.fechaHoraEntrega`/`urgente`
+- `src/app/flores/service/flores.service.ts` → `fechasDisponibles()`
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `consultarFechas()`,
+  `toggleUrgente()`, `fechaHoraEntrega`, `minFecha`, `entregaBloqueada`, `fechaLegible()`,
+  `limpiarFechas()`; APARTADO en `guardarPedido()`
+- `src/app/flores/configurar/configurar-ramo.component.html` → paso 6 con calendario
+- `src/app/flores/configurar/configurar-ramo.component.scss` → `.cr-btn--urgente`, `.cr-fecha-*`
+
+**Verificado con `ng build` sin errores** y **en vivo con `ng serve` + Playwright** (claro y
+oscuro, con los endpoints mockeados simulando el back ya corregido): las líneas suman el total
+exacto, el papel no aparece en accesorios, y el botón urgente cambia fecha, cargo y anticipo.

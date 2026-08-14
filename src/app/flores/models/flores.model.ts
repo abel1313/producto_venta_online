@@ -278,6 +278,40 @@ export interface IValidarCantidadResponse {
   precioAlternativaMayor: number | null;
 }
 
+/**
+ * `POST /v1/flores/fechas-disponibles` — público.
+ *
+ * Le pregunta al taller **desde cuándo** puede entregar ese tamaño, para que el cliente solo
+ * pueda elegir fechas que sí se van a cumplir, en vez de pedir algo imposible y que se le
+ * rechace después.
+ *
+ * `tipoFlorId` es obligatorio aunque parezca redundante: los tamaños se configuran por
+ * (especie, cantidad), así que sin la especie no hay contra qué catálogo hacer el redondeo.
+ */
+export interface IFechasDisponiblesRequest {
+  tipoFlorId: number;
+  cantidad: number;
+  lugarEntregaId?: number | null;
+  /** `true` para preguntar por el plazo apurado. El cargo viene en `cargoUrgencia`. */
+  urgente: boolean;
+}
+
+export interface IFechasDisponiblesResponse {
+  /**
+   * Lo antes que se puede entregar, ISO `LocalDateTime`. **`null` = no se puede pedir** — ahí
+   * `mensaje` trae el texto para el cliente (que contacte por WhatsApp). Pasa cuando piden más
+   * que el tamaño máximo configurado, o `urgente` en un tamaño que no se puede apurar.
+   */
+  primeraFechaValida: string | null;
+  /** Las horas a las que el taller entrega ese tamaño, `HH:mm`. */
+  horasDisponibles: string[] | null;
+  /** El tamaño del que se tomaron los plazos — puede no ser el pedido: 37 se maneja como 48. */
+  cantidadAplicada: number;
+  cargoUrgencia: number | null;
+  ofreceUrgente: boolean;
+  mensaje: string | null;
+}
+
 /** Cada entrada es UN listón: o frase predefinida, o personalizada. Nunca las dos ni ninguna. */
 export interface IListonRequest {
   fraseListonPredefinidaId?: number;
@@ -293,6 +327,15 @@ export interface ICalcularPrecioRequest {
    * `guardarDetalleRamo` — el back no confía en lo ya cotizado y revalida en el servidor.
    */
   fechaHoraEntrega?: string | null;
+  /**
+   * `true` cuando el cliente eligió la entrega urgente en el calendario — el mismo valor que se
+   * mandó a `fechas-disponibles` para obtener esa fecha.
+   *
+   * ⚠️ **Sin este flag no se cobra el cargo urgente ni se marca `requiereAnticipo`**, aunque el
+   * tamaño sí tenga plazo urgente configurado. O sea: el ramo se entregaría en la fecha apurada
+   * pero cobrado como normal, y de contado en vez de con el 50% de enganche.
+   */
+  urgente?: boolean;
   /**
    * Cómo se reparte la cantidad entre colores. Un ramo de un solo color es una lista de una
    * entrada. **Todos los colores deben ser de la misma especie**, si no el back responde 400.
@@ -412,6 +455,13 @@ export interface IRamoPedidoDetalleRequest {
   telefonoContacto?: string | null;
   correoContacto?: string | null;
   comentarioAccesorioNoDisponible?: string | null;
+  /**
+   * Los mismos dos valores que se usaron al cotizar. Con ellos el back **guarda** la
+   * `fechaLimitePago` y el `cargoUrgenteMonto` en ese momento, y ya no depende de que el front
+   * vuelva a mandar nada — es lo que después consulta `revalidar-antes-de-pagar`.
+   */
+  fechaHoraEntrega?: string | null;
+  urgente?: boolean;
 }
 
 export interface IRamoPedidoDetalle extends IRamoPedidoDetalleRequest {

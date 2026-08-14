@@ -9034,3 +9034,45 @@ más arriba): stock, reportes, caducidad, cómo distinguirlo y cómo verifica el
 - `src/app/flores/service/flores.service.ts` → `revalidarAntesDePagar()`
 - `src/app/abonos/abonos.component.ts` → `registrarAbono()` revalida; nuevo `ejecutarAbono()`
 - `src/app/flores/configurar/configurar-ramo.component.ts` / `.html` → zonas sin guard de sesión
+
+---
+
+## 🛑 CANCELADO — el "pedido pendiente sin verificar" NO se implementa (2026-08-14)
+
+**Anula la sección "⏳ PEDIDO PENDIENTE POR CORREO SIN VERIFICAR" de más arriba.** Se conserva
+solo como historial de la decisión.
+
+El dueño lo repensó a partir de la consecuencia que él mismo había detectado: si el pedido queda
+guardado y el cliente vuelve días después, **la fecha ya se pasó igual** y hay que recotizar stock,
+fecha y precio de cero. Su conclusión:
+
+> *"Me gusta más que si no lo confirma, que no se guarde nada, porque la hora o fecha ya será
+> tarde. Entonces mejor que configure otro ramo, y hay que avisarle. Ya no lo vería ni el cliente
+> ni el admin, porque en sí no se concretaría nada."*
+
+Guardar un pedido que **de todos modos** habría que recotizar entero al retomarlo no aportaba
+nada, y a cambio traía estados nuevos, caducidad, el estado "perdido" y una bandeja que mantener.
+
+**No hay cambio de backend.** `savePedido` sigue rechazando mientras el correo no esté verificado
+y sin guardar nada — el comportamiento que ya existía.
+
+### Lo único que se hizo, y es todo del front
+
+Que el cliente **entienda** que no quedó nada, en vez de que el diálogo se cierre en silencio.
+Aplicado en **las dos** pantallas que comparten el flujo de verificación:
+
+| Pantalla | Mensaje al cancelar el código |
+|---|---|
+| `configurar-ramo` | *"Tu ramo no se registró… no guardamos nada. Sigue armado aquí, pero si sales tendrás que armarlo de nuevo — y la fecha se cuenta desde que confirmas, así que dejarlo para después puede correrla."* |
+| `venta-variante` | *"Tu pedido no se generó… tu carrito sigue aquí, vuelve a pulsar el botón."* |
+
+⚠️ **`venta-variante` tenía el mismo hueco** (cerraba en silencio) y nadie lo había reportado —
+se encontró al revisar el hermano, no por un reporte. Vale la pena recordarlo: este flujo de
+verificación está copiado en dos componentes, así que **lo que se cambie en uno hay que revisarlo
+en el otro** (misma lección que ya está anotada para `agregar-rifa` / `rifa-mes`).
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → mensaje ampliado
+- `src/app/variante/venta-variante/venta-variante.component.ts` → mensaje nuevo al cancelar
+
+**Verificado con `ng build` sin errores.**

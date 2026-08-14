@@ -456,6 +456,19 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   onCambiarFecha(): void { this.pedirRecalculo(); }
 
   /**
+   * El cliente tiene que decir **a dónde va el ramo**: una zona o pasar por él a la tienda.
+   * Sin eso no se puede ni entregar ni calcular bien el envío, así que no se deja confirmar.
+   */
+  get entregaSinDefinir(): boolean {
+    return !this.lugarEntregaId && !this.recogerEnLocal;
+  }
+
+  /** Sin sesión no se pueden listar las zonas (el endpoint las protege) — ver `ngOnInit`. */
+  get sinSesion(): boolean {
+    return !this.idUsuario;
+  }
+
+  /**
    * El cliente pidió entrega urgente, ese tamaño **sí** tiene cargo configurado… y el cálculo
    * volvió sin cobrarlo. O sea: el taller correría el ramo con prisa **gratis**, y encima el
    * pedido nacería de contado en vez de apartado con su 50%.

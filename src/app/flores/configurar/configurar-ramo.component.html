@@ -183,13 +183,20 @@
       <div class="cr-step__body">
         <label class="cr-label">¿Dónde y cuándo lo quieres?</label>
         <select class="cr-input" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarChange()" [disabled]="recogerEnLocal">
-          <option [ngValue]="null">Sin especificar</option>
+          <option [ngValue]="null" disabled>Elige la zona de entrega…</option>
           <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
         </select>
         <label class="cr-check cr-check--block">
           <input type="checkbox" [(ngModel)]="recogerEnLocal" (ngModelChange)="onRecogerEnLocalChange()">
           Voy a recoger en la tienda
         </label>
+
+        <!-- Sin sesión el catálogo de zonas responde 401 y no se puede listar (ver ngOnInit). Se
+             dice explícitamente en vez de dejar el selector vacío sin explicación. -->
+        <p class="cr-hint" *ngIf="sinSesion && lugares.length === 0">
+          Para elegir zona de entrega necesitas iniciar sesión. También puedes marcar
+          <b>«Voy a recoger en la tienda»</b> y seguir.
+        </p>
 
         <p class="cr-hint" *ngIf="consultandoFechas">Consultando fechas de entrega…</p>
         <div class="cr-aviso cr-aviso--error" *ngIf="errorFechas">{{ errorFechas }}</div>
@@ -314,8 +321,15 @@
           ⚠️ La entrega urgente no se está sumando al total en este momento.
         </div>
 
+        <!-- Un botón gris sin decir por qué deja al cliente atorado — mismo criterio que la
+             pantalla de configuración de entregas. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="entregaSinDefinir">
+          📍 Falta decir <b>a dónde llevamos tu ramo</b>: elige una zona de entrega arriba, o marca
+          «Voy a recoger en la tienda».
+        </div>
+
         <button class="cr-btn cr-btn--confirmar"
-                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || entregaSinDefinir"
                 (click)="confirmarPedido()">
           {{ guardando ? 'Guardando…' : '💐 Confirmar mi ramo' }}
         </button>

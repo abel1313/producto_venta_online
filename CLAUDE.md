@@ -8845,3 +8845,44 @@ y por eso el 401 nunca apareció. **Para una pantalla pública hay que probarla 
 contra el backend real y sin sesión.** Truco usado: `page.route()` de Playwright reenviando lo que
 el front pide a `localhost:9091` hacia el QA real (`fetch` + `fulfill` — `continue({url})` no
 sirve, no deja cambiar http→https).
+
+---
+
+## FIX FLORES — LA ZONA DE ENTREGA AHORA ES OBLIGATORIA (2026-08-14)
+
+**Reportado:** *"no se seleccionó una zona de entrega y deja pasar… la zona es requerida"*. El
+paso 6 nació como opcional (`<option>Sin especificar</option>`) y se podía confirmar sin decir a
+dónde iba el ramo.
+
+**Fix:** hay que elegir **una zona** o marcar **«Voy a recoger en la tienda»** — una de las dos.
+Getter `entregaSinDefinir`; el botón de confirmar se deshabilita y sale un aviso diciendo qué
+falta (mismo criterio que la pantalla de configuración de entregas: un botón gris sin explicación
+deja al usuario atorado). El placeholder del selector pasó de "Sin especificar" a
+"Elige la zona de entrega…", deshabilitado, igual que el paso 1.
+
+**Verificado contra QA real:** sin zona → botón apagado + aviso; con "recoger en la tienda" →
+habilitado; con zona elegida → habilitado.
+
+### ⚠️ Riesgo abierto que esto destapa — puede dejar sin envío a los clientes
+
+`GET /v1/lugares-entrega/getAll` responde **401 sin sesión** (por eso el fix anterior de no
+pedirlo cuando no hay sesión). **No se pudo confirmar qué responde a un cliente logueado que NO es
+admin.** Si también lo rechaza:
+
+- El cliente no vería ninguna zona en el selector.
+- Y como la zona ahora es obligatoria, **su única salida sería "recoger en la tienda"** — o sea,
+  nadie podría pedir entrega a domicilio.
+
+Preguntado al back, junto con la petición de hacer público ese GET. **Si resulta que sí lo
+rechaza, hay que resolverlo antes de publicar flores** — con la zona obligatoria deja de ser un
+detalle y se vuelve un bloqueo de venta.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `entregaSinDefinir`, `sinSesion`
+- `src/app/flores/configurar/configurar-ramo.component.html` → placeholder, aviso, `[disabled]`
+
+### 💡 Nota de prueba — un JWT inventado no sirve contra el backend real
+
+Para probar con sesión hay que **simular solo el endpoint protegido** (aquí `lugares-entrega`) y
+dejar el resto apuntando a QA. Con el token de prueba, la llamada real devuelve 401 → el
+interceptor manda a `/login` y la prueba mide otra pantalla sin avisar.

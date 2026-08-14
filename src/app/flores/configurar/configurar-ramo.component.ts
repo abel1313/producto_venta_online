@@ -252,6 +252,16 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     return this.accesorios.find(a => a.esPapel);
   }
 
+  /**
+   * Los accesorios que el cliente puede elegir de verdad. Cuando el papel ya es obligatorio por
+   * la cantidad, se saca de la lista: no es una decisión suya y verlo como casilla bloqueada
+   * solo generaba la duda de "¿por qué no la puedo quitar?". El cobro sigue visible en el
+   * resumen, con el desglose de pliegos.
+   */
+  get accesoriosSeleccionables(): { accesorio: IAccesorioRamo; seleccionado: boolean; cantidad: number }[] {
+    return this.seleccionAccesorios.filter(s => !(s.accesorio.esPapel && this.papelForzado));
+  }
+
   /** `true` cuando la cantidad ya cruzó el umbral del admin — el papel deja de ser opcional. */
   get papelForzado(): boolean {
     const papel = this.accesorioPapel;

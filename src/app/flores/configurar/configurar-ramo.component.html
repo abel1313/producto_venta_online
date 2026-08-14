@@ -96,14 +96,21 @@
       <div class="cr-step__num">4</div>
       <div class="cr-step__body">
         <label class="cr-label">¿Quieres algún accesorio?</label>
-        <div class="cr-accesorio-row" *ngFor="let s of seleccionAccesorios">
+
+        <!-- Cuando la cantidad ya cruzó el umbral, el papel deja de ser una opción: el back lo
+             agrega solo. Mostrarlo aquí como casilla bloqueada solo confundía ("¿por qué no la
+             puedo quitar?"). Se saca de la lista y se avisa; el cobro sigue visible en el
+             resumen de abajo, con su desglose de pliegos. -->
+        <p class="cr-nota" *ngIf="papelForzado">
+          📄 El papel va incluido por la cantidad de flores — lo verás desglosado en el total.
+        </p>
+
+        <div class="cr-accesorio-row" *ngFor="let s of accesoriosSeleccionables">
           <label class="cr-check">
             <input type="checkbox" [(ngModel)]="s.seleccionado"
-                   [disabled]="s.accesorio.esPapel && papelForzado"
                    (ngModelChange)="toggleAccesorio(s)">
             {{ s.accesorio.nombre }} —
             ${{ s.accesorio.precio | number:'1.2-2' }}{{ s.accesorio.esPapel && s.accesorio.floresPorPliego ? '/pliego' : '' }}
-            <span class="cr-badge" *ngIf="s.accesorio.esPapel && papelForzado">incluido por la cantidad de flores</span>
           </label>
           <input class="cr-input cr-input--num" type="number" min="1"
                  *ngIf="s.seleccionado && !s.accesorio.esPapel"

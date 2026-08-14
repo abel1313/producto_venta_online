@@ -295,13 +295,20 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Los accesorios que el cliente puede elegir. **El papel nunca aparece aquí**: no es una
-   * decisión del cliente en ningún caso — si el ramo está en el rango, el back lo agrega solo y
-   * se cobra por dentro; si no lo está, no se cobra. Mostrarlo solo generaba preguntas
-   * ("¿por qué no la puedo quitar?", "¿por qué me subió el total?").
+   * Los accesorios que el cliente puede elegir.
+   *
+   * **El papel solo aparece cuando NO va por default.** La regla del dueño: las cantidades que él
+   * dejó configuradas ya llevan papel incluido y el cliente ni se entera (se cobra por dentro);
+   * pero si alguien pide una cantidad por debajo de lo configurado, ahí el papel no está previsto
+   * y sí hay que preguntárselo — puede querer solo las rosas enrolladas.
    */
   get accesoriosSeleccionables(): { accesorio: IAccesorioRamo; seleccionado: boolean; cantidad: number }[] {
-    return this.seleccionAccesorios.filter(s => !s.accesorio.esPapel);
+    return this.seleccionAccesorios.filter(s => !(s.accesorio.esPapel && this.papelForzado));
+  }
+
+  /** El papel está en la lista (o sea, es una decisión del cliente y no va por default). */
+  get papelEsOpcional(): boolean {
+    return !!this.accesorioPapel && !this.papelForzado;
   }
 
   /** `true` cuando la cantidad ya cruzó el umbral del admin — el papel deja de ser opcional. */

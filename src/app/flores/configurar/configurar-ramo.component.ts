@@ -291,7 +291,12 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
    */
   get subtotalFlores(): number {
     if (!this.calculo) return 0;
-    return this.calculo.precioBase + (this.calculo.papelObligatorioAplicado ? (this.calculo.precioPapel ?? 0) : 0);
+    const papel = this.calculo.papelObligatorioAplicado ? (this.calculo.precioPapel ?? 0) : 0;
+    // La mano de obra viaja en `precioManoDeObra` solo como dato informativo, pero el back YA la
+    // sumó en `total`. Si no se incluye acá, las líneas visibles dejan de dar el total y el
+    // cliente ve un descuadre — el mismo motivo por el que el papel también va aquí adentro.
+    const mano = this.calculo.precioManoDeObra ?? 0;
+    return this.calculo.precioBase + papel + mano;
   }
 
   /**

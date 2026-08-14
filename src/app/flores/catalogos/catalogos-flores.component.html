@@ -166,6 +166,12 @@
                title="Cuántos pliegos lleva un ramo de esta cantidad. Se puede llenar después."
                [(ngModel)]="nuevaCantidad.pliegos">
       </div>
+      <div class="fl-field">
+        <label class="fl-lbl">Mano de obra ($)</label>
+        <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Aún no lo sé"
+               title="Se suma al precio del ramo sin que el cliente lo vea desglosado"
+               [(ngModel)]="nuevaCantidad.manoDeObra">
+      </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevaCantidad.tipoFlorId || !nuevaCantidad.cantidad || guardando"
               (click)="agregarCantidad()">+ Agregar</button>
@@ -185,6 +191,8 @@
                poco a poco, así necesita ver de un vistazo cuáles le faltan. -->
           <span class="fl-badge" *ngIf="c.pliegos">{{ c.pliegos }} pliego(s)</span>
           <span class="fl-badge fl-badge--pend" *ngIf="!c.pliegos">pliegos sin configurar</span>
+          <span class="fl-badge" *ngIf="c.manoDeObra">mano de obra ${{ c.manoDeObra | number:'1.2-2' }}</span>
+          <span class="fl-badge fl-badge--pend" *ngIf="!c.manoDeObra">sin mano de obra</span>
         </span>
         <span class="fl-fila__precio">{{ c.cantidad }} flores</span>
         <div class="fl-acciones">
@@ -207,6 +215,12 @@
           <input class="fl-input fl-input--num" type="number" min="0" placeholder="Aún no lo sé"
                  title="Cuántos pliegos lleva un ramo de esta cantidad"
                  [(ngModel)]="editCantidad.pliegos">
+        </div>
+        <div class="fl-field">
+          <label class="fl-lbl">Mano de obra ($)</label>
+          <input class="fl-input fl-input--num" type="number" min="0" step="0.01" placeholder="Aún no lo sé"
+                 title="Se suma al precio del ramo sin que el cliente lo vea desglosado"
+                 [(ngModel)]="editCantidad.manoDeObra">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>
@@ -260,6 +274,12 @@
         <input class="fl-input fl-input--num" type="number" min="1" placeholder="Vacío = precio fijo"
                title="El precio de arriba pasa a ser 'precio por pliego'. Vacío = precio fijo único, como antes."
                [(ngModel)]="nuevoAccesorio.floresPorPliego">
+      </div>
+      <div class="fl-field" *ngIf="nuevoAccesorio.esPapel">
+        <label class="fl-lbl">Pliegos por defecto</label>
+        <input class="fl-input fl-input--num" type="number" min="1" placeholder="Ej. 2"
+               title="Cuántos pliegos cobrar en un ramo cuya cantidad no está registrada arriba"
+               [(ngModel)]="nuevoAccesorio.pliegosPorDefecto">
       </div>
       <button class="fl-btn fl-btn--primary"
               [disabled]="!nuevoAccesorio.nombre.trim() || guardando"
@@ -316,6 +336,12 @@
           <input class="fl-input fl-input--num" type="number" min="1" placeholder="Vacío = precio fijo"
                  title="El precio de arriba pasa a ser 'precio por pliego'. Vacío = precio fijo único, como antes."
                  [(ngModel)]="editAccesorio.floresPorPliego">
+        </div>
+        <div class="fl-field" *ngIf="editAccesorio.esPapel">
+          <label class="fl-lbl">Pliegos por defecto</label>
+          <input class="fl-input fl-input--num" type="number" min="1" placeholder="Ej. 2"
+                 title="Cuántos pliegos cobrar en un ramo cuya cantidad no está registrada"
+                 [(ngModel)]="editAccesorio.pliegosPorDefecto">
         </div>
         <div class="fl-acciones">
           <button class="fl-btn fl-btn--primary fl-btn--sm" [disabled]="guardando" (click)="guardarEdicion()">Guardar</button>

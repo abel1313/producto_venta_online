@@ -98,6 +98,8 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
+  /** Cliente resuelto al confirmar — se usa para adjuntar su correo al detalle del ramo. */
+  private clienteIdActual: number | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -630,6 +632,8 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   private guardarPedido(clienteId: number): void {
     if (!this.calculo) return;
+    // Se guarda para poder pedir después el correo del cliente (ver `finalizarConDetalleRamo`).
+    this.clienteIdActual = clienteId;
     this.guardando = true;
 
     const detalles: IPedidoVarianteDetalleDTO[] = [];
@@ -737,6 +741,26 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fechaHoraEntrega: this.fechaHoraEntrega,
       urgente: this.urgente
     };
+
+    // ⚠️ `correoContacto` es lo que el back usa para avisarle al cliente cuando su frase ya tiene
+    // precio. Si no lo mandamos llega `null` y ese correo **nunca sale** — el cliente se queda
+    // esperando sin saber cuánto debe. Solo hace falta cuando hay frase.
+    if (hayFrase && this.clienteIdActual) {
+      this.clienteService.getDataOneCliente(this.clienteIdActual).subscribe({
+        next: (res: any) => {
+          body.correoContacto   = res?.data?.correoElectronico ?? null;
+          body.telefonoContacto = res?.data?.numeroTelefonico ?? null;
+          this.enviarDetalleRamo(pedidoId, body, hayFrase);
+        },
+        // Sin contacto se manda igual: perder el aviso es malo, perder la frase es peor.
+        error: () => this.enviarDetalleRamo(pedidoId, body, hayFrase)
+      });
+      return;
+    }
+    this.enviarDetalleRamo(pedidoId, body, hayFrase);
+  }
+
+  private enviarDetalleRamo(pedidoId: number, body: IRamoPedidoDetalleRequest, hayFrase: boolean): void {
     this.flores.guardarDetalleRamo(pedidoId, body).subscribe({
       next: () => this.completarExito(pedidoId),
       error: () => {

@@ -9283,3 +9283,20 @@ necesita cambiarlo y es decisión del dueño, no técnica.
   `finalizarConDetalleRamo()` adjunta contacto, nuevo `enviarDetalleRamo()`
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — QA sigue caído.
+
+---
+
+## 📄 `ESTADO_FLORES_ETERNAS.md` — estado consolidado del módulo (2026-08-15)
+
+Creado a petición del dueño (*"hay que anotar todo lo que tenemos, lo que llevamos y qué nos
+falta"*). Vive en la raíz del proyecto.
+
+**Por qué existe:** el módulo de flores ya ocupa ~20 secciones cronológicas en este archivo. Para
+saber en qué punto está había que leerlas todas y reconstruirlo mentalmente — incluyendo cosas que
+después se cancelaron. Ese documento dice **solo el estado actual**: pantallas construidas, cómo
+se arma el precio, las 8 reglas de negocio vigentes, lo que se descartó y por qué, lo que el back
+está diseñando, y la lista de pendientes con casillas.
+
+**Regla:** al tocar flores, actualizar **ese** documento (no solo agregar una sección más aquí).
+`CLAUDE.md` sigue siendo el registro cronológico de cada cambio; `ESTADO_FLORES_ETERNAS.md` es la
+foto de dónde estamos.

@@ -9233,3 +9233,53 @@ cliente puede insistir sin quedarse atorado.
 
 **Verificado con `ng build` sin errores.** ⚠️ No se pudo forzar el fallo contra QA (sigue caído);
 el camino de error no está probado en vivo.
+
+---
+
+## FIX FLORES — EL AVISO AL CLIENTE NUNCA SE HABRÍA MANDADO (2026-08-14)
+
+El back implementó las dos notificaciones por correo que se les pidieron:
+
+1. **Al admin** cuando entra una frase personalizada — dispara dentro de
+   `POST /v1/flores/pedidos/{id}/detalle`, **no requiere nada del front**.
+2. **Al cliente** cuando se le asigna precio (`validar-frase` con `aprobar: true`) — se manda a
+   **`detalle.correoContacto`**.
+
+### El problema
+
+`correoContacto` existe en `IRamoPedidoDetalleRequest` desde siempre, pero **ningún componente lo
+mandaba** (verificado con grep en todo `src/app`). Llegaba `null`, y el back —correctamente— no
+manda nada cuando no hay a quién avisarle. O sea: **el correo al cliente nunca habría salido**, y
+nadie se hubiera enterado, porque no es un error, es un `null` silencioso.
+
+Se habría visto como "el back dice que implementó el aviso pero no llega" y se habría investigado
+del lado equivocado.
+
+### El fix
+
+`finalizarConDetalleRamo()`: **solo cuando hay frase**, pide el cliente con
+`getDataOneCliente(clienteId)` y adjunta `correoContacto` + `telefonoContacto` antes de guardar el
+detalle. Se agregó el campo `clienteIdActual` (se guarda en `guardarPedido`) y se extrajo
+`enviarDetalleRamo()` para no duplicar la llamada.
+
+Si esa consulta falla, **se manda igual sin contacto**: perder el aviso es malo, perder la frase
+es peor.
+
+⚠️ Solo se pide cuando hay frase — no se le agrega una llamada extra a todos los pedidos por un
+dato que en los demás casos no se usa.
+
+### `anticipoPagado` — la suposición era incorrecta
+
+Se había supuesto que servía para "ya me lo pagó en efectivo, no generes el pedido del anticipo".
+**No es eso:** hoy es solo una bandera informativa, y `validar-frase` **siempre** crea el pedido
+`APARTADO` del anticipo sin importar su valor. Mandar `true` generaría un cobro duplicado contra
+un pago hecho en efectivo.
+
+**El front NO lo manda** (correcto). Si se quiere ese checkbox funcionando de verdad, el back
+necesita cambiarlo y es decisión del dueño, no técnica.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `clienteIdActual`,
+  `finalizarConDetalleRamo()` adjunta contacto, nuevo `enviarDetalleRamo()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — QA sigue caído.

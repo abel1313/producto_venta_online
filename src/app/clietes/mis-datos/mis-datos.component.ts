@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
+import { UsuarioService } from 'src/app/shared/usuario.service';
 import { MensajesGenericos } from './../../swife/swal.model';
 import { ICliente, InitCliente } from './models/index.model';
 import Swal from 'sweetalert2';
@@ -25,7 +26,8 @@ export class MisDatosComponent implements OnInit {
 
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly usuarioService: UsuarioService
   ) {
     this.formDatosCliente = this.fb.group({
       nombrePersona: ['abel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
@@ -46,10 +48,33 @@ export class MisDatosComponent implements OnInit {
     this.authService.userId$.subscribe(idUser => {
       this.idUusario = idUser;
     });
-    // ⚠️ Sin `error`, un fallo aquí dejaba el formulario vacío y sin ninguna explicación — el
-    // mismo fallo mudo que tenía "Mis pedidos". No se cambia el id que se manda hasta que el
-    // back confirme si `buscarPorIdCliente` espera el de cliente o el de usuario (ver CLAUDE.md).
-    this.clienteServoce.getDataOneCliente(this.idUusario).subscribe({
+    // ⚠️ `buscarPorIdCliente` espera el id de **cliente**, no el de usuario — confirmado por el
+    // back (2026-08-16). Antes se le mandaba el `idUsuario` y respondía "No autorizado", así que
+    // el formulario quedaba en blanco y (sin `error`) sin ninguna explicación.
+    this.usuarioService.buscarClientePorIdUsuario(this.idUusario).subscribe({
+      next: (clienteId: any) => {
+        if (!clienteId) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Completa tu registro',
+            text: 'Todavía no tienes datos de cliente guardados. Llénalos aquí para poder comprar.'
+          });
+          return;
+        }
+        this.cargarCliente(clienteId);
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'info',
+          title: 'No pudimos cargar tus datos',
+          text: 'Si es la primera vez, completa tu registro de cliente para poder comprar.'
+        });
+      }
+    });
+  }
+
+  private cargarCliente(clienteId: number): void {
+    this.clienteServoce.getDataOneCliente(clienteId).subscribe({
       error: () => {
         Swal.fire({
           icon: 'info',

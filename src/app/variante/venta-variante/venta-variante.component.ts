@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
+import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
@@ -60,6 +61,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   lugares: ILugarEntrega[] = [];
   lugarEntregaId: number | null = null;
+
+  // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
+  onImgError = onImagenError;
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {

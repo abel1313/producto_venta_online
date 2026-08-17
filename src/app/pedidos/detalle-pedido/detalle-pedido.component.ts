@@ -9,6 +9,7 @@ import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } fr
 import { AuthService } from 'src/app/auth/auth.service';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
+import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
@@ -165,9 +166,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
-  onImgError(event: Event): void {
-    (event.target as HTMLImageElement).src = 'assets/img/no-image.png';
-  }
+  // Ver `imagen-placeholder.ts`: apuntaba a un png inexistente y provocaba un bucle infinito de
+  // peticiones (50+ vistas en vivo en un pedido de flores, cuyos productos no tienen imagen).
+  onImgError = onImagenError;
 
   irPedido(): void {
     this.regresarProductos.emit(false);

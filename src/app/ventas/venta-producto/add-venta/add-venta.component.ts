@@ -9,6 +9,7 @@ import { PagoService } from 'src/app/pedidos/pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto } from 'src/app/pedidos/mis-pedidos/models/IPago.model';
 import { IVentaDirectaRequest } from '../models/ventaDirectaRequest.model';
 import { AuthService } from 'src/app/auth/auth.service';
+import { IMAGEN_PLACEHOLDER, onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -88,7 +89,7 @@ export class AddVentaComponent implements OnInit {
     const img = fila?.imagen;
     this.imagenVisor = (img?.imagen && img?.contentType)
       ? `data:${img.contentType};base64,${img.imagen}`
-      : 'assets/img/no-image.png';
+      : IMAGEN_PLACEHOLDER;
     this.mostrarVisorImagen = true;
   }
 
@@ -117,6 +118,9 @@ export class AddVentaComponent implements OnInit {
   ) {
     this.authService.userId$.subscribe(id => this.usuarioId = id);
   }
+
+  // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
+  onImgError = onImagenError;
 
   ngOnInit(): void {
     this.getDataBuscador(1);

@@ -9300,3 +9300,47 @@ está diseñando, y la lista de pendientes con casillas.
 **Regla:** al tocar flores, actualizar **ese** documento (no solo agregar una sección más aquí).
 `CLAUDE.md` sigue siendo el registro cronológico de cada cambio; `ESTADO_FLORES_ETERNAS.md` es la
 foto de dónde estamos.
+
+---
+
+## VERIFICACIÓN — 3 CAMBIOS DEL BACK DE CORREO/CONTRASEÑA, SIN TRABAJO PARA EL FRONT (2026-08-16)
+
+El back entregó tres cosas. **Se revisaron en el código en vez de darlas por buenas** — el front ya
+estaba alineado en las tres, cero cambios.
+
+### 1. `POST /v1/usuarios/{id}/solicitar-cambio-correo` ahora puede responder 400
+
+Antes **siempre** respondía 200, aunque el correo no saliera: el usuario veía "ingresa el código"
+y esperaba uno que nunca llegaba. Ahora, si el envío falla de verdad, responde 400 con el motivo y
+**no deja guardado el código pendiente**.
+
+**Ya se manejaba bien** en los dos únicos puntos que lo llaman — ambos muestran el mensaje del
+back y **no** abren el diálogo del código:
+- `mi-perfil.component.ts` → `flujoEmailChange()`: además **revierte el campo** a `emailOriginal`.
+- `add-usuarios.component.ts` → `onEmailBlur()`: el campo ya mostraba el correo actual.
+
+⚠️ Duda menor anotada al back: si falla el **reenvío**, ¿borran el código pendiente anterior? Si
+sí, el banner de "código pendiente" del front apuntaría a un código que ya no existe. No es grave.
+
+### 2. El access token ahora se rechaza al instante tras cambiar contraseña
+
+Antes el JWT seguía sirviendo hasta sus 15 minutos aunque el refresh estuviera muerto. Ahora el
+back compara la emisión del token contra la fecha del último cambio y lo rechaza de inmediato.
+
+**No rompe nada porque el front ya no espera:** cierra sesión en el mismo `next` del 200.
+Verificado en los 4 caminos, todos vía `SesionService.cerrarSesionLocal()`:
+`cambiar-password`, `mi-perfil`, el modal forzado del login, y el mismo modal en
+`verificar-correo`. **Ninguno hace llamadas después** del cambio — no hay forma de que salte un
+401 inesperado en pantalla.
+
+`olvide-password` no aplica (sin sesión). El reseteo de ADMIN afecta al **otro** usuario, que cae
+al login por el `TokenInterceptor` (devuelve `EMPTY`, sin error feo encima de la redirección).
+
+⚠️ Depende de que el back corra `migration_password_actualizado_en.sql`; mientras no, el refuerzo
+no aplica y el comportamiento es el de antes.
+
+### 3. SMTP de QA por dominio propio — sin acción
+
+Cambio de infraestructura, sin contrato nuevo.
+
+**Sin archivos modificados** — esta sección documenta una verificación, no un cambio.

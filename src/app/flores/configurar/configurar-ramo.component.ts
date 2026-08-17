@@ -99,7 +99,6 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   guardando = false;
   private idUsuario = 0;
   /** Cliente resuelto al confirmar — se usa para adjuntar su correo al detalle del ramo. */
-  private clienteIdActual: number | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -632,8 +631,6 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   private guardarPedido(clienteId: number): void {
     if (!this.calculo) return;
-    // Se guarda para poder pedir después el correo del cliente (ver `finalizarConDetalleRamo`).
-    this.clienteIdActual = clienteId;
     this.guardando = true;
 
     const detalles: IPedidoVarianteDetalleDTO[] = [];
@@ -745,8 +742,12 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     // ⚠️ `correoContacto` es lo que el back usa para avisarle al cliente cuando su frase ya tiene
     // precio. Si no lo mandamos llega `null` y ese correo **nunca sale** — el cliente se queda
     // esperando sin saber cuánto debe. Solo hace falta cuando hay frase.
-    if (hayFrase && this.clienteIdActual) {
-      this.clienteService.getDataOneCliente(this.clienteIdActual).subscribe({
+    // ⚠️ `buscarPorIdCliente/{id}` recibe el id de **USUARIO**, no el de cliente — el nombre del
+    // endpoint engaña. Así lo llaman los otros 4 puntos del proyecto (mis-datos, mi-perfil,
+    // mis-pedidos, detalle-productos). Mandarle el clienteId traería el cliente equivocado, o
+    // ninguno: se le estaría adjuntando al ramo el correo de otra persona.
+    if (hayFrase && this.idUsuario) {
+      this.clienteService.getDataOneCliente(this.idUsuario).subscribe({
         next: (res: any) => {
           body.correoContacto   = res?.data?.correoElectronico ?? null;
           body.telefonoContacto = res?.data?.numeroTelefonico ?? null;

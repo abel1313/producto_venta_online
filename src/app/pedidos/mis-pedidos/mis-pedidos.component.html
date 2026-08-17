@@ -203,8 +203,19 @@
     <button class="mp-pagination__btn" [disabled]="page + 1 >= totalPaginas || cargando" (click)="paginaSiguienteAdmin()">Siguiente →</button>
   </div>
 
+  <!-- Sin perfil de cliente no hay pedidos que buscar. Antes esto fallaba en silencio y la
+       pantalla quedaba vacía sin explicar nada. -->
+  <div class="mp-empty" *ngIf="pedidoGenerico.length === 0 && sinPerfilCliente">
+    <i class="pi pi-user-edit mp-empty__icon"></i>
+    <p class="mp-empty__title">Falta completar tus datos</p>
+    <p class="mp-empty__sub">
+      Para ver tus pedidos necesitamos tu nombre, apellido y teléfono.
+    </p>
+    <a routerLink="/clientes/agregar" class="btn-entrega">Completar mis datos</a>
+  </div>
+
   <!-- Estado vacío -->
-  <div class="mp-empty" *ngIf="pedidoGenerico.length === 0">
+  <div class="mp-empty" *ngIf="pedidoGenerico.length === 0 && !sinPerfilCliente">
     <i class="pi pi-inbox mp-empty__icon"></i>
     <p class="mp-empty__title">Sin pedidos</p>
     <p class="mp-empty__sub">Aún no tienes pedidos registrados. Tus compras aparecerán aquí.</p>

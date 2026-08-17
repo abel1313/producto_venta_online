@@ -9380,3 +9380,56 @@ estilo que `isAdminService`) — hacía falta para poder comparar.
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — requiere sesión de admin real y
 depende de que el back corra `migration_password_actualizado_en.sql` para que el corte inmediato
 aplique.
+
+---
+
+## 🔴 FIX — "Error al cambiar la contraseña" sobre una operación que SÍ funcionó (2026-08-16)
+
+**Reportado por el back:** con curl, `PUT /v1/auth/cambiar-password` responde **200** y el log del
+pod confirma el éxito, sin rastro de error. Pero probando en la app real, la pantalla pinta
+**"Error al cambiar la contraseña"** — y la contraseña **sí queda cambiada** (confirmado
+entrando con la nueva).
+
+### Causa — Angular revienta al parsear un 200 que no es JSON
+
+`http.put<any>(...)` usa `responseType: 'json'` por default. Si el back contesta un **texto
+suelto** (`ResponseEntity.ok("Contrasena actualizada correctamente")` en Spring → `text/plain`),
+Angular **falla al parsearlo y dispara el callback de `error` aunque el status sea 200**. El
+componente entra a su `catch` y muestra el mensaje de fallback.
+
+Encaja con todo lo observado:
+- El back no ve ningún error **porque no lo hubo** — la petición fue un 200 limpio.
+- La contraseña **sí se cambia**: el back ya hizo su trabajo antes de que el front tropiece.
+- Los **errores de verdad sí se ven bien**: los arma su `@ControllerAdvice` como JSON, y ésos
+  parsean sin problema. **Solo el camino de éxito fallaba.**
+
+El texto exacto que reportó el usuario (*"error al cambiar contraseña"*) es literal del `catch`
+de `forzarCambioPassword()` en `login-form.component.ts` — el modal que sale justo después de un
+reseteo de ADMIN, que es el escenario que el back estaba probando.
+
+### Fix — parseo tolerante, indiferente a lo que devuelva el back
+
+Nuevo `parseoTolerante()` en `AccederService`: pide la respuesta como **texto** y la convierte a
+objeto **solo si de verdad es JSON**; si no, la envuelve como `{ mensaje, data }`.
+
+**Si el back devuelve JSON, el comportamiento es idéntico** — por eso se pudo aplicar sin esperar
+a confirmar el `Content-Type` real (no se pudo verificar en vivo: hace falta una sesión válida y
+no hay credenciales de prueba).
+
+Aplicado a los 3 endpoints de contraseña, que comparten la forma:
+- `AccederService.cambiarPassword()`
+- `AccederService.restablecerPassword()` (mismo riesgo en "olvidé mi contraseña")
+- `UsuarioService.resetearPassword()` — ahí el síntoma habría sido distinto: la contraseña
+  temporal saliendo como `—` en vez de reventar, porque el componente lee `res?.data`.
+
+### ⚠️ Cómo confirmarlo en 10 segundos
+
+DevTools → Network → cambiar la contraseña → mirar el `Content-Type` de la respuesta de
+`cambiar-password`. Si dice **`text/plain`**, era esto. Si dice `application/json`, la causa es
+otra y hay que seguir buscando (el fix no estorba en ningún caso).
+
+**Archivos modificados:**
+- `src/app/login/acceder.service.ts` → `parseoTolerante()`, `cambiarPassword()`, `restablecerPassword()`
+- `src/app/shared/usuario.service.ts` → `resetearPassword()`
+
+**Verificado con `ng build` sin errores.** ⚠️ **Hipótesis bien fundada, no confirmada en vivo.**

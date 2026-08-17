@@ -163,7 +163,7 @@
         <span class="prod-card__promo-badge" *ngIf="item.promocionId">
           🏷️ {{ item.promocionDescripcion || 'Promoción' }}
         </span>
-        <p class="prod-card__nombre">{{ item.productoNombre }}</p>
+        <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
         <p class="prod-card__variante" *ngIf="item.talla || item.color">
           <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
           <span *ngIf="item.color"> · Color: {{ item.color }}</span>
@@ -176,8 +176,12 @@
 
         <div class="prod-card__fila">
           <span class="prod-card__label">Cantidad</span>
+          <!-- Quitar artículos es SOLO del admin: un cliente podía reducir su propio pedido ya
+               confirmado, descuadrando lo que el taller va a armar contra lo que se cobró.
+               ⚠️ En un ramo esto además es peligroso hasta para el admin — ver `puedeEditarLineas`. -->
           <div class="cantidad-control">
             <button class="cantidad-btn cantidad-btn--menos"
+              *ngIf="puedeEditarLineas"
               (click)="reducirCantidad(item)"
               [disabled]="eliminando.has(item)">
               {{ eliminando.has(item) ? '…' : '−' }}

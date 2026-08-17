@@ -9707,3 +9707,57 @@ falla, se re-dispara solo. Dos reglas para cualquier `<img>` nuevo con fallback:
 `detalle-pedido`, `venta-variante`, `add-venta` (`.ts` + `.html`).
 
 **Verificado con `ng build` sin errores.**
+
+---
+
+## FIX — EL CLIENTE PODÍA MODIFICAR SU PROPIO PEDIDO YA CONFIRMADO (2026-08-16)
+
+**Reportado por el dueño** viendo el detalle de un pedido de flores: *"para el cliente le da la
+opción de removerlo, tampoco lo puede hacer en el pedido ¿no?"*.
+
+Tenía razón: el botón **"−"** de cada artículo se le mostraba **también al cliente**. Podía
+reducir su propio pedido después de confirmarlo, descuadrando lo que el taller va a preparar
+contra lo que ya se cobró.
+
+### Fix
+
+Nuevo `puedeEditarLineas` = **admin** y **que no sea un ramo**.
+
+⚠️ **En un ramo está bloqueado incluso para el admin**, y no es exceso de celo: `eliminarDetalle`
+borra una línea suelta **sin recalcular nada**. Quitar flores de un ramo dejaría:
+- el **papel** con los pliegos del tamaño viejo,
+- la **fecha** con el plazo del tamaño viejo,
+- el **cargo de urgencia** sin revisar.
+
+El pedido queda internamente inconsistente y nadie se entera. **Editar un ramo de verdad exige
+rehacer la cotización**, que hoy no existe — ver el pendiente de abajo.
+
+### También — se limpia el prefijo interno del nombre
+
+`[Flores eternas] Flor eternal0 - Roja` → `Flor eternal0 - Roja`. Ese prefijo marca los productos
+sombra para excluirlos de los buscadores; no tiene por qué salirle al cliente en su pedido.
+
+### ⚠️ Detección de "es un ramo" — frágil y provisional
+
+`esPedidoDeFlores` mira si algún producto trae `[Flores eternas]` en el nombre. **Se le pidió al
+back una marca de verdad** en el detalle del pedido. Si alguien renombra esos productos, esto deja
+de detectar — pero **falla hacia el lado seguro**: vuelve a permitir editar (el comportamiento
+anterior), no bloquea de más.
+
+### ⏳ Pendientes que esto destapa (preguntados al back / al dueño)
+
+1. **El papel se sigue viendo en el detalle.** El dueño quiere que el cliente no lo vea (va
+   incluido). Esconder la línea a secas **rompería la suma**: las líneas visibles ya no darían el
+   total. La salida limpia es agrupar las líneas internas del ramo en una sola ("Ramo de N
+   flores"), pero **no se puede hacer por nombre sin adivinar** — hace falta que el back marque
+   qué líneas son internas.
+2. **No existe forma de editar un ramo.** El dueño lo pidió explícitamente: *"debe haber una parte
+   que sí deje editar las rosas o el armado"*. Hoy solo existe el borrado de líneas sueltas, que
+   para un ramo es peor que no tener nada.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `puedeEditarLineas`,
+  `esPedidoDeFlores`, `nombreVisible()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `*ngIf` en el botón, nombre limpio
+
+**Verificado con `ng build` sin errores.**

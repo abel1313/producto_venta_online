@@ -16,6 +16,7 @@ import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
+import { UsuarioService } from 'src/app/shared/usuario.service';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -36,6 +37,8 @@ export class MisPedidosComponent implements OnInit {
   };
   idUsuario: number = 0;
   clienteId: number = 0;
+  /** El usuario no tiene perfil de cliente — sin eso no hay pedidos que mostrarle. */
+  sinPerfilCliente = false;
 
   // --- Diálogo de cobro ---
   mostrarDialogoCobro: boolean = false;
@@ -128,7 +131,8 @@ export class MisPedidosComponent implements OnInit {
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
-    private readonly lugarEntregaService: LugarEntregaService
+    private readonly lugarEntregaService: LugarEntregaService,
+    private readonly usuarioService: UsuarioService
   ) {}
 
   ngOnInit(): void {
@@ -153,13 +157,24 @@ export class MisPedidosComponent implements OnInit {
     if (this.isAdminUser) {
       this.buscarPedidoAdmin();
     } else {
-      this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
-        if (data && data.data) {
-          this.clienteId = data.data.id;
+      // ⚠️ Antes esto usaba `getDataOneCliente(idUsuario)`, que pega a
+      // `/v1/clientes/buscarPorIdCliente/{id}` — ese endpoint espera el id de **cliente**, no el
+      // de usuario, y respondía "No autorizado". Como la llamada **no tenía manejo de error**, la
+      // pantalla se quedaba vacía para siempre: sin pedidos, sin aviso, sin nada que explicara
+      // por qué. No se había notado porque el dueño prueba como admin, y admin entra por la otra
+      // rama (`buscarPedidoAdmin`).
+      //
+      // `buscarClientePorIdUsuario` es justo la traducción usuario → cliente, y es la que ya usan
+      // venta-variante y el configurador de ramos para lo mismo.
+      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+        next: (clienteId: any) => {
+          if (!clienteId) { this.sinPerfilCliente = true; return; }
+          this.clienteId = clienteId;
           this.page = 0;
           this.size = 10;
           this.cargarMasPedidos();
-        }
+        },
+        error: () => { this.sinPerfilCliente = true; }
       });
     }
   }

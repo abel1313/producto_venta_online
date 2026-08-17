@@ -9479,3 +9479,67 @@ también dice 404. Si algún día el back le da un código propio a este caso, c
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — hace falta la sesión de un
 usuario sin perfil de cliente.
+
+---
+
+## 🔴 FIX — "Mis pedidos" quedaba VACÍA para cualquier cliente real (2026-08-16)
+
+**Reportado por el dueño** probando con una cuenta de cliente de verdad (`perse`, ROLE_USUARIO):
+generó un pedido de ramo, y en "Mis pedidos" **no le aparecía nada**. Junto con la respuesta cruda:
+
+```
+GET /v1/clientes/buscarPorIdCliente/69   (69 = idUsuario)
+→ { "mensaje": "No autorizado", "code": 404, ... }
+```
+
+### Causa — se pedía el cliente con el id equivocado, y el fallo era mudo
+
+`mis-pedidos` resolvía el cliente así:
+
+```ts
+this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
+  if (data && data.data) { this.clienteId = data.data.id; ... }
+});   // ← sin error handler
+```
+
+Dos problemas encadenados:
+
+1. **Id equivocado.** `getDataOneCliente` pega a `/v1/clientes/buscarPorIdCliente/{id}` — espera el
+   id de **cliente**, y se le mandaba el de **usuario**.
+2. **Sin `error`.** Al fallar, no pasaba absolutamente nada: ni pedidos, ni aviso, ni consola. La
+   pantalla se quedaba en "Sin pedidos" para siempre.
+
+**Por qué nadie lo había notado:** el dueño siempre prueba **como admin**, y admin entra por la
+otra rama (`buscarPedidoAdmin()`). La rama del cliente estaba rota y sin usar.
+
+### Fix
+
+- Se usa **`usuarioService.buscarClientePorIdUsuario(idUsuario)`**, que es literalmente la
+  traducción usuario → cliente, y la que ya usaban `venta-variante` y el configurador de ramos
+  para esto mismo.
+- Nuevo `sinPerfilCliente`: si no hay cliente, la pantalla lo dice y ofrece
+  **"Completar mis datos"** → `/clientes/agregar`, en vez de un "Sin pedidos" engañoso.
+
+### ⚠️ Los otros 3 usos de `getDataOneCliente` tienen la misma duda
+
+`mi-perfil`, `mis-datos` y `detalle-productos` **también le pasan el `idUsuario`**. Si el endpoint
+de verdad espera el clienteId, esas tres pantallas están igual de rotas para clientes reales — y
+por el mismo motivo nadie lo ha visto (se prueban como admin).
+
+**No se tocaron**: no se pudo confirmar en vivo qué id espera el endpoint (hace falta una sesión de
+cliente y no hay credenciales de prueba). **Preguntado al back.** Si confirman que espera
+clienteId, hay que corregir las tres igual.
+
+### Bug relacionado, introducido ayer y ya corregido
+
+`configurar-ramo.finalizarConDetalleRamo()` llamaba `getDataOneCliente(clienteIdActual)` — el
+único punto del proyecto que pasaba el **clienteId**. Se alineó al `idUsuario` como el resto.
+⚠️ Ese era el peor caso: con el id equivocado podía traer **otro cliente** y adjuntarle al ramo
+el correo de otra persona. Se eliminó el campo `clienteIdActual`, ya sin uso.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` + `.html` → `buscarClientePorIdUsuario`,
+  `sinPerfilCliente`, estado explicativo
+- `src/app/flores/configurar/configurar-ramo.component.ts` → usa `idUsuario`, fuera `clienteIdActual`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con una cuenta de cliente.

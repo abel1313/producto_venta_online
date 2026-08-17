@@ -200,7 +200,7 @@
           <img [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
-        <button *ngIf="!isAnonymous" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"
+        <button *ngIf="!isAnonymous && favoritosDisponibles" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"
                 (click)="toggleFavorito(v); $event.stopPropagation()"
                 [title]="esFavorito(v) ? 'Quitar de favoritos' : 'Agregar a favoritos'">
           {{ esFavorito(v) ? '❤️' : '🤍' }}

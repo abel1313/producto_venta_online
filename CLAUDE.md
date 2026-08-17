@@ -9433,3 +9433,49 @@ otra y hay que seguir buscando (el fix no estorba en ningún caso).
 - `src/app/shared/usuario.service.ts` → `resetearPassword()`
 
 **Verificado con `ng build` sin errores.** ⚠️ **Hipótesis bien fundada, no confirmada en vivo.**
+
+---
+
+## FIX FAVORITOS — DEJABA ENTRAR Y RECIBÍA CON UN ERROR ROJO (2026-08-16)
+
+**Reportado por el dueño** con la respuesta cruda del back:
+
+```
+GET /v1/favoritos?pagina=1&size=12
+→ { "mensaje": "Tu cuenta todavia no tiene un perfil de cliente completo", "code": 404, ... }
+```
+
+*"pero deja entrar"* — y eso era el problema. La ruta solo tiene `AuthGuard`, así que cualquier
+logueado entra; y ya adentro le salía un `Swal` rojo de **"Error"** con ese texto. **No está
+roto: le falta un paso.** Presentarlo como error hace pensar que el sistema falló.
+
+Mismo callejón en el catálogo: el corazón aparecía para cualquier logueado, y al tocarlo solo
+podía darle ese error, sin salida.
+
+### Fix — que el error sea inalcanzable, no más bonito
+
+1. **`/favoritos`** — nuevo `faltaPerfilCliente`. Si el back responde con ese mensaje, la pantalla
+   muestra un estado explicativo (*"Para guardar favoritos necesitas completar tus datos… es
+   rápido, y con eso también podrás hacer pedidos"*) con botón a `/clientes/agregar`. **Sin popup
+   de error.** Cualquier otro fallo sí sigue mostrando el Swal de siempre.
+2. **Catálogo** — nuevo `favoritosDisponibles`. `listarIds()` ya fallaba en silencio; ahora,
+   **solo si el mensaje menciona "perfil de cliente"**, además esconde el corazón. Un fallo de red
+   NO lo esconde (puede ser pasajero y el corazón debe seguir ahí).
+3. **`toggleFavorito()`** — red de seguridad por si el corazón alcanzó a mostrarse: ese error deja
+   de ser un `Swal` rojo muerto y pasa a ofrecer *"Completar mis datos"* → `/clientes/agregar`.
+
+Mismo criterio que ya se usó al mover el punto de entrada de las reseñas: **el error se vuelve
+inalcanzable por diseño** en vez de solo redactarse mejor.
+
+### ⚠️ Se detecta por el TEXTO del mensaje, no por el status
+
+`err.error.mensaje.includes('perfil de cliente')`. No es lo ideal, pero el `code` interno del back
+no sirve para distinguir: en esa misma respuesta dice **404**, y en un 401 de otro endpoint
+también dice 404. Si algún día el back le da un código propio a este caso, cambiar la condición.
+
+**Archivos modificados:**
+- `src/app/favoritos/favoritos.component.ts` + `.html` → `faltaPerfilCliente`, `irACompletarPerfil()`
+- `src/app/variante/buscar/buscar.component.ts` + `.html` → `favoritosDisponibles`, `toggleFavorito()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — hace falta la sesión de un
+usuario sin perfil de cliente.

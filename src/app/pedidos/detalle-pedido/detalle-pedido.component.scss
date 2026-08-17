@@ -546,3 +546,16 @@
     color: #86efac;
   }
 }
+
+// Nota de "el total incluye la envoltura" — aparece cuando se ocultó la línea del papel.
+.dp-nota-incluido {
+  grid-column: 1 / -1;
+  margin: 10px 0 0;
+  font-size: .82rem;
+  line-height: 1.45;
+  color: var(--app-text-muted, #5F8375);
+  background: var(--app-accent-soft);
+  border-left: 3px solid var(--app-accent);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+}

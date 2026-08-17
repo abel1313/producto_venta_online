@@ -152,7 +152,7 @@
   </div>
 
   <div class="detalle-grid" *ngIf="!cargandoDetalle">
-    <div class="prod-card" *ngFor="let item of (detalle?.detalles ?? [])">
+    <div class="prod-card" *ngFor="let item of lineasVisibles">
 
       <img class="prod-card__img"
         [src]="env + item.productoId"
@@ -197,6 +197,12 @@
       </div>
 
     </div>
+
+    <!-- Se ocultó el papel (va incluido en el ramo). Sin esta nota, el total sería mayor que la
+         suma de lo visible y parecería un error de cuentas. -->
+    <p class="dp-nota-incluido" *ngIf="hayLineasOcultas">
+      El total incluye la <b>envoltura del ramo</b>, que va siempre y no se cobra aparte.
+    </p>
 
     <div class="detalle-vacio" *ngIf="(detalle?.detalles ?? []).length === 0">
       <p>No hay productos en este pedido.</p>

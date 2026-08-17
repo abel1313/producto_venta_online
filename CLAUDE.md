@@ -9761,3 +9761,60 @@ anterior), no bloquea de más.
 - `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `*ngIf` en el botón, nombre limpio
 
 **Verificado con `ng build` sin errores.**
+
+---
+
+## FLORES — CONECTADO `esRamoFlores` / `esLineaInterna`; el papel ya no se le muestra al cliente (2026-08-16)
+
+El back entregó lo que se le pidió en la sección anterior, ya desplegado en `dev`/`qa` (verificado
+en vivo: QA responde 200, `editar-ramo` existe, los colores traen `variante.id`).
+
+### Lo conectado
+
+- **`esRamoFlores`** (raíz del detalle) sustituye al parche de detectar el ramo por el nombre del
+  producto. El parche **se deja como respaldo** para pedidos guardados antes del cambio, pero solo
+  se usa si el campo viene `null`.
+- **`esLineaInterna`** (por línea, `true` solo en el papel) → nuevo `lineasVisibles`: **al cliente
+  se le esconde el papel**, el admin sigue viendo todo.
+
+### ⚠️ Por qué hay una nota y no solo se esconde la línea
+
+Esconder el papel a secas deja el **total mayor que la suma de lo visible** — un descuadre sin
+explicación, que es peor que mostrar el papel. Por eso aparece:
+
+> *El total incluye la **envoltura del ramo**, que va siempre y no se cobra aparte.*
+
+Solo sale cuando de verdad se ocultó algo (`hayLineasOcultas`).
+
+### 🔴 Conflicto de diseño en "Editar ramo" — NO se construyó el botón todavía
+
+El back implementó `PUT /v1/flores/pedidos/{id}/editar-ramo`, pero **solo acepta `colores` y
+`accesorios`**. A propósito, no cubre **fecha de entrega, urgencia, envío ni listón**.
+
+Eso choca con lo que pidió el dueño: *"que mande al mismo armar ramo pero con los datos
+cargados"*. Si "Editar" abre el configurador completo, el admin podría cambiar la fecha o el
+listón, darle guardar, y **esos cambios se perderían en silencio** — exactamente el tipo de fallo
+mudo que llevamos toda la sesión corrigiendo.
+
+**No se construye hasta resolverlo.** Las salidas posibles:
+1. En modo edición, mostrar solo los pasos que el endpoint sí guarda (colores y accesorios), y
+   dejar fecha/listón/envío en solo lectura con un aviso.
+2. Que el back amplíe el endpoint.
+
+Se le planteó a ambos. **Opción 1 es la barata y no requiere back**, pero deja "editar" a medias
+respecto a lo que el dueño imaginó.
+
+### Otras dos cosas útiles que quedaron disponibles (sin construir aún)
+
+- **`accesorios[]` en el detalle del ramo** — era el hueco que impedía recargar un armado sin
+  perder la corona o las luces. Ya viene.
+- **Fotos por color/accesorio**: cada `ColorFlor` y `AccesorioRamo` trae `variante.id`, así que
+  `GET /v1/variantes/imagenes/{varianteId}` ya devuelve su imagen. Sin cambios de back.
+
+**Archivos modificados:**
+- `src/app/abonos/models/abono.model.ts` → `esRamoFlores`, `esLineaInterna`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `lineasVisibles`,
+  `hayLineasOcultas`, `esPedidoDeFlores` usa el campo del back
+- `.html` + `.scss` → nota de envoltura incluida
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con un pedido de ramo real.

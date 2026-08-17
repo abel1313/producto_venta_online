@@ -59,6 +59,8 @@ export interface PedidoDetalleResponse {
   metodoPago?:       string | null;
   montoDado?:        number | null;
   abonos?:           AbonoDetalleItem[];
+  /** `true` si el pedido es un ramo de flores. Reemplaza al parche de mirar el nombre. */
+  esRamoFlores?:     boolean;
   detalles:          PedidoDetalleItem[];
   // Datos de entrega (2026-07-23) — nombreReceptor/direccionEntrega nuevos; fechaRecogida se
   // reutiliza como fecha en que se va a entregar el pedido. Se editan con
@@ -89,6 +91,12 @@ export interface PedidoDetalleItem {
   subTotal:               number;
   promocionId?:           number | null;
   promocionDescripcion?:  string | null;
+  /**
+   * `true` solo en la línea del papel de un ramo. Sustituye a detectarlo por el nombre del
+   * producto, que era frágil. Sirve para no mostrársela al cliente: el papel va incluido, él no
+   * lo elige ni lo puede quitar.
+   */
+  esLineaInterna?:        boolean;
 }
 
 export interface EstadoCuenta {

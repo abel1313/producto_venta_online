@@ -251,7 +251,7 @@
     <button class="img-visor-close" (click)="cerrarVisor()">✕</button>
     <img class="img-visor-img"
       [src]="imagenVisor | imagenSrc | async" [alt]="nombreVisor"
-      (error)="$any($event.target).src='assets/img/no-image.png'" />
+      (error)="onImgError($event)" />
     <p class="img-visor-nombre">{{ nombreVisor }}</p>
   </div>
 </div>

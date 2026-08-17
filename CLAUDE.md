@@ -9657,3 +9657,53 @@ distingue estos casos **por el texto del mensaje**, que es frágil.
 - `src/app/clietes/mis-datos/mis-datos.component.ts` → traduce a clienteId, `cargarCliente()`
 
 **Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.
+
+---
+
+## 🔴 FIX — BUCLE INFINITO DE PETICIONES DE IMAGEN (2026-08-16)
+
+**Reportado por el dueño** en `/pedidos/mis-pedidos` con un pedido de flores: *"se pone a cargar y
+cargar imágenes infinitas"* — y el curl mostrando **50+ peticiones** al mismo archivo.
+
+### La cadena
+
+```
+<img [src]="env + item.productoId" (error)="onImgError($event)">
+  ↓ el producto no tiene imagen (los productos sombra de flores nunca la tienen) → 404
+onImgError() → src = 'assets/img/no-image.png'
+  ↓ ⚠️ ESE ARCHIVO NO EXISTE EN EL PROYECTO → 404
+(error) se dispara otra vez → pone el mismo png → 404 → ... sin fin
+```
+
+El `(error)` se re-disparaba con su propio reemplazo. Un producto sin imagen bastaba para dejar al
+navegador pidiendo el mismo 404 indefinidamente.
+
+**Estaba en 3 pantallas**, no solo en la reportada: `detalle-pedido`, `venta-variante` y
+`add-venta` — las tres apuntaban al mismo png inexistente. En las otras dos no se había notado
+porque sus productos casi siempre tienen imagen; **flores lo destapó porque sus productos sombra
+nunca la tienen**.
+
+### Fix — que el bucle sea imposible por construcción
+
+Nuevo `src/app/shared/imagen-placeholder.ts`:
+
+- **`IMAGEN_PLACEHOLDER`** es un **data URI** (SVG inline), no una ruta. **Un data URI no puede dar
+  404**, así que el bucle no puede existir — y no depende de que alguien se acuerde de subir un
+  archivo.
+- **`onImagenError()`** además hace `img.onerror = null` **antes** de reemplazar la fuente: doble
+  seguro para que ni un reemplazo roto en el futuro pueda encadenar otro error.
+
+Las 3 pantallas usan ahora ese helper. Grep de `no-image` en `src/`: **cero referencias** fuera del
+comentario que documenta el bug.
+
+### 💡 Lección
+
+**Un `(error)` de `<img>` que asigna otra imagen es un bucle esperando a pasar.** Si el reemplazo
+falla, se re-dispara solo. Dos reglas para cualquier `<img>` nuevo con fallback:
+1. El reemplazo debe ser **data URI**, nunca una ruta que pueda faltar.
+2. Desconectar el handler (`onerror = null`) antes de reasignar.
+
+**Archivos:** `src/app/shared/imagen-placeholder.ts` (nuevo);
+`detalle-pedido`, `venta-variante`, `add-venta` (`.ts` + `.html`).
+
+**Verificado con `ng build` sin errores.**

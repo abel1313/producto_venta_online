@@ -46,7 +46,18 @@ export class MisDatosComponent implements OnInit {
     this.authService.userId$.subscribe(idUser => {
       this.idUusario = idUser;
     });
-    this.clienteServoce.getDataOneCliente(this.idUusario).subscribe((data: any) => {
+    // ⚠️ Sin `error`, un fallo aquí dejaba el formulario vacío y sin ninguna explicación — el
+    // mismo fallo mudo que tenía "Mis pedidos". No se cambia el id que se manda hasta que el
+    // back confirme si `buscarPorIdCliente` espera el de cliente o el de usuario (ver CLAUDE.md).
+    this.clienteServoce.getDataOneCliente(this.idUusario).subscribe({
+      error: () => {
+        Swal.fire({
+          icon: 'info',
+          title: 'No pudimos cargar tus datos',
+          text: 'Si es la primera vez, completa tu registro de cliente para poder comprar.'
+        });
+      },
+      next: (data: any) => {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
@@ -83,7 +94,7 @@ export class MisDatosComponent implements OnInit {
           this.suscribirCambioPredefinida(nueva, 0);
         }
       }
-
+      }
     })
 
     if (this.listDirecciones.length > 0) {

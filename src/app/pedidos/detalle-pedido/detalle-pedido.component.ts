@@ -69,15 +69,31 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Si el pedido es un ramo. Se detecta por el prefijo de los productos internos del módulo
-   * (`[Flores eternas] …`).
-   *
-   * ⚠️ Es frágil a propósito y **provisional**: se le pidió al back una marca de verdad en el
-   * detalle del pedido. Si alguien renombra esos productos, esto deja de detectar — pero falla
-   * hacia el lado seguro (vuelve a permitir editar, que es el comportamiento de antes).
+   * Si el pedido es un ramo. Ahora lo dice el back con `esRamoFlores` (agregado a petición
+   * nuestra el 2026-08-16); el parche de mirar el nombre del producto queda solo como respaldo
+   * por si se consulta un pedido guardado antes de ese cambio.
    */
   get esPedidoDeFlores(): boolean {
+    if (this.detalle?.esRamoFlores != null) return this.detalle.esRamoFlores;
     return (this.detalle?.detalles ?? []).some(d => (d.productoNombre ?? '').includes('[Flores eternas]'));
+  }
+
+  /**
+   * Las líneas que se muestran. Al cliente **se le esconde el papel** (`esLineaInterna`): va
+   * incluido en el ramo, no lo eligió y no lo puede quitar — verlo como renglón suelto solo
+   * confunde. El admin sí ve todo, que para eso administra.
+   */
+  get lineasVisibles(): PedidoDetalleItem[] {
+    const todas = this.detalle?.detalles ?? [];
+    return this.isAdmin ? todas : todas.filter(d => !d.esLineaInterna);
+  }
+
+  /**
+   * Se escondió alguna línea, así que el total es mayor que la suma de lo visible. Se avisa con
+   * una nota en vez de dejar un descuadre sin explicación — que sería peor que mostrar el papel.
+   */
+  get hayLineasOcultas(): boolean {
+    return (this.detalle?.detalles ?? []).length !== this.lineasVisibles.length;
   }
 
   /**

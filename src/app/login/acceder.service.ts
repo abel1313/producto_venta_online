@@ -46,8 +46,14 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/refresh`, {}, { withCredentials: true });
   }
 
+  // ⚠️ Los 6 endpoints con `parseoTolerante` de aquí abajo son los que el back confirmó
+  // (2026-08-16) que responden **texto plano** en el camino de éxito. Sin esto, Angular no puede
+  // parsearlos como JSON y **dispara el error con status 200** — la app dice que falló algo que
+  // sí funcionó. Ver el comentario largo en `parseoTolerante`.
   logout() {
-    return this.http.post<void>(`${environment.api_Url}/v1/auth/logout`, {}, { withCredentials: true });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/logout`, {}, { withCredentials: true, responseType: 'text' }
+    ));
   }
 
   registrar(credentials: any) {
@@ -55,7 +61,9 @@ export class AccederService {
   }
 
   olvidoPassword(email: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/olvide-password`, { email });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/olvide-password`, { email }, { responseType: 'text' }
+    ));
   }
 
   // Mismo tratamiento que `cambiarPassword`: el camino de éxito puede venir como texto plano.
@@ -76,15 +84,23 @@ export class AccederService {
   }
 
   enviarCodigoVerificacionUsuario(userName: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName }, { responseType: 'text' }
+    ));
   }
 
+  // El peor de la lista: sin esto, una verificación **exitosa** se le mostraba al usuario como
+  // "código incorrecto o expirado", y volvía a intentar con un código que ya se había consumido.
   verificarCorreoUsuario(userName: string, codigo: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo }, { responseType: 'text' }
+    ));
   }
 
   miPerfil(username: string) {
-    return this.http.put<any>(`${environment.api_Url}/v1/auth/mi-perfil`, { username });
+    return this.parseoTolerante(this.http.put(
+      `${environment.api_Url}/v1/auth/mi-perfil`, { username }, { responseType: 'text' }
+    ));
   }
 
   solicitarCambioCorreo(correoNuevo: string) {

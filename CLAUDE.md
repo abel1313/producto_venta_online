@@ -9592,3 +9592,68 @@ calladas.
 - `src/app/productos/producto/detalle-productos/detalle-productos.component.ts`
 
 **Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.
+
+---
+
+## ✅ CERRADO — el back confirmó las 2 hipótesis; corregidas las 3 pantallas + 5 endpoints (2026-08-16)
+
+Las dos suposiciones del día resultaron correctas, confirmadas por el back revisando su código.
+
+### 1. `buscarPorIdCliente/{id}` espera el id de **CLIENTE** — confirmado
+
+```java
+boolean esDueno = actual.getCliente().getId() == idCliente;   // PK de `clientes`, no idUsuario
+```
+
+Mandarle el `idUsuario` nunca matchea → 403 "No autorizado". Las 3 pantallas que faltaban
+**estaban rotas para clientes reales**, con el mismo fallo mudo de `mis-pedidos`. Corregidas todas
+con `buscarClientePorIdUsuario(idUsuario)` → `clienteId`:
+
+| Pantalla | Qué se rompía |
+|---|---|
+| `mi-perfil` | El campo de correo quedaba vacío |
+| `mis-datos` | Formulario en blanco (además le faltaba `error`) |
+| `detalle-productos` | 🔴 El botón de comprar no hacía nada |
+
+### 2. `cambiar-password` devuelve texto plano — confirmado, y **eran 9 endpoints**
+
+El back listó todos los que responden `String` crudo en el camino de éxito. **El front usa 7**, y
+solo 2 estaban cubiertos. Se aplicó `parseoTolerante` a los 5 restantes:
+
+| Endpoint | Qué hubiera pasado (o pasaba) |
+|---|---|
+| `POST /v1/auth/verificar-correo` | 🔴 **El peor**: una verificación exitosa se mostraba como *"código incorrecto o expirado"*, y el usuario reintentaba con un código ya consumido |
+| `POST /v1/auth/enviar-codigo-verificacion` | "No se pudo enviar" sobre un envío que sí salió |
+| `POST /v1/auth/olvide-password` | Igual, en el flujo de recuperar contraseña |
+| `PUT /v1/auth/mi-perfil` | "No se pudo actualizar el perfil" tras guardarlo bien |
+| `POST /v1/auth/logout` | Error al cerrar sesión (inofensivo, pero ruido) |
+
+⚠️ `PUT /v1/usuarios/{id}/resetear-password` **no** está en la lista del back — ese sí devuelve
+`ResponseGeneric` de verdad. El `parseoTolerante` que se le puso no estorba (parsea el JSON igual),
+pero no era necesario.
+
+**El back NO va a migrar esos endpoints a `ResponseGeneric`** — cambiar el contrato rompería lo que
+ya funciona con el fix aplicado. Si algún día se homogeniza, avisan antes.
+
+### 💡 La lección que deja el patrón del texto plano
+
+**Un endpoint que responde `String` crudo revienta el parseo de Angular incluso con status 200**, y
+el síntoma siempre es el mismo y engañosísimo: *"la app dice error pero la operación sí se hizo"*,
+sin nada en los logs del back porque **no hubo error**.
+
+Si vuelve a aparecer ese síntoma en cualquier pantalla, **lo primero es mirar el `Content-Type` de
+la respuesta**, no la lógica del componente.
+
+### Pendiente del back (no bloquea)
+
+Mejorar los mensajes que despistan: `"No autorizado"` cuando el caso real es "no tiene perfil de
+cliente", y el `code: 404` fijo en varios 401/403. Lo anotaron como deuda; mientras tanto el front
+distingue estos casos **por el texto del mensaje**, que es frágil.
+
+**Archivos modificados:**
+- `src/app/login/acceder.service.ts` → `parseoTolerante` en logout, olvide-password,
+  enviar-codigo-verificacion, verificar-correo, mi-perfil
+- `src/app/clietes/mi-perfil/mi-perfil.component.ts` → traduce a clienteId, `cargarCorreoCliente()`
+- `src/app/clietes/mis-datos/mis-datos.component.ts` → traduce a clienteId, `cargarCliente()`
+
+**Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.

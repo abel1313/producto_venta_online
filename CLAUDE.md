@@ -9344,3 +9344,39 @@ no aplica y el comportamiento es el de antes.
 Cambio de infraestructura, sin contrato nuevo.
 
 **Sin archivos modificados** — esta sección documenta una verificación, no un cambio.
+
+---
+
+## FIX — EL ADMIN QUE SE RESETEA A SÍ MISMO SE QUEDABA SIN SESIÓN SIN AVISO (2026-08-16)
+
+Encontrado al revisar el refuerzo del back (access token rechazado al instante tras cambiar
+contraseña). Los 4 caminos normales ya cerraban sesión bien; **este quinto no se había mirado**.
+
+**El caso:** un admin abre su **propio** usuario en `/usuarios/buscar` → Editar y pulsa
+"🔑 Resetear contraseña". El back invalida su token **en ese momento**. Antes del refuerzo le
+quedaban 15 minutos de gracia y no se notaba; ahora su siguiente clic cae en un 401 y lo saca al
+login **sin que entienda por qué** — con el agravante de que quizá ni alcanzó a anotar la
+contraseña temporal.
+
+**Fix en `resetearPasswordAdmin()`:** detecta `updateUser.id === authService.userIdValue` y
+entonces:
+- El diálogo de confirmación avisa: *"Es tu propia cuenta: se cerrará tu sesión y tendrás que
+  entrar de nuevo con la contraseña temporal."*
+- El texto de la contraseña temporal cambia a *"Anótala: la vas a necesitar para volver a
+  entrar"* (en vez de "dásela al usuario", que no aplica).
+- Al cerrar ese diálogo, **`sesion.cerrarSesionLocal()`** — salida controlada en vez de un 401
+  sorpresa.
+
+Para cualquier otro usuario, nada cambia.
+
+**Nuevo en `AuthService`:** getter `userIdValue` (lee el `BehaviorSubject` sin suscribirse, mismo
+estilo que `isAdminService`) — hacía falta para poder comparar.
+
+**Archivos modificados:**
+- `src/app/auth/auth.service.ts` → getter `userIdValue`
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` → `resetearPasswordAdmin()`
+  con caso propio, inyecta `SesionService`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — requiere sesión de admin real y
+depende de que el back corra `migration_password_actualizado_en.sql` para que el corte inmediato
+aplique.

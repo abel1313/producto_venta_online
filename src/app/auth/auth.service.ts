@@ -37,6 +37,11 @@ export class AuthService {
     }
   }
 
+  /** Id del usuario en sesión, sin tener que suscribirse — mismo estilo que `isAdminService`. */
+  get userIdValue(): number {
+    return this.userId.value;
+  }
+
   get isAdminService(): boolean {
     return this.userRoles.value.includes('ROLE_ADMIN');
   }

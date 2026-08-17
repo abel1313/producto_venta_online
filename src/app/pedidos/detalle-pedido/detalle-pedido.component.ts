@@ -51,6 +51,45 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.authService.isAdminService;
   }
 
+  /**
+   * Quién puede quitar artículos de un pedido ya confirmado.
+   *
+   * **Solo el admin.** Antes el botón "−" se le mostraba también al cliente, que podía reducir su
+   * propio pedido después de confirmarlo — descuadrando lo que el taller va a preparar contra lo
+   * que ya se cobró.
+   *
+   * ⚠️ **En un ramo de flores está bloqueado incluso para el admin**, y no es exceso de celo:
+   * `eliminarDetalle` borra una línea suelta sin recalcular nada. En un ramo, quitar flores deja
+   * el papel con los pliegos del tamaño viejo, la fecha con el plazo del tamaño viejo y el cargo
+   * de urgencia sin revisar — el pedido queda internamente inconsistente y nadie se entera.
+   * Editar un ramo de verdad exige rehacer la cotización, que hoy no existe (ver CLAUDE.md).
+   */
+  get puedeEditarLineas(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores;
+  }
+
+  /**
+   * Si el pedido es un ramo. Se detecta por el prefijo de los productos internos del módulo
+   * (`[Flores eternas] …`).
+   *
+   * ⚠️ Es frágil a propósito y **provisional**: se le pidió al back una marca de verdad en el
+   * detalle del pedido. Si alguien renombra esos productos, esto deja de detectar — pero falla
+   * hacia el lado seguro (vuelve a permitir editar, que es el comportamiento de antes).
+   */
+  get esPedidoDeFlores(): boolean {
+    return (this.detalle?.detalles ?? []).some(d => (d.productoNombre ?? '').includes('[Flores eternas]'));
+  }
+
+  /**
+   * `[Flores eternas] Flor eternal0 - Roja` → `Flor eternal0 - Roja`.
+   *
+   * Ese prefijo es de uso interno (marca los productos sombra del módulo para excluirlos de los
+   * buscadores) y no tiene por qué salirle al cliente en su pedido.
+   */
+  nombreVisible(nombre: string | null | undefined): string {
+    return (nombre ?? '').replace('[Flores eternas]', '').trim();
+  }
+
   get esCredito(): boolean {
     const tp = this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido;
     return tp === 'APARTADO' || tp === 'FIADO';

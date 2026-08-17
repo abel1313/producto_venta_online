@@ -9543,3 +9543,52 @@ el correo de otra persona. Se eliminó el campo `clienteIdActual`, ya sin uso.
 - `src/app/flores/configurar/configurar-ramo.component.ts` → usa `idUsuario`, fuera `clienteIdActual`
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con una cuenta de cliente.
+
+---
+
+## AUDITORÍA — "solo se probó como admin": 3 pantallas más con fallo mudo (2026-08-16)
+
+El dueño lo planteó bien: *"solo lo he probado con admin"*. Se auditaron las **16 pantallas que
+ve un cliente** buscando `.subscribe()` sin manejo de error. Aparecieron en 12, pero **no todas
+pesan igual** — la mayoría son cargas de adorno que degradan bien. Las graves son las que **dejan
+la pantalla o el checkout muertos sin decir nada**.
+
+### Corregidas
+
+| Pantalla | Qué pasaba |
+|---|---|
+| `mis-pedidos` | Ya corregida (sección anterior) — la lista quedaba vacía para siempre |
+| `mis-datos` | El formulario quedaba **en blanco sin explicación** si fallaba la carga |
+| `detalle-productos` (checkout) | 🔴 **El botón de comprar no hacía absolutamente nada.** Venta perdida en silencio |
+
+El de `detalle-productos` era el peor: además de no manejar el error, resolvía el cliente con
+`getDataOneCliente(idUsuario)`. Ahí solo hace falta el **clienteId**, así que se cambió a
+`buscarClientePorIdUsuario` — la misma traducción que ya usan `venta-variante` y el configurador
+de ramos para armar un pedido. Y el "usuario no registrado" pasó de un `Error` seco a ofrecer
+**"Completar mis datos"**.
+
+`mis-datos` **no** se cambió de id (solo se le agregó el manejo de error) porque ahí sí se
+necesitan los datos completos del cliente, y sigue en pie la duda de qué id espera
+`buscarPorIdCliente` — ver la sección anterior.
+
+### Revisada y sin cambios
+
+`mi-perfil` ya tenía `error` y degrada bien (el campo de correo se queda vacío, la pantalla sigue
+viva).
+
+### 💡 La lección, que es la más útil de todo esto
+
+**Un `.subscribe()` sin `error` en una pantalla de cliente no es deuda técnica menor: es una
+pantalla que puede morir en silencio.** Y no se detecta probando como admin, porque casi todas
+estas pantallas tienen una rama distinta para admin (`isAdminUser`) que sí funciona.
+
+**Regla:** al tocar una pantalla que ve un cliente, revisar que **toda llamada que condicione lo
+que se muestra** tenga `error` — y que ese `error` diga algo accionable, no solo apague un
+spinner. Las cargas accesorias (contactos del negocio, catálogos de adorno) sí pueden fallar
+calladas.
+
+**Archivos modificados:**
+- `src/app/clietes/mis-datos/mis-datos.component.ts`
+- `src/app/productos/producto/detalle-productos/detalle-productos.component.ts`
+
+**Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.

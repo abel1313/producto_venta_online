@@ -10025,3 +10025,61 @@ llamadas dejaban de existir**. Lo detectó el compilador; quedó como `redesSel`
 **Verificado con `ng build` y en pantalla** (claro y oscuro): texto común, hashtags por red, vista
 previa de cada una, TikTok deshabilitado con su motivo, y al pasar a video Instagram se desmarca
 sola explicando por qué. ⚠️ Sin probar contra el backend real.
+
+---
+
+## FIX FLORES — UN COLOR DESACTIVADO SE PERDÍA SIN DECIR CUÁL (2026-08-18)
+
+**Lo encontró el back**, revisando nuestra pregunta: no hacía falta ningún cambio de su lado, el
+dato ya venía y **el bug era del front**.
+
+`GET /v1/flores/pedidos/{id}/detalle` trae `colores[].colorNombre`, leído de **la relación
+guardada en el pedido** — no del catálogo. Nosotros lo ignorábamos y cruzábamos `colorFlorId`
+contra `colores-flor/por-tipo-flor/{id}`, que **filtra por `activo:true`**: justo el color caído
+es el que no aparece ahí.
+
+**Síntoma:** al editar un ramo con un color desactivado después de la venta, esas flores
+desaparecían y el admin solo veía *"faltan 10 flores por repartir"* — sin saber de qué color eran,
+así que no podía ofrecerle un cambio al cliente.
+
+**Fix:** los colores del ramo que no están en el catálogo activo se separan en
+`coloresNoDisponibles` (nombre + cantidad, del propio detalle) y se muestran arriba del reparto:
+
+> ⚠️ Ya no hay **10 Blanca**. Esas flores hay que repartirlas entre los colores de abajo.
+
+**Regla:** para mostrar algo que ya quedó guardado en un pedido, usar lo que trae **el pedido**, no
+buscarlo en el catálogo. El catálogo dice qué se puede vender **hoy**; el pedido dice qué se
+vendió. Aplica igual a accesorios y frases.
+
+**Verificado en pantalla** simulando un color desactivado (el catálogo devuelve solo "Roja", el
+ramo trae "Roja" y "Blanca"): el aviso sale con nombre y cantidad correctos.
+
+---
+
+## ✅ CERRADO POR EL BACK — el agujero de `PUT /v1/pedidos/{id}/entrega` (2026-08-18)
+
+El back lo reforzó de su lado: ahora ese endpoint **rechaza con 400** si el pedido es un ramo y el
+request manda `fechaEntrega` o `lugarEntregaId` — así no se cuela ni llamándolo directo por
+Postman. El resto de los campos siguen editables, y en pedidos que no son de flores no cambia nada.
+
+Nuestro bloqueo de UI se queda igual (es la primera barrera y evita el viaje inútil), pero ya no
+es lo único que protege.
+
+⚠️ **Confirmado de paso:** `lugarEntregaId` de un ramo **no se puede cambiar por ningún endpoint
+todavía** — ni `editar-ramo` lo cubre. Por eso la zona se muestra bloqueada al editar. Si hace
+falta, hay que pedirlo.
+
+---
+
+## 🎉 INSTAGRAM YA ESTÁ VINCULADO — se puede probar (2026-08-18)
+
+El bloqueo se resolvió: la cuenta `novedades_bolsas_jade` ya está vinculada.
+
+⚠️ **Con una corrección importante:** la página de Facebook configurada al principio era **la
+equivocada**. La cuenta administra 4 páginas y la buena es **"NovedadesJade"** (sin espacio,
+`645820348605806`) — no "Novedades Jade" con espacio (`1275448475648441`). La correcta es la que
+tiene la cuenta real de Instagram. Si alguna vez guardamos el id viejo en el front, hay que
+cambiarlo (hoy no lo guardamos en ninguna parte — el front nunca manda el id de página).
+
+QA ya tiene las 3 variables correctas y **no queda ningún bloqueo de credenciales**: foto y video
+de Facebook, y foto de Instagram, se pueden probar de punta a punta.

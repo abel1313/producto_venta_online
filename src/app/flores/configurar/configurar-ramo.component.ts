@@ -115,6 +115,12 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   avisoFechaCorrida: string | null = null;
   /** Respaldo del reparto original: teclear una cantidad nueva vacía `reparto`. */
   private repartoPactado: Map<number, number> | null = null;
+  /**
+   * Colores que el cliente había pedido pero que se desactivaron después de la venta. No se pueden
+   * volver a mandar, así que hay que decirle al admin **cuál y cuántas** para que pueda ofrecerle
+   * un cambio — si no, solo ve "faltan N flores" sin saber de qué eran.
+   */
+  coloresNoDisponibles: { nombre: string; cantidad: number }[] = [];
 
   get modoEdicion(): boolean { return this.pedidoIdEdicion != null; }
 
@@ -253,9 +259,17 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
             this.cantidadDeseada    = total;
             this.cantidadConfirmada = total;
 
-            // Un color que se desactivó después de la venta ya no está en `coloresDisponibles`
-            // y no se puede volver a mandar — se pierde de la lista, y el admin ve que le faltan
-            // flores por repartir en vez de un error incomprensible al guardar.
+            // Un color que se desactivó después de la venta ya no está en `coloresDisponibles` y
+            // no se puede volver a mandar (el back lo rechaza). Se cae de la lista y el admin ve
+            // que le faltan flores por repartir — pero sin saber cuál era ni cuántas.
+            //
+            // El nombre sale de `colorNombre` del propio detalle, que el back lee de la relación
+            // guardada en el pedido. Buscarlo en el catálogo no sirve: ese endpoint solo trae los
+            // activos, así que el color caído justamente no está ahí.
+            this.coloresNoDisponibles = (ramo.colores ?? [])
+              .filter(x => !cs.some(c => c.id === x.colorFlorId))
+              .map(x => ({ nombre: x.colorNombre ?? `Color #${x.colorFlorId}`, cantidad: x.cantidad }));
+
             this.reparto = cs.map(c => ({
               color: c,
               cantidad: (ramo.colores ?? []).find(x => x.colorFlorId === c.id)?.cantidad ?? 0
@@ -303,6 +317,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.resultadoValidacion = null;
     this.cantidadConfirmada = null;
     this.coloresDisponibles = [];
+    this.coloresNoDisponibles = [];
     this.reparto = [];
     this.calculo = null;
     this.limpiarFechas();

@@ -446,7 +446,13 @@ export interface ICalcularPrecioResponse {
  */
 export interface IRamoPedidoDetalleRequest {
   ramoArmadoId?: number | null;
-  colores: { colorFlorId: number; cantidad: number }[];
+  /**
+   * `colorNombre` solo viene en la RESPUESTA, y es importante: se lee de la relación guardada en
+   * el pedido, **no del catálogo activo**. Es la única forma de saber cómo se llamaba un color
+   * que se desactivó después de la venta — cruzarlo contra `colores-flor/por-tipo-flor` no sirve,
+   * porque ese endpoint filtra por `activo:true` y el color caído simplemente no aparece.
+   */
+  colores: { colorFlorId: number; cantidad: number; colorNombre?: string }[];
   /** Uno u otro, nunca los dos. */
   fraseListonPredefinidaId?: number | null;
   fraseListonPersonalizada?: string | null;

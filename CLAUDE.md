@@ -10265,3 +10265,67 @@ diciendo qué falta. Nunca dejar la pantalla en blanco esperando.
 
 **Verificado en pantalla** tal cual la abre el usuario (sin producto elegido): se ven los 3 pasos,
 el área de arrastrar el video, las pestañas de hashtags y el botón de publicar con su aviso.
+
+---
+
+## REDES — TIKTOK + PROGRAMAR EN LAS 3, Y LA PANTALLA EN EL ORDEN QUE PIDIÓ EL DUEÑO (2026-08-18)
+
+Dos entregas grandes del back en el mismo día, más el reordenamiento que pidió el dueño.
+
+### 1. TikTok conectado
+
+`POST /v1/redes-sociales/tiktok/publicar` — multipart, **solo video** (su API no tiene "publicar
+foto"). Al elegir Foto, TikTok se desmarca solo con el motivo.
+
+⚠️ **Mientras su app siga en Sandbox, el video sale forzado a privado** y solo funciona con las
+cuentas dadas de alta como Target User. Eso lo avisa la pantalla con `advertenciaDe()` — un aviso
+que **no impide publicar**, a diferencia de `motivoNoDisponible()`. Si no se dijera, el admin
+publicaría y creería que falló al no verlo.
+
+El endpoint `/tiktok/autorizar` (OAuth, una sola vez) **no necesita pantalla** — lo corre el back
+desde el navegador.
+
+### 2. Programar: ahora en las 3 redes y los 3 tipos
+
+El back tomó la sugerencia del **job propio para todas** en vez de mezclar el scheduler nativo de
+Facebook con uno propio para Instagram. Con eso:
+
+- `scheduledPublishTime` existe ahora en **los 6 endpoints** (antes solo en Facebook foto/video).
+- **Ya no hay fecha máxima.** Los 29 días del Reel de Facebook y los 6 meses del video de feed eran
+  límites *de la API de Meta*; como ahora publica un job del back, no aplican. Se quitó
+  `PROGRAMAR_MAX_MESES` y su validación. Queda solo el mínimo de 10 minutos.
+- `estado` puede venir **`FALLIDA`** (el job reintenta 3 veces y se rinde), con `intentos` y
+  `ultimoError` — es lo único que dice POR QUÉ no salió, así que se muestra en el resultado.
+- Con `PROGRAMADA`, `postIdFacebook` viene `null` (el post todavía no existe) — por eso ese campo
+  pasó a `string | null`.
+
+### 3. La pantalla, en el orden que pidió el dueño
+
+Lo describió así: *"primero es el drop para arrastrar el video, después el textarea, después 3
+como radio button para cuando selecciono uno entonces es para face por ejemplo y pongo los
+hashtags, y al final la programación"*.
+
+| Antes | Ahora |
+|---|---|
+| 1 Producto · 2 Contenido · 3 Redes · 4 Cuándo | **1 Contenido · 2 Redes · 3 Cuándo · 4 Producto** |
+| Pestañas para los hashtags | **Radios** |
+
+El producto se fue **al final**: es un requisito del back, no parte del flujo con el que él piensa.
+
+⚠️ **El radio elige qué red se está CONFIGURANDO, no a cuál se publica.** Eso último sigue siendo
+la casilla de adentro, y pueden ir varias a la vez — el archivo se sube una sola vez. Son dos
+cosas distintas y por eso se ven distintas: el radio marca la que se está viendo, y el ✓ marca las
+que van a recibir la publicación.
+
+### 💡 Al reordenar, revisar los textos que hablan de la posición
+
+Tres frases quedaron mintiendo y el compilador no puede verlas:
+- *"Los Reels no se pueden programar"* — dejó de ser cierto con el job propio.
+- *"Entre 10 minutos y 6 meses"* — ya no hay máximo.
+- *"Falta elegir el producto arriba (paso 1)"* — el producto pasó a ser el paso 4.
+
+**Verificado en pantalla** (claro y oscuro): el orden nuevo, los 3 radios, un Reel con las 3 redes
+marcadas y programación activada, y que al pasar a Foto TikTok se cae solo con su motivo.
+
+⚠️ **Nada de esto se ha probado contra las APIs reales** — ni el back. Ni TikTok, ni los Reels, ni
+el flujo de programación.

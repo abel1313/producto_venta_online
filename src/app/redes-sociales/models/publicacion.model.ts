@@ -1,18 +1,18 @@
 /**
- * Publicación en redes sociales — por ahora solo Facebook (feed), foto o video.
- * Contrato documentado por el back en CAMBIOS_FRONT.md (2026-08-05).
+ * Publicación en redes sociales: Facebook, Instagram y TikTok. Foto, video de feed o Reel.
+ * Contrato documentado por el back en CAMBIOS_FRONT.md.
  *
  * ⚠️ Ambos endpoints son `multipart/form-data`, NO JSON — se necesitaba para poder
  * mandar el archivo en el mismo request. No hay que setear `Content-Type` a mano:
  * el browser lo pone solo con su boundary cuando el body es un `FormData`.
  */
 
-/** `tiktok` ya está en el tipo aunque el back todavía no tenga endpoint — la pantalla lo muestra
- *  deshabilitado para que se vea contemplado, no olvidado. */
+/** Las 3 ya tienen endpoint. TikTok solo acepta video. */
 export type PlataformaRed = 'facebook' | 'instagram' | 'tiktok';
-/** `reel` solo existe en Instagram por ahora — el Reel de Facebook queda para otra ronda. */
+/** `reel` existe en Facebook e Instagram. En TikTok todo video es "video". */
 export type TipoPublicacion = 'foto' | 'video' | 'reel';
-export type EstadoPublicacion = 'PUBLICADA' | 'PROGRAMADA';
+/** `FALLIDA` es nueva: el job propio reintenta 3 veces y, si no lo logra, la marca así. */
+export type EstadoPublicacion = 'PUBLICADA' | 'PROGRAMADA' | 'FALLIDA';
 
 export interface IPublicacionRed {
   id: number;
@@ -28,10 +28,32 @@ export interface IPublicacionRed {
    * tocar el contrato. Hay que mirar `plataforma` para saber de cuál red es antes de armar el
    * link, porque el dominio cambia.
    */
-  postIdFacebook: string;
+  /** `null` mientras `estado` sea `PROGRAMADA` — el post todavía no existe. */
+  postIdFacebook: string | null;
   scheduledPublishTime: string | null;
   fechaPublicacion: string;
   estado: EstadoPublicacion;
+  /** Cuántas veces lo intentó el job. `0` si nunca falló. */
+  intentos?: number;
+  /** Mensaje del último fallo — para poder decirle al admin por qué no salió. */
+  ultimoError?: string | null;
+}
+
+/**
+ * `POST /v1/redes-sociales/tiktok/publicar` — solo ADMIN, multipart.
+ *
+ * **Solo video.** La API de TikTok no tiene concepto de "publicar foto".
+ *
+ * ⚠️ Mientras la app no pase la auditoría de TikTok, el video sale **forzado a privado**
+ * (`SELF_ONLY`) y solo funciona con las cuentas dadas de alta como Target User en su Sandbox.
+ * Eso es de TikTok, no del back ni nuestro.
+ */
+export interface IPublicarTikTokRequest {
+  varianteId: number;
+  descripcion: string;
+  video: File;
+  /** Programado con el job propio del back, igual que las demás. */
+  scheduledPublishTime?: string | null;
 }
 
 /**
@@ -41,14 +63,16 @@ export interface IPublicacionRed {
  * - **Solo imagen ya guardada.** Instagram no acepta un archivo subido directo: su API exige una
  *   URL pública, así que el back reusa la del microservicio de imágenes. No hay equivalente de
  *   `imagenNueva`.
- * - **No se puede programar.** La Content Publishing API de Instagram siempre publica de
- *   inmediato — es limitación de Meta, no del back.
+ * - Programar **sí se puede ahora**, pero con el job propio del back — la API de Instagram sigue
+ *   sin permitirlo por su cuenta.
  */
 export interface IPublicarInstagramRequest {
   varianteId: number;
   descripcion: string;
   /** Opcional — omitido, usa la imagen principal de la variante (igual que Facebook). */
   imagenId?: string | null;
+  /** Nuevo: lo programa el job propio del back, no la API de Instagram (que no lo permite). */
+  scheduledPublishTime?: string | null;
 }
 
 /**
@@ -68,6 +92,8 @@ export interface IPublicarReelRequest {
   descripcion: string;
   /** Obligatorio en cada llamada — el catálogo no guarda video, no hay "reel principal". */
   video: File;
+  /** Nuevo: lo programa el job propio del back. */
+  scheduledPublishTime?: string | null;
 }
 
 export interface IPublicarFotoRequest {
@@ -93,6 +119,9 @@ export interface IPublicarVideoRequest {
 /** Tope del micro para cualquier archivo/request (foto o video). */
 export const LIMITE_ARCHIVO_MB = 200;
 
-/** Ventana que acepta el back para programar una publicación. */
+/**
+ * Anticipación mínima para programar. **Ya no hay máximo**: la programación la hace un job del
+ * propio back, no la API de cada red, así que no aplican sus topes (los 29 días del Reel de
+ * Facebook, los 6 meses del video de feed). Se puede programar a la fecha que sea.
+ */
 export const PROGRAMAR_MIN_MINUTOS = 10;
-export const PROGRAMAR_MAX_MESES = 6;

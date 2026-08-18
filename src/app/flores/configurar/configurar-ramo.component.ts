@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { forkJoin, Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, debounceTime, filter, take, takeUntil, timeout } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFechasDisponiblesResponse, IFraseListon,
@@ -95,6 +95,29 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   errorCalculo: string | null = null;
   private recalcular$ = new Subject<void>();
 
+  // ── Modo edición (admin) ─────────────────────────────────────────────────
+  /**
+   * Se entra con `/flores/configurar?pedidoId=42` desde "✏️ Editar ramo" (detalle del pedido).
+   * La misma pantalla, precargada con lo que el cliente pidió, para que el admin cambie flores,
+   * accesorios o la fecha y se **recotice** — en vez de tocar líneas sueltas sin recalcular nada.
+   *
+   * ⚠️ `editar-ramo` **no** cambia listón ni zona de envío: cambiarlos abre reglas propias
+   * (aprobación de frase con su precio, costo de envío ya cobrado) que el back dejó fuera. Por
+   * eso esos dos pasos se ocultan al editar — si se mostraran, el admin creería que los cambió
+   * y se perderían en silencio al guardar.
+   */
+  pedidoIdEdicion: number | null = null;
+  cargandoEdicion = false;
+  errorEdicion: string | null = null;
+  /** Lo que el pedido tenía al abrir, para poder avisar qué cambió. */
+  fechaOriginal: string | null = null;
+  /** Se llena cuando el cambio hizo que la fecha ya pactada dejara de alcanzar. */
+  avisoFechaCorrida: string | null = null;
+  /** Respaldo del reparto original: teclear una cantidad nueva vacía `reparto`. */
+  private repartoPactado: Map<number, number> | null = null;
+
+  get modoEdicion(): boolean { return this.pedidoIdEdicion != null; }
+
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
@@ -109,10 +132,14 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     private readonly clienteService: ClienteService,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly varianteService: VarianteService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    const idEdit = Number(this.route.snapshot.queryParamMap.get('pedidoId'));
+    this.pedidoIdEdicion = idEdit > 0 ? idEdit : null;
+
     this.cargarCatalogo();
 
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
@@ -153,10 +180,118 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.cantidades = r.cantidades.filter(c => c.activo);
         this.seleccionAccesorios = this.accesorios.map(a => ({ accesorio: a, seleccionado: false, cantidad: 1 }));
         this.cargandoCatalogo = false;
+        // Después del catálogo: sin especies/accesorios cargados no hay contra qué reconstruir.
+        if (this.modoEdicion) this.cargarRamoParaEditar();
       },
       error: err => {
         this.cargandoCatalogo = false;
         this.errorCatalogo = this.msg(err, 'No se pudo cargar el catálogo de flores.');
+      }
+    });
+  }
+
+  /**
+   * Reconstruye la pantalla con lo que el cliente ya había pedido.
+   *
+   * Se hace en cadena y no en paralelo porque cada paso depende del anterior: la especie decide
+   * qué colores existen, y sin los colores cargados no se puede repartir la cantidad.
+   */
+  private cargarRamoParaEditar(): void {
+    if (!this.pedidoIdEdicion) return;
+
+    this.cargandoEdicion = true;
+    this.errorEdicion = null;
+
+    // Esta ruta es PÚBLICA (el cliente arma su ramo sin cuenta), así que cualquiera podría pegar
+    // `?pedidoId=42` y ver precargado el ramo de otra persona. El back rechaza el guardado con
+    // 403, pero para entonces ya se vio lo que pidió alguien más.
+    //
+    // ⚠️ Se espera a que los roles estén resueltos en vez de leer `isAdminService` de golpe: al
+    // recargar la pantalla con F5, la sesión se rehidrata con `/auth/refresh` y el rol llega
+    // DESPUÉS de que el catálogo terminó de cargar — leerlo antes le diría "no eres admin" a un
+    // admin. `userRoles$` es un BehaviorSubject, así que emite de inmediato si ya está listo.
+    // El `timeout` no es adorno: un visitante anónimo NUNCA va a tener roles, así que sin él la
+    // pantalla se queda colgada en "Cargando el ramo…" para siempre y sin explicación.
+    this.authService.userRoles$
+      .pipe(filter(r => r.length > 0), take(1), timeout(4000), catchError(() => of([] as string[])),
+            takeUntil(this.destroy$))
+      .subscribe(roles => {
+        if (!roles.includes('ROLE_ADMIN')) {
+          this.pedidoIdEdicion = null;
+          this.cargandoEdicion = false;
+          Swal.fire({
+            icon: 'info',
+            title: 'Solo un administrador puede editar un pedido',
+            text: 'Si quieres cambiar algo de tu ramo, escríbenos y lo ajustamos.'
+          });
+          return;
+        }
+        this.pedirRamoDelPedido();
+      });
+  }
+
+  private pedirRamoDelPedido(): void {
+    if (!this.pedidoIdEdicion) return;
+
+    this.flores.obtenerDetalleRamo(this.pedidoIdEdicion).subscribe({
+      next: ramo => {
+        const especie = ramo.tipoFlorId ?? 0;
+        if (!especie) {
+          this.cargandoEdicion = false;
+          this.errorEdicion = 'Este pedido no trae la especie de flor, no se puede editar desde aquí.';
+          return;
+        }
+
+        this.tipoSeleccionadoId = especie;
+        this.fechaOriginal = ramo.fechaHoraEntrega ?? null;
+
+        this.flores.coloresPorTipoFlor(especie).subscribe({
+          next: cs => {
+            this.coloresDisponibles = cs;
+
+            const total = (ramo.colores ?? []).reduce((s, c) => s + c.cantidad, 0);
+            this.cantidadDeseada    = total;
+            this.cantidadConfirmada = total;
+
+            // Un color que se desactivó después de la venta ya no está en `coloresDisponibles`
+            // y no se puede volver a mandar — se pierde de la lista, y el admin ve que le faltan
+            // flores por repartir en vez de un error incomprensible al guardar.
+            this.reparto = cs.map(c => ({
+              color: c,
+              cantidad: (ramo.colores ?? []).find(x => x.colorFlorId === c.id)?.cantidad ?? 0
+            }));
+
+            // El papel no viene en `accesorios` (no es una elección) y se recalcula solo.
+            (ramo.accesorios ?? []).forEach(a => {
+              const sel = this.seleccionAccesorios.find(s => s.accesorio.id === a.accesorioId);
+              if (sel) { sel.seleccionado = true; sel.cantidad = a.cantidad; }
+            });
+
+            if (ramo.fechaHoraEntrega) {
+              const [f, h] = ramo.fechaHoraEntrega.split('T');
+              this.fechaEntrega = f ?? '';
+              this.horaEntrega  = (h ?? '').slice(0, 5);
+            }
+            this.urgente = ramo.esUrgente === true;
+
+            // La zona no se puede cambiar aquí, pero sí tiene que verse: el plazo del taller
+            // depende de ella, y un selector vacío haría creer que el ramo no tiene destino.
+            this.lugarEntregaId = ramo.lugarEntregaId ?? null;
+            this.recogerEnLocal = ramo.recogerEnLocal === true;
+
+            this.cargandoEdicion = false;
+            this.consultarFechas();
+            this.pedirRecalculo();
+          },
+          error: err => {
+            this.cargandoEdicion = false;
+            this.errorEdicion = this.msg(err, 'No se pudieron cargar los colores de este ramo.');
+          }
+        });
+      },
+      error: err => {
+        this.cargandoEdicion = false;
+        this.errorEdicion = this.msg(err, 'No se pudo cargar el ramo de este pedido.');
       }
     });
   }
@@ -189,6 +324,13 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
    * — se limpia todo lo que dependía de ella para forzar un "Validar" nuevo, y que el aviso
    * verde de "cantidad válida" no se quede pegado mostrando un número que ya no es el escrito. */
   onCambiarCantidadDeseada(): void {
+    // Al editar hay que recordar lo que YA estaba pactado antes de borrarlo: si no, teclear la
+    // cantidad nueva borra el reparto (el admin tendría que capturar de nuevo lo que ya estaba
+    // bien) y la fecha (sin ella no hay contra qué comparar para avisar que se corrió).
+    if (this.modoEdicion && this.reparto.length) {
+      this.repartoPactado = new Map(this.reparto.map(r => [r.color.id, r.cantidad]));
+    }
+
     this.resultadoValidacion = null;
     this.cantidadConfirmada = null;
     this.reparto = [];
@@ -269,7 +411,16 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   private confirmarCantidad(cantidad: number): void {
     this.cantidadConfirmada = cantidad;
-    this.reparto = this.coloresDisponibles.map(c => ({ color: c, cantidad: 0 }));
+
+    // Al editar se conserva lo que ya estaba repartido: el admin normalmente sube el tamaño para
+    // AGREGAR flores, no para rehacer el ramo. El contador de "faltan N" le dice cuántas colocar,
+    // en vez de dejarlo con todo en cero y obligarlo a capturar de nuevo lo que ya estaba bien.
+    // `repartoPactado` es el respaldo que dejó `onCambiarCantidadDeseada` antes de vaciar la lista.
+    const previo = this.modoEdicion
+      ? (this.reparto.length ? new Map(this.reparto.map(r => [r.color.id, r.cantidad])) : this.repartoPactado)
+      : null;
+
+    this.reparto = this.coloresDisponibles.map(c => ({ color: c, cantidad: previo?.get(c.id) ?? 0 }));
     // Un solo color disponible: se reparte todo ahí de entrada, no tiene caso obligar a
     // escribirlo a mano si no hay entre qué elegir.
     if (this.reparto.length === 1) this.reparto[0].cantidad = cantidad;
@@ -424,11 +575,34 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       next: r => {
         this.consultandoFechas = false;
         this.fechas = r;
+        this.avisoFechaCorrida = null;
+
         if (r.primeraFechaValida) {
-          // Se preselecciona lo más pronto posible: es lo que la mayoría quiere, y de paso deja
-          // el formulario completo sin que el cliente tenga que elegir nada.
-          this.fechaEntrega = r.primeraFechaValida.slice(0, 10);
-          this.horaEntrega = r.horasDisponibles?.[0] ?? r.primeraFechaValida.slice(11, 16);
+          // Al editar, la fecha ya pactada con el cliente NO se pisa mientras siga siendo posible
+          // — cambiar un accesorio no tiene por qué mover la entrega. Solo si el ramo creció y el
+          // taller ya no llega, se corre y se avisa, que es justo lo que el admin necesita para
+          // decirle al cliente "si le agregamos 10, ya no te lo doy el 20, sería el 23".
+          //
+          // Se compara contra `fechaOriginal` (la del pedido) y no contra `fechaEntrega`: esta
+          // última se vacía al teclear una cantidad nueva, así que justo cuando hay algo que
+          // avisar ya no habría con qué comparar.
+          const pactada = this.modoEdicion
+            ? (this.fechaEntrega ? `${this.fechaEntrega}T${this.horaEntrega || '00:00'}` : this.fechaOriginal)
+            : null;
+          const alcanza = !!pactada && pactada.slice(0, 16) >= r.primeraFechaValida.slice(0, 16);
+
+          if (this.modoEdicion && alcanza && this.fechaEntrega) {
+            // se conserva lo que ya estaba
+          } else {
+            if (this.modoEdicion && pactada && !alcanza) {
+              this.avisoFechaCorrida = `Con este cambio el ramo ya no alcanza para el ${this.fechaLegible(pactada)} `
+                + `— lo más pronto ahora es el ${this.fechaLegible(r.primeraFechaValida)}`;
+            }
+            // Se preselecciona lo más pronto posible: es lo que la mayoría quiere, y de paso deja
+            // el formulario completo sin que el cliente tenga que elegir nada.
+            this.fechaEntrega = r.primeraFechaValida.slice(0, 10);
+            this.horaEntrega = r.horasDisponibles?.[0] ?? r.primeraFechaValida.slice(11, 16);
+          }
         } else {
           this.fechaEntrega = '';
           this.horaEntrega = '';
@@ -557,6 +731,10 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   confirmarPedido(): void {
     if (!this.calculo || this.guardando) return;
 
+    // Editar no crea un pedido nuevo: recotiza el que ya existe. Ni resuelve cliente, ni verifica
+    // correo, ni guarda el ticket de producción — de eso ya se encargó la venta original.
+    if (this.modoEdicion) { this.confirmarEdicion(); return; }
+
     // Avisar, no prohibir (misma regla que "Seguir con N" en el paso 2): bloquear en seco impide
     // probar el flujo urgente completo, y el riesgo real solo existe con un cliente de verdad.
     // Quien decide es quien vende.
@@ -576,6 +754,87 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       return;
     }
     this.confirmarPedidoConfirmado();
+  }
+
+  /**
+   * Guarda los cambios de un ramo ya vendido — `PUT .../editar-ramo`, solo ADMIN.
+   *
+   * Se le muestra al admin la **diferencia contra lo que ya se cobró**, porque es lo que tiene
+   * que negociar con el cliente antes de aceptar: si el ramo sube, la diferencia se cobra con un
+   * abono; si baja por debajo de lo ya pagado, el back lo rechaza (no hay reembolso).
+   */
+  private confirmarEdicion(): void {
+    if (!this.calculo || !this.pedidoIdEdicion) return;
+
+    const nuevoTotal = this.calculo.total;
+    const cambioFecha = this.fechaHoraEntrega && this.fechaHoraEntrega !== this.fechaOriginal;
+    const avisoFecha = cambioFecha
+      ? `<p style="margin-top:8px">Nueva fecha de entrega: <b>${this.fechaLegible(this.fechaHoraEntrega!)}</b>.
+         Se le avisa al cliente por correo.</p>`
+      : '';
+
+    Swal.fire({
+      title: 'Guardar los cambios del ramo',
+      icon: 'question',
+      html: `<p class="fw-bold fs-5">Nuevo total: $${nuevoTotal.toFixed(2)}</p>
+             <p style="color:var(--app-text-muted,#6b7280);margin:0">Pedido #${this.pedidoIdEdicion}</p>
+             ${avisoFecha}`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar cambios',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.guardando = true;
+
+      const colores = this.reparto.filter(x => x.cantidad > 0)
+        .map(x => ({ colorFlorId: x.color.id, cantidad: x.cantidad }));
+
+      // Una entrada por unidad, igual que `calcular-precio`. El papel NO va aquí: lo recalcula el
+      // back según la cantidad nueva de flores.
+      const accesorios: { accesorioId: number }[] = [];
+      this.seleccionAccesorios
+        .filter(s => s.seleccionado && !s.accesorio.esPapel)
+        .forEach(s => { for (let i = 0; i < (s.cantidad || 1); i++) accesorios.push({ accesorioId: s.accesorio.id }); });
+
+      this.flores.editarRamo(this.pedidoIdEdicion!, {
+        colores,
+        accesorios,
+        // Solo se manda si de verdad cambió: omitida, el back deja la fecha del pedido intacta.
+        fechaHoraEntrega: cambioFecha ? this.fechaHoraEntrega : undefined,
+        urgente: cambioFecha ? this.urgente : undefined
+      }).subscribe({
+        next: res => {
+          this.guardando = false;
+          const dif = res.diferencia;
+          const textoDif = dif > 0
+            ? `<p style="margin-top:10px">El cliente debe pagar <b>$${dif.toFixed(2)}</b> más.
+               Regístralo como abono en <b>Créditos / Abonos</b>.</p>`
+            : dif < 0
+              ? `<p style="margin-top:10px">El ramo bajó $${Math.abs(dif).toFixed(2)}. No se devuelve dinero.</p>`
+              : '';
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Ramo actualizado',
+            html: `<p>Nuevo total: <b>$${res.totalPedidoNuevo.toFixed(2)}</b>
+                   (antes $${res.totalPedidoAnterior.toFixed(2)}).</p>${textoDif}`,
+            showCancelButton: dif > 0,
+            confirmButtonText: dif > 0 ? 'Ir a cobrar la diferencia' : 'Listo',
+            cancelButtonText: 'Después'
+          }).then(sr => {
+            if (dif > 0 && sr.isConfirmed) {
+              this.router.navigate(['/abonos'], { queryParams: { pedidoId: this.pedidoIdEdicion } });
+            } else {
+              this.router.navigate(['/pedidos/mis-pedidos']);
+            }
+          });
+        },
+        error: err => {
+          this.guardando = false;
+          Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: this.msg(err, 'No se pudo actualizar el ramo.') });
+        }
+      });
+    });
   }
 
   private confirmarPedidoConfirmado(): void {

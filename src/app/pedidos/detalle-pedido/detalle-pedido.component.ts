@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
@@ -66,6 +67,25 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    */
   get puedeEditarLineas(): boolean {
     return this.isAdmin && !this.esPedidoDeFlores;
+  }
+
+  /**
+   * "✏️ Editar ramo" — la única forma correcta de cambiar un ramo ya vendido, porque reabre el
+   * configurador y recotiza todo (`PUT .../editar-ramo`), a diferencia del botón "−" que borra
+   * una línea suelta sin recalcular nada.
+   *
+   * Solo ADMIN (el back devuelve 403 a cualquier otro) y solo si el pedido es un ramo. No se
+   * bloquea por estado del pedido: el dueño lo pidió explícito ("no importa en qué estado esté").
+   * El back sí rechaza un pedido cancelado, y ese mensaje se muestra tal cual.
+   */
+  get puedeEditarRamo(): boolean {
+    return this.isAdmin && this.esPedidoDeFlores;
+  }
+
+  editarRamo(): void {
+    this.router.navigate(['/flores/configurar'], {
+      queryParams: { pedidoId: this.detalle?.pedidoId ?? this.pedido?.pedido?.id }
+    });
   }
 
   /**
@@ -160,7 +180,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly abonoService:   AbonoService,
     private readonly authService:    AuthService,
     private readonly negocioService: NegocioService,
-    private readonly floresService:  FloresService
+    private readonly floresService:  FloresService,
+    private readonly router:         Router
   ) {}
 
   ngOnInit(): void {

@@ -314,6 +314,17 @@
   line-height: 1.45;
 }
 
+// Modo edición: informativo, no advertencia — solo dice qué se puede cambiar aquí y qué no.
+.cr-aviso--info {
+  background: var(--app-accent-soft, rgba(0, 135, 90, .12));
+  border: 1px solid var(--card-border);
+  color: var(--app-text);
+  margin: 0 0 14px;
+  display: block;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
 .cr-fecha-min {
   margin: 12px 0 0;
   font-size: .88rem;

@@ -10329,3 +10329,45 @@ marcadas y programación activada, y que al pasar a Foto TikTok se cae solo con 
 
 ⚠️ **Nada de esto se ha probado contra las APIs reales** — ni el back. Ni TikTok, ni los Reels, ni
 el flujo de programación.
+
+---
+
+## FIX REDES — "TIKTOK NO ME DEJA SELECCIONARLO" + LOS HASHTAGS ESCONDIDOS (2026-08-18)
+
+Dos reportes del dueño probando la pantalla en vivo.
+
+### 1. Los hashtags solo aparecían si la red ya estaba marcada
+
+Su flujo es llenar los 3 de corrido: *"pongo el texto, selecciono el radio de Facebook pongo los
+hashtags, después Instagram pongo los hashtags, después TikTok"*. Pero el campo estaba detrás de
+`*ngIf="redesSel[r] && puedeUsar(r)"`, así que en una red sin marcar no había dónde escribir.
+
+Ahora el campo se ve **siempre**. Si una red se queda sin hashtags no pasa nada — `textoFinal()`
+manda solo el texto, sin concatenar. No hay que marcar la red para poder prepararla.
+
+### 2. 🔴 "El de TikTok no me deja seleccionarlo"
+
+**No era un bug: era el tipo.** La pantalla arranca en **Foto**, y TikTok no publica fotos (su API
+no tiene ese concepto), así que la casilla salía deshabilitada — con razón, pero **sin que se
+entendiera**.
+
+El motivo sí estaba escrito, pero iba dentro del `<label>` de la casilla como un `<small>` gris,
+pegado al texto. Se perdía por completo.
+
+**Fix:** el motivo salió del label y pasó a ser un aviso propio en rojo (`.fb-bloqueo`) —
+🚫 *"TikTok solo acepta video, no fotos"* — **con la salida al lado**: un botón **"Cambiar a
+video"** que lo arregla en un clic, en vez de dejar al admin deducir qué tiene que hacer.
+
+Rojo y no ámbar a propósito: esto **sí impide** publicar en esa red, a diferencia de
+`.fb-hint--warn` (el video privado de TikTok en Sandbox), que solo avisa.
+
+### 💡 Un `<small>` dentro de un `<label>` clicable no se lee
+
+Es el mismo patrón que ya falló antes en este proyecto: la explicación de por qué algo está
+bloqueado **compite visualmente con la etiqueta** y el ojo la salta. Si un control está
+deshabilitado, el motivo va **fuera**, con su propio contraste, y si hay una acción que lo
+desbloquea, va junto al motivo.
+
+**Verificado reproduciendo el caso exacto del dueño** (tipo Foto → radio de TikTok): la casilla
+sale deshabilitada, el aviso rojo se ve, el botón "Cambiar a video" lo desbloquea, y después de
+pulsarlo TikTok se puede marcar y publicar.

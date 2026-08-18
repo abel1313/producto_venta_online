@@ -6,6 +6,40 @@
       <h4>📣 Publicar en redes</h4>
       <small>Sube una foto o un video de un producto a las redes del negocio</small>
     </div>
+    <button class="fb-btn fb-btn--ghost fb-btn--sm" (click)="mostrarAyuda = !mostrarAyuda">
+      {{ mostrarAyuda ? '▲ Ocultar' : '❔ ¿Qué acepta cada red?' }}
+    </button>
+  </div>
+
+  <!-- Chuleta plegable. Existe para no tener que recordar por qué una red se bloquea: el caso
+       que lo motivó fue "TikTok no me deja seleccionarlo" estando en Foto. -->
+  <div class="fb-card fb-ayuda" *ngIf="mostrarAyuda">
+    <table class="fb-ayuda__tabla">
+      <tr>
+        <th></th><th>📷 Foto</th><th>🎬 Video</th><th>🎞️ Reel</th><th>📅 Programar</th>
+      </tr>
+      <tr>
+        <td>📘 Facebook</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td>
+      </tr>
+      <tr>
+        <td>📸 Instagram</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td>
+      </tr>
+      <tr>
+        <td>🎵 TikTok</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td>
+      </tr>
+    </table>
+    <ul class="fb-ayuda__notas">
+      <li><b>TikTok no publica fotos</b> — su sistema solo acepta video. Si estás en Foto, no se
+          deja marcar.</li>
+      <li><b>Instagram no tiene "video normal"</b> — ahí todo video es Reel.</li>
+      <li><b>La música va pegada en el archivo.</b> La de la app de Instagram no se puede elegir
+          desde aquí; si usas música comercial pueden silenciarte el video.</li>
+      <li><b>El video se sube una sola vez</b> y va a todas las redes que marques. El texto es el
+          mismo; solo cambian los hashtags.</li>
+      <li><b>Programar:</b> mínimo 10 minutos, sin fecha máxima. Salen todas a la misma hora. Si
+          el servidor estuvo apagado a esa hora, se publican en cuanto vuelva.</li>
+      <li><b>TikTok sube el video como privado</b> hasta que aprueben la cuenta. No es un error.</li>
+    </ul>
   </div>
 
 

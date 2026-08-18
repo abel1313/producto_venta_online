@@ -533,6 +533,28 @@
   }
 }
 
+// ── Red bloqueada ─────────────────────────────────────────────────────────
+// Rojo (no ámbar): esto SÍ impide publicar en esa red, a diferencia de `.fb-hint--warn`.
+.fb-bloqueo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, .09);
+  border: 1px solid rgba(220, 38, 38, .3);
+
+  &__txt {
+    margin: 0;
+    font-size: .82rem;
+    line-height: 1.4;
+    color: var(--app-text);
+  }
+}
+
 // ── Vista previa del texto final ──────────────────────────────────────────
 .fb-preview {
   border: 1px solid var(--card-border);

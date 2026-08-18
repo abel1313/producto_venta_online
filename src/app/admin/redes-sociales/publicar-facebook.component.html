@@ -164,15 +164,23 @@
                [checked]="redesSel[r]" [disabled]="!puedeUsar(r) || publicando"
                (change)="toggleRed(r)">
         <span class="fb-red__nombre">Publicar en {{ nombreDeRed(r) }}</span>
-        <!-- El motivo va junto a la casilla: apagarla sin explicar deja al admin adivinando si
-             es un error o una limitación de esa red. -->
-        <small class="fb-red__motivo" *ngIf="motivoNoDisponible(r) as m">{{ m }}</small>
       </label>
+
+      <!-- El motivo iba dentro del label y se perdía. Ahora es un aviso propio, con la salida:
+           el admin llegaba aquí sin entender por qué la casilla no se dejaba marcar. -->
+      <div class="fb-bloqueo" *ngIf="motivoNoDisponible(r) as m">
+        <p class="fb-bloqueo__txt">🚫 {{ m }}</p>
+        <button class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="r === 'tiktok' && tipo === 'foto'"
+                (click)="setTipo('video')">Cambiar a video</button>
+      </div>
 
       <!-- Aviso que NO impide publicar (hoy: el video privado de TikTok en Sandbox). -->
       <p class="fb-hint fb-hint--warn" *ngIf="redesSel[r] && advertenciaDe(r) as a">⚠️ {{ a }}</p>
 
-      <div class="fb-field" *ngIf="redesSel[r] && puedeUsar(r)">
+      <!-- Los hashtags se pueden escribir SIEMPRE, aunque la red no esté marcada todavía: el
+           flujo del dueño es llenar los 3 de corrido (uno por radio) y decidir después. Si una
+           red se queda sin hashtags no pasa nada — se manda solo el texto. -->
+      <div class="fb-field">
         <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
         <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
                placeholder="#novedadesjade #bolsas">

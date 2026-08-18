@@ -505,6 +505,23 @@
   &:not(:disabled):hover { box-shadow: 0 3px 10px rgba(0,135,90,.35); }
 }
 
+// Acción principal del pedido de ramo — sólida, para que no se pierda entre los dos botones
+// de ticket (que van en contorno).
+.dp-btn-editar-ramo {
+  padding: .38rem .9rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--app-accent);
+  color: var(--app-accent-ink);
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: box-shadow .15s;
+
+  &:hover { box-shadow: 0 3px 10px rgba(0,135,90,.35); }
+}
+
 .dp-btn-reenviar, .dp-btn-imprimir {
   padding: .38rem .9rem;
   border: 1px solid rgba(0,135,90,.5);

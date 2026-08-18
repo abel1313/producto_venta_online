@@ -22,6 +22,13 @@
     </div>
     <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
+           Ver `puedeEditarRamo`. -->
+      <button class="dp-btn-editar-ramo" type="button" *ngIf="puedeEditarRamo"
+              (click)="editarRamo()"
+              title="Cambiar flores, accesorios o la fecha de entrega — se vuelve a calcular el precio">
+        ✏️ Editar ramo
+      </button>
       <button class="dp-btn-imprimir" type="button"
               [disabled]="imprimiendoTicket || !puedeGenerarTicket" (click)="imprimirTicketDetalle()"
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">

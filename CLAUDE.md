@@ -9818,3 +9818,81 @@ respecto a lo que el dueño imaginó.
 - `.html` + `.scss` → nota de envoltura incluida
 
 **Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con un pedido de ramo real.
+
+---
+
+## FLORES — "EDITAR RAMO" (admin), CANCELAR DEL CLIENTE, Y FECHA BLOQUEADA EN "ENTREGA" (2026-08-17)
+
+> Dos entregas del back destrabaron lo que estaba detenido: `editar-ramo` ahora **también cambia
+> la fecha** (era el choque que impedía construir el botón), y existe
+> `DELETE /v1/flores/pedidos/{id}/cancelar` para que el cliente cancele lo suyo.
+
+### 1. ✏️ Editar ramo — la misma pantalla del cliente, precargada
+
+Botón nuevo en el **detalle del pedido** (no en la card: la lista no sabe si el pedido es un ramo,
+ese dato solo viene al abrir el detalle). Abre `/flores/configurar?pedidoId=42` en modo edición:
+especie, cantidad, reparto por color, accesorios, fecha y zona ya cargados.
+
+**Lo que sí cambia:** flores, accesorios, fecha/urgencia.
+**Lo que NO:** listón y zona de envío — `editar-ramo` no los cubre (reabren la aprobación de
+frase y un costo de envío ya cobrado). El paso del listón se **oculta** y la zona se muestra
+**bloqueada**; si se dejaran editables, el admin creería que los cambió y se perderían en silencio
+al guardar. Se dice de frente con un aviso arriba, en vez de esconder pasos sin explicación.
+
+Al guardar se muestra la **diferencia contra lo ya cobrado**: si sube, botón directo a
+`/abonos?pedidoId=N` para cobrarla; si baja por debajo de lo pagado, el back lo rechaza (no hay
+reembolso) y ese mensaje se muestra tal cual.
+
+### El punto que pidió el dueño: la fecha se recalcula sola al agregar flores
+
+*"Si le agregamos 10, ya no te lo doy el 20, sería el 23"* — al subir el tamaño, el configurador
+vuelve a preguntar el plazo (`fechas-disponibles`) y avisa:
+
+> 📅 Con este cambio el ramo ya no alcanza para el jueves, 20 de agosto, 4:00 p.m. — lo más
+> pronto ahora es el domingo, 23 de agosto, 4:00 p.m.
+
+**La fecha ya pactada NO se pisa mientras siga siendo posible** — cambiar un accesorio no tiene
+por qué mover la entrega. Solo se corre cuando de verdad el taller ya no llega.
+
+### ⚠️ Tres trampas que solo aparecieron probando en pantalla (el build no las ve)
+
+1. **`onCambiarCantidadDeseada()` vacía `reparto` y `fechaEntrega` al teclear.** Sin respaldo, el
+   admin perdía el reparto que ya estaba bien (todo a 0) y el aviso de fecha nunca salía, porque
+   ya no había con qué comparar. Se guardan en `repartoPactado` y se compara contra `fechaOriginal`.
+2. **Leer `isAdminService` de golpe reprueba a un admin.** Al recargar con F5, la sesión se
+   rehidrata con `/auth/refresh` y el rol llega **después** de que el catálogo cargó → "solo un
+   administrador" a un administrador. Se espera `userRoles$`.
+3. **Y ese `filter(r => r.length > 0)` deja la pantalla colgada para un anónimo**, que nunca va a
+   tener roles: "Cargando el ramo…" para siempre, sin mensaje. Lleva `timeout(4000)`.
+
+La ruta es **pública** (el cliente arma su ramo sin cuenta), así que cualquiera podría pegar
+`?pedidoId=42` y ver precargado el ramo de otra persona — el back rechaza el guardado con 403,
+pero para entonces ya lo vio. Por eso el modo edición se corta en el front.
+
+### 2. El cliente ya puede cancelar su ramo
+
+Su botón "Cancelar" llamaba al endpoint de admin y le respondía **403 mudo**. Ahora, si no es
+admin, se pide el detalle y se decide: ramo sin pagos → `DELETE /v1/flores/pedidos/{id}/cancelar`
+(sin motivo, ese endpoint no recibe body); ya pagó algo o no es un ramo → se le dice que escriba,
+en vez de mandarlo a un error inevitable.
+
+### 3. 🔴 Agujero cerrado — la fecha del ramo en el modal "📍 Entrega"
+
+Ese botón **lo ve el cliente** y su modal tenía la fecha como campo libre. En un ramo eso permitía:
+pagar $1,225 con entrega al 22, y después mover la fecha al 19 desde ahí — el taller lo arma con
+prisa y **los $300 de urgencia nunca se cobran**. Nadie se entera.
+
+Fecha y lugar quedan **bloqueados en ramos** (para todos, admin incluido: ese campo no valida
+nada), con aviso de que se cambian desde "✏️ Editar ramo". Los otros 4 campos (recibe, dirección,
+Facebook, observaciones) siguen libres. **En pedidos normales no cambia nada** — ahí no hay plazos
+de armado ni cargo por prisa. Decisión del dueño entre 3 opciones.
+
+**Verificado con `ng build` y EN PANTALLA** (`ng serve` + Playwright, backend simulado porque QA
+está caído): precarga completa, reparto conservado con "faltan 28 flores", aviso de fecha corrida,
+el listón oculto y la zona bloqueada; y el modal de Entrega en claro y oscuro, con un pedido de
+ramo (bloqueado) y uno normal (editable). ⚠️ No probado contra el backend real.
+
+**Archivos:** `flores.model.ts` (`IEditarRamoRequest/Response`, detalle enriquecido),
+`flores.service.ts` (`editarRamo`, `cancelarPedidoFlores`), `configurar-ramo.component.*`
+(modo edición), `detalle-pedido.component.*` (botón), `mis-pedidos.component.ts`
+(cancelar del cliente + bloqueo del modal).

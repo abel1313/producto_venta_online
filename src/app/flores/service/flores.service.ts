@@ -5,7 +5,8 @@ import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
   IAccesorioRamo, ICalcularPrecioRequest, ICalcularPrecioResponse, ICantidadFlor,
-  ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IFechasDisponiblesRequest,
+  ICantidadFlorRequest, IColorFlor, IColorFlorRequest, IEditarRamoRequest,
+  IEditarRamoResponse, IFechasDisponiblesRequest,
   IFechasDisponiblesResponse, IFraseListon, IFrasesPendientesPaginable,
   IRamoArmado, IRamoArmadoPaginable, IRamoArmadoRequest, IRamoPedidoDetalle,
   IRamoPedidoDetalleRequest, IRevalidarPagoResponse, ITipoFlor, IValidarCantidadRequest,
@@ -227,6 +228,25 @@ export class FloresService {
     return this.http
       .get<{ data: IRamoPedidoDetalle }>(`${this.urlCalculo}/pedidos/${pedidoId}/detalle`)
       .pipe(map(r => r.data));
+  }
+
+  /** Recotiza un ramo ya guardado — **solo ADMIN**. Ver `IEditarRamoRequest`. */
+  editarRamo(pedidoId: number, body: IEditarRamoRequest): Observable<IEditarRamoResponse> {
+    return this.http
+      .put<{ data: IEditarRamoResponse }>(`${this.urlCalculo}/pedidos/${pedidoId}/editar-ramo`, body)
+      .pipe(map(r => r.data));
+  }
+
+  /**
+   * El **cliente** cancela su propio ramo, solo mientras no haya ningún pago registrado. El admin
+   * también puede llamarlo (se salta el chequeo de dueño, pero las demás reglas siguen). Devuelve
+   * stock, igual que el cancelado de siempre — es la misma lógica con otra puerta.
+   *
+   * 400 si ya hay un pago, si el pedido no es de flores, o si ya estaba cancelado.
+   * 403 si el pedido no es de quien llama.
+   */
+  cancelarPedidoFlores(pedidoId: number): Observable<any> {
+    return this.http.delete(`${this.urlCalculo}/pedidos/${pedidoId}/cancelar`);
   }
 
   /** Bandeja de frases por aprobar — ADMIN. `pagina` base-1. */

@@ -468,6 +468,52 @@ export interface IRamoPedidoDetalle extends IRamoPedidoDetalleRequest {
   id: number;
   pedidoId: number;
   fraseListonEstado?: string;
+  /** Especie del ramo — viene explícito, no hay que deducirlo de `colores[]`. */
+  tipoFlorId?: number;
+  tipoFlorNombre?: string;
+  /** Total de flores ya sumado. */
+  cantidadFinal?: number;
+  /** Los accesorios elegidos, SIN el papel (ése no es una elección del cliente). */
+  accesorios?: { accesorioId: number; accesorioNombre: string; cantidad: number }[];
+  /** Se guardaron al cotizar; los usa `revalidar-antes-de-pagar`. */
+  esUrgente?: boolean;
+  fechaLimitePago?: string | null;
+  cargoUrgenteMonto?: number | null;
+}
+
+/**
+ * `PUT /v1/flores/pedidos/{pedidoId}/editar-ramo` — **solo ADMIN**.
+ *
+ * Reemplaza (no suma) los colores y accesorios de un ramo ya guardado y lo recotiza.
+ *
+ * ⚠️ **No cubre envío ni listón** — cambiarlos abre reglas propias (costo de envío ya cobrado,
+ * aprobación de frase con su precio) que el back dejó fuera a propósito. En modo edición esos dos
+ * pasos van en solo lectura, o el admin creería que los cambió y se perderían en silencio.
+ */
+export interface IEditarRamoRequest {
+  /** Obligatorio, al menos uno. Reemplaza TODOS los colores. Todos de la misma especie. */
+  colores: { colorFlorId: number; cantidad: number }[];
+  /** Una entrada por unidad (2 coronas = 2 entradas). **Nunca incluir el papel** — se recalcula solo. */
+  accesorios?: { accesorioId: number }[];
+  /**
+   * Opcionales y retrocompatibles: omitirlos deja la fecha del pedido intacta. Si se mandan, el
+   * back recalcula la hora límite de pago y el cargo urgente — pero **no revalida el calendario**,
+   * así que hay que llamar `fechas-disponibles` primero y mandar lo que ya se validó ahí.
+   */
+  fechaHoraEntrega?: string | null;
+  urgente?: boolean;
+}
+
+export interface IEditarRamoResponse {
+  ramo: IRamoPedidoDetalle;
+  totalPedidoAnterior: number;
+  totalPedidoNuevo: number;
+  /**
+   * `nuevo - anterior`. **Positiva → el cliente debe pagar la diferencia** (se registra con
+   * `POST /v1/abonos/{pedidoId}`). Negativa o cero → no se genera reembolso ni ajuste; de hecho
+   * el back rechaza con 400 cualquier edición que deje el total por debajo de lo ya pagado.
+   */
+  diferencia: number;
 }
 
 /**

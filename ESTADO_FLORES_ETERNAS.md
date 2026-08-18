@@ -35,6 +35,7 @@ Son **independientes**: un ramo armado no aparece en el configurador ni al revé
 | `/flores/zonas` | Admin | Zonas de entrega y costo de envío |
 | `/flores/ramos-admin` | Admin | Alta y edición de ramos preconfigurados |
 | `/flores/frases` | Admin | Bandeja de frases de listón esperando precio |
+| `/flores/configurar?pedidoId=N` | **Solo admin** | **Editar** un ramo ya vendido — la misma pantalla, precargada, que recotiza |
 
 ⚠️ `/flores/zonas` es **la misma pantalla** que `/lugares-entrega` de Inventario, con ruta propia
 para que el menú no salte de sección. No está duplicada.
@@ -105,6 +106,71 @@ ahorraba nada y traía estados nuevos, caducidad y una bandeja que mantener.
 
 ---
 
+## 6.b Editar y cancelar un ramo ya vendido (2026-08-17)
+
+### Quién puede qué
+
+| | Cliente | Admin |
+|---|---|---|
+| Quitar artículos sueltos ("−") | ❌ | ❌ **tampoco** — ver abajo |
+| Editar el ramo | ❌ | ✅ desde el detalle del pedido |
+| Cambiar fecha/zona en "📍 Entrega" | ❌ en ramos | ❌ **tampoco** en ramos |
+| Cancelar su propio ramo | ✅ si no ha pagado nada | ✅ siempre |
+
+**El botón "−" está bloqueado incluso para el admin en un ramo**, y no es exceso de celo:
+`eliminarDetalle` borra una línea suelta **sin recalcular nada**. Quitar flores dejaría el papel
+con los pliegos del tamaño viejo, la fecha con el plazo viejo y la urgencia sin revisar — el
+pedido queda inconsistente por dentro y nadie se entera. Para eso está "Editar ramo".
+
+### El agujero de cobro que se cerró
+
+El modal **"📍 Entrega"** lo ve el cliente y su fecha era un campo libre. Permitía:
+
+1. Cotizar el ramo para el 22 → sin cargo → pagar $1,225
+2. Ya pagado, abrir "Entrega" y mover la fecha al 19
+3. El taller lo arma con prisa y **los $300 de urgencia nunca se cobran**
+
+Ahora fecha y lugar quedan bloqueados en ramos. En pedidos normales no cambia nada (ahí no hay
+plazos de armado ni cargo por prisa).
+
+⚠️ **Pendiente de decisión del back:** `PUT /v1/pedidos/{id}/entrega` **sigue aceptando cualquier
+fecha** en un pedido de ramo sin tocar `fechaLimitePago` ni el cargo. El front ya no la manda,
+pero el endpoint sigue abierto — se les planteó reforzarlo de su lado.
+
+### Lo que "Editar ramo" NO cambia
+
+Flores, accesorios y fecha/urgencia sí. **Listón y zona de envío no** — el endpoint del back no
+los cubre (reabren la aprobación de frase con su precio, y un costo de envío ya cobrado). Por eso
+el paso del listón se **oculta** y la zona se muestra **bloqueada**: si se dejaran editables, el
+admin creería que los cambió y se perderían en silencio al guardar.
+
+**Regla dura del back:** no se puede bajar el total por debajo de lo ya pagado (implicaría
+reembolso, que no existe). Si sube, la diferencia se cobra con un abono normal.
+
+### 🐛 Errores encontrados construyendo esto — para no repetirlos
+
+Los tres **compilaban perfecto**; solo salieron probando en pantalla:
+
+1. **Teclear la cantidad nueva borraba el reparto y la fecha pactada.**
+   `onCambiarCantidadDeseada()` limpia `reparto` y `fechaEntrega` — así que el admin perdía las
+   flores que ya estaban bien repartidas (todo a 0) y el aviso de "la fecha ya no alcanza" nunca
+   salía, porque ya no había con qué comparar. Se guardan aparte (`repartoPactado`, `fechaOriginal`).
+   **Lección:** al reusar una pantalla en otro modo, revisar qué limpian sus manejadores de cambio.
+
+2. **Leer el rol de golpe reprueba a un admin.** Al recargar con F5, la sesión se rehidrata con
+   `/auth/refresh` y el rol llega **después** de que el catálogo cargó → "solo un administrador"
+   a un administrador. Hay que suscribirse a `userRoles$`, no leer `isAdminService`.
+
+3. **Y esperar el rol deja la pantalla colgada para un anónimo**, que nunca va a tener roles:
+   "Cargando el ramo…" para siempre, sin mensaje. Lleva `timeout(4000)`.
+
+**Contexto que hace falta:** `/flores/configurar` es una ruta **pública** (el cliente arma su ramo
+sin cuenta). Por eso el modo edición se corta en el front: sin eso, cualquiera podría pegar
+`?pedidoId=42` y ver precargado el ramo de otra persona — el back rechaza el guardado con 403,
+pero para entonces ya lo vio.
+
+---
+
 ## 7. En curso — el back lo está diseñando
 
 **Armado guardado.** Distinto del pedido pendiente que se canceló: **no es una venta**, es el ramo
@@ -141,6 +207,17 @@ Decidido con el dueño:
 - [ ] **El camino completo con datos reales**: armar un ramo → confirmarlo → cobrarlo en `/abonos`.
 - [ ] **La recotización del pago tardío.** Está conectada en los dos puntos de cobro, pero hace
       falta un ramo urgente cuyo pago se pase de la hora límite.
+- [ ] **Editar un ramo contra el backend real** (2026-08-17). Se verificó en pantalla con datos
+      simulados: precarga, reparto conservado, aviso de fecha corrida, listón oculto y zona
+      bloqueada. Falta con un pedido de verdad.
+- [ ] **Que el cliente cancele su ramo** — hace falta una cuenta de cliente con un ramo sin pagos.
+
+### Duda menor abierta con el back
+- [ ] **Un color desactivado después de la venta desaparece al editar.** El admin ve que le faltan
+      flores por repartir, pero **no sabe qué color se cayó ni cuántas eran**, así que no puede
+      decirle al cliente "las 10 rojas ya no hay, ¿con cuál las cambiamos?". Se pidió que el
+      detalle del ramo conserve el nombre aunque el color esté inactivo. No urge — solo pasa si
+      desactivan un color con pedidos vivos.
 
 ### Infraestructura
 - [ ] **El backend de QA se cae seguido.** Todo el 2026-08-14 estuvo intermitente (502). El front

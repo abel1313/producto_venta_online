@@ -9896,3 +9896,60 @@ ramo (bloqueado) y uno normal (editable). ⚠️ No probado contra el backend re
 `flores.service.ts` (`editarRamo`, `cancelarPedidoFlores`), `configurar-ramo.component.*`
 (modo edición), `detalle-pedido.component.*` (botón), `mis-pedidos.component.ts`
 (cancelar del cliente + bloqueo del modal).
+
+---
+
+## REDES SOCIALES — FACEBOOK RESTAURADO + INSTAGRAM (2026-08-17)
+
+> El back retomó Facebook (endpoints de vuelta en `dev`/`qa`) y **ya cargó las credenciales de
+> Meta en QA** — el Page Access Token de larga duración de la página real. Ya se puede probar el
+> camino feliz, no solo el 400 de credenciales. Además adelantó el primer endpoint de Instagram.
+
+### Facebook — restaurado desde la rama de respaldo
+
+Se pausó el 2026-08-05 y se sacó de `dev`/`qa` (ver esa sección). El código estaba en
+`backup/facebook-redes-sociales`, intacto.
+
+⚠️ **NO se mergeó la rama** — está 7.856 líneas atrás de `dev` (es de hace 12 días) y el merge
+habría revertido medio proyecto. Se extrajeron **solo los 5 archivos del feature** con
+`git checkout backup/... -- src/app/admin/redes-sociales src/app/redes-sociales`, y los 4 puntos
+de integración se rehicieron a mano:
+
+| Punto | Qué |
+|---|---|
+| `admin-routing.module.ts` | ruta `admin/facebook` |
+| `admin.module.ts` | declaración del componente |
+| `navbar.component.html` + `.ts` | link + `GROUP_ROUTES` |
+| **`loading.interceptor.ts`** | **`/redes-sociales/` en `skipUrls`** |
+
+El último es el que se advirtió que era fácil de olvidar, y por qué: **no truena nada**, solo
+deja el overlay global tapando la app entera durante los minutos que tarda un video.
+
+### Instagram — endpoint nuevo, más limitado (por Meta, no por el back)
+
+`POST /v1/redes-sociales/instagram/publicar`, solo ADMIN, **JSON no multipart**:
+
+- **Solo imagen ya guardada.** Instagram exige una URL pública, así que no acepta archivo suelto —
+  no hay equivalente de `imagenNueva`. El back reusa la URL del micro de imágenes.
+- **No se puede programar.** Su Content Publishing API siempre publica de inmediato.
+- **Solo foto**, sin video por ahora.
+
+La pantalla pasó a llamarse **"📣 Publicar en redes"** con un selector arriba. Al elegir Instagram
+se ocultan las opciones que ese endpoint ignoraría (video, "subir una nueva", el paso "Cuándo") y
+se explica por qué — si se dejaran a la vista, el admin creería que se guardaron.
+
+⚠️ **El id de Instagram viaja en el MISMO campo `postIdFacebook`** (el back no agregó uno nuevo
+para no romper el contrato). Hay que mirar `plataforma` antes de armar el link, o un post de
+Instagram llevaría a un `facebook.com/...` que no existe.
+
+### 🔴 Bloqueo de Instagram — es del dueño, no del código
+
+**La cuenta de Instagram profesional no está vinculada** a la página de Facebook "Novedades Jade".
+El back lo verificó contra la Graph API (`instagram_business_account` no viene en la respuesta de
+la página). Hasta que se vincule desde **Meta Business Suite**, el endpoint responde 400
+`"Instagram no esta configurado..."` — que la pantalla muestra tal cual.
+
+**Facebook sí se puede probar ya.**
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): Facebook conserva video, "subir una
+nueva" y programación; Instagram las oculta. ⚠️ Ninguna probada contra el backend real.

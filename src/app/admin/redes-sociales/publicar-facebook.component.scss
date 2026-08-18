@@ -406,12 +406,98 @@
   to   { background-position: -200% 0; }
 }
 
+// ── Redes (casillas) ──────────────────────────────────────────────────────
+.fb-redes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fb-red {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+
+  &--on {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+  }
+
+  // Apagada pero legible: el motivo tiene que poder leerse, es la explicación.
+  &--off {
+    cursor: not-allowed;
+    opacity: .75;
+    background: var(--app-surface-2);
+  }
+
+  &__check { accent-color: var(--app-accent); cursor: inherit; }
+  &__nombre { font-weight: 600; font-size: .9rem; color: var(--app-text); }
+
+  &__motivo {
+    flex-basis: 100%;
+    font-size: .74rem;
+    line-height: 1.35;
+    color: var(--app-text-muted);
+  }
+}
+
+// ── Vista previa del texto final ──────────────────────────────────────────
+.fb-preview {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--app-surface-2);
+
+  &__red {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--app-text-muted);
+    margin-bottom: 4px;
+  }
+
+  // `pre` para respetar los saltos de línea entre el texto y los hashtags, que es justo lo
+  // que se quiere ver; `white-space: pre-wrap` para que igual corte a lo ancho.
+  &__texto {
+    margin: 0;
+    font-family: inherit;
+    font-size: .86rem;
+    line-height: 1.45;
+    color: var(--app-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
 // ── Resultado ─────────────────────────────────────────────────────────────
 .fb-resultado {
   border-color: var(--app-accent);
 
+  &__fila {
+    padding: 10px 0;
+
+    & + & { border-top: 1px solid var(--card-border); }
+  }
+
+  &__red {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .92rem;
+    color: var(--app-text);
+    margin-bottom: 4px;
+  }
+
   &__linea {
-    margin: 0 0 16px;
+    margin: 0 0 8px;
     font-size: 0.9rem;
     color: var(--app-text);
   }
@@ -420,8 +506,11 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 12px;
   }
 }
+
+.fb-btn--sm { padding: 5px 12px; font-size: .8rem; }
 
 // ── Móvil ─────────────────────────────────────────────────────────────────
 @media (max-width: 576px) {

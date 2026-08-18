@@ -35,12 +35,24 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   // ── Contenido a publicar ──────────────────────────────────────────────
   /**
-   * A qué red se publica. Instagram es más limitado **por Meta, no por el back**: no acepta
-   * archivo suelto (exige una URL pública, así que solo sirve imagen ya guardada) y no se puede
-   * programar. Al cambiar a Instagram se ajustan las opciones para que no queden a la vista
-   * cosas que ese endpoint va a ignorar.
+   * A qué redes va ESTA publicación. El archivo se sube **una sola vez** y se manda a cada red
+   * marcada — la alternativa (una pestaña por red con su propio botón) obligaría a subir el mismo
+   * video tantas veces como redes, y un video pesa.
+   *
+   * Cada red tiene sus propios límites, y **ninguno es decisión nuestra ni del back**:
+   * - Instagram exige una URL pública, así que no acepta archivo suelto ni video (todavía), y su
+   *   API publica siempre de inmediato — no se puede programar.
+   * - TikTok no tiene endpoint todavía; se muestra deshabilitado para que se vea que está
+   *   contemplado, no olvidado.
    */
-  red: PlataformaRed = 'facebook';
+  redesSel: Record<PlataformaRed, boolean> = { facebook: true, instagram: false, tiktok: false };
+
+  /**
+   * El texto va **una sola vez** (es el mismo post en todas), y los hashtags **por red**: lo que
+   * funciona en Instagram no es lo mismo que en Facebook. Al publicar se concatenan.
+   */
+  hashtags: Record<PlataformaRed, string> = { facebook: '', instagram: '', tiktok: '' };
+
   tipo: TipoPublicacion = 'foto';
   descripcion = '';
 
@@ -68,7 +80,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   publicando = false;
   faseEnvio: 'subiendo' | 'procesando' | null = null;
   progreso = 0;
-  resultado: IPublicacionRed | null = null;
+  /** En cuál va ahora — se muestra en la barra, si no parece colgado al pasar de una a otra. */
+  redEnCurso: PlataformaRed | null = null;
+  /** Una fila por red: publicó o falló. Ver `publicar()` sobre por qué no es un sí/no global. */
+  resultados_pub: { red: PlataformaRed; publicacion?: IPublicacionRed; error?: string }[] = [];
 
   readonly limiteMb = LIMITE_ARCHIVO_MB;
 
@@ -124,7 +139,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.seleccionado = v;
     this.resultados = [];
     this.termino = '';
-    this.resultado = null;
+    this.resultados_pub = [];
     this.descripcion = this.descripcionSugerida(v);
     this.reiniciarImagen();
     this.cargarImagenesGuardadas(v.id);
@@ -134,7 +149,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.seleccionado = null;
     this.descripcion = '';
     this.imagenesGuardadas = [];
-    this.resultado = null;
+    this.resultados_pub = [];
     this.reiniciarImagen();
     this.quitarVideo();
   }
@@ -278,7 +293,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   setTipo(t: TipoPublicacion): void {
     this.tipo = t;
-    this.resultado = null;
+    this.resultados_pub = [];
   }
 
   /** Mensaje de error de la fecha, o null si es válida. Mismos límites que valida el back. */
@@ -307,29 +322,73 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   // ── Publicar ──────────────────────────────────────────────────────────
 
-  get esInstagram(): boolean { return this.red === 'instagram'; }
+  // ── Redes ─────────────────────────────────────────────────────────────
 
-  /** Al cambiar de red se limpia lo que la otra no soporta, para no publicar algo distinto
-   *  a lo que el admin ve en pantalla. */
-  onCambiarRed(): void {
-    this.resultado = null;
-    if (this.esInstagram) {
-      this.tipo = 'foto';          // Instagram: solo foto por ahora
-      this.programar = false;      // su API siempre publica de inmediato
-      this.fechaProgramada = '';
-      if (this.origenImagen === 'nueva') this.origenImagen = 'principal';
+  readonly TODAS: PlataformaRed[] = ['facebook', 'instagram', 'tiktok'];
+
+  nombreDeRed(r: PlataformaRed): string {
+    return r === 'facebook' ? '📘 Facebook' : r === 'instagram' ? '📸 Instagram' : '🎵 TikTok';
+  }
+
+  /**
+   * Por qué esta red no puede recibir lo que hay armado ahora mismo, o `null` si sí puede.
+   *
+   * Se devuelve el motivo (no un booleano) para poder mostrarlo junto a la casilla: una casilla
+   * apagada sin explicación deja al admin adivinando si es un error o una limitación.
+   */
+  motivoNoDisponible(r: PlataformaRed): string | null {
+    if (r === 'tiktok') return 'Todavía no está conectado — se lo pedimos al back.';
+
+    if (r === 'instagram') {
+      if (this.tipo === 'video')            return 'Instagram todavía no acepta video desde aquí.';
+      if (this.origenImagen === 'nueva')    return 'Instagram necesita una foto que ya esté guardada en el producto.';
     }
+    return null;
+  }
+
+  puedeUsar(r: PlataformaRed): boolean { return this.motivoNoDisponible(r) === null; }
+
+  toggleRed(r: PlataformaRed): void {
+    if (!this.puedeUsar(r) || this.publicando) return;
+    this.redesSel[r] = !this.redesSel[r];
+    this.resultados_pub = [];
+    this.sincronizarRestricciones();
+  }
+
+  /** Las redes marcadas que de verdad pueden recibir lo que hay armado. */
+  get redesActivas(): PlataformaRed[] {
+    return this.TODAS.filter(r => this.redesSel[r] && this.puedeUsar(r));
+  }
+
+  /**
+   * Si el contenido cambia (p. ej. se pasa a video), una red marcada puede dejar de poder
+   * recibirlo. Se desmarca sola: si no, el admin creería que se publicó ahí.
+   */
+  sincronizarRestricciones(): void {
+    this.TODAS.forEach(r => { if (this.redesSel[r] && !this.puedeUsar(r)) this.redesSel[r] = false; });
+
+    // Programar solo tiene sentido en Facebook y solo si va sola: Instagram publica de inmediato
+    // siempre, así que con las dos marcadas saldrían en momentos distintos sin avisar.
+    if (!this.soloFacebook) { this.programar = false; this.fechaProgramada = ''; }
+  }
+
+  get soloFacebook(): boolean {
+    const a = this.redesActivas;
+    return a.length === 1 && a[0] === 'facebook';
+  }
+
+  /** Lo que de verdad se va a publicar en esa red: el texto común + sus propios hashtags. */
+  textoFinal(r: PlataformaRed): string {
+    const tags = (this.hashtags[r] || '').trim();
+    const base = this.descripcion.trim();
+    return tags ? `${base}\n\n${tags}` : base;
   }
 
   get puedePublicar(): boolean {
     if (this.publicando || !this.seleccionado) return false;
     if (!this.descripcion.trim()) return false;
     if (this.errorFecha) return false;
-
-    if (this.esInstagram) {
-      // Nunca 'nueva': Instagram no recibe archivos.
-      return this.origenImagen === 'guardada' ? !!this.imagenIdSel : this.tieneImagenPrincipal;
-    }
+    if (this.redesActivas.length === 0) return false;
 
     if (this.tipo === 'video') return !!this.archivoVideo;
 
@@ -339,37 +398,61 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     return this.tieneImagenPrincipal;
   }
 
+  /**
+   * Publica en cada red marcada, **una tras otra**.
+   *
+   * ⚠️ Secuencial a propósito, no en paralelo: cada red es un request independiente contra Meta y
+   * **una puede fallar mientras la otra funciona** (el caso real de hoy: Facebook publica bien e
+   * Instagram devuelve 400 porque la cuenta no está vinculada). Con `forkJoin` un solo fallo
+   * cancelaría el resto y no se sabría qué llegó a publicarse. Por eso el resultado es una lista
+   * por red, no un sí/no global.
+   */
   publicar(): void {
     if (!this.puedePublicar || !this.seleccionado) return;
 
     this.publicando = true;
     this.faseEnvio = 'subiendo';
     this.progreso = 0;
-    this.resultado = null;
+    this.resultados_pub = [];
 
-    // Instagram no sube archivo, así que no hay barra de progreso que pintar: se resuelve en un
-    // request chico y con otra forma de respuesta (el objeto directo, no eventos de avance).
-    if (this.esInstagram) {
+    this.pendientes = [...this.redesActivas];
+    this.siguienteRed();
+  }
+
+  private pendientes: PlataformaRed[] = [];
+
+  private siguienteRed(): void {
+    const red = this.pendientes.shift();
+    if (!red || !this.seleccionado) {
+      this.publicando = false;
+      this.faseEnvio = null;
+      this.avisarResultado();
+      return;
+    }
+
+    this.redEnCurso = red;
+    this.progreso = 0;
+
+    const descripcion = this.textoFinal(red);
+
+    // Instagram no sube archivo (usa una URL pública), así que no hay progreso que pintar:
+    // se resuelve en un request chico y devuelve el objeto directo, no eventos de avance.
+    if (red === 'instagram') {
+      this.faseEnvio = 'procesando';
       this.redes.publicarInstagram({
         varianteId: this.seleccionado.id,
-        descripcion: this.descripcion.trim(),
+        descripcion,
         imagenId: this.origenImagen === 'guardada' ? this.imagenIdSel : null
       }).pipe(takeUntil(this.destroy$)).subscribe({
-        next: pub => {
-          this.publicando = false;
-          this.faseEnvio = null;
-          this.progreso = 100;
-          this.resultado = pub;
-          Swal.fire({ icon: 'success', title: '✅ Publicado en Instagram', text: 'Ya está publicado en la cuenta.' });
-        },
-        error: err => this.fallaPublicacion(err)
+        next: pub => { this.resultados_pub.push({ red, publicacion: pub }); this.siguienteRed(); },
+        error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
       });
       return;
     }
 
     const base = {
       varianteId: this.seleccionado.id,
-      descripcion: this.descripcion.trim(),
+      descripcion,
       scheduledPublishTime: this.fechaISO()
     };
 
@@ -385,36 +468,46 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       next: ev => {
         this.progreso = ev.porcentaje;
         if (ev.tipo === 'listo') {
-          this.publicando = false;
-          this.faseEnvio = null;
-          this.resultado = ev.publicacion ?? null;
-          const programada = this.resultado?.estado === 'PROGRAMADA';
-          Swal.fire({
-            icon: 'success',
-            title: programada ? '📅 Publicación programada' : '✅ Publicado en Facebook',
-            text: programada
-              ? `Se publicará el ${this.formatoFecha(this.resultado?.scheduledPublishTime)}.`
-              : 'Ya está publicado en la página.'
-          });
+          this.resultados_pub.push({ red, publicacion: ev.publicacion ?? undefined });
+          this.siguienteRed();
         } else {
           this.faseEnvio = ev.tipo;
         }
       },
-      error: err => this.fallaPublicacion(err)
+      error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
     });
   }
 
-  private fallaPublicacion(err: any): void {
-    this.publicando = false;
-    this.faseEnvio = null;
-    this.progreso = 0;
-    // El back manda el 400 con `mensaje` en español ya listo para mostrar — incluido el caso
-    // de "Instagram no esta configurado", que es el que va a salir hasta que se vincule la cuenta.
+  private avisarResultado(): void {
+    const ok = this.resultados_pub.filter(r => !r.error);
+    const mal = this.resultados_pub.filter(r => r.error);
+
+    if (mal.length === 0) {
+      const programada = ok.some(r => r.publicacion?.estado === 'PROGRAMADA');
+      Swal.fire({
+        icon: 'success',
+        title: programada ? '📅 Programada' : `✅ Publicado en ${ok.length === 1 ? '1 red' : ok.length + ' redes'}`,
+        text: programada ? 'Se publicará en la fecha que elegiste.' : 'Ya está publicado.'
+      });
+      return;
+    }
+
+    // Se dice exactamente dónde sí y dónde no: un "hubo un error" a secas dejaría al admin sin
+    // saber si tiene que volver a intentar en todas o solo en una.
     Swal.fire({
-      icon: 'error',
-      title: 'No se pudo publicar',
-      text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.'
+      icon: ok.length ? 'warning' : 'error',
+      title: ok.length ? 'Se publicó en algunas' : 'No se pudo publicar',
+      html: [
+        ...ok.map(r => `<p style="margin:4px 0">✅ <b>${this.nombreDeRed(r.red)}</b> — listo</p>`),
+        ...mal.map(r => `<p style="margin:4px 0;text-align:left">❌ <b>${this.nombreDeRed(r.red)}</b><br><small>${r.error}</small></p>`)
+      ].join('')
     });
+  }
+
+  /** El back manda el 400 con `mensaje` en español ya listo para mostrar — incluido el
+   *  "Instagram no esta configurado" que va a salir hasta que se vincule la cuenta. */
+  private msgError(err: any): string {
+    return err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo publicar.';
   }
 
   formatoFecha(iso: string | null | undefined): string {
@@ -428,19 +521,19 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * para no romper el contrato), así que hay que mirar `plataforma` — si no, un post de Instagram
    * llevaría a un link de Facebook que no existe.
    */
-  get linkPost(): string | null {
-    const id = this.resultado?.postIdFacebook;
-    if (!id) return null;
-    return this.resultado?.plataforma === 'instagram'
-      ? `https://www.instagram.com/p/${id}`
-      : `https://www.facebook.com/${id}`;
+  linkDe(pub: IPublicacionRed | undefined): string | null {
+    if (!pub?.postIdFacebook) return null;
+    return pub.plataforma === 'instagram'
+      ? `https://www.instagram.com/p/${pub.postIdFacebook}`
+      : `https://www.facebook.com/${pub.postIdFacebook}`;
   }
 
-  get nombreRed(): string { return this.resultado?.plataforma === 'instagram' ? 'Instagram' : 'Facebook'; }
+  get huboResultado(): boolean { return this.resultados_pub.length > 0; }
 
   nuevaPublicacion(): void {
-    this.resultado = null;
+    this.resultados_pub = [];
     this.progreso = 0;
+    this.redEnCurso = null;
   }
 
   private revocarPreviews(): void {

@@ -7,7 +7,9 @@
  * el browser lo pone solo con su boundary cuando el body es un `FormData`.
  */
 
-export type PlataformaRed = 'facebook' | 'instagram';
+/** `tiktok` ya está en el tipo aunque el back todavía no tenga endpoint — la pantalla lo muestra
+ *  deshabilitado para que se vea contemplado, no olvidado. */
+export type PlataformaRed = 'facebook' | 'instagram' | 'tiktok';
 export type TipoPublicacion = 'foto' | 'video';
 export type EstadoPublicacion = 'PUBLICADA' | 'PROGRAMADA';
 

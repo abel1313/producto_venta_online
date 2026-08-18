@@ -57,7 +57,9 @@
   </div>
 
   <!-- ── PASO 2 · CONTENIDO ───────────────────────────────────────────── -->
-  <div class="fb-card" *ngIf="seleccionado">
+  <!-- ⚠️ Estos pasos NO se esconden hasta elegir producto: la pantalla se veía casi vacía y
+       parecía que no había cargado. El producto se sigue exigiendo, pero al publicar. -->
+  <div class="fb-card">
     <h5 class="fb-card__title">2 · Qué vas a publicar</h5>
 
     <div class="fb-tipo">
@@ -189,7 +191,7 @@
   <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags,
        así que son ellos los que viven en pestañas. Cada pestaña trae además la casilla de si
        se publica ahí, que es la otra decisión que se toma por red. -->
-  <div class="fb-card" *ngIf="seleccionado">
+  <div class="fb-card">
     <h5 class="fb-card__title">3 · Redes y hashtags</h5>
 
     <div class="fb-tabs">
@@ -243,7 +245,7 @@
   <!-- ── PASO 4 · CUÁNDO ──────────────────────────────────────────────── -->
   <!-- Solo con Facebook sola: Instagram publica de inmediato siempre, así que con las dos
        marcadas saldrían en momentos distintos sin que nadie lo advierta. -->
-  <div class="fb-card" *ngIf="seleccionado && puedeProgramar">
+  <div class="fb-card" *ngIf="puedeProgramar">
     <h5 class="fb-card__title">4 · Cuándo</h5>
 
     <div class="fb-tipo">
@@ -265,7 +267,13 @@
   </div>
 
   <!-- ── PUBLICAR ─────────────────────────────────────────────────────── -->
-  <div class="fb-card fb-card--accion" *ngIf="seleccionado && !huboResultado">
+  <div class="fb-card fb-card--accion" *ngIf="!huboResultado">
+    <!-- Un botón gris sin decir qué falta deja al admin atorado — mismo criterio que el resto
+         del proyecto. -->
+    <p class="fb-error" *ngIf="!seleccionado">
+      ⬆️ Falta elegir el producto arriba (paso 1) para poder publicar.
+    </p>
+
     <button class="fb-btn fb-btn--primary fb-btn--lg"
             [disabled]="!puedePublicar" (click)="publicar()">
       {{ programar

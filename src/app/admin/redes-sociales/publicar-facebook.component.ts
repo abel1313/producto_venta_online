@@ -140,7 +140,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.resultados = [];
     this.termino = '';
     this.resultados_pub = [];
-    this.descripcion = this.descripcionSugerida(v);
+    // Solo se sugiere el texto si todavía no hay nada escrito. Ahora que el formulario se ve
+    // completo desde el inicio, el admin puede escribir ANTES de elegir el producto — pisarle lo
+    // que ya redactó sería perder su trabajo sin avisar.
+    if (!this.descripcion.trim()) this.descripcion = this.descripcionSugerida(v);
     this.reiniciarImagen();
     this.cargarImagenesGuardadas(v.id);
   }

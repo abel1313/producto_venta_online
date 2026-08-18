@@ -10083,3 +10083,51 @@ cambiarlo (hoy no lo guardamos en ninguna parte — el front nunca manda el id d
 
 QA ya tiene las 3 variables correctas y **no queda ningún bloqueo de credenciales**: foto y video
 de Facebook, y foto de Instagram, se pueden probar de punta a punta.
+
+---
+
+## REDES — REEL DE INSTAGRAM CONECTADO (2026-08-18)
+
+El back lo construyó el mismo día que se pidió: `POST /v1/redes-sociales/instagram/publicar-reel`.
+Es **el objetivo real del dueño** (el Reel, no la foto).
+
+**Multipart**, no JSON como la foto de Instagram — aquí sí viaja archivo. `varianteId`,
+`descripcion` y `video` (obligatorio: el catálogo no guarda video, no hay "reel principal").
+`tipoPublicacion` vuelve como `"reel"`.
+
+**Respuestas del back a las 4 preguntas:**
+1. **No validan el archivo** — se manda tal cual y si el formato no sirve, Instagram lo rechaza
+   con su propio mensaje. Mismo criterio que el video de Facebook.
+2. **Endpoint aparte**, no un parámetro del de foto: el mecanismo de subida es distinto.
+3. **La subida por partes la absorben ellos** — el front sigue mandando un solo multipart, sin
+   cambios. Ellos hacen los 4 pasos de la subida reanudable de Meta por dentro.
+4. **TikTok:** no tienen referencia previa de su API; lo investigan cuando toque.
+
+### ⏳ Tarda, y hay que decirlo
+
+Meta **procesa el video después de recibirlo**; el back espera hasta **3 minutos** antes de
+rendirse. La barra llega al 100% mucho antes de que termine de verdad — por eso la fase
+`procesando` ya existía y aquí es más importante que nunca. Si Meta se pasa de esos 3 minutos, el
+back responde 400 pidiendo reintentar: **no se perdió nada, pero tampoco se publicó**.
+
+La pantalla lo avisa antes de subir, no después.
+
+### En la pantalla
+
+Tercer botón **🎞️ Reel** junto a Foto y Video. Al elegirlo:
+- **Facebook se desmarca solo** — su Reel es otro flujo que el back todavía no construyó. Su
+  "video" es el del feed, que no es lo mismo.
+- Instagram queda disponible (es el único que hoy publica Reels).
+- El selector de archivo se comparte con Video: `*ngIf="tipo !== 'foto'"`.
+
+`motivoNoDisponible()` explica cada caso junto a la casilla, igual que el resto.
+
+**Verificado en pantalla:** al pulsar Reel, Facebook se apaga con su motivo, Instagram queda
+marcado, y los avisos de tiempo y de música salen antes de elegir el archivo.
+
+⚠️ **Ni el back lo ha probado contra Meta real** — es la primera vez que el proyecto usa la subida
+reanudable. Si algún paso responde distinto, el error de Meta llega tal cual a la pantalla.
+
+### Falta todavía
+- **Reel de Facebook** — pedido, no construido.
+- **TikTok** — pedido, no construido. Ya aparece deshabilitado en la pantalla.

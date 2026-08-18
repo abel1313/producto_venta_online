@@ -10,7 +10,8 @@
 /** `tiktok` ya está en el tipo aunque el back todavía no tenga endpoint — la pantalla lo muestra
  *  deshabilitado para que se vea contemplado, no olvidado. */
 export type PlataformaRed = 'facebook' | 'instagram' | 'tiktok';
-export type TipoPublicacion = 'foto' | 'video';
+/** `reel` solo existe en Instagram por ahora — el Reel de Facebook queda para otra ronda. */
+export type TipoPublicacion = 'foto' | 'video' | 'reel';
 export type EstadoPublicacion = 'PUBLICADA' | 'PROGRAMADA';
 
 export interface IPublicacionRed {
@@ -48,6 +49,25 @@ export interface IPublicarInstagramRequest {
   descripcion: string;
   /** Opcional — omitido, usa la imagen principal de la variante (igual que Facebook). */
   imagenId?: string | null;
+}
+
+/**
+ * `POST /v1/redes-sociales/instagram/publicar-reel` — solo ADMIN. **Multipart**, no JSON (aquí sí
+ * viaja un archivo, a diferencia de la foto de Instagram).
+ *
+ * ⚠️ **Tarda.** Meta procesa el video después de subirlo y antes de poder publicarlo; el back
+ * espera hasta **3 minutos** antes de rendirse. La barra de progreso llega al 100% mucho antes de
+ * que termine de verdad — por eso la fase `procesando` existe y el texto tiene que decirlo, si no
+ * parece colgado.
+ *
+ * Si Meta se pasa de esos 3 minutos, el back responde 400 pidiendo reintentar: no se perdió nada,
+ * pero tampoco se creó el post.
+ */
+export interface IPublicarReelRequest {
+  varianteId: number;
+  descripcion: string;
+  /** Obligatorio en cada llamada — el catálogo no guarda video, no hay "reel principal". */
+  video: File;
 }
 
 export interface IPublicarFotoRequest {

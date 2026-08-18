@@ -339,9 +339,16 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   motivoNoDisponible(r: PlataformaRed): string | null {
     if (r === 'tiktok') return 'Todavía no está conectado — se lo pedimos al back.';
 
+    if (r === 'facebook') {
+      // El Reel de Facebook es un flujo aparte que el back todavía no construyó; su "video" es
+      // del feed normal, que no es lo mismo.
+      if (this.tipo === 'reel') return 'El Reel de Facebook todavía no está listo — por ahora solo Instagram.';
+    }
+
     if (r === 'instagram') {
-      if (this.tipo === 'video')            return 'Instagram todavía no acepta video desde aquí.';
-      if (this.origenImagen === 'nueva')    return 'Instagram necesita una foto que ya esté guardada en el producto.';
+      if (this.tipo === 'video')         return 'Para video en Instagram usa Reel (el video de feed no aplica).';
+      if (this.origenImagen === 'nueva' && this.tipo === 'foto')
+        return 'Instagram necesita una foto que ya esté guardada en el producto.';
     }
     return null;
   }
@@ -390,7 +397,8 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     if (this.errorFecha) return false;
     if (this.redesActivas.length === 0) return false;
 
-    if (this.tipo === 'video') return !!this.archivoVideo;
+    // Video y Reel comparten el mismo archivo — el catálogo no guarda ninguno, siempre se sube.
+    if (this.tipo !== 'foto') return !!this.archivoVideo;
 
     // Foto: hay que tener de dónde sacarla.
     if (this.origenImagen === 'nueva')    return !!this.archivoImagen;
@@ -435,9 +443,29 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
     const descripcion = this.textoFinal(red);
 
-    // Instagram no sube archivo (usa una URL pública), así que no hay progreso que pintar:
-    // se resuelve en un request chico y devuelve el objeto directo, no eventos de avance.
     if (red === 'instagram') {
+      // El Reel SÍ manda archivo (multipart, endpoint aparte), así que tiene barra de progreso
+      // como el video de Facebook. La foto no: usa una URL pública y es un request chico.
+      if (this.tipo === 'reel') {
+        this.redes.publicarReelInstagram({
+          varianteId: this.seleccionado.id,
+          descripcion,
+          video: this.archivoVideo!
+        }).pipe(takeUntil(this.destroy$)).subscribe({
+          next: ev => {
+            this.progreso = ev.porcentaje;
+            if (ev.tipo === 'listo') {
+              this.resultados_pub.push({ red, publicacion: ev.publicacion ?? undefined });
+              this.siguienteRed();
+            } else {
+              this.faseEnvio = ev.tipo;
+            }
+          },
+          error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
+        });
+        return;
+      }
+
       this.faseEnvio = 'procesando';
       this.redes.publicarInstagram({
         varianteId: this.seleccionado.id,

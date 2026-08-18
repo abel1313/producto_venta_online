@@ -65,11 +65,18 @@
               (click)="setTipo('foto')" [disabled]="publicando">📷 Foto</button>
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'video'"
               (click)="setTipo('video')" [disabled]="publicando">🎬 Video</button>
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'reel'"
+              (click)="setTipo('reel')" [disabled]="publicando">🎞️ Reel</button>
     </div>
-    <p class="fb-hint" *ngIf="tipo === 'video'">
+    <p class="fb-hint" *ngIf="tipo !== 'foto'">
       🎬 El video se sube <b>una sola vez</b> y se manda a todas las redes que marques abajo.
       La música tiene que ir <b>ya puesta en el archivo</b>: la de la app de Instagram no se puede
-      elegir desde aquí.
+      elegir desde aquí, y si es música comercial pueden silenciarte el video por derechos de autor.
+    </p>
+    <p class="fb-hint" *ngIf="tipo === 'reel'">
+      ⏳ Un Reel <b>tarda</b>: Instagram procesa el video después de recibirlo. Puede llevarse
+      varios minutos — no cierres la pantalla. Si se pasa de 3 minutos te va a pedir reintentar
+      (no se pierde nada, pero tampoco se publica).
     </p>
 
     <!-- ····· FOTO ····· -->
@@ -142,7 +149,8 @@
     </div>
 
     <!-- ····· VIDEO ····· -->
-    <div *ngIf="tipo === 'video'">
+    <!-- Video y Reel comparten el mismo selector de archivo: el catálogo no guarda ninguno. -->
+    <div *ngIf="tipo !== 'foto'">
       <p class="fb-hint">
         El video es obligatorio y no se guarda en el catálogo — es exclusivo de esta
         publicación. Máximo {{ limiteMb }} MB.

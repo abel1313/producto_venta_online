@@ -7,6 +7,7 @@ import {
   IPublicacionRed,
   IPublicarFotoRequest,
   IPublicarInstagramRequest,
+  IPublicarReelRequest,
   IPublicarVideoRequest
 } from '../models/publicacion.model';
 
@@ -50,6 +51,22 @@ export class RedesSocialesService {
     return this.http
       .post<{ data: IPublicacionRed }>(`${this.urlInstagram}/publicar`, body)
       .pipe(map(r => r.data));
+  }
+
+  /**
+   * Publica un Reel en Instagram. Solo ADMIN. **Multipart** — aquí sí va un archivo.
+   *
+   * Sí usa `enviar()` (a diferencia de la foto de Instagram): hay archivo, así que hay barra de
+   * progreso. Ojo con la fase `procesando`: Meta procesa el video DESPUÉS de recibirlo y el back
+   * espera hasta 3 minutos — la barra llega al 100% mucho antes de que termine de verdad.
+   */
+  publicarReelInstagram(req: IPublicarReelRequest): Observable<IProgresoPublicacion> {
+    const form = new FormData();
+    form.append('varianteId', String(req.varianteId));
+    form.append('descripcion', req.descripcion);
+    form.append('video', req.video, req.video.name);
+
+    return this.enviar(`${this.urlInstagram}/publicar-reel`, form);
   }
 
   /**

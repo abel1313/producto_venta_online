@@ -106,6 +106,24 @@ export class RedesSocialesService {
   }
 
   /**
+   * Publica un Reel en Facebook. Solo ADMIN. **Multipart.**
+   *
+   * ⚠️ **No acepta `scheduledPublishTime`**, a diferencia del video de feed de esta misma red:
+   * `/video_reels` no lo soporta. Por eso el paso "Cuándo" se oculta cuando el tipo es Reel.
+   *
+   * Mismo mecanismo reanudable que el Reel de Instagram (el back lo absorbe entero), así que
+   * también **tarda** — la barra llega al 100% antes de que termine de verdad.
+   */
+  publicarReelFacebook(req: IPublicarReelRequest): Observable<IProgresoPublicacion> {
+    const form = new FormData();
+    form.append('varianteId', String(req.varianteId));
+    form.append('descripcion', req.descripcion);
+    form.append('video', req.video, req.video.name);
+
+    return this.enviar(`${this.url}/publicar-reel`, form);
+  }
+
+  /**
    * `reportProgress` + `observe: 'events'` para poder pintar una barra de avance real —
    * sin esto, una subida de video de 200 MB se ve como una pantalla congelada varios
    * minutos. Ver también `LoadingInterceptor.skipUrls`, que excluye estas rutas del

@@ -10131,3 +10131,50 @@ reanudable. Si algún paso responde distinto, el error de Meta llega tal cual a 
 ### Falta todavía
 - **Reel de Facebook** — pedido, no construido.
 - **TikTok** — pedido, no construido. Ya aparece deshabilitado en la pantalla.
+
+---
+
+## REDES — REEL DE FACEBOOK CONECTADO: EL MISMO REEL YA VA A LAS 2 REDES (2026-08-18)
+
+`POST /v1/redes-sociales/facebook/publicar-reel`, construido por el back el mismo día que el de
+Instagram. **Con esto se cumple el objetivo del dueño**: un solo video vertical publicado en
+Facebook e Instagram de una vez, con hashtags distintos en cada una.
+
+Multipart, `varianteId` + `descripcion` + `video`. Mismo mecanismo reanudable que Instagram (3
+pasos contra `/video_reels`), absorbido entero por el back — el front sigue mandando un multipart.
+
+### ⚠️ El Reel de Facebook NO se puede programar
+
+A diferencia del **video de feed** de esa misma red, que sí acepta `scheduledPublishTime`:
+`/video_reels` no lo soporta. Por eso `soloFacebook` se reemplazó por **`puedeProgramar`**, que
+además exige `tipo !== 'reel'` — y el paso "Cuándo" desaparece solo.
+
+Y por eso la petición del Reel **no se arma con `base`**: ese objeto lleva `scheduledPublishTime`
+dentro.
+
+Resumen de dónde se puede programar hoy:
+
+| | Programar |
+|---|---|
+| Facebook · foto y video de feed | ✅ (y solo si va sola) |
+| Facebook · Reel | ❌ `/video_reels` no lo soporta |
+| Instagram · todo | ❌ su API publica siempre de inmediato |
+
+### El límite es 200 MB — confirmado, y el 25 era doc viejo
+
+El back aclaró la contradicción: **200 MB es el único límite real**, global para todos los
+endpoints (foto nueva, video de feed y Reel). El 25 MB era el valor original, de antes de que lo
+subieran para soportar video. `LIMITE_ARCHIVO_MB` ya estaba en 200 — sin cambios.
+
+**Verificado en pantalla** (claro y oscuro): con Reel, Facebook e Instagram quedan **las dos
+disponibles**, sin motivo de bloqueo, el paso "Cuándo" desaparece, y la vista previa muestra el
+mismo texto con los hashtags de cada red. Botón: *"🚀 Publicar en 2 redes"*.
+
+⚠️ **Nadie lo ha probado contra Meta** — ni el back. Es la primera vez que el proyecto usa
+`/video_reels` y la subida reanudable de Instagram. Si algo falla, el mensaje de Meta llega tal
+cual a la pantalla, sin recortar.
+
+### Ya solo falta TikTok
+
+Integración nueva desde cero y con trámite de app propio. Ya aparece deshabilitado en la pantalla
+con su motivo; se activa cuando exista el endpoint.

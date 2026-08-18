@@ -339,12 +339,6 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   motivoNoDisponible(r: PlataformaRed): string | null {
     if (r === 'tiktok') return 'Todavía no está conectado — se lo pedimos al back.';
 
-    if (r === 'facebook') {
-      // El Reel de Facebook es un flujo aparte que el back todavía no construyó; su "video" es
-      // del feed normal, que no es lo mismo.
-      if (this.tipo === 'reel') return 'El Reel de Facebook todavía no está listo — por ahora solo Instagram.';
-    }
-
     if (r === 'instagram') {
       if (this.tipo === 'video')         return 'Para video en Instagram usa Reel (el video de feed no aplica).';
       if (this.origenImagen === 'nueva' && this.tipo === 'foto')
@@ -374,14 +368,18 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   sincronizarRestricciones(): void {
     this.TODAS.forEach(r => { if (this.redesSel[r] && !this.puedeUsar(r)) this.redesSel[r] = false; });
 
-    // Programar solo tiene sentido en Facebook y solo si va sola: Instagram publica de inmediato
-    // siempre, así que con las dos marcadas saldrían en momentos distintos sin avisar.
-    if (!this.soloFacebook) { this.programar = false; this.fechaProgramada = ''; }
+    if (!this.puedeProgramar) { this.programar = false; this.fechaProgramada = ''; }
   }
 
-  get soloFacebook(): boolean {
+  /**
+   * Programar solo existe en **foto y video de feed de Facebook**, y solo si va sola:
+   * - Instagram publica siempre de inmediato (su API no lo permite).
+   * - El Reel de Facebook tampoco: `/video_reels` no acepta `scheduledPublishTime`.
+   * - Con dos redes marcadas saldrían en momentos distintos sin que nadie lo advierta.
+   */
+  get puedeProgramar(): boolean {
     const a = this.redesActivas;
-    return a.length === 1 && a[0] === 'facebook';
+    return a.length === 1 && a[0] === 'facebook' && this.tipo !== 'reel';
   }
 
   /** Lo que de verdad se va a publicar en esa red: el texto común + sus propios hashtags. */
@@ -484,13 +482,19 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       scheduledPublishTime: this.fechaISO()
     };
 
-    const peticion$ = this.tipo === 'video'
-      ? this.redes.publicarVideo({ ...base, video: this.archivoVideo! })
-      : this.redes.publicarFoto({
-          ...base,
-          imagenNueva: this.origenImagen === 'nueva'    ? this.archivoImagen : null,
-          imagenId:    this.origenImagen === 'guardada' ? this.imagenIdSel   : null
-        });
+    // El Reel de Facebook es su propio endpoint y NO recibe `scheduledPublishTime` — por eso no
+    // se arma con `base`, que lo lleva dentro.
+    const peticion$ = this.tipo === 'reel'
+      ? this.redes.publicarReelFacebook({
+          varianteId: this.seleccionado.id, descripcion, video: this.archivoVideo!
+        })
+      : this.tipo === 'video'
+        ? this.redes.publicarVideo({ ...base, video: this.archivoVideo! })
+        : this.redes.publicarFoto({
+            ...base,
+            imagenNueva: this.origenImagen === 'nueva'    ? this.archivoImagen : null,
+            imagenId:    this.origenImagen === 'guardada' ? this.imagenIdSel   : null
+          });
 
     peticion$.pipe(takeUntil(this.destroy$)).subscribe({
       next: ev => {

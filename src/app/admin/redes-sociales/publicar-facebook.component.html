@@ -74,9 +74,9 @@
       elegir desde aquí, y si es música comercial pueden silenciarte el video por derechos de autor.
     </p>
     <p class="fb-hint" *ngIf="tipo === 'reel'">
-      ⏳ Un Reel <b>tarda</b>: Instagram procesa el video después de recibirlo. Puede llevarse
-      varios minutos — no cierres la pantalla. Si se pasa de 3 minutos te va a pedir reintentar
-      (no se pierde nada, pero tampoco se publica).
+      ⏳ Un Reel <b>tarda</b>: la red procesa el video después de recibirlo. Puede llevarse varios
+      minutos — no cierres la pantalla. Si se pasa del tiempo de espera te va a pedir reintentar
+      (no se pierde nada, pero tampoco se publica). Los Reels <b>no se pueden programar</b>.
     </p>
 
     <!-- ····· FOTO ····· -->
@@ -225,7 +225,7 @@
   <!-- ── PASO 4 · CUÁNDO ──────────────────────────────────────────────── -->
   <!-- Solo con Facebook sola: Instagram publica de inmediato siempre, así que con las dos
        marcadas saldrían en momentos distintos sin que nadie lo advierta. -->
-  <div class="fb-card" *ngIf="seleccionado && soloFacebook">
+  <div class="fb-card" *ngIf="seleccionado && puedeProgramar">
     <h5 class="fb-card__title">4 · Cuándo</h5>
 
     <div class="fb-tipo">

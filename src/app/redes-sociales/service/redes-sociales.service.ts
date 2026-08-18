@@ -8,6 +8,7 @@ import {
   IPublicarFotoRequest,
   IPublicarInstagramRequest,
   IPublicarReelRequest,
+  IPublicarTikTokRequest,
   IPublicarVideoRequest
 } from '../models/publicacion.model';
 
@@ -32,6 +33,7 @@ export class RedesSocialesService {
 
   private readonly url = `${environment.api_Url}/v1/redes-sociales/facebook`;
   private readonly urlInstagram = `${environment.api_Url}/v1/redes-sociales/instagram`;
+  private readonly urlTikTok   = `${environment.api_Url}/v1/redes-sociales/tiktok`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -47,6 +49,7 @@ export class RedesSocialesService {
     // Igual que en Facebook: el opcional se OMITE, no se manda vacío — mandarlo como '' haría
     // que el back lo tome como valor y descarte la imagen principal.
     if (req.imagenId) body.imagenId = req.imagenId;
+    if (req.scheduledPublishTime) body.scheduledPublishTime = req.scheduledPublishTime;
 
     return this.http
       .post<{ data: IPublicacionRed }>(`${this.urlInstagram}/publicar`, body)
@@ -65,6 +68,7 @@ export class RedesSocialesService {
     form.append('varianteId', String(req.varianteId));
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
+    if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
 
     return this.enviar(`${this.urlInstagram}/publicar-reel`, form);
   }
@@ -108,19 +112,36 @@ export class RedesSocialesService {
   /**
    * Publica un Reel en Facebook. Solo ADMIN. **Multipart.**
    *
-   * ⚠️ **No acepta `scheduledPublishTime`**, a diferencia del video de feed de esta misma red:
-   * `/video_reels` no lo soporta. Por eso el paso "Cuándo" se oculta cuando el tipo es Reel.
-   *
    * Mismo mecanismo reanudable que el Reel de Instagram (el back lo absorbe entero), así que
    * también **tarda** — la barra llega al 100% antes de que termine de verdad.
+   *
+   * `scheduledPublishTime` **sí funciona ahora**: no usa el scheduler nativo de Meta (que en
+   * `/video_reels` no existe), sino el job propio del back.
    */
   publicarReelFacebook(req: IPublicarReelRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
     form.append('varianteId', String(req.varianteId));
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
+    if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
 
     return this.enviar(`${this.url}/publicar-reel`, form);
+  }
+
+  /**
+   * Publica un video en TikTok. Solo ADMIN. **Multipart. Solo video** — su API no tiene foto.
+   *
+   * ⚠️ Mientras la app no pase la auditoría de TikTok, el video sale **forzado a privado** y solo
+   * funciona con las cuentas del Sandbox. Es de TikTok, no del back.
+   */
+  publicarTikTok(req: IPublicarTikTokRequest): Observable<IProgresoPublicacion> {
+    const form = new FormData();
+    form.append('varianteId', String(req.varianteId));
+    form.append('descripcion', req.descripcion);
+    form.append('video', req.video, req.video.name);
+    if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
+
+    return this.enviar(`${this.urlTikTok}/publicar`, form);
   }
 
   /**

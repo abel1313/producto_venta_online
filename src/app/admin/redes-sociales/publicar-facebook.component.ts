@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -9,12 +9,11 @@ import { VarianteService } from 'src/app/variante/service/variante.service';
 import {
   IPublicacionRed,
   LIMITE_ARCHIVO_MB,
-  PROGRAMAR_MAX_MESES,
   PROGRAMAR_MIN_MINUTOS,
   PlataformaRed,
   TipoPublicacion
 } from 'src/app/redes-sociales/models/publicacion.model';
-import { RedesSocialesService } from 'src/app/redes-sociales/service/redes-sociales.service';
+import { IProgresoPublicacion, RedesSocialesService } from 'src/app/redes-sociales/service/redes-sociales.service';
 
 type OrigenImagen = 'principal' | 'guardada' | 'nueva';
 
@@ -40,10 +39,8 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * video tantas veces como redes, y un video pesa.
    *
    * Cada red tiene sus propios límites, y **ninguno es decisión nuestra ni del back**:
-   * - Instagram exige una URL pública, así que no acepta archivo suelto ni video (todavía), y su
-   *   API publica siempre de inmediato — no se puede programar.
-   * - TikTok no tiene endpoint todavía; se muestra deshabilitado para que se vea que está
-   *   contemplado, no olvidado.
+   * - Instagram exige una URL pública, así que no acepta archivo suelto ni video de feed.
+   * - TikTok solo acepta video, su API no publica fotos.
    */
   redesSel: Record<PlataformaRed, boolean> = { facebook: true, instagram: false, tiktok: false };
 
@@ -371,10 +368,8 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     const minimo = new Date(Date.now() + PROGRAMAR_MIN_MINUTOS * 60_000);
     if (fecha < minimo) return `Tiene que ser al menos ${PROGRAMAR_MIN_MINUTOS} minutos en el futuro.`;
 
-    const maximo = new Date();
-    maximo.setMonth(maximo.getMonth() + PROGRAMAR_MAX_MESES);
-    if (fecha > maximo) return `No puede ser a más de ${PROGRAMAR_MAX_MESES} meses.`;
-
+    // Ya no hay tope: la programación la hace un job del back, no la API de cada red, así que no
+    // aplican sus límites (29 días del Reel de Facebook, 6 meses del video de feed).
     return null;
   }
 
@@ -401,7 +396,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * apagada sin explicación deja al admin adivinando si es un error o una limitación.
    */
   motivoNoDisponible(r: PlataformaRed): string | null {
-    if (r === 'tiktok') return 'Todavía no está conectado — se lo pedimos al back.';
+    if (r === 'tiktok') {
+      // Su API no tiene "publicar foto" — solo video.
+      if (this.tipo === 'foto') return 'TikTok solo acepta video, no fotos.';
+    }
 
     if (r === 'instagram') {
       if (this.tipo === 'video')         return 'Para video en Instagram usa Reel (el video de feed no aplica).';
@@ -409,6 +407,17 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
         return 'Instagram necesita una foto que ya esté guardada en el producto.';
     }
     return null;
+  }
+
+  /**
+   * Aviso que NO impide publicar, a diferencia de `motivoNoDisponible`. Hoy solo TikTok: mientras
+   * su app siga en Sandbox el video sale privado, y eso hay que decirlo antes de publicar o el
+   * admin va a creer que salió mal.
+   */
+  advertenciaDe(r: PlataformaRed): string | null {
+    return r === 'tiktok'
+      ? 'Mientras TikTok no apruebe la app, el video se sube como privado y solo lo ves tú.'
+      : null;
   }
 
   puedeUsar(r: PlataformaRed): boolean { return this.motivoNoDisponible(r) === null; }
@@ -436,14 +445,15 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Programar solo existe en **foto y video de feed de Facebook**, y solo si va sola:
-   * - Instagram publica siempre de inmediato (su API no lo permite).
-   * - El Reel de Facebook tampoco: `/video_reels` no acepta `scheduledPublishTime`.
-   * - Con dos redes marcadas saldrían en momentos distintos sin que nadie lo advierta.
+   * **Ahora se puede programar en las 3 redes y en cualquier tipo.** El back lo hace con un job
+   * propio, no con el scheduler de cada plataforma — por eso ya no aplica ninguna de sus
+   * limitaciones (Instagram no lo permitía, el Reel de Facebook tampoco) ni sus topes de fecha.
+   *
+   * Se deja como getter, y no como `true` fijo, porque es el punto natural donde volver a
+   * restringir si alguna red cambia de reglas.
    */
   get puedeProgramar(): boolean {
-    const a = this.redesActivas;
-    return a.length === 1 && a[0] === 'facebook' && this.tipo !== 'reel';
+    return this.redesActivas.length > 0;
   }
 
   /** Lo que de verdad se va a publicar en esa red: el texto común + sus propios hashtags. */
@@ -504,35 +514,25 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.progreso = 0;
 
     const descripcion = this.textoFinal(red);
+    const varianteId = this.seleccionado.id;
+    const scheduledPublishTime = this.fechaISO();
 
     if (red === 'instagram') {
       // El Reel SÍ manda archivo (multipart, endpoint aparte), así que tiene barra de progreso
       // como el video de Facebook. La foto no: usa una URL pública y es un request chico.
       if (this.tipo === 'reel') {
-        this.redes.publicarReelInstagram({
-          varianteId: this.seleccionado.id,
-          descripcion,
-          video: this.archivoVideo!
-        }).pipe(takeUntil(this.destroy$)).subscribe({
-          next: ev => {
-            this.progreso = ev.porcentaje;
-            if (ev.tipo === 'listo') {
-              this.resultados_pub.push({ red, publicacion: ev.publicacion ?? undefined });
-              this.siguienteRed();
-            } else {
-              this.faseEnvio = ev.tipo;
-            }
-          },
-          error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
-        });
+        this.conProgreso(red, this.redes.publicarReelInstagram({
+          varianteId, descripcion, video: this.archivoVideo!, scheduledPublishTime
+        }));
         return;
       }
 
       this.faseEnvio = 'procesando';
       this.redes.publicarInstagram({
-        varianteId: this.seleccionado.id,
+        varianteId,
         descripcion,
-        imagenId: this.origenImagen === 'guardada' ? this.imagenIdSel : null
+        imagenId: this.origenImagen === 'guardada' ? this.imagenIdSel : null,
+        scheduledPublishTime
       }).pipe(takeUntil(this.destroy$)).subscribe({
         next: pub => { this.resultados_pub.push({ red, publicacion: pub }); this.siguienteRed(); },
         error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
@@ -540,26 +540,33 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const base = {
-      varianteId: this.seleccionado.id,
-      descripcion,
-      scheduledPublishTime: this.fechaISO()
-    };
+    if (red === 'tiktok') {
+      // Solo video: su API no publica fotos, y `motivoNoDisponible` ya impide llegar aquí con foto.
+      this.conProgreso(red, this.redes.publicarTikTok({
+        varianteId, descripcion, video: this.archivoVideo!, scheduledPublishTime
+      }));
+      return;
+    }
 
-    // El Reel de Facebook es su propio endpoint y NO recibe `scheduledPublishTime` — por eso no
-    // se arma con `base`, que lo lleva dentro.
-    const peticion$ = this.tipo === 'reel'
-      ? this.redes.publicarReelFacebook({
-          varianteId: this.seleccionado.id, descripcion, video: this.archivoVideo!
-        })
-      : this.tipo === 'video'
-        ? this.redes.publicarVideo({ ...base, video: this.archivoVideo! })
-        : this.redes.publicarFoto({
-            ...base,
-            imagenNueva: this.origenImagen === 'nueva'    ? this.archivoImagen : null,
-            imagenId:    this.origenImagen === 'guardada' ? this.imagenIdSel   : null
-          });
+    // Facebook. Los 3 tipos aceptan `scheduledPublishTime` desde que el back lo hace con su
+    // propio job y no con el scheduler de Meta.
+    const base = { varianteId, descripcion, scheduledPublishTime };
 
+    this.conProgreso(red,
+      this.tipo === 'reel'
+        ? this.redes.publicarReelFacebook({ ...base, video: this.archivoVideo! })
+        : this.tipo === 'video'
+          ? this.redes.publicarVideo({ ...base, video: this.archivoVideo! })
+          : this.redes.publicarFoto({
+              ...base,
+              imagenNueva: this.origenImagen === 'nueva'    ? this.archivoImagen : null,
+              imagenId:    this.origenImagen === 'guardada' ? this.imagenIdSel   : null
+            })
+    );
+  }
+
+  /** Suscripción común de los endpoints que suben archivo: avanza la barra y pasa a la red siguiente. */
+  private conProgreso(red: PlataformaRed, peticion$: Observable<IProgresoPublicacion>): void {
     peticion$.pipe(takeUntil(this.destroy$)).subscribe({
       next: ev => {
         this.progreso = ev.porcentaje;

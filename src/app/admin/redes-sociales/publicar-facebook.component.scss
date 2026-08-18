@@ -76,6 +76,15 @@
   font-size: 0.78rem;
   line-height: 1.4;
   color: var(--app-text-muted, #64748b);
+
+  // Advertencia que NO impide publicar — ámbar, no rojo: el rojo es para lo que sí bloquea.
+  &--warn {
+    padding: 8px 11px;
+    border-radius: 9px;
+    background: rgba(180, 83, 9, .1);
+    border: 1px solid rgba(180, 83, 9, .28);
+    color: var(--app-text);
+  }
 }
 
 .fb-error {
@@ -435,42 +444,46 @@
   &__sub    { font-size: .8rem; color: var(--app-text-muted); }
 }
 
-// ── Pestañas por red ──────────────────────────────────────────────────────
-.fb-tabs {
+// ── Selector de red (radio) ───────────────────────────────────────────────
+// El radio elige cuál red se está CONFIGURANDO. A cuáles se publica es la casilla de abajo —
+// por eso el ✓ y el estado "on" son dos cosas distintas y se ven distinto.
+.fb-radios {
   display: flex;
-  gap: 4px;
-  border-bottom: 2px solid var(--card-border);
-  margin-bottom: 14px;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-.fb-tab {
+.fb-radio {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 9px 16px;
-  border: none;
-  background: transparent;
+  border: 1.5px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card-bg);
   color: var(--app-text-muted);
   font-size: .88rem;
   font-weight: 600;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;   // encima del borde del contenedor, para que se "una" a la pestaña
-  transition: color .15s, border-color .15s;
+  transition: border-color .15s, background .15s, color .15s;
 
   &:hover { color: var(--app-text); }
 
-  // La pestaña que se está viendo.
+  &__input { accent-color: var(--app-accent); cursor: inherit; margin: 0; }
+
+  // La que se está viendo ahora.
   &--on {
-    color: var(--app-accent);
-    border-bottom-color: var(--app-accent);
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-text);
   }
 
-  // Distinta de `--on`: esta dice que ESA red va a recibir la publicación, se esté viendo o no.
+  // Distinto de `--on`: esta red SÍ va a recibir la publicación, se esté viendo o no.
   &--activa { color: var(--app-text); }
 
-  &__check { color: var(--app-accent); font-weight: 800; }
+  &__check  { color: var(--app-accent); font-weight: 800; }
+  &__nombre { white-space: nowrap; }
 }
 
 .fb-tab-body { padding-top: 2px; }

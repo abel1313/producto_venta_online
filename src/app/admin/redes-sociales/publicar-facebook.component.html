@@ -9,58 +9,11 @@
   </div>
 
 
-  <!-- ── PASO 1 · ELEGIR PRODUCTO ─────────────────────────────────────── -->
-  <div class="fb-card">
-    <h5 class="fb-card__title">1 · Elige el producto</h5>
-
-    <div *ngIf="!seleccionado">
-      <div class="fb-search-wrap">
-        <input class="fb-input" type="text"
-               placeholder="Buscar por nombre, código, talla o color…"
-               [(ngModel)]="termino" (input)="onInput()" appUppercase>
-        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
-      </div>
-
-      <div class="fb-dropdown" *ngIf="resultados.length > 0">
-        <div class="fb-dropdown__item" *ngFor="let v of resultados" (click)="seleccionar(v)">
-          <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
-            <img class="fb-dropdown__img" [src]="src" alt="">
-          </ng-container>
-          <span class="fb-dropdown__txt">
-            {{ etiqueta(v) }} <small class="fb-dropdown__id">#{{ v.id }}</small>
-          </span>
-          <span class="fb-dropdown__precio" *ngIf="v.precio != null">${{ v.precio | number:'1.2-2' }}</span>
-        </div>
-      </div>
-
-      <p class="fb-hint"
-         *ngIf="!buscando && termino.trim().length >= 2 && resultados.length === 0">
-        Sin resultados. Prueba con otro nombre o con el código de barras.
-      </p>
-    </div>
-
-    <!-- Producto ya elegido -->
-    <div class="fb-sel" *ngIf="seleccionado">
-      <ng-container *ngIf="seleccionado.imagenUrl | imagenSrc | async as src">
-        <img class="fb-sel__img" [src]="src" alt="">
-      </ng-container>
-      <div class="fb-sel__info">
-        <strong>{{ etiqueta(seleccionado) }}</strong>
-        <small>#{{ seleccionado.id }}
-          <ng-container *ngIf="seleccionado.codigoBarras"> · {{ seleccionado.codigoBarras }}</ng-container>
-        </small>
-      </div>
-      <button class="fb-btn fb-btn--ghost" (click)="limpiarSeleccion()" [disabled]="publicando">
-        Cambiar
-      </button>
-    </div>
-  </div>
-
-  <!-- ── PASO 2 · CONTENIDO ───────────────────────────────────────────── -->
+  <!-- ── PASO 1 · EL VIDEO / LA FOTO ───────────────────────────────────── -->
   <!-- ⚠️ Estos pasos NO se esconden hasta elegir producto: la pantalla se veía casi vacía y
        parecía que no había cargado. El producto se sigue exigiendo, pero al publicar. -->
   <div class="fb-card">
-    <h5 class="fb-card__title">2 · Qué vas a publicar</h5>
+    <h5 class="fb-card__title">1 · Qué vas a publicar</h5>
 
     <div class="fb-tipo">
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'foto'"
@@ -78,7 +31,7 @@
     <p class="fb-hint" *ngIf="tipo === 'reel'">
       ⏳ Un Reel <b>tarda</b>: la red procesa el video después de recibirlo. Puede llevarse varios
       minutos — no cierres la pantalla. Si se pasa del tiempo de espera te va a pedir reintentar
-      (no se pierde nada, pero tampoco se publica). Los Reels <b>no se pueden programar</b>.
+      (no se pierde nada, pero tampoco se publica).
     </p>
 
     <!-- ····· FOTO ····· -->
@@ -187,21 +140,22 @@
     </p>
   </div>
 
-  <!-- ── PASO 3 · UNA PESTAÑA POR RED, SOLO PARA LOS HASHTAGS ─────────── -->
-  <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags,
-       así que son ellos los que viven en pestañas. Cada pestaña trae además la casilla de si
-       se publica ahí, que es la otra decisión que se toma por red. -->
+  <!-- ── PASO 2 · UNA OPCIÓN POR RED, SOLO PARA LOS HASHTAGS ──────────── -->
+  <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags.
+       El radio elige QUÉ RED se está configurando (no a cuál se publica: eso es la casilla de
+       abajo, y pueden ir varias a la vez). -->
   <div class="fb-card">
-    <h5 class="fb-card__title">3 · Redes y hashtags</h5>
+    <h5 class="fb-card__title">2 · Redes y hashtags</h5>
 
-    <div class="fb-tabs">
-      <button class="fb-tab" *ngFor="let r of TODAS"
-              [class.fb-tab--on]="pestana === r"
-              [class.fb-tab--activa]="redesSel[r] && puedeUsar(r)"
-              (click)="verPestana(r)">
-        <span class="fb-tab__check" *ngIf="redesSel[r] && puedeUsar(r)">✓</span>
-        {{ nombreDeRed(r) }}
-      </button>
+    <div class="fb-radios">
+      <label class="fb-radio" *ngFor="let r of TODAS"
+             [class.fb-radio--on]="pestana === r"
+             [class.fb-radio--activa]="redesSel[r] && puedeUsar(r)">
+        <input type="radio" name="redConfig" class="fb-radio__input"
+               [checked]="pestana === r" (change)="verPestana(r)">
+        <span class="fb-radio__check" *ngIf="redesSel[r] && puedeUsar(r)">✓</span>
+        <span class="fb-radio__nombre">{{ nombreDeRed(r) }}</span>
+      </label>
     </div>
 
     <div class="fb-tab-body" *ngFor="let r of TODAS" [hidden]="pestana !== r">
@@ -214,6 +168,9 @@
              es un error o una limitación de esa red. -->
         <small class="fb-red__motivo" *ngIf="motivoNoDisponible(r) as m">{{ m }}</small>
       </label>
+
+      <!-- Aviso que NO impide publicar (hoy: el video privado de TikTok en Sandbox). -->
+      <p class="fb-hint fb-hint--warn" *ngIf="redesSel[r] && advertenciaDe(r) as a">⚠️ {{ a }}</p>
 
       <div class="fb-field" *ngIf="redesSel[r] && puedeUsar(r)">
         <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
@@ -242,11 +199,11 @@
     </ng-container>
   </div>
 
-  <!-- ── PASO 4 · CUÁNDO ──────────────────────────────────────────────── -->
-  <!-- Solo con Facebook sola: Instagram publica de inmediato siempre, así que con las dos
-       marcadas saldrían en momentos distintos sin que nadie lo advierta. -->
+  <!-- ── PASO 3 · CUÁNDO ──────────────────────────────────────────────── -->
+  <!-- Ya sirve para las 3 redes y los 3 tipos: el back lo programa con un job propio, no con el
+       scheduler de cada plataforma, así que salen todas juntas o ninguna. -->
   <div class="fb-card" *ngIf="puedeProgramar">
-    <h5 class="fb-card__title">4 · Cuándo</h5>
+    <h5 class="fb-card__title">3 · Cuándo se publica</h5>
 
     <div class="fb-tipo">
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="!programar"
@@ -261,8 +218,56 @@
              [(ngModel)]="fechaProgramada" [disabled]="publicando">
       <p class="fb-error" *ngIf="errorFecha">{{ errorFecha }}</p>
       <p class="fb-hint" *ngIf="!errorFecha">
-        Entre 10 minutos y 6 meses a futuro.
+        Al menos 10 minutos a futuro — sin fecha máxima. Se publica en las redes que marcaste
+        arriba, todas a la misma hora.
       </p>
+    </div>
+  </div>
+
+  <!-- ── PASO 4 · PRODUCTO (requisito del back, va al final) ──────────── -->
+  <div class="fb-card">
+    <h5 class="fb-card__title">4 · ¿De qué producto es?</h5>
+
+    <div *ngIf="!seleccionado">
+      <div class="fb-search-wrap">
+        <input class="fb-input" type="text"
+               placeholder="Buscar por nombre, código, talla o color…"
+               [(ngModel)]="termino" (input)="onInput()" appUppercase>
+        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
+      </div>
+
+      <div class="fb-dropdown" *ngIf="resultados.length > 0">
+        <div class="fb-dropdown__item" *ngFor="let v of resultados" (click)="seleccionar(v)">
+          <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+            <img class="fb-dropdown__img" [src]="src" alt="">
+          </ng-container>
+          <span class="fb-dropdown__txt">
+            {{ etiqueta(v) }} <small class="fb-dropdown__id">#{{ v.id }}</small>
+          </span>
+          <span class="fb-dropdown__precio" *ngIf="v.precio != null">${{ v.precio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <p class="fb-hint"
+         *ngIf="!buscando && termino.trim().length >= 2 && resultados.length === 0">
+        Sin resultados. Prueba con otro nombre o con el código de barras.
+      </p>
+    </div>
+
+    <!-- Producto ya elegido -->
+    <div class="fb-sel" *ngIf="seleccionado">
+      <ng-container *ngIf="seleccionado.imagenUrl | imagenSrc | async as src">
+        <img class="fb-sel__img" [src]="src" alt="">
+      </ng-container>
+      <div class="fb-sel__info">
+        <strong>{{ etiqueta(seleccionado) }}</strong>
+        <small>#{{ seleccionado.id }}
+          <ng-container *ngIf="seleccionado.codigoBarras"> · {{ seleccionado.codigoBarras }}</ng-container>
+        </small>
+      </div>
+      <button class="fb-btn fb-btn--ghost" (click)="limpiarSeleccion()" [disabled]="publicando">
+        Cambiar
+      </button>
     </div>
   </div>
 
@@ -271,7 +276,7 @@
     <!-- Un botón gris sin decir qué falta deja al admin atorado — mismo criterio que el resto
          del proyecto. -->
     <p class="fb-error" *ngIf="!seleccionado">
-      ⬆️ Falta elegir el producto arriba (paso 1) para poder publicar.
+      ⬆️ Falta decir de qué producto es (paso 4) para poder publicar.
     </p>
 
     <button class="fb-btn fb-btn--primary fb-btn--lg"
@@ -306,7 +311,8 @@
 
     <div class="fb-resultado__fila" *ngFor="let r of resultados_pub">
       <div class="fb-resultado__red">
-        <span>{{ r.error ? '❌' : (r.publicacion?.estado === 'PROGRAMADA' ? '📅' : '✅') }}</span>
+        <span>{{ r.error || r.publicacion?.estado === 'FALLIDA' ? '❌'
+                  : (r.publicacion?.estado === 'PROGRAMADA' ? '📅' : '✅') }}</span>
         <strong>{{ nombreDeRed(r.red) }}</strong>
       </div>
 
@@ -316,6 +322,12 @@
       </p>
       <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'PUBLICADA'">
         Publicada el <strong>{{ formatoFecha(r.publicacion?.fechaPublicacion) }}</strong>.
+      </p>
+      <!-- `FALLIDA` la marca el job del back cuando se le acabaron los 3 reintentos. Su
+           `ultimoError` es lo único que dice POR QUÉ no salió. -->
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'FALLIDA'">
+        No se pudo publicar después de {{ r.publicacion?.intentos || 3 }} intentos.
+        <ng-container *ngIf="r.publicacion?.ultimoError as e"><br><small>{{ e }}</small></ng-container>
       </p>
 
       <a class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="linkDe(r.publicacion) as link"

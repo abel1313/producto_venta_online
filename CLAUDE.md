@@ -10178,3 +10178,51 @@ cual a la pantalla, sin recortar.
 
 Integración nueva desde cero y con trámite de app propio. Ya aparece deshabilitado en la pantalla
 con su motivo; se activa cuando exista el endpoint.
+
+---
+
+## REDES — REDISEÑO PEDIDO POR EL DUEÑO: ARRASTRAR VIDEO + PESTAÑAS DE HASHTAGS (2026-08-18)
+
+El dueño describió la pantalla que quería y **no era la que estaba hecha**. Su flujo:
+
+> *"tiene que haber un [área] para cargar el video y ese video es para las 3 redes... entonces
+> tiene que haber 3 pestañas para las 3 redes... eso solo es para poner los hashtags porque ahí sí
+> va a ser lo diferente, y un textarea para el texto que irá en las 3 redes... por eso debe tener
+> un botón de mostrar para Facebook o para las demás, eso quedaría al final"*
+
+### Los 3 cambios
+
+1. **Arrastrar y soltar el video** en vez del botón "Elegir video". Es un `<label>` con el input
+   escondido, así el clic sigue abriendo el selector sin JS extra.
+2. **Los hashtags pasan a pestañas** (una por red) en vez de campos apilados. Cada pestaña trae
+   además su casilla de "Publicar en esta red" — es la otra decisión que se toma por red. La
+   pestaña muestra ✓ cuando esa red está activa, se esté viendo o no.
+3. **La vista previa se esconde detrás de un botón**, al final ("👁 Mostrar cómo va a quedar"),
+   en vez de estar siempre visible estorbando mientras se escribe.
+
+### ⚠️ `preventDefault` en `dragover` no es opcional
+
+Sin él el navegador **no considera la zona un destino válido**, y al soltar el archivo lo abre en
+una pestaña nueva en vez de dárnoslo. Es el error clásico de drag & drop.
+
+También se valida `file.type.startsWith('video/')` al soltar: en una zona de arrastre puede caer
+cualquier cosa (un PDF, una carpeta). Sin ese filtro se subiría basura y el error llegaría desde
+Meta mucho después.
+
+### 💡 Cuidado con `node_modules` del scratchpad
+
+Al ir a verificar, Playwright había desaparecido del scratchpad (se limpió el temp). Si un script
+de prueba falla con `Cannot find module 'playwright'`, es eso — `npm i playwright` ahí y listo, no
+es un problema del proyecto.
+
+**Verificado en pantalla** (claro y oscuro): la zona de arrastre, las 3 pestañas con su ✓, el
+cambio de pestaña mostrando los hashtags de esa red, y la vista previa desplegándose al final con
+el mismo texto y los hashtags de cada una.
+
+### ⏳ Queda una duda del dueño sin resolver
+
+Preguntó **"elegir producto ¿a qué se refiere?"** — el paso 1 no aparece en el flujo que él
+describió. Hoy es **obligatorio porque el back exige `varianteId`** en todos los endpoints. Si
+quiere subir un Reel que no sea de un producto (el local, un saludo, una promo general), tendría
+que elegir uno cualquiera. Pendiente de decidir si se le pide al back que sea opcional para video
+y Reel.

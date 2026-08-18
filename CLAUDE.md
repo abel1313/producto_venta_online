@@ -9953,3 +9953,75 @@ la página). Hasta que se vincule desde **Meta Business Suite**, el endpoint res
 
 **Verificado con `ng build` y en pantalla** (claro y oscuro): Facebook conserva video, "subir una
 nueva" y programación; Instagram las oculta. ⚠️ Ninguna probada contra el backend real.
+
+---
+
+## REDES — UNA PUBLICACIÓN, VARIAS REDES: TEXTO COMÚN + HASHTAGS POR RED (2026-08-18)
+
+> Diseño pedido por el dueño. Su objetivo real son los **Reels** (mismo video en Facebook,
+> Instagram y TikTok) — eso **todavía no existe**, ver abajo. La pantalla se armó ya con lo que sí
+> funciona, para que cuando el back entregue Reels solo haya que enchufarlo.
+
+### El modelo
+
+Sube el archivo **una vez**, marca a qué redes va, escribe el texto **una vez**, y los **hashtags
+por red** (lo que funciona en Instagram no es lo mismo que en Facebook). Al publicar se concatena
+`texto + "\n\n" + hashtags de esa red`, y hay **vista previa de cómo queda cada una**.
+
+Se descartó la idea inicial de una pestaña por red: obligaría a **subir el mismo video tantas
+veces como redes**, y un video pesa.
+
+### Publicación secuencial, y resultado POR RED
+
+`publicar()` recorre las redes **una tras otra**, no con `forkJoin`. El motivo es concreto: cada
+red es un request independiente contra Meta y **una puede fallar mientras la otra funciona** — es
+literalmente el caso de hoy (Facebook publica bien, Instagram devuelve 400 porque la cuenta no
+está vinculada). Con `forkJoin`, un solo fallo cancela el resto y no se sabe qué llegó a
+publicarse.
+
+Por eso el resultado es **una fila por red** (✅/❌ con su motivo y su link), no un sí/no global:
+un "hubo un error" a secas dejaría al admin sin saber si tiene que reintentar en todas o en una.
+
+### Las restricciones se aplican solas, y se explican
+
+`motivoNoDisponible(red)` devuelve **el motivo**, no un booleano, para poder mostrarlo junto a la
+casilla — una casilla apagada sin explicación deja al admin adivinando si es un error o una
+limitación de esa red. Hoy:
+
+| Red | Limitación |
+|---|---|
+| Instagram | Sin video; y sin "subir una nueva" (su API exige una URL pública, no acepta archivo) |
+| Instagram | No se puede programar — su API siempre publica de inmediato |
+| TikTok | Sin endpoint todavía — se muestra deshabilitado para que se vea contemplado, no olvidado |
+
+`sincronizarRestricciones()` **desmarca sola** una red que deje de poder recibir el contenido
+(ej. pasar de foto a video desmarca Instagram): si se quedara marcada, el admin creería que se
+publicó ahí.
+
+**Programar solo aparece con Facebook sola.** Con Instagram también marcada, saldrían en momentos
+distintos sin que nadie lo advierta.
+
+### 🔴 Lo que NO existe todavía — hay que pedirlo
+
+**Reels no está implementado en ninguna red**, y es el objetivo del dueño. El back ya lo había
+avisado: *"Video, Historias y Reels NO están implementados... la Graph API los maneja con flujos
+completamente distintos (subida por partes/resumable)"*. Lo que hay es **video de feed en
+Facebook** — que no es un Reel. TikTok tampoco existe.
+
+### ⚠️ La música NO se puede elegir desde aquí — y conviene tenerlo claro
+
+Meta **no expone la biblioteca de audio por API**. Un video publicado desde el sistema sale con
+**el audio que ya trae el archivo**; la música se elige solo dentro de la app de Instagram.
+
+Decisión del dueño: **la pega él al editar el video**. Queda advertido en la pantalla, incluido
+el riesgo de que Instagram silencie el Reel por derechos de autor si usa música comercial.
+
+### 💡 Trampa: `redes` chocaba con el servicio inyectado
+
+El campo de las casillas se llamó primero `redes`, pero el servicio ya se llamaba así
+(`private readonly redes: RedesSocialesService`) — la propiedad tapaba al servicio y **todas las
+llamadas dejaban de existir**. Lo detectó el compilador; quedó como `redesSel`.
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): texto común, hashtags por red, vista
+previa de cada una, TikTok deshabilitado con su motivo, y al pasar a video Instagram se desmarca
+sola explicando por qué. ⚠️ Sin probar contra el backend real.

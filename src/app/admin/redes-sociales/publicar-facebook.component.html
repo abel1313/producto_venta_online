@@ -8,22 +8,6 @@
     </div>
   </div>
 
-  <!-- ── ELEGIR RED ────────────────────────────────────────────────────── -->
-  <div class="fb-card">
-    <h5 class="fb-card__title">¿Dónde se publica?</h5>
-    <div class="fb-tipo">
-      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="red === 'facebook'"
-              (click)="red = 'facebook'; onCambiarRed()" [disabled]="publicando">📘 Facebook</button>
-      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="red === 'instagram'"
-              (click)="red = 'instagram'; onCambiarRed()" [disabled]="publicando">📸 Instagram</button>
-    </div>
-    <!-- Las dos limitaciones son de Meta, no del back — conviene decirlo para que no parezca
-         que la pantalla está incompleta. -->
-    <p class="fb-hint" *ngIf="esInstagram">
-      En Instagram solo se puede publicar <b>una foto que ya esté guardada</b> en el producto, y
-      <b>se publica de inmediato</b> (su sistema no permite programar ni subir un archivo suelto).
-    </p>
-  </div>
 
   <!-- ── PASO 1 · ELEGIR PRODUCTO ─────────────────────────────────────── -->
   <div class="fb-card">
@@ -76,13 +60,17 @@
   <div class="fb-card" *ngIf="seleccionado">
     <h5 class="fb-card__title">2 · Qué vas a publicar</h5>
 
-    <!-- En Instagram no se ofrece video: ese endpoint solo publica foto por ahora. -->
-    <div class="fb-tipo" *ngIf="!esInstagram">
+    <div class="fb-tipo">
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'foto'"
               (click)="setTipo('foto')" [disabled]="publicando">📷 Foto</button>
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'video'"
               (click)="setTipo('video')" [disabled]="publicando">🎬 Video</button>
     </div>
+    <p class="fb-hint" *ngIf="tipo === 'video'">
+      🎬 El video se sube <b>una sola vez</b> y se manda a todas las redes que marques abajo.
+      La música tiene que ir <b>ya puesta en el archivo</b>: la de la app de Instagram no se puede
+      elegir desde aquí.
+    </p>
 
     <!-- ····· FOTO ····· -->
     <div *ngIf="tipo === 'foto'">
@@ -98,8 +86,7 @@
                 [disabled]="publicando || imagenesGuardadas.length === 0">
           Otra ya guardada
         </button>
-        <!-- Instagram exige una URL pública, así que no acepta un archivo suelto. -->
-        <button class="fb-origen__btn" *ngIf="!esInstagram"
+        <button class="fb-origen__btn"
                 [class.fb-origen__btn--on]="origenImagen === 'nueva'"
                 (click)="setOrigenImagen('nueva')" [disabled]="publicando">
           Subir una nueva
@@ -182,15 +169,56 @@
               [disabled]="publicando"
               placeholder="Lo que escribas aquí es exactamente lo que se ve en la publicación."></textarea>
     <p class="fb-hint">
-      ℹ️ Se publica tal cual. Si dejas el código de barras, cualquiera que vea el post
-      podrá leerlo — bórralo si no quieres que sea público.
+      ℹ️ Este texto es el <b>mismo para todas las redes</b>. Los hashtags se ponen abajo, uno por
+      red. Si dejas el código de barras, cualquiera que vea el post podrá leerlo.
     </p>
   </div>
 
-  <!-- ── PASO 3 · CUÁNDO ──────────────────────────────────────────────── -->
-  <!-- Oculto en Instagram: su API siempre publica de inmediato, no acepta programación. -->
-  <div class="fb-card" *ngIf="seleccionado && !esInstagram">
-    <h5 class="fb-card__title">3 · Cuándo</h5>
+  <!-- ── PASO 3 · REDES + HASHTAGS ────────────────────────────────────── -->
+  <div class="fb-card" *ngIf="seleccionado">
+    <h5 class="fb-card__title">3 · ¿Dónde se publica?</h5>
+
+    <div class="fb-redes">
+      <label class="fb-red" *ngFor="let r of TODAS"
+             [class.fb-red--on]="redesSel[r]"
+             [class.fb-red--off]="!puedeUsar(r)">
+        <input type="checkbox" class="fb-red__check"
+               [checked]="redesSel[r]" [disabled]="!puedeUsar(r) || publicando"
+               (change)="toggleRed(r)">
+        <span class="fb-red__nombre">{{ nombreDeRed(r) }}</span>
+        <!-- El motivo va junto a la casilla: apagarla sin explicar deja al admin adivinando si
+             es un error o una limitación de esa red. -->
+        <small class="fb-red__motivo" *ngIf="motivoNoDisponible(r) as m">{{ m }}</small>
+      </label>
+    </div>
+
+    <p class="fb-error" *ngIf="redesActivas.length === 0">
+      Marca al menos una red para poder publicar.
+    </p>
+
+    <!-- ····· HASHTAGS POR RED ····· -->
+    <ng-container *ngIf="redesActivas.length">
+      <label class="fb-label fb-label--sep">Hashtags de cada red</label>
+      <div class="fb-field" *ngFor="let r of redesActivas">
+        <label class="fb-label">{{ nombreDeRed(r) }}</label>
+        <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
+               placeholder="#novedadesjade #bolsas">
+      </div>
+
+      <!-- ····· VISTA PREVIA ····· -->
+      <label class="fb-label fb-label--sep">Así va a quedar</label>
+      <div class="fb-preview" *ngFor="let r of redesActivas">
+        <div class="fb-preview__red">{{ nombreDeRed(r) }}</div>
+        <pre class="fb-preview__texto">{{ textoFinal(r) }}</pre>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ── PASO 4 · CUÁNDO ──────────────────────────────────────────────── -->
+  <!-- Solo con Facebook sola: Instagram publica de inmediato siempre, así que con las dos
+       marcadas saldrían en momentos distintos sin que nadie lo advierta. -->
+  <div class="fb-card" *ngIf="seleccionado && soloFacebook">
+    <h5 class="fb-card__title">4 · Cuándo</h5>
 
     <div class="fb-tipo">
       <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="!programar"
@@ -211,10 +239,12 @@
   </div>
 
   <!-- ── PUBLICAR ─────────────────────────────────────────────────────── -->
-  <div class="fb-card fb-card--accion" *ngIf="seleccionado && !resultado">
+  <div class="fb-card fb-card--accion" *ngIf="seleccionado && !huboResultado">
     <button class="fb-btn fb-btn--primary fb-btn--lg"
             [disabled]="!puedePublicar" (click)="publicar()">
-      {{ programar ? '📅 Programar publicación' : '🚀 Publicar ahora' }}
+      {{ programar
+          ? '📅 Programar publicación'
+          : (redesActivas.length > 1 ? '🚀 Publicar en ' + redesActivas.length + ' redes' : '🚀 Publicar ahora') }}
     </button>
 
     <div class="fb-progreso" *ngIf="publicando">
@@ -223,31 +253,43 @@
              [class.fb-progreso__fill--indet]="faseEnvio === 'procesando'"
              [style.width.%]="faseEnvio === 'procesando' ? 100 : progreso"></div>
       </div>
-      <small *ngIf="faseEnvio === 'subiendo'">Subiendo… {{ progreso }}%</small>
+      <!-- Se dice en cuál red va: al pasar de una a otra la barra se reinicia y sin esto
+           parecería que se colgó. -->
+      <small *ngIf="faseEnvio === 'subiendo'">
+        Subiendo a {{ redEnCurso ? nombreDeRed(redEnCurso) : '' }}… {{ progreso }}%
+      </small>
       <small *ngIf="faseEnvio === 'procesando'">
-        Archivo recibido. Enviándolo a la red — un video puede tardar varios minutos,
-        no cierres esta pantalla.
+        Enviándolo a {{ redEnCurso ? nombreDeRed(redEnCurso) : 'la red' }} — un video puede tardar
+        varios minutos, no cierres esta pantalla.
       </small>
     </div>
   </div>
 
   <!-- ── RESULTADO ────────────────────────────────────────────────────── -->
-  <div class="fb-card fb-resultado" *ngIf="resultado">
-    <h5 class="fb-card__title">
-      {{ resultado.estado === 'PROGRAMADA' ? '📅 Programada' : '✅ Publicada' }}
-    </h5>
+  <!-- Una fila por red: con varias, una puede publicar y otra fallar. -->
+  <div class="fb-card fb-resultado" *ngIf="huboResultado">
+    <h5 class="fb-card__title">Resultado</h5>
 
-    <p class="fb-resultado__linea" *ngIf="resultado.estado === 'PROGRAMADA'">
-      Se publicará el <strong>{{ formatoFecha(resultado.scheduledPublishTime) }}</strong>.
-    </p>
-    <p class="fb-resultado__linea" *ngIf="resultado.estado === 'PUBLICADA'">
-      Publicada el <strong>{{ formatoFecha(resultado.fechaPublicacion) }}</strong>.
-    </p>
+    <div class="fb-resultado__fila" *ngFor="let r of resultados_pub">
+      <div class="fb-resultado__red">
+        <span>{{ r.error ? '❌' : (r.publicacion?.estado === 'PROGRAMADA' ? '📅' : '✅') }}</span>
+        <strong>{{ nombreDeRed(r.red) }}</strong>
+      </div>
+
+      <p class="fb-resultado__linea" *ngIf="r.error">{{ r.error }}</p>
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'PROGRAMADA'">
+        Se publicará el <strong>{{ formatoFecha(r.publicacion?.scheduledPublishTime) }}</strong>.
+      </p>
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'PUBLICADA'">
+        Publicada el <strong>{{ formatoFecha(r.publicacion?.fechaPublicacion) }}</strong>.
+      </p>
+
+      <a class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="linkDe(r.publicacion) as link"
+         [href]="link" target="_blank" rel="noopener">Ver publicación ↗</a>
+    </div>
 
     <div class="fb-resultado__acciones">
-      <a class="fb-btn fb-btn--primary" *ngIf="linkPost"
-         [href]="linkPost" target="_blank" rel="noopener">Ver en {{ nombreRed }} ↗</a>
-      <button class="fb-btn fb-btn--ghost" (click)="nuevaPublicacion()">Publicar otra cosa</button>
+      <button class="fb-btn fb-btn--primary" (click)="nuevaPublicacion()">Publicar otra cosa</button>
     </div>
   </div>
 

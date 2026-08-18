@@ -53,6 +53,9 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   tipo: TipoPublicacion = 'foto';
   descripcion = '';
 
+  /** Chuleta de qué acepta cada red — para no tener que recordar por qué una se bloquea. */
+  mostrarAyuda = false;
+
   // Foto
   origenImagen: OrigenImagen = 'principal';
   imagenesGuardadas: IVarianteImagenDto[] = [];

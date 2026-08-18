@@ -10371,3 +10371,48 @@ desbloquea, va junto al motivo.
 **Verificado reproduciendo el caso exacto del dueño** (tipo Foto → radio de TikTok): la casilla
 sale deshabilitada, el aviso rojo se ve, el botón "Cambiar a video" lo desbloquea, y después de
 pulsarlo TikTok se puede marcar y publicar.
+
+---
+
+## REDES — CHULETA DE QUÉ ACEPTA CADA RED + RESPUESTAS DEL BACK (2026-08-19)
+
+### La chuleta, pedida por el dueño
+
+Después de toparse con *"TikTok no me deja seleccionarlo"*, pidió que quedara anotado en algún
+lado *"para ver si no es video, ya sé por qué"*. En vez de mandarlo a un documento, se puso
+**dentro de la pantalla**: botón **"❔ ¿Qué acepta cada red?"** en el header, plegable, con la
+tabla y las 6 reglas que se han ido descubriendo.
+
+|  | 📷 Foto | 🎬 Video | 🎞️ Reel | 📅 Programar |
+|---|---|---|---|---|
+| Facebook | ✅ | ✅ | ✅ | ✅ |
+| Instagram | ✅ | ❌ | ✅ | ✅ |
+| TikTok | ❌ | ✅ | ✅ | ✅ |
+
+Las notas cubren lo que no se ve en la tabla: la música va en el archivo, el video se sube una
+vez, el mínimo de 10 minutos, y que **el video privado de TikTok en Sandbox no es un error**.
+
+**Regla:** cuando cambien las capacidades de alguna red (p. ej. si Instagram habilita video de
+feed, o TikTok sale de Sandbox), **actualizar esta tabla además del código** — es el único lugar
+donde el dueño va a mirar.
+
+### Respuestas del back que cierran dos dudas
+
+1. **El job SÍ se recupera solo si el servidor estuvo caído.** No busca "las que vencen en este
+   minuto", sino **todas las `PROGRAMADA` con `scheduledPublishTime <= ahora`** — al arrancar
+   recoge las vencidas sin importar cuánto llevaban. Y los 3 intentos de `FALLIDA` **solo se
+   consumen por fallos reales de la API**: si el servidor no corrió, la fila no gasta ninguno.
+   Era el punto flojo que preocupaba de programar con job propio, y queda cubierto.
+2. **TikTok ya está autorizado y validado** contra su API real (cuenta Sandbox `novedadesJade`,
+   token guardado). Las migraciones corrieron en dev y qa.
+
+**Sin cambios de código por estas dos** — solo se reflejaron en la chuleta.
+
+### 💡 Al verificar con Playwright, un clic real puede no repintar
+
+El clic sobre el botón de la chuleta no abría el panel en la prueba, aunque el botón existía: es
+el efecto ya conocido de haber navegado con `router.navigateByUrl()` desde `page.evaluate()`
+(fuera de la zona de Angular). Se resolvió tocando el campo + `applyChanges`. **No era un bug de
+la pantalla** — en la app real el clic funciona.
+
+**Verificado en pantalla** en claro y oscuro: la tabla y las notas se leen bien en ambos temas.

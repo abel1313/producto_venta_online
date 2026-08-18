@@ -9,10 +9,51 @@
 }
 
 .fb-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
   margin-bottom: 24px;
+
   &__title {
     h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
     small { color: var(--app-text-muted, #64748b); }
+  }
+}
+
+// ── Chuleta de qué acepta cada red ────────────────────────────────────────
+.fb-ayuda {
+  &__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .84rem;
+
+    th, td {
+      padding: 7px 10px;
+      text-align: center;
+      border-bottom: 1px solid var(--card-border);
+      color: var(--app-text);
+      white-space: nowrap;
+    }
+
+    th { color: var(--app-text-muted); font-weight: 700; }
+    // Primera columna: el nombre de la red, alineado a la izquierda.
+    td:first-child { text-align: left; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+  }
+
+  &__notas {
+    margin: 14px 0 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: .81rem;
+    line-height: 1.45;
+    color: var(--app-text-muted);
+
+    b { color: var(--app-text); }
   }
 }
 

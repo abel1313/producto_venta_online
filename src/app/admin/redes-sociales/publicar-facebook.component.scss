@@ -406,6 +406,77 @@
   to   { background-position: -200% 0; }
 }
 
+// ── Zona de arrastrar el video ────────────────────────────────────────────
+.fb-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 36px 20px;
+  border: 2px dashed var(--card-border);
+  border-radius: 14px;
+  background: var(--app-surface-2);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .15s, background .15s, transform .1s;
+
+  &:hover { border-color: var(--app-accent); }
+
+  // Mientras se arrastra algo encima: tiene que notarse que soltar ahí va a funcionar.
+  &--activa {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    transform: scale(1.01);
+  }
+
+  &__icono  { font-size: 2rem; line-height: 1; }
+  &__titulo { font-weight: 700; font-size: .95rem; color: var(--app-text); }
+  &__sub    { font-size: .8rem; color: var(--app-text-muted); }
+}
+
+// ── Pestañas por red ──────────────────────────────────────────────────────
+.fb-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--card-border);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.fb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: .88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;   // encima del borde del contenedor, para que se "una" a la pestaña
+  transition: color .15s, border-color .15s;
+
+  &:hover { color: var(--app-text); }
+
+  // La pestaña que se está viendo.
+  &--on {
+    color: var(--app-accent);
+    border-bottom-color: var(--app-accent);
+  }
+
+  // Distinta de `--on`: esta dice que ESA red va a recibir la publicación, se esté viendo o no.
+  &--activa { color: var(--app-text); }
+
+  &__check { color: var(--app-accent); font-weight: 800; }
+}
+
+.fb-tab-body { padding-top: 2px; }
+
+.fb-ver-preview { margin-top: 14px; }
+
 // ── Redes (casillas) ──────────────────────────────────────────────────────
 .fb-redes {
   display: flex;

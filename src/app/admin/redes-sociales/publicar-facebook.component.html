@@ -151,14 +151,17 @@
     <!-- ····· VIDEO ····· -->
     <!-- Video y Reel comparten el mismo selector de archivo: el catálogo no guarda ninguno. -->
     <div *ngIf="tipo !== 'foto'">
-      <p class="fb-hint">
-        El video es obligatorio y no se guarda en el catálogo — es exclusivo de esta
-        publicación. Máximo {{ limiteMb }} MB.
-      </p>
 
-      <label class="fb-file" *ngIf="!archivoVideo">
-        <input type="file" accept="video/*" (change)="onArchivoVideo($event)" hidden>
-        🎬 Elegir video
+      <!-- Zona de arrastrar. Es un <label> para que el clic abra el selector sin JS extra. -->
+      <label class="fb-drop" *ngIf="!archivoVideo"
+             [class.fb-drop--activa]="arrastrando"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)">
+        <input type="file" accept="video/*" (change)="onArchivoVideo($event)" hidden [disabled]="publicando">
+        <span class="fb-drop__icono">🎬</span>
+        <span class="fb-drop__titulo">Arrastra aquí tu video</span>
+        <span class="fb-drop__sub">o haz clic para buscarlo · máximo {{ limiteMb }} MB</span>
       </label>
 
       <div class="fb-archivo" *ngIf="archivoVideo">
@@ -182,42 +185,57 @@
     </p>
   </div>
 
-  <!-- ── PASO 3 · REDES + HASHTAGS ────────────────────────────────────── -->
+  <!-- ── PASO 3 · UNA PESTAÑA POR RED, SOLO PARA LOS HASHTAGS ─────────── -->
+  <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags,
+       así que son ellos los que viven en pestañas. Cada pestaña trae además la casilla de si
+       se publica ahí, que es la otra decisión que se toma por red. -->
   <div class="fb-card" *ngIf="seleccionado">
-    <h5 class="fb-card__title">3 · ¿Dónde se publica?</h5>
+    <h5 class="fb-card__title">3 · Redes y hashtags</h5>
 
-    <div class="fb-redes">
-      <label class="fb-red" *ngFor="let r of TODAS"
-             [class.fb-red--on]="redesSel[r]"
-             [class.fb-red--off]="!puedeUsar(r)">
+    <div class="fb-tabs">
+      <button class="fb-tab" *ngFor="let r of TODAS"
+              [class.fb-tab--on]="pestana === r"
+              [class.fb-tab--activa]="redesSel[r] && puedeUsar(r)"
+              (click)="verPestana(r)">
+        <span class="fb-tab__check" *ngIf="redesSel[r] && puedeUsar(r)">✓</span>
+        {{ nombreDeRed(r) }}
+      </button>
+    </div>
+
+    <div class="fb-tab-body" *ngFor="let r of TODAS" [hidden]="pestana !== r">
+      <label class="fb-red" [class.fb-red--on]="redesSel[r]" [class.fb-red--off]="!puedeUsar(r)">
         <input type="checkbox" class="fb-red__check"
                [checked]="redesSel[r]" [disabled]="!puedeUsar(r) || publicando"
                (change)="toggleRed(r)">
-        <span class="fb-red__nombre">{{ nombreDeRed(r) }}</span>
+        <span class="fb-red__nombre">Publicar en {{ nombreDeRed(r) }}</span>
         <!-- El motivo va junto a la casilla: apagarla sin explicar deja al admin adivinando si
              es un error o una limitación de esa red. -->
         <small class="fb-red__motivo" *ngIf="motivoNoDisponible(r) as m">{{ m }}</small>
       </label>
+
+      <div class="fb-field" *ngIf="redesSel[r] && puedeUsar(r)">
+        <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
+        <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
+               placeholder="#novedadesjade #bolsas">
+        <p class="fb-hint">Solo los hashtags cambian por red — el texto de arriba va igual en todas.</p>
+      </div>
     </div>
 
     <p class="fb-error" *ngIf="redesActivas.length === 0">
       Marca al menos una red para poder publicar.
     </p>
 
-    <!-- ····· HASHTAGS POR RED ····· -->
+    <!-- ····· VISTA PREVIA — al final y detrás de un botón ····· -->
     <ng-container *ngIf="redesActivas.length">
-      <label class="fb-label fb-label--sep">Hashtags de cada red</label>
-      <div class="fb-field" *ngFor="let r of redesActivas">
-        <label class="fb-label">{{ nombreDeRed(r) }}</label>
-        <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
-               placeholder="#novedadesjade #bolsas">
-      </div>
+      <button class="fb-btn fb-btn--ghost fb-btn--sm fb-ver-preview" (click)="togglePreview()">
+        {{ mostrarPreview ? '▲ Ocultar' : '👁 Mostrar cómo va a quedar' }}
+      </button>
 
-      <!-- ····· VISTA PREVIA ····· -->
-      <label class="fb-label fb-label--sep">Así va a quedar</label>
-      <div class="fb-preview" *ngFor="let r of redesActivas">
-        <div class="fb-preview__red">{{ nombreDeRed(r) }}</div>
-        <pre class="fb-preview__texto">{{ textoFinal(r) }}</pre>
+      <div *ngIf="mostrarPreview">
+        <div class="fb-preview" *ngFor="let r of redesActivas">
+          <div class="fb-preview__red">{{ nombreDeRed(r) }}</div>
+          <pre class="fb-preview__texto">{{ textoFinal(r) }}</pre>
+        </div>
       </div>
     </ng-container>
   </div>

@@ -270,6 +270,67 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.archivoVideo = null;
   }
 
+  // ── Arrastrar y soltar ────────────────────────────────────────────────
+
+  /** Solo para pintar el recuadro mientras se arrastra algo encima. */
+  arrastrando = false;
+
+  /**
+   * `preventDefault` en dragover es **obligatorio**: sin él el navegador no considera la zona
+   * como destino válido y al soltar abre el archivo en una pestaña nueva en vez de dárnoslo.
+   */
+  onDragOver(e: DragEvent): void {
+    e.preventDefault();
+    if (!this.publicando) this.arrastrando = true;
+  }
+
+  onDragLeave(e: DragEvent): void {
+    e.preventDefault();
+    this.arrastrando = false;
+  }
+
+  onDrop(e: DragEvent): void {
+    e.preventDefault();
+    this.arrastrando = false;
+    if (this.publicando) return;
+
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    // Se puede soltar cualquier cosa (un PDF, una carpeta) — hay que revisar qué llegó antes de
+    // tratarlo como video, o se subiría basura y el error vendría de Meta mucho después.
+    if (!file.type.startsWith('video/')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Eso no es un video',
+        text: 'Arrastra un archivo de video (MP4, MOV…).'
+      });
+      return;
+    }
+
+    if (!this.validarTamano(file)) return;
+
+    this.quitarVideo();
+    this.archivoVideo = file;
+    this.previewVideoUrl = URL.createObjectURL(file);
+    this.previewVideo = this.sanitizer.bypassSecurityTrustUrl(this.previewVideoUrl);
+  }
+
+  // ── Pestañas de hashtags ──────────────────────────────────────────────
+
+  /**
+   * Qué pestaña se está viendo. El texto del post es uno solo para todas; **lo único que cambia
+   * por red son los hashtags**, y por eso son ellos los que viven en pestañas.
+   */
+  pestana: PlataformaRed = 'facebook';
+
+  verPestana(r: PlataformaRed): void { this.pestana = r; }
+
+  /** La vista previa va detrás de un botón, al final — no estorbando mientras se escribe. */
+  mostrarPreview = false;
+
+  togglePreview(): void { this.mostrarPreview = !this.mostrarPreview; }
+
   private validarTamano(file: File): boolean {
     const mb = file.size / (1024 * 1024);
     if (mb > LIMITE_ARCHIVO_MB) {

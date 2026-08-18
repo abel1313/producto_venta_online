@@ -108,6 +108,14 @@
           Esta especie todavía no tiene colores disponibles.
         </p>
 
+        <!-- Un color que se desactivó después de la venta ya no se puede volver a mandar. Se dice
+             cuál y cuántas eran para poder ofrecerle un cambio al cliente. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="coloresNoDisponibles.length">
+          ⚠️ Ya no hay
+          <ng-container *ngFor="let c of coloresNoDisponibles; let i = index"><b>{{ c.cantidad }} {{ c.nombre }}</b><span *ngIf="i < coloresNoDisponibles.length - 1">, </span></ng-container>.
+          Esas flores hay que repartirlas entre los colores de abajo.
+        </div>
+
         <div class="cr-color-row" *ngFor="let r of reparto">
           <span class="cr-color-row__nombre">{{ r.color.nombre }}</span>
           <span class="cr-color-row__stock">{{ r.color.stock }} disp.</span>

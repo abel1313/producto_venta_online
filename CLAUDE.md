@@ -10226,3 +10226,42 @@ describió. Hoy es **obligatorio porque el back exige `varianteId`** en todos lo
 quiere subir un Reel que no sea de un producto (el local, un saludo, una promo general), tendría
 que elegir uno cualquiera. Pendiente de decidir si se le pide al back que sea opcional para video
 y Reel.
+
+---
+
+## FIX REDES — LA PANTALLA SE VEÍA VACÍA: TODO ESTABA ESCONDIDO TRAS ELEGIR PRODUCTO (2026-08-18)
+
+**Reportado como "no veo los cambios en dev y qa".** No era eso: los cambios estaban desplegados
+(el título ya decía "📣 Publicar en redes"). El problema era que **4 de las 5 secciones tenían
+`*ngIf="seleccionado"`**, así que hasta elegir un producto la pantalla mostraba solo el buscador
+y nada más — parecía que no había cargado.
+
+Es la misma molestia que el dueño ya había señalado al preguntar *"elegir producto, ¿a qué se
+refiere?"*: ese paso le estaba tapando la pantalla, y no aparece en el flujo que él describió
+(video → texto → hashtags → publicar).
+
+### El fix
+
+Se quitó `*ngIf="seleccionado"` de los pasos 2 (contenido), 3 (redes/hashtags), del bloque de
+programar y del de publicar. **El producto se sigue exigiendo** — pero al publicar, no para poder
+ver la pantalla. `puedePublicar` ya lo validaba; solo faltaba **decirlo**: nuevo aviso
+*"⬆️ Falta elegir el producto arriba (paso 1) para poder publicar"*, porque un botón gris sin
+explicación deja al admin atorado (mismo criterio que el resto del proyecto).
+
+### ⚠️ Efecto secundario que había que cubrir
+
+Con el formulario visible desde el inicio, **el admin puede escribir el texto ANTES de elegir el
+producto**. `seleccionar()` sobrescribía `descripcion` con la sugerencia — le habría borrado lo
+que ya redactó, sin avisar. Ahora solo sugiere **si el texto está vacío**.
+
+### 💡 Lección — un `*ngIf` de "requisito previo" puede leerse como "está roto"
+
+Esconder el 80% de una pantalla hasta que se cumpla un paso previo **no se lee como "falta algo",
+se lee como "no cargó"**. Y encima llegó como reporte de deploy fallido, que hizo perder tiempo
+verificando GitHub y el bundle del servidor.
+
+**Regla:** si un paso es requisito, mostrar el resto **igual** y bloquear solo la acción final,
+diciendo qué falta. Nunca dejar la pantalla en blanco esperando.
+
+**Verificado en pantalla** tal cual la abre el usuario (sin producto elegido): se ven los 3 pasos,
+el área de arrastrar el video, las pestañas de hashtags y el botón de publicar con su aviso.

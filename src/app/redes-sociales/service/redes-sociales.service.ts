@@ -4,12 +4,14 @@ import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
+  IHashtagsDefault,
   IPublicacionRed,
   IPublicarFotoRequest,
   IPublicarInstagramRequest,
   IPublicarReelRequest,
   IPublicarTikTokRequest,
-  IPublicarVideoRequest
+  IPublicarVideoRequest,
+  PlataformaRed
 } from '../models/publicacion.model';
 
 /** Lo que el componente necesita saber mientras sube: % de avance o el resultado final. */
@@ -34,8 +36,30 @@ export class RedesSocialesService {
   private readonly url = `${environment.api_Url}/v1/redes-sociales/facebook`;
   private readonly urlInstagram = `${environment.api_Url}/v1/redes-sociales/instagram`;
   private readonly urlTikTok   = `${environment.api_Url}/v1/redes-sociales/tiktok`;
+  private readonly urlHashtags = `${environment.api_Url}/v1/redes-sociales/hashtags-default`;
 
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Los hashtags fijos de las 3 redes. Siempre devuelve las 3 filas, aunque estén vacías.
+   *
+   * ⚠️ Responde en **`lista`**, no en `data` (el PUT sí usa `data`). Ver `IHashtagsDefault`.
+   */
+  hashtagsDefault(): Observable<IHashtagsDefault[]> {
+    return this.http
+      .get<{ lista: IHashtagsDefault[] }>(this.urlHashtags)
+      .pipe(map(r => r?.lista ?? []));
+  }
+
+  /**
+   * **Reemplaza** los hashtags fijos de esa red — no agrega. Para quitar uno se manda el texto ya
+   * sin él; para borrarlos todos, cadena vacía.
+   */
+  guardarHashtagsDefault(red: PlataformaRed, hashtags: string): Observable<IHashtagsDefault> {
+    return this.http
+      .put<{ data: IHashtagsDefault }>(`${this.urlHashtags}/${red}`, { hashtags })
+      .pipe(map(r => r?.data));
+  }
 
   /**
    * Publica una foto en Instagram. Solo ADMIN. **JSON, no multipart** — no se manda archivo:
@@ -65,7 +89,7 @@ export class RedesSocialesService {
    */
   publicarReelInstagram(req: IPublicarReelRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
-    form.append('varianteId', String(req.varianteId));
+    this.agregarVariante(form, req.varianteId);
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
     if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
@@ -101,7 +125,7 @@ export class RedesSocialesService {
    */
   publicarVideo(req: IPublicarVideoRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
-    form.append('varianteId', String(req.varianteId));
+    this.agregarVariante(form, req.varianteId);
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
     if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
@@ -120,7 +144,7 @@ export class RedesSocialesService {
    */
   publicarReelFacebook(req: IPublicarReelRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
-    form.append('varianteId', String(req.varianteId));
+    this.agregarVariante(form, req.varianteId);
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
     if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
@@ -136,12 +160,21 @@ export class RedesSocialesService {
    */
   publicarTikTok(req: IPublicarTikTokRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
-    form.append('varianteId', String(req.varianteId));
+    this.agregarVariante(form, req.varianteId);
     form.append('descripcion', req.descripcion);
     form.append('video', req.video, req.video.name);
     if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
 
     return this.enviar(`${this.urlTikTok}/publicar`, form);
+  }
+
+  /**
+   * El part se **omite** si no hay variante — mandarlo como `"null"` o vacío haría que el back
+   * intente convertirlo a `Long` y responda un 500 feo en vez de tomarlo como ausente (mismo
+   * problema que ya pasó con `imagenId`). Ver `VARIANTE_OPCIONAL` en el modelo.
+   */
+  private agregarVariante(form: FormData, varianteId?: number | null): void {
+    if (varianteId != null) form.append('varianteId', String(varianteId));
   }
 
   /**

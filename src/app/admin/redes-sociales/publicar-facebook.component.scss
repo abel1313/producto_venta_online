@@ -358,13 +358,44 @@
 
 .fb-tab-body { padding-top: 2px; }
 
-// Guardar / restaurar los hashtags fijos de esa red.
+// Alta de los hashtags fijos de esa red. Con recuadro y título propio: un botón suelto no se
+// lee como "aquí es donde se dan de alta" (el dueño preguntó dónde, teniéndolo enfrente).
 .fb-fijos {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 10px;
+
+    strong { font-size: .86rem; color: var(--app-text); }
+
+    small {
+      font-size: .78rem;
+      color: var(--app-text-muted, #64748b);
+      line-height: 1.4;
+    }
+
+    code {
+      font-size: .78rem;
+      color: var(--app-accent);
+      background: var(--card-bg);
+      border-radius: 5px;
+      padding: 1px 5px;
+    }
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
   &__txt {
     font-size: .78rem;

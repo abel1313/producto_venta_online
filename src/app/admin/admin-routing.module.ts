@@ -9,6 +9,7 @@ import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
 import { GestionCintaComponent } from './cinta/gestion-cinta.component';
 import { PublicarFacebookComponent } from './redes-sociales/publicar-facebook.component';
+import { GestionHashtagsComponent } from './hashtags/gestion-hashtags.component';
 
 const routes: Routes = [
   { path: 'cache',                   component: CacheComponent },
@@ -19,7 +20,8 @@ const routes: Routes = [
   { path: 'chat',                    component: ChatAdminComponent },
   { path: 'promociones',             component: GestionPromocionesComponent },
   { path: 'cinta',                   component: GestionCintaComponent },
-  { path: 'facebook',                component: PublicarFacebookComponent }
+  { path: 'facebook',                component: PublicarFacebookComponent },
+  { path: 'hashtags',                component: GestionHashtagsComponent }
 ];
 
 @NgModule({

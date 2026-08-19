@@ -11,6 +11,7 @@ import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
 import { GestionCintaComponent } from './cinta/gestion-cinta.component';
 import { PublicarFacebookComponent } from './redes-sociales/publicar-facebook.component';
+import { GestionHashtagsComponent } from './hashtags/gestion-hashtags.component';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -23,7 +24,8 @@ import { SharedModule } from '../shared/shared.module';
     ChatAdminComponent,
     GestionPromocionesComponent,
     GestionCintaComponent,
-    PublicarFacebookComponent
+    PublicarFacebookComponent,
+    GestionHashtagsComponent
   ],
   imports: [
     CommonModule,

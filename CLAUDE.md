@@ -10591,6 +10591,46 @@ motivo de bloqueo de TikTok (un `<small>` dentro de un `<label>` que nadie leía
 producto escondiendo media pantalla. **Un botón comunica "qué hago"; un recuadro con título
 comunica "dónde estoy".**
 
-⚠️ Sigue sin haber pantalla aparte, y con esto la decisión se sostiene — el problema no era el
-lugar, era que no se anunciaba. Si aun así vuelve a preguntar, ahí sí conviene la pantalla propia
-en el menú.
+### 🔁 Volvió a preguntar → ahora SÍ tiene pantalla propia (`/admin/hashtags`)
+
+La regla que había quedado escrita arriba ("si aun así vuelve a preguntar, ahí sí conviene la
+pantalla propia") se cumplió: al día siguiente preguntó otra vez, y con más detalle —
+*"¿dónde los doy de alta? para cada red social, para después tomarlos"*.
+
+Esa frase es el diagnóstico completo: **su modelo mental es "los registro en un lado y la de
+publicar los toma"**, no "los guardo mientras publico". Ninguna cantidad de título o recuadro
+dentro de la pantalla de publicar iba a cambiar eso, porque el problema no era que no se viera —
+era que no estaba donde él lo buscaba (el menú).
+
+Nueva pantalla **🛠️ Sistema → 🏷️ Hashtags de redes** (`/admin/hashtags`,
+`GestionHashtagsComponent`, BEM `gh-`): las 3 redes, un textarea cada una, contador de hashtags,
+Guardar / Deshacer y el estado ✓ Guardado / Sin guardar por red.
+
+**Los dos caminos conviven a propósito**, enlazados entre sí ("gestionar todos ↗" desde publicar,
+"📣 Ir a publicar" desde el alta): se dan de alta en su pantalla, y en la de publicar se pueden
+ajustar para un post puntual sin salirse de la publicación. Ambos usan los mismos 2 endpoints.
+
+⚠️ **Diferencia deliberada en el manejo de error:** si el GET falla, en *publicar* es un aviso
+discreto (accesorio: se escriben a mano y se publica igual), pero en *esta* pantalla es un error
+con botón de reintentar — aquí no hay nada más que hacer, si no cargó no sirve de nada.
+
+### 📖 La lección, que ya se repitió tres veces esta semana
+
+1. Paso de producto escondiendo media pantalla → *"no veo los cambios"*.
+2. Motivo de bloqueo de TikTok en un `<small>` dentro de un `<label>` → *"no me deja
+   seleccionarlo"*.
+3. Alta de hashtags dentro de publicar → *"¿dónde los doy de alta?"* (dos veces).
+
+Las tres son la misma: **la funcionalidad estaba, pero no donde el dueño la buscaba.** Y las tres
+las reportó como si fuera un bug o un deploy fallido, lo que hace perder tiempo revisando ramas y
+bundles. Regla práctica: **si algo se "da de alta" o se "configura", va en el menú**, aunque
+técnicamente quepa dentro de la pantalla donde se usa. Que además esté a la mano donde se usa es
+un extra, no el lugar principal.
+
+**Archivos nuevos:** `src/app/admin/hashtags/gestion-hashtags.component.ts/.html/.scss`
+**Modificados:** `admin-routing.module.ts`, `admin.module.ts`, `navbar.component.html` + `.ts`
+(link y `GROUP_ROUTES`), `publicar-facebook.component.html` + `.scss` (enlace cruzado)
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): carga las 3 redes con su contador,
+el estado cambia a "Sin guardar" al editar, y el `PUT` sale a `/hashtags-default/tiktok` con el
+texto correcto.

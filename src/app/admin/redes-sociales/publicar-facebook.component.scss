@@ -375,6 +375,18 @@
 
     strong { font-size: .86rem; color: var(--app-text); }
 
+    &__link,
+    a {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--app-accent);
+      text-decoration: none;
+      margin-left: 8px;
+      white-space: nowrap;
+
+      &:hover { text-decoration: underline; }
+    }
+
     small {
       font-size: .78rem;
       color: var(--app-text-muted, #64748b);

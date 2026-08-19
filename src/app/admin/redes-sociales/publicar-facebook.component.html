@@ -148,7 +148,13 @@
              agregar, corregir y borrar); restaurar deshace un cambio de un solo post. -->
         <div class="fb-fijos">
           <div class="fb-fijos__head">
-            <strong>📌 Mis hashtags fijos de {{ nombreDeRed(r) }}</strong>
+            <strong>
+              📌 Mis hashtags fijos de {{ nombreDeRed(r) }}
+              <!-- El alta también vive en su propia pantalla del menú: el dueño preguntó dos
+                   veces dónde se daban de alta, su modelo mental es "los registro en un lado y
+                   aquí se toman". Se deja el enlace para que los dos caminos se encuentren. -->
+              <a class="fb-fijos__link" routerLink="/admin/hashtags">gestionar todos ↗</a>
+            </strong>
             <small *ngIf="hashtagsFijos[r]">
               Guardados: <code>{{ hashtagsFijos[r] }}</code> — se escriben solos cada vez que
               abres esta pantalla.

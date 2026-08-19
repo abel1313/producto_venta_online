@@ -155,16 +155,21 @@ export const LIMITE_ARCHIVO_MB = 200;
 export const PROGRAMAR_MIN_MINUTOS = 10;
 
 /**
- * ⚠️ `VARIANTE_OPCIONAL` — pendiente del back (pedido 2026-08-19).
+ * ⚠️ `VARIANTE_OPCIONAL` — ✅ **cerrado**, el back lo desplegó en dev y qa (2026-08-19).
  *
  * Decisión del dueño: a redes **solo se suben videos**, y un video no es de un producto del
  * catálogo (puede ser del local, un saludo, una promo general). Por eso se quitó el paso de
- * "elegir producto" de la pantalla y **el front ya no manda `varianteId`**.
+ * "elegir producto" de la pantalla y **el front ya no manda `varianteId`** en video ni Reel.
  *
- * Hoy los 6 endpoints lo declaran obligatorio (`@RequestParam Long varianteId` sin
- * `required = false`), así que hasta que el back lo haga opcional la publicación responde 400.
- * En cuanto lo desplieguen, esto funciona solo — no hay nada que tocar aquí.
+ * Del lado del back, `publicacion_social.variante_id` ya es `NULL`-able; la FK a `variantes`
+ * quedó intacta (un FK no valida la fila cuando el valor es nulo) y el job de programadas no
+ * dependía de la variante.
  *
- * Solo aplica a video y Reel: la **foto** sí necesita variante (es de donde sale la imagen), pero
- * esa opción ya no existe en la pantalla.
+ * ⚠️ **El único efecto**: una publicación sin variante no sale en el historial *por variante*
+ * (`GET .../historial?varianteId=…`) — sí en cualquier listado general, con `varianteId: null`.
+ * Hoy no consumimos ese historial desde ningún lado; si algún día se hace, hay que contar con
+ * que los videos no van a estar ahí.
+ *
+ * La **foto** sí necesita variante (es de donde sale la imagen) y sus endpoints se quedaron
+ * obligatorios, pero esa opción ya no existe en la pantalla.
  */

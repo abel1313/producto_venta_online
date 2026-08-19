@@ -10441,11 +10441,25 @@ que meta un dato falso.
 La pantalla queda en 3 pasos: **1 Qué vas a publicar (video + texto) · 2 Redes y hashtags ·
 3 Cuándo**. El botón ya no dice "falta el producto" sino qué falta de verdad (el video o el texto).
 
-### 🔴 Requiere un cambio del back — hasta entonces responde 400
+### ✅ El back ya lo desplegó (2026-08-19) — sin cambios de nuestro lado
 
-Los 6 endpoints declaran `varianteId` **obligatorio**. El front ya dejó de mandarlo, así que la
-publicación va a fallar hasta que el back lo haga opcional. Pedido en el repo compartido; en
-cuanto lo desplieguen esto funciona solo, no hay nada que tocar aquí.
+Se pidió que `varianteId` fuera opcional en los 4 endpoints de video/Reel y el back lo hizo el
+mismo día, por su cuenta y por el mismo motivo. Detalles que dejaron confirmados:
+
+- La tabla real se llama **`publicacion_social`** (no `publicacion_red`), y su `variante_id` ya
+  es `NULL`-able. **La FK a `variantes` no se tocó** — un FK no valida la fila cuando el valor es
+  nulo.
+- El job de publicaciones programadas no dependía de la variante.
+- ⚠️ **Único efecto**: una publicación sin variante no aparece en el historial *por variante*
+  (`GET .../historial?varianteId=…`); sí en los listados generales, con `varianteId: null`. Hoy
+  no consumimos ese historial desde ninguna pantalla — si algún día se hace, contar con que los
+  videos no van a estar ahí.
+- De paso corrigieron un bug suyo de clasificación de errores: un parámetro obligatorio faltante
+  en **cualquier** endpoint respondía `500`; ahora responde `400 "Falta el parámetro requerido:
+  <nombre>"`. Aplica a todo el back, no solo a redes.
+
+Los endpoints de **foto** se quedaron con la variante obligatoria — ahí sí hace falta, es de donde
+sale la imagen. No los llamamos desde ninguna pantalla.
 
 ⚠️ Se documentó como **`VARIANTE_OPCIONAL`** en `publicacion.model.ts` — ahí está el porqué
 completo, y los `varianteId?` de las 3 interfaces apuntan a esa nota.

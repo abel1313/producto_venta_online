@@ -9,7 +9,12 @@
 
 /** Las 3 ya tienen endpoint. TikTok solo acepta video. */
 export type PlataformaRed = 'facebook' | 'instagram' | 'tiktok';
-/** `reel` existe en Facebook e Instagram. En TikTok todo video es "video". */
+/**
+ * `reel` existe en Facebook e Instagram. En TikTok todo video es "video".
+ *
+ * ⚠️ `foto` sigue en el tipo porque el back lo devuelve en publicaciones viejas, pero **la
+ * pantalla ya no publica fotos** — decisión del dueño (2026-08-19): a redes solo se suben videos.
+ */
 export type TipoPublicacion = 'foto' | 'video' | 'reel';
 /** `FALLIDA` es nueva: el job propio reintenta 3 veces y, si no lo logra, la marca así. */
 export type EstadoPublicacion = 'PUBLICADA' | 'PROGRAMADA' | 'FALLIDA';
@@ -49,7 +54,8 @@ export interface IPublicacionRed {
  * Eso es de TikTok, no del back ni nuestro.
  */
 export interface IPublicarTikTokRequest {
-  varianteId: number;
+  /** ⚠️ Ver `VARIANTE_OPCIONAL` al final del archivo. */
+  varianteId?: number | null;
   descripcion: string;
   video: File;
   /** Programado con el job propio del back, igual que las demás. */
@@ -88,7 +94,8 @@ export interface IPublicarInstagramRequest {
  * pero tampoco se creó el post.
  */
 export interface IPublicarReelRequest {
-  varianteId: number;
+  /** ⚠️ Ver `VARIANTE_OPCIONAL` al final del archivo. */
+  varianteId?: number | null;
   descripcion: string;
   /** Obligatorio en cada llamada — el catálogo no guarda video, no hay "reel principal". */
   video: File;
@@ -109,11 +116,32 @@ export interface IPublicarFotoRequest {
 }
 
 export interface IPublicarVideoRequest {
-  varianteId: number;
+  /** ⚠️ Ver `VARIANTE_OPCIONAL` al final del archivo. */
+  varianteId?: number | null;
   descripcion: string;
   /** Obligatorio — el catálogo no guarda video de variantes, no hay "video principal". */
   video: File;
   scheduledPublishTime?: string | null;
+}
+
+/**
+ * Los hashtags fijos de una red — los que el dueño quiere que se precarguen solos cada vez, para
+ * no reescribir siempre lo mismo.
+ *
+ * `GET /v1/redes-sociales/hashtags-default` devuelve **siempre las 3 filas** (sembradas vacías en
+ * la migración), así que no hay caso "todavía no existe" que manejar.
+ *
+ * ⚠️ El GET responde en **`lista`** y el PUT en **`data`** — son shapes distintos del mismo
+ * recurso. Leer el campo equivocado devuelve `undefined` sin ningún error (mismo tropiezo que ya
+ * costó una sesión con `colores-flor/por-tipo-flor`).
+ */
+export interface IHashtagsDefault {
+  id: number;
+  /** `facebook` | `instagram` | `tiktok` — coincide con `PlataformaRed`. */
+  redSocial: string;
+  /** El texto completo. El PUT lo **reemplaza**, no agrega: para borrar uno se manda el resto. */
+  hashtags: string;
+  actualizadoEn: string;
 }
 
 /** Tope del micro para cualquier archivo/request (foto o video). */
@@ -125,3 +153,18 @@ export const LIMITE_ARCHIVO_MB = 200;
  * Facebook, los 6 meses del video de feed). Se puede programar a la fecha que sea.
  */
 export const PROGRAMAR_MIN_MINUTOS = 10;
+
+/**
+ * ⚠️ `VARIANTE_OPCIONAL` — pendiente del back (pedido 2026-08-19).
+ *
+ * Decisión del dueño: a redes **solo se suben videos**, y un video no es de un producto del
+ * catálogo (puede ser del local, un saludo, una promo general). Por eso se quitó el paso de
+ * "elegir producto" de la pantalla y **el front ya no manda `varianteId`**.
+ *
+ * Hoy los 6 endpoints lo declaran obligatorio (`@RequestParam Long varianteId` sin
+ * `required = false`), así que hasta que el back lo haga opcional la publicación responde 400.
+ * En cuanto lo desplieguen, esto funciona solo — no hay nada que tocar aquí.
+ *
+ * Solo aplica a video y Reel: la **foto** sí necesita variante (es de donde sale la imagen), pero
+ * esa opción ya no existe en la pantalla.
+ */

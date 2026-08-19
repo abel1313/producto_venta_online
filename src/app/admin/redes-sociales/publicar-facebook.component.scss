@@ -135,91 +135,6 @@
   color: #dc2626;
 }
 
-// ── Buscador + dropdown ───────────────────────────────────────────────────
-.fb-search-wrap { position: relative; }
-
-.fb-search-spinner {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.9rem;
-}
-
-.fb-dropdown {
-  margin-top: 6px;
-  border: 1.5px solid var(--card-border);
-  border-radius: 10px;
-  background: var(--card-bg);
-  overflow: hidden;
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--card-border);
-    transition: background .12s;
-
-    &:last-child { border-bottom: none; }
-    &:hover { background: var(--app-accent-soft); }
-  }
-
-  &__img {
-    width: 38px;
-    height: 38px;
-    object-fit: cover;
-    border-radius: 6px;
-    flex-shrink: 0;
-  }
-
-  &__txt {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.86rem;
-    color: var(--app-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__id { opacity: .5; font-size: 0.76rem; }
-
-  &__precio {
-    font-size: 0.86rem;
-    font-weight: 700;
-    color: var(--app-accent);
-    flex-shrink: 0;
-  }
-}
-
-// ── Producto seleccionado ─────────────────────────────────────────────────
-.fb-sel {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  &__img {
-    width: 56px;
-    height: 56px;
-    object-fit: cover;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-
-  &__info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    strong { font-size: 0.92rem; color: var(--app-text); }
-    small  { font-size: 0.76rem; color: var(--app-text-muted, #64748b); }
-  }
-}
-
 // ── Toggles (tipo de contenido / cuándo) ──────────────────────────────────
 .fb-tipo {
   display: flex;
@@ -250,93 +165,7 @@
   }
 }
 
-// ── Origen de la imagen ───────────────────────────────────────────────────
-.fb-origen {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-
-  &__btn {
-    border: 1.5px solid var(--card-border);
-    background: var(--card-bg);
-    color: var(--app-text);
-    border-radius: 999px;
-    padding: 7px 14px;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s;
-
-    &:hover:not(:disabled):not(&--on) { background: var(--app-accent-soft); }
-    &:disabled { opacity: .45; cursor: not-allowed; }
-
-    &--on {
-      background: var(--app-accent);
-      border-color: var(--app-accent);
-      color: var(--app-accent-ink);
-    }
-  }
-}
-
-// ── Galería de imágenes guardadas ─────────────────────────────────────────
-.fb-galeria {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-
-  &__item {
-    position: relative;
-    aspect-ratio: 1 / 1;
-    border: 2px solid var(--card-border);
-    border-radius: 10px;
-    overflow: hidden;
-    cursor: pointer;
-    background: var(--card-bg);
-    transition: border-color .15s;
-
-    img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    &--on { border-color: var(--app-accent); }
-  }
-
-  &__check {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
-    font-size: 0.72rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-// ── Selector de archivo + preview ─────────────────────────────────────────
-.fb-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 12px 8px 0 0;
-  border: 1.5px dashed var(--card-border);
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--app-text);
-  cursor: pointer;
-  transition: border-color .15s, background .15s;
-
-  &:hover {
-    border-color: var(--app-accent);
-    background: var(--app-accent-soft);
-  }
-}
-
+// ── Archivo elegido + preview ─────────────────────────────────────────────
 .fb-archivo {
   display: flex;
   align-items: center;
@@ -529,6 +358,20 @@
 
 .fb-tab-body { padding-top: 2px; }
 
+// Guardar / restaurar los hashtags fijos de esa red.
+.fb-fijos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+
+  &__txt {
+    font-size: .78rem;
+    color: var(--app-text-muted, #64748b);
+  }
+}
+
 .fb-ver-preview { margin-top: 14px; }
 
 // ── Redes (casillas) ──────────────────────────────────────────────────────
@@ -664,14 +507,11 @@
   .fb-wrap { padding: 16px 12px; }
   .fb-card { padding: 16px; }
   .fb-tipo { flex-direction: column; }
-  .fb-file { width: 100%; justify-content: center; margin-right: 0; }
   .fb-btn--lg { width: 100%; }
 }
 
 // ── Matices por tema ──────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  // El dashed de un selector de archivo se pierde sobre fondo oscuro.
-  .fb-file { border-color: rgba(255, 255, 255, 0.22); }
   .fb-archivo__preview { background: rgba(0, 0, 0, 0.5); }
   .fb-error { color: #f87171; }
 }

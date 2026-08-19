@@ -10416,3 +10416,146 @@ el efecto ya conocido de haber navegado con `router.navigateByUrl()` desde `page
 la pantalla** — en la app real el clic funciona.
 
 **Verificado en pantalla** en claro y oscuro: la tabla y las notas se leen bien en ambos temas.
+
+---
+
+## REDES — FUERA EL PASO "ELEGIR PRODUCTO" Y FUERA LAS FOTOS (2026-08-19)
+
+**Decisión del dueño**, revisando la pantalla: *"tienes una opción para seleccionar el producto o
+la variante, eso no me interesa, solo se subirá a redes videos y nada más"*.
+
+Es coherente con lo que ya venía diciendo desde que se rediseñó la pantalla (el flujo que él
+describe empieza en el video, el producto nunca apareció en él, y ya había preguntado *"elegir
+producto ¿a qué se refiere?"*). Un video del local, un saludo o una promo general **no son de una
+variante del catálogo** — obligarlo a elegir una cualquiera solo para poder publicar es pedirle
+que meta un dato falso.
+
+### Qué se quitó
+
+| | Por qué |
+|---|---|
+| Paso "¿De qué producto es?" (buscador + selección) | Lo pidió explícitamente |
+| Tipo **📷 Foto** completo (origen de imagen, galería, subir una nueva) | Consecuencia directa: *"solo videos y nada más"*. Y sin producto la foto **no puede funcionar** — es de donde sale la imagen (Instagram exige una ya guardada) |
+| La sugerencia automática de texto a partir del producto | Sin producto no hay de dónde sacarla. El texto se escribe a mano |
+
+La pantalla queda en 3 pasos: **1 Qué vas a publicar (video + texto) · 2 Redes y hashtags ·
+3 Cuándo**. El botón ya no dice "falta el producto" sino qué falta de verdad (el video o el texto).
+
+### 🔴 Requiere un cambio del back — hasta entonces responde 400
+
+Los 6 endpoints declaran `varianteId` **obligatorio**. El front ya dejó de mandarlo, así que la
+publicación va a fallar hasta que el back lo haga opcional. Pedido en el repo compartido; en
+cuanto lo desplieguen esto funciona solo, no hay nada que tocar aquí.
+
+⚠️ Se documentó como **`VARIANTE_OPCIONAL`** en `publicacion.model.ts` — ahí está el porqué
+completo, y los `varianteId?` de las 3 interfaces apuntan a esa nota.
+
+⚠️ **El part se omite, no se manda vacío** (`agregarVariante()` en el servicio): mandar `"null"`
+haría que el back intente convertirlo a `Long` y responda un **500 feo** en vez de tomarlo como
+ausente — es exactamente lo que ya pasó una vez con `imagenId` (ver "FIX — el parseo tolerante",
+mismo patrón).
+
+### Lo que NO se borró
+
+- **`publicarFoto()` y `publicarInstagram()` siguen en el servicio.** Quedaron sin uso (confirmado
+  con grep), pero los endpoints del back existen y funcionan; borrarlos sería tirar código
+  probado para tener que reescribirlo si algún día quiere volver a publicar fotos.
+- **`TipoPublicacion` conserva `'foto'`** — el back lo devuelve en publicaciones viejas.
+
+### La chuleta se actualizó junto con el código
+
+Se le quitó la columna 📷 Foto y la nota de "TikTok no publica fotos" (ya no hay forma de estar en
+Foto). El bloqueo que queda es el de Instagram con "video de feed", y su botón de salida ahora
+dice **"Cambiar a Reel"**. Es justo la regla que dejó escrita la sección anterior: **si cambian
+las capacidades de una red, la tabla se actualiza además del código** — aquí cambió la pantalla,
+no la red, pero aplica igual.
+
+**Archivos modificados:**
+- `src/app/redes-sociales/models/publicacion.model.ts` → `varianteId?` en Video/Reel/TikTok, nota
+  `VARIANTE_OPCIONAL`
+- `src/app/redes-sociales/service/redes-sociales.service.ts` → `agregarVariante()` privado
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → reescrito sin buscador ni foto
+  (fuera `VarianteService`, `OnInit`, `descripcionSugerida`, todo el bloque de imagen)
+- `.html` → 3 pasos, sin producto ni foto; `.scss` → fuera `.fb-search-*`, `.fb-dropdown`,
+  `.fb-sel`, `.fb-origen`, `.fb-galeria`, `.fb-file`
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro, sesión admin): no queda rastro del
+paso de producto ni del botón de Foto, los 3 pasos se numeran bien, con Video Instagram se cae
+sola con su motivo y su botón "Cambiar a Reel", y con Reel quedan las 3 redes disponibles.
+
+---
+
+## REDES — HASHTAGS FIJOS POR RED, SE PRECARGAN SOLOS (2026-08-19)
+
+> Idea del dueño, implementada por el back el mismo día: guardar un set fijo de hashtags por red
+> para no reescribir siempre lo mismo. Migración ya corrida en dev y qa.
+
+| Método | URL | Devuelve |
+|---|---|---|
+| `GET` | `/v1/redes-sociales/hashtags-default` | **`lista`** con las 3 filas, siempre |
+| `PUT` | `/v1/redes-sociales/hashtags-default/{redSocial}` | **`data`** con la fila actualizada |
+
+⚠️ **El GET responde en `lista` y el PUT en `data`** — shapes distintos del mismo recurso. Leer el
+campo equivocado devuelve `undefined` **sin ningún error** (mismo tropiezo que ya costó una sesión
+con `colores-flor/por-tipo-flor`). Anotado en `IHashtagsDefault`.
+
+⚠️ El PUT **reemplaza** el string completo, no agrega. Por eso el mismo botón sirve para las tres
+cosas que pidió el back (agregar, editar y borrar): se manda el texto ya corregido, o vacío.
+
+### Dónde quedó — sin pantalla aparte, a propósito
+
+El back pidió "una pantalla de gestión de hashtags" **y** una opción en la de publicar. Se hizo
+todo **en la de publicar**, dentro del paso 2, porque ahí ya existe un campo de hashtags por red
+(con su radio) — una pantalla aparte obligaría a salirse de la publicación a medias, y sumaría un
+ítem más al menú para dos campos de texto.
+
+Debajo del campo de cada red:
+- **💾 Dejar estos fijos** → `PUT`. Deshabilitado si lo escrito ya es igual a lo guardado.
+- **↩ Volver a los fijos** → deshace un cambio hecho solo para este post. Aparece solo si difieren.
+- Y si no difieren, el texto dice cuál es el estado: *"✓ Son los que tienes guardados"* o
+  *"Todavía no tienes hashtags fijos para esta red"* — sin eso, dos botones apagados no explican
+  nada.
+
+**La precarga solo pisa el campo si está vacío.** Si la respuesta del GET tarda y el admin ya
+alcanzó a teclear, sobrescribirle lo que escribió sería perderle el trabajo sin avisar.
+
+**Si el GET falla no se bloquea nada** (se escriben a mano), pero **sí se avisa** — si no, el
+admin se queda esperando una precarga que nunca va a llegar.
+
+### ✅ El 413 de las pruebas en vivo no era nuestro ni del back
+
+El primer intento real de subir video a las 3 redes dio `413 Request Entity Too Large` **antes de
+llegar a Spring**: el Nginx de la VPS no tenía `client_max_body_size` y el default son 1 MB. Ya
+está en 200 MB. No fue la lógica de publicación — no hubo nada que corregir en el front.
+
+### 💡 Lección de prueba — `ngOnInit` NO se dispara al navegar fuera de la zona
+
+Ya estaba anotado que `router.navigateByUrl()` desde `page.evaluate()` no repinta. Esta vez pasó
+algo más específico y peor de diagnosticar: **el componente se crea (`ng.getComponent` lo
+encuentra) pero `ngOnInit` nunca corre**, porque los hooks se ejecutan en el primer ciclo de
+detección — que fuera de la zona no ocurre. Síntoma: la petición del `ngOnInit` **no aparece ni en
+el Network**, así que parece que el código no la hace.
+
+Ni `applyChanges` ni un `dispatchEvent('click')` sobre el link del menú lo resolvieron. Lo que
+funciona es llamar `c.ngOnInit()` a mano — con una trampa: **Angular lo vuelve a llamar** cuando
+por fin corre su primer ciclo (lo dispara cualquier evento que sí entre a la zona, p. ej. cerrar
+un Swal), así que la carga inicial se ve **dos veces** y la segunda pisa lo que se probó en medio.
+Se ve como "el guardado no tomó efecto" y no lo es.
+
+Otros dos estorbos del harness, sin relación con el código: sin backend, **el overlay global de
+carga queda tapando la pantalla** y ningún clic llega (se apaga con
+`addStyleTag('app-loading{display:none}')` o mockeando todo el host con `p.route(/localhost:9091/)`
+como catch-all), y `p.hover('app-navbar')` falla porque el host no tiene tamaño — hay que apuntar
+a `aside.sidebar`.
+
+**Archivos modificados:**
+- `src/app/redes-sociales/models/publicacion.model.ts` → `IHashtagsDefault`
+- `src/app/redes-sociales/service/redes-sociales.service.ts` → `hashtagsDefault()`,
+  `guardarHashtagsDefault()`
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → `ngOnInit` + `cargarFijos()`,
+  `guardarFijos()`, `restaurarFijos()`, `fijosSinCambios()`
+- `.html` → botones y estado bajo el campo de hashtags; `.scss` → `.fb-fijos`
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro, endpoints simulados con el shape real
+`lista`/`data`): precarga las 3 redes, el estado del botón cambia bien en los 3 casos (igual,
+editado, vacío) y el `PUT` sale a `/hashtags-default/facebook` con el texto correcto.

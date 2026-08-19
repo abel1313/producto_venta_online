@@ -1,21 +1,26 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Observable, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
-import { IVarianteImagenDto, IVarianteResumen } from 'src/app/variante/models/variante.model';
-import { VarianteService } from 'src/app/variante/service/variante.service';
 import {
   IPublicacionRed,
   LIMITE_ARCHIVO_MB,
   PROGRAMAR_MIN_MINUTOS,
-  PlataformaRed,
-  TipoPublicacion
+  PlataformaRed
 } from 'src/app/redes-sociales/models/publicacion.model';
 import { IProgresoPublicacion, RedesSocialesService } from 'src/app/redes-sociales/service/redes-sociales.service';
 
-type OrigenImagen = 'principal' | 'guardada' | 'nueva';
+/**
+ * Lo único que se publica desde aquí.
+ *
+ * ⚠️ **Sin fotos, a propósito** (decisión del dueño, 2026-08-19): a redes solo se suben videos.
+ * Con eso desapareció también el paso de "elegir producto" — un video no es de una variante del
+ * catálogo, puede ser del local o un saludo. Ver `VARIANTE_OPCIONAL` en el modelo: el back todavía
+ * exige `varianteId` y hasta que lo haga opcional la publicación responde 400.
+ */
+type TipoVideo = 'video' | 'reel';
 
 @Component({
   selector: 'app-publicar-facebook',
@@ -24,23 +29,14 @@ type OrigenImagen = 'principal' | 'guardada' | 'nueva';
 })
 export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
-  // ── Buscador de producto ──────────────────────────────────────────────
-  termino = '';
-  resultados: IVarianteResumen[] = [];
-  buscando = false;
-  private input$ = new Subject<string>();
-
-  seleccionado: IVarianteResumen | null = null;
-
   // ── Contenido a publicar ──────────────────────────────────────────────
   /**
    * A qué redes va ESTA publicación. El archivo se sube **una sola vez** y se manda a cada red
    * marcada — la alternativa (una pestaña por red con su propio botón) obligaría a subir el mismo
    * video tantas veces como redes, y un video pesa.
    *
-   * Cada red tiene sus propios límites, y **ninguno es decisión nuestra ni del back**:
-   * - Instagram exige una URL pública, así que no acepta archivo suelto ni video de feed.
-   * - TikTok solo acepta video, su API no publica fotos.
+   * El único límite que queda es de Instagram, y no es decisión nuestra ni del back: ahí no
+   * existe el "video de feed", todo video es Reel.
    */
   redesSel: Record<PlataformaRed, boolean> = { facebook: true, instagram: false, tiktok: false };
 
@@ -50,26 +46,28 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    */
   hashtags: Record<PlataformaRed, string> = { facebook: '', instagram: '', tiktok: '' };
 
-  tipo: TipoPublicacion = 'foto';
+  /**
+   * Los que están guardados en el servidor para cada red. Se precargan solos al abrir la pantalla
+   * — la idea es no reescribir siempre lo mismo — y quedan editables: lo de arriba es lo que se
+   * va a publicar HOY, esto es lo que se guardó como fijo.
+   */
+  hashtagsFijos: Record<PlataformaRed, string> = { facebook: '', instagram: '', tiktok: '' };
+  /** Cuál se está guardando ahora — bloquea solo esa red, no la pantalla entera. */
+  guardandoFijos: PlataformaRed | null = null;
+  /** Si no se pudieron traer, se dice — si no, el admin se queda esperando una precarga que no viene. */
+  errorFijos = false;
+
+  tipo: TipoVideo = 'video';
   descripcion = '';
 
   /** Chuleta de qué acepta cada red — para no tener que recordar por qué una se bloquea. */
   mostrarAyuda = false;
 
-  // Foto
-  origenImagen: OrigenImagen = 'principal';
-  imagenesGuardadas: IVarianteImagenDto[] = [];
-  cargandoImagenes = false;
-  imagenIdSel: string | null = null;
-  archivoImagen: File | null = null;
-  /** SafeUrl para el [src] — Angular 14 bloquea las URLs `blob:` crudas (ver CLAUDE.md). */
-  previewImagen: SafeUrl | null = null;
-  /** El string crudo, lo único que sirve para `URL.revokeObjectURL`. */
-  private previewImagenUrl: string | null = null;
-
   // Video
   archivoVideo: File | null = null;
+  /** SafeUrl para el [src] — Angular 14 bloquea las URLs `blob:` crudas (ver CLAUDE.md). */
   previewVideo: SafeUrl | null = null;
+  /** El string crudo, lo único que sirve para `URL.revokeObjectURL`. */
   private previewVideoUrl: string | null = null;
 
   // ── Programación ──────────────────────────────────────────────────────
@@ -90,164 +88,73 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private readonly varianteService: VarianteService,
     private readonly redes: RedesSocialesService,
     private readonly sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
-    this.input$.pipe(
-      filter(t => t.trim().length >= 2),
-      debounceTime(400),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(t => this.buscar(t));
+    this.cargarFijos();
   }
 
   ngOnDestroy(): void {
-    this.revocarPreviews();
+    if (this.previewVideoUrl) URL.revokeObjectURL(this.previewVideoUrl);
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // ── Búsqueda ──────────────────────────────────────────────────────────
+  // ── Hashtags guardados ────────────────────────────────────────────────
 
-  onInput(): void { this.input$.next(this.termino); }
-
-  private buscar(termino: string): void {
-    this.buscando = true;
-    this.varianteService.buscar({ termino, pagina: 1, size: 8 })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: res => {
-          this.resultados = res?.t ?? [];
-          this.buscando = false;
-        },
-        error: err => {
-          this.buscando = false;
-          this.resultados = [];
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo buscar',
-            text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.'
-          });
-        }
-      });
+  private cargarFijos(): void {
+    this.redes.hashtagsDefault().pipe(takeUntil(this.destroy$)).subscribe({
+      next: filas => {
+        filas.forEach(f => {
+          const red = f.redSocial as PlataformaRed;
+          if (!this.TODAS.includes(red)) return;
+          this.hashtagsFijos[red] = f.hashtags ?? '';
+          // Solo se precarga si el campo sigue vacío: si la respuesta tarda y el admin ya
+          // alcanzó a teclear, pisárselo sería borrarle lo que escribió.
+          if (!this.hashtags[red].trim()) this.hashtags[red] = f.hashtags ?? '';
+        });
+      },
+      // No bloquea nada — sin los fijos igual se escriben a mano; pero sí se avisa, o el admin
+      // se queda esperando una precarga que nunca va a llegar.
+      error: () => { this.errorFijos = true; }
+    });
   }
 
-  seleccionar(v: IVarianteResumen): void {
-    this.seleccionado = v;
-    this.resultados = [];
-    this.termino = '';
-    this.resultados_pub = [];
-    // Solo se sugiere el texto si todavía no hay nada escrito. Ahora que el formulario se ve
-    // completo desde el inicio, el admin puede escribir ANTES de elegir el producto — pisarle lo
-    // que ya redactó sería perder su trabajo sin avisar.
-    if (!this.descripcion.trim()) this.descripcion = this.descripcionSugerida(v);
-    this.reiniciarImagen();
-    this.cargarImagenesGuardadas(v.id);
+  /** El PUT reemplaza el valor completo, así que esto sirve igual para agregar, editar y borrar. */
+  guardarFijos(r: PlataformaRed): void {
+    if (this.guardandoFijos) return;
+    this.guardandoFijos = r;
+
+    const texto = (this.hashtags[r] || '').trim();
+    this.redes.guardarHashtagsDefault(r, texto).pipe(takeUntil(this.destroy$)).subscribe({
+      next: fila => {
+        this.hashtagsFijos[r] = fila?.hashtags ?? texto;
+        this.guardandoFijos = null;
+        Swal.fire({
+          icon: 'success',
+          title: 'Guardados',
+          text: texto
+            ? `Los hashtags de ${this.nombreDeRed(r)} se van a precargar solos la próxima vez.`
+            : `${this.nombreDeRed(r)} ya no tiene hashtags guardados.`
+        });
+      },
+      error: err => {
+        this.guardandoFijos = null;
+        Swal.fire({ icon: 'error', title: 'No se pudieron guardar', text: this.msgError(err) });
+      }
+    });
   }
 
-  limpiarSeleccion(): void {
-    this.seleccionado = null;
-    this.descripcion = '';
-    this.imagenesGuardadas = [];
-    this.resultados_pub = [];
-    this.reiniciarImagen();
-    this.quitarVideo();
+  /** Devuelve el campo a lo guardado — para deshacer un cambio de un solo post. */
+  restaurarFijos(r: PlataformaRed): void {
+    this.hashtags[r] = this.hashtagsFijos[r];
   }
 
-  etiqueta(v: IVarianteResumen): string {
-    return [v.nombreProducto, v.descripcion, v.talla, v.color]
-      .filter(p => !!p && String(p).trim() !== '')
-      .join(' · ');
-  }
-
-  /**
-   * Sugerencia editable. Incluye el código de barras porque es lo que le permite a un
-   * cliente pedir ese producto exacto — pero queda visible en un post público, así que
-   * la pantalla lo avisa y el admin puede borrarlo antes de publicar.
-   */
-  private descripcionSugerida(v: IVarianteResumen): string {
-    const partes: string[] = [];
-    if (v.nombreProducto) partes.push(v.nombreProducto);
-    if (v.descripcion && v.descripcion !== v.nombreProducto) partes.push(v.descripcion);
-
-    const atributos = [
-      v.talla  ? `Talla: ${v.talla}`   : null,
-      v.color  ? `Color: ${v.color}`   : null,
-      v.marca  ? `Marca: ${v.marca}`   : null
-    ].filter(Boolean).join(' · ');
-
-    let texto = partes.join(' — ');
-    if (atributos) texto += `\n${atributos}`;
-    if (v.precio != null) texto += `\nPrecio: $${v.precio}`;
-    if (v.codigoBarras) texto += `\nCódigo: ${v.codigoBarras}`;
-    return texto;
-  }
-
-  // ── Imágenes ──────────────────────────────────────────────────────────
-
-  private cargarImagenesGuardadas(varianteId: number): void {
-    this.cargandoImagenes = true;
-    this.varianteService.getImagenesVariante(varianteId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: imgs => {
-          this.imagenesGuardadas = imgs ?? [];
-          this.cargandoImagenes = false;
-        },
-        // Falla en silencio a propósito: sin esta lista el admin igual puede publicar
-        // con la imagen principal o subiendo una nueva. No vale bloquear la pantalla.
-        error: () => {
-          this.imagenesGuardadas = [];
-          this.cargandoImagenes = false;
-        }
-      });
-  }
-
-  get tieneImagenPrincipal(): boolean {
-    return !!this.seleccionado?.imagenUrl;
-  }
-
-  setOrigenImagen(origen: OrigenImagen): void {
-    this.origenImagen = origen;
-    if (origen !== 'guardada') this.imagenIdSel = null;
-    if (origen !== 'nueva')    this.quitarImagenNueva();
-  }
-
-  elegirGuardada(img: IVarianteImagenDto): void {
-    this.imagenIdSel = img.id ?? null;
-  }
-
-  onArchivoImagen(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = ''; // permite volver a elegir el mismo archivo
-    if (!file) return;
-
-    if (!this.validarTamano(file)) return;
-
-    this.quitarImagenNueva();
-    this.archivoImagen = file;
-    this.previewImagenUrl = URL.createObjectURL(file);
-    // bypass al CREAR, no en el binding: llamarlo desde el template devolvería una
-    // instancia nueva en cada ciclo de detección y Angular repintaría sin parar.
-    this.previewImagen = this.sanitizer.bypassSecurityTrustUrl(this.previewImagenUrl);
-    this.origenImagen = 'nueva';
-  }
-
-  quitarImagenNueva(): void {
-    if (this.previewImagenUrl) URL.revokeObjectURL(this.previewImagenUrl);
-    this.previewImagenUrl = null;
-    this.previewImagen = null;
-    this.archivoImagen = null;
-  }
-
-  private reiniciarImagen(): void {
-    this.origenImagen = 'principal';
-    this.imagenIdSel = null;
-    this.quitarImagenNueva();
+  /** `true` si lo que hay escrito ya es exactamente lo guardado: no hay nada que guardar ni deshacer. */
+  fijosSinCambios(r: PlataformaRed): boolean {
+    return (this.hashtags[r] || '').trim() === (this.hashtagsFijos[r] || '').trim();
   }
 
   // ── Video ─────────────────────────────────────────────────────────────
@@ -255,15 +162,11 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   onArchivoVideo(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    input.value = '';
+    input.value = ''; // permite volver a elegir el mismo archivo
     if (!file) return;
 
     if (!this.validarTamano(file)) return;
-
-    this.quitarVideo();
-    this.archivoVideo = file;
-    this.previewVideoUrl = URL.createObjectURL(file);
-    this.previewVideo = this.sanitizer.bypassSecurityTrustUrl(this.previewVideoUrl);
+    this.tomarVideo(file);
   }
 
   quitarVideo(): void {
@@ -271,6 +174,15 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.previewVideoUrl = null;
     this.previewVideo = null;
     this.archivoVideo = null;
+  }
+
+  private tomarVideo(file: File): void {
+    this.quitarVideo();
+    this.archivoVideo = file;
+    this.previewVideoUrl = URL.createObjectURL(file);
+    // bypass al CREAR, no en el binding: llamarlo desde el template devolvería una
+    // instancia nueva en cada ciclo de detección y Angular repintaría sin parar.
+    this.previewVideo = this.sanitizer.bypassSecurityTrustUrl(this.previewVideoUrl);
   }
 
   // ── Arrastrar y soltar ────────────────────────────────────────────────
@@ -312,11 +224,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     }
 
     if (!this.validarTamano(file)) return;
-
-    this.quitarVideo();
-    this.archivoVideo = file;
-    this.previewVideoUrl = URL.createObjectURL(file);
-    this.previewVideo = this.sanitizer.bypassSecurityTrustUrl(this.previewVideoUrl);
+    this.tomarVideo(file);
   }
 
   // ── Pestañas de hashtags ──────────────────────────────────────────────
@@ -355,9 +263,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   // ── Programación ──────────────────────────────────────────────────────
 
-  setTipo(t: TipoPublicacion): void {
+  setTipo(t: TipoVideo): void {
     this.tipo = t;
     this.resultados_pub = [];
+    this.sincronizarRestricciones();
   }
 
   /** Mensaje de error de la fecha, o null si es válida. Mismos límites que valida el back. */
@@ -382,8 +291,6 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     return this.fechaProgramada.length === 16 ? `${this.fechaProgramada}:00` : this.fechaProgramada;
   }
 
-  // ── Publicar ──────────────────────────────────────────────────────────
-
   // ── Redes ─────────────────────────────────────────────────────────────
 
   readonly TODAS: PlataformaRed[] = ['facebook', 'instagram', 'tiktok'];
@@ -399,15 +306,9 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * apagada sin explicación deja al admin adivinando si es un error o una limitación.
    */
   motivoNoDisponible(r: PlataformaRed): string | null {
-    if (r === 'tiktok') {
-      // Su API no tiene "publicar foto" — solo video.
-      if (this.tipo === 'foto') return 'TikTok solo acepta video, no fotos.';
-    }
-
-    if (r === 'instagram') {
-      if (this.tipo === 'video')         return 'Para video en Instagram usa Reel (el video de feed no aplica).';
-      if (this.origenImagen === 'nueva' && this.tipo === 'foto')
-        return 'Instagram necesita una foto que ya esté guardada en el producto.';
+    // Instagram no tiene "video de feed": ahí todo video es Reel.
+    if (r === 'instagram' && this.tipo === 'video') {
+      return 'Para video en Instagram usa Reel (el video de feed no aplica).';
     }
     return null;
   }
@@ -438,7 +339,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Si el contenido cambia (p. ej. se pasa a video), una red marcada puede dejar de poder
+   * Si el contenido cambia (p. ej. se pasa de Reel a video), una red marcada puede dejar de poder
    * recibirlo. Se desmarca sola: si no, el admin creería que se publicó ahí.
    */
   sincronizarRestricciones(): void {
@@ -448,9 +349,9 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * **Ahora se puede programar en las 3 redes y en cualquier tipo.** El back lo hace con un job
-   * propio, no con el scheduler de cada plataforma — por eso ya no aplica ninguna de sus
-   * limitaciones (Instagram no lo permitía, el Reel de Facebook tampoco) ni sus topes de fecha.
+   * **Se puede programar en las 3 redes y en los dos tipos.** El back lo hace con un job propio,
+   * no con el scheduler de cada plataforma — por eso ya no aplica ninguna de sus limitaciones
+   * (Instagram no lo permitía, el Reel de Facebook tampoco) ni sus topes de fecha.
    *
    * Se deja como getter, y no como `true` fijo, porque es el punto natural donde volver a
    * restringir si alguna red cambia de reglas.
@@ -467,31 +368,25 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   get puedePublicar(): boolean {
-    if (this.publicando || !this.seleccionado) return false;
+    if (this.publicando) return false;
     if (!this.descripcion.trim()) return false;
+    if (!this.archivoVideo) return false;
     if (this.errorFecha) return false;
-    if (this.redesActivas.length === 0) return false;
-
-    // Video y Reel comparten el mismo archivo — el catálogo no guarda ninguno, siempre se sube.
-    if (this.tipo !== 'foto') return !!this.archivoVideo;
-
-    // Foto: hay que tener de dónde sacarla.
-    if (this.origenImagen === 'nueva')    return !!this.archivoImagen;
-    if (this.origenImagen === 'guardada') return !!this.imagenIdSel;
-    return this.tieneImagenPrincipal;
+    return this.redesActivas.length > 0;
   }
+
+  // ── Publicar ──────────────────────────────────────────────────────────
 
   /**
    * Publica en cada red marcada, **una tras otra**.
    *
-   * ⚠️ Secuencial a propósito, no en paralelo: cada red es un request independiente contra Meta y
-   * **una puede fallar mientras la otra funciona** (el caso real de hoy: Facebook publica bien e
-   * Instagram devuelve 400 porque la cuenta no está vinculada). Con `forkJoin` un solo fallo
-   * cancelaría el resto y no se sabría qué llegó a publicarse. Por eso el resultado es una lista
-   * por red, no un sí/no global.
+   * ⚠️ Secuencial a propósito, no en paralelo: cada red es un request independiente contra su API
+   * y **una puede fallar mientras la otra funciona**. Con `forkJoin` un solo fallo cancelaría el
+   * resto y no se sabría qué llegó a publicarse. Por eso el resultado es una lista por red, no un
+   * sí/no global.
    */
   publicar(): void {
-    if (!this.puedePublicar || !this.seleccionado) return;
+    if (!this.puedePublicar) return;
 
     this.publicando = true;
     this.faseEnvio = 'subiendo';
@@ -506,7 +401,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   private siguienteRed(): void {
     const red = this.pendientes.shift();
-    if (!red || !this.seleccionado) {
+    if (!red) {
       this.publicando = false;
       this.faseEnvio = null;
       this.avisarResultado();
@@ -516,55 +411,31 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.redEnCurso = red;
     this.progreso = 0;
 
-    const descripcion = this.textoFinal(red);
-    const varianteId = this.seleccionado.id;
-    const scheduledPublishTime = this.fechaISO();
+    // Sin `varianteId`: el video no es de un producto del catálogo. Ver `VARIANTE_OPCIONAL`.
+    const base = {
+      descripcion: this.textoFinal(red),
+      video: this.archivoVideo!,
+      scheduledPublishTime: this.fechaISO()
+    };
 
     if (red === 'instagram') {
-      // El Reel SÍ manda archivo (multipart, endpoint aparte), así que tiene barra de progreso
-      // como el video de Facebook. La foto no: usa una URL pública y es un request chico.
-      if (this.tipo === 'reel') {
-        this.conProgreso(red, this.redes.publicarReelInstagram({
-          varianteId, descripcion, video: this.archivoVideo!, scheduledPublishTime
-        }));
-        return;
-      }
-
-      this.faseEnvio = 'procesando';
-      this.redes.publicarInstagram({
-        varianteId,
-        descripcion,
-        imagenId: this.origenImagen === 'guardada' ? this.imagenIdSel : null,
-        scheduledPublishTime
-      }).pipe(takeUntil(this.destroy$)).subscribe({
-        next: pub => { this.resultados_pub.push({ red, publicacion: pub }); this.siguienteRed(); },
-        error: err => { this.resultados_pub.push({ red, error: this.msgError(err) }); this.siguienteRed(); }
-      });
+      // Solo Reel: `motivoNoDisponible` ya impide llegar aquí con "video de feed".
+      this.conProgreso(red, this.redes.publicarReelInstagram(base));
       return;
     }
 
     if (red === 'tiktok') {
-      // Solo video: su API no publica fotos, y `motivoNoDisponible` ya impide llegar aquí con foto.
-      this.conProgreso(red, this.redes.publicarTikTok({
-        varianteId, descripcion, video: this.archivoVideo!, scheduledPublishTime
-      }));
+      // Su API no distingue Reel de video: todo es un video vertical.
+      this.conProgreso(red, this.redes.publicarTikTok(base));
       return;
     }
 
-    // Facebook. Los 3 tipos aceptan `scheduledPublishTime` desde que el back lo hace con su
+    // Facebook. Los dos tipos aceptan `scheduledPublishTime` desde que el back lo hace con su
     // propio job y no con el scheduler de Meta.
-    const base = { varianteId, descripcion, scheduledPublishTime };
-
     this.conProgreso(red,
       this.tipo === 'reel'
-        ? this.redes.publicarReelFacebook({ ...base, video: this.archivoVideo! })
-        : this.tipo === 'video'
-          ? this.redes.publicarVideo({ ...base, video: this.archivoVideo! })
-          : this.redes.publicarFoto({
-              ...base,
-              imagenNueva: this.origenImagen === 'nueva'    ? this.archivoImagen : null,
-              imagenId:    this.origenImagen === 'guardada' ? this.imagenIdSel   : null
-            })
+        ? this.redes.publicarReelFacebook(base)
+        : this.redes.publicarVideo(base)
     );
   }
 
@@ -610,8 +481,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** El back manda el 400 con `mensaje` en español ya listo para mostrar — incluido el
-   *  "Instagram no esta configurado" que va a salir hasta que se vincule la cuenta. */
+  /** El back manda el 400 con `mensaje` en español ya listo para mostrar. */
   private msgError(err: any): string {
     return err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo publicar.';
   }
@@ -640,10 +510,6 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.resultados_pub = [];
     this.progreso = 0;
     this.redEnCurso = null;
-  }
-
-  private revocarPreviews(): void {
-    if (this.previewImagenUrl) URL.revokeObjectURL(this.previewImagenUrl);
-    if (this.previewVideoUrl)  URL.revokeObjectURL(this.previewVideoUrl);
+    this.quitarVideo();
   }
 }

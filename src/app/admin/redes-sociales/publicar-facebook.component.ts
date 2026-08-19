@@ -17,8 +17,8 @@ import { IProgresoPublicacion, RedesSocialesService } from 'src/app/redes-social
  *
  * ⚠️ **Sin fotos, a propósito** (decisión del dueño, 2026-08-19): a redes solo se suben videos.
  * Con eso desapareció también el paso de "elegir producto" — un video no es de una variante del
- * catálogo, puede ser del local o un saludo. Ver `VARIANTE_OPCIONAL` en el modelo: el back todavía
- * exige `varianteId` y hasta que lo haga opcional la publicación responde 400.
+ * catálogo, puede ser del local o un saludo. Ver `VARIANTE_OPCIONAL` en el modelo (el back ya
+ * dejó `varianteId` opcional en video y Reel).
  */
 type TipoVideo = 'video' | 'reel';
 

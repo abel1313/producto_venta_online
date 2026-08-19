@@ -142,25 +142,40 @@
                placeholder="#novedadesjade #bolsas">
         <p class="fb-hint">Solo los hashtags cambian por red — el texto de arriba va igual en todas.</p>
 
-        <!-- Los fijos se precargan solos al abrir. Guardar reemplaza lo guardado (sirve para
+        <!-- Aquí se dan de alta los fijos. Va con título propio porque el dueño preguntó "¿dónde
+             doy de alta hashtags?" teniendo el botón enfrente: un botón suelto no se lee como
+             "esta es la pantalla donde se guardan". Guardar reemplaza lo guardado (sirve para
              agregar, corregir y borrar); restaurar deshace un cambio de un solo post. -->
         <div class="fb-fijos">
-          <button class="fb-btn fb-btn--ghost fb-btn--sm"
-                  [disabled]="publicando || !!guardandoFijos || fijosSinCambios(r)"
-                  (click)="guardarFijos(r)">
-            {{ guardandoFijos === r ? 'Guardando…' : '💾 Dejar estos fijos' }}
-          </button>
-          <button class="fb-btn fb-btn--ghost fb-btn--sm"
-                  *ngIf="!fijosSinCambios(r)"
-                  [disabled]="publicando" (click)="restaurarFijos(r)">
-            ↩ Volver a los fijos
-          </button>
-          <small class="fb-fijos__txt" *ngIf="fijosSinCambios(r) && hashtagsFijos[r]">
-            ✓ Son los que tienes guardados — se precargan solos.
-          </small>
-          <small class="fb-fijos__txt" *ngIf="!hashtagsFijos[r] && fijosSinCambios(r)">
-            Todavía no tienes hashtags fijos para esta red.
-          </small>
+          <div class="fb-fijos__head">
+            <strong>📌 Mis hashtags fijos de {{ nombreDeRed(r) }}</strong>
+            <small *ngIf="hashtagsFijos[r]">
+              Guardados: <code>{{ hashtagsFijos[r] }}</code> — se escriben solos cada vez que
+              abres esta pantalla.
+            </small>
+            <small *ngIf="!hashtagsFijos[r]">
+              Todavía no tienes. Escríbelos arriba y guárdalos: la próxima vez ya van a estar
+              puestos.
+            </small>
+          </div>
+
+          <div class="fb-fijos__acciones">
+            <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                    [disabled]="publicando || !!guardandoFijos || fijosSinCambios(r)"
+                    (click)="guardarFijos(r)">
+              {{ guardandoFijos === r
+                  ? 'Guardando…'
+                  : (hashtagsFijos[r] ? '💾 Actualizar mis fijos' : '💾 Guardar como fijos') }}
+            </button>
+            <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                    *ngIf="!fijosSinCambios(r)"
+                    [disabled]="publicando" (click)="restaurarFijos(r)">
+              ↩ Volver a los fijos
+            </button>
+            <small class="fb-fijos__txt" *ngIf="fijosSinCambios(r) && hashtagsFijos[r]">
+              ✓ Lo de arriba ya es igual a tus fijos.
+            </small>
+          </div>
         </div>
 
         <p class="fb-hint fb-hint--warn" *ngIf="errorFijos">

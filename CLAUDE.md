@@ -10559,3 +10559,24 @@ a `aside.sidebar`.
 **Verificado con `ng build` y en pantalla** (claro y oscuro, endpoints simulados con el shape real
 `lista`/`data`): precarga las 3 redes, el estado del botón cambia bien en los 3 casos (igual,
 editado, vacío) y el `PUT` sale a `/hashtags-default/facebook` con el texto correcto.
+
+### 🐛 El dueño no lo encontró — un botón suelto no dice "aquí se dan de alta"
+
+Apenas subido, preguntó: *"¿y dónde doy de alta hashtags?"* — **teniendo el botón enfrente**. La
+primera versión era solo un `💾 Dejar estos fijos` debajo del campo, y se leía como una acción
+más del post que se está escribiendo, no como el lugar donde se registran.
+
+**Fix:** el bloque pasó a ser un recuadro con **título propio** (📌 *Mis hashtags fijos de
+{red}*), que además **muestra lo que hay guardado** (`Guardados: #… — se escriben solos cada vez
+que abres esta pantalla`) o dice que todavía no hay nada. El botón cambia de texto según el caso:
+*Guardar como fijos* la primera vez, *Actualizar mis fijos* después.
+
+**La lección, que ya se repitió varias veces esta semana:** si una acción es también el **lugar**
+donde se configura algo, necesita título y estado visible, no solo un botón. Lo mismo pasó con el
+motivo de bloqueo de TikTok (un `<small>` dentro de un `<label>` que nadie leía) y con el paso de
+producto escondiendo media pantalla. **Un botón comunica "qué hago"; un recuadro con título
+comunica "dónde estoy".**
+
+⚠️ Sigue sin haber pantalla aparte, y con esto la decisión se sostiene — el problema no era el
+lugar, era que no se anunciaba. Si aun así vuelve a preguntar, ahí sí conviene la pantalla propia
+en el menú.

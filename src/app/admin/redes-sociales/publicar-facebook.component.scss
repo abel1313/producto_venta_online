@@ -543,6 +543,22 @@
   }
 }
 
+// Reintentar solo las redes que fallaron, sin volver a subir el video.
+.fb-reintento {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--app-accent);
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+
+  &__txt {
+    margin: 0 0 10px;
+    font-size: .85rem;
+    line-height: 1.45;
+    color: var(--app-text);
+  }
+}
+
 .fb-btn--sm { padding: 5px 12px; font-size: .8rem; }
 
 // ── Móvil ─────────────────────────────────────────────────────────────────

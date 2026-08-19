@@ -10634,3 +10634,57 @@ un extra, no el lugar principal.
 **Verificado con `ng build` y en pantalla** (claro y oscuro): carga las 3 redes con su contador,
 el estado cambia a "Sin guardar" al editar, y el `PUT` sale a `/hashtags-default/tiktok` con el
 texto correcto.
+
+---
+
+## REDES — REINTENTAR SOLO LO QUE FALLÓ, SIN VOLVER A SUBIR EL VIDEO (2026-08-19)
+
+**Pedido del dueño:** *"si falla, por ejemplo, cuando se quieren publicar, la opción de reintentar
+para no perder las cosas"*.
+
+**El agujero era real.** Con 3 redes marcadas, si dos publicaban y una fallaba, la única acción de
+la tarjeta de resultado era *"Publicar otra cosa"* — que además **borra el video**. Para reintentar
+esa red había que volver a subir el archivo (que pueden ser 200 MB) y reescribir todo. Y peor: al
+republicar iban las 3 otra vez, **duplicando los dos posts que sí habían salido**.
+
+### Lo que hay ahora
+
+| Acción | Qué hace |
+|---|---|
+| **🔄 Reintentar en {red}** | Reenvía **solo las que fallaron**, con el mismo archivo y el mismo texto. Aparece solo si hay fallidas |
+| **✏️ Volver a editar** | Vuelve al formulario **conservando todo** — para cuando el error se arregla cambiando algo (el texto, el tipo, la fecha) |
+| **🗑️ Empezar de cero** | Lo único que descarta el video, y **pide confirmación** antes |
+
+### ⚠️ La parte que evita el daño de verdad: no publicar dos veces
+
+Un post duplicado en la página real **no se puede deshacer desde aquí**. Por eso:
+
+- Cada red que sale bien se guarda en **`yaPublicadas`**, que **sobrevive al "volver a editar"**.
+- Al volver al formulario, esas redes **se desmarcan solas** y `motivoNoDisponible()` **impide
+  volver a marcarlas**, con el motivo escrito. La salida es "Empezar de cero", que las limpia.
+- **`PROGRAMADA` cuenta como ya mandada**: el job del back la va a publicar sola a su hora, así
+  que reintentarla dejaría dos posts. Solo `error` y `FALLIDA` son reintentables.
+
+### Detalles que no son obvios
+
+- **La barra de progreso se duplicó dentro de la tarjeta de resultado.** Durante un reintento la
+  tarjeta de publicar está oculta (`huboResultado` es true), así que sin eso el reintento se veía
+  como que no pasaba nada.
+- **El Swal de resultado ahora dice que el video no se perdió** — es lo primero que preocupa
+  cuando algo falla, y decirlo ahí evita que se cierre la pantalla creyendo que hay que empezar
+  de nuevo.
+- `reintentarFallidas()` **quita de la lista solo las fallidas**: las buenas siguen visibles
+  mientras corre el reintento.
+- Si el video ya no está (se limpió antes), el reintento avisa en vez de mandar un request roto.
+
+**Archivos modificados:**
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → `yaPublicadas`,
+  `redesFallidas`, `reintentarFallidas()`, `volverAEditar()`, `nuevaPublicacion()` con confirm,
+  `motivoNoDisponible()` bloquea las ya publicadas, `conProgreso()` registra los éxitos
+- `.html` → bloque de reintento, barra en el resultado, aviso de "ya se publicó en…"
+- `.scss` → `.fb-reintento`
+
+**Verificado con `ng build` y en pantalla**, simulando el caso real (Reel a las 3 redes, TikTok
+devuelve 400): la 1ª vuelta llama a las 3 y deja `yaPublicadas: [facebook, instagram]` con el
+video y el texto intactos; el reintento llama **solo a `tiktok/publicar`** y fusiona el resultado;
+y al "volver a editar", Facebook queda desmarcado y no se deja re-marcar.

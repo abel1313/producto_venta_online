@@ -191,6 +191,14 @@
       </div>
     </div>
 
+    <!-- Tras un "volver a editar": recuerda dónde ya quedó publicado, para que no se pregunte
+         por qué esas redes están bloqueadas. -->
+    <p class="fb-hint fb-hint--warn" *ngIf="yaPublicadas.length">
+      ✅ Este video ya se publicó en
+      <ng-container *ngFor="let r of yaPublicadas; let i = index"><b>{{ nombreDeRed(r) }}</b><span *ngIf="i < yaPublicadas.length - 1">, </span></ng-container>.
+      No se va a volver a mandar ahí — para eso, empieza una publicación nueva.
+    </p>
+
     <p class="fb-error" *ngIf="redesActivas.length === 0">
       Marca al menos una red para poder publicar.
     </p>
@@ -299,9 +307,50 @@
          [href]="link" target="_blank" rel="noopener">Ver publicación ↗</a>
     </div>
 
-    <div class="fb-resultado__acciones">
-      <button class="fb-btn fb-btn--primary" (click)="nuevaPublicacion()">Publicar otra cosa</button>
+    <!-- La barra vive aquí también: durante un reintento la tarjeta de publicar está oculta
+         (hay resultados), y sin esto parecería que no pasa nada. -->
+    <div class="fb-progreso" *ngIf="publicando">
+      <div class="fb-progreso__barra">
+        <div class="fb-progreso__fill"
+             [class.fb-progreso__fill--indet]="faseEnvio === 'procesando'"
+             [style.width.%]="faseEnvio === 'procesando' ? 100 : progreso"></div>
+      </div>
+      <small *ngIf="faseEnvio === 'subiendo'">
+        Reintentando en {{ redEnCurso ? nombreDeRed(redEnCurso) : '' }}… {{ progreso }}%
+      </small>
+      <small *ngIf="faseEnvio === 'procesando'">
+        Enviándolo a {{ redEnCurso ? nombreDeRed(redEnCurso) : 'la red' }} — puede tardar varios
+        minutos, no cierres esta pantalla.
+      </small>
     </div>
+
+    <!-- Reintentar sin volver a subir el video: es lo que evita perder el trabajo cuando una
+         red falla y las otras sí salieron. -->
+    <div class="fb-reintento" *ngIf="redesFallidas.length && !publicando">
+      <p class="fb-reintento__txt">
+        Tu video y tu texto siguen cargados. Puedes reintentar solo
+        {{ redesFallidas.length === 1 ? 'la que falló' : 'las que fallaron' }} — las que sí
+        salieron no se vuelven a publicar.
+      </p>
+      <button class="fb-btn fb-btn--primary" (click)="reintentarFallidas()">
+        🔄 Reintentar en {{ redesFallidas.length === 1
+            ? nombreDeRed(redesFallidas[0])
+            : redesFallidas.length + ' redes' }}
+      </button>
+    </div>
+
+    <div class="fb-resultado__acciones">
+      <button class="fb-btn fb-btn--ghost" [disabled]="publicando" (click)="volverAEditar()">
+        ✏️ Volver a editar
+      </button>
+      <button class="fb-btn fb-btn--ghost" [disabled]="publicando" (click)="nuevaPublicacion()">
+        🗑️ Empezar de cero
+      </button>
+    </div>
+    <p class="fb-hint">
+      «Volver a editar» conserva el video y el texto por si el error se arregla cambiando algo.
+      «Empezar de cero» quita el video.
+    </p>
   </div>
 
 </div>

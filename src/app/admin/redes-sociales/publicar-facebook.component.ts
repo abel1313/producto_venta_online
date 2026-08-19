@@ -83,6 +83,13 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   /** Una fila por red: publicó o falló. Ver `publicar()` sobre por qué no es un sí/no global. */
   resultados_pub: { red: PlataformaRed; publicacion?: IPublicacionRed; error?: string }[] = [];
 
+  /**
+   * Redes donde este video **ya quedó publicado**. Se conserva aunque se vuelva a editar, para no
+   * mandarlo dos veces: un post duplicado en la página real no se puede deshacer desde aquí.
+   * Se limpia solo al empezar una publicación nueva.
+   */
+  yaPublicadas: PlataformaRed[] = [];
+
   readonly limiteMb = LIMITE_ARCHIVO_MB;
 
   private destroy$ = new Subject<void>();
@@ -306,6 +313,12 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * apagada sin explicación deja al admin adivinando si es un error o una limitación.
    */
   motivoNoDisponible(r: PlataformaRed): string | null {
+    // Ya se publicó ahí con este mismo video: volver a mandarlo dejaría el post duplicado en la
+    // página real, y eso no se deshace desde aquí. Se limpia al empezar una publicación nueva.
+    if (this.yaPublicadas.includes(r)) {
+      return `Este video ya se publicó en ${this.nombreDeRed(r)}. Para mandarlo otra vez, empieza una publicación nueva.`;
+    }
+
     // Instagram no tiene "video de feed": ahí todo video es Reel.
     if (r === 'instagram' && this.tipo === 'video') {
       return 'Para video en Instagram usa Reel (el video de feed no aplica).';
@@ -446,6 +459,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
         this.progreso = ev.porcentaje;
         if (ev.tipo === 'listo') {
           this.resultados_pub.push({ red, publicacion: ev.publicacion ?? undefined });
+          // `PROGRAMADA` también cuenta como ya mandada: el job del back la va a publicar sola,
+          // así que reintentarla dejaría dos posts.
+          const fallida = ev.publicacion?.estado === 'FALLIDA';
+          if (!fallida && !this.yaPublicadas.includes(red)) this.yaPublicadas.push(red);
           this.siguienteRed();
         } else {
           this.faseEnvio = ev.tipo;
@@ -470,13 +487,15 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     }
 
     // Se dice exactamente dónde sí y dónde no: un "hubo un error" a secas dejaría al admin sin
-    // saber si tiene que volver a intentar en todas o solo en una.
+    // saber si tiene que volver a intentar en todas o solo en una. Y se aclara de una vez que
+    // no perdió el video, que es lo primero que preocupa cuando algo falla.
     Swal.fire({
       icon: ok.length ? 'warning' : 'error',
       title: ok.length ? 'Se publicó en algunas' : 'No se pudo publicar',
       html: [
         ...ok.map(r => `<p style="margin:4px 0">✅ <b>${this.nombreDeRed(r.red)}</b> — listo</p>`),
-        ...mal.map(r => `<p style="margin:4px 0;text-align:left">❌ <b>${this.nombreDeRed(r.red)}</b><br><small>${r.error}</small></p>`)
+        ...mal.map(r => `<p style="margin:4px 0;text-align:left">❌ <b>${this.nombreDeRed(r.red)}</b><br><small>${r.error}</small></p>`),
+        `<p style="margin:10px 0 0;font-size:.85rem;opacity:.8">Tu video y tu texto siguen aquí — puedes reintentar solo ${mal.length === 1 ? 'la que falló' : 'las que fallaron'} sin volver a subir nada.</p>`
       ].join('')
     });
   }
@@ -506,10 +525,83 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   get huboResultado(): boolean { return this.resultados_pub.length > 0; }
 
-  nuevaPublicacion(): void {
+  // ── Reintentar sin perder nada ────────────────────────────────────────
+
+  /**
+   * Las que no salieron: error de red/API, o `FALLIDA` (el job del back agotó sus 3 reintentos).
+   * Las `PROGRAMADA` **no** cuentan — todavía no han fallado, están esperando su hora.
+   */
+  get redesFallidas(): PlataformaRed[] {
+    return this.resultados_pub
+      .filter(r => !!r.error || r.publicacion?.estado === 'FALLIDA')
+      .map(r => r.red);
+  }
+
+  /**
+   * Reintenta **solo las que fallaron**, con el mismo archivo y el mismo texto — no hay que volver
+   * a subir el video ni reescribir los hashtags.
+   *
+   * ⚠️ Las que sí salieron se conservan en la lista y **no se vuelven a mandar**: republicarlas
+   * dejaría el post duplicado en la página real.
+   */
+  reintentarFallidas(): void {
+    const fallidas = this.redesFallidas;
+    if (!fallidas.length || this.publicando) return;
+
+    if (!this.archivoVideo) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Ya no está el video',
+        text: 'Vuelve a cargarlo para poder reintentar.'
+      });
+      return;
+    }
+
+    // Se quitan solo las fallidas: las buenas siguen a la vista mientras corre el reintento.
+    this.resultados_pub = this.resultados_pub.filter(r => !fallidas.includes(r.red));
+
+    this.publicando = true;
+    this.faseEnvio = 'subiendo';
+    this.progreso = 0;
+    this.pendientes = [...fallidas];
+    this.siguienteRed();
+  }
+
+  /**
+   * Vuelve al formulario **sin perder nada** — para cuando el error se arregla cambiando algo
+   * (el texto, el tipo, la fecha). Lo ya publicado queda registrado en `yaPublicadas` y esas
+   * redes se desmarcan solas, para no mandar el mismo video dos veces.
+   */
+  volverAEditar(): void {
+    if (this.publicando) return;
+    this.yaPublicadas.forEach(r => { this.redesSel[r] = false; });
     this.resultados_pub = [];
     this.progreso = 0;
     this.redEnCurso = null;
-    this.quitarVideo();
+    this.sincronizarRestricciones();
+  }
+
+  /** Empieza de cero. Pregunta antes: es lo único que descarta el video. */
+  nuevaPublicacion(): void {
+    if (this.publicando) return;
+
+    const limpiar = () => {
+      this.resultados_pub = [];
+      this.yaPublicadas = [];
+      this.progreso = 0;
+      this.redEnCurso = null;
+      this.quitarVideo();
+    };
+
+    if (!this.archivoVideo) { limpiar(); return; }
+
+    Swal.fire({
+      icon: 'question',
+      title: '¿Empezar de cero?',
+      text: 'Se va a quitar el video y tendrás que cargarlo otra vez. El texto y los hashtags se quedan.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, empezar de cero',
+      cancelButtonText: 'Cancelar'
+    }).then(res => { if (res.isConfirmed) limpiar(); });
   }
 }

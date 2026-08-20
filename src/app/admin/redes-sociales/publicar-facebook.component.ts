@@ -1,9 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Observable, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
+import { IVarianteResumen } from 'src/app/variante/models/variante.model';
+import { VarianteService } from 'src/app/variante/service/variante.service';
 import {
   IPublicacionRed,
   LIMITE_ARCHIVO_MB,
@@ -60,6 +62,23 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   tipo: TipoVideo = 'video';
   descripcion = '';
 
+  // ── Producto (opcional) ───────────────────────────────────────────────
+  /**
+   * De qué producto es el video. **Opcional**: un video del local o un saludo no es de ninguna
+   * variante del catálogo.
+   *
+   * Cuando sí se elige sirve para dos cosas concretas:
+   * 1. Su **código de barras encabeza el post** — es lo que le permite a un cliente pedir ese
+   *    producto exacto.
+   * 2. El **bot de comentarios** del back usa el producto del post como contexto: sin él no
+   *    puede contestar si alguien pregunta precio o talla.
+   */
+  seleccionado: IVarianteResumen | null = null;
+  termino = '';
+  resultados: IVarianteResumen[] = [];
+  buscando = false;
+  private input$ = new Subject<string>();
+
   /** Chuleta de qué acepta cada red — para no tener que recordar por qué una se bloquea. */
   mostrarAyuda = false;
 
@@ -96,11 +115,63 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly redes: RedesSocialesService,
+    private readonly varianteService: VarianteService,
     private readonly sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
     this.cargarFijos();
+
+    this.input$.pipe(
+      filter(t => t.trim().length >= 2),
+      debounceTime(400),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(t => this.buscarProducto(t));
+  }
+
+  // ── Buscar el producto ────────────────────────────────────────────────
+
+  onInput(): void { this.input$.next(this.termino); }
+
+  /** El endpoint ya busca en cascada: código de barras primero, luego categoría y nombre. */
+  private buscarProducto(termino: string): void {
+    this.buscando = true;
+    this.varianteService.buscar({ termino, pagina: 1, size: 8 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.resultados = res?.t ?? [];
+          this.buscando = false;
+        },
+        error: err => {
+          this.buscando = false;
+          this.resultados = [];
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo buscar',
+            text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.'
+          });
+        }
+      });
+  }
+
+  seleccionarProducto(v: IVarianteResumen): void {
+    this.seleccionado = v;
+    this.resultados = [];
+    this.termino = '';
+  }
+
+  quitarProducto(): void {
+    this.seleccionado = null;
+    this.resultados = [];
+    this.termino = '';
+  }
+
+  etiqueta(v: IVarianteResumen): string {
+    return [v.nombreProducto, v.descripcion, v.talla, v.color]
+      .filter(p => !!p && String(p).trim() !== '')
+      .join(' · ');
   }
 
   ngOnDestroy(): void {
@@ -373,11 +444,22 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     return this.redesActivas.length > 0;
   }
 
-  /** Lo que de verdad se va a publicar en esa red: el texto común + sus propios hashtags. */
+  /**
+   * Lo que de verdad se va a publicar en esa red, en este orden:
+   *
+   * 1. **El código de barras**, solo en su renglón — así queda a la vista para pedir ese producto
+   *    exacto. Solo aparece si se eligió producto.
+   * 2. El **texto del post**, el mismo para todas las redes.
+   * 3. Los **hashtags de esa red**, separados por un renglón en blanco.
+   */
   textoFinal(r: PlataformaRed): string {
+    const cuerpo = [
+      this.seleccionado?.codigoBarras?.trim(),
+      this.descripcion.trim()
+    ].filter(p => !!p).join('\n');
+
     const tags = (this.hashtags[r] || '').trim();
-    const base = this.descripcion.trim();
-    return tags ? `${base}\n\n${tags}` : base;
+    return tags ? `${cuerpo}\n\n${tags}` : cuerpo;
   }
 
   get puedePublicar(): boolean {
@@ -424,8 +506,10 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.redEnCurso = red;
     this.progreso = 0;
 
-    // Sin `varianteId`: el video no es de un producto del catálogo. Ver `VARIANTE_OPCIONAL`.
+    // `varianteId` va solo si se eligió producto — el back ya lo acepta nulo
+    // (ver `VARIANTE_OPCIONAL`), y el servicio omite el part cuando no hay.
     const base = {
+      varianteId: this.seleccionado?.id ?? null,
       descripcion: this.textoFinal(red),
       video: this.archivoVideo!,
       scheduledPublishTime: this.fechaISO()
@@ -591,6 +675,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       this.progreso = 0;
       this.redEnCurso = null;
       this.quitarVideo();
+      this.quitarProducto();
     };
 
     if (!this.archivoVideo) { limpiar(); return; }

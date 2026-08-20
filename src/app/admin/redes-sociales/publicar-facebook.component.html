@@ -85,14 +85,66 @@
       <button class="fb-btn fb-btn--quitar" (click)="quitarVideo()" [disabled]="publicando">✕</button>
     </div>
 
+    <!-- ····· PRODUCTO (opcional) ····· -->
+    <!-- Va aquí, justo antes del texto, porque su código de barras encabeza el post: el orden de
+         la pantalla es el mismo con el que se arma la publicación. -->
+    <label class="fb-label fb-label--sep">¿Es de algún producto? <small>(opcional)</small></label>
+
+    <div *ngIf="!seleccionado">
+      <div class="fb-search-wrap">
+        <input class="fb-input" type="text"
+               placeholder="Código de barras, nombre o categoría…"
+               [(ngModel)]="termino" (input)="onInput()" [disabled]="publicando" appUppercase>
+        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
+      </div>
+
+      <div class="fb-dropdown" *ngIf="resultados.length > 0">
+        <div class="fb-dropdown__item" *ngFor="let v of resultados" (click)="seleccionarProducto(v)">
+          <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+            <img class="fb-dropdown__img" [src]="src" alt="">
+          </ng-container>
+          <span class="fb-dropdown__txt">
+            {{ etiqueta(v) }}
+            <small class="fb-dropdown__id" *ngIf="v.codigoBarras">{{ v.codigoBarras }}</small>
+          </span>
+          <span class="fb-dropdown__precio" *ngIf="v.precio != null">${{ v.precio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <p class="fb-hint"
+         *ngIf="!buscando && termino.trim().length >= 2 && resultados.length === 0">
+        Sin resultados. Prueba con el código de barras.
+      </p>
+
+      <p class="fb-hint">
+        Si lo eliges, <b>su código de barras encabeza el post</b> y, cuando alguien comente, el bot
+        puede contestar con los datos de ese producto. Para un video del local o un saludo, déjalo
+        vacío.
+      </p>
+    </div>
+
+    <div class="fb-sel" *ngIf="seleccionado">
+      <ng-container *ngIf="seleccionado.imagenUrl | imagenSrc | async as src">
+        <img class="fb-sel__img" [src]="src" alt="">
+      </ng-container>
+      <div class="fb-sel__info">
+        <strong>{{ etiqueta(seleccionado) }}</strong>
+        <small *ngIf="seleccionado.codigoBarras">{{ seleccionado.codigoBarras }} — va como primera
+          línea del post</small>
+      </div>
+      <button class="fb-btn fb-btn--ghost fb-btn--sm" [disabled]="publicando"
+              (click)="quitarProducto()">Quitar</button>
+    </div>
+
     <!-- ····· DESCRIPCIÓN ····· -->
     <label class="fb-label fb-label--sep">Texto del post</label>
     <textarea class="fb-textarea" rows="6" [(ngModel)]="descripcion"
               [disabled]="publicando"
               placeholder="Lo que escribas aquí es exactamente lo que se ve en la publicación."></textarea>
     <p class="fb-hint">
-      ℹ️ Este texto es el <b>mismo para todas las redes</b>. Los hashtags se ponen abajo, uno por
-      red.
+      ℹ️ Este texto es el <b>mismo para todas las redes</b>. La publicación sale en este orden:
+      <b>código de barras</b> (si elegiste producto) → <b>este texto</b> → <b>los hashtags</b> de
+      cada red.
     </p>
   </div>
 

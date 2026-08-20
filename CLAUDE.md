@@ -10688,3 +10688,66 @@ Un post duplicado en la página real **no se puede deshacer desde aquí**. Por e
 devuelve 400): la 1ª vuelta llama a las 3 y deja `yaPublicadas: [facebook, instagram]` con el
 video y el texto intactos; el reintento llama **solo a `tiktok/publicar`** y fusiona el resultado;
 y al "volver a editar", Facebook queda desmarcado y no se deja re-marcar.
+
+---
+
+## REDES — EL PRODUCTO VUELVE, PERO OPCIONAL + EL CÓDIGO DE BARRAS ENCABEZA EL POST (2026-08-20)
+
+**Corrige parcialmente la decisión de ayer** ("fuera el paso de producto"). El dueño lo revisó y
+pidió que la variante volviera *"porque esa debe de ir para publicar en las redes"*.
+
+**Y tenía razón, por un motivo que ayer no existía:** el back montó un **bot que contesta los
+comentarios** de Facebook e Instagram y que usa *"el producto del post como contexto"*. Sin
+`varianteId`, ese bot no tiene con qué contestar si alguien pregunta precio o talla — el video se
+publica igual, pero pierde esa función.
+
+### Cómo quedó (confirmado con él, no asumido)
+
+- **Opcional, no obligatorio.** Un video del local o un saludo se publica sin producto; cuando sí
+  es de un producto, se elige y se adjunta. Es lo mejor de las dos decisiones: no obliga a meter
+  un dato falso, y no pierde el contexto del bot cuando sí aplica.
+- **El código de barras encabeza el post.** Orden literal que pidió: *"primero es el código de
+  barras y abajo lo demás, el textarea lo que lleve y abajo los hashtags"*:
+
+```
+GLPD-066
+Bolsas nuevas esta semana
+
+#NovedadesJade #Bolsas
+```
+
+Sin producto, el código simplemente no aparece y el resto queda igual.
+
+### Detalles
+
+- El buscador va **dentro del paso 1, justo antes del texto** — el orden de la pantalla es el
+  mismo con el que se arma la publicación, así el código como primera línea se explica solo.
+- No hace falta priorizar el código de barras en la búsqueda: `GET /tienda/v1/buscar` **ya busca
+  en cascada** código → categoría → nombre (ver "FIX BACK — BÚSQUEDA POR CÓDIGO DE BARRAS").
+- El chip del producto elegido dice *"— va como primera línea del post"*, para que no sorprenda
+  ver el código publicado.
+- `nuevaPublicacion()` ("Empezar de cero") también limpia el producto; `volverAEditar()` lo
+  conserva, igual que el video y el texto.
+- **No volvió nada de la foto** — sigue siendo solo video, como quedó ayer.
+
+⚠️ El código de barras queda **visible en un post público**. Es a propósito (es lo que permite
+pedir ese producto exacto), pero si algún día no se quiere, se quita de `textoFinal()`.
+
+**Archivos modificados:**
+- `publicar-facebook.component.ts` → `seleccionado`/`termino`/`resultados`, `buscarProducto()`,
+  `seleccionarProducto()`, `quitarProducto()`, `etiqueta()`; `textoFinal()` antepone el código;
+  `siguienteRed()` manda `varianteId`
+- `.html` → buscador opcional en el paso 1 + chip del elegido; hint del orden
+- `.scss` → se restauraron `.fb-search-*`, `.fb-dropdown` y `.fb-sel` (que se habían borrado ayer)
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): sin producto el texto sale
+`texto + hashtags`; con producto sale `GLPD-066\ntexto\n\n#hashtags`, y el multipart lleva
+`varianteId=44`.
+
+### 💡 El mock de una prueba también se desactualiza
+
+La primera corrida dio el buscador vacío y parecía un bug: el mock de Playwright apuntaba a
+`/variantes/v1/buscar` y el endpoint **ya se llama `/tienda/v1/buscar`**. Confirmado contra QA que
+`/tienda` responde 200 y `/variantes` ya no (401), o sea el rename del back ya está desplegado
+ahí. **Al renombrar un endpoint, revisar también los scripts de prueba** — si no, la siguiente
+verificación miente.

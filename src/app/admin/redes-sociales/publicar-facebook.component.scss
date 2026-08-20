@@ -135,6 +135,95 @@
   color: #dc2626;
 }
 
+// ── Buscador del producto (opcional) + dropdown ───────────────────────────
+.fb-search-wrap { position: relative; }
+
+.fb-search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+}
+
+.fb-dropdown {
+  margin-top: 6px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  overflow: hidden;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--card-border);
+    transition: background .12s;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: var(--app-accent-soft); }
+  }
+
+  &__img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  &__txt {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.86rem;
+    color: var(--app-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__id { opacity: .55; font-size: 0.76rem; margin-left: 6px; }
+
+  &__precio {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--app-accent);
+    flex-shrink: 0;
+  }
+}
+
+// ── Producto elegido ──────────────────────────────────────────────────────
+.fb-sel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--app-accent);
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+
+  &__img {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong { font-size: 0.9rem; color: var(--app-text); }
+    small  { font-size: 0.76rem; color: var(--app-text-muted, #64748b); }
+  }
+}
+
 // ── Toggles (tipo de contenido / cuándo) ──────────────────────────────────
 .fb-tipo {
   display: flex;

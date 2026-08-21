@@ -32,6 +32,8 @@ export interface ITicketData {
   qrTienda?:       string | null;
   qrWhatsapp?:     string | null;
   qrFacebook?:     string | null;
+  qrInstagram?:    string | null;
+  qrTiktok?:       string | null;
 }
 
 const fmt = (n: number | null | undefined): string =>
@@ -94,6 +96,8 @@ export function generarHtmlTicket(d: ITicketData): string {
   if (d.qrTienda)   qrs.push(`<div class="qr-item"><img src="${qrUrl(d.qrTienda)}" width="80" height="80"><div class="qr-label">Tienda</div></div>`);
   if (d.qrWhatsapp) qrs.push(`<div class="qr-item"><img src="${qrUrl(d.qrWhatsapp)}" width="80" height="80"><div class="qr-label">WhatsApp</div></div>`);
   if (d.qrFacebook) qrs.push(`<div class="qr-item"><img src="${qrUrl(d.qrFacebook)}" width="80" height="80"><div class="qr-label">Facebook</div></div>`);
+  if (d.qrInstagram) qrs.push(`<div class="qr-item"><img src="${qrUrl(d.qrInstagram)}" width="80" height="80"><div class="qr-label">Instagram</div></div>`);
+  if (d.qrTiktok)   qrs.push(`<div class="qr-item"><img src="${qrUrl(d.qrTiktok)}" width="80" height="80"><div class="qr-label">TikTok</div></div>`);
   const seccionQr = qrs.length
     ? `<div class="linea"></div><p class="centro" style="font-size:9px;margin:4px 0">Síguenos</p><div class="qr-row">${qrs.join('')}</div>`
     : '';

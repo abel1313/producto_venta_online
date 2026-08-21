@@ -121,6 +121,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private qrTienda    = window.location.origin;
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
+  private qrInstagram: string | null = null;
+  private qrTiktok: string | null = null;
 
   // ── Carrito preload ────────────────────────────────────────────────
   private cargadoDesdeCarrito = false;
@@ -352,7 +354,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
     // Cargar URLs de contacto del negocio para QR en ticket (silencioso si falla)
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; this.qrInstagram = c.instagramUrl ?? null; this.qrTiktok = c.tiktokUrl ?? null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
   }
@@ -794,7 +796,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           metodoPago: metodoPagoSnap, montoDado: montoDadoSnap, cambio: cambioSnap,
           qrTienda:   this.qrTienda,
           qrWhatsapp: this.qrWhatsapp,
-          qrFacebook: this.qrFacebook
+          qrFacebook: this.qrFacebook,
+          qrInstagram: this.qrInstagram,
+          qrTiktok:  this.qrTiktok
         };
         request.notificacion = {
           enviarCorreo: true,
@@ -873,7 +877,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
             cambio:     cambioSnap,
             qrTienda:   this.qrTienda,
             qrWhatsapp: this.qrWhatsapp,
-            qrFacebook: this.qrFacebook
+            qrFacebook: this.qrFacebook,
+            qrInstagram: this.qrInstagram,
+            qrTiktok:  this.qrTiktok
           });
 
           this.limpiarTodo();

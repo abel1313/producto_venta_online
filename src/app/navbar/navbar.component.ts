@@ -23,7 +23,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   // justamente para que el acordeón no salte de grupo al entrar desde aquí.
   { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/zonas', 'flores/frases'] },
   { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
-  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
+  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta'] },
 ];
 
 @Component({

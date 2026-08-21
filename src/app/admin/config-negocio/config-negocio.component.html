@@ -59,7 +59,9 @@
           </div>
         </form>
 
-        <button class="cn-btn cn-btn--save" [disabled]="guardandoHorario" (click)="guardarHorario()">
+        <button class="cn-btn cn-btn--save" [disabled]="guardandoHorario || !configCargada"
+                [title]="!configCargada ? 'Espera a que cargue lo que ya está guardado' : ''"
+                (click)="guardarHorario()">
           💾 Guardar horario
         </button>
       </div>
@@ -136,7 +138,11 @@
 
         </form>
 
-        <button class="cn-btn cn-btn--save" [disabled]="guardandoContactos" (click)="guardarContactos()">
+        <!-- Sin `configCargada` no se deja guardar: el PUT toma "" como «borrar», así que
+             guardar con el formulario en blanco borraría las URLs ya guardadas. -->
+        <button class="cn-btn cn-btn--save" [disabled]="guardandoContactos || !configCargada"
+                [title]="!configCargada ? 'Espera a que cargue lo que ya está guardado' : ''"
+                (click)="guardarContactos()">
           💾 Guardar contactos
         </button>
       </div>

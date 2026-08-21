@@ -11016,3 +11016,67 @@ condicional correcto en ambos temas. ⚠️ No se pudo confirmar el clic en vivo
 intermitencia ya conocida de `router.navigateByUrl()` fuera de zona (a veces `ngOnInit` no
 dispara en el primer intento) — el cambio es de bajo riesgo (un `*ngIf` + `setValue('')`), no se
 insistió más allá de la confirmación visual ya obtenida.
+
+---
+
+## FIX `/admin/negocio` — EL FORMULARIO NUNCA CARGABA LO GUARDADO (2026-08-21)
+
+**Reportado con captura:** el horario volvía a los valores por defecto en vez del último
+guardado, las 4 URLs salían vacías aunque existieran, y los iconos de Facebook/Instagram/TikTok
+no aparecían en el login.
+
+### Una sola causa para las tres cosas
+
+`cargarConfig()` leía **dos niveles distintos de la misma respuesta**:
+
+```ts
+this.estado = data.data;                      // ← el nivel correcto
+this.horarioForm.patchValue({
+  horaApertura: data.horaApertura ?? '09:00', // ← la raíz: siempre undefined
+```
+
+`GET /v1/negocio/config` responde envuelto en `ResponseGeneric` (`{ mensaje, code, data, lista }`)
+— **comprobado con curl contra QA**, no supuesto:
+
+```json
+{"mensaje":"La peticion fue exitosa","code":200,
+ "data":{"abierto":false,"whatsappUrl":"","facebookUrl":"https://...","horaApertura":"09:00","horaCierre":"21:00"}}
+```
+
+Así que `data.horaApertura` era `undefined` y el `?? '09:00'` metía el valor por defecto. Lo mismo
+con las 4 URLs → campos vacíos. Y los iconos del login no salían **porque nunca se llegaron a
+guardar**: no era un bug del login (su markup y el servicio ya desenvuelven bien; verificado en
+pantalla, con datos salen los 4).
+
+⚠️ Es exactamente la trampa que ya estaba anotada para el módulo chat: *"TODOS los endpoints usan
+`ResponseGeneric` — leer siempre `res?.data`"*. Vuelve a costar caro porque **no falla**: devuelve
+`undefined` y el `??` lo tapa con un valor plausible.
+
+### Fix — desenvolver en el servicio, no en cada componente
+
+`getEstado()` y `getConfig()` ahora hacen `map(r => r?.data ?? r)`, igual que
+`getContactosPublicos()` ya hacía. Así ningún componente puede volver a leer el nivel equivocado.
+El login sigue funcionando sin tocarlo (su `res?.data ?? res` recibe el objeto ya plano).
+
+En el componente, un solo objeto para todo, y `||` en vez de `??` para el horario — una cadena
+vacía tampoco es un horario válido.
+
+### 🔴 El bug además BORRABA datos
+
+`PUT /v1/negocio/contactos` interpreta `""` como «límpialo». Con el formulario cargando vacío,
+darle a **Guardar contactos** mandaba 4 cadenas vacías y **borraba las URLs que ya estaban**.
+Es lo más probable detrás del `whatsappUrl: ""` que hoy tiene QA.
+
+Por eso se agregó `configCargada`: los dos botones de guardar quedan deshabilitados (con `title`
+explicando por qué) **hasta que se sepa qué hay guardado**, y si el GET falla se quedan
+deshabilitados a propósito.
+
+**Regla general:** un formulario que guarda con semántica de «vacío = borrar» no debe poder
+guardarse antes de haber cargado. Si la carga falla, guardar destruye.
+
+**Archivos:** `src/app/negocio/negocio.service.ts` (`getEstado`/`getConfig` desenvuelven),
+`config-negocio.component.ts` (`cargarConfig`, `configCargada`), `.html` (`[disabled]` + `title`).
+
+**Verificado en pantalla** con el shape real de QA: el horario carga 11:00–18:00 (lo guardado, no
+el default), las 4 URLs aparecen llenas, y en el login salen los 4 iconos con el texto
+«Local cerrado — abrimos a las 11:00».

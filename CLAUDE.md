@@ -10981,3 +10981,38 @@ warning del compilador no siempre es un fix seguro — verificar con `ng build` 
 (`ng serve` + Playwright, `GET /v1/negocio/estado` y `GET /v1/negocio/contactos` mockeados ya
 que no hay backend local) en claro y oscuro — badge de estado y los 4 íconos se ven correctos y
 legibles en ambos temas.
+
+---
+
+## FEAT NEGOCIO — BOTÓN "✕ LIMPIAR" JUNTO A CADA RED SOCIAL YA CONFIGURADA (2026-08-21)
+
+> Se me había pasado esto de la respuesta del back (`NEGOCIO_INSTAGRAM_TIKTOK_HORARIO.md`) — el
+> doc traía una sugerencia de UX aparte de confirmar los endpoints, y solo implementé el badge
+> del login sin notar que faltaba esta parte. El dueño lo detectó al preguntar de nuevo por el
+> "check" original.
+
+**Sugerencia del back:** cuando un campo de red social (WhatsApp/Facebook/Instagram/TikTok) ya
+tiene una URL guardada, un botón "limpiar" al lado la borra de un tirón — para el caso de "me
+equivoqué y quiero reemplazarla" sin tener que borrar el texto letra por letra. Mandar `""` en
+el `PUT /v1/negocio/contactos` ya limpia el campo del lado del back sin ningún problema.
+
+**Implementado:** botón `✕ Limpiar` dentro de la fila del `<label>` de cada uno de los 4 campos
+(`margin-left: auto`, empuja a la derecha), visible solo cuando ese `FormControl` ya tiene
+valor (`*ngIf="contactosForm.get('whatsappUrl')?.value"`). Al hacer clic,
+`limpiarCampo(campo)` hace `this.contactosForm.get(campo)?.setValue('')` — **solo limpia el
+campo en el formulario**, el admin sigue teniendo que darle "Guardar contactos" para persistirlo
+(no guarda solo, evitando un guardado accidental de un campo vacío sin que el admin lo confirme).
+
+**Archivos modificados:**
+- `src/app/admin/config-negocio/config-negocio.component.html` → botón en los 4 `<label>`
+- `src/app/admin/config-negocio/config-negocio.component.ts` → `limpiarCampo()`
+- `src/app/admin/config-negocio/config-negocio.component.scss` → `.cn-clear-btn`
+
+**Verificado con `ng build` sin errores**, y **en pantalla** (Playwright, sesión admin
+inyectada vía el injector de Angular — `window.ng.getComponent()` sobre `app-navbar`,
+`GET /v1/negocio/config` mockeado) en claro y oscuro: el botón aparece junto a WhatsApp/Facebook
+(con URL en el mock) y NO aparece junto a Instagram/TikTok (vacíos en el mock) — comportamiento
+condicional correcto en ambos temas. ⚠️ No se pudo confirmar el clic en vivo por la
+intermitencia ya conocida de `router.navigateByUrl()` fuera de zona (a veces `ngOnInit` no
+dispara en el primer intento) — el cambio es de bajo riesgo (un `*ngIf` + `setValue('')`), no se
+insistió más allá de la confirmación visual ya obtenida.

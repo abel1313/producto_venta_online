@@ -11,6 +11,7 @@ import { CarritoVarianteService } from 'src/app/variante/service/carrito-variant
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { ThemeService } from 'src/app/services/theme/theme.service';
 import { SesionService } from 'src/app/shared/sesion.service';
+import { NegocioService, IContactosPublicos } from 'src/app/negocio/negocio.service';
 
 @Component({
   selector: 'app-login-form',
@@ -24,6 +25,26 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
   mostrarPassword = false;
   cargando        = false;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
+
+  // ── Estado del negocio (abierto/cerrado + horario) y redes sociales ──
+  // Ambos endpoints son públicos (sin token) — fallan en silencio si no cargan,
+  // son puro adorno informativo y no deben bloquear el login.
+  negocioAbierto: boolean | null = null;
+  private horaApertura: string | null = null;
+  private horaCierre:   string | null = null;
+  contactos: IContactosPublicos | null = null;
+
+  get estadoNegocioTexto(): string {
+    if (this.negocioAbierto === null) return '';
+    if (this.negocioAbierto) {
+      return this.horaCierre
+        ? `¡Local abierto! Puedes comprar hasta las ${this.horaCierre}`
+        : 'Local abierto';
+    }
+    return this.horaApertura
+      ? `Local cerrado — abrimos a las ${this.horaApertura}`
+      : 'Local cerrado por ahora';
+  }
 
   // ── Fondo animado (malla técnica WebGL) — solo modo oscuro ──
   @ViewChild('particlesCanvas') particlesCanvas?: ElementRef<HTMLCanvasElement>;
@@ -115,7 +136,8 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly carritoVariante:      CarritoVarianteService,
     private readonly carritoService:       CarritoService,
     private readonly themeService:         ThemeService,
-    private readonly sesion:               SesionService
+    private readonly sesion:               SesionService,
+    private readonly negocioService:       NegocioService
   ) {
     this.loginForm = this.fb.group({
       userName: ['', Validators.required],
@@ -126,6 +148,24 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.presentacion.getImagenesPorTipoV2('LOGIN').subscribe({
       next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
+      error: () => {}
+    });
+
+    // GET /v1/negocio/estado — mismo shape envuelto { data: {...} } que ya
+    // consume ChatbotComponent. horaApertura/horaCierre pueden venir null si
+    // el admin nunca configuró horario (contrato confirmado por el back).
+    this.negocioService.getEstado().subscribe({
+      next: (res: any) => {
+        const estado = res?.data ?? res;
+        this.negocioAbierto = estado?.abierto ?? null;
+        this.horaApertura   = estado?.horaApertura ?? null;
+        this.horaCierre     = estado?.horaCierre   ?? null;
+      },
+      error: () => {}
+    });
+
+    this.negocioService.getContactosPublicos().subscribe({
+      next: c => { this.contactos = c; },
       error: () => {}
     });
   }

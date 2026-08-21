@@ -10928,3 +10928,56 @@ Contactos, y de ahí sale el **QR que se imprime en los tickets** de venta/abono
 sin los campos del back, `getContactosPublicos()` devuelve `instagramUrl`/`tiktokUrl` en `null` y
 esos 2 QR simplemente no aparecen en el ticket (mismo comportamiento que hoy si WhatsApp/Facebook
 no están configurados) — no rompe nada mientras tanto.
+
+---
+
+## FEAT LOGIN — ESTADO DEL NEGOCIO (ABIERTO/CERRADO) + ÍCONOS DE REDES SOCIALES (2026-08-21)
+
+> El back respondió la consulta de Instagram/TikTok en un documento aparte
+> (`documentos_front_back_nodevedaades_jade/NEGOCIO_INSTAGRAM_TIKTOK_HORARIO.md`) — ya
+> desplegado en QA y producción. Confirma los 3 endpoints de Instagram/TikTok (sin cambios de
+> nuestro lado, ya estaba listo) y agrega algo nuevo: `GET /v1/negocio/estado` (público, sin
+> token) ahora manda **siempre** `horaApertura`/`horaCierre`, pensado para mostrar un texto de
+> estado ("Local abierto"/"Local cerrado") en el login/home.
+
+### 1. Badge "Abierto/Cerrado" con horario en el login
+
+Nuevo `estadoNegocioTexto` en `LoginFormComponent`, con el copy sugerido por el back:
+- Abierto: *"¡Local abierto! Puedes comprar hasta las {horaCierre}"* (o solo "Local abierto" si
+  `horaCierre` viene `null` — el admin nunca configuró horario).
+- Cerrado: *"Local cerrado — abrimos a las {horaApertura}"* (o "Local cerrado por ahora").
+
+Se pide en `ngOnInit()` junto con las imágenes de presentación, **falla en silencio**
+(`error: () => {}`) — es un adorno informativo, no debe bloquear el login si el endpoint no
+responde. Mientras no cargue (`negocioAbierto === null`), no se muestra nada — evita un
+"parpadeo" mostrando un estado que después cambia.
+
+**Shape de la respuesta:** igual que `ChatbotComponent` ya consume (`res.data`, wrapped) —
+mismo patrón, `res?.data ?? res` por si acaso.
+
+### 2. Íconos de WhatsApp/Facebook/Instagram/TikTok en el login
+
+Fila de 4 íconos (mismos SVG/colores de marca que ya usa `config-negocio`) debajo del link de
+registro, cada uno `*ngIf` independiente según si esa red tiene URL configurada — usa
+`NegocioService.getContactosPublicos()`, el mismo endpoint que alimenta los QR de los tickets.
+
+⚠️ **`*ngIf="contactos?.whatsappUrl"` no se pudo simplificar a `.` sin el `?.`** aunque el
+compilador de plantillas (`NG8107`) marcara el `?.` como redundante por narrowing desde el
+`*ngIf` del contenedor padre (`*ngIf="contactos?.a || contactos?.b || ..."`) — quitarlo rompió
+el build real (`TS2531: Object is possibly 'null'`) porque esa narrowing no se propaga de un
+`*ngIf` de contenedor a los `*ngIf` de sus hijos en la comprobación de tipos de Angular. El
+warning del compilador no siempre es un fix seguro — verificar con `ng build` antes de aplicarlo.
+
+**Archivos modificados:**
+- `src/app/login/login-form/login-form.component.ts` → inyecta `NegocioService`; `negocioAbierto`,
+  `horaApertura`/`horaCierre` (privados), `estadoNegocioTexto`, `contactos`; 2 llamadas nuevas en
+  `ngOnInit()`
+- `src/app/login/login-form/login-form.component.html` → badge de estado bajo `.brand-sub`;
+  fila de 4 íconos de redes al final de `.form-inner`
+- `src/app/login/login-form/login-form.component.scss` → `.negocio-estado` (+`--cerrado`),
+  `.social-row` (+`__link`), overrides de modo oscuro
+
+**Verificado con `ng build --configuration=development` sin errores**, y **en pantalla**
+(`ng serve` + Playwright, `GET /v1/negocio/estado` y `GET /v1/negocio/contactos` mockeados ya
+que no hay backend local) en claro y oscuro — badge de estado y los 4 íconos se ven correctos y
+legibles en ambos temas.

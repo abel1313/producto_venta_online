@@ -86,6 +86,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
   private qrTienda    = window.location.origin;
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
+  private qrInstagram: string | null = null;
+  private qrTiktok: string | null = null;
 
   // ── Usuario ───────────────────────────────────────────────────────
   idUsuario = 0;
@@ -125,7 +127,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
     // Cargar URLs de contacto del negocio para QR en ticket (silencioso si falla)
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl; this.qrFacebook = c.facebookUrl; this.qrInstagram = c.instagramUrl ?? null; this.qrTiktok = c.tiktokUrl ?? null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
   }
@@ -278,7 +280,9 @@ export class AbonosComponent implements OnInit, OnDestroy {
                 motivo:    motivo ?? null,
                 qrTienda:   this.qrTienda,
                 qrWhatsapp: this.qrWhatsapp,
-                qrFacebook: this.qrFacebook
+                qrFacebook: this.qrFacebook,
+                qrInstagram: this.qrInstagram,
+                qrTiktok:  this.qrTiktok
               }) : null;
 
               Swal.fire({
@@ -382,6 +386,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
       tempTicket.qrTienda   = this.qrTienda;
       tempTicket.qrWhatsapp = this.qrWhatsapp;
       tempTicket.qrFacebook = this.qrFacebook;
+      tempTicket.qrInstagram = this.qrInstagram;
+      tempTicket.qrTiktok  = this.qrTiktok;
       body.notificacion = {
         enviarCorreo: true,
         ticketHtml:   generarHtmlTicket(tempTicket)
@@ -420,7 +426,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
           // Construir ticket de impresión si tenemos los artículos
           const htmlTicket = detalleSnap
-            ? generarHtmlTicket({ ...this.buildTicketDataFromDetalle(body, tipo, pedidoSnap, detalleSnap, montoDadoSnap, cambioSnap, metodoPagoSnap), qrTienda: this.qrTienda, qrWhatsapp: this.qrWhatsapp, qrFacebook: this.qrFacebook })
+            ? generarHtmlTicket({ ...this.buildTicketDataFromDetalle(body, tipo, pedidoSnap, detalleSnap, montoDadoSnap, cambioSnap, metodoPagoSnap), qrTienda: this.qrTienda, qrWhatsapp: this.qrWhatsapp, qrFacebook: this.qrFacebook, qrInstagram: this.qrInstagram, qrTiktok: this.qrTiktok })
             : null;
 
           const txtCambio = cambioSnap > 0 ? ` Cambio al cliente: $${cambioSnap.toFixed(2)}.` : '';

@@ -40,12 +40,19 @@ export class NegocioService {
 
   constructor(private readonly http: HttpClient) {}
 
+  /**
+   * ⚠️ Estos dos responden **envueltos** en `ResponseGeneric`: `{ mensaje, code, data, lista }`.
+   * Se desenvuelven aquí para que ningún componente pueda leer el nivel equivocado — que es
+   * justo el bug que dejó la pantalla de configuración con el horario en sus valores por
+   * defecto y las URLs vacías (comprobado contra QA: `/estado` y `/contactos` traen todo
+   * dentro de `data`).
+   */
   getEstado(): Observable<INegocioEstado> {
-    return this.http.get<INegocioEstado>(`${this.url}/estado`);
+    return this.http.get<any>(`${this.url}/estado`).pipe(map(r => (r?.data ?? r) as INegocioEstado));
   }
 
   getConfig(): Observable<INegocioEstado> {
-    return this.http.get<INegocioEstado>(`${this.url}/config`);
+    return this.http.get<any>(`${this.url}/config`).pipe(map(r => (r?.data ?? r) as INegocioEstado));
   }
 
   abrir(): Observable<any> {

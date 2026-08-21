@@ -11,6 +11,12 @@ import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service'
 export class ConfigNegocioComponent implements OnInit {
 
   estado: INegocioEstado | null = null;
+  /**
+   * Hasta que no se sepa qué hay guardado, no se deja guardar: el `PUT` de contactos
+   * interpreta `""` como «bórralo», así que guardar con el formulario en blanco borraría
+   * las URLs que ya existían.
+   */
+  configCargada    = false;
   toggling         = false;
   guardandoHorario = false;
   guardandoContactos = false;
@@ -37,23 +43,37 @@ export class ConfigNegocioComponent implements OnInit {
     this.cargarConfig();
   }
 
+  /**
+   * ⚠️ La respuesta viene envuelta en `ResponseGeneric` y el servicio ya la desenvuelve.
+   * Antes aquí se leían DOS niveles a la vez (`data.data` para el estado y `data.horaApertura`
+   * para el formulario): el segundo siempre era `undefined`, así que el horario volvía a
+   * 09:00–21:00 y las URLs salían vacías aunque estuvieran guardadas.
+   */
   private cargarConfig(): void {
     this.negocioService.getConfig().subscribe({
-      next: (data: any) => {
-
-        this.estado = data.data;
+      next: (config) => {
+        this.estado = config;
         this.horarioForm.patchValue({
-          horaApertura: data.horaApertura ?? '09:00',
-          horaCierre:   data.horaCierre   ?? '21:00'
+          horaApertura: config?.horaApertura || '09:00',
+          horaCierre:   config?.horaCierre   || '21:00'
         });
         this.contactosForm.patchValue({
-          whatsappUrl:  data.whatsappUrl  ?? '',
-          facebookUrl:  data.facebookUrl  ?? '',
-          instagramUrl: data.instagramUrl ?? '',
-          tiktokUrl:    data.tiktokUrl    ?? ''
+          whatsappUrl:  config?.whatsappUrl  ?? '',
+          facebookUrl:  config?.facebookUrl  ?? '',
+          instagramUrl: config?.instagramUrl ?? '',
+          tiktokUrl:    config?.tiktokUrl    ?? ''
         });
+        this.configCargada = true;
       },
-      error: (err) => { Swal.fire({ icon: 'error', title: 'Error al cargar configuración', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la configuración del negocio.', timer: 2000, showConfirmButton: false }); }
+      error: (err) => {
+        // Se deja `configCargada` en false a propósito: si no se pudo leer lo guardado,
+        // guardar mandaría cadenas vacías y BORRARÍA las URLs que ya existían.
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al cargar configuración',
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la configuración del negocio.'
+        });
+      }
     });
   }
 

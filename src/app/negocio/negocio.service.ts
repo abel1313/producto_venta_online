@@ -8,19 +8,25 @@ export interface INegocioEstado {
   abierto:       boolean;
   whatsappUrl:   string | null;
   facebookUrl:   string | null;
+  instagramUrl?: string | null;
+  tiktokUrl?:    string | null;
   horaApertura?: string;   // "09:00"
   horaCierre?:   string;   // "21:00"
 }
 
 export interface IContactosRequest {
-  whatsappUrl: string;
-  facebookUrl: string;
+  whatsappUrl:   string;
+  facebookUrl:   string;
+  instagramUrl?: string;
+  tiktokUrl?:    string;
 }
 
 export interface IContactosPublicos {
-  whatsappUrl: string | null;
-  facebookUrl: string | null;
-  tiendaUrl?:  string | null;
+  whatsappUrl:   string | null;
+  facebookUrl:   string | null;
+  instagramUrl?: string | null;
+  tiktokUrl?:    string | null;
+  tiendaUrl?:    string | null;
 }
 
 export interface IHorarioRequest {
@@ -56,9 +62,11 @@ export class NegocioService {
         // Maneja respuesta directa { whatsappUrl, facebookUrl } o envuelta { data: {...} }
         const d = r?.data ?? r;
         return {
-          whatsappUrl: d?.whatsappUrl ?? null,
-          facebookUrl: d?.facebookUrl ?? null,
-          tiendaUrl:   d?.tiendaUrl   ?? null
+          whatsappUrl:  d?.whatsappUrl  ?? null,
+          facebookUrl:  d?.facebookUrl  ?? null,
+          instagramUrl: d?.instagramUrl ?? null,
+          tiktokUrl:    d?.tiktokUrl    ?? null,
+          tiendaUrl:    d?.tiendaUrl    ?? null
         } as IContactosPublicos;
       })
     );

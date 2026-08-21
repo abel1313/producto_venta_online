@@ -34,6 +34,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   private qrTienda    = window.location.origin;
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
+  private qrInstagram: string | null = null;
+  private qrTiktok: string | null = null;
 
   // ── Abono inline ──────────────────────────────────────────────────
   mostrarFormAbono = false;
@@ -188,7 +190,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
 
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
 
@@ -442,7 +444,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
-      qrFacebook: this.qrFacebook
+      qrFacebook: this.qrFacebook,
+      qrInstagram: this.qrInstagram,
+      qrTiktok:  this.qrTiktok
     });
     this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({
       next: (r2: any) => Swal.fire({ title: '✅ Enviado', text: r2?.data ?? `Ticket enviado a ${correo}`, icon: 'success', timer: 2000, showConfirmButton: false }),
@@ -523,7 +527,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
-      qrFacebook: this.qrFacebook
+      qrFacebook: this.qrFacebook,
+      qrInstagram: this.qrInstagram,
+      qrTiktok:  this.qrTiktok
     }));
   }
 

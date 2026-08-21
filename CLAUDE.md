@@ -10892,3 +10892,39 @@ catálogo, publicar en redes, hashtags y registro. El modo claro se comparó lad
 El modo claro sigue en **jade**. Si se quiere que los dos temas se sientan la misma marca, la
 contraparte natural del monocromático es blanco de fondo con negro de acento — pero eso el dueño
 no lo pidió, así que no se tocó.
+
+---
+
+## FEAT NEGOCIO — INSTAGRAM Y TIKTOK EN CONTACTOS DEL NEGOCIO (2026-08-21)
+
+> Consulta al back subida al repo compartido (`documentos_front_back_nodevedaades_jade/CAMBIOS_FRONT.md`,
+> "❓ CONSULTA AL BACK — agregar Instagram y TikTok a los contactos del negocio"). Front listo,
+> a la espera de que el back agregue los 2 campos en `GET /v1/negocio/config`,
+> `GET /v1/negocio/contactos` (público) y `PUT /v1/negocio/contactos`.
+
+**No confundir con "Publicar en redes sociales"** (Facebook/Instagram/TikTok, módulo aparte que
+sigue en pruebas en `qa`, fuera de `master` por ahora). Esto es solo el **link de contacto** del
+negocio — mismo concepto que ya existían para WhatsApp/Facebook: se edita en Admin → Negocio &
+Contactos, y de ahí sale el **QR que se imprime en los tickets** de venta/abono.
+
+**Archivos modificados:**
+- `src/app/negocio/negocio.service.ts` → `INegocioEstado`, `IContactosRequest`,
+  `IContactosPublicos` con `instagramUrl?`/`tiktokUrl?`; `getContactosPublicos()` los mapea
+- `src/app/admin/config-negocio/config-negocio.component.ts` → campos del form, carga y guardado
+- `src/app/admin/config-negocio/config-negocio.component.html` → 2 campos nuevos con ícono
+  (mismo patrón que WhatsApp/Facebook — SVG inline, `fill` en color de marca:
+  `#E4405F` Instagram, `#FE2C55` TikTok — colores saturados a propósito, un ícono negro se
+  perdería contra una card oscura en modo oscuro)
+- `src/app/shared/ticket.util.ts` → `ITicketData.qrInstagram`/`qrTiktok`, nuevos bloques QR en
+  `generarHtmlTicket()`
+- `src/app/abonos/abonos.component.ts`, `src/app/variante/venta-directa/venta-directa.component.ts`,
+  `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts`,
+  `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → los 4 componentes que arman
+  tickets (8 puntos en total, más de los que documentaba esta misma sección al planearse — se
+  encontraron `mis-pedidos` y `detalle-pedido` con grep antes de cerrar, mismo criterio de
+  "revisar todos los `.subscribe()`/usos del mismo patrón" ya establecido en el proyecto)
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo —
+sin los campos del back, `getContactosPublicos()` devuelve `instagramUrl`/`tiktokUrl` en `null` y
+esos 2 QR simplemente no aparecen en el ticket (mismo comportamiento que hoy si WhatsApp/Facebook
+no están configurados) — no rompe nada mientras tanto.

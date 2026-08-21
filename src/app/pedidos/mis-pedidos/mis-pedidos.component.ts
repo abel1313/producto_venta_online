@@ -60,6 +60,8 @@ export class MisPedidosComponent implements OnInit {
   private qrTienda    = window.location.origin;
   private qrWhatsapp: string | null = null;
   private qrFacebook: string | null = null;
+  private qrInstagram: string | null = null;
+  private qrTiktok: string | null = null;
 
   // ── Filtro por lugar de entrega (autocomplete, solo admin) ──────────────
   lugares: ILugarEntrega[] = [];
@@ -145,7 +147,7 @@ export class MisPedidosComponent implements OnInit {
     });
 
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
       error: () => {}
     });
 
@@ -902,7 +904,9 @@ export class MisPedidosComponent implements OnInit {
       })),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
-      qrFacebook: this.qrFacebook
+      qrFacebook: this.qrFacebook,
+      qrInstagram: this.qrInstagram,
+      qrTiktok:  this.qrTiktok
     }));
   }
 
@@ -1013,7 +1017,9 @@ export class MisPedidosComponent implements OnInit {
       articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
-      qrFacebook: this.qrFacebook
+      qrFacebook: this.qrFacebook,
+      qrInstagram: this.qrInstagram,
+      qrTiktok:  this.qrTiktok
     });
 
     this.pedidoService.reenviarComprobante(pedidoId, { correo, ticketHtml: html }).subscribe({

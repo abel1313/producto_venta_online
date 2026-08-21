@@ -29,8 +29,10 @@ export class ConfigNegocioComponent implements OnInit {
       horaCierre:   ['21:00']
     });
     this.contactosForm = this.fb.group({
-      whatsappUrl: [''],
-      facebookUrl: ['']
+      whatsappUrl:  [''],
+      facebookUrl:  [''],
+      instagramUrl: [''],
+      tiktokUrl:    ['']
     });
     this.cargarConfig();
   }
@@ -45,8 +47,10 @@ export class ConfigNegocioComponent implements OnInit {
           horaCierre:   data.horaCierre   ?? '21:00'
         });
         this.contactosForm.patchValue({
-          whatsappUrl: data.whatsappUrl ?? '',
-          facebookUrl: data.facebookUrl ?? ''
+          whatsappUrl:  data.whatsappUrl  ?? '',
+          facebookUrl:  data.facebookUrl  ?? '',
+          instagramUrl: data.instagramUrl ?? '',
+          tiktokUrl:    data.tiktokUrl    ?? ''
         });
       },
       error: (err) => { Swal.fire({ icon: 'error', title: 'Error al cargar configuración', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar la configuración del negocio.', timer: 2000, showConfirmButton: false }); }
@@ -102,8 +106,10 @@ export class ConfigNegocioComponent implements OnInit {
       next: () => {
         this.guardandoContactos = false;
         if (this.estado) {
-          this.estado.whatsappUrl = this.contactosForm.value.whatsappUrl;
-          this.estado.facebookUrl = this.contactosForm.value.facebookUrl;
+          this.estado.whatsappUrl  = this.contactosForm.value.whatsappUrl;
+          this.estado.facebookUrl  = this.contactosForm.value.facebookUrl;
+          this.estado.instagramUrl = this.contactosForm.value.instagramUrl;
+          this.estado.tiktokUrl    = this.contactosForm.value.tiktokUrl;
         }
         Swal.fire({ icon: 'success', title: '¡Contactos actualizados!', timer: 1400, showConfirmButton: false });
       },

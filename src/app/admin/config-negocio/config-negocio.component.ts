@@ -98,6 +98,14 @@ export class ConfigNegocioComponent implements OnInit {
     });
   }
 
+  // Sugerencia del back (doc NEGOCIO_INSTAGRAM_TIKTOK_HORARIO.md): en vez de borrar el
+  // texto letra por letra para reemplazar una URL ya guardada, un botón "✕ Limpiar" la
+  // vacía de un tirón. No guarda nada — solo limpia el campo en el form; el admin sigue
+  // teniendo que darle "Guardar contactos" para persistirlo.
+  limpiarCampo(campo: 'whatsappUrl' | 'facebookUrl' | 'instagramUrl' | 'tiktokUrl'): void {
+    this.contactosForm.get(campo)?.setValue('');
+  }
+
   // ── Guardar contactos (request existente) ─────────────────────────
 
   guardarContactos(): void {

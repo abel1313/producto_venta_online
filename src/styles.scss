@@ -59,13 +59,23 @@ nb-card, nb-menu, nb-select {
    ════════════════════════════════════════════════ */
 body.theme-light, [data-theme="light"] {
   color-scheme: light;
+  /* ── Marca — los 3 tonos del degradado ──
+     Existen para que el modo oscuro pueda tener SU propia marca sin tocar el claro.
+     Antes estos 3 tonos estaban escritos a mano en 52 archivos de componente, así que
+     cambiar el oscuro obligaba a cambiar también el claro. Ahora son variables:
+     `--brand-1` es el acento, `--brand-2` y `--brand-3` los stops del degradado.
+     ⚠️ Regla del proyecto: nunca escribir el hex de marca en un componente. */
+  --brand-1:            #00875A;
+  --brand-2:            #005C3D;
+  --brand-3:            #00301F;
+
   /* ── Paleta de marca — variables canónicas ── */
   --color-bg:           #F3FAF6;
   --color-surface:      #FFFFFF;
   --color-surface-alt:  #E3F2EA;
   --color-text:         #152420;
   --color-text-secondary: #55736A;
-  --color-accent:       #00875A;
+  --color-accent:       var(--brand-1);
   --color-border:       #D5E8DD;
   --color-success-bg:   #E4E9E4;
   --color-success-text: #3A4A3D;
@@ -79,10 +89,10 @@ body.theme-light, [data-theme="light"] {
   --app-text:          #152420;
   --app-text-muted:    #55736A;
   --app-border:        #D5E8DD;
-  --app-accent:        #00875A;
-  --app-accent-soft:   rgba(0,135,90,0.10);
+  --app-accent:        var(--brand-1);
+  --app-accent-soft:   rgba(var(--app-accent-rgb),0.10);
   /* Tinta = color del TEXTO que va encima del acento. En claro el acento es
-     oscuro (#00875A) → texto blanco. En oscuro el acento es brillante → texto
+     oscuro (var(--brand-1)) → texto blanco. En oscuro el acento es brillante → texto
      casi negro. Sin esto, un botón jade brillante con texto blanco queda
      ilegible (se detectó en la captura del paginador). */
   --app-accent-ink:    #FFFFFF;
@@ -92,9 +102,9 @@ body.theme-light, [data-theme="light"] {
   /* Bootstrap lee estas para .text-primary / .bg-primary / .link-primary /
      anillos de foco. Declaradas aquí (body.theme-* = mayor especificidad que
      el :root de Bootstrap) para que sigan el acento del sistema. */
-  --bs-primary:        #00875A;
+  --bs-primary:        var(--brand-1);
   --bs-primary-rgb:    0, 135, 90;
-  --bs-link-color:     #00875A;
+  --bs-link-color:     var(--brand-1);
   --bs-link-color-rgb: 0, 135, 90;
   --bs-link-hover-color: #006B47;
   --app-shadow:        0 1px 4px rgba(0,0,0,0.08);
@@ -115,8 +125,8 @@ body.theme-light, [data-theme="light"] {
   --input-text:        #152420;
   --input-border:      #D5E8DD;
   --input-placeholder: #9DBAAD;
-  --input-focus-border: #00875A;
-  --input-focus-shadow: 0 0 0 3px rgba(0,135,90,0.18);
+  --input-focus-border: var(--brand-1);
+  --input-focus-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18);
 
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #FFFFFF;
@@ -124,8 +134,8 @@ body.theme-light, [data-theme="light"] {
 
   /* ── Cabeceras — glassmorphism Aether (mismo cristal del login) ── */
   --header-brand:        rgba(255, 255, 255, 0.78);
-  --header-brand-shadow: rgba(0, 135, 90, 0.12);
-  --header-brand-border: rgba(0, 135, 90, 0.16);
+  --header-brand-shadow: rgba(var(--app-accent-rgb), 0.12);
+  --header-brand-border: rgba(var(--app-accent-rgb), 0.16);
   --header-brand-filter: blur(20px) saturate(150%);
   --header-text:         #152420;
   --header-text-muted:   #55736A;
@@ -134,73 +144,96 @@ body.theme-light, [data-theme="light"] {
 /* ════════════════════════════════════════════════
    TEMA OSCURO (19:00 – 5:59)
    ════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   MODO OSCURO — MONOCROMÁTICO SOBRE NEGRO PURO (2026-08-21)
+
+   Decisión del dueño tras descartar seis paletas de color seguidas (índigo,
+   ámbar, azul/morado, jade, y las cuatro candidatas violeta/oro/coral/rubí):
+   **fondo negro puro y sin ningún color de marca** — blancos y plata.
+
+   Cómo se lee la jerarquía sin color: por luminosidad. El texto normal es
+   #E9E9EC y el acento es #FFFFFF, o sea el acento es lo *más* brillante de la
+   pantalla. Los rellenos de marca son blancos con tinta negra encima.
+
+   ⚠️ Los colores SEMÁNTICOS no se tocan (rojo de error, verde de éxito, ámbar
+   de espera): no son la marca, y sobre negro puro resaltan mejor que nunca.
+   ══════════════════════════════════════════════════════════════════════════ */
 body.theme-dark, [data-theme="dark"] {
   color-scheme: dark;
+
+  /* Marca monocromática: blanco → plata → gris. Los degradados que antes iban
+     de verde oscuro a verde brillante ahora van de gris a blanco. */
+  --brand-1:            #FFFFFF;
+  --brand-2:            #C7C7CC;
+  --brand-3:            #8E8E93;
+
   /* ── Paleta de marca — variables canónicas ── */
-  --color-bg:           #081410;
-  --color-surface:      #0F2119;
-  --color-surface-alt:  #193227;
-  --color-text:         #EDF7F1;
-  --color-text-secondary: #88A99A;
-  --color-accent:       #00D97E;
-  --color-border:       #1E3A2D;
+  --color-bg:           #000000;
+  --color-surface:      #0C0C0C;
+  --color-surface-alt:  #151517;
+  --color-text:         #E9E9EC;
+  --color-text-secondary: #9A9AA0;
+  --color-accent:       var(--brand-1);
+  --color-border:       #2A2A2E;
   --color-success-bg:   #233326;
   --color-success-text: #8FB894;
   --color-warning-bg:   #3A2323;
   --color-warning-text: #D48B8B;
 
   /* ── Base (aliases a la paleta) ── */
-  --app-bg:            #081410;
-  --app-surface:       #0F2119;
-  --app-surface-2:     #193227;
-  --app-text:          #EDF7F1;
-  --app-text-muted:    #88A99A;
-  --app-border:        #1E3A2D;
-  --app-accent:        #00D97E;
-  --app-accent-soft:   rgba(0,217,126,0.14);
-  /* Acento brillante → la tinta encima debe ser oscura, no blanca. */
-  --app-accent-ink:    #062015;
-  --app-accent-hover:  #2EE698;
-  --app-accent-rgb:    0, 217, 126;
+  --app-bg:            #000000;
+  --app-surface:       #0C0C0C;
+  --app-surface-2:     #151517;
+  --app-text:          #E9E9EC;
+  --app-text-muted:    #9A9AA0;
+  --app-border:        #2A2A2E;
+  --app-accent:        var(--brand-1);
+  --app-accent-soft:   rgba(255,255,255,0.10);
+  /* Acento blanco → la tinta encima tiene que ser negra. */
+  --app-accent-ink:    #000000;
+  --app-accent-hover:  #D4D4D8;
+  --app-accent-rgb:    255, 255, 255;
 
   /* Ver nota en el bloque claro — Bootstrap usa estas para utilidades/enlaces. */
-  --bs-primary:        #00D97E;
-  --bs-primary-rgb:    0, 217, 126;
-  --bs-link-color:     #00D97E;
-  --bs-link-color-rgb: 0, 217, 126;
-  --bs-link-hover-color: #2EE698;
-  --app-shadow:        0 1px 4px rgba(0,0,0,0.40);
+  --bs-primary:        var(--brand-1);
+  --bs-primary-rgb:    255, 255, 255;
+  --bs-link-color:     var(--brand-1);
+  --bs-link-color-rgb: 255, 255, 255;
+  --bs-link-hover-color: #D4D4D8;
+  --app-shadow:        0 1px 4px rgba(0,0,0,0.60);
 
   /* ── Página (fondo principal) ── */
-  --page-bg:           #081410;
+  --page-bg:           #000000;
 
-  /* ── Cards / paneles ── */
-  --card-bg:           #0F2119;
-  --card-text:         #EDF7F1;
-  --card-text-muted:   #88A99A;
-  --card-border:       #1E3A2D;
-  --card-shadow:       0 4px 20px rgba(0,0,0,0.45);
+  /* ── Cards / paneles ──
+     Sobre negro puro la sombra no se ve: lo que separa la tarjeta del fondo es
+     que la tarjeta es un pelo más clara (#0C0C0C) y su borde. */
+  --card-bg:           #0C0C0C;
+  --card-text:         #E9E9EC;
+  --card-text-muted:   #9A9AA0;
+  --card-border:       #2A2A2E;
+  --card-shadow:       0 4px 20px rgba(0,0,0,0.65);
   --card-radius:       14px;
 
   /* ── Inputs / buscadores / textareas ── */
-  --input-bg:          rgba(225,255,240,0.06);
-  --input-text:        #EDF7F1;
-  --input-border:      #1E3A2D;
-  --input-placeholder: #688A7C;
-  --input-focus-border: #00D97E;
-  --input-focus-shadow: 0 0 0 3px rgba(0,217,126,0.22);
+  --input-bg:          rgba(255,255,255,0.05);
+  --input-text:        #E9E9EC;
+  --input-border:      #2A2A2E;
+  --input-placeholder: #6E6E73;
+  --input-focus-border: var(--brand-1);
+  --input-focus-shadow: 0 0 0 3px rgba(255,255,255,0.18);
 
   /* ── Formularios de guardado/actualización ── */
-  --form-bg:           #0F2119;
-  --form-section-bg:   #193227;
+  --form-bg:           #0C0C0C;
+  --form-section-bg:   #151517;
 
-  /* ── Cabeceras — dark glass Aether (mismo cristal del login) ── */
-  --header-brand:        rgba(10, 26, 20, 0.72);
-  --header-brand-shadow: rgba(0, 0, 0, 0.55);
-  --header-brand-border: rgba(0, 217, 126, 0.28);
+  /* ── Cabeceras — cristal sobre negro ── */
+  --header-brand:        rgba(12, 12, 12, 0.72);
+  --header-brand-shadow: rgba(0, 0, 0, 0.70);
+  --header-brand-border: rgba(255, 255, 255, 0.14);
   --header-brand-filter: blur(20px);
-  --header-text:         #EDF7F1;
-  --header-text-muted:   #88A99A;
+  --header-text:         #E9E9EC;
+  --header-text-muted:   #9A9AA0;
 }
 
 /* ── Transición suave al cambiar de tema ──── */
@@ -307,176 +340,176 @@ label {
 body.theme-dark {
 
   /* ── Tipografía general ────────────────── */
-  color: #EDF7F1;
-  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #EDF7F1; }
+  color: #E9E9EC;
+  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #E9E9EC; }
 
   /* ── Bootstrap cards ───────────────────── */
   .card {
-    background: rgba(225,255,240,0.05) !important;
+    background: rgba(255,255,255,0.05) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    border: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
     box-shadow: 0 4px 24px rgba(0,0,0,0.45) !important;
   }
   .card-header {
-    background: rgba(225,255,240,0.06) !important;
-    border-bottom: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-bottom: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
-  .card-body { color: #EDF7F1 !important; }
-  .card-title { color: #EDF7F1 !important; }
+  .card-body { color: #E9E9EC !important; }
+  .card-title { color: #E9E9EC !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
-    background: rgba(225,255,240,0.05) !important;
-    border: 1px solid #1E3A2D !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid #2A2A2E !important;
     backdrop-filter: blur(12px);
-    color: #EDF7F1 !important;
+    color: #E9E9EC !important;
   }
   nb-card-header {
-    background: rgba(225,255,240,0.05) !important;
-    border-bottom: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
-  nb-card-body { color: #EDF7F1 !important; }
+  nb-card-body { color: #E9E9EC !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: #EDF7F1 !important;
+    color: #E9E9EC !important;
     --bs-table-bg: transparent;
-    --bs-table-striped-bg: rgba(225,255,240,0.03);
-    --bs-table-hover-bg: rgba(225,255,240,0.06);
-    --bs-table-border-color: #1E3A2D;
+    --bs-table-striped-bg: rgba(255,255,255,0.03);
+    --bs-table-hover-bg: rgba(255,255,255,0.06);
+    --bs-table-border-color: #2A2A2E;
   }
   .table thead th {
-    background: rgba(225,255,240,0.06) !important;
+    background: rgba(255,255,255,0.06) !important;
     color: #93B3A4 !important;
-    border-color: #1E3A2D !important;
+    border-color: #2A2A2E !important;
   }
   .table td, .table th { border-color: rgba(30,58,45,0.7) !important; }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
-    background: rgba(225,255,240,0.06) !important;
-    border-color: #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: #2A2A2E !important;
+    color: #E9E9EC !important;
     &:focus {
-      background: rgba(225,255,240,0.09) !important;
-      border-color: #00D97E !important;
-      box-shadow: 0 0 0 3px rgba(0,217,126,0.22) !important;
+      background: rgba(255,255,255,0.09) !important;
+      border-color: var(--brand-1) !important;
+      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.22) !important;
     }
     &::placeholder { color: #5F8375 !important; }
   }
   .input-group-text {
-    background: rgba(225,255,240,0.06) !important;
-    border-color: #1E3A2D !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: #2A2A2E !important;
     color: #93B3A4 !important;
   }
   label { color: #93B3A4 !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {
-    background: rgba(8,20,16,0.97) !important;
+    background: rgba(var(--sb-bg-rgb),0.97) !important;
     backdrop-filter: blur(16px);
-    border: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    border: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
   .modal-header {
-    border-bottom: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    border-bottom: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
-  .modal-footer { border-top: 1px solid #1E3A2D !important; }
+  .modal-footer { border-top: 1px solid #2A2A2E !important; }
   .btn-close { filter: invert(1); }
 
   /* ── Bootstrap dropdowns ───────────────── */
   .dropdown-menu {
-    background: rgba(8,20,16,0.97) !important;
+    background: rgba(var(--sb-bg-rgb),0.97) !important;
     backdrop-filter: blur(12px);
-    border: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    border: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
   .dropdown-item {
     color: #E3F2EA !important;
-    &:hover { background: rgba(225,255,240,0.08) !important; color: #fff !important; }
+    &:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
   }
-  .dropdown-divider { border-color: #1E3A2D !important; }
+  .dropdown-divider { border-color: #2A2A2E !important; }
 
   /* ── PrimeNG ───────────────────────────── */
   .p-card {
-    background: rgba(225,255,240,0.05) !important;
-    border: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
   .p-datatable .p-datatable-thead > tr > th {
-    background: rgba(225,255,240,0.06) !important;
+    background: rgba(255,255,255,0.06) !important;
     color: #93B3A4 !important;
-    border-color: #1E3A2D !important;
+    border-color: #2A2A2E !important;
   }
   .p-datatable .p-datatable-tbody > tr {
     background: transparent !important;
-    color: #EDF7F1 !important;
-    &:hover { background: rgba(225,255,240,0.05) !important; }
+    color: #E9E9EC !important;
+    &:hover { background: rgba(255,255,255,0.05) !important; }
   }
   .p-datatable .p-datatable-tbody > tr > td { border-color: rgba(30,58,45,0.6) !important; }
   .p-inputtext {
-    background: rgba(225,255,240,0.06) !important;
-    border-color: #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: #2A2A2E !important;
+    color: #E9E9EC !important;
   }
   .p-dropdown {
     background: #0D1E17 !important;
-    border-color: #1E3A2D !important;
-    color: #EDF7F1 !important;
+    border-color: #2A2A2E !important;
+    color: #E9E9EC !important;
   }
-  .p-dropdown-label { color: #EDF7F1 !important; }
+  .p-dropdown-label { color: #E9E9EC !important; }
   .p-dropdown-trigger { color: #93B3A4 !important; }
   .p-dropdown-panel {
-    background: #0F2119 !important;
-    border: 1px solid #1E3A2D !important;
+    background: #0C0C0C !important;
+    border: 1px solid #2A2A2E !important;
     box-shadow: 0 8px 32px rgba(0,0,0,0.55) !important;
   }
-  .p-dropdown-items-wrapper { background: #0F2119 !important; }
+  .p-dropdown-items-wrapper { background: #0C0C0C !important; }
   .p-dropdown-item {
-    color: #EDF7F1 !important;
+    color: #E9E9EC !important;
     background: transparent !important;
-    &:hover { background: rgba(0,217,126,0.16) !important; color: #6EEBB0 !important; }
+    &:hover { background: rgba(var(--app-accent-rgb),0.16) !important; color: var(--brand-1) !important; }
   }
-  .p-dropdown-item.p-highlight { background: rgba(0,217,126,0.20) !important; color: #6EEBB0 !important; }
+  .p-dropdown-item.p-highlight { background: rgba(var(--app-accent-rgb),0.20) !important; color: var(--brand-1) !important; }
   .p-dialog .p-dialog-header {
-    background: rgba(8,20,16,0.97) !important;
-    border-bottom: 1px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(var(--sb-bg-rgb),0.97) !important;
+    border-bottom: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
   }
   .p-dialog .p-dialog-content {
-    background: rgba(8,20,16,0.95) !important;
-    color: #EDF7F1 !important;
+    background: rgba(var(--sb-bg-rgb),0.95) !important;
+    color: #E9E9EC !important;
   }
   .p-dialog .p-dialog-footer {
-    background: rgba(8,20,16,0.97) !important;
-    border-top: 1px solid #1E3A2D !important;
+    background: rgba(var(--sb-bg-rgb),0.97) !important;
+    border-top: 1px solid #2A2A2E !important;
   }
 
   /* ── AG Grid ────────────────────────────── */
   .ag-theme-alpine {
-    --ag-background-color:        rgba(225,255,240,0.04);
-    --ag-header-background-color: rgba(225,255,240,0.07);
-    --ag-odd-row-background-color: rgba(225,255,240,0.02);
-    --ag-row-hover-color:         rgba(225,255,240,0.06);
-    --ag-border-color:            #1E3A2D;
-    --ag-foreground-color:        #EDF7F1;
+    --ag-background-color:        rgba(255,255,255,0.04);
+    --ag-header-background-color: rgba(255,255,255,0.07);
+    --ag-odd-row-background-color: rgba(255,255,255,0.02);
+    --ag-row-hover-color:         rgba(255,255,255,0.06);
+    --ag-border-color:            #2A2A2E;
+    --ag-foreground-color:        #E9E9EC;
     --ag-header-foreground-color: #93B3A4;
   }
 
   /* ── Bootstrap alerts ──────────────────── */
   .alert {
-    background: rgba(225,255,240,0.06) !important;
-    border-color: #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: #2A2A2E !important;
+    color: #E9E9EC !important;
   }
 
   /* ── Badges neutros ────────────────────── */
-  .badge.bg-light { background: rgba(225,255,240,0.12) !important; color: #EDF7F1 !important; }
+  .badge.bg-light { background: rgba(255,255,255,0.12) !important; color: #E9E9EC !important; }
   .text-muted { color: #5F8375 !important; }
 }
 
@@ -524,7 +557,7 @@ body.theme-light {
   .table {
     color: #12241D !important;
     --bs-table-bg: #FFFFFF;
-    --bs-table-striped-bg: #EDF7F1;
+    --bs-table-striped-bg: #E9E9EC;
     --bs-table-hover-bg: #E3F2EA;
     --bs-table-border-color: #D5E8DD;
   }
@@ -540,8 +573,8 @@ body.theme-light {
     border-color: #D5E8DD !important;
     color: #12241D !important;
     &:focus {
-      border-color: #00875A !important;
-      box-shadow: 0 0 0 3px rgba(0,135,90,0.18) !important;
+      border-color: var(--brand-1) !important;
+      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
     }
   }
   .input-group-text {
@@ -574,7 +607,7 @@ body.theme-light {
   }
   .dropdown-item {
     color: #12241D !important;
-    &:hover { background: #E3F2EA !important; color: #00875A !important; }
+    &:hover { background: #E3F2EA !important; color: var(--brand-1) !important; }
   }
 
   /* ── PrimeNG ───────────────────────────── */
@@ -592,7 +625,7 @@ body.theme-light {
   .p-datatable .p-datatable-tbody > tr {
     background: #FFFFFF !important;
     color: #12241D !important;
-    &:hover { background: #EDF7F1 !important; }
+    &:hover { background: #E9E9EC !important; }
   }
   .p-datatable .p-datatable-tbody > tr > td { border-color: #E3F2EA !important; }
   .p-inputtext {
@@ -610,7 +643,7 @@ body.theme-light {
     border: 1px solid #D5E8DD !important;
     box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
   }
-  .p-dropdown-item { color: #12241D !important; &:hover { background: #E3F2EA !important; color: #00875A !important; } }
+  .p-dropdown-item { color: #12241D !important; &:hover { background: #E3F2EA !important; color: var(--brand-1) !important; } }
   .p-dialog .p-dialog-header {
     background: #FFFFFF !important;
     border-bottom: 1px solid #D5E8DD !important;
@@ -623,7 +656,7 @@ body.theme-light {
   .ag-theme-alpine {
     --ag-background-color:        #FFFFFF;
     --ag-header-background-color: #E3F2EA;
-    --ag-odd-row-background-color: #EDF7F1;
+    --ag-odd-row-background-color: #E9E9EC;
     --ag-row-hover-color:         #E3F2EA;
     --ag-border-color:            #D5E8DD;
     --ag-foreground-color:        #12241D;
@@ -654,9 +687,9 @@ body.theme-light, [data-theme="light"] {
     background: #FFFFFF !important;
     color: #12241D !important;
     border-radius: 24px !important;
-    border: 1px solid rgba(0,135,90, 0.22) !important;
+    border: 1px solid rgba(var(--app-accent-rgb), 0.22) !important;
     box-shadow:
-      0 8px 32px rgba(0,135,90, 0.12),
+      0 8px 32px rgba(var(--app-accent-rgb), 0.12),
       0 2px 8px rgba(0, 0, 0, 0.07) !important;
   }
   .swal2-title         { color: #12241D !important; }
@@ -670,8 +703,8 @@ body.theme-light, [data-theme="light"] {
     border-radius: 10px !important;
     box-shadow: none !important;
     &:focus {
-      border-color: #00875A !important;
-      box-shadow: 0 0 0 3px rgba(0,135,90,0.18) !important;
+      border-color: var(--brand-1) !important;
+      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
     }
   }
   .swal2-validation-message {
@@ -683,26 +716,26 @@ body.theme-light, [data-theme="light"] {
 
 body.theme-dark, [data-theme="dark"] {
   .swal2-popup {
-    background: #0F2119 !important;
-    color: #EDF7F1 !important;
+    background: #0C0C0C !important;
+    color: #E9E9EC !important;
     border-radius: 24px !important;
-    border: 1px solid #1E3A2D !important;
+    border: 1px solid #2A2A2E !important;
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55) !important;
   }
-  .swal2-title         { color: #EDF7F1 !important; }
+  .swal2-title         { color: #E9E9EC !important; }
   .swal2-html-container,
   .swal2-content       { color: #93B3A4 !important; }
   .swal2-input,
   .swal2-file          {
-    background: rgba(225,255,240,0.06) !important;
-    border: 1.5px solid #1E3A2D !important;
-    color: #EDF7F1 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1.5px solid #2A2A2E !important;
+    color: #E9E9EC !important;
     border-radius: 10px !important;
     box-shadow: none !important;
     &::placeholder     { color: #5F8375 !important; }
     &:focus {
-      border-color: #00D97E !important;
-      box-shadow: 0 0 0 3px rgba(0,217,126,0.22) !important;
+      border-color: var(--brand-1) !important;
+      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.22) !important;
     }
   }
   .swal2-label         { color: #93B3A4 !important; }
@@ -884,13 +917,13 @@ body.theme-dark, [data-theme="dark"] {
 body.theme-light, [data-theme="light"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="pl-card__head"]) {
-    background:          rgba(225,255,240, 0.82) !important;
+    background:          rgba(255,255,255, 0.82) !important;
     backdrop-filter:     blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
     box-shadow:
-      0 8px 32px rgba(0,135,90, 0.12),
+      0 8px 32px rgba(var(--app-accent-rgb), 0.12),
       0 2px 8px rgba(0, 0, 0, 0.05) !important;
-    border-bottom:       1px solid rgba(0,135,90, 0.22) !important;
+    border-bottom:       1px solid rgba(var(--app-accent-rgb), 0.22) !important;
     color:               #12241D !important;
   }
 
@@ -913,14 +946,14 @@ body.theme-light, [data-theme="light"] {
 body.theme-dark, [data-theme="dark"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="pl-card__head"]) {
-    background:          rgba(8,20,16, 0.80) !important;
+    background:          rgba(var(--sb-bg-rgb), 0.80) !important;
     backdrop-filter:     blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     box-shadow:          0 6px 28px rgba(0, 0, 0, 0.50) !important;
-    border-bottom:       1px solid rgba(0,217,126, 0.15) !important;
-    color:               #EDF7F1 !important;
+    border-bottom:       1px solid rgba(var(--app-accent-rgb), 0.15) !important;
+    color:               #E9E9EC !important;
 
-    h4, h5, h6     { color: #EDF7F1 !important; }
+    h4, h5, h6     { color: #E9E9EC !important; }
     small           { color: #93B3A4 !important; }
   }
 }

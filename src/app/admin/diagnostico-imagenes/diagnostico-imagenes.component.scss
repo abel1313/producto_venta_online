@@ -1,6 +1,6 @@
 $t: all 0.2s ease;
-$accent: #00875A;
-$accent-light: rgba(0,135,90,0.12);
+$accent: var(--brand-1);
+$accent-light: rgba(var(--app-accent-rgb),0.12);
 
 // ── Página ─────────────────────────────────────────────────────────
 .di-page {
@@ -23,7 +23,7 @@ $accent-light: rgba(0,135,90,0.12);
   // SIN overflow:hidden para que el dropdown no quede cortado
 
   &__header {
-    background: linear-gradient(135deg, #00301F 0%, #005C3D 60%, #00875A 100%);
+    background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 60%, var(--brand-1) 100%);
     padding: 24px 28px 22px;
     display: flex;
     align-items: center;
@@ -66,7 +66,7 @@ $accent-light: rgba(0,135,90,0.12);
   &--active {
     background: var(--card-bg);
     color: $accent;
-    box-shadow: 0 2px 8px rgba(0,135,90,0.18);
+    box-shadow: 0 2px 8px rgba(var(--app-accent-rgb),0.18);
   }
   &:hover:not(&--active) { color: var(--card-text); }
 }
@@ -148,7 +148,7 @@ $accent-light: rgba(0,135,90,0.12);
     font-size: 0.75rem; font-family: monospace;
     color: $accent; white-space: nowrap;
     background: $accent-light; padding: 1px 7px; border-radius: 10px;
-    border: 1px solid rgba(0,135,90,0.3);
+    border: 1px solid rgba(var(--app-accent-rgb),0.3);
   }
 
   &__sub {
@@ -176,13 +176,13 @@ $accent-light: rgba(0,135,90,0.12);
   &__chip {
     display: inline-flex; align-items: center; gap: 8px;
     background: $accent-light;
-    border: 1px solid rgba(0,135,90,0.35);
+    border: 1px solid rgba(var(--app-accent-rgb),0.35);
     border-radius: 20px; padding: 4px 14px;
     font-size: 0.88rem; font-weight: 600; color: $accent;
   }
 
   &__id {
-    font-size: 0.75rem; font-family: monospace; color: rgba(0,135,90,0.6);
+    font-size: 0.75rem; font-family: monospace; color: rgba(var(--app-accent-rgb),0.6);
   }
 }
 
@@ -254,8 +254,8 @@ $accent-light: rgba(0,135,90,0.12);
   padding: 3px 10px; border-radius: 20px;
   background: var(--form-section-bg); border: 1px solid var(--card-border); color: var(--card-text);
 
-  &--id    { background: $accent-light; border-color: rgba(0,135,90,0.35); color: $accent; }
-  &--ext   { background: $accent-light; border-color: rgba(0,135,90,0.3); color: $accent; }
+  &--id    { background: $accent-light; border-color: rgba(var(--app-accent-rgb),0.35); color: $accent; }
+  &--ext   { background: $accent-light; border-color: rgba(var(--app-accent-rgb),0.3); color: $accent; }
   &--path  { color: var(--card-text-muted); font-size: 0.7rem; }
   &--green { background: #dcfce7; border-color: #86efac; color: #166534; }
   &--red   { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }

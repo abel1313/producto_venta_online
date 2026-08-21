@@ -62,7 +62,7 @@ export class CompartirService {
         ${puedeCopiar ? `
           <button id="cp-copiar" type="button"
                   style="width:100%;margin-bottom:12px;padding:10px;border:none;border-radius:10px;
-                         font-weight:600;cursor:pointer;background:#00875A;color:#fff">
+                         font-weight:600;cursor:pointer;background:var(--brand-1);color: var(--app-accent-ink)">
             📋 Copiar imagen
           </button>` : ''}
         <img src="${dataUrl}"
@@ -80,7 +80,7 @@ export class CompartirService {
             const png = await this.aPng(blob);
             await navigator.clipboard.write([new (window as any).ClipboardItem({ 'image/png': png })]);
             btn.textContent = '✅ Copiada — pégala con Ctrl + V';
-            btn.setAttribute('style', btn.getAttribute('style')!.replace('#00875A', '#0f766e'));
+            btn.setAttribute('style', btn.getAttribute('style')!.replace('var(--brand-1)', '#0f766e'));
           } catch {
             btn.textContent = '⚠️ No se pudo copiar — usa clic derecho sobre la imagen';
           }

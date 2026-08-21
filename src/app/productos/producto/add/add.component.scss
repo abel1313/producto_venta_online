@@ -4,8 +4,8 @@
   --header-brand-shadow: rgba(24,24,27,0.35);
 }
 
-$primary:   #005C3D;
-$primary-d: #00875A;
+$primary:   var(--brand-2);
+$primary-d: var(--brand-1);
 $t: all 0.22s ease;
 
 // ── Página ─────────────────────────────────────────────────────────
@@ -264,12 +264,12 @@ $t: all 0.22s ease;
   &--gallery {
     background: var(--app-accent-soft);
     color: var(--app-accent);
-    &:hover { background: rgba(0,135,90,0.2); }
+    &:hover { background: rgba(var(--app-accent-rgb),0.2); }
   }
 
   &--camera {
     background: var(--app-accent);
-    color: #fff;
+    color: var(--app-accent-ink);
     &:hover { filter: brightness(0.88); }
   }
 }
@@ -374,19 +374,19 @@ $t: all 0.22s ease;
   padding: 15px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #005C3D, #00875A);
-  color: white;
+  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+  color: var(--app-accent-ink);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: $t;
-  box-shadow: 0 6px 20px rgba(0,135,90,0.35);
+  box-shadow: 0 6px 20px rgba(var(--app-accent-rgb),0.35);
   margin-top: 6px;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px rgba(0,135,90,0.5);
+    box-shadow: 0 10px 28px rgba(var(--app-accent-rgb),0.5);
   }
 
   &:active:not(:disabled) { transform: translateY(0); }
@@ -451,7 +451,7 @@ $t: all 0.22s ease;
 
   &--capture {
     background: var(--app-accent);
-    color: #fff;
+    color: var(--app-accent-ink);
     font-size: 1.1rem;
     &:hover { filter: brightness(0.88); }
   }

@@ -185,8 +185,8 @@
   .db-page { background: #f1f5f9; }
 
   .db-header {
-    background: linear-gradient(135deg, #00301F 0%, #005C3D 55%, #00875A 100%);
-    box-shadow: 0 2px 12px rgba(0,135,90,0.25);
+    background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 55%, var(--brand-1) 100%);
+    box-shadow: 0 2px 12px rgba(var(--app-accent-rgb),0.25);
   }
 
   .db-card {

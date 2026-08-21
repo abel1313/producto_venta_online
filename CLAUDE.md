@@ -32,6 +32,44 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 - Si es un endpoint nuevo → anotarlo en "RESUMEN DE MIGRACIÓN"
 - Si es un cambio de layout → anotarlo en la sección del componente afectado
 
+## REGLA — RAMA PROPIA PARA FEATURES QUE PUEDAN QUEDAR FUERA DE PROD (2026-08-21)
+
+> Motivo: al llevar `qa` → `master` (2026-08-21) hubo que sacar el módulo de "Publicar en
+> redes sociales" (Facebook/Instagram/TikTok) porque no estaba listo para producción, pero
+> ya llevaba semanas mezclado commit a commit con flores eternas, fixes de auth, etc. en
+> `dev`/`qa`. Se pudo resolver con un merge completo + un commit de limpieza (no hizo falta
+> cherry-pick) SOLO porque esa feature vivía en carpetas propias y con pocos puntos de
+> integración — si hubiera estado mezclada dentro de archivos compartidos (ej. un fix de
+> `venta-directa.component.ts` en el mismo commit que otro cambio no relacionado), habría
+> sido mucho más frágil separarla después.
+
+**Regla — nivel intermedio, no git-flow completo:** el flujo diario (`dev` → `qa` → `master`)
+sigue igual para fixes normales y features chicas. Se aísla en su propia rama SOLO cuando
+al empezar la feature ya se sabe que **puede necesitar quedarse fuera de una promoción a
+`master` mientras el resto del trabajo sí avanza**. Casos típicos:
+
+- Depende de aprobación/configuración de un tercero (ej. app de Meta, credenciales externas)
+  y no se sabe cuándo estará lista.
+- Es experimental o el dueño puede pedir pausarla a medio camino.
+- Es grande y se prevé que tome varias sesiones — mientras tanto van a seguir entrando fixes
+  normales a `dev`/`qa` que sí deben poder llegar a producción sin esperarla.
+
+**Cómo:**
+1. Rama `feature/<nombre-corto>` creada desde `dev`.
+2. El trabajo de esa feature (commits, "merge dev: ..." internos si aplica) se queda ahí —
+   NO se mergea a `dev`/`qa` mientras siga en duda si va a producción.
+3. Solo cuando la feature esté lista para convivir con todo lo demás en `master`, se mergea
+   `feature/<nombre>` → `dev` (y de ahí sigue el flujo normal a `qa`/`master`).
+4. Si se decide pausarla a medio camino, la rama se deja tal cual (o se respalda con
+   `backup/<nombre>` si ya alcanzó a tocar `dev`/`qa` y hay que revertirla de ahí — mismo
+   patrón ya usado con `backup/facebook-redes-sociales`).
+
+**No aplica** a fixes puntuales, ajustes de estilos, o features chicas de una sola sesión que
+no tienen ninguna duda de si van a producción — esas siguen yendo directo a `dev` como
+siempre. Crear una rama por cada cambio chico sería puro overhead sin beneficio real.
+
+---
+
 ## REGLA — `DOCUMENTO_BACK_VENTAS_CREDITO.md`
 
 Los cambios del módulo de crédito/abonos (ventas, pedidos, abonos, cancelar, transferir) se documentan **al final** de `DOCUMENTO_BACK_VENTAS_CREDITO.md` como secciones numeradas.

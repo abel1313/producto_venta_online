@@ -1,5 +1,5 @@
-$p:  #005C3D;
-$pd: #00875A;
+$p:  var(--brand-2);
+$pd: var(--brand-1);
 $t:  all 0.25s ease;
 
 // ── Página ─────────────────────────────────────────────────────────
@@ -220,11 +220,11 @@ $t:  all 0.25s ease;
   &--save {
     background: linear-gradient(135deg, $p, $pd);
     color: #fff;
-    box-shadow: 0 5px 16px rgba(0,135,90,.32);
+    box-shadow: 0 5px 16px rgba(var(--app-accent-rgb),.32);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(0,135,90,.48);
+      box-shadow: 0 8px 22px rgba(var(--app-accent-rgb),.48);
     }
 
     &:disabled { opacity: .45; cursor: not-allowed; transform: none; }

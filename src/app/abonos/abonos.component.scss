@@ -104,12 +104,12 @@
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &--reload     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--abono      { background: var(--app-accent); color: #fff; }
+  &--abono      { background: var(--app-accent); color: var(--app-accent-ink); }
   &--cancelar   { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
   &--transferir { background: rgba(8,145,178,0.1); color: #0891b2; border: 1px solid rgba(8,145,178,0.3); }
   &--detalle    { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--cancel     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--save       { background: var(--app-accent); color: #fff; min-width: 140px; }
+  &--save       { background: var(--app-accent); color: var(--app-accent-ink); min-width: 140px; }
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────
@@ -386,7 +386,7 @@
   transition: all 0.15s;
 
   &--active {
-    background: rgba(0,135,90,0.15);
+    background: rgba(var(--app-accent-rgb),0.15);
     border-color: var(--app-accent);
     color: var(--app-accent);
     font-weight: 700;

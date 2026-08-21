@@ -276,7 +276,7 @@ export class MisDatosComponent implements OnInit {
         <input id="swal-codigo-propio" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',

@@ -77,7 +77,7 @@
   &:hover { background: var(--form-section-bg, #f8fafc); }
 
   &--active {
-    background: rgba(0,135,90,0.08);
+    background: rgba(var(--app-accent-rgb),0.08);
     border-left: 3px solid var(--app-accent);
   }
 
@@ -93,7 +93,7 @@
     height: 38px;
     border-radius: 50%;
     background: var(--app-accent);
-    color: #fff;
+    color: var(--app-accent-ink);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -230,7 +230,7 @@
     height: 38px;
     border-radius: 50%;
     background: var(--app-accent);
-    color: #fff;
+    color: var(--app-accent-ink);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -310,15 +310,15 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #009A5C, #00D97E);
-    color: #fff;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    color: var(--app-accent-ink);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 0.7rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(0,135,90,0.25);
+    box-shadow: 0 2px 6px rgba(var(--app-accent-rgb),0.25);
   }
 
   &__text {
@@ -361,10 +361,10 @@
     .ca-bubble__body { align-items: flex-end; }
 
     .ca-bubble__text {
-      background: linear-gradient(135deg, #009A5C, #00D97E);
-      color: #fff;
+      background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+      color: var(--app-accent-ink);
       border-radius: 16px 4px 16px 16px;
-      box-shadow: 0 2px 8px rgba(0,135,90,0.3);
+      box-shadow: 0 2px 8px rgba(var(--app-accent-rgb),0.3);
     }
 
     .ca-bubble__time { text-align: right; }
@@ -386,7 +386,7 @@
 
   &:focus {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 2px rgba(0,135,90,0.15);
+    box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb),0.15);
   }
 
   &:disabled { cursor: not-allowed; }
@@ -406,11 +406,11 @@
   &--enviar {
     padding: 0 18px;
     background: var(--app-accent);
-    color: #fff;
+    color: var(--app-accent-ink);
     white-space: nowrap;
 
-    &:hover:not(:disabled) { background: #005C3D; }
-    &:disabled { background: rgba(0,135,90,0.35); cursor: not-allowed; }
+    &:hover:not(:disabled) { background: var(--brand-2); }
+    &:disabled { background: rgba(var(--app-accent-rgb),0.35); cursor: not-allowed; }
   }
 
   &--cerrar {
@@ -425,13 +425,13 @@
 
   &--cargar-mas {
     padding: 6px 16px;
-    background: rgba(0,135,90,0.08);
+    background: rgba(var(--app-accent-rgb),0.08);
     color: var(--app-accent);
-    border: 1px solid rgba(0,135,90,0.2);
+    border: 1px solid rgba(var(--app-accent-rgb),0.2);
     font-size: 0.78rem;
     border-radius: 20px;
 
-    &:hover { background: rgba(0,135,90,0.15); }
+    &:hover { background: rgba(var(--app-accent-rgb),0.15); }
   }
 }
 
@@ -454,14 +454,14 @@
   }
 
   .ca-session-item--active {
-    background: rgba(0,135,90,0.06);
+    background: rgba(var(--app-accent-rgb),0.06);
     border-left-color: var(--app-accent);
   }
 
   .ca-btn--enviar {
     background: var(--app-accent);
-    &:hover:not(:disabled) { background: #005C3D; }
-    &:disabled { background: rgba(0,135,90,0.35); }
+    &:hover:not(:disabled) { background: var(--brand-2); }
+    &:disabled { background: rgba(var(--app-accent-rgb),0.35); }
   }
 }
 
@@ -480,7 +480,7 @@
   .ca-session-item {
     border-color: rgba(255,255,255,0.06);
     &:hover { background: rgba(255,255,255,0.04); }
-    &--active { background: rgba(0,135,90,0.12); }
+    &--active { background: rgba(var(--app-accent-rgb),0.12); }
     &--unread { background: rgba(239,68,68,0.1); border-left-color: #f87171; }
     &--unread &__name { color: #f87171; font-weight: 700; }
     &__name { color: #e2e8f0; }
@@ -499,7 +499,7 @@
   }
 
   .ca-chat__messages {
-    background: linear-gradient(180deg, rgba(0,135,90,0.06) 0%, rgba(30,41,59,0.3) 100%);
+    background: linear-gradient(180deg, rgba(var(--app-accent-rgb),0.06) 0%, rgba(30,41,59,0.3) 100%);
   }
 
   .ca-bubble--usuario .ca-bubble__text {
@@ -533,10 +533,10 @@
   }
 
   .ca-btn--cargar-mas {
-    background: rgba(0,135,90,0.12);
-    border-color: rgba(0,135,90,0.25);
+    background: rgba(var(--app-accent-rgb),0.12);
+    border-color: rgba(var(--app-accent-rgb),0.25);
     color: var(--app-accent);
 
-    &:hover { background: rgba(0,135,90,0.2); }
+    &:hover { background: rgba(var(--app-accent-rgb),0.2); }
   }
 }

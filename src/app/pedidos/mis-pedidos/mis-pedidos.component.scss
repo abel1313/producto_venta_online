@@ -65,15 +65,15 @@ $cancelado-to:   #dc2626;
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
-  background: linear-gradient(135deg, #005C3D, #00875A);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0,135,90,0.28);
+  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+  color: var(--app-accent-ink);
+  box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),0.28);
   transition: $transition;
 
   &:hover {
-    box-shadow: 0 6px 18px rgba(0,135,90,0.42);
+    box-shadow: 0 6px 18px rgba(var(--app-accent-rgb),0.42);
     transform: translateY(-1px);
-    color: #fff;
+    color: var(--app-accent-ink);
   }
 
   .pi { font-size: 0.85rem; }
@@ -145,7 +145,7 @@ $cancelado-to:   #dc2626;
 
   &:focus {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 4px rgba(0,135,90,0.12);
+    box-shadow: 0 0 0 4px rgba(var(--app-accent-rgb),0.12);
   }
 }
 
@@ -185,7 +185,7 @@ $cancelado-to:   #dc2626;
 
   &:focus {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 4px rgba(0,135,90,0.12);
+    box-shadow: 0 0 0 4px rgba(var(--app-accent-rgb),0.12);
   }
 }
 
@@ -369,7 +369,7 @@ $cancelado-to:   #dc2626;
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
 .card-head {
-  background: linear-gradient(135deg, #005C3D, #00875A);
+  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
@@ -496,8 +496,8 @@ $cancelado-to:   #dc2626;
   margin-top: 0.5rem;
   padding: 0.65rem 0.9rem;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(0,135,90,0.07), rgba(138,106,56,0.12));
-  border: 1px solid rgba(0,135,90,0.18);
+  background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.07), rgba(138,106,56,0.12));
+  border: 1px solid rgba(var(--app-accent-rgb),0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -584,9 +584,9 @@ $cancelado-to:   #dc2626;
 }
 
 .btn-ticket {
-  background: rgba(0,135,90,0.1);
+  background: rgba(var(--app-accent-rgb),0.1);
   color: var(--app-accent);
-  &:not(:disabled):hover { background: rgba(0,135,90,0.18); }
+  &:not(:disabled):hover { background: rgba(var(--app-accent-rgb),0.18); }
 }
 
 .btn-correo {
@@ -609,8 +609,8 @@ $cancelado-to:   #dc2626;
 .mp-terminal {
   margin-top: 1.25rem;
   border-radius: 14px;
-  border: 2px solid rgba(0,135,90,0.25);
-  background: linear-gradient(135deg, rgba(0,135,90,0.06) 0%, rgba(0,135,90,0.1) 100%);
+  border: 2px solid rgba(var(--app-accent-rgb),0.25);
+  background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.06) 0%, rgba(var(--app-accent-rgb),0.1) 100%);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -721,10 +721,10 @@ $cancelado-to:   #dc2626;
 
   &--send {
     flex: 1;
-    background: linear-gradient(135deg, #005C3D, #00875A);
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(0,135,90,0.3);
-    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(0,135,90,0.45); }
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    color: var(--app-accent-ink);
+    box-shadow: 0 4px 14px rgba(var(--app-accent-rgb),0.3);
+    &:not(:disabled):hover { box-shadow: 0 6px 20px rgba(var(--app-accent-rgb),0.45); }
   }
 
   &--cancel {

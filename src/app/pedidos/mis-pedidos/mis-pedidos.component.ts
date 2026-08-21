@@ -362,8 +362,8 @@ export class MisPedidosComponent implements OnInit {
           }
           .mp-entrega-textarea { resize:vertical; min-height:44px; }
           .mp-entrega-input:focus, .mp-entrega-select:focus, .mp-entrega-textarea:focus {
-            outline:none; border-color:var(--app-accent,#00875A);
-            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,135,90,.12));
+            outline:none; border-color:var(--app-accent,var(--brand-1));
+            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(var(--app-accent-rgb),.12));
           }
           .mp-entrega-input:disabled, .mp-entrega-select:disabled {
             opacity:.6; cursor:not-allowed;
@@ -372,7 +372,7 @@ export class MisPedidosComponent implements OnInit {
           .mp-entrega-aviso {
             margin:0; padding:9px 12px; border-radius:10px; font-size:.78rem; line-height:1.45;
             text-align:left; color:var(--app-text,#1f2937);
-            background:var(--app-accent-soft,rgba(0,135,90,.12));
+            background:var(--app-accent-soft,rgba(var(--app-accent-rgb),.12));
             border:1px solid var(--card-border,#e5e7eb);
           }
         </style>

@@ -10751,3 +10751,106 @@ La primera corrida dio el buscador vacío y parecía un bug: el mock de Playwrig
 `/tienda` responde 200 y `/variantes` ya no (401), o sea el rename del back ya está desplegado
 ahí. **Al renombrar un endpoint, revisar también los scripts de prueba** — si no, la siguiente
 verificación miente.
+
+---
+
+## MODO OSCURO — MONOCROMÁTICO SOBRE NEGRO PURO (2026-08-21)
+
+> **Reemplaza al jade en modo oscuro.** El modo claro **no cambió**: sigue en jade.
+
+**Decisión del dueño** tras rechazar seis paletas de color seguidas. Se le mostraron cuatro
+candidatas nuevas (violeta orquídea, oro champagne, coral cobre, rubí carmín) aplicadas a la
+pantalla real, y su respuesta fue *"no me gustó ningún color… y menos el fondo"*. Al acotarlo con
+dos preguntas eligió: **fondo negro puro** y **sin color de acento — blanco o plata**.
+
+### Qué es ahora el modo oscuro
+
+| | |
+|---|---|
+| Fondo | `#000000` — negro puro |
+| Tarjetas / superficies | `#0C0C0C` y `#151517` |
+| Bordes | `#2A2A2E` |
+| Texto | `#E9E9EC` · secundario `#9A9AA0` |
+| Marca | `--brand-1 #FFFFFF` → `--brand-2 #C7C7CC` → `--brand-3 #8E8E93` |
+| Tinta sobre la marca | `#000000` |
+
+**La jerarquía se lee por luminosidad, no por color:** el texto normal es `#E9E9EC` y el acento es
+blanco puro, o sea el acento es lo *más brillante* de la pantalla. Los rellenos de marca son
+blancos con texto negro encima.
+
+⚠️ **Los colores semánticos NO se tocaron** (rojo de error, verde de éxito, ámbar de espera). No
+son la marca, y sobre negro puro resaltan mejor que antes.
+
+### 🔑 Lo que hizo posible cambiar solo el oscuro: 3 variables de marca
+
+El problema real no era elegir color — era que **el verde estaba escrito a mano en 52 archivos de
+componente**, así que cambiar el oscuro obligaba a cambiar también el claro. Ahora hay tres
+variables, con valor propio por tema:
+
+```scss
+--brand-1   /* acento          */  claro #00875A   oscuro #FFFFFF
+--brand-2   /* stop del degradado */ claro #005C3D  oscuro #C7C7CC
+--brand-3   /* stop profundo    */  claro #00301F   oscuro #8E8E93
+```
+
+**Regla (ya estaba escrita y se incumplía): nunca escribir el hex de marca en un componente.**
+Ahora sí se cumple — grep de los 10 hexes de jade en `src`: **cero**, salvo las 3 definiciones del
+tema claro en `styles.scss`.
+
+### ⚠️ El verde estaba escondido en TRES formas distintas, no una
+
+Esto es lo que hace grande una migración de paleta, y lo que hay que buscar la próxima vez:
+
+| Forma | Cuántos | A qué se migró |
+|---|---|---|
+| **Hex** — `#00875A`, `#005C3D`, `#00D97E`… | 289 en 52 archivos | `var(--brand-1/2/3)` |
+| **rgba** — `rgba(0,135,90,0.14)` | 384 en 49 archivos | `rgba(var(--app-accent-rgb), …)` |
+| **Neutros teñidos** — `#EDF7F1`, `rgba(225,255,240,…)`, `#0F2119`, `#1E3A2D` | 92 | grises neutros |
+
+**La primera búsqueda solo vio los hex** y dejó el sidebar y medio sistema con tinte verde. Los
+`rgba(0,135,90,…)` son los más fáciles de olvidar porque el color no se ve como color en el código.
+
+💡 **Sass sí acepta `rgba(var(--x), 0.5)`** — se probó antes de migrar 384 usos, porque
+históricamente Dart Sass fallaba con eso. No falla.
+
+### 🐛 El acento blanco rompe todo `color: #fff` que esté encima de la marca
+
+Es el riesgo grande de un acento blanco, y ya estaba anotado como pendiente desde la migración
+jade (*"18 archivos con `background: var(--app-accent)` + `color:#fff`, sin tocar"*). Ahora sí se
+corrigió: **86 declaraciones** pasaron a `color: var(--app-accent-ink)` — que en claro vale
+`#FFFFFF`, así que **el modo claro no cambió ni un pixel**.
+
+⚠️ **Un barrido por cercanía de renglones NO alcanza.** El primer intento reemplazó solo lo que
+estuviera a ±3 renglones del fondo, y dejó esto, que se vio en la captura como un botón blanco sin
+texto:
+
+```scss
+.btn-submit {
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  color: var(--app-accent-ink);      // ← esta sí la agarró
+  …10 renglones…
+  span, .pi { color: #fff; }          // ← esta no
+```
+
+El barrido bueno recorre **el bloque completo contando llaves**, y baja a los anidados solo si no
+redefinen su propio `background` (si lo redefinen, su texto blanco puede ser correcto — un badge
+rojo, por ejemplo).
+
+💡 **Y no usar regex en bucle para "marcar lo ya procesado":** el primer script se colgó porque el
+patrón `background[^;]*var\(--brand-` seguía casando con su propia marca `background/*✓*/`. La
+versión buena recoge los rangos primero y reemplaza **de atrás hacia adelante**, así los índices
+no se corren.
+
+### Verificado
+
+`ng build` sin errores, y **en pantalla** (Playwright, oscuro y claro) sobre cuatro pantallas:
+catálogo, publicar en redes, hashtags y registro. El modo claro se comparó lado a lado: idéntico.
+
+**Archivos:** `src/styles.scss` (los dos bloques de tema), `navbar.component.scss`
+(`--sb-bg-rgb`), y 60 SCSS de componente migrados a variables.
+
+### Pendiente de decidir
+
+El modo claro sigue en **jade**. Si se quiere que los dos temas se sientan la misma marca, la
+contraparte natural del monocromático es blanco de fondo con negro de acento — pero eso el dueño
+no lo pidió, así que no se tocó.

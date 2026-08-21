@@ -1,5 +1,5 @@
-$primary:    #00875A;
-$primary-d:  #005C3D;
+$primary:    var(--brand-1);
+$primary-d:  var(--brand-2);
 $radius:     14px;
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -43,9 +43,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   // Mismos gradientes que el login (login-form.component.scss) — es el mismo
   // layout split y deben verse idénticos.
-  &--1 { flex: 1.4; background: linear-gradient(160deg, #005C3D 0%, #00875A 60%, #4FE0A8 100%); }
-  &--2 { flex: 1;   background: linear-gradient(160deg, #00432C 0%, #005C3D 100%); }
-  &--3 { flex: 1;   background: linear-gradient(160deg, #00875A 0%, #4FE0A8 100%); }
+  &--1 { flex: 1.4; background: linear-gradient(160deg, var(--brand-2) 0%, var(--brand-1) 60%, var(--brand-1) 100%); }
+  &--2 { flex: 1;   background: linear-gradient(160deg, var(--brand-3) 0%, var(--brand-2) 100%); }
+  &--3 { flex: 1;   background: linear-gradient(160deg, var(--brand-1) 0%, var(--brand-1) 100%); }
 
   @media (max-width: 768px) { border-radius: 8px; }
 
@@ -113,7 +113,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   overflow-y: auto;
   padding: 2rem 1.5rem;
-  box-shadow: -8px 0 32px rgba(0,135,90, 0.12);
+  box-shadow: -8px 0 32px rgba(var(--app-accent-rgb), 0.12);
 
   @media (max-width: 768px) {
     order: 1;
@@ -237,7 +237,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   &:focus {
     border-color: var(--app-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(0,135,90,0.1);
+    box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.1);
     ~ .input-icon { color: var(--app-accent); }
   }
 }
@@ -328,7 +328,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 // ── TEMA OSCURO ───────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .split-form {
-    background: rgba(8,20,16, 0.97);
+    background: rgba(var(--sb-bg-rgb), 0.97);
     box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
 
     @media (max-width: 768px) { background: #0d1117; }
@@ -347,7 +347,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:focus {
       background: rgba(255, 255, 255, 0.1);
       border-color: var(--app-accent);
-      box-shadow: 0 0 0 4px rgba(0,135,90,0.2);
+      box-shadow: 0 0 0 4px rgba(var(--app-accent-rgb),0.2);
     }
   }
 
@@ -418,27 +418,27 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: center;
   gap: 0.5rem;
   padding: 0.78rem 1rem;
-  background: linear-gradient(135deg, #00875A, #005C3D);
-  color: #fff;
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  color: var(--app-accent-ink);
   border: none;
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,135,90, 0.35);
+  box-shadow: 0 6px 18px rgba(var(--app-accent-rgb), 0.35);
   transition: $transition;
 
-  span, .pi { color: #fff; }
+  span, .pi { color: var(--app-accent-ink); }
   .pi { font-size: 0.9rem; transition: $transition; }
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(0,135,90, 0.45);
+    box-shadow: 0 10px 24px rgba(var(--app-accent-rgb), 0.45);
     .pi { transform: translateX(3px); }
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled {
-    background: linear-gradient(135deg, #00D97E, #009A5C);
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -511,8 +511,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .au-codigo-pendiente {
   margin-top: 0.75rem;
   padding: 0.85rem 1rem;
-  background: rgba(0,135,90, 0.07);
-  border: 1.5px solid rgba(0,135,90, 0.22);
+  background: rgba(var(--app-accent-rgb), 0.07);
+  border: 1.5px solid rgba(var(--app-accent-rgb), 0.22);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -527,7 +527,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: #374151;
   line-height: 1.45;
 
-  .pi { color: #00875A; margin-top: 1px; font-size: 0.9rem; }
+  .pi { color: var(--brand-1); margin-top: 1px; font-size: 0.9rem; }
 
   strong { color: #1e293b; }
 }
@@ -543,8 +543,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.35rem;
   padding: 0.45rem 0.9rem;
-  background: linear-gradient(135deg, #005C3D, #00875A);
-  color: #fff;
+  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+  color: var(--app-accent-ink);
   border: none;
   border-radius: 9px;
   font-size: 0.8rem;
@@ -552,14 +552,14 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   font-family: inherit;
   transition: $transition;
-  &:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,135,90,0.35); }
+  &:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(var(--app-accent-rgb),0.35); }
 }
 
 .au-btn-reenviar {
   padding: 0.45rem 0.9rem;
   background: transparent;
-  color: #00875A;
-  border: 1.5px solid rgba(0,135,90, 0.45);
+  color: var(--brand-1);
+  border: 1.5px solid rgba(var(--app-accent-rgb), 0.45);
   border-radius: 9px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -570,7 +570,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.35rem;
   transition: $transition;
   .pi { font-size: 0.78rem; }
-  &:hover:not(:disabled) { background: rgba(0,135,90, 0.08); border-color: #00875A; }
+  &:hover:not(:disabled) { background: rgba(var(--app-accent-rgb), 0.08); border-color: var(--brand-1); }
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
@@ -590,17 +590,17 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 :host-context(body.theme-dark) {
   .au-codigo-pendiente {
-    background: rgba(0,135,90,0.09);
-    border-color: rgba(0,135,90,0.25);
+    background: rgba(var(--app-accent-rgb),0.09);
+    border-color: rgba(var(--app-accent-rgb),0.25);
   }
   .au-codigo-info {
     color: #cbd5e1;
     strong { color: #f1f5f9; }
   }
   .au-btn-reenviar {
-    color: #00D97E;
-    border-color: rgba(0,217,126, 0.35);
-    &:hover:not(:disabled) { background: rgba(0,217,126, 0.1); border-color: #00D97E; }
+    color: var(--brand-1);
+    border-color: rgba(var(--app-accent-rgb), 0.35);
+    &:hover:not(:disabled) { background: rgba(var(--app-accent-rgb), 0.1); border-color: var(--brand-1); }
   }
   .au-btn-cancelar-codigo {
     color: #94a3b8;
@@ -622,11 +622,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   transition: $transition;
   margin-top: 0.75rem;
-  background: rgba(0,135,90, 0.1);
-  color: var(--app-accent, #00875A);
-  border: 1px solid rgba(0,135,90, 0.3);
+  background: rgba(var(--app-accent-rgb), 0.1);
+  color: var(--app-accent, var(--brand-1));
+  border: 1px solid rgba(var(--app-accent-rgb), 0.3);
   font-family: inherit;
-  &:hover { background: rgba(0,135,90, 0.18); border-color: rgba(0,135,90, 0.5); }
+  &:hover { background: rgba(var(--app-accent-rgb), 0.18); border-color: rgba(var(--app-accent-rgb), 0.5); }
 }
 
 .field-input--readonly {

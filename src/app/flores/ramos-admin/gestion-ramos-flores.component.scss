@@ -1,0 +1,248 @@
+.ra-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.ra-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  &__title {
+    h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
+    small { color: #64748b; }
+  }
+}
+
+.ra-aviso {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25);
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.ra-hint {
+  font-size: 0.8rem;
+  color: var(--app-text-muted, #5F8375);
+  margin: 6px 0 16px;
+  line-height: 1.4;
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────
+.ra-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: opacity .15s;
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &--primary {
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    color: var(--app-accent-ink);
+    &:hover:not(:disabled) { opacity: .85; }
+  }
+  &--ghost {
+    background: rgba(128,128,128,.1);
+    color: var(--app-text);
+    border: 1px solid var(--card-border);
+  }
+  &--edit { background: rgba(99,102,241,.12); color: #6366f1; }
+  &--off  { background: rgba(239,68,68,.1); color: #ef4444; }
+  &--on   { background: rgba(34,197,94,.1); color: #16a34a; }
+}
+
+// ── Formulario ───────────────────────────────────────────────────────────
+.ra-form-card {
+  background: var(--form-section-bg, var(--app-surface));
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.ra-form-title {
+  margin: 0 0 20px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.ra-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.ra-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  &--check { justify-content: flex-end; padding-bottom: 9px; }
+  &__vacio { font-size: 0.76rem; color: #f59e0b; margin: 2px 0 0; }
+}
+
+.ra-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--app-text);
+  opacity: .75;
+}
+
+.ra-input {
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  background: var(--app-surface);
+  color: var(--app-text);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus { border-color: var(--app-accent); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &--num { width: 90px; text-align: center; padding: 6px 8px; }
+}
+
+.ra-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+// ── Accesorios del form ────────────────────────────────────────────────────
+.ra-accesorios {
+  border-top: 1px solid var(--card-border);
+  padding-top: 16px;
+  margin-bottom: 20px;
+}
+
+.ra-accesorio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.ra-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+// ── Lista de ramos ────────────────────────────────────────────────────────
+.ra-loading, .ra-empty {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
+.ra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.ra-card {
+  background: var(--app-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  overflow: hidden;
+
+  &__hdr {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px 8px;
+  }
+
+  &__titulo {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--app-text);
+  }
+
+  &__body { padding: 0 16px 12px; }
+
+  &__especie {
+    font-size: 0.8rem;
+    color: var(--app-text);
+    opacity: .65;
+    margin: 2px 0 6px;
+  }
+
+  &__precio {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--app-accent);
+    margin: 0 0 6px;
+  }
+
+  &__extra {
+    font-size: 0.8rem;
+    color: var(--app-text);
+    opacity: .75;
+    margin: 0 0 4px;
+  }
+
+  &__accesorios {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    font-size: 0.8rem;
+    color: var(--app-text);
+    opacity: .8;
+    li { padding: 2px 0; }
+  }
+
+  &__footer {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--card-border);
+  }
+}
+
+// ── Badges ───────────────────────────────────────────────────────────────
+.ra-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(var(--app-accent-rgb),.12);
+  color: var(--app-accent);
+  &--activo { background: rgba(34,197,94,.12); color: #16a34a; }
+  &--off    { background: rgba(100,116,139,.12); color: #64748b; }
+}
+
+.ra-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  color: var(--app-text);
+  font-size: 0.88rem;
+}
+
+// ── Dark mode ─────────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .ra-form-card { background: rgba(255,255,255,.04); }
+  .ra-card      { background: rgba(255,255,255,.04); }
+}
+:host-context(body.theme-light) {
+  .ra-form-card { background: #fff; }
+  .ra-card      { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+}

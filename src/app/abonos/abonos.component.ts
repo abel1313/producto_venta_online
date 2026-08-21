@@ -14,6 +14,7 @@ import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
 import { NegocioService } from '../negocio/negocio.service';
+import { FloresService } from '../flores/service/flores.service';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
 
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
@@ -96,6 +97,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly pedidosService:  PedidosService,
     private readonly negocioService:  NegocioService,
+    private readonly floresService:   FloresService,
     private readonly route:           ActivatedRoute
   ) {}
 
@@ -327,6 +329,15 @@ export class AbonosComponent implements OnInit, OnDestroy {
     this.pedidoSeleccionado = null;
   }
 
+  /**
+   * Antes de cobrar hay que revalidar el reloj: si es un ramo urgente y el pago llega después de
+   * la hora límite, el back agrega el cargo y el total sube — cobrar el monto viejo dejaría el
+   * pedido corto.
+   *
+   * **Se llama en todos los pedidos, no solo de flores**: el back responde 200 sin cambios para
+   * los demás (se pidió así justamente para no tener que adivinar antes cuál es cuál). Si la
+   * llamada falla por red, se sigue con el cobro — no vale bloquear un abono normal por esto.
+   */
   registrarAbono(): void {
     if (!this.pedidoSeleccionado || this.registrando) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
@@ -335,6 +346,26 @@ export class AbonosComponent implements OnInit, OnDestroy {
     }
 
     this.registrando = true;
+    this.floresService.revalidarAntesDePagar(this.pedidoSeleccionado.pedidoId).subscribe({
+      next: r => {
+        if (!r?.cargoRecienAplicado) { this.ejecutarAbono(); return; }
+        // El total cambió: se avisa con el mensaje del back y se recarga la lista para que el
+        // saldo en pantalla deje de ser el viejo. El admin decide si cobra ya con el monto nuevo.
+        this.registrando = false;
+        Swal.fire({
+          icon: 'warning',
+          title: 'El total de este pedido cambió',
+          html: `<p>${r.mensaje ?? 'Se aplicó el cargo por entrega urgente porque el pago llegó después de la hora límite.'}</p>
+                 <p>Nuevo total: <b>$${r.totalActual.toFixed(2)}</b></p>`,
+          confirmButtonText: 'Entendido'
+        }).then(() => { this.cerrarModal(); this.cargarCuenta(); });
+      },
+      error: () => { this.ejecutarAbono(); }
+    });
+  }
+
+  private ejecutarAbono(): void {
+    if (!this.pedidoSeleccionado) { this.registrando = false; return; }
     const montoDadoEfectivo = this.abonoForm.metodoPago === 'EFECTIVO' && this.montoDado > 0 ? this.montoDado : undefined;
 
     const body: AbonoRequest = {

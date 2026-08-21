@@ -1,0 +1,112 @@
+<div class="vr-wrap">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+  <div class="vr-header">
+    <div class="vr-header__inner">
+      <div class="vr-header__title">
+        <h4>🌹 Ramos de flores eternas</h4>
+        <small>Ramos ya armados, listos para pedir</small>
+      </div>
+      <a class="vr-btn vr-btn--pedir" routerLink="/flores/configurar">🌷 Armar el mío</a>
+    </div>
+  </div>
+
+  <div class="vr-aviso" *ngIf="error">
+    <strong>⚠️ {{ error }}</strong>
+    <button class="vr-btn vr-btn--ghost" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <!-- ── LOADING ────────────────────────────────────────────────────── -->
+  <div class="vr-loading" *ngIf="cargando">Cargando ramos…</div>
+
+  <!-- ── VACÍO ──────────────────────────────────────────────────────── -->
+  <div class="vr-empty" *ngIf="!cargando && !error && ramos.length === 0">
+    <p>🌷 Por ahora no hay ramos armados disponibles.</p>
+    <p>¡Vuelve pronto para ver las nuevas opciones!</p>
+  </div>
+
+  <!-- ── GRID DE CARDS ──────────────────────────────────────────────── -->
+  <div class="vr-grid" *ngIf="!cargando && ramos.length > 0">
+    <div class="vr-card" *ngFor="let r of ramos">
+
+      <div class="vr-card__img-wrap" *ngIf="r.imagenUrl">
+        <img [src]="r.imagenUrl" class="vr-card__img" [alt]="r.nombre">
+      </div>
+      <div class="vr-card__img-wrap vr-card__img-wrap--placeholder" *ngIf="!r.imagenUrl">
+        <span>🌹</span>
+      </div>
+
+      <div class="vr-card__body">
+        <p class="vr-card__nombre">{{ r.nombre }}</p>
+        <p class="vr-card__especie">{{ r.tipoFlorNombre }} · {{ r.colorFlorNombre }} · {{ r.cantidad }} flores</p>
+
+        <p class="vr-card__precio">${{ r.precioTotal | number:'1.2-2' }}</p>
+
+        <div class="vr-card__badges">
+          <span class="vr-badge" *ngIf="r.papelIncluido">📄 papel incluido</span>
+          <span class="vr-badge vr-badge--alt" *ngIf="r.accesorios?.length">🎀 {{ r.accesorios.length }} accesorio(s)</span>
+        </div>
+      </div>
+
+      <div class="vr-card__footer">
+        <button class="vr-btn vr-btn--detalle" (click)="abrirDetalle(r)">Ver detalle</button>
+        <button class="vr-btn vr-btn--pedir" (click)="contactar(r)">💬 Pedir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="vr-paginacion" *ngIf="!cargando && totalPaginas > 1">
+    <button class="vr-btn vr-btn--ghost" (click)="paginaAnterior()" [disabled]="pagina <= 1">← Anterior</button>
+    <span>{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="vr-btn vr-btn--ghost" (click)="paginaSiguiente()" [disabled]="pagina >= totalPaginas">Siguiente →</button>
+  </div>
+
+</div>
+
+<!-- ── MODAL DETALLE ──────────────────────────────────────────────────── -->
+<div class="vr-overlay" *ngIf="ramoDetalle" (click)="cerrarDetalle()">
+  <div class="vr-modal" (click)="$event.stopPropagation()">
+
+    <div class="vr-modal__hdr">
+      <h5>{{ ramoDetalle.nombre }}</h5>
+      <button class="vr-modal__close" (click)="cerrarDetalle()">✕</button>
+    </div>
+
+    <div class="vr-modal__body">
+      <img *ngIf="ramoDetalle.imagenUrl" [src]="ramoDetalle.imagenUrl" class="vr-modal__img" [alt]="ramoDetalle.nombre">
+
+      <p class="vr-modal__especie">{{ ramoDetalle.tipoFlorNombre }} · {{ ramoDetalle.colorFlorNombre }} · {{ ramoDetalle.cantidad }} flores</p>
+
+      <div class="vr-modal__linea">
+        <span>{{ ramoDetalle.cantidad }} flores</span>
+        <span>${{ ramoDetalle.precioFlores | number:'1.2-2' }}</span>
+      </div>
+
+      <div class="vr-modal__linea" *ngIf="ramoDetalle.papelIncluido">
+        <span>📄 Papel{{ precioPapelTexto(ramoDetalle) ? ' (' + precioPapelTexto(ramoDetalle) + ')' : '' }}</span>
+        <span>${{ ramoDetalle.precioPapel | number:'1.2-2' }}</span>
+      </div>
+
+      <div class="vr-modal__linea" *ngFor="let a of ramoDetalle.accesorios">
+        <span>🎀 {{ labelAccesorio(a) }}</span>
+        <span>${{ a.subtotal | number:'1.2-2' }}</span>
+      </div>
+
+      <div class="vr-modal__linea vr-modal__linea--total">
+        <span>Total</span>
+        <span>${{ ramoDetalle.precioTotal | number:'1.2-2' }}</span>
+      </div>
+
+      <p class="vr-modal__aviso">
+        💬 Este ramo se pide directo con nosotros — todavía no se puede pagar en línea desde aquí.
+      </p>
+    </div>
+
+    <div class="vr-modal__footer">
+      <button class="vr-btn vr-btn--ghost" (click)="cerrarDetalle()">Cerrar</button>
+      <button class="vr-btn vr-btn--pedir" (click)="contactar(ramoDetalle)">💬 Pedir este ramo</button>
+    </div>
+
+  </div>
+</div>

@@ -17,6 +17,16 @@ export class FavoritosComponent implements OnInit {
   pagina = 1;
   totalPaginas = 1;
 
+  /**
+   * El back exige **perfil de cliente completo** para usar favoritos y responde
+   * "Tu cuenta todavia no tiene un perfil de cliente completo".
+   *
+   * Antes eso salía como un Swal rojo de "Error" apenas entrabas — sin decirte qué hacer y como
+   * si algo estuviera roto. No está roto: te falta un paso. Ahora la pantalla lo explica y te
+   * manda a completarlo.
+   */
+  faltaPerfilCliente = false;
+
   constructor(
     private readonly favoritoService: FavoritoService,
     private readonly carritoVariante: CarritoVarianteService,
@@ -38,9 +48,18 @@ export class FavoritosComponent implements OnInit {
       },
       error: err => {
         this.cargando = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudieron cargar tus favoritos.' });
+        const msg: string = err?.error?.mensaje ?? err?.error?.message ?? '';
+        if (msg.toLowerCase().includes('perfil de cliente')) {
+          this.faltaPerfilCliente = true;
+          return; // se explica en pantalla, sin popup de error
+        }
+        Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudieron cargar tus favoritos.' });
       }
     });
+  }
+
+  irACompletarPerfil(): void {
+    this.router.navigate(['/clientes/agregar']);
   }
 
   anteriorPagina(): void {
@@ -85,8 +104,12 @@ export class FavoritosComponent implements OnInit {
     return stock === 0 || this.cantidadEnCarrito(v) >= stock;
   }
 
+  // Igual que en el catálogo: se manda el `productoId` para que la ficha no llame a `getOne`
+  // (ADMIN-only desde 2026-08-11) y no se rompa para un cliente.
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/tienda/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id], {
+      queryParams: v.productoId ? { productoId: v.productoId } : {}
+    });
   }
 
   verCarrito(): void {

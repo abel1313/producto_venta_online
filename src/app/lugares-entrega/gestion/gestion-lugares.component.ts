@@ -37,7 +37,11 @@ export class GestionLugaresComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(80)]]
+      nombre: ['', [Validators.required, Validators.maxLength(80)]],
+      // Ambos solo los usa el módulo de flores eternas — el checkout normal de la tienda no lee
+      // ninguno de los dos. Opcionales: vacío = sin costo de envío / sin tiempo extra.
+      costoEnvio: [null],
+      horasExtraAnticipacion: [null]
     });
     this.cargar();
   }
@@ -71,7 +75,7 @@ export class GestionLugaresComponent implements OnInit {
 
   iniciarEdicion(l: ILugarEntrega): void {
     this.editandoId = l.id;
-    this.form.patchValue({ nombre: l.nombre });
+    this.form.patchValue({ nombre: l.nombre, costoEnvio: l.costoEnvio ?? null, horasExtraAnticipacion: l.horasExtraAnticipacion ?? null });
   }
 
   cancelarEdicion(): void {
@@ -84,9 +88,15 @@ export class GestionLugaresComponent implements OnInit {
     this.guardando = true;
     const nombre = this.form.value.nombre.trim();
 
+    const body = {
+      nombre,
+      costoEnvio: this.form.value.costoEnvio,
+      horasExtraAnticipacion: this.form.value.horasExtraAnticipacion
+    };
+
     const op$ = this.editandoId !== null
-      ? this.svc.update(this.editandoId, { nombre })
-      : this.svc.save({ nombre });
+      ? this.svc.update(this.editandoId, body)
+      : this.svc.save(body);
 
     op$.subscribe({
       next: () => {

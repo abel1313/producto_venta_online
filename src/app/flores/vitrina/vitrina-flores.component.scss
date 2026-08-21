@@ -1,0 +1,263 @@
+// ── Wrap ──────────────────────────────────────────────────────────────────
+.vr-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+.vr-header {
+  padding: 0 16px;
+  margin-bottom: 28px;
+  &__inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 24px 0;
+  }
+  &__title {
+    h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
+    small { color: #64748b; }
+  }
+}
+
+// ── Aviso de error ───────────────────────────────────────────────────────
+.vr-aviso {
+  max-width: 1120px;
+  margin: 0 auto 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+// ── Loading / Empty ───────────────────────────────────────────────────────
+.vr-loading, .vr-empty {
+  text-align: center;
+  padding: 60px 16px;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+// ── Grid ─────────────────────────────────────────────────────────────────
+.vr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+  padding: 0 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────
+.vr-card {
+  background: var(--app-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .2s;
+  &:hover { box-shadow: 0 8px 24px rgba(var(--app-accent-rgb),.18); }
+
+  &__img-wrap {
+    height: 160px;
+    background: linear-gradient(135deg, rgba(12,20,60,.88) 0%, rgba(var(--app-accent-rgb),.72) 100%);
+    &--placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+    }
+  }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__body {
+    padding: 14px 16px;
+    flex: 1;
+  }
+
+  &__nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--app-text);
+    margin: 0 0 4px;
+  }
+
+  &__especie {
+    font-size: 0.78rem;
+    color: var(--app-text);
+    opacity: .65;
+    margin: 0 0 8px;
+  }
+
+  &__precio {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--app-accent);
+    margin: 0 0 8px;
+  }
+
+  &__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.vr-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(var(--app-accent-rgb),.12);
+  color: var(--app-accent);
+  &--alt { background: rgba(128,128,128,.12); color: var(--app-text); opacity: .8; }
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────
+.vr-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity .15s, background .15s, color .15s;
+  &--pedir    { background: var(--app-accent); color: var(--app-accent-ink, #fff); flex: 1; font-weight: 700; &:hover:not(:disabled) { opacity: .85; } }
+  &--detalle  { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--ghost    { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &:disabled { cursor: not-allowed; opacity: .5; }
+}
+
+// ── Paginación ────────────────────────────────────────────────────────────
+.vr-paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 32px auto;
+  color: var(--app-text);
+  font-size: 0.88rem;
+}
+
+// ── Modal overlay ─────────────────────────────────────────────────────────
+.vr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.vr-modal {
+  background: var(--app-surface);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+
+  &__hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid var(--card-border);
+    h5 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--app-text); }
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #64748b;
+    padding: 4px 8px;
+    border-radius: 6px;
+    &:hover { background: rgba(0,0,0,.08); }
+  }
+
+  &__body { padding: 16px 20px; }
+
+  &__img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+
+  &__especie {
+    font-size: 0.8rem;
+    color: var(--app-text);
+    opacity: .65;
+    margin: 0 0 12px;
+  }
+
+  &__linea {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.85rem;
+    color: var(--app-text);
+
+    &--total {
+      border-bottom: none;
+      border-top: 1.5px solid var(--card-border);
+      margin-top: 4px;
+      padding-top: 10px;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--app-accent);
+    }
+  }
+
+  &__aviso {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 16px;
+    background: rgba(var(--app-accent-rgb),.06);
+    border-radius: 8px;
+    padding: 8px 12px;
+    border-left: 3px solid var(--app-accent);
+  }
+
+  &__footer {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--card-border);
+  }
+}
+
+// ── Dark / Light ──────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .vr-card { background: rgba(255,255,255,.04); }
+  .vr-modal { background: #18181b; }
+}
+
+:host-context(body.theme-light) {
+  .vr-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .vr-modal { background: #fff; }
+}

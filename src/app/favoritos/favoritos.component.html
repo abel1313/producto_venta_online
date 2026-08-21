@@ -9,7 +9,18 @@
 
   <div *ngIf="cargando" class="fv-loading">Cargando…</div>
 
-  <div *ngIf="!cargando && variantes.length === 0" class="fv-empty">
+  <!-- No es un error: le falta completar su perfil de cliente. Se explica y se le da la salida,
+       en vez del Swal rojo de "Error" que salía antes apenas entraba. -->
+  <div *ngIf="!cargando && faltaPerfilCliente" class="fv-empty">
+    <span class="fv-empty__icon">📝</span>
+    <p class="mb-0">Para guardar favoritos necesitas completar tus datos.</p>
+    <p class="fv-empty__hint">
+      Nos falta tu nombre, apellido y teléfono. Es rápido, y con eso también podrás hacer pedidos.
+    </p>
+    <button class="fv-btn fv-btn--primary" (click)="irACompletarPerfil()">Completar mis datos</button>
+  </div>
+
+  <div *ngIf="!cargando && !faltaPerfilCliente && variantes.length === 0" class="fv-empty">
     <span class="fv-empty__icon">💔</span>
     <p class="mb-0">Todavía no tienes favoritos.</p>
     <p class="fv-empty__hint">Toca el corazón de cualquier producto en el catálogo para guardarlo aquí.</p>

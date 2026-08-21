@@ -1,0 +1,139 @@
+<div class="ra-wrap">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────── -->
+  <div class="ra-header">
+    <div class="ra-header__title">
+      <h4>🎁 Ramos armados</h4>
+      <small>Ramos completos, listos para que el cliente los elija sin armar nada</small>
+    </div>
+    <button class="ra-btn ra-btn--primary" (click)="abrirNuevo()" *ngIf="!modoForm">
+      + Nuevo ramo
+    </button>
+  </div>
+
+  <div class="ra-aviso" *ngIf="error">
+    <strong>⚠️ {{ error }}</strong>
+  </div>
+
+  <p class="ra-hint" *ngIf="!modoForm && !cargandoCatalogos && tipos.length === 0">
+    ⚠️ Primero da de alta al menos una especie, color y cantidad en «🌸 Catálogos» — un ramo se
+    arma a partir de esos datos.
+  </p>
+
+  <!-- ── FORMULARIO ─────────────────────────────────────────────────── -->
+  <div class="ra-form-card" *ngIf="modoForm">
+    <h5 class="ra-form-title">{{ modoForm === 'nuevo' ? '✨ Nuevo ramo' : '✏️ Editar ramo' }}</h5>
+
+    <div class="ra-form-grid">
+      <div class="ra-field">
+        <label class="ra-label">Nombre del ramo</label>
+        <input class="ra-input" type="text" placeholder="Ej. Ramo Elegancia Roja"
+               [(ngModel)]="formNombre" maxlength="80">
+      </div>
+      <div class="ra-field">
+        <label class="ra-label">Especie</label>
+        <select class="ra-input" [(ngModel)]="formTipoFlorId" (ngModelChange)="onCambiarEspecie()">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let t of tipos" [ngValue]="t.id">{{ t.nombre }}</option>
+        </select>
+      </div>
+      <div class="ra-field">
+        <label class="ra-label">Color</label>
+        <select class="ra-input" [(ngModel)]="formColorFlorId" [disabled]="!formTipoFlorId">
+          <option [ngValue]="0" disabled>Elige uno…</option>
+          <option *ngFor="let c of coloresDeLaEspecie" [ngValue]="c.id">{{ c.nombre }} ({{ c.stock }} disp.)</option>
+        </select>
+        <p class="ra-field__vacio" *ngIf="formTipoFlorId && coloresDeLaEspecie.length === 0">
+          Esta especie no tiene colores activos todavía.
+        </p>
+      </div>
+      <div class="ra-field">
+        <label class="ra-label">Cuántas flores</label>
+        <select class="ra-input" [(ngModel)]="formCantidadFlorValidaId" [disabled]="!formTipoFlorId">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let c of cantidadesDeLaEspecie" [ngValue]="c.id">{{ c.cantidad }} flores</option>
+        </select>
+        <p class="ra-field__vacio" *ngIf="formTipoFlorId && cantidadesDeLaEspecie.length === 0">
+          Esta especie no tiene cantidades válidas configuradas todavía.
+        </p>
+      </div>
+      <div class="ra-field">
+        <label class="ra-label">Imagen (link)</label>
+        <input class="ra-input" type="text" placeholder="https://…" [(ngModel)]="formImagenUrl">
+      </div>
+      <div class="ra-field ra-field--check">
+        <label class="ra-check">
+          <input type="checkbox" [(ngModel)]="formActivo"> Visible en la vitrina del cliente
+        </label>
+      </div>
+    </div>
+
+    <!-- Accesorios -->
+    <div class="ra-accesorios" *ngIf="accesoriosActivos.length > 0">
+      <label class="ra-label">Accesorios que lleva</label>
+      <div class="ra-accesorio-row" *ngFor="let s of formAccesorios">
+        <label class="ra-check">
+          <input type="checkbox" [(ngModel)]="s.seleccionado">
+          {{ s.accesorio.nombre }}
+          <span class="ra-badge" *ngIf="s.accesorio.esPapel">papel — se calcula solo</span>
+        </label>
+        <input class="ra-input ra-input--num" type="number" min="1"
+               *ngIf="s.seleccionado && !s.accesorio.esPapel"
+               [(ngModel)]="s.cantidad" title="Cantidad">
+      </div>
+      <p class="ra-hint">
+        El accesorio marcado «papel» no necesita cantidad — el sistema la calcula sola según las
+        flores del ramo.
+      </p>
+    </div>
+
+    <div class="ra-form-actions">
+      <button class="ra-btn ra-btn--ghost" (click)="cancelarForm()">Cancelar</button>
+      <button class="ra-btn ra-btn--primary" (click)="guardar()" [disabled]="guardando">
+        {{ guardando ? 'Guardando…' : '💾 Guardar ramo' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LISTA ──────────────────────────────────────────────────────── -->
+  <div class="ra-loading" *ngIf="cargando && !modoForm">Cargando…</div>
+
+  <div class="ra-empty" *ngIf="!cargando && !modoForm && ramos.length === 0">
+    Todavía no hay ramos armados.
+  </div>
+
+  <div class="ra-grid" *ngIf="!modoForm && ramos.length > 0">
+    <div class="ra-card" *ngFor="let r of ramos">
+      <div class="ra-card__hdr">
+        <span class="ra-card__titulo">{{ r.nombre }}</span>
+        <span class="ra-badge" [ngClass]="r.activo ? 'ra-badge--activo' : 'ra-badge--off'">
+          {{ r.activo ? '🟢 Visible' : '⚫ Oculto' }}
+        </span>
+      </div>
+
+      <div class="ra-card__body">
+        <p class="ra-card__especie">{{ r.tipoFlorNombre }} · {{ r.colorFlorNombre }} · {{ r.cantidad }} flores</p>
+        <p class="ra-card__precio">${{ r.precioTotal | number:'1.2-2' }}</p>
+        <p class="ra-card__extra" *ngIf="r.papelIncluido">📄 Papel incluido — ${{ r.precioPapel | number:'1.2-2' }}</p>
+        <ul class="ra-card__accesorios" *ngIf="r.accesorios?.length">
+          <li *ngFor="let a of r.accesorios">🎀 {{ a.nombre }} × {{ a.cantidad }} — ${{ a.subtotal | number:'1.2-2' }}</li>
+        </ul>
+      </div>
+
+      <div class="ra-card__footer">
+        <button class="ra-btn ra-btn--edit" (click)="abrirEditar(r)">✏️ Editar</button>
+        <button class="ra-btn" [ngClass]="r.activo ? 'ra-btn--off' : 'ra-btn--on'" (click)="toggleActivo(r)">
+          {{ r.activo ? '⏸ Ocultar' : '▶️ Mostrar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="ra-paginacion" *ngIf="!modoForm && totalPaginas > 1">
+    <button class="ra-btn ra-btn--ghost" (click)="paginaAnterior()" [disabled]="pagina <= 1">← Anterior</button>
+    <span>{{ pagina }} / {{ totalPaginas }}</span>
+    <button class="ra-btn ra-btn--ghost" (click)="paginaSiguiente()" [disabled]="pagina >= totalPaginas">Siguiente →</button>
+  </div>
+
+</div>

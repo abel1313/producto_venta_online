@@ -171,25 +171,35 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
           });
           return;
         }
-        this.clienteServoce.getDataOneCliente(this.idUsuario).subscribe((dataCliente: any) => {
-          if (dataCliente && dataCliente.data) {
-            this.pedidosDTO.cliente.id = dataCliente.data.id;
-            this.armarYConfirmarPedido();
-          } else {
+        // ⚠️ Se cambió `getDataOneCliente(idUsuario)` por esto: aquí solo hace falta el
+        // **clienteId**, y `buscarClientePorIdUsuario` es justo esa traducción — la misma que ya
+        // usan `venta-variante` y el configurador de ramos para armar un pedido. Antes, además,
+        // la llamada no tenía `error`: si fallaba, el botón de comprar **no hacía absolutamente
+        // nada** y el cliente se quedaba sin saber por qué. En un checkout eso es una venta
+        // perdida en silencio.
+        this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+          error: () => {
             Swal.fire({
-              title: "Error",
-              icon: "error",
-              text: "El usuario no esta registrado, intente de nuevo",
-              showCancelButton: false
+              title: 'No pudimos completar tu pedido',
+              icon: 'error',
+              text: 'No logramos leer tus datos de cliente. Revisa "Mis datos" e inténtalo de nuevo.'
             });
+          },
+          next: (clienteId: any) => {
+            if (clienteId) {
+              this.pedidosDTO.cliente.id = clienteId;
+              this.armarYConfirmarPedido();
+            } else {
+              Swal.fire({
+                title: 'Completa tu registro',
+                icon: 'info',
+                text: 'Para comprar necesitamos tus datos de cliente.',
+                showCancelButton: true,
+                confirmButtonText: 'Completar mis datos',
+                cancelButtonText: 'Ahora no'
+              }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+            }
           }
-        }, () => {
-          Swal.fire({
-            title: "Error",
-            icon: "error",
-            text: "Ocurrio un error",
-            showCancelButton: false
-          });
         });
       }
     }

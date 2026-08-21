@@ -1,5 +1,5 @@
-$primary:   #005C3D;
-$primary-d: #00875A;
+$primary:   var(--brand-2);
+$primary-d: var(--brand-1);
 $radius:    14px;
 $t:         all 0.22s ease;
 
@@ -20,7 +20,7 @@ $t:         all 0.22s ease;
   transition: $t;
 
   &:hover {
-    background: rgba(0,135,90,0.08);
+    background: rgba(var(--app-accent-rgb),0.08);
     color: var(--app-accent);
   }
 
@@ -101,7 +101,7 @@ $t:         all 0.22s ease;
     border: 1.5px solid var(--card-border);
     transition: $t;
 
-    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(0,135,90,0.15); }
+    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(var(--app-accent-rgb),0.15); }
 
     @media (max-width: 575px) { aspect-ratio: 1 / 1; }
   }
@@ -239,7 +239,7 @@ $t:         all 0.22s ease;
 
     @media (max-width: 767px) { height: 140px; }
 
-    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(0,135,90,0.15); }
+    &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(var(--app-accent-rgb),0.15); }
 
     &--principal {
       border-color: #f59e0b !important;

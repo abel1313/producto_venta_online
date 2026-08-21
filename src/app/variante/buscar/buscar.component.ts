@@ -69,6 +69,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private roles: string[] = [];
   get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
   favoritosIds = new Set<number>();
+  /** Se apaga si el back dice que al usuario le falta perfil de cliente — ver `ngOnInit`. */
+  favoritosDisponibles = true;
 
   constructor(
     private readonly varianteService: VarianteService,
@@ -101,8 +103,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
       if (!this.isAnonymous) {
         this.favoritoService.listarIds().pipe(takeUntil(this.destroy$)).subscribe({
-          next: res => { this.favoritosIds = new Set(res?.data ?? []); },
-          error: () => { this.favoritosIds = new Set(); }
+          next: res => { this.favoritosIds = new Set(res?.data ?? []); this.favoritosDisponibles = true; },
+          error: err => {
+            this.favoritosIds = new Set();
+            // Si el back dice que le falta perfil de cliente, favoritos no le sirve de nada:
+            // se esconde el corazón en vez de dejarle un botón que solo puede darle error.
+            // Cualquier otro fallo (red, etc.) NO lo esconde — puede ser pasajero.
+            const msg: string = err?.error?.mensaje ?? err?.error?.message ?? '';
+            if (msg.toLowerCase().includes('perfil de cliente')) this.favoritosDisponibles = false;
+          }
         });
       }
     });
@@ -380,7 +389,22 @@ export class BuscarComponent implements OnInit, OnDestroy {
       error: err => {
         if (eraFavorito) this.favoritosIds.add(v.id);
         else this.favoritosIds.delete(v.id);
-        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo actualizar favoritos.' });
+        const msg: string = err?.error?.mensaje ?? err?.error?.message ?? '';
+        // Red de seguridad: si el corazón alcanzó a mostrarse (la carga inicial no falló, pero
+        // el perfil sigue incompleto), no se le deja un error muerto — se le ofrece la salida.
+        if (msg.toLowerCase().includes('perfil de cliente')) {
+          this.favoritosDisponibles = false;
+          Swal.fire({
+            icon: 'info',
+            title: 'Falta completar tus datos',
+            text: 'Para guardar favoritos necesitamos tu nombre, apellido y teléfono.',
+            showCancelButton: true,
+            confirmButtonText: 'Completar mis datos',
+            cancelButtonText: 'Ahora no'
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+          return;
+        }
+        Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo actualizar favoritos.' });
       }
     });
   }
@@ -389,8 +413,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.router.navigate(['/tienda/carrito']);
   }
 
+  // Se manda el `productoId` que ya viene en el resumen para que la ficha no tenga que pedirlo
+  // con `getOne`, que es ADMIN-only desde 2026-08-11 y le daría 403 a un cliente.
   irDetalle(v: IVarianteResumen): void {
-    this.router.navigate(['/tienda/detalle', v.id]);
+    this.router.navigate(['/tienda/detalle', v.id], {
+      queryParams: v.productoId ? { productoId: v.productoId } : {}
+    });
   }
 
   editarVariante(v: IVarianteResumen): void {

@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
+import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
@@ -60,6 +61,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   lugares: ILugarEntrega[] = [];
   lugarEntregaId: number | null = null;
+
+  // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
+  onImgError = onImagenError;
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
@@ -338,10 +342,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         <input id="swal-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:160px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;outline:none">
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;outline:none">
         <div id="swal-resend" style="margin-top:12px;font-size:0.85rem;color:#64748b">
           ¿No llegó?
-          <span id="swal-resend-btn" style="color:#00875A;cursor:pointer;text-decoration:underline">
+          <span id="swal-resend-btn" style="color:var(--brand-1);cursor:pointer;text-decoration:underline">
             Reenviar código
           </span>
         </div>
@@ -349,7 +353,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#00875A',
+      confirmButtonColor: 'var(--brand-1)',
       didOpen: () => {
         const btn = document.getElementById('swal-resend-btn');
         if (btn) {
@@ -379,7 +383,21 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         }
       }
     }).then(result => {
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        // Cerrar en silencio dejaba al cliente sin saber si su pedido se generó o no. NO se
+        // generó: el back rechaza el guardado mientras el correo no esté verificado, así que no
+        // quedó nada. Su carrito sí sigue en pantalla y puede reintentar.
+        Swal.fire({
+          icon: 'info',
+          title: 'Tu pedido no se generó',
+          html: `<p>Necesitamos verificar tu correo antes de tomarlo, así que
+                 <b>no guardamos nada</b>.</p>
+                 <p>Tu carrito sigue aquí — vuelve a pulsar el botón y te mandamos el código
+                 otra vez.</p>`,
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
       Swal.fire({
         icon: 'success',
         title: '¡Correo verificado!',

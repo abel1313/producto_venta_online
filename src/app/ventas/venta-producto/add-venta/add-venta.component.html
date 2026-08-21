@@ -136,7 +136,7 @@
     <img class="img-visor-img"
       [src]="imagenVisor"
       [alt]="filaSeleccionadaBuscador?.nombre ?? 'Imagen'"
-      (error)="$any($event.target).src = 'assets/img/no-image.png'" />
+      (error)="onImgError($event)" />
     <p class="img-visor-nombre">{{ filaSeleccionadaBuscador?.nombre }}</p>
   </div>
 </div>

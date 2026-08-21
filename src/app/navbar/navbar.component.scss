@@ -5,13 +5,16 @@
 :host {
   --sb-w:           70px;          /* collapsed width */
   --sb-w-exp:       262px;         /* expanded width */
-  --sb-bg:          rgba(8,20,16, 0.88); /* cálido oscuro */
-  --sb-bg-item:     rgba(225,255,240,0.06);
-  --sb-bg-active:   rgba(0,135,90,0.22);
-  --sb-accent:      #00D97E;
-  --sb-text:        #EDF7F1;
+  /* El sidebar arranca en su versión oscura; el tema claro la sobreescribe abajo.
+     Negro puro, sin tinte — antes tenía un verde muy oscuro (8,20,16). */
+  --sb-bg-rgb:      0, 0, 0;
+  --sb-bg:          rgba(var(--sb-bg-rgb), 0.88);
+  --sb-bg-item:     rgba(255,255,255,0.06);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
+  --sb-accent:      var(--brand-1);
+  --sb-text:        #E9E9EC;
   --sb-text-active: #FFFFFF;
-  --sb-border:      rgba(225,255,240,0.08);
+  --sb-border:      rgba(255,255,255,0.08);
   --sb-trans:       0.28s cubic-bezier(0.4,0,0.2,1);
   --sb-radius:      10px;
   --sb-font:        'Poppins', sans-serif;
@@ -21,9 +24,9 @@
    TEMA CLARO — sidebar blanco con letras oscuras
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-light), :host-context([data-theme="light"]) {
-  --sb-bg:          rgba(225,255,240,0.97);
-  --sb-bg-item:     rgba(0,135,90,0.07);
-  --sb-bg-active:   rgba(0,135,90,0.14);
+  --sb-bg:          rgba(255,255,255,0.97);
+  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
   --sb-text:        #12241D;
   --sb-text-active: #12241D;
   --sb-border:      #D5E8DD;
@@ -33,25 +36,25 @@
   }
 
   .sb-brand-text     { color: #12241D; }
-  .sb-subitem        { color: #5F8375; &:hover { color: #00875A; background: rgba(0,135,90,0.10); } }
-  .sb-user-link      { color: #5F8375; &:hover { color: #12241D; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: #00875A; } } }
+  .sb-subitem        { color: #5F8375; &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
+  .sb-user-link      { color: #5F8375; &:hover { color: #12241D; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
   .sb-logout         { color: #ef4444; }
   .sb-username       { color: #12241D; }
   .sb-cart-btn       { color: #5F8375; &:hover { color: #12241D; } }
   .sb-chevron        { color: #5F8375; }
 
   .sb-avatar {
-    background: #00875A;
-    box-shadow: 0 0 0 2px rgba(0,135,90,0.22);
+    background: var(--brand-1);
+    box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb),0.22);
   }
 
   .sb-hamburger {
-    background: #00875A;
-    box-shadow: 0 4px 12px rgba(0,135,90,0.30);
+    background: var(--brand-1);
+    box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),0.30);
   }
 
   .sidebar.mobile-open {
-    background: rgba(225,255,240,0.99) !important;
+    background: rgba(255,255,255,0.99) !important;
   }
 
   .sb-item--test {
@@ -67,7 +70,7 @@
    Solo sobreescribimos lo que necesita explícito
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  --sb-bg: rgba(8,20,16,0.92);
+  --sb-bg: rgba(var(--sb-bg-rgb),0.92);
 }
 
 /* ── Hamburger (mobile only) ─────────────────────── */
@@ -87,10 +90,10 @@
   border-radius: 10px;
   font-size: 1.25rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,135,90,0.35);
+  box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),0.35);
   transition: background 0.15s, transform 0.15s;
 
-  &:hover { background: #005C3D; transform: scale(1.05); }
+  &:hover { background: var(--brand-2); transform: scale(1.05); }
   &:active { transform: scale(0.96); }
 }
 
@@ -390,7 +393,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(0,217,126,0.30);
+  box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb),0.30);
 }
 
 .sb-user-info {
@@ -434,7 +437,7 @@
 
   &--pass {
     opacity: 0.75;
-    &:hover { opacity: 1; color: #6EEBB0; }
+    &:hover { opacity: 1; color: var(--brand-1); }
   }
 }
 

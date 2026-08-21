@@ -5,6 +5,7 @@ import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
 import { SesionService } from 'src/app/shared/sesion.service';
+import { UsuarioService } from 'src/app/shared/usuario.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -39,7 +40,8 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
     private readonly acceder:        AccederService,
     private readonly authService:    AuthService,
     private readonly clienteService: ClienteService,
-    private readonly sesion:         SesionService
+    private readonly sesion:         SesionService,
+    private readonly usuarioService: UsuarioService
   ) {}
 
   ngOnInit(): void {
@@ -48,7 +50,21 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
     });
     this.authService.userId$.pipe(take(1)).subscribe(userId => {
       if (!userId) return;
-      this.clienteService.getDataOneCliente(userId).subscribe({
+      // ⚠️ `buscarPorIdCliente` espera el id de **cliente**, no el de usuario — confirmado por el
+      // back (2026-08-16) revisando su código. Antes se le mandaba el `userId` y respondía
+      // "No autorizado", así que el campo de correo se quedaba vacío. Hay que traducir primero.
+      this.usuarioService.buscarClientePorIdUsuario(userId).subscribe({
+        next: (clienteId: any) => {
+          if (!clienteId) { this.verificarCambioCorreoPendiente(); return; }
+          this.cargarCorreoCliente(clienteId);
+        },
+        error: () => { this.verificarCambioCorreoPendiente(); }
+      });
+    });
+  }
+
+  private cargarCorreoCliente(clienteId: number): void {
+      this.clienteService.getDataOneCliente(clienteId).subscribe({
         next: (data: any) => {
           const correo = data?.data?.correoElectronico ?? '';
           if (correo) {
@@ -59,7 +75,6 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         },
         error: () => { this.verificarCambioCorreoPendiente(); }
       });
-    });
   }
 
   ngOnDestroy(): void {
@@ -160,13 +175,13 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         <input id="swal-mp-codigo" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
       showCancelButton: true,
       cancelButtonText: 'Verificar más tarde',
-      confirmButtonColor: '#00875A',
+      confirmButtonColor: 'var(--brand-1)',
       preConfirm: async () => {
         const codigo = (document.getElementById('swal-mp-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos'); return false; }

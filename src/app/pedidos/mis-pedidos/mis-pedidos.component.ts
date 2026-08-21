@@ -16,6 +16,8 @@ import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
+import { UsuarioService } from 'src/app/shared/usuario.service';
+import { FloresService } from 'src/app/flores/service/flores.service';
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -36,6 +38,8 @@ export class MisPedidosComponent implements OnInit {
   };
   idUsuario: number = 0;
   clienteId: number = 0;
+  /** El usuario no tiene perfil de cliente — sin eso no hay pedidos que mostrarle. */
+  sinPerfilCliente = false;
 
   // --- Diálogo de cobro ---
   mostrarDialogoCobro: boolean = false;
@@ -128,7 +132,9 @@ export class MisPedidosComponent implements OnInit {
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
-    private readonly lugarEntregaService: LugarEntregaService
+    private readonly lugarEntregaService: LugarEntregaService,
+    private readonly usuarioService: UsuarioService,
+    private readonly floresService: FloresService
   ) {}
 
   ngOnInit(): void {
@@ -153,13 +159,24 @@ export class MisPedidosComponent implements OnInit {
     if (this.isAdminUser) {
       this.buscarPedidoAdmin();
     } else {
-      this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
-        if (data && data.data) {
-          this.clienteId = data.data.id;
+      // ⚠️ Antes esto usaba `getDataOneCliente(idUsuario)`, que pega a
+      // `/v1/clientes/buscarPorIdCliente/{id}` — ese endpoint espera el id de **cliente**, no el
+      // de usuario, y respondía "No autorizado". Como la llamada **no tenía manejo de error**, la
+      // pantalla se quedaba vacía para siempre: sin pedidos, sin aviso, sin nada que explicara
+      // por qué. No se había notado porque el dueño prueba como admin, y admin entra por la otra
+      // rama (`buscarPedidoAdmin`).
+      //
+      // `buscarClientePorIdUsuario` es justo la traducción usuario → cliente, y es la que ya usan
+      // venta-variante y el configurador de ramos para lo mismo.
+      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+        next: (clienteId: any) => {
+          if (!clienteId) { this.sinPerfilCliente = true; return; }
+          this.clienteId = clienteId;
           this.page = 0;
           this.size = 10;
           this.cargarMasPedidos();
-        }
+        },
+        error: () => { this.sinPerfilCliente = true; }
       });
     }
   }
@@ -175,6 +192,15 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cancelarPedido(item: IPedidoGenerico) {
+    // El cliente va por otra puerta: `DELETE /v1/pedidos/delete/{id}` (lo de abajo) es ADMIN-only
+    // y le respondía 403 mudo. El back abrió `DELETE /v1/flores/pedidos/{id}/cancelar` para que
+    // cancele lo suyo — pero SOLO ramos y SOLO sin ningún pago registrado, así que hay que saber
+    // primero si el pedido es un ramo, y eso no viene en la lista.
+    if (!this.isAdminUser) {
+      this.cancelarComoCliente(item);
+      return;
+    }
+
     // Ya entregado = devolución (el back ahora sí permite cancelar en este estado, pero solo
     // admin y sin NO_SE_PRESENTO como motivo — el cliente sí cumplió, solo se devuelve el
     // producto). El botón que dispara esto ya está protegido con !isAdminUser en el HTML.
@@ -209,6 +235,74 @@ export class MisPedidosComponent implements OnInit {
     });
   }
 
+  /**
+   * Cancelación pedida por el propio cliente. Solo existe para ramos y solo antes de cualquier
+   * pago — el back lo valida, pero se comprueba antes para no mandarlo a un error inevitable.
+   *
+   * No pide motivo: ese endpoint no recibe body. El motivo es para que el admin registre por qué
+   * canceló él un pedido ajeno; aquí el cliente cancela el suyo.
+   */
+  private cancelarComoCliente(item: IPedidoGenerico): void {
+    const pedidoId = item.pedido.id;
+
+    this.pedidoService.getDetallePedido(pedidoId).subscribe({
+      next: r => {
+        const d = r?.data;
+
+        if (d?.esRamoFlores !== true) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Este pedido no lo puedes cancelar tú',
+            text: 'Escríbenos y con gusto lo cancelamos por ti.'
+          });
+          return;
+        }
+
+        if ((d.totalPagado ?? 0) > 0) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Ya hay un pago registrado',
+            text: 'Como ya abonaste algo, la cancelación la tiene que hacer un administrador. Escríbenos.'
+          });
+          return;
+        }
+
+        Swal.fire({
+          icon: 'warning',
+          title: '¿Cancelar tu ramo?',
+          html: `<p style="margin:0;color:var(--app-text-muted,#6b7280)">Pedido #${pedidoId}</p>
+                 <p style="margin:8px 0 0">Se cancela y ya no se prepara. Si lo quieres de nuevo, tendrás que armarlo otra vez.</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cancelar mi ramo',
+          cancelButtonText: 'No, dejarlo así',
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#6b7280'
+        }).then(res => {
+          if (!res.isConfirmed) return;
+
+          this.floresService.cancelarPedidoFlores(pedidoId).subscribe({
+            next: () => {
+              this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== pedidoId);
+              Swal.fire({ icon: 'success', title: 'Tu ramo quedó cancelado', timer: 1800, showConfirmButton: false });
+            },
+            error: err => Swal.fire({
+              icon: 'error',
+              title: 'No se pudo cancelar',
+              text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Inténtalo de nuevo o escríbenos.'
+            })
+          });
+        });
+      },
+      // Sin detalle no se puede saber si es un ramo — mejor decirlo que mandar una petición que
+      // se sabe que va a fallar con 403.
+      error: () => Swal.fire({
+        icon: 'error',
+        title: 'No pudimos abrir tu pedido',
+        text: 'Revisa tu conexión e inténtalo de nuevo.'
+      })
+    });
+  }
+
   // Modal (Swal) para capturar/editar nombreReceptor, direccionEntrega, fechaEntrega y
   // observaciones — PUT /v1/pedidos/{id}/entrega, no requiere admin (cualquiera puede editar
   // su propio pedido), el back solo lo rechaza si el pedido ya está "cancelado".
@@ -233,6 +327,19 @@ export class MisPedidosComponent implements OnInit {
       `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
     ).join('');
 
+    // En un ramo, fecha y lugar NO se editan desde aquí — ni el cliente ni el admin. Este campo
+    // es libre y no valida nada: cambiar la fecha a mano se salta los plazos del taller y el
+    // cargo por entrega urgente que sí calcula `fechas-disponibles`, y cambiar la zona altera un
+    // costo de envío ya cobrado. La fecha del ramo se cambia con "✏️ Editar ramo" (detalle del
+    // pedido), que sí recotiza. Mismo criterio que el botón "−" de quitar líneas.
+    const esRamo = actual?.esRamoFlores === true;
+    const bloqueo = esRamo ? 'disabled' : '';
+    const avisoRamo = esRamo
+      ? `<p class="mp-entrega-aviso">🌹 La fecha y el lugar de este ramo se cambian desde
+           <b>«✏️ Editar ramo»</b> (dentro del detalle del pedido), para que se vuelvan a calcular
+           los días que tarda el taller y el cargo por entrega urgente.</p>`
+      : '';
+
     Swal.fire({
       title: `📍 Info de entrega — Pedido #${pedidoId}`,
       width: 480,
@@ -255,8 +362,18 @@ export class MisPedidosComponent implements OnInit {
           }
           .mp-entrega-textarea { resize:vertical; min-height:44px; }
           .mp-entrega-input:focus, .mp-entrega-select:focus, .mp-entrega-textarea:focus {
-            outline:none; border-color:var(--app-accent,#00875A);
-            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(0,135,90,.12));
+            outline:none; border-color:var(--app-accent,var(--brand-1));
+            box-shadow:0 0 0 3px var(--app-accent-soft,rgba(var(--app-accent-rgb),.12));
+          }
+          .mp-entrega-input:disabled, .mp-entrega-select:disabled {
+            opacity:.6; cursor:not-allowed;
+            background:var(--app-surface-2,#f1f5f9);
+          }
+          .mp-entrega-aviso {
+            margin:0; padding:9px 12px; border-radius:10px; font-size:.78rem; line-height:1.45;
+            text-align:left; color:var(--app-text,#1f2937);
+            background:var(--app-accent-soft,rgba(var(--app-accent-rgb),.12));
+            border:1px solid var(--card-border,#e5e7eb);
           }
         </style>
         <div class="mp-entrega-form">
@@ -271,16 +388,17 @@ export class MisPedidosComponent implements OnInit {
           <div class="mp-entrega-row">
             <div class="mp-entrega-field">
               <label class="mp-entrega-label">📅 Fecha de entrega</label>
-              <input id="sw-fecha" type="date" class="mp-entrega-input" value="${fechaEntrega}">
+              <input id="sw-fecha" type="date" class="mp-entrega-input" value="${fechaEntrega}" ${bloqueo}>
             </div>
             <div class="mp-entrega-field">
               <label class="mp-entrega-label">📍 Lugar de entrega</label>
-              <select id="sw-lugar" class="mp-entrega-select">
+              <select id="sw-lugar" class="mp-entrega-select" ${bloqueo}>
                 <option value="">Sin especificar</option>
                 ${opcionesLugar}
               </select>
             </div>
           </div>
+          ${avisoRamo}
           <div class="mp-entrega-field">
             <label class="mp-entrega-label">📘 Link de Facebook</label>
             <input id="sw-facebook" class="mp-entrega-input" placeholder="Opcional" value="${urlFacebook}">
@@ -296,8 +414,11 @@ export class MisPedidosComponent implements OnInit {
       preConfirm: () => ({
         nombreReceptor:   (document.getElementById('sw-receptor') as HTMLInputElement)?.value?.trim() || undefined,
         direccionEntrega: (document.getElementById('sw-direccion') as HTMLTextAreaElement)?.value?.trim() || undefined,
-        fechaEntrega:     (document.getElementById('sw-fecha') as HTMLInputElement)?.value || undefined,
-        lugarEntregaId:   Number((document.getElementById('sw-lugar') as HTMLSelectElement)?.value) || undefined,
+        // En un ramo se omiten a propósito: el back interpreta ausente como "no tocar este campo".
+        // Un <input disabled> igual devuelve su valor por JS, así que sin este guard se
+        // reescribirían con lo mismo — inofensivo, pero mejor no mandarlos.
+        fechaEntrega:     esRamo ? undefined : ((document.getElementById('sw-fecha') as HTMLInputElement)?.value || undefined),
+        lugarEntregaId:   esRamo ? undefined : (Number((document.getElementById('sw-lugar') as HTMLSelectElement)?.value) || undefined),
         urlFacebook:      (document.getElementById('sw-facebook') as HTMLInputElement)?.value?.trim() || undefined,
         observaciones:    (document.getElementById('sw-obs') as HTMLTextAreaElement)?.value?.trim() || undefined
       })

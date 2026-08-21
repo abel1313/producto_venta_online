@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
+import { SesionService } from 'src/app/shared/sesion.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 
 @Component({
@@ -49,7 +50,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     private readonly router:               Router,
     public  readonly authService:          AuthService,
     private readonly usuario:              UsuarioService,
-    private readonly presentacion:         PresentacionService
+    private readonly presentacion:         PresentacionService,
+    private readonly sesion:               SesionService
   ) { }
 
   formRegistro = this.fb.group({
@@ -227,11 +229,22 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Resetea la contraseña de un usuario y muestra la temporal para que el admin se la pase.
+   *
+   * ⚠️ **Caso propio:** si el admin se resetea a sí mismo, el back invalida su token **al
+   * instante** (refuerzo 2026-08-16 — antes le quedaban 15 minutos de gracia), así que su
+   * siguiente clic caería en un 401 y lo sacaría al login sin entender por qué. Aquí se le avisa
+   * antes y se le cierra la sesión a propósito después de enseñarle la contraseña temporal.
+   */
   resetearPasswordAdmin(): void {
     if (!this.updateUser.id) return;
+    const esMiPropiaCuenta = this.updateUser.id === this.authService.userIdValue;
     Swal.fire({
       title: `¿Resetear contraseña de ${this.updateUser.username}?`,
-      text: 'Se generará una contraseña temporal que deberás compartir con el usuario.',
+      text: esMiPropiaCuenta
+        ? 'Es tu propia cuenta: se cerrará tu sesión y tendrás que entrar de nuevo con la contraseña temporal.'
+        : 'Se generará una contraseña temporal que deberás compartir con el usuario.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, resetear',
@@ -253,10 +266,16 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
                 ${nuevaPass}
               </div>
               <p style="font-size:0.82rem;color:#64748b">
-                Dásela al usuario. Deberá cambiarla en su siguiente inicio de sesión.
+                ${esMiPropiaCuenta
+                  ? 'Anótala: la vas a necesitar para volver a entrar, y te la va a pedir cambiar.'
+                  : 'Dásela al usuario. Deberá cambiarla en su siguiente inicio de sesión.'}
               </p>
             `,
             confirmButtonText: 'Entendido'
+          }).then(() => {
+            // La sesión ya está muerta del lado del back; se cierra aquí de forma controlada en
+            // vez de dejar que el admin choque con un 401 en su siguiente clic.
+            if (esMiPropiaCuenta) this.sesion.cerrarSesionLocal();
           });
         },
         error: (err: any) => {
@@ -284,7 +303,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
         <input id="swal-codigo-admin" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',
@@ -390,7 +409,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
         <input id="swal-codigo-cambio" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar y guardar',

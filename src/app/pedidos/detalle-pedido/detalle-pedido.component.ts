@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
@@ -8,6 +9,8 @@ import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { NegocioService } from 'src/app/negocio/negocio.service';
+import { FloresService } from 'src/app/flores/service/flores.service';
+import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
@@ -47,6 +50,80 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   get isAdmin(): boolean {
     return this.authService.isAdminService;
+  }
+
+  /**
+   * Quién puede quitar artículos de un pedido ya confirmado.
+   *
+   * **Solo el admin.** Antes el botón "−" se le mostraba también al cliente, que podía reducir su
+   * propio pedido después de confirmarlo — descuadrando lo que el taller va a preparar contra lo
+   * que ya se cobró.
+   *
+   * ⚠️ **En un ramo de flores está bloqueado incluso para el admin**, y no es exceso de celo:
+   * `eliminarDetalle` borra una línea suelta sin recalcular nada. En un ramo, quitar flores deja
+   * el papel con los pliegos del tamaño viejo, la fecha con el plazo del tamaño viejo y el cargo
+   * de urgencia sin revisar — el pedido queda internamente inconsistente y nadie se entera.
+   * Editar un ramo de verdad exige rehacer la cotización, que hoy no existe (ver CLAUDE.md).
+   */
+  get puedeEditarLineas(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores;
+  }
+
+  /**
+   * "✏️ Editar ramo" — la única forma correcta de cambiar un ramo ya vendido, porque reabre el
+   * configurador y recotiza todo (`PUT .../editar-ramo`), a diferencia del botón "−" que borra
+   * una línea suelta sin recalcular nada.
+   *
+   * Solo ADMIN (el back devuelve 403 a cualquier otro) y solo si el pedido es un ramo. No se
+   * bloquea por estado del pedido: el dueño lo pidió explícito ("no importa en qué estado esté").
+   * El back sí rechaza un pedido cancelado, y ese mensaje se muestra tal cual.
+   */
+  get puedeEditarRamo(): boolean {
+    return this.isAdmin && this.esPedidoDeFlores;
+  }
+
+  editarRamo(): void {
+    this.router.navigate(['/flores/configurar'], {
+      queryParams: { pedidoId: this.detalle?.pedidoId ?? this.pedido?.pedido?.id }
+    });
+  }
+
+  /**
+   * Si el pedido es un ramo. Ahora lo dice el back con `esRamoFlores` (agregado a petición
+   * nuestra el 2026-08-16); el parche de mirar el nombre del producto queda solo como respaldo
+   * por si se consulta un pedido guardado antes de ese cambio.
+   */
+  get esPedidoDeFlores(): boolean {
+    if (this.detalle?.esRamoFlores != null) return this.detalle.esRamoFlores;
+    return (this.detalle?.detalles ?? []).some(d => (d.productoNombre ?? '').includes('[Flores eternas]'));
+  }
+
+  /**
+   * Las líneas que se muestran. Al cliente **se le esconde el papel** (`esLineaInterna`): va
+   * incluido en el ramo, no lo eligió y no lo puede quitar — verlo como renglón suelto solo
+   * confunde. El admin sí ve todo, que para eso administra.
+   */
+  get lineasVisibles(): PedidoDetalleItem[] {
+    const todas = this.detalle?.detalles ?? [];
+    return this.isAdmin ? todas : todas.filter(d => !d.esLineaInterna);
+  }
+
+  /**
+   * Se escondió alguna línea, así que el total es mayor que la suma de lo visible. Se avisa con
+   * una nota en vez de dejar un descuadre sin explicación — que sería peor que mostrar el papel.
+   */
+  get hayLineasOcultas(): boolean {
+    return (this.detalle?.detalles ?? []).length !== this.lineasVisibles.length;
+  }
+
+  /**
+   * `[Flores eternas] Flor eternal0 - Roja` → `Flor eternal0 - Roja`.
+   *
+   * Ese prefijo es de uso interno (marca los productos sombra del módulo para excluirlos de los
+   * buscadores) y no tiene por qué salirle al cliente en su pedido.
+   */
+  nombreVisible(nombre: string | null | undefined): string {
+    return (nombre ?? '').replace('[Flores eternas]', '').trim();
   }
 
   get esCredito(): boolean {
@@ -102,7 +179,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly pedidosService: PedidosService,
     private readonly abonoService:   AbonoService,
     private readonly authService:    AuthService,
-    private readonly negocioService: NegocioService
+    private readonly negocioService: NegocioService,
+    private readonly floresService:  FloresService,
+    private readonly router:         Router
   ) {}
 
   ngOnInit(): void {
@@ -163,9 +242,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
-  onImgError(event: Event): void {
-    (event.target as HTMLImageElement).src = 'assets/img/no-image.png';
-  }
+  // Ver `imagen-placeholder.ts`: apuntaba a un png inexistente y provocaba un bucle infinito de
+  // peticiones (50+ vistas en vivo en un pedido de flores, cuyos productos no tienen imagen).
+  onImgError = onImagenError;
 
   irPedido(): void {
     this.regresarProductos.emit(false);
@@ -183,12 +262,40 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.mostrarFormAbono = false;
   }
 
+  /**
+   * Mismo patrón que `/abonos`: revalidar el reloj antes de cobrar. Si es un ramo urgente y el
+   * pago llega tarde, el back agrega el cargo y el total sube — cobrar el monto viejo dejaría el
+   * pedido corto. Se llama en **todos** los pedidos (el back responde 200 sin cambios para los
+   * que no son de flores), y si falla por red se cobra igual.
+   *
+   * ⚠️ Este es el **segundo** punto de cobro de la app; el otro es `/abonos`. Lo que se toque
+   * aquí hay que revisarlo allá y al revés.
+   */
   registrarAbono(): void {
     if (this.registrandoAbono) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
       Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
       return;
     }
+    this.registrandoAbono = true;
+    this.floresService.revalidarAntesDePagar(this.pedido.pedido.id).subscribe({
+      next: r => {
+        if (!r?.cargoRecienAplicado) { this.ejecutarAbono(); return; }
+        this.registrandoAbono = false;
+        this.mostrarFormAbono = false;
+        Swal.fire({
+          icon: 'warning',
+          title: 'El total de este pedido cambió',
+          html: `<p>${r.mensaje ?? 'Se aplicó el cargo por entrega urgente porque el pago llegó después de la hora límite.'}</p>
+                 <p>Nuevo total: <b>$${r.totalActual.toFixed(2)}</b></p>`,
+          confirmButtonText: 'Entendido'
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: () => { this.ejecutarAbono(); }
+    });
+  }
+
+  private ejecutarAbono(): void {
     this.registrandoAbono = true;
     const body: AbonoRequest = {
       monto:      this.abonoForm.monto,

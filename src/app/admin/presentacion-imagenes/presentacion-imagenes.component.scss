@@ -1,4 +1,4 @@
-$p: #005C3D; $pd: #00875A; $t: all 0.22s ease;
+$p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
 .pi-page {
   min-height: 100vh;
@@ -50,7 +50,7 @@ $p: #005C3D; $pd: #00875A; $t: all 0.22s ease;
 
   &--changed {
     border-color: var(--app-accent);
-    box-shadow: 0 0 0 3px rgba(0,135,90,.1);
+    box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.1);
   }
 
   // ── Preview ──
@@ -82,14 +82,14 @@ $p: #005C3D; $pd: #00875A; $t: all 0.22s ease;
 
   &__badge-changed {
     position: absolute; top: 8px; right: 8px;
-    background: var(--app-accent); color: #fff;
+    background: var(--app-accent); color: var(--app-accent-ink);
     font-size: .68rem; font-weight: 700;
     padding: 2px 8px; border-radius: 20px;
   }
 
   &__hover-overlay {
     position: absolute; inset: 0;
-    background: rgba(0,135,90,.55);
+    background: rgba(var(--app-accent-rgb),.55);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity .22s;
     color: #fff; font-size: .85rem; font-weight: 700;
@@ -104,7 +104,7 @@ $p: #005C3D; $pd: #00875A; $t: all 0.22s ease;
 
   &__filename {
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    background: rgba(0,135,90,.06); border: 1px solid rgba(0,135,90,.15); border-radius: 8px;
+    background: rgba(var(--app-accent-rgb),.06); border: 1px solid rgba(var(--app-accent-rgb),.15); border-radius: 8px;
     padding: 4px 8px; font-size: .72rem; color: var(--app-accent); font-weight: 600;
     white-space: nowrap; overflow: hidden;
     span { overflow: hidden; text-overflow: ellipsis; }
@@ -165,7 +165,7 @@ $p: #005C3D; $pd: #00875A; $t: all 0.22s ease;
   color: #fff; font-size: .8rem; font-weight: 700;
   cursor: pointer; transition: $t;
 
-  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,135,90,.35); }
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),.35); }
   &:disabled { opacity: .45; cursor: not-allowed; }
 }
 

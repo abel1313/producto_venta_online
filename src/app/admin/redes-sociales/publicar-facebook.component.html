@@ -1,0 +1,408 @@
+<div class="fb-wrap">
+
+  <!-- ── HEADER ───────────────────────────────────────────────────────── -->
+  <div class="fb-header">
+    <div class="fb-header__title">
+      <h4>📣 Publicar en redes</h4>
+      <small>Sube un video a las redes del negocio</small>
+    </div>
+    <button class="fb-btn fb-btn--ghost fb-btn--sm" (click)="mostrarAyuda = !mostrarAyuda">
+      {{ mostrarAyuda ? '▲ Ocultar' : '❔ ¿Qué acepta cada red?' }}
+    </button>
+  </div>
+
+  <!-- Chuleta plegable. Existe para no tener que recordar por qué una red se bloquea. -->
+  <div class="fb-card fb-ayuda" *ngIf="mostrarAyuda">
+    <table class="fb-ayuda__tabla">
+      <tr>
+        <th></th><th>🎬 Video</th><th>🎞️ Reel</th><th>📅 Programar</th>
+      </tr>
+      <tr>
+        <td>📘 Facebook</td><td>✅</td><td>✅</td><td>✅</td>
+      </tr>
+      <tr>
+        <td>📸 Instagram</td><td>❌</td><td>✅</td><td>✅</td>
+      </tr>
+      <tr>
+        <td>🎵 TikTok</td><td>✅</td><td>✅</td><td>✅</td>
+      </tr>
+    </table>
+    <ul class="fb-ayuda__notas">
+      <li><b>Aquí solo se suben videos.</b> Las fotos de los productos se comparten desde el
+          catálogo, no desde esta pantalla.</li>
+      <li><b>Instagram no tiene "video normal"</b> — ahí todo video es Reel. Si estás en Video, no
+          se deja marcar.</li>
+      <li><b>La música va pegada en el archivo.</b> La de la app de Instagram no se puede elegir
+          desde aquí; si usas música comercial pueden silenciarte el video.</li>
+      <li><b>El video se sube una sola vez</b> y va a todas las redes que marques. El texto es el
+          mismo; solo cambian los hashtags.</li>
+      <li><b>Programar:</b> mínimo 10 minutos, sin fecha máxima. Salen todas a la misma hora. Si
+          el servidor estuvo apagado a esa hora, se publican en cuanto vuelva.</li>
+      <li><b>TikTok sube el video como privado</b> hasta que aprueben la cuenta. No es un error.</li>
+    </ul>
+  </div>
+
+
+  <!-- ── PASO 1 · EL VIDEO ─────────────────────────────────────────────── -->
+  <div class="fb-card">
+    <h5 class="fb-card__title">1 · Qué vas a publicar</h5>
+
+    <div class="fb-tipo">
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'video'"
+              (click)="setTipo('video')" [disabled]="publicando">🎬 Video</button>
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="tipo === 'reel'"
+              (click)="setTipo('reel')" [disabled]="publicando">🎞️ Reel</button>
+    </div>
+    <p class="fb-hint">
+      🎬 El video se sube <b>una sola vez</b> y se manda a todas las redes que marques abajo.
+      La música tiene que ir <b>ya puesta en el archivo</b>: la de la app de Instagram no se puede
+      elegir desde aquí, y si es música comercial pueden silenciarte el video por derechos de autor.
+    </p>
+    <p class="fb-hint" *ngIf="tipo === 'reel'">
+      ⏳ Un Reel <b>tarda</b>: la red procesa el video después de recibirlo. Puede llevarse varios
+      minutos — no cierres la pantalla. Si se pasa del tiempo de espera te va a pedir reintentar
+      (no se pierde nada, pero tampoco se publica).
+    </p>
+
+    <!-- Zona de arrastrar. Es un <label> para que el clic abra el selector sin JS extra. -->
+    <label class="fb-drop" *ngIf="!archivoVideo"
+           [class.fb-drop--activa]="arrastrando"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)">
+      <input type="file" accept="video/*" (change)="onArchivoVideo($event)" hidden [disabled]="publicando">
+      <span class="fb-drop__icono">🎬</span>
+      <span class="fb-drop__titulo">Arrastra aquí tu video</span>
+      <span class="fb-drop__sub">o haz clic para buscarlo · máximo {{ limiteMb }} MB</span>
+    </label>
+
+    <div class="fb-archivo" *ngIf="archivoVideo">
+      <video class="fb-archivo__preview" *ngIf="previewVideo" [src]="previewVideo" controls muted></video>
+      <div class="fb-archivo__info">
+        <strong>{{ archivoVideo.name }}</strong>
+        <small>{{ pesoLegible(archivoVideo) }}</small>
+      </div>
+      <button class="fb-btn fb-btn--quitar" (click)="quitarVideo()" [disabled]="publicando">✕</button>
+    </div>
+
+    <!-- ····· PRODUCTO (opcional) ····· -->
+    <!-- Va aquí, justo antes del texto, porque su código de barras encabeza el post: el orden de
+         la pantalla es el mismo con el que se arma la publicación. -->
+    <label class="fb-label fb-label--sep">¿Es de algún producto? <small>(opcional)</small></label>
+
+    <div *ngIf="!seleccionado">
+      <div class="fb-search-wrap">
+        <input class="fb-input" type="text"
+               placeholder="Código de barras, nombre o categoría…"
+               [(ngModel)]="termino" (input)="onInput()" [disabled]="publicando" appUppercase>
+        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
+      </div>
+
+      <div class="fb-dropdown" *ngIf="resultados.length > 0">
+        <div class="fb-dropdown__item" *ngFor="let v of resultados" (click)="seleccionarProducto(v)">
+          <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
+            <img class="fb-dropdown__img" [src]="src" alt="">
+          </ng-container>
+          <span class="fb-dropdown__txt">
+            {{ etiqueta(v) }}
+            <small class="fb-dropdown__id" *ngIf="v.codigoBarras">{{ v.codigoBarras }}</small>
+          </span>
+          <span class="fb-dropdown__precio" *ngIf="v.precio != null">${{ v.precio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <p class="fb-hint"
+         *ngIf="!buscando && termino.trim().length >= 2 && resultados.length === 0">
+        Sin resultados. Prueba con el código de barras.
+      </p>
+
+      <p class="fb-hint">
+        Si lo eliges, <b>su código de barras encabeza el post</b> y, cuando alguien comente, el bot
+        puede contestar con los datos de ese producto. Para un video del local o un saludo, déjalo
+        vacío.
+      </p>
+    </div>
+
+    <div class="fb-sel" *ngIf="seleccionado">
+      <ng-container *ngIf="seleccionado.imagenUrl | imagenSrc | async as src">
+        <img class="fb-sel__img" [src]="src" alt="">
+      </ng-container>
+      <div class="fb-sel__info">
+        <strong>{{ etiqueta(seleccionado) }}</strong>
+        <small *ngIf="seleccionado.codigoBarras">{{ seleccionado.codigoBarras }} — va como primera
+          línea del post</small>
+      </div>
+      <button class="fb-btn fb-btn--ghost fb-btn--sm" [disabled]="publicando"
+              (click)="quitarProducto()">Quitar</button>
+    </div>
+
+    <!-- ····· DESCRIPCIÓN ····· -->
+    <label class="fb-label fb-label--sep">Texto del post</label>
+    <textarea class="fb-textarea" rows="6" [(ngModel)]="descripcion"
+              [disabled]="publicando"
+              placeholder="Lo que escribas aquí es exactamente lo que se ve en la publicación."></textarea>
+    <p class="fb-hint">
+      ℹ️ Este texto es el <b>mismo para todas las redes</b>. La publicación sale en este orden:
+      <b>código de barras</b> (si elegiste producto) → <b>este texto</b> → <b>los hashtags</b> de
+      cada red.
+    </p>
+  </div>
+
+  <!-- ── PASO 2 · UNA OPCIÓN POR RED, SOLO PARA LOS HASHTAGS ──────────── -->
+  <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags.
+       El radio elige QUÉ RED se está configurando (no a cuál se publica: eso es la casilla de
+       abajo, y pueden ir varias a la vez). -->
+  <div class="fb-card">
+    <h5 class="fb-card__title">2 · Redes y hashtags</h5>
+
+    <div class="fb-radios">
+      <label class="fb-radio" *ngFor="let r of TODAS"
+             [class.fb-radio--on]="pestana === r"
+             [class.fb-radio--activa]="redesSel[r] && puedeUsar(r)">
+        <input type="radio" name="redConfig" class="fb-radio__input"
+               [checked]="pestana === r" (change)="verPestana(r)">
+        <span class="fb-radio__check" *ngIf="redesSel[r] && puedeUsar(r)">✓</span>
+        <span class="fb-radio__nombre">{{ nombreDeRed(r) }}</span>
+      </label>
+    </div>
+
+    <div class="fb-tab-body" *ngFor="let r of TODAS" [hidden]="pestana !== r">
+      <label class="fb-red" [class.fb-red--on]="redesSel[r]" [class.fb-red--off]="!puedeUsar(r)">
+        <input type="checkbox" class="fb-red__check"
+               [checked]="redesSel[r]" [disabled]="!puedeUsar(r) || publicando"
+               (change)="toggleRed(r)">
+        <span class="fb-red__nombre">Publicar en {{ nombreDeRed(r) }}</span>
+      </label>
+
+      <!-- El motivo iba dentro del label y se perdía. Ahora es un aviso propio, con la salida:
+           el admin llegaba aquí sin entender por qué la casilla no se dejaba marcar. -->
+      <div class="fb-bloqueo" *ngIf="motivoNoDisponible(r) as m">
+        <p class="fb-bloqueo__txt">🚫 {{ m }}</p>
+        <button class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="r === 'instagram' && tipo === 'video'"
+                (click)="setTipo('reel')">Cambiar a Reel</button>
+      </div>
+
+      <!-- Aviso que NO impide publicar (hoy: el video privado de TikTok en Sandbox). -->
+      <p class="fb-hint fb-hint--warn" *ngIf="redesSel[r] && advertenciaDe(r) as a">⚠️ {{ a }}</p>
+
+      <!-- Los hashtags se pueden escribir SIEMPRE, aunque la red no esté marcada todavía: el
+           flujo del dueño es llenar los 3 de corrido (uno por radio) y decidir después. Si una
+           red se queda sin hashtags no pasa nada — se manda solo el texto. -->
+      <div class="fb-field">
+        <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
+        <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
+               placeholder="#novedadesjade #bolsas">
+        <p class="fb-hint">Solo los hashtags cambian por red — el texto de arriba va igual en todas.</p>
+
+        <!-- Aquí se dan de alta los fijos. Va con título propio porque el dueño preguntó "¿dónde
+             doy de alta hashtags?" teniendo el botón enfrente: un botón suelto no se lee como
+             "esta es la pantalla donde se guardan". Guardar reemplaza lo guardado (sirve para
+             agregar, corregir y borrar); restaurar deshace un cambio de un solo post. -->
+        <div class="fb-fijos">
+          <div class="fb-fijos__head">
+            <strong>
+              📌 Mis hashtags fijos de {{ nombreDeRed(r) }}
+              <!-- El alta también vive en su propia pantalla del menú: el dueño preguntó dos
+                   veces dónde se daban de alta, su modelo mental es "los registro en un lado y
+                   aquí se toman". Se deja el enlace para que los dos caminos se encuentren. -->
+              <a class="fb-fijos__link" routerLink="/admin/hashtags">gestionar todos ↗</a>
+            </strong>
+            <small *ngIf="hashtagsFijos[r]">
+              Guardados: <code>{{ hashtagsFijos[r] }}</code> — se escriben solos cada vez que
+              abres esta pantalla.
+            </small>
+            <small *ngIf="!hashtagsFijos[r]">
+              Todavía no tienes. Escríbelos arriba y guárdalos: la próxima vez ya van a estar
+              puestos.
+            </small>
+          </div>
+
+          <div class="fb-fijos__acciones">
+            <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                    [disabled]="publicando || !!guardandoFijos || fijosSinCambios(r)"
+                    (click)="guardarFijos(r)">
+              {{ guardandoFijos === r
+                  ? 'Guardando…'
+                  : (hashtagsFijos[r] ? '💾 Actualizar mis fijos' : '💾 Guardar como fijos') }}
+            </button>
+            <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                    *ngIf="!fijosSinCambios(r)"
+                    [disabled]="publicando" (click)="restaurarFijos(r)">
+              ↩ Volver a los fijos
+            </button>
+            <small class="fb-fijos__txt" *ngIf="fijosSinCambios(r) && hashtagsFijos[r]">
+              ✓ Lo de arriba ya es igual a tus fijos.
+            </small>
+          </div>
+        </div>
+
+        <p class="fb-hint fb-hint--warn" *ngIf="errorFijos">
+          ⚠️ No se pudieron traer tus hashtags guardados. Escríbelos a mano — publicar sigue
+          funcionando igual.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tras un "volver a editar": recuerda dónde ya quedó publicado, para que no se pregunte
+         por qué esas redes están bloqueadas. -->
+    <p class="fb-hint fb-hint--warn" *ngIf="yaPublicadas.length">
+      ✅ Este video ya se publicó en
+      <ng-container *ngFor="let r of yaPublicadas; let i = index"><b>{{ nombreDeRed(r) }}</b><span *ngIf="i < yaPublicadas.length - 1">, </span></ng-container>.
+      No se va a volver a mandar ahí — para eso, empieza una publicación nueva.
+    </p>
+
+    <p class="fb-error" *ngIf="redesActivas.length === 0">
+      Marca al menos una red para poder publicar.
+    </p>
+
+    <!-- ····· VISTA PREVIA — al final y detrás de un botón ····· -->
+    <ng-container *ngIf="redesActivas.length">
+      <button class="fb-btn fb-btn--ghost fb-btn--sm fb-ver-preview" (click)="togglePreview()">
+        {{ mostrarPreview ? '▲ Ocultar' : '👁 Mostrar cómo va a quedar' }}
+      </button>
+
+      <div *ngIf="mostrarPreview">
+        <div class="fb-preview" *ngFor="let r of redesActivas">
+          <div class="fb-preview__red">{{ nombreDeRed(r) }}</div>
+          <pre class="fb-preview__texto">{{ textoFinal(r) }}</pre>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ── PASO 3 · CUÁNDO ──────────────────────────────────────────────── -->
+  <!-- Ya sirve para las 3 redes y los dos tipos: el back lo programa con un job propio, no con el
+       scheduler de cada plataforma, así que salen todas juntas o ninguna. -->
+  <div class="fb-card" *ngIf="puedeProgramar">
+    <h5 class="fb-card__title">3 · Cuándo se publica</h5>
+
+    <div class="fb-tipo">
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="!programar"
+              (click)="programar = false" [disabled]="publicando">⚡ Ahora</button>
+      <button class="fb-tipo__btn" [class.fb-tipo__btn--on]="programar"
+              (click)="programar = true" [disabled]="publicando">📅 Programar</button>
+    </div>
+
+    <div class="fb-field" *ngIf="programar">
+      <label class="fb-label">Fecha y hora</label>
+      <input class="fb-input" type="datetime-local"
+             [(ngModel)]="fechaProgramada" [disabled]="publicando">
+      <p class="fb-error" *ngIf="errorFecha">{{ errorFecha }}</p>
+      <p class="fb-hint" *ngIf="!errorFecha">
+        Al menos 10 minutos a futuro — sin fecha máxima. Se publica en las redes que marcaste
+        arriba, todas a la misma hora.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── PUBLICAR ─────────────────────────────────────────────────────── -->
+  <div class="fb-card fb-card--accion" *ngIf="!huboResultado">
+    <!-- Un botón gris sin decir qué falta deja al admin atorado — mismo criterio que el resto
+         del proyecto. -->
+    <p class="fb-error" *ngIf="!archivoVideo">⬆️ Falta el video (paso 1).</p>
+    <p class="fb-error" *ngIf="archivoVideo && !descripcion.trim()">
+      ⬆️ Falta el texto del post (paso 1).
+    </p>
+
+    <button class="fb-btn fb-btn--primary fb-btn--lg"
+            [disabled]="!puedePublicar" (click)="publicar()">
+      {{ programar
+          ? '📅 Programar publicación'
+          : (redesActivas.length > 1 ? '🚀 Publicar en ' + redesActivas.length + ' redes' : '🚀 Publicar ahora') }}
+    </button>
+
+    <div class="fb-progreso" *ngIf="publicando">
+      <div class="fb-progreso__barra">
+        <div class="fb-progreso__fill"
+             [class.fb-progreso__fill--indet]="faseEnvio === 'procesando'"
+             [style.width.%]="faseEnvio === 'procesando' ? 100 : progreso"></div>
+      </div>
+      <!-- Se dice en cuál red va: al pasar de una a otra la barra se reinicia y sin esto
+           parecería que se colgó. -->
+      <small *ngIf="faseEnvio === 'subiendo'">
+        Subiendo a {{ redEnCurso ? nombreDeRed(redEnCurso) : '' }}… {{ progreso }}%
+      </small>
+      <small *ngIf="faseEnvio === 'procesando'">
+        Enviándolo a {{ redEnCurso ? nombreDeRed(redEnCurso) : 'la red' }} — un video puede tardar
+        varios minutos, no cierres esta pantalla.
+      </small>
+    </div>
+  </div>
+
+  <!-- ── RESULTADO ────────────────────────────────────────────────────── -->
+  <!-- Una fila por red: con varias, una puede publicar y otra fallar. -->
+  <div class="fb-card fb-resultado" *ngIf="huboResultado">
+    <h5 class="fb-card__title">Resultado</h5>
+
+    <div class="fb-resultado__fila" *ngFor="let r of resultados_pub">
+      <div class="fb-resultado__red">
+        <span>{{ r.error || r.publicacion?.estado === 'FALLIDA' ? '❌'
+                  : (r.publicacion?.estado === 'PROGRAMADA' ? '📅' : '✅') }}</span>
+        <strong>{{ nombreDeRed(r.red) }}</strong>
+      </div>
+
+      <p class="fb-resultado__linea" *ngIf="r.error">{{ r.error }}</p>
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'PROGRAMADA'">
+        Se publicará el <strong>{{ formatoFecha(r.publicacion?.scheduledPublishTime) }}</strong>.
+      </p>
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'PUBLICADA'">
+        Publicada el <strong>{{ formatoFecha(r.publicacion?.fechaPublicacion) }}</strong>.
+      </p>
+      <!-- `FALLIDA` la marca el job del back cuando se le acabaron los 3 reintentos. Su
+           `ultimoError` es lo único que dice POR QUÉ no salió. -->
+      <p class="fb-resultado__linea" *ngIf="!r.error && r.publicacion?.estado === 'FALLIDA'">
+        No se pudo publicar después de {{ r.publicacion?.intentos || 3 }} intentos.
+        <ng-container *ngIf="r.publicacion?.ultimoError as e"><br><small>{{ e }}</small></ng-container>
+      </p>
+
+      <a class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="linkDe(r.publicacion) as link"
+         [href]="link" target="_blank" rel="noopener">Ver publicación ↗</a>
+    </div>
+
+    <!-- La barra vive aquí también: durante un reintento la tarjeta de publicar está oculta
+         (hay resultados), y sin esto parecería que no pasa nada. -->
+    <div class="fb-progreso" *ngIf="publicando">
+      <div class="fb-progreso__barra">
+        <div class="fb-progreso__fill"
+             [class.fb-progreso__fill--indet]="faseEnvio === 'procesando'"
+             [style.width.%]="faseEnvio === 'procesando' ? 100 : progreso"></div>
+      </div>
+      <small *ngIf="faseEnvio === 'subiendo'">
+        Reintentando en {{ redEnCurso ? nombreDeRed(redEnCurso) : '' }}… {{ progreso }}%
+      </small>
+      <small *ngIf="faseEnvio === 'procesando'">
+        Enviándolo a {{ redEnCurso ? nombreDeRed(redEnCurso) : 'la red' }} — puede tardar varios
+        minutos, no cierres esta pantalla.
+      </small>
+    </div>
+
+    <!-- Reintentar sin volver a subir el video: es lo que evita perder el trabajo cuando una
+         red falla y las otras sí salieron. -->
+    <div class="fb-reintento" *ngIf="redesFallidas.length && !publicando">
+      <p class="fb-reintento__txt">
+        Tu video y tu texto siguen cargados. Puedes reintentar solo
+        {{ redesFallidas.length === 1 ? 'la que falló' : 'las que fallaron' }} — las que sí
+        salieron no se vuelven a publicar.
+      </p>
+      <button class="fb-btn fb-btn--primary" (click)="reintentarFallidas()">
+        🔄 Reintentar en {{ redesFallidas.length === 1
+            ? nombreDeRed(redesFallidas[0])
+            : redesFallidas.length + ' redes' }}
+      </button>
+    </div>
+
+    <div class="fb-resultado__acciones">
+      <button class="fb-btn fb-btn--ghost" [disabled]="publicando" (click)="volverAEditar()">
+        ✏️ Volver a editar
+      </button>
+      <button class="fb-btn fb-btn--ghost" [disabled]="publicando" (click)="nuevaPublicacion()">
+        🗑️ Empezar de cero
+      </button>
+    </div>
+    <p class="fb-hint">
+      «Volver a editar» conserva el video y el texto por si el error se arregla cambiando algo.
+      «Empezar de cero» quita el video.
+    </p>
+  </div>
+
+</div>

@@ -1,6 +1,8 @@
 import { ITokenData, IUsuarioDto } from './models/index.mode';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IResponseGeneric } from 'src/shared/responseGeneric.model';
 
@@ -15,6 +17,27 @@ export class AccederService {
     private readonly http: HttpClient
   ) { }
 
+  /**
+   * Convierte una respuesta pedida como texto en objeto, **solo si de verdad es JSON**.
+   *
+   * ⚠️ Existe por un bug real: Angular parsea como JSON por default, así que si el back contesta
+   * un texto suelto (`ResponseEntity.ok("Contrasena actualizada correctamente")` en Spring →
+   * `text/plain`) el parseo revienta y **se dispara el callback de error aunque el status sea
+   * 200**. La app pintaba "Error al cambiar la contraseña" sobre una operación que sí había
+   * funcionado — y en el log del back no aparecía ningún error, porque no lo hubo.
+   *
+   * Lo insidioso es que los ERRORES sí llegan como JSON (los arma su `@ControllerAdvice`), así
+   * que se veían bien; solo el camino de éxito fallaba.
+   *
+   * Es indiferente si el back devuelve JSON: se parsea igual y el shape no cambia.
+   */
+  private parseoTolerante<T = any>(obs: Observable<string>): Observable<T> {
+    return obs.pipe(map(raw => {
+      if (raw == null || raw === '') return null as unknown as T;
+      try { return JSON.parse(raw) as T; } catch { return { mensaje: raw, data: raw } as unknown as T; }
+    }));
+  }
+
   login(credentials: IUsuarioDto) {
     return this.http.post<IResponseGeneric<ITokenData>>(`${environment.api_Url}/v1/auth/login`, credentials, { withCredentials: true });
   }
@@ -23,8 +46,14 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/refresh`, {}, { withCredentials: true });
   }
 
+  // ⚠️ Los 6 endpoints con `parseoTolerante` de aquí abajo son los que el back confirmó
+  // (2026-08-16) que responden **texto plano** en el camino de éxito. Sin esto, Angular no puede
+  // parsearlos como JSON y **dispara el error con status 200** — la app dice que falló algo que
+  // sí funcionó. Ver el comentario largo en `parseoTolerante`.
   logout() {
-    return this.http.post<void>(`${environment.api_Url}/v1/auth/logout`, {}, { withCredentials: true });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/logout`, {}, { withCredentials: true, responseType: 'text' }
+    ));
   }
 
   registrar(credentials: any) {
@@ -32,27 +61,46 @@ export class AccederService {
   }
 
   olvidoPassword(email: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/olvide-password`, { email });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/olvide-password`, { email }, { responseType: 'text' }
+    ));
   }
 
+  // Mismo tratamiento que `cambiarPassword`: el camino de éxito puede venir como texto plano.
   restablecerPassword(email: string, codigo: string, nuevaPassword: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/restablecer-password`, { email, codigo, nuevaPassword });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/restablecer-password`,
+      { email, codigo, nuevaPassword },
+      { responseType: 'text' }
+    ));
   }
 
   cambiarPassword(passwordActual: string, nuevaPassword: string) {
-    return this.http.put<any>(`${environment.api_Url}/v1/auth/cambiar-password`, { passwordActual, nuevaPassword });
+    return this.parseoTolerante(this.http.put(
+      `${environment.api_Url}/v1/auth/cambiar-password`,
+      { passwordActual, nuevaPassword },
+      { responseType: 'text' }
+    ));
   }
 
   enviarCodigoVerificacionUsuario(userName: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName }, { responseType: 'text' }
+    ));
   }
 
+  // El peor de la lista: sin esto, una verificación **exitosa** se le mostraba al usuario como
+  // "código incorrecto o expirado", y volvía a intentar con un código que ya se había consumido.
   verificarCorreoUsuario(userName: string, codigo: string) {
-    return this.http.post<any>(`${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo });
+    return this.parseoTolerante(this.http.post(
+      `${environment.api_Url}/v1/auth/verificar-correo`, { userName, codigo }, { responseType: 'text' }
+    ));
   }
 
   miPerfil(username: string) {
-    return this.http.put<any>(`${environment.api_Url}/v1/auth/mi-perfil`, { username });
+    return this.parseoTolerante(this.http.put(
+      `${environment.api_Url}/v1/auth/mi-perfil`, { username }, { responseType: 'text' }
+    ));
   }
 
   solicitarCambioCorreo(correoNuevo: string) {

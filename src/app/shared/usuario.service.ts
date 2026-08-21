@@ -3,6 +3,7 @@ import { CrudGenericService } from '../crud-generic.service';
 import { HttpClient } from '@angular/common/http';
 import { IUsuarioDto } from '../usuarios/usuarios/models/usuario.dto';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { environment } from 'src/environments/environment';
 
@@ -39,8 +40,19 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
     return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
   }
 
+  /**
+   * Mismo tratamiento que `AccederService.cambiarPassword` — ver el comentario largo allá.
+   * Angular parsea como JSON por default; si el back contesta la contraseña temporal como texto
+   * suelto, el parseo revienta y salta el error **con status 200**. Se pide como texto y se
+   * convierte solo si de verdad es JSON, así el componente sigue leyendo `res?.data` igual.
+   */
   resetearPassword(id: number) {
-    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${id}/resetear-password`, {});
+    return this.http
+      .put(`${environment.api_Url}/v1/usuarios/${id}/resetear-password`, {}, { responseType: 'text' })
+      .pipe(map(raw => {
+        if (raw == null || raw === '') return null as any;
+        try { return JSON.parse(raw); } catch { return { mensaje: raw, data: raw }; }
+      }));
   }
 
   solicitarCambioCorreoAdmin(id: number, correoNuevo: string) {

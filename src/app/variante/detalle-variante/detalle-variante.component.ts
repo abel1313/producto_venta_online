@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
@@ -76,6 +76,9 @@ export class DetalleVarianteComponent implements OnInit {
   cargandoResenas = false;
   get miResena(): IResena | null { return this.resenas.find(r => r.esPropia) ?? null; }
 
+  /** Falla al resolver la ficha. Antes se tragaba en silencio y la pantalla quedaba en blanco. */
+  errorCarga: string | null = null;
+
   mostrarFormResena = false;
   editandoResenaId: number | null = null;
   formCalificacion = 5;
@@ -102,10 +105,23 @@ export class DetalleVarianteComponent implements OnInit {
     const productoIdParam = params.get('productoId');
     const varianteIdParam = params.get('id');
 
-    const productoId$ = productoIdParam
-      ? of(+productoIdParam)
-      : this.varianteService.getOne(+varianteIdParam!).pipe(
-          switchMap(v => of(v.producto?.id!))
+    // El catálogo y favoritos mandan el `productoId` en la URL a propósito, para no tener que
+    // preguntárselo al back: `GET /tienda/v1/getOne/{id}` pasó a ser ADMIN-only (2026-08-11,
+    // devolvía la entidad cruda con `precioCosto`) y esta pantalla es pública.
+    //
+    // Cuando NO viene (link directo o marcador, típico link compartido por WhatsApp/Facebook)
+    // se resuelve con el endpoint público `resolverProductoId`. El `getOne` queda solo como
+    // respaldo mientras ese endpoint termina de desplegarse: hoy sigue funcionando para admin,
+    // y para un cliente falla mostrando aviso en vez de dejar la pantalla en blanco. Una vez
+    // que el resolver esté en todos los ambientes, este `catchError` se puede quitar.
+    const productoIdConocido = productoIdParam ?? this.route.snapshot.queryParamMap.get('productoId');
+
+    const productoId$ = productoIdConocido
+      ? of(+productoIdConocido)
+      : this.varianteService.resolverProductoId(+varianteIdParam!).pipe(
+          catchError(() => this.varianteService.getOne(+varianteIdParam!).pipe(
+            switchMap(v => of(v.producto?.id!))
+          ))
         );
 
     productoId$.pipe(
@@ -120,8 +136,13 @@ export class DetalleVarianteComponent implements OnInit {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
+        else this.errorCarga = 'Este producto ya no está disponible.';
       },
-      error: () => {}
+      error: err => {
+        this.errorCarga = (err?.status === 401 || err?.status === 403)
+          ? 'No pudimos abrir este producto desde un enlace directo. Búscalo en la tienda para verlo.'
+          : (err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cargar el producto.');
+      }
     });
   }
 

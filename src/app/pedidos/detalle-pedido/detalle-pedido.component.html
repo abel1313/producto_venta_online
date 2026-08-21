@@ -22,6 +22,13 @@
     </div>
     <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
+           Ver `puedeEditarRamo`. -->
+      <button class="dp-btn-editar-ramo" type="button" *ngIf="puedeEditarRamo"
+              (click)="editarRamo()"
+              title="Cambiar flores, accesorios o la fecha de entrega — se vuelve a calcular el precio">
+        ✏️ Editar ramo
+      </button>
       <button class="dp-btn-imprimir" type="button"
               [disabled]="imprimiendoTicket || !puedeGenerarTicket" (click)="imprimirTicketDetalle()"
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
@@ -152,7 +159,7 @@
   </div>
 
   <div class="detalle-grid" *ngIf="!cargandoDetalle">
-    <div class="prod-card" *ngFor="let item of (detalle?.detalles ?? [])">
+    <div class="prod-card" *ngFor="let item of lineasVisibles">
 
       <img class="prod-card__img"
         [src]="env + item.productoId"
@@ -163,7 +170,7 @@
         <span class="prod-card__promo-badge" *ngIf="item.promocionId">
           🏷️ {{ item.promocionDescripcion || 'Promoción' }}
         </span>
-        <p class="prod-card__nombre">{{ item.productoNombre }}</p>
+        <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
         <p class="prod-card__variante" *ngIf="item.talla || item.color">
           <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
           <span *ngIf="item.color"> · Color: {{ item.color }}</span>
@@ -176,8 +183,12 @@
 
         <div class="prod-card__fila">
           <span class="prod-card__label">Cantidad</span>
+          <!-- Quitar artículos es SOLO del admin: un cliente podía reducir su propio pedido ya
+               confirmado, descuadrando lo que el taller va a armar contra lo que se cobró.
+               ⚠️ En un ramo esto además es peligroso hasta para el admin — ver `puedeEditarLineas`. -->
           <div class="cantidad-control">
             <button class="cantidad-btn cantidad-btn--menos"
+              *ngIf="puedeEditarLineas"
               (click)="reducirCantidad(item)"
               [disabled]="eliminando.has(item)">
               {{ eliminando.has(item) ? '…' : '−' }}
@@ -193,6 +204,12 @@
       </div>
 
     </div>
+
+    <!-- Se ocultó el papel (va incluido en el ramo). Sin esta nota, el total sería mayor que la
+         suma de lo visible y parecería un error de cuentas. -->
+    <p class="dp-nota-incluido" *ngIf="hayLineasOcultas">
+      El total incluye la <b>envoltura del ramo</b>, que va siempre y no se cobra aparte.
+    </p>
 
     <div class="detalle-vacio" *ngIf="(detalle?.detalles ?? []).length === 0">
       <p>No hay productos en este pedido.</p>

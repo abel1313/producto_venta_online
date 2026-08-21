@@ -1,0 +1,391 @@
+.cr-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+.cr-header {
+  padding: 0 16px;
+  margin-bottom: 24px;
+  &__inner {
+    padding: 24px 0;
+    h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
+    small { color: #64748b; }
+  }
+}
+
+.cr-loading {
+  text-align: center;
+  padding: 40px 16px;
+  color: #64748b;
+}
+
+.cr-aviso {
+  margin: 0 16px 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  &--error {
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25);
+    color: #ef4444;
+  }
+}
+
+.cr-form {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Pasos ────────────────────────────────────────────────────────────────
+.cr-step {
+  display: flex;
+  gap: 14px;
+  background: var(--app-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+
+  &__num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--app-accent);
+    color: var(--app-accent-ink, #fff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.88rem;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.cr-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--app-text);
+  margin-bottom: 10px;
+}
+
+.cr-hint {
+  font-size: 0.8rem;
+  color: var(--app-text-muted, #5F8375);
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.cr-input {
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  background: var(--app-surface);
+  color: var(--app-text);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus { border-color: var(--app-accent); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &--num { width: 100px; text-align: center; }
+}
+
+// ── Paso 2 — cantidad ───────────────────────────────────────────────────
+.cr-cantidad-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  .cr-input--num { width: 140px; text-align: left; }
+}
+
+.cr-validacion {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  &--ok {
+    background: rgba(var(--app-accent-rgb),.1);
+    color: var(--app-accent);
+    font-weight: 700;
+  }
+  &--warn {
+    background: rgba(245,158,11,.1);
+    color: #b45309;
+    p { margin: 0 0 10px; }
+  }
+}
+
+.cr-alternativas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+// ── Paso 3 — colores ────────────────────────────────────────────────────
+.cr-color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+  &:last-of-type { border-bottom: none; }
+
+  &__nombre { flex: 1; font-size: 0.9rem; color: var(--app-text); }
+  &__stock { font-size: 0.78rem; color: var(--app-text-muted, #5F8375); white-space: nowrap; }
+}
+
+.cr-restante {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  &--ok   { color: #16a34a; }
+  &--warn { color: #f59e0b; }
+}
+
+// ── Paso 4 — accesorios ─────────────────────────────────────────────────
+.cr-accesorio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.cr-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--app-accent-rgb),.12);
+  color: var(--app-accent);
+}
+
+// ── Paso 5 — listón ─────────────────────────────────────────────────────
+.cr-liston-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+// ── Checks / radios ─────────────────────────────────────────────────────
+.cr-check, .cr-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--app-text);
+  cursor: pointer;
+  &--block { margin-top: 10px; }
+}
+
+// ── Resumen ──────────────────────────────────────────────────────────────
+.cr-resumen {
+  background: var(--app-surface);
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 20px;
+
+  &__titulo {
+    margin: 0 0 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--app-text);
+  }
+}
+
+.cr-linea {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 0.87rem;
+  color: var(--app-text);
+  gap: 12px;
+
+  small { color: var(--app-text-muted, #5F8375); font-weight: 400; }
+
+  &--total {
+    border-bottom: none;
+    border-top: 1.5px solid var(--card-border);
+    margin-top: 6px;
+    padding-top: 12px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--app-accent);
+  }
+}
+
+.cr-aviso-frase {
+  font-size: 0.78rem;
+  color: #b45309;
+  background: rgba(245,158,11,.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 12px 0 0;
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────
+.cr-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: opacity .15s;
+  &:disabled { cursor: not-allowed; opacity: .5; }
+  &--primary { background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); color: var(--app-accent-ink); &:hover:not(:disabled) { opacity: .85; } }
+  &--ghost   { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--alt     { background: rgba(var(--app-accent-rgb),.1); color: var(--app-accent); font-weight: 700; }
+  &--confirmar {
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px;
+    font-size: 1rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    color: var(--app-accent-ink);
+    &:hover:not(:disabled) { opacity: .9; }
+  }
+}
+
+// ── Dark / Light ─────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .cr-step, .cr-resumen { background: rgba(255,255,255,.04); }
+}
+:host-context(body.theme-light) {
+  .cr-step, .cr-resumen { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+}
+
+// El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni
+// rojo: se puede vender, pero no es lo mismo que una cantidad que sí cierra el círculo.
+.cr-validacion--aviso {
+  border-left: 3px solid #b45309;
+  background: rgba(180, 83, 9, .1);
+  color: var(--app-text);
+}
+
+// Tercera opción del bloque de advertencia: seguir con lo que el cliente pidió. Se ve distinta
+// de las alternativas sugeridas para que no parezca "la opción correcta" ni quede escondida.
+.cr-btn--seguir {
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--app-text);
+}
+
+.cr-sub {
+  margin: 8px 0 6px;
+  font-size: .8rem;
+  opacity: .8;
+}
+
+:host-context(body.theme-dark) {
+  .cr-validacion--aviso {
+    border-left-color: #fbbf24;
+    background: rgba(251, 191, 36, .12);
+  }
+}
+
+// ── Paso 6: fecha de entrega ─────────────────────────────────────────────
+// Ámbar (no rojo): que este tamaño no tenga plazo no es un error del cliente ni una falla — es
+// que el taller no se puede comprometer, y el mensaje lo manda a contactarnos.
+.cr-aviso--warn {
+  background: rgba(180, 83, 9, .1);
+  border: 1px solid rgba(180, 83, 9, .28);
+  color: var(--app-text);
+  margin: 10px 0 0;
+  display: block;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+// Modo edición: informativo, no advertencia — solo dice qué se puede cambiar aquí y qué no.
+.cr-aviso--info {
+  background: var(--app-accent-soft, rgba(var(--app-accent-rgb), .12));
+  border: 1px solid var(--card-border);
+  color: var(--app-text);
+  margin: 0 0 14px;
+  display: block;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.cr-fecha-min {
+  margin: 12px 0 0;
+  font-size: .88rem;
+  color: var(--app-text);
+}
+
+.cr-fecha-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.cr-fecha-campo {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.cr-sub-label {
+  display: block;
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--app-text-muted, #5F8375);
+  margin-bottom: 4px;
+}
+
+// Ámbar en vez del verde de marca: es un extra que cuesta dinero, no el camino por defecto.
+// Encendido se rellena, para que se note de un vistazo que está activo.
+.cr-btn--urgente {
+  margin-top: 12px;
+  background: transparent;
+  border: 1.5px solid #b45309;
+  color: #b45309;
+  font-weight: 700;
+
+  small { font-weight: 600; }
+}
+
+.cr-btn--urgente-on {
+  background: #b45309;
+  color: #fff;
+}
+
+.cr-nota-urgente {
+  margin: 8px 0 0;
+  font-size: .8rem;
+  line-height: 1.45;
+  color: var(--app-text-muted, #5F8375);
+}
+
+:host-context(body.theme-dark) {
+  .cr-aviso--warn {
+    background: rgba(251, 191, 36, .12);
+    border-color: rgba(251, 191, 36, .3);
+  }
+  .cr-btn--urgente {
+    border-color: #fbbf24;
+    color: #fbbf24;
+  }
+  .cr-btn--urgente-on {
+    background: #fbbf24;
+    color: #12241D;
+  }
+}

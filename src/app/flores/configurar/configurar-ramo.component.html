@@ -1,0 +1,379 @@
+<div class="cr-wrap">
+
+  <div class="cr-header">
+    <div class="cr-header__inner">
+      <h4 *ngIf="!modoEdicion">🌷 Arma tu propio ramo</h4>
+      <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
+      <small *ngIf="!modoEdicion">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
+      <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
+    </div>
+  </div>
+
+  <!-- El listón y la zona de envío NO se pueden cambiar al editar (el endpoint del back no los
+       cubre). Se dice de frente, en vez de esconder los pasos sin explicación. -->
+  <div class="cr-aviso cr-aviso--info" *ngIf="modoEdicion">
+    ℹ️ Aquí se cambian <b>flores, accesorios y la fecha de entrega</b>. El listón y la zona de
+    envío se quedan como estaban.
+  </div>
+
+  <div class="cr-aviso cr-aviso--error" *ngIf="errorEdicion">
+    <strong>⚠️ {{ errorEdicion }}</strong>
+  </div>
+
+  <div class="cr-aviso cr-aviso--error" *ngIf="errorCatalogo">
+    <strong>⚠️ {{ errorCatalogo }}</strong>
+    <button class="cr-btn cr-btn--ghost" (click)="cargarCatalogo()">Reintentar</button>
+  </div>
+
+  <p class="cr-loading" *ngIf="cargandoCatalogo">Cargando catálogo…</p>
+  <p class="cr-loading" *ngIf="cargandoEdicion">Cargando el ramo del pedido…</p>
+
+  <div class="cr-form" *ngIf="!cargandoCatalogo && !errorCatalogo">
+
+    <!-- Paso 1 — especie -->
+    <div class="cr-step">
+      <div class="cr-step__num">1</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Qué flor quieres?</label>
+        <select class="cr-input" [(ngModel)]="tipoSeleccionadoId" (ngModelChange)="onCambiarEspecie()">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let t of tipos" [ngValue]="t.id">{{ t.nombre }} — ${{ t.precioPorFlor | number:'1.2-2' }} c/u</option>
+        </select>
+        <p class="cr-hint" *ngIf="tipos.length === 0">Todavía no hay flores disponibles para armar un ramo.</p>
+      </div>
+    </div>
+
+    <!-- Paso 2 — cantidad -->
+    <div class="cr-step" *ngIf="tipoSeleccionadoId">
+      <div class="cr-step__num">2</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Cuántas flores quieres?</label>
+        <div class="cr-cantidad-row">
+          <input class="cr-input cr-input--num" type="number" min="1" placeholder="Ej. 24"
+                 [(ngModel)]="cantidadDeseada" (ngModelChange)="onCambiarCantidadDeseada()">
+          <button class="cr-btn cr-btn--primary" [disabled]="!cantidadDeseada || validandoCantidad" (click)="validarCantidad()">
+            {{ validandoCantidad ? 'Validando…' : 'Validar' }}
+          </button>
+        </div>
+
+        <!-- Se muestra el `mensaje` del back TAL CUAL, no un texto propio: distingue tres casos
+             ("se cobra por unidad" cuando la cantidad es menor a la más chica registrada, vs
+             "forma bien el círculo" cuando sí está registrada). Antes decía un genérico
+             "cantidad válida" y esa distinción se perdía — hizo pensar que el back validaba
+             mal una cantidad de 10 cuando en realidad estaba avisando que iba por unidad. -->
+        <div class="cr-validacion" *ngIf="cantidadConfirmada"
+             [class.cr-validacion--ok]="!cantidadConAviso"
+             [class.cr-validacion--aviso]="cantidadConAviso">
+          {{ cantidadConAviso ? '⚠️' : '✅' }} {{ cantidadConfirmada }} flores — {{ mensajeCantidad }}
+        </div>
+
+        <!-- El back AVISA, no prohíbe: su mensaje dice "puede no quedar bien formado", y de hecho
+             `calcular-precio` acepta y cobra esa cantidad sin problema (probado con 22 → $555).
+             Antes esta pantalla convertía ese aviso en un bloqueo: solo dejaba elegir una de las
+             dos alternativas, así que quien pedía 22 terminaba llevándose 20 sin quererlo.
+             La decisión vuelve a ser del cliente. -->
+        <!-- `!cantidadConfirmada`: una vez que el cliente ya decidió (tomó una alternativa o
+             siguió con la suya), la advertencia de la cantidad rechazada sobra. Sin esto queda
+             el "✅ 20 flores" arriba y justo debajo el "con 22 el círculo puede no quedar bien"
+             con sus botones, como si todavía hubiera algo que elegir. -->
+        <div class="cr-validacion cr-validacion--warn"
+             *ngIf="resultadoValidacion && !resultadoValidacion.valida && !cantidadConfirmada">
+          <p>{{ resultadoValidacion.mensaje || 'Esa cantidad no forma bien el ramo.' }}</p>
+          <p class="cr-sub" *ngIf="resultadoValidacion.alternativaMenor || resultadoValidacion.alternativaMayor">
+            Estas cantidades sí forman bien el círculo:
+          </p>
+          <div class="cr-alternativas">
+            <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMenor" (click)="usarAlternativa(resultadoValidacion.alternativaMenor)">
+              Usar {{ resultadoValidacion.alternativaMenor }} (${{ resultadoValidacion.precioAlternativaMenor | number:'1.2-2' }})
+            </button>
+            <button class="cr-btn cr-btn--alt" *ngIf="resultadoValidacion.alternativaMayor" (click)="usarAlternativa(resultadoValidacion.alternativaMayor)">
+              Usar {{ resultadoValidacion.alternativaMayor }} (${{ resultadoValidacion.precioAlternativaMayor | number:'1.2-2' }})
+            </button>
+            <button class="cr-btn cr-btn--seguir" (click)="continuarDeTodosModos()">
+              Seguir con {{ resultadoValidacion.cantidadSolicitada }}
+              (${{ resultadoValidacion.precioCantidadSolicitada | number:'1.2-2' }})
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 3 — repartir entre colores -->
+    <div class="cr-step" *ngIf="cantidadConfirmada">
+      <div class="cr-step__num">3</div>
+      <div class="cr-step__body">
+        <label class="cr-label">Reparte tus {{ cantidadConfirmada }} flores entre colores</label>
+        <p class="cr-hint" *ngIf="cargandoColores">Cargando colores…</p>
+        <p class="cr-hint" *ngIf="!cargandoColores && coloresDisponibles.length === 0">
+          Esta especie todavía no tiene colores disponibles.
+        </p>
+
+        <!-- Un color que se desactivó después de la venta ya no se puede volver a mandar. Se dice
+             cuál y cuántas eran para poder ofrecerle un cambio al cliente. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="coloresNoDisponibles.length">
+          ⚠️ Ya no hay
+          <ng-container *ngFor="let c of coloresNoDisponibles; let i = index"><b>{{ c.cantidad }} {{ c.nombre }}</b><span *ngIf="i < coloresNoDisponibles.length - 1">, </span></ng-container>.
+          Esas flores hay que repartirlas entre los colores de abajo.
+        </div>
+
+        <div class="cr-color-row" *ngFor="let r of reparto">
+          <span class="cr-color-row__nombre">{{ r.color.nombre }}</span>
+          <span class="cr-color-row__stock">{{ r.color.stock }} disp.</span>
+          <input class="cr-input cr-input--num" type="number" min="0" [max]="r.color.stock"
+                 [(ngModel)]="r.cantidad" (ngModelChange)="onCambiarReparto(r)">
+        </div>
+
+        <p class="cr-restante" *ngIf="reparto.length > 0"
+           [class.cr-restante--ok]="restante === 0"
+           [class.cr-restante--warn]="restante !== 0">
+          {{ restante === 0 ? '✅ Ya repartiste todas tus flores' :
+             (restante > 0 ? 'Faltan ' + restante + ' flores por repartir' : 'Te pasaste por ' + (-restante) + ' flores') }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Paso 4 — accesorios -->
+    <div class="cr-step" *ngIf="repartoCompleto && seleccionAccesorios.length > 0">
+      <div class="cr-step__num">4</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Quieres algún accesorio?</label>
+
+        <!-- Hay que decirlo explícito: sin papel el ramo se entrega distinto, no es solo "más
+             barato". El dueño lo pidió con esas palabras. -->
+        <p class="cr-nota" *ngIf="papelEsOpcional">
+          📄 Si no eliges el papel, el ramo se entrega <b>sin papel</b> — solo las rosas enrolladas.
+        </p>
+
+        <!-- El papel solo se lista cuando NO va por default (ver `accesoriosSeleccionables`).
+             Y cuando aparece se dice QUE se cobra, pero no CUÁNTO: el monto depende de los
+             pliegos y el dueño no quiere anticipar esa cuenta al cliente. -->
+        <div class="cr-accesorio-row" *ngFor="let s of accesoriosSeleccionables">
+          <label class="cr-check">
+            <input type="checkbox" [(ngModel)]="s.seleccionado"
+                   (ngModelChange)="toggleAccesorio(s)">
+            <ng-container *ngIf="!s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} — ${{ s.accesorio.precio | number:'1.2-2' }}
+            </ng-container>
+            <ng-container *ngIf="s.accesorio.esPapel">
+              {{ s.accesorio.nombre }} <small>(tiene costo)</small>
+            </ng-container>
+          </label>
+          <input class="cr-input cr-input--num" type="number" min="1"
+                 *ngIf="s.seleccionado && !s.accesorio.esPapel"
+                 [(ngModel)]="s.cantidad" (ngModelChange)="onCambiarCantidadAccesorio()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 5 — listón. Oculto al editar: `editar-ramo` no lo cambia (una frase nueva reabre la
+         aprobación de precio), así que mostrarlo haría creer que se guardó algo que no. -->
+    <div class="cr-step" *ngIf="repartoCompleto && !modoEdicion">
+      <div class="cr-step__num">5</div>
+      <div class="cr-step__body">
+        <label class="cr-label">¿Lleva listón con frase? (opcional)</label>
+        <div class="cr-liston-opciones">
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="ninguno" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Sin listón
+          </label>
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="predefinida" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Elegir una frase
+          </label>
+          <label class="cr-radio">
+            <input type="radio" name="liston" value="personalizada" [(ngModel)]="listonModo" (ngModelChange)="onCambiarListon()">
+            Escribir mi propia frase
+          </label>
+        </div>
+
+        <select class="cr-input" *ngIf="listonModo === 'predefinida'"
+                [(ngModel)]="fraseSeleccionadaId" (ngModelChange)="onCambiarListon()">
+          <option [ngValue]="0" disabled>Elige una…</option>
+          <option *ngFor="let f of frases" [ngValue]="f.id">{{ f.texto }} — ${{ f.precio | number:'1.2-2' }}</option>
+        </select>
+
+        <div *ngIf="listonModo === 'personalizada'">
+          <textarea class="cr-input" rows="2" maxlength="120" placeholder="Escribe tu frase…"
+                    [(ngModel)]="fraseTexto" (ngModelChange)="onCambiarListon()"></textarea>
+          <p class="cr-hint">El precio de una frase personalizada se confirma después con nosotros — no se cobra un monto fijo aquí.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 6 — entrega -->
+    <div class="cr-step" *ngIf="repartoCompleto">
+      <div class="cr-step__num">{{ modoEdicion ? 5 : 6 }}</div>
+      <div class="cr-step__body">
+        <label class="cr-label">{{ modoEdicion ? '¿Para cuándo queda?' : '¿Dónde y cuándo lo quieres?' }}</label>
+
+        <!-- La zona no se toca al editar (cambia un costo de envío ya cobrado) — se ve, pero
+             bloqueada, para que el admin sepa a dónde va sin poder moverla por accidente. -->
+        <select class="cr-input" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarChange()"
+                [disabled]="recogerEnLocal || modoEdicion">
+          <option [ngValue]="null" disabled>Elige la zona de entrega…</option>
+          <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
+        </select>
+        <label class="cr-check cr-check--block" *ngIf="!modoEdicion">
+          <input type="checkbox" [(ngModel)]="recogerEnLocal" (ngModelChange)="onRecogerEnLocalChange()">
+          Voy a recoger en la tienda
+        </label>
+
+        <!-- El aviso que el admin necesita para negociar por teléfono: "si le agregamos 10, ya no
+             te lo doy el 20, sería el 23 — o el 20 con el cargo de prisa". -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="avisoFechaCorrida">
+          📅 {{ avisoFechaCorrida }}
+        </div>
+
+        <p class="cr-hint" *ngIf="lugares.length === 0">
+          Todavía no hay zonas de entrega dadas de alta. Puedes marcar
+          <b>«Voy a recoger en la tienda»</b> y seguir.
+        </p>
+
+        <p class="cr-hint" *ngIf="consultandoFechas">Consultando fechas de entrega…</p>
+        <div class="cr-aviso cr-aviso--error" *ngIf="errorFechas">{{ errorFechas }}</div>
+
+        <!-- Sin fecha posible no hay nada que elegir: se muestra el mensaje del back tal cual
+             (dirige al cliente a contactar por WhatsApp) y el botón de confirmar queda bloqueado
+             más abajo. Pasa cuando piden más que el tamaño máximo configurado. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="entregaBloqueada">
+          ⚠️ {{ fechas?.mensaje || 'Todavía no podemos comprometer una fecha para este tamaño de ramo. Contáctanos y lo vemos contigo.' }}
+        </div>
+
+        <ng-container *ngIf="fechas && fechas.primeraFechaValida && !consultandoFechas">
+          <p class="cr-fecha-min">
+            🗓️ Lo más pronto que podemos entregarlo: <b>{{ fechaLegible(fechas.primeraFechaValida) }}</b>
+          </p>
+
+          <!-- El plazo puede venir de un tamaño mayor (37 se arma como 48). Decirlo evita que
+               parezca un error cuando la fecha no cuadra con el número que escribió. -->
+          <p class="cr-hint" *ngIf="cantidadConfirmada && fechas.cantidadAplicada !== cantidadConfirmada">
+            Se usa el plazo del ramo de {{ fechas.cantidadAplicada }} flores, que es el tamaño en el
+            que entra el tuyo.
+          </p>
+
+          <div class="cr-fecha-row">
+            <div class="cr-fecha-campo">
+              <label class="cr-sub-label">Día</label>
+              <input class="cr-input" type="date" [min]="minFecha"
+                     [(ngModel)]="fechaEntrega" (ngModelChange)="onCambiarFecha()">
+            </div>
+            <div class="cr-fecha-campo">
+              <label class="cr-sub-label">Hora</label>
+              <select class="cr-input" [(ngModel)]="horaEntrega" (ngModelChange)="onCambiarFecha()">
+                <option *ngFor="let h of fechas.horasDisponibles" [ngValue]="h">{{ h }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- El cargo sale de `fechas.cargoUrgencia`, pero quien lo cobra es el back cuando se
+               le manda `urgente:true` en `calcular-precio`. Ver `ejecutarCalculo()`. -->
+          <button class="cr-btn cr-btn--urgente" *ngIf="fechas.ofreceUrgente || urgente"
+                  [class.cr-btn--urgente-on]="urgente" (click)="toggleUrgente()">
+            <ng-container *ngIf="!urgente">
+              ⚡ Lo necesito antes
+              <small *ngIf="fechas.cargoUrgencia"> (+${{ fechas.cargoUrgencia | number:'1.2-2' }})</small>
+            </ng-container>
+            <ng-container *ngIf="urgente">✓ Entrega urgente — quitar</ng-container>
+          </button>
+
+          <p class="cr-nota-urgente" *ngIf="urgente">
+            Los ramos urgentes se apartan con el <b>50% de anticipo</b> y el resto se paga al
+            entregar. Si el pago se hace después de la hora límite, la fecha y el precio se
+            vuelven a calcular.
+          </p>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="cr-resumen" *ngIf="repartoCompleto">
+      <h5 class="cr-resumen__titulo">Resumen de tu ramo</h5>
+
+      <p class="cr-hint" *ngIf="calculando">Calculando…</p>
+      <div class="cr-aviso cr-aviso--error" *ngIf="errorCalculo">{{ errorCalculo }}</div>
+
+      <ng-container *ngIf="calculo && !calculando">
+        <!-- El papel va DENTRO de esta línea, sin renglón propio: el dueño lo quiere invisible
+             para el cliente. Si se mostrara aparte, o peor, si no se sumara aquí, las líneas no
+             darían el total y el cliente notaría el descuadre. Ver `subtotalFlores`. -->
+        <div class="cr-linea">
+          <span>{{ calculo.cantidadFinal }} flores</span>
+          <span>${{ subtotalFlores | number:'1.2-2' }}</span>
+        </div>
+        <div class="cr-linea" *ngFor="let a of calculo.accesoriosCalculados">
+          <span>🎀 {{ a.nombre }}<small *ngIf="a.cantidad > 1"> × {{ a.cantidad }}</small></span>
+          <span>${{ a.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="cr-linea" *ngFor="let l of calculo.listonesCalculados">
+          <span>🎗️ {{ l.texto }}</span>
+          <span>{{ l.precio != null ? ('$' + (l.precio | number:'1.2-2')) : 'Por confirmar' }}</span>
+        </div>
+        <div class="cr-linea" *ngIf="calculo.costoEnvio != null">
+          <span>🚚 Envío</span>
+          <span>${{ calculo.costoEnvio | number:'1.2-2' }}</span>
+        </div>
+
+        <!-- Este SÍ lleva línea propia, a diferencia del papel y la mano de obra: el cliente lo
+             eligió a propósito en un botón que ya le decía el precio. Esconderlo después sería
+             raro. Ojo: `subtotalFlores` no lo incluye, justamente para que no se cobre dos veces
+             en la vista. -->
+        <div class="cr-linea" *ngIf="calculo.precioUrgencia">
+          <span>⚡ Entrega urgente</span>
+          <span>${{ calculo.precioUrgencia | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="cr-linea cr-linea--total">
+          <span>Total{{ calculo.tieneListonPendienteValidacion ? ' (provisional)' : '' }}</span>
+          <span>${{ calculo.total | number:'1.2-2' }}</span>
+        </div>
+
+        <p class="cr-aviso-frase" *ngIf="calculo.tieneListonPendienteValidacion">
+          ℹ️ {{ calculo.avisoFrasePendiente }}
+        </p>
+
+        <!-- El anticipo NO es dinero extra: es la mitad del total. Decirlo así evita que se lea
+             como un cargo aparte encima del precio. -->
+        <p class="cr-aviso-frase" *ngIf="calculo.requiereAnticipo && calculo.montoAnticipoSugerido != null">
+          💳 Para apartarlo se deja <b>${{ calculo.montoAnticipoSugerido | number:'1.2-2' }}</b> de
+          anticipo (la mitad del total); el resto se paga al entregar.
+        </p>
+
+        <!-- El back revalida el plazo por su cuenta al cotizar: aunque el calendario de arriba
+             ya filtre, la fecha pudo quedar obsoleta si el cliente se tardó armando el ramo. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="calculo.entregaValida === false">
+          ⚠️ {{ calculo.mensajeEntrega || 'La fecha que elegiste ya no se puede cumplir — elige otra.' }}
+        </div>
+
+        <!-- Se pidió urgente, hay cargo configurado, y el cálculo no lo trae: el ramo se armaría
+             con prisa sin cobrar el extra. Se AVISA, no se prohíbe — confirmar pide una
+             confirmación aparte. Ver `cargoUrgenteNoAplicado`: se apaga solo cuando el back
+             devuelva el cargo. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="cargoUrgenteNoAplicado">
+          ⚠️ La entrega urgente no se está sumando al total en este momento.
+        </div>
+
+        <!-- Un botón gris sin decir por qué deja al cliente atorado — mismo criterio que la
+             pantalla de configuración de entregas. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="entregaSinDefinir && !modoEdicion">
+          📍 Falta decir <b>a dónde llevamos tu ramo</b>: elige una zona de entrega arriba, o marca
+          «Voy a recoger en la tienda».
+        </div>
+
+        <!-- Al editar, la zona ya viene del pedido original y está bloqueada — exigirla otra vez
+             dejaría el botón muerto en un ramo que se pidió antes de que fuera obligatoria. -->
+        <button class="cr-btn cr-btn--confirmar"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || (entregaSinDefinir && !modoEdicion)"
+                (click)="confirmarPedido()">
+          {{ guardando
+              ? 'Guardando…'
+              : (modoEdicion ? '💾 Guardar cambios del ramo' : '💐 Confirmar mi ramo') }}
+        </button>
+      </ng-container>
+
+      <p class="cr-hint" *ngIf="!calculo && !calculando && !errorCalculo">
+        Preparando el resumen de tu ramo…
+      </p>
+    </div>
+
+  </div>
+</div>

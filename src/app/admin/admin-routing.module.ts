@@ -8,6 +8,8 @@ import { ReconciliacionImagenesComponent } from './reconciliacion-imagenes/recon
 import { ChatAdminComponent } from './chat-admin/chat-admin.component';
 import { GestionPromocionesComponent } from './promociones/gestion-promociones.component';
 import { GestionCintaComponent } from './cinta/gestion-cinta.component';
+import { PublicarFacebookComponent } from './redes-sociales/publicar-facebook.component';
+import { GestionHashtagsComponent } from './hashtags/gestion-hashtags.component';
 
 const routes: Routes = [
   { path: 'cache',                   component: CacheComponent },
@@ -17,9 +19,9 @@ const routes: Routes = [
   { path: 'reconciliacion-imagenes', component: ReconciliacionImagenesComponent },
   { path: 'chat',                    component: ChatAdminComponent },
   { path: 'promociones',             component: GestionPromocionesComponent },
-  { path: 'cinta',                   component: GestionCintaComponent }
-  // ⏸️ 'facebook' (Publicar en Facebook) se sacó 2026-08-05 — el back pausó el feature.
-  //    Código completo en la rama `backup/facebook-redes-sociales`.
+  { path: 'cinta',                   component: GestionCintaComponent },
+  { path: 'facebook',                component: PublicarFacebookComponent },
+  { path: 'hashtags',                component: GestionHashtagsComponent }
 ];
 
 @NgModule({

@@ -1,0 +1,149 @@
+<div class="ce-wrap">
+
+  <div class="ce-header">
+    <h4 class="ce-header__title">🚚 Configuración de entregas</h4>
+    <small class="ce-header__sub">Cuánto tardas en armar cada ramo y a qué hora lo entregas</small>
+  </div>
+
+  <div class="ce-aviso ce-aviso--error" *ngIf="error">
+    <strong>{{ error }}</strong>
+    <button class="ce-btn ce-btn--ghost ce-btn--sm" (click)="cargar()">Reintentar</button>
+  </div>
+
+  <p class="ce-hint">
+    El cliente solo va a poder elegir fechas que tú puedas cumplir. Si pide una cantidad que no
+    tenga su propia configuración, se usa la del <b>tamaño inmediato superior</b> — un ramo de 37
+    se maneja con las reglas del de 48.
+    <br>
+    <b>Un tamaño sin plazos no se puede pedir</b>: al cliente se le pide que te contacte.
+    <br>
+    📍 Las <b>zonas de entrega y su precio</b> se configuran aparte, en
+    <a routerLink="/flores/zonas" class="ce-link">Zonas y envío</a> — ahí pones Luvianos
+    en $0 y Tejupilco en $150, por ejemplo.
+  </p>
+
+  <p class="ce-vacio" *ngIf="cargando">Cargando…</p>
+
+  <p class="ce-aviso" *ngIf="!cargando && !error && cantidades.length === 0">
+    ⚠️ Todavía no hay tamaños de ramo. Créalos primero en <b>Catálogos → Cantidades</b>; aquí solo
+    se les configuran los plazos de entrega.
+  </p>
+
+  <p class="ce-hint" *ngIf="!cargando && cantidades.length > 0">
+    <b>{{ configurados }}</b> de <b>{{ cantidades.length }}</b> tamaños tienen plazos configurados.
+  </p>
+
+  <!-- Un card por tamaño. No se crean ni se borran aquí: los tamaños viven en Catálogos. -->
+  <div class="ce-card" *ngFor="let c of cantidades">
+
+    <div class="ce-fila">
+      <span class="ce-fila__titulo">
+        {{ c.cantidad }} flores
+        <small *ngIf="c.tipoFlor"> · {{ c.tipoFlor.nombre }}</small>
+      </span>
+      <div class="ce-acciones" *ngIf="editandoId !== c.id">
+        <button class="ce-btn ce-btn--ghost ce-btn--sm" [disabled]="guardando" (click)="editar(c)">
+          {{ c.diasNormal ? '✏️ Editar' : '+ Configurar' }}
+        </button>
+        <button class="ce-ico ce-ico--del" title="Quitar plazos" *ngIf="c.diasNormal"
+                [disabled]="guardando" (click)="limpiar(c)">🗑️</button>
+      </div>
+    </div>
+
+    <!-- Resumen (modo lectura) -->
+    <div class="ce-detalle" *ngIf="editandoId !== c.id">
+      <span class="ce-badge" *ngIf="c.diasNormal">
+        Normal: {{ c.diasNormal }} día(s) · {{ c.horaEntregaNormal }}
+      </span>
+      <span class="ce-badge ce-badge--urg" *ngIf="c.diasUrgente">
+        Urgente: {{ c.diasUrgente }} día(s) · {{ c.horaEntregaUrgente }} · pedir antes de
+        {{ c.horaLimitePedido }} · +${{ c.cargoUrgente | number:'1.2-2' }}
+      </span>
+      <span class="ce-badge ce-badge--pend" *ngIf="c.diasNormal && !c.diasUrgente">No se puede apurar</span>
+      <span class="ce-badge ce-badge--pend" *ngIf="!c.diasNormal">Sin plazos — no se puede pedir</span>
+    </div>
+
+    <!-- Formulario (modo edición) -->
+    <div *ngIf="editandoId === c.id">
+
+      <div class="ce-bloque">
+        <h6 class="ce-bloque__titulo">Entrega normal</h6>
+        <div class="ce-row">
+          <div class="ce-field">
+            <label class="ce-lbl">Días que tardas</label>
+            <input class="ce-input" type="number" min="0" placeholder="Ej. 3" [(ngModel)]="form.diasNormal">
+          </div>
+          <div class="ce-field">
+            <label class="ce-lbl">Lo entregas a las</label>
+            <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaNormal">
+            <span class="ce-hora-eco" *ngIf="eco(form.horaEntregaNormal)">{{ eco(form.horaEntregaNormal) }}</span>
+          </div>
+        </div>
+        <p class="ce-nota" *ngIf="form.diasNormal && form.horaEntregaNormal">
+          Si te lo piden hoy, lo entregas en <b>{{ form.diasNormal }} día(s)</b> a las
+          <b>{{ form.horaEntregaNormal }}</b>, sin cargo extra.
+        </p>
+      </div>
+
+      <div class="ce-bloque">
+        <h6 class="ce-bloque__titulo">Entrega urgente</h6>
+        <label class="ce-check">
+          <input type="checkbox" [(ngModel)]="form.ofreceUrgente">
+          <b>Este ramo se puede apurar</b>
+        </label>
+        <p class="ce-nota">
+          Déjalo sin marcar si este tamaño no se puede entregar más rápido por ningún motivo — al
+          cliente no se le mostrará la opción.
+        </p>
+
+        <div *ngIf="form.ofreceUrgente">
+          <div class="ce-row">
+            <div class="ce-field">
+              <label class="ce-lbl">Días que tardas</label>
+              <input class="ce-input" type="number" min="0" placeholder="Ej. 1" [(ngModel)]="form.diasUrgente">
+            </div>
+            <div class="ce-field">
+              <label class="ce-lbl">Lo entregas a las</label>
+              <input class="ce-input" type="time" [(ngModel)]="form.horaEntregaUrgente">
+              <span class="ce-hora-eco" *ngIf="eco(form.horaEntregaUrgente)">{{ eco(form.horaEntregaUrgente) }}</span>
+            </div>
+          </div>
+          <div class="ce-row">
+            <div class="ce-field">
+              <label class="ce-lbl">Te lo tienen que pedir antes de</label>
+              <input class="ce-input" type="time" [(ngModel)]="form.horaLimitePedido">
+              <span class="ce-hora-eco" *ngIf="eco(form.horaLimitePedido)">{{ eco(form.horaLimitePedido) }}</span>
+            </div>
+            <div class="ce-field">
+              <label class="ce-lbl">Cargo extra ($)</label>
+              <input class="ce-input" type="number" min="0" step="0.01" placeholder="Ej. 300"
+                     [(ngModel)]="form.cargoUrgente">
+            </div>
+          </div>
+          <p class="ce-nota ce-nota--warn">
+            ⏰ El <b>pago</b> también tiene que quedar antes de esa hora. Si se pasa, el pedido se
+            recotiza con el cargo urgente.
+          </p>
+        </div>
+      </div>
+
+      <!-- Sin esto, el botón se queda gris y no hay forma de saber qué falta. Pasa sobre todo con
+           los campos de hora: si no se elige a.m./p.m., el campo se ve lleno pero está vacío. -->
+      <p class="ce-nota ce-nota--warn" *ngIf="faltantes.length > 0">
+        Falta {{ faltantes.join(', ') }}.
+        <span *ngIf="faltaAlgunaHora">
+          Si el campo se ve lleno, revisa que hayas elegido <b>a.m. / p.m.</b> — sin esa parte la
+          hora no queda guardada.
+        </span>
+      </p>
+
+      <div class="ce-acciones">
+        <button class="ce-btn ce-btn--primary" [disabled]="!formValido || guardando" (click)="guardar()">
+          {{ guardando ? 'Guardando…' : '💾 Guardar' }}
+        </button>
+        <button class="ce-btn ce-btn--ghost" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
+      </div>
+    </div>
+
+  </div>
+</div>

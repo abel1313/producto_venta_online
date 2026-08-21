@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
+import { UsuarioService } from 'src/app/shared/usuario.service';
 import { MensajesGenericos } from './../../swife/swal.model';
 import { ICliente, InitCliente } from './models/index.model';
 import Swal from 'sweetalert2';
@@ -25,7 +26,8 @@ export class MisDatosComponent implements OnInit {
 
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly usuarioService: UsuarioService
   ) {
     this.formDatosCliente = this.fb.group({
       nombrePersona: ['abel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
@@ -46,7 +48,41 @@ export class MisDatosComponent implements OnInit {
     this.authService.userId$.subscribe(idUser => {
       this.idUusario = idUser;
     });
-    this.clienteServoce.getDataOneCliente(this.idUusario).subscribe((data: any) => {
+    // ⚠️ `buscarPorIdCliente` espera el id de **cliente**, no el de usuario — confirmado por el
+    // back (2026-08-16). Antes se le mandaba el `idUsuario` y respondía "No autorizado", así que
+    // el formulario quedaba en blanco y (sin `error`) sin ninguna explicación.
+    this.usuarioService.buscarClientePorIdUsuario(this.idUusario).subscribe({
+      next: (clienteId: any) => {
+        if (!clienteId) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Completa tu registro',
+            text: 'Todavía no tienes datos de cliente guardados. Llénalos aquí para poder comprar.'
+          });
+          return;
+        }
+        this.cargarCliente(clienteId);
+      },
+      error: () => {
+        Swal.fire({
+          icon: 'info',
+          title: 'No pudimos cargar tus datos',
+          text: 'Si es la primera vez, completa tu registro de cliente para poder comprar.'
+        });
+      }
+    });
+  }
+
+  private cargarCliente(clienteId: number): void {
+    this.clienteServoce.getDataOneCliente(clienteId).subscribe({
+      error: () => {
+        Swal.fire({
+          icon: 'info',
+          title: 'No pudimos cargar tus datos',
+          text: 'Si es la primera vez, completa tu registro de cliente para poder comprar.'
+        });
+      },
+      next: (data: any) => {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
@@ -83,7 +119,7 @@ export class MisDatosComponent implements OnInit {
           this.suscribirCambioPredefinida(nueva, 0);
         }
       }
-
+      }
     })
 
     if (this.listDirecciones.length > 0) {
@@ -240,7 +276,7 @@ export class MisDatosComponent implements OnInit {
         <input id="swal-codigo-propio" type="text" inputmode="numeric" maxlength="6"
                placeholder="123456"
                style="width:150px;text-align:center;font-size:1.4rem;letter-spacing:6px;
-                      padding:8px 12px;border:2px solid #00875A;border-radius:8px;
+                      padding:8px 12px;border:2px solid var(--brand-1);border-radius:8px;
                       outline:none;font-family:monospace">
       `,
       confirmButtonText: 'Verificar',

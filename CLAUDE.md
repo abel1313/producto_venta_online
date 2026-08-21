@@ -7361,3 +7361,3496 @@ refresque sin recargar la página.
 ⚠️ **No probado en vivo:** el back todavía no corre `migration_cinta_promocion.sql` en QA, así que
 los endpoints no responden. Hasta entonces la cinta no se va a ver — que es el comportamiento
 esperado (falla en silencio), no un bug.
+
+---
+
+## FIX — LA FICHA DE PRODUCTO LLAMABA A `getOne`, QUE PASÓ A SER ADMIN-ONLY (2026-08-12)
+
+**Reportado por el back** (repo compartido, 2026-08-11): cerraron `/tienda/getAll`,
+`/tienda/v1/getAll`, `/tienda/getOne/{id}` y `/tienda/v1/getOne/{id}` — antes eran públicos y
+devolvían la entidad `Variantes` cruda, que arrastra el `Producto` completo **incluidos
+`precioCosto` y `precioRebaja`**. Con `getAll?size=1000` y sin login se podía sacar el margen
+completo de la tienda. Pidieron avisar si alguna pantalla los usaba sin login.
+
+### Sí los usaba — y era la ficha de producto, que es pública
+
+`DetalleVarianteComponent` (`/tienda/detalle/:id`, **sin guard**) llamaba
+`GET /tienda/v1/getOne/{varianteId}` con un solo fin: averiguar a qué producto pertenece la
+variante, para después pedir `getPorProducto(productoId)` (que sigue público y es de donde sale
+todo lo que se pinta). Ni un precio, ni ningún otro campo de esa respuesta.
+
+Con el endpoint cerrado, a un cliente le devuelve 401/403 → sin `productoId` → **ficha vacía**.
+Y como el `subscribe` tenía `error: () => {}`, no se veía ni un mensaje: pantalla en blanco.
+
+**Verificado en vivo:** `QA → 401`, `PROD → 200` (el cierre todavía no estaba desplegado en
+producción). El back confirmó por escrito que **no promueve `qa → main` hasta que este fix esté
+arriba**.
+
+### Fix
+
+1. **El `productoId` viaja en la URL.** `BuscarComponent.irDetalle()` y
+   `FavoritosComponent.irDetalle()` navegan con `queryParams: { productoId }` — ya lo tienen en
+   `IVarianteResumen.productoId`, no cuesta nada. `DetalleVarianteComponent` lo lee
+   (`paramMap` primero, luego `queryParamMap`) y **solo llama a `getOne` si no lo tiene**.
+2. **El error se ve.** Nuevo campo `errorCarga` + bloque `.dv-error` en el template. Iba
+   obligado: **todo el contenido de esa pantalla cuelga de `*ngIf="varianteSeleccionada"`**, así
+   que cualquier fallo la dejaba literalmente en blanco. Con 401/403 el mensaje es específico
+   ("no pudimos abrir este producto desde un enlace directo, búscalo en la tienda").
+
+### ⏳ Lo que este fix NO cubre
+
+**El link directo o marcador** — entrar a `/tienda/detalle/{varianteId}` sin pasar por el
+catálogo, que es justo el caso de un link compartido por WhatsApp o Facebook. Ahí no hay de dónde
+sacar el `productoId` y sigue cayendo en `getOne` (funciona para admin, falla para cliente — ahora
+con mensaje en vez de pantalla blanca).
+
+El back ya está construyendo un endpoint público para eso; quedaron en pasar el request/response
+antes de que lo usemos. **Cuando exista, cambiar el fallback de `getOne` por ese endpoint** en
+`DetalleVarianteComponent.ngOnInit()` y este caso queda cerrado.
+
+### Sin riesgo en el resto
+
+`VarianteService.getAll()` no lo llama ningún componente (método muerto) y `/actuator` no se toca
+desde el front — confirmado con grep.
+
+**Archivos modificados:**
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → lee `productoId` de query
+  param, `getOne` solo como fallback, `errorCarga`
+- `src/app/variante/detalle-variante/detalle-variante.component.html` → bloque `.dv-error`
+- `src/app/variante/detalle-variante/detalle-variante.component.scss` → `.dv-error`
+- `src/app/variante/buscar/buscar.component.ts` → `irDetalle()` manda `productoId`
+- `src/app/favoritos/favoritos.component.ts` → `irDetalle()` manda `productoId`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo contra QA.
+
+---
+
+## FIX — COMPARTIR POR WHATSAPP/FACEBOOK: LA VISTA PREVIA NO MOSTRABA NINGUNA IMAGEN (2026-08-12)
+
+**Hay que separar dos cosas que se confunden**, porque solo una estaba rota:
+
+| | Qué es | Estado |
+|---|---|---|
+| **Botón 📤 de la app** (`CompartirService`) | Manda **el archivo de la foto** por el menú del sistema | ✅ Ya funcionaba |
+| **Pegar el link** de un producto en WhatsApp | WhatsApp arma su tarjetita leyendo los meta tags de `index.html` | ❌ Sin imagen |
+
+### La vista previa del link nunca mostró foto — ni la genérica
+
+`og:image` apuntaba a `/assets/og-image.jpg`, y **ese archivo no existía**. Verificado contra
+producción: `GET https://shop.novedades-jade.com.mx/assets/og-image.jpg` → **404**.
+
+Dos problemas más en el mismo bloque:
+1. **La URL era relativa.** WhatsApp y Facebook piden la página desde SUS servidores, así que una
+   ruta como `/assets/...` no la resuelven — `og:image` tiene que ser absoluta (`https://...`).
+   Aunque el archivo hubiera existido, la tarjeta habría salido igual sin foto.
+2. **Faltaba `og:url`** (y `og:site_name`), que es lo que usan para canonicalizar la tarjeta.
+
+**Fix:** se creó `src/assets/og-image.jpg` (copia de `venta-bolsas.jpg`, 360 KB — por debajo del
+límite de ~600 KB que WhatsApp tolera para la vista previa) y se pasaron `og:image`/`twitter:image`
+a URL absoluta, más `og:url`, `og:site_name`, `og:image:type` y `og:image:alt`.
+
+⚠️ **Es una imagen FIJA, la misma para toda la tienda.** Compartir el link de una blusa muestra
+esa foto genérica, no la blusa. Que salga la foto del producto compartido **requiere render en
+servidor (SSR) o un servicio que sirva meta tags por producto**: los bots de WhatsApp/Facebook
+**no ejecutan JavaScript**, y este build es 100% cliente
+(`@angular-devkit/build-angular:browser`, sin `@angular/ssr` ni `@nguniversal`) — solo leen el
+`index.html` tal cual. El back lo confirmó por su lado y ofreció planearlo si se pide.
+
+### Bug del botón compartir en computadora
+
+`puedeCompartirArchivo()` preguntaba solo `navigator.share && navigator.canShare`, sin verificar
+**este archivo en concreto**. En Windows, Chrome y Edge sí exponen esas APIs pero varios no
+aceptan archivos → se entraba por la rama de móvil, `navigator.share({ files })` fallaba, y el
+`catch` terminaba **descargando la imagen sin avisar**: el admin daba clic en compartir y le
+aparecía un archivo en Descargas en vez del cuadro con la imagen para copiarla.
+
+**Fix:** `navigator.canShare({ files: [archivo] })`, que es la pregunta correcta.
+
+### Conectado el resolver público `varianteId → productoId`
+
+El back entregó `GET /tienda/v1/variante/{varianteId}/producto-id` → `{ data: { productoId } }`,
+público. `DetalleVarianteComponent` ya lo usa cuando el `productoId` no viene en la URL (link
+directo), con **`catchError` que cae a `getOne` como respaldo** mientras el endpoint termina de
+desplegarse en todos los ambientes — así funciona antes y después del deploy del back. Cuando
+esté en QA y prod, ese `catchError` se puede quitar.
+
+**Archivos modificados:**
+- `src/index.html` → bloque Open Graph corregido
+- `src/assets/og-image.jpg` → **archivo nuevo** (antes se referenciaba sin existir)
+- `src/app/shared/compartir.service.ts` → `puedeCompartirArchivo(archivo)`
+- `src/app/variante/service/variante.service.ts` → `resolverProductoId()`
+- `src/app/variante/detalle-variante/detalle-variante.component.ts` → usa el resolver
+
+**Verificado:** `ng build --configuration=production` sin errores, y confirmado que el build de
+salida trae `dist/assets/og-image.jpg` y la URL absoluta en `dist/index.html`.
+
+### Compartir en computadora: botón "📋 Copiar imagen" (2026-08-12)
+
+**Por qué no puede ser automático:** una página web **no puede** meterle la imagen a WhatsApp Web
+— son sitios distintos y el navegador lo prohíbe. No hay forma de saltarse eso. Lo más cerca es
+dejar la imagen en el portapapeles de un clic, para que el admin solo pegue con `Ctrl + V`.
+
+Antes el diálogo de escritorio solo decía "clic derecho → copiar imagen". Ahora, si el navegador
+lo soporta (`navigator.clipboard.write` + `ClipboardItem`), aparece un botón que la copia directo;
+si no, cae al texto de siempre.
+
+**Dos detalles que hacen que funcione, y sin los cuales falla en silencio:**
+
+1. **La copia va dentro del listener del clic del botón.** El navegador exige un gesto *reciente*
+   del usuario para escribir en el portapapeles, y el clic original del botón de compartir ya
+   expiró después de esperar la descarga de la imagen. Copiar fuera de ese listener tira
+   `NotAllowedError`.
+2. **Hay que convertir el JPEG a PNG** (`aPng()`, vía canvas). El portapapeles solo acepta
+   `image/png` para imágenes: pasarle el JPEG tal cual también tira `NotAllowedError`. Por eso el
+   helper existe aunque parezca un rodeo innecesario.
+
+**Archivo modificado:** `src/app/shared/compartir.service.ts` → `didOpen` con el botón, `aPng()`.
+
+**Verificado con `ng build --configuration=development` sin errores.**
+⚠️ No probado en un navegador real — el comportamiento del portapapeles varía por navegador y el
+botón está protegido con `try/catch` que cae al mensaje de clic derecho si falla.
+
+---
+
+## FEAT MÓDULO FLORES ETERNAS — CATÁLOGOS DE ADMINISTRACIÓN (2026-08-13)
+
+> Primera etapa del módulo nuevo del back (`CAMBIOS_FRONT.md`, 2026-08-12): ramos de rosas
+> eternas configurables. Es una **línea de producto aparte**, no tiene relación con el catálogo
+> de bolsas/blusas/perfumes.
+
+### ⚠️ Alcance — solo administración, y por qué
+
+Se hicieron **únicamente los catálogos de admin**. La pantalla del cliente (configurador del ramo
+con precio en vivo) **NO se hizo a propósito**: el back no entregó todavía el endpoint para
+confirmar un ramo cotizado como pedido real (falta decidir cómo se engancha con
+`Pedido`/`DetallePedido`). Construirla ahora dejaría una pantalla que calcula un precio bonito y
+termina en un botón que no puede hacer nada.
+
+Además, sin catálogos cargados no hay nada que cotizar ni que probar — así que este era el orden
+obligado de todos modos.
+
+### Endpoints conectados (`FloresService`)
+
+| Catálogo | Base URL | Paginación |
+|---|---|---|
+| Tipos de flor | `/v1/tipos-flor` | `page` **base-0** + `size` |
+| Cantidades válidas | `/v1/cantidades-flor` | `page` **base-0** + `size` |
+| Accesorios | `/v1/accesorios-ramo` | `page` **base-0** + `size` |
+| Frases de listón | `/v1/frases-liston` | `page` **base-0** + `size` |
+| Ramos preconfigurados | `/v1/ramos-armados` | `pagina` **base-1** + `size` |
+| Motor de cálculo | `/v1/flores/validar-cantidad`, `/v1/flores/calcular-precio` | — |
+
+⚠️ **Las dos convenciones de paginación conviven a propósito** y el back lo advirtió: los 4
+catálogos usan el CRUD genérico (base-0) y ramos-armados usa rutas propias estilo
+`/v1/promociones` (base-1). No "corregir" una por la otra.
+
+Reglas ya conocidas del CRUD genérico, iguales que en `lugares-entrega` y `cinta`: `getAll` exige
+`page`/`size` (sin default), `delete` recibe el id **crudo** en el body (`1`, no `{ id: 1 }`), y
+`save`/`update` reciben la entidad completa.
+
+### Reglas de negocio que la UI tiene que respetar
+
+- **El papel se cobra solo** cuando el ramo lleva **más de 10 flores** — el back lo agrega, el
+  front no lo manda ni se lo pregunta al cliente. Con 10 o menos es un accesorio opcional más.
+  Por eso el accesorio marcado `esPapel` es especial: **debe haber máximo uno activo**, y la
+  pantalla ya bloquea marcar un segundo (`yaHayPapel`).
+- **Frase de listón personalizada** → el precio no existe todavía: el total es **provisional**,
+  se pide **50% de anticipo** y hay que mostrar el `avisoNoReembolso` **tal cual viene del back**.
+  Es política de negocio, no redacción libre del front.
+- **Cantidades válidas** son las que "cierran bien el círculo". Si el cliente pide otra, el back
+  ofrece la más cercana hacia abajo y hacia arriba.
+
+### Decisiones de diseño
+
+- **Una sola pantalla con 4 pestañas**, no 4 entradas de menú. Son catálogos diminutos; cuatro
+  links separados serían ruido en el sidebar (ver "REGLA — CRITERIO DE ORGANIZACIÓN DEL SIDEBAR").
+- **Grupo propio en el menú (🌹 Flores eternas)**, no dentro de Inventario: es una línea de
+  producto aparte con sus propios catálogos — mismo criterio por el que Rifas es un grupo aparte
+  aunque también genere dinero.
+- **Los 4 catálogos se cargan juntos** con un `forkJoin` aunque solo se vea una pestaña: son
+  listas chicas y el alta de cantidades necesita los tipos de flor para su selector. Cargarlos por
+  separado obligaría a recargar al cambiar de pestaña.
+- **`ICantidadFlor.tipoFlor` es opcional** (`tipoFlor?:`) aunque el back siempre lo mande — es un
+  objeto anidado de otra tabla. Lección #2 del módulo rifas: si un solo renglón llega con eso en
+  `null`, un acceso directo tira `TypeError` a media `*ngFor` y **desaparece el resto de la
+  lista** (se ve como "solo aparece el primero", que despista muchísimo).
+- **Guard de doble-submit en toda la cadena** (Lección #10): `ejecutar()` corre mutación →
+  recarga, y `guardando` se libera **solo al terminar la recarga**.
+
+### ⚠️ VERIFICADO EN QA: los GET "públicos" responden 401
+
+El back documentó que los GET de los 4 catálogos y los 2 de cálculo son **públicos, sin login**
+(el cliente configura su ramo sin sesión). Comprobado hoy contra QA sin token:
+
+```
+/v1/tipos-flor/getAll        → 401
+/v1/flores/validar-cantidad  → 401
+/v1/cinta/activos            → 200   ← este sí es público y sí está desplegado
+```
+
+⚠️ **El 401 no prueba por sí solo que falte el `permitAll`**: una ruta inventada
+(`/v1/no-existe-nada/getAll`) también responde 401, así que ese código es la respuesta genérica
+para todo lo no permitido — o sea, no distingue "no desplegado" de "requiere token". Lo que sí
+dice algo es la comparación con `cinta/activos`: público y desplegado, responde 200.
+
+**Conclusión: o el módulo no está en QA todavía, o le falta el `permitAll`.** Reportado al back.
+No bloquea esta entrega (las pantallas son admin y mandan token), pero **sí bloquearía la pantalla
+del cliente** cuando se haga.
+
+**Archivos nuevos:** `src/app/flores/models/flores.model.ts`,
+`src/app/flores/service/flores.service.ts`,
+`src/app/flores/catalogos/catalogos-flores.component.ts/.html/.scss` (BEM `fl-`),
+`src/app/flores/flores.module.ts`, `src/app/flores/flores-routing.module.ts`
+
+**Archivos modificados:** `src/app/app-routing.module.ts` (ruta lazy `/flores`),
+`src/app/navbar/navbar.component.html` + `.ts` (grupo 🌹 + `GROUP_ROUTES`)
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado en vivo** — depende de que el back confirme el estado del módulo en QA.
+
+---
+
+## FLORES ETERNAS — MULTICOLOR: CATÁLOGO DE COLORES + UMBRAL CONFIGURABLE (2026-08-13)
+
+> Segunda ronda del módulo. El back rehízo el modelo para soportar ramos de varios colores y
+> respondió las 5 dudas abiertas. Esto actualiza lo que ya estaba y agrega lo que faltaba.
+
+### ⚠️ Cambio de modelo: la especie y el color se separaron
+
+Antes "Rosa roja" y "Rosa blanca" tenían que ser dos `TipoFlor` distintos, lo que obligaba a
+duplicar precio y cantidades válidas por cada color. Ahora:
+
+| | Qué es | Tiene |
+|---|---|---|
+| `TipoFlor` | La **especie** ("Rosa eterna") | Precio por flor + tabla de cantidades válidas |
+| `ColorFlor` (nuevo) | Un **color vendible** de esa especie | Stock propio + variante interna |
+
+`ColorFlor` **hereda** precio y cantidades de la especie — no los duplica. **`TipoFlor` ya no
+tiene stock ni variante propia**; lo vendible es el color.
+
+Confirmado por el back: **la validación del círculo es por el total de la especie**, sin importar
+cómo se reparta entre colores — que era nuestra sospecha, pero no la asumimos.
+
+### Contrato de cálculo — cambió la forma del request
+
+`calcular-precio` ya no recibe `tipoFlorId` + `cantidadFinal`, sino una lista:
+
+```json
+{ "colores": [ { "colorFlorId": 1, "cantidad": 6 }, { "colorFlorId": 2, "cantidad": 6 } ], ... }
+```
+
+Un ramo de un solo color es una lista de una entrada. **Todos los colores deben ser de la misma
+especie**, si no responde 400. La respuesta trae `coloresCalculados[]` — **una línea por color,
+cada una con su `varianteId`** — y al armar `savePedido` va una línea de detalle por cada una
+(mismo patrón que ya se usaba para accesorios).
+
+`validar-cantidad` **no cambió**: sigue siendo por especie.
+
+### El umbral del papel ahora lo mueve el dueño
+
+Antes estaba fijo en el código del back (>10 flores), así que cambiarlo exigía un despliegue.
+Ahora `AccesorioRamo.umbralActivacion` es un campo editable desde la pantalla de accesorios:
+el accesorio marcado `esPapel` se agrega solo cuando `cantidadFinal > umbralActivacion`.
+**`null` = nunca se agrega solo** (queda opcional siempre).
+
+⚠️ **El dueño todavía no ha definido el número.** Describió el comportamiento ("con 1 flor se
+pregunta, con 2 o 3 ya va incluido") pero no confirmó si el corte es 2, 3 o 4. Hasta que lo
+diga, el campo se queda vacío y el papel nunca se agrega automático.
+
+### El anticipo: el back eliminó un número que era falso
+
+`calcular-precio` devolvía `montoAnticipoSugerido` = 50% del total del ramo completo. **No
+representaba nada real** — el anticipo es sobre el precio de la frase personalizada, que en ese
+momento todavía no existe. El back lo quitó; ahora solo devuelve `avisoFrasePendiente` (texto,
+sin monto).
+
+El monto real nace **solo** al aprobar la frase (`validar-frase`), que crea un pedido `APARTADO`
+separado y devuelve `pedidoAnticipoId` + `montoAnticipo`. El cobro se registra con el módulo de
+abonos que ya existe: `POST /v1/abonos/{pedidoAnticipoId}`.
+
+**Regla para la pantalla:** el texto que se le muestra al cliente al cotizar **no debe mencionar
+ningún número**. Usar `avisoFrasePendiente` tal cual viene.
+
+### Variantes sombra — el back las excluyó de todos lados
+
+Cada color de flor crea por dentro un producto/variante real (así `savePedido` funciona sin
+cambios). Se reportó el riesgo de que aparecieran en la tienda y el back agregó
+`Producto.esCatalogoInterno`, aplicado en: buscador público, filtros de admin, listados generales,
+**chatbot** y **reporte de más vendidos** (estos dos los encontraron ellos, no estaban en el
+reporte). Los selectores de promoción y rifa quedan cubiertos porque reusan el buscador general.
+
+**Decisión del dueño registrada:** flores en sección aparte, y **no se venden flores por unidad**.
+
+⚠️ **Riesgo residual que dejaron abierto:** si un admin edita el stock de una variante interna
+desde la pantalla normal de variantes (sabiéndose el id), se desincroniza con lo que muestra el
+catálogo de colores — no hay sincronización en ese sentido. Ahora es improbable porque ya no
+aparecen en ningún buscador, pero no es imposible.
+
+### Lo implementado en esta ronda
+
+- **Modelos:** `IColorFlor`/`IColorFlorRequest`, `umbralActivacion` en accesorios, `colorFlorId` +
+  `imagenUrl` en ramos armados, `colores[]`/`coloresCalculados[]` en el cálculo,
+  `avisoFrasePendiente` (fuera `montoAnticipoSugerido`), y las interfaces del ticket de producción
+  y de la bandeja de frases.
+- **Servicio:** CRUD de colores + `coloresPorTipoFlor()`, `guardarDetalleRamo()`,
+  `obtenerDetalleRamo()`, `frasesPendientes()`, `validarFrase()`.
+- **Pantalla de catálogos:** pestaña nueva **🎨 Colores** (especie + color + existencias) y el
+  campo **«desde»** en accesorios para el umbral.
+
+### Lo que sigue faltando (pantallas, no contrato)
+
+El contrato ya está completo — no quedan dudas abiertas con el back. Falta construir:
+1. **Configurador del cliente** (elegir especie → cantidad → repartir entre colores → accesorios →
+   listón → total en vivo → `savePedido` + ticket de producción).
+2. **Bandeja de frases pendientes** (admin): listar, aprobar con precio, y enlazar el anticipo con
+   `/abonos`.
+3. **Ramos preconfigurados** (admin + catálogo público) — decisión de negocio pendiente: el dueño
+   dijo "solo ramos configurables" y falta confirmar si eso excluye los preconfigurados.
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ **No probado contra QA:** al terminar, el backend de QA estaba respondiendo 502 (desplegando,
+presumiblemente la migración `migration_flores_eternas_multicolor.sql`, que el back reportó como
+pendiente). Sin esa migración no existen `ColorFlor`, `umbralActivacion` ni `esCatalogoInterno`.
+
+### FIX — los formularios se veían como casillas con "0" sin decir qué eran (2026-08-13)
+
+**Reportado al probar en QA:** *"dice tipo flor bien, después dice 0 pero no dice qué… en color
+lo mismo, cantidad dice 0 0 que no sé qué"*.
+
+**Causa:** cada campo se apoyaba únicamente en su `placeholder` para identificarse, pero los
+numéricos arrancaban con valor `0` — y **el placeholder solo se ve cuando el campo está vacío**.
+Resultado: filas de casillas con "0" y ninguna pista de qué era cada una.
+
+**Fix, dos partes:**
+1. **Etiqueta visible por campo** (`.fl-field` + `.fl-lbl`) — no desaparece al escribir, que es
+   justo lo que fallaba del placeholder.
+2. **Los numéricos arrancan vacíos** (`null`, no `0`), así el ejemplo en gris (`0.00`, `Ej. 12`,
+   `Vacío = nunca`) sí se ve. Las guardas de validación pasaron a `!campo` en vez de `campo <= 0`,
+   y al guardar se manda `?? 0` donde el 0 es un valor legítimo (stock, precio de accesorio).
+
+**Lección aplicable a cualquier formulario nuevo:** un `placeholder` NO sirve como etiqueta en un
+campo numérico inicializado en 0 — nunca se llega a ver. O se deja el campo vacío, o se pone
+etiqueta aparte. Lo ideal, ambas.
+
+**Verificado visualmente** con Playwright sobre una vitrina estática del template real
+(`ng build` compila igual con o sin etiquetas — esto no lo detecta el build, es la misma lección
+de "ng build no valida diseño").
+
+---
+
+## FLORES ETERNAS — PRECIO DEL PAPEL POR PLIEGO EN EL CATÁLOGO DE ACCESORIOS (2026-08-13)
+
+> Conecta el contrato del back documentado en `## 🟡 BACK — el precio del papel ahora escala con
+> la cantidad de flores...` del repo compartido. Migración `migration_flores_eternas_papel_pliego.sql`
+> ya corrida en QA y prod (confirmado por el dueño).
+
+**Qué cambió:** `AccesorioRamo` gana `floresPorPliego: number | null` — solo aplica al accesorio
+marcado `esPapel=true`. Configurado, `precio` deja de ser un monto fijo y pasa a significar
+**precio por pliego**: el costo real es `ceil(cantidadFlores / floresPorPliego) × precio` (un
+pliego empezado se cobra completo). `null` = comportamiento de antes, precio fijo único sin
+importar la cantidad — 100% retrocompatible.
+
+**Front — pestaña 🎀 Accesorios de `catalogos-flores` (`/flores/catalogos`):**
+- Nuevo campo "Flores por pliego" en el form de alta y en la edición inline, **visible solo
+  cuando `esPapel` está marcado** (no aplica a ningún otro accesorio).
+- Badge `{{ floresPorPliego }} flores/pliego` + sufijo `/pliego` en el precio de la fila, cuando
+  aplica.
+- `ICalcularPrecioResponse` e `IRamoArmado` (`flores.model.ts`) ganan `pliegosPapel` y
+  `precioUnitarioPapel` — todavía sin consumir en ninguna pantalla porque el configurador del
+  cliente y la pantalla de Ramos armados no existen aún (ver pendientes más abajo).
+
+**⚠️ Advertencia dejada documentada en el modelo, para cuando se arme el configurador del
+cliente:** al mandar la línea del papel en `POST /v1/pedidos/savePedido`, hay que usar
+`cantidad = pliegosPapel ?? 1` y `precioUnitario = precioUnitarioPapel ?? precioPapel` — **nunca**
+`precioUnitario = precioPapel` (el total ya multiplicado) cuando `pliegosPapel` no es `null`. El
+back valida que `precioUnitario` coincida exacto con el precio de catálogo del producto interno
+(que ahora es el precio *por pliego*), y rechaza el pedido si no coincide.
+
+**Acción pendiente del dueño en QA/prod** (no es del front): editar el accesorio marcado como
+papel y ponerle `floresPorPliego`; y volver a guardar (sin cambios) cualquier `RamoArmado` que ya
+existiera antes de este cambio, porque quedó con `precioPapel`/`precioTotal` congelados con la
+fórmula vieja.
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IAccesorioRamo.floresPorPliego`,
+  `ICalcularPrecioResponse`/`IRamoArmado` con `pliegosPapel`/`precioUnitarioPapel`
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → `nuevoAccesorio.floresPorPliego`
+- `src/app/flores/catalogos/catalogos-flores.component.html` → campo condicional + badge
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+
+### Aclaración pendiente — modelo de configuración vs. flujo del cliente
+
+El dueño preguntó si el flujo va a ser: él configura las flores que lleva, los accesorios y el
+precio de cada flor y de las demás cosas que puede llevar el ramo — **confirmado que sí**, así
+es como ya está: `Tipos de flor` (especie + precio por flor), `Colores` (stock por color, hereda
+precio de la especie), `Accesorios` (cada uno con su propio precio, uno puede ser "el papel"),
+`Frases de listón` (precio por frase). Eso es **Flujo A** — el cliente arma su propio ramo desde
+esos catálogos, con el total calculado en vivo por `POST /v1/flores/calcular-precio`.
+
+Aparte existe **Flujo B**: el dueño también puede preconfigurar `RamoArmado`, ramos completos ya
+armados con precio fijo, para que el cliente simplemente elija uno sin armar nada — el dueño
+confirmó que YA corrió las migraciones y puede dar de alta ramos armados, pero preguntó **dónde
+se le muestran al cliente esos ramos ya armados** (en la tienda, o dentro del propio configurador
+como una opción rápida). El dueño eligió empezar por esta pieza (Flujo B) — ver sección siguiente,
+ya construida. El configurador del cliente (Flujo A, "arma tu propio ramo") sigue sin construirse.
+
+---
+
+## FLORES ETERNAS — VITRINA PÚBLICA DE RAMOS ARMADOS (Flujo B) (2026-08-13)
+
+**Ruta pública nueva:** `/flores/ramos` → `VitrinaFloresComponent`. Lista los `RamoArmado`
+activos (`GET /v1/ramos-armados/activos`, paginado) en un grid de cards — imagen (o placeholder
+🌹 si `imagenUrl` es `null`), nombre, especie+color+cantidad, precio total, badges de "papel
+incluido" y "N accesorio(s)". Clic en "Ver detalle" abre un modal con el desglose línea por línea
+(flores, papel —con el desglose de pliegos si `pliegosPapel`/`precioUnitarioPapel` vienen, ver
+sección de arriba—, cada accesorio, total).
+
+**⚠️ Sin botón de compra/carrito todavía, a propósito.** `RamoArmado` no expone ningún
+`varianteId` resuelto (ni del color, ni del papel, ni de los accesorios) — esos solo se obtienen
+llamando `POST /v1/flores/calcular-precio` en el momento. Conectar esto al carrito/checkout real
+es una pieza aparte y más riesgosa (toca `savePedido`, dinero real) — se dejó fuera de esta
+entrega para no adivinar la arquitectura de cobro sin confirmarla primero. Lo que hay hoy en su
+lugar: botón **"💬 Pedir"** que abre WhatsApp del negocio (mismo dato — `whatsappUrl` — que ya
+alimenta el QR de los tickets, vía `NegocioService.getContactosPublicos()`) o, si no está
+configurado, un aviso genérico con el nombre y precio del ramo.
+
+**Guards — cambio de estructura:** antes `/flores` completo (módulo `FloresModule`) tenía
+`AdminGuardGuard` en `app-routing.module.ts`, porque solo existía la pantalla de catálogos. Con
+la vitrina pública agregada, el guard de admin se movió **adentro** de
+`flores-routing.module.ts`, solo en la ruta `catalogos` — el módulo en sí ahora solo lleva
+`CarritoGuard` (mismo nivel que "Tienda": ni admin ni login son requisito, un visitante anónimo
+también puede ver los ramos armados). El default `'' → redirectTo` cambió de `'catalogos'` a
+`'ramos'`, porque ahora el tráfico mayoritario de esa ruta es del cliente, no del admin (el link
+del sidebar admin sigue apuntando directo a `flores/catalogos`, así que esto no le afecta).
+
+**Menú:** nuevo link directo "🌹 Ramos de flores" (`flores/ramos`), visible para
+`!isAnonymous` — mismo patrón que Promociones/Favoritos, fuera del accordion admin "Flores
+eternas" (que se queda con un solo ítem, "🌸 Catálogos", intacto).
+
+**Archivos nuevos:**
+- `src/app/flores/vitrina/vitrina-flores.component.ts/.html/.scss` (BEM `vr-`)
+
+**Archivos modificados:**
+- `src/app/app-routing.module.ts` → guard de `/flores` bajado a `[CarritoGuard]`
+- `src/app/flores/flores-routing.module.ts` → ruta `ramos` pública, `AdminGuardGuard` movido a
+  `catalogos`, default `'' → 'ramos'`
+- `src/app/flores/flores.module.ts` → declara `VitrinaFloresComponent`
+- `src/app/navbar/navbar.component.html` → link "🌹 Ramos de flores"
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+capturas Playwright (mock de `GET /v1/ramos-armados/activos` + `GET /v1/negocio/contactos`) en
+claro y oscuro — grid, badges, y el modal de detalle con el desglose de pliegos se ven correctos
+en ambos temas, sin errores de consola atribuibles al cambio.
+
+**Pendiente:** el configurador del cliente (Flujo A) y la integración de compra real de un
+`RamoArmado` (Flujo B, "Pedir" → carrito/checkout en vez de WhatsApp) — ambas quedaron fuera de
+esta entrega, son decisiones de arquitectura de cobro que hay que confirmar con el dueño antes de
+construir.
+
+---
+
+## FLORES ETERNAS — PANTALLA ADMIN "RAMOS ARMADOS" (Flujo B, la mitad que faltaba) (2026-08-13)
+
+> El dueño ya había cargado el catálogo base (tipos/colores/accesorios/cantidades) y reportó que
+> la vitrina `/flores/ramos` seguía diciendo "no hay". Causa: `FloresService` ya tenía los métodos
+> (`ramoCrear`, `ramosAdmin`, `ramoEditar`, `ramoToggleActivo`) desde que se escribió el modelo,
+> pero **ninguna pantalla los llamaba** — no existía forma de armar un `RamoArmado` de verdad.
+> Confirmado con grep: cero componentes usaban esos métodos antes de este cambio.
+
+**Ruta nueva:** `/flores/ramos-admin` → `GestionRamosFloresComponent`, admin-only
+(`AuthGuard + AdminGuardGuard`, mismo patrón que `catalogos`). Link "🎁 Ramos armados" agregado
+como segundo ítem del accordion "🌹 Flores eternas" (junto a "🌸 Catálogos").
+
+**Flujo del formulario:** el admin elige **Especie** primero (`tipos`) — eso filtra los selects
+de **Color** y **Cuántas flores** a solo las opciones activas de esa especie (`coloresDeLaEspecie`
+/`cantidadesDeLaEspecie`, filtrando client-side por `tipoFlor?.id`, mismos catálogos ya cargados
+para `catalogos-flores`). Cambiar de especie limpia color/cantidad (`onCambiarEspecie()`) para no
+dejar una combinación inválida sin que se note. Debajo, checkboxes de **accesorios** — el marcado
+`esPapel` no pide cantidad (el back la calcula sola según las flores del ramo), el resto sí.
+`imagenUrl` es un input de texto plano (mismo criterio que `RamoArmado.imagenUrl` — el admin sube
+la imagen por fuera, no pasa por micro_imagenes todavía).
+
+**Al editar:** `RamoArmado` (la respuesta) no expone `tipoFlorId` ni `cantidadFlorValidaId`
+directos — solo `colorFlorId` y `cantidad` (el total de flores ya calculado). Se reconstruyen así:
+la especie sale de `colores.find(c => c.id === r.colorFlorId)?.tipoFlor?.id`; la cantidad exacta
+se busca por coincidencia (`cantidades.find(c => c.tipoFlor?.id === especie && c.cantidad ===
+r.cantidad)`) — si no calza con ninguna cantidad válida activa (por ejemplo si se desactivó
+después de crear el ramo), el select de cantidad queda sin preseleccionar y el admin debe
+elegirla de nuevo antes de guardar.
+
+**Sin `delete`, solo ocultar:** igual que Promociones, `RamoArmado` no tiene endpoint de borrado
+— `toggleActivo()` (🟢 Visible / ⚫ Oculto) es la única forma de retirarlo de la vitrina.
+
+**Archivos nuevos:**
+- `src/app/flores/ramos-admin/gestion-ramos-flores.component.ts/.html/.scss` (BEM `ra-`)
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta `ramos-admin`
+- `src/app/flores/flores.module.ts` → declara `GestionRamosFloresComponent`
+- `src/app/navbar/navbar.component.html` + `.ts` → link + `GROUP_ROUTES`
+
+**Verificado con `ng build` sin errores**, y con Playwright contra la app real (`ng serve`,
+sesión admin inyectada vía el injector de Angular en modo dev — `window.ng.getComponent()` sobre
+`app-navbar` para llamar `AuthenticateService.setAccessToken()` +
+`AuthService.setRolesFromToken()` con un JWT de prueba, sin tocar ningún backend) con las 4
+llamadas de catálogo y `ramos-admin` mockeadas — lista, badges, y el formulario de edición con los
+selects ya poblados y los accesorios preseleccionados se ven correctos en claro y oscuro.
+**Esta vez sí verificado el CSS propio del componente** (a diferencia del primer intento con una
+vitrina estática contra `dist/styles.css`, que solo refleja variables/estilos GLOBALES — el SCSS
+scoped de un componente Angular se inyecta en runtime, nunca aparece en ese archivo; para
+componentes admin nuevos, verificar contra la app real corriendo, no contra un HTML suelto).
+
+---
+
+## FLORES ETERNAS — CONFIGURADOR DEL CLIENTE (Flujo A, la pieza que faltaba) (2026-08-13)
+
+> El dueño explicó paso a paso, con mucho detalle, cómo esperaba que funcionara el armado libre
+> del cliente — confirmando que coincide con el Flujo A ya documentado (especie → cantidad →
+> colores → accesorios → listón, con el papel incluido solo cuando cruza el umbral). Esta es esa
+> pantalla. La vitrina de ramos ya armados (Flujo B) y esta pantalla son **independientes** — un
+> ramo armado con "Ramos armados" no aparece aquí ni viceversa, cada una alimenta su propia parte
+> del negocio.
+
+**Ruta nueva:** `/flores/configurar` → `ConfigurarRamoComponent`, **pública** (mismo nivel que
+`/flores/ramos` — ni admin ni login hacen falta para *armar* el ramo y ver el precio; el login
+solo se exige al *confirmar* el pedido, igual que en `venta-variante`). Link "🌷 Arma tu ramo" en
+el sidebar junto a "🌹 Ramos de flores", y botón "🌷 Armar el mío" en el header de la vitrina.
+
+### El flujo, en 6 pasos (cada uno solo aparece cuando el anterior está resuelto)
+
+1. **Especie** — select de `tipos-flor` activos, con su precio por flor visible.
+2. **Cantidad** — el cliente escribe cuántas flores quiere y da "Validar" →
+   `POST /v1/flores/validar-cantidad`. Si no "cierra el círculo", aparecen botones **"Usar N
+   ($precio)"** con las alternativas que manda el back (`alternativaMenor`/`alternativaMayor`) —
+   un clic ahí confirma esa cantidad directo, sin que el cliente tenga que volver a escribirla.
+3. **Repartir entre colores** — `GET /v1/colores-flor/por-tipo-flor/{id}` (el endpoint que el
+   back construyó justo para esto, ya filtra activos). Un input por color con su stock visible;
+   un contador de "faltan N" / "te pasaste por N" hasta que la suma cierre exacto.
+4. **Accesorios** — checkbox + cantidad por cada uno. El marcado `esPapel` es especial: si
+   `cantidadConfirmada > umbralActivacion` del accesorio, el checkbox se **fuerza marcado y se
+   deshabilita** con el badge "incluido por la cantidad de flores" — el cliente no puede
+   desmarcarlo. Por debajo del umbral, es opcional como cualquier otro.
+5. **Listón** (opcional) — sin listón / frase predefinida con precio / frase propia. La frase
+   personalizada no tiene precio todavía — se muestra el aviso del back tal cual
+   (`avisoFrasePendiente`), sin inventar ningún monto.
+6. **Entrega** (opcional) — lugar de entrega o "recoger en tienda", mutuamente excluyentes (mismo
+   patrón ya usado en `venta-variante`).
+
+**Resumen en vivo:** cada cambio relevante (reparto, accesorios, listón, entrega) dispara —
+debounced 450ms — `POST /v1/flores/calcular-precio`, que trae ya resueltos los `varianteId` de
+cada línea (colores, papel, accesorios, listón). El resumen se pinta línea por línea con el mismo
+lenguaje visual que el detalle de la vitrina — incluye el desglose de pliegos del papel
+(`pliegosPapel × precioUnitarioPapel`) cuando aplica.
+
+### Checkout — se reutilizó el flujo real, no se inventó uno nuevo
+
+Confirmar el pedido arma las líneas desde la ÚLTIMA respuesta de `calcular-precio` (nunca se
+recalculan los precios a mano en el front) y llama `VarianteService.guardarPedidoVariante()` —
+el mismo endpoint (`POST /v1/pedidos/savePedido`) que usa `venta-variante` para cualquier compra
+normal del cliente. Se copió **tal cual** su manejo ya probado de:
+- Resolver el cliente (`idUsuario` → `buscarClientePorIdUsuario` → si no está registrado, manda a
+  `/clientes/agregar`; si no hay sesión, manda a `/usuarios/registrar`).
+- Verificación de correo (`enviarCodigoVerificacion` + Swal con reenviar, igual que
+  `venta-variante`).
+- Los 3 mensajes de error ya conocidos del back: "verificar", "completar tus datos", "no es
+  válido" (precio desactualizado).
+
+**⚠️ Detalle importante replicado del papel-por-pliego (ver sección de arriba):** la línea del
+papel se arma con `cantidad = pliegosPapel ?? 1` y `precioUnitario = precioUnitarioPapel ??
+precioPapel` — nunca el total ya multiplicado, porque el back valida el precio unitario contra
+el catálogo (que es el precio *por pliego*).
+
+**Después de guardar el pedido:** si hubo listón (de cualquier tipo) o se eligió
+lugar/recoger-en-tienda, se llama `POST /v1/flores/pedidos/{pedidoId}/detalle` para dejar esa
+info en el ticket de producción — si esa llamada falla, el pedido YA quedó bien guardado y
+cobrado, así que se muestra éxito igual (no se bloquea al cliente por un detalle que el admin
+puede completar después a mano).
+
+### Lección de esta sesión — `router.navigateByUrl()` fuera de la zona de Angular no dispara las llamadas HTTP de `ngOnInit`
+
+Para probar pantallas **admin** (guardadas) en sesiones anteriores, se venía usando el truco de
+`window.ng.getComponent(navbarEl)` + `nav.router.navigateByUrl(...)` desde `page.evaluate()` para
+saltarse el login real. Con esta pantalla **pública** (sin guard), el mismo truco hizo que
+`ngOnInit()` nunca disparara ninguna llamada HTTP — ni una — aunque el componente sí se
+renderizaba (comprobado leyendo el estado real del componente vía `ng.getComponent()`:
+`cargandoCatalogo`/`errorCatalogo`/`tipos` se quedaban en sus valores iniciales, como si
+`ngOnInit` jamás hubiera corrido). La consola marcaba la pista: *"Navigation triggered outside
+Angular zone, did you forget to call 'ngZone.run()'?"*.
+
+**Diagnóstico:** en las pantallas admin, `AdminGuardGuard`/`AuthGuard` corren antes de activar la
+ruta — ese paso sí re-entra a la zona de Angular correctamente. Sin ningún guard de por medio
+(como esta pantalla pública), la navegación completa —incluida la construcción del componente—
+queda fuera de zona, y ahí las peticiones de `ngOnInit` no llegan a dispararse.
+
+**Fix del método de prueba (no del componente — el componente está bien):** para pantallas
+**públicas**, verificar con un `page.goto()` directo a la URL (carga de página completa, dentro
+del bootstrap normal de Angular) en vez del truco de inyección + `navigateByUrl`. Ese truco sigue
+sirviendo, pero solo para pantallas detrás de un guard.
+
+**Segunda trampa del mismo lote:** `page.selectOption(selector, '1')` fallaba con "did not find
+some options" contra un `<select>` con `*ngFor` + `[ngValue]` — Angular renderiza esos `<option>`
+con `value="idx: valor"` internamente (no el valor plano), así que Playwright nunca encuentra un
+`<option value="1">` literal. Fix: `page.selectOption(selector, { index: N })` (posición, no
+value) — ya lo eran los mismos `<option>` que en `ramos-admin` y `catalogos-flores`, esto no se
+había topado antes en esta sesión simplemente porque nunca se había hecho `selectOption()` contra
+uno de ellos (las pruebas anteriores solo abrían formularios ya precargados vía "Editar").
+
+**Archivos nuevos:**
+- `src/app/flores/configurar/configurar-ramo.component.ts/.html/.scss` (BEM `cr-`)
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta pública `configurar`
+- `src/app/flores/flores.module.ts` → declara `ConfigurarRamoComponent`
+- `src/app/navbar/navbar.component.html` → link "🌷 Arma tu ramo"
+- `src/app/flores/vitrina/vitrina-flores.component.html` → botón "🌷 Armar el mío" en el header
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+Playwright contra la app real (`page.goto` directo, sin inyección de sesión — la pantalla es
+pública) mockeando los 6 endpoints que usa (`tipos-flor`, `accesorios-ramo`, `frases-liston`,
+`colores-flor/por-tipo-flor`, `lugares-entrega`, `validar-cantidad`, `calcular-precio`): probado
+el camino completo (especie → cantidad no válida → sugerencia → repartir colores → accesorios →
+listón → resumen) y, por separado, el caso del **papel forzado** (cantidad por encima del
+umbral: checkbox marcado y deshabilitado con el badge, precio con el desglose de pliegos) — los
+dos en claro y oscuro, sin errores de consola atribuibles al cambio. **No probado el checkout
+real** (`guardarPedidoVariante`/verificación de correo) contra un backend de verdad — depende de
+que el back tenga corrido `migration_flores_eternas_multicolor.sql` y
+`migration_flores_eternas_papel_pliego.sql` en el ambiente donde se pruebe.
+
+---
+
+## FLORES ETERNAS — UN SOLO ACORDEÓN EN EL MENÚ PARA TODO (2026-08-13)
+
+> El dueño, tras ver las pantallas repartidas en el sidebar: "todo lo que tenga que ver con
+> rosas eternas hay que tenerlas juntas".
+
+**Antes:** "Flores eternas" existían en el sidebar como **3 lugares distintos**: un acordeón
+admin-only con "🌸 Catálogos" + "🎁 Ramos armados", y dos links sueltos fuera de cualquier
+acordeón ("🌹 Ramos de flores" y "🌷 Arma tu ramo", visibles a cualquier logueado) — mezclados
+entre Favoritos y Chat, sin relación visual con el resto de lo que era "flores".
+
+**Ahora:** un único acordeón **"🌹 Flores eternas"**, visible a **cualquier usuario logueado**
+(antes el acordeón completo era `*ngIf="isAdminUser"`) con los 4 ítems juntos, en este orden:
+1. 🌹 Ramos de flores (`flores/ramos`) — todos
+2. 🌷 Arma tu ramo (`flores/configurar`) — todos
+3. 🌸 Catálogos (`flores/catalogos`) — **solo admin**, dentro de un `<ng-container
+   *ngIf="isAdminUser">` adentro del mismo `<div class="sb-submenu">`
+4. 🎁 Administrar ramos armados (`flores/ramos-admin`, antes decía solo "Ramos armados" — se
+   renombró para no confundirse con el ítem 1 "Ramos de flores") — **solo admin**
+
+Las rutas de admin NO cambiaron — siguen protegidas por `AdminGuardGuard` en
+`flores-routing.module.ts` exactamente igual que antes. Este cambio es solo de **presentación en
+el menú**: quién ve cada link, y que estén agrupados. Un cliente sin rol admin ve el acordeón con
+solo los primeros 2 ítems; un admin ve los 4.
+
+**Archivos modificados:**
+- `src/app/navbar/navbar.component.html` → un solo `<div class="sb-group">` para `flores` en vez
+  de 3 bloques separados
+- `src/app/navbar/navbar.component.ts` → `GROUP_ROUTES['flores']` ahora incluye las 4 rutas
+  (antes solo las 2 de admin) — así el acordeón "recuerda" quedar abierto sin importar en cuál de
+  las 4 pantallas esté parado el usuario
+
+**Verificado con `ng build` sin errores**, y con Playwright contra la app real (inyección de
+sesión vía `ng.getComponent()`, hover + click reales sobre el sidebar — no el truco de
+`router.navigateByUrl()` fuera de zona, que aquí no hacía falta porque no se navega a ningún
+lado, solo se abre el acordeón) confirmando: como admin aparecen los 4 ítems juntos; como cliente
+logueado (sin rol admin) aparecen solo los 2 primeros, sin ver "Catálogos" ni "Administrar ramos
+armados".
+
+---
+
+## FLORES ETERNAS — "SE COBRA SOLO DESDE" SOLO TENÍA EFECTO EN EL PAPEL, PERO SE PODÍA CONFIGURAR EN CUALQUIER ACCESORIO (2026-08-13)
+
+> El dueño mandó una captura de "Catálogos → Accesorios" con "corona" marcada a la vez como
+> `PAPEL` y `AUTOMÁTICO DESDE 10`, y "pasta" con `AUTOMÁTICO DESDE 1` pero sin la marca de papel.
+> Confirmó por escrito con el back
+> (`CAMBIOS_FRONT.md`, sección "🟢 Umbral del papel"): *"El accesorio marcado `esPapel` se agrega
+> solo cuando `cantidadFinal > umbralActivacion`"* — **solo ese accesorio**, ninguno más. El campo
+> nunca fue genérico por diseño del back.
+
+**Causa raíz — el formulario dejaba configurar el umbral en CUALQUIER accesorio, sin avisar que
+no serviría de nada ahí.** El dueño puso `umbralActivacion=1` en "pasta" (sin marcar `esPapel`)
+esperando que se auto-agregara — nunca iba a pasar, el campo se guarda pero el back lo ignora
+para cualquier accesorio que no sea el marcado papel. Y para lograr que "corona" sí se
+auto-agregara, terminó marcándola como `esPapel=true` — lo cual tiene un efecto colateral real,
+no solo de nombre: el sistema empieza a tratar a "corona" como si fuera el envoltorio en todos
+lados (resumen del cliente, ticket, reportes dirían "📄 Papel" en vez de "Corona").
+
+**Aclarado con el dueño:** el auto-agregado por cantidad de flores **no va en Catálogos** — va
+en el momento de armar el ramo (ya sea "Ramos armados" admin o "Arma tu ramo" del cliente), que
+es exactamente donde ya está implementado (`papelForzado` en ambos componentes, fuerza el
+checkbox del papel cuando la cantidad cruza el umbral). Catálogos → Accesorios es solo para dar
+de alta accesorios sueltos con su precio — el resto (corona, luces, etc.) se eligen a mano al
+armar el ramo, sin umbral propio, salvo que el back agregue esa función más adelante (se anotó
+como consulta al back — ver `CAMBIOS_FRONT.md` del repo compartido).
+
+**Fix — los 2 campos que solo sirven para el papel («Se cobra solo desde» y «Flores por
+pliego») ahora solo aparecen cuando la casilla «Es el papel» está marcada** (antes «Se cobra
+solo desde» estaba siempre visible, aunque solo «Flores por pliego» ya tenía esa protección) —
+tanto en el formulario de alta como en el de edición en línea. Si se desmarca «Es el papel», el
+front limpia esos 2 valores antes de guardar (`agregarAccesorio()`/`guardarEdicion()`), para no
+dejar un número guardado sin efecto que confunda después. El badge «automático desde N» de la
+lista también se corrigió para solo mostrarse en el accesorio que de verdad tiene ese
+comportamiento (`*ngIf="a.esPapel && a.umbralActivacion"`, antes era `*ngIf="a.umbralActivacion"`
+a secas — por eso "pasta" mostraba el badge aunque no hiciera nada).
+
+**Bug adicional encontrado de paso — el formulario de EDICIÓN no tenía forma de cambiar «Es el
+papel».** Ese checkbox solo existía en el formulario de ALTA — una vez creado el accesorio, no
+había manera de corregir el dato desde la UI (habría que borrar y crear de nuevo). Se agregó el
+checkbox también al formulario de edición — es lo que le permite al dueño ahora desmarcar
+"corona" sin perder el resto de sus datos.
+
+**Pendiente — el dueño no confirmó todavía si corrige el dato de "corona"/"pasta" ya cargado en
+QA** (se le explicó el problema y quedó en verlo, no se tocó ningún dato desde aquí).
+
+**Consulta aparte al back, ya escrita en el repo compartido pero sin subir (pendiente de que el
+dueño confirme el push):** por qué `POST /v1/flores/validar-cantidad` devolvió `valida: true`
+para una cantidad (10) que no estaba entre las únicas 2 registradas en `/v1/cantidades-flor`
+para esa especie (48 y 62) — no se pudo determinar desde el front si es un bug o si esa pantalla
+no es realmente la fuente de verdad de la validación.
+
+**Archivos modificados:**
+- `src/app/flores/catalogos/catalogos-flores.component.html` → hint reescrito; "Se cobra solo
+  desde" ahora condicional a `esPapel` (alta y edición); checkbox "Es el papel" agregado a
+  edición; badge de la lista corregido
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → `agregarAccesorio()` y la rama de
+  accesorio en `guardarEdicion()` limpian `umbralActivacion`/`floresPorPliego` cuando `!esPapel`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.** No se
+pudo verificar visualmente con Playwright esta vez — el truco de inyección de sesión + navegación
+fuera de zona (que sí funcionó para otras pantallas admin esta semana) esta vez dejó el
+componente en un estado donde `setTab()` no actualizaba la vista de forma confiable al
+interactuar por script (aun cuando los datos sí cargaban) — parece un artefacto propio del método
+de prueba, no del código (el patrón `*ngIf="condición" `usado es idéntico al que ya funcionaba
+para "Flores por pliego" en el mismo formulario). Revisado el diff a mano con cuidado en su
+lugar. Pendiente confirmar visualmente la próxima vez que se toque esta pantalla.
+---
+
+## FIX FLORES — EL CONFIGURADOR NO VEÍA LOS COLORES: `lista` vs `data` (2026-08-14)
+
+> Dos bugs distintos que se reportaron juntos como "colores y cantidades no aparecen bien aunque
+> están registrados". Solo uno era un bug de verdad; el otro era un mensaje mal mostrado que hizo
+> parecer bug algo que no lo era.
+
+### 1. 🔴 `colores-flor/por-tipo-flor` devuelve el arreglo en `lista`, no en `data`
+
+El configurador decía **"esta especie todavía no tiene colores disponibles"** aunque el catálogo
+sí tuviera colores dados de alta. `FloresService.coloresPorTipoFlor()` leía `r?.data`, y ese
+endpoint deja `data` en `null`.
+
+**Verificado contra QA antes de tocar nada:**
+```
+GET /v1/colores-flor/por-tipo-flor/1  → { "data": null,  "lista": [ {...}, {...} ] }
+GET /v1/colores-flor/getAll           → { "data": [...], "lista": null }
+```
+
+⚠️ **Es el único endpoint del módulo que lo hace así.** Se auditaron los demás uno por uno
+(`tipos-flor/getAll`, `cantidades-flor/getAll`, `accesorios-ramo/getAll`, `frases-liston/getAll`,
+`ramos-armados/activos`, `validar-cantidad`): **todos devuelven en `data`, con `lista: null`**.
+No hace falta cambiar ningún otro.
+
+Lo insidioso del bug: la petición respondía **200 correctamente**, así que no había ningún error
+en consola ni en la red — solo una lista vacía. Por eso se investigó primero del lado del back.
+
+**Fix:** leer `r?.lista ?? r?.data ?? []` — los dos campos, por si algún día lo normalizan; así
+funciona antes y después del cambio.
+
+### 2. 🟠 El front pisaba el mensaje del back y borraba una distinción importante
+
+El dueño reportó que `validar-cantidad` daba por buena una cantidad (10) que no estaba
+registrada. **No era un bug del back:** la regla es que las cantidades **por debajo de la más
+chica registrada** se aceptan como "venta por unidad" (para vender 1 o 2 flores sueltas sin tener
+que registrar cada número). Todo lo demás sí valida estricto.
+
+El back ya distingue los tres casos en el campo `mensaje`:
+- `"Cantidad aceptada tal cual, se cobra por unidad."`
+- `"Esta cantidad forma bien el circulo."`
+- `"Con 55 flores el circulo puede no quedar bien formado."`
+
+Pero el template mostraba un genérico **"— cantidad válida"** hardcodeado, ignorando ese campo.
+Con eso, un "se cobra por unidad" se veía idéntico a un "forma bien el círculo" — de ahí la
+confusión y toda la ronda de consultas.
+
+**Fix:** nuevo getter `mensajeCantidad` que muestra el `mensaje` del back tal cual. Solo aplica
+cuando la cantidad confirmada es la que se validó: si el cliente eligió una de las alternativas
+sugeridas, ese mensaje hablaba de la cantidad rechazada y ya no corresponde.
+
+**Regla general que deja esto:** cuando el back manda un `mensaje` pensado para el usuario final,
+mostrarlo tal cual en vez de escribir uno propio — si no, se pierden distinciones que el back sí
+está haciendo, y se investiga como bug algo que solo estaba mal presentado.
+
+### ⚠️ Decisión de negocio pendiente (el back la dejó abierta)
+
+¿La venta "por unidad" para cantidades chicas se mantiene, o **cualquier** cantidad no registrada
+debe rechazarse y sugerir la alternativa más cercana? El back dice que quitarlo es un cambio de
+una línea de su lado. Falta que lo decida el dueño.
+
+**Archivos modificados:**
+- `src/app/flores/service/flores.service.ts` → `coloresPorTipoFlor()` lee `lista`
+- `src/app/flores/configurar/configurar-ramo.component.ts` → getter `mensajeCantidad`
+- `src/app/flores/configurar/configurar-ramo.component.html` → usa el mensaje del back
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y con
+la forma real de la respuesta comprobada en QA con `curl` (no asumida del documento).
+
+### Pliegos de papel por ramo — configurable desde Cantidades (2026-08-14)
+
+**El dueño lo pidió así:** *"cuántos pliegos necesito para cada ramo, es decir para el de 48
+flores, eso se debe configurar"*, y remarcó que **no lo sabe todavía** — *"cuando lo sepa lo puedo
+configurar"*.
+
+**Por qué NO es una fórmula:** ya existía `AccesorioRamo.floresPorPliego`, que calcula
+`ceil(cantidad / floresPorPliego)`. No le sirve: el papel que lleva un ramo no es proporcional al
+número de flores — depende de cómo se arma y del tamaño del pliego que compran. Él sabe que el de
+48 lleva 4 y el de 62 lleva 5, y eso no sigue una proporción.
+
+**Lo que entregó el back:** campo `pliegos: number | null` en `CantidadFlorValida`, por el mismo
+CRUD de siempre (`/v1/cantidades-flor`). Migración ya corrida en **QA y producción**.
+
+**Prioridad (implementada por el back):** `pliegos` explícito **gana** sobre la fórmula. Si es
+`null` → cae a `floresPorPliego`; si tampoco hay → precio fijo de siempre. Ninguna combinación
+rompe ni cobra distinto a lo de antes. `RamoArmado` lo hereda solo (ya referencia
+`cantidadFlorValidaId`), y el configurador libre lo usa cuando la cantidad final coincide exacto
+con una `CantidadFlorValida` que lo tenga configurado.
+
+**⚠️ `AccesorioRamo.precio` del papel es el precio de UN pliego** — confirmado por el back en su
+código. Hoy está en `$5.00` funcionando como precio fijo único porque no hay pliegos configurados
+en ningún lado. **Pendiente del dueño:** confirmar si ese $5 es lo que cuesta un pliego o si lo
+puso pensando en un total.
+
+**Front — lo agregado:**
+- `ICantidadFlor`/`ICantidadFlorRequest` → campo `pliegos`
+- Pestaña **Cantidades**: input "Pliegos de papel" (placeholder *"Aún no lo sé"*) al agregar y al
+  editar, más un badge por renglón que distingue **"N pliego(s)"** de **"pliegos sin configurar"**
+  — el dueño va a llenar esto poco a poco, así que necesita ver de un vistazo cuáles le faltan.
+  El badge de pendiente es gris neutro, NO rojo: estar vacío es el estado esperado, no un error.
+- Configurador y ramos armados: **sin cambios**, ya leían `pliegosPapel`/`precioPapel` del back.
+
+### El papel desaparece de las opciones cuando ya va incluido
+
+Antes se mostraba en la lista de accesorios como casilla marcada y bloqueada, con un badge
+"incluido por la cantidad". Generaba la duda de *"¿por qué no la puedo quitar?"*. Ahora, cuando
+`papelForzado` es true, se saca de la lista (getter `accesoriosSeleccionables`) y se muestra un
+aviso — el cobro sigue visible en el resumen con su desglose de pliegos.
+
+**Verificado contra QA que NO se cobra doble** cuando el front igual lo manda en `accesorios`: el
+back deduplica (48 flores con y sin mandarlo → mismo total, $1,205). Por eso no se tocó la lógica
+del request.
+
+### FIX — el umbral del papel es ESTRICTAMENTE MAYOR, y la etiqueta decía lo contrario (2026-08-14)
+
+**Reportado:** *"eligió el de 20, ya lleva configurado el papel, no debería aparecer"* — pero el
+papel seguía saliendo en «¿Quieres algún accesorio?».
+
+**No era el filtro** (`accesoriosSeleccionables` funciona). Era la semántica del umbral.
+Comprobado contra QA con el umbral en 20:
+
+```
+ramo de 19 → papel automático: NO
+ramo de 20 → papel automático: NO   ← el caso reportado
+ramo de 21 → papel automático: SÍ
+```
+
+El back compara `cantidadFinal > umbralActivacion` (**estrictamente mayor**), pero la etiqueta
+del catálogo decía **«Se cobra solo desde»**, que se lee inclusivo. El dueño puso 20 esperando
+"de 20 en adelante" y obtuvo "a partir de 21".
+
+**Fix (solo texto, sin tocar la lógica):** la etiqueta pasa a **«Obligatorio con más de»**, el
+badge del listado a "automático con más de N", y el hint explica el caso borde: *"si pones 20, el
+papel entra a partir de 21; para que un ramo de 20 ya lo incluya, pon 19"*.
+
+⚠️ **Pendiente de decidir:** si conviene pedirle al back que sea `>=` en vez de `>`. Es más
+natural de leer ("desde 20" = 20 incluido) pero cambia el comportamiento de lo ya configurado.
+No se pidió todavía.
+
+### FIX — el papel mostraba $5 cuando el cobro real eran $15
+
+**Reportado:** *"cuando no sea un ramo seleccionado sí aparece que si quiere papel, pero no
+aparece el precio"*.
+
+La casilla mostraba `accesorio.precio` = **$5.00**, pero ese precio es **por pliego**. Con el
+dueño ya configurando `pliegos` por cantidad (20→3, 48→5, 62→7), un ramo de 20 cobra **$15**.
+Verificado en QA: marcar el papel con 20 flores devuelve `accesoriosCalculados: ["Papel $15"]`.
+O sea el cliente veía $5, marcaba, y el total le subía $15.
+
+**Fix:** el configurador ahora carga también `cantidades-flor` (público) y calcula lo que se va a
+cobrar **antes** de que el cliente marque la casilla:
+
+```
+Papel — 3 pliego(s) × $5.00 = $15.00     ← cuando la cantidad tiene pliegos configurados
+Papel — $5.00 por pliego                 ← cuando no (venta por unidad o sin configurar)
+```
+
+Getters nuevos: `pliegosDelRamo` (busca la cantidad confirmada en el catálogo) y
+`precioPapelEstimado`. Los demás accesorios siguen mostrando su precio plano — solo el papel se
+cobra por pliego.
+
+### ⚠️ Select-on-focus en inputs numéricos — arreglo aplicado pero SIN verificar
+
+El listener global de `app.component.ts` usaba solo `focusin` + `select()`. Con **clic** eso no
+alcanza: la secuencia es `mousedown → focusin (seleccionamos) → mouseup`, y ese mouseup coloca el
+cursor y **borra la selección**. Funcionaba con Tab, no con clic — que es como se usa siempre.
+
+Se agregó cancelar ese primer `mouseup` (con detección de arrastre, para no romper la selección
+manual de un pedazo del texto).
+
+⚠️ **La verificación automática no fue concluyente:** el test con Playwright dio el mismo
+resultado con y sin el arreglo (el clic sintético no reproduce el borrado de selección del clic
+real). **Falta comprobarlo a mano en un navegador**: dar clic en un campo con "0", escribir, y
+confirmar que reemplaza en vez de quedar "025".
+
+### FIX — el aviso de "no cierra el círculo" bloqueaba en vez de avisar (2026-08-14)
+
+**Reportado:** *"puse 22 y me dijo que 20 se armaba, pero yo había elegido 22"*.
+
+**El back solo ADVIERTE, no prohíbe.** Su mensaje literal es *"Con 22 flores el circulo **puede**
+no quedar bien formado"*, y `calcular-precio` acepta y cobra esa cantidad sin chistar —
+verificado en QA: 22 flores → 200, total $555.
+
+Pero la pantalla solo ofrecía las dos alternativas ("Usar 20" / "Usar 48"): **no había forma de
+seguir con lo pedido**. Quien quería 22 terminaba llevándose 20 sin haberlo decidido.
+
+**Fix:** tercer botón **"Seguir con N"** con su precio, visualmente distinto de las alternativas
+(borde, no relleno) para que no parezca la opción recomendada ni quede escondida. Nuevo método
+`continuarDeTodosModos()`.
+
+Y como al continuar la cantidad NO es una de las válidas, el recuadro de confirmación deja de ser
+un ✅ verde: pasa a ⚠️ ámbar (`cantidadConAviso`) mostrando el mensaje real del back, para que el
+cliente no crea que su ramo va a quedar como los de tamaño estándar. `mensajeCantidad` ya no
+exige `valida` para mostrar el mensaje del back — así el aviso viaja tal cual en los dos casos.
+
+**Lección (segunda vez en este módulo):** cuando el back manda un mensaje con "puede", es una
+advertencia, no un bloqueo. Antes se había perdido la distinción entre sus tres mensajes por
+mostrar un texto genérico; ahora se perdía la distinción entre "avisar" y "prohibir". El criterio
+es el mismo: **la decisión es del usuario, el sistema informa.**
+
+### FIX — el papel se oculta POR COMPLETO al cliente (2026-08-14)
+
+**Corrección del dueño**, tras el fix anterior: *"el papel no se muestra en el armado del ramo
+para el cliente, ese va por default si está en el rango pero **se cobra internamente**, y lo
+sigues mostrando como 3 × 15"*.
+
+El fix previo solo lo sacaba de la lista **cuando era automático**, y además le había puesto el
+desglose "3 pliego(s) × $5.00 = $15.00". Seguía visible en dos lados:
+1. La lista de accesorios, cuando NO era automático (el caso del ramo de 20 con umbral 20).
+2. El resumen, como renglón propio `📄 Papel (3 pliego(s) × $5.00) — $15.00`.
+
+**Ahora:** el papel **nunca** aparece — ni como opción, ni como línea, ni como aviso. No es una
+decisión del cliente en ningún caso: si el ramo está en rango, el back lo agrega y se cobra por
+dentro; si no lo está, no se cobra.
+
+⚠️ **El costo NO se esconde del total, se funde en la línea de flores** (`subtotalFlores` =
+`precioBase + precioPapel`). Quitar el renglón sin sumarlo ahí habría dejado un descuadre visible:
+las líneas no darían el total y el cliente lo notaría. **Verificado contra QA** (48 flores +
+Corona): línea de flores $1,225 + accesorios $50 = **$1,275**, igual al `total` del back.
+
+También se dejó de mandar el papel en `accesorios` (antes se auto-marcaba). El back lo agrega
+solo; mandarlo era inofensivo porque deduplica —probado: 48 flores con y sin mandarlo dan el
+mismo total— pero es más limpio no depender de eso.
+
+**Conflicto con una instrucción anterior, pendiente de aclarar:** al describir el flujo, el dueño
+había dicho que con 1 o 2 flores *"se le pregunta si quiere papel"*. Con este cambio ya no se
+pregunta nunca. Si quiere recuperar esa pregunta para ramos chicos, es volver a listarlo solo
+cuando `!papelForzado` — pero entonces vuelve a ser visible, que es justo lo que pidió quitar.
+
+### Campos de configuración de urgencia + costo del material (2026-08-14)
+
+Tres cosas que el back confirmó y ya se pueden llenar desde las pantallas. **No conectan ningún
+cobro por sí solas** — por eso se agregaron sin esperar al redespliegue de QA.
+
+| Pantalla | Campo | Para qué |
+|---|---|---|
+| Tipos de flor | **Costo del material ($)** (`precioCosto`) | Lo que a él le cuesta la flor. No se le muestra al cliente: el back lo sincroniza al producto sombra y de ahí sale el margen en los reportes de ganancia, igual que cualquier producto |
+| Cantidades | **Mínimo de horas** (`horasMinimasAnticipacion`) | Por debajo de eso el pedido **se rechaza** (un ramo de 100 para mañana no se puede) |
+| Cantidades | **Extra de un día para otro ($)** (`precioUrgencia`) | Lo que se cobra de más cuando sí se puede pero es con prisa |
+| Lugares de entrega | **Envío ($)** y **Horas extra** | Solo los usa flores eternas — marcados con 🌹 en la pantalla para que no se lean como algo que afecte a todos los pedidos |
+
+⚠️ **`horasMinimasAnticipacion` y `precioUrgencia` NO son lo mismo, y confundirlos cuesta dinero:**
+la primera decide si **se puede**; la segunda, si **se cobra extra**. Un ramo que no da tiempo se
+rechaza, no se cobra más caro.
+
+**El campo de mano de obra en Cantidades se dejó pero en desuso** (placeholder "Va en el precio
+por flor"). La mano de obra terminó yendo dentro de `TipoFlor.precioPorFlor` — decisión del dueño,
+y además escala sola con el tamaño del ramo. No se quitó de la pantalla por si cambia de opinión;
+el back lo ignora mientras esté en `null`.
+
+### El contrato de urgencia — lo que falta conectar y por qué está en pausa
+
+El back entregó el flujo completo, **pero QA todavía corre un build anterior al fix** (lo
+confirmaron probando en vivo: llega `precioUrgencia` pero no `entregaValida` ni `requiereAnticipo`).
+Hasta que redesplieguen, ese build **todavía tiene el bug del 150%**.
+
+Contrato ya acordado, para cuando se conecte:
+
+```
+calcular-precio  → entregaValida:false + mensajeEntrega   → NO se puede pedir, corregir fecha
+                 → requiereAnticipo:true                   → savePedido con tipoPedido:'APARTADO'
+                 → montoAnticipoSugerido (50% del total)   → POST /v1/abonos/{pedidoId}
+```
+
+**El 50% es enganche del total, no dinero extra** — ramo de $960 → $480 ahora, $480 al entregar.
+Lo confirmó el dueño con números después de que la primera redacción del back sugería cobrar 150%.
+
+`precioUrgencia`, igual que `precioManoDeObra`: **sumado en `total`, sin línea aparte** para el
+cliente.
+
+**Archivos modificados:** `flores.model.ts` (`precioCosto`, `horasMinimasAnticipacion`,
+`precioUrgencia`, `fechaHoraEntrega`, y los 4 campos nuevos del response),
+`lugar-entrega.model.ts` (`costoEnvio`, `horasExtraAnticipacion`),
+`catalogos-flores.component.ts/.html`, `gestion-lugares.component.ts/.html/.scss`.
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado contra QA: estaba en 502 (redesplegando)
+durante todo el cambio.
+
+## FEAT FLORES — PANTALLA DE CONFIGURACIÓN DE ENTREGAS (2026-08-14)
+
+> ⚠️ **Construida contra un contrato que el back todavía NO implementó.** Es deliberado: el dueño
+> llevaba varias vueltas de diseño hablado y necesitaba ver la pantalla para corregirla antes de
+> que nadie construyera la tabla. La pantalla carga, se puede revisar y criticar; **guardar no
+> funciona** hasta que existan los endpoints, y lo dice con un aviso visible.
+
+### La regla de negocio que implementa
+
+El dueño da de alta, **por tamaño de ramo**, cuánto tarda en armarlo y a qué hora lo entrega:
+
+```
+Ramo de 48
+  Normal:   3 días, entrego a las 16:00
+  Urgente:  1 día, entrego a las 18:00, pedir antes de las 12:00, +$300
+```
+
+Con eso, la pantalla del cliente podrá ofrecerle **solo fechas que el taller sí puede cumplir**
+(un calendario que deshabilita lo imposible) en vez de dejarlo pedir cualquier cosa y rechazarla
+después. Fue propuesta del dueño y es mejor que lo que se venía diseñando: **el error no puede
+ocurrir**, así que se cae la necesidad de rechazar y recotizar.
+
+### Reglas que hay que respetar al tocar esto
+
+- **El redondeo es HACIA ARRIBA.** Una cantidad sin configuración propia usa la del tamaño
+  configurado **inmediato superior** — 37 flores se maneja con las reglas del 48. Confirmado
+  explícitamente por el dueño. El porqué, para que no se "optimice" después: un ramo de 30 da más
+  trabajo que uno de 24; tomar las reglas del 24 comprometería al taller a un plazo que no puede
+  cumplir. Redondear hacia arriba siempre juega a favor del taller.
+- **Si piden más que el tamaño más grande configurado, se bloquea** y se le pide al cliente que
+  contacte al admin. Es el único caso sin salida.
+- **El bloque urgente es opcional.** Hay tamaños que no se pueden apurar por ningún motivo (el de
+  100 para mañana). Sin `diasUrgente`, al cliente no se le muestra el botón de urgente.
+- **La hora límite no es cosmética.** Vale para pedir *y para pagar*: si el pago se pasa de esa
+  hora, el pedido se recotiza con el cargo urgente. Esa validación **tiene que vivir en el
+  servidor** — si queda solo en el front, el cliente deja la pantalla abierta y paga después con
+  el precio viejo.
+
+### Por qué NO se guardó en `localStorage` mientras llega el back
+
+Se consideró y se descartó: es exactamente el error que ya se cometió con la cinta de promociones
+(fase dummy), donde los datos vivían en un solo navegador y el dueño no lo notaba hasta que abría
+la app en otro lado. Mejor una pantalla que dice claramente "todavía no se puede guardar".
+
+### Decisión de modelo todavía abierta
+
+Se le propuso al back que esta configuración **cuelgue de `CantidadFlorValida`** (el 48 ya está
+dado de alta ahí con sus pliegos) en vez de ser una tabla nueva — para que el dueño no registre el
+mismo tamaño en dos lugares y se le desalineen. Si aceptan, esto deja de ser una pantalla aparte y
+se vuelve una pestaña más de Catálogos. **Por eso el servicio está aislado en su propio archivo:**
+si cambia el modelo, se toca `ConfigEntregaService` y la pantalla queda igual.
+
+**Archivos nuevos:** `src/app/flores/models/config-entrega.model.ts`,
+`src/app/flores/service/config-entrega.service.ts`,
+`src/app/flores/entregas/config-entregas.component.ts/.html/.scss` (BEM `ce-`).
+
+**Archivos modificados:** `flores.module.ts`, `flores-routing.module.ts` (ruta `flores/entregas`),
+`navbar.component.html` + `.ts` (link "🚚 Entregas" en el grupo 🌹).
+
+**Verificado con `ng build` sin errores**, y revisado visualmente con una vitrina estática del
+template real (Playwright) — el build no valida diseño.
+
+### La configuración de entregas cuelga de `CantidadFlorValida` (2026-08-14)
+
+El back aceptó la propuesta: **no hay tabla ni endpoints propios.** Los 6 campos
+(`diasNormal`, `horaEntregaNormal`, `diasUrgente`, `horaEntregaUrgente`, `horaLimitePedido`,
+`cargoUrgente`) se agregaron a `CantidadFlorValida` y se guardan con `/v1/cantidades-flor` de
+siempre. Migración ya corrida en QA y prod; verificado con curl que los 6 llegan en el `getAll`.
+
+Se borraron `config-entrega.model.ts` y `config-entrega.service.ts`, que se habían escrito como
+contrato provisional mientras el back decidía.
+
+**🐛 Bug que atajó el compilador — y que habría borrado datos:** el CRUD genérico **reemplaza el
+registro completo**. Los 3 puntos donde `catalogos-flores` guarda una cantidad (alta, edición
+inline y toggle de activo) no mandaban los campos nuevos, así que **editar los pliegos desde
+Catálogos habría borrado la configuración de entrega** hecha en la otra pantalla. Ahora los tres
+reenvían los 6 campos tal cual venían.
+
+⚠️ **Regla para cualquier campo que se agregue a `CantidadFlorValida` de aquí en adelante:** hay
+que reenviarlo en TODOS los puntos que llaman `cantidadUpdate`, no solo en la pantalla que lo
+edita. Son 4 hoy (3 en catálogos + 1 en entregas).
+
+### Endpoints nuevos del back, ya operativos en QA
+
+| Endpoint | Para qué |
+|---|---|
+| `POST /v1/flores/fechas-disponibles` | **Público.** Devuelve `primeraFechaValida`, `horasDisponibles`, `cantidadAplicada`, `cargoUrgencia`, `ofreceUrgente`, `mensaje`. Es lo que va a alimentar el calendario del cliente |
+| `POST /v1/flores/pedidos/{pedidoId}/revalidar-antes-de-pagar` | Se llama **antes** de `POST /v1/abonos/{pedidoId}`. Si el pago se pasó de la hora límite, agrega el cargo urgente y devuelve `totalActual` — hay que abonar **ese** monto, no el calculado antes. Es idempotente |
+
+⚠️ `fechas-disponibles` pide **`tipoFlorId`** además de la cantidad — el back lo agregó a la
+propuesta original y tiene razón: `CantidadFlorValida` es por (especie, cantidad), y sin la especie
+no se sabe contra qué catálogo hacer el redondeo hacia arriba.
+
+⚠️ **Las horas viajan como `HH:mm:ss`** ("16:00:00") pero un `<input type="time">` solo entiende
+`HH:mm` — si se le pasa el valor con segundos **el campo se queda vacío sin avisar**. Por eso
+`ConfigEntregasComponent` recorta al leer (`aInput`) y completa al guardar (`aBack`).
+
+**Verificado con `ng build` sin errores.** ⚠️ La pantalla no se ha probado guardando contra QA.
+
+---
+
+## FIX FLORES — EL PAPEL SALÍA COMO CASILLA OPCIONAL EN UN RAMO QUE YA TENÍA PLIEGOS (2026-08-14)
+
+**Reportado con captura:** en «Arma tu ramo», con 20 flores, el paso 4 mostraba
+`☐ Papel (tiene costo)` como opción. El dueño: *"ya habíamos quedado que entre 1 y 5 flores
+entonces sí se ponía el papel, porque cuando configuro los ramos ya puse cuántos pliegos usaría"*.
+
+**No era un bug de código — eran dos configuraciones sin coordinar.** Verificado en QA:
+
+| Dónde se configura | Valor |
+|---|---|
+| Accesorios → Papel → «Obligatorio con más de» | **20** |
+| Cantidades → 20 flores → pliegos | 3 |
+| Cantidades → 48 flores → pliegos | 5 |
+| Cantidades → 62 flores → pliegos | 7 |
+
+El corte estaba en 20 y la comparación del back es **estrictamente mayor**, así que un ramo de
+exactamente 20 cae del lado "opcional" — aunque tenga sus 3 pliegos ya registrados. Los de 48 y
+62 sí entraban solos. El dueño configuró los pliegos por tamaño esperando que eso bastara; el
+umbral es un segundo número, en otra pestaña, que nadie cruzaba con el primero.
+
+### Lo que se hizo
+
+1. **Alerta en Catálogos → Accesorios** que detecta la incoherencia: lista los tamaños que tienen
+   pliegos configurados pero quedan **por debajo o igual** al umbral (`<=`, porque el back usa
+   `>`), y dice qué número poner. Getters `papel`, `tamanosSinPapelAutomatico`,
+   `menorTamanoConPliegos`.
+2. **`papelForzado` en el configurador ahora obedece al back.** Antes calculaba el umbral por su
+   cuenta; ahora, en cuanto hay cálculo, usa `calculo.papelObligatorioAplicado`. La cuenta local
+   queda solo como anticipo mientras el request viaja (evita que la casilla parpadee).
+
+   ⚠️ **Esto importa más de lo que parece:** quien agrega y cobra el papel es el back. Si el front
+   lo escondiera por su cuenta creyendo que va incluido y el back no lo agregara, **el ramo saldría
+   sin papel y sin cobro** — el cliente nunca lo eligió y nadie lo facturó. Esconder ≠ incluir.
+
+### Acción del dueño (es dato, no código)
+
+Poner «Obligatorio con más de» en **5** para que el papel se pregunte solo en ramos de 1 a 5
+flores y vaya incluido de 6 en adelante. Con el umbral en 20 el ramo de 20 seguirá saliendo como
+opcional por más que tenga pliegos.
+
+### Propuesta anotada al back
+
+Que el papel se derive de **`CantidadFlorValida.pliegos`**: si el tamaño tiene pliegos
+configurados, lleva papel; si no, se pregunta. Un solo lugar donde configurarlo, imposible de
+desalinear — hoy son dos números en dos pestañas distintas que tienen que concordar a mano.
+Es sugerencia, la decisión es suya.
+
+**Archivos modificados:**
+- `src/app/flores/catalogos/catalogos-flores.component.ts` → 3 getters nuevos
+- `src/app/flores/catalogos/catalogos-flores.component.html` → alerta de incoherencia
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `papelForzado`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos**, y el
+estado real de QA comprobado con curl antes de tocar nada (no se asumió del documento).
+
+---
+
+## FEAT FLORES — CALENDARIO DE ENTREGA + ENTREGA URGENTE EN EL CONFIGURADOR (2026-08-14)
+
+> Conecta `POST /v1/flores/fechas-disponibles` y cierra lo que el back pidió en su commit del
+> mismo día: **mandar `urgente` en `calcular-precio`**, sin lo cual el cargo no se cobra y el
+> pedido no nace con anticipo.
+
+### El paso 6 dejó de ser un select suelto
+
+Antes solo preguntaba la zona. Ahora consulta el plazo real del taller y **preselecciona lo más
+pronto posible**. El `<input type="date">` lleva `min` en `primeraFechaValida` y la hora sale de
+`horasDisponibles` — el cliente **no puede elegir una fecha que el taller no vaya a cumplir**,
+que era justo el punto del rediseño (el error deja de ser posible en vez de rechazarse después).
+
+- `primeraFechaValida: null` → se muestra el `mensaje` del back tal cual (lo manda a WhatsApp) y
+  se bloquea el botón de confirmar.
+- **Si vino `null` porque pidió urgente**, el front se regresa solo a normal — si no, quedaría con
+  el botón encendido y sin ninguna fecha, sin entender por qué.
+- Botón «⚡ Lo necesito antes» solo con `ofreceUrgente: true`, con el cargo en la etiqueta.
+
+### Detalles que no son obvios
+
+- **`consultarFechas()` se llama al confirmar la cantidad, no en el paso 3.** El plazo depende de
+  (especie, cantidad, zona, urgente) — **no** del reparto entre colores. Colgarlo del reparto
+  dispararía un request por cada tecla.
+- **La zona cambia el plazo** (`LugarEntrega.horasExtraAnticipacion`), por eso `onLugarChange()`
+  vuelve a consultar en vez de solo recalcular el precio.
+- **`precioUrgencia` SÍ lleva línea propia en el resumen**, a diferencia del papel y la mano de
+  obra, que van fundidos en la línea de flores (ver `subtotalFlores`). El cliente lo eligió a
+  propósito en un botón que ya le decía el precio; escondérselo después sería raro. ⚠️ Por eso
+  `subtotalFlores` **no** lo incluye — si se agrega ahí, se cobra dos veces en la vista.
+- **`requiereAnticipo` → el pedido nace `APARTADO`**, con `estadoPedido: 'APARTADO'` (no
+  `'Pendiente'`) — el back espera que para crédito ambos campos traigan el mismo valor, igual que
+  en `venta-variante`.
+- **La llamada a `.../detalle` ahora es obligatoria cuando hay fecha**, aunque no haya frase ni
+  zona: es ahí donde el back guarda `fechaLimitePago` y `cargoUrgenteMonto`. Sin eso,
+  `revalidar-antes-de-pagar` no tiene contra qué comparar y un pago tardío nunca se recotizaría.
+- El anticipo se explica como **"la mitad del total"**, no como un cargo aparte — es el mismo
+  malentendido del 150% que ya se corrigió una vez.
+
+### 🔴 El fix del back NO está en QA (verificado, no asumido)
+
+`calcular-precio` con `urgente:true` sigue devolviendo `precioUrgencia: null`,
+`requiereAnticipo: false`, `total: 1225`. Probado también sin `fechaHoraEntrega` — idéntico.
+
+**No es falta de configuración:** `fechas-disponibles`, contra el mismo tamaño y en el mismo
+momento, sí devuelve `cargoUrgencia: 300`. Un endpoint ve el `cargoUrgente` del tamaño y el otro
+no → QA quedó con el build anterior. Reportado en el repo compartido.
+
+**No rompe nada mientras tanto:** el front ya manda `urgente` y el back lo ignora, así que el ramo
+se cobra como normal. En cuanto desplieguen, empieza a cobrarse solo sin tocar el front.
+
+### ⏳ Pendiente — `revalidar-antes-de-pagar` sin conectar
+
+Está claro cuándo llamarlo (antes de `POST /v1/abonos/{pedidoId}`, usando el `totalActual` que
+devuelva). **Lo que falta es cómo saber que toca llamarlo:** quien cobra es el admin desde
+`/abonos`, y esa pantalla no distingue un ramo de flores de una venta de blusas. Se le
+preguntó al back si pueden marcar el pedido (ej. `esRamoFlores` en `GET /v1/pedidos/{id}/detalle`)
+o si el endpoint puede responder 200 en vez de error para pedidos que no son de flores. **Hasta
+entonces, el cobro tardío de un ramo urgente no se recotiza.**
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IFechasDisponiblesRequest/Response`,
+  `ICalcularPrecioRequest.urgente`, `IRamoPedidoDetalleRequest.fechaHoraEntrega`/`urgente`
+- `src/app/flores/service/flores.service.ts` → `fechasDisponibles()`
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `consultarFechas()`,
+  `toggleUrgente()`, `fechaHoraEntrega`, `minFecha`, `entregaBloqueada`, `fechaLegible()`,
+  `limpiarFechas()`; APARTADO en `guardarPedido()`
+- `src/app/flores/configurar/configurar-ramo.component.html` → paso 6 con calendario
+- `src/app/flores/configurar/configurar-ramo.component.scss` → `.cr-btn--urgente`, `.cr-fecha-*`
+
+**Verificado con `ng build` sin errores** y **en vivo con `ng serve` + Playwright** (claro y
+oscuro, con los endpoints mockeados simulando el back ya corregido): las líneas suman el total
+exacto, el papel no aparece en accesorios, y el botón urgente cambia fecha, cargo y anticipo.
+
+---
+
+## FIX MENÚ — «Zonas y envío» de Flores saltaba el acordeón a Inventario (2026-08-14)
+
+**Reportado:** al entrar a *Flores eternas → 📍 Zonas y envío*, el menú se quedaba abierto en
+**Inventario**, no en Flores.
+
+**Causa:** las dos entradas apuntaban a la misma URL (`/lugares-entrega`) y el sidebar resuelve el
+grupo activo **por la ruta** (`GROUP_ROUTES` en `navbar.component.ts`). Con una ruta compartida no
+hay forma de saber desde qué menú entró el usuario — `computeActiveGroup()` devolvía siempre
+`misproductos`, que es donde esa ruta estaba registrada.
+
+**Fix:** la entrada de Flores tiene ahora su **propia dirección**, `/flores/zonas`, declarada en
+`flores-routing.module.ts` como alias que carga el mismo `LugaresEntregaModule`. Cada menú
+conserva su contexto y `routerLinkActive` resalta solo el subitem correcto.
+
+**No duplica la pantalla ni el código:** webpack detectó que el módulo ahora cuelga de dos puntos
+de entrada y lo movió a un chunk compartido (`default-src_app_lugares-entrega_...`). Es un punto
+de entrada más, no una copia.
+
+**Alternativa descartada:** distinguir por query param (`/lugares-entrega?desde=flores`). Obligaba
+a meter el query param en `computeActiveGroup()` y a configurar `routerLinkActiveOptions` con
+`queryParams: 'exact'` en **ambos** links para que no se resaltaran los dos a la vez. Más piezas
+acopladas para el mismo resultado.
+
+### ⚠️ Trampa del método de prueba — navegar fuera de la zona de Angular ensucia el diagnóstico
+
+Verificando con Playwright vía `router.navigateByUrl()` desde `page.evaluate()`, los componentes
+**se acumulaban en el DOM** (4 navegaciones = 4 componentes vivos), lo que parecía una fuga grave
+introducida por la ruta nueva. **Era artefacto del método:** la navegación ocurre fuera de la zona
+de Angular, no corre el ciclo de detección de cambios y el `router-outlet` nunca destruye la vista
+anterior. Con **clics reales sobre el menú** hay exactamente un componente por vez.
+
+Es la contraparte de la lección ya anotada para pantallas públicas (ahí `ngOnInit` ni siquiera
+disparaba las peticiones). **Regla:** el truco de inyectar sesión + `navigateByUrl` sirve para
+*llegar* a una pantalla guardada, pero **nunca** para concluir nada sobre montaje/destrucción de
+componentes — para eso, clic real.
+
+Segundo detalle del mismo método: el JWT de prueba necesita el claim **`roles`** (no `role`) y
+`idUsuario`, que es lo que lee `AuthService.setRolesFromToken()`; con la clave equivocada el guard
+de admin redirige a `/tienda/buscar` y la prueba mide otra pantalla sin avisar.
+
+**Archivos modificados:**
+- `src/app/flores/flores-routing.module.ts` → ruta alias `zonas`
+- `src/app/navbar/navbar.component.html` → el link de Flores apunta a `flores/zonas`
+- `src/app/navbar/navbar.component.ts` → `flores/zonas` en `GROUP_ROUTES`
+- `src/app/flores/entregas/config-entregas.component.html` → el enlace del texto también
+
+**Verificado con `ng build` y con clics reales en el menú:** `/flores/zonas` → grupo `flores`;
+`/lugares-entrega` → grupo `misproductos`; un solo componente montado en cada caso.
+
+---
+
+## FIX FLORES — BLOQUEO DEFENSIVO CUANDO EL CARGO URGENTE NO SE APLICA (2026-08-14)
+
+**Situación:** el dueño probando en vivo reporta que el cargo urgente no sube el total. Tercera
+verificación contra QA, con todo descartado:
+
+| Qué se descartó | Cómo |
+|---|---|
+| El nombre del campo | 4 variantes (`urgente`, `esUrgente`, `entregaUrgente`, `"true"`) → idéntico |
+| La configuración del dueño | `fechas-disponibles` devuelve `cargoUrgencia: 50` para ese mismo tamaño |
+| El front | Payload capturado del navegador: manda `urgente:true` + `fechaHoraEntrega` |
+
+Queda solo el despliegue del back. **Su arreglo existe pero no está en QA.**
+
+### El riesgo no era cosmético — por eso se bloquea la venta
+
+Con `requiereAnticipo: false`, un ramo urgente **no solo se cobra sin el extra: nace `NORMAL` en
+vez de `APARTADO`**. El taller lo arma con prisa, gratis, y sin haber recibido el 50% de enganche.
+
+Nuevo getter `cargoUrgenteNoAplicado`: pidió urgente **+** el tamaño tiene cargo **+** el cálculo
+volvió sin él → aviso visible y botón de confirmar deshabilitado.
+
+**⚠️ Por qué NO se suma el cargo en el front**, que era lo tentador: la urgencia **no tiene
+`varianteId`** (a diferencia del papel, los accesorios o el envío), así que el front no puede
+crear su línea en `savePedido`. Sumarlo solo al total mostrado enseñaría un número distinto al que
+se cobra — peor que no vender.
+
+**Se apaga solo** en cuanto el back devuelva `precioUrgencia`. No hay que acordarse de quitarlo.
+
+### 🟠 Hallazgo aparte — en PRODUCCIÓN los GET de flores piden token
+
+```
+PROD  GET  /v1/cinta/activos              → 200 (público, ok)
+PROD  GET  /v1/tipos-flor/getAll          → 404 "Token invalido o expirado"
+PROD  POST /v1/flores/fechas-disponibles  → 404 "Token invalido o expirado"
+```
+
+En QA responden 200 sin token. Como `/flores/ramos` y `/flores/configurar` son **rutas públicas**
+del front, tal como está prod un visitante sin cuenta vería la pantalla rota. Probablemente el
+mismo `qa → main` pendiente. Reportado; no bloquea porque las pruebas van en QA.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `cargoUrgenteNoAplicado`
+- `src/app/flores/configurar/configurar-ramo.component.html` → aviso + `[disabled]`
+
+**Verificado con `ng build` sin errores.**
+
+---
+
+## ⏳ PENDIENTES ABIERTOS — FLORES ETERNAS (anotados 2026-08-14)
+
+> El dueño está **en fase de pruebas** en QA. Estos 4 puntos se revisan **antes de publicar**, no
+> ahora. Ninguno bloquea las pruebas.
+
+### 1. 🔴 El cargo urgente no se cobra — esperando despliegue del back
+
+`calcular-precio` devuelve `precioUrgencia: null` y `requiereAnticipo: false` aunque el front
+mande `urgente:true` y el tamaño tenga su cargo. Descartado el nombre del campo (4 variantes),
+la configuración del dueño y el front (payload capturado). Su arreglo existe pero no está en QA.
+
+**Consecuencia si se publica así:** el ramo urgente se arma con prisa **gratis y de contado**, sin
+el 50% de anticipo. El front avisa y pide confirmación, pero deja continuar.
+
+**Se resuelve solo** cuando el back despliegue — el aviso desaparece sin tocar código.
+
+### 2. 🟠 En PRODUCCIÓN los GET de flores piden token
+
+`/v1/tipos-flor/getAll` y `/v1/flores/fechas-disponibles` responden
+`404 "Token invalido o expirado"` en prod; en QA responden 200 sin token. Como `/flores/ramos` y
+`/flores/configurar` son **rutas públicas** del front, hoy un visitante sin cuenta vería la
+pantalla rota en producción. Probablemente el mismo `qa → main` pendiente.
+
+**Revisar antes de publicar flores.** No afecta las pruebas en QA.
+
+### 3. 🟡 `revalidar-antes-de-pagar` sin conectar
+
+Falta saber **cómo distingue `/abonos` un pedido de flores** de una venta normal, para llamarlo
+solo cuando toca. Se propusieron 3 opciones al back (flag en el detalle del pedido, o que el
+endpoint responda 200 en vez de error). Hasta entonces, **un pago tardío de un ramo urgente no se
+recotiza** — conserva el precio del momento en que se cotizó.
+
+### 4. 🟡 Bandeja de frases pendientes (admin)
+
+`frasesPendientes()` y `validarFrase()` ya existen en `FloresService`; **falta la pantalla**. Sin
+ella, una frase personalizada queda cotizada como "por confirmar" y nadie puede aprobarle precio.
+
+---
+
+### Lección — avisar no es prohibir (se repitió en esta sesión)
+
+Al detectar que el cargo urgente no se aplicaba, lo primero que se hizo fue **deshabilitar el
+botón de confirmar**. Estaba mal por dos motivos:
+
+1. **Impedía probar** justo lo que el dueño estaba probando.
+2. Contradice una regla que este mismo proyecto ya tenía escrita, del bloque de la cantidad que
+   "no cierra el círculo": *el back avisa, no prohíbe — la decisión es del usuario*.
+
+Corregido: aviso visible + `Swal` de confirmación explicando qué se deja de cobrar, y el botón
+sigue habilitado. **Regla:** ante una incoherencia de datos, informar con claridad y dejar
+decidir; reservar el bloqueo duro para lo que de plano no puede funcionar (ej. no hay fecha de
+entrega posible, que sí bloquea).
+
+---
+
+## ✅ EL CARGO URGENTE YA SE COBRA + FIX: LA PANTALLA PÚBLICA EXPULSABA AL VISITANTE (2026-08-14)
+
+### 1. El back desplegó — verificado contra QA
+
+`calcular-precio` ya aplica el cargo. Ramo de 20 con urgencia:
+
+```
+precioBase 500 + papel 15 (3 pliegos × $5) + urgencia 50  =  total 565
+requiereAnticipo: true    montoAnticipoSugerido: 282.50   (= 565 / 2)
+```
+
+Sin urgencia sigue en 515 y sin anticipo. **El aviso defensivo (`cargoUrgenteNoAplicado`) se apagó
+solo**, como estaba previsto — no hubo que tocar nada.
+
+Probado también en pantalla contra el QA real (no con datos simulados): el resumen muestra la
+línea "⚡ Entrega urgente $50.00", el total 565 y la nota del anticipo de $282.50.
+
+### 2. 🔴 Fix — "Arma tu ramo" echaba al login a quien no tuviera sesión
+
+**Encontrado al probar contra el backend real** — con datos simulados era invisible, porque todo
+respondía 200.
+
+`ngOnInit` pedía `GET /v1/lugares-entrega/getAll` para llenar el selector de zona. Ese endpoint
+**responde 401 sin sesión**, y el `TokenInterceptor` manda al login ante **cualquier** 401: el
+visitante anónimo entraba a la pantalla y salía disparado a `/login` antes de ver nada.
+
+La pantalla es pública **a propósito** (arma su ramo y solo se le pide cuenta al confirmar), así
+que esto rompía todo el flujo de un cliente nuevo. **El dueño no lo veía porque prueba con sesión
+de admin.**
+
+**Fix:** las zonas se piden solo cuando ya hay sesión (dentro de la suscripción a `userId$`, una
+sola vez). Sin sesión, el visitante se queda sin selector de zona — degradación aceptable, porque
+para confirmar necesita cuenta de todos modos.
+
+**Verificado:** visitante anónimo entra, arma el ramo completo y llega al total. El único 401 que
+queda es `/v1/auth/refresh`, que es el intento normal de rehidratar sesión y no redirige.
+
+⚠️ **Pedido al back:** que `GET /v1/lugares-entrega/getAll` sea público de lectura, como ya lo son
+los catálogos de flores. Son nombres de zona y costo de envío — nada sensible — y sin ellos el
+cliente anónimo no puede ver cuánto le cuesta el envío ni cómo afecta su fecha de entrega.
+
+**Revisado:** `vitrina-flores` (la otra pantalla pública) no tiene el problema —
+`ramos-armados/activos` y `negocio/contactos` sí son públicos.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → carga de zonas condicionada a sesión
+
+### 💡 Lección — probar con mocks no basta para pantallas públicas
+
+Toda la verificación anterior de esta pantalla se hizo con endpoints simulados que devolvían 200,
+y por eso el 401 nunca apareció. **Para una pantalla pública hay que probarla al menos una vez
+contra el backend real y sin sesión.** Truco usado: `page.route()` de Playwright reenviando lo que
+el front pide a `localhost:9091` hacia el QA real (`fetch` + `fulfill` — `continue({url})` no
+sirve, no deja cambiar http→https).
+
+---
+
+## FIX FLORES — LA ZONA DE ENTREGA AHORA ES OBLIGATORIA (2026-08-14)
+
+**Reportado:** *"no se seleccionó una zona de entrega y deja pasar… la zona es requerida"*. El
+paso 6 nació como opcional (`<option>Sin especificar</option>`) y se podía confirmar sin decir a
+dónde iba el ramo.
+
+**Fix:** hay que elegir **una zona** o marcar **«Voy a recoger en la tienda»** — una de las dos.
+Getter `entregaSinDefinir`; el botón de confirmar se deshabilita y sale un aviso diciendo qué
+falta (mismo criterio que la pantalla de configuración de entregas: un botón gris sin explicación
+deja al usuario atorado). El placeholder del selector pasó de "Sin especificar" a
+"Elige la zona de entrega…", deshabilitado, igual que el paso 1.
+
+**Verificado contra QA real:** sin zona → botón apagado + aviso; con "recoger en la tienda" →
+habilitado; con zona elegida → habilitado.
+
+### ⚠️ Riesgo abierto que esto destapa — puede dejar sin envío a los clientes
+
+`GET /v1/lugares-entrega/getAll` responde **401 sin sesión** (por eso el fix anterior de no
+pedirlo cuando no hay sesión). **No se pudo confirmar qué responde a un cliente logueado que NO es
+admin.** Si también lo rechaza:
+
+- El cliente no vería ninguna zona en el selector.
+- Y como la zona ahora es obligatoria, **su única salida sería "recoger en la tienda"** — o sea,
+  nadie podría pedir entrega a domicilio.
+
+Preguntado al back, junto con la petición de hacer público ese GET. **Si resulta que sí lo
+rechaza, hay que resolverlo antes de publicar flores** — con la zona obligatoria deja de ser un
+detalle y se vuelve un bloqueo de venta.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `entregaSinDefinir`, `sinSesion`
+- `src/app/flores/configurar/configurar-ramo.component.html` → placeholder, aviso, `[disabled]`
+
+### 💡 Nota de prueba — un JWT inventado no sirve contra el backend real
+
+Para probar con sesión hay que **simular solo el endpoint protegido** (aquí `lugares-entrega`) y
+dejar el resto apuntando a QA. Con el token de prueba, la llamada real devuelve 401 → el
+interceptor manda a `/login` y la prueba mide otra pantalla sin avisar.
+
+---
+
+## ACLARACIÓN — QUÉ PASA SI EL CLIENTE NO CONFIRMA EL CÓDIGO DEL CORREO (2026-08-14)
+
+Pregunta del dueño. Verificado en el código, no de memoria.
+
+### El pedido NO se crea
+
+El orden real de los pasos es al revés de lo que parece:
+
+1. El cliente pulsa "Confirmar mi ramo" → `POST /v1/pedidos/savePedido`
+2. El back **rechaza** con 400 `"…verificar…"` porque el correo del cliente no está verificado —
+   **no guarda nada**
+3. Recién ahí el front manda el código y abre el diálogo
+4. Si verifica → se **vuelve a llamar** `savePedido`, y esta vez sí se crea
+
+O sea: mientras no verifique, **no existe pedido, ni apartado, ni stock reservado**. No queda
+basura en la base. Si cierra el navegador a medias, tampoco.
+
+**Es una sola vez por cliente**: `Cliente.correoVerificado` queda en `true` y no se le vuelve a
+pedir en compras siguientes.
+
+### Hueco tapado — cancelar el diálogo era silencioso
+
+El `.then()` hacía `if (!result.isConfirmed) return;` — el diálogo se cerraba sin decir nada y el
+cliente se quedaba viendo su ramo **sin saber si se registró o no**. Ahora sale un aviso: *"Tu ramo
+no se registró… sigue armado aquí, vuelve a pulsar Confirmar y te mandamos el código otra vez"*.
+
+La configuración del ramo **no se pierde** (`resetTodo()` solo corre en `completarExito`), y
+`guardando` ya se liberaba en el `error`, así que el botón queda listo para reintentar.
+
+Reintentar **no genera spam de correos**: el back reutiliza el código vigente si ya mandó uno al
+mismo correo (responde *"Ya tienes un codigo vigente…"`).
+
+### ⚠️ Decisión de negocio pendiente — la venta se pierde sin rastro
+
+Si el cliente nunca verifica (correo en spam, dirección mal escrita, se aburre), **el dueño no se
+entera de nada**: no hay pedido, ni aviso, ni registro del intento. Alguien armó un ramo de $565 y
+se fue, y no queda ni el nombre.
+
+Opciones si se quiere recuperar esas ventas — **no implementado, requiere decisión y backend**:
+1. Guardar el pedido como "pendiente de confirmar" y que el admin lo vea en una bandeja.
+2. Registrar solo el intento (nombre + contacto + total) para poder llamarle.
+3. Dejarlo como está: si no verifica su correo, no hay venta.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → aviso al cancelar el código
+
+**Verificado con `ng build` sin errores.**
+
+---
+
+## ⏳ PEDIDO PENDIENTE POR CORREO SIN VERIFICAR — pedido al back, sin implementar (2026-08-14)
+
+Decisión del dueño sobre la pregunta anterior: quiere la **opción 1** — que el pedido **se guarde
+como pendiente** aunque el cliente no verifique su correo.
+
+| Situación | Cliente | Admin |
+|---|---|---|
+| Pidió pero no verificó | Ve su pedido, pendiente de confirmar | Igual, y **por qué** está pendiente |
+| Vuelve y verifica | Pasa a pedido normal | Normal |
+| Vuelve y lo cancela | Deja de verlo | **Sigue viéndolo**, marcado "cancelado por el cliente" |
+| Nunca vuelve | Sigue guardado | Sigue guardado, con el contacto para llamarle |
+
+### ⚠️ El alcance NO es solo flores
+
+`savePedido` lo usan **las dos** pantallas de cliente: `configurar-ramo` (flores) y
+`venta-variante` (carrito normal). El dueño lo planteó hablando de flores, pero el cambio afecta
+**todos los pedidos de cliente**. Preguntado a él y al back; **no asumir que es solo flores**.
+
+### Bloqueado — depende del back
+
+Hoy `savePedido` **rechaza** con 400 si `correoVerificado` es `false`, así que el front no puede
+guardar nada por su cuenta. Preguntas abiertas que ellos tienen que resolver (ver el detalle en el
+repo compartido):
+
+1. ¿El pendiente **aparta stock**? Si sí, quien nunca verifica bloquea inventario; si no, al
+   verificar días después el stock puede haberse acabado.
+2. ¿Cuenta en reportes/dashboard? (nuestra opinión: no hasta confirmarse — decisión suya)
+3. ¿Caduca? El dueño dijo "se queda guardado", pero sin caducidad la lista se llena de pedidos
+   muertos.
+4. ¿Cómo lo distingue el front — estado nuevo, campo aparte, reusar `motivo_cancelacion`?
+5. ¿El cliente puede verificar **desde el pedido ya creado** en "Mis pedidos"?
+
+### Trabajo de front que quedará pendiente cuando contesten
+
+- `configurar-ramo` y `venta-variante`: el 400 deja de ser error — el pedido ya quedó guardado, así
+  que el mensaje cambia de *"tu ramo no se registró"* a *"quedó registrado, confírmalo con el
+  código"*. ⚠️ **El aviso que se agregó hoy al cancelar el código tendrá que reescribirse** — dice
+  justo lo contrario de lo que pasará.
+- `mis-pedidos` (cliente): distintivo "pendiente de confirmar" + botones verificar / cancelar.
+- `mis-pedidos` (admin): mismo pedido visible con el motivo, y que **no desaparezca** al cancelarlo
+  el cliente.
+
+**Nada implementado todavía** — sin el cambio del back, el front no tiene dónde guardar.
+
+---
+
+## CONECTADO — `revalidar-antes-de-pagar` + zonas públicas (2026-08-14)
+
+El back resolvió los dos pendientes técnicos que teníamos abiertos.
+
+### 1. `revalidar-antes-de-pagar` ahora es tolerante → conectado en `/abonos`
+
+Eligieron la opción 3 que habíamos propuesto: para un pedido que **no** es de flores responde
+`200` con `cargoRecienAplicado: false` en vez de `400`. Así el front **lo llama siempre**, sin
+tener que adivinar de antemano qué pedido es un ramo — que era justo lo que no podíamos resolver
+(`/abonos` trabaja con pedidos de todo tipo y no los distingue).
+
+`AbonosComponent.registrarAbono()` se partió en dos:
+- `registrarAbono()` → revalida primero. Si `cargoRecienAplicado`, **no cobra**: avisa con el
+  mensaje del back, muestra el `totalActual` y recarga la lista para que el saldo en pantalla deje
+  de ser el viejo. El admin decide si cobra con el monto nuevo.
+- `ejecutarAbono()` → el cobro de siempre, sin cambios.
+
+**Si la revalidación falla por red, se cobra igual** — no vale bloquear un abono normal por un
+endpoint que para la mayoría de los pedidos no hace nada.
+
+⚠️ **`detalle-pedido` también registra abonos y NO quedó conectado.** Es el otro punto de cobro
+(botón "💳 Registrar abono" dentro del detalle). Pendiente aplicarle el mismo patrón.
+
+### 2. `GET /v1/lugares-entrega/getAll` ya es público → se revirtió el rodeo
+
+El back lo pasó a `permitAll()`. Se quitó el guard que cargaba las zonas solo con sesión (y el
+getter `sinSesion` y el flag `lugaresPedidos`, que quedaron sin uso). Ahora se piden siempre, como
+el resto del catálogo.
+
+De paso aclararon algo que no sabíamos: **un cliente logueado no-admin sí podía leerlas** — el
+`authenticated()` anterior no distinguía rol. El único afectado era el visitante sin sesión.
+
+### ⏳ Verificación pendiente — QA estaba caído (502)
+
+Al terminar, QA respondía **502 en todo** (redespliegue). **No se pudo confirmar en vivo** ni que
+las zonas ya sean públicas ni que `revalidar-antes-de-pagar` responda 200 en un pedido normal.
+Compila y el código está listo; falta la comprobación contra el servidor.
+
+### ❓ Devuelto al dueño — las 5 preguntas del pedido pendiente
+
+El back leyó la petición de guardar el pedido sin verificar y **la regresó sin implementar**: dice
+que son decisiones de negocio, no trabajo técnico. Siguen abiertas (ver la sección de pendientes
+más arriba): stock, reportes, caducidad, cómo distinguirlo y cómo verifica el cliente después.
+
+**Archivos modificados:**
+- `src/app/flores/models/flores.model.ts` → `IRevalidarPagoResponse`
+- `src/app/flores/service/flores.service.ts` → `revalidarAntesDePagar()`
+- `src/app/abonos/abonos.component.ts` → `registrarAbono()` revalida; nuevo `ejecutarAbono()`
+- `src/app/flores/configurar/configurar-ramo.component.ts` / `.html` → zonas sin guard de sesión
+
+---
+
+## 🛑 CANCELADO — el "pedido pendiente sin verificar" NO se implementa (2026-08-14)
+
+**Anula la sección "⏳ PEDIDO PENDIENTE POR CORREO SIN VERIFICAR" de más arriba.** Se conserva
+solo como historial de la decisión.
+
+El dueño lo repensó a partir de la consecuencia que él mismo había detectado: si el pedido queda
+guardado y el cliente vuelve días después, **la fecha ya se pasó igual** y hay que recotizar stock,
+fecha y precio de cero. Su conclusión:
+
+> *"Me gusta más que si no lo confirma, que no se guarde nada, porque la hora o fecha ya será
+> tarde. Entonces mejor que configure otro ramo, y hay que avisarle. Ya no lo vería ni el cliente
+> ni el admin, porque en sí no se concretaría nada."*
+
+Guardar un pedido que **de todos modos** habría que recotizar entero al retomarlo no aportaba
+nada, y a cambio traía estados nuevos, caducidad, el estado "perdido" y una bandeja que mantener.
+
+**No hay cambio de backend.** `savePedido` sigue rechazando mientras el correo no esté verificado
+y sin guardar nada — el comportamiento que ya existía.
+
+### Lo único que se hizo, y es todo del front
+
+Que el cliente **entienda** que no quedó nada, en vez de que el diálogo se cierre en silencio.
+Aplicado en **las dos** pantallas que comparten el flujo de verificación:
+
+| Pantalla | Mensaje al cancelar el código |
+|---|---|
+| `configurar-ramo` | *"Tu ramo no se registró… no guardamos nada. Sigue armado aquí, pero si sales tendrás que armarlo de nuevo — y la fecha se cuenta desde que confirmas, así que dejarlo para después puede correrla."* |
+| `venta-variante` | *"Tu pedido no se generó… tu carrito sigue aquí, vuelve a pulsar el botón."* |
+
+⚠️ **`venta-variante` tenía el mismo hueco** (cerraba en silencio) y nadie lo había reportado —
+se encontró al revisar el hermano, no por un reporte. Vale la pena recordarlo: este flujo de
+verificación está copiado en dos componentes, así que **lo que se cambie en uno hay que revisarlo
+en el otro** (misma lección que ya está anotada para `agregar-rifa` / `rifa-mes`).
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → mensaje ampliado
+- `src/app/variante/venta-variante/venta-variante.component.ts` → mensaje nuevo al cancelar
+
+**Verificado con `ng build` sin errores.**
+
+---
+
+## 📋 ESTADO DE PENDIENTES — FLORES ETERNAS (revisado 2026-08-14, fin de sesión)
+
+Reemplaza a la sección "⏳ PENDIENTES ABIERTOS" de más arriba, que quedó desactualizada.
+
+### ✅ Cerrados hoy
+
+| | Cómo se cerró |
+|---|---|
+| Cargo urgente no se cobraba | El back desplegó. Verificado: ramo de 20 → 500 + 15 papel + 50 urgencia = **565**, anticipo 282.50. El aviso defensivo se apagó solo |
+| `revalidar-antes-de-pagar` sin conectar | El back lo hizo tolerante (200 para pedidos que no son de flores) → conectado en **los dos** puntos de cobro: `/abonos` y `detalle-pedido` |
+| Zonas expulsaban al visitante anónimo | El back abrió el GET a `permitAll()` → se revirtió el rodeo |
+| Pedido pendiente sin verificar | **Cancelado por el dueño** — no se guarda nada, solo se avisa |
+
+### 🔴 Bloqueante ahora mismo — el backend de QA está caído
+
+`https://qa.backend.novedades-jade.com.mx` responde **502 en todo** (hasta `/v1/cinta/activos`).
+**Producción responde 200**, y los dos sitios de front cargan bien — es solo el backend de QA.
+
+**Bloquea toda prueba en vivo.** Queda sin verificar contra el servidor (el código está listo y
+compila):
+- Que las zonas ya carguen para un visitante sin cuenta.
+- Que `revalidar-antes-de-pagar` responda 200 en un pedido normal (no de flores).
+
+### 🟠 Antes de publicar flores
+
+**En producción los GET de flores piden token.** `/v1/tipos-flor/getAll` y
+`/v1/flores/fechas-disponibles` responden `404 "Token invalido o expirado"` en prod; en QA son
+públicos. Como `/flores/ramos` y `/flores/configurar` son **rutas públicas del front**, hoy un
+visitante sin cuenta vería la pantalla rota en producción. Es el mismo `qa → main` pendiente.
+
+### 🟡 Funcionalidad que falta construir
+
+1. **Bandeja de frases pendientes (admin).** `frasesPendientes()` y `validarFrase()` ya existen en
+   `FloresService`; **falta la pantalla**. Sin ella, una frase personalizada queda "por confirmar"
+   y nadie puede aprobarle precio. Es la única pieza del módulo que sigue sin construirse.
+2. **Los ramos preconfigurados (`RamoArmado`) no validan ni cobran urgencia** — lo señaló el back.
+   Si alguien pide un ramo ya armado "para mañana", no hay bloqueo de fecha ni cargo. Solo el
+   configurador libre lo maneja.
+
+### ⚙️ Configuración que le toca al dueño
+
+**Bajar el umbral del papel a 5** en Catálogos → Accesorios. Con el corte en 20 (el valor actual),
+un ramo de exactamente 20 sigue mostrando el papel como casilla opcional en vez de ir incluido.
+La pantalla ya se lo avisa con la alerta que cruza pliegos contra umbral.
+
+---
+
+## FEAT FLORES — BANDEJA DE FRASES DE LISTÓN POR APROBAR (2026-08-14)
+
+Última pieza del módulo que faltaba construir. Ruta `/flores/frases` (admin), link
+"🎗️ Frases por aprobar" en el grupo de Flores. Prefijo BEM `fp-`.
+
+### Por qué existe
+
+Cuando el cliente **escribe su propia frase** en vez de elegir una del catálogo, no hay precio de
+catálogo que cobrarle. El ramo se cotiza con `tieneListonPendienteValidacion: true` y un total
+**provisional**, y la frase queda esperando precio. Sin esta pantalla, esa opción **no se podía
+vender**: la frase quedaba en la base y nadie podía aprobarla.
+
+### ⚠️ Este caso SÍ guarda el pedido — no confundirlo con el del correo sin verificar
+
+Son dos cosas distintas que se parecen:
+
+| | Correo sin verificar | Frase personalizada |
+|---|---|---|
+| ¿Se guarda el pedido? | **No**, el back lo rechaza | **Sí**, se vende con total provisional |
+| Qué queda pendiente | Todo — no existe nada | Solo el precio de la frase |
+| Estado | Cancelado (ver sección 🛑) | **Esta pantalla** |
+
+Confirmado con el dueño en voz alta, porque él mismo hizo la conexión: *"ahí sí sería necesario
+guardar su ramo, solo quedaría pendiente la frase, ¿no?"*.
+
+### Detalles de implementación
+
+- **Aprobar exige precio** (`precioAsignado > 0`) — sin él, aviso y no se manda nada.
+- **`procesandoId` es por fila**, no un booleano global: bloquea toda la lista mientras una
+  petición está en vuelo, para que un doble clic no apruebe dos frases distintas.
+- Al aprobar, el back **no toca el pedido original**: crea un pedido `APARTADO` aparte solo con
+  esa frase. La pantalla ofrece **ir a cobrar el anticipo de una vez**
+  (`/abonos?pedidoId={pedidoAnticipoId}`, reusando el query param que ya existía) — si el dueño
+  tiene que buscar ese pedido a mano después, se queda sin cobrar.
+- Rechazar pide confirmación y aclara que **el ramo sigue en pie**, solo se descarta la frase.
+
+### ⏳ Pendiente del back (3 preguntas, ninguna bloquea)
+
+1. **Aviso al dueño cuando entra una frase nueva** — lo pidió explícitamente y **no existe**. Hoy
+   nadie le avisa: si no entra a la bandeja por su cuenta, la frase se queda ahí y el ramo no se
+   termina de cobrar. Se pidió correo al admin al guardar un `RamoPedidoDetalle` con
+   `fraseListonPersonalizada`.
+2. **¿Se le avisa al cliente cuando ya tiene precio?** Se fue con un total provisional; si nadie
+   le dice, no sabe cuánto debe ni que ya puede pagar.
+3. **¿Para qué es `anticipoPagado`** en `IValidarFraseRequest`? Está en el contrato sin documentar
+   y **hoy no se manda**. Si es "ya me lo pagó en efectivo, no generes el pedido del anticipo",
+   se agrega un checkbox a la bandeja.
+
+### 💡 Trampa de encoding, tercera vez en el proyecto
+
+Insertar un emoji con `perl -0pi -e` en el HTML **lo dobla-codifica** (`🎗️` → `ðï¸`), incluso con
+`-CSD`: la cadena del shell ya viene en UTF-8 y perl la vuelve a codificar. Se reparó sustituyendo
+los bytes rotos por los correctos en modo binario. **Regla: para texto con emoji o acentos, usar
+la herramienta de edición, no `perl`/`sed`.**
+
+**Archivos nuevos:** `src/app/flores/frases/bandeja-frases.component.ts/.html/.scss`
+
+**Archivos modificados:** `flores.module.ts`, `flores-routing.module.ts`,
+`navbar.component.html` + `.ts` (link y `GROUP_ROUTES`)
+
+**Verificado con `ng build` y en pantalla** (Playwright, sesión admin, endpoints simulados porque
+QA sigue caído): la lista carga, aprobar sin precio reclama, con precio manda
+`{aprobar:true, precioAsignado:120}` al `detalleId` correcto y ofrece ir a cobrar el anticipo.
+
+---
+
+## FIX FLORES — LA FRASE SE PODÍA PERDER EN SILENCIO (2026-08-14)
+
+Encontrado al verificar en el código la pregunta del dueño (*"¿el ramo no quedaría guardado en
+caso de que ponga una frase nueva?"*). **La respuesta a su pregunta es que sí se guarda** — pero
+revisando el camino apareció otra cosa.
+
+### El agujero
+
+El pedido se crea en dos llamadas:
+
+1. `POST /v1/pedidos/savePedido` → crea el pedido con las líneas que **sí** tienen precio.
+2. `POST /v1/flores/pedidos/{id}/detalle` → guarda la frase, la zona y la fecha.
+
+La segunda tenía `error: () => this.completarExito(pedidoId)` — **fallaba en silencio** y el
+cliente veía igual *"¡Tu ramo quedó registrado!"*.
+
+Para la zona o la fecha eso está bien: el pedido ya quedó cobrado y el admin las completa a mano
+desde el detalle. **Para la frase no**, y es un caso distinto de verdad:
+
+- Su texto **vive únicamente en esa llamada** — si falla, se pierde para siempre (la pantalla se
+  resetea al salir).
+- El ramo se arma **sin listón**, y el cliente ya lo daba por hecho.
+- **Nadie se entera**: no llega a la bandeja de frases, así que el dueño tampoco la ve.
+
+O sea: el cliente paga, se va contento, y el ramo sale mal sin que nadie lo note hasta la entrega.
+
+### El fix
+
+Si falla **y había frase**, se avisa mostrando **su propio texto** (para que pueda copiarlo aunque
+cierre) y se ofrece **reintentar** sin volver a armar el ramo. Si no había frase, se conserva el
+comportamiento silencioso de antes, que ahí sí es correcto.
+
+Nuevo `avisarFraseNoGuardada()` — se llama a sí mismo si el reintento vuelve a fallar, así que el
+cliente puede insistir sin quedarse atorado.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `finalizarConDetalleRamo()`,
+  nuevo `avisarFraseNoGuardada()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No se pudo forzar el fallo contra QA (sigue caído);
+el camino de error no está probado en vivo.
+
+---
+
+## FIX FLORES — EL AVISO AL CLIENTE NUNCA SE HABRÍA MANDADO (2026-08-14)
+
+El back implementó las dos notificaciones por correo que se les pidieron:
+
+1. **Al admin** cuando entra una frase personalizada — dispara dentro de
+   `POST /v1/flores/pedidos/{id}/detalle`, **no requiere nada del front**.
+2. **Al cliente** cuando se le asigna precio (`validar-frase` con `aprobar: true`) — se manda a
+   **`detalle.correoContacto`**.
+
+### El problema
+
+`correoContacto` existe en `IRamoPedidoDetalleRequest` desde siempre, pero **ningún componente lo
+mandaba** (verificado con grep en todo `src/app`). Llegaba `null`, y el back —correctamente— no
+manda nada cuando no hay a quién avisarle. O sea: **el correo al cliente nunca habría salido**, y
+nadie se hubiera enterado, porque no es un error, es un `null` silencioso.
+
+Se habría visto como "el back dice que implementó el aviso pero no llega" y se habría investigado
+del lado equivocado.
+
+### El fix
+
+`finalizarConDetalleRamo()`: **solo cuando hay frase**, pide el cliente con
+`getDataOneCliente(clienteId)` y adjunta `correoContacto` + `telefonoContacto` antes de guardar el
+detalle. Se agregó el campo `clienteIdActual` (se guarda en `guardarPedido`) y se extrajo
+`enviarDetalleRamo()` para no duplicar la llamada.
+
+Si esa consulta falla, **se manda igual sin contacto**: perder el aviso es malo, perder la frase
+es peor.
+
+⚠️ Solo se pide cuando hay frase — no se le agrega una llamada extra a todos los pedidos por un
+dato que en los demás casos no se usa.
+
+### `anticipoPagado` — la suposición era incorrecta
+
+Se había supuesto que servía para "ya me lo pagó en efectivo, no generes el pedido del anticipo".
+**No es eso:** hoy es solo una bandera informativa, y `validar-frase` **siempre** crea el pedido
+`APARTADO` del anticipo sin importar su valor. Mandar `true` generaría un cobro duplicado contra
+un pago hecho en efectivo.
+
+**El front NO lo manda** (correcto). Si se quiere ese checkbox funcionando de verdad, el back
+necesita cambiarlo y es decisión del dueño, no técnica.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `clienteIdActual`,
+  `finalizarConDetalleRamo()` adjunta contacto, nuevo `enviarDetalleRamo()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — QA sigue caído.
+
+---
+
+## 📄 `ESTADO_FLORES_ETERNAS.md` — estado consolidado del módulo (2026-08-15)
+
+Creado a petición del dueño (*"hay que anotar todo lo que tenemos, lo que llevamos y qué nos
+falta"*). Vive en la raíz del proyecto.
+
+**Por qué existe:** el módulo de flores ya ocupa ~20 secciones cronológicas en este archivo. Para
+saber en qué punto está había que leerlas todas y reconstruirlo mentalmente — incluyendo cosas que
+después se cancelaron. Ese documento dice **solo el estado actual**: pantallas construidas, cómo
+se arma el precio, las 8 reglas de negocio vigentes, lo que se descartó y por qué, lo que el back
+está diseñando, y la lista de pendientes con casillas.
+
+**Regla:** al tocar flores, actualizar **ese** documento (no solo agregar una sección más aquí).
+`CLAUDE.md` sigue siendo el registro cronológico de cada cambio; `ESTADO_FLORES_ETERNAS.md` es la
+foto de dónde estamos.
+
+---
+
+## VERIFICACIÓN — 3 CAMBIOS DEL BACK DE CORREO/CONTRASEÑA, SIN TRABAJO PARA EL FRONT (2026-08-16)
+
+El back entregó tres cosas. **Se revisaron en el código en vez de darlas por buenas** — el front ya
+estaba alineado en las tres, cero cambios.
+
+### 1. `POST /v1/usuarios/{id}/solicitar-cambio-correo` ahora puede responder 400
+
+Antes **siempre** respondía 200, aunque el correo no saliera: el usuario veía "ingresa el código"
+y esperaba uno que nunca llegaba. Ahora, si el envío falla de verdad, responde 400 con el motivo y
+**no deja guardado el código pendiente**.
+
+**Ya se manejaba bien** en los dos únicos puntos que lo llaman — ambos muestran el mensaje del
+back y **no** abren el diálogo del código:
+- `mi-perfil.component.ts` → `flujoEmailChange()`: además **revierte el campo** a `emailOriginal`.
+- `add-usuarios.component.ts` → `onEmailBlur()`: el campo ya mostraba el correo actual.
+
+⚠️ Duda menor anotada al back: si falla el **reenvío**, ¿borran el código pendiente anterior? Si
+sí, el banner de "código pendiente" del front apuntaría a un código que ya no existe. No es grave.
+
+### 2. El access token ahora se rechaza al instante tras cambiar contraseña
+
+Antes el JWT seguía sirviendo hasta sus 15 minutos aunque el refresh estuviera muerto. Ahora el
+back compara la emisión del token contra la fecha del último cambio y lo rechaza de inmediato.
+
+**No rompe nada porque el front ya no espera:** cierra sesión en el mismo `next` del 200.
+Verificado en los 4 caminos, todos vía `SesionService.cerrarSesionLocal()`:
+`cambiar-password`, `mi-perfil`, el modal forzado del login, y el mismo modal en
+`verificar-correo`. **Ninguno hace llamadas después** del cambio — no hay forma de que salte un
+401 inesperado en pantalla.
+
+`olvide-password` no aplica (sin sesión). El reseteo de ADMIN afecta al **otro** usuario, que cae
+al login por el `TokenInterceptor` (devuelve `EMPTY`, sin error feo encima de la redirección).
+
+⚠️ Depende de que el back corra `migration_password_actualizado_en.sql`; mientras no, el refuerzo
+no aplica y el comportamiento es el de antes.
+
+### 3. SMTP de QA por dominio propio — sin acción
+
+Cambio de infraestructura, sin contrato nuevo.
+
+**Sin archivos modificados** — esta sección documenta una verificación, no un cambio.
+
+---
+
+## FIX — EL ADMIN QUE SE RESETEA A SÍ MISMO SE QUEDABA SIN SESIÓN SIN AVISO (2026-08-16)
+
+Encontrado al revisar el refuerzo del back (access token rechazado al instante tras cambiar
+contraseña). Los 4 caminos normales ya cerraban sesión bien; **este quinto no se había mirado**.
+
+**El caso:** un admin abre su **propio** usuario en `/usuarios/buscar` → Editar y pulsa
+"🔑 Resetear contraseña". El back invalida su token **en ese momento**. Antes del refuerzo le
+quedaban 15 minutos de gracia y no se notaba; ahora su siguiente clic cae en un 401 y lo saca al
+login **sin que entienda por qué** — con el agravante de que quizá ni alcanzó a anotar la
+contraseña temporal.
+
+**Fix en `resetearPasswordAdmin()`:** detecta `updateUser.id === authService.userIdValue` y
+entonces:
+- El diálogo de confirmación avisa: *"Es tu propia cuenta: se cerrará tu sesión y tendrás que
+  entrar de nuevo con la contraseña temporal."*
+- El texto de la contraseña temporal cambia a *"Anótala: la vas a necesitar para volver a
+  entrar"* (en vez de "dásela al usuario", que no aplica).
+- Al cerrar ese diálogo, **`sesion.cerrarSesionLocal()`** — salida controlada en vez de un 401
+  sorpresa.
+
+Para cualquier otro usuario, nada cambia.
+
+**Nuevo en `AuthService`:** getter `userIdValue` (lee el `BehaviorSubject` sin suscribirse, mismo
+estilo que `isAdminService`) — hacía falta para poder comparar.
+
+**Archivos modificados:**
+- `src/app/auth/auth.service.ts` → getter `userIdValue`
+- `src/app/usuarios/usuarios/add-usuarios/add-usuarios.component.ts` → `resetearPasswordAdmin()`
+  con caso propio, inyecta `SesionService`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — requiere sesión de admin real y
+depende de que el back corra `migration_password_actualizado_en.sql` para que el corte inmediato
+aplique.
+
+---
+
+## 🔴 FIX — "Error al cambiar la contraseña" sobre una operación que SÍ funcionó (2026-08-16)
+
+**Reportado por el back:** con curl, `PUT /v1/auth/cambiar-password` responde **200** y el log del
+pod confirma el éxito, sin rastro de error. Pero probando en la app real, la pantalla pinta
+**"Error al cambiar la contraseña"** — y la contraseña **sí queda cambiada** (confirmado
+entrando con la nueva).
+
+### Causa — Angular revienta al parsear un 200 que no es JSON
+
+`http.put<any>(...)` usa `responseType: 'json'` por default. Si el back contesta un **texto
+suelto** (`ResponseEntity.ok("Contrasena actualizada correctamente")` en Spring → `text/plain`),
+Angular **falla al parsearlo y dispara el callback de `error` aunque el status sea 200**. El
+componente entra a su `catch` y muestra el mensaje de fallback.
+
+Encaja con todo lo observado:
+- El back no ve ningún error **porque no lo hubo** — la petición fue un 200 limpio.
+- La contraseña **sí se cambia**: el back ya hizo su trabajo antes de que el front tropiece.
+- Los **errores de verdad sí se ven bien**: los arma su `@ControllerAdvice` como JSON, y ésos
+  parsean sin problema. **Solo el camino de éxito fallaba.**
+
+El texto exacto que reportó el usuario (*"error al cambiar contraseña"*) es literal del `catch`
+de `forzarCambioPassword()` en `login-form.component.ts` — el modal que sale justo después de un
+reseteo de ADMIN, que es el escenario que el back estaba probando.
+
+### Fix — parseo tolerante, indiferente a lo que devuelva el back
+
+Nuevo `parseoTolerante()` en `AccederService`: pide la respuesta como **texto** y la convierte a
+objeto **solo si de verdad es JSON**; si no, la envuelve como `{ mensaje, data }`.
+
+**Si el back devuelve JSON, el comportamiento es idéntico** — por eso se pudo aplicar sin esperar
+a confirmar el `Content-Type` real (no se pudo verificar en vivo: hace falta una sesión válida y
+no hay credenciales de prueba).
+
+Aplicado a los 3 endpoints de contraseña, que comparten la forma:
+- `AccederService.cambiarPassword()`
+- `AccederService.restablecerPassword()` (mismo riesgo en "olvidé mi contraseña")
+- `UsuarioService.resetearPassword()` — ahí el síntoma habría sido distinto: la contraseña
+  temporal saliendo como `—` en vez de reventar, porque el componente lee `res?.data`.
+
+### ⚠️ Cómo confirmarlo en 10 segundos
+
+DevTools → Network → cambiar la contraseña → mirar el `Content-Type` de la respuesta de
+`cambiar-password`. Si dice **`text/plain`**, era esto. Si dice `application/json`, la causa es
+otra y hay que seguir buscando (el fix no estorba en ningún caso).
+
+**Archivos modificados:**
+- `src/app/login/acceder.service.ts` → `parseoTolerante()`, `cambiarPassword()`, `restablecerPassword()`
+- `src/app/shared/usuario.service.ts` → `resetearPassword()`
+
+**Verificado con `ng build` sin errores.** ⚠️ **Hipótesis bien fundada, no confirmada en vivo.**
+
+---
+
+## FIX FAVORITOS — DEJABA ENTRAR Y RECIBÍA CON UN ERROR ROJO (2026-08-16)
+
+**Reportado por el dueño** con la respuesta cruda del back:
+
+```
+GET /v1/favoritos?pagina=1&size=12
+→ { "mensaje": "Tu cuenta todavia no tiene un perfil de cliente completo", "code": 404, ... }
+```
+
+*"pero deja entrar"* — y eso era el problema. La ruta solo tiene `AuthGuard`, así que cualquier
+logueado entra; y ya adentro le salía un `Swal` rojo de **"Error"** con ese texto. **No está
+roto: le falta un paso.** Presentarlo como error hace pensar que el sistema falló.
+
+Mismo callejón en el catálogo: el corazón aparecía para cualquier logueado, y al tocarlo solo
+podía darle ese error, sin salida.
+
+### Fix — que el error sea inalcanzable, no más bonito
+
+1. **`/favoritos`** — nuevo `faltaPerfilCliente`. Si el back responde con ese mensaje, la pantalla
+   muestra un estado explicativo (*"Para guardar favoritos necesitas completar tus datos… es
+   rápido, y con eso también podrás hacer pedidos"*) con botón a `/clientes/agregar`. **Sin popup
+   de error.** Cualquier otro fallo sí sigue mostrando el Swal de siempre.
+2. **Catálogo** — nuevo `favoritosDisponibles`. `listarIds()` ya fallaba en silencio; ahora,
+   **solo si el mensaje menciona "perfil de cliente"**, además esconde el corazón. Un fallo de red
+   NO lo esconde (puede ser pasajero y el corazón debe seguir ahí).
+3. **`toggleFavorito()`** — red de seguridad por si el corazón alcanzó a mostrarse: ese error deja
+   de ser un `Swal` rojo muerto y pasa a ofrecer *"Completar mis datos"* → `/clientes/agregar`.
+
+Mismo criterio que ya se usó al mover el punto de entrada de las reseñas: **el error se vuelve
+inalcanzable por diseño** en vez de solo redactarse mejor.
+
+### ⚠️ Se detecta por el TEXTO del mensaje, no por el status
+
+`err.error.mensaje.includes('perfil de cliente')`. No es lo ideal, pero el `code` interno del back
+no sirve para distinguir: en esa misma respuesta dice **404**, y en un 401 de otro endpoint
+también dice 404. Si algún día el back le da un código propio a este caso, cambiar la condición.
+
+**Archivos modificados:**
+- `src/app/favoritos/favoritos.component.ts` + `.html` → `faltaPerfilCliente`, `irACompletarPerfil()`
+- `src/app/variante/buscar/buscar.component.ts` + `.html` → `favoritosDisponibles`, `toggleFavorito()`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo — hace falta la sesión de un
+usuario sin perfil de cliente.
+
+---
+
+## 🔴 FIX — "Mis pedidos" quedaba VACÍA para cualquier cliente real (2026-08-16)
+
+**Reportado por el dueño** probando con una cuenta de cliente de verdad (`perse`, ROLE_USUARIO):
+generó un pedido de ramo, y en "Mis pedidos" **no le aparecía nada**. Junto con la respuesta cruda:
+
+```
+GET /v1/clientes/buscarPorIdCliente/69   (69 = idUsuario)
+→ { "mensaje": "No autorizado", "code": 404, ... }
+```
+
+### Causa — se pedía el cliente con el id equivocado, y el fallo era mudo
+
+`mis-pedidos` resolvía el cliente así:
+
+```ts
+this.clienteService.getDataOneCliente(this.idUsuario).subscribe((data: any) => {
+  if (data && data.data) { this.clienteId = data.data.id; ... }
+});   // ← sin error handler
+```
+
+Dos problemas encadenados:
+
+1. **Id equivocado.** `getDataOneCliente` pega a `/v1/clientes/buscarPorIdCliente/{id}` — espera el
+   id de **cliente**, y se le mandaba el de **usuario**.
+2. **Sin `error`.** Al fallar, no pasaba absolutamente nada: ni pedidos, ni aviso, ni consola. La
+   pantalla se quedaba en "Sin pedidos" para siempre.
+
+**Por qué nadie lo había notado:** el dueño siempre prueba **como admin**, y admin entra por la
+otra rama (`buscarPedidoAdmin()`). La rama del cliente estaba rota y sin usar.
+
+### Fix
+
+- Se usa **`usuarioService.buscarClientePorIdUsuario(idUsuario)`**, que es literalmente la
+  traducción usuario → cliente, y la que ya usaban `venta-variante` y el configurador de ramos
+  para esto mismo.
+- Nuevo `sinPerfilCliente`: si no hay cliente, la pantalla lo dice y ofrece
+  **"Completar mis datos"** → `/clientes/agregar`, en vez de un "Sin pedidos" engañoso.
+
+### ⚠️ Los otros 3 usos de `getDataOneCliente` tienen la misma duda
+
+`mi-perfil`, `mis-datos` y `detalle-productos` **también le pasan el `idUsuario`**. Si el endpoint
+de verdad espera el clienteId, esas tres pantallas están igual de rotas para clientes reales — y
+por el mismo motivo nadie lo ha visto (se prueban como admin).
+
+**No se tocaron**: no se pudo confirmar en vivo qué id espera el endpoint (hace falta una sesión de
+cliente y no hay credenciales de prueba). **Preguntado al back.** Si confirman que espera
+clienteId, hay que corregir las tres igual.
+
+### Bug relacionado, introducido ayer y ya corregido
+
+`configurar-ramo.finalizarConDetalleRamo()` llamaba `getDataOneCliente(clienteIdActual)` — el
+único punto del proyecto que pasaba el **clienteId**. Se alineó al `idUsuario` como el resto.
+⚠️ Ese era el peor caso: con el id equivocado podía traer **otro cliente** y adjuntarle al ramo
+el correo de otra persona. Se eliminó el campo `clienteIdActual`, ya sin uso.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` + `.html` → `buscarClientePorIdUsuario`,
+  `sinPerfilCliente`, estado explicativo
+- `src/app/flores/configurar/configurar-ramo.component.ts` → usa `idUsuario`, fuera `clienteIdActual`
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con una cuenta de cliente.
+
+---
+
+## AUDITORÍA — "solo se probó como admin": 3 pantallas más con fallo mudo (2026-08-16)
+
+El dueño lo planteó bien: *"solo lo he probado con admin"*. Se auditaron las **16 pantallas que
+ve un cliente** buscando `.subscribe()` sin manejo de error. Aparecieron en 12, pero **no todas
+pesan igual** — la mayoría son cargas de adorno que degradan bien. Las graves son las que **dejan
+la pantalla o el checkout muertos sin decir nada**.
+
+### Corregidas
+
+| Pantalla | Qué pasaba |
+|---|---|
+| `mis-pedidos` | Ya corregida (sección anterior) — la lista quedaba vacía para siempre |
+| `mis-datos` | El formulario quedaba **en blanco sin explicación** si fallaba la carga |
+| `detalle-productos` (checkout) | 🔴 **El botón de comprar no hacía absolutamente nada.** Venta perdida en silencio |
+
+El de `detalle-productos` era el peor: además de no manejar el error, resolvía el cliente con
+`getDataOneCliente(idUsuario)`. Ahí solo hace falta el **clienteId**, así que se cambió a
+`buscarClientePorIdUsuario` — la misma traducción que ya usan `venta-variante` y el configurador
+de ramos para armar un pedido. Y el "usuario no registrado" pasó de un `Error` seco a ofrecer
+**"Completar mis datos"**.
+
+`mis-datos` **no** se cambió de id (solo se le agregó el manejo de error) porque ahí sí se
+necesitan los datos completos del cliente, y sigue en pie la duda de qué id espera
+`buscarPorIdCliente` — ver la sección anterior.
+
+### Revisada y sin cambios
+
+`mi-perfil` ya tenía `error` y degrada bien (el campo de correo se queda vacío, la pantalla sigue
+viva).
+
+### 💡 La lección, que es la más útil de todo esto
+
+**Un `.subscribe()` sin `error` en una pantalla de cliente no es deuda técnica menor: es una
+pantalla que puede morir en silencio.** Y no se detecta probando como admin, porque casi todas
+estas pantallas tienen una rama distinta para admin (`isAdminUser`) que sí funciona.
+
+**Regla:** al tocar una pantalla que ve un cliente, revisar que **toda llamada que condicione lo
+que se muestra** tenga `error` — y que ese `error` diga algo accionable, no solo apague un
+spinner. Las cargas accesorias (contactos del negocio, catálogos de adorno) sí pueden fallar
+calladas.
+
+**Archivos modificados:**
+- `src/app/clietes/mis-datos/mis-datos.component.ts`
+- `src/app/productos/producto/detalle-productos/detalle-productos.component.ts`
+
+**Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.
+
+---
+
+## ✅ CERRADO — el back confirmó las 2 hipótesis; corregidas las 3 pantallas + 5 endpoints (2026-08-16)
+
+Las dos suposiciones del día resultaron correctas, confirmadas por el back revisando su código.
+
+### 1. `buscarPorIdCliente/{id}` espera el id de **CLIENTE** — confirmado
+
+```java
+boolean esDueno = actual.getCliente().getId() == idCliente;   // PK de `clientes`, no idUsuario
+```
+
+Mandarle el `idUsuario` nunca matchea → 403 "No autorizado". Las 3 pantallas que faltaban
+**estaban rotas para clientes reales**, con el mismo fallo mudo de `mis-pedidos`. Corregidas todas
+con `buscarClientePorIdUsuario(idUsuario)` → `clienteId`:
+
+| Pantalla | Qué se rompía |
+|---|---|
+| `mi-perfil` | El campo de correo quedaba vacío |
+| `mis-datos` | Formulario en blanco (además le faltaba `error`) |
+| `detalle-productos` | 🔴 El botón de comprar no hacía nada |
+
+### 2. `cambiar-password` devuelve texto plano — confirmado, y **eran 9 endpoints**
+
+El back listó todos los que responden `String` crudo en el camino de éxito. **El front usa 7**, y
+solo 2 estaban cubiertos. Se aplicó `parseoTolerante` a los 5 restantes:
+
+| Endpoint | Qué hubiera pasado (o pasaba) |
+|---|---|
+| `POST /v1/auth/verificar-correo` | 🔴 **El peor**: una verificación exitosa se mostraba como *"código incorrecto o expirado"*, y el usuario reintentaba con un código ya consumido |
+| `POST /v1/auth/enviar-codigo-verificacion` | "No se pudo enviar" sobre un envío que sí salió |
+| `POST /v1/auth/olvide-password` | Igual, en el flujo de recuperar contraseña |
+| `PUT /v1/auth/mi-perfil` | "No se pudo actualizar el perfil" tras guardarlo bien |
+| `POST /v1/auth/logout` | Error al cerrar sesión (inofensivo, pero ruido) |
+
+⚠️ `PUT /v1/usuarios/{id}/resetear-password` **no** está en la lista del back — ese sí devuelve
+`ResponseGeneric` de verdad. El `parseoTolerante` que se le puso no estorba (parsea el JSON igual),
+pero no era necesario.
+
+**El back NO va a migrar esos endpoints a `ResponseGeneric`** — cambiar el contrato rompería lo que
+ya funciona con el fix aplicado. Si algún día se homogeniza, avisan antes.
+
+### 💡 La lección que deja el patrón del texto plano
+
+**Un endpoint que responde `String` crudo revienta el parseo de Angular incluso con status 200**, y
+el síntoma siempre es el mismo y engañosísimo: *"la app dice error pero la operación sí se hizo"*,
+sin nada en los logs del back porque **no hubo error**.
+
+Si vuelve a aparecer ese síntoma en cualquier pantalla, **lo primero es mirar el `Content-Type` de
+la respuesta**, no la lógica del componente.
+
+### Pendiente del back (no bloquea)
+
+Mejorar los mensajes que despistan: `"No autorizado"` cuando el caso real es "no tiene perfil de
+cliente", y el `code: 404` fijo en varios 401/403. Lo anotaron como deuda; mientras tanto el front
+distingue estos casos **por el texto del mensaje**, que es frágil.
+
+**Archivos modificados:**
+- `src/app/login/acceder.service.ts` → `parseoTolerante` en logout, olvide-password,
+  enviar-codigo-verificacion, verificar-correo, mi-perfil
+- `src/app/clietes/mi-perfil/mi-perfil.component.ts` → traduce a clienteId, `cargarCorreoCliente()`
+- `src/app/clietes/mis-datos/mis-datos.component.ts` → traduce a clienteId, `cargarCliente()`
+
+**Verificado con `ng build` sin errores.** ⚠️ Ninguna probada en vivo con cuenta de cliente.
+
+---
+
+## 🔴 FIX — BUCLE INFINITO DE PETICIONES DE IMAGEN (2026-08-16)
+
+**Reportado por el dueño** en `/pedidos/mis-pedidos` con un pedido de flores: *"se pone a cargar y
+cargar imágenes infinitas"* — y el curl mostrando **50+ peticiones** al mismo archivo.
+
+### La cadena
+
+```
+<img [src]="env + item.productoId" (error)="onImgError($event)">
+  ↓ el producto no tiene imagen (los productos sombra de flores nunca la tienen) → 404
+onImgError() → src = 'assets/img/no-image.png'
+  ↓ ⚠️ ESE ARCHIVO NO EXISTE EN EL PROYECTO → 404
+(error) se dispara otra vez → pone el mismo png → 404 → ... sin fin
+```
+
+El `(error)` se re-disparaba con su propio reemplazo. Un producto sin imagen bastaba para dejar al
+navegador pidiendo el mismo 404 indefinidamente.
+
+**Estaba en 3 pantallas**, no solo en la reportada: `detalle-pedido`, `venta-variante` y
+`add-venta` — las tres apuntaban al mismo png inexistente. En las otras dos no se había notado
+porque sus productos casi siempre tienen imagen; **flores lo destapó porque sus productos sombra
+nunca la tienen**.
+
+### Fix — que el bucle sea imposible por construcción
+
+Nuevo `src/app/shared/imagen-placeholder.ts`:
+
+- **`IMAGEN_PLACEHOLDER`** es un **data URI** (SVG inline), no una ruta. **Un data URI no puede dar
+  404**, así que el bucle no puede existir — y no depende de que alguien se acuerde de subir un
+  archivo.
+- **`onImagenError()`** además hace `img.onerror = null` **antes** de reemplazar la fuente: doble
+  seguro para que ni un reemplazo roto en el futuro pueda encadenar otro error.
+
+Las 3 pantallas usan ahora ese helper. Grep de `no-image` en `src/`: **cero referencias** fuera del
+comentario que documenta el bug.
+
+### 💡 Lección
+
+**Un `(error)` de `<img>` que asigna otra imagen es un bucle esperando a pasar.** Si el reemplazo
+falla, se re-dispara solo. Dos reglas para cualquier `<img>` nuevo con fallback:
+1. El reemplazo debe ser **data URI**, nunca una ruta que pueda faltar.
+2. Desconectar el handler (`onerror = null`) antes de reasignar.
+
+**Archivos:** `src/app/shared/imagen-placeholder.ts` (nuevo);
+`detalle-pedido`, `venta-variante`, `add-venta` (`.ts` + `.html`).
+
+**Verificado con `ng build` sin errores.**
+
+---
+
+## FIX — EL CLIENTE PODÍA MODIFICAR SU PROPIO PEDIDO YA CONFIRMADO (2026-08-16)
+
+**Reportado por el dueño** viendo el detalle de un pedido de flores: *"para el cliente le da la
+opción de removerlo, tampoco lo puede hacer en el pedido ¿no?"*.
+
+Tenía razón: el botón **"−"** de cada artículo se le mostraba **también al cliente**. Podía
+reducir su propio pedido después de confirmarlo, descuadrando lo que el taller va a preparar
+contra lo que ya se cobró.
+
+### Fix
+
+Nuevo `puedeEditarLineas` = **admin** y **que no sea un ramo**.
+
+⚠️ **En un ramo está bloqueado incluso para el admin**, y no es exceso de celo: `eliminarDetalle`
+borra una línea suelta **sin recalcular nada**. Quitar flores de un ramo dejaría:
+- el **papel** con los pliegos del tamaño viejo,
+- la **fecha** con el plazo del tamaño viejo,
+- el **cargo de urgencia** sin revisar.
+
+El pedido queda internamente inconsistente y nadie se entera. **Editar un ramo de verdad exige
+rehacer la cotización**, que hoy no existe — ver el pendiente de abajo.
+
+### También — se limpia el prefijo interno del nombre
+
+`[Flores eternas] Flor eternal0 - Roja` → `Flor eternal0 - Roja`. Ese prefijo marca los productos
+sombra para excluirlos de los buscadores; no tiene por qué salirle al cliente en su pedido.
+
+### ⚠️ Detección de "es un ramo" — frágil y provisional
+
+`esPedidoDeFlores` mira si algún producto trae `[Flores eternas]` en el nombre. **Se le pidió al
+back una marca de verdad** en el detalle del pedido. Si alguien renombra esos productos, esto deja
+de detectar — pero **falla hacia el lado seguro**: vuelve a permitir editar (el comportamiento
+anterior), no bloquea de más.
+
+### ⏳ Pendientes que esto destapa (preguntados al back / al dueño)
+
+1. **El papel se sigue viendo en el detalle.** El dueño quiere que el cliente no lo vea (va
+   incluido). Esconder la línea a secas **rompería la suma**: las líneas visibles ya no darían el
+   total. La salida limpia es agrupar las líneas internas del ramo en una sola ("Ramo de N
+   flores"), pero **no se puede hacer por nombre sin adivinar** — hace falta que el back marque
+   qué líneas son internas.
+2. **No existe forma de editar un ramo.** El dueño lo pidió explícitamente: *"debe haber una parte
+   que sí deje editar las rosas o el armado"*. Hoy solo existe el borrado de líneas sueltas, que
+   para un ramo es peor que no tener nada.
+
+**Archivos modificados:**
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `puedeEditarLineas`,
+  `esPedidoDeFlores`, `nombreVisible()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → `*ngIf` en el botón, nombre limpio
+
+**Verificado con `ng build` sin errores.**
+
+---
+
+## FLORES — CONECTADO `esRamoFlores` / `esLineaInterna`; el papel ya no se le muestra al cliente (2026-08-16)
+
+El back entregó lo que se le pidió en la sección anterior, ya desplegado en `dev`/`qa` (verificado
+en vivo: QA responde 200, `editar-ramo` existe, los colores traen `variante.id`).
+
+### Lo conectado
+
+- **`esRamoFlores`** (raíz del detalle) sustituye al parche de detectar el ramo por el nombre del
+  producto. El parche **se deja como respaldo** para pedidos guardados antes del cambio, pero solo
+  se usa si el campo viene `null`.
+- **`esLineaInterna`** (por línea, `true` solo en el papel) → nuevo `lineasVisibles`: **al cliente
+  se le esconde el papel**, el admin sigue viendo todo.
+
+### ⚠️ Por qué hay una nota y no solo se esconde la línea
+
+Esconder el papel a secas deja el **total mayor que la suma de lo visible** — un descuadre sin
+explicación, que es peor que mostrar el papel. Por eso aparece:
+
+> *El total incluye la **envoltura del ramo**, que va siempre y no se cobra aparte.*
+
+Solo sale cuando de verdad se ocultó algo (`hayLineasOcultas`).
+
+### 🔴 Conflicto de diseño en "Editar ramo" — NO se construyó el botón todavía
+
+El back implementó `PUT /v1/flores/pedidos/{id}/editar-ramo`, pero **solo acepta `colores` y
+`accesorios`**. A propósito, no cubre **fecha de entrega, urgencia, envío ni listón**.
+
+Eso choca con lo que pidió el dueño: *"que mande al mismo armar ramo pero con los datos
+cargados"*. Si "Editar" abre el configurador completo, el admin podría cambiar la fecha o el
+listón, darle guardar, y **esos cambios se perderían en silencio** — exactamente el tipo de fallo
+mudo que llevamos toda la sesión corrigiendo.
+
+**No se construye hasta resolverlo.** Las salidas posibles:
+1. En modo edición, mostrar solo los pasos que el endpoint sí guarda (colores y accesorios), y
+   dejar fecha/listón/envío en solo lectura con un aviso.
+2. Que el back amplíe el endpoint.
+
+Se le planteó a ambos. **Opción 1 es la barata y no requiere back**, pero deja "editar" a medias
+respecto a lo que el dueño imaginó.
+
+### Otras dos cosas útiles que quedaron disponibles (sin construir aún)
+
+- **`accesorios[]` en el detalle del ramo** — era el hueco que impedía recargar un armado sin
+  perder la corona o las luces. Ya viene.
+- **Fotos por color/accesorio**: cada `ColorFlor` y `AccesorioRamo` trae `variante.id`, así que
+  `GET /v1/variantes/imagenes/{varianteId}` ya devuelve su imagen. Sin cambios de back.
+
+**Archivos modificados:**
+- `src/app/abonos/models/abono.model.ts` → `esRamoFlores`, `esLineaInterna`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `lineasVisibles`,
+  `hayLineasOcultas`, `esPedidoDeFlores` usa el campo del back
+- `.html` + `.scss` → nota de envoltura incluida
+
+**Verificado con `ng build` sin errores.** ⚠️ No probado en vivo con un pedido de ramo real.
+
+---
+
+## FLORES — "EDITAR RAMO" (admin), CANCELAR DEL CLIENTE, Y FECHA BLOQUEADA EN "ENTREGA" (2026-08-17)
+
+> Dos entregas del back destrabaron lo que estaba detenido: `editar-ramo` ahora **también cambia
+> la fecha** (era el choque que impedía construir el botón), y existe
+> `DELETE /v1/flores/pedidos/{id}/cancelar` para que el cliente cancele lo suyo.
+
+### 1. ✏️ Editar ramo — la misma pantalla del cliente, precargada
+
+Botón nuevo en el **detalle del pedido** (no en la card: la lista no sabe si el pedido es un ramo,
+ese dato solo viene al abrir el detalle). Abre `/flores/configurar?pedidoId=42` en modo edición:
+especie, cantidad, reparto por color, accesorios, fecha y zona ya cargados.
+
+**Lo que sí cambia:** flores, accesorios, fecha/urgencia.
+**Lo que NO:** listón y zona de envío — `editar-ramo` no los cubre (reabren la aprobación de
+frase y un costo de envío ya cobrado). El paso del listón se **oculta** y la zona se muestra
+**bloqueada**; si se dejaran editables, el admin creería que los cambió y se perderían en silencio
+al guardar. Se dice de frente con un aviso arriba, en vez de esconder pasos sin explicación.
+
+Al guardar se muestra la **diferencia contra lo ya cobrado**: si sube, botón directo a
+`/abonos?pedidoId=N` para cobrarla; si baja por debajo de lo pagado, el back lo rechaza (no hay
+reembolso) y ese mensaje se muestra tal cual.
+
+### El punto que pidió el dueño: la fecha se recalcula sola al agregar flores
+
+*"Si le agregamos 10, ya no te lo doy el 20, sería el 23"* — al subir el tamaño, el configurador
+vuelve a preguntar el plazo (`fechas-disponibles`) y avisa:
+
+> 📅 Con este cambio el ramo ya no alcanza para el jueves, 20 de agosto, 4:00 p.m. — lo más
+> pronto ahora es el domingo, 23 de agosto, 4:00 p.m.
+
+**La fecha ya pactada NO se pisa mientras siga siendo posible** — cambiar un accesorio no tiene
+por qué mover la entrega. Solo se corre cuando de verdad el taller ya no llega.
+
+### ⚠️ Tres trampas que solo aparecieron probando en pantalla (el build no las ve)
+
+1. **`onCambiarCantidadDeseada()` vacía `reparto` y `fechaEntrega` al teclear.** Sin respaldo, el
+   admin perdía el reparto que ya estaba bien (todo a 0) y el aviso de fecha nunca salía, porque
+   ya no había con qué comparar. Se guardan en `repartoPactado` y se compara contra `fechaOriginal`.
+2. **Leer `isAdminService` de golpe reprueba a un admin.** Al recargar con F5, la sesión se
+   rehidrata con `/auth/refresh` y el rol llega **después** de que el catálogo cargó → "solo un
+   administrador" a un administrador. Se espera `userRoles$`.
+3. **Y ese `filter(r => r.length > 0)` deja la pantalla colgada para un anónimo**, que nunca va a
+   tener roles: "Cargando el ramo…" para siempre, sin mensaje. Lleva `timeout(4000)`.
+
+La ruta es **pública** (el cliente arma su ramo sin cuenta), así que cualquiera podría pegar
+`?pedidoId=42` y ver precargado el ramo de otra persona — el back rechaza el guardado con 403,
+pero para entonces ya lo vio. Por eso el modo edición se corta en el front.
+
+### 2. El cliente ya puede cancelar su ramo
+
+Su botón "Cancelar" llamaba al endpoint de admin y le respondía **403 mudo**. Ahora, si no es
+admin, se pide el detalle y se decide: ramo sin pagos → `DELETE /v1/flores/pedidos/{id}/cancelar`
+(sin motivo, ese endpoint no recibe body); ya pagó algo o no es un ramo → se le dice que escriba,
+en vez de mandarlo a un error inevitable.
+
+### 3. 🔴 Agujero cerrado — la fecha del ramo en el modal "📍 Entrega"
+
+Ese botón **lo ve el cliente** y su modal tenía la fecha como campo libre. En un ramo eso permitía:
+pagar $1,225 con entrega al 22, y después mover la fecha al 19 desde ahí — el taller lo arma con
+prisa y **los $300 de urgencia nunca se cobran**. Nadie se entera.
+
+Fecha y lugar quedan **bloqueados en ramos** (para todos, admin incluido: ese campo no valida
+nada), con aviso de que se cambian desde "✏️ Editar ramo". Los otros 4 campos (recibe, dirección,
+Facebook, observaciones) siguen libres. **En pedidos normales no cambia nada** — ahí no hay plazos
+de armado ni cargo por prisa. Decisión del dueño entre 3 opciones.
+
+**Verificado con `ng build` y EN PANTALLA** (`ng serve` + Playwright, backend simulado porque QA
+está caído): precarga completa, reparto conservado con "faltan 28 flores", aviso de fecha corrida,
+el listón oculto y la zona bloqueada; y el modal de Entrega en claro y oscuro, con un pedido de
+ramo (bloqueado) y uno normal (editable). ⚠️ No probado contra el backend real.
+
+**Archivos:** `flores.model.ts` (`IEditarRamoRequest/Response`, detalle enriquecido),
+`flores.service.ts` (`editarRamo`, `cancelarPedidoFlores`), `configurar-ramo.component.*`
+(modo edición), `detalle-pedido.component.*` (botón), `mis-pedidos.component.ts`
+(cancelar del cliente + bloqueo del modal).
+
+---
+
+## REDES SOCIALES — FACEBOOK RESTAURADO + INSTAGRAM (2026-08-17)
+
+> El back retomó Facebook (endpoints de vuelta en `dev`/`qa`) y **ya cargó las credenciales de
+> Meta en QA** — el Page Access Token de larga duración de la página real. Ya se puede probar el
+> camino feliz, no solo el 400 de credenciales. Además adelantó el primer endpoint de Instagram.
+
+### Facebook — restaurado desde la rama de respaldo
+
+Se pausó el 2026-08-05 y se sacó de `dev`/`qa` (ver esa sección). El código estaba en
+`backup/facebook-redes-sociales`, intacto.
+
+⚠️ **NO se mergeó la rama** — está 7.856 líneas atrás de `dev` (es de hace 12 días) y el merge
+habría revertido medio proyecto. Se extrajeron **solo los 5 archivos del feature** con
+`git checkout backup/... -- src/app/admin/redes-sociales src/app/redes-sociales`, y los 4 puntos
+de integración se rehicieron a mano:
+
+| Punto | Qué |
+|---|---|
+| `admin-routing.module.ts` | ruta `admin/facebook` |
+| `admin.module.ts` | declaración del componente |
+| `navbar.component.html` + `.ts` | link + `GROUP_ROUTES` |
+| **`loading.interceptor.ts`** | **`/redes-sociales/` en `skipUrls`** |
+
+El último es el que se advirtió que era fácil de olvidar, y por qué: **no truena nada**, solo
+deja el overlay global tapando la app entera durante los minutos que tarda un video.
+
+### Instagram — endpoint nuevo, más limitado (por Meta, no por el back)
+
+`POST /v1/redes-sociales/instagram/publicar`, solo ADMIN, **JSON no multipart**:
+
+- **Solo imagen ya guardada.** Instagram exige una URL pública, así que no acepta archivo suelto —
+  no hay equivalente de `imagenNueva`. El back reusa la URL del micro de imágenes.
+- **No se puede programar.** Su Content Publishing API siempre publica de inmediato.
+- **Solo foto**, sin video por ahora.
+
+La pantalla pasó a llamarse **"📣 Publicar en redes"** con un selector arriba. Al elegir Instagram
+se ocultan las opciones que ese endpoint ignoraría (video, "subir una nueva", el paso "Cuándo") y
+se explica por qué — si se dejaran a la vista, el admin creería que se guardaron.
+
+⚠️ **El id de Instagram viaja en el MISMO campo `postIdFacebook`** (el back no agregó uno nuevo
+para no romper el contrato). Hay que mirar `plataforma` antes de armar el link, o un post de
+Instagram llevaría a un `facebook.com/...` que no existe.
+
+### 🔴 Bloqueo de Instagram — es del dueño, no del código
+
+**La cuenta de Instagram profesional no está vinculada** a la página de Facebook "Novedades Jade".
+El back lo verificó contra la Graph API (`instagram_business_account` no viene en la respuesta de
+la página). Hasta que se vincule desde **Meta Business Suite**, el endpoint responde 400
+`"Instagram no esta configurado..."` — que la pantalla muestra tal cual.
+
+**Facebook sí se puede probar ya.**
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): Facebook conserva video, "subir una
+nueva" y programación; Instagram las oculta. ⚠️ Ninguna probada contra el backend real.
+
+---
+
+## REDES — UNA PUBLICACIÓN, VARIAS REDES: TEXTO COMÚN + HASHTAGS POR RED (2026-08-18)
+
+> Diseño pedido por el dueño. Su objetivo real son los **Reels** (mismo video en Facebook,
+> Instagram y TikTok) — eso **todavía no existe**, ver abajo. La pantalla se armó ya con lo que sí
+> funciona, para que cuando el back entregue Reels solo haya que enchufarlo.
+
+### El modelo
+
+Sube el archivo **una vez**, marca a qué redes va, escribe el texto **una vez**, y los **hashtags
+por red** (lo que funciona en Instagram no es lo mismo que en Facebook). Al publicar se concatena
+`texto + "\n\n" + hashtags de esa red`, y hay **vista previa de cómo queda cada una**.
+
+Se descartó la idea inicial de una pestaña por red: obligaría a **subir el mismo video tantas
+veces como redes**, y un video pesa.
+
+### Publicación secuencial, y resultado POR RED
+
+`publicar()` recorre las redes **una tras otra**, no con `forkJoin`. El motivo es concreto: cada
+red es un request independiente contra Meta y **una puede fallar mientras la otra funciona** — es
+literalmente el caso de hoy (Facebook publica bien, Instagram devuelve 400 porque la cuenta no
+está vinculada). Con `forkJoin`, un solo fallo cancela el resto y no se sabe qué llegó a
+publicarse.
+
+Por eso el resultado es **una fila por red** (✅/❌ con su motivo y su link), no un sí/no global:
+un "hubo un error" a secas dejaría al admin sin saber si tiene que reintentar en todas o en una.
+
+### Las restricciones se aplican solas, y se explican
+
+`motivoNoDisponible(red)` devuelve **el motivo**, no un booleano, para poder mostrarlo junto a la
+casilla — una casilla apagada sin explicación deja al admin adivinando si es un error o una
+limitación de esa red. Hoy:
+
+| Red | Limitación |
+|---|---|
+| Instagram | Sin video; y sin "subir una nueva" (su API exige una URL pública, no acepta archivo) |
+| Instagram | No se puede programar — su API siempre publica de inmediato |
+| TikTok | Sin endpoint todavía — se muestra deshabilitado para que se vea contemplado, no olvidado |
+
+`sincronizarRestricciones()` **desmarca sola** una red que deje de poder recibir el contenido
+(ej. pasar de foto a video desmarca Instagram): si se quedara marcada, el admin creería que se
+publicó ahí.
+
+**Programar solo aparece con Facebook sola.** Con Instagram también marcada, saldrían en momentos
+distintos sin que nadie lo advierta.
+
+### 🔴 Lo que NO existe todavía — hay que pedirlo
+
+**Reels no está implementado en ninguna red**, y es el objetivo del dueño. El back ya lo había
+avisado: *"Video, Historias y Reels NO están implementados... la Graph API los maneja con flujos
+completamente distintos (subida por partes/resumable)"*. Lo que hay es **video de feed en
+Facebook** — que no es un Reel. TikTok tampoco existe.
+
+### ⚠️ La música NO se puede elegir desde aquí — y conviene tenerlo claro
+
+Meta **no expone la biblioteca de audio por API**. Un video publicado desde el sistema sale con
+**el audio que ya trae el archivo**; la música se elige solo dentro de la app de Instagram.
+
+Decisión del dueño: **la pega él al editar el video**. Queda advertido en la pantalla, incluido
+el riesgo de que Instagram silencie el Reel por derechos de autor si usa música comercial.
+
+### 💡 Trampa: `redes` chocaba con el servicio inyectado
+
+El campo de las casillas se llamó primero `redes`, pero el servicio ya se llamaba así
+(`private readonly redes: RedesSocialesService`) — la propiedad tapaba al servicio y **todas las
+llamadas dejaban de existir**. Lo detectó el compilador; quedó como `redesSel`.
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): texto común, hashtags por red, vista
+previa de cada una, TikTok deshabilitado con su motivo, y al pasar a video Instagram se desmarca
+sola explicando por qué. ⚠️ Sin probar contra el backend real.
+
+---
+
+## FIX FLORES — UN COLOR DESACTIVADO SE PERDÍA SIN DECIR CUÁL (2026-08-18)
+
+**Lo encontró el back**, revisando nuestra pregunta: no hacía falta ningún cambio de su lado, el
+dato ya venía y **el bug era del front**.
+
+`GET /v1/flores/pedidos/{id}/detalle` trae `colores[].colorNombre`, leído de **la relación
+guardada en el pedido** — no del catálogo. Nosotros lo ignorábamos y cruzábamos `colorFlorId`
+contra `colores-flor/por-tipo-flor/{id}`, que **filtra por `activo:true`**: justo el color caído
+es el que no aparece ahí.
+
+**Síntoma:** al editar un ramo con un color desactivado después de la venta, esas flores
+desaparecían y el admin solo veía *"faltan 10 flores por repartir"* — sin saber de qué color eran,
+así que no podía ofrecerle un cambio al cliente.
+
+**Fix:** los colores del ramo que no están en el catálogo activo se separan en
+`coloresNoDisponibles` (nombre + cantidad, del propio detalle) y se muestran arriba del reparto:
+
+> ⚠️ Ya no hay **10 Blanca**. Esas flores hay que repartirlas entre los colores de abajo.
+
+**Regla:** para mostrar algo que ya quedó guardado en un pedido, usar lo que trae **el pedido**, no
+buscarlo en el catálogo. El catálogo dice qué se puede vender **hoy**; el pedido dice qué se
+vendió. Aplica igual a accesorios y frases.
+
+**Verificado en pantalla** simulando un color desactivado (el catálogo devuelve solo "Roja", el
+ramo trae "Roja" y "Blanca"): el aviso sale con nombre y cantidad correctos.
+
+---
+
+## ✅ CERRADO POR EL BACK — el agujero de `PUT /v1/pedidos/{id}/entrega` (2026-08-18)
+
+El back lo reforzó de su lado: ahora ese endpoint **rechaza con 400** si el pedido es un ramo y el
+request manda `fechaEntrega` o `lugarEntregaId` — así no se cuela ni llamándolo directo por
+Postman. El resto de los campos siguen editables, y en pedidos que no son de flores no cambia nada.
+
+Nuestro bloqueo de UI se queda igual (es la primera barrera y evita el viaje inútil), pero ya no
+es lo único que protege.
+
+⚠️ **Confirmado de paso:** `lugarEntregaId` de un ramo **no se puede cambiar por ningún endpoint
+todavía** — ni `editar-ramo` lo cubre. Por eso la zona se muestra bloqueada al editar. Si hace
+falta, hay que pedirlo.
+
+---
+
+## 🎉 INSTAGRAM YA ESTÁ VINCULADO — se puede probar (2026-08-18)
+
+El bloqueo se resolvió: la cuenta `novedades_bolsas_jade` ya está vinculada.
+
+⚠️ **Con una corrección importante:** la página de Facebook configurada al principio era **la
+equivocada**. La cuenta administra 4 páginas y la buena es **"NovedadesJade"** (sin espacio,
+`645820348605806`) — no "Novedades Jade" con espacio (`1275448475648441`). La correcta es la que
+tiene la cuenta real de Instagram. Si alguna vez guardamos el id viejo en el front, hay que
+cambiarlo (hoy no lo guardamos en ninguna parte — el front nunca manda el id de página).
+
+QA ya tiene las 3 variables correctas y **no queda ningún bloqueo de credenciales**: foto y video
+de Facebook, y foto de Instagram, se pueden probar de punta a punta.
+
+---
+
+## REDES — REEL DE INSTAGRAM CONECTADO (2026-08-18)
+
+El back lo construyó el mismo día que se pidió: `POST /v1/redes-sociales/instagram/publicar-reel`.
+Es **el objetivo real del dueño** (el Reel, no la foto).
+
+**Multipart**, no JSON como la foto de Instagram — aquí sí viaja archivo. `varianteId`,
+`descripcion` y `video` (obligatorio: el catálogo no guarda video, no hay "reel principal").
+`tipoPublicacion` vuelve como `"reel"`.
+
+**Respuestas del back a las 4 preguntas:**
+1. **No validan el archivo** — se manda tal cual y si el formato no sirve, Instagram lo rechaza
+   con su propio mensaje. Mismo criterio que el video de Facebook.
+2. **Endpoint aparte**, no un parámetro del de foto: el mecanismo de subida es distinto.
+3. **La subida por partes la absorben ellos** — el front sigue mandando un solo multipart, sin
+   cambios. Ellos hacen los 4 pasos de la subida reanudable de Meta por dentro.
+4. **TikTok:** no tienen referencia previa de su API; lo investigan cuando toque.
+
+### ⏳ Tarda, y hay que decirlo
+
+Meta **procesa el video después de recibirlo**; el back espera hasta **3 minutos** antes de
+rendirse. La barra llega al 100% mucho antes de que termine de verdad — por eso la fase
+`procesando` ya existía y aquí es más importante que nunca. Si Meta se pasa de esos 3 minutos, el
+back responde 400 pidiendo reintentar: **no se perdió nada, pero tampoco se publicó**.
+
+La pantalla lo avisa antes de subir, no después.
+
+### En la pantalla
+
+Tercer botón **🎞️ Reel** junto a Foto y Video. Al elegirlo:
+- **Facebook se desmarca solo** — su Reel es otro flujo que el back todavía no construyó. Su
+  "video" es el del feed, que no es lo mismo.
+- Instagram queda disponible (es el único que hoy publica Reels).
+- El selector de archivo se comparte con Video: `*ngIf="tipo !== 'foto'"`.
+
+`motivoNoDisponible()` explica cada caso junto a la casilla, igual que el resto.
+
+**Verificado en pantalla:** al pulsar Reel, Facebook se apaga con su motivo, Instagram queda
+marcado, y los avisos de tiempo y de música salen antes de elegir el archivo.
+
+⚠️ **Ni el back lo ha probado contra Meta real** — es la primera vez que el proyecto usa la subida
+reanudable. Si algún paso responde distinto, el error de Meta llega tal cual a la pantalla.
+
+### Falta todavía
+- **Reel de Facebook** — pedido, no construido.
+- **TikTok** — pedido, no construido. Ya aparece deshabilitado en la pantalla.
+
+---
+
+## REDES — REEL DE FACEBOOK CONECTADO: EL MISMO REEL YA VA A LAS 2 REDES (2026-08-18)
+
+`POST /v1/redes-sociales/facebook/publicar-reel`, construido por el back el mismo día que el de
+Instagram. **Con esto se cumple el objetivo del dueño**: un solo video vertical publicado en
+Facebook e Instagram de una vez, con hashtags distintos en cada una.
+
+Multipart, `varianteId` + `descripcion` + `video`. Mismo mecanismo reanudable que Instagram (3
+pasos contra `/video_reels`), absorbido entero por el back — el front sigue mandando un multipart.
+
+### ⚠️ El Reel de Facebook NO se puede programar
+
+A diferencia del **video de feed** de esa misma red, que sí acepta `scheduledPublishTime`:
+`/video_reels` no lo soporta. Por eso `soloFacebook` se reemplazó por **`puedeProgramar`**, que
+además exige `tipo !== 'reel'` — y el paso "Cuándo" desaparece solo.
+
+Y por eso la petición del Reel **no se arma con `base`**: ese objeto lleva `scheduledPublishTime`
+dentro.
+
+Resumen de dónde se puede programar hoy:
+
+| | Programar |
+|---|---|
+| Facebook · foto y video de feed | ✅ (y solo si va sola) |
+| Facebook · Reel | ❌ `/video_reels` no lo soporta |
+| Instagram · todo | ❌ su API publica siempre de inmediato |
+
+### El límite es 200 MB — confirmado, y el 25 era doc viejo
+
+El back aclaró la contradicción: **200 MB es el único límite real**, global para todos los
+endpoints (foto nueva, video de feed y Reel). El 25 MB era el valor original, de antes de que lo
+subieran para soportar video. `LIMITE_ARCHIVO_MB` ya estaba en 200 — sin cambios.
+
+**Verificado en pantalla** (claro y oscuro): con Reel, Facebook e Instagram quedan **las dos
+disponibles**, sin motivo de bloqueo, el paso "Cuándo" desaparece, y la vista previa muestra el
+mismo texto con los hashtags de cada red. Botón: *"🚀 Publicar en 2 redes"*.
+
+⚠️ **Nadie lo ha probado contra Meta** — ni el back. Es la primera vez que el proyecto usa
+`/video_reels` y la subida reanudable de Instagram. Si algo falla, el mensaje de Meta llega tal
+cual a la pantalla, sin recortar.
+
+### Ya solo falta TikTok
+
+Integración nueva desde cero y con trámite de app propio. Ya aparece deshabilitado en la pantalla
+con su motivo; se activa cuando exista el endpoint.
+
+---
+
+## REDES — REDISEÑO PEDIDO POR EL DUEÑO: ARRASTRAR VIDEO + PESTAÑAS DE HASHTAGS (2026-08-18)
+
+El dueño describió la pantalla que quería y **no era la que estaba hecha**. Su flujo:
+
+> *"tiene que haber un [área] para cargar el video y ese video es para las 3 redes... entonces
+> tiene que haber 3 pestañas para las 3 redes... eso solo es para poner los hashtags porque ahí sí
+> va a ser lo diferente, y un textarea para el texto que irá en las 3 redes... por eso debe tener
+> un botón de mostrar para Facebook o para las demás, eso quedaría al final"*
+
+### Los 3 cambios
+
+1. **Arrastrar y soltar el video** en vez del botón "Elegir video". Es un `<label>` con el input
+   escondido, así el clic sigue abriendo el selector sin JS extra.
+2. **Los hashtags pasan a pestañas** (una por red) en vez de campos apilados. Cada pestaña trae
+   además su casilla de "Publicar en esta red" — es la otra decisión que se toma por red. La
+   pestaña muestra ✓ cuando esa red está activa, se esté viendo o no.
+3. **La vista previa se esconde detrás de un botón**, al final ("👁 Mostrar cómo va a quedar"),
+   en vez de estar siempre visible estorbando mientras se escribe.
+
+### ⚠️ `preventDefault` en `dragover` no es opcional
+
+Sin él el navegador **no considera la zona un destino válido**, y al soltar el archivo lo abre en
+una pestaña nueva en vez de dárnoslo. Es el error clásico de drag & drop.
+
+También se valida `file.type.startsWith('video/')` al soltar: en una zona de arrastre puede caer
+cualquier cosa (un PDF, una carpeta). Sin ese filtro se subiría basura y el error llegaría desde
+Meta mucho después.
+
+### 💡 Cuidado con `node_modules` del scratchpad
+
+Al ir a verificar, Playwright había desaparecido del scratchpad (se limpió el temp). Si un script
+de prueba falla con `Cannot find module 'playwright'`, es eso — `npm i playwright` ahí y listo, no
+es un problema del proyecto.
+
+**Verificado en pantalla** (claro y oscuro): la zona de arrastre, las 3 pestañas con su ✓, el
+cambio de pestaña mostrando los hashtags de esa red, y la vista previa desplegándose al final con
+el mismo texto y los hashtags de cada una.
+
+### ⏳ Queda una duda del dueño sin resolver
+
+Preguntó **"elegir producto ¿a qué se refiere?"** — el paso 1 no aparece en el flujo que él
+describió. Hoy es **obligatorio porque el back exige `varianteId`** en todos los endpoints. Si
+quiere subir un Reel que no sea de un producto (el local, un saludo, una promo general), tendría
+que elegir uno cualquiera. Pendiente de decidir si se le pide al back que sea opcional para video
+y Reel.
+
+---
+
+## FIX REDES — LA PANTALLA SE VEÍA VACÍA: TODO ESTABA ESCONDIDO TRAS ELEGIR PRODUCTO (2026-08-18)
+
+**Reportado como "no veo los cambios en dev y qa".** No era eso: los cambios estaban desplegados
+(el título ya decía "📣 Publicar en redes"). El problema era que **4 de las 5 secciones tenían
+`*ngIf="seleccionado"`**, así que hasta elegir un producto la pantalla mostraba solo el buscador
+y nada más — parecía que no había cargado.
+
+Es la misma molestia que el dueño ya había señalado al preguntar *"elegir producto, ¿a qué se
+refiere?"*: ese paso le estaba tapando la pantalla, y no aparece en el flujo que él describió
+(video → texto → hashtags → publicar).
+
+### El fix
+
+Se quitó `*ngIf="seleccionado"` de los pasos 2 (contenido), 3 (redes/hashtags), del bloque de
+programar y del de publicar. **El producto se sigue exigiendo** — pero al publicar, no para poder
+ver la pantalla. `puedePublicar` ya lo validaba; solo faltaba **decirlo**: nuevo aviso
+*"⬆️ Falta elegir el producto arriba (paso 1) para poder publicar"*, porque un botón gris sin
+explicación deja al admin atorado (mismo criterio que el resto del proyecto).
+
+### ⚠️ Efecto secundario que había que cubrir
+
+Con el formulario visible desde el inicio, **el admin puede escribir el texto ANTES de elegir el
+producto**. `seleccionar()` sobrescribía `descripcion` con la sugerencia — le habría borrado lo
+que ya redactó, sin avisar. Ahora solo sugiere **si el texto está vacío**.
+
+### 💡 Lección — un `*ngIf` de "requisito previo" puede leerse como "está roto"
+
+Esconder el 80% de una pantalla hasta que se cumpla un paso previo **no se lee como "falta algo",
+se lee como "no cargó"**. Y encima llegó como reporte de deploy fallido, que hizo perder tiempo
+verificando GitHub y el bundle del servidor.
+
+**Regla:** si un paso es requisito, mostrar el resto **igual** y bloquear solo la acción final,
+diciendo qué falta. Nunca dejar la pantalla en blanco esperando.
+
+**Verificado en pantalla** tal cual la abre el usuario (sin producto elegido): se ven los 3 pasos,
+el área de arrastrar el video, las pestañas de hashtags y el botón de publicar con su aviso.
+
+---
+
+## REDES — TIKTOK + PROGRAMAR EN LAS 3, Y LA PANTALLA EN EL ORDEN QUE PIDIÓ EL DUEÑO (2026-08-18)
+
+Dos entregas grandes del back en el mismo día, más el reordenamiento que pidió el dueño.
+
+### 1. TikTok conectado
+
+`POST /v1/redes-sociales/tiktok/publicar` — multipart, **solo video** (su API no tiene "publicar
+foto"). Al elegir Foto, TikTok se desmarca solo con el motivo.
+
+⚠️ **Mientras su app siga en Sandbox, el video sale forzado a privado** y solo funciona con las
+cuentas dadas de alta como Target User. Eso lo avisa la pantalla con `advertenciaDe()` — un aviso
+que **no impide publicar**, a diferencia de `motivoNoDisponible()`. Si no se dijera, el admin
+publicaría y creería que falló al no verlo.
+
+El endpoint `/tiktok/autorizar` (OAuth, una sola vez) **no necesita pantalla** — lo corre el back
+desde el navegador.
+
+### 2. Programar: ahora en las 3 redes y los 3 tipos
+
+El back tomó la sugerencia del **job propio para todas** en vez de mezclar el scheduler nativo de
+Facebook con uno propio para Instagram. Con eso:
+
+- `scheduledPublishTime` existe ahora en **los 6 endpoints** (antes solo en Facebook foto/video).
+- **Ya no hay fecha máxima.** Los 29 días del Reel de Facebook y los 6 meses del video de feed eran
+  límites *de la API de Meta*; como ahora publica un job del back, no aplican. Se quitó
+  `PROGRAMAR_MAX_MESES` y su validación. Queda solo el mínimo de 10 minutos.
+- `estado` puede venir **`FALLIDA`** (el job reintenta 3 veces y se rinde), con `intentos` y
+  `ultimoError` — es lo único que dice POR QUÉ no salió, así que se muestra en el resultado.
+- Con `PROGRAMADA`, `postIdFacebook` viene `null` (el post todavía no existe) — por eso ese campo
+  pasó a `string | null`.
+
+### 3. La pantalla, en el orden que pidió el dueño
+
+Lo describió así: *"primero es el drop para arrastrar el video, después el textarea, después 3
+como radio button para cuando selecciono uno entonces es para face por ejemplo y pongo los
+hashtags, y al final la programación"*.
+
+| Antes | Ahora |
+|---|---|
+| 1 Producto · 2 Contenido · 3 Redes · 4 Cuándo | **1 Contenido · 2 Redes · 3 Cuándo · 4 Producto** |
+| Pestañas para los hashtags | **Radios** |
+
+El producto se fue **al final**: es un requisito del back, no parte del flujo con el que él piensa.
+
+⚠️ **El radio elige qué red se está CONFIGURANDO, no a cuál se publica.** Eso último sigue siendo
+la casilla de adentro, y pueden ir varias a la vez — el archivo se sube una sola vez. Son dos
+cosas distintas y por eso se ven distintas: el radio marca la que se está viendo, y el ✓ marca las
+que van a recibir la publicación.
+
+### 💡 Al reordenar, revisar los textos que hablan de la posición
+
+Tres frases quedaron mintiendo y el compilador no puede verlas:
+- *"Los Reels no se pueden programar"* — dejó de ser cierto con el job propio.
+- *"Entre 10 minutos y 6 meses"* — ya no hay máximo.
+- *"Falta elegir el producto arriba (paso 1)"* — el producto pasó a ser el paso 4.
+
+**Verificado en pantalla** (claro y oscuro): el orden nuevo, los 3 radios, un Reel con las 3 redes
+marcadas y programación activada, y que al pasar a Foto TikTok se cae solo con su motivo.
+
+⚠️ **Nada de esto se ha probado contra las APIs reales** — ni el back. Ni TikTok, ni los Reels, ni
+el flujo de programación.
+
+---
+
+## FIX REDES — "TIKTOK NO ME DEJA SELECCIONARLO" + LOS HASHTAGS ESCONDIDOS (2026-08-18)
+
+Dos reportes del dueño probando la pantalla en vivo.
+
+### 1. Los hashtags solo aparecían si la red ya estaba marcada
+
+Su flujo es llenar los 3 de corrido: *"pongo el texto, selecciono el radio de Facebook pongo los
+hashtags, después Instagram pongo los hashtags, después TikTok"*. Pero el campo estaba detrás de
+`*ngIf="redesSel[r] && puedeUsar(r)"`, así que en una red sin marcar no había dónde escribir.
+
+Ahora el campo se ve **siempre**. Si una red se queda sin hashtags no pasa nada — `textoFinal()`
+manda solo el texto, sin concatenar. No hay que marcar la red para poder prepararla.
+
+### 2. 🔴 "El de TikTok no me deja seleccionarlo"
+
+**No era un bug: era el tipo.** La pantalla arranca en **Foto**, y TikTok no publica fotos (su API
+no tiene ese concepto), así que la casilla salía deshabilitada — con razón, pero **sin que se
+entendiera**.
+
+El motivo sí estaba escrito, pero iba dentro del `<label>` de la casilla como un `<small>` gris,
+pegado al texto. Se perdía por completo.
+
+**Fix:** el motivo salió del label y pasó a ser un aviso propio en rojo (`.fb-bloqueo`) —
+🚫 *"TikTok solo acepta video, no fotos"* — **con la salida al lado**: un botón **"Cambiar a
+video"** que lo arregla en un clic, en vez de dejar al admin deducir qué tiene que hacer.
+
+Rojo y no ámbar a propósito: esto **sí impide** publicar en esa red, a diferencia de
+`.fb-hint--warn` (el video privado de TikTok en Sandbox), que solo avisa.
+
+### 💡 Un `<small>` dentro de un `<label>` clicable no se lee
+
+Es el mismo patrón que ya falló antes en este proyecto: la explicación de por qué algo está
+bloqueado **compite visualmente con la etiqueta** y el ojo la salta. Si un control está
+deshabilitado, el motivo va **fuera**, con su propio contraste, y si hay una acción que lo
+desbloquea, va junto al motivo.
+
+**Verificado reproduciendo el caso exacto del dueño** (tipo Foto → radio de TikTok): la casilla
+sale deshabilitada, el aviso rojo se ve, el botón "Cambiar a video" lo desbloquea, y después de
+pulsarlo TikTok se puede marcar y publicar.
+
+---
+
+## REDES — CHULETA DE QUÉ ACEPTA CADA RED + RESPUESTAS DEL BACK (2026-08-19)
+
+### La chuleta, pedida por el dueño
+
+Después de toparse con *"TikTok no me deja seleccionarlo"*, pidió que quedara anotado en algún
+lado *"para ver si no es video, ya sé por qué"*. En vez de mandarlo a un documento, se puso
+**dentro de la pantalla**: botón **"❔ ¿Qué acepta cada red?"** en el header, plegable, con la
+tabla y las 6 reglas que se han ido descubriendo.
+
+|  | 📷 Foto | 🎬 Video | 🎞️ Reel | 📅 Programar |
+|---|---|---|---|---|
+| Facebook | ✅ | ✅ | ✅ | ✅ |
+| Instagram | ✅ | ❌ | ✅ | ✅ |
+| TikTok | ❌ | ✅ | ✅ | ✅ |
+
+Las notas cubren lo que no se ve en la tabla: la música va en el archivo, el video se sube una
+vez, el mínimo de 10 minutos, y que **el video privado de TikTok en Sandbox no es un error**.
+
+**Regla:** cuando cambien las capacidades de alguna red (p. ej. si Instagram habilita video de
+feed, o TikTok sale de Sandbox), **actualizar esta tabla además del código** — es el único lugar
+donde el dueño va a mirar.
+
+### Respuestas del back que cierran dos dudas
+
+1. **El job SÍ se recupera solo si el servidor estuvo caído.** No busca "las que vencen en este
+   minuto", sino **todas las `PROGRAMADA` con `scheduledPublishTime <= ahora`** — al arrancar
+   recoge las vencidas sin importar cuánto llevaban. Y los 3 intentos de `FALLIDA` **solo se
+   consumen por fallos reales de la API**: si el servidor no corrió, la fila no gasta ninguno.
+   Era el punto flojo que preocupaba de programar con job propio, y queda cubierto.
+2. **TikTok ya está autorizado y validado** contra su API real (cuenta Sandbox `novedadesJade`,
+   token guardado). Las migraciones corrieron en dev y qa.
+
+**Sin cambios de código por estas dos** — solo se reflejaron en la chuleta.
+
+### 💡 Al verificar con Playwright, un clic real puede no repintar
+
+El clic sobre el botón de la chuleta no abría el panel en la prueba, aunque el botón existía: es
+el efecto ya conocido de haber navegado con `router.navigateByUrl()` desde `page.evaluate()`
+(fuera de la zona de Angular). Se resolvió tocando el campo + `applyChanges`. **No era un bug de
+la pantalla** — en la app real el clic funciona.
+
+**Verificado en pantalla** en claro y oscuro: la tabla y las notas se leen bien en ambos temas.
+
+---
+
+## REDES — FUERA EL PASO "ELEGIR PRODUCTO" Y FUERA LAS FOTOS (2026-08-19)
+
+**Decisión del dueño**, revisando la pantalla: *"tienes una opción para seleccionar el producto o
+la variante, eso no me interesa, solo se subirá a redes videos y nada más"*.
+
+Es coherente con lo que ya venía diciendo desde que se rediseñó la pantalla (el flujo que él
+describe empieza en el video, el producto nunca apareció en él, y ya había preguntado *"elegir
+producto ¿a qué se refiere?"*). Un video del local, un saludo o una promo general **no son de una
+variante del catálogo** — obligarlo a elegir una cualquiera solo para poder publicar es pedirle
+que meta un dato falso.
+
+### Qué se quitó
+
+| | Por qué |
+|---|---|
+| Paso "¿De qué producto es?" (buscador + selección) | Lo pidió explícitamente |
+| Tipo **📷 Foto** completo (origen de imagen, galería, subir una nueva) | Consecuencia directa: *"solo videos y nada más"*. Y sin producto la foto **no puede funcionar** — es de donde sale la imagen (Instagram exige una ya guardada) |
+| La sugerencia automática de texto a partir del producto | Sin producto no hay de dónde sacarla. El texto se escribe a mano |
+
+La pantalla queda en 3 pasos: **1 Qué vas a publicar (video + texto) · 2 Redes y hashtags ·
+3 Cuándo**. El botón ya no dice "falta el producto" sino qué falta de verdad (el video o el texto).
+
+### ✅ El back ya lo desplegó (2026-08-19) — sin cambios de nuestro lado
+
+Se pidió que `varianteId` fuera opcional en los 4 endpoints de video/Reel y el back lo hizo el
+mismo día, por su cuenta y por el mismo motivo. Detalles que dejaron confirmados:
+
+- La tabla real se llama **`publicacion_social`** (no `publicacion_red`), y su `variante_id` ya
+  es `NULL`-able. **La FK a `variantes` no se tocó** — un FK no valida la fila cuando el valor es
+  nulo.
+- El job de publicaciones programadas no dependía de la variante.
+- ⚠️ **Único efecto**: una publicación sin variante no aparece en el historial *por variante*
+  (`GET .../historial?varianteId=…`); sí en los listados generales, con `varianteId: null`. Hoy
+  no consumimos ese historial desde ninguna pantalla — si algún día se hace, contar con que los
+  videos no van a estar ahí.
+- De paso corrigieron un bug suyo de clasificación de errores: un parámetro obligatorio faltante
+  en **cualquier** endpoint respondía `500`; ahora responde `400 "Falta el parámetro requerido:
+  <nombre>"`. Aplica a todo el back, no solo a redes.
+
+Los endpoints de **foto** se quedaron con la variante obligatoria — ahí sí hace falta, es de donde
+sale la imagen. No los llamamos desde ninguna pantalla.
+
+⚠️ Se documentó como **`VARIANTE_OPCIONAL`** en `publicacion.model.ts` — ahí está el porqué
+completo, y los `varianteId?` de las 3 interfaces apuntan a esa nota.
+
+⚠️ **El part se omite, no se manda vacío** (`agregarVariante()` en el servicio): mandar `"null"`
+haría que el back intente convertirlo a `Long` y responda un **500 feo** en vez de tomarlo como
+ausente — es exactamente lo que ya pasó una vez con `imagenId` (ver "FIX — el parseo tolerante",
+mismo patrón).
+
+### Lo que NO se borró
+
+- **`publicarFoto()` y `publicarInstagram()` siguen en el servicio.** Quedaron sin uso (confirmado
+  con grep), pero los endpoints del back existen y funcionan; borrarlos sería tirar código
+  probado para tener que reescribirlo si algún día quiere volver a publicar fotos.
+- **`TipoPublicacion` conserva `'foto'`** — el back lo devuelve en publicaciones viejas.
+
+### La chuleta se actualizó junto con el código
+
+Se le quitó la columna 📷 Foto y la nota de "TikTok no publica fotos" (ya no hay forma de estar en
+Foto). El bloqueo que queda es el de Instagram con "video de feed", y su botón de salida ahora
+dice **"Cambiar a Reel"**. Es justo la regla que dejó escrita la sección anterior: **si cambian
+las capacidades de una red, la tabla se actualiza además del código** — aquí cambió la pantalla,
+no la red, pero aplica igual.
+
+**Archivos modificados:**
+- `src/app/redes-sociales/models/publicacion.model.ts` → `varianteId?` en Video/Reel/TikTok, nota
+  `VARIANTE_OPCIONAL`
+- `src/app/redes-sociales/service/redes-sociales.service.ts` → `agregarVariante()` privado
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → reescrito sin buscador ni foto
+  (fuera `VarianteService`, `OnInit`, `descripcionSugerida`, todo el bloque de imagen)
+- `.html` → 3 pasos, sin producto ni foto; `.scss` → fuera `.fb-search-*`, `.fb-dropdown`,
+  `.fb-sel`, `.fb-origen`, `.fb-galeria`, `.fb-file`
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro, sesión admin): no queda rastro del
+paso de producto ni del botón de Foto, los 3 pasos se numeran bien, con Video Instagram se cae
+sola con su motivo y su botón "Cambiar a Reel", y con Reel quedan las 3 redes disponibles.
+
+---
+
+## REDES — HASHTAGS FIJOS POR RED, SE PRECARGAN SOLOS (2026-08-19)
+
+> Idea del dueño, implementada por el back el mismo día: guardar un set fijo de hashtags por red
+> para no reescribir siempre lo mismo. Migración ya corrida en dev y qa.
+
+| Método | URL | Devuelve |
+|---|---|---|
+| `GET` | `/v1/redes-sociales/hashtags-default` | **`lista`** con las 3 filas, siempre |
+| `PUT` | `/v1/redes-sociales/hashtags-default/{redSocial}` | **`data`** con la fila actualizada |
+
+⚠️ **El GET responde en `lista` y el PUT en `data`** — shapes distintos del mismo recurso. Leer el
+campo equivocado devuelve `undefined` **sin ningún error** (mismo tropiezo que ya costó una sesión
+con `colores-flor/por-tipo-flor`). Anotado en `IHashtagsDefault`.
+
+⚠️ El PUT **reemplaza** el string completo, no agrega. Por eso el mismo botón sirve para las tres
+cosas que pidió el back (agregar, editar y borrar): se manda el texto ya corregido, o vacío.
+
+### Dónde quedó — sin pantalla aparte, a propósito
+
+El back pidió "una pantalla de gestión de hashtags" **y** una opción en la de publicar. Se hizo
+todo **en la de publicar**, dentro del paso 2, porque ahí ya existe un campo de hashtags por red
+(con su radio) — una pantalla aparte obligaría a salirse de la publicación a medias, y sumaría un
+ítem más al menú para dos campos de texto.
+
+Debajo del campo de cada red:
+- **💾 Dejar estos fijos** → `PUT`. Deshabilitado si lo escrito ya es igual a lo guardado.
+- **↩ Volver a los fijos** → deshace un cambio hecho solo para este post. Aparece solo si difieren.
+- Y si no difieren, el texto dice cuál es el estado: *"✓ Son los que tienes guardados"* o
+  *"Todavía no tienes hashtags fijos para esta red"* — sin eso, dos botones apagados no explican
+  nada.
+
+**La precarga solo pisa el campo si está vacío.** Si la respuesta del GET tarda y el admin ya
+alcanzó a teclear, sobrescribirle lo que escribió sería perderle el trabajo sin avisar.
+
+**Si el GET falla no se bloquea nada** (se escriben a mano), pero **sí se avisa** — si no, el
+admin se queda esperando una precarga que nunca va a llegar.
+
+### ✅ El 413 de las pruebas en vivo no era nuestro ni del back
+
+El primer intento real de subir video a las 3 redes dio `413 Request Entity Too Large` **antes de
+llegar a Spring**: el Nginx de la VPS no tenía `client_max_body_size` y el default son 1 MB. Ya
+está en 200 MB. No fue la lógica de publicación — no hubo nada que corregir en el front.
+
+### 💡 Lección de prueba — `ngOnInit` NO se dispara al navegar fuera de la zona
+
+Ya estaba anotado que `router.navigateByUrl()` desde `page.evaluate()` no repinta. Esta vez pasó
+algo más específico y peor de diagnosticar: **el componente se crea (`ng.getComponent` lo
+encuentra) pero `ngOnInit` nunca corre**, porque los hooks se ejecutan en el primer ciclo de
+detección — que fuera de la zona no ocurre. Síntoma: la petición del `ngOnInit` **no aparece ni en
+el Network**, así que parece que el código no la hace.
+
+Ni `applyChanges` ni un `dispatchEvent('click')` sobre el link del menú lo resolvieron. Lo que
+funciona es llamar `c.ngOnInit()` a mano — con una trampa: **Angular lo vuelve a llamar** cuando
+por fin corre su primer ciclo (lo dispara cualquier evento que sí entre a la zona, p. ej. cerrar
+un Swal), así que la carga inicial se ve **dos veces** y la segunda pisa lo que se probó en medio.
+Se ve como "el guardado no tomó efecto" y no lo es.
+
+Otros dos estorbos del harness, sin relación con el código: sin backend, **el overlay global de
+carga queda tapando la pantalla** y ningún clic llega (se apaga con
+`addStyleTag('app-loading{display:none}')` o mockeando todo el host con `p.route(/localhost:9091/)`
+como catch-all), y `p.hover('app-navbar')` falla porque el host no tiene tamaño — hay que apuntar
+a `aside.sidebar`.
+
+**Archivos modificados:**
+- `src/app/redes-sociales/models/publicacion.model.ts` → `IHashtagsDefault`
+- `src/app/redes-sociales/service/redes-sociales.service.ts` → `hashtagsDefault()`,
+  `guardarHashtagsDefault()`
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → `ngOnInit` + `cargarFijos()`,
+  `guardarFijos()`, `restaurarFijos()`, `fijosSinCambios()`
+- `.html` → botones y estado bajo el campo de hashtags; `.scss` → `.fb-fijos`
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro, endpoints simulados con el shape real
+`lista`/`data`): precarga las 3 redes, el estado del botón cambia bien en los 3 casos (igual,
+editado, vacío) y el `PUT` sale a `/hashtags-default/facebook` con el texto correcto.
+
+### 🐛 El dueño no lo encontró — un botón suelto no dice "aquí se dan de alta"
+
+Apenas subido, preguntó: *"¿y dónde doy de alta hashtags?"* — **teniendo el botón enfrente**. La
+primera versión era solo un `💾 Dejar estos fijos` debajo del campo, y se leía como una acción
+más del post que se está escribiendo, no como el lugar donde se registran.
+
+**Fix:** el bloque pasó a ser un recuadro con **título propio** (📌 *Mis hashtags fijos de
+{red}*), que además **muestra lo que hay guardado** (`Guardados: #… — se escriben solos cada vez
+que abres esta pantalla`) o dice que todavía no hay nada. El botón cambia de texto según el caso:
+*Guardar como fijos* la primera vez, *Actualizar mis fijos* después.
+
+**La lección, que ya se repitió varias veces esta semana:** si una acción es también el **lugar**
+donde se configura algo, necesita título y estado visible, no solo un botón. Lo mismo pasó con el
+motivo de bloqueo de TikTok (un `<small>` dentro de un `<label>` que nadie leía) y con el paso de
+producto escondiendo media pantalla. **Un botón comunica "qué hago"; un recuadro con título
+comunica "dónde estoy".**
+
+### 🔁 Volvió a preguntar → ahora SÍ tiene pantalla propia (`/admin/hashtags`)
+
+La regla que había quedado escrita arriba ("si aun así vuelve a preguntar, ahí sí conviene la
+pantalla propia") se cumplió: al día siguiente preguntó otra vez, y con más detalle —
+*"¿dónde los doy de alta? para cada red social, para después tomarlos"*.
+
+Esa frase es el diagnóstico completo: **su modelo mental es "los registro en un lado y la de
+publicar los toma"**, no "los guardo mientras publico". Ninguna cantidad de título o recuadro
+dentro de la pantalla de publicar iba a cambiar eso, porque el problema no era que no se viera —
+era que no estaba donde él lo buscaba (el menú).
+
+Nueva pantalla **🛠️ Sistema → 🏷️ Hashtags de redes** (`/admin/hashtags`,
+`GestionHashtagsComponent`, BEM `gh-`): las 3 redes, un textarea cada una, contador de hashtags,
+Guardar / Deshacer y el estado ✓ Guardado / Sin guardar por red.
+
+**Los dos caminos conviven a propósito**, enlazados entre sí ("gestionar todos ↗" desde publicar,
+"📣 Ir a publicar" desde el alta): se dan de alta en su pantalla, y en la de publicar se pueden
+ajustar para un post puntual sin salirse de la publicación. Ambos usan los mismos 2 endpoints.
+
+⚠️ **Diferencia deliberada en el manejo de error:** si el GET falla, en *publicar* es un aviso
+discreto (accesorio: se escriben a mano y se publica igual), pero en *esta* pantalla es un error
+con botón de reintentar — aquí no hay nada más que hacer, si no cargó no sirve de nada.
+
+### 📖 La lección, que ya se repitió tres veces esta semana
+
+1. Paso de producto escondiendo media pantalla → *"no veo los cambios"*.
+2. Motivo de bloqueo de TikTok en un `<small>` dentro de un `<label>` → *"no me deja
+   seleccionarlo"*.
+3. Alta de hashtags dentro de publicar → *"¿dónde los doy de alta?"* (dos veces).
+
+Las tres son la misma: **la funcionalidad estaba, pero no donde el dueño la buscaba.** Y las tres
+las reportó como si fuera un bug o un deploy fallido, lo que hace perder tiempo revisando ramas y
+bundles. Regla práctica: **si algo se "da de alta" o se "configura", va en el menú**, aunque
+técnicamente quepa dentro de la pantalla donde se usa. Que además esté a la mano donde se usa es
+un extra, no el lugar principal.
+
+**Archivos nuevos:** `src/app/admin/hashtags/gestion-hashtags.component.ts/.html/.scss`
+**Modificados:** `admin-routing.module.ts`, `admin.module.ts`, `navbar.component.html` + `.ts`
+(link y `GROUP_ROUTES`), `publicar-facebook.component.html` + `.scss` (enlace cruzado)
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): carga las 3 redes con su contador,
+el estado cambia a "Sin guardar" al editar, y el `PUT` sale a `/hashtags-default/tiktok` con el
+texto correcto.
+
+---
+
+## REDES — REINTENTAR SOLO LO QUE FALLÓ, SIN VOLVER A SUBIR EL VIDEO (2026-08-19)
+
+**Pedido del dueño:** *"si falla, por ejemplo, cuando se quieren publicar, la opción de reintentar
+para no perder las cosas"*.
+
+**El agujero era real.** Con 3 redes marcadas, si dos publicaban y una fallaba, la única acción de
+la tarjeta de resultado era *"Publicar otra cosa"* — que además **borra el video**. Para reintentar
+esa red había que volver a subir el archivo (que pueden ser 200 MB) y reescribir todo. Y peor: al
+republicar iban las 3 otra vez, **duplicando los dos posts que sí habían salido**.
+
+### Lo que hay ahora
+
+| Acción | Qué hace |
+|---|---|
+| **🔄 Reintentar en {red}** | Reenvía **solo las que fallaron**, con el mismo archivo y el mismo texto. Aparece solo si hay fallidas |
+| **✏️ Volver a editar** | Vuelve al formulario **conservando todo** — para cuando el error se arregla cambiando algo (el texto, el tipo, la fecha) |
+| **🗑️ Empezar de cero** | Lo único que descarta el video, y **pide confirmación** antes |
+
+### ⚠️ La parte que evita el daño de verdad: no publicar dos veces
+
+Un post duplicado en la página real **no se puede deshacer desde aquí**. Por eso:
+
+- Cada red que sale bien se guarda en **`yaPublicadas`**, que **sobrevive al "volver a editar"**.
+- Al volver al formulario, esas redes **se desmarcan solas** y `motivoNoDisponible()` **impide
+  volver a marcarlas**, con el motivo escrito. La salida es "Empezar de cero", que las limpia.
+- **`PROGRAMADA` cuenta como ya mandada**: el job del back la va a publicar sola a su hora, así
+  que reintentarla dejaría dos posts. Solo `error` y `FALLIDA` son reintentables.
+
+### Detalles que no son obvios
+
+- **La barra de progreso se duplicó dentro de la tarjeta de resultado.** Durante un reintento la
+  tarjeta de publicar está oculta (`huboResultado` es true), así que sin eso el reintento se veía
+  como que no pasaba nada.
+- **El Swal de resultado ahora dice que el video no se perdió** — es lo primero que preocupa
+  cuando algo falla, y decirlo ahí evita que se cierre la pantalla creyendo que hay que empezar
+  de nuevo.
+- `reintentarFallidas()` **quita de la lista solo las fallidas**: las buenas siguen visibles
+  mientras corre el reintento.
+- Si el video ya no está (se limpió antes), el reintento avisa en vez de mandar un request roto.
+
+**Archivos modificados:**
+- `src/app/admin/redes-sociales/publicar-facebook.component.ts` → `yaPublicadas`,
+  `redesFallidas`, `reintentarFallidas()`, `volverAEditar()`, `nuevaPublicacion()` con confirm,
+  `motivoNoDisponible()` bloquea las ya publicadas, `conProgreso()` registra los éxitos
+- `.html` → bloque de reintento, barra en el resultado, aviso de "ya se publicó en…"
+- `.scss` → `.fb-reintento`
+
+**Verificado con `ng build` y en pantalla**, simulando el caso real (Reel a las 3 redes, TikTok
+devuelve 400): la 1ª vuelta llama a las 3 y deja `yaPublicadas: [facebook, instagram]` con el
+video y el texto intactos; el reintento llama **solo a `tiktok/publicar`** y fusiona el resultado;
+y al "volver a editar", Facebook queda desmarcado y no se deja re-marcar.
+
+---
+
+## REDES — EL PRODUCTO VUELVE, PERO OPCIONAL + EL CÓDIGO DE BARRAS ENCABEZA EL POST (2026-08-20)
+
+**Corrige parcialmente la decisión de ayer** ("fuera el paso de producto"). El dueño lo revisó y
+pidió que la variante volviera *"porque esa debe de ir para publicar en las redes"*.
+
+**Y tenía razón, por un motivo que ayer no existía:** el back montó un **bot que contesta los
+comentarios** de Facebook e Instagram y que usa *"el producto del post como contexto"*. Sin
+`varianteId`, ese bot no tiene con qué contestar si alguien pregunta precio o talla — el video se
+publica igual, pero pierde esa función.
+
+### Cómo quedó (confirmado con él, no asumido)
+
+- **Opcional, no obligatorio.** Un video del local o un saludo se publica sin producto; cuando sí
+  es de un producto, se elige y se adjunta. Es lo mejor de las dos decisiones: no obliga a meter
+  un dato falso, y no pierde el contexto del bot cuando sí aplica.
+- **El código de barras encabeza el post.** Orden literal que pidió: *"primero es el código de
+  barras y abajo lo demás, el textarea lo que lleve y abajo los hashtags"*:
+
+```
+GLPD-066
+Bolsas nuevas esta semana
+
+#NovedadesJade #Bolsas
+```
+
+Sin producto, el código simplemente no aparece y el resto queda igual.
+
+### Detalles
+
+- El buscador va **dentro del paso 1, justo antes del texto** — el orden de la pantalla es el
+  mismo con el que se arma la publicación, así el código como primera línea se explica solo.
+- No hace falta priorizar el código de barras en la búsqueda: `GET /tienda/v1/buscar` **ya busca
+  en cascada** código → categoría → nombre (ver "FIX BACK — BÚSQUEDA POR CÓDIGO DE BARRAS").
+- El chip del producto elegido dice *"— va como primera línea del post"*, para que no sorprenda
+  ver el código publicado.
+- `nuevaPublicacion()` ("Empezar de cero") también limpia el producto; `volverAEditar()` lo
+  conserva, igual que el video y el texto.
+- **No volvió nada de la foto** — sigue siendo solo video, como quedó ayer.
+
+⚠️ El código de barras queda **visible en un post público**. Es a propósito (es lo que permite
+pedir ese producto exacto), pero si algún día no se quiere, se quita de `textoFinal()`.
+
+**Archivos modificados:**
+- `publicar-facebook.component.ts` → `seleccionado`/`termino`/`resultados`, `buscarProducto()`,
+  `seleccionarProducto()`, `quitarProducto()`, `etiqueta()`; `textoFinal()` antepone el código;
+  `siguienteRed()` manda `varianteId`
+- `.html` → buscador opcional en el paso 1 + chip del elegido; hint del orden
+- `.scss` → se restauraron `.fb-search-*`, `.fb-dropdown` y `.fb-sel` (que se habían borrado ayer)
+
+**Verificado con `ng build` y en pantalla** (claro y oscuro): sin producto el texto sale
+`texto + hashtags`; con producto sale `GLPD-066\ntexto\n\n#hashtags`, y el multipart lleva
+`varianteId=44`.
+
+### 💡 El mock de una prueba también se desactualiza
+
+La primera corrida dio el buscador vacío y parecía un bug: el mock de Playwright apuntaba a
+`/variantes/v1/buscar` y el endpoint **ya se llama `/tienda/v1/buscar`**. Confirmado contra QA que
+`/tienda` responde 200 y `/variantes` ya no (401), o sea el rename del back ya está desplegado
+ahí. **Al renombrar un endpoint, revisar también los scripts de prueba** — si no, la siguiente
+verificación miente.
+
+---
+
+## MODO OSCURO — MONOCROMÁTICO SOBRE NEGRO PURO (2026-08-21)
+
+> **Reemplaza al jade en modo oscuro.** El modo claro **no cambió**: sigue en jade.
+
+**Decisión del dueño** tras rechazar seis paletas de color seguidas. Se le mostraron cuatro
+candidatas nuevas (violeta orquídea, oro champagne, coral cobre, rubí carmín) aplicadas a la
+pantalla real, y su respuesta fue *"no me gustó ningún color… y menos el fondo"*. Al acotarlo con
+dos preguntas eligió: **fondo negro puro** y **sin color de acento — blanco o plata**.
+
+### Qué es ahora el modo oscuro
+
+| | |
+|---|---|
+| Fondo | `#000000` — negro puro |
+| Tarjetas / superficies | `#0C0C0C` y `#151517` |
+| Bordes | `#2A2A2E` |
+| Texto | `#E9E9EC` · secundario `#9A9AA0` |
+| Marca | `--brand-1 #FFFFFF` → `--brand-2 #C7C7CC` → `--brand-3 #8E8E93` |
+| Tinta sobre la marca | `#000000` |
+
+**La jerarquía se lee por luminosidad, no por color:** el texto normal es `#E9E9EC` y el acento es
+blanco puro, o sea el acento es lo *más brillante* de la pantalla. Los rellenos de marca son
+blancos con texto negro encima.
+
+⚠️ **Los colores semánticos NO se tocaron** (rojo de error, verde de éxito, ámbar de espera). No
+son la marca, y sobre negro puro resaltan mejor que antes.
+
+### 🔑 Lo que hizo posible cambiar solo el oscuro: 3 variables de marca
+
+El problema real no era elegir color — era que **el verde estaba escrito a mano en 52 archivos de
+componente**, así que cambiar el oscuro obligaba a cambiar también el claro. Ahora hay tres
+variables, con valor propio por tema:
+
+```scss
+--brand-1   /* acento          */  claro #00875A   oscuro #FFFFFF
+--brand-2   /* stop del degradado */ claro #005C3D  oscuro #C7C7CC
+--brand-3   /* stop profundo    */  claro #00301F   oscuro #8E8E93
+```
+
+**Regla (ya estaba escrita y se incumplía): nunca escribir el hex de marca en un componente.**
+Ahora sí se cumple — grep de los 10 hexes de jade en `src`: **cero**, salvo las 3 definiciones del
+tema claro en `styles.scss`.
+
+### ⚠️ El verde estaba escondido en TRES formas distintas, no una
+
+Esto es lo que hace grande una migración de paleta, y lo que hay que buscar la próxima vez:
+
+| Forma | Cuántos | A qué se migró |
+|---|---|---|
+| **Hex** — `#00875A`, `#005C3D`, `#00D97E`… | 289 en 52 archivos | `var(--brand-1/2/3)` |
+| **rgba** — `rgba(0,135,90,0.14)` | 384 en 49 archivos | `rgba(var(--app-accent-rgb), …)` |
+| **Neutros teñidos** — `#EDF7F1`, `rgba(225,255,240,…)`, `#0F2119`, `#1E3A2D` | 92 | grises neutros |
+
+**La primera búsqueda solo vio los hex** y dejó el sidebar y medio sistema con tinte verde. Los
+`rgba(0,135,90,…)` son los más fáciles de olvidar porque el color no se ve como color en el código.
+
+💡 **Sass sí acepta `rgba(var(--x), 0.5)`** — se probó antes de migrar 384 usos, porque
+históricamente Dart Sass fallaba con eso. No falla.
+
+### 🐛 El acento blanco rompe todo `color: #fff` que esté encima de la marca
+
+Es el riesgo grande de un acento blanco, y ya estaba anotado como pendiente desde la migración
+jade (*"18 archivos con `background: var(--app-accent)` + `color:#fff`, sin tocar"*). Ahora sí se
+corrigió: **86 declaraciones** pasaron a `color: var(--app-accent-ink)` — que en claro vale
+`#FFFFFF`, así que **el modo claro no cambió ni un pixel**.
+
+⚠️ **Un barrido por cercanía de renglones NO alcanza.** El primer intento reemplazó solo lo que
+estuviera a ±3 renglones del fondo, y dejó esto, que se vio en la captura como un botón blanco sin
+texto:
+
+```scss
+.btn-submit {
+  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+  color: var(--app-accent-ink);      // ← esta sí la agarró
+  …10 renglones…
+  span, .pi { color: #fff; }          // ← esta no
+```
+
+El barrido bueno recorre **el bloque completo contando llaves**, y baja a los anidados solo si no
+redefinen su propio `background` (si lo redefinen, su texto blanco puede ser correcto — un badge
+rojo, por ejemplo).
+
+💡 **Y no usar regex en bucle para "marcar lo ya procesado":** el primer script se colgó porque el
+patrón `background[^;]*var\(--brand-` seguía casando con su propia marca `background/*✓*/`. La
+versión buena recoge los rangos primero y reemplaza **de atrás hacia adelante**, así los índices
+no se corren.
+
+### Verificado
+
+`ng build` sin errores, y **en pantalla** (Playwright, oscuro y claro) sobre cuatro pantallas:
+catálogo, publicar en redes, hashtags y registro. El modo claro se comparó lado a lado: idéntico.
+
+**Archivos:** `src/styles.scss` (los dos bloques de tema), `navbar.component.scss`
+(`--sb-bg-rgb`), y 60 SCSS de componente migrados a variables.
+
+### Pendiente de decidir
+
+El modo claro sigue en **jade**. Si se quiere que los dos temas se sientan la misma marca, la
+contraparte natural del monocromático es blanco de fondo con negro de acento — pero eso el dueño
+no lo pidió, así que no se tocó.

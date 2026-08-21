@@ -1,0 +1,286 @@
+// Catálogos de flores eternas. Prefijo BEM `fl-`.
+// Todo el color sale de las variables globales, así que dark/light funciona solo.
+
+.fl-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px 4px 40px;
+}
+
+.fl-header {
+  margin-bottom: 18px;
+
+  &__title {
+    margin: 0 0 4px;
+    color: var(--app-text);
+    font-weight: 700;
+  }
+
+  &__sub {
+    color: var(--app-text-muted, var(--app-text));
+    opacity: .75;
+    font-size: .84rem;
+  }
+}
+
+.fl-aviso {
+  border-left: 3px solid var(--app-accent);
+  background: var(--app-accent-soft);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: .84rem;
+  line-height: 1.5;
+  color: var(--app-text);
+
+  &--error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    border-left-color: #dc2626;
+    background: rgba(220, 38, 38, .08);
+  }
+}
+
+.fl-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.fl-tab {
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--app-text);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: .84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+
+  &:hover { border-color: var(--app-accent); }
+
+  &--active {
+    background: var(--app-accent);
+    border-color: var(--app-accent);
+    color: var(--app-accent-ink);
+  }
+}
+
+.fl-card {
+  background: var(--form-section-bg, var(--app-surface));
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.fl-hint {
+  margin: 0 0 14px;
+  font-size: .82rem;
+  line-height: 1.5;
+  color: var(--app-text);
+  opacity: .75;
+}
+
+.fl-add {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fl-input {
+  flex: 1 1 180px;
+  min-width: 0;
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: .88rem;
+  background: var(--card-bg);
+  color: var(--app-text);
+
+  &:focus {
+    outline: none;
+    border-color: var(--app-accent);
+  }
+
+  &--num { flex: 0 1 140px; }
+}
+
+.fl-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: var(--app-text);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--off { opacity: .45; cursor: not-allowed; }
+}
+
+.fl-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  &--primary {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 1.5px solid var(--card-border);
+    color: var(--app-text);
+  }
+
+  &--sm { padding: 6px 12px; font-size: .8rem; }
+}
+
+.fl-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  border-top: 1px solid var(--card-border);
+  flex-wrap: wrap;
+
+  &--off { opacity: .5; }
+
+  &__txt {
+    flex: 1 1 200px;
+    min-width: 0;
+    color: var(--app-text);
+    font-size: .9rem;
+    font-weight: 500;
+  }
+
+  &__precio {
+    color: var(--app-accent);
+    font-weight: 700;
+    font-size: .86rem;
+    white-space: nowrap;
+  }
+}
+
+.fl-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+
+  &--alt {
+    background: rgba(37, 99, 235, .12);
+    color: #2563eb;
+  }
+}
+
+.fl-acciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.fl-ico {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  border-radius: 8px;
+  line-height: 1;
+
+  &:hover { background: var(--app-accent-soft); }
+  &:disabled { opacity: .4; cursor: not-allowed; }
+  &--del:hover { background: rgba(220, 38, 38, .12); }
+}
+
+.fl-vacio {
+  margin: 12px 0;
+  color: var(--app-text);
+  opacity: .6;
+  font-size: .86rem;
+}
+
+:host-context(body.theme-dark) {
+  .fl-aviso--error {
+    border-left-color: #f87171;
+    background: rgba(248, 113, 113, .12);
+  }
+  .fl-badge--alt {
+    background: rgba(96, 165, 250, .16);
+    color: #60a5fa;
+  }
+}
+
+@media (max-width: 575px) {
+  .fl-add { flex-direction: column; align-items: stretch; }
+  .fl-input, .fl-input--num { flex: 1 1 auto; }
+  .fl-fila__txt { flex: 1 1 100%; }
+}
+
+// Etiqueta visible por campo.
+//
+// ⚠️ Motivo, para no repetir el error: antes cada campo se apoyaba solo en su `placeholder`,
+// pero los numéricos arrancaban en 0 — y el placeholder únicamente se ve cuando el campo está
+// VACÍO. Resultado: casillas con "0" y ninguna pista de qué eran. Los numéricos ahora arrancan
+// en null y además cada campo lleva su etiqueta, que no desaparece al escribir.
+.fl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 180px;
+  min-width: 0;
+
+  .fl-input { flex: 1 1 auto; width: 100%; }
+}
+
+.fl-lbl {
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--app-text);
+  opacity: .7;
+}
+
+.fl-checks {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 38px;
+}
+
+.fl-add { align-items: flex-end; }
+
+@media (max-width: 575px) {
+  .fl-field { flex: 1 1 auto; }
+}
+
+// "pliegos sin configurar" — es un estado normal y esperado (el dueño lo va llenando con el
+// tiempo), no un error. Por eso gris neutro y no rojo de advertencia.
+.fl-badge--pend {
+  background: var(--card-border);
+  color: var(--app-text);
+  opacity: .7;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}

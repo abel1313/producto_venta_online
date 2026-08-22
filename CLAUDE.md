@@ -11481,3 +11481,36 @@ que se necesite este truco.
 **Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
 claro y oscuro, con petición real interceptada) confirmando que el mapa pinta, el pin se coloca,
 y el guardado manda los campos correctos.**
+
+---
+
+## FIX URGENTE PROD — BOTÓN "ABRIR/CERRAR NEGOCIO" DE UN CLIC EN EL MENÚ (2026-08-22)
+
+> Pedido explícito del dueño, marcado como urgente: un acceso directo desde el menú principal
+> para abrir/cerrar el negocio sin tener que entrar a Admin → Negocio & Contactos. La hora de
+> apertura/cierre **no se toca aquí** — ya estaba configurada de antes en esa pantalla; este
+> botón solo activa/desactiva el flag `abierto`, reusando los mismos endpoints que ya existían.
+
+**Ubicación:** entre "Home" y "Tienda" en el menú principal (pedido explícito), visible solo
+para admin. Muestra 🟢/🔴 según el estado real (`GET /v1/negocio/estado`, cargado una vez al
+detectar sesión de admin) y al hacer clic llama `POST /v1/negocio/abrir` o `/cerrar` según
+corresponda — mismos métodos que ya usaba `ConfigNegocioComponent.toggleNegocio()`, sin
+duplicar lógica de negocio, solo un segundo punto de entrada más rápido.
+
+**Estado "cargando":** mientras `GET /v1/negocio/estado` no responde, se muestra ⏳ "Negocio…"
+(botón deshabilitado) en vez de asumir 🔴 cerrado — mostrar "cerrado" en ese hueco sería un dato
+falso, no un "todavía no sé".
+
+**Archivos modificados:**
+- `src/app/navbar/navbar.component.ts` → `negocioAbierto`, `activandoNegocio`,
+  `cargarEstadoNegocio()`, `toggleNegocioRapido()`; se dispara al detectar `isAdminUser` en
+  `userRoles$`
+- `src/app/navbar/navbar.component.html` → botón entre Home y Tienda
+
+**Verificado con `ng build --configuration=development` sin errores**, y funcionalmente con
+Playwright (clic real → dispara `POST /v1/negocio/abrir` cuando estaba cerrado, la etiqueta
+cambia a "🟢 Negocio abierto" tras la respuesta) — confirmado en la posición exacta del menú
+pedida.
+
+⚠️ **Nada más se tocó** — cambio puramente aditivo, sin modificar ningún botón, ruta ni
+comportamiento existente (instrucción explícita del dueño).

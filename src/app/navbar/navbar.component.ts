@@ -9,6 +9,8 @@ import { CarritoService } from '../services/carrito/carrito.service';
 import { CarritoVarianteService } from '../variante/service/carrito-variante.service';
 import { ThemeService } from '../services/theme/theme.service';
 import { SesionService } from '../shared/sesion.service';
+import { NegocioService } from '../negocio/negocio.service';
+import Swal from 'sweetalert2';
 
 // Mapeo ruta → grupo del accordion, para que la sección de la ruta activa se
 // recuerde entre navegaciones en vez de cerrarse siempre (ver comentario en
@@ -57,12 +59,21 @@ export class NavbarComponent implements OnInit {
     private readonly carritoVariante: CarritoVarianteService,
     public readonly themeService: ThemeService,
     private readonly sesion: SesionService,
+    private readonly negocioService: NegocioService,
   ) { }
+
+  // ── Abrir/cerrar negocio (acceso rápido desde el menú) ───────────────
+  // Reusa los mismos endpoints ya conectados en Admin > Negocio & Contactos
+  // (GET /v1/negocio/estado, POST /v1/negocio/abrir|cerrar) — esto es solo un
+  // atajo de un clic desde el menú principal, no reemplaza esa pantalla.
+  negocioAbierto: boolean | null = null;
+  activandoNegocio = false;
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
+      if (this.isAdminUser && this.negocioAbierto === null) this.cargarEstadoNegocio();
     });
     this.authService.userName$.subscribe(user => { this.usuario = user; });
 
@@ -184,4 +195,41 @@ export class NavbarComponent implements OnInit {
 
   // ── Tema claro/oscuro ──────────────────────────────────────────────
   toggleTheme(): void { this.themeService.toggle(); }
+
+  // ── Abrir/cerrar negocio (acceso rápido) ─────────────────────────────
+  private cargarEstadoNegocio(): void {
+    this.negocioService.getEstado().subscribe({
+      next: (res: any) => { this.negocioAbierto = (res?.data ?? res)?.abierto ?? null; },
+      error: () => {}
+    });
+  }
+
+  // Abre o cierra el negocio con la hora de apertura/cierre YA configurada en
+  // Admin > Negocio & Contactos — este botón no toca esa configuración, solo
+  // activa/desactiva "abierto" con un clic, sin tener que ir a esa pantalla.
+  toggleNegocioRapido(): void {
+    if (this.activandoNegocio || this.negocioAbierto === null) return;
+    this.activandoNegocio = true;
+    const accion$ = this.negocioAbierto ? this.negocioService.cerrar() : this.negocioService.abrir();
+    accion$.subscribe({
+      next: () => {
+        this.negocioAbierto = !this.negocioAbierto;
+        this.activandoNegocio = false;
+        Swal.fire({
+          icon: 'success',
+          title: this.negocioAbierto ? '¡Negocio abierto!' : 'Negocio cerrado',
+          timer: 1400,
+          showConfirmButton: false
+        });
+      },
+      error: (err) => {
+        this.activandoNegocio = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo cambiar el estado',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Inténtalo de nuevo.'
+        });
+      }
+    });
+  }
 }

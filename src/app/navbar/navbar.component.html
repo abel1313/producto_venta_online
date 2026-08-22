@@ -29,6 +29,18 @@
       <span class="sb-label">Home</span>
     </a>
 
+    <!-- Abrir/cerrar negocio — acceso rápido de un clic (usa la hora ya configurada
+         en Admin > Negocio & Contactos, no la vuelve a pedir). Solo admin.
+         Mientras `negocioAbierto` es null (todavía no respondió GET /estado) se muestra un
+         estado neutral "Cargando…" — mostrar "cerrado" ahí sería un dato falso, no un
+         "no sé todavía". -->
+    <button class="sb-item" *ngIf="isAdminUser" (click)="toggleNegocioRapido()"
+            [disabled]="activandoNegocio || negocioAbierto === null"
+            [title]="negocioAbierto === null ? 'Cargando estado…' : (negocioAbierto ? 'Cerrar negocio' : 'Abrir negocio')">
+      <span class="sb-icon">{{ negocioAbierto === null ? '⏳' : (negocioAbierto ? '🟢' : '🔴') }}</span>
+      <span class="sb-label">{{ negocioAbierto === null ? 'Negocio…' : (negocioAbierto ? 'Negocio abierto' : 'Negocio cerrado') }}</span>
+    </button>
+
     <!-- Tienda = catálogo que ve el cliente. Apunta a /variantes/buscar: una
          "variante" (talla/color/código de barras) ES el producto que se vende.
          Ver taxonomía de nombres en CLAUDE.md. -->

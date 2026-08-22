@@ -123,6 +123,8 @@
 
     <div class="fl-fila" *ngFor="let co of colores" [class.fl-fila--off]="!co.activo">
       <ng-container *ngIf="editandoId !== co.id">
+        <!-- La foto vive en el producto interno del color (ver FloresImagenService). -->
+        <ng-container *ngTemplateOutlet="foto; context: { $implicit: co.variante }"></ng-container>
         <span class="fl-fila__txt">{{ co.tipoFlor?.nombre ?? '—' }} · <b>{{ co.nombre }}</b></span>
         <span class="fl-fila__precio">{{ co.stock }} disponibles</span>
         <div class="fl-acciones">
@@ -347,6 +349,7 @@
 
     <div class="fl-fila" *ngFor="let a of accesorios" [class.fl-fila--off]="!a.activo">
       <ng-container *ngIf="editandoId !== a.id">
+        <ng-container *ngTemplateOutlet="foto; context: { $implicit: a.variante }"></ng-container>
         <span class="fl-fila__txt">
           {{ a.nombre }}
           <span class="fl-badge" *ngIf="a.esPapel">papel</span>
@@ -429,6 +432,7 @@
 
     <div class="fl-fila" *ngFor="let f of frases" [class.fl-fila--off]="!f.activo">
       <ng-container *ngIf="editandoId !== f.id">
+        <ng-container *ngTemplateOutlet="foto; context: { $implicit: f.variante }"></ng-container>
         <span class="fl-fila__txt">{{ f.texto }}</span>
         <span class="fl-fila__precio">${{ f.precio | number:'1.2-2' }}</span>
         <div class="fl-acciones">
@@ -457,3 +461,28 @@
   </div>
 
 </div>
+
+<!-- ── Foto del artículo ──────────────────────────────────────────────
+     Una sola plantilla para colores, accesorios y frases: los tres guardan su foto
+     en su producto interno, así que el trato es idéntico. Los tipos de flor NO la
+     usan — no tienen producto interno (ver FloresImagenService).
+
+     Es un <label>: el input va escondido dentro y el clic en la miniatura abre el
+     selector, sin JavaScript de por medio. -->
+<ng-template #foto let-variante>
+  <label class="fl-foto" *ngIf="variante?.id"
+         [class.fl-foto--subiendo]="subiendoFoto === variante.id"
+         [title]="portadas[variante.id] ? 'Cambiar la foto' : 'Agregar una foto'">
+    <input type="file" accept="image/jpeg,image/png,image/gif" hidden
+           [disabled]="!!subiendoFoto || guardando"
+           (change)="onFoto($event, variante)">
+
+    <img class="fl-foto__img" *ngIf="portadas[variante.id] as url" [src]="url" alt="">
+    <span class="fl-foto__vacia" *ngIf="!portadas[variante.id]">📷</span>
+    <span class="fl-foto__cargando" *ngIf="subiendoFoto === variante.id">…</span>
+  </label>
+
+  <!-- Sin producto interno no hay dónde guardar la foto: se dice, en vez de mostrar un
+       botón que no haría nada. -->
+  <span class="fl-foto fl-foto--sin" *ngIf="!variante?.id" title="Este artículo no tiene producto interno, no admite foto">—</span>
+</ng-template>

@@ -8,6 +8,7 @@ import {
   IListonRequest, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { FloresImagenService } from '../service/flores-imagen.service';
 import { AuthService } from '../../auth/auth.service';
 import { UsuarioService } from '../../shared/usuario.service';
 import { ClienteService } from '../../clietes/cliente.service';
@@ -131,8 +132,19 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  // ── Fotos de los artículos ────────────────────────────────────────
+  /**
+   * Foto de cada color/accesorio/frase, indexada por el id de su **producto interno** — que es
+   * donde vive la imagen (los artículos de flores no tienen campo propio). Ver
+   * `FloresImagenService`.
+   *
+   * Es solo un adorno para elegir viendo: si no hay foto, o si falla, la pantalla funciona igual.
+   */
+  portadas: Record<number, string | null> = {};
+
   constructor(
     private readonly flores: FloresService,
+    private readonly imagenes: FloresImagenService,
     private readonly authService: AuthService,
     private readonly usuarioService: UsuarioService,
     private readonly clienteService: ClienteService,
@@ -185,6 +197,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.frases     = r.frases.filter(f => f.activo);
         this.cantidades = r.cantidades.filter(c => c.activo);
         this.seleccionAccesorios = this.accesorios.map(a => ({ accesorio: a, seleccionado: false, cantidad: 1 }));
+        this.cargarPortadas([...this.accesorios, ...this.frases]);
         this.cargandoCatalogo = false;
         // Después del catálogo: sin especies/accesorios cargados no hay contra qué reconstruir.
         if (this.modoEdicion) this.cargarRamoParaEditar();
@@ -274,6 +287,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
               color: c,
               cantidad: (ramo.colores ?? []).find(x => x.colorFlorId === c.id)?.cantidad ?? 0
             }));
+            this.cargarPortadas(cs);
 
             // El papel no viene en `accesorios` (no es una elección) y se recalcula solo.
             (ramo.accesorios ?? []).forEach(a => {
@@ -325,12 +339,28 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
     this.cargandoColores = true;
     this.flores.coloresPorTipoFlor(this.tipoSeleccionadoId).subscribe({
-      next: cs => { this.coloresDisponibles = cs; this.cargandoColores = false; },
+      next: cs => { this.coloresDisponibles = cs; this.cargarPortadas(cs); this.cargandoColores = false; },
       error: err => {
         this.cargandoColores = false;
         this.errorCatalogo = this.msg(err, 'No se pudieron cargar los colores de esta especie.');
       }
     });
+  }
+
+  /**
+   * Pide la foto de cada artículo que tenga producto interno. No bloquea nada ni avisa si falla:
+   * es un apoyo visual para elegir, no un dato del pedido.
+   */
+  private cargarPortadas(articulos: { variante?: { id: number } }[]): void {
+    articulos
+      .filter(a => !!a?.variante?.id && this.portadas[a.variante!.id] === undefined)
+      .forEach(a => {
+        const id = a.variante!.id;
+        this.portadas[id] = null;                 // marca "ya pedida", para no repetirla
+        this.imagenes.portadaDe(id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(url => { this.portadas[id] = url; });
+      });
   }
 
   // ── Paso 2 — cantidad ────────────────────────────────────────────────────

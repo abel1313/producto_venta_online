@@ -42,6 +42,31 @@ export interface ITipoFlor {
  * válidas de la especie** — por eso no lleva `precioPorFlor` ni tabla propia. Es lo que permite
  * armar un ramo mezclando colores sin duplicar la configuración por cada uno.
  */
+/**
+ * El **producto interno** que el back crea por cada color, accesorio y frase de listón.
+ *
+ * No se vende por su cuenta (va marcado `esCatalogoInterno`, por eso no sale en la tienda ni en
+ * los buscadores), pero es lo que permite que un ramo se cobre con el flujo normal de pedidos.
+ *
+ * ⚠️ Para el front tiene un segundo uso: **es donde viven las fotos**. Los artículos de flores no
+ * tienen campo de imagen propio, así que la foto se guarda en este producto interno y se lee con
+ * `GET /tienda/v1/imagenes/{id}`, igual que la de cualquier producto.
+ *
+ * Opcional a propósito: es un objeto anidado de otra tabla, y un acceso directo con un solo
+ * renglón en `null` tira `TypeError` a media `*ngFor` y borra el resto de la lista.
+ */
+export interface IVarianteSombra {
+  id: number;
+  producto?: { id: number };
+  color?: string | null;
+  descripcion?: string | null;
+  talla?: string | null;
+  presentacion?: string | null;
+  marca?: string | null;
+  contenidoNeto?: string | null;
+  stock?: number;
+}
+
 export interface IColorFlor {
   id: number;
   /** Opcional por la misma razón que en `ICantidadFlor`: objeto anidado de otra tabla. */
@@ -49,6 +74,8 @@ export interface IColorFlor {
   nombre: string;
   stock: number;
   activo: boolean;
+  /** Producto interno del color — de aquí salen sus fotos. Ver `IVarianteSombra`. */
+  variante?: IVarianteSombra;
 }
 
 export interface IColorFlorRequest {
@@ -188,6 +215,8 @@ export interface IAccesorioRamo {
    */
   pliegosPorDefecto: number | null;
   activo: boolean;
+  /** Producto interno del accesorio — de aquí salen sus fotos. Ver `IVarianteSombra`. */
+  variante?: IVarianteSombra;
 }
 
 export interface IFraseListon {
@@ -195,6 +224,8 @@ export interface IFraseListon {
   texto: string;
   precio: number;
   activo: boolean;
+  /** Producto interno de la frase — de aquí salen sus fotos. Ver `IVarianteSombra`. */
+  variante?: IVarianteSombra;
 }
 
 // ── Ramos preconfigurados (CRUD propio, estilo /v1/promociones) ──────────────
@@ -230,7 +261,23 @@ export interface IRamoArmado {
   colorFlorId: number;
   colorFlorNombre?: string;
   tipoFlorNombre?: string;
+  /**
+   * Link de texto que el admin pegaba a mano. **Se mantiene** por retrocompatibilidad, pero ya no
+   * es la única forma: ver `varianteId`. Sirve de respaldo para los ramos viejos.
+   */
   imagenUrl?: string | null;
+  /**
+   * Variante sombra del **ramo completo** — el mismo mecanismo que los colores y accesorios, pero
+   * para el ramo ya armado. Es donde viven sus fotos reales (varias, no una sola).
+   *
+   * ⚠️ **`null` en los ramos guardados antes de esta función**: la variante se crea sola en el
+   * siguiente `PUT` sobre ese ramo. Mientras tanto hay que caer a `imagenUrl`.
+   *
+   * ⚠️ No confundir con `colorFlorVarianteId`, que es la variante del *color de flor*.
+   */
+  varianteId?: number | null;
+  /** Producto detrás de esa variante — `guardarConImagenes` lo exige siempre, aun al actualizar. */
+  varianteProductoId?: number | null;
   cantidad: number;
   precioFlores: number;
   /** Lo calcula el back solo cuando `cantidad > 10` — el front no lo manda ni lo agrega. */

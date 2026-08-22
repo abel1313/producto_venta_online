@@ -11246,3 +11246,123 @@ botón pasa a ser el punto exacto, sin tocar la pantalla.
 **Probado con los 4 casos** del armado del link (dirección + lugar, solo uno, ninguno → `null`).
 
 **Archivos:** `detalle-pedido.component.ts` (`linkComoLlegar`), `.html`, `.scss` (`.dp-btn-mapa`).
+## FEAT FLORES — FOTO POR ARTÍCULO + `FLORES_ETERNAS_ENDPOINTS.md` (2026-08-21)
+
+> ⚠️ **Vive en la rama `fix/flores-imagenes`, NO en `dev`.** Es lo que pide la regla de rama
+> propia: no está confirmado que el back haya entregado algo de imágenes para flores (ver abajo),
+> así que no se mezcla con `dev`/`qa` hasta aclararlo.
+
+**Pedido del dueño:** poder ponerle foto a cada artículo de flores, y un documento que explique
+qué endpoint usa cada pantalla del módulo.
+
+### 1. Fotos de colores, accesorios y frases
+
+⚠️ **No hay endpoints de imagen propios de flores, y no hacían falta.** Un color o un accesorio
+**no tiene campo de foto**: tiene un **producto interno** (`variante`, marcado
+`esCatalogoInterno`), y la foto se guarda ahí con los endpoints normales de producto —
+`GET /tienda/v1/imagenes/{varianteId}` para leerla y `POST /tienda/v1/guardarConImagenes` para
+subirla. Todo eso queda encapsulado en `FloresImagenService` para que las pantallas no tengan que
+saberlo.
+
+**Dónde:** se sube en Catálogos (miniatura clicable por renglón, en las 3 pestañas) y se ve en
+"Arma tu ramo" al elegir color y accesorios. Confirmado con el dueño que quería las dos.
+
+⚠️ **Los tipos de flor (la especie) quedan fuera** — no tienen producto interno ni campo de
+imagen. Para que lleven foto hay que pedírselo al back.
+
+### 🔴 Dos cosas que habrían roto datos
+
+1. **`guardarConImagenes` guarda la variante COMPLETA.** Mandar solo `{ id, listImagenes }` la
+   dejaría con el resto en blanco — y en un color de flor ese `stock` **es el inventario real de
+   ese color**, no un dato de adorno. Por eso `subirFoto()` reenvía los campos que la variante ya
+   tenía. Verificado en el envío real: `stock: 90` viaja intacto.
+2. **La foto se comprime antes de mandarla** (1280 px, JPEG 0.8). Una foto de cámara pesa 3-8 MB
+   y en base64 crece ~33%: sin comprimir da **413 Request Entity Too Large** — ya pasó con las
+   imágenes de variantes. La compresión se extrajo de `update-variante` a
+   `src/app/shared/imagen-comprimir.util.ts` para que los dos usen el mismo camino y no se
+   separen con el tiempo.
+
+**Detalle menor:** las portadas se indexan por el id del **producto interno**, no por el del color
+o accesorio — son numeraciones distintas y se pisarían entre sí.
+
+### 2. `FLORES_ETERNAS_ENDPOINTS.md` (raíz del repo)
+
+Pantalla por pantalla: qué endpoints llama, cuándo, por qué, y qué manda y recibe. Incluye las
+trampas que ya costaron sesiones (que `colores-flor/por-tipo-flor` responde en `lista` y no en
+`data`, que `update` reemplaza el registro completo, que la línea del papel va por pliego, que la
+frase personalizada solo vive en una llamada que no puede fallar callada) y una sección final de
+**lo que NO existe**.
+
+⚠️ **Cada endpoint del documento se cruzó contra `flores.service.ts`** — así aparecieron dos URLs
+mal escritas (las de frases pendientes: van bajo `/pedidos/` y una es `PUT`, no `POST`). Un
+documento de endpoints sin verificar contra el código es peor que no tenerlo.
+
+**Relación con `ESTADO_FLORES_ETERNAS.md`:** ese dice *en qué punto está* el módulo (pendientes,
+decisiones); este dice *cómo habla con el back*. Al tocar flores hay que actualizar los dos.
+
+### ⚠️ Sin confirmar: la entrega del back
+
+El dueño dijo que *"según el back ya hay cambios para agregar imágenes"*, pero **en el repo
+compartido no hay nada de eso** — lo último de flores es `editar-ramo` y `cancelar`. Lo
+implementado usa el mecanismo que ya existía. **Preguntar al back antes de mergear a `dev`**: si
+entregaron otra cosa, esto habría que rehacerlo.
+
+**Archivos nuevos:** `src/app/shared/imagen-comprimir.util.ts`,
+`src/app/flores/service/flores-imagen.service.ts`, `FLORES_ETERNAS_ENDPOINTS.md`.
+**Modificados:** `flores.model.ts` (`IVarianteSombra` + el campo en los 3 catálogos),
+`catalogos-flores.component.*`, `configurar-ramo.component.*`.
+
+**Verificado con `ng build` y en pantalla** (endpoints simulados): la miniatura carga, la vacía
+muestra 📷, y el envío conserva el stock.
+
+---
+
+## FLORES — FOTOS REALES DEL RAMO ARMADO (2026-08-22)
+
+> Sigue en la rama `fix/flores-imagenes`, junto con las fotos de colores/accesorios/frases.
+
+**El back entregó esto y de paso confirmó que lo nuestro iba bien:** usan *"el mismo mecanismo de
+variante sombra que ya usan `ColorFlor`/`AccesorioRamo`/`FraseListonPredefinida`"* — o sea, lo que
+ya habíamos implementado a partir de lo que existía. No hubo que rehacer nada.
+
+Lo nuevo es que **`RamoArmado` también tiene variante sombra**, así que el ramo ya armado puede
+tener fotos de verdad en vez del `imagenUrl` que el admin pegaba a mano.
+
+### Campos nuevos en `RamoArmadoResponseDto`
+
+- `varianteId` — la variante sombra del ramo. ⚠️ **No confundir con `colorFlorVarianteId`**, que
+  es la del color de flor.
+- `varianteProductoId` — el producto detrás. `guardarConImagenes` lo exige **siempre**, aun al
+  actualizar.
+
+### La cadena de respaldo, y por qué hace falta
+
+```
+foto real (variante sombra)  →  imagenUrl (el link viejo)  →  🌹
+```
+
+⚠️ **Los ramos guardados antes de esto tienen `varianteId: null`** — el back crea su variante en
+el siguiente `PUT` sobre ese ramo. Sin el respaldo a `imagenUrl`, todos los ramos existentes se
+habrían quedado sin imagen de un día para otro. `imagenUrl` sigue existiendo y no es obligatorio
+migrar.
+
+En `ramos-admin`, el input de foto va **deshabilitado** mientras el ramo no tenga variante, con un
+`title` que dice qué hacer ("guárdalo una vez") — en vez de dejar elegir un archivo que no se
+podría guardar.
+
+### Dos arreglos de la misma pantalla
+
+- **"Armar el mío" pegado al título**: `.vr-header__inner` no tenía layout, así que el botón caía
+  debajo del subtítulo como si fuera parte de él. Ahora es flex con `space-between`.
+- Al separarlos, el botón **se estiraba de lado a lado**: `.vr-btn--pedir` lleva `flex: 1` porque
+  en el pie de la tarjeta sí debe crecer. Se acota solo dentro del encabezado (medido: 140 px).
+
+**Verificado con los 3 casos** de la cadena de respaldo: ramo con variante → foto real; ramo viejo
+con `imagenUrl` → el link; ramo sin nada → 🌹. En pantalla: 2 imágenes y 1 marcador.
+
+### 💡 En Playwright, la ruta que gana es la ÚLTIMA registrada
+
+La prueba decía que el ramo con foto real no la tenía, y parecía un bug del código. Era el mock:
+`imagenes/900` estaba registrada **antes** que el genérico `imagenes/\d+`, y Playwright da
+prioridad a la última — así que el genérico (que devuelve `[]`) se comía la específica. **Lo
+específico va al final.**

@@ -11206,3 +11206,43 @@ botones por ningún lado.
   relleno blanco entero. Ahora hay una regla global de deshabilitado para modo oscuro (superficie
   oscura + texto apagado), con `[class]` de más para ganar la especificidad a los componentes que
   usan `!important`.
+
+---
+
+## FEAT ENTREGAS — BOTÓN "CÓMO LLEGAR" (2026-08-22)
+
+**Pedido del dueño:** poder ver dónde es la entrega y que el celular lo lleve, porque hoy la
+dirección es texto libre y en la práctica queda como *"es en Tejupilco, hay una casa"*.
+
+### ⚠️ Esto NO usa ninguna API de mapas — y por eso ya está hecho
+
+Abrir la app de mapas del teléfono con una ruta es **una URL normal**, no un servicio:
+
+```
+https://www.google.com/maps/search/?api=1&query={dirección}      ← hoy
+https://www.google.com/maps/dir/?api=1&destination={lat},{lng}   ← cuando haya coordenadas
+```
+
+El celular la abre con Google Maps o Waze y él pone la navegación. **Sin llave, sin cuenta de
+Google Cloud, sin tarjeta, sin costo.** Lo que sí cobra es *embeber* un mapa interactivo — para
+eso, cuando toque, va **Leaflet + OpenStreetMap**, que no pide registro (Google Maps sí exige
+cuenta con tarjeta, y por eso se descartó).
+
+### Qué hay ahora
+
+Botón **🧭 Cómo llegar** en el panel de datos de entrega del detalle del pedido, armado con la
+**dirección escrita** + el lugar de entrega. Atina hasta donde atine el buscador de mapas — que
+para "la casa de junto a la tienda" no es mucho, pero ya es infinitamente mejor que nada.
+
+Si no hay ni dirección ni lugar, el botón **no aparece** (en vez de abrir un mapa vacío).
+
+### Lo que falta para que sea exacto
+
+Los 3 campos que se le pidieron al back el 2026-08-22 (`latitud`, `longitud`, `referencias` **en
+el pedido**, no en `LugarEntrega` — la zona es Tejupilco, esto es la casa de cada cliente).
+Cuando existan, `linkComoLlegar` cambia a la forma `dir/?api=1&destination={lat},{lng}` y el mismo
+botón pasa a ser el punto exacto, sin tocar la pantalla.
+
+**Probado con los 4 casos** del armado del link (dirección + lugar, solo uno, ninguno → `null`).
+
+**Archivos:** `detalle-pedido.component.ts` (`linkComoLlegar`), `.html`, `.scss` (`.dp-btn-mapa`).

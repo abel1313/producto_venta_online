@@ -68,6 +68,39 @@ al empezar la feature ya se sabe que **puede necesitar quedarse fuera de una pro
 no tienen ninguna duda de si van a producción — esas siguen yendo directo a `dev` como
 siempre. Crear una rama por cada cambio chico sería puro overhead sin beneficio real.
 
+### ⚠️ HOTFIX — se crea desde `master`, no desde `dev` (2026-08-22)
+
+> Corrección del dueño tras el fix del botón "Abrir/cerrar negocio" (2026-08-22): pidió
+> explícitamente un **hotfix** urgente para producción, y el trabajo se empezó commiteando
+> directo en `dev` (para luego llevarlo a `master` con un cherry-pick puntual, evitando de paso
+> arrastrar el picker de mapa que todavía no debía llegar a prod). El resultado en `master` salió
+> limpio, pero el **proceso** no siguió git-flow: en git-flow, un hotfix nace de una rama
+> `hotfix/<nombre>` cortada desde `master` (production), no desde `dev`.
+
+**Regla, de aquí en adelante — cuando el usuario pida explícitamente un "hotfix" o diga que algo
+es urgente para producción:**
+
+1. `git checkout master && git pull` → `git checkout -b hotfix/<nombre-corto>` (rama nueva desde
+   `master`, no desde `dev`).
+2. El trabajo del fix se hace ahí. Build de verificación con `--configuration=production`.
+3. Merge `hotfix/<nombre>` → `master` (con build verificado), push — esto es lo que dispara el
+   deploy urgente.
+4. Merge `hotfix/<nombre>` → `dev` (y de ahí sigue el flujo normal a `qa`) para que el fix no se
+   pierda ni tenga que rehacerse la próxima vez que `dev`/`qa` se promuevan a `master` — un
+   hotfix que solo vive en `master` es frágil, la siguiente promoción normal desde `dev` podría
+   sobrescribirlo sin querer si `dev` no lo tiene también.
+5. Borrar la rama `hotfix/<nombre>` una vez mergeada en ambos lados (o dejarla, según prefiera
+   el dueño — no es destructivo conservarla).
+
+**Por qué importa aunque el resultado final sea el mismo código:** empezar el hotfix en `dev`
+mezcla el fix urgente con lo que sea que `dev` tenga en ese momento (en este caso, una feature
+—el picker de mapa del checkout— que el dueño había pedido explícitamente dejar fuera de
+`master` por ahora). Resolverlo con cherry-pick funcionó esta vez porque el hotfix no tocó
+ningún archivo compartido con esa feature, pero es la misma fragilidad ya documentada arriba
+("REGLA — RAMA PROPIA...") — un hotfix que sí comparta archivos con trabajo en curso en `dev`
+sería mucho más difícil de aislar después. Partir de `master` desde el principio elimina el
+riesgo por completo, en vez de depender de que el cherry-pick salga limpio.
+
 ---
 
 ## REGLA — `DOCUMENTO_BACK_VENTAS_CREDITO.md`

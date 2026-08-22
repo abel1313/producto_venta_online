@@ -43,13 +43,16 @@
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
-  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.lugarEntregaNombre || detalle.urlFacebook)">
+  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
     <p class="dp-entrega__title">📍 Datos de entrega</p>
     <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
       <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
     </p>
     <p class="dp-entrega__item" *ngIf="detalle.direccionEntrega">
       <strong>Dirección:</strong> {{ detalle.direccionEntrega }}
+    </p>
+    <p class="dp-entrega__item" *ngIf="detalle.referencias">
+      <strong>Referencias:</strong> {{ detalle.referencias }}
     </p>
     <p class="dp-entrega__item" *ngIf="detalle.lugarEntregaNombre">
       <strong>Lugar:</strong> {{ detalle.lugarEntregaNombre }}
@@ -63,14 +66,17 @@
     </p>
 
     <!-- Abrir el GPS del celular con la ruta es SOLO un link — no es una API, no cuesta ni
-         necesita cuenta. Hoy va con la dirección escrita; cuando el back guarde latitud y
-         longitud, el mismo botón apunta al punto exacto (ver `linkComoLlegar`). -->
+         necesita cuenta. Si el pedido ya tiene ubicación exacta (capturada con el mapa en
+         "Mis pedidos"), va directo a ese punto; si no, cae a buscar por la dirección escrita
+         (ver `linkComoLlegar`/`tieneUbicacionExacta`). -->
     <a class="dp-btn-mapa" *ngIf="linkComoLlegar as link"
        [href]="link" target="_blank" rel="noopener">
       🧭 Cómo llegar
     </a>
     <small class="dp-entrega__nota" *ngIf="linkComoLlegar">
-      Se abre en tu app de mapas con la dirección escrita.
+      {{ tieneUbicacionExacta
+          ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
+          : 'Se abre en tu app de mapas con la dirección escrita.' }}
     </small>
   </div>
 

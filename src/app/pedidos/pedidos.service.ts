@@ -62,6 +62,12 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       observaciones?: string;
       lugarEntregaId?: number;
       urlFacebook?: string;
+      // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega,
+      // que es la zona/pueblo. `null` en cualquiera de los 3 = no se toca lo ya guardado;
+      // el back todavía no soporta "borrar" latitud/longitud una vez capturadas.
+      latitud?: number;
+      longitud?: number;
+      referencias?: string;
     }): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`, body);
     }

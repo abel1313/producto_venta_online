@@ -164,7 +164,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * 2026-08-22), aquí se antepone `dir/?api=1&destination={lat},{lng}` y pasa a ser el punto
    * exacto, sin tocar la pantalla.
    */
+  // Si el pedido ya tiene ubicación exacta capturada (2026-08-22, ver "Editar Entrega" en
+  // mis-pedidos), el botón apunta directo a ese punto con ruta trazada — más preciso que
+  // buscar por texto, que depende de qué tan bien escrita quedó la dirección.
+  get tieneUbicacionExacta(): boolean {
+    return this.detalle?.latitud != null && this.detalle?.longitud != null;
+  }
+
   get linkComoLlegar(): string | null {
+    if (this.tieneUbicacionExacta) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitud},${this.detalle!.longitud}`;
+    }
     const partes = [this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
       .map(p => (p ?? '').trim())
       .filter(p => p !== '');

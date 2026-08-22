@@ -11110,3 +11110,48 @@ que no existe en 12 horas.
 `18:00`→`6:00 p.m.`, `12:00`→`12:00 p.m.`, `00:30`→`12:30 a.m.`, `23:59`→`11:59 p.m.`; `null`/`""`
 devuelven vacío y un texto que no sea `HH:mm` se devuelve tal cual. Y en pantalla: el formulario
 muestra `11:00 a.m.` / `6:00 p.m.` con su resumen, y el login el texto completo.
+
+---
+
+## FIX MODO OSCURO — BOTONES BLANCOS CON TEXTO BLANCO: FALTABA UN PATRÓN (2026-08-22)
+
+**Reportado por el dueño en 4 pantallas** (`admin/negocio`, `admin/presentacion`, `rifas/*`):
+*"los botones no se ve lo que dice"*. Es una **regresión del acento monocromático**: con el acento
+en blanco, todo `color: #fff` que esté encima de un relleno de marca queda invisible.
+
+El barrido de esa migración corrigió 86 declaraciones, pero se le escapó un patrón entero:
+**los SCSS que aliasean la marca en una variable propia**.
+
+```scss
+$p:  var(--brand-2);
+$pd: var(--brand-1);
+
+.cn-btn--save {
+  background: linear-gradient(135deg, $p, $pd);   // ← no dice "var(--brand-…)"
+  color: #fff;                                     // ← quedó blanco sobre blanco
+}
+```
+
+El barrido buscaba `background[^;{}]*var\(--(brand-[123]|app-accent)\)`, y con el alias el
+`background` no contiene ese texto. **18 archivos** usan alias (`$p`, `$pd`, `$primary`,
+`$primary-d`, `$accent`, `$indigo`…). La pasada nueva los detecta por archivo y corrige 8
+declaraciones en 7 archivos.
+
+⚠️ **Regla al cambiar la paleta:** el color de marca no solo aparece como hex y como `rgba()` —
+también como **variable SCSS que apunta a la variable CSS**. Son tres formas, no dos.
+
+### 💡 `\b` dentro de un template literal NO es el `\b` de una expresión regular
+
+El script no encontraba nada y parecía que no había casos:
+
+```js
+new RegExp(`background[^;{}]*\$(${alias.join('|')})\b`)   // ❌ \b = retroceso (U+0008)
+new RegExp(`background[^;{}]*\$(${alias.join('|')})\b`) // ✅
+```
+
+Con `\b` el patrón termina en `$` (fin de cadena en regex) + un carácter de control, así que nunca
+casa. Se ve como "no hay nada que corregir", que es el peor tipo de fallo silencioso.
+
+**Sin confirmar todavía:** en `rifas/agregar` y `rifas/buscar` los botones primarios ya usaban
+`var(--app-accent-ink)`, así que **ahí es otra cosa** — hace falta ver la pantalla con datos
+reales (el reporte menciona los modales y los checks, no los botones de la pantalla base).

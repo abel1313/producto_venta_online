@@ -189,7 +189,7 @@ $t:  all 0.22s ease;
 
   &--upload {
     background: linear-gradient(135deg, $p, $pd);
-    color: white;
+    color: var(--app-accent-ink);
     box-shadow: 0 4px 16px rgba(var(--app-accent-rgb),0.35);
     min-width: 160px;
     display: flex;

@@ -40,7 +40,7 @@ $t:  all 0.2s ease;
   cursor: pointer; font-weight: 600; font-size: .85rem;
   transition: $t; white-space: nowrap;
 
-  &--save   { background: linear-gradient(135deg, $p, $pd); color: #fff;
+  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
                &:disabled { opacity: .5; cursor: not-allowed; } }
   &--cancel { background: #f3f4f6; color: #6b7280;
                &:hover { background: #e5e7eb; } }

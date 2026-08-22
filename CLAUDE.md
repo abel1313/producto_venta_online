@@ -11181,3 +11181,55 @@ entregaron otra cosa, esto habría que rehacerlo.
 
 **Verificado con `ng build` y en pantalla** (endpoints simulados): la miniatura carga, la vacía
 muestra 📷, y el envío conserva el stock.
+
+---
+
+## FLORES — FOTOS REALES DEL RAMO ARMADO (2026-08-22)
+
+> Sigue en la rama `fix/flores-imagenes`, junto con las fotos de colores/accesorios/frases.
+
+**El back entregó esto y de paso confirmó que lo nuestro iba bien:** usan *"el mismo mecanismo de
+variante sombra que ya usan `ColorFlor`/`AccesorioRamo`/`FraseListonPredefinida`"* — o sea, lo que
+ya habíamos implementado a partir de lo que existía. No hubo que rehacer nada.
+
+Lo nuevo es que **`RamoArmado` también tiene variante sombra**, así que el ramo ya armado puede
+tener fotos de verdad en vez del `imagenUrl` que el admin pegaba a mano.
+
+### Campos nuevos en `RamoArmadoResponseDto`
+
+- `varianteId` — la variante sombra del ramo. ⚠️ **No confundir con `colorFlorVarianteId`**, que
+  es la del color de flor.
+- `varianteProductoId` — el producto detrás. `guardarConImagenes` lo exige **siempre**, aun al
+  actualizar.
+
+### La cadena de respaldo, y por qué hace falta
+
+```
+foto real (variante sombra)  →  imagenUrl (el link viejo)  →  🌹
+```
+
+⚠️ **Los ramos guardados antes de esto tienen `varianteId: null`** — el back crea su variante en
+el siguiente `PUT` sobre ese ramo. Sin el respaldo a `imagenUrl`, todos los ramos existentes se
+habrían quedado sin imagen de un día para otro. `imagenUrl` sigue existiendo y no es obligatorio
+migrar.
+
+En `ramos-admin`, el input de foto va **deshabilitado** mientras el ramo no tenga variante, con un
+`title` que dice qué hacer ("guárdalo una vez") — en vez de dejar elegir un archivo que no se
+podría guardar.
+
+### Dos arreglos de la misma pantalla
+
+- **"Armar el mío" pegado al título**: `.vr-header__inner` no tenía layout, así que el botón caía
+  debajo del subtítulo como si fuera parte de él. Ahora es flex con `space-between`.
+- Al separarlos, el botón **se estiraba de lado a lado**: `.vr-btn--pedir` lleva `flex: 1` porque
+  en el pie de la tarjeta sí debe crecer. Se acota solo dentro del encabezado (medido: 140 px).
+
+**Verificado con los 3 casos** de la cadena de respaldo: ramo con variante → foto real; ramo viejo
+con `imagenUrl` → el link; ramo sin nada → 🌹. En pantalla: 2 imágenes y 1 marcador.
+
+### 💡 En Playwright, la ruta que gana es la ÚLTIMA registrada
+
+La prueba decía que el ramo con foto real no la tenía, y parecía un bug del código. Era el mock:
+`imagenes/900` estaba registrada **antes** que el genérico `imagenes/\d+`, y Playwright da
+prioridad a la última — así que el genérico (que devuelve `[]`) se comía la específica. **Lo
+específico va al final.**

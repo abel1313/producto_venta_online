@@ -261,7 +261,23 @@ export interface IRamoArmado {
   colorFlorId: number;
   colorFlorNombre?: string;
   tipoFlorNombre?: string;
+  /**
+   * Link de texto que el admin pegaba a mano. **Se mantiene** por retrocompatibilidad, pero ya no
+   * es la única forma: ver `varianteId`. Sirve de respaldo para los ramos viejos.
+   */
   imagenUrl?: string | null;
+  /**
+   * Variante sombra del **ramo completo** — el mismo mecanismo que los colores y accesorios, pero
+   * para el ramo ya armado. Es donde viven sus fotos reales (varias, no una sola).
+   *
+   * ⚠️ **`null` en los ramos guardados antes de esta función**: la variante se crea sola en el
+   * siguiente `PUT` sobre ese ramo. Mientras tanto hay que caer a `imagenUrl`.
+   *
+   * ⚠️ No confundir con `colorFlorVarianteId`, que es la variante del *color de flor*.
+   */
+  varianteId?: number | null;
+  /** Producto detrás de esa variante — `guardarConImagenes` lo exige siempre, aun al actualizar. */
+  varianteProductoId?: number | null;
   cantidad: number;
   precioFlores: number;
   /** Lo calcula el back solo cuando `cantidad > 10` — el front no lo manda ni lo agrega. */

@@ -112,6 +112,20 @@
       </div>
 
       <div class="ra-card__body">
+        <!-- La foto del ramo vive en su variante sombra, igual que la de los colores y accesorios.
+             `imagenUrl` (el link que se pegaba a mano) se sigue mostrando de respaldo mientras el
+             ramo no tenga variante — los guardados antes de esta función la tienen en null hasta
+             que se vuelvan a guardar. -->
+        <label class="ra-foto" [class.ra-foto--subiendo]="subiendoFoto === r.id"
+               [title]="r.varianteId ? 'Cambiar la foto del ramo' : 'Guarda el ramo una vez para poder subirle fotos'">
+          <input type="file" accept="image/jpeg,image/png,image/gif" hidden
+                 [disabled]="!r.varianteId || !!subiendoFoto || guardando"
+                 (change)="onFotoRamo($event, r)">
+          <img class="ra-foto__img" *ngIf="fotoDe(r) as foto" [src]="foto" [alt]="r.nombre">
+          <span class="ra-foto__vacia" *ngIf="!fotoDe(r)">{{ r.varianteId ? '📷' : '🌹' }}</span>
+          <span class="ra-foto__cargando" *ngIf="subiendoFoto === r.id">…</span>
+        </label>
+
         <p class="ra-card__especie">{{ r.tipoFlorNombre }} · {{ r.colorFlorNombre }} · {{ r.cantidad }} flores</p>
         <p class="ra-card__precio">${{ r.precioTotal | number:'1.2-2' }}</p>
         <p class="ra-card__extra" *ngIf="r.papelIncluido">📄 Papel incluido — ${{ r.precioPapel | number:'1.2-2' }}</p>

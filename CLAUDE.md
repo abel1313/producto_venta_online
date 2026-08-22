@@ -11366,3 +11366,118 @@ La prueba decía que el ramo con foto real no la tenía, y parecía un bug del c
 `imagenes/900` estaba registrada **antes** que el genérico `imagenes/\d+`, y Playwright da
 prioridad a la última — así que el genérico (que devuelve `[]`) se comía la específica. **Lo
 específico va al final.**
+
+---
+
+## FEAT PEDIDOS — UBICACIÓN EXACTA DE ENTREGA CON MAPA (LATITUD/LONGITUD/REFERENCIAS) (2026-08-22)
+
+> El back implementó y confirmó los 3 campos pedidos en `CAMBIOS_FRONT.md`/`CAMBIOS_FRONT_2.md`
+> (repo compartido): `latitud`, `longitud`, `referencias` en el pedido — distintos de
+> `LugarEntrega` (la zona/pueblo). Sin costo de servicio externo: Leaflet + OpenStreetMap para
+> elegir el punto (sin cuenta ni tarjeta), y el link de "cómo llegar" es solo una URL de Google
+> Maps (`maps/dir/?api=1&destination=...`), no una API.
+
+### Dónde vive — mismo punto de entrada que ya existía para entrega
+
+El picker de mapa se agregó dentro del modal **"📍 Info de entrega"** de `mis-pedidos`
+(`mostrarModalEntrega()`) — el mismo Swal que ya edita `nombreReceptor`/`direccionEntrega`/
+`fechaEntrega`/`lugarEntregaId`/`urlFacebook`/`observaciones`. No se creó una pantalla nueva:
+sigue el mismo criterio ya establecido en el proyecto de que la edición de entrega vive en un
+solo lugar (la card de `mis-pedidos`), no repartida entre varias pantallas.
+
+### Cómo funciona el mapa (dentro del Swal, con `didOpen`/`willClose`)
+
+- Se instala `L.map('sw-mapa')` en `didOpen`, con `L.tileLayer(...)` de OpenStreetMap.
+- **Centro por defecto:** Tejupilco, Edo. México (`18.916234, -100.143567`) — el mismo punto que
+  el back usó de ejemplo en su documentación, dentro de la zona real de entrega del negocio.
+  Si el pedido ya tenía ubicación guardada, el mapa arranca centrado y con el pin ya puesto ahí
+  (zoom 16); si no, arranca sin pin, zoom 13 (vista de la zona).
+- **Clic en el mapa o arrastrar el pin** → coloca/mueve el marcador y actualiza el texto de
+  coordenadas (`📍 lat, lng`) en vivo.
+- **Botón "📡 Usar mi ubicación"** → `navigator.geolocation.getCurrentPosition()`, coloca el pin
+  ahí y centra el mapa — útil para cuando el admin está parado en la casa del cliente.
+- **`willClose` destruye el mapa** (`mapaLeaflet.remove()`) — sin esto, cada vez que se abre este
+  modal se crea una instancia de Leaflet nueva sin liberar la anterior (listeners/tiles quedan
+  colgando aunque el DOM del Swal ya se haya borrado).
+
+### Solo se manda lat/lng si el admin tocó el mapa
+
+`preConfirm` manda `latitud`/`longitud` **solo si `ubicacionTocada` es true** (ya venían
+guardados, o el admin marcó un punto nuevo). El back no soporta "borrar" estos campos mandando
+`null` — así que nunca hay que mandarlos en falso cuando nunca se marcó nada (evita pisar con el
+centro por defecto un pedido donde el admin nunca llegó a tocar el mapa).
+
+### Dos trampas clásicas de Leaflet + bundlers, ya resueltas
+
+1. **Los íconos del marcador por defecto salen invisibles.** Leaflet calcula la URL de sus
+   PNGs en base a dónde quedó su propio bundle, y con Angular/webpack casi siempre la resuelve
+   mal — sin ningún error en consola, el pin simplemente no se ve. Fix: se copiaron los 3 PNGs
+   (`marker-icon.png`, `marker-icon-2x.png`, `marker-shadow.png`) a `src/assets/leaflet/` y se
+   reconfiguró `L.Icon.Default.mergeOptions({...})` a nivel de módulo (una sola vez) apuntando
+   ahí, en vez de depender de la resolución automática.
+2. **El mapa sale en blanco o recortado si su contenedor no era visible al crearse** (como
+   dentro de un modal que recién apareció) — Leaflet mide el `<div>` en el momento de
+   `L.map(...)` y si mide 0 se queda mal calculado. Fix: `setTimeout(() => mapa.invalidateSize(), 60)`
+   después de crear el mapa, una vez que el layout del Swal ya asentó.
+
+### Registro en `angular.json`
+
+`node_modules/leaflet/dist/leaflet.css` agregado al array `styles` del build (no al de `test`,
+no hace falta ahí). `src/assets` ya estaba en `assets`, así que los 3 PNGs copiados no
+necesitaron configuración adicional.
+
+### "Cómo llegar" en `detalle-pedido` — ahora usa el punto exacto cuando existe
+
+`linkComoLlegar` (ya existía, con un comentario anticipando esto) ahora revisa
+`tieneUbicacionExacta` primero: si el pedido tiene `latitud`/`longitud`, arma
+`maps/dir/?api=1&destination={lat},{lng}` (ruta trazada al punto exacto); si no, cae al
+`maps/search/?api=1&query=...` de siempre (dirección + lugar en texto). El texto de ayuda
+debajo del botón también distingue los dos casos. Se agregó además la fila **"Referencias"** en
+el bloque de solo-lectura de datos de entrega.
+
+### ⚠️ node_modules quedó root-owned de una instalación anterior
+
+Antes de poder instalar Leaflet, `npm install` falló con `EACCES` — **toda** la carpeta
+`node_modules` (747 paquetes) pertenecía a `root`, probablemente de un `npm install` corrido con
+`sudo` en algún momento anterior. Sin `sudo` no se puede ni siquiera borrar el árbol (cada
+subcarpeta niega escritura). Se le pidió al usuario correr
+`sudo chown -R "$(whoami)" node_modules` una sola vez — seguro, no toca nada rastreado por git
+(`node_modules` está en `.gitignore`), y deja instalado sin volver a pedir permisos.
+
+### Verificado en pantalla, no solo con `ng build`
+
+`ng build` valida tipos pero no que Leaflet realmente pinte tiles ni que el ícono no salga roto
+(exactamente el tipo de bug de esta sección 1 de "Dos trampas clásicas"). Se verificó con
+Playwright + `ng serve`, sesión admin inyectada (mismo patrón ya documentado en el proyecto), en
+claro y oscuro:
+- Mapa sin ubicación previa → centra en Tejupilco, "Sin marcar todavía".
+- Mapa con ubicación previa → pin ya puesto, coordenadas mostradas, dirección/referencias
+  precargadas.
+- Clic en el mapa → coloca el pin, actualiza el texto, y el `PUT /v1/pedidos/{id}/entrega` real
+  que se dispara al guardar sí lleva `latitud`/`longitud`/`referencias` (confirmado
+  interceptando la petición, no solo mirando la pantalla).
+
+⚠️ Durante la verificación se topó de nuevo el artefacto ya documentado de navegar con
+`router.navigateByUrl()` desde fuera de la zona de Angular (dos componentes de ruta montados a
+la vez, el nuevo tapado por el viejo). Se encontró un fix más confiable que los intentos previos:
+un **clic real** (`page.mouse.click()`, evento de confianza vía CDP) inmediatamente después de
+la navegación programática "despierta" la zona — a diferencia de un `.click()` disparado desde
+`page.evaluate()` (que corre igual de fuera de zona que el resto). Anotado para la próxima vez
+que se necesite este truco.
+
+**Archivos modificados:**
+- `package.json` → `leaflet`, `@types/leaflet`
+- `angular.json` → `node_modules/leaflet/dist/leaflet.css` en `styles` (build)
+- `src/assets/leaflet/` → 3 PNGs del marcador (nuevo)
+- `src/app/pedidos/pedidos.service.ts` → `actualizarEntrega()` + `latitud`/`longitud`/`referencias`
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + los 3 campos
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → import Leaflet, fix de íconos,
+  `CENTRO_MAPA_DEFAULT`, picker de mapa completo en `mostrarModalEntrega()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `tieneUbicacionExacta`,
+  `linkComoLlegar` usa el punto exacto cuando existe
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → fila "Referencias", texto de
+  ayuda diferenciado
+
+**Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
+claro y oscuro, con petición real interceptada) confirmando que el mapa pinta, el pin se coloca,
+y el guardado manda los campos correctos.**

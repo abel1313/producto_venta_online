@@ -74,6 +74,11 @@ export interface PedidoDetalleResponse {
   lugarEntregaId?:     number | null;
   lugarEntregaNombre?: string | null;
   urlFacebook?:        string | null;
+  // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega, que es
+  // la zona/pueblo. Ausentes (no `null`) si nunca se capturó — el back usa @JsonInclude(NON_NULL).
+  latitud?:            number | null;
+  longitud?:           number | null;
+  referencias?:        string | null;
 }
 
 export interface PedidoDetalleItem {

@@ -11080,3 +11080,33 @@ guardarse antes de haber cargado. Si la carga falla, guardar destruye.
 **Verificado en pantalla** con el shape real de QA: el horario carga 11:00–18:00 (lo guardado, no
 el default), las 4 URLs aparecen llenas, y en el login salen los 4 iconos con el texto
 «Local cerrado — abrimos a las 11:00».
+
+---
+
+## FIX `/admin/negocio` + LOGIN — LA HORA NO DECÍA a.m. NI p.m. (2026-08-21)
+
+**Reportado:** *"la hora solo dice 11 y dice a 6 pero no dice si son am o pm"*.
+
+**Causa:** los dos lugares mostraban la hora **cruda** (`"18:00"`), y en el formulario es un
+`<input type="time">`, que **se pinta según la configuración del navegador y del sistema**: en
+unas máquinas sale en 24 horas y en otras en 12 sin el a.m./p.m. a la vista. O sea, el mismo
+horario se leía distinto según quién abriera la pantalla — y "6:00" no se distingue de las 6 de
+la mañana.
+
+**Fix:** nuevo `src/app/shared/hora.util.ts` → `horaLegible("18:00")` = `"6:00 p.m."`. El texto va
+**al lado del campo**, no dentro: así no depende de cómo el navegador decida pintar el input.
+
+- **`/admin/negocio`**: debajo de cada campo sale la hora en palabras, más un resumen
+  `🕐 Abre 11:00 a.m. · Cierra 6:00 p.m.`. El hint dejó de decir "09:00 – 21:00" y ahora dice
+  "9:00 a.m. – 9:00 p.m.".
+- **Login**: `estadoNegocioTexto` usa la misma función → *"Local cerrado — abrimos a las
+  11:00 a.m."*.
+
+⚠️ **Los dos casos borde que rompen un `% 12` ingenuo** (y que sí están cubiertos):
+`12:00` es **mediodía → p.m.**, y `00:30` es **12:30 a.m.** — un `% 12` a secas daría "0:30",
+que no existe en 12 horas.
+
+**Probado con la función directamente**, que es donde viven los bordes: `09:00`→`9:00 a.m.`,
+`18:00`→`6:00 p.m.`, `12:00`→`12:00 p.m.`, `00:30`→`12:30 a.m.`, `23:59`→`11:59 p.m.`; `null`/`""`
+devuelven vacío y un texto que no sea `HH:mm` se devuelve tal cual. Y en pantalla: el formulario
+muestra `11:00 a.m.` / `6:00 p.m.` con su resumen, y el login el texto completo.

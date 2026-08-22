@@ -11727,3 +11727,39 @@ seguir ubicando el punto a mano si la búsqueda no ayuda.
 Nominatim real (solo compilación) — pendiente confirmar con el dueño que el buscador sí ubica
 zonas reales de la región. El problema de fondo (recentrar solo al elegir zona) sigue sin resolver
 hasta que el back agregue lat/lng a `LugarEntrega`.
+
+---
+
+## ✅ CERRADO — el "Cómo llegar" nunca fue bug del front: faltaba la migración en QA (2026-08-22)
+
+> Cierra la investigación de las dos secciones anteriores. El back respondió en el compartido
+> (`CAMBIOS_FRONT_2.md`, "respuesta consolidada" del mismo día) con la causa real.
+
+**La tabla `pedidos` en QA (y en cualquier otro ambiente) todavía NO tiene las columnas**
+`latitud`/`longitud`/`referencias` — cita textual del back: *"Requiere migración de base de datos
+antes de desplegar... no tiene las columnas todavía en ningún ambiente (`ddl-auto: none`)."*
+
+Esto explica TODO lo observado sin necesitar ningún fix de front:
+- `guardarPedido()` sí manda `latitud`/`longitud` correctamente en el `pedido` (confirmado
+  releyendo el código completo, dos veces, sin encontrar ningún bug).
+- `finalizarConDetalleRamo()` también los reenvía (fix de la sesión anterior, correcto pero
+  innecesario — no había nada que "perder" en esa segunda llamada, el dato nunca llegó a
+  persistir desde la primera).
+- El back podía aceptar esos campos en el JSON sin quejarse, pero sin la columna en la tabla no
+  hay dónde guardarlos — de ahí que `GET /v1/pedidos/{id}/detalle` siempre regresara sin ellos y
+  `linkComoLlegar` cayera al fallback de texto (el polígono del pueblo completo).
+
+**Nada que corregir del lado del front.** Cuando el back corra
+`migration_pedido_ubicacion_entrega.sql` en QA y despliegue, el mismo código que ya está en
+producción-de-código (sin cambios adicionales) debería empezar a funcionar solo — hay que
+reprobar en vivo hasta entonces, no antes.
+
+**Pendiente:** confirmar con el back cuándo corren la migración + despliegan en QA, y repetir la
+prueba real del dueño (marcar un pin, confirmar el ramo, y revisar "Cómo llegar" desde ese
+pedido) una vez que avisen.
+
+**Lección para la próxima vez que algo "no se refleja" a pesar de que el código se ve
+correcto:** antes de seguir cazando bugs de front, revisar si el propio backend documentó una
+migración pendiente para ese mismo campo — el repo compartido (`CAMBIOS_FRONT.md`/
+`CAMBIOS_FRONT_2.md`) suele decirlo explícito ("requiere migración antes de desplegar"), y es
+mucho más rápido de verificar que releer código que ya se confirmó correcto dos veces.

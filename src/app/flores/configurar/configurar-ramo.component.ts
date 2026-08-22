@@ -82,6 +82,16 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Paso 6 — entrega ─────────────────────────────────────────────────────
   lugarEntregaId: number | null = null;
   recogerEnLocal = false;
+  // Ubicación exacta (2026-08-22) — se ofrece el mapa solo tras elegir zona, para marcar el
+  // punto dentro de esa zona (Tejupilco es extenso, "la zona" sola no dice dónde exactamente).
+  latitud: number | null = null;
+  longitud: number | null = null;
+  referencias = '';
+
+  onUbicacionCambio(p: { lat: number; lng: number }): void {
+    this.latitud = p.lat;
+    this.longitud = p.lng;
+  }
   /** Cuándo puede entregarse este tamaño. Ver `consultarFechas()`. */
   fechas: IFechasDisponiblesResponse | null = null;
   consultandoFechas = false;
@@ -581,7 +591,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Paso 6 — entrega ─────────────────────────────────────────────────────
 
   onRecogerEnLocalChange(): void {
-    if (this.recogerEnLocal) this.lugarEntregaId = null;
+    if (this.recogerEnLocal) {
+      this.lugarEntregaId = null;
+      this.latitud = null;
+      this.longitud = null;
+    }
     this.consultarFechas();
   }
 
@@ -980,6 +994,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fechaPedido: new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
+      latitud:        this.latitud ?? undefined,
+      longitud:       this.longitud ?? undefined,
+      referencias:    this.referencias.trim() || undefined,
       detalles
     };
 
@@ -1149,6 +1166,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.fraseTexto = '';
     this.lugarEntregaId = null;
     this.recogerEnLocal = false;
+    this.latitud = null;
+    this.longitud = null;
+    this.referencias = '';
     this.calculo = null;
     this.fechas = null;
     this.errorFechas = null;

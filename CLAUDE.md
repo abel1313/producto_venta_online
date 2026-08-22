@@ -11481,3 +11481,84 @@ que se necesite este truco.
 **Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
 claro y oscuro, con petición real interceptada) confirmando que el mapa pinta, el pin se coloca,
 y el guardado manda los campos correctos.**
+
+---
+
+## FEAT PEDIDOS — MAPA DE UBICACIÓN TAMBIÉN AL ARMAR EL PEDIDO (CHECKOUT + ARMA TU RAMO) (2026-08-22)
+
+> Corrige un hueco de la entrega anterior (sección "FEAT PEDIDOS — UBICACIÓN EXACTA DE ENTREGA
+> CON MAPA"): el mapa solo vivía en "Mis pedidos → Editar Entrega", es decir, **después** de que
+> el pedido ya existía — el cliente tenía que acordarse de volver a editarlo. El dueño lo pidió
+> directo en el momento de armar el pedido: *"si selecciona Tejupilco, abrimos el mapa y que
+> elija el lugar de entrega... Tejupilco es extenso, ¿cómo voy a saber dónde es?"* — y lo mismo
+> para cuando arma un ramo.
+
+### Se extrajo el mapa a un componente reutilizable
+
+La primera implementación vivía **inline dentro de un `Swal.fire()`** en `mis-pedidos` (JS
+vainilla con `didOpen`/`willClose`, ver sección anterior) — eso funciona ahí porque un modal de
+SweetAlert2 no es parte del árbol de componentes de Angular. Pero **estas dos pantallas nuevas sí
+son templates normales de Angular**, así que copiar el mismo código vainilla tres veces habría
+sido pura duplicación. Se creó `<app-selector-ubicacion>`
+(`src/app/shared/selector-ubicacion/selector-ubicacion.component.ts`) como componente real:
+`@Input() lat/lng/centroDefault`, `@Output() ubicacionCambio`, con el mismo mapa/pin/geolocalizar
+por dentro. Se agregó a `SharedModule` (ahora también importado por `FloresModule`, que antes no
+lo tenía).
+
+⚠️ **El Swal de `mis-pedidos` NO se migró a usar este componente** — sigue con su propia
+implementación vainilla. SweetAlert2 renderiza su `html` fuera del árbol de Angular; insertar un
+componente Angular ahí requeriría técnicas más complejas (`ComponentFactoryResolver`/portal) que
+no valían la pena solo para no repetir ~80 líneas ya probadas y funcionando.
+
+### Dónde quedó conectado
+
+1. **`venta-variante`** (carrito/checkout normal del cliente) — debajo del select "📍 Lugar de
+   entrega", solo visible si ya se eligió una zona (`*ngIf="lugarEntregaId"`) y solo para
+   cliente (`!isAdminUser` — el admin captura esto en Venta Directa). Nuevos campos `latitud`,
+   `longitud`, `referencias` en el componente, incluidos en el `IPedidoVarianteDTO` que ya arma
+   `armarYConfirmar()`.
+2. **`configurar-ramo`** ("Arma tu ramo", flores) — mismo criterio, dentro del Paso 6 ("¿Dónde y
+   cuándo lo quieres?"), debajo del select de zona, oculto si `recogerEnLocal` o si
+   `modoEdicion` (la zona tampoco se toca al editar un ramo ya pactado — mismo motivo ya
+   documentado: cambiarla alteraría un costo de envío ya cobrado). Los 3 campos se mandan en el
+   mismo `IPedidoVarianteDTO` de `guardarPedido()` (confirmado por el back que `savePedido` los
+   acepta desde la creación).
+
+**`IPedidoVarianteDTO`** (`pedido-variante.model.ts`) ganó `latitud?`/`longitud?`/`referencias?`.
+
+### Lo que NO se tocó (fuera de alcance de este pedido)
+
+- **`venta-directa`** (admin vendiendo directo) no lleva el mapa — el dueño lo pidió para
+  flujos donde el **cliente** elige su propia ubicación ("cuando arman su pedido/ramo"), y ahí
+  es el admin quien captura los datos, normalmente por teléfono. Si se pide después, es trivial
+  de agregar con el mismo componente.
+- El mapa **no reposiciona su centro por zona** (Tejupilco vs. Zacazonapan muestran el mismo
+  centro por defecto) — el catálogo `LugarEntrega` no guarda lat/lng propio todavía. No bloquea
+  el objetivo real (el cliente puede navegar/hacer zoom en el mapa para encontrar su punto, o
+  usar "📡 Usar mi ubicación" si está parado ahí) pero sería una mejora pedirle al back que
+  agregue un centro por zona si se quiere que el mapa ya abra centrado en el pueblo correcto.
+
+### Verificado en pantalla, en el flujo real (no solo `ng build`)
+
+Con Playwright — para saltarse los 5 pasos previos del wizard de "Arma tu ramo" (especie,
+cantidad, reparto, accesorios, listón) sin tener que simularlos uno por uno con clics reales, se
+forzó el estado directo vía `window.ng.getComponent()` (`cantidadConfirmada`, `reparto`,
+`lugares`, `lugarEntregaId`) — válido porque lo que se estaba verificando es el **renderizado del
+mapa dentro de este layout específico**, no la lógica del wizard (ya cubierta por el compilador
+estricto de plantillas). Confirmado en claro y oscuro, y con un clic real sobre el mapa que sí
+actualiza `latitud`/`longitud` del componente padre y el texto en pantalla — la conexión
+`@Output()` entre el componente reutilizable y sus dos padres funciona en ambos casos.
+
+**Archivos nuevos:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts`
+
+**Archivos modificados:**
+- `src/app/shared/shared.module.ts` → declara/exporta `SelectorUbicacionComponent`
+- `src/app/flores/flores.module.ts` → importa `SharedModule` (no lo tenía)
+- `src/app/variante/models/pedido-variante.model.ts` → `IPedidoVarianteDTO` + los 3 campos
+- `src/app/variante/venta-variante/venta-variante.component.ts` + `.html` → mapa tras elegir zona
+- `src/app/flores/configurar/configurar-ramo.component.ts` + `.html` → mapa en Paso 6
+
+**Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
+claro y oscuro) en ambos puntos de entrada nuevos, con clic real confirmando la actualización de
+estado en los dos.**

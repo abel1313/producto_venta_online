@@ -224,6 +224,20 @@
           Voy a recoger en la tienda
         </label>
 
+        <!-- Ubicación exacta (opcional) — solo tras elegir zona y solo al crear el pedido (la
+             zona no se toca al editar, y esto va de la mano con ella). La zona sola ("Tejupilco")
+             es muy extensa, esto marca el punto dentro de ella. -->
+        <div class="cr-field" *ngIf="lugarEntregaId && !modoEdicion">
+          <label class="cr-label" style="font-size:.85rem">🗺️ Ubicación exacta (opcional)</label>
+          <app-selector-ubicacion
+            [lat]="latitud" [lng]="longitud"
+            (ubicacionCambio)="onUbicacionCambio($event)">
+          </app-selector-ubicacion>
+          <input type="text" class="cr-input mt-2"
+                 placeholder="Referencias (ej. portón verde, junto a la tienda)"
+                 [(ngModel)]="referencias">
+        </div>
+
         <!-- El aviso que el admin necesita para negociar por teléfono: "si le agregamos 10, ya no
              te lo doy el 20, sería el 23 — o el 20 con el cargo de prisa". -->
         <div class="cr-aviso cr-aviso--warn" *ngIf="avisoFechaCorrida">

@@ -161,6 +161,20 @@ $t:  all 0.25s ease;
   gap: 5px;
 }
 
+// La hora en palabras, debajo del campo: el `<input type="time">` no siempre
+// muestra el a.m./p.m. y "6:00" se leía igual que las 6 de la mañana.
+.cn-hora-legible {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.cn-horario-resumen {
+  margin: 12px 0 0;
+  font-size: .84rem;
+  color: var(--card-text-muted);
+}
+
 .cn-label {
   font-size: .78rem;
   font-weight: 700;

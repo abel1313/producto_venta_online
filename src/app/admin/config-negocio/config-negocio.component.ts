@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service';
+import { horaLegible } from 'src/app/shared/hora.util';
 
 @Component({
   selector: 'app-config-negocio',
@@ -122,6 +123,19 @@ export class ConfigNegocioComponent implements OnInit {
   // texto letra por letra para reemplazar una URL ya guardada, un botón "✕ Limpiar" la
   // vacía de un tirón. No guarda nada — solo limpia el campo en el form; el admin sigue
   // teniendo que darle "Guardar contactos" para persistirlo.
+  /**
+   * "18:00" → "6:00 p.m." — el `<input type="time">` se pinta según el navegador y en algunas
+   * máquinas no muestra el a.m./p.m., así que el horario se leía a medias.
+   */
+  legible(hhmm?: string | null): string { return horaLegible(hhmm); }
+
+  /** Resumen del horario tal como quedaría guardado, para confirmarlo de un vistazo. */
+  get horarioLegible(): string {
+    const a = this.legible(this.horarioForm?.get('horaApertura')?.value);
+    const c = this.legible(this.horarioForm?.get('horaCierre')?.value);
+    return a && c ? `Abre ${a} · Cierra ${c}` : '';
+  }
+
   limpiarCampo(campo: 'whatsappUrl' | 'facebookUrl' | 'instagramUrl' | 'tiktokUrl'): void {
     this.contactosForm.get(campo)?.setValue('');
   }

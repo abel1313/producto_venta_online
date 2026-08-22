@@ -61,6 +61,17 @@
       <strong>Facebook:</strong>
       <a [href]="detalle.urlFacebook" target="_blank" rel="noopener">{{ detalle.urlFacebook }}</a>
     </p>
+
+    <!-- Abrir el GPS del celular con la ruta es SOLO un link — no es una API, no cuesta ni
+         necesita cuenta. Hoy va con la dirección escrita; cuando el back guarde latitud y
+         longitud, el mismo botón apunta al punto exacto (ver `linkComoLlegar`). -->
+    <a class="dp-btn-mapa" *ngIf="linkComoLlegar as link"
+       [href]="link" target="_blank" rel="noopener">
+      🧭 Cómo llegar
+    </a>
+    <small class="dp-entrega__nota" *ngIf="linkComoLlegar">
+      Se abre en tu app de mapas con la dirección escrita.
+    </small>
   </div>
 
   <!-- FORM DE ABONO (solo crédito) -->

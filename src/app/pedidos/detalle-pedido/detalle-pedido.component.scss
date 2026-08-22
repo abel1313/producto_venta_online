@@ -576,3 +576,27 @@
   border-radius: 0 8px 8px 0;
   padding: 10px 14px;
 }
+
+// "Cómo llegar" — abre la app de mapas del teléfono. Es un link normal, no una API.
+.dp-btn-mapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--app-accent);
+  color: var(--app-accent-ink);
+  font-size: .86rem;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover { background: var(--app-accent-hover); color: var(--app-accent-ink); }
+}
+
+.dp-entrega__nota {
+  display: block;
+  margin-top: 6px;
+  font-size: .76rem;
+  color: var(--card-text-muted);
+}

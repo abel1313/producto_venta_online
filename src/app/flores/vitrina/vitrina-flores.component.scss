@@ -9,10 +9,21 @@
 .vr-header {
   padding: 0 16px;
   margin-bottom: 28px;
+  // Sin layout propio, el título y "Armar el mío" quedaban pegados uno debajo del otro,
+  // como si el botón fuera parte del subtítulo. Ahora se separan de verdad.
   &__inner {
     max-width: 1120px;
     margin: 0 auto;
     padding: 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+
+    // `.vr-btn--pedir` lleva `flex: 1` porque en el pie de la tarjeta sí debe crecer.
+    // Aquí no: sin esto el botón se estira hasta el otro extremo del encabezado.
+    .vr-btn { flex: 0 0 auto; }
   }
   &__title {
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }

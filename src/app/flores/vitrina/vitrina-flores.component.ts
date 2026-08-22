@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { IRamoAccesorioCalculado, IRamoArmado } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { FloresImagenService } from '../service/flores-imagen.service';
 import { NegocioService } from '../../negocio/negocio.service';
 
 /**
@@ -30,10 +31,35 @@ export class VitrinaFloresComponent implements OnInit {
   /** Solo lo que hace falta para el botón "Pedir por WhatsApp" — falla en silencio si no hay. */
   private whatsappUrl: string | null = null;
 
+  /**
+   * Foto real de cada ramo, indexada por el id de su **variante sombra**.
+   *
+   * ⚠️ Los ramos guardados antes de esta función tienen `varianteId: null` — su variante se crea
+   * sola en el siguiente guardado. Por eso `fotoDe()` cae a `imagenUrl` (el link que el admin
+   * pegaba a mano) mientras tanto, y solo entonces al marcador de posición.
+   */
+  fotos: Record<number, string | null> = {};
+
   constructor(
     private readonly flores: FloresService,
-    private readonly negocio: NegocioService
+    private readonly negocio: NegocioService,
+    private readonly imagenes: FloresImagenService
   ) {}
+
+  /** Qué imagen mostrar para un ramo: la foto real, el link viejo, o nada. */
+  fotoDe(r: IRamoArmado): string | null {
+    return (r.varianteId ? this.fotos[r.varianteId] : null) ?? r.imagenUrl ?? null;
+  }
+
+  private cargarFotos(ramos: IRamoArmado[]): void {
+    ramos
+      .filter(r => !!r.varianteId && this.fotos[r.varianteId!] === undefined)
+      .forEach(r => {
+        const id = r.varianteId!;
+        this.fotos[id] = null;                      // marca "ya pedida", para no repetirla
+        this.imagenes.portadaDe(id).subscribe(url => { this.fotos[id] = url; });
+      });
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -49,6 +75,7 @@ export class VitrinaFloresComponent implements OnInit {
     this.flores.ramosActivos(this.pagina, this.size).subscribe({
       next: r => {
         this.ramos = r?.t ?? [];
+        this.cargarFotos(this.ramos);
         this.totalPaginas = r?.totalPaginas ?? 1;
         this.cargando = false;
       },

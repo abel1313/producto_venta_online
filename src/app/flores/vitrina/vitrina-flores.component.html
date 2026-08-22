@@ -29,10 +29,10 @@
   <div class="vr-grid" *ngIf="!cargando && ramos.length > 0">
     <div class="vr-card" *ngFor="let r of ramos">
 
-      <div class="vr-card__img-wrap" *ngIf="r.imagenUrl">
-        <img [src]="r.imagenUrl" class="vr-card__img" [alt]="r.nombre">
+      <div class="vr-card__img-wrap" *ngIf="fotoDe(r) as foto">
+        <img [src]="foto" class="vr-card__img" [alt]="r.nombre">
       </div>
-      <div class="vr-card__img-wrap vr-card__img-wrap--placeholder" *ngIf="!r.imagenUrl">
+      <div class="vr-card__img-wrap vr-card__img-wrap--placeholder" *ngIf="!fotoDe(r)">
         <span>🌹</span>
       </div>
 
@@ -74,7 +74,7 @@
     </div>
 
     <div class="vr-modal__body">
-      <img *ngIf="ramoDetalle.imagenUrl" [src]="ramoDetalle.imagenUrl" class="vr-modal__img" [alt]="ramoDetalle.nombre">
+      <img *ngIf="fotoDe(ramoDetalle) as fotoD" [src]="fotoD" class="vr-modal__img" [alt]="ramoDetalle.nombre">
 
       <p class="vr-modal__especie">{{ ramoDetalle.tipoFlorNombre }} · {{ ramoDetalle.colorFlorNombre }} · {{ ramoDetalle.cantidad }} flores</p>
 

@@ -6,6 +6,7 @@ import {
   IRamoArmadoRequest, ITipoFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { FloresImagenService } from '../service/flores-imagen.service';
 
 interface IAccesorioSeleccion {
   accesorio: IAccesorioRamo;
@@ -54,7 +55,69 @@ export class GestionRamosFloresComponent implements OnInit {
   formActivo = true;
   formAccesorios: IAccesorioSeleccion[] = [];
 
-  constructor(private readonly flores: FloresService) {}
+  // ── Foto del ramo ─────────────────────────────────────────────────
+  /** Foto real de cada ramo, indexada por el id de su variante sombra. */
+  fotos: Record<number, string | null> = {};
+  /** Ramo cuya foto se está subiendo — bloquea solo esa tarjeta. */
+  subiendoFoto: number | null = null;
+
+  constructor(
+    private readonly flores: FloresService,
+    private readonly imagenes: FloresImagenService
+  ) {}
+
+  /**
+   * Qué imagen mostrar: la foto real si ya la tiene, si no el `imagenUrl` viejo (el link que se
+   * pegaba a mano), y si no, nada.
+   */
+  fotoDe(r: IRamoArmado): string | null {
+    return (r.varianteId ? this.fotos[r.varianteId] : null) ?? r.imagenUrl ?? null;
+  }
+
+  private cargarFotos(ramos: IRamoArmado[]): void {
+    ramos
+      .filter(r => !!r.varianteId && this.fotos[r.varianteId!] === undefined)
+      .forEach(r => {
+        const id = r.varianteId!;
+        this.fotos[id] = null;
+        this.imagenes.portadaDe(id).subscribe(url => { this.fotos[id] = url; });
+      });
+  }
+
+  /**
+   * Sube la foto del ramo a su variante sombra.
+   *
+   * ⚠️ Un ramo guardado antes de esta función **todavía no tiene variante** (`varianteId: null`):
+   * la crea el back en el siguiente guardado. Por eso el input va deshabilitado en ese caso y el
+   * `title` explica qué hacer, en vez de dejar elegir un archivo que no se podría guardar.
+   */
+  onFotoRamo(evento: Event, r: IRamoArmado): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo || !r.varianteId || !r.varianteProductoId) return;
+
+    this.subiendoFoto = r.id;
+    this.imagenes
+      .subirFoto({ id: r.varianteId, producto: { id: r.varianteProductoId } }, archivo)
+      .subscribe({
+        next: () => {
+          this.imagenes.portadaDe(r.varianteId!).subscribe(url => {
+            this.fotos[r.varianteId!] = url;
+            this.subiendoFoto = null;
+            Swal.fire({ icon: 'success', title: 'Foto guardada', timer: 1200, showConfirmButton: false });
+          });
+        },
+        error: err => {
+          this.subiendoFoto = null;
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar la foto',
+            text: err?.error?.mensaje ?? err?.message ?? 'Intenta de nuevo.'
+          });
+        }
+      });
+  }
 
   ngOnInit(): void {
     this.cargarCatalogos();
@@ -91,6 +154,7 @@ export class GestionRamosFloresComponent implements OnInit {
     this.flores.ramosAdmin(this.pagina, this.size).subscribe({
       next: r => {
         this.ramos = r?.t ?? [];
+        this.cargarFotos(this.ramos);
         this.totalPaginas = r?.totalPaginas ?? 1;
         this.cargando = false;
       },

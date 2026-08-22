@@ -252,7 +252,7 @@ $t:  all 0.25s ease;
 
   &--save {
     background: linear-gradient(135deg, $p, $pd);
-    color: #fff;
+    color: var(--app-accent-ink);
     box-shadow: 0 5px 16px rgba(var(--app-accent-rgb),.32);
 
     &:hover:not(:disabled) {

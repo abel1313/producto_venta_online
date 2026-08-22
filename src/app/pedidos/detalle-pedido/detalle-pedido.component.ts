@@ -151,6 +151,38 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // solo mira tipoPedido (APARTADO/FIADO), que no cambia al pagarse; hacía falta chequear
   // también el estado. El historial de pagos sí se sigue mostrando (útil de consultar),
   // solo se oculta el botón de registrar uno nuevo.
+  /**
+   * Link que abre la app de mapas del teléfono con la ruta hacia la entrega, o `null` si no hay
+   * a dónde ir.
+   *
+   * ⚠️ **Esto no usa ninguna API de mapas.** Es una URL normal: el celular la abre con Google
+   * Maps o Waze y él pone la navegación. Por eso no cuesta, no pide llave ni cuenta de Google
+   * Cloud, y funciona hoy sin nada del back.
+   *
+   * Hoy va con la **dirección escrita**, que es lo único que se captura — así que atina hasta
+   * donde atine el buscador de mapas. Cuando el back agregue `latitud`/`longitud` (pedido el
+   * 2026-08-22), aquí se antepone `dir/?api=1&destination={lat},{lng}` y pasa a ser el punto
+   * exacto, sin tocar la pantalla.
+   */
+  // Si el pedido ya tiene ubicación exacta capturada (2026-08-22, ver "Editar Entrega" en
+  // mis-pedidos), el botón apunta directo a ese punto con ruta trazada — más preciso que
+  // buscar por texto, que depende de qué tan bien escrita quedó la dirección.
+  get tieneUbicacionExacta(): boolean {
+    return this.detalle?.latitud != null && this.detalle?.longitud != null;
+  }
+
+  get linkComoLlegar(): string | null {
+    if (this.tieneUbicacionExacta) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitud},${this.detalle!.longitud}`;
+    }
+    const partes = [this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
+      .map(p => (p ?? '').trim())
+      .filter(p => p !== '');
+    if (!partes.length) return null;
+
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(partes.join(', '))}`;
+  }
+
   get yaLiquidado(): boolean {
     return this.esCredito && this.estadoPedido === 'PAGADO';
   }

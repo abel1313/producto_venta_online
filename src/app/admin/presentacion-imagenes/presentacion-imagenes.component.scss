@@ -162,7 +162,7 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 .pi-btn-save {
   flex: 1; padding: 8px 10px; border: none; border-radius: 8px;
   background: linear-gradient(135deg, $p, $pd);
-  color: #fff; font-size: .8rem; font-weight: 700;
+  color: var(--app-accent-ink); font-size: .8rem; font-weight: 700;
   cursor: pointer; transition: $t;
 
   &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),.35); }

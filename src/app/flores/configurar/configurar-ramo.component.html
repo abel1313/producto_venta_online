@@ -117,6 +117,10 @@
         </div>
 
         <div class="cr-color-row" *ngFor="let r of reparto">
+          <!-- La foto sale del producto interno del color (ver FloresImagenService). Si no hay,
+               no se deja un hueco: la fila se ve como antes. -->
+          <img class="cr-mini" *ngIf="r.color.variante?.id && portadas[r.color.variante!.id] as url"
+               [src]="url" [alt]="r.color.nombre">
           <span class="cr-color-row__nombre">{{ r.color.nombre }}</span>
           <span class="cr-color-row__stock">{{ r.color.stock }} disp.</span>
           <input class="cr-input cr-input--num" type="number" min="0" [max]="r.color.stock"
@@ -148,6 +152,8 @@
              Y cuando aparece se dice QUE se cobra, pero no CUÁNTO: el monto depende de los
              pliegos y el dueño no quiere anticipar esa cuenta al cliente. -->
         <div class="cr-accesorio-row" *ngFor="let s of accesoriosSeleccionables">
+          <img class="cr-mini" *ngIf="s.accesorio.variante?.id && portadas[s.accesorio.variante!.id] as url"
+               [src]="url" [alt]="s.accesorio.nombre">
           <label class="cr-check">
             <input type="checkbox" [(ngModel)]="s.seleccionado"
                    (ngModelChange)="toggleAccesorio(s)">

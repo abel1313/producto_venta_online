@@ -90,7 +90,7 @@ $indigo-dark: var(--brand-2);
   &--active {
     border-color: $indigo;
     background: linear-gradient(135deg, $indigo, $indigo-dark);
-    color: #fff;
+    color: var(--app-accent-ink);
     box-shadow: 0 4px 12px rgba(var(--app-accent-rgb), 0.3);
   }
 }
@@ -156,7 +156,7 @@ $indigo-dark: var(--brand-2);
 
   &--search {
     background: linear-gradient(135deg, $indigo, $indigo-dark);
-    color: #fff;
+    color: var(--app-accent-ink);
     box-shadow: 0 4px 12px rgba(var(--app-accent-rgb), 0.28);
     &:not(:disabled):hover { box-shadow: 0 6px 18px rgba(var(--app-accent-rgb), 0.42); }
   }

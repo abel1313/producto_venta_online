@@ -10,6 +10,7 @@ import { IPageable } from './models/IPageable.mode';
 import { PagoService } from '../pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
+import * as L from 'leaflet';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
@@ -18,6 +19,22 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
+
+// Leaflet calcula la URL de sus íconos por defecto en base a dónde quedó su propio bundle, y
+// con Angular/webpack casi siempre la resuelve mal — el pin del mapa sale invisible, sin
+// ningún error en consola. Fix estándar: apuntar a copias propias en assets/leaflet en vez de
+// depender de esa resolución automática. Corre una sola vez al cargar el módulo.
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',
+  iconUrl:       'assets/leaflet/marker-icon.png',
+  shadowUrl:     'assets/leaflet/marker-shadow.png',
+});
+
+// Tejupilco, Edo. México — centro por defecto del mapa cuando el pedido todavía no tiene
+// ubicación guardada. Es el mismo punto que el back usó de ejemplo en su documentación, y
+// corresponde a la zona real donde el negocio entrega.
+const CENTRO_MAPA_DEFAULT: L.LatLngTuple = [18.916234, -100.143567];
 
 @Component({
   selector: 'app-mis-pedidos',
@@ -324,6 +341,20 @@ export class MisPedidosComponent implements OnInit {
     const observaciones    = actual?.observaciones ?? '';
     const lugarEntregaId   = actual?.lugarEntregaId ?? null;
     const urlFacebook      = actual?.urlFacebook ?? '';
+    const referencias      = actual?.referencias ?? '';
+
+    // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega (la
+    // zona/pueblo). Variables mutables capturadas por el `didOpen`/`preConfirm` del Swal de
+    // abajo: se actualizan al hacer clic en el mapa o arrastrar el pin. Si el pedido ya tenía
+    // ubicación guardada, arranca marcado; si no, arranca sin marcar y no se manda nada al
+    // guardar salvo que el admin toque el mapa.
+    let latActual: number | null = actual?.latitud ?? null;
+    let lngActual: number | null = actual?.longitud ?? null;
+    let ubicacionTocada = latActual != null && lngActual != null;
+    // Referencia al mapa para destruirlo en `willClose` — sin esto, cada vez que se abre este
+    // modal se crea una instancia de Leaflet nueva sin liberar la anterior (listeners y tiles
+    // quedan colgando, aunque el DOM ya se haya borrado).
+    let mapaLeaflet: L.Map | null = null;
 
     const opcionesLugar = this.lugares.map(l =>
       `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
@@ -377,6 +408,19 @@ export class MisPedidosComponent implements OnInit {
             background:var(--app-accent-soft,rgba(var(--app-accent-rgb),.12));
             border:1px solid var(--card-border,#e5e7eb);
           }
+          .mp-mapa {
+            width:100%; height:200px; border-radius:10px;
+            border:1.5px solid var(--card-border,#e5e7eb);
+          }
+          .mp-mapa-hint { font-size:.74rem; color:var(--app-text-muted,#6b7280); margin:0; }
+          .mp-mapa-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+          .mp-mapa-coords { font-size:.8rem; font-weight:600; color:var(--app-text,#1f2937); }
+          .mp-mapa-geo {
+            border:none; background:none; padding:0; cursor:pointer;
+            font-size:.76rem; font-weight:700; color:var(--app-accent,var(--brand-1));
+            flex-shrink:0;
+          }
+          .mp-mapa-geo:hover { text-decoration:underline; }
         </style>
         <div class="mp-entrega-form">
           <div class="mp-entrega-field">
@@ -386,6 +430,19 @@ export class MisPedidosComponent implements OnInit {
           <div class="mp-entrega-field">
             <label class="mp-entrega-label">🏠 Dirección de entrega</label>
             <textarea id="sw-direccion" class="mp-entrega-textarea" placeholder="Opcional">${direccionEntrega}</textarea>
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">🗺️ Ubicación exacta (opcional)</label>
+            <div id="sw-mapa" class="mp-mapa"></div>
+            <div class="mp-mapa-row">
+              <span id="sw-coords" class="mp-mapa-coords"></span>
+              <button type="button" id="sw-geo" class="mp-mapa-geo">📡 Usar mi ubicación</button>
+            </div>
+            <p class="mp-mapa-hint">Toca el mapa (o arrastra el pin) para marcar la casa exacta del cliente.</p>
+          </div>
+          <div class="mp-entrega-field">
+            <label class="mp-entrega-label">🧭 Referencias del lugar</label>
+            <input id="sw-referencias" class="mp-entrega-input" placeholder="Ej. portón verde, junto a la tienda" value="${referencias}">
           </div>
           <div class="mp-entrega-row">
             <div class="mp-entrega-field">
@@ -413,9 +470,67 @@ export class MisPedidosComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: '💾 Guardar',
       cancelButtonText: 'Cancelar',
+      didOpen: () => {
+        const centro: L.LatLngTuple = ubicacionTocada ? [latActual!, lngActual!] : CENTRO_MAPA_DEFAULT;
+        const mapa = L.map('sw-mapa', { attributionControl: false }).setView(centro, ubicacionTocada ? 16 : 13);
+        mapaLeaflet = mapa;
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          subdomains: 'abc'
+        }).addTo(mapa);
+
+        let marker: L.Marker | null = null;
+
+        const textoCoords = document.getElementById('sw-coords');
+        const actualizarTexto = () => {
+          if (!textoCoords) return;
+          textoCoords.textContent = ubicacionTocada
+            ? `📍 ${latActual!.toFixed(6)}, ${lngActual!.toFixed(6)}`
+            : 'Sin marcar todavía';
+        };
+
+        const colocar = (lat: number, lng: number) => {
+          latActual = lat; lngActual = lng; ubicacionTocada = true;
+          if (marker) {
+            marker.setLatLng([lat, lng]);
+          } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(mapa);
+            marker.on('dragend', () => { const p = marker!.getLatLng(); colocar(p.lat, p.lng); });
+          }
+          actualizarTexto();
+        };
+
+        if (ubicacionTocada) colocar(latActual!, lngActual!);
+        actualizarTexto();
+
+        mapa.on('click', (e: L.LeafletMouseEvent) => colocar(e.latlng.lat, e.latlng.lng));
+
+        document.getElementById('sw-geo')?.addEventListener('click', () => {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition(
+            pos => { colocar(pos.coords.latitude, pos.coords.longitude); mapa.setView([pos.coords.latitude, pos.coords.longitude], 17); },
+            () => Swal.showValidationMessage('No se pudo obtener tu ubicación — revisa los permisos del navegador.')
+          );
+        });
+
+        // Leaflet mide el contenedor al crearse; dentro de un modal que recién apareció puede
+        // medir 0 y el mapa sale en blanco/recortado. invalidateSize() lo corrige una vez que
+        // el layout del Swal ya está listo.
+        setTimeout(() => mapa.invalidateSize(), 60);
+      },
+      willClose: () => {
+        mapaLeaflet?.remove();
+        mapaLeaflet = null;
+      },
       preConfirm: () => ({
         nombreReceptor:   (document.getElementById('sw-receptor') as HTMLInputElement)?.value?.trim() || undefined,
         direccionEntrega: (document.getElementById('sw-direccion') as HTMLTextAreaElement)?.value?.trim() || undefined,
+        referencias:      (document.getElementById('sw-referencias') as HTMLInputElement)?.value?.trim() || undefined,
+        // Solo se mandan si el admin tocó el mapa (colocó o ya venía con un punto guardado) —
+        // el back no soporta "borrar" latitud/longitud mandando null, así que nunca hay que
+        // mandarlos en falso cuando nunca se marcó nada.
+        latitud:          ubicacionTocada ? latActual! : undefined,
+        longitud:         ubicacionTocada ? lngActual! : undefined,
         // En un ramo se omiten a propósito: el back interpreta ausente como "no tocar este campo".
         // Un <input disabled> igual devuelve su valor por JS, así que sin este guard se
         // reescribirían con lo mismo — inofensivo, pero mejor no mandarlos.

@@ -343,6 +343,17 @@ body.theme-dark {
   color: #E9E9EC;
   h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #E9E9EC; }
 
+  /* ⚠️ …pero NO adentro de un botón. Esa regla de arriba pinta de blanco CUALQUIER
+     `<span>`, y desde que el acento es blanco eso deja el texto invisible sobre los
+     botones de marca — es la causa real del "no se ve lo que dice" que se reportó en
+     rifas, y del mismo síntoma en cualquier botón cuyo texto vaya envuelto en un span.
+     El texto de un botón tiene que heredar SU color, que ya está resuelto con
+     `--app-accent-ink`. (0,1,2) le gana a (0,1,1), sin `!important`. */
+  button span, button label, button p,
+  .btn span, [class*="-btn"] span, [class*="-btn"] label {
+    color: inherit;
+  }
+
   /* ── Bootstrap cards ───────────────────── */
   .card {
     background: rgba(255,255,255,0.05) !important;
@@ -523,6 +534,13 @@ body.theme-light {
   h1, h2, h3, h4, h5, h6 { color: #12241D; }
   p, span, label, td, th, li { color: #12241D; }
 
+  /* Misma excepción que en oscuro, y aquí el riesgo es el espejo: un `<span>` con
+     texto oscuro dentro de un botón de marca (verde oscuro) también desaparece. */
+  button span, button label, button p,
+  .btn span, [class*="-btn"] span, [class*="-btn"] label {
+    color: inherit;
+  }
+
   /* ── Bootstrap cards ───────────────────── */
   .card {
     background: #FFFFFF !important;
@@ -678,6 +696,41 @@ body.theme-light {
    en el DOM pero tapado e inaccesible detrás de ellas, sin ningún error en
    consola. El modal SIEMPRE debe ganar, sin importar qué z-index tenga la
    pantalla debajo. */
+/* ══════════════════════════════════════════════════════════════════════════
+   BOTONES DESHABILITADOS EN MODO OSCURO
+
+   Con el acento en blanco, un botón deshabilitado se veía como una barra casi
+   blanca con el texto apenas perceptible — el dueño lo reportó como "no se ve
+   lo que dice" en rifas, negocio y presentación.
+
+   La causa: cada componente resuelve el deshabilitado a su manera (unos con
+   `opacity`, otros sin nada), y con relleno blanco ninguna de las dos funciona.
+   Aquí se les da un trato único y explícito: superficie oscura y texto apagado,
+   que además comunica mejor "esto no se puede tocar" que un blanco desvaído.
+
+   ⚠️ `!important` porque varios componentes ya marcan su fondo con `!important`
+   (ej. `.rf-btn--primary`); sin esto la regla no gana. Y `opacity: 1` a
+   propósito: el gris ya comunica el estado, bajar la opacidad encima solo
+   vuelve a borrar el texto.
+   ══════════════════════════════════════════════════════════════════════════ */
+/* ⚠️ El `[class]` de más NO es decorativo: sube la especificidad a (0,4,1). Con
+   `[class*="-btn"]:disabled` a secas la regla EMPATA con la del componente
+   (`:host-context(body.theme-dark) .rf-btn--primary`, que también es (0,3,1)) y
+   pierde por orden de carga — los estilos de componente se inyectan después de
+   los globales. Se comprobó en pantalla: el botón seguía blanco. */
+body.theme-dark button[class]:disabled,
+body.theme-dark .btn[class]:disabled,
+body.theme-dark [class][class*="-btn"]:disabled,
+body.theme-dark input[type="submit"]:disabled {
+  background: var(--app-surface-2) !important;
+  background-image: none !important;
+  color: var(--app-text-muted) !important;
+  border-color: var(--card-border) !important;
+  box-shadow: none !important;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
 .swal2-container {
   z-index: 20000 !important;
 }

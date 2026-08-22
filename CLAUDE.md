@@ -11110,3 +11110,374 @@ que no existe en 12 horas.
 `18:00`→`6:00 p.m.`, `12:00`→`12:00 p.m.`, `00:30`→`12:30 a.m.`, `23:59`→`11:59 p.m.`; `null`/`""`
 devuelven vacío y un texto que no sea `HH:mm` se devuelve tal cual. Y en pantalla: el formulario
 muestra `11:00 a.m.` / `6:00 p.m.` con su resumen, y el login el texto completo.
+
+---
+
+## FIX MODO OSCURO — BOTONES BLANCOS CON TEXTO BLANCO: FALTABA UN PATRÓN (2026-08-22)
+
+**Reportado por el dueño en 4 pantallas** (`admin/negocio`, `admin/presentacion`, `rifas/*`):
+*"los botones no se ve lo que dice"*. Es una **regresión del acento monocromático**: con el acento
+en blanco, todo `color: #fff` que esté encima de un relleno de marca queda invisible.
+
+El barrido de esa migración corrigió 86 declaraciones, pero se le escapó un patrón entero:
+**los SCSS que aliasean la marca en una variable propia**.
+
+```scss
+$p:  var(--brand-2);
+$pd: var(--brand-1);
+
+.cn-btn--save {
+  background: linear-gradient(135deg, $p, $pd);   // ← no dice "var(--brand-…)"
+  color: #fff;                                     // ← quedó blanco sobre blanco
+}
+```
+
+El barrido buscaba `background[^;{}]*var\(--(brand-[123]|app-accent)\)`, y con el alias el
+`background` no contiene ese texto. **18 archivos** usan alias (`$p`, `$pd`, `$primary`,
+`$primary-d`, `$accent`, `$indigo`…). La pasada nueva los detecta por archivo y corrige 8
+declaraciones en 7 archivos.
+
+⚠️ **Regla al cambiar la paleta:** el color de marca no solo aparece como hex y como `rgba()` —
+también como **variable SCSS que apunta a la variable CSS**. Son tres formas, no dos.
+
+### 💡 `\b` dentro de un template literal NO es el `\b` de una expresión regular
+
+El script no encontraba nada y parecía que no había casos:
+
+```js
+new RegExp(`background[^;{}]*\$(${alias.join('|')})\b`)   // ❌ \b = retroceso (U+0008)
+new RegExp(`background[^;{}]*\$(${alias.join('|')})\b`) // ✅
+```
+
+Con `\b` el patrón termina en `$` (fin de cadena en regex) + un carácter de control, así que nunca
+casa. Se ve como "no hay nada que corregir", que es el peor tipo de fallo silencioso.
+
+**Sin confirmar todavía:** en `rifas/agregar` y `rifas/buscar` los botones primarios ya usaban
+`var(--app-accent-ink)`, así que **ahí es otra cosa** — hace falta ver la pantalla con datos
+reales (el reporte menciona los modales y los checks, no los botones de la pantalla base).
+
+### La causa REAL del "no se ve lo que dice": una regla global pintaba los `<span>`
+
+Los dos arreglos de arriba (los alias `$p`/`$pd` y los botones deshabilitados) eran ciertos pero
+**no eran el problema que el dueño estaba viendo**. Al medir el botón en el navegador en vez de
+deducirlo:
+
+```
+.rf-btn--primary  →  color: rgb(0,0,0)        ← el botón sí tenía tinta negra
+                     span interno: rgb(233,233,236)   ← el texto real, casi blanco
+```
+
+El culpable es una regla **global** de `styles.scss`, de mucho antes:
+
+```scss
+body.theme-dark {
+  h1,h2,h3,h4,h5,h6, p, span, label, td, th, li { color: #E9E9EC; }
+}
+```
+
+Pinta de blanco **cualquier `<span>`**, incluidos los que van dentro de un botón. Con los botones
+verdes nunca se notó; con el acento blanco, todo botón cuyo texto vaya envuelto en un `<span>`
+quedó invisible. Por eso salía en pantallas sin nada en común.
+
+**Fix:** el texto dentro de un botón hereda el color del botón —
+
+```scss
+button span, button label, button p,
+.btn span, [class*="-btn"] span, [class*="-btn"] label { color: inherit; }
+```
+
+(0,1,2) le gana a (0,1,1), sin `!important`. **Se aplicó también al tema claro**, donde el riesgo
+es el espejo: un `<span>` con texto oscuro dentro de un botón de marca verde también desaparece.
+
+### 💡 Tres intentos, y solo el tercero era el bueno
+
+Los dos primeros arreglos se hicieron **leyendo el CSS**; el tercero salió de **medir el elemento
+renderizado** (`getComputedStyle` del botón y de su `<span>`). Los dos primeros son correctos y se
+quedan, pero ninguno resolvía el síntoma reportado.
+
+**Regla:** ante un "no se ve", medir el elemento real antes de tocar CSS. Leer hojas de estilo no
+muestra qué regla ganó la cascada, y aquí la que ganaba estaba en otro archivo y no mencionaba
+botones por ningún lado.
+
+**Otros dos hallazgos de la misma medición:**
+- **`.sb-hamburger`** (el botón del menú en celular) tenía `background: var(--sb-accent)` con
+  `color: #fff` → blanco sobre blanco. Corregido a `var(--app-accent-ink)`.
+- **`.rf-btn` no tenía NINGÚN estilo `:disabled`**, así que un botón deshabilitado conservaba el
+  relleno blanco entero. Ahora hay una regla global de deshabilitado para modo oscuro (superficie
+  oscura + texto apagado), con `[class]` de más para ganar la especificidad a los componentes que
+  usan `!important`.
+
+---
+
+## FEAT ENTREGAS — BOTÓN "CÓMO LLEGAR" (2026-08-22)
+
+**Pedido del dueño:** poder ver dónde es la entrega y que el celular lo lleve, porque hoy la
+dirección es texto libre y en la práctica queda como *"es en Tejupilco, hay una casa"*.
+
+### ⚠️ Esto NO usa ninguna API de mapas — y por eso ya está hecho
+
+Abrir la app de mapas del teléfono con una ruta es **una URL normal**, no un servicio:
+
+```
+https://www.google.com/maps/search/?api=1&query={dirección}      ← hoy
+https://www.google.com/maps/dir/?api=1&destination={lat},{lng}   ← cuando haya coordenadas
+```
+
+El celular la abre con Google Maps o Waze y él pone la navegación. **Sin llave, sin cuenta de
+Google Cloud, sin tarjeta, sin costo.** Lo que sí cobra es *embeber* un mapa interactivo — para
+eso, cuando toque, va **Leaflet + OpenStreetMap**, que no pide registro (Google Maps sí exige
+cuenta con tarjeta, y por eso se descartó).
+
+### Qué hay ahora
+
+Botón **🧭 Cómo llegar** en el panel de datos de entrega del detalle del pedido, armado con la
+**dirección escrita** + el lugar de entrega. Atina hasta donde atine el buscador de mapas — que
+para "la casa de junto a la tienda" no es mucho, pero ya es infinitamente mejor que nada.
+
+Si no hay ni dirección ni lugar, el botón **no aparece** (en vez de abrir un mapa vacío).
+
+### Lo que falta para que sea exacto
+
+Los 3 campos que se le pidieron al back el 2026-08-22 (`latitud`, `longitud`, `referencias` **en
+el pedido**, no en `LugarEntrega` — la zona es Tejupilco, esto es la casa de cada cliente).
+Cuando existan, `linkComoLlegar` cambia a la forma `dir/?api=1&destination={lat},{lng}` y el mismo
+botón pasa a ser el punto exacto, sin tocar la pantalla.
+
+**Probado con los 4 casos** del armado del link (dirección + lugar, solo uno, ninguno → `null`).
+
+**Archivos:** `detalle-pedido.component.ts` (`linkComoLlegar`), `.html`, `.scss` (`.dp-btn-mapa`).
+## FEAT FLORES — FOTO POR ARTÍCULO + `FLORES_ETERNAS_ENDPOINTS.md` (2026-08-21)
+
+> ⚠️ **Vive en la rama `fix/flores-imagenes`, NO en `dev`.** Es lo que pide la regla de rama
+> propia: no está confirmado que el back haya entregado algo de imágenes para flores (ver abajo),
+> así que no se mezcla con `dev`/`qa` hasta aclararlo.
+
+**Pedido del dueño:** poder ponerle foto a cada artículo de flores, y un documento que explique
+qué endpoint usa cada pantalla del módulo.
+
+### 1. Fotos de colores, accesorios y frases
+
+⚠️ **No hay endpoints de imagen propios de flores, y no hacían falta.** Un color o un accesorio
+**no tiene campo de foto**: tiene un **producto interno** (`variante`, marcado
+`esCatalogoInterno`), y la foto se guarda ahí con los endpoints normales de producto —
+`GET /tienda/v1/imagenes/{varianteId}` para leerla y `POST /tienda/v1/guardarConImagenes` para
+subirla. Todo eso queda encapsulado en `FloresImagenService` para que las pantallas no tengan que
+saberlo.
+
+**Dónde:** se sube en Catálogos (miniatura clicable por renglón, en las 3 pestañas) y se ve en
+"Arma tu ramo" al elegir color y accesorios. Confirmado con el dueño que quería las dos.
+
+⚠️ **Los tipos de flor (la especie) quedan fuera** — no tienen producto interno ni campo de
+imagen. Para que lleven foto hay que pedírselo al back.
+
+### 🔴 Dos cosas que habrían roto datos
+
+1. **`guardarConImagenes` guarda la variante COMPLETA.** Mandar solo `{ id, listImagenes }` la
+   dejaría con el resto en blanco — y en un color de flor ese `stock` **es el inventario real de
+   ese color**, no un dato de adorno. Por eso `subirFoto()` reenvía los campos que la variante ya
+   tenía. Verificado en el envío real: `stock: 90` viaja intacto.
+2. **La foto se comprime antes de mandarla** (1280 px, JPEG 0.8). Una foto de cámara pesa 3-8 MB
+   y en base64 crece ~33%: sin comprimir da **413 Request Entity Too Large** — ya pasó con las
+   imágenes de variantes. La compresión se extrajo de `update-variante` a
+   `src/app/shared/imagen-comprimir.util.ts` para que los dos usen el mismo camino y no se
+   separen con el tiempo.
+
+**Detalle menor:** las portadas se indexan por el id del **producto interno**, no por el del color
+o accesorio — son numeraciones distintas y se pisarían entre sí.
+
+### 2. `FLORES_ETERNAS_ENDPOINTS.md` (raíz del repo)
+
+Pantalla por pantalla: qué endpoints llama, cuándo, por qué, y qué manda y recibe. Incluye las
+trampas que ya costaron sesiones (que `colores-flor/por-tipo-flor` responde en `lista` y no en
+`data`, que `update` reemplaza el registro completo, que la línea del papel va por pliego, que la
+frase personalizada solo vive en una llamada que no puede fallar callada) y una sección final de
+**lo que NO existe**.
+
+⚠️ **Cada endpoint del documento se cruzó contra `flores.service.ts`** — así aparecieron dos URLs
+mal escritas (las de frases pendientes: van bajo `/pedidos/` y una es `PUT`, no `POST`). Un
+documento de endpoints sin verificar contra el código es peor que no tenerlo.
+
+**Relación con `ESTADO_FLORES_ETERNAS.md`:** ese dice *en qué punto está* el módulo (pendientes,
+decisiones); este dice *cómo habla con el back*. Al tocar flores hay que actualizar los dos.
+
+### ⚠️ Sin confirmar: la entrega del back
+
+El dueño dijo que *"según el back ya hay cambios para agregar imágenes"*, pero **en el repo
+compartido no hay nada de eso** — lo último de flores es `editar-ramo` y `cancelar`. Lo
+implementado usa el mecanismo que ya existía. **Preguntar al back antes de mergear a `dev`**: si
+entregaron otra cosa, esto habría que rehacerlo.
+
+**Archivos nuevos:** `src/app/shared/imagen-comprimir.util.ts`,
+`src/app/flores/service/flores-imagen.service.ts`, `FLORES_ETERNAS_ENDPOINTS.md`.
+**Modificados:** `flores.model.ts` (`IVarianteSombra` + el campo en los 3 catálogos),
+`catalogos-flores.component.*`, `configurar-ramo.component.*`.
+
+**Verificado con `ng build` y en pantalla** (endpoints simulados): la miniatura carga, la vacía
+muestra 📷, y el envío conserva el stock.
+
+---
+
+## FLORES — FOTOS REALES DEL RAMO ARMADO (2026-08-22)
+
+> Sigue en la rama `fix/flores-imagenes`, junto con las fotos de colores/accesorios/frases.
+
+**El back entregó esto y de paso confirmó que lo nuestro iba bien:** usan *"el mismo mecanismo de
+variante sombra que ya usan `ColorFlor`/`AccesorioRamo`/`FraseListonPredefinida`"* — o sea, lo que
+ya habíamos implementado a partir de lo que existía. No hubo que rehacer nada.
+
+Lo nuevo es que **`RamoArmado` también tiene variante sombra**, así que el ramo ya armado puede
+tener fotos de verdad en vez del `imagenUrl` que el admin pegaba a mano.
+
+### Campos nuevos en `RamoArmadoResponseDto`
+
+- `varianteId` — la variante sombra del ramo. ⚠️ **No confundir con `colorFlorVarianteId`**, que
+  es la del color de flor.
+- `varianteProductoId` — el producto detrás. `guardarConImagenes` lo exige **siempre**, aun al
+  actualizar.
+
+### La cadena de respaldo, y por qué hace falta
+
+```
+foto real (variante sombra)  →  imagenUrl (el link viejo)  →  🌹
+```
+
+⚠️ **Los ramos guardados antes de esto tienen `varianteId: null`** — el back crea su variante en
+el siguiente `PUT` sobre ese ramo. Sin el respaldo a `imagenUrl`, todos los ramos existentes se
+habrían quedado sin imagen de un día para otro. `imagenUrl` sigue existiendo y no es obligatorio
+migrar.
+
+En `ramos-admin`, el input de foto va **deshabilitado** mientras el ramo no tenga variante, con un
+`title` que dice qué hacer ("guárdalo una vez") — en vez de dejar elegir un archivo que no se
+podría guardar.
+
+### Dos arreglos de la misma pantalla
+
+- **"Armar el mío" pegado al título**: `.vr-header__inner` no tenía layout, así que el botón caía
+  debajo del subtítulo como si fuera parte de él. Ahora es flex con `space-between`.
+- Al separarlos, el botón **se estiraba de lado a lado**: `.vr-btn--pedir` lleva `flex: 1` porque
+  en el pie de la tarjeta sí debe crecer. Se acota solo dentro del encabezado (medido: 140 px).
+
+**Verificado con los 3 casos** de la cadena de respaldo: ramo con variante → foto real; ramo viejo
+con `imagenUrl` → el link; ramo sin nada → 🌹. En pantalla: 2 imágenes y 1 marcador.
+
+### 💡 En Playwright, la ruta que gana es la ÚLTIMA registrada
+
+La prueba decía que el ramo con foto real no la tenía, y parecía un bug del código. Era el mock:
+`imagenes/900` estaba registrada **antes** que el genérico `imagenes/\d+`, y Playwright da
+prioridad a la última — así que el genérico (que devuelve `[]`) se comía la específica. **Lo
+específico va al final.**
+
+---
+
+## FEAT PEDIDOS — UBICACIÓN EXACTA DE ENTREGA CON MAPA (LATITUD/LONGITUD/REFERENCIAS) (2026-08-22)
+
+> El back implementó y confirmó los 3 campos pedidos en `CAMBIOS_FRONT.md`/`CAMBIOS_FRONT_2.md`
+> (repo compartido): `latitud`, `longitud`, `referencias` en el pedido — distintos de
+> `LugarEntrega` (la zona/pueblo). Sin costo de servicio externo: Leaflet + OpenStreetMap para
+> elegir el punto (sin cuenta ni tarjeta), y el link de "cómo llegar" es solo una URL de Google
+> Maps (`maps/dir/?api=1&destination=...`), no una API.
+
+### Dónde vive — mismo punto de entrada que ya existía para entrega
+
+El picker de mapa se agregó dentro del modal **"📍 Info de entrega"** de `mis-pedidos`
+(`mostrarModalEntrega()`) — el mismo Swal que ya edita `nombreReceptor`/`direccionEntrega`/
+`fechaEntrega`/`lugarEntregaId`/`urlFacebook`/`observaciones`. No se creó una pantalla nueva:
+sigue el mismo criterio ya establecido en el proyecto de que la edición de entrega vive en un
+solo lugar (la card de `mis-pedidos`), no repartida entre varias pantallas.
+
+### Cómo funciona el mapa (dentro del Swal, con `didOpen`/`willClose`)
+
+- Se instala `L.map('sw-mapa')` en `didOpen`, con `L.tileLayer(...)` de OpenStreetMap.
+- **Centro por defecto:** Tejupilco, Edo. México (`18.916234, -100.143567`) — el mismo punto que
+  el back usó de ejemplo en su documentación, dentro de la zona real de entrega del negocio.
+  Si el pedido ya tenía ubicación guardada, el mapa arranca centrado y con el pin ya puesto ahí
+  (zoom 16); si no, arranca sin pin, zoom 13 (vista de la zona).
+- **Clic en el mapa o arrastrar el pin** → coloca/mueve el marcador y actualiza el texto de
+  coordenadas (`📍 lat, lng`) en vivo.
+- **Botón "📡 Usar mi ubicación"** → `navigator.geolocation.getCurrentPosition()`, coloca el pin
+  ahí y centra el mapa — útil para cuando el admin está parado en la casa del cliente.
+- **`willClose` destruye el mapa** (`mapaLeaflet.remove()`) — sin esto, cada vez que se abre este
+  modal se crea una instancia de Leaflet nueva sin liberar la anterior (listeners/tiles quedan
+  colgando aunque el DOM del Swal ya se haya borrado).
+
+### Solo se manda lat/lng si el admin tocó el mapa
+
+`preConfirm` manda `latitud`/`longitud` **solo si `ubicacionTocada` es true** (ya venían
+guardados, o el admin marcó un punto nuevo). El back no soporta "borrar" estos campos mandando
+`null` — así que nunca hay que mandarlos en falso cuando nunca se marcó nada (evita pisar con el
+centro por defecto un pedido donde el admin nunca llegó a tocar el mapa).
+
+### Dos trampas clásicas de Leaflet + bundlers, ya resueltas
+
+1. **Los íconos del marcador por defecto salen invisibles.** Leaflet calcula la URL de sus
+   PNGs en base a dónde quedó su propio bundle, y con Angular/webpack casi siempre la resuelve
+   mal — sin ningún error en consola, el pin simplemente no se ve. Fix: se copiaron los 3 PNGs
+   (`marker-icon.png`, `marker-icon-2x.png`, `marker-shadow.png`) a `src/assets/leaflet/` y se
+   reconfiguró `L.Icon.Default.mergeOptions({...})` a nivel de módulo (una sola vez) apuntando
+   ahí, en vez de depender de la resolución automática.
+2. **El mapa sale en blanco o recortado si su contenedor no era visible al crearse** (como
+   dentro de un modal que recién apareció) — Leaflet mide el `<div>` en el momento de
+   `L.map(...)` y si mide 0 se queda mal calculado. Fix: `setTimeout(() => mapa.invalidateSize(), 60)`
+   después de crear el mapa, una vez que el layout del Swal ya asentó.
+
+### Registro en `angular.json`
+
+`node_modules/leaflet/dist/leaflet.css` agregado al array `styles` del build (no al de `test`,
+no hace falta ahí). `src/assets` ya estaba en `assets`, así que los 3 PNGs copiados no
+necesitaron configuración adicional.
+
+### "Cómo llegar" en `detalle-pedido` — ahora usa el punto exacto cuando existe
+
+`linkComoLlegar` (ya existía, con un comentario anticipando esto) ahora revisa
+`tieneUbicacionExacta` primero: si el pedido tiene `latitud`/`longitud`, arma
+`maps/dir/?api=1&destination={lat},{lng}` (ruta trazada al punto exacto); si no, cae al
+`maps/search/?api=1&query=...` de siempre (dirección + lugar en texto). El texto de ayuda
+debajo del botón también distingue los dos casos. Se agregó además la fila **"Referencias"** en
+el bloque de solo-lectura de datos de entrega.
+
+### ⚠️ node_modules quedó root-owned de una instalación anterior
+
+Antes de poder instalar Leaflet, `npm install` falló con `EACCES` — **toda** la carpeta
+`node_modules` (747 paquetes) pertenecía a `root`, probablemente de un `npm install` corrido con
+`sudo` en algún momento anterior. Sin `sudo` no se puede ni siquiera borrar el árbol (cada
+subcarpeta niega escritura). Se le pidió al usuario correr
+`sudo chown -R "$(whoami)" node_modules` una sola vez — seguro, no toca nada rastreado por git
+(`node_modules` está en `.gitignore`), y deja instalado sin volver a pedir permisos.
+
+### Verificado en pantalla, no solo con `ng build`
+
+`ng build` valida tipos pero no que Leaflet realmente pinte tiles ni que el ícono no salga roto
+(exactamente el tipo de bug de esta sección 1 de "Dos trampas clásicas"). Se verificó con
+Playwright + `ng serve`, sesión admin inyectada (mismo patrón ya documentado en el proyecto), en
+claro y oscuro:
+- Mapa sin ubicación previa → centra en Tejupilco, "Sin marcar todavía".
+- Mapa con ubicación previa → pin ya puesto, coordenadas mostradas, dirección/referencias
+  precargadas.
+- Clic en el mapa → coloca el pin, actualiza el texto, y el `PUT /v1/pedidos/{id}/entrega` real
+  que se dispara al guardar sí lleva `latitud`/`longitud`/`referencias` (confirmado
+  interceptando la petición, no solo mirando la pantalla).
+
+⚠️ Durante la verificación se topó de nuevo el artefacto ya documentado de navegar con
+`router.navigateByUrl()` desde fuera de la zona de Angular (dos componentes de ruta montados a
+la vez, el nuevo tapado por el viejo). Se encontró un fix más confiable que los intentos previos:
+un **clic real** (`page.mouse.click()`, evento de confianza vía CDP) inmediatamente después de
+la navegación programática "despierta" la zona — a diferencia de un `.click()` disparado desde
+`page.evaluate()` (que corre igual de fuera de zona que el resto). Anotado para la próxima vez
+que se necesite este truco.
+
+**Archivos modificados:**
+- `package.json` → `leaflet`, `@types/leaflet`
+- `angular.json` → `node_modules/leaflet/dist/leaflet.css` en `styles` (build)
+- `src/assets/leaflet/` → 3 PNGs del marcador (nuevo)
+- `src/app/pedidos/pedidos.service.ts` → `actualizarEntrega()` + `latitud`/`longitud`/`referencias`
+- `src/app/abonos/models/abono.model.ts` → `PedidoDetalleResponse` + los 3 campos
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → import Leaflet, fix de íconos,
+  `CENTRO_MAPA_DEFAULT`, picker de mapa completo en `mostrarModalEntrega()`
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.ts` → `tieneUbicacionExacta`,
+  `linkComoLlegar` usa el punto exacto cuando existe
+- `src/app/pedidos/detalle-pedido/detalle-pedido.component.html` → fila "Referencias", texto de
+  ayuda diferenciado
+
+**Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
+claro y oscuro, con petición real interceptada) confirmando que el mapa pinta, el pin se coloca,
+y el guardado manda los campos correctos.**

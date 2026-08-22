@@ -1056,6 +1056,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fraseListonPersonalizada: this.listonModo === 'personalizada' ? this.fraseTexto.trim() : null,
       lugarEntregaId: this.lugarEntregaId ?? null,
       recogerEnLocal: this.recogerEnLocal,
+      latitud: this.latitud,
+      longitud: this.longitud,
+      referencias: this.referencias.trim() || null,
       fechaHoraEntrega: this.fechaHoraEntrega,
       urgente: this.urgente
     };

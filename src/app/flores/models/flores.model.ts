@@ -505,6 +505,13 @@ export interface IRamoPedidoDetalleRequest {
   fraseListonPersonalizada?: string | null;
   lugarEntregaId?: number | null;
   recogerEnLocal?: boolean;
+  // Ubicación exacta (2026-08-22) — se reenvían aquí los mismos valores ya mandados en
+  // savePedido: esta llamada toca campos de entrega del pedido (lugarEntregaId, fecha), así
+  // que por seguridad se reafirman también estos para que no queden en blanco si el back
+  // los trata como parte del mismo bloque de "datos de entrega".
+  latitud?: number | null;
+  longitud?: number | null;
+  referencias?: string | null;
   telefonoContacto?: string | null;
   correoContacto?: string | null;
   comentarioAccesorioNoDisponible?: string | null;

@@ -149,7 +149,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 0.75rem;
   box-shadow: 0 8px 20px rgba($primary, 0.35);
 
-  .pi { font-size: 1.5rem; color: #fff; }
+  .pi { font-size: 1.5rem; color: var(--app-accent-ink); }
 }
 
 .brand-name {

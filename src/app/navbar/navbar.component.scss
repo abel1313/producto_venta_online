@@ -85,7 +85,9 @@
   width: 40px;
   height: 40px;
   background: var(--sb-accent);
-  color: #fff;
+  // Tinta, no blanco fijo: en oscuro el acento ES blanco, y el icono quedaba
+  // blanco sobre blanco — el botón se veía vacío en el celular.
+  color: var(--app-accent-ink);
   border: none;
   border-radius: 10px;
   font-size: 1.25rem;

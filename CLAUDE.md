@@ -11155,3 +11155,54 @@ casa. Se ve como "no hay nada que corregir", que es el peor tipo de fallo silenc
 **Sin confirmar todavía:** en `rifas/agregar` y `rifas/buscar` los botones primarios ya usaban
 `var(--app-accent-ink)`, así que **ahí es otra cosa** — hace falta ver la pantalla con datos
 reales (el reporte menciona los modales y los checks, no los botones de la pantalla base).
+
+### La causa REAL del "no se ve lo que dice": una regla global pintaba los `<span>`
+
+Los dos arreglos de arriba (los alias `$p`/`$pd` y los botones deshabilitados) eran ciertos pero
+**no eran el problema que el dueño estaba viendo**. Al medir el botón en el navegador en vez de
+deducirlo:
+
+```
+.rf-btn--primary  →  color: rgb(0,0,0)        ← el botón sí tenía tinta negra
+                     span interno: rgb(233,233,236)   ← el texto real, casi blanco
+```
+
+El culpable es una regla **global** de `styles.scss`, de mucho antes:
+
+```scss
+body.theme-dark {
+  h1,h2,h3,h4,h5,h6, p, span, label, td, th, li { color: #E9E9EC; }
+}
+```
+
+Pinta de blanco **cualquier `<span>`**, incluidos los que van dentro de un botón. Con los botones
+verdes nunca se notó; con el acento blanco, todo botón cuyo texto vaya envuelto en un `<span>`
+quedó invisible. Por eso salía en pantallas sin nada en común.
+
+**Fix:** el texto dentro de un botón hereda el color del botón —
+
+```scss
+button span, button label, button p,
+.btn span, [class*="-btn"] span, [class*="-btn"] label { color: inherit; }
+```
+
+(0,1,2) le gana a (0,1,1), sin `!important`. **Se aplicó también al tema claro**, donde el riesgo
+es el espejo: un `<span>` con texto oscuro dentro de un botón de marca verde también desaparece.
+
+### 💡 Tres intentos, y solo el tercero era el bueno
+
+Los dos primeros arreglos se hicieron **leyendo el CSS**; el tercero salió de **medir el elemento
+renderizado** (`getComputedStyle` del botón y de su `<span>`). Los dos primeros son correctos y se
+quedan, pero ninguno resolvía el síntoma reportado.
+
+**Regla:** ante un "no se ve", medir el elemento real antes de tocar CSS. Leer hojas de estilo no
+muestra qué regla ganó la cascada, y aquí la que ganaba estaba en otro archivo y no mencionaba
+botones por ningún lado.
+
+**Otros dos hallazgos de la misma medición:**
+- **`.sb-hamburger`** (el botón del menú en celular) tenía `background: var(--sb-accent)` con
+  `color: #fff` → blanco sobre blanco. Corregido a `var(--app-accent-ink)`.
+- **`.rf-btn` no tenía NINGÚN estilo `:disabled`**, así que un botón deshabilitado conservaba el
+  relleno blanco entero. Ahora hay una regla global de deshabilitado para modo oscuro (superficie
+  oscura + texto apagado), con `[class]` de más para ganar la especificidad a los componentes que
+  usan `!important`.

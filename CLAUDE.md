@@ -11628,3 +11628,52 @@ pedida.
 
 ⚠️ **Nada más se tocó** — cambio puramente aditivo, sin modificar ningún botón, ruta ni
 comportamiento existente (instrucción explícita del dueño).
+
+---
+
+## FIX FLORES — MAPA: SIN NÚMEROS DE LAT/LONG AL CLIENTE + "CÓMO LLEGAR" NO USABA EL PUNTO EXACTO (2026-08-22)
+
+> Reportado por el dueño probando en vivo "Arma tu ramo": *"el cliente no tiene por qué saber la
+> latitud y longitud, quítalo"* + *"cuando voy a ver 'cómo llegar' no me lleva al lugar que
+> seleccioné, solo muestra Tejupilco completo — ¿cuál es el chiste de seleccionar una zona si no
+> me va a llevar a donde apunté?"*
+
+### 1. Ya no se muestran los números crudos de lat/long
+
+`SelectorUbicacionComponent.textoCoords` mostraba `📍 18.916234, -100.143567` — datos sin
+sentido para un cliente. Ahora dice **"✅ Ubicación marcada"** / "Sin marcar todavía". El dato
+real (`lat`/`lng`) se sigue capturando y enviando exactamente igual — solo se dejó de imprimir
+en pantalla.
+
+### 2. "Cómo llegar" caía siempre al buscador de texto (nunca al punto exacto)
+
+**Causa encontrada:** en "Arma tu ramo", el pedido se guarda en **dos** llamadas —
+`POST /v1/pedidos/savePedido` (que sí llevaba `latitud`/`longitud`) y, justo después,
+`POST /v1/flores/pedidos/{id}/detalle` (`finalizarConDetalleRamo()`, para frase/zona/fecha) —
+**que no incluía esos 2 campos**. Esa segunda llamada ya reenvía `lugarEntregaId` a propósito
+(el comentario del propio código explica que ahí el back guarda `fechaLimitePago`/
+`cargoUrgenteMonto`, señal de que sí toca campos de entrega del pedido) — todo apunta a que
+`latitud`/`longitud` quedaban en `null` después de esa segunda llamada, aunque la primera sí
+las hubiera guardado bien. Por eso `detalle.latitud` volvía vacío al leer el pedido, y
+`linkComoLlegar` (en `detalle-pedido`) caía a su fallback de buscar por texto — que para
+"Tejupilco" sin más contexto muestra el polígono de todo el pueblo, exactamente lo que describió
+el dueño.
+
+**Fix:** `IRamoPedidoDetalleRequest` gana `latitud?`/`longitud?`/`referencias?`, y
+`finalizarConDetalleRamo()` los reenvía con los mismos valores ya usados en el `savePedido`
+inicial — mismo criterio ya usado en otros lados del proyecto (reenviar los campos que ya se
+tienen para que un endpoint de guardado parcial no los borre sin querer).
+
+⚠️ **No confirmado con el back que esto sea 100% la causa** (no hay acceso directo a su código
+desde aquí) — es la explicación más consistente con la evidencia (solo el flujo de ramos, que
+tiene esta segunda llamada, presentó el problema; el checkout normal, que no la tiene, no fue
+reportado). Si el síntoma persiste después de este fix, hay que pedirle al back que confirme si
+`POST /v1/flores/pedidos/{id}/detalle` también acepta/persiste estos 2 campos.
+
+**Archivos modificados:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts` → texto sin coordenadas
+- `src/app/flores/models/flores.model.ts` → `IRamoPedidoDetalleRequest` + 3 campos
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `finalizarConDetalleRamo()` los reenvía
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo
+contra el back — pendiente que el dueño confirme en QA si el link ya lleva al punto exacto.

@@ -114,9 +114,12 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
     if (emitir) this.ubicacionCambio.emit({ lat, lng });
   }
 
+  // El cliente no tiene por qué ver los números crudos de latitud/longitud — no le dicen nada.
+  // Solo se confirma que sí hay un punto marcado; el dato real (lat/lng) se sigue capturando y
+  // enviando igual, solo no se muestra en pantalla.
   private actualizarTexto(): void {
     this.textoCoords = (this.lat != null && this.lng != null)
-      ? `📍 ${this.lat.toFixed(6)}, ${this.lng.toFixed(6)}`
+      ? '✅ Ubicación marcada'
       : 'Sin marcar todavía';
   }
 }

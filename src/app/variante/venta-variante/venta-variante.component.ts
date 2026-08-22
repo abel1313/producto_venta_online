@@ -62,6 +62,17 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   lugares: ILugarEntrega[] = [];
   lugarEntregaId: number | null = null;
 
+  // Ubicación exacta (2026-08-22) — se muestra el mapa solo después de elegir zona, para que
+  // el cliente pueda marcar el punto dentro de esa zona en vez de solo un nombre de pueblo.
+  latitud: number | null = null;
+  longitud: number | null = null;
+  referencias = '';
+
+  onUbicacionCambio(p: { lat: number; lng: number }): void {
+    this.latitud = p.lat;
+    this.longitud = p.lng;
+  }
+
   // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
   onImgError = onImagenError;
 
@@ -240,6 +251,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
+      latitud:        this.latitud ?? undefined,
+      longitud:       this.longitud ?? undefined,
+      referencias:    this.referencias.trim() || undefined,
       detalles:      [...detallesVariantes, ...detallesPromos]
     };
 

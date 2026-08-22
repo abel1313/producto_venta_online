@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import * as L from 'leaflet';
 
 // Mismo fix ya usado en mis-pedidos.component.ts — Leaflet calcula la URL de sus íconos por
@@ -22,14 +23,28 @@ L.Icon.Default.mergeOptions({
 @Component({
   selector: 'app-selector-ubicacion',
   template: `
+    <div class="su-buscar">
+      <input type="text" class="su-buscar__input" placeholder="Busca un lugar (ej. Zacazonapan centro)…"
+             [(ngModel)]="terminoBusqueda" (keydown.enter)="buscarLugar()">
+      <button type="button" class="su-buscar__btn" [disabled]="buscando || !terminoBusqueda.trim()" (click)="buscarLugar()">
+        {{ buscando ? '…' : '🔍' }}
+      </button>
+    </div>
+    <p class="su-buscar__error" *ngIf="errorBusqueda">{{ errorBusqueda }}</p>
     <div #mapaEl class="su-mapa"></div>
     <div class="su-row">
       <span class="su-coords">{{ textoCoords }}</span>
       <button type="button" class="su-geo" (click)="usarMiUbicacion()">📡 Usar mi ubicación</button>
     </div>
-    <p class="su-hint">Toca el mapa (o arrastra el pin) para marcar el punto exacto.</p>
+    <p class="su-hint">Busca la zona arriba para llegar rápido, y toca el mapa (o arrastra el pin) para marcar el punto exacto.</p>
   `,
   styles: [`
+    .su-buscar { display:flex; gap:6px; margin-bottom:6px; }
+    .su-buscar__input { flex:1; min-width:0; padding:7px 10px; border-radius:8px; border:1.5px solid var(--card-border, #e5e7eb); background:var(--card-bg, #fff); color:var(--app-text, #1f2937); font-size:.82rem; }
+    .su-buscar__input:focus { outline:none; border-color:var(--app-accent, #007AFF); }
+    .su-buscar__btn { flex-shrink:0; border:1.5px solid var(--card-border, #e5e7eb); background:var(--card-bg, #fff); border-radius:8px; padding:0 12px; cursor:pointer; font-size:.9rem; }
+    .su-buscar__btn:disabled { opacity:.5; cursor:default; }
+    .su-buscar__error { font-size:.76rem; color:#dc2626; margin:0 0 6px; }
     .su-mapa { width:100%; height:200px; border-radius:10px; border:1.5px solid var(--card-border, #e5e7eb); }
     .su-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
     .su-coords { font-size:.8rem; font-weight:600; color:var(--app-text, #1f2937); }
@@ -52,6 +67,40 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
   textoCoords = 'Sin marcar todavía';
   private mapa: L.Map | null = null;
   private marker: L.Marker | null = null;
+
+  // Buscador de dirección libre (Nominatim / OpenStreetMap — gratis, sin API key). Sirve para
+  // saltar directo a la zona (ej. "Zacazonapan centro") en vez de tener que ubicarla a ojo desde
+  // el centro genérico de Tejupilco. Solo RECENTRA el mapa — no coloca el pin solo, el punto
+  // exacto sigue marcándose con un toque/clic sobre el mapa, a propósito (buscar ≠ confirmar).
+  terminoBusqueda = '';
+  buscando = false;
+  errorBusqueda: string | null = null;
+
+  constructor(private readonly http: HttpClient) {}
+
+  buscarLugar(): void {
+    const q = this.terminoBusqueda.trim();
+    if (!q || this.buscando) return;
+    this.buscando = true;
+    this.errorBusqueda = null;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=${encodeURIComponent(q)}`;
+    this.http.get<Array<{ lat: string; lon: string }>>(url).subscribe({
+      next: (res) => {
+        this.buscando = false;
+        if (!res?.length) {
+          this.errorBusqueda = 'No se encontró ese lugar — prueba con otro nombre o ubica el punto directo en el mapa.';
+          return;
+        }
+        const lat = parseFloat(res[0].lat);
+        const lon = parseFloat(res[0].lon);
+        this.mapa?.setView([lat, lon], 15);
+      },
+      error: () => {
+        this.buscando = false;
+        this.errorBusqueda = 'No se pudo buscar ahorita — ubica el punto directo en el mapa.';
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     const tocado = this.lat != null && this.lng != null;

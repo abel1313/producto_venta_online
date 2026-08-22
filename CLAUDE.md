@@ -11677,3 +11677,53 @@ reportado). Si el síntoma persiste después de este fix, hay que pedirle al bac
 
 **Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo
 contra el back — pendiente que el dueño confirme en QA si el link ya lleva al punto exacto.
+
+---
+
+## FIX FLORES — SE CONFIRMÓ LA CAUSA REAL DEL "CÓMO LLEGAR" + BUSCADOR DE LUGAR EN EL PICKER (2026-08-22)
+
+> El dueño probó con un ramo genuinamente **nuevo** (creado después del fix de arriba) y el
+> síntoma seguía igual — el fix de `finalizarConDetalleRamo()` era correcto pero no era la causa
+> real. Explicación completa del propio dueño: al elegir "Zacazonapan" en el `<select>` de zona,
+> el picker de mapa **no se recentra** — sigue mostrando el centro genérico de Tejupilco. Como el
+> mapa no mostraba nada relacionado con la zona elegida, lo más probable es que nunca haya tocado
+> el mapa para marcar el punto (¿para qué, si ni siquiera mostraba su zona?) — por eso
+> `latitud`/`longitud` seguían en `null` en la práctica, aunque toda la cadena de guardado/lectura
+> (`guardarPedido()` → `savePedido` → `GET /detalle` → `linkComoLlegar`) ya estaba correcta de
+> punta a punta (confirmado leyendo el código completo otra vez, sin encontrar ningún bug nuevo).
+
+### Causa raíz real — el picker no tiene forma de saber dónde está cada zona
+
+`SelectorUbicacionComponent` siempre arranca en un `centroDefault` fijo (Tejupilco) porque
+`LugarEntrega` (el catálogo de zonas) **no tiene lat/lng propio** — no hay ningún dato de dónde
+está "Zacazonapan" para que el mapa se recentre solo al elegirla. El componente ya tenía el
+gancho listo para esto (`ngOnChanges` reacciona a cambios de `@Input() centroDefault`), pero
+nunca se conectó a nada real porque el dato no existe en el back.
+
+**Se le pidió al back agregar `latitud`/`longitud` a `LugarEntrega`** (consulta en el repo
+compartido, `CAMBIOS_FRONT.md`, 2026-08-22) — con eso, elegir una zona del select recentraría el
+mapa ahí automáticamente. De paso se dejó anotada la idea del dueño para más adelante: cobrar
+distinto (o restringir) según qué tan lejos del centroide de la zona caiga el punto marcado —
+por si les sirve considerarlo al diseñar el campo nuevo, aunque no se pide implementarlo todavía.
+
+### Mientras tanto — buscador de lugar por texto dentro del picker (sin backend)
+
+Nuevo campo de búsqueda arriba del mapa en `SelectorUbicacionComponent`, usando
+**Nominatim/OpenStreetMap** (`nominatim.openstreetmap.org/search`) — gratis, sin API key, mismo
+criterio ya usado para elegir Leaflet en vez de Google Maps. Escribir "Zacazonapan centro" y
+pulsar 🔍 (o Enter) recentra el mapa ahí; **no coloca el pin solo** — buscar es solo para llegar
+rápido a la zona correcta, marcar el punto exacto sigue siendo un toque/clic sobre el mapa, a
+propósito (la misma distinción que ya existía entre "el mapa está centrado aquí" y "ya elegiste
+este punto", documentada en el propio componente).
+
+Sin resultados o sin red, se muestra un aviso corto sin bloquear — el admin/cliente siempre puede
+seguir ubicando el punto a mano si la búsqueda no ayuda.
+
+**Archivos modificados:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts` → buscador (`terminoBusqueda`,
+  `buscando`, `errorBusqueda`, `buscarLugar()`), inyecta `HttpClient`
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo con
+Nominatim real (solo compilación) — pendiente confirmar con el dueño que el buscador sí ubica
+zonas reales de la región. El problema de fondo (recentrar solo al elegir zona) sigue sin resolver
+hasta que el back agregue lat/lng a `LugarEntrega`.

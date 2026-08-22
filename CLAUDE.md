@@ -11110,3 +11110,74 @@ que no existe en 12 horas.
 `18:00`→`6:00 p.m.`, `12:00`→`12:00 p.m.`, `00:30`→`12:30 a.m.`, `23:59`→`11:59 p.m.`; `null`/`""`
 devuelven vacío y un texto que no sea `HH:mm` se devuelve tal cual. Y en pantalla: el formulario
 muestra `11:00 a.m.` / `6:00 p.m.` con su resumen, y el login el texto completo.
+
+---
+
+## FEAT FLORES — FOTO POR ARTÍCULO + `FLORES_ETERNAS_ENDPOINTS.md` (2026-08-21)
+
+> ⚠️ **Vive en la rama `fix/flores-imagenes`, NO en `dev`.** Es lo que pide la regla de rama
+> propia: no está confirmado que el back haya entregado algo de imágenes para flores (ver abajo),
+> así que no se mezcla con `dev`/`qa` hasta aclararlo.
+
+**Pedido del dueño:** poder ponerle foto a cada artículo de flores, y un documento que explique
+qué endpoint usa cada pantalla del módulo.
+
+### 1. Fotos de colores, accesorios y frases
+
+⚠️ **No hay endpoints de imagen propios de flores, y no hacían falta.** Un color o un accesorio
+**no tiene campo de foto**: tiene un **producto interno** (`variante`, marcado
+`esCatalogoInterno`), y la foto se guarda ahí con los endpoints normales de producto —
+`GET /tienda/v1/imagenes/{varianteId}` para leerla y `POST /tienda/v1/guardarConImagenes` para
+subirla. Todo eso queda encapsulado en `FloresImagenService` para que las pantallas no tengan que
+saberlo.
+
+**Dónde:** se sube en Catálogos (miniatura clicable por renglón, en las 3 pestañas) y se ve en
+"Arma tu ramo" al elegir color y accesorios. Confirmado con el dueño que quería las dos.
+
+⚠️ **Los tipos de flor (la especie) quedan fuera** — no tienen producto interno ni campo de
+imagen. Para que lleven foto hay que pedírselo al back.
+
+### 🔴 Dos cosas que habrían roto datos
+
+1. **`guardarConImagenes` guarda la variante COMPLETA.** Mandar solo `{ id, listImagenes }` la
+   dejaría con el resto en blanco — y en un color de flor ese `stock` **es el inventario real de
+   ese color**, no un dato de adorno. Por eso `subirFoto()` reenvía los campos que la variante ya
+   tenía. Verificado en el envío real: `stock: 90` viaja intacto.
+2. **La foto se comprime antes de mandarla** (1280 px, JPEG 0.8). Una foto de cámara pesa 3-8 MB
+   y en base64 crece ~33%: sin comprimir da **413 Request Entity Too Large** — ya pasó con las
+   imágenes de variantes. La compresión se extrajo de `update-variante` a
+   `src/app/shared/imagen-comprimir.util.ts` para que los dos usen el mismo camino y no se
+   separen con el tiempo.
+
+**Detalle menor:** las portadas se indexan por el id del **producto interno**, no por el del color
+o accesorio — son numeraciones distintas y se pisarían entre sí.
+
+### 2. `FLORES_ETERNAS_ENDPOINTS.md` (raíz del repo)
+
+Pantalla por pantalla: qué endpoints llama, cuándo, por qué, y qué manda y recibe. Incluye las
+trampas que ya costaron sesiones (que `colores-flor/por-tipo-flor` responde en `lista` y no en
+`data`, que `update` reemplaza el registro completo, que la línea del papel va por pliego, que la
+frase personalizada solo vive en una llamada que no puede fallar callada) y una sección final de
+**lo que NO existe**.
+
+⚠️ **Cada endpoint del documento se cruzó contra `flores.service.ts`** — así aparecieron dos URLs
+mal escritas (las de frases pendientes: van bajo `/pedidos/` y una es `PUT`, no `POST`). Un
+documento de endpoints sin verificar contra el código es peor que no tenerlo.
+
+**Relación con `ESTADO_FLORES_ETERNAS.md`:** ese dice *en qué punto está* el módulo (pendientes,
+decisiones); este dice *cómo habla con el back*. Al tocar flores hay que actualizar los dos.
+
+### ⚠️ Sin confirmar: la entrega del back
+
+El dueño dijo que *"según el back ya hay cambios para agregar imágenes"*, pero **en el repo
+compartido no hay nada de eso** — lo último de flores es `editar-ramo` y `cancelar`. Lo
+implementado usa el mecanismo que ya existía. **Preguntar al back antes de mergear a `dev`**: si
+entregaron otra cosa, esto habría que rehacerlo.
+
+**Archivos nuevos:** `src/app/shared/imagen-comprimir.util.ts`,
+`src/app/flores/service/flores-imagen.service.ts`, `FLORES_ETERNAS_ENDPOINTS.md`.
+**Modificados:** `flores.model.ts` (`IVarianteSombra` + el campo en los 3 catálogos),
+`catalogos-flores.component.*`, `configurar-ramo.component.*`.
+
+**Verificado con `ng build` y en pantalla** (endpoints simulados): la miniatura carga, la vacía
+muestra 📷, y el envío conserva el stock.

@@ -44,20 +44,27 @@
       <!-- ── 2. Horario ────────────────────────────────────────────── -->
       <div class="cn-section">
         <p class="cn-section__label">🕐 Horario de atención</p>
-        <p class="cn-section__hint">Por defecto: 09:00 – 21:00. Cámbialo cuando necesites.</p>
+        <p class="cn-section__hint">Por defecto: 9:00 a.m. – 9:00 p.m. Cámbialo cuando necesites.</p>
 
+        <!-- El texto de a.m./p.m. va aparte del campo a propósito: `<input type="time">` se
+             pinta según el navegador y en algunas máquinas no muestra el a.m./p.m., así que
+             "6:00" se leía igual que las 6 de la mañana. -->
         <form [formGroup]="horarioForm" class="cn-grid">
           <div class="cn-field">
             <label class="cn-label">Hora de apertura</label>
             <input class="cn-input cn-input--time" type="time"
                    formControlName="horaApertura">
+            <small class="cn-hora-legible" *ngIf="legible(horarioForm.get('horaApertura')?.value) as h">{{ h }}</small>
           </div>
           <div class="cn-field">
             <label class="cn-label">Hora de cierre</label>
             <input class="cn-input cn-input--time" type="time"
                    formControlName="horaCierre">
+            <small class="cn-hora-legible" *ngIf="legible(horarioForm.get('horaCierre')?.value) as h">{{ h }}</small>
           </div>
         </form>
+
+        <p class="cn-horario-resumen" *ngIf="horarioLegible">🕐 {{ horarioLegible }}</p>
 
         <button class="cn-btn cn-btn--save" [disabled]="guardandoHorario || !configCargada"
                 [title]="!configCargada ? 'Espera a que cargue lo que ya está guardado' : ''"

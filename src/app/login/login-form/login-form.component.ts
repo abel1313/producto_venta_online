@@ -12,6 +12,7 @@ import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { ThemeService } from 'src/app/services/theme/theme.service';
 import { SesionService } from 'src/app/shared/sesion.service';
 import { NegocioService, IContactosPublicos } from 'src/app/negocio/negocio.service';
+import { horaLegible } from 'src/app/shared/hora.util';
 
 @Component({
   selector: 'app-login-form',
@@ -36,14 +37,14 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get estadoNegocioTexto(): string {
     if (this.negocioAbierto === null) return '';
+    // Con la hora legible ("6:00 p.m."), no cruda: "abrimos a las 18:00" obliga a traducir
+    // mentalmente, y "a las 6" sin el a.m./p.m. es directamente ambiguo.
     if (this.negocioAbierto) {
-      return this.horaCierre
-        ? `¡Local abierto! Puedes comprar hasta las ${this.horaCierre}`
-        : 'Local abierto';
+      const cierra = horaLegible(this.horaCierre);
+      return cierra ? `¡Local abierto! Puedes comprar hasta las ${cierra}` : 'Local abierto';
     }
-    return this.horaApertura
-      ? `Local cerrado — abrimos a las ${this.horaApertura}`
-      : 'Local cerrado por ahora';
+    const abre = horaLegible(this.horaApertura);
+    return abre ? `Local cerrado — abrimos a las ${abre}` : 'Local cerrado por ahora';
   }
 
   // ── Fondo animado (malla técnica WebGL) — solo modo oscuro ──

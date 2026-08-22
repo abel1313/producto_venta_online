@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { forkJoin, Observable } from 'rxjs';
 import Swal from 'sweetalert2';
 import {
-  IAccesorioRamo, ICantidadFlor, IColorFlor, IFraseListon, ITipoFlor
+  IAccesorioRamo, ICantidadFlor, IColorFlor, IFraseListon, ITipoFlor, IVarianteSombra
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { FloresImagenService } from '../service/flores-imagen.service';
 
 type Tab = 'tipos' | 'colores' | 'cantidades' | 'accesorios' | 'frases';
 
@@ -43,9 +44,61 @@ export class CatalogosFloresComponent implements OnInit {
   editAccesorio: IAccesorioRamo | null = null;
   editFrase:     IFraseListon   | null = null;
 
-  constructor(private readonly flores: FloresService) {}
+  // ── Fotos de los artículos ────────────────────────────────────────
+  /**
+   * Portada por artículo, indexada por el id de su **producto interno** (no por el id del color
+   * o del accesorio: son numeraciones distintas y se pisarían entre sí).
+   *
+   * ⚠️ Los tipos de flor no aparecen aquí: no tienen producto interno, así que hoy no pueden
+   * llevar foto. Ver `FloresImagenService`.
+   */
+  portadas: Record<number, string | null> = {};
+  /** Producto interno cuya foto se está subiendo — bloquea solo ese renglón. */
+  subiendoFoto: number | null = null;
+
+  constructor(
+    private readonly flores: FloresService,
+    private readonly imagenes: FloresImagenService
+  ) {}
 
   ngOnInit(): void { this.cargar(); }
+
+  /** Pide la portada de cada artículo que tenga producto interno. Falla en silencio por diseño. */
+  private cargarPortadas(): void {
+    const variantes = [
+      ...this.colores.map(c => c.variante),
+      ...this.accesorios.map(a => a.variante),
+      ...this.frases.map(f => f.variante)
+    ].filter(v => !!v?.id);
+
+    variantes.forEach(v => {
+      this.imagenes.portadaDe(v!.id).subscribe(url => { this.portadas[v!.id] = url; });
+    });
+  }
+
+  /** Sube la foto elegida al producto interno del artículo. */
+  onFoto(evento: Event, variante?: IVarianteSombra | null): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';                       // permite volver a elegir el mismo archivo
+    if (!archivo || !variante?.id) return;
+
+    this.subiendoFoto = variante.id;
+    this.imagenes.subirFoto(variante, archivo).subscribe({
+      next: () => {
+        // Se vuelve a pedir en vez de adivinar la URL: la arma el micro de imágenes.
+        this.imagenes.portadaDe(variante.id).subscribe(url => {
+          this.portadas[variante.id] = url;
+          this.subiendoFoto = null;
+          Swal.fire({ icon: 'success', title: 'Foto guardada', timer: 1200, showConfirmButton: false });
+        });
+      },
+      error: err => {
+        this.subiendoFoto = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo guardar la foto', text: this.msg(err, err?.message ?? 'Intenta de nuevo.') });
+      }
+    });
+  }
 
   setTab(t: Tab): void { this.tab = t; this.cancelarEdicion(); }
 
@@ -100,6 +153,7 @@ export class CatalogosFloresComponent implements OnInit {
         this.cantidades = r.cantidades;
         this.accesorios = r.accesorios;
         this.frases     = r.frases;
+        this.cargarPortadas();
         this.cargando   = false;
       },
       error: err => {
@@ -334,6 +388,7 @@ export class CatalogosFloresComponent implements OnInit {
         this.cantidades = r.cantidades;
         this.accesorios = r.accesorios;
         this.frases     = r.frases;
+        this.cargarPortadas();
         this.guardando  = false;
       },
       error: err => {

@@ -284,3 +284,57 @@
   letter-spacing: 0;
   font-weight: 600;
 }
+
+// ── Foto del artículo (colores, accesorios, frases) ───────────────────────
+// Miniatura clicable: el <label> envuelve un input file escondido.
+.fl-foto {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  border: 1.5px dashed var(--card-border);
+  background: var(--app-surface, var(--card-bg));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: border-color .15s, opacity .15s;
+
+  &:hover { border-color: var(--app-accent); }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &__vacia {
+    font-size: 1rem;
+    opacity: .55;
+  }
+
+  &__cargando {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .55);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  &--subiendo { opacity: .8; cursor: progress; }
+
+  // Artículo sin producto interno: no hay dónde guardar la foto.
+  &--sin {
+    cursor: default;
+    border-style: solid;
+    color: var(--app-text-muted, #64748b);
+    font-size: .85rem;
+    &:hover { border-color: var(--card-border); }
+  }
+}

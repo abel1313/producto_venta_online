@@ -175,7 +175,8 @@ export class ProductoService {
     // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
     // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
     adminFiltrar(
-        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean },
+        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean;
+                   fechaDesde?: string; fechaHasta?: string },
         page: number, size: number
     ): Observable<IProductoPaginable<IProductoDTO[]>> {
         let params = new HttpParams()
@@ -187,6 +188,10 @@ export class ProductoService {
         if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
         if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
         if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
+        // Rango de fecha de creacion (yyyy-MM-dd, dia calendario) — pensado para encontrar
+        // "lo que se cargo hoy" en carga rapida de imagenes. Los 2 son independientes entre si.
+        if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
+        if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
 
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }

@@ -85,6 +85,16 @@
         <span class="pl-filtro-check__box"></span>
         Código real
       </label>
+      <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
+           imágenes). Los 2 campos son independientes entre sí, se combinan con AND con el resto. -->
+      <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaDesde">
+        Creado desde
+        <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
+      </label>
+      <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaHasta">
+        Creado hasta
+        <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
+      </label>
       <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
         📥 Excel sin productos
@@ -204,6 +214,13 @@
           <div class="pl-card__detail-row" *ngIf="item.descripcion">
             <span class="pl-card__detail-label">Descripción</span>
             <span class="pl-card__detail-val">{{ item.descripcion }}</span>
+          </div>
+
+          <!-- Puede venir null en productos creados antes de la migración del back — no mostrar
+               la fila en ese caso, en vez de un "Invalid Date". -->
+          <div class="pl-card__detail-row" *ngIf="item.fechaCreacion">
+            <span class="pl-card__detail-label">Creado</span>
+            <span class="pl-card__detail-val">{{ item.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
           </div>
 
         </div>

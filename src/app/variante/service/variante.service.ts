@@ -173,7 +173,7 @@ export class VarianteService {
   // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
   adminFiltrar(
     filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean;
-               codigoGenerado?: boolean },
+               codigoGenerado?: boolean; fechaDesde?: string; fechaHasta?: string },
     pagina: number, size: number
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
@@ -187,6 +187,9 @@ export class VarianteService {
     // true = solo borradores de carga rápida con código autogenerado (BRD-...);
     // false = solo código real; omitido = ambos. Filtra por el producto padre.
     if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
+    // Rango de fecha de creacion (yyyy-MM-dd) — independientes entre si, se combinan con AND.
+    if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
+    if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
 
     return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
       .pipe(map(res => res.data));

@@ -67,6 +67,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   mostrarNoHabilitados = false;
   mostrarCodigoGenerado = false;
   mostrarCodigoReal = false;
+  // Rango de fecha de creacion — inputs de fecha, no checkboxes tri-estado (2026-08-24).
+  fechaDesde = '';
+  fechaHasta = '';
   sinResultados    = false;
   mensajeError     = '';
   seleccionados    = new Set<number>();
@@ -365,7 +368,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes
         || this.mostrarHabilitados || this.mostrarNoHabilitados
-        || this.mostrarCodigoGenerado || this.mostrarCodigoReal;
+        || this.mostrarCodigoGenerado || this.mostrarCodigoReal
+        || !!this.fechaDesde || !!this.fechaHasta;
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
@@ -389,6 +393,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.aplicarFiltrosAdmin(1);
   }
 
+  // Rango de fecha — se dispara con (change) del <input type="date">, no con toggleFiltroAdmin
+  // (ese es solo para los pares booleanos tri-estado).
+  onFechaFiltroChange(): void {
+    this.aplicarFiltrosAdmin(1);
+  }
+
   limpiarFiltrosAdmin(): void {
     this.mostrarConStock = false;
     this.mostrarSinStock = false;
@@ -398,6 +408,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrarNoHabilitados = false;
     this.mostrarCodigoGenerado = false;
     this.mostrarCodigoReal = false;
+    this.fechaDesde = '';
+    this.fechaHasta = '';
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
@@ -412,7 +424,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       conStock: this.paramConStock,
       conImagenes: this.paramConImagenes,
       habilitado: this.paramHabilitado,
-      codigoGenerado: this.paramCodigoGenerado
+      codigoGenerado: this.paramCodigoGenerado,
+      fechaDesde: this.fechaDesde || undefined,
+      fechaHasta: this.fechaHasta || undefined
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;

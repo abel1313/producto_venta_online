@@ -103,17 +103,21 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Filtros admin ──────────────────────────────────────────────────
 // 8 filtros en PC: 4 columnas × 2 filas, para que no se vea tan estirado
 // como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
+// gap generoso (fila y columna) para que un grupo de checkbox se distinga
+// claramente del siguiente — con poco espacio se leían como una sola franja.
 .vb-filtros {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: stretch;
-  gap: 8px 12px;
+  gap: 14px 18px;
   padding: 0 0 16px;
 }
 
-// min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
-// más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
-.vb-filtro-btn, .vb-filtro-check {
+// min-width:0 evita que un label largo ("Código generado") o el input de fecha
+// fuercen la columna del grid más allá de su 1fr y desborden el contenedor —
+// bug clásico de "grid blowout" (sin esto el date picker se corta/oculta en móvil,
+// porque el :host tiene overflow-x:hidden).
+.vb-filtro-btn, .vb-filtro-check, .vb-filtro-fecha {
   min-width: 0;
 }
 
@@ -179,8 +183,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-filtro-check {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);
@@ -271,8 +275,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-filtro-fecha {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);
@@ -299,6 +303,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
     color-scheme: dark;
     max-width: 120px;
+    // Sin esto el <input type="date"> (control atómico, no encoge por su cuenta)
+    // fuerza el ancho mínimo del label por encima de la columna del grid y,
+    // combinado con el overflow-x:hidden del :host, quedaba cortado/oculto en móvil.
+    min-width: 0;
 
     &::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
   }
@@ -1005,15 +1013,28 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
-  // completo, con el texto alineado a la izquierda como una lista.
-  .vb-filtros { grid-template-columns: 1fr; gap: 6px; }
+  // completo, con el texto alineado a la izquierda como una lista. gap:10px
+  // (en vez de 6px) para que un checkbox no se pegue visualmente al siguiente.
+  .vb-filtros { grid-template-columns: 1fr; gap: 10px; }
   .vb-filtro-check, .vb-filtro-fecha, .vb-filtro-btn {
-    font-size: 0.78rem;
-    padding: 8px 14px;
+    font-size: 0.8rem;
+    padding: 10px 16px;
     white-space: normal;
     text-align: left;
     justify-content: flex-start;
     line-height: 1.25;
+  }
+
+  // El date picker nativo tiene un ancho mínimo interno que no siempre respeta
+  // max-width en navegadores móviles; al ir en columna única ya sobra ancho
+  // en el pill, así que se lo damos completo en vez de dejarlo fijo en 120px
+  // (fijo en 120px + label es justo lo que lo desbordaba/ocultaba antes).
+  .vb-filtro-fecha {
+    flex-wrap: wrap;
+  }
+  .vb-filtro-fecha__input {
+    max-width: 100%;
+    flex: 1;
   }
 
   // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .vb-grid con

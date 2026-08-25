@@ -18,10 +18,20 @@ export interface ILugarEntrega {
    * Solo aplica a flores eternas. `null` = no agrega tiempo.
    */
   horasExtraAnticipacion?: number | null;
+  /**
+   * Coordenadas del centro de la zona (2026-08-25) — usadas para recentrar el mapa de
+   * `SelectorUbicacionComponent` al elegir esta zona en vez de dejarlo siempre en el punto
+   * genérico fijo. `null` en zonas viejas que nunca capturaron el dato: en ese caso el mapa
+   * debe caer al centro genérico (fallback), no a `null`/`0,0`.
+   */
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
 export interface ILugarEntregaRequest {
   nombre: string;
   costoEnvio?: number | null;
   horasExtraAnticipacion?: number | null;
+  latitud?: number | null;
+  longitud?: number | null;
 }

@@ -163,17 +163,24 @@ reportadas:
 
 ## ⏳ 4. Esperando respuesta del back
 
-### 4.1 Lat/lng por zona en `LugarEntrega`
+### 4.1 Lat/lng por zona en `LugarEntrega` — ✅ RESUELTO en el back (25-ago, hoy)
 
 Consulta enviada el 22 de agosto (`CAMBIOS_FRONT.md`, sección "❓ CONSULTA AL BACK — lat/lng por
 zona..."): el mapa siempre arranca centrado en Tejupilco, sin importar qué zona elija el cliente
 en el select. Pedimos que `LugarEntrega` tenga su propio centroide (`latitud`/`longitud`
 opcionales) para que el mapa se recentre solo.
 
-**Sin respuesta en 3 días** — reenviada el 2026-08-25 marcada como 🚨 URGENTE en
-`CAMBIOS_FRONT_2.md` (sección "🚨 URGENTE — reenviamos: lat/lng por zona..."), con opción B
-propuesta por si prefieren no tocar su modelo (que el front resuelva el centroide con Nominatim
-buscando el nombre de la zona, sin cambios de back). Esperando que contesten.
+**Ya implementado y desplegado en `dev`/`qa` del back, con la migración ya corrida** —
+`LugarEntrega` ahora trae `latitud`/`longitud` (nullable, `Double`) en los 4 endpoints existentes
+(`GET` listado/`findById`, `POST save`, `PUT update`) sin cambios de contrato aparte de los 2
+campos nuevos. Ver `CAMBIOS_FRONT_2.md` sección "✅ BACK — implementado: `LugarEntrega` ya tiene
+`latitud`/`longitud`" para el detalle completo del request/response.
+
+**Lo que falta del lado del front:** ya está el gancho hecho (`SelectorUbicacionComponent`
+reacciona a un cambio de `centroDefault`, según lo documentado antes) — ahora solo falta leer
+`latitud`/`longitud` del `LugarEntrega` seleccionado y pasarlo como `centroDefault` en vez del
+valor genérico fijo. Zonas viejas sin capturar el dato vienen `null` — mantener el fallback
+actual (Tejupilco) para esos casos.
 
 > ⚠️ **No confundir con el punto 1.1.** Son 2 cosas distintas con el mismo par de nombres de
 > campo:

@@ -100,7 +100,7 @@
   <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio">
     <div class="col-12 col-sm-6">
       <label class="form-label small mb-1">📍 Lugar de entrega (opcional)</label>
-      <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId">
+      <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarEntregaChange()">
         <option [ngValue]="null">Sin especificar</option>
         <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
       </select>
@@ -114,7 +114,7 @@
     <div class="col-12 col-sm-8">
       <label class="form-label small mb-1">🗺️ Ubicación exacta (opcional)</label>
       <app-selector-ubicacion
-        [lat]="latitud" [lng]="longitud"
+        [lat]="latitud" [lng]="longitud" [centroDefault]="centroMapaLugar"
         (ubicacionCambio)="onUbicacionCambio($event)">
       </app-selector-ubicacion>
       <input type="text" class="form-control form-control-sm mt-2"

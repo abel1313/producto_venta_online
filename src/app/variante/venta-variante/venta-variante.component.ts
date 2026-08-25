@@ -15,6 +15,7 @@ import { VarianteService } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
+import { CENTRO_MAPA_GENERICO } from 'src/app/shared/selector-ubicacion/selector-ubicacion.component';
 
 @Component({
   selector: 'app-venta-variante',
@@ -71,6 +72,22 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   onUbicacionCambio(p: { lat: number; lng: number }): void {
     this.latitud = p.lat;
     this.longitud = p.lng;
+  }
+
+  // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
+  // (ver `onLugarEntregaChange`), no en cada ciclo de detección de cambios: un getter que
+  // devolviera un array nuevo cada vez rompería `SelectorUbicacionComponent.ngOnChanges`
+  // (recentraría el mapa en cada tecla que el cliente escriba en "referencias", peleándose con
+  // que el cliente pueda mover/hacer zoom libremente antes de marcar el pin). Si la zona ya
+  // tiene latitud/longitud capturada se usa como centro; si no (zona vieja) se cae al genérico
+  // fijo de siempre — ver CENTRO_MAPA_GENERICO en selector-ubicacion.component.ts.
+  centroMapaLugar: [number, number] = CENTRO_MAPA_GENERICO;
+
+  onLugarEntregaChange(): void {
+    const lugar = this.lugares.find(l => l.id === this.lugarEntregaId);
+    this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
+      ? [lugar.latitud, lugar.longitud]
+      : CENTRO_MAPA_GENERICO;
   }
 
   // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.

@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IImagenDto } from '../models';
@@ -21,6 +22,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @ViewChild('fileInput',    { static: false }) fileInputRef!:   ElementRef<HTMLInputElement>;
   @ViewChild('videoCamara',  { static: false }) videoCamaraRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasCamara', { static: false }) canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('videoScanner', { static: false }) videoScannerRef!: ElementRef<HTMLVideoElement>;
 
   @Input() nombreCard    = 'Agregar Producto';
   @Input() productoUpdate: IProductoDTORec | null = null;
@@ -31,6 +33,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
   private formReady = false;
+
+  // Escáner de código de barras (mismo patrón que variante/buscar/buscar.component.ts)
+  escaneandoCodigo = false;
+  private controlesEscanerCodigo: IScannerControls | null = null;
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -422,7 +428,46 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrandoCamara = false;
   }
 
+  // ── Escáner de código de barras ──────────────────────────────────────
+  // Reusa el mismo patrón que variante/buscar/buscar.component.ts →
+  // iniciarEscaner() (BrowserMultiFormatReader de @zxing/browser).
+
+  async iniciarEscanerCodigo(): Promise<void> {
+    this.escaneandoCodigo = true;
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      const reader = new BrowserMultiFormatReader();
+      this.controlesEscanerCodigo = await reader.decodeFromVideoDevice(
+        undefined,
+        this.videoScannerRef.nativeElement,
+        (result, _err, controls) => {
+          if (result) {
+            // El código escaneado siempre es el real: se apaga "generar
+            // automático" (si estaba activo) para que el valor no se
+            // sobrescriba y el input quede editable con lo escaneado.
+            this.formProductos.patchValue({
+              sinCodigoBarra: false,
+              codigoBarras: result.getText()
+            });
+            controls.stop();
+            this.escaneandoCodigo = false;
+          }
+        }
+      );
+    } catch {
+      Swal.fire({ icon: 'error', title: 'No se pudo acceder a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.', timer: 2500, showConfirmButton: false });
+      this.escaneandoCodigo = false;
+    }
+  }
+
+  detenerEscanerCodigo(): void {
+    this.controlesEscanerCodigo?.stop();
+    this.controlesEscanerCodigo = null;
+    this.escaneandoCodigo = false;
+  }
+
   ngOnDestroy(): void {
     this.cerrarCamara();
+    this.detenerEscanerCodigo();
   }
 }

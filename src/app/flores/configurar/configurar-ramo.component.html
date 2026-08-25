@@ -1,13 +1,19 @@
 <div class="cr-wrap">
 
   <div class="cr-header">
-    <div class="cr-header__inner">
-      <h4 *ngIf="!modoEdicion && !modoRamoArmado">🌷 Arma tu propio ramo</h4>
-      <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
-      <h4 *ngIf="modoRamoArmado">💐 Pedir "{{ ramoArmadoOrigenNombre }}"</h4>
-      <small *ngIf="!modoEdicion && !modoRamoArmado">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
-      <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
-      <small *ngIf="modoRamoArmado">Ya viene armado — ajusta lo que quieras y elige cuándo y dónde lo quieres</small>
+    <div class="cr-header__inner" [class.cr-header__inner--conFoto]="modoRamoArmado && ramoArmadoOrigenFoto">
+      <!-- Foto del ramo con el que se llegó desde "Pedir este ramo" (ver ramoArmadoOrigenFoto) —
+           sin esto el cliente perdía de vista qué ramo estaba pidiendo al entrar aquí. -->
+      <img *ngIf="modoRamoArmado && ramoArmadoOrigenFoto" [src]="ramoArmadoOrigenFoto"
+           class="cr-header__foto" [alt]="ramoArmadoOrigenNombre">
+      <div class="cr-header__texto">
+        <h4 *ngIf="!modoEdicion && !modoRamoArmado">🌷 Arma tu propio ramo</h4>
+        <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
+        <h4 *ngIf="modoRamoArmado">💐 Pedir "{{ ramoArmadoOrigenNombre }}"</h4>
+        <small *ngIf="!modoEdicion && !modoRamoArmado">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
+        <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
+        <small *ngIf="modoRamoArmado">Ya viene armado — ajusta lo que quieras y elige cuándo y dónde lo quieres</small>
+      </div>
     </div>
   </div>
 
@@ -244,7 +250,7 @@
         <div class="cr-field" *ngIf="lugarEntregaId && !modoEdicion">
           <label class="cr-label" style="font-size:.85rem">🗺️ Ubicación exacta (opcional)</label>
           <app-selector-ubicacion
-            [lat]="latitud" [lng]="longitud"
+            [lat]="latitud" [lng]="longitud" [centroDefault]="centroMapaLugar"
             (ubicacionCambio)="onUbicacionCambio($event)">
           </app-selector-ubicacion>
           <input type="text" class="cr-input mt-2"

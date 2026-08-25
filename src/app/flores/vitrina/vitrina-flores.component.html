@@ -42,8 +42,11 @@
 
         <p class="vr-card__precio">${{ r.precioTotal | number:'1.2-2' }}</p>
 
+        <!-- El papel no se anuncia al cliente ni como badge: si va incluido por default es
+             invisible (se funde en el precio), mismo criterio que "Arma tu ramo" — ver
+             `papelForzado` en configurar-ramo.component.html. Mostrar "papel incluido" acá era
+             justo el resto que el dueño seguía viendo como "el papel se cobra". -->
         <div class="vr-card__badges">
-          <span class="vr-badge" *ngIf="r.papelIncluido">📄 papel incluido</span>
           <span class="vr-badge vr-badge--alt" *ngIf="r.accesorios?.length">🎀 {{ r.accesorios.length }} accesorio(s)</span>
         </div>
       </div>

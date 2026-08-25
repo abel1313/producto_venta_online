@@ -107,7 +107,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // claramente del siguiente — con poco espacio se leían como una sola franja.
 .vb-filtros {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  // auto-fit/minmax en vez de repeat(4,1fr) fijo: con 4 columnas rígidas, en
+  // pantallas de laptop/desktop angostas cada columna se quedaba sin espacio
+  // para texto largo ("Código generado") y se veía amontonado. Con
+  // minmax(200px,1fr) el navegador baja solo a menos columnas según el
+  // ancho real disponible, igual que ya hace .vb-grid.
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   align-items: stretch;
   gap: 14px 18px;
   padding: 0 0 16px;
@@ -1043,13 +1048,6 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .vb-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
-// Hueco entre "móvil" (576px) y donde .vb-grid ya cabe cómodo en varias columnas:
-// sin este bloque, .vb-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
-// white-space:nowrap, un label largo no cabía en un ancho de tablet/celular grande
-// y el texto se desbordaba encimado sobre la siguiente pill.
-@media (min-width: 577px) and (max-width: 899px) {
-  .vb-filtros { grid-template-columns: repeat(2, 1fr); }
-}
 
 @media (max-width: 400px) {
   .scanner-box { width: 96vw; padding: 10px; }

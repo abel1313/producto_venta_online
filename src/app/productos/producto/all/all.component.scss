@@ -324,14 +324,6 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .pl-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
-// Hueco entre "móvil" (576px) y "PC" (900px, donde .pl-grid ya pasa a 3 columnas):
-// sin este bloque, .pl-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
-// white-space:nowrap, un label largo ("Código generado") no cabía en un ancho de
-// tablet/celular grande y el texto se desbordaba encimado sobre la siguiente pill.
-@media (min-width: 577px) and (max-width: 899px) {
-  .pl-filtros { grid-template-columns: repeat(2, 1fr); }
-}
-
 @media (max-width: 400px) {
   .scanner-box {
     width: 96vw;
@@ -518,11 +510,14 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Filtros admin ──────────────────────────────────────────────────
-// 8 filtros en PC: 4 columnas × 2 filas, para que no se vea tan estirado
-// como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
+// auto-fit/minmax en vez de repeat(4,1fr) fijo: con 4 columnas rígidas, en
+// pantallas de laptop/desktop angostas (sidebar + contenido) cada columna se
+// quedaba sin espacio para texto largo ("Código generado", "No habilitados")
+// y se veía amontonado. Con minmax(200px,1fr) el navegador baja solo a 3, 2
+// o 1 columna según el ancho real disponible, igual que ya hace .pl-grid.
 .pl-filtros {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   align-items: stretch;
   gap: 14px 18px;
   padding: 0 24px 16px;

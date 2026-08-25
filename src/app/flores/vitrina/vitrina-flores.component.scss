@@ -262,6 +262,21 @@
   }
 }
 
+// Escape hatch secundario — no compite visualmente con "Pedir este ramo", el botón principal.
+.vr-btn-whatsapp {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 20px 14px;
+  font-size: 0.76rem;
+  color: var(--app-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  &:hover { color: var(--app-accent); }
+}
+
 // ── Dark / Light ──────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .vr-card { background: rgba(255,255,255,.04); }

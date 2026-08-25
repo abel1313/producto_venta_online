@@ -86,21 +86,38 @@ Se agregó un párrafo explicando qué hace la herramienta (compara la BD local 
 microservicio de imágenes) y cuándo usarla (cuando una foto no aparece y no se sabe si nunca se
 guardó o si el archivo se perdió).
 
-### 2.5 Vitrina de flores — "Ver detalle" no es un flujo de compra real
+### 2.5 Vitrina de flores — "Pedir" ya es un flujo de compra real — ✅ hecho (25-ago)
 
-`src/app/flores/vitrina/vitrina-flores.component.ts` — el modal de detalle de un ramo armado:
-- **Sigue mostrando el papel/envoltura al cliente** (línea ~112, `precioPapelTexto()`) — debería
-  ir oculto o fundido en el precio, como ya se hace en "Arma tu ramo".
-- El botón "Pedir" solo **abre WhatsApp** (`contactar()`, línea 128) — no pregunta
-  envío-vs-recoger-en-tienda, no calcula precio con envío incluido, no genera un pedido real.
+**No existe (ni existió nunca) un endpoint para confirmar un `RamoArmado` como pedido
+directamente** — solo hay listados paginados. En vez de inventar un flujo de cobro paralelo sin
+probar, "Pedir este ramo" ahora **lleva al configurador** (`/flores/configurar`) con las flores
+y accesorios de ese ramo ya precargados — reutilizando el 100% del checkout que ya estaba
+probado ahí (fecha/urgencia, mapa de entrega, verificación de correo, `savePedido`, etc.), en
+vez de duplicar esa lógica en la vitrina.
 
-Esta es la pieza más grande de las 5 — es un flujo de compra completo, no un ajuste puntual.
-Sigue sin empezar.
+- El papel ya **no se muestra** como línea aparte al cliente (se funde en la línea de flores,
+  mismo criterio que "Arma tu ramo" — `subtotalFloresConPapel()`).
+- El reparto/accesorios quedan **editables** a propósito una vez en el configurador — el precio
+  final siempre se recalcula en vivo, así que nunca se cobra algo distinto de lo que se
+  confirma, se ajuste o no lo que traía el ramo.
+- `RamoArmado` no trae `tipoFlorId` directo (solo `colorFlorId`) — se resuelve probando cada
+  especie del catálogo público hasta encontrar la que contiene ese color (catálogo chico,
+  llamadas en paralelo — sin pedirle nada nuevo al back).
+- Se pasa por `router.navigate(['/flores/configurar'], { state: { ramoArmado } })`, no por
+  query param — no hay endpoint para pedir UN `RamoArmado` por id, y el objeto ya está completo
+  en memoria en la vitrina al momento del clic. ⚠️ No sobrevive un refresh de página a medio
+  armar (se pierde el `state`) — aceptable, no hay pedido ni cobro de por medio todavía.
+- Se conservó un link secundario "¿Dudas antes de pedir? Escríbenos por WhatsApp" para quien
+  prefiere solo preguntar.
 
-**Lo que sí está resuelto de la lista original de flores:**
-- ✅ Espaciado del header ("Armar el mío" pegado al título) — corregido.
-- ✅ Foto del ramo ya armado se muestra — corregido (usa la variante sombra si existe, cae a
-  `imagenUrl` si no).
+**Verificado en pantalla con datos simulados** (Playwright, clic real en el botón de la card,
+no llamada directa al método) — confirmado que el estado del configurador queda exactamente con
+la especie, cantidad, reparto y accesorios del ramo elegido.
+
+**Lo que sí ya estaba resuelto de la lista original de flores:**
+- ✅ Espaciado del header ("Armar el mío" pegado al título) — corregido antes.
+- ✅ Foto del ramo ya armado se muestra — corregido antes (usa la variante sombra si existe,
+  cae a `imagenUrl` si no).
 
 ---
 
@@ -157,6 +174,6 @@ buscando el nombre de la zona, sin cambios de back). Esperando que contesten.
 | 2.2 | `/ventas/buscar` (legacy) | ✅ Quitado del menú |
 | 2.3 | Abonos → link al pedido | ✅ Hecho |
 | 2.4 | Diagnóstico de imágenes — texto | ✅ Hecho |
-| 2.5 | Vitrina flores — flujo de compra real | 🔴 No implementado (pieza grande) |
+| 2.5 | Vitrina flores — flujo de compra real | ✅ Hecho (reusa el configurador) |
 | 3 | Dark mode: rifas / presentación / negocio | ✅ Confirmado con capturas — se ven bien |
 | 4.1 | Lat/lng por zona (LugarEntrega) | 🚨 Reenviada urgente el 25-ago — distinta de la 1.1, ver nota abajo |

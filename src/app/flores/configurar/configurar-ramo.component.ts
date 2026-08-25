@@ -1,11 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, debounceTime, filter, take, takeUntil, timeout } from 'rxjs/operators';
+import { catchError, debounceTime, filter, map, take, takeUntil, timeout } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFechasDisponiblesResponse, IFraseListon,
-  IListonRequest, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
+  IListonRequest, IRamoArmado, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { FloresImagenService } from '../service/flores-imagen.service';
@@ -135,6 +135,23 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   get modoEdicion(): boolean { return this.pedidoIdEdicion != null; }
 
+  // ── Entrada desde la vitrina ("Pedir este ramo") ────────────────────────
+  /**
+   * Se llega desde `VitrinaFloresComponent.pedirRamo()` con
+   * `router.navigate([...], { state: { ramoArmado } })` — no por query param (`?ramoArmadoId=`),
+   * porque no existe un endpoint público para pedir UN `RamoArmado` por id (solo listados
+   * paginados) y el objeto ya está completo en memoria en la vitrina al momento del clic.
+   *
+   * ⚠️ Por venir de `router state`, no sobrevive un F5 a medio armar — si el cliente recarga,
+   * el wizard vuelve a Paso 1 en blanco (sin `ramoArmadoOrigen` que precargar). Aceptable: no
+   * hay pedido ni cobro de por medio todavía, solo hay que volver a elegir el ramo.
+   */
+  private ramoArmadoOrigen: IRamoArmado | null = null;
+  cargandoRamoArmado = false;
+  errorRamoArmado: string | null = null;
+  get modoRamoArmado(): boolean { return this.ramoArmadoOrigen != null; }
+  get ramoArmadoOrigenNombre(): string { return this.ramoArmadoOrigen?.nombre ?? ''; }
+
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
@@ -162,7 +179,14 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
-  ) {}
+  ) {
+    // `router.getCurrentNavigation()` (la forma "oficial" de leer state) da `null` acá porque
+    // `flores` es un módulo LAZY — para cuando el chunk terminó de descargar y este componente
+    // se construye, el Router ya considera la navegación resuelta y borra ese objeto. `history
+    // .state` sí sobrevive: Angular lo empuja con `history.pushState` en el momento del
+    // `navigate(..., { state })`, y ahí se queda sin importar cuánto tarde el chunk en cargar.
+    this.ramoArmadoOrigen = (history.state as { ramoArmado?: IRamoArmado } | undefined)?.ramoArmado ?? null;
+  }
 
   ngOnInit(): void {
     const idEdit = Number(this.route.snapshot.queryParamMap.get('pedidoId'));
@@ -211,6 +235,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.cargandoCatalogo = false;
         // Después del catálogo: sin especies/accesorios cargados no hay contra qué reconstruir.
         if (this.modoEdicion) this.cargarRamoParaEditar();
+        else if (this.ramoArmadoOrigen) this.precargarDesdeRamoArmado(this.ramoArmadoOrigen);
       },
       error: err => {
         this.cargandoCatalogo = false;
@@ -331,6 +356,75 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.cargandoEdicion = false;
         this.errorEdicion = this.msg(err, 'No se pudo cargar el ramo de este pedido.');
       }
+    });
+  }
+
+  /**
+   * `IRamoArmado` no trae `tipoFlorId` (solo `colorFlorId` y un `tipoFlorNombre` de exhibición,
+   * no un id usable) — pero `fechas-disponibles` sí lo necesita para calcular el plazo de
+   * entrega. Sin un endpoint público de "a qué especie pertenece este color", se prueba cada
+   * especie activa del catálogo (ya cargado, público, catálogo chico) hasta encontrar la que
+   * contenga este color — en paralelo, no uno por uno.
+   */
+  private resolverTipoFlorId(colorFlorId: number, cb: (tipoFlorId: number | null) => void): void {
+    if (!this.tipos.length) { cb(null); return; }
+    forkJoin(
+      this.tipos.map(t => this.flores.coloresPorTipoFlor(t.id).pipe(
+        map(colores => ({ tipoId: t.id, tiene: colores.some(c => c.id === colorFlorId) })),
+        catchError(() => of({ tipoId: t.id, tiene: false }))
+      ))
+    ).subscribe(resultados => {
+      const match = resultados.find(r => r.tiene);
+      cb(match ? match.tipoId : null);
+    });
+  }
+
+  /**
+   * Entrada alterna al configurador: el cliente eligió un ramo YA ARMADO en la vitrina
+   * (`/flores/ramos`, "💐 Pedir este ramo") en vez de construir uno desde cero. Precarga
+   * especie/cantidad/reparto/accesorios con lo que trae el `RamoArmado` — mismo patrón que
+   * `pedirRamoDelPedido()` (edición admin) arriba, pero sin el candado de admin y sin
+   * fecha/zona restauradas (esas todavía no existen: se eligen ahora, como parte de la compra).
+   *
+   * El reparto y los accesorios quedan EDITABLES a propósito, no bloqueados: el precio final
+   * siempre se recalcula en vivo (`calcular-precio`), así que el cliente nunca paga algo
+   * distinto de lo que confirma al final, ajuste o no lo que traía el ramo. `precioTotal` del
+   * `RamoArmado` es solo el precio de referencia que se vio en la vitrina.
+   */
+  private precargarDesdeRamoArmado(ramo: IRamoArmado): void {
+    this.cargandoRamoArmado = true;
+    this.errorRamoArmado = null;
+    this.resolverTipoFlorId(ramo.colorFlorId, tipoFlorId => {
+      if (!tipoFlorId) {
+        this.cargandoRamoArmado = false;
+        this.errorRamoArmado = 'No se pudo identificar la especie de este ramo — puedes armarlo manualmente abajo.';
+        return;
+      }
+      this.tipoSeleccionadoId = tipoFlorId;
+      this.flores.coloresPorTipoFlor(tipoFlorId).subscribe({
+        next: cs => {
+          this.coloresDisponibles = cs;
+          this.cantidadDeseada = ramo.cantidad;
+          this.cantidadConfirmada = ramo.cantidad;
+          this.reparto = cs.map(c => ({
+            color: c,
+            cantidad: c.id === ramo.colorFlorId ? ramo.cantidad : 0
+          }));
+          this.cargarPortadas(cs);
+
+          (ramo.accesorios ?? []).forEach(a => {
+            const sel = this.seleccionAccesorios.find(s => s.accesorio.id === a.accesorioId);
+            if (sel) { sel.seleccionado = true; sel.cantidad = a.cantidad; }
+          });
+
+          this.cargandoRamoArmado = false;
+          this.pedirRecalculo();
+        },
+        error: err => {
+          this.cargandoRamoArmado = false;
+          this.errorRamoArmado = this.msg(err, 'No se pudieron cargar los colores de este ramo.');
+        }
+      });
     });
   }
 
@@ -1178,6 +1272,10 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.urgente = false;
     this.fechaEntrega = '';
     this.horaEntrega = '';
+    // Limpia el origen "vitrina → ramo armado" — sin esto, tras confirmar un pedido y volver a
+    // Paso 1, la pantalla seguiría creyendo que hay un ramo precargado pendiente.
+    this.ramoArmadoOrigen = null;
+    this.errorRamoArmado = null;
   }
 
   // ── Verificación de correo — copia exacta del flujo ya probado en

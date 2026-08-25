@@ -11936,3 +11936,128 @@ los 2 links se quitó) — es la sección "2.1" que queda pendiente de decisión
 
 **Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
 ⚠️ No probado en vivo — sin sesión de admin/cliente disponible en esta sesión de trabajo.
+
+---
+
+## CONFIRMADO — MODO OSCURO EN RIFAS/PRESENTACIÓN/NEGOCIO (2026-08-25)
+
+> Cierra la sección 3 de `PENDIENTES_REVISION_QA.md`, pendiente desde el fix global del 30 de
+> julio (regla que pintaba de blanco cualquier `<span>`, incluidos los de dentro de botones).
+
+Se levantó `ng serve`, se entró con sesión admin simulada (Playwright), se forzó modo oscuro y
+se compararon capturas reales de `rifas/agregar`, `rifas/buscar`, `admin/presentacion` y
+`admin/negocio`. **Las 4 se ven bien** — botones, checks/toggles y campos de texto legibles en
+las cuatro, sin ningún caso de texto invisible. El fix de julio sí las cubrió, no había ningún
+color hardcodeado escapándose. Sin cambios de código en esta sección — solo confirmación.
+
+---
+
+## FEAT FLORES — "PEDIR ESTE RAMO" EN LA VITRINA YA ES UN FLUJO DE COMPRA REAL (2026-08-25)
+
+> Cierra la pieza más grande de `PENDIENTES_REVISION_QA.md` (sección 2.5). Antes, el botón
+> "Pedir" de un `RamoArmado` (Flujo B: el admin arma y publica ramos ya listos, distinto de
+> "Arma tu ramo" donde el cliente construye el suyo desde cero) solo abría WhatsApp — sin
+> calcular precio, sin preguntar envío/recoger, sin generar ningún pedido real.
+
+### La decisión de arquitectura — reusar el configurador, no duplicar el checkout
+
+**No existe (ni existió nunca) un endpoint para confirmar un `RamoArmado` como pedido
+directamente** — el back solo expone listados paginados (`ramosActivos`/`ramosAdmin`). Construir
+un flujo de cobro paralelo en la vitrina habría significado reimplementar, sin probar, toda la
+lógica que "Arma tu ramo" ya tiene resuelta y probada: `calcular-precio`, fechas/urgencia, mapa
+de entrega, verificación de correo, `savePedido`. En vez de eso, "Pedir este ramo" ahora navega
+a `/flores/configurar` con las flores y accesorios del ramo **ya precargados**, y de ahí en
+adelante es exactamente el mismo flujo ya probado.
+
+### Cómo llega el ramo elegido al configurador
+
+`VitrinaFloresComponent.pedirRamo(r)` → `router.navigate(['/flores/configurar'], { state: { ramoArmado: r } })`.
+**No por query param** (`?ramoArmadoId=`): no hay endpoint para pedir UN `RamoArmado` por id
+suelto, y el objeto completo ya está en memoria en la vitrina al momento del clic — pasarlo por
+`state` evita una llamada HTTP innecesaria.
+
+⚠️ **Trampa encontrada al leer el state en `ConfigurarRamoComponent`:** `Router
+.getCurrentNavigation()` (la forma "oficial" de leer `extras.state`) da `null` en este caso
+porque `flores` es un módulo **lazy** — para cuando el chunk termina de descargar y el
+componente se construye, el Router ya considera la navegación resuelta y borra ese objeto. El
+mismo mecanismo funciona perfecto en módulos eager, por eso no se había topado antes en el
+proyecto. Fix: leer `history.state` directo en el constructor — Angular lo empuja con
+`history.pushState` en el momento del `navigate(..., { state })` y ahí se queda sin importar
+cuánto tarde el chunk en cargar.
+
+### Precarga — mismo patrón que "✏️ Editar ramo" (admin), pero público y editable
+
+`ConfigurarRamoComponent.precargarDesdeRamoArmado(ramo)` es un espejo cercano de
+`pedirRamoDelPedido()` (la función ya existente que reconstruye el wizard al editar un pedido
+de admin) — mismo enfoque: especie → colores del catálogo → reparto → accesorios marcados —
+pero sin el candado de `ROLE_ADMIN` (esto es para cualquier cliente) y sin fecha/zona
+restauradas (esas todavía no existen, se eligen ahora como parte de la compra, no antes).
+
+**A propósito, el reparto y los accesorios quedan EDITABLES**, no bloqueados: el precio final
+siempre se recalcula en vivo con `calcular-precio`, así que el cliente nunca paga algo distinto
+de lo que confirma al final, ajuste o no lo que traía el ramo — `precioTotal` del `RamoArmado`
+es solo el precio de referencia que vio en la vitrina.
+
+### El hueco de `tipoFlorId` — resuelto sin pedirle nada al back
+
+`IRamoArmado` no trae `tipoFlorId` (solo `colorFlorId` y un `tipoFlorNombre` de exhibición, no
+usable como id) — pero `fechas-disponibles` sí lo necesita para calcular el plazo de entrega.
+Sin un endpoint público de "a qué especie pertenece este color", `resolverTipoFlorId()` prueba
+cada especie activa del catálogo público (ya chico, cargado de todos modos) en paralelo
+(`forkJoin` sobre `coloresPorTipoFlor(tipoId)` por cada una) hasta encontrar la que contiene ese
+`colorFlorId`. Sin llamadas nuevas al back, sin depender de que respondan una consulta más.
+
+### Papel oculto en el detalle de la vitrina — mismo criterio que "Arma tu ramo"
+
+El modal "Ver detalle" mostraba `📄 Papel` como línea aparte con su precio. El papel **no es una
+decisión del cliente** (va incluido siempre que aplique) — se sacó como línea propia y se funde
+en la de flores (`subtotalFloresConPapel()` = `precioFlores + precioPapel` si `papelIncluido`),
+igual que ya se hacía en el configurador. Sin esto el total no cuadraba contra la suma de lo
+visible.
+
+### Escape hatch conservado
+
+Se mantuvo `contactarPorWhatsapp(r)` (antes era la única acción del botón "Pedir") como link
+secundario, más discreto, para quien prefiere solo preguntar antes de comprometerse — no compite
+visualmente con "💐 Pedir este ramo", que ahora es la acción principal.
+
+### 💡 Lección de la propia verificación — un botón con la misma clase CSS engañó al test
+
+Al escribir la prueba con Playwright, el primer intento de simular el clic real (en vez de
+llamar `pedirRamo()` directo por código) fallaba silenciosamente: `history.state` solo traía
+`{navigationId}`, sin el ramo. La causa: el link "🌷 Armar el mío" del header de la vitrina usa
+las **mismas clases** (`vr-btn vr-btn--pedir`) que el botón "Pedir" de cada card — el selector
+`.vr-btn--pedir` sin acotar al `.vr-card__footer` encontraba PRIMERO el link del header (que no
+lleva `state`), no el de la card. No era un bug de la app — era el selector del test. Ajustado a
+`.vr-card__footer .vr-btn--pedir` y confirmó todo correcto. Aplica en general: cuando dos
+elementos comparten clases CSS por diseño (mismo look, distinta función), un selector de prueba
+tiene que acotar al contenedor, no solo a la clase.
+
+**Archivos nuevos:**
+- Ninguno — todo se agregó a componentes existentes.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → import `map`/`IRamoArmado`,
+  `ramoArmadoOrigen`/`cargandoRamoArmado`/`errorRamoArmado`, getters `modoRamoArmado`/
+  `ramoArmadoOrigenNombre`, lectura de `history.state` en el constructor,
+  `resolverTipoFlorId()`, `precargarDesdeRamoArmado()`, hook en `cargarCatalogo()`, reset en
+  `resetTodo()`
+- `src/app/flores/configurar/configurar-ramo.component.html` → título/subtítulo/aviso
+  condicionales a `modoRamoArmado`, bloques de carga/error nuevos
+- `src/app/flores/vitrina/vitrina-flores.component.ts` → `pedirRamo()` (nuevo, reemplaza el uso
+  principal de `contactar`), `contactarPorWhatsapp()` (antes `contactar`, ahora secundario),
+  `subtotalFloresConPapel()` (reemplaza `precioPapelTexto()`)
+- `src/app/flores/vitrina/vitrina-flores.component.html` → botones apuntan a `pedirRamo()`,
+  línea de papel fundida en flores, nuevo link de WhatsApp secundario
+- `src/app/flores/vitrina/vitrina-flores.component.scss` → `.vr-btn-whatsapp`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos, y EN
+PANTALLA con Playwright** (clic real en el botón de la card, backend simulado): confirmado que
+`ConfigurarRamoComponent` queda con la especie/cantidad/reparto/accesorios exactos del ramo
+elegido, el aviso informativo se muestra, y el resumen calcula el total correcto contra el
+`calcular-precio` simulado.
+
+⚠️ **No probado contra el backend real** — depende de que `GET /v1/tipos-flor/getAll` y
+`GET /v1/colores-flor/por-tipo-flor/{id}` sigan siendo públicos como están documentados (ya
+confirmado en sesiones anteriores) y de que el resto del checkout (fechas, savePedido) funcione
+igual que en "Arma tu ramo", que es donde ya está probado.

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { IRamoAccesorioCalculado, IRamoArmado } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
@@ -6,10 +7,13 @@ import { FloresImagenService } from '../service/flores-imagen.service';
 import { NegocioService } from '../../negocio/negocio.service';
 
 /**
- * Vitrina pública de ramos ya armados por el admin (Flujo B). Solo lectura por ahora — todavía
- * no existe un endpoint para confirmar un `RamoArmado` como pedido real, así que esta pantalla
- * no tiene botón de compra. El configurador donde el cliente arma su propio ramo desde cero
- * (Flujo A: especie → cantidad → colores → accesorios → listón) es una pieza aparte, pendiente.
+ * Vitrina pública de ramos ya armados por el admin (Flujo B).
+ *
+ * "Pedir este ramo" lleva al configurador (`/flores/configurar`) precargado con las
+ * flores/accesorios de este ramo — no existe un endpoint que confirme un `RamoArmado` como
+ * pedido directamente (solo listados paginados), así que se reutiliza TODO el checkout ya
+ * probado del configurador de armado libre (Flujo A) en vez de duplicar esa lógica acá. Ver
+ * `ConfigurarRamoComponent.precargarDesdeRamoArmado()`.
  */
 @Component({
   selector: 'app-vitrina-flores',
@@ -43,7 +47,8 @@ export class VitrinaFloresComponent implements OnInit {
   constructor(
     private readonly flores: FloresService,
     private readonly negocio: NegocioService,
-    private readonly imagenes: FloresImagenService
+    private readonly imagenes: FloresImagenService,
+    private readonly router: Router
   ) {}
 
   /** Qué imagen mostrar para un ramo: la foto real, el link viejo, o nada. */
@@ -109,31 +114,35 @@ export class VitrinaFloresComponent implements OnInit {
   }
 
   /**
-   * Texto del precio del papel para el detalle: si viene el desglose por pliego (nuevo), lo
-   * muestra explícito; si no (accesorio sin `floresPorPliego` configurado, o ramo guardado antes
-   * de esa fórmula), muestra solo el total fijo — mismo criterio que el back documentó.
+   * El papel NO se le muestra al cliente como línea aparte — no es una decisión suya, va
+   * incluido siempre que aplique y se cobra por dentro (mismo criterio ya establecido en "Arma
+   * tu ramo": el costo se funde en la línea de flores, nunca se esconde del total). Sin esto el
+   * total no cuadraría contra la suma de lo visible.
    */
-  precioPapelTexto(r: IRamoArmado): string {
-    if (r.pliegosPapel && r.precioUnitarioPapel != null) {
-      return `${r.pliegosPapel} pliego(s) × $${r.precioUnitarioPapel.toFixed(2)}`;
-    }
-    return '';
+  subtotalFloresConPapel(r: IRamoArmado): number {
+    return r.precioFlores + (r.papelIncluido ? r.precioPapel : 0);
   }
 
   /**
-   * Sin endpoint todavía para confirmar un ramo armado como pedido real (ver nota de la clase),
-   * así que "pedirlo" hoy es contactar directo — abre WhatsApp si el negocio lo tiene configurado
-   * (mismo dato que ya alimenta el QR de WhatsApp de los tickets), o un aviso genérico si no.
+   * Lleva al configurador con este ramo ya precargado (flores, accesorios) — desde ahí el
+   * cliente ajusta si quiere, elige fecha y zona de entrega, y confirma el pedido real con el
+   * mismo checkout ya probado del armado libre. Ver nota de la clase.
    */
-  contactar(r: IRamoArmado): void {
+  pedirRamo(r: IRamoArmado): void {
+    this.router.navigate(['/flores/configurar'], { state: { ramoArmado: r } });
+  }
+
+  /** Escape hatch para quien prefiere solo preguntar antes de comprometerse — no es el flujo
+   * principal, por eso vive aparte de `pedirRamo()`. */
+  contactarPorWhatsapp(r: IRamoArmado): void {
     if (this.whatsappUrl) {
       window.open(this.whatsappUrl, '_blank');
       return;
     }
     Swal.fire({
       icon: 'info',
-      title: 'Pídelo por este medio',
-      html: `Por ahora este ramo se pide directo con nosotros — escríbenos y te lo apartamos:<br><br><b>${r.nombre}</b> — $${r.precioTotal.toFixed(2)}`,
+      title: 'Escríbenos',
+      html: `Este negocio todavía no tiene WhatsApp configurado — usa el botón "Pedir este ramo" para hacer tu pedido directo:<br><br><b>${r.nombre}</b> — $${r.precioTotal.toFixed(2)}`,
       confirmButtonText: 'Entendido'
     });
   }

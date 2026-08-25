@@ -50,7 +50,7 @@
 
       <div class="vr-card__footer">
         <button class="vr-btn vr-btn--detalle" (click)="abrirDetalle(r)">Ver detalle</button>
-        <button class="vr-btn vr-btn--pedir" (click)="contactar(r)">💬 Pedir</button>
+        <button class="vr-btn vr-btn--pedir" (click)="pedirRamo(r)">💐 Pedir</button>
       </div>
     </div>
   </div>
@@ -78,14 +78,11 @@
 
       <p class="vr-modal__especie">{{ ramoDetalle.tipoFlorNombre }} · {{ ramoDetalle.colorFlorNombre }} · {{ ramoDetalle.cantidad }} flores</p>
 
+      <!-- El papel no es una decisión del cliente — va incluido siempre que aplique y su costo
+           se funde acá, nunca se muestra como línea aparte (mismo criterio que "Arma tu ramo"). -->
       <div class="vr-modal__linea">
         <span>{{ ramoDetalle.cantidad }} flores</span>
-        <span>${{ ramoDetalle.precioFlores | number:'1.2-2' }}</span>
-      </div>
-
-      <div class="vr-modal__linea" *ngIf="ramoDetalle.papelIncluido">
-        <span>📄 Papel{{ precioPapelTexto(ramoDetalle) ? ' (' + precioPapelTexto(ramoDetalle) + ')' : '' }}</span>
-        <span>${{ ramoDetalle.precioPapel | number:'1.2-2' }}</span>
+        <span>${{ subtotalFloresConPapel(ramoDetalle) | number:'1.2-2' }}</span>
       </div>
 
       <div class="vr-modal__linea" *ngFor="let a of ramoDetalle.accesorios">
@@ -94,19 +91,24 @@
       </div>
 
       <div class="vr-modal__linea vr-modal__linea--total">
-        <span>Total</span>
+        <span>Total de referencia</span>
         <span>${{ ramoDetalle.precioTotal | number:'1.2-2' }}</span>
       </div>
 
       <p class="vr-modal__aviso">
-        💬 Este ramo se pide directo con nosotros — todavía no se puede pagar en línea desde aquí.
+        💐 Al pedirlo puedes ajustar las flores/accesorios si quieres, elegir cuándo y dónde lo
+        quieres, y el precio final se calcula al confirmar.
       </p>
     </div>
 
     <div class="vr-modal__footer">
       <button class="vr-btn vr-btn--ghost" (click)="cerrarDetalle()">Cerrar</button>
-      <button class="vr-btn vr-btn--pedir" (click)="contactar(ramoDetalle)">💬 Pedir este ramo</button>
+      <button class="vr-btn vr-btn--pedir" (click)="pedirRamo(ramoDetalle)">💐 Pedir este ramo</button>
     </div>
+
+    <button class="vr-btn-whatsapp" (click)="contactarPorWhatsapp(ramoDetalle)">
+      ¿Dudas antes de pedir? Escríbenos por WhatsApp
+    </button>
 
   </div>
 </div>

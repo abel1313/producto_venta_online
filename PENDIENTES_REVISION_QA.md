@@ -24,10 +24,10 @@ El back confirmó que el código de `latitud`/`longitud`/`referencias` nunca se 
    (`maps/dir/?api=1&destination=lat,lng`), **no** al buscador de texto con el nombre del pueblo
    completo (`maps/search/?api=1&query=...`).
 
-**Si sigue sin funcionar:** revisar con el back si las 2 migraciones
-(`migration_pedido_ubicacion_entrega.sql`) realmente corrieron en la base de QA — el código ya
-desplegado sin la migración habría dado error 500 al guardar (columna inexistente), así que si
-el pedido se guarda sin error pero el dato no vuelve, es la pista más probable.
+**Actualización 2026-08-25:** el back confirmó que `migration_pedido_ubicacion_entrega.sql` ya
+corrió en QA **y** en prod. Con el código fusionado + la migración corrida, ya no debería haber
+ningún bloqueante técnico conocido — si sigue sin funcionar al probar, es un caso nuevo, no el
+mismo de antes.
 
 ### 1.2 Filtro por fecha de creación (productos/variantes)
 
@@ -41,8 +41,8 @@ Mismo caso — nunca se había fusionado, ya está corregido.
 4. En cada card, si el producto/variante tiene el dato, debe aparecer una fila **"Creado"** con
    fecha y hora.
 
-**Si sigue sin funcionar:** mismo caso — confirmar si
-`migration_fecha_creacion_producto_variante.sql` corrió en QA.
+**Actualización 2026-08-25:** el back confirmó que `migration_fecha_creacion_producto_variante.sql`
+también ya corrió en QA y prod. Listo para probar.
 
 ---
 
@@ -130,8 +130,12 @@ global no cubre (ej. un color hardcodeado en vez de heredar).
 Consulta enviada el 22 de agosto (`CAMBIOS_FRONT.md`, sección "❓ CONSULTA AL BACK — lat/lng por
 zona..."): el mapa siempre arranca centrado en Tejupilco, sin importar qué zona elija el cliente
 en el select. Pedimos que `LugarEntrega` tenga su propio centroide (`latitud`/`longitud`
-opcionales) para que el mapa se recentre solo. **Sin respuesta todavía** — no apareció en la
-respuesta del 25 de agosto (esa fue específica del bug de coordenadas del pedido).
+opcionales) para que el mapa se recentre solo.
+
+**Sin respuesta en 3 días** — reenviada el 2026-08-25 marcada como 🚨 URGENTE en
+`CAMBIOS_FRONT_2.md` (sección "🚨 URGENTE — reenviamos: lat/lng por zona..."), con opción B
+propuesta por si prefieren no tocar su modelo (que el front resuelva el centroide con Nominatim
+buscando el nombre de la zona, sin cambios de back). Esperando que contesten.
 
 > ⚠️ **No confundir con el punto 1.1.** Son 2 cosas distintas con el mismo par de nombres de
 > campo:
@@ -147,12 +151,12 @@ respuesta del 25 de agosto (esa fue específica del bug de coordenadas del pedid
 
 | # | Qué | Estado |
 |---|---|---|
-| 1.1 | Mapa/coordenadas de entrega | ✅ Código listo y desplegado — falta probar en vivo |
-| 1.2 | Filtro por fecha de creación | ✅ Código listo y desplegado — falta probar en vivo |
+| 1.1 | Mapa/coordenadas de entrega | ✅ Código + migración confirmados — falta probar en vivo |
+| 1.2 | Filtro por fecha de creación | ✅ Código + migración confirmados — falta probar en vivo |
 | 2.1 | Menú duplicado (lugares-entrega) | 🔴 Sigue así — falta tu decisión |
 | 2.2 | `/ventas/buscar` (legacy) | 🔴 Sigue en el menú, línea 99 de navbar.component.html — nunca se quitó |
 | 2.3 | Abonos → link al pedido | 🔴 No implementado |
 | 2.4 | Diagnóstico de imágenes — texto | 🔴 No implementado |
 | 2.5 | Vitrina flores — flujo de compra real | 🔴 No implementado (pieza grande) |
 | 3 | Dark mode: rifas / presentación / negocio | 🟡 Debería estar resuelto — falta confirmar |
-| 4.1 | Lat/lng por zona (LugarEntrega) | ⏳ Esperando al back — es distinta de la 1.1, ver nota abajo |
+| 4.1 | Lat/lng por zona (LugarEntrega) | 🚨 Reenviada urgente el 25-ago — distinta de la 1.1, ver nota abajo |

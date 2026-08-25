@@ -11763,3 +11763,76 @@ correcto:** antes de seguir cazando bugs de front, revisar si el propio backend 
 migración pendiente para ese mismo campo — el repo compartido (`CAMBIOS_FRONT.md`/
 `CAMBIOS_FRONT_2.md`) suele decirlo explícito ("requiere migración antes de desplegar"), y es
 mucho más rápido de verificar que releer código que ya se confirmó correcto dos veces.
+
+---
+
+## ⚠️ REABIERTO — LAS COORDENADAS SIGUEN SIN VOLVER TRAS "CERRAR" LA INVESTIGACIÓN (2026-08-24)
+
+> El cierre de la sección de arriba fue prematuro: el dueño volvió a probar en vivo (marcar un
+> punto → confirmar pedido/ramo → "Cómo llegar") y las coordenadas SIGUEN sin aparecer, cayendo
+> siempre al fallback de buscar por texto.
+
+**Se volvió a auditar el código completo, letra por letra**, contra el ejemplo de
+request/response que el back documentó el 22 de agosto (punto 5 de la respuesta consolidada en
+`CAMBIOS_FRONT_2.md`) — los 7 puntos donde el front manda o lee `latitud`/`longitud`/`referencias`
+coinciden exacto con su spec, sin ninguna variación de nombre:
+
+| Archivo:línea | Qué hace |
+|---|---|
+| `pedido-variante.model.ts:20-22` | Declara los 3 campos en el DTO de `savePedido` |
+| `venta-variante.component.ts:254-256` | Los arma en el checkout normal |
+| `configurar-ramo.component.ts:997-999` | Los arma en el `savePedido` de "Arma tu ramo" |
+| `configurar-ramo.component.ts:1059-1061` | Los reenvía en `POST /flores/pedidos/{id}/detalle` |
+| `pedidos.service.ts:67-70` | Los declara en `actualizarEntrega()` (PUT /entrega) |
+| `mis-pedidos.component.ts:528-533` | Los arma en el picker del modal "Info de entrega" |
+| `abono.model.ts:79-81` | Los lee de `GET /detalle` |
+
+**Sin nada que corregir de nuevo del lado del front.** Se documentó el flujo completo (pantalla
+por pantalla, con el request/response exacto de cada punto) en una consulta nueva al back —
+`CAMBIOS_FRONT_2.md`, sección "❓ CONSULTA AL BACK — las coordenadas SIGUEN sin volver..."
+(2026-08-24) — pidiendo 3 cosas concretas: (1) confirmar que la migración corrió de verdad
+contra la tabla de QA, no solo que el código está desplegado; (2) probar el ciclo completo con
+curl y compartir la respuesta cruda; (3) confirmar si `POST /flores/pedidos/{id}/detalle`
+(el segundo POST del flujo de ramos) realmente persiste estos 3 campos o los ignora en
+silencio — es el único de los 3 endpoints de escritura que no tenía esto documentado
+explícitamente.
+
+**No se pudo probar en vivo contra QA** — los 3 endpoints requieren sesión (admin o cliente) y
+no hay credenciales de prueba disponibles en esta sesión de trabajo.
+
+## FEAT ADMIN — FILTRO POR RANGO DE FECHA DE CREACIÓN EN PRODUCTOS Y VARIANTES (2026-08-24)
+
+> Conecta la feature que el back documentó el 22 de agosto (`CAMBIOS_FRONT_2.md`, sección
+> "🆕 Filtro por fecha de creación") — pensada para encontrar los borradores de carga rápida de
+> imágenes ("lo que se subió hoy") sin depender del nombre/código, que en un borrador todavía no
+> son legibles (`BRD-XXXXXXXXXXXX`).
+
+**Qué se agregó:**
+- `ProductoService.adminFiltrar()` y `VarianteService.adminFiltrar()` ganan
+  `fechaDesde?`/`fechaHasta?` (formato `yyyy-MM-dd`), independientes entre sí, se combinan con
+  AND con el resto de filtros ya existentes (con/sin stock, con/sin imágenes,
+  habilitado/no-habilitado, código generado/real).
+- Dos nuevos `<input type="date">` en el bloque de filtros admin de `productos/buscar` y
+  `tienda/buscar` (`.pl-filtro-fecha`/`.vb-filtro-fecha`), mismo lenguaje visual "pill" que los
+  checkboxes existentes — se resaltan con `[class]` desde el template cuando tienen valor (no
+  con `:has(:valid)`: un `<input type="date">` vacío sin `required` ya es `:valid` por spec, así
+  que ese selector nunca habría distinguido "elegida" de "vacía").
+- `IProductoDTO`/`IVarianteResumen` ganan `fechaCreacion?: string | null` — se muestra como fila
+  extra en la card ("Creado", `dd/MM/yyyy HH:mm`) solo si viene presente, ya que el back avisó
+  que productos/variantes creados antes de su migración quedan con el campo ausente (sin
+  backfill retroactivo — mismo criterio que `correoVerificado` en clientes).
+- `onFechaFiltroChange()` (nuevo, un método por componente) se dispara con `(change)` del input
+  de fecha y llama `aplicarFiltrosAdmin(1)` — separado de `toggleFiltroAdmin()`, que es solo
+  para los pares booleanos tri-estado.
+
+**Archivos modificados:**
+- `src/app/productos/service/producto.service.ts`, `src/app/variante/service/variante.service.ts`
+- `src/app/productos/producto/models/producto.model.dto.ts` (`IProductoDTO.fechaCreacion`)
+- `src/app/variante/models/variante.model.ts` (`IVarianteResumen.fechaCreacion`)
+- `src/app/productos/producto/all/all.component.ts` + `.html` + `.scss`
+- `src/app/variante/buscar/buscar.component.ts` + `.html` + `.scss`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back haya corrido
+`migration_fecha_creacion_producto_variante.sql` en el ambiente donde se pruebe (pregunta
+mandada al back en la misma consulta de arriba).

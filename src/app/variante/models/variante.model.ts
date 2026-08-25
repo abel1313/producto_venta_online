@@ -66,6 +66,8 @@ export interface IVarianteResumen {
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;
+  // Puede venir null en variantes creadas antes de la migracion del back (2026-08-22).
+  fechaCreacion?: string | null;
 }
 
 export interface IVarianteResumenPaginable {

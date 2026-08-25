@@ -265,6 +265,50 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// Mismo look de pill que .vb-filtro-check, pero con un <input type="date"> en vez de checkbox.
+// El resalte de "activo" se hace con [class] desde el template — un date vacío sin `required`
+// ya es :valid por spec, así que :has(:valid) nunca distinguiría "elegida" de "vacía".
+.vb-filtro-fecha {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: $transition;
+  min-width: 0;
+
+  &--active {
+    background: rgba(255,255,255,0.92);
+    color: var(--app-accent);
+    font-weight: 700;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  &__input {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    color-scheme: dark;
+    max-width: 120px;
+
+    &::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+  }
+
+  &--active &__input {
+    color-scheme: light;
+    &::-webkit-calendar-picker-indicator { filter: none; }
+  }
+}
+
 // ── Botón carrito header ───────────────────────────────────────────
 .vb-btn {
   border: none;
@@ -963,7 +1007,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
   // completo, con el texto alineado a la izquierda como una lista.
   .vb-filtros { grid-template-columns: 1fr; gap: 6px; }
-  .vb-filtro-check, .vb-filtro-btn {
+  .vb-filtro-check, .vb-filtro-fecha, .vb-filtro-btn {
     font-size: 0.78rem;
     padding: 8px 14px;
     white-space: normal;
@@ -1058,6 +1102,19 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       border-color: transparent;
     }
     &:has(input:checked) &__box { border-color: var(--app-accent); }
+  }
+
+  .vb-filtro-fecha {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+    &__input { color-scheme: light; &::-webkit-calendar-picker-indicator { filter: none; } }
+    &--active {
+      background: rgba(var(--app-accent-rgb), 0.14);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
   }
 
   .vb-scan-mobile {

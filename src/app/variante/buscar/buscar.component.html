@@ -104,6 +104,16 @@
       <span class="vb-filtro-check__box"></span>
       Código real
     </label>
+    <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
+         imágenes). Independientes entre sí, se combinan con AND con el resto. -->
+    <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaDesde">
+      Creado desde
+      <input type="date" class="vb-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
+    </label>
+    <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaHasta">
+      Creado hasta
+      <input type="date" class="vb-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
+    </label>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
 
@@ -252,6 +262,12 @@
           <div class="vb-card__detail-row" *ngIf="v.descripcion">
             <span class="vb-card__detail-label">Descripción</span>
             <span class="vb-card__detail-val">{{ v.descripcion }}</span>
+          </div>
+          <!-- Puede venir null en variantes creadas antes de la migración del back — no mostrar
+               la fila en ese caso, en vez de un "Invalid Date". -->
+          <div class="vb-card__detail-row" *ngIf="v.fechaCreacion">
+            <span class="vb-card__detail-label">Creado</span>
+            <span class="vb-card__detail-val">{{ v.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
           </div>
         </div>
 

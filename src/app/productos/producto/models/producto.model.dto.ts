@@ -17,6 +17,9 @@ export interface IProductoDTO{
     piezas?: number;
     precioRebaja?: number;
     contenido?: string;
+    // Puede venir null en productos creados antes de la migracion del back (2026-08-22) —
+    // sin backfill retroactivo, mismo criterio que correoVerificado en clientes.
+    fechaCreacion?: string | null;
 }
 
 

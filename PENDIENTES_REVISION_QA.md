@@ -104,21 +104,22 @@ Sigue sin empezar.
 
 ---
 
-## 🟡 3. Debería estar resuelto por el fix global de modo oscuro — falta confirmar visualmente
+## ✅ 3. Modo oscuro — confirmado visualmente (25-ago)
 
 El 30 de julio se encontró la causa raíz de "botones sin texto visible" en modo oscuro (una
-regla global pintaba de blanco cualquier `<span>`, incluidos los de dentro de un botón — ver
-`styles.scss:352-353` y `:539-540`, confirmado que sigue en el código). Esto debería haber
-arreglado, sin tocarlas una por una:
+regla global pintaba de blanco cualquier `<span>`, incluidos los de dentro de un botón). Se
+había quedado sin volver a probar visualmente. **Ya se probó** — levanté el server, entré con
+sesión admin simulada, forcé modo oscuro, y comparé capturas reales de las 4 pantallas
+reportadas:
 
-- `rifas/agregar` y `rifas/buscar` — modales y botones ilegibles en oscuro.
-- `admin/presentacion` — botones ilegibles.
-- `admin/negocio` — botones y checks ilegibles (además de un fix aparte: el formulario no
-  cargaba lo guardado por leer mal el `ResponseGeneric` — ese si está confirmado corregido).
+- `rifas/agregar` — "💾 Guardar configuración" y los botones de sección legibles (blanco con
+  texto negro, o gris apagado en los que están deshabilitados por falta de datos — correcto).
+- `rifas/buscar` — pestañas "Diaria"/"Mensual" legibles, la activa en blanco con texto negro.
+- `admin/presentacion` — título, subtítulo y contadores legibles.
+- `admin/negocio` — toggle de abierto/cerrado, hora, y los 2 botones "Guardar" perfectamente
+  legibles, igual que los 4 campos de contacto (WhatsApp/Facebook/Instagram/TikTok).
 
-**No se volvió a probar visualmente ninguna de las 3 después del fix global.** Si al entrar en
-modo oscuro alguna todavía se ve mal, avisa con una captura — puede ser un caso que el fix
-global no cubre (ej. un color hardcodeado en vez de heredar).
+**Las 4 se ven bien — el fix global de julio sí las cubrió.** Sin acción pendiente acá.
 
 ---
 
@@ -157,5 +158,5 @@ buscando el nombre de la zona, sin cambios de back). Esperando que contesten.
 | 2.3 | Abonos → link al pedido | ✅ Hecho |
 | 2.4 | Diagnóstico de imágenes — texto | ✅ Hecho |
 | 2.5 | Vitrina flores — flujo de compra real | 🔴 No implementado (pieza grande) |
-| 3 | Dark mode: rifas / presentación / negocio | 🟡 Debería estar resuelto — falta confirmar |
+| 3 | Dark mode: rifas / presentación / negocio | ✅ Confirmado con capturas — se ven bien |
 | 4.1 | Lat/lng por zona (LugarEntrega) | 🚨 Reenviada urgente el 25-ago — distinta de la 1.1, ver nota abajo |

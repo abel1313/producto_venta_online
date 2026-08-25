@@ -48,7 +48,7 @@ del back. **Volver a probar el flujo de guardar ubicación como cliente — ya n
   arriba, ahora sí se puede guardar el cambio.
 - **Orden de "Mis pedidos"** — corregido, ahora se ordena por número de pedido de mayor a menor
   (más reciente primero).
-
+ya veo el cambio y ya se puede actualizar la zon, solo que hay que revisar bien porque puede ser que cree el producto ramo y le ponga por ejemplo luvianos y es gratis pero despues lo actualiza de zona y ya no haria el cobro es decir si pone zaca seria gratis porque al actualizar el lugar no se actualiza el cobro eos hay qu erevisar, es decir revisar bien, porque tenemos que revisar primero lo que ya habiamos quedado, primero solo en un rango de zona voy a aceptar el cobro por sona es decir de un lugar de zacazonapan por ejmplo za centro el cliente elije un lugar y calculamos esta dentro de lo permitido si entonces solo se hace el cobro que ya pusimos, despues tenemo que configurar otra zona como mas edxtendido en circulo es decir si selecciona fuera de la zona pero dentro de zaca entonces el precio es mas caro y se muestra antes de cambiarse y se actualiza el precio total y asi para todos los que pongamos ahora hay que revisar como podemos hacerlo o implementarlo para poder elegir la configuracion de hasta aqui saldria en el precio que puse y configurar varios alcances para cada zona no? 
 ### 1.2 Filtro por fecha de creación (productos/variantes)
 
 Mismo caso — nunca se había fusionado, ya está corregido.
@@ -60,7 +60,8 @@ Mismo caso — nunca se había fusionado, ya está corregido.
 3. Elegir una fecha — debe filtrar la lista al instante.
 4. En cada card, si el producto/variante tiene el dato, debe aparecer una fila **"Creado"** con
    fecha y hora.
-
+ya veo esto, si lo hace solo que tengoq ue seleccionar la fecha como tal esta bien por si quiero ver otros dias pero asi lo dejamos por hoy
+hay que revisar como podemos hacer para
 **Actualización 2026-08-25:** el back confirmó que `migration_fecha_creacion_producto_variante.sql`
 también ya corrió en QA y prod. Listo para probar.
 
@@ -69,8 +70,13 @@ también ya corrió en QA y prod. Listo para probar.
 - **(Urgente) Checkboxes de filtro admin muy juntos, no se leía qué decía cada uno** — corregido,
   más separación entre cada checkbox/etiqueta y entre grupos.
 - **Filtro de fecha invisible en móvil** — causa raíz encontrada: un `overflow-x: hidden` del
-  contenedor recortaba el input de fecha cuando el label empujaba el ancho. Corregido.
+ya lo veo bien, pero ahora en cel se ve muy amontonados los productos, esta mostrando de 2 en 2 y pues se ve amontonado las letras, lo que tenia pensado es en cel que muestre de 1 producto en un producto para que e vea mejor?
+y para productos/buscar
+tiene el mismo producto de lso estilos no se ven bien los filtros se ven todo amontonados
+y aqui si esta mostrando de 1 producto en 1 producto y se ve mucho mejor para hcerlo lo mismo en tienda buscar
 
+
+otra cosa para el boton de como llegar en  pedidos mis pedidos se ve muy feo que tome toda la pantalla el boton de com llegar
 ---
 
 ## 🆕 1.3 Escáner de código de barras + fix de lista — ✅ hecho (25-ago, hoy)
@@ -89,6 +95,7 @@ hasta recargar la página. Mismo problema de "falta escanear" en Productos (alta
 real; confirmar que la tarjeta desaparece de la lista al completar el producto. En Productos >
 agregar/editar, confirmar que también aparece la opción de escanear.
 
+ya lo veo bien, ya veo el producto, pero otra cosa no se si sea la implementacion en el front porque a vece cuando quiero escaner un codigo de barras acerco la camara y se ve borroso no lo capta, pero a veces si se ve bien la captura del codigo de barra para que lo revises
 ---
 
 ## 🔴 2. Reportado hace días
@@ -181,3 +188,6 @@ o en "Arma tu ramo" — el mapa debe recentrarse solo ahí, sin tener que buscar
 
 **Todo lo de arriba está en `dev` y `qa` del front — falta tu confirmación probando en QA antes
 de promover a `master`/producción.**
+
+
+lISTO, HAY QU EREVISAR

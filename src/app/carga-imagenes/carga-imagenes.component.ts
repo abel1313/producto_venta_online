@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
 import { ProductoService } from '../productos/service/producto.service';
@@ -319,9 +320,7 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));
     try {
-      const reader = new BrowserMultiFormatReader();
-      this.controlesEscaner = await reader.decodeFromVideoDevice(
-        undefined,
+      this.controlesEscaner = await iniciarEscanerConAutofoco(
         this.videoScanner.nativeElement,
         (result, _err, controls) => {
           if (result) {

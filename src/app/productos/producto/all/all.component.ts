@@ -1,7 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { MatMenuTrigger } from '@angular/material/menu';
 import { Router } from '@angular/router';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
 import { Subject } from 'rxjs';
@@ -738,9 +739,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));
     try {
-      const reader = new BrowserMultiFormatReader();
-      this.controlesEscaner = await reader.decodeFromVideoDevice(
-        undefined,
+      this.controlesEscaner = await iniciarEscanerConAutofoco(
         this.videoScanner.nativeElement,
         (result, _err, controls) => {
           if (result) {

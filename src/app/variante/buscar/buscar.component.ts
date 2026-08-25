@@ -2,7 +2,8 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../../shared/barcode-scanner.util';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
@@ -511,9 +512,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));
     try {
-      const reader = new BrowserMultiFormatReader();
-      this.controlesEscaner = await reader.decodeFromVideoDevice(
-        undefined,
+      this.controlesEscaner = await iniciarEscanerConAutofoco(
         this.videoScanner.nativeElement,
         (result, _err, controls) => {
           if (result) {

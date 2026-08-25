@@ -303,11 +303,13 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
-  // completo, con el texto alineado a la izquierda como una lista.
-  .pl-filtros { grid-template-columns: 1fr; gap: 6px; }
+  // completo, con el texto alineado a la izquierda como una lista. gap:10px
+  // (en vez de 6px) para que un checkbox no se pegue visualmente al siguiente
+  // — mismo criterio que .vb-filtros (tienda/buscar).
+  .pl-filtros { grid-template-columns: 1fr; gap: 10px; }
   .pl-filtro-check, .pl-filtro-fecha, .pl-filtro-btn, .pl-excel-btn {
-    font-size: 0.78rem;
-    padding: 8px 14px;
+    font-size: 0.8rem;
+    padding: 10px 16px;
     white-space: normal;
     text-align: left;
     justify-content: flex-start;
@@ -315,9 +317,11 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .pl-excel-btn { margin-left: 0; }
 
-  // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .pl-grid con
-  // auto-fill/minmax(270px) siempre colapsaba a una sola columna.
-  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco
+  // espacio por card y el texto se veía amontonado. Sin este override, .pl-grid
+  // con auto-fill/minmax(270px) cae solo a una columna — mismo criterio que
+  // .vb-grid (tienda/buscar).
+  .pl-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
 // Hueco entre "móvil" (576px) y "PC" (900px, donde .pl-grid ya pasa a 3 columnas):
@@ -520,7 +524,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: stretch;
-  gap: 8px 12px;
+  gap: 14px 18px;
   padding: 0 24px 16px;
 }
 
@@ -556,8 +560,8 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pl-filtro-check {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);
@@ -649,8 +653,8 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pl-filtro-fecha {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);

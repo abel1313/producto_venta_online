@@ -1,7 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IImagenDto } from '../models';
@@ -436,9 +437,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.escaneandoCodigo = true;
     await new Promise(r => setTimeout(r, 150));
     try {
-      const reader = new BrowserMultiFormatReader();
-      this.controlesEscanerCodigo = await reader.decodeFromVideoDevice(
-        undefined,
+      this.controlesEscanerCodigo = await iniciarEscanerConAutofoco(
         this.videoScannerRef.nativeElement,
         (result, _err, controls) => {
           if (result) {

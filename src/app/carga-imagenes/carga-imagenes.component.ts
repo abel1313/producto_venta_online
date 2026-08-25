@@ -355,6 +355,14 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.svc.completar(productoId, body).subscribe({
       next: () => {
         this.guardando = false;
+        // Al publicar, el borrador deja de ser un pendiente: se saca de la
+        // grilla local de inmediato en vez de esperar a que el usuario
+        // navegue a otra pantalla y regrese para que "desaparezca".
+        if (publicar) {
+          const t = this.tarjetas.find(x => x.productoId === productoId);
+          if (t?.previewUrl) { URL.revokeObjectURL(t.previewUrl); }
+          this.tarjetas = this.tarjetas.filter(x => x.productoId !== productoId);
+        }
         Swal.fire({
           icon: 'success',
           title: publicar ? 'Producto publicado' : 'Avance guardado',

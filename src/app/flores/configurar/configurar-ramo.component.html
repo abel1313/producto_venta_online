@@ -384,6 +384,12 @@
           ⚠️ {{ calculo.mensajeEntrega || 'La fecha que elegiste ya no se puede cumplir — elige otra.' }}
         </div>
 
+        <!-- Zona con anillos de cobro por distancia configurados (DISENO_ZONAS_POR_ANILLO.md) y
+             el punto marcado quedó fuera de todos ellos. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="calculo.envioDentroDeRango === false">
+          📍 {{ calculo.mensajeEnvio || 'El punto que marcaste está fuera de las zonas de entrega configuradas — marca un punto más cercano.' }}
+        </div>
+
         <!-- Se pidió urgente, hay cargo configurado, y el cálculo no lo trae: el ramo se armaría
              con prisa sin cobrar el extra. Se AVISA, no se prohíbe — confirmar pide una
              confirmación aparte. Ver `cargoUrgenteNoAplicado`: se apaga solo cuando el back
@@ -402,7 +408,7 @@
         <!-- Al editar, la zona ya viene del pedido original y está bloqueada — exigirla otra vez
              dejaría el botón muerto en un ramo que se pidió antes de que fuera obligatoria. -->
         <button class="cr-btn cr-btn--confirmar"
-                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || (entregaSinDefinir && !modoEdicion)"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || calculo.envioDentroDeRango === false || (entregaSinDefinir && !modoEdicion)"
                 (click)="confirmarPedido()">
           {{ guardando
               ? 'Guardando…'

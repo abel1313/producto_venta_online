@@ -92,6 +92,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   onUbicacionCambio(p: { lat: number; lng: number }): void {
     this.latitud = p.lat;
     this.longitud = p.lng;
+    // Si la zona tiene anillos de cobro por distancia, el costo depende de este punto exacto —
+    // hay que recalcular para que se muestre (y se valide) apenas se marca/mueve el pin.
+    this.pedirRecalculo();
   }
 
   // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
@@ -902,7 +905,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       // Sin estos dos, un ramo urgente se entregaría en la fecha apurada pero cobrado como
       // normal y de contado — el cargo y el enganche del 50% dependen de que lleguen aquí.
       fechaHoraEntrega: this.fechaHoraEntrega,
-      urgente: this.urgente
+      urgente: this.urgente,
+      // Solo importan si la zona elegida tiene anillos de cobro por distancia configurados —
+      // sin anillos ahí, el back los ignora y usa el costo fijo de siempre.
+      latitud: this.latitud,
+      longitud: this.longitud
     }).subscribe({
       next: r => { this.calculo = r; this.calculando = false; },
       error: err => {

@@ -1,0 +1,31 @@
+<div class="ttc-wrap">
+
+  <div class="ttc-card" *ngIf="estado === 'procesando'">
+    <div class="ttc-spinner"></div>
+    <h1>Conectando con TikTok…</h1>
+    <p>Espera un momento mientras completamos la autorización.</p>
+  </div>
+
+  <div class="ttc-card ttc-ok" *ngIf="estado === 'ok'">
+    <h1>✅ Cuenta de TikTok conectada</h1>
+    <p>La autorización se completó correctamente. Ya puedes cerrar esta pestaña.</p>
+  </div>
+
+  <div class="ttc-card ttc-error" *ngIf="estado === 'error'">
+    <h1>No se pudo completar la conexión</h1>
+    <p>{{ mensaje }}</p>
+    <p class="ttc-hint">
+      Si el problema persiste, copia el código de la URL (parámetro <code>code</code>) y
+      complétalo manualmente siguiendo <code>TIKTOK_SETUP.md</code>.
+    </p>
+  </div>
+
+  <div class="ttc-card" *ngIf="estado === 'sin-code'">
+    <h1>Página de conexión con TikTok</h1>
+    <p>
+      Esta página recibe la autorización cuando TikTok redirige de vuelta tras iniciar sesión.
+      No se detectó ningún código en la URL.
+    </p>
+  </div>
+
+</div>

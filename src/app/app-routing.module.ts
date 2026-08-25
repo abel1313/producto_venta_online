@@ -9,6 +9,8 @@ import { SinRegistroGuard } from './guard/sin-registro.guard';
 import { AdminGuardGuard } from './guard/admin-guard.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
+import { TerminosComponent } from './legal/terminos/terminos.component';
+import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
 
 const routes: Routes = [
   {
@@ -133,7 +135,22 @@ const routes: Routes = [
     path: 'privacidad', component: PrivacidadComponent
   },
   {
-    path: '', redirectTo: 'productos/buscar', pathMatch: 'full'
+    // PÚBLICA a propósito, mismo motivo que /privacidad — TikTok exige Terms of Service URL
+    // accesible sin sesión para aprobar la app de developers.tiktok.com.
+    path: 'termConditions', component: TerminosComponent
+  },
+  {
+    // PÚBLICA a propósito — TikTok redirige aquí con el `code` de OAuth antes de que exista
+    // sesión nuestra (ver TIKTOK_SETUP.md paso 3-5 y tiktok-callback.component.ts).
+    path: 'tiktok/callback', component: TiktokCallbackComponent
+  },
+  {
+    // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+AdminGuardGuard (es el
+    // catalogo interno de administracion). Cualquier visitante sin sesion que entrara al dominio
+    // raiz caia directo al login en vez de ver la tienda -- rompia la tienda publica para todo
+    // el mundo, y ademas hizo que TikTok rechazara el App Review ("Website URL... cannot be a
+    // login page"). La tienda publica real vive en 'tienda/buscar' (ver ruta 'tienda' arriba).
+    path: '', redirectTo: 'tienda/buscar', pathMatch: 'full'
   },
 
   {

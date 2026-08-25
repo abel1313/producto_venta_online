@@ -11800,6 +11800,31 @@ explícitamente.
 **No se pudo probar en vivo contra QA** — los 3 endpoints requieren sesión (admin o cliente) y
 no hay credenciales de prueba disponibles en esta sesión de trabajo.
 
+### ✅ Causa real encontrada por el back — nunca se había fusionado a `dev`/`qa` (2026-08-25)
+
+El back revisó las 3 ramas directamente en GitHub y confirmó: **el código de
+`latitud`/`longitud`/`referencias` (y también el filtro de fecha de creación) vivía solo en
+ramas de feature — nunca se había fusionado a `dev` ni a `qa`.** No era la migración pendiente
+ni ningún bug del front — el `.jar` desplegado en QA simplemente nunca tuvo el código que
+lee/escribe esos campos. Su confirmación del 22 de agosto de "ya funciona en dev/qa" fue un
+error de ellos, sin haberlo verificado contra las ramas reales.
+
+**Ya está corregido y desplegado en QA** — ambas features (`flores-eternas-fotos-ramo` y el
+filtro de fecha) se fusionaron a `dev` y de ahí a `qa`.
+
+**De paso confirmaron la pregunta 3:** `POST /v1/flores/pedidos/{id}/detalle` **no toca para
+nada** `latitud`/`longitud`/`referencias` del `Pedido` — ni los lee del request
+(`RamoPedidoDetalleRequestDto` no tiene esos campos) ni vuelve a guardar el `Pedido`. Solo lee
+el `Pedido` para enganchar la relación con `RamoPedidoDetalle`. El reenvío que hace
+`configurar-ramo.component.ts:1059-1061` es inofensivo pero innecesario — el único que persiste
+esos 3 campos es el primer `savePedido`.
+
+**⏳ Pendiente — probar en vivo con el código ya desplegado:** el back pide confirmar que las 2
+migraciones (`migration_pedido_ubicacion_entrega.sql` y
+`migration_fecha_creacion_producto_variante.sql`) también corrieron en la base de QA, y volver a
+probar el ciclo completo (marcar pin → confirmar pedido/ramo → "Cómo llegar"). **Esto requiere
+una sesión real en QA — no se puede verificar desde esta sesión de trabajo sin credenciales.**
+
 ## FEAT ADMIN — FILTRO POR RANGO DE FECHA DE CREACIÓN EN PRODUCTOS Y VARIANTES (2026-08-24)
 
 > Conecta la feature que el back documentó el 22 de agosto (`CAMBIOS_FRONT_2.md`, sección

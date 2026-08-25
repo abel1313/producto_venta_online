@@ -388,6 +388,11 @@ export class MisPedidosComponent implements OnInit {
     // quedan colgando, aunque el DOM ya se haya borrado).
     let mapaLeaflet: L.Map | null = null;
 
+    // Latitud/longitud numéricas son un dato interno (coordenadas exactas de la casa del
+    // cliente) — solo el admin debe verlas. El cliente sigue pudiendo marcar/arrastrar el pin
+    // en el mapa igual que siempre, solo que no se le muestra el texto con los números.
+    const puedeVerCoordenadas = this.isAdminUser;
+
     const opcionesLugar = this.lugares.map(l =>
       `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
     ).join('');
@@ -467,7 +472,7 @@ export class MisPedidosComponent implements OnInit {
             <label class="mp-entrega-label">🗺️ Ubicación exacta (opcional)</label>
             <div id="sw-mapa" class="mp-mapa"></div>
             <div class="mp-mapa-row">
-              <span id="sw-coords" class="mp-mapa-coords"></span>
+              ${puedeVerCoordenadas ? '<span id="sw-coords" class="mp-mapa-coords"></span>' : '<span></span>'}
               <button type="button" id="sw-geo" class="mp-mapa-geo">📡 Usar mi ubicación</button>
             </div>
             <p class="mp-mapa-hint">Toca el mapa (o arrastra el pin) para marcar la casa exacta del cliente.</p>
@@ -809,11 +814,21 @@ export class MisPedidosComponent implements OnInit {
       sus => {
         this.resposeGenericPedido = sus;
         this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
+        // Más reciente primero. El orden de cada página tal cual la devuelve el back no está
+        // garantizado (no hay ORDER BY documentado), así que se ordena en el front por número
+        // de pedido descendente sobre el acumulado completo cada vez que llega una página nueva.
+        this.ordenarPedidosDescendente();
         this.page++;
         this.cargando = false;
       },
       err => console.error(err)
     );
+  }
+
+  // Mayor a menor por número de pedido (#id) — el más reciente arriba. Ver comentario en
+  // cargarPedidosDesdeBase(): el back no garantiza el orden, se fuerza aquí.
+  private ordenarPedidosDescendente(): void {
+    this.pedidoGenerico.sort((a, b) => b.pedido.id - a.pedido.id);
   }
 
   buscarProductos(event: KeyboardEvent) {
@@ -844,6 +859,7 @@ export class MisPedidosComponent implements OnInit {
       next: sus => {
         this.resposeGenericPedido = sus;
         this.pedidoGenerico = sus.data?.list || [];
+        this.ordenarPedidosDescendente();
         this.page++;
         this.cargando = false;
         this.abrirSiVieneDeUrl();
@@ -869,6 +885,7 @@ export class MisPedidosComponent implements OnInit {
         next: sus => {
           this.resposeGenericPedido = sus;
           this.pedidoGenerico = sus.data?.list || [];
+          this.ordenarPedidosDescendente();
           this.totalPaginas = sus.data?.totalPaginas ?? 0;
           this.cargando = false;
           this.abrirSiVieneDeUrl();

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize, take, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
@@ -100,8 +100,16 @@ export class AbonosComponent implements OnInit, OnDestroy {
     private readonly pedidosService:  PedidosService,
     private readonly negocioService:  NegocioService,
     private readonly floresService:   FloresService,
-    private readonly route:           ActivatedRoute
+    private readonly route:           ActivatedRoute,
+    private readonly router:          Router
   ) {}
+
+  // El número de pedido en cada card era texto plano — sin forma de llegar a su detalle real
+  // (con el historial completo, datos de entrega, etc.) sin ir a buscarlo a mano en
+  // /pedidos/mis-pedidos. MisPedidosComponent ya sabe leer ?pedidoId=N y abrir el detalle solo.
+  verPedido(pedidoId: number): void {
+    this.router.navigate(['/pedidos/mis-pedidos'], { queryParams: { pedidoId } });
+  }
 
   ngOnInit(): void {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });

@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
 const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'misproductos', paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave', 'lugares-entrega'] },
   { group: 'pedidos',      paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
-  { group: 'ventas',       paths: ['tienda/venta-directa', 'ventas/buscar', 'abonos', 'gastos/buscar'] },
+  { group: 'ventas',       paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
   { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
   { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
   // 'flores/zonas' es la misma pantalla que 'lugares-entrega' de Inventario, con ruta propia

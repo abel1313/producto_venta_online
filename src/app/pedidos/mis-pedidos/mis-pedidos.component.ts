@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
 import { IPedidoGenerico } from './models/IPedidoGenerico.model';
@@ -144,6 +144,11 @@ export class MisPedidosComponent implements OnInit {
     return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
   }
 
+  // Pedido pedido por url (ej. desde /abonos?pedidoId=93, "Ver el pedido") — se guarda al
+  // arrancar y se limpia apenas se abre el detalle (o si no se encuentra), para que una
+  // búsqueda posterior del usuario no se re-abra sola.
+  private pedidoIdDesdeUrl: number | null = null;
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
@@ -151,12 +156,14 @@ export class MisPedidosComponent implements OnInit {
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly usuarioService: UsuarioService,
     private readonly floresService: FloresService
   ) {}
 
   ngOnInit(): void {
+    this.pedidoIdDesdeUrl = Number(this.route.snapshot.queryParamMap.get('pedidoId')) || null;
     this.authService.userId$.subscribe(idUser => { this.idUsuario = idUser; });
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
@@ -176,6 +183,10 @@ export class MisPedidosComponent implements OnInit {
     });
 
     if (this.isAdminUser) {
+      // Si se llegó con ?pedidoId=93 (ej. desde /abonos → "Ver el pedido"), precarga el buscador
+      // con ese número — buscarPedidoAdmin() ya sabe buscar por id exacto (el back lo agregó
+      // justo para esto), y su `next` abre el detalle solo si pedidoIdDesdeUrl sigue puesto.
+      if (this.pedidoIdDesdeUrl) this.buscarProd = String(this.pedidoIdDesdeUrl);
       this.buscarPedidoAdmin();
     } else {
       // ⚠️ Antes esto usaba `getDataOneCliente(idUsuario)`, que pega a
@@ -193,10 +204,31 @@ export class MisPedidosComponent implements OnInit {
           this.clienteId = clienteId;
           this.page = 0;
           this.size = 10;
-          this.cargarMasPedidos();
+          if (this.pedidoIdDesdeUrl) {
+            this.buscarProd = String(this.pedidoIdDesdeUrl);
+            this.buscarClientePorId(this.pedidoIdDesdeUrl);
+          } else {
+            this.cargarMasPedidos();
+          }
         },
         error: () => { this.sinPerfilCliente = true; }
       });
+    }
+  }
+
+  // Si llegó ?pedidoId=N por la URL y la búsqueda lo encontró, abre su detalle automáticamente
+  // y limpia el flag (para que la próxima búsqueda del usuario no se reabra sola). Si no lo
+  // encontró, avisa — quedarse en silencio dejaría al usuario viendo una lista vacía sin saber
+  // si el link estaba roto o el pedido ya no existe.
+  private abrirSiVieneDeUrl(): void {
+    if (!this.pedidoIdDesdeUrl) return;
+    const encontrado = this.pedidoGenerico.find(p => p.pedido.id === this.pedidoIdDesdeUrl);
+    const idBuscado = this.pedidoIdDesdeUrl;
+    this.pedidoIdDesdeUrl = null;
+    if (encontrado) {
+      this.irDetalle(encontrado);
+    } else {
+      Swal.fire({ icon: 'warning', title: `No se encontró el pedido #${idBuscado}`, text: 'Puede que ya no exista o que no tengas acceso a él.' });
     }
   }
 
@@ -796,21 +828,28 @@ export class MisPedidosComponent implements OnInit {
       } else {
         const pedido = Number(this.buscarProd);
         if (!isNaN(pedido) && pedido > 0) {
-          this.cargando = true;
-          this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0).subscribe(
-            sus => {
-              this.resposeGenericPedido = sus;
-              this.pedidoGenerico = this.resposeGenericPedido.data?.list || [];
-              this.page++;
-              this.cargando = false;
-            },
-            err => console.error(err)
-          );
+          this.buscarClientePorId(pedido);
         } else {
           Swal.fire({ title: 'Ingrese el numero de pedido', icon: 'info', draggable: false });
         }
       }
     }
+  }
+
+  // Extraído de buscarProductos() para poder llamarlo también desde ngOnInit cuando se llega
+  // con ?pedidoId=N por la URL (ej. desde /abonos → "Ver el pedido").
+  private buscarClientePorId(pedido: number): void {
+    this.cargando = true;
+    this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0).subscribe({
+      next: sus => {
+        this.resposeGenericPedido = sus;
+        this.pedidoGenerico = sus.data?.list || [];
+        this.page++;
+        this.cargando = false;
+        this.abrirSiVieneDeUrl();
+      },
+      error: err => { this.cargando = false; console.error(err); }
+    });
   }
 
   mostrarProductos(mostrar: boolean): void {
@@ -832,6 +871,7 @@ export class MisPedidosComponent implements OnInit {
           this.pedidoGenerico = sus.data?.list || [];
           this.totalPaginas = sus.data?.totalPaginas ?? 0;
           this.cargando = false;
+          this.abrirSiVieneDeUrl();
         },
         error: err => { this.cargando = false; console.error(err); }
       });

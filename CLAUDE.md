@@ -11861,3 +11861,78 @@ una sesión real en QA — no se puede verificar desde esta sesión de trabajo s
 ⚠️ No probado en vivo — depende de que el back haya corrido
 `migration_fecha_creacion_producto_variante.sql` en el ambiente donde se pruebe (pregunta
 mandada al back en la misma consulta de arriba).
+
+---
+
+## FIX RONDA DE PENDIENTES — LINK ABONOS→PEDIDO + TEXTO DIAGNÓSTICO + MENÚ (2026-08-25)
+
+> Cierra 3 de los 5 puntos que quedaron documentados en `PENDIENTES_REVISION_QA.md` tras la
+> ronda de revisión de esa fecha.
+
+### 1. `/abonos` — el número de pedido ahora es un link al detalle real
+
+Antes era texto plano `#{{ pedidoId }}` en las 3 pestañas (Cuentas por cobrar, Liquidados,
+Cancelados) — sin forma de llegar al detalle completo del pedido (historial, datos de entrega,
+etc.) sin ir a buscarlo a mano.
+
+**El obstáculo:** `DetallePedidoComponent` no tiene ruta propia — vive embebido dentro de
+`MisPedidosComponent` (`*ngIf="mostrarDetalle"`, recibe el pedido completo por `@Input()`, no
+por id de URL). La solución no fue darle ruta propia (cambio más grande, arriesgado) sino
+enseñarle a `MisPedidosComponent` a leer `?pedidoId=N` de la URL y auto-abrir el detalle — mismo
+patrón que ya usaba `AbonosComponent` al revés (`/abonos?pedidoId=N` desde "Cobrar" en
+mis-pedidos, ver sección "FIX — 'COBRAR' CRÉDITO SEGUÍA ABRIENDO..." más arriba).
+
+**Implementación:**
+- `MisPedidosComponent`: nuevo `pedidoIdDesdeUrl` (leído de `route.snapshot.queryParamMap` en
+  `ngOnInit`). Si hay valor, precarga `buscarProd` con ese número y dispara la búsqueda
+  correspondiente (`buscarPedidoAdmin()` para admin — el back ya soporta buscar por id exacto;
+  `buscarClientePorId()`, nuevo método extraído de `buscarProductos()`, para cliente).
+- Nuevo `abrirSiVieneDeUrl()`: se llama en el `next` de ambas búsquedas — si encuentra el pedido
+  en los resultados, llama `irDetalle()` automáticamente y limpia el flag (para que una búsqueda
+  posterior del usuario no se reabra sola); si no lo encuentra, `Swal` avisando en vez de dejar
+  la pantalla en silencio.
+- `AbonosComponent`: nuevo `verPedido(pedidoId)` → `router.navigate(['/pedidos/mis-pedidos'], { queryParams: { pedidoId } })`.
+  El `<span class="ab-card__id">` pasó a `<button class="ab-card__id ab-card__id--link">` en
+  las 3 pestañas — reset de estilos nativos de botón + subrayado punteado en hover (color
+  `var(--app-accent)`).
+
+### 2. `/admin/diagnostico-imagenes` — texto explicativo
+
+Solo tenía título + subtítulo genérico ("Solo administradores · Verifica BD ↔ Microservicio") —
+mostraba nombres de campos crudos (`imagenPresenteEnMicroservicio`,
+`idsSinDatosEnMicroservicio`...) sin contexto de qué hace la herramienta ni cuándo usarla.
+
+**Fix:** párrafo nuevo (`.di-card__help`) explicando en una frase qué compara (BD local vs.
+archivo real en el microservicio) y para qué sirve (cuando una foto no aparece en el catálogo y
+no se sabe si nunca se guardó o si el archivo se perdió) — con los 2 casos (⚠️/❌) mencionados en
+negritas para que se reconozcan al ver el resultado.
+
+### 3. Menú — `/ventas/buscar` (legacy) quitado; "Lugares de entrega" se queda duplicado a propósito
+
+**`/ventas/buscar`:** pantalla del módulo viejo de venta por producto (`BuscarVentaComponent`,
+anterior al sistema de variantes), sin ningún diseño (ni modo oscuro). Confirmado que ningún
+otro lugar de la app la referencia — se quitó el link del menú (`navbar.component.html:99` +
+`GROUP_ROUTES` en `.ts`). El módulo y la ruta siguen existiendo en el código, solo dejaron de
+ser accesibles desde el menú — no se borró nada, por si hace falta recuperarlo.
+
+**"Lugares de entrega" duplicado (📦 Inventario + 🌹 Flores eternas):** investigado dónde se usa
+el catálogo de zonas — en el checkout del cliente, Venta directa, "Arma tu ramo" y Mis pedidos
+(filtrar/editar zona de un pedido). El catálogo en sí es de **toda la tienda**, no solo de
+flores — no se puede quitar de ningún lado. Los 2 accesos de menú llevan a la MISMA pantalla de
+administrarlo, y esa pantalla tiene 2 campos (costo de envío, horas extra) exclusivos de
+flores — de ahí que tenga su propio acceso también desde ahí. Se dejó como estaba (ninguno de
+los 2 links se quitó) — es la sección "2.1" que queda pendiente de decisión en
+`PENDIENTES_REVISION_QA.md`, sin urgencia.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `pedidoIdDesdeUrl`,
+  `abrirSiVieneDeUrl()`, `buscarClientePorId()`, hooks en `buscarPedidoAdmin()`
+- `src/app/abonos/abonos.component.ts` → `verPedido()`
+- `src/app/abonos/abonos.component.html` → 3 `<span>` → `<button>` clickeables
+- `src/app/abonos/abonos.component.scss` → `.ab-card__id--link`
+- `src/app/admin/diagnostico-imagenes/diagnostico-imagenes.component.html` + `.scss` →
+  `.di-card__help`
+- `src/app/navbar/navbar.component.html` + `.ts` → quita el link de `/ventas/buscar`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — sin sesión de admin/cliente disponible en esta sesión de trabajo.

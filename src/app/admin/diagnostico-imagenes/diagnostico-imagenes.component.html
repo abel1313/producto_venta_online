@@ -13,6 +13,17 @@
 
     <div class="di-card__body">
 
+      <!-- Sin esto la pantalla no explicaba para qué sirve — solo mostraba nombres de campos
+           crudos (imagenPresenteEnMicroservicio, idsSinDatosEnMicroservicio...) sin contexto. -->
+      <p class="di-card__help">
+        Cuando la foto de un producto o variante <strong>no aparece en el catálogo</strong>, esta
+        herramienta dice por qué: compara el registro que existe en la base de datos local
+        (nombre del archivo, extensión) contra si el archivo <strong>realmente está guardado</strong>
+        en el microservicio de imágenes. Puede pasar que el registro exista pero el archivo se haya
+        perdido (⚠️), o que nunca se haya guardado nada (❌). Busca el producto o la variante y
+        compara los resultados.
+      </p>
+
       <!-- Tabs -->
       <div class="di-tabs">
         <button class="di-tab" [class.di-tab--active]="tab === 'producto'" (click)="cambiarTab('producto')">

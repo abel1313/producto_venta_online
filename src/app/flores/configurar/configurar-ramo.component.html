@@ -2,10 +2,12 @@
 
   <div class="cr-header">
     <div class="cr-header__inner">
-      <h4 *ngIf="!modoEdicion">🌷 Arma tu propio ramo</h4>
+      <h4 *ngIf="!modoEdicion && !modoRamoArmado">🌷 Arma tu propio ramo</h4>
       <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
-      <small *ngIf="!modoEdicion">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
+      <h4 *ngIf="modoRamoArmado">💐 Pedir "{{ ramoArmadoOrigenNombre }}"</h4>
+      <small *ngIf="!modoEdicion && !modoRamoArmado">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
       <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
+      <small *ngIf="modoRamoArmado">Ya viene armado — ajusta lo que quieras y elige cuándo y dónde lo quieres</small>
     </div>
   </div>
 
@@ -16,8 +18,19 @@
     envío se quedan como estaban.
   </div>
 
+  <!-- El reparto/accesorios quedan editables a propósito (ver precargarDesdeRamoArmado) — se
+       avisa para que no parezca un error que ya vengan marcados. -->
+  <div class="cr-aviso cr-aviso--info" *ngIf="modoRamoArmado">
+    ℹ️ Este ramo ya viene armado — las flores y accesorios de abajo son los de referencia, pero
+    puedes ajustarlos si quieres. El precio final es siempre el que se calcula en vivo.
+  </div>
+
   <div class="cr-aviso cr-aviso--error" *ngIf="errorEdicion">
     <strong>⚠️ {{ errorEdicion }}</strong>
+  </div>
+
+  <div class="cr-aviso cr-aviso--error" *ngIf="errorRamoArmado">
+    <strong>⚠️ {{ errorRamoArmado }}</strong>
   </div>
 
   <div class="cr-aviso cr-aviso--error" *ngIf="errorCatalogo">
@@ -27,6 +40,7 @@
 
   <p class="cr-loading" *ngIf="cargandoCatalogo">Cargando catálogo…</p>
   <p class="cr-loading" *ngIf="cargandoEdicion">Cargando el ramo del pedido…</p>
+  <p class="cr-loading" *ngIf="cargandoRamoArmado">Cargando tu ramo…</p>
 
   <div class="cr-form" *ngIf="!cargandoCatalogo && !errorCatalogo">
 

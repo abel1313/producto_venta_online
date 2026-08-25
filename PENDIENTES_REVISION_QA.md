@@ -12,11 +12,23 @@
 
 El back confirmó que el código de `latitud`/`longitud`/`referencias` nunca se había fusionado a
 `qa` — ya está corregido y desplegado.
+RES= ya se esta mostrando en el mapa seleccionado, eso esta bien, ahora aqui
+ Info de entrega — Pedido #99
+ pedidos/mis-pedidos
+ entrega
+puedo modificar la direccion como cliente pero auqi me sigue mostrando la long y lat ara el cliente, te dije que eso no lo podia o no lo tenia que ver el cliente o el usuairio solo el admin
+No tiene permisos para acceder a este recurso
+pero que pasa si me equivoque como cliente y quiero actualizar la zona, como le voy a hacer o en donde, otra cosa tiene datos para llenar
+
 
 **Cómo probar:**
 1. Ir a `/tienda/venta` (checkout) o `/flores/configurar` ("Arma tu ramo") con sesión de cliente.
 2. Elegir una zona de entrega — debe aparecer el mapa (Leaflet) debajo del selector.
 3. Marcar un punto en el mapa (o usar "📡 Usar mi ubicación").
+Ya lo hice, pero por default como que se ve tejupilco, pero ya seleccione zacazonapan pero no cambio a zacazonapan, tengo que ir a buscar manual y seleccionar la zona que eso si esta bien ir a seleccionar la zona pero me tiene que levar de perdda al lugar o al pueblo como tal
+cuando voy a lso pedido hay que ordenar lso pedido hay que ordenarlos por pedido de mayor a menor
+ya esta los puntos si lo guardo desde armar ramo y me voy a pedido pero hay que revisar lo que te menciono
+
 4. Confirmar el pedido/ramo.
 5. Ir a `/pedidos/mis-pedidos` (o `/abonos` si quedó a crédito), abrir el detalle del pedido que
    se acaba de crear.
@@ -29,6 +41,10 @@ corrió en QA **y** en prod. Con el código fusionado + la migración corrida, y
 ningún bloqueante técnico conocido — si sigue sin funcionar al probar, es un caso nuevo, no el
 mismo de antes.
 
+
+urgente, en productos modo admin los filtros del check se ve muy juntos no se ve que dice cada chec
+
+En la carga de imagen urgente, solo esta la generacion del codigo de barraspero no tiene la opcion para escanear y que se ponga el codigo escaneado y al completar los productos cuando se cargan, no se quita el producto, tengo que ir a otra pagina y regresar para que ya no este, y se supone que ya deberia estar cargada y en productos update lo mismo no veo que tenga la opcion de escanear el codigo de barrea para que lo obtenga del producto
 ### 1.2 Filtro por fecha de creación (productos/variantes)
 
 Mismo caso — nunca se había fusionado, ya está corregido.
@@ -40,7 +56,7 @@ Mismo caso — nunca se había fusionado, ya está corregido.
 3. Elegir una fecha — debe filtrar la lista al instante.
 4. En cada card, si el producto/variante tiene el dato, debe aparecer una fila **"Creado"** con
    fecha y hora.
-
+solo hay que revisar este filtro para dispositivos moviles, no se ven nada los check
 **Actualización 2026-08-25:** el back confirmó que `migration_fecha_creacion_producto_variante.sql`
 también ya corrió en QA y prod. Listo para probar.
 
@@ -71,7 +87,7 @@ Confirmaste que no se usa. Verificado que ningún otro lugar de la app lo refere
 pantalla hermana `/ventas/venta`) — se quitó el link del menú
 (`navbar.component.html`/`.ts`). El módulo y la ruta siguen existiendo en el código por si hace
 falta recuperarlos, solo dejó de ser accesible desde el menú.
-
+ya lo revise bien
 ### 2.3 `/abonos` — el número de pedido no era un link — ✅ hecho (25-ago)
 
 El pedido en las 3 pestañas (`#{{ pedidoId }}`) ahora es un botón — clic y lleva directo a
@@ -94,6 +110,11 @@ probar, "Pedir este ramo" ahora **lleva al configurador** (`/flores/configurar`)
 y accesorios de ese ramo ya precargados — reutilizando el 100% del checkout que ya estaba
 probado ahí (fecha/urgencia, mapa de entrega, verificación de correo, `savePedido`, etc.), en
 vez de duplicar esa lógica en la vitrina.
+solo me queda duda, de si ya se esta metiendo las imagenes para ese ramo, es decir ahi en ese ramo ya tiene que tener la foto cuando se configura, hay que revisar eso, ademas se 
+sigue mostrando el texto de el papel se cobra, te dije que para el cliente no lo tiene que ver, 
+ya veo que al pedir te lleva a la configuracio del ramo como tal y aqui lo mismo sobre que que al seleccionar zacazonapan no te lleva al puedo para seleccionar eso, hay que revisarlo
+
+flores/ramos sigue mostrando que el papel se cobra
 
 - El papel ya **no se muestra** como línea aparte al cliente (se funde en la línea de flores,
   mismo criterio que "Arma tu ramo" — `subtotalFloresConPapel()`).

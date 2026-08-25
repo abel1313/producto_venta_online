@@ -47,7 +47,7 @@
                                    [class.ab-badge--fiado]="ec.tipoPedido === 'FIADO'">
               {{ ec.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
-            <span class="ab-card__id">#{{ ec.pedidoId }}</span>
+            <button class="ab-card__id ab-card__id--link" (click)="verPedido(ec.pedidoId)" title="Ver el pedido completo">#{{ ec.pedidoId }}</button>
             <span class="ab-card__cliente">{{ ec.cliente }}</span>
             <span class="ab-card__tel" *ngIf="ec.telefono">📞 {{ ec.telefono }}</span>
           </div>
@@ -124,7 +124,7 @@
                                    [class.ab-badge--fiado]="p.tipoPedido === 'FIADO'">
               {{ p.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
-            <span class="ab-card__id">#{{ p.pedidoId }}</span>
+            <button class="ab-card__id ab-card__id--link" (click)="verPedido(p.pedidoId)" title="Ver el pedido completo">#{{ p.pedidoId }}</button>
             <span class="ab-card__cliente">{{ p.cliente }}</span>
             <span class="ab-card__tel" *ngIf="p.telefono">📞 {{ p.telefono }}</span>
           </div>
@@ -190,7 +190,7 @@
                                    [class.ab-badge--fiado]="c.tipoPedido === 'FIADO'">
               {{ c.tipoPedido === 'APARTADO' ? '📦 Apartado' : '💳 Ir pagando' }}
             </span>
-            <span class="ab-card__id">#{{ c.pedidoId }}</span>
+            <button class="ab-card__id ab-card__id--link" (click)="verPedido(c.pedidoId)" title="Ver el pedido completo">#{{ c.pedidoId }}</button>
             <span class="ab-card__cliente">{{ c.cliente }}</span>
             <span class="ab-card__tel" *ngIf="c.telefono">📞 {{ c.telefono }}</span>
           </div>

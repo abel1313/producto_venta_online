@@ -46,46 +46,45 @@ también ya corrió en QA y prod. Listo para probar.
 
 ---
 
-## 🔴 2. Reportado hace días — sigue sin resolver en el código
+## 🔴 2. Reportado hace días
 
-### 2.1 Menú duplicado — "Lugares de entrega" aparece 2 veces
+### 2.1 Menú duplicado — "Lugares de entrega" aparece 2 veces — ⏳ sigue así, tu decisión
 
 `src/app/navbar/navbar.component.html:70` y `:157` — el mismo componente
 (`LugaresEntregaModule`) tiene 2 entradas de menú distintas:
 - 📦 Inventario → "📍 Lugares de entrega" (`routerLink="lugares-entrega"`)
 - 🌹 Flores eternas → "📍 Zonas y envío" (`routerLink="flores/zonas"`)
 
-Es la misma pantalla con 2 rutas alias (se hizo así a propósito para que el acordeón del menú no
-saltara de sección al entrar desde Flores — ver `CLAUDE.md`, sección "FIX MENÚ — 'Zonas y
-envío'..."). **Sigue habiendo 2 links** — falta decidir si eso está bien así (cada uno tiene su
-contexto) o si prefieres quitar uno de los dos.
+**Confirmado de nuevo el 25-ago (grep fresco): siguen los 2, ninguno se quitó.**
 
-### 2.2 `/ventas/buscar` — pantalla legacy que puede confundir
+**Investigado — dónde se usa el catálogo de zonas** (no la pantalla de administrarlo, el dato en
+sí): en el checkout del cliente (`tienda/venta`), en Venta directa (admin), en "Arma tu ramo"
+(flores), y en Mis pedidos (filtrar/editar la zona de un pedido). **El catálogo no se puede
+quitar** — es la fuente de zonas de TODO el checkout de la tienda, no solo de flores. Lo único
+duplicado son los 2 accesos de menú a la pantalla de administrarlo (dar de alta/editar zonas), y
+esa pantalla tiene 2 campos (costo de envío, horas extra) que **sí son exclusivos de flores** —
+por eso se le puso también su propio acceso ahí. Recomendación: dejarlo así, pero es tu llamada.
 
-`src/app/ventas/venta-producto/venta-producto-routing.module.ts` — sigue existiendo y con link
-en el menú (🛠️ Ventas → "🔍 Buscar ventas"). Es del **módulo viejo de venta por producto**
-(`BuscarVentaComponent`), anterior al flujo actual de variantes (`tienda/venta-directa`). No se
-ha quitado — pendiente de que confirmes si sigue haciendo falta o se puede sacar del menú.
+### 2.2 `/ventas/buscar` — ✅ quitado del menú (25-ago)
 
-### 2.3 `/abonos` — el número de pedido no es un link
+Confirmaste que no se usa. Verificado que ningún otro lugar de la app lo referencia (ni la
+pantalla hermana `/ventas/venta`) — se quitó el link del menú
+(`navbar.component.html`/`.ts`). El módulo y la ruta siguen existiendo en el código por si hace
+falta recuperarlos, solo dejó de ser accesible desde el menú.
 
-`src/app/abonos/abonos.component.html` (líneas 50, 127, 193, 262, 347) — el pedido se muestra
-como texto plano `#{{ pedidoId }}` en las 3 pestañas (Cuentas por cobrar, Liquidados,
-Cancelados) y en los 2 modales. No hay forma de ir del pedido en `/abonos` a su detalle real.
+### 2.3 `/abonos` — el número de pedido no era un link — ✅ hecho (25-ago)
 
-**Por qué no es trivial:** `DetallePedidoComponent` no es una pantalla con ruta propia — vive
-**embebido dentro de `MisPedidosComponent`** (`*ngIf="mostrarDetalle"`, recibe el pedido
-completo por `@Input()`, no por id de la URL). Para linkear desde `/abonos` hace falta que
-`MisPedidosComponent` sepa leer un `?pedidoId=` de la URL, buscar ese pedido y abrir el detalle
-automáticamente — mismo patrón que ya existe al revés (`/abonos?pedidoId=93` ya funciona porque
-`AbonosComponent` sí lee ese query param). Es una tarea concreta, no compleja, pero no está
-hecha.
+El pedido en las 3 pestañas (`#{{ pedidoId }}`) ahora es un botón — clic y lleva directo a
+`/pedidos/mis-pedidos?pedidoId=N`, que abre el detalle completo automáticamente (se agregó esa
+lectura de `?pedidoId=` en `MisPedidosComponent`, tanto para admin como para cliente, buscando
+por el número de pedido). Si el pedido no se encuentra, avisa en vez de dejar la pantalla en
+silencio.
 
-### 2.4 `/admin/diagnostico-imagenes` — sin texto explicativo
+### 2.4 `/admin/diagnostico-imagenes` — sin texto explicativo — ✅ hecho (25-ago)
 
-`src/app/admin/diagnostico-imagenes/diagnostico-imagenes.component.html:9-10` — solo tiene
-título y un subtítulo genérico ("Solo administradores · Verifica BD ↔ Microservicio"). No explica
-qué hace la herramienta ni cómo interpretar el resultado. Sigue pendiente agregar ese texto.
+Se agregó un párrafo explicando qué hace la herramienta (compara la BD local contra el
+microservicio de imágenes) y cuándo usarla (cuando una foto no aparece y no se sabe si nunca se
+guardó o si el archivo se perdió).
 
 ### 2.5 Vitrina de flores — "Ver detalle" no es un flujo de compra real
 
@@ -153,10 +152,10 @@ buscando el nombre de la zona, sin cambios de back). Esperando que contesten.
 |---|---|---|
 | 1.1 | Mapa/coordenadas de entrega | ✅ Código + migración confirmados — falta probar en vivo |
 | 1.2 | Filtro por fecha de creación | ✅ Código + migración confirmados — falta probar en vivo |
-| 2.1 | Menú duplicado (lugares-entrega) | 🔴 Sigue así — falta tu decisión |
-| 2.2 | `/ventas/buscar` (legacy) | 🔴 Sigue en el menú, línea 99 de navbar.component.html — nunca se quitó |
-| 2.3 | Abonos → link al pedido | 🔴 No implementado |
-| 2.4 | Diagnóstico de imágenes — texto | 🔴 No implementado |
+| 2.1 | Menú duplicado (lugares-entrega) | ⏳ Sigue así — catálogo se usa en todo el checkout, recomendado dejarlo |
+| 2.2 | `/ventas/buscar` (legacy) | ✅ Quitado del menú |
+| 2.3 | Abonos → link al pedido | ✅ Hecho |
+| 2.4 | Diagnóstico de imágenes — texto | ✅ Hecho |
 | 2.5 | Vitrina flores — flujo de compra real | 🔴 No implementado (pieza grande) |
 | 3 | Dark mode: rifas / presentación / negocio | 🟡 Debería estar resuelto — falta confirmar |
 | 4.1 | Lat/lng por zona (LugarEntrega) | 🚨 Reenviada urgente el 25-ago — distinta de la 1.1, ver nota abajo |

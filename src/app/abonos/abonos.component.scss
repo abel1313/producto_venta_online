@@ -146,6 +146,18 @@
   }
 
   &__id     { font-weight: 700; color: var(--app-text); font-size: 0.88rem; }
+  // Ahora es un <button> (antes span) para poder llevar al detalle real del pedido en
+  // /pedidos/mis-pedidos — reset de estilos nativos + affordance de "esto se puede tocar".
+  &__id--link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+    &:hover, &:focus-visible { color: var(--app-accent); }
+  }
   &__cliente{ font-weight: 600; color: var(--app-text); font-size: 0.92rem; }
   &__tel    { font-size: 0.78rem; color: var(--app-text); opacity: 0.65; }
 

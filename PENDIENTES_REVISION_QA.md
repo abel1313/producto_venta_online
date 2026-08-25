@@ -133,13 +133,13 @@ en el select. Pedimos que `LugarEntrega` tenga su propio centroide (`latitud`/`l
 opcionales) para que el mapa se recentre solo. **Sin respuesta todavía** — no apareció en la
 respuesta del 25 de agosto (esa fue específica del bug de coordenadas del pedido).
 
----
-
-## ❓ 5. Necesito que lo aclares — no tengo contexto suficiente
-
-Quedó anotado en una sesión anterior "flores/ramos-admin confirmation question" en la lista de
-pendientes, sin el detalle de qué se preguntaba exactamente. Si sigue siendo relevante, cuéntame
-de nuevo qué era para poder revisarlo — no quiero adivinar y corregir algo que no era.
+> ⚠️ **No confundir con el punto 1.1.** Son 2 cosas distintas con el mismo par de nombres de
+> campo:
+> - **1.1** = `latitud`/`longitud` **del pedido** (el punto exacto de la casa del cliente) — eso
+>   ya lo confirmó el back, ya está desplegado, y es lo que hay que volver a probar.
+> - **4.1** = `latitud`/`longitud` **de `LugarEntrega`** (el centro del pueblo/zona, para que el
+>   mapa arranque ya centrado ahí en vez de siempre en Tejupilco) — esto es una consulta
+>   DISTINTA, más nueva, y el back todavía no la contestó para nada.
 
 ---
 
@@ -150,10 +150,9 @@ de nuevo qué era para poder revisarlo — no quiero adivinar y corregir algo qu
 | 1.1 | Mapa/coordenadas de entrega | ✅ Código listo y desplegado — falta probar en vivo |
 | 1.2 | Filtro por fecha de creación | ✅ Código listo y desplegado — falta probar en vivo |
 | 2.1 | Menú duplicado (lugares-entrega) | 🔴 Sigue así — falta tu decisión |
-| 2.2 | `/ventas/buscar` (legacy) | 🔴 Sigue en el menú — falta tu decisión |
+| 2.2 | `/ventas/buscar` (legacy) | 🔴 Sigue en el menú, línea 99 de navbar.component.html — nunca se quitó |
 | 2.3 | Abonos → link al pedido | 🔴 No implementado |
 | 2.4 | Diagnóstico de imágenes — texto | 🔴 No implementado |
 | 2.5 | Vitrina flores — flujo de compra real | 🔴 No implementado (pieza grande) |
 | 3 | Dark mode: rifas / presentación / negocio | 🟡 Debería estar resuelto — falta confirmar |
-| 4.1 | Lat/lng por zona (LugarEntrega) | ⏳ Esperando al back |
-| 5 | "flores/ramos-admin confirmation" | ❓ Falta que me digas de qué se trataba |
+| 4.1 | Lat/lng por zona (LugarEntrega) | ⏳ Esperando al back — es distinta de la 1.1, ver nota abajo |

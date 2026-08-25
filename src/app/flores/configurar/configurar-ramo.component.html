@@ -244,7 +244,7 @@
         <div class="cr-field" *ngIf="lugarEntregaId && !modoEdicion">
           <label class="cr-label" style="font-size:.85rem">🗺️ Ubicación exacta (opcional)</label>
           <app-selector-ubicacion
-            [lat]="latitud" [lng]="longitud"
+            [lat]="latitud" [lng]="longitud" [centroDefault]="centroMapaLugar"
             (ubicacionCambio)="onUbicacionCambio($event)">
           </app-selector-ubicacion>
           <input type="text" class="cr-input mt-2"

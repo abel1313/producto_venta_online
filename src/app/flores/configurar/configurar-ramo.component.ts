@@ -14,6 +14,7 @@ import { UsuarioService } from '../../shared/usuario.service';
 import { ClienteService } from '../../clietes/cliente.service';
 import { LugarEntregaService } from '../../lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from '../../lugares-entrega/models/lugar-entrega.model';
+import { CENTRO_MAPA_GENERICO } from '../../shared/selector-ubicacion/selector-ubicacion.component';
 import { VarianteService } from '../../variante/service/variante.service';
 import { IPedidoVarianteDTO, IPedidoVarianteDetalleDTO } from '../../variante/models/pedido-variante.model';
 
@@ -92,6 +93,16 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.latitud = p.lat;
     this.longitud = p.lng;
   }
+
+  // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
+  // (ver `onLugarChange`), no en cada ciclo de detección de cambios: un getter que devolviera
+  // un array nuevo cada vez rompería `SelectorUbicacionComponent.ngOnChanges` (recentraría el
+  // mapa en cada tecla que el cliente escriba, peleándose con que pueda mover/hacer zoom
+  // libremente antes de marcar el pin). Si la zona ya tiene latitud/longitud capturada se usa
+  // como centro; si no (zona vieja) se cae al genérico fijo de siempre — ver
+  // CENTRO_MAPA_GENERICO en selector-ubicacion.component.ts.
+  centroMapaLugar: [number, number] = CENTRO_MAPA_GENERICO;
+
   /** Cuándo puede entregarse este tamaño. Ver `consultarFechas()`. */
   fechas: IFechasDisponiblesResponse | null = null;
   consultandoFechas = false;
@@ -689,12 +700,17 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       this.lugarEntregaId = null;
       this.latitud = null;
       this.longitud = null;
+      this.centroMapaLugar = CENTRO_MAPA_GENERICO;
     }
     this.consultarFechas();
   }
 
   onLugarChange(): void {
     if (this.lugarEntregaId) this.recogerEnLocal = false;
+    const lugar = this.lugares.find(l => l.id === this.lugarEntregaId);
+    this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
+      ? [lugar.latitud, lugar.longitud]
+      : CENTRO_MAPA_GENERICO;
     // La zona puede sumar horas de anticipación, así que el plazo cambia con ella.
     this.consultarFechas();
   }
@@ -1265,6 +1281,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.recogerEnLocal = false;
     this.latitud = null;
     this.longitud = null;
+    this.centroMapaLugar = CENTRO_MAPA_GENERICO;
     this.referencias = '';
     this.calculo = null;
     this.fechas = null;

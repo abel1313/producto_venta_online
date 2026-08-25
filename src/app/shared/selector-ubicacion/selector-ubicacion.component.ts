@@ -14,6 +14,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     'assets/leaflet/marker-shadow.png',
 });
 
+// Centro genérico fijo — Tejupilco, Edo. México (misma zona real de entrega del negocio).
+// Se usa como fallback cuando no hay lat/lng por zona (`LugarEntrega.latitud/longitud` en null,
+// zonas viejas sin capturar el dato) o todavía no se eligió zona. Exportado para que los
+// componentes que pasan `centroDefault` según la zona elegida (venta-variante,
+// configurar-ramo) puedan caer en este mismo punto sin duplicar las coordenadas.
+export const CENTRO_MAPA_GENERICO: [number, number] = [18.916234, -100.143567];
+
 /**
  * Selector de ubicación exacta en mapa (Leaflet + OpenStreetMap, sin costo ni API key).
  * Clic o arrastrar el pin para marcar el punto; botón "usar mi ubicación" vía geolocalización
@@ -56,10 +63,11 @@ L.Icon.Default.mergeOptions({
 export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() lat: number | null = null;
   @Input() lng: number | null = null;
-  // Centro por defecto cuando todavía no hay punto marcado — Tejupilco, Edo. México (misma
-  // zona real de entrega del negocio). No hay lat/lng por zona en el catálogo de LugarEntrega
-  // todavía, así que es un solo centro genérico sin importar qué zona haya elegido el cliente.
-  @Input() centroDefault: [number, number] = [18.916234, -100.143567];
+  // Centro por defecto cuando todavía no hay punto marcado. El padre lo sobreescribe con las
+  // coordenadas de la zona elegida (`LugarEntrega.latitud/longitud`) cuando esa zona sí las
+  // tiene capturadas; si vienen null (zona vieja) el padre debe seguir pasando este mismo
+  // genérico — ver `CENTRO_MAPA_GENERICO` arriba.
+  @Input() centroDefault: [number, number] = CENTRO_MAPA_GENERICO;
   @Output() ubicacionCambio = new EventEmitter<{ lat: number; lng: number }>();
 
   @ViewChild('mapaEl') mapaEl!: ElementRef<HTMLDivElement>;

@@ -163,6 +163,13 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   get modoRamoArmado(): boolean { return this.ramoArmadoOrigen != null; }
   get ramoArmadoOrigenNombre(): string { return this.ramoArmadoOrigen?.nombre ?? ''; }
 
+  /**
+   * Foto del ramo con el que se llegó desde "Pedir este ramo" — mismo criterio de resolución que
+   * `VitrinaFloresComponent.fotoDe()`: la variante sombra primero (foto real, se actualiza sola),
+   * `imagenUrl` de respaldo (link viejo pegado a mano) mientras tanto o si no hay variante.
+   */
+  ramoArmadoOrigenFoto: string | null = null;
+
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
@@ -204,6 +211,17 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.pedidoIdEdicion = idEdit > 0 ? idEdit : null;
 
     this.cargarCatalogo();
+
+    // Foto del ramo de origen — no depende del catálogo, se resuelve aparte para que se vea
+    // desde el primer render en vez de esperar a `precargarDesdeRamoArmado()`.
+    if (this.ramoArmadoOrigen) {
+      this.ramoArmadoOrigenFoto = this.ramoArmadoOrigen.imagenUrl ?? null;
+      const varianteId = this.ramoArmadoOrigen.varianteId;
+      if (varianteId) {
+        this.imagenes.portadaDe(varianteId).pipe(takeUntil(this.destroy$))
+          .subscribe(url => { if (url) this.ramoArmadoOrigenFoto = url; });
+      }
+    }
 
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
 

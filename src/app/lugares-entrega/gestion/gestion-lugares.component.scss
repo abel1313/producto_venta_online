@@ -130,3 +130,22 @@ $t:  all 0.2s ease;
   font-size: .78rem;
   white-space: nowrap;
 }
+
+// Bloque del picker de centro -- ancho completo (no flex:1 junto a los campos numéricos), el
+// mapa necesita su propio ancho para no verse aplastado.
+.pk-form__field--mapa {
+  flex: 1 1 100%;
+  min-width: 100%;
+}
+
+.pk-form__label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--app-text-muted, #6b7280);
+}
+
+.pk-hint {
+  font-size: .78rem;
+  color: var(--app-text-muted, #9ca3af);
+  margin: 4px 0 0;
+}

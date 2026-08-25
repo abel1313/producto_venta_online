@@ -35,6 +35,11 @@ export class GestionLugaresComponent implements OnInit {
     private readonly fb:  FormBuilder
   ) {}
 
+  // Centro de la zona (para el mapa/picker) — no es parte del FormGroup porque
+  // SelectorUbicacionComponent maneja lat/lng por [lat]/[lng]/(ubicacionCambio), no ngModel.
+  centroLat: number | null = null;
+  centroLng: number | null = null;
+
   ngOnInit(): void {
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(80)]],
@@ -44,6 +49,11 @@ export class GestionLugaresComponent implements OnInit {
       horasExtraAnticipacion: [null]
     });
     this.cargar();
+  }
+
+  onCentroCambio(p: { lat: number; lng: number }): void {
+    this.centroLat = p.lat;
+    this.centroLng = p.lng;
   }
 
   cargar(): void {
@@ -75,11 +85,15 @@ export class GestionLugaresComponent implements OnInit {
 
   iniciarEdicion(l: ILugarEntrega): void {
     this.editandoId = l.id;
+    this.centroLat = l.latitud ?? null;
+    this.centroLng = l.longitud ?? null;
     this.form.patchValue({ nombre: l.nombre, costoEnvio: l.costoEnvio ?? null, horasExtraAnticipacion: l.horasExtraAnticipacion ?? null });
   }
 
   cancelarEdicion(): void {
     this.editandoId = null;
+    this.centroLat = null;
+    this.centroLng = null;
     this.form.reset();
   }
 
@@ -91,7 +105,9 @@ export class GestionLugaresComponent implements OnInit {
     const body = {
       nombre,
       costoEnvio: this.form.value.costoEnvio,
-      horasExtraAnticipacion: this.form.value.horasExtraAnticipacion
+      horasExtraAnticipacion: this.form.value.horasExtraAnticipacion,
+      latitud: this.centroLat,
+      longitud: this.centroLng
     };
 
     const op$ = this.editandoId !== null

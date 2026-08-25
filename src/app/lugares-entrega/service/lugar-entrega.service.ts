@@ -3,7 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { ILugarEntrega, ILugarEntregaRequest } from '../models/lugar-entrega.model';
+import {
+  IAnilloLugarEntrega,
+  IAnilloLugarEntregaRequest,
+  ICalcularCostoEnvioResponse,
+  ILugarEntrega,
+  ILugarEntregaRequest,
+} from '../models/lugar-entrega.model';
 
 @Injectable({ providedIn: 'root' })
 export class LugarEntregaService {
@@ -53,5 +59,37 @@ export class LugarEntregaService {
   delete(id: number): Observable<void> {
     return this.http
       .delete<void>(`${this.url}/delete`, { body: id });
+  }
+
+  // ── Anillos (rangos de distancia con precio propio) — ver DISENO_ZONAS_POR_ANILLO.md ──────
+
+  getAnillos(lugarEntregaId: number): Observable<IAnilloLugarEntrega[]> {
+    return this.http
+      .get<{ data: IAnilloLugarEntrega[] }>(`${this.url}/${lugarEntregaId}/anillos`)
+      .pipe(map(res => res.data ?? []));
+  }
+
+  crearAnillo(lugarEntregaId: number, req: IAnilloLugarEntregaRequest): Observable<IAnilloLugarEntrega> {
+    return this.http
+      .post<{ data: IAnilloLugarEntrega }>(`${this.url}/${lugarEntregaId}/anillos`, req)
+      .pipe(map(res => res.data));
+  }
+
+  editarAnillo(anilloId: number, req: IAnilloLugarEntregaRequest): Observable<IAnilloLugarEntrega> {
+    return this.http
+      .put<{ data: IAnilloLugarEntrega }>(`${this.url}/anillos/${anilloId}`, req)
+      .pipe(map(res => res.data));
+  }
+
+  eliminarAnillo(anilloId: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/anillos/${anilloId}`);
+  }
+
+  // Público -- lo llama el checkout (con o sin sesión) antes de dejar avanzar/confirmar, y
+  // "Info de entrega" para calcular el diferencial antes de aplicar un cambio de zona/punto.
+  calcularCosto(lugarEntregaId: number, latitud: number, longitud: number): Observable<ICalcularCostoEnvioResponse> {
+    return this.http
+      .post<{ data: ICalcularCostoEnvioResponse }>(`${this.url}/${lugarEntregaId}/calcular-costo`, { latitud, longitud })
+      .pipe(map(res => res.data));
   }
 }

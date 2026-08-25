@@ -35,3 +35,29 @@ export interface ILugarEntregaRequest {
   latitud?: number | null;
   longitud?: number | null;
 }
+
+// Anillo (rango de distancia) de cobro dentro de una zona -- ver DISENO_ZONAS_POR_ANILLO.md en
+// el repo compartido. Un LugarEntrega puede tener 0 anillos (se comporta igual que hoy, costo
+// fijo de la zona) o varios, cada uno con su propio radio y precio.
+export interface IAnilloLugarEntrega {
+  id: number;
+  lugarEntregaId: number;
+  radioMetros: number;
+  costoEnvio: number;
+  orden?: number | null;
+}
+
+export interface IAnilloLugarEntregaRequest {
+  radioMetros: number;
+  costoEnvio: number;
+  orden?: number | null;
+}
+
+// Respuesta de POST /{id}/calcular-costo -- dentroDeRango=false significa que el punto marcado
+// en el mapa quedó fuera de todos los anillos configurados para la zona: el checkout debe
+// bloquear el avance en ese caso.
+export interface ICalcularCostoEnvioResponse {
+  dentroDeRango: boolean;
+  costoEnvio: number | null;
+  anilloId: number | null;
+}

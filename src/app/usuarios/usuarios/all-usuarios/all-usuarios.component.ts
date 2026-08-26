@@ -198,7 +198,10 @@ export class AllUsuariosComponent implements OnInit {
                 icon: "success",
                 draggable: true
               });
-      this.router.navigate(['usuarios/buscar']);
+      // router.navigate a la MISMA ruta en la que ya estás no recarga nada (Angular no
+      // reejecuta el componente si la URL no cambia) -- por eso el usuario "eliminado" seguía
+      // viéndose hasta refrescar la página a mano. Se quita de la lista en memoria directo.
+      this.rows = this.rows.filter(u => u.id !== item.id);
     },err=>{
               Swal.fire({
                 title: `Ocurrio un erro al eliminar el usuario`,

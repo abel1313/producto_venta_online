@@ -53,7 +53,7 @@
 
     <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
          "Producto" es lo que se vende (Blusa Zara / M / Negro). -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('catalogo')"
          [class.sb-group--open]="openGroup === 'catalogo'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('catalogo')">
         <span class="sb-icon">📦</span>
@@ -73,7 +73,7 @@
     <!-- Envíos (admin) — catálogo de zonas de entrega, compartido por todo el checkout
          (no solo flores). Antes vivía duplicado dentro de Catálogo y de Flores eternas con
          2 nombres distintos; ahora es una sola entrada aquí. -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('envios')"
          [class.sb-group--open]="openGroup === 'envios'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('envios')">
         <span class="sb-icon">🚚</span>
@@ -95,14 +95,14 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" *ngIf="isAdminUser"
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" *ngIf="tienePantalla('pedidos/historial-mp')"
            routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial de pagos (MP)</a>
       </div>
     </div>
 
     <!-- Ventas (admin) — accordion: solo lo operativo del día a día (cobro + créditos +
          gastos). Los reportes de ventas viven en "Reportes", no aquí. -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('ventas')"
          [class.sb-group--open]="openGroup === 'ventas'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('ventas')">
         <span class="sb-icon">💰</span>
@@ -118,7 +118,7 @@
 
     <!-- Reportes (admin) — accordion: métricas del negocio, no operación del día a día
          (antes "Analítica"; "Clientes" salió a su propio grupo, es búsqueda/CRM, no un reporte). -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('reportes')"
          [class.sb-group--open]="openGroup === 'reportes'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('reportes')">
         <span class="sb-icon">📊</span>
@@ -132,7 +132,7 @@
     </div>
 
     <!-- Clientes (admin) — búsqueda/CRM, no es un reporte. Antes vivía dentro de "Analítica". -->
-    <a class="sb-item" *ngIf="isAdminUser"
+    <a class="sb-item" *ngIf="tienePantalla('clientes/buscar')"
        routerLink="clientes/buscar" routerLinkActive="sb-item--active"
        (click)="closeMobile()">
       <span class="sb-icon">👥</span>
@@ -140,7 +140,7 @@
     </a>
 
     <!-- Rifas (admin) — accordion -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('rifas')"
          [class.sb-group--open]="openGroup === 'rifas'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('rifas')">
         <span class="sb-icon">🎰</span>
@@ -167,7 +167,7 @@
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos" (click)="closeMobile()">🌹 Ramos de flores</a>
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/configurar" (click)="closeMobile()">🌷 Arma tu ramo</a>
-        <ng-container *ngIf="isAdminUser">
+        <ng-container *ngIf="tieneAlguna(['flores/catalogos','flores/entregas','flores/frases','flores/ramos-admin'])">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/entregas" (click)="closeMobile()">🚚 Entregas</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/frases" (click)="closeMobile()">🎗️ Frases por aprobar</a>
@@ -189,7 +189,7 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="promociones" (click)="closeMobile()">🎁 Promociones activas</a>
-        <ng-container *ngIf="isAdminUser">
+        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta','admin/facebook','admin/hashtags'])">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestionar promociones</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cinta" (click)="closeMobile()">📢 Cinta de anuncios</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en redes</a>
@@ -200,7 +200,7 @@
 
     <!-- Sistema (admin) — accordion: administración general, incluye las herramientas de
          imágenes (antes en un grupo aparte). -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('sistema')"
          [class.sb-group--open]="openGroup === 'sistema'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('sistema')">
         <span class="sb-icon">🛠️</span>

@@ -130,12 +130,43 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
     setTimeout(() => this.mapa?.invalidateSize(), 60);
   }
 
+  // Cuando `colocar()` emite `ubicacionCambio` por un clic/arrastre propio, el padre casi
+  // siempre solo guarda ese mismo valor de vuelta en el binding de `lat`/`lng` (ver
+  // `onUbicacionCambio` en los componentes que usan este selector) — eso dispara `ngOnChanges`
+  // otra vez con el MISMO punto. Sin esta bandera, `ngOnChanges` no podía distinguir ese eco de
+  // un cambio real del padre (ej. cambiar de fila a editar), así que el mapa se recentraba y
+  // hacía zoom de golpe en cada clic del usuario, encima de ya estar ahí.
+  private ultimoEmitido: { lat: number; lng: number } | null = null;
+
   ngOnChanges(changes: SimpleChanges): void {
     // Si el padre cambia de zona (otro `centroDefault`) DESPUÉS de que el mapa ya existe y
     // todavía no se marcó ningún punto, recentrar ahí — para que el mapa muestre la zona
     // elegida en vez de quedarse en el centro genérico inicial.
     if (changes['centroDefault'] && this.mapa && this.lat == null && this.lng == null) {
       this.mapa.setView(this.centroDefault, 13);
+    }
+
+    // Si el padre cambia `lat`/`lng` directamente (ej. seleccionó otra fila para editar, con un
+    // punto ya guardado distinto al que se estaba mostrando) hay que mover el mapa y el marcador
+    // ahí. Antes esto solo se calculaba una vez, en `ngAfterViewInit` — cambiar de fila sin
+    // recrear el componente dejaba el mapa/marcador donde estaban, aunque el punto real ya fuera
+    // otro (bug reportado 2026-08-26: "selecciono la zona y no me lleva ahí, se queda en
+    // cualquier lado, así para todos").
+    if ((changes['lat'] || changes['lng']) && this.mapa) {
+      const esEcoDelPropioClick = !!this.ultimoEmitido
+        && this.lat === this.ultimoEmitido.lat && this.lng === this.ultimoEmitido.lng;
+      this.ultimoEmitido = null;
+      if (esEcoDelPropioClick) return;
+
+      if (this.lat != null && this.lng != null) {
+        this.colocar(this.lat, this.lng, false);
+        this.mapa.setView([this.lat, this.lng], 16);
+      } else if (this.marker) {
+        // El padre limpió el punto (ej. canceló la edición) -- quitar el marcador también.
+        this.marker.remove();
+        this.marker = null;
+        this.actualizarTexto();
+      }
     }
   }
 
@@ -168,7 +199,10 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
     this.lat = lat;
     this.lng = lng;
     this.actualizarTexto();
-    if (emitir) this.ubicacionCambio.emit({ lat, lng });
+    if (emitir) {
+      this.ultimoEmitido = { lat, lng };
+      this.ubicacionCambio.emit({ lat, lng });
+    }
   }
 
   // El cliente no tiene por qué ver los números crudos de latitud/longitud — no le dicen nada.

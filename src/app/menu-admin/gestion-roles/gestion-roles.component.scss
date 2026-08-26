@@ -129,21 +129,50 @@ $t:  all 0.2s ease;
   padding-right: 4px;
 }
 
-// Checklist de pantallas por grupo (columna derecha)
+// Checklist de pantallas por grupo (columna derecha) -- acordeón, mismo patrón que el navbar
+// (.sb-group): arrancan cerrados, un click en el título expande/colapsa su lista.
 .gr-grupo {
   border: 1.5px solid #e5e7eb;
   border-radius: 10px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  overflow: hidden;
+  transition: $t;
+
+  &--abierto { border-color: var(--app-accent); }
 
   &__titulo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
     font-size: .8rem;
     font-weight: 700;
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: .03em;
+    text-align: left;
+  }
+
+  &__nombre { flex: 1; }
+
+  &__chevron {
+    font-size: 1rem;
+    transition: transform .2s ease;
+    color: #9ca3af;
+  }
+
+  &--abierto &__chevron { transform: rotate(90deg); }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 14px 12px;
+    border-top: 1px solid #f0f1f3;
+    padding-top: 8px;
   }
 }
 
@@ -172,6 +201,8 @@ $t:  all 0.2s ease;
   .gm-col__title { color: #e5e7eb; }
   .gr-check { color: #f1f5f9; }
   .gr-grupo { border-color: #374151; }
+  .gr-grupo__titulo { color: #cbd5e1; }
+  .gr-grupo__lista { border-top-color: #374151; }
   .gm-list__item { border-color: #374151; }
 }
 

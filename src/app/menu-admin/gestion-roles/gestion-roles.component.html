@@ -43,7 +43,9 @@
           </button>
           <span class="gm-list__actions">
             <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionRol(r)" title="Editar">✏️</button>
-            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarRol(r)" title="Eliminar">🗑️</button>
+            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarRol(r)"
+                    [disabled]="esRolAdmin(r)"
+                    [title]="esRolAdmin(r) ? 'ROLE_ADMIN no se puede eliminar' : 'Eliminar'">🗑️</button>
           </span>
         </li>
       </ul>
@@ -63,17 +65,24 @@
           Todavía no hay menús/submenús dados de alta.
         </div>
 
-        <div class="gr-grupo" *ngFor="let g of grupos">
-          <div class="gr-grupo__titulo">
-            <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span> {{ g.menu?.nombre ?? 'Sin grupo' }}
+        <div class="gr-grupo" *ngFor="let g of grupos" [class.gr-grupo--abierto]="grupoEstaAbierto(g)">
+          <button class="gr-grupo__titulo" type="button" (click)="toggleGrupo(g)">
+            <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span>
+            <span class="gr-grupo__nombre">{{ g.menu?.nombre ?? 'Sin grupo' }}</span>
+            <small class="pk-meta">{{ contarAsignadas(g) }}/{{ g.submenus.length }}</small>
+            <span class="gr-grupo__chevron">›</span>
+          </button>
+          <div class="gr-grupo__lista" *ngIf="grupoEstaAbierto(g)">
+            <label class="gr-check" *ngFor="let s of g.submenus"
+                   [title]="esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : ''">
+              <input type="checkbox"
+                     [checked]="tieneSubmenu(s)"
+                     [disabled]="guardandoSubmenuId === s.id || (tieneSubmenu(s) && esSubmenuProtegido(s))"
+                     (change)="toggleSubmenu(s)" />
+              <span>{{ s.icono }} {{ s.nombre }}</span>
+              <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
+            </label>
           </div>
-          <label class="gr-check" *ngFor="let s of g.submenus">
-            <input type="checkbox"
-                   [checked]="tieneSubmenu(s)"
-                   [disabled]="guardandoSubmenuId === s.id"
-                   (change)="toggleSubmenu(s)" />
-            <span>{{ s.icono }} {{ s.nombre }}</span>
-          </label>
         </div>
       </ng-container>
     </div>

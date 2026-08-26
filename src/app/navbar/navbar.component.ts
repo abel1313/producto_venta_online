@@ -28,7 +28,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'rifas',      paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
   { group: 'flores',     paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/frases'] },
   { group: 'marketing',  paths: ['promociones', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
-  { group: 'sistema',    paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
+  { group: 'sistema',    paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache', 'gestion-menu', 'gestion-menu/roles'] },
 ];
 
 @Component({

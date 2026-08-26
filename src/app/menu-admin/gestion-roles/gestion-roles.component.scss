@@ -1,0 +1,180 @@
+$p:  var(--brand-1);
+$pd: var(--brand-2);
+$t:  all 0.2s ease;
+
+.pk-wrap {
+  max-width: 980px;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.pk-header {
+  &__title { font-size: 1.1rem; font-weight: 800; color: #1f2937; margin: 0; }
+  &__sub   { font-size: .78rem; color: #9ca3af; }
+}
+
+.pk-link {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+.gm-cols {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.gm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &--menus    { flex: 1 1 320px; min-width: 280px; }
+  &--submenus { flex: 2 1 480px; min-width: 320px; }
+
+  &__title {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #374151;
+  }
+}
+
+.pk-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+
+  &__field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+  &__actions { display: flex; gap: 8px; }
+
+  &--stack { flex-direction: row; }
+}
+
+.pk-input {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: .9rem; color: #1f2937; outline: none;
+  transition: $t; box-sizing: border-box;
+  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.12); }
+}
+
+.pk-error { font-size: .72rem; color: #dc2626; }
+
+.pk-btn {
+  padding: 10px 16px; border: none; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: .85rem;
+  transition: $t; white-space: nowrap;
+
+  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
+               &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--cancel { background: #f3f4f6; color: #6b7280;
+               &:hover { background: #e5e7eb; } }
+  &--edit   { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
+  &--del    { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer;
+               &:hover { filter: brightness(0.8); } }
+}
+
+.pk-empty {
+  color: #9ca3af; font-size: .84rem; text-align: center; padding: 24px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+
+.pk-meta { opacity: .65; font-size: .78rem; }
+
+// Lista de roles (columna izquierda)
+.gm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 4px;
+  transition: $t;
+
+  &--activo { border-color: var(--app-accent); background: var(--app-accent-soft); }
+}
+
+.gm-list__label {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.gm-list__actions {
+  display: flex;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+// Checklist de pantallas por grupo (columna derecha)
+.gr-grupo {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__titulo {
+    font-size: .8rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+}
+
+.gr-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .88rem;
+  color: #1f2937;
+  cursor: pointer;
+  padding: 2px 0;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--app-accent);
+    flex-shrink: 0;
+  }
+}
+
+// ── Dark mode ────────────────────────────────────────────────────────
+:host-context(body.theme-dark) {
+  .pk-input { color-scheme: dark; color: #f1f5f9; }
+  .gm-list__label { color: #f1f5f9; }
+  .gm-col__title { color: #e5e7eb; }
+  .gr-check { color: #f1f5f9; }
+  .gr-grupo { border-color: #374151; }
+  .gm-list__item { border-color: #374151; }
+}
+
+:host-context(body.theme-light) {
+  .pk-input { color-scheme: light; color: #1f2937; }
+}

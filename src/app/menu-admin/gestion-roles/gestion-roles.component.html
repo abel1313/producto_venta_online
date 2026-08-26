@@ -1,0 +1,83 @@
+<div class="pk-wrap">
+
+  <div class="pk-header">
+    <h4 class="pk-header__title">🛡️ Gestión de roles</h4>
+    <small class="pk-header__sub">Crea roles y marca qué pantallas puede ver cada uno</small>
+    <a class="pk-link" routerLink="/gestion-menu">← Volver a menús y submenús</a>
+  </div>
+
+  <div class="gm-cols">
+
+    <!-- Columna izquierda: Roles -->
+    <div class="gm-col gm-col--menus">
+
+      <form [formGroup]="rolForm" (ngSubmit)="guardarRol()" class="pk-form pk-form--stack">
+        <div class="pk-form__field">
+          <input class="pk-input" formControlName="nombreRol" type="text"
+                 placeholder="Nombre del rol (ej. ROLE_EMPLEADO)…" autocomplete="off" maxlength="60" />
+          <small class="pk-error" *ngIf="rolForm.get('nombreRol')?.invalid && rolForm.get('nombreRol')?.touched">
+            El nombre es obligatorio
+          </small>
+        </div>
+        <div class="pk-form__actions">
+          <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoRol">
+            {{ editandoRolId ? '💾 Actualizar' : '➕ Agregar rol' }}
+          </button>
+          <button *ngIf="editandoRolId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicionRol()">
+            ✕ Cancelar
+          </button>
+        </div>
+      </form>
+
+      <div class="pk-empty" *ngIf="!cargandoRoles && roles.length === 0">
+        Sin roles — agrega el primero arriba
+      </div>
+
+      <ul class="gm-list" *ngIf="roles.length > 0">
+        <li class="gm-list__item"
+            [class.gm-list__item--activo]="rolSeleccionado?.id === r.id"
+            *ngFor="let r of roles">
+          <button class="gm-list__label" type="button" (click)="seleccionarRol(r)">
+            {{ r.nombreRol }}
+            <small class="pk-meta">· {{ r.submenus?.length ?? 0 }} pantallas</small>
+          </button>
+          <span class="gm-list__actions">
+            <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionRol(r)" title="Editar">✏️</button>
+            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarRol(r)" title="Eliminar">🗑️</button>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Columna derecha: pantallas del rol seleccionado -->
+    <div class="gm-col gm-col--submenus">
+
+      <div class="pk-empty" *ngIf="!rolSeleccionado">
+        Elige un rol de la izquierda para marcar sus pantallas
+      </div>
+
+      <ng-container *ngIf="rolSeleccionado">
+        <div class="gm-col__title">Pantallas de "{{ rolSeleccionado.nombreRol }}"</div>
+
+        <div class="pk-empty" *ngIf="!cargandoCatalogo && grupos.length === 0">
+          Todavía no hay menús/submenús dados de alta.
+        </div>
+
+        <div class="gr-grupo" *ngFor="let g of grupos">
+          <div class="gr-grupo__titulo">
+            <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span> {{ g.menu?.nombre ?? 'Sin grupo' }}
+          </div>
+          <label class="gr-check" *ngFor="let s of g.submenus">
+            <input type="checkbox"
+                   [checked]="tieneSubmenu(s)"
+                   [disabled]="guardandoSubmenuId === s.id"
+                   (change)="toggleSubmenu(s)" />
+            <span>{{ s.icono }} {{ s.nombre }}</span>
+          </label>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+
+</div>

@@ -103,6 +103,13 @@ const routes: Routes = [
     canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
   },
   {
+    // Gestión del catálogo de menús/submenús -- Fase 1 de PLAN_PERMISOS_PANTALLAS.md (repo
+    // compartido). Solo admin, todavía no consumido por el sidebar (sigue con GROUP_ROUTES fijo).
+    path: 'gestion-menu',
+    loadChildren: () => import('./menu-admin/menu-admin.module').then(m => m.MenuAdminModule),
+    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+  },
+  {
     // Flores eternas — el módulo mezcla pantallas admin (catálogos) y una pública (vitrina de
     // ramos armados), así que el guard de admin ya NO va aquí arriba: vive solo en la ruta
     // 'catalogos' dentro de flores-routing.module.ts. Mismo nivel que "Tienda" — sin AuthGuard,

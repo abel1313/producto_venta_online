@@ -1,4 +1,4 @@
-<app-buscar-usuarios (regresarProductos)="usuariosResponse($event)"></app-buscar-usuarios>
+<app-buscar-usuarios (regresarProductos)="usuariosResponse($event)" (modoCambio)="onModoCambio($event)"></app-buscar-usuarios>
 
 <div class="au-wrapper">
   <div class="au-scroll" (scroll)="onScroll($event)">
@@ -20,14 +20,21 @@
         </div>
 
         <div class="au-card__actions">
-          <button class="au-btn au-btn--edit" (click)="updateUsuario(item)">
-            <img [src]="iconImagen.iconEditar" class="au-btn__icon" alt="" />
-            Actualizar
-          </button>
-          <button class="au-btn au-btn--delete" (click)="removeUsuario(item)">
-            <img [src]="iconImagen.iconEliminar" class="au-btn__icon" alt="" />
-            Eliminar
-          </button>
+          <ng-container *ngIf="!mostrandoInactivos; else accionesInactivo">
+            <button class="au-btn au-btn--edit" (click)="updateUsuario(item)">
+              <img [src]="iconImagen.iconEditar" class="au-btn__icon" alt="" />
+              Actualizar
+            </button>
+            <button class="au-btn au-btn--delete" (click)="removeUsuario(item)">
+              <img [src]="iconImagen.iconEliminar" class="au-btn__icon" alt="" />
+              Eliminar
+            </button>
+          </ng-container>
+          <ng-template #accionesInactivo>
+            <button class="au-btn au-btn--activar" (click)="activarUsuario(item)">
+              ✅ Reactivar
+            </button>
+          </ng-template>
         </div>
 
       </div>

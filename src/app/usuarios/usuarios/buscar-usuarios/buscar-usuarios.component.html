@@ -23,5 +23,10 @@
       />
     </div>
 
+    <button class="bu-toggle-inactivos" type="button" (click)="toggleInactivos()"
+            [class.bu-toggle-inactivos--activo]="mostrandoInactivos">
+      {{ mostrandoInactivos ? '👥 Viendo desactivados — volver a activos' : '🚫 Ver desactivados' }}
+    </button>
+
   </div>
 </div>

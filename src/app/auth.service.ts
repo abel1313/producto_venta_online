@@ -20,5 +20,17 @@ export class AuthenticateService {
   clearAccessToken() {
     this.accessToken = null;
   }
-  
+
+  /** Claims del access token actual (roles, idUsuario, pantallas, exp…), o null si no hay token
+   *  o no se puede parsear. Usado por PantallaGuard y por el navbar para el menú dinámico. */
+  getPayload(): any | null {
+    const token = this.getAccessToken();
+    if (!token) return null;
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch {
+      return null;
+    }
+  }
+
 }

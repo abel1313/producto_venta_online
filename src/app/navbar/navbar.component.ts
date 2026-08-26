@@ -41,6 +41,13 @@ export class NavbarComponent implements OnInit {
   isAdminUser = false;
   usuario = '';
 
+  // Pantallas efectivas del usuario (rutas de Submenu, ver PLAN_PERMISOS_PANTALLAS.md) --
+  // vienen en el claim "pantallas" del JWT (AuthController.pantallasEfectivas). Reemplazan a
+  // isAdminUser para decidir qué grupos/ítems del menú se pintan; isAdminUser se conserva solo
+  // para los pocos casos que no son "pantallas" (el botón de abrir/cerrar negocio, ocultar Chat
+  // cuando ya está "Chat en vivo" en Sistema, el carrito del footer).
+  private pantallas: string[] = [];
+
   countCarritoVariante = 0;
 
   // Sidebar state
@@ -76,6 +83,7 @@ export class NavbarComponent implements OnInit {
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
+      this.pantallas = this.auth.getPayload()?.pantallas ?? [];
       if (this.isAdminUser && this.negocioAbierto === null) this.cargarEstadoNegocio();
     });
     this.authService.userName$.subscribe(user => { this.usuario = user; });
@@ -148,6 +156,29 @@ export class NavbarComponent implements OnInit {
     // Ya no se resetea a null: se recuerda la sección activa para la próxima
     // vez que se expanda el sidebar, en vez de perderla cada vez.
     this.openGroup = this.activeGroup;
+  }
+
+  // ── Pantallas (permisos) ──────────────────────────────────────────
+  // ¿El usuario tiene esta ruta puntual (item suelto dentro de un grupo mixto,
+  // ej. "pedidos/historial-mp")?
+  tienePantalla(ruta: string): boolean {
+    return this.pantallas.includes(ruta);
+  }
+
+  // ¿El usuario tiene AL MENOS UNA de las pantallas del grupo? Controla si el
+  // acordeón completo se pinta. Usa el mismo GROUP_ROUTES que ya recordaba qué
+  // grupo abrir según la ruta activa.
+  grupoVisible(grupoId: string): boolean {
+    const grupo = GROUP_ROUTES.find(g => g.group === grupoId);
+    if (!grupo) return false;
+    return grupo.paths.some(p => this.pantallas.includes(p));
+  }
+
+  // Para el subconjunto admin DENTRO de un grupo mixto (Flores eternas, Marketing) -- no se
+  // puede usar grupoVisible() ahí porque esos grupos también tienen items públicos en el mismo
+  // GROUP_ROUTES; una lista aparte evita que tener el item público "preste" acceso al admin.
+  tieneAlguna(rutas: string[]): boolean {
+    return rutas.some(r => this.pantallas.includes(r));
   }
 
   // ── Accordion ──────────────────────────────────────────────────────

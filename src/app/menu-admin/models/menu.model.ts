@@ -30,3 +30,15 @@ export interface ISubmenuRequest {
   icono?: string | null;
   orden?: number | null;
 }
+
+// Rol -- submenus viene ya anidado (Roles.submenus es @ManyToMany EAGER en el back), asi que
+// GET /v1/roles/getAll trae de una vez las pantallas asignadas a cada rol.
+export interface IRol {
+  id: number;
+  nombreRol: string;
+  submenus?: ISubmenu[];
+}
+
+export interface IRolRequest {
+  nombreRol: string;
+}

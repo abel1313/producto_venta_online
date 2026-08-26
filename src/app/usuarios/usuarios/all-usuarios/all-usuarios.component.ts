@@ -26,6 +26,8 @@ export class AllUsuariosComponent implements OnInit {
   };
 
   rows: IUsuarioDto[] = [];
+  mostrandoInactivos = false;
+
   constructor(
     private readonly serviceUser: UsuarioService,
     public  readonly iconImagen:  IconService,
@@ -75,6 +77,11 @@ export class AllUsuariosComponent implements OnInit {
     this.paginacion = event.data;
     this.totalPaginas = this.paginacion?.totalPaginas || 0
     this.rows = [...this.paginacion.t]; // Agrega sin borrar los anteriores
+  }
+
+  onModoCambio(mostrandoInactivos: boolean): void {
+    this.mostrandoInactivos = mostrandoInactivos;
+    this.rows = []; // el nuevo resultado llega por usuariosResponse() justo después
   }
   updateUsuario(item: any) {
     this.router.navigate(['usuarios/update']);
@@ -198,6 +205,28 @@ export class AllUsuariosComponent implements OnInit {
                 icon: "error",
                 draggable: true
               });
+    });
+  }
+
+  activarUsuario(item: IUsuarioDto): void {
+    Swal.fire({
+      title: `¿Reactivar a ${item.username}?`,
+      text: 'Podrá volver a iniciar sesión normalmente.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.serviceUser.activarUsuario(item.id!).subscribe({
+        next: () => {
+          this.rows = this.rows.filter(u => u.id !== item.id);
+          Swal.fire({ icon: 'success', title: 'Usuario reactivado', timer: 1400, showConfirmButton: false });
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error al reactivar', text: err?.error?.mensaje ?? err?.error?.message });
+        }
+      });
     });
   }
 

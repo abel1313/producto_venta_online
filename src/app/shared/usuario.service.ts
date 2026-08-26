@@ -26,8 +26,8 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   }
 
 
-  getDataPage(page: number, size: number, buscar: string): Observable<ResponseGeneric<IUsuarioDto>> {
-    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/v1/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}`);
+  getDataPage(page: number, size: number, buscar: string, activos: boolean = true): Observable<ResponseGeneric<IUsuarioDto>> {
+    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/v1/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}&activos=${activos}`);
   }
 
   restablecerContra(data: any, tipoDato: number) {
@@ -35,6 +35,10 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   }
   eliminarUsuarioDto(tipoDato: number) {
     return this.http.delete<any>(`${environment.api_Url}/v1/usuarios/eliminarUsuarioDto/${tipoDato}`);
+  }
+  // Contraparte de eliminarUsuarioDto -- reactiva a alguien a quien se le hizo soft-delete.
+  activarUsuario(tipoDato: number) {
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${tipoDato}/activar`, {});
   }
   buscarClientePorIdUsuario(idUsuario: number) {
     return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);

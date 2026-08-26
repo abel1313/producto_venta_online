@@ -40,6 +40,18 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   activarUsuario(tipoDato: number) {
     return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${tipoDato}/activar`, {});
   }
+
+  // El catálogo de roles ya existía (creado en otra sesión, nunca conectado al front) -- devuelve
+  // el arreglo plano de Roles directo, sin envolver en ResponseGeneric.
+  getRoles(): Observable<{ id: number; nombreRol: string }[]> {
+    return this.http.get<{ id: number; nombreRol: string }[]>(`${environment.api_Url}/v1/usuarios/roles`);
+  }
+
+  // Idem -- ya existía en el back (PUT /{usuarioId}/rol/{rolId}) pero el front nunca lo llamaba;
+  // el campo "Rol" de Actualizar usuario era un input de texto suelto que no guardaba nada.
+  cambiarRol(usuarioId: number, rolId: number) {
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${usuarioId}/rol/${rolId}`, {});
+  }
   buscarClientePorIdUsuario(idUsuario: number) {
     return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
   }

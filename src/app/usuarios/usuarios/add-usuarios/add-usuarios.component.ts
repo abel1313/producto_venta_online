@@ -30,6 +30,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
   cooldownReenvio      = 0;
   private cooldownTimer: any = null;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
+  roles: { id: number; nombreRol: string }[] = [];
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
     './../../../assets/imagenes/imagen2.jpeg',
@@ -60,7 +61,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     password: ['', [Validators.required, Validators.minLength(8), passwordFuerte]],
     confirmPassword: ['', Validators.required],
     enabled: true,
-    rol: ''
+    rol: '',
+    rolId: [null as number | null]
   }, { validators: passwordsIguales });
 
 
@@ -87,6 +89,18 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
 
       this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
       this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
+
+      // El selector de rol necesita el catálogo real de roles -- una vez cargado, se
+      // preselecciona el que coincide con el nombre que ya trae updateUser.rol (el back solo
+      // expone el nombre, no el id, en el listado de usuarios).
+      this.usuario.getRoles().subscribe({
+        next: roles => {
+          this.roles = roles;
+          const actual = roles.find(r => r.nombreRol === this.updateUser.rol);
+          if (actual) this.formRegistro.patchValue({ rolId: actual.id });
+        },
+        error: () => {}
+      });
 
       // Verificar si hay cambio de correo pendiente en el backend
       if (this.updateUser.id) {
@@ -443,14 +457,30 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // El campo enabled se guarda vía updateUsuario (ya funcionaba). El rol se guarda aparte, con
+  // el endpoint real PUT /{usuarioId}/rol/{rolId} -- antes este botón mandaba "rol" como texto
+  // suelto a updateUsuario, que ni siquiera lee ese campo, así que nunca cambiaba nada.
   guardarPermisos(): void {
-    const { enabled, rol } = this.formRegistro.value;
-    const body = { ...this.updateUser, enabled: enabled ?? false, rol: rol ?? '' };
-    this.usuario.restablecerContra(body, body.id || 0).subscribe({
+    const { enabled, rolId } = this.formRegistro.value;
+    const id = this.updateUser.id || 0;
+    const body = { ...this.updateUser, enabled: enabled ?? false };
+
+    this.usuario.restablecerContra(body, id).subscribe({
       next: () => {
         this.updateUser.enabled = body.enabled;
-        this.updateUser.rol     = body.rol;
-        Swal.fire({ icon: 'success', title: 'Permisos guardados', text: `Estado y rol de ${this.updateUser.username} actualizados.`, timer: 2000, showConfirmButton: false });
+        if (!rolId) {
+          Swal.fire({ icon: 'success', title: 'Estado guardado', timer: 1600, showConfirmButton: false });
+          return;
+        }
+        this.usuario.cambiarRol(id, rolId).subscribe({
+          next: (res: any) => {
+            this.updateUser.rol = res?.rol ?? this.roles.find(r => r.id === rolId)?.nombreRol ?? this.updateUser.rol;
+            Swal.fire({ icon: 'success', title: 'Permisos guardados', text: `Estado y rol de ${this.updateUser.username} actualizados.`, timer: 2000, showConfirmButton: false });
+          },
+          error: (err: any) => {
+            Swal.fire({ icon: 'error', title: 'Se guardó el estado, pero no el rol', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el rol.' });
+          }
+        });
       },
       error: (err: any) => {
         Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo guardar.' });

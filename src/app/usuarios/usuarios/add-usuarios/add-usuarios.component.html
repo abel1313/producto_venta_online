@@ -156,7 +156,10 @@
               <label class="field-label">Rol</label>
               <div class="input-wrap">
                 <i class="pi pi-id-card input-icon"></i>
-                <input class="field-input" formControlName="rol" type="text" placeholder="Rol del usuario">
+                <select class="field-input" formControlName="rolId">
+                  <option [ngValue]="null" disabled>Selecciona un rol…</option>
+                  <option *ngFor="let r of roles" [ngValue]="r.id">{{ r.nombreRol }}</option>
+                </select>
               </div>
             </div>
           </div>

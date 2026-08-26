@@ -10,6 +10,12 @@ interface GrupoSubmenus {
   submenus: ISubmenu[];
 }
 
+// Rutas que ROLE_ADMIN nunca puede perder -- son las pantallas que asignan permisos. Si se le
+// quitan, nadie puede volver a dárselas (el back también lo bloquea, esto es solo para no dejar
+// clickear algo que de todos modos va a rechazar).
+const RUTAS_PROTEGIDAS_ADMIN = new Set(['gestion-menu', 'gestion-menu/roles']);
+const ROL_ADMIN = 'ROLE_ADMIN';
+
 // Gestión de roles -- PLAN_PERMISOS_PANTALLAS.md sección 3: los roles dejan de ser los 4 fijos
 // del código, el admin crea/edita/borra roles y marca con checkboxes qué pantallas (Submenu) ve
 // cada uno. Fase 2 (permisos de acción) amplía esta misma pantalla más adelante.
@@ -30,6 +36,10 @@ export class GestionRolesComponent implements OnInit {
   grupos: GrupoSubmenus[] = [];
   cargandoCatalogo = false;
   guardandoSubmenuId: number | null = null;
+
+  // Acordeón -- igual que el navbar: arrancan todos cerrados, uno a la vez abierto, para no
+  // tirar los ~40 submenus de un jalón. 'sin-grupo' identifica al pseudo-grupo de items sueltos.
+  grupoAbierto: number | 'sin-grupo' | null = null;
 
   constructor(
     private readonly rolSvc: RolAdminService,
@@ -113,7 +123,19 @@ export class GestionRolesComponent implements OnInit {
     });
   }
 
+  esRolAdmin(r: IRol): boolean {
+    return r.nombreRol === ROL_ADMIN;
+  }
+
+  esSubmenuProtegido(submenu: ISubmenu): boolean {
+    return this.esRolAdmin(this.rolSeleccionado!) && RUTAS_PROTEGIDAS_ADMIN.has(submenu.ruta);
+  }
+
   eliminarRol(r: IRol): void {
+    if (this.esRolAdmin(r)) {
+      Swal.fire({ icon: 'info', title: 'ROLE_ADMIN no se puede eliminar', text: 'Es el único rol con acceso garantizado a esta pantalla.' });
+      return;
+    }
     Swal.fire({
       title: `¿Eliminar el rol "${r.nombreRol}"?`,
       text: 'No se puede eliminar si hay usuarios con este rol asignado.',
@@ -139,6 +161,24 @@ export class GestionRolesComponent implements OnInit {
 
   seleccionarRol(r: IRol): void {
     this.rolSeleccionado = r;
+    this.grupoAbierto = null;
+  }
+
+  toggleGrupo(g: GrupoSubmenus): void {
+    const clave = g.menu ? g.menu.id : 'sin-grupo';
+    this.grupoAbierto = this.grupoAbierto === clave ? null : clave;
+  }
+
+  grupoEstaAbierto(g: GrupoSubmenus): boolean {
+    return this.grupoAbierto === (g.menu ? g.menu.id : 'sin-grupo');
+  }
+
+  // Cuántas de las pantallas de este grupo tiene el rol seleccionado -- se muestra en el
+  // encabezado cerrado para no tener que abrir cada grupo solo para ver si tiene algo marcado.
+  contarAsignadas(g: GrupoSubmenus): number {
+    if (!this.rolSeleccionado?.submenus) return 0;
+    const idsDelRol = new Set(this.rolSeleccionado.submenus.map(s => s.id));
+    return g.submenus.filter(s => idsDelRol.has(s.id)).length;
   }
 
   tieneSubmenu(submenu: ISubmenu): boolean {
@@ -147,6 +187,10 @@ export class GestionRolesComponent implements OnInit {
 
   toggleSubmenu(submenu: ISubmenu): void {
     if (!this.rolSeleccionado) return;
+    if (this.tieneSubmenu(submenu) && this.esSubmenuProtegido(submenu)) {
+      Swal.fire({ icon: 'info', title: 'No se puede quitar', text: `"${submenu.nombre}" es una pantalla protegida para ROLE_ADMIN -- sin ella nadie podría volver a asignar permisos.` });
+      return;
+    }
     const rolId = this.rolSeleccionado.id;
     this.guardandoSubmenuId = submenu.id;
     const op$ = this.tieneSubmenu(submenu)

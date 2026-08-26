@@ -139,6 +139,27 @@ body.theme-light, [data-theme="light"] {
   --header-brand-filter: blur(20px) saturate(150%);
   --header-text:         #152420;
   --header-text-muted:   #55736A;
+
+  /* ── Tablas — encabezado, hover de fila, bordes ──
+     Úsalas en cualquier <table> nueva en vez de escribir el hex a mano (así
+     todas las tablas del sistema cambian juntas). Ver clase genérica .g-table
+     más abajo en este archivo para copiar/pegar la estructura ya lista. */
+  --table-header-bg:   #F9FAFB;
+  --table-header-text: #9CA3AF;
+  --table-row-hover:   #F9FAFB;
+  --table-border:      #E5E7EB;
+  --table-row-active:  var(--app-accent-soft);
+
+  /* ── Menú lateral (sidebar) — antes vivía solo dentro de navbar.component.scss,
+     así que cambiarlo significaba editar ese componente. Ahora es global: cambiar
+     estos 5 valores cambia el menú completo (fondo, item activo, texto, borde). */
+  --sb-bg-rgb:      255, 255, 255;
+  --sb-bg:          rgba(255,255,255,0.97);
+  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
+  --sb-text:        #12241D;
+  --sb-text-active: #12241D;
+  --sb-border:      #D5E8DD;
 }
 
 /* ════════════════════════════════════════════════
@@ -234,6 +255,23 @@ body.theme-dark, [data-theme="dark"] {
   --header-brand-filter: blur(20px);
   --header-text:         #E9E9EC;
   --header-text-muted:   #9A9AA0;
+
+  /* ── Tablas — ver nota en el bloque claro ── */
+  --table-header-bg:   #151517;
+  --table-header-text: #9A9AA0;
+  --table-row-hover:   #151517;
+  --table-border:      #2A2A2E;
+  --table-row-active:  var(--app-accent-soft);
+
+  /* ── Menú lateral (sidebar) — el oscuro parte de negro puro, sin tinte de marca
+     (ver nota "MODO OSCURO" arriba). Ver nota en el bloque claro. */
+  --sb-bg-rgb:      0, 0, 0;
+  --sb-bg:          rgba(var(--sb-bg-rgb), 0.92);
+  --sb-bg-item:     rgba(255,255,255,0.06);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
+  --sb-text:        #E9E9EC;
+  --sb-text-active: #FFFFFF;
+  --sb-border:      rgba(255,255,255,0.08);
 }
 
 /* ── Transición suave al cambiar de tema ──── */

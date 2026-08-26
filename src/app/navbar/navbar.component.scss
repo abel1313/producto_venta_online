@@ -2,19 +2,15 @@
    SIDEBAR — Dark collapsible with accordion submenus
    ════════════════════════════════════════════════════ */
 
+/* Los colores del sidebar (--sb-bg, --sb-bg-item, --sb-bg-active, --sb-text,
+   --sb-text-active, --sb-border) YA NO se definen aquí -- son tokens globales
+   en src/styles.scss (bloques body.theme-light / body.theme-dark), para que
+   la pantalla de Personalización pueda cambiarlos sin tocar este componente.
+   Aquí solo quedan las medidas/estructura, que no son "color de marca". */
 :host {
   --sb-w:           70px;          /* collapsed width */
   --sb-w-exp:       262px;         /* expanded width */
-  /* El sidebar arranca en su versión oscura; el tema claro la sobreescribe abajo.
-     Negro puro, sin tinte — antes tenía un verde muy oscuro (8,20,16). */
-  --sb-bg-rgb:      0, 0, 0;
-  --sb-bg:          rgba(var(--sb-bg-rgb), 0.88);
-  --sb-bg-item:     rgba(255,255,255,0.06);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
   --sb-accent:      var(--brand-1);
-  --sb-text:        #E9E9EC;
-  --sb-text-active: #FFFFFF;
-  --sb-border:      rgba(255,255,255,0.08);
   --sb-trans:       0.28s cubic-bezier(0.4,0,0.2,1);
   --sb-radius:      10px;
   --sb-font:        'Poppins', sans-serif;
@@ -24,13 +20,6 @@
    TEMA CLARO — sidebar blanco con letras oscuras
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-light), :host-context([data-theme="light"]) {
-  --sb-bg:          rgba(255,255,255,0.97);
-  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
-  --sb-text:        #12241D;
-  --sb-text-active: #12241D;
-  --sb-border:      #D5E8DD;
-
   .sidebar {
     box-shadow: 2px 0 16px rgba(0,0,0,0.08);
   }
@@ -63,14 +52,6 @@
   }
 
   .sb-item--theme { border-color: #D5E8DD; }
-}
-
-/* ════════════════════════════════════════════════════
-   TEMA OSCURO — sidebar oscuro con letras blancas (ya definido en :host)
-   Solo sobreescribimos lo que necesita explícito
-   ════════════════════════════════════════════════════ */
-:host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  --sb-bg: rgba(var(--sb-bg-rgb),0.92);
 }
 
 /* ── Hamburger (mobile only) ─────────────────────── */

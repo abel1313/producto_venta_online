@@ -149,3 +149,15 @@ $t:  all 0.2s ease;
   color: var(--app-text-muted, #9ca3af);
   margin: 4px 0 0;
 }
+
+// ── Dark mode ────────────────────────────────────────────────────────
+// Sin esto, .pk-input quedaba con fondo oscuro nativo del navegador (color-scheme:dark
+// heredado de body.theme-dark) pero texto oscuro fijo (#1f2937) -- texto invisible sobre
+// fondo oscuro. Mismo bug y mismo arreglo ya usado en abonos.component.scss (.ab-input).
+:host-context(body.theme-dark) {
+  .pk-input { color-scheme: dark; color: #f1f5f9; }
+}
+
+:host-context(body.theme-light) {
+  .pk-input { color-scheme: light; color: #1f2937; }
+}

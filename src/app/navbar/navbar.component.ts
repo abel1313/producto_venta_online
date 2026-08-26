@@ -15,17 +15,20 @@ import Swal from 'sweetalert2';
 // Mapeo ruta → grupo del accordion, para que la sección de la ruta activa se
 // recuerde entre navegaciones en vez de cerrarse siempre (ver comentario en
 // ngOnInit). Cada entrada es el routerLink tal cual aparece en el template.
+//
+// Reorganizado 2026-08-25 (ver PROPUESTA_REORGANIZACION_MENU.md) — "lugares-entrega" ya no
+// vive duplicado en 2 grupos (antes Inventario y Flores con 'flores/zonas' aparte); "Clientes"
+// salió de Analítica a un link propio, ya no es parte de ningún accordion.
 const GROUP_ROUTES: { group: string; paths: string[] }[] = [
-  { group: 'misproductos', paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave', 'lugares-entrega'] },
-  { group: 'pedidos',      paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
-  { group: 'ventas',       paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
-  { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
-  { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
-  // 'flores/zonas' es la misma pantalla que 'lugares-entrega' de Inventario, con ruta propia
-  // justamente para que el acordeón no salte de grupo al entrar desde aquí.
-  { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/zonas', 'flores/frases'] },
-  { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
-  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
+  { group: 'catalogo',   paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave'] },
+  { group: 'envios',     paths: ['lugares-entrega'] },
+  { group: 'pedidos',    paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
+  { group: 'ventas',     paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
+  { group: 'reportes',   paths: ['dashboard', 'reportes'] },
+  { group: 'rifas',      paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
+  { group: 'flores',     paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/frases'] },
+  { group: 'marketing',  paths: ['promociones', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
+  { group: 'sistema',    paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
 ];
 
 @Component({

@@ -393,6 +393,13 @@ export interface ICalcularPrecioRequest {
   listones: IListonRequest[];
   lugarEntregaId?: number;
   recogerEnLocal?: boolean;
+  /**
+   * Punto exacto marcado en el mapa — solo hace falta cuando la zona elegida tiene anillos de
+   * cobro por distancia configurados (ver `DISENO_ZONAS_POR_ANILLO.md`). Sin anillos en esa
+   * zona, se ignoran y el envío sigue siendo el costo fijo de siempre.
+   */
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
 export interface IColorCalculado {
@@ -479,6 +486,17 @@ export interface ICalcularPrecioResponse {
   /** `null` si todavía no se eligió lugar ni recoger en local; no cuenta en el total. */
   costoEnvio: number | null;
   envioVarianteId: number | null;
+  /**
+   * `false` cuando la zona elegida tiene anillos de cobro por distancia configurados y el punto
+   * marcado (`latitud`/`longitud` del request) quedó fuera de todos ellos — bloquear "Confirmar
+   * mi ramo" con `mensajeEnvio`, igual que ya se hace con `entregaValida`. Default `true`: sin
+   * anillos en la zona (comportamiento de siempre), o mientras el cliente todavía no marca el
+   * punto (ahí `costoEnvio`/`envioVarianteId` vienen `null`, sin bloquear con un error que
+   * todavía no aplica).
+   */
+  envioDentroDeRango?: boolean;
+  /** El motivo, cuando `envioDentroDeRango` es `false`. Mostrarlo tal cual. */
+  mensajeEnvio?: string | null;
   total: number;
 }
 

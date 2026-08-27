@@ -33,10 +33,13 @@ export interface ISubmenuRequest {
 
 // Rol -- submenus viene ya anidado (Roles.submenus es @ManyToMany EAGER en el back), asi que
 // GET /v1/roles/getAll trae de una vez las pantallas asignadas a cada rol.
+// submenusEscritura (Fase 2 de permisos de accion, 2026-08-27) es un SUBCONJUNTO de submenus:
+// de las pantallas que el rol puede VER, cuales ademas puede ESCRIBIR (crear/editar/borrar).
 export interface IRol {
   id: number;
   nombreRol: string;
   submenus?: ISubmenu[];
+  submenusEscritura?: ISubmenu[];
 }
 
 export interface IRolRequest {

@@ -325,6 +325,117 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 .toggle-wrap { display: flex; align-items: center; gap: 0.75rem; }
 
+// ── Excepciones de pantalla individuales ────────────────────────────────────
+.excepciones-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 0.6rem;
+}
+
+.excepciones-title {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--app-text, #1f2937);
+}
+
+.excepciones-sub {
+  font-size: .74rem;
+  color: var(--app-text-muted, #6b7280);
+}
+
+.pk-empty {
+  color: var(--app-text-muted, #9ca3af);
+  font-size: .8rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+// Mismo patrón acordeón que Gestión de roles (.gr-grupo)
+.gr-grupo {
+  border: 1.5px solid var(--card-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  transition: all .2s ease;
+
+  &--abierto { border-color: var(--app-accent); }
+
+  &__titulo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: .76rem;
+    font-weight: 700;
+    color: var(--app-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    text-align: left;
+  }
+
+  &__nombre { flex: 1; }
+
+  &__chevron {
+    font-size: 1rem;
+    transition: transform .2s ease;
+    color: var(--app-text-muted, #9ca3af);
+  }
+
+  &--abierto &__chevron { transform: rotate(90deg); }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 10px 10px;
+    border-top: 1px solid var(--table-border, #f0f1f3);
+    padding-top: 6px;
+  }
+}
+
+.exc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-size: .82rem;
+  color: var(--app-text, #1f2937);
+  text-align: left;
+  transition: all .15s ease;
+
+  &:hover:not(:disabled) { background: var(--form-section-bg, #f3f4f6); }
+  &:disabled { opacity: .6; cursor: wait; }
+
+  &__estado {
+    font-size: .74rem;
+    color: var(--app-text-muted, #9ca3af);
+    white-space: nowrap;
+  }
+
+  &--suma {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.35);
+    .exc-row__estado { color: #059669; font-weight: 600; }
+  }
+
+  &--quita {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.3);
+    .exc-row__estado { color: #dc2626; font-weight: 600; }
+  }
+}
+
 // ── TEMA OSCURO ───────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .split-form {
@@ -374,6 +485,11 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.1);
   }
+
+  .excepciones-title { color: var(--app-text, #f1f5f9); }
+  .gr-grupo { border-color: rgba(255, 255, 255, 0.12); }
+  .gr-grupo__lista { border-top-color: rgba(255, 255, 255, 0.1); }
+  .exc-row { color: var(--app-text, #f1f5f9); &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); } }
 
   .error-msg {
     background: rgba(220, 38, 38, 0.12);

@@ -2,7 +2,7 @@
 
   <div class="pk-header">
     <h4 class="pk-header__title">🛡️ Gestión de roles</h4>
-    <small class="pk-header__sub">Crea roles y marca qué pantallas puede ver cada uno</small>
+    <small class="pk-header__sub">Crea roles y marca, pantalla por pantalla, quién puede Ver y quién además puede Editar</small>
     <a class="pk-link" routerLink="/gestion-menu">← Volver a menús y submenús</a>
   </div>
 
@@ -73,15 +73,25 @@
             <span class="gr-grupo__chevron">›</span>
           </button>
           <div class="gr-grupo__lista" *ngIf="grupoEstaAbierto(g)">
-            <label class="gr-check" *ngFor="let s of g.submenus"
-                   [title]="esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : ''">
-              <input type="checkbox"
-                     [checked]="tieneSubmenu(s)"
-                     [disabled]="guardandoSubmenuId === s.id || (tieneSubmenu(s) && esSubmenuProtegido(s))"
-                     (change)="toggleSubmenu(s)" />
-              <span>{{ s.icono }} {{ s.nombre }}</span>
-              <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
-            </label>
+            <div class="gr-check-row" *ngFor="let s of g.submenus">
+              <label class="gr-check"
+                     [title]="esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : ''">
+                <input type="checkbox"
+                       [checked]="tieneSubmenu(s)"
+                       [disabled]="guardandoSubmenuId === s.id || (tieneSubmenu(s) && esSubmenuProtegido(s))"
+                       (change)="toggleSubmenu(s)" />
+                <span>{{ s.icono }} {{ s.nombre }}</span>
+                <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
+              </label>
+              <label class="gr-check gr-check--escritura"
+                     [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
+                <input type="checkbox"
+                       [checked]="tieneSubmenuEscritura(s)"
+                       [disabled]="!tieneSubmenu(s) || guardandoEscrituraId === s.id || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
+                       (change)="toggleSubmenuEscritura(s)" />
+                <span>✏️ Editar</span>
+              </label>
+            </div>
           </div>
         </div>
       </ng-container>

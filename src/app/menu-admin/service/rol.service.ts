@@ -41,4 +41,16 @@ export class RolAdminService {
     return this.http.delete<{ data: IRol }>(`${this.urlRoles}/${rolId}/submenus/${submenuId}`)
       .pipe(map(res => res.data));
   }
+
+  // Fase 2 de permisos de accion -- ademas de VER la pantalla (arriba), puede ESCRIBIR en ella.
+  // El back rechaza agregarSubmenuEscritura si el rol todavia no tiene el "ver" de esa pantalla.
+  agregarSubmenuEscritura(rolId: number, submenuId: number): Observable<IRol> {
+    return this.http.post<{ data: IRol }>(`${this.urlRoles}/${rolId}/submenus/${submenuId}/escritura`, {})
+      .pipe(map(res => res.data));
+  }
+
+  quitarSubmenuEscritura(rolId: number, submenuId: number): Observable<IRol> {
+    return this.http.delete<{ data: IRol }>(`${this.urlRoles}/${rolId}/submenus/${submenuId}/escritura`)
+      .pipe(map(res => res.data));
+  }
 }

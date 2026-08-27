@@ -2,14 +2,24 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AccederService } from 'src/app/login/acceder.service';
 import { passwordFuerte, passwordsIguales } from 'src/app/validador/validador';
 import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
-import { UsuarioService } from 'src/app/shared/usuario.service';
+import { UsuarioService, IExcepcionSubmenu } from 'src/app/shared/usuario.service';
 import { SesionService } from 'src/app/shared/sesion.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
+import { MenuAdminService } from 'src/app/menu-admin/service/menu.service';
+import { IMenu, ISubmenu } from 'src/app/menu-admin/models/menu.model';
+
+interface GrupoSubmenusExcepcion {
+  menu: IMenu | null;
+  submenus: ISubmenu[];
+}
+
+type EstadoExcepcion = 'ninguno' | 'suma' | 'quita';
 
 @Component({
   selector: 'app-add-usuarios',
@@ -31,6 +41,13 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
   private cooldownTimer: any = null;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
   roles: { id: number; nombreRol: string }[] = [];
+
+  // ── Excepciones de pantalla individuales (encima del rol) ──────────────────────────────
+  gruposExcepciones: GrupoSubmenusExcepcion[] = [];
+  excepciones: IExcepcionSubmenu[] = [];
+  cargandoExcepciones = false;
+  guardandoExcepcionSubmenuId: number | null = null;
+  grupoExcepcionAbierto: number | 'sin-grupo' | null = null;
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
     './../../../assets/imagenes/imagen2.jpeg',
@@ -52,7 +69,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     public  readonly authService:          AuthService,
     private readonly usuario:              UsuarioService,
     private readonly presentacion:         PresentacionService,
-    private readonly sesion:               SesionService
+    private readonly sesion:               SesionService,
+    private readonly menuAdmin:            MenuAdminService
   ) { }
 
   formRegistro = this.fb.group({
@@ -101,6 +119,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
         },
         error: () => {}
       });
+
+      if (this.updateUser.id) this.cargarExcepciones(this.updateUser.id);
 
       // Verificar si hay cambio de correo pendiente en el backend
       if (this.updateUser.id) {
@@ -504,5 +524,79 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     if (this.pwdStrength <= 2) return 'weak';
     if (this.pwdStrength === 3) return 'medium';
     return 'strong';
+  }
+
+  // ── Excepciones de pantalla individuales (PLAN_PERMISOS_PANTALLAS.md sección 3) ────────
+  // Encima de lo que ya da el rol del usuario: "suma" = le da una pantalla que su rol NO tiene;
+  // "quita" = le quita una que su rol SÍ tiene. Solo para ESTE usuario, sin tocar el rol.
+
+  private cargarExcepciones(usuarioId: number): void {
+    this.cargandoExcepciones = true;
+    this.menuAdmin.getMenus().subscribe(menus => {
+      this.menuAdmin.getSubmenus().subscribe(submenus => {
+        const ordenados = [...menus].sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999));
+        const grupos: GrupoSubmenusExcepcion[] = ordenados.map(menu => ({
+          menu,
+          submenus: submenus
+            .filter(s => s.menu?.id === menu.id)
+            .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
+        }));
+        const sinGrupo = submenus
+          .filter(s => !s.menu)
+          .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999));
+        if (sinGrupo.length > 0) grupos.push({ menu: null, submenus: sinGrupo });
+        this.gruposExcepciones = grupos;
+
+        this.usuario.listarExcepcionesSubmenu(usuarioId).subscribe({
+          next: excepciones => { this.excepciones = excepciones; this.cargandoExcepciones = false; },
+          error: () => { this.cargandoExcepciones = false; }
+        });
+      });
+    });
+  }
+
+  toggleGrupoExcepcion(g: GrupoSubmenusExcepcion): void {
+    const clave = g.menu ? g.menu.id : 'sin-grupo';
+    this.grupoExcepcionAbierto = this.grupoExcepcionAbierto === clave ? null : clave;
+  }
+
+  grupoExcepcionEstaAbierto(g: GrupoSubmenusExcepcion): boolean {
+    return this.grupoExcepcionAbierto === (g.menu ? g.menu.id : 'sin-grupo');
+  }
+
+  contarExcepcionesGrupo(g: GrupoSubmenusExcepcion): number {
+    const idsConExcepcion = new Set(this.excepciones.map(e => e.submenu.id));
+    return g.submenus.filter(s => idsConExcepcion.has(s.id)).length;
+  }
+
+  estadoExcepcion(submenu: ISubmenu): EstadoExcepcion {
+    const e = this.excepciones.find(ex => ex.submenu.id === submenu.id);
+    if (!e) return 'ninguno';
+    return e.concedido ? 'suma' : 'quita';
+  }
+
+  // Clic = ciclo de 3 estados: sin excepción -> "+ dar acceso" -> "- quitar acceso" -> sin excepción.
+  ciclarExcepcion(submenu: ISubmenu): void {
+    if (!this.updateUser.id) return;
+    const usuarioId = this.updateUser.id;
+    const estado = this.estadoExcepcion(submenu);
+    this.guardandoExcepcionSubmenuId = submenu.id;
+
+    const op$: Observable<unknown> = estado === 'ninguno'
+      ? this.usuario.agregarExcepcionSubmenu(usuarioId, submenu.id, true)
+      : estado === 'suma'
+        ? this.usuario.agregarExcepcionSubmenu(usuarioId, submenu.id, false)
+        : this.usuario.quitarExcepcionSubmenu(usuarioId, submenu.id);
+
+    op$.subscribe({
+      next: () => {
+        this.guardandoExcepcionSubmenuId = null;
+        this.cargarExcepciones(usuarioId);
+      },
+      error: (err: any) => {
+        this.guardandoExcepcionSubmenuId = null;
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la excepción.' });
+      }
+    });
   }
 }

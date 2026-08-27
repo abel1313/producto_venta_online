@@ -176,6 +176,13 @@ $t:  all 0.2s ease;
   }
 }
 
+// Fila con "Ver" (pantalla) + "Editar" (escritura, Fase 2 de permisos de acción) uno junto al otro.
+.gr-check-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
 .gr-check {
   display: flex;
   align-items: center;
@@ -191,6 +198,12 @@ $t:  all 0.2s ease;
     cursor: pointer;
     accent-color: var(--app-accent);
     flex-shrink: 0;
+  }
+
+  &--escritura {
+    font-size: .8rem;
+    color: var(--app-text-muted, #6b7280);
+    &:has(input:disabled) { opacity: .45; cursor: not-allowed; }
   }
 }
 

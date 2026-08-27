@@ -168,6 +168,44 @@
           </button>
         </div>
 
+        <!-- Excepciones de pantalla individuales -- encima de lo que ya da el rol de este
+             usuario, sin tocar el rol (afecta solo a esta persona). -->
+        <div class="admin-section admin-section--excepciones" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario' && updateUser.id">
+          <div class="excepciones-header">
+            <span class="excepciones-title">🔓 Excepciones de pantalla de {{ updateUser.username }}</span>
+            <small class="excepciones-sub">Encima del rol "{{ updateUser.rol }}": dale acceso a una pantalla que su rol no tiene, o quítasela sin tocar el rol.</small>
+          </div>
+
+          <div class="pk-empty" *ngIf="!cargandoExcepciones && gruposExcepciones.length === 0">
+            Todavía no hay menús/submenús dados de alta.
+          </div>
+
+          <div class="gr-grupo" *ngFor="let g of gruposExcepciones" [class.gr-grupo--abierto]="grupoExcepcionEstaAbierto(g)">
+            <button class="gr-grupo__titulo" type="button" (click)="toggleGrupoExcepcion(g)">
+              <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span>
+              <span class="gr-grupo__nombre">{{ g.menu?.nombre ?? 'Sin grupo' }}</span>
+              <small class="pk-meta" *ngIf="contarExcepcionesGrupo(g) > 0">{{ contarExcepcionesGrupo(g) }} excepción(es)</small>
+              <span class="gr-grupo__chevron">›</span>
+            </button>
+            <div class="gr-grupo__lista" *ngIf="grupoExcepcionEstaAbierto(g)">
+              <button type="button" class="exc-row" *ngFor="let s of g.submenus"
+                      [class.exc-row--suma]="estadoExcepcion(s) === 'suma'"
+                      [class.exc-row--quita]="estadoExcepcion(s) === 'quita'"
+                      [disabled]="guardandoExcepcionSubmenuId === s.id"
+                      (click)="ciclarExcepcion(s)">
+                <span class="exc-row__nombre">{{ s.icono }} {{ s.nombre }}</span>
+                <span class="exc-row__estado">
+                  <ng-container [ngSwitch]="estadoExcepcion(s)">
+                    <span *ngSwitchCase="'suma'">✅ Se le dio acceso</span>
+                    <span *ngSwitchCase="'quita'">🚫 Se le quitó acceso</span>
+                    <span *ngSwitchDefault class="exc-row__estado--neutro">Según su rol — clic para forzar</span>
+                  </ng-container>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <button type="submit" class="btn-submit"
                 *ngIf="!(textoCard === 'Actualizar usuario' && authService.isAdminService)"
                 [disabled]="formRegistro.invalid">

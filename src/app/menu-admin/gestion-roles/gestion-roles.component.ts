@@ -18,7 +18,9 @@ const ROL_ADMIN = 'ROLE_ADMIN';
 
 // Gestión de roles -- PLAN_PERMISOS_PANTALLAS.md sección 3: los roles dejan de ser los 4 fijos
 // del código, el admin crea/edita/borra roles y marca con checkboxes qué pantallas (Submenu) ve
-// cada uno. Fase 2 (permisos de acción) amplía esta misma pantalla más adelante.
+// cada uno. Fase 2 de permisos de acción (2026-08-27): un segundo checkbox por pantalla ("Editar")
+// separa VER (rol_submenu, sin cambios) de ESCRIBIR (rol_submenu_escritura, nuevo) -- antes era
+// todo-o-nada: dar una pantalla daba automáticamente el CRUD completo.
 @Component({
   selector: 'app-gestion-roles',
   templateUrl: './gestion-roles.component.html',
@@ -36,6 +38,7 @@ export class GestionRolesComponent implements OnInit {
   grupos: GrupoSubmenus[] = [];
   cargandoCatalogo = false;
   guardandoSubmenuId: number | null = null;
+  guardandoEscrituraId: number | null = null;
 
   // Acordeón -- igual que el navbar: arrancan todos cerrados, uno a la vez abierto, para no
   // tirar los ~40 submenus de un jalón. 'sin-grupo' identifica al pseudo-grupo de items sueltos.
@@ -198,12 +201,45 @@ export class GestionRolesComponent implements OnInit {
       : this.rolSvc.agregarSubmenu(rolId, submenu.id);
     op$.subscribe({
       next: rolActualizado => {
+        // Si se quitó el "ver", el back cascadea y también quita el "editar" -- rolActualizado
+        // ya viene con ambos sets consistentes, no hace falta tocar nada más aquí.
         this.rolSeleccionado = rolActualizado;
         this.roles = this.roles.map(r => r.id === rolActualizado.id ? rolActualizado : r);
         this.guardandoSubmenuId = null;
       },
       error: err => {
         this.guardandoSubmenuId = null;
+        Swal.fire({ icon: 'error', title: err?.error?.mensaje ?? 'Error al actualizar' });
+      }
+    });
+  }
+
+  // ── Fase 2 de permisos de accion: además de VER, ¿puede ESCRIBIR (crear/editar/borrar)? ──
+
+  tieneSubmenuEscritura(submenu: ISubmenu): boolean {
+    return !!this.rolSeleccionado?.submenusEscritura?.some(s => s.id === submenu.id);
+  }
+
+  toggleSubmenuEscritura(submenu: ISubmenu): void {
+    if (!this.rolSeleccionado) return;
+    if (!this.tieneSubmenu(submenu)) return; // el checkbox ya viene deshabilitado en este caso
+    if (this.tieneSubmenuEscritura(submenu) && this.esSubmenuProtegido(submenu)) {
+      Swal.fire({ icon: 'info', title: 'No se puede quitar', text: `"${submenu.nombre}" es una pantalla protegida para ROLE_ADMIN -- sin ella nadie podría volver a asignar permisos.` });
+      return;
+    }
+    const rolId = this.rolSeleccionado.id;
+    this.guardandoEscrituraId = submenu.id;
+    const op$ = this.tieneSubmenuEscritura(submenu)
+      ? this.rolSvc.quitarSubmenuEscritura(rolId, submenu.id)
+      : this.rolSvc.agregarSubmenuEscritura(rolId, submenu.id);
+    op$.subscribe({
+      next: rolActualizado => {
+        this.rolSeleccionado = rolActualizado;
+        this.roles = this.roles.map(r => r.id === rolActualizado.id ? rolActualizado : r);
+        this.guardandoEscrituraId = null;
+      },
+      error: err => {
+        this.guardandoEscrituraId = null;
         Swal.fire({ icon: 'error', title: err?.error?.mensaje ?? 'Error al actualizar' });
       }
     });

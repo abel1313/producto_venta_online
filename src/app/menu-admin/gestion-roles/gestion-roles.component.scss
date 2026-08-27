@@ -176,11 +176,37 @@ $t:  all 0.2s ease;
   }
 }
 
+// Envuelve la fila Ver/Editar de una pantalla + su lista de acciones puntuales (Fase 3), si tiene.
+.gr-submenu-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
 // Fila con "Ver" (pantalla) + "Editar" (escritura, Fase 2 de permisos de acción) uno junto al otro.
 .gr-check-row {
   display: flex;
   align-items: center;
   gap: 18px;
+}
+
+// Acciones puntuales dentro de una pantalla (Fase 3, piloto en Modelos 2026-08-27) -- mas finas
+// que el "Editar" general, ej. "eliminar" sin "habilitar".
+.gr-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 2px 0 4px 26px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--card-border, #e5e7eb);
+
+  &--bloqueado { opacity: .5; }
+}
+
+.gr-check--accion {
+  font-size: .78rem;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .gr-check {
@@ -205,6 +231,10 @@ $t:  all 0.2s ease;
     color: var(--app-text-muted, #6b7280);
     &:has(input:disabled) { opacity: .45; cursor: not-allowed; }
   }
+
+  &--accion {
+    &:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+  }
 }
 
 // ── Dark mode ────────────────────────────────────────────────────────
@@ -217,6 +247,7 @@ $t:  all 0.2s ease;
   .gr-grupo__titulo { color: var(--app-text-muted, #cbd5e1); }
   .gr-grupo__lista { border-top-color: var(--card-border, #374151); }
   .gm-list__item { border-color: var(--card-border, #374151); }
+  .gr-acciones { border-left-color: var(--card-border, #374151); }
 }
 
 :host-context(body.theme-light) {

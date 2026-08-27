@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
-import { IMenu, IRol, ISubmenu } from '../models/menu.model';
+import { IAccionSubmenu, IMenu, IRol, ISubmenu } from '../models/menu.model';
 import { MenuAdminService } from '../service/menu.service';
 import { RolAdminService } from '../service/rol.service';
 
@@ -39,6 +39,11 @@ export class GestionRolesComponent implements OnInit {
   cargandoCatalogo = false;
   guardandoSubmenuId: number | null = null;
   guardandoEscrituraId: number | null = null;
+  guardandoAccionId: number | null = null;
+
+  // Catalogo de acciones granulares por pantalla (Fase 3, piloto en Modelos 2026-08-27),
+  // agrupado por submenu.id -- la mayoria de las pantallas hoy no tienen ninguna, solo Modelos.
+  accionesPorSubmenu = new Map<number, IAccionSubmenu[]>();
 
   // Acordeón -- igual que el navbar: arrancan todos cerrados, uno a la vez abierto, para no
   // tirar los ~40 submenus de un jalón. 'sin-grupo' identifica al pseudo-grupo de items sueltos.
@@ -90,6 +95,48 @@ export class GestionRolesComponent implements OnInit {
         this.grupos = grupos;
         this.cargandoCatalogo = false;
       });
+    });
+    this.rolSvc.getAcciones().subscribe({
+      next: acciones => {
+        const mapa = new Map<number, IAccionSubmenu[]>();
+        for (const a of acciones) {
+          const lista = mapa.get(a.submenu.id) ?? [];
+          lista.push(a);
+          mapa.set(a.submenu.id, lista.sort((x, y) => (x.orden ?? 999) - (y.orden ?? 999)));
+        }
+        this.accionesPorSubmenu = mapa;
+      },
+      error: () => {}
+    });
+  }
+
+  // ── Fase 3 de permisos: acciones puntuales dentro de una pantalla (piloto en Modelos) ────
+
+  accionesDe(submenu: ISubmenu): IAccionSubmenu[] {
+    return this.accionesPorSubmenu.get(submenu.id) ?? [];
+  }
+
+  tieneAccion(accion: IAccionSubmenu): boolean {
+    return !!this.rolSeleccionado?.acciones?.some(a => a.id === accion.id);
+  }
+
+  toggleAccion(accion: IAccionSubmenu): void {
+    if (!this.rolSeleccionado) return;
+    const rolId = this.rolSeleccionado.id;
+    this.guardandoAccionId = accion.id;
+    const op$ = this.tieneAccion(accion)
+      ? this.rolSvc.quitarAccion(rolId, accion.id)
+      : this.rolSvc.agregarAccion(rolId, accion.id);
+    op$.subscribe({
+      next: rolActualizado => {
+        this.rolSeleccionado = rolActualizado;
+        this.roles = this.roles.map(r => r.id === rolActualizado.id ? rolActualizado : r);
+        this.guardandoAccionId = null;
+      },
+      error: err => {
+        this.guardandoAccionId = null;
+        Swal.fire({ icon: 'error', title: err?.error?.mensaje ?? 'Error al actualizar' });
+      }
     });
   }
 

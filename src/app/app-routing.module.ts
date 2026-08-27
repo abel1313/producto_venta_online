@@ -110,6 +110,13 @@ const routes: Routes = [
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
+    // Pantalla única de Personalización (colores/fondos/cards/tablas/menú) -- ver
+    // migration_tema_negocio.sql para el catálogo submenu/rol_submenu que la habilita.
+    path: 'personalizacion',
+    loadChildren: () => import('./tema-admin/tema-admin.module').then(m => m.TemaAdminModule),
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
+  },
+  {
     // Flores eternas — el módulo mezcla pantallas admin (catálogos) y una pública (vitrina de
     // ramos armados), así que el guard de admin ya NO va aquí arriba: vive solo en la ruta
     // 'catalogos' dentro de flores-routing.module.ts. Mismo nivel que "Tienda" — sin AuthGuard,

@@ -77,7 +77,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .mp-section-desc {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   margin: -0.4rem 0 1rem;
 }
 
@@ -98,7 +98,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text, #374151);
   letter-spacing: 0.02em;
 }
 
@@ -111,7 +111,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.85rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -120,11 +120,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-input {
   width: 100%;
   padding: 0.62rem 1rem 0.62rem 2.35rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: $radius-sm;
   font-size: 0.875rem;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--app-text, #111827);
+  background: var(--form-section-bg, #f9fafb);
   outline: none;
   transition: $trans;
   box-sizing: border-box;
@@ -134,7 +134,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:focus {
     border-color: var(--app-accent, var(--brand-1));
-    background: #fff;
+    background: var(--card-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
     ~ .mp-input-icon { color: var(--app-accent, var(--brand-1)); }
   }
@@ -149,7 +149,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   cursor: pointer;
   padding: 4px;
   line-height: 1;
@@ -184,7 +184,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .mp-hint {
   font-size: 0.74rem;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   margin: 0;
 }
 
@@ -262,7 +262,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   transition: color 0.2s;
   i { font-size: 0.8rem; color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
   .req-example { opacity: 0.65; font-size: 0.73rem; }
-  &.met { color: #374151; i { color: #10b981; } }
+  &.met { color: var(--app-text, #374151); i { color: #10b981; } }
 }
 
 .pwd-strength-bar {
@@ -298,7 +298,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   gap: 0.6rem;
   font-size: 0.82rem;
-  color: #374151;
+  color: var(--app-text, #374151);
   .pi { color: var(--app-accent, var(--brand-1)); font-size: 0.9rem; margin-top: 2px; flex-shrink: 0; }
 }
 
@@ -348,30 +348,30 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-btn--cancelar-codigo {
   padding: 0.45rem 1rem;
   background: transparent;
-  color: #64748b;
-  border: 1.5px solid #e5e7eb;
+  color: var(--app-text-muted, #64748b);
+  border: 1.5px solid var(--card-border, #e5e7eb);
   border-radius: $radius-sm;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: $trans;
-  &:hover { border-color: #94a3b8; color: #374151; }
+  &:hover { border-color: var(--card-border, #94a3b8); color: var(--app-text, #374151); }
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .mp-card { background: #1e1e2e; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+  .mp-card { background: var(--card-bg, #1e1e2e); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
 
   .mp-section-label { color: var(--app-accent); }
-  .mp-section-desc  { color: #64748b; }
-  .mp-label         { color: #94a3b8; }
-  .mp-hint          { color: #475569; }
+  .mp-section-desc  { color: var(--app-text-muted, #64748b); }
+  .mp-label         { color: var(--app-text-muted, #94a3b8); }
+  .mp-hint          { color: var(--app-text-muted, #475569); }
 
   .mp-input {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
+    color: var(--app-text, #f1f5f9);
     &::placeholder { color: #475569; }
     &:focus {
       background: rgba(255, 255, 255, 0.09);
@@ -380,8 +380,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .mp-input-icon  { color: #475569; }
-  .mp-toggle-pass { color: #475569; }
+  .mp-input-icon  { color: var(--app-text-muted, #475569); }
+  .mp-toggle-pass { color: var(--app-text-muted, #475569); }
 
   .mp-divider { border-top-color: rgba(255, 255, 255, 0.07); }
 
@@ -416,7 +416,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: rgba(var(--app-accent-rgb), 0.22);
   }
 
-  .mp-codigo-info { color: #cbd5e1; }
+  .mp-codigo-info { color: var(--app-text, #cbd5e1); }
 
   .mp-btn--reenviar {
     color: var(--brand-1);
@@ -425,14 +425,14 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mp-btn--cancelar-codigo {
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     border-color: rgba(255, 255, 255, 0.1);
-    &:hover { border-color: #475569; color: #e2e8f0; }
+    &:hover { border-color: var(--card-border, #475569); color: var(--app-text, #e2e8f0); }
   }
 }
 
 // ── LIGHT MODE ────────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .mp-card  { background: #fff; }
-  .mp-input { background: #f9fafb; border-color: #e5e7eb; color: #111827; }
+  .mp-card  { background: var(--card-bg, #fff); }
+  .mp-input { background: var(--form-section-bg, #f9fafb); border-color: var(--card-border, #e5e7eb); color: var(--app-text, #111827); }
 }

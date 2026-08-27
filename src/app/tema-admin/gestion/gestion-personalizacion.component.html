@@ -1,0 +1,134 @@
+<div class="pz-wrap">
+  <div class="pz-header">
+    <h1 class="pz-header__title">🎨 Personalización</h1>
+    <p class="pz-header__sub">Catálogo de variables de color/forma -- agrega, edita o elimina las
+      que quieras, sin límite. Las que no des de alta usan el valor fijo de código. Cada variable
+      tiene un valor para modo claro ☀️ y otro para modo oscuro 🌙 -- se aplica a toda la app en
+      vivo mientras editas; "Guardar" lo deja fijo.</p>
+  </div>
+
+  <div class="pz-loading" *ngIf="cargando">Cargando…</div>
+
+  <ng-container *ngIf="!cargando">
+
+    <!-- ── Alta / edición ─────────────────────────────────────────── -->
+    <form class="pz-form pz-form--card" [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="pz-form__title">{{ editandoId ? '✏️ Editar variable' : '➕ Agregar variable nueva' }}</div>
+
+      <div class="pz-form__grid">
+        <label class="pz-field pz-field--col">
+          <span class="pz-field__mode">Clave (nombre CSS, sin --)</span>
+          <input class="pz-input" type="text" formControlName="clave" placeholder="ej. app-bg"
+                 [readonly]="editandoId !== null" (input)="previsualizar()">
+          <small class="pz-error" *ngIf="form.get('clave')?.invalid && form.get('clave')?.touched">
+            Obligatoria, solo minúsculas/números/guiones (ej. app-bg)
+          </small>
+        </label>
+
+        <label class="pz-field pz-field--col">
+          <span class="pz-field__mode">Etiqueta</span>
+          <input class="pz-input" type="text" formControlName="etiqueta" placeholder="ej. Fondo de la página"
+                 (input)="previsualizar()">
+          <small class="pz-error" *ngIf="form.get('etiqueta')?.invalid && form.get('etiqueta')?.touched">
+            Obligatoria
+          </small>
+        </label>
+
+        <label class="pz-field pz-field--col">
+          <span class="pz-field__mode">Grupo</span>
+          <input class="pz-input" type="text" formControlName="grupo" placeholder="ej. Página" list="pz-grupos">
+          <datalist id="pz-grupos">
+            <option *ngFor="let g of grupos" [value]="g"></option>
+          </datalist>
+        </label>
+
+        <label class="pz-field pz-field--col">
+          <span class="pz-field__mode">Tipo</span>
+          <select class="pz-input" formControlName="tipo" (change)="previsualizar()">
+            <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+          </select>
+        </label>
+
+        <ng-container *ngIf="form.value.tipo === 'seleccion'; else valoresLibres">
+          <label class="pz-field pz-field--col">
+            <span class="pz-field__mode">Valor</span>
+            <select class="pz-input" formControlName="valorClaro" (change)="previsualizar()">
+              <option *ngFor="let s of sombras" [value]="s">{{ s }}</option>
+            </select>
+          </label>
+        </ng-container>
+        <ng-template #valoresLibres>
+          <label class="pz-field pz-field--col">
+            <span class="pz-field__mode">☀️ Valor claro</span>
+            <div class="pz-pair__row">
+              <input class="pz-color" *ngIf="form.value.tipo === 'color'" type="color"
+                     [value]="form.value.valorClaro || '#ffffff'"
+                     (input)="form.patchValue({valorClaro: $any($event.target).value}); previsualizar()">
+              <input class="pz-input" type="text" formControlName="valorClaro" placeholder="#00875A o rgba(...)"
+                     (input)="previsualizar()">
+            </div>
+            <small class="pz-error" *ngIf="form.get('valorClaro')?.invalid && form.get('valorClaro')?.touched">
+              Obligatorio
+            </small>
+          </label>
+
+          <label class="pz-field pz-field--col">
+            <span class="pz-field__mode">🌙 Valor oscuro</span>
+            <div class="pz-pair__row">
+              <input class="pz-color" *ngIf="form.value.tipo === 'color'" type="color"
+                     [value]="form.value.valorOscuro || form.value.valorClaro || '#ffffff'"
+                     (input)="form.patchValue({valorOscuro: $any($event.target).value}); previsualizar()">
+              <input class="pz-input" type="text" formControlName="valorOscuro" placeholder="vacío = igual que el claro"
+                     (input)="previsualizar()">
+            </div>
+          </label>
+        </ng-template>
+
+        <label class="pz-field pz-field--col" *ngIf="form.value.tipo === 'numero'">
+          <span class="pz-field__mode">Orden</span>
+          <input class="pz-input pz-input--num" type="number" formControlName="orden">
+        </label>
+      </div>
+
+      <div class="pz-actions pz-actions--split">
+        <button class="pz-btn pz-btn--cancel" type="button" *ngIf="editandoId" (click)="cancelarEdicion()">
+          ✕ Cancelar
+        </button>
+        <button class="pz-btn pz-btn--save" type="submit" [disabled]="guardando">
+          {{ guardando ? 'Guardando…' : (editandoId ? '💾 Actualizar' : '➕ Agregar variable') }}
+        </button>
+      </div>
+    </form>
+
+    <!-- ── Catálogo actual, agrupado ──────────────────────────────── -->
+    <div class="pz-empty" *ngIf="grupos.length === 0">
+      Todavía no hay variables dadas de alta -- toda la app usa los valores fijos de código.
+    </div>
+
+    <section class="pz-section" *ngFor="let g of grupos">
+      <button type="button" class="pz-section__header" (click)="toggleGrupo(g)">
+        <span class="pz-section__title">{{ g }}</span>
+        <small class="pz-section__count">{{ porGrupo(g).length }}</small>
+        <span class="pz-section__chevron" [class.pz-section__chevron--open]="grupoAbierto(g)">›</span>
+      </button>
+
+      <div class="pz-section__body" *ngIf="grupoAbierto(g)">
+        <div class="pz-row" *ngFor="let v of porGrupo(g)" [class.pz-row--editando]="editandoId === v.id">
+          <div class="pz-row__swatches" *ngIf="v.tipo === 'color'">
+            <span class="pz-swatch" [style.background]="v.valorClaro" title="Claro"></span>
+            <span class="pz-swatch" [style.background]="v.valorOscuro || v.valorClaro" title="Oscuro"></span>
+          </div>
+          <div class="pz-row__info">
+            <span class="pz-row__etiqueta">{{ v.etiqueta }}</span>
+            <small class="pz-row__clave">--{{ v.clave }}</small>
+          </div>
+          <span class="pz-row__valor" *ngIf="v.tipo !== 'color'">{{ v.valorClaro }}</span>
+          <span class="pz-row__actions">
+            <button class="pz-btn pz-btn--edit" type="button" (click)="iniciarEdicion(v)" title="Editar">✏️</button>
+            <button class="pz-btn pz-btn--del" type="button" (click)="eliminar(v)" title="Eliminar">🗑️</button>
+          </span>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

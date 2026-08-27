@@ -11,7 +11,7 @@
   margin-bottom: 24px;
   &__title {
     h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
-    small { color: #64748b; }
+    small { color: var(--app-text-muted, #64748b); }
   }
 }
 
@@ -202,14 +202,14 @@
   }
 
   &__normal {
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     font-size: 0.78rem;
   }
 }
 
 .gp-form-empty {
   text-align: center;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   font-size: 0.88rem;
   padding: 20px;
   border: 1.5px dashed var(--card-border);
@@ -227,7 +227,7 @@
 .gp-loading, .gp-empty {
   text-align: center;
   padding: 40px;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
 }
 
 .gp-grid {
@@ -262,7 +262,7 @@
 
   &__vence, &__piezas {
     font-size: 0.82rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     margin: 2px 0;
   }
 
@@ -305,7 +305,7 @@
 }
 
 .gp-precio {
-  &--normal { font-size: 0.85rem; color: #94a3b8; text-decoration: line-through; }
+  &--normal { font-size: 0.85rem; color: var(--app-text-muted, #94a3b8); text-decoration: line-through; }
   &--promo  { font-size: 1rem; font-weight: 700; color: var(--app-accent); }
 }
 
@@ -326,17 +326,17 @@
 
 .gp-existencias {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   margin-left: 4px;
 }
 
 // ── Dark mode ─────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .gp-form-card { background: rgba(255,255,255,.04); }
-  .gp-dropdown  { background: #18181b; border-color: rgba(255,255,255,.1); }
+  .gp-dropdown  { background: var(--card-bg, #18181b); border-color: rgba(255,255,255,.1); }
   .gp-card      { background: rgba(255,255,255,.04); }
 }
 :host-context(body.theme-light) {
-  .gp-form-card { background: #fff; }
-  .gp-card      { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .gp-form-card { background: var(--card-bg, #fff); }
+  .gp-card      { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }

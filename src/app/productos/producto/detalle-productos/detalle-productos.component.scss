@@ -86,12 +86,12 @@
 :host-context(body.theme-light) {
   ::ng-deep {
     .p-paginator {
-      background: #f8fafc;
-      border-color: #e2e8f0;
-      color: #1e293b;
+      background: var(--table-header-bg, #f8fafc);
+      border-color: var(--table-border, #e2e8f0);
+      color: var(--app-text, #1e293b);
 
       .p-paginator-element {
-        color: #475569;
+        color: var(--app-text-muted, #475569);
         background: transparent;
         border: none;
         &:hover { background: rgba(var(--app-accent-rgb),0.08); color: var(--app-accent); }
@@ -104,18 +104,18 @@
       }
 
       .p-dropdown {
-        background: #fff;
-        border-color: #cbd5e1;
-        .p-dropdown-label { color: #1e293b; }
-        .p-dropdown-trigger { color: #64748b; }
+        background: var(--card-bg, #fff);
+        border-color: var(--card-border, #cbd5e1);
+        .p-dropdown-label { color: var(--app-text, #1e293b); }
+        .p-dropdown-trigger { color: var(--app-text-muted, #64748b); }
       }
     }
 
     .p-dropdown-panel {
-      background: #fff;
-      border-color: #e2e8f0;
+      background: var(--card-bg, #fff);
+      border-color: var(--table-border, #e2e8f0);
       .p-dropdown-item {
-        color: #1e293b;
+        color: var(--app-text, #1e293b);
         &:hover { background: rgba(var(--app-accent-rgb),0.07); }
         &.p-highlight { background: rgba(var(--app-accent-rgb),0.12); color: var(--app-accent); }
       }
@@ -135,10 +135,10 @@
     .p-paginator {
       background: #1e1e2e;
       border-color: rgba(255,255,255,0.08);
-      color: #e2e8f0;
+      color: var(--app-text, #e2e8f0);
 
       .p-paginator-element {
-        color: #94a3b8;
+        color: var(--app-text-muted, #94a3b8);
         background: transparent;
         border: none;
         &:hover { background: rgba(255,255,255,0.07); color: #c7d2fe; }
@@ -146,7 +146,7 @@
       }
 
       .p-paginator-page {
-        color: #94a3b8;
+        color: var(--app-text-muted, #94a3b8);
         &:hover { background: rgba(255,255,255,0.07); }
         &.p-highlight {
           background: var(--app-accent);
@@ -158,8 +158,8 @@
       .p-dropdown {
         background: #27272a;
         border-color: rgba(255,255,255,0.15);
-        .p-dropdown-label { color: #e2e8f0; }
-        .p-dropdown-trigger { color: #94a3b8; }
+        .p-dropdown-label { color: var(--app-text, #e2e8f0); }
+        .p-dropdown-trigger { color: var(--app-text-muted, #94a3b8); }
         &:hover { border-color: rgba(255,255,255,0.3); }
       }
     }
@@ -168,7 +168,7 @@
       background: #27272a;
       border-color: rgba(255,255,255,0.15);
       .p-dropdown-item {
-        color: #e2e8f0;
+        color: var(--app-text, #e2e8f0);
         &:hover { background: rgba(255,255,255,0.07); }
         &.p-highlight { background: rgba(var(--app-accent-rgb),0.3); color: var(--app-accent); }
       }
@@ -177,12 +177,12 @@
     .p-datatable {
       .p-datatable-thead > tr > th {
         background: #27272a;
-        color: #e2e8f0;
+        color: var(--app-text, #e2e8f0);
         border-color: rgba(255,255,255,0.08);
       }
       .p-datatable-tbody > tr {
         background: var(--card-bg);
-        color: #e2e8f0;
+        color: var(--app-text, #e2e8f0);
         > td { border-color: rgba(255,255,255,0.06); }
         &:hover { background: rgba(255,255,255,0.04); }
       }
@@ -197,13 +197,13 @@
     .form-control {
       background: #27272a;
       border-color: rgba(255,255,255,0.15);
-      color: #e2e8f0;
+      color: var(--app-text, #e2e8f0);
       &::placeholder { color: rgba(148,163,184,0.6); }
       &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.2); }
     }
 
     .btn-primary { background: var(--app-accent); border-color: var(--app-accent); }
-    .btn-outline-secondary { color: #94a3b8; border-color: rgba(255,255,255,0.2); }
+    .btn-outline-secondary { color: var(--app-text-muted, #94a3b8); border-color: rgba(255,255,255,0.2); }
     .card-header.bg-primary { background: linear-gradient(135deg, var(--brand-3), var(--brand-2)) !important; }
   }
 }

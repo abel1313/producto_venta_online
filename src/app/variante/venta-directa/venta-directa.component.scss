@@ -462,8 +462,8 @@ $t:  all 0.22s ease;
   }
   &--cancelar { background: #dc2626; color: #fff; }
   &--cerrar {
-    background: #f3f4f6; color: #6b7280;
-    &:hover { background: #e5e7eb; }
+    background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280);
+    &:hover { background: var(--card-border, #e5e7eb); }
   }
 }
 
@@ -682,7 +682,7 @@ $t:  all 0.22s ease;
 // ── Divider "o" ────────────────────────────────────────────────────
 .vd-client-divider {
   display: flex; align-items: center; gap: 10px; color: #d1d5db; font-size: .78rem;
-  &::before, &::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border, #e5e7eb); }
 }
 
 // ── Botón agregar sin registro ─────────────────────────────────────

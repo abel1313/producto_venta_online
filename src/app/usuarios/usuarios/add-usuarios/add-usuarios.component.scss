@@ -107,7 +107,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Panel derecho ──────────────────────────────────────────────────────────
 .split-form {
   flex: 1;
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,7 +119,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     order: 1;
     flex: none;
     width: 100%;
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     box-shadow: none;
     padding: 2rem 1.5rem 1.5rem;
     align-items: flex-start;
@@ -155,7 +155,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .brand-name {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   margin: 0 0 0.2rem;
   letter-spacing: -0.03em;
 
@@ -169,7 +169,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 .brand-sub {
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   margin: 0;
 }
 
@@ -183,7 +183,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text-muted, #374151);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.35rem;
@@ -196,7 +196,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   left: 13px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   pointer-events: none;
   transition: $transition;
@@ -211,7 +211,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   line-height: 1;
   transition: color 0.2s;
@@ -221,22 +221,22 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .field-input {
   width: 100%;
   padding: 0.65rem 1rem 0.65rem 2.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--input-border, #e5e7eb);
   border-radius: 10px;
   font-size: 0.88rem;
-  color: #1f2937;
-  background: #f9fafb;
+  color: var(--input-text, #1f2937);
+  background: var(--input-bg, #f9fafb);
   outline: none;
   transition: $transition;
   box-sizing: border-box;
 
   &--has-toggle { padding-right: 2.5rem; }
 
-  &::placeholder { color: #d1d5db; }
+  &::placeholder { color: var(--input-placeholder, #d1d5db); }
 
   &:focus {
     border-color: var(--app-accent);
-    background: #fff;
+    background: var(--input-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.1);
     ~ .input-icon { color: var(--app-accent); }
   }
@@ -314,8 +314,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 .admin-section {
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
+  background: var(--table-header-bg, #f9fafb);
+  border: 2px solid var(--table-border, #e5e7eb);
   border-radius: 12px;
   padding: 0.85rem;
   margin-bottom: 0.9rem;
@@ -334,16 +334,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     @media (max-width: 768px) { background: #0d1117; }
   }
 
-  .brand-name  { color: #f1f5f9; }
-  .brand-sub   { color: #64748b; }
-  .field-label { color: #94a3b8; }
+  .brand-name  { color: var(--app-text, #f1f5f9); }
+  .brand-sub   { color: var(--app-text-muted, #64748b); }
+  .field-label { color: var(--app-text-muted, #94a3b8); }
 
   .field-input {
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
+    color: var(--input-text, #f1f5f9);
 
-    &::placeholder { color: #475569; }
+    &::placeholder { color: var(--input-placeholder, #475569); }
     &:focus {
       background: rgba(255, 255, 255, 0.1);
       border-color: var(--app-accent);
@@ -351,8 +351,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .input-icon  { color: #64748b; }
-  .toggle-pass { color: #64748b; &:hover { color: var(--app-accent); } }
+  .input-icon  { color: var(--app-text-muted, #64748b); }
+  .toggle-pass { color: var(--app-text-muted, #64748b); &:hover { color: var(--app-accent); } }
 
   .pwd-requirements {
     background: rgba(220, 38, 38, 0.08);
@@ -387,23 +387,23 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── TEMA CLARO ────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .split-form   { background: #ffffff; }
-  .brand-name   { color: #1f2937; }
-  .field-label  { color: #374151; }
+  .split-form   { background: var(--card-bg, #ffffff); }
+  .brand-name   { color: var(--app-text, #1f2937); }
+  .field-label  { color: var(--app-text-muted, #374151); }
 
   .field-input {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #1f2937;
-    &::placeholder { color: #d1d5db; }
+    background: var(--input-bg, #f9fafb);
+    border-color: var(--input-border, #e5e7eb);
+    color: var(--input-text, #1f2937);
+    &::placeholder { color: var(--input-placeholder, #d1d5db); }
   }
 
-  .admin-section { background: #f9fafb; border-color: #e5e7eb; }
+  .admin-section { background: var(--table-header-bg, #f9fafb); border-color: var(--table-border, #e5e7eb); }
 }
 
 .toggle-label {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   transition: color 0.2s;
   &.on { color: #10b981; font-weight: 600; }
 }
@@ -452,8 +452,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.5rem;
   padding: 0.68rem 1rem;
   background: transparent;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
+  color: var(--app-text-muted, #6b7280);
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 10px;
   font-size: 0.88rem;
   font-weight: 600;
@@ -524,12 +524,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #374151;
+  color: var(--app-text, #374151);
   line-height: 1.45;
 
   .pi { color: var(--brand-1); margin-top: 1px; font-size: 0.9rem; }
 
-  strong { color: #1e293b; }
+  strong { color: var(--app-text, #1e293b); }
 }
 
 .au-codigo-acciones {
@@ -577,15 +577,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .au-btn-cancelar-codigo {
   padding: 0.45rem 0.9rem;
   background: transparent;
-  color: #64748b;
-  border: 1.5px solid #e5e7eb;
+  color: var(--app-text-muted, #64748b);
+  border: 1.5px solid var(--card-border, #e5e7eb);
   border-radius: 9px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: $transition;
-  &:hover { border-color: #94a3b8; color: #374151; }
+  &:hover { border-color: #94a3b8; color: var(--app-text, #374151); }
 }
 
 :host-context(body.theme-dark) {
@@ -594,8 +594,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: rgba(var(--app-accent-rgb),0.25);
   }
   .au-codigo-info {
-    color: #cbd5e1;
-    strong { color: #f1f5f9; }
+    color: var(--app-text, #cbd5e1);
+    strong { color: var(--app-text, #f1f5f9); }
   }
   .au-btn-reenviar {
     color: var(--brand-1);
@@ -603,9 +603,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover:not(:disabled) { background: rgba(var(--app-accent-rgb), 0.1); border-color: var(--brand-1); }
   }
   .au-btn-cancelar-codigo {
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     border-color: rgba(255,255,255,0.1);
-    &:hover { border-color: #475569; color: #e2e8f0; }
+    &:hover { border-color: #475569; color: var(--app-text, #e2e8f0); }
   }
 }
 
@@ -640,7 +640,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   margin: 1rem 0 0;
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
 
   a {
     color: var(--app-accent);

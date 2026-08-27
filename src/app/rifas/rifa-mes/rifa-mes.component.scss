@@ -388,14 +388,14 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   // Botón outline dentro del card head: borde visible sobre blanco
   .rm-card__head .rm-btn--outline {
     border-color: rgba(0, 0, 0, 0.18);
-    color: #1e293b;
+    color: var(--app-text, #1e293b);
   }
 }
 
 // ── Tema NOCHE — ajustes completos ────────────────────────────────
 :host-context(body.theme-dark) {
   // Texto en heads de card (glassmorphism oscuro)
-  .rm-card__head h4, .rm-card__head p { color: #f1f5f9; }
+  .rm-card__head h4, .rm-card__head p { color: var(--app-text, #f1f5f9); }
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rm-btn--primary {
@@ -406,7 +406,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   // Botones OUTLINE en noche: borde casi invisible por defecto → reforzar
   .rm-btn--outline {
     border-color: rgba(255, 255, 255, 0.32);
-    color: #e2e8f0;
+    color: var(--app-text, #e2e8f0);
     &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
   }
 

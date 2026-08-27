@@ -138,7 +138,7 @@
 }
 
 :host-context(body.theme-light) {
-  .fv-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .fv-header__title { color: #1e293b; }
-  .fv-header__sub { color: rgba(0,0,0,.55); }
+  .fv-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .fv-header__title { color: var(--app-text, #1e293b); }
+  .fv-header__sub { color: var(--app-text-muted, rgba(0,0,0,.55)); }
 }

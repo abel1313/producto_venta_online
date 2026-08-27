@@ -48,7 +48,7 @@ $t: all 0.22s ease;
   &__title {
     font-size: 1.5rem;
     font-weight: 800;
-    color: white;
+    color: var(--header-text, white);
     margin: 0;
     letter-spacing: -0.02em;
     z-index: 1;
@@ -190,6 +190,6 @@ $t: all 0.22s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .ac-card__title    { color: #1e293b; }
+  .ac-card__title    { color: var(--header-text, #1e293b); }
   .ac-card__subtitle { color: rgba(0,0,0,0.55); }
 }

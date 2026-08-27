@@ -11,7 +11,7 @@
   &__inner {
     padding: 24px 0;
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: #64748b; }
+    small { color: var(--app-text-muted, #64748b); }
 
     &--conFoto {
       display: flex;
@@ -34,7 +34,7 @@
 .cr-loading {
   text-align: center;
   padding: 40px 16px;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
 }
 
 .cr-aviso {
@@ -285,7 +285,7 @@
   .cr-step, .cr-resumen { background: rgba(255,255,255,.04); }
 }
 :host-context(body.theme-light) {
-  .cr-step, .cr-resumen { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .cr-step, .cr-resumen { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
 
 // El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni

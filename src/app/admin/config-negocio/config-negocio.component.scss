@@ -39,7 +39,7 @@ $t:  all 0.25s ease;
   }
 
   &__header-icon { font-size: 2.2rem; z-index: 1; }
-  &__title  { font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0; z-index: 1; }
+  &__title  { font-size: 1.35rem; font-weight: 800; color: var(--header-text, #fff); margin: 0; z-index: 1; }
   &__subtitle { font-size: .78rem; color: rgba(255,255,255,.7); margin: 3px 0 0; z-index: 1; }
 
   &__body {
@@ -266,6 +266,6 @@ $t:  all 0.25s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .cn-card__title    { color: #1e293b; }
+  .cn-card__title    { color: var(--header-text, #1e293b); }
   .cn-card__subtitle { color: rgba(0,0,0,0.55); }
 }

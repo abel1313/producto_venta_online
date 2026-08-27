@@ -103,8 +103,8 @@ $t: all 0.22s ease;
 }
 
 .pf-required { color: var(--app-accent); }
-.pf-optional { font-weight: 400; color: #9ca3af; text-transform: none; font-size: 0.72rem; }
-.pf-hint     { font-weight: 400; color: #9ca3af; text-transform: none; font-size: 0.72rem; margin-left: 4px; }
+.pf-optional { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; }
+.pf-hint     { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; margin-left: 4px; }
 
 .pf-input {
   border: 1.5px solid var(--input-border);
@@ -162,7 +162,7 @@ $t: all 0.22s ease;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #6b7280;
+    color: var(--app-text-muted, #6b7280);
     font-size: 0.9rem;
     font-weight: 600;
     pointer-events: none;

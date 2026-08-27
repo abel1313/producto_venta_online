@@ -124,7 +124,7 @@ $t:         all 0.22s ease;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    color: #9ca3af;
+    color: var(--app-text-muted, #9ca3af);
     font-size: 0.78rem;
   }
 
@@ -253,7 +253,7 @@ $t:         all 0.22s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9ca3af;
+    color: var(--app-text-muted, #9ca3af);
   }
 
   &__img {

@@ -31,15 +31,28 @@ export interface ISubmenuRequest {
   orden?: number | null;
 }
 
+// Fase 3 de permisos (2026-08-27, piloto en Modelos): accion puntual dentro de una pantalla
+// (ej. "eliminar", "habilitar" en Modelos). Ver entity AccionSubmenu en el back.
+export interface IAccionSubmenu {
+  id: number;
+  submenu: ISubmenu;
+  clave: string;
+  etiqueta: string;
+  orden?: number | null;
+}
+
 // Rol -- submenus viene ya anidado (Roles.submenus es @ManyToMany EAGER en el back), asi que
 // GET /v1/roles/getAll trae de una vez las pantallas asignadas a cada rol.
 // submenusEscritura (Fase 2 de permisos de accion, 2026-08-27) es un SUBCONJUNTO de submenus:
 // de las pantallas que el rol puede VER, cuales ademas puede ESCRIBIR (crear/editar/borrar).
+// acciones (Fase 3, piloto en Modelos) es mas fino todavia: cuales acciones puntuales dentro de
+// esas pantallas puede usar (independiente de submenusEscritura).
 export interface IRol {
   id: number;
   nombreRol: string;
   submenus?: ISubmenu[];
   submenusEscritura?: ISubmenu[];
+  acciones?: IAccionSubmenu[];
 }
 
 export interface IRolRequest {

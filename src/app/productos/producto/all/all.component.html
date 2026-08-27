@@ -44,59 +44,61 @@
          a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae ambos,
          solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se combinan
          con AND con la busqueda por texto. -->
-    <div *ngIf="isAdminUser" class="pl-filtros">
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
-        <span class="pl-filtro-check__box"></span>
-        Con stock
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
-        <span class="pl-filtro-check__box"></span>
-        Sin stock
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
-        <span class="pl-filtro-check__box"></span>
-        Con imágenes
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
-        <span class="pl-filtro-check__box"></span>
-        Sin imágenes
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
-        <span class="pl-filtro-check__box"></span>
-        Habilitados
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
-        <span class="pl-filtro-check__box"></span>
-        No habilitados
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
-        <span class="pl-filtro-check__box"></span>
-        Código generado
-      </label>
-      <label class="pl-filtro-check">
-        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
-        <span class="pl-filtro-check__box"></span>
-        Código real
-      </label>
-      <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
-           imágenes). Los 2 campos son independientes entre sí, se combinan con AND con el resto. -->
-      <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaDesde">
-        Creado desde
-        <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
-      </label>
-      <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaHasta">
-        Creado hasta
-        <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
-      </label>
-      <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
-      <button class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
+    <div *ngIf="puedeVerFiltrosAdmin || puedeDescargarExcel" class="pl-filtros">
+      <ng-container *ngIf="puedeVerFiltrosAdmin">
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
+          <span class="pl-filtro-check__box"></span>
+          Con stock
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
+          <span class="pl-filtro-check__box"></span>
+          Sin stock
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
+          <span class="pl-filtro-check__box"></span>
+          Con imágenes
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
+          <span class="pl-filtro-check__box"></span>
+          Sin imágenes
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
+          <span class="pl-filtro-check__box"></span>
+          Habilitados
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
+          <span class="pl-filtro-check__box"></span>
+          No habilitados
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
+          <span class="pl-filtro-check__box"></span>
+          Código generado
+        </label>
+        <label class="pl-filtro-check">
+          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
+          <span class="pl-filtro-check__box"></span>
+          Código real
+        </label>
+        <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
+             imágenes). Los 2 campos son independientes entre sí, se combinan con AND con el resto. -->
+        <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaDesde">
+          Creado desde
+          <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
+        </label>
+        <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaHasta">
+          Creado hasta
+          <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
+        </label>
+        <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
+      </ng-container>
+      <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
         📥 Excel sin productos
       </button>
     </div>
@@ -119,7 +121,7 @@
 </div>
 
 <!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
-<div *ngIf="isAdminUser && seleccionados.size > 0" class="pl-lote-bar">
+<div *ngIf="puedeHabilitar && seleccionados.size > 0" class="pl-lote-bar">
   <label class="pl-lote-bar__check">
     <input type="checkbox" [checked]="todoSeleccionadoProducto" (change)="toggleTodosProductos()" />
     <span>{{ seleccionados.size }} seleccionado(s)</span>
@@ -144,16 +146,16 @@
 
   <div class="pl-grid">
     <div class="pl-card" *ngFor="let item of rows; trackBy: trackById"
-         [class.pl-card--deshabilitado]="isAdminUser && !estaHabilitado(item)"
+         [class.pl-card--deshabilitado]="esVistaAdmin && !estaHabilitado(item)"
          [class.pl-card--seleccionado]="seleccionados.has(item.idProducto)">
 
-      <!-- Checkbox de selección (solo admin) -->
-      <label *ngIf="isAdminUser" class="pl-card__check" (click)="$event.stopPropagation()">
+      <!-- Checkbox de selección (para habilitar/deshabilitar en lote) -->
+      <label *ngIf="puedeHabilitar" class="pl-card__check" (click)="$event.stopPropagation()">
         <input type="checkbox" [checked]="seleccionados.has(item.idProducto)" (change)="toggleSeleccionProducto(item.idProducto)" />
       </label>
 
-      <!-- Botón X eliminar (solo admin) -->
-      <button *ngIf="isAdminUser"
+      <!-- Botón X eliminar -->
+      <button *ngIf="puedeEliminar"
         type="button"
         class="dp-slide__del-btn"
         [class.dp-slide__del-btn--on]="estaMarcada(item)"
@@ -162,8 +164,8 @@
         ✕
       </button>
 
-      <!-- Badge deshabilitado (solo admin) -->
-      <span *ngIf="isAdminUser && !estaHabilitado(item)"
+      <!-- Badge deshabilitado (informativo, solo requiere ver la pantalla en modo admin) -->
+      <span *ngIf="esVistaAdmin && !estaHabilitado(item)"
         class="pl-badge-disabled">Deshabilitado</span>
 
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
@@ -260,18 +262,18 @@
           <span class="pl-btn-card__label">Detalle</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--edit" (click)="updateProducto(item)">
+        <button *ngIf="puedeActualizarProducto" class="pl-btn-card pl-btn-card--edit" (click)="updateProducto(item)">
           <span>✏️</span>
           <span class="pl-btn-card__label">Actualizar</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
+        <button *ngIf="puedeCrearVariantes" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
           [disabled]="item.stock === 0" title="Crear productos a partir de este modelo">
           <span>🧩</span>
           <span class="pl-btn-card__label">Productos</span>
         </button>
 
-        <button *ngIf="isAdminUser && item.imagen?.urlImagen"
+        <button *ngIf="puedeCompartirImagen && item.imagen?.urlImagen"
                 class="pl-btn-card pl-btn-card--share"
                 (click)="compartirImagen(item)"
                 title="Compartir imagen">
@@ -279,7 +281,7 @@
           <span class="pl-btn-card__label">Imagen</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="pl-btn-card pl-btn-card--toggle"
+        <button *ngIf="puedeHabilitar" class="pl-btn-card pl-btn-card--toggle"
           [title]="estaHabilitado(item) ? 'Deshabilitar' : 'Habilitar'"
           (click)="habilitarProducto(item, !estaHabilitado(item))">
           <span>{{ estaHabilitado(item) ? '🔒' : '🔓' }}</span>

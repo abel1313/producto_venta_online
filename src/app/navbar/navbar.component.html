@@ -61,12 +61,12 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/buscar')" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('carga-imagenes')" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/cargar-excel')" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('palabras-clave')" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
       </div>
     </div>
 
@@ -110,9 +110,9 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta-directa')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('abonos')" routerLinkActive="sb-subitem--active" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gastos/buscar')" routerLinkActive="sb-subitem--active" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos</a>
       </div>
     </div>
 
@@ -126,8 +126,8 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes de ventas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('dashboard')" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('reportes')" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes de ventas</a>
       </div>
     </div>
 
@@ -148,9 +148,9 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/agregar')" routerLinkActive="sb-subitem--active" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/mes')" routerLinkActive="sb-subitem--active" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/buscar')" routerLinkActive="sb-subitem--active" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
       </div>
     </div>
 
@@ -208,15 +208,15 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes de presentación</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico de imágenes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación de imágenes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="gestion-menu" (click)="closeMobile()">🗂️ Menús y submenús</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="gestion-menu/roles" (click)="closeMobile()">🛡️ Gestión de roles</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('usuarios/buscar')" routerLinkActive="sb-subitem--active" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/negocio')" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/chat')" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/presentacion')" routerLinkActive="sb-subitem--active" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes de presentación</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/diagnostico-imagenes')" routerLinkActive="sb-subitem--active" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/reconciliacion-imagenes')" routerLinkActive="sb-subitem--active" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/cache')" routerLinkActive="sb-subitem--active" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gestion-menu')" routerLinkActive="sb-subitem--active" routerLink="gestion-menu" (click)="closeMobile()">🗂️ Menús y submenús</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gestion-menu/roles')" routerLinkActive="sb-subitem--active" routerLink="gestion-menu/roles" (click)="closeMobile()">🛡️ Gestión de roles</a>
       </div>
     </div>
 

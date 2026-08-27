@@ -1201,18 +1201,25 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     // ⚠️ `correoContacto` es lo que el back usa para avisarle al cliente cuando su frase ya tiene
     // precio. Si no lo mandamos llega `null` y ese correo **nunca sale** — el cliente se queda
     // esperando sin saber cuánto debe. Solo hace falta cuando hay frase.
-    // ⚠️ `buscarPorIdCliente/{id}` recibe el id de **USUARIO**, no el de cliente — el nombre del
-    // endpoint engaña. Así lo llaman los otros 4 puntos del proyecto (mis-datos, mi-perfil,
-    // mis-pedidos, detalle-productos). Mandarle el clienteId traería el cliente equivocado, o
-    // ninguno: se le estaría adjuntando al ramo el correo de otra persona.
+    // ⚠️ `buscarPorIdCliente/{id}` recibe el id de **cliente**, no el de usuario -- hay que
+    // traducir primero con `buscarClientePorIdUsuario`, misma traducción que ya hacen
+    // mis-datos/mi-perfil/mis-pedidos/detalle-productos (antes esto mandaba `idUsuario` directo:
+    // para un cliente real, no admin, el chequeo de dueño del back lo rechazaba con "No
+    // autorizado" y el aviso de frase nunca se armaba -- encontrado 2026-08-27).
     if (hayFrase && this.idUsuario) {
-      this.clienteService.getDataOneCliente(this.idUsuario).subscribe({
-        next: (res: any) => {
-          body.correoContacto   = res?.data?.correoElectronico ?? null;
-          body.telefonoContacto = res?.data?.numeroTelefonico ?? null;
-          this.enviarDetalleRamo(pedidoId, body, hayFrase);
+      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+        next: (clienteId: any) => {
+          if (!clienteId) { this.enviarDetalleRamo(pedidoId, body, hayFrase); return; }
+          this.clienteService.getDataOneCliente(clienteId).subscribe({
+            next: (res: any) => {
+              body.correoContacto   = res?.data?.correoElectronico ?? null;
+              body.telefonoContacto = res?.data?.numeroTelefonico ?? null;
+              this.enviarDetalleRamo(pedidoId, body, hayFrase);
+            },
+            // Sin contacto se manda igual: perder el aviso es malo, perder la frase es peor.
+            error: () => this.enviarDetalleRamo(pedidoId, body, hayFrase)
+          });
         },
-        // Sin contacto se manda igual: perder el aviso es malo, perder la frase es peor.
         error: () => this.enviarDetalleRamo(pedidoId, body, hayFrase)
       });
       return;

@@ -170,10 +170,16 @@
 
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
 
-        <img *ngIf="item.imagen?.urlImagen | imagenSrc | async as src"
+        <!-- Experimento 2026-08-27: antes pasaba por el pipe imagenSrc (baja el blob completo vía
+             HttpClient + lo convierte a base64 en el navegador, una petición autenticada POR
+             imagen). Ahora es un <img> normal -- el navegador la baja directo, en paralelo real,
+             con su propio caché, sin mandar el token. Si el microservicio de imágenes exige el
+             token para servir la miniatura, esto rompe las imágenes -- probar visualmente. -->
+        <img *ngIf="item.imagen?.urlImagen as src"
              [src]="src"
              [alt]="item.nombre"
              class="pl-card__img"
+             loading="lazy"
              (error)="$any($event.target).style.display='none'" />
         <div *ngIf="!item.imagen?.urlImagen" class="pl-card__img-placeholder">📦</div>
       </div>

@@ -54,6 +54,7 @@ $t:  all 0.2s ease;
 
   &__field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
   &__field--num { flex: 0 1 100px; min-width: 0; }
+  &__field--full { flex: 1 1 100%; }
   &__actions { display: flex; gap: 8px; }
 
   &--stack { flex-direction: row; }
@@ -66,6 +67,8 @@ $t:  all 0.2s ease;
   transition: $t; box-sizing: border-box;
   &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.12); }
 }
+
+textarea.pk-input { font-family: inherit; resize: vertical; }
 
 .pk-error { font-size: .72rem; color: #dc2626; }
 

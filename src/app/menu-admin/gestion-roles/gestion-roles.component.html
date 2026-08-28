@@ -87,6 +87,9 @@
                   <span>{{ s.icono }} {{ s.nombre }}</span>
                   <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
                 </label>
+                <!-- Fuera del <label> a propósito -- si estuviera adentro, el clic también
+                     marcaría/desmarcaría el checkbox Ver. -->
+                <button type="button" class="gr-info-btn" (click)="verInfoSubmenu(s)" title="¿Qué es esta pantalla? ¿Dónde vive en el menú?">ℹ️</button>
                 <label class="gr-check gr-check--escritura"
                        [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
                   <input type="checkbox"

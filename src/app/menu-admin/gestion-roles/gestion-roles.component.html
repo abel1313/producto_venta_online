@@ -59,7 +59,10 @@
       </div>
 
       <ng-container *ngIf="rolSeleccionado">
-        <div class="gm-col__title">Pantallas de "{{ rolSeleccionado.nombreRol }}"</div>
+        <div class="gm-col__title">
+          Pantallas de "{{ rolSeleccionado.nombreRol }}"
+          <button type="button" class="gr-info-btn" (click)="verInfoVerEditar()" title="¿Qué significan Ver y Editar?">ℹ️</button>
+        </div>
 
         <div class="pk-empty" *ngIf="!cargandoCatalogo && grupos.length === 0">
           Todavía no hay menús/submenús dados de alta.
@@ -98,14 +101,19 @@
                    pantalla, mas finas que el "Editar" de arriba. Solo aparece si la pantalla
                    tiene alguna dada de alta en el catalogo (hoy solo Modelos). -->
               <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
-                <label class="gr-check gr-check--accion" *ngFor="let a of accionesDe(s)"
-                       [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (a.descripcion || '')">
-                  <input type="checkbox"
-                         [checked]="tieneAccion(a)"
-                         [disabled]="!tieneSubmenu(s) || guardandoAccionId === a.id"
-                         (change)="toggleAccion(a)" />
-                  <span>{{ a.etiqueta }}</span>
-                </label>
+                <div class="gr-accion-item" *ngFor="let a of accionesDe(s)">
+                  <label class="gr-check gr-check--accion"
+                         [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
+                    <input type="checkbox"
+                           [checked]="tieneAccion(a)"
+                           [disabled]="!tieneSubmenu(s) || guardandoAccionId === a.id"
+                           (change)="toggleAccion(a)" />
+                    <span>{{ a.etiqueta }}</span>
+                  </label>
+                  <!-- Botón aparte (no dentro del <label>) para que el clic abra el popup en vez
+                       de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
+                  <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
+                </div>
               </div>
             </div>
           </div>

@@ -68,10 +68,32 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.buildForm();
     this.initPrecioVenta();
     this.initCodigoBarra();
+    this.initValidacionEliminarStock();
     this.formReady = true;
+    if (this.esActualizar) {
+      // El stock real en edición solo se mueve con "Actualizar stock" / "Eliminar stock" (que
+      // suman/restan contra el stock real de la BD, con validación de no quedar negativo -- ver
+      // guardarProducto() en el back). El campo "Stock" a secas queda bloqueado para que no se
+      // pueda pisar el valor a mano por error (pedido 2026-08-28).
+      this.formProductos.get('stock')?.disable();
+    }
     if (this.esActualizar && this.productoUpdate) {
       this.cargarProductoUpdate();
     }
+  }
+
+  // "Eliminar stock" no puede superar el stock actual -- si el admin lo intenta, se marca
+  // inválido en vivo (además de la validación del back, que es la que realmente protege el dato).
+  private initValidacionEliminarStock(): void {
+    this.formProductos.get('eliminarStock')!.valueChanges.subscribe((valor: number) => {
+      const ctrl = this.formProductos.get('eliminarStock')!;
+      const stockActual = +(this.formProductos.get('stock')?.value ?? 0);
+      if (+valor > stockActual) {
+        ctrl.setErrors({ excedeStock: true });
+      } else if (ctrl.hasError('excedeStock')) {
+        ctrl.setErrors(null);
+      }
+    });
   }
 
   ngAfterViewInit(): void {}

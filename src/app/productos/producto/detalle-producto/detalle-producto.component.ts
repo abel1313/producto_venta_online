@@ -113,7 +113,6 @@ export class DetalleProductoComponent implements OnInit {
         });
     });
   }
-  volver(): void { this.router.navigate(['/productos/buscar']); }
 
   get cantidadEnCarrito(): number {
     if (!this.producto) return 0;
@@ -141,7 +140,8 @@ addCarrito() {
     precioVenta,
     codigoBarras,
     cantidad: 1,
-    total: precioVenta
+    total: precioVenta,
+    tieneImagen: this.existeImagenes
   };
 
   this.serviceCarrito.agregarProducto(prod);

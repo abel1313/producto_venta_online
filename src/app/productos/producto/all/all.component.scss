@@ -352,15 +352,16 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Grid ───────────────────────────────────────────────────────────
+// Mismo criterio que tienda/buscar (.vb-grid): auto-fill puro, sin forzar una cantidad fija de
+// columnas -- el forzado a repeat(3,1fr) que había acá hacía que en pantallas anchas las 3
+// tarjetas se estiraran parejas hasta llenar el ancho entero, viéndose enormes comparadas con
+// tienda/buscar (pedido 2026-08-28: "las card están muy grandes, no están igual que en tienda
+// buscar").
 .pl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 22px;
   padding-bottom: 20px;
-
-  @media (min-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 // ── Card ───────────────────────────────────────────────────────────
@@ -377,9 +378,12 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover { transform: translateY(-5px); box-shadow: $shadow-hover; }
 
+  // Mismo alto fijo que tienda/buscar (.vb-card__img-wrap) -- antes usaba aspect-ratio:3/4, que
+  // en una tarjeta de ~260-270px de ancho da una imagen ~350px de alto, mucho más grande que las
+  // de tienda/buscar (parte del mismo pedido de homologación 2026-08-28).
   &__img-wrap {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    height: 180px;
     overflow: hidden;
     background: var(--form-section-bg);
     display: flex;
@@ -391,7 +395,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &__img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     transition: $transition;
     &:hover { transform: scale(1.04); }
   }

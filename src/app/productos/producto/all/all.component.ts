@@ -313,7 +313,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       precioVenta,
       codigoBarras,
       cantidad: 1,
-      total: precioVenta
+      total: precioVenta,
+      tieneImagen: !!producto.imagen?.urlImagen
     };
 
     const agregado = this.serviceCarrito.agregarProducto(prod);

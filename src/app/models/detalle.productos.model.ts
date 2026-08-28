@@ -11,4 +11,5 @@ export interface IDetalleProducto{
     stock: number;
     total: number;
     varianteId?: number | null;
+    tieneImagen?: boolean;
 }

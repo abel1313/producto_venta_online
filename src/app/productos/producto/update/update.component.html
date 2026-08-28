@@ -1,7 +1,5 @@
 <!-- Botón regresar -->
-<button class="up-back" (click)="volver()">
-  <i class="pi pi-arrow-left"></i> Mis productos
-</button>
+<app-boton-volver etiqueta="Mis productos" fallback="/productos/buscar"></app-boton-volver>
 
 <!-- Formulario de actualización -->
 <app-add [nombreCard]="'Actualizar Producto'" [productoUpdate]="productoActualizar"></app-add>

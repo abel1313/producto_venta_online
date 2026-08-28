@@ -108,8 +108,11 @@ $primary-d: var(--brand-1);
   outline: none; transition: $t; width: 100%;
   &::placeholder { color: var(--input-placeholder); }
   &:focus { border-color: var(--app-accent); background: rgba(var(--app-accent-rgb),0.06); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18); }
+  &:disabled, &[readonly] { opacity: 0.6; cursor: not-allowed; }
+  &--error { border-color: #ef4444; }
 }
 .vf-textarea { resize: vertical; min-height: 70px; }
+.vf-error { font-size: 0.76rem; color: #ef4444; }
 
 .vf-drop {
   border: 2px dashed rgba(var(--app-accent-rgb),0.4); border-radius: 16px;

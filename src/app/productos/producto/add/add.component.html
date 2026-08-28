@@ -73,6 +73,9 @@
             <input class="pf-input" [class.pf-input--error]="isInvalid('stock')"
                    formControlName="stock" type="number" min="0" placeholder="0">
             <small class="pf-error" *ngIf="isInvalid('stock')">Campo requerido</small>
+            <small class="pf-hint" *ngIf="esActualizar">
+              Bloqueado en edición — usa "Actualizar stock" / "Eliminar stock" abajo para moverlo
+            </small>
           </div>
         </div>
 
@@ -115,12 +118,16 @@
           </div>
           <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
             <label class="pf-label">Actualizar stock</label>
-            <input class="pf-input" formControlName="actualizarStock" type="number" placeholder="0">
+            <input class="pf-input" formControlName="actualizarStock" type="number" min="0" placeholder="0">
           </div>
 
           <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
             <label class="pf-label">Eliminar stock</label>
-            <input class="pf-input" formControlName="eliminarStock" type="number" placeholder="0">
+            <input class="pf-input" [class.pf-input--error]="ctrl('eliminarStock')?.hasError('excedeStock')"
+                   formControlName="eliminarStock" type="number" min="0" placeholder="0">
+            <small class="pf-error" *ngIf="ctrl('eliminarStock')?.hasError('excedeStock')">
+              No puede superar el stock actual ({{ ctrl('stock')?.value }})
+            </small>
           </div>
 
         </div>

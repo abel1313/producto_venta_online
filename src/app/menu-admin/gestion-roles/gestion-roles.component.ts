@@ -128,6 +128,17 @@ export class GestionRolesComponent implements OnInit {
     });
   }
 
+  // Igual que verInfoAccion() pero para la pantalla (Submenu) misma -- qué es y dónde vive en el
+  // menú, no solo qué significa el checkbox Ver en abstracto (eso lo cubre verInfoVerEditar()).
+  verInfoSubmenu(submenu: ISubmenu): void {
+    Swal.fire({
+      icon: 'info',
+      title: `${submenu.icono ?? ''} ${submenu.nombre}`.trim(),
+      html: submenu.descripcion || 'Todavía no tiene descripción cargada.',
+      confirmButtonText: 'Entendido'
+    });
+  }
+
   verInfoVerEditar(): void {
     Swal.fire({
       icon: 'info',

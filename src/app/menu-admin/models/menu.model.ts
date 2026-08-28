@@ -20,6 +20,8 @@ export interface ISubmenu {
   nombre: string;
   ruta: string;
   icono?: string | null;
+  // Tooltip/popup: qué es esta pantalla y dónde vive en el menú (2026-08-28).
+  descripcion?: string | null;
   orden?: number | null;
 }
 

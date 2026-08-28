@@ -155,8 +155,53 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return this.authService.tieneAccion('productos/buscar', 'descargar-excel');
   }
 
-  get puedeVerFiltrosAdmin(): boolean {
-    return this.authService.tieneAccion('productos/buscar', 'filtros-admin');
+  // Antes era un solo permiso "filtros-admin" que mostraba/ocultaba TODA la barra en bloque.
+  // Se separó (2026-08-28) en un permiso por checkbox para poder darle a un rol, por ejemplo,
+  // solo "Con stock" sin el resto -- ver migration_filtros_granulares.sql.
+  get puedeFiltroConStock(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-con-stock');
+  }
+
+  get puedeFiltroSinStock(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-sin-stock');
+  }
+
+  get puedeFiltroConImagenes(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-con-imagenes');
+  }
+
+  get puedeFiltroSinImagenes(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-sin-imagenes');
+  }
+
+  get puedeFiltroHabilitados(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-habilitados');
+  }
+
+  get puedeFiltroNoHabilitados(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-no-habilitados');
+  }
+
+  get puedeFiltroCodigoGenerado(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-codigo-generado');
+  }
+
+  get puedeFiltroCodigoReal(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-codigo-real');
+  }
+
+  get puedeFiltroFecha(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-fecha-creacion');
+  }
+
+  /** Cualquiera de los 9 filtros individuales -- controla si se muestra la barra completa y el
+   * botón "Limpiar filtros" (que limpia los que estén visibles, no los que no). */
+  get puedeVerAlgunFiltro(): boolean {
+    return this.puedeFiltroConStock || this.puedeFiltroSinStock
+        || this.puedeFiltroConImagenes || this.puedeFiltroSinImagenes
+        || this.puedeFiltroHabilitados || this.puedeFiltroNoHabilitados
+        || this.puedeFiltroCodigoGenerado || this.puedeFiltroCodigoReal
+        || this.puedeFiltroFecha;
   }
 
     confirmarEliminarBatch(item: IProductoDTO): void {

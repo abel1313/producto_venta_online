@@ -99,7 +99,7 @@
                    tiene alguna dada de alta en el catalogo (hoy solo Modelos). -->
               <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
                 <label class="gr-check gr-check--accion" *ngFor="let a of accionesDe(s)"
-                       [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
+                       [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (a.descripcion || '')">
                   <input type="checkbox"
                          [checked]="tieneAccion(a)"
                          [disabled]="!tieneSubmenu(s) || guardandoAccionId === a.id"

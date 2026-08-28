@@ -44,50 +44,50 @@
          a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae ambos,
          solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se combinan
          con AND con la busqueda por texto. -->
-    <div *ngIf="puedeVerFiltrosAdmin || puedeDescargarExcel" class="pl-filtros">
-      <ng-container *ngIf="puedeVerFiltrosAdmin">
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
-          <span class="pl-filtro-check__box"></span>
-          Con stock
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
-          <span class="pl-filtro-check__box"></span>
-          Sin stock
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
-          <span class="pl-filtro-check__box"></span>
-          Con imágenes
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
-          <span class="pl-filtro-check__box"></span>
-          Sin imágenes
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
-          <span class="pl-filtro-check__box"></span>
-          Habilitados
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
-          <span class="pl-filtro-check__box"></span>
-          No habilitados
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
-          <span class="pl-filtro-check__box"></span>
-          Código generado
-        </label>
-        <label class="pl-filtro-check">
-          <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
-          <span class="pl-filtro-check__box"></span>
-          Código real
-        </label>
-        <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
-             imágenes). Los 2 campos son independientes entre sí, se combinan con AND con el resto. -->
+    <div *ngIf="puedeVerAlgunFiltro || puedeDescargarExcel" class="pl-filtros">
+      <label class="pl-filtro-check" *ngIf="puedeFiltroConStock">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
+        <span class="pl-filtro-check__box"></span>
+        Con stock
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroSinStock">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
+        <span class="pl-filtro-check__box"></span>
+        Sin stock
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroConImagenes">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
+        <span class="pl-filtro-check__box"></span>
+        Con imágenes
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroSinImagenes">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
+        <span class="pl-filtro-check__box"></span>
+        Sin imágenes
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroHabilitados">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
+        <span class="pl-filtro-check__box"></span>
+        Habilitados
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroNoHabilitados">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
+        <span class="pl-filtro-check__box"></span>
+        No habilitados
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroCodigoGenerado">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
+        <span class="pl-filtro-check__box"></span>
+        Código generado
+      </label>
+      <label class="pl-filtro-check" *ngIf="puedeFiltroCodigoReal">
+        <input type="checkbox" class="pl-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
+        <span class="pl-filtro-check__box"></span>
+        Código real
+      </label>
+      <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
+           imágenes). Los 2 campos son independientes entre sí, se combinan con AND con el resto. -->
+      <ng-container *ngIf="puedeFiltroFecha">
         <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaDesde">
           Creado desde
           <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
@@ -96,8 +96,8 @@
           Creado hasta
           <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
         </label>
-        <button class="pl-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       </ng-container>
+      <button class="pl-filtro-btn" *ngIf="puedeVerAlgunFiltro && hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
       <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
         📥 Excel sin productos
       </button>

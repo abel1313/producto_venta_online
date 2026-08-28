@@ -1,5 +1,4 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import * as L from 'leaflet';
 
 // Mismo fix ya usado en mis-pedidos.component.ts — Leaflet calcula la URL de sus íconos por
@@ -84,30 +83,34 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
   buscando = false;
   errorBusqueda: string | null = null;
 
-  constructor(private readonly http: HttpClient) {}
-
-  buscarLugar(): void {
+  // fetch() nativo a propósito, NO HttpClient -- HttpClient pasa por TokenInterceptor, que le
+  // pega el Authorization: Bearer y withCredentials:true a CUALQUIER request sin filtrar por
+  // origen (encontrado 2026-08-28: "el buscador no sirve de nada porque no busca"). Nominatim
+  // responde Access-Control-Allow-Origin: *, y eso es INCOMPATIBLE con credentials -- el
+  // navegador rechaza la respuesta por CORS antes de que el código la vea, así que el buscador
+  // fallaba en silencio (el catch de abajo mostraba el error genérico, nunca el resultado real).
+  // fetch() sin `credentials: 'include'` no manda cookies ni pasa por el interceptor -- llega
+  // limpio a un servicio público de terceros, como debe ser.
+  async buscarLugar(): Promise<void> {
     const q = this.terminoBusqueda.trim();
     if (!q || this.buscando) return;
     this.buscando = true;
     this.errorBusqueda = null;
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=${encodeURIComponent(q)}`;
-    this.http.get<Array<{ lat: string; lon: string }>>(url).subscribe({
-      next: (res) => {
-        this.buscando = false;
-        if (!res?.length) {
-          this.errorBusqueda = 'No se encontró ese lugar — prueba con otro nombre o ubica el punto directo en el mapa.';
-          return;
-        }
-        const lat = parseFloat(res[0].lat);
-        const lon = parseFloat(res[0].lon);
-        this.mapa?.setView([lat, lon], 15);
-      },
-      error: () => {
-        this.buscando = false;
-        this.errorBusqueda = 'No se pudo buscar ahorita — ubica el punto directo en el mapa.';
+    try {
+      const res = await fetch(url).then(r => r.json()) as Array<{ lat: string; lon: string }>;
+      this.buscando = false;
+      if (!res?.length) {
+        this.errorBusqueda = 'No se encontró ese lugar — prueba con otro nombre o ubica el punto directo en el mapa.';
+        return;
       }
-    });
+      const lat = parseFloat(res[0].lat);
+      const lon = parseFloat(res[0].lon);
+      this.mapa?.setView([lat, lon], 15);
+    } catch {
+      this.buscando = false;
+      this.errorBusqueda = 'No se pudo buscar ahorita — ubica el punto directo en el mapa.';
+    }
   }
 
   ngAfterViewInit(): void {

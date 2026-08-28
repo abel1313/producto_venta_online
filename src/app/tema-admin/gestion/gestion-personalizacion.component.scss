@@ -52,6 +52,11 @@
 .pz-header {
   &__title { font-size: 1.2rem; font-weight: 800; color: var(--app-text); margin: 0 0 4px; }
   &__sub   { font-size: .82rem; color: var(--app-text-muted); margin: 0; line-height: 1.5; }
+  &__link  {
+    display: inline-block; margin-top: 8px; font-size: .82rem; font-weight: 600;
+    color: var(--app-accent); text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
 }
 
 .pz-loading {

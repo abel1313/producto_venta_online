@@ -54,8 +54,6 @@ export class UpdateComponent implements OnInit, OnDestroy {
     private readonly imagenesService: ImagenesService,
   ) {}
 
-  volver(): void { this.router.navigate(['/productos/buscar']); }
-
   ngOnInit(): void {
     this.serviceProducto.productoUpdate$
       .pipe(takeUntil(this.destroy$))

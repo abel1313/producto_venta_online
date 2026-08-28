@@ -8,9 +8,7 @@
 <div *ngIf="varianteSeleccionada" class="dv-wrapper">
 
   <!-- Botón volver -->
-  <button class="dv-back" (click)="volver()">
-    <i class="pi pi-arrow-left"></i> Volver
-  </button>
+  <app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
 
   <!-- Selector de variantes -->
   <div class="dv-variants" *ngIf="variantesChips.length > 1">

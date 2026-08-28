@@ -3,9 +3,7 @@
 <div *ngIf="producto" class="dp-wrapper">
 
   <!-- ── Botón volver ──────────────────────────────────────────── -->
-  <button class="dp-back" (click)="volver()">
-    <i class="pi pi-arrow-left"></i> Volver a productos
-  </button>
+  <app-boton-volver etiqueta="Volver a productos" fallback="/productos/buscar"></app-boton-volver>
 
   <!-- ── Header con nombre, precio y stock ─────────────────────── -->
   <div class="dp-header">

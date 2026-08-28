@@ -47,6 +47,9 @@ export class GestionMenuComponent implements OnInit {
       nombre: ['', [Validators.required, Validators.maxLength(80)]],
       ruta: ['', [Validators.required, Validators.maxLength(150)]],
       icono: ['', [Validators.maxLength(10)]],
+      // Texto del botón ℹ️ en Gestión de roles (2026-08-28) -- qué es esta pantalla y dónde vive
+      // en el menú. Opcional: si se deja vacío, el popup dice "Todavía no tiene descripción".
+      descripcion: ['', [Validators.maxLength(255)]],
       orden: [null]
     });
     this.cargarMenus();
@@ -162,7 +165,13 @@ export class GestionMenuComponent implements OnInit {
 
   iniciarEdicionSubmenu(s: ISubmenu): void {
     this.editandoSubmenuId = s.id;
-    this.submenuForm.patchValue({ nombre: s.nombre, ruta: s.ruta, icono: s.icono ?? '', orden: s.orden ?? null });
+    this.submenuForm.patchValue({
+      nombre: s.nombre,
+      ruta: s.ruta,
+      icono: s.icono ?? '',
+      descripcion: s.descripcion ?? '',
+      orden: s.orden ?? null
+    });
   }
 
   cancelarEdicionSubmenu(): void {
@@ -178,6 +187,7 @@ export class GestionMenuComponent implements OnInit {
       nombre: this.submenuForm.value.nombre.trim(),
       ruta: this.submenuForm.value.ruta.trim().replace(/^\//, ''),
       icono: this.submenuForm.value.icono?.trim() || null,
+      descripcion: this.submenuForm.value.descripcion?.trim() || null,
       orden: this.submenuForm.value.orden
     };
     const op$ = this.editandoSubmenuId !== null

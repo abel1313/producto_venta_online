@@ -93,6 +93,13 @@
           <div class="pk-form__field pk-form__field--num">
             <input class="pk-input" formControlName="orden" type="number" placeholder="Orden" />
           </div>
+          <!-- Texto del botón ℹ️ que ve el admin en Gestión de roles al hacer clic sobre esta
+               pantalla -- "qué es" + "dónde vive en el menú". Opcional, pero sin esto el popup
+               solo dice "Todavía no tiene descripción cargada". -->
+          <div class="pk-form__field pk-form__field--full">
+            <textarea class="pk-input" formControlName="descripcion" rows="2" maxlength="255"
+                      placeholder="Descripción para el botón ℹ️ de Gestión de roles: qué es esta pantalla y dónde vive en el menú…"></textarea>
+          </div>
           <div class="pk-form__actions">
             <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoSubmenu">
               {{ editandoSubmenuId ? '💾 Actualizar' : '➕ Agregar pantalla' }}
@@ -118,7 +125,10 @@
             </thead>
             <tbody>
               <tr *ngFor="let s of submenus" [class.pk-row--editando]="editandoSubmenuId === s.id">
-                <td>{{ s.icono }} {{ s.nombre }}</td>
+                <td>
+                  {{ s.icono }} {{ s.nombre }}
+                  <small class="pk-meta" *ngIf="!s.descripcion" title="Sin descripción -- el botón ℹ️ en Gestión de roles no va a tener nada que mostrar">⚠️</small>
+                </td>
                 <td><small class="pk-meta">/{{ s.ruta }}</small></td>
                 <td class="pk-table__actions">
                   <button class="pk-btn pk-btn--edit" (click)="iniciarEdicionSubmenu(s)" title="Editar">✏️</button>

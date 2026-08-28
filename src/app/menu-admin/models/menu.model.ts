@@ -30,6 +30,7 @@ export interface ISubmenuRequest {
   nombre: string;
   ruta: string;
   icono?: string | null;
+  descripcion?: string | null;
   orden?: number | null;
 }
 

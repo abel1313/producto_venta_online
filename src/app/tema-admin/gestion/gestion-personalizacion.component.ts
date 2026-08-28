@@ -34,6 +34,25 @@ export class GestionPersonalizacionComponent implements OnInit {
   // pantalla no abrume apenas se entra.
   gruposAbiertos = new Set<string>();
 
+  // Grupo que se muestra en el panel de vista previa (3ra columna) -- se actualiza al abrir una
+  // sección o al editar/crear una variable de ese grupo, así el mockup de la derecha siempre
+  // corresponde a lo que se está mirando/editando a la izquierda. Pedido del usuario 2026-08-28:
+  // antes, para ver si un color "quedaba bien" en una Card o un Menú, había que guardar, salir de
+  // Personalización y navegar a una pantalla real que la usara -- mucha ida y vuelta. Ahora el
+  // mockup vive en la misma pantalla y reacciona en vivo (mismo mecanismo de siempre:
+  // TemaService.previsualizar() ya pone las variables CSS en <body>, y estos mockups las leen con
+  // los mismos var(--clave) que usa el resto de la app -- no hace falta re-render de Angular).
+  grupoActivo: string | null = null;
+
+  /** Normaliza el nombre del grupo (minúsculas, sin acentos) para el switch del preview -- así
+   * "Página"/"pagina"/"PÁGINA" caen en el mismo caso sin depender de mayúsculas/acentos exactos. */
+  get grupoPreview(): string {
+    return (this.grupoActivo ?? '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly svc: TemaAdminService
@@ -60,6 +79,7 @@ export class GestionPersonalizacionComponent implements OnInit {
         this.grupos = [...new Set(this.variables.map(v => v.grupo || 'Otros'))];
         if (this.gruposAbiertos.size === 0 && this.grupos.length > 0) {
           this.gruposAbiertos.add(this.grupos[0]);
+          this.grupoActivo = this.grupos[0];
         }
         this.cargando = false;
         this.svc.previsualizar(this.variables);
@@ -76,8 +96,12 @@ export class GestionPersonalizacionComponent implements OnInit {
   }
 
   toggleGrupo(g: string): void {
-    if (this.gruposAbiertos.has(g)) this.gruposAbiertos.delete(g);
-    else this.gruposAbiertos.add(g);
+    if (this.gruposAbiertos.has(g)) {
+      this.gruposAbiertos.delete(g);
+    } else {
+      this.gruposAbiertos.add(g);
+      this.grupoActivo = g; // el preview sigue a la sección que se acaba de abrir
+    }
   }
 
   grupoAbierto(g: string): boolean {
@@ -86,6 +110,7 @@ export class GestionPersonalizacionComponent implements OnInit {
 
   iniciarEdicion(v: ITemaVariable): void {
     this.editandoId = v.id ?? null;
+    this.grupoActivo = v.grupo || 'Otros';
     this.form.patchValue({
       clave: v.clave,
       etiqueta: v.etiqueta,
@@ -157,5 +182,10 @@ export class GestionPersonalizacionComponent implements OnInit {
       ? this.variables.map(v => (v.id === this.editandoId ? enEdicion : v))
       : [...this.variables, enEdicion];
     this.svc.previsualizar(preview);
+    // Si se está dando de alta una variable nueva (no editando una existente) y ya se escribió un
+    // grupo, el preview de la derecha sigue a ese grupo en vivo -- igual que al editar una fila.
+    if (this.editandoId === null && this.form.value.grupo) {
+      this.grupoActivo = this.form.value.grupo;
+    }
   }
 }

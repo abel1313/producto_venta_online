@@ -1,12 +1,52 @@
 // Pantalla de Personalización -- construida desde cero con los tokens globales (nunca hex a
 // mano), justo lo que el resto de la app todavía tiene pendiente de migrar (ver barrido pk-*).
 .pz-wrap {
-  max-width: 820px;
+  max-width: 1280px;
   margin: 24px auto;
   padding: 0 16px 40px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+// ── Layout de 3 columnas: form | catálogo | vista previa ─────────────
+// Pedido del usuario (2026-08-28): antes había que editar, guardar, salir de Personalización y
+// navegar a una pantalla real para ver si el color quedaba bien -- mucha ida y vuelta, sobre todo
+// con grupos que quedaban lejos scrolleando. Ahora las 3 cosas están visibles a la vez y el
+// mockup de la derecha reacciona en vivo al mismo mecanismo de preview que ya existía.
+// En mobile se apilan en el mismo orden (form -> catálogo -> preview), como pidió.
+.pz-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(280px, 380px) minmax(280px, 1fr);
+  align-items: start;
+  gap: 20px;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Sticky en desktop -- el punto entero del rediseño era que, sin importar qué tan abajo esté la
+// fila que editas en la columna 2 (catálogo), el form (columna 1) y el preview (columna 3) se
+// quedan a la vista sin tener que scrollear de vuelta arriba.
+.pz-col--lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pz-col--form,
+.pz-col--preview {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+
+  @media (max-width: 1080px) {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 .pz-header {
@@ -289,4 +329,226 @@
   border-radius: 6px;
   border: 1.5px solid var(--card-border);
   display: inline-block;
+}
+
+// ── Panel de vista previa (columna 3) ────────────────────────────────
+.pz-preview {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  &__title {
+    font-size: .84rem;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+
+  &__sub {
+    font-size: .76rem;
+    color: var(--app-text-muted);
+  }
+
+  &__body {
+    min-height: 180px;
+  }
+}
+
+.pv-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1.5px solid var(--card-border);
+  display: inline-block;
+}
+
+// Mockups: cada uno usa los MISMOS var(--clave) que el resto de la app -- así lo que se ve acá es
+// exactamente lo que se va a ver en la pantalla real que usa esa variable.
+
+.pv-marca {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__swatches { display: flex; gap: 8px; }
+
+  &__btn {
+    align-self: flex-start;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: default;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+  }
+}
+
+.pv-pagina {
+  background: var(--app-bg);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__titulo { font-size: .95rem; }
+  &__texto { margin: 0; font-size: .84rem; }
+  &__muted { color: var(--app-text-muted); font-size: .76rem; }
+}
+
+.pv-card {
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  font-size: .84rem;
+
+  &__header {
+    background: var(--card-header-bg);
+    padding: 10px 14px;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+
+  &__body {
+    background: var(--card-body-bg);
+    padding: 14px;
+    color: var(--app-text);
+  }
+
+  &__footer {
+    background: var(--card-footer-bg);
+    padding: 10px 14px;
+    color: var(--app-text-muted);
+  }
+}
+
+.pv-tabla {
+  border: 1px solid var(--table-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: .82rem;
+
+  &__head, &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 8px 12px;
+  }
+
+  &__head {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-weight: 700;
+    border-bottom: 1px solid var(--table-border);
+  }
+
+  &__row {
+    color: var(--app-text);
+    transition: background .15s ease;
+    &:hover { background: var(--table-row-hover); }
+  }
+
+  &__hint {
+    display: block;
+    padding: 6px 12px;
+    color: var(--app-text-muted);
+    font-size: .72rem;
+  }
+}
+
+.pv-menu {
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: .84rem;
+
+  &__header {
+    background: var(--sb-header-bg);
+    color: var(--sb-text);
+    font-weight: 700;
+    padding: 10px 14px;
+  }
+
+  &__body {
+    background: var(--sb-body-bg);
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    color: var(--sb-text);
+    padding: 8px 14px;
+  }
+
+  &__footer {
+    background: var(--sb-footer-bg);
+    color: var(--sb-text);
+    padding: 10px 14px;
+    border-top: 1px solid var(--sb-border);
+  }
+}
+
+.pv-form {
+  &__seccion {
+    background: var(--form-section-bg);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  &__input {
+    background: var(--input-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--app-text);
+    font-size: .86rem;
+  }
+}
+
+.pv-generico {
+  &__aviso {
+    color: var(--app-text-muted);
+    font-size: .8rem;
+    margin: 0 0 10px;
+  }
+
+  &__swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--app-text);
+    font-size: .82rem;
+  }
 }

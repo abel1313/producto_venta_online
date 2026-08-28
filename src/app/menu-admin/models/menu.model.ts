@@ -38,6 +38,8 @@ export interface IAccionSubmenu {
   submenu: ISubmenu;
   clave: string;
   etiqueta: string;
+  // Tooltip opcional: dónde exactamente aparece esta acción en la pantalla real (2026-08-28).
+  descripcion?: string | null;
   orden?: number | null;
 }
 

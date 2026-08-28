@@ -732,6 +732,15 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
       ? [lugar.latitud, lugar.longitud]
       : CENTRO_MAPA_GENERICO;
+    // Bug encontrado 2026-08-28 ("elijo una zona y el mapa se queda donde estaba"): si el
+    // cliente ya había marcado un punto (latitud/longitud con valor) y LUEGO cambia de zona,
+    // SelectorUbicacionComponent.ngOnChanges no recentra el mapa mientras lat/lng no sean null
+    // (a propósito, para no perder el punto marcado con cada re-render — ver ese componente).
+    // Pero un punto marcado en la zona vieja no tiene sentido al cambiar de zona: hay que
+    // soltarlo para que el mapa sí recentre en la zona nueva. Mismo reseteo que ya hace
+    // onRecogerEnLocalChange() al cambiar a "recoger en local".
+    this.latitud = null;
+    this.longitud = null;
     // La zona puede sumar horas de anticipación, así que el plazo cambia con ella.
     this.consultarFechas();
   }

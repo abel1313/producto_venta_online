@@ -116,6 +116,35 @@ export class GestionRolesComponent implements OnInit {
     return this.accionesPorSubmenu.get(submenu.id) ?? [];
   }
 
+  // Popup con "¿para qué sirve? ¿dónde lo veo?" -- pedido del usuario 2026-08-28: el tooltip al
+  // pasar el mouse (title="...") no alcanzaba, quería poder hacer clic y que quedara a la vista
+  // explícitamente, con la ubicación real en la pantalla ("puedes ir aquí, aquí o aquí").
+  verInfoAccion(accion: IAccionSubmenu): void {
+    Swal.fire({
+      icon: 'info',
+      title: accion.etiqueta,
+      html: accion.descripcion || 'Todavía no tiene descripción cargada.',
+      confirmButtonText: 'Entendido'
+    });
+  }
+
+  verInfoVerEditar(): void {
+    Swal.fire({
+      icon: 'info',
+      title: 'Ver y Editar',
+      html: `
+        <p style="text-align:left"><b>👁️ Ver</b> deja entrar a esa pantalla del menú -- sin esto,
+        aunque se le den acciones puntuales de abajo, el usuario ni siquiera puede navegar ahí.</p>
+        <p style="text-align:left"><b>✏️ Editar</b> deja además guardar cambios ahí (crear,
+        actualizar, borrar) -- necesita "Ver" marcado primero, si no hay pantalla donde editar.</p>
+        <p style="text-align:left">Las acciones puntuales que aparecen debajo de algunas pantallas
+        (ej. "Habilitar", los filtros) son más finas todavía: dejan usar UN botón/opción concreto
+        de esa pantalla sin dar todo "Editar".</p>
+      `,
+      confirmButtonText: 'Entendido'
+    });
+  }
+
   tieneAccion(accion: IAccionSubmenu): boolean {
     return !!this.rolSeleccionado?.acciones?.some(a => a.id === accion.id);
   }

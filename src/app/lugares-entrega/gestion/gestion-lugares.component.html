@@ -32,14 +32,6 @@
              placeholder="Horas extra 🌹" title="Horas que se suman al mínimo de anticipación por ser una zona lejana — solo flores eternas" />
     </div>
 
-    <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
-      {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
-    </button>
-
-    <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
-      ✕ Cancelar
-    </button>
-
     <!-- Centro de la zona -- usado para recentrar el mapa del checkout al elegir esta zona, y
          como origen para medir los anillos de cobro por distancia (ver abajo). Zonas viejas sin
          marcar simplemente no tienen ninguno de los dos. -->
@@ -64,6 +56,21 @@
   <p class="pk-hint" *ngIf="editandoId && (centroLat == null || centroLng == null)">
     Marca el centro de la zona arriba para poder configurar anillos de cobro por distancia.
   </p>
+
+  <!-- Barra de acciones FIJA abajo (2026-08-28: "seleccioné la zona y los radios y ya no hay
+       botón a la vista") -- antes el botón vivía arriba del mapa/anillos, así que en cuanto
+       bajabas a marcar el centro o configurar anillos quedaba fuera de la pantalla. Ahora se ve
+       siempre mientras estás en esta zona, sin importar cuánto scrollees. Los anillos se guardan
+       solos al editarlos (ver "Guardando…" en cada fila) -- este botón es solo para
+       nombre/envío/horas/centro. -->
+  <div class="pk-actions-fija">
+    <button class="pk-btn pk-btn--save" type="button" [disabled]="guardando" (click)="guardar()">
+      {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
+    </button>
+    <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
+      ✕ Cancelar
+    </button>
+  </div>
 
   <!-- Vacío -->
   <div *ngIf="!cargando && lugares.length === 0 && page === 0" class="pk-empty">

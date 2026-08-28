@@ -150,6 +150,24 @@ $t:  all 0.2s ease;
   margin: 4px 0 0;
 }
 
+// Barra de Guardar/Actualizar/Cancelar, fija abajo -- antes vivía arriba del mapa y de los
+// anillos, así que en cuanto bajabas a esa parte de la pantalla quedaba fuera de vista (pedido
+// 2026-08-28: "seleccioné la zona y los radios y ya no hay botón a la vista"). `sticky` la deja
+// pegada al fondo de la ventana mientras se scrollea el resto de la pantalla, sin taparla con un
+// `fixed` que quedaría flotando aunque ya hayas salido de esta pantalla.
+.pk-actions-fija {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  margin: 0 -16px;
+  background: var(--card-bg);
+  border-top: 1.5px solid var(--card-border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+}
+
 // ── Dark mode ────────────────────────────────────────────────────────
 // Sin esto, .pk-input quedaba con fondo oscuro nativo del navegador (color-scheme:dark
 // heredado de body.theme-dark) pero texto oscuro fijo (#1f2937) -- texto invisible sobre

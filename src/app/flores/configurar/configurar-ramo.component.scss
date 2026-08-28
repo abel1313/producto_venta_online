@@ -116,6 +116,14 @@
   &:focus { border-color: var(--app-accent); }
   &:disabled { opacity: .5; cursor: not-allowed; }
   &--num { width: 100px; text-align: center; }
+
+  // Marca en rojo el campo que falta llenar (2026-08-28: "cuando hace falta algo no se marca
+  // en rojo... no es fácil encontrarlo") -- antes solo había un texto de aviso más abajo, sin
+  // nada que dijera CUÁL campo exacto era. Mismo rojo que .cr-aviso--error.
+  &--error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, .12);
+  }
 }
 
 // ── Paso 2 — cantidad ───────────────────────────────────────────────────

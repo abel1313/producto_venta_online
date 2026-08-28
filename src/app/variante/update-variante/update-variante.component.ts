@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
@@ -92,14 +92,17 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
           this.variante = variante;
 
           this.form = this.fb.group({
-            talla:         [variante.talla         ?? ''],
-            color:         [variante.color         ?? ''],
-            presentacion:  [variante.presentacion  ?? ''],
-            stock:         [variante.stock         ?? null],
-            descripcion:   [variante.descripcion   ?? ''],
-            marca:         [variante.marca         ?? ''],
-            contenidoNeto: [variante.contenidoNeto ?? ''],
+            talla:           [variante.talla         ?? ''],
+            color:           [variante.color         ?? ''],
+            presentacion:    [variante.presentacion  ?? ''],
+            stock:           [{ value: variante.stock ?? 0, disabled: true }],
+            actualizarStock: [0, [Validators.min(0)]],
+            eliminarStock:   [0, [Validators.min(0)]],
+            descripcion:     [variante.descripcion   ?? ''],
+            marca:           [variante.marca         ?? ''],
+            contenidoNeto:   [variante.contenidoNeto ?? ''],
           });
+          this.initValidacionEliminarStock();
 
           // Precargar producto seleccionado
           if (variante.producto) {
@@ -285,8 +288,6 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
-  volver(): void { this.router.navigate(['/tienda/buscar']); }
-
   imageSrc(img: IVarianteImagenDto): string {
     if (img?.urlImagen) return img.urlImagen;
     if (!img?.base64) return '';
@@ -388,19 +389,29 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   }
 
   // ── Ajuste de stock ────────────────────────────────────────────────
-
-  cantidadAjuste = 1;
+  // Mismo patrón que productos/update: "Stock" muestra el valor actual (bloqueado), y solo se
+  // mueve sumando/restando con "Actualizar stock" / "Eliminar stock". "Eliminar stock" no puede
+  // superar el stock actual (validado en vivo acá, y de nuevo en el back como red de seguridad).
 
   get stockActual(): number {
     return this.form?.get('stock')?.value ?? 0;
   }
 
-  ajustarStock(tipo: 'agregar' | 'quitar'): void {
-    const cantidad = Math.max(1, Math.abs(this.cantidadAjuste ?? 1));
-    const nuevo = tipo === 'agregar'
-      ? this.stockActual + cantidad
-      : Math.max(0, this.stockActual - cantidad);
-    this.form.patchValue({ stock: nuevo });
+  get stockFinal(): number {
+    const agregar = +(this.form?.get('actualizarStock')?.value ?? 0);
+    const quitar  = +(this.form?.get('eliminarStock')?.value ?? 0);
+    return this.stockActual + agregar - quitar;
+  }
+
+  private initValidacionEliminarStock(): void {
+    this.form.get('eliminarStock')!.valueChanges.subscribe((valor: number) => {
+      const ctrl = this.form.get('eliminarStock')!;
+      if (+valor > this.stockActual) {
+        ctrl.setErrors({ excedeStock: true });
+      } else if (ctrl.hasError('excedeStock')) {
+        ctrl.setErrors(null);
+      }
+    });
   }
 
   // Nuevo — recibe la selección del autocomplete de palabra clave
@@ -412,12 +423,15 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
   actualizar(): void {
     if (!this.productoSeleccionado || !this.variante?.id) return;
+    if (this.form.get('eliminarStock')?.hasError('excedeStock')) return;
     this.guardando = true;
 
+    const { talla, color, presentacion, descripcion, marca, contenidoNeto } = this.form.getRawValue();
     const payload: IVarianteRequest = {
       id:                this.variante.id,
       productoId:        this.productoSeleccionado.idProducto,
-      ...this.form.value,
+      talla, color, presentacion, descripcion, marca, contenidoNeto,
+      stock:             this.stockFinal,
       palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
       imagenPrincipalId: this.imagenPrincipalId,
       ...(this.imagenesCargadas.length ? { listImagenes: this.imagenesCargadas } : {})

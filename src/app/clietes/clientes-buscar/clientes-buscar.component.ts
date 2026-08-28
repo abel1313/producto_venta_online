@@ -12,12 +12,12 @@ import Swal from 'sweetalert2';
 })
 export class ClientesBuscarComponent implements OnInit, OnDestroy {
 
-  termino        = '';
+  termino      = '';
   clientes: IClienteBusquedaDto[] = [];
-  cargando       = false;
-  totalElementos = 0;
-  pagina         = 0;
-  size           = 10;
+  cargando     = false;
+  totalPaginas = 0;
+  pagina       = 0;
+  size         = 10;
 
   private input$ = new Subject<string>();
   private sub!: Subscription;
@@ -41,8 +41,11 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.clienteService.buscarClientes(this.termino, this.pagina, this.size).subscribe({
       next: res => {
-        this.clientes      = res.data?.list ?? [];
-        this.totalElementos = res.data?.totalElementos ?? 0;
+        // El backend (PageableDto) solo trae `list`/`totalPaginas` -- no existe `totalElementos`.
+        // Antes se leía ese campo inexistente, así que siempre daba 0 y la paginación se quedaba
+        // atascada en la página 0 sin importar cuántos resultados hubiera (encontrado 2026-08-27).
+        this.clientes     = res.data?.list ?? [];
+        this.totalPaginas = res.data?.totalPaginas ?? 0;
         this.cargando = false;
       },
       error: (err) => {
@@ -119,8 +122,6 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
       Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: `El correo de ${c.nombrePersona} fue verificado correctamente.`, timer: 2500, showConfirmButton: false });
     });
   }
-
-  get totalPaginas(): number { return Math.ceil(this.totalElementos / this.size); }
 
   paginaAnterior(): void { if (this.pagina > 0) { this.pagina--; this.buscar(); } }
   paginaSiguiente(): void { if (this.pagina < this.totalPaginas - 1) { this.pagina++; this.buscar(); } }

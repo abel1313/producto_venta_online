@@ -1,5 +1,4 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import * as L from 'leaflet';
 
 // Mismo fix ya usado en mis-pedidos.component.ts — Leaflet calcula la URL de sus íconos por
@@ -84,30 +83,34 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
   buscando = false;
   errorBusqueda: string | null = null;
 
-  constructor(private readonly http: HttpClient) {}
-
-  buscarLugar(): void {
+  // fetch() nativo a propósito, NO HttpClient -- HttpClient pasa por TokenInterceptor, que le
+  // pega el Authorization: Bearer y withCredentials:true a CUALQUIER request sin filtrar por
+  // origen (encontrado 2026-08-28: "el buscador no sirve de nada porque no busca"). Nominatim
+  // responde Access-Control-Allow-Origin: *, y eso es INCOMPATIBLE con credentials -- el
+  // navegador rechaza la respuesta por CORS antes de que el código la vea, así que el buscador
+  // fallaba en silencio (el catch de abajo mostraba el error genérico, nunca el resultado real).
+  // fetch() sin `credentials: 'include'` no manda cookies ni pasa por el interceptor -- llega
+  // limpio a un servicio público de terceros, como debe ser.
+  async buscarLugar(): Promise<void> {
     const q = this.terminoBusqueda.trim();
     if (!q || this.buscando) return;
     this.buscando = true;
     this.errorBusqueda = null;
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=mx&q=${encodeURIComponent(q)}`;
-    this.http.get<Array<{ lat: string; lon: string }>>(url).subscribe({
-      next: (res) => {
-        this.buscando = false;
-        if (!res?.length) {
-          this.errorBusqueda = 'No se encontró ese lugar — prueba con otro nombre o ubica el punto directo en el mapa.';
-          return;
-        }
-        const lat = parseFloat(res[0].lat);
-        const lon = parseFloat(res[0].lon);
-        this.mapa?.setView([lat, lon], 15);
-      },
-      error: () => {
-        this.buscando = false;
-        this.errorBusqueda = 'No se pudo buscar ahorita — ubica el punto directo en el mapa.';
+    try {
+      const res = await fetch(url).then(r => r.json()) as Array<{ lat: string; lon: string }>;
+      this.buscando = false;
+      if (!res?.length) {
+        this.errorBusqueda = 'No se encontró ese lugar — prueba con otro nombre o ubica el punto directo en el mapa.';
+        return;
       }
-    });
+      const lat = parseFloat(res[0].lat);
+      const lon = parseFloat(res[0].lon);
+      this.mapa?.setView([lat, lon], 15);
+    } catch {
+      this.buscando = false;
+      this.errorBusqueda = 'No se pudo buscar ahorita — ubica el punto directo en el mapa.';
+    }
   }
 
   ngAfterViewInit(): void {
@@ -130,12 +133,43 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
     setTimeout(() => this.mapa?.invalidateSize(), 60);
   }
 
+  // Cuando `colocar()` emite `ubicacionCambio` por un clic/arrastre propio, el padre casi
+  // siempre solo guarda ese mismo valor de vuelta en el binding de `lat`/`lng` (ver
+  // `onUbicacionCambio` en los componentes que usan este selector) — eso dispara `ngOnChanges`
+  // otra vez con el MISMO punto. Sin esta bandera, `ngOnChanges` no podía distinguir ese eco de
+  // un cambio real del padre (ej. cambiar de fila a editar), así que el mapa se recentraba y
+  // hacía zoom de golpe en cada clic del usuario, encima de ya estar ahí.
+  private ultimoEmitido: { lat: number; lng: number } | null = null;
+
   ngOnChanges(changes: SimpleChanges): void {
     // Si el padre cambia de zona (otro `centroDefault`) DESPUÉS de que el mapa ya existe y
     // todavía no se marcó ningún punto, recentrar ahí — para que el mapa muestre la zona
     // elegida en vez de quedarse en el centro genérico inicial.
     if (changes['centroDefault'] && this.mapa && this.lat == null && this.lng == null) {
       this.mapa.setView(this.centroDefault, 13);
+    }
+
+    // Si el padre cambia `lat`/`lng` directamente (ej. seleccionó otra fila para editar, con un
+    // punto ya guardado distinto al que se estaba mostrando) hay que mover el mapa y el marcador
+    // ahí. Antes esto solo se calculaba una vez, en `ngAfterViewInit` — cambiar de fila sin
+    // recrear el componente dejaba el mapa/marcador donde estaban, aunque el punto real ya fuera
+    // otro (bug reportado 2026-08-26: "selecciono la zona y no me lleva ahí, se queda en
+    // cualquier lado, así para todos").
+    if ((changes['lat'] || changes['lng']) && this.mapa) {
+      const esEcoDelPropioClick = !!this.ultimoEmitido
+        && this.lat === this.ultimoEmitido.lat && this.lng === this.ultimoEmitido.lng;
+      this.ultimoEmitido = null;
+      if (esEcoDelPropioClick) return;
+
+      if (this.lat != null && this.lng != null) {
+        this.colocar(this.lat, this.lng, false);
+        this.mapa.setView([this.lat, this.lng], 16);
+      } else if (this.marker) {
+        // El padre limpió el punto (ej. canceló la edición) -- quitar el marcador también.
+        this.marker.remove();
+        this.marker = null;
+        this.actualizarTexto();
+      }
     }
   }
 
@@ -168,7 +202,10 @@ export class SelectorUbicacionComponent implements AfterViewInit, OnChanges, OnD
     this.lat = lat;
     this.lng = lng;
     this.actualizarTexto();
-    if (emitir) this.ubicacionCambio.emit({ lat, lng });
+    if (emitir) {
+      this.ultimoEmitido = { lat, lng };
+      this.ubicacionCambio.emit({ lat, lng });
+    }
   }
 
   // El cliente no tiene por qué ver los números crudos de latitud/longitud — no le dicen nada.

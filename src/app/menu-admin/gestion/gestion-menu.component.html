@@ -1,0 +1,146 @@
+<div class="pk-wrap">
+
+  <div class="pk-header">
+    <h4 class="pk-header__title">🗂️ Catálogo de menús y submenús</h4>
+    <small class="pk-header__sub">Define los grupos del menú y las pantallas que contiene cada uno — esto es lo que luego arma el sidebar</small>
+    <a class="pk-link" routerLink="/gestion-menu/roles">Ir a gestión de roles →</a>
+  </div>
+
+  <div class="gm-cols">
+
+    <!-- Columna izquierda: Menús -->
+    <div class="gm-col gm-col--menus">
+
+      <form [formGroup]="menuForm" (ngSubmit)="guardarMenu()" class="pk-form pk-form--stack">
+        <div class="pk-form__field">
+          <input class="pk-input" formControlName="nombre" type="text"
+                 placeholder="Nombre del menú (ej. Catálogo)…" autocomplete="off" maxlength="60" />
+          <small class="pk-error" *ngIf="menuForm.get('nombre')?.invalid && menuForm.get('nombre')?.touched">
+            El nombre es obligatorio
+          </small>
+        </div>
+        <div class="pk-form__field pk-form__field--num">
+          <input class="pk-input" formControlName="icono" type="text" placeholder="Icono (ej. 📦)" maxlength="10" />
+        </div>
+        <div class="pk-form__field pk-form__field--num">
+          <input class="pk-input" formControlName="orden" type="number" placeholder="Orden" />
+        </div>
+        <div class="pk-form__actions">
+          <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoMenu">
+            {{ editandoMenuId ? '💾 Actualizar' : '➕ Agregar menú' }}
+          </button>
+          <button *ngIf="editandoMenuId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicionMenu()">
+            ✕ Cancelar
+          </button>
+        </div>
+      </form>
+
+      <div class="pk-empty" *ngIf="!cargandoMenus && menus.length === 0">
+        Sin menús — agrega el primero arriba
+      </div>
+
+      <ul class="gm-list" *ngIf="menus.length > 0">
+        <li class="gm-list__item"
+            [class.gm-list__item--activo]="!viendoSinGrupo && menuSeleccionado?.id === m.id"
+            *ngFor="let m of menus">
+          <button class="gm-list__label" type="button" (click)="seleccionarMenu(m)">
+            <span *ngIf="m.icono">{{ m.icono }}</span> {{ m.nombre }}
+          </button>
+          <span class="gm-list__actions">
+            <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionMenu(m)" title="Editar">✏️</button>
+            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarMenu(m)" title="Eliminar">🗑️</button>
+          </span>
+        </li>
+        <li class="gm-list__item gm-list__item--singrupo"
+            [class.gm-list__item--activo]="viendoSinGrupo">
+          <button class="gm-list__label" type="button" (click)="seleccionarSinGrupo()">
+            🔗 Sin grupo (nivel superior)
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Columna derecha: Submenús del menú seleccionado -->
+    <div class="gm-col gm-col--submenus">
+
+      <div class="pk-empty" *ngIf="!menuSeleccionado && !viendoSinGrupo">
+        Elige un menú de la izquierda (o "Sin grupo") para ver y editar sus pantallas
+      </div>
+
+      <ng-container *ngIf="menuSeleccionado || viendoSinGrupo">
+        <div class="gm-col__title">
+          Pantallas de "{{ viendoSinGrupo ? 'Sin grupo' : menuSeleccionado?.nombre }}"
+        </div>
+
+        <form [formGroup]="submenuForm" (ngSubmit)="guardarSubmenu()" class="pk-form pk-form--stack">
+          <div class="pk-form__field">
+            <input class="pk-input" formControlName="nombre" type="text"
+                   placeholder="Nombre de la pantalla (ej. Modelos)…" autocomplete="off" maxlength="80" />
+            <small class="pk-error" *ngIf="submenuForm.get('nombre')?.invalid && submenuForm.get('nombre')?.touched">
+              El nombre es obligatorio
+            </small>
+          </div>
+          <div class="pk-form__field">
+            <input class="pk-input" formControlName="ruta" type="text"
+                   placeholder="Ruta (ej. productos/buscar)…" autocomplete="off" maxlength="150" />
+            <small class="pk-error" *ngIf="submenuForm.get('ruta')?.invalid && submenuForm.get('ruta')?.touched">
+              La ruta es obligatoria
+            </small>
+          </div>
+          <div class="pk-form__field pk-form__field--num">
+            <input class="pk-input" formControlName="icono" type="text" placeholder="Icono" maxlength="10" />
+          </div>
+          <div class="pk-form__field pk-form__field--num">
+            <input class="pk-input" formControlName="orden" type="number" placeholder="Orden" />
+          </div>
+          <!-- Texto del botón ℹ️ que ve el admin en Gestión de roles al hacer clic sobre esta
+               pantalla -- "qué es" + "dónde vive en el menú". Opcional, pero sin esto el popup
+               solo dice "Todavía no tiene descripción cargada". -->
+          <div class="pk-form__field pk-form__field--full">
+            <textarea class="pk-input" formControlName="descripcion" rows="2" maxlength="255"
+                      placeholder="Descripción para el botón ℹ️ de Gestión de roles: qué es esta pantalla y dónde vive en el menú…"></textarea>
+          </div>
+          <div class="pk-form__actions">
+            <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoSubmenu">
+              {{ editandoSubmenuId ? '💾 Actualizar' : '➕ Agregar pantalla' }}
+            </button>
+            <button *ngIf="editandoSubmenuId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicionSubmenu()">
+              ✕ Cancelar
+            </button>
+          </div>
+        </form>
+
+        <div class="pk-empty" *ngIf="!cargandoSubmenus && submenus.length === 0">
+          Sin pantallas todavía — agrega la primera arriba
+        </div>
+
+        <div class="pk-table-wrap" *ngIf="!cargandoSubmenus && submenus.length > 0">
+          <table class="pk-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Ruta</th>
+                <th class="pk-table__col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of submenus" [class.pk-row--editando]="editandoSubmenuId === s.id">
+                <td>
+                  {{ s.icono }} {{ s.nombre }}
+                  <small class="pk-meta" *ngIf="!s.descripcion" title="Sin descripción -- el botón ℹ️ en Gestión de roles no va a tener nada que mostrar">⚠️</small>
+                </td>
+                <td><small class="pk-meta">/{{ s.ruta }}</small></td>
+                <td class="pk-table__actions">
+                  <button class="pk-btn pk-btn--edit" (click)="iniciarEdicionSubmenu(s)" title="Editar">✏️</button>
+                  <button class="pk-btn pk-btn--del" (click)="eliminarSubmenu(s)" title="Eliminar">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+
+</div>

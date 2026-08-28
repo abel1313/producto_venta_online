@@ -1,3 +1,18 @@
+// ── Aislamiento del panel "Personalización" (2026-08-26) ──────────────────
+// El login usa los tokens globales --app-text/--app-text-muted en varios puntos
+// (.brand-sub, .input-icon, .toggle-pass, .register-link) SIN tener su propio
+// override de color en el bloque :host-context(body.theme-light) de más abajo
+// (a diferencia de .brand-name/.field-label/.field-input, que sí lo tienen).
+// El dueño pidió que el login se quede "como está" aunque el panel de
+// Personalización cambie los tokens globales en modo claro — así que se
+// congela aquí el valor de HOY de esos tokens, solo para el tema claro (el
+// oscuro no se toca: sigue leyendo los tokens globales de siempre, que
+// Personalización nunca modifica).
+:host-context(body.theme-light), :host-context([data-theme="light"]) {
+  --app-text:       #152420;
+  --app-text-muted: #55736A;
+}
+
 // Paleta Aether — azul/morado. Ya es la paleta GLOBAL del proyecto
 // (ver styles.scss: --app-accent). Se conservan como variables SCSS locales
 // porque este componente las usa dentro de rgba()/gradientes, donde las

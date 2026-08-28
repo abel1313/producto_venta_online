@@ -56,7 +56,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     { field: 'codigoBarras', headerName: 'Codigo Barras' },
   ];
   roles: string[] = [];
-  isAdminUser: boolean = false;
   // Cada checkbox es independiente (no excluyente entre si). Si ambos de un par estan marcados
   // (o ninguno), no se filtra por esa dimension (se traen ambos casos) — solo cuando queda
   // marcado exactamente uno de los dos se manda el booleano al back.
@@ -111,12 +110,98 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
-      this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
-    
+
   }
   get isAnonymous(): boolean {
     return !this.roles || this.roles.length === 0;
+  }
+
+  // ── Permisos granulares de esta pantalla (Fase 3, piloto en Modelos 2026-08-27) ────────
+  // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas, desconectado del
+  // catalogo de pantallas/acciones) -- ahora cada boton pregunta exactamente por su propio
+  // permiso, configurable desde Gestión de roles.
+
+  /** ¿Ve esta pantalla en modo admin? Controla lo puramente informativo (badge "Deshabilitado",
+   * atenuar la tarjeta) -- no requiere ninguna acción puntual, solo poder VER la pantalla. */
+  get esVistaAdmin(): boolean {
+    return this.authService.tienePantalla('productos/buscar');
+  }
+
+  /** El botón "Actualizar" navega a "Agregar modelo" -- su permiso real es esa otra pantalla,
+   * no una acción de Modelos (así lo señaló el usuario: "en esa pantalla no está la opción de
+   * editar el modelo, entonces no se pone ahí"). */
+  get puedeActualizarProducto(): boolean {
+    return this.authService.tienePantalla('productos/agregar');
+  }
+
+  get puedeHabilitar(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'habilitar');
+  }
+
+  get puedeEliminar(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'eliminar');
+  }
+
+  get puedeCrearVariantes(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'crear-variantes');
+  }
+
+  get puedeCompartirImagen(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'compartir-imagen');
+  }
+
+  get puedeDescargarExcel(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'descargar-excel');
+  }
+
+  // Antes era un solo permiso "filtros-admin" que mostraba/ocultaba TODA la barra en bloque.
+  // Se separó (2026-08-28) en un permiso por checkbox para poder darle a un rol, por ejemplo,
+  // solo "Con stock" sin el resto -- ver migration_filtros_granulares.sql.
+  get puedeFiltroConStock(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-con-stock');
+  }
+
+  get puedeFiltroSinStock(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-sin-stock');
+  }
+
+  get puedeFiltroConImagenes(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-con-imagenes');
+  }
+
+  get puedeFiltroSinImagenes(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-sin-imagenes');
+  }
+
+  get puedeFiltroHabilitados(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-habilitados');
+  }
+
+  get puedeFiltroNoHabilitados(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-no-habilitados');
+  }
+
+  get puedeFiltroCodigoGenerado(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-codigo-generado');
+  }
+
+  get puedeFiltroCodigoReal(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-codigo-real');
+  }
+
+  get puedeFiltroFecha(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'filtro-fecha-creacion');
+  }
+
+  /** Cualquiera de los 9 filtros individuales -- controla si se muestra la barra completa y el
+   * botón "Limpiar filtros" (que limpia los que estén visibles, no los que no). */
+  get puedeVerAlgunFiltro(): boolean {
+    return this.puedeFiltroConStock || this.puedeFiltroSinStock
+        || this.puedeFiltroConImagenes || this.puedeFiltroSinImagenes
+        || this.puedeFiltroHabilitados || this.puedeFiltroNoHabilitados
+        || this.puedeFiltroCodigoGenerado || this.puedeFiltroCodigoReal
+        || this.puedeFiltroFecha;
   }
 
     confirmarEliminarBatch(item: IProductoDTO): void {

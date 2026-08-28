@@ -192,7 +192,7 @@
   &__sub {
     margin: 0;
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     max-width: 240px;
   }
 
@@ -200,7 +200,7 @@
   p:not(.cu-empty__greeting):not(.cu-empty__sub) {
     margin: 0;
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
   }
 }
 
@@ -262,7 +262,7 @@
 
   &__time {
     font-size: 0.68rem;
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     padding: 0 4px;
   }
 
@@ -273,11 +273,11 @@
     .cu-bubble__body { align-items: flex-start; }
 
     .cu-bubble__text {
-      background: #fff;
+      background: var(--card-bg, #fff);
       color: var(--app-text, #1e293b);
       border-radius: 4px 16px 16px 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      border: 1px solid #e8ecf4;
+      border: 1px solid var(--card-border, #e8ecf4);
     }
 
     .cu-bubble__time { text-align: left; }
@@ -426,7 +426,7 @@
 
   .cu-bubble--admin .cu-bubble__text {
     background: rgba(255,255,255,0.07);
-    color: #e2e8f0;
+    color: var(--app-text, #e2e8f0);
     border-color: rgba(255,255,255,0.1);
     box-shadow: none;
   }
@@ -439,11 +439,11 @@
   .cu-input {
     background: rgba(255,255,255,0.06);
     border-color: rgba(255,255,255,0.12);
-    color: #e2e8f0;
+    color: var(--app-text, #e2e8f0);
   }
 
-  .cu-empty__greeting { color: #e2e8f0; }
-  .cu-empty__sub { color: #94a3b8; }
+  .cu-empty__greeting { color: var(--app-text, #e2e8f0); }
+  .cu-empty__sub { color: var(--app-text-muted, #94a3b8); }
 
   .cu-alert--info {
     background: rgba(59,130,246,0.15);

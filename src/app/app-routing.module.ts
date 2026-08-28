@@ -6,7 +6,7 @@ import { HomeComponent } from './home/home.component';
 import { CarritoGuard } from './guards/carrito.guard';
 import { UsuariosGuard } from './auth/usuarios.guard';
 import { SinRegistroGuard } from './guard/sin-registro.guard';
-import { AdminGuardGuard } from './guard/admin-guard.guard';
+import { PantallaGuard } from './guard/pantalla.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
@@ -21,37 +21,37 @@ const routes: Routes = [
   {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule),
-    canActivate: [CarritoGuard, AuthGuard, AdminGuardGuard]
+    canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
   },
   {
     path: 'ventas',
     loadChildren: () => import('./ventas/venta-producto/venta-producto.module').then(m => m.VentaProductoModule),
-    canActivate: [AuthGuard, AdminGuardGuard,CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard,CarritoGuard]
   },
   {
     path: 'gastos',
     loadChildren: () => import('./gastos/mis-gastos/mis-gastos.module').then(m => m.MisGastosModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     path: 'abonos',
     loadChildren: () => import('./abonos/abonos.module').then(m => m.AbonosModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     path: 'carga-imagenes',
     loadChildren: () => import('./carga-imagenes/carga-imagenes.module').then(m => m.CargaImagenesModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     path: 'reportes',
     loadChildren: () => import('./reportes/reportes.module').then(m => m.ReportesModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     path: 'dashboard',
     loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
     {
     path: 'pedidos',
@@ -60,7 +60,7 @@ const routes: Routes = [
   {
     path: 'rifas',
     loadChildren: () => import('./rifas/rifas.module').then(m => m.RifasModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     path: 'chat',
@@ -88,19 +88,33 @@ const routes: Routes = [
   {
     path: 'admin',
     loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
-    canActivate: [AuthGuard, AdminGuardGuard]
+    canActivate: [AuthGuard, PantallaGuard]
   },
   {
-    // Gestión del catálogo de palabras clave — solo admin
+    // Gestión del catálogo de palabras clave — solo quien tenga la pantalla asignada
     path: 'palabras-clave',
     loadChildren: () => import('./palabras-clave/palabras-clave.module').then(m => m.PalabrasClave),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
-    // Gestión del catálogo de lugares de entrega — solo admin
+    // Gestión del catálogo de lugares de entrega — solo quien tenga la pantalla asignada
     path: 'lugares-entrega',
     loadChildren: () => import('./lugares-entrega/lugares-entrega.module').then(m => m.LugaresEntregaModule),
-    canActivate: [AuthGuard, AdminGuardGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
+  },
+  {
+    // Gestión del catálogo de menús/submenús -- Fase 1 de PLAN_PERMISOS_PANTALLAS.md (repo
+    // compartido). PantallaGuard aquí también, protegido por la misma tabla que administra.
+    path: 'gestion-menu',
+    loadChildren: () => import('./menu-admin/menu-admin.module').then(m => m.MenuAdminModule),
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
+  },
+  {
+    // Pantalla única de Personalización (colores/fondos/cards/tablas/menú) -- ver
+    // migration_tema_negocio.sql para el catálogo submenu/rol_submenu que la habilita.
+    path: 'personalizacion',
+    loadChildren: () => import('./tema-admin/tema-admin.module').then(m => m.TemaAdminModule),
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     // Flores eternas — el módulo mezcla pantallas admin (catálogos) y una pública (vitrina de
@@ -145,7 +159,7 @@ const routes: Routes = [
     path: 'tiktok/callback', component: TiktokCallbackComponent
   },
   {
-    // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+AdminGuardGuard (es el
+    // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+PantallaGuard (es el
     // catalogo interno de administracion). Cualquier visitante sin sesion que entrara al dominio
     // raiz caia directo al login en vez de ver la tienda -- rompia la tienda publica para todo
     // el mundo, y ademas hizo que TikTok rechazara el App Review ("Website URL... cannot be a

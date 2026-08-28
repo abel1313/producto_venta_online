@@ -1,3 +1,17 @@
+// ── Aislamiento del panel "Personalización" (2026-08-26) ──────────────────
+// Este archivo usa --app-bg/--app-border/--app-text/--brand-1/--brand-2
+// directamente en var(), sin override propio para el tema claro. Se congela
+// aquí el valor de HOY de esos tokens para el tema claro, así el panel de
+// Personalización (que solo actúa en modo claro) no cambia esta pantalla. El
+// oscuro sigue intacto, leyendo los tokens globales de siempre.
+:host-context(body.theme-light), :host-context([data-theme="light"]) {
+  --app-bg:     #F3FAF6;
+  --app-border: #D5E8DD;
+  --app-text:   #152420;
+  --brand-1:    #00875A;
+  --brand-2:    #005C3D;
+}
+
 .vc-page {
   min-height: 100vh;
   display: flex;

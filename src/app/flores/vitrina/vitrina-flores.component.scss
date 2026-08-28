@@ -27,7 +27,7 @@
   }
   &__title {
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: #64748b; }
+    small { color: var(--app-text-muted, #64748b); }
   }
 }
 
@@ -50,7 +50,7 @@
 .vr-loading, .vr-empty {
   text-align: center;
   padding: 60px 16px;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   font-size: 1rem;
 }
 
@@ -202,7 +202,7 @@
     border: none;
     font-size: 1.1rem;
     cursor: pointer;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     padding: 4px 8px;
     border-radius: 6px;
     &:hover { background: rgba(0,0,0,.08); }
@@ -246,7 +246,7 @@
 
   &__aviso {
     font-size: 0.78rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     margin-top: 16px;
     background: rgba(var(--app-accent-rgb),.06);
     border-radius: 8px;
@@ -280,10 +280,10 @@
 // ── Dark / Light ──────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .vr-card { background: rgba(255,255,255,.04); }
-  .vr-modal { background: #18181b; }
+  .vr-modal { background: var(--card-bg, #18181b); }
 }
 
 :host-context(body.theme-light) {
-  .vr-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .vr-modal { background: #fff; }
+  .vr-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .vr-modal { background: var(--card-bg, #fff); }
 }

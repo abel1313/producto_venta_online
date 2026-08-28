@@ -11,7 +11,7 @@
   &__inner {
     padding: 24px 0;
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: #64748b; }
+    small { color: var(--app-text-muted, #64748b); }
 
     &--conFoto {
       display: flex;
@@ -34,7 +34,7 @@
 .cr-loading {
   text-align: center;
   padding: 40px 16px;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
 }
 
 .cr-aviso {
@@ -116,6 +116,14 @@
   &:focus { border-color: var(--app-accent); }
   &:disabled { opacity: .5; cursor: not-allowed; }
   &--num { width: 100px; text-align: center; }
+
+  // Marca en rojo el campo que falta llenar (2026-08-28: "cuando hace falta algo no se marca
+  // en rojo... no es fácil encontrarlo") -- antes solo había un texto de aviso más abajo, sin
+  // nada que dijera CUÁL campo exacto era. Mismo rojo que .cr-aviso--error.
+  &--error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, .12);
+  }
 }
 
 // ── Paso 2 — cantidad ───────────────────────────────────────────────────
@@ -285,7 +293,7 @@
   .cr-step, .cr-resumen { background: rgba(255,255,255,.04); }
 }
 :host-context(body.theme-light) {
-  .cr-step, .cr-resumen { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .cr-step, .cr-resumen { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
 
 // El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni

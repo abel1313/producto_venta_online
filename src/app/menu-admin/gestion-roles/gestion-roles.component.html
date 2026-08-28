@@ -1,0 +1,129 @@
+<div class="pk-wrap">
+
+  <div class="pk-header">
+    <h4 class="pk-header__title">🛡️ Gestión de roles</h4>
+    <small class="pk-header__sub">Crea roles y marca, pantalla por pantalla, quién puede Ver y quién además puede Editar</small>
+    <a class="pk-link" routerLink="/gestion-menu">← Volver a menús y submenús</a>
+  </div>
+
+  <div class="gm-cols">
+
+    <!-- Columna izquierda: Roles -->
+    <div class="gm-col gm-col--menus">
+
+      <form [formGroup]="rolForm" (ngSubmit)="guardarRol()" class="pk-form pk-form--stack">
+        <div class="pk-form__field">
+          <input class="pk-input" formControlName="nombreRol" type="text"
+                 placeholder="Nombre del rol (ej. ROLE_EMPLEADO)…" autocomplete="off" maxlength="60" />
+          <small class="pk-error" *ngIf="rolForm.get('nombreRol')?.invalid && rolForm.get('nombreRol')?.touched">
+            El nombre es obligatorio
+          </small>
+        </div>
+        <div class="pk-form__actions">
+          <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoRol">
+            {{ editandoRolId ? '💾 Actualizar' : '➕ Agregar rol' }}
+          </button>
+          <button *ngIf="editandoRolId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicionRol()">
+            ✕ Cancelar
+          </button>
+        </div>
+      </form>
+
+      <div class="pk-empty" *ngIf="!cargandoRoles && roles.length === 0">
+        Sin roles — agrega el primero arriba
+      </div>
+
+      <ul class="gm-list" *ngIf="roles.length > 0">
+        <li class="gm-list__item"
+            [class.gm-list__item--activo]="rolSeleccionado?.id === r.id"
+            *ngFor="let r of roles">
+          <button class="gm-list__label" type="button" (click)="seleccionarRol(r)">
+            {{ r.nombreRol }}
+            <small class="pk-meta">· {{ r.submenus?.length ?? 0 }} pantallas</small>
+          </button>
+          <span class="gm-list__actions">
+            <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionRol(r)" title="Editar">✏️</button>
+            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarRol(r)"
+                    [disabled]="esRolAdmin(r)"
+                    [title]="esRolAdmin(r) ? 'ROLE_ADMIN no se puede eliminar' : 'Eliminar'">🗑️</button>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Columna derecha: pantallas del rol seleccionado -->
+    <div class="gm-col gm-col--submenus">
+
+      <div class="pk-empty" *ngIf="!rolSeleccionado">
+        Elige un rol de la izquierda para marcar sus pantallas
+      </div>
+
+      <ng-container *ngIf="rolSeleccionado">
+        <div class="gm-col__title">
+          Pantallas de "{{ rolSeleccionado.nombreRol }}"
+          <button type="button" class="gr-info-btn" (click)="verInfoVerEditar()" title="¿Qué significan Ver y Editar?">ℹ️</button>
+        </div>
+
+        <div class="pk-empty" *ngIf="!cargandoCatalogo && grupos.length === 0">
+          Todavía no hay menús/submenús dados de alta.
+        </div>
+
+        <div class="gr-grupo" *ngFor="let g of grupos" [class.gr-grupo--abierto]="grupoEstaAbierto(g)">
+          <button class="gr-grupo__titulo" type="button" (click)="toggleGrupo(g)">
+            <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span>
+            <span class="gr-grupo__nombre">{{ g.menu?.nombre ?? 'Sin grupo' }}</span>
+            <small class="pk-meta">{{ contarAsignadas(g) }}/{{ g.submenus.length }}</small>
+            <span class="gr-grupo__chevron">›</span>
+          </button>
+          <div class="gr-grupo__lista" *ngIf="grupoEstaAbierto(g)">
+            <div class="gr-submenu-block" *ngFor="let s of g.submenus">
+              <div class="gr-check-row">
+                <label class="gr-check"
+                       [title]="esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : ''">
+                  <input type="checkbox"
+                         [checked]="tieneSubmenu(s)"
+                         [disabled]="guardandoSubmenuId === s.id || (tieneSubmenu(s) && esSubmenuProtegido(s))"
+                         (change)="toggleSubmenu(s)" />
+                  <span>{{ s.icono }} {{ s.nombre }}</span>
+                  <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
+                </label>
+                <!-- Fuera del <label> a propósito -- si estuviera adentro, el clic también
+                     marcaría/desmarcaría el checkbox Ver. -->
+                <button type="button" class="gr-info-btn" (click)="verInfoSubmenu(s)" title="¿Qué es esta pantalla? ¿Dónde vive en el menú?">ℹ️</button>
+                <label class="gr-check gr-check--escritura"
+                       [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
+                  <input type="checkbox"
+                         [checked]="tieneSubmenuEscritura(s)"
+                         [disabled]="!tieneSubmenu(s) || guardandoEscrituraId === s.id || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
+                         (change)="toggleSubmenuEscritura(s)" />
+                  <span>✏️ Editar</span>
+                </label>
+              </div>
+
+              <!-- Fase 3 de permisos (piloto en Modelos): acciones puntuales dentro de esta
+                   pantalla, mas finas que el "Editar" de arriba. Solo aparece si la pantalla
+                   tiene alguna dada de alta en el catalogo (hoy solo Modelos). -->
+              <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
+                <div class="gr-accion-item" *ngFor="let a of accionesDe(s)">
+                  <label class="gr-check gr-check--accion"
+                         [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
+                    <input type="checkbox"
+                           [checked]="tieneAccion(a)"
+                           [disabled]="!tieneSubmenu(s) || guardandoAccionId === a.id"
+                           (change)="toggleAccion(a)" />
+                    <span>{{ a.etiqueta }}</span>
+                  </label>
+                  <!-- Botón aparte (no dentro del <label>) para que el clic abra el popup en vez
+                       de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
+                  <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+
+</div>

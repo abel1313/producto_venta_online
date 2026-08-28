@@ -7,6 +7,7 @@ import {
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { FloresImagenService } from '../service/flores-imagen.service';
+import { VarianteService } from 'src/app/variante/service/variante.service';
 
 interface IAccesorioSeleccion {
   accesorio: IAccesorioRamo;
@@ -63,7 +64,8 @@ export class GestionRamosFloresComponent implements OnInit {
 
   constructor(
     private readonly flores: FloresService,
-    private readonly imagenes: FloresImagenService
+    private readonly imagenes: FloresImagenService,
+    private readonly variantes: VarianteService
   ) {}
 
   /**
@@ -90,6 +92,13 @@ export class GestionRamosFloresComponent implements OnInit {
    * ⚠️ Un ramo guardado antes de esta función **todavía no tiene variante** (`varianteId: null`):
    * la crea el back en el siguiente guardado. Por eso el input va deshabilitado en ese caso y el
    * `title` explica qué hacer, en vez de dejar elegir un archivo que no se podría guardar.
+   *
+   * ⚠️ Antes esto mandaba `{ id, producto: { id } }` sin el resto de la variante -- como
+   * `guardarConImagenes` guarda la entidad completa (no hace merge), el `stock` llegaba en 0 y
+   * pisaba el inventario real del producto sombra en cada foto subida (encontrado 2026-08-27).
+   * `FloresImagenService.subirFoto()` necesita la variante real, no un stub -- hay que traerla
+   * primero con `getOne`, igual que hace `catalogos-flores.component.ts` (que sí recibe la
+   * variante completa desde el catálogo, por eso nunca tuvo este bug).
    */
   onFotoRamo(evento: Event, r: IRamoArmado): void {
     const input = evento.target as HTMLInputElement;
@@ -98,25 +107,35 @@ export class GestionRamosFloresComponent implements OnInit {
     if (!archivo || !r.varianteId || !r.varianteProductoId) return;
 
     this.subiendoFoto = r.id;
-    this.imagenes
-      .subirFoto({ id: r.varianteId, producto: { id: r.varianteProductoId } }, archivo)
-      .subscribe({
-        next: () => {
-          this.imagenes.portadaDe(r.varianteId!).subscribe(url => {
-            this.fotos[r.varianteId!] = url;
+    this.variantes.getOne(r.varianteId).subscribe({
+      next: variante => {
+        this.imagenes.subirFoto({ ...variante, id: r.varianteId! }, archivo).subscribe({
+          next: () => {
+            this.imagenes.portadaDe(r.varianteId!).subscribe(url => {
+              this.fotos[r.varianteId!] = url;
+              this.subiendoFoto = null;
+              Swal.fire({ icon: 'success', title: 'Foto guardada', timer: 1200, showConfirmButton: false });
+            });
+          },
+          error: err => {
             this.subiendoFoto = null;
-            Swal.fire({ icon: 'success', title: 'Foto guardada', timer: 1200, showConfirmButton: false });
-          });
-        },
-        error: err => {
-          this.subiendoFoto = null;
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo guardar la foto',
-            text: err?.error?.mensaje ?? err?.message ?? 'Intenta de nuevo.'
-          });
-        }
-      });
+            Swal.fire({
+              icon: 'error',
+              title: 'No se pudo guardar la foto',
+              text: err?.error?.mensaje ?? err?.message ?? 'Intenta de nuevo.'
+            });
+          }
+        });
+      },
+      error: err => {
+        this.subiendoFoto = null;
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo leer la variante del ramo',
+          text: err?.error?.mensaje ?? err?.message ?? 'Intenta de nuevo.'
+        });
+      }
+    });
   }
 
   ngOnInit(): void {

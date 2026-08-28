@@ -15,17 +15,20 @@ import Swal from 'sweetalert2';
 // Mapeo ruta → grupo del accordion, para que la sección de la ruta activa se
 // recuerde entre navegaciones en vez de cerrarse siempre (ver comentario en
 // ngOnInit). Cada entrada es el routerLink tal cual aparece en el template.
+//
+// Reorganizado 2026-08-25 (ver PROPUESTA_REORGANIZACION_MENU.md) — "lugares-entrega" ya no
+// vive duplicado en 2 grupos (antes Inventario y Flores con 'flores/zonas' aparte); "Clientes"
+// salió de Analítica a un link propio, ya no es parte de ningún accordion.
 const GROUP_ROUTES: { group: string; paths: string[] }[] = [
-  { group: 'misproductos', paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave', 'lugares-entrega'] },
-  { group: 'pedidos',      paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
-  { group: 'ventas',       paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
-  { group: 'analitica',    paths: ['dashboard', 'reportes', 'clientes/buscar'] },
-  { group: 'rifas',        paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
-  // 'flores/zonas' es la misma pantalla que 'lugares-entrega' de Inventario, con ruta propia
-  // justamente para que el acordeón no salte de grupo al entrar desde aquí.
-  { group: 'flores',       paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/zonas', 'flores/frases'] },
-  { group: 'imagenes',     paths: ['admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache'] },
-  { group: 'sistema',      paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
+  { group: 'catalogo',   paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave'] },
+  { group: 'envios',     paths: ['lugares-entrega'] },
+  { group: 'pedidos',    paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
+  { group: 'ventas',     paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
+  { group: 'reportes',   paths: ['dashboard', 'reportes'] },
+  { group: 'rifas',      paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar'] },
+  { group: 'flores',     paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/frases'] },
+  { group: 'marketing',  paths: ['promociones', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },
+  { group: 'sistema',    paths: ['usuarios/buscar', 'admin/negocio', 'admin/chat', 'admin/presentacion', 'admin/diagnostico-imagenes', 'admin/reconciliacion-imagenes', 'admin/cache', 'gestion-menu', 'gestion-menu/roles'] },
 ];
 
 @Component({
@@ -37,6 +40,13 @@ export class NavbarComponent implements OnInit {
   roles: string[] = [];
   isAdminUser = false;
   usuario = '';
+
+  // Pantallas efectivas del usuario (rutas de Submenu, ver PLAN_PERMISOS_PANTALLAS.md) --
+  // vienen en el claim "pantallas" del JWT (AuthController.pantallasEfectivas). Reemplazan a
+  // isAdminUser para decidir qué grupos/ítems del menú se pintan; isAdminUser se conserva solo
+  // para los pocos casos que no son "pantallas" (el botón de abrir/cerrar negocio, ocultar Chat
+  // cuando ya está "Chat en vivo" en Sistema, el carrito del footer).
+  private pantallas: string[] = [];
 
   countCarritoVariante = 0;
 
@@ -73,6 +83,7 @@ export class NavbarComponent implements OnInit {
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
       this.isAdminUser = roles.includes('ROLE_ADMIN');
+      this.pantallas = this.auth.getPayload()?.pantallas ?? [];
       if (this.isAdminUser && this.negocioAbierto === null) this.cargarEstadoNegocio();
     });
     this.authService.userName$.subscribe(user => { this.usuario = user; });
@@ -145,6 +156,29 @@ export class NavbarComponent implements OnInit {
     // Ya no se resetea a null: se recuerda la sección activa para la próxima
     // vez que se expanda el sidebar, en vez de perderla cada vez.
     this.openGroup = this.activeGroup;
+  }
+
+  // ── Pantallas (permisos) ──────────────────────────────────────────
+  // ¿El usuario tiene esta ruta puntual (item suelto dentro de un grupo mixto,
+  // ej. "pedidos/historial-mp")?
+  tienePantalla(ruta: string): boolean {
+    return this.pantallas.includes(ruta);
+  }
+
+  // ¿El usuario tiene AL MENOS UNA de las pantallas del grupo? Controla si el
+  // acordeón completo se pinta. Usa el mismo GROUP_ROUTES que ya recordaba qué
+  // grupo abrir según la ruta activa.
+  grupoVisible(grupoId: string): boolean {
+    const grupo = GROUP_ROUTES.find(g => g.group === grupoId);
+    if (!grupo) return false;
+    return grupo.paths.some(p => this.pantallas.includes(p));
+  }
+
+  // Para el subconjunto admin DENTRO de un grupo mixto (Flores eternas, Marketing) -- no se
+  // puede usar grupoVisible() ahí porque esos grupos también tienen items públicos en el mismo
+  // GROUP_ROUTES; una lista aparte evita que tener el item público "preste" acceso al admin.
+  tieneAlguna(rutas: string[]): boolean {
+    return rutas.some(r => this.pantallas.includes(r));
   }
 
   // ── Accordion ──────────────────────────────────────────────────────

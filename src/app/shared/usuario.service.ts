@@ -6,6 +6,17 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { environment } from 'src/environments/environment';
+import { ISubmenu } from 'src/app/menu-admin/models/menu.model';
+
+// Excepción de pantalla para un usuario individual, encima de lo que ya le da su rol --
+// PLAN_PERMISOS_PANTALLAS.md sección 3. concedido=true suma una pantalla que el rol no da,
+// concedido=false quita una que el rol sí daría. El back devuelve el usuario anidado también
+// (UsuarioSubmenu.usuario) pero el front no lo necesita, así que no se tipa aquí.
+export interface IExcepcionSubmenu {
+  id: number;
+  submenu: ISubmenu;
+  concedido: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -26,8 +37,8 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   }
 
 
-  getDataPage(page: number, size: number, buscar: string): Observable<ResponseGeneric<IUsuarioDto>> {
-    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/v1/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}`);
+  getDataPage(page: number, size: number, buscar: string, activos: boolean = true): Observable<ResponseGeneric<IUsuarioDto>> {
+    return this.http.get<ResponseGeneric<IUsuarioDto>>(`${this.url}/v1/usuarios/getAllPage?buscar=${buscar}&page=${page}&size=${size}&activos=${activos}`);
   }
 
   restablecerContra(data: any, tipoDato: number) {
@@ -35,6 +46,22 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   }
   eliminarUsuarioDto(tipoDato: number) {
     return this.http.delete<any>(`${environment.api_Url}/v1/usuarios/eliminarUsuarioDto/${tipoDato}`);
+  }
+  // Contraparte de eliminarUsuarioDto -- reactiva a alguien a quien se le hizo soft-delete.
+  activarUsuario(tipoDato: number) {
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${tipoDato}/activar`, {});
+  }
+
+  // El catálogo de roles ya existía (creado en otra sesión, nunca conectado al front) -- devuelve
+  // el arreglo plano de Roles directo, sin envolver en ResponseGeneric.
+  getRoles(): Observable<{ id: number; nombreRol: string }[]> {
+    return this.http.get<{ id: number; nombreRol: string }[]>(`${environment.api_Url}/v1/usuarios/roles`);
+  }
+
+  // Idem -- ya existía en el back (PUT /{usuarioId}/rol/{rolId}) pero el front nunca lo llamaba;
+  // el campo "Rol" de Actualizar usuario era un input de texto suelto que no guardaba nada.
+  cambiarRol(usuarioId: number, rolId: number) {
+    return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${usuarioId}/rol/${rolId}`, {});
   }
   buscarClientePorIdUsuario(idUsuario: number) {
     return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
@@ -65,5 +92,25 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
 
   cambioCorreoPendienteAdmin(id: number) {
     return this.http.get<any>(`${environment.api_Url}/v1/usuarios/${id}/cambio-correo-pendiente`);
+  }
+
+  // ── Excepciones de pantalla por usuario individual (encima del rol) ────────────────────
+  // Backend ya existía (UsuarioController), sin front todavía hasta esta pantalla.
+
+  listarExcepcionesSubmenu(usuarioId: number): Observable<IExcepcionSubmenu[]> {
+    return this.http
+      .get<{ data: IExcepcionSubmenu[] }>(`${environment.api_Url}/v1/usuarios/${usuarioId}/submenus/excepciones`)
+      .pipe(map(res => res.data ?? []));
+  }
+
+  agregarExcepcionSubmenu(usuarioId: number, submenuId: number, concedido: boolean): Observable<IExcepcionSubmenu> {
+    return this.http
+      .post<{ data: IExcepcionSubmenu }>(
+        `${environment.api_Url}/v1/usuarios/${usuarioId}/submenus/${submenuId}?concedido=${concedido}`, {})
+      .pipe(map(res => res.data));
+  }
+
+  quitarExcepcionSubmenu(usuarioId: number, submenuId: number): Observable<void> {
+    return this.http.delete<void>(`${environment.api_Url}/v1/usuarios/${usuarioId}/submenus/${submenuId}`);
   }
 }

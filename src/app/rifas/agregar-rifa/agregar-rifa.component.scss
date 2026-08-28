@@ -843,14 +843,14 @@
   // Botón outline dentro del head del card: borde visible sobre blanco
   .rf-card__head .rf-btn--outline {
     border-color: rgba(0, 0, 0, 0.18);
-    color: #1e293b;
+    color: var(--app-text, #1e293b);
   }
 }
 
 // ── Tema NOCHE — ajustes completos ────────────────────────────────
 :host-context(body.theme-dark) {
   // Círculo de paso: texto blanco
-  .rf-card__step { color: #f1f5f9; }
+  .rf-card__step { color: var(--app-text, #f1f5f9); }
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rf-btn--primary {
@@ -861,7 +861,7 @@
   // Botones OUTLINE en noche: --input-border es rgba(255,255,255,0.12) = invisible
   .rf-btn--outline {
     border-color: rgba(255, 255, 255, 0.32);
-    color: #e2e8f0;
+    color: var(--app-text, #e2e8f0);
     &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
   }
 

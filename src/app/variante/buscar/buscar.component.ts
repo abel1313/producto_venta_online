@@ -214,6 +214,53 @@ export class BuscarComponent implements OnInit, OnDestroy {
         || !!this.fechaDesde || !!this.fechaHasta;
   }
 
+  // Barra de filtros de Tienda -- antes dependía solo de isAdminUser (todo o nada). Se sumó al
+  // sistema de acciones por pantalla (2026-08-28, mismo cambio que en Modelos) para poder darle
+  // a un rol, por ejemplo, solo "Con stock" sin el resto -- ver migration_filtros_granulares.sql.
+  get puedeFiltroConStock(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-con-stock');
+  }
+
+  get puedeFiltroSinStock(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-sin-stock');
+  }
+
+  get puedeFiltroConImagenes(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-con-imagenes');
+  }
+
+  get puedeFiltroSinImagenes(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-sin-imagenes');
+  }
+
+  get puedeFiltroHabilitados(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-habilitados');
+  }
+
+  get puedeFiltroNoHabilitados(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-no-habilitados');
+  }
+
+  get puedeFiltroCodigoGenerado(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-codigo-generado');
+  }
+
+  get puedeFiltroCodigoReal(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-codigo-real');
+  }
+
+  get puedeFiltroFecha(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-fecha-creacion');
+  }
+
+  get puedeVerAlgunFiltro(): boolean {
+    return this.puedeFiltroConStock || this.puedeFiltroSinStock
+        || this.puedeFiltroConImagenes || this.puedeFiltroSinImagenes
+        || this.puedeFiltroHabilitados || this.puedeFiltroNoHabilitados
+        || this.puedeFiltroCodigoGenerado || this.puedeFiltroCodigoReal
+        || this.puedeFiltroFecha;
+  }
+
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
   private get paramConStock(): boolean | undefined {
     return this.mostrarConStock === this.mostrarSinStock ? undefined : this.mostrarConStock;
@@ -231,7 +278,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   toggleFiltroAdmin(campo: 'mostrarConStock' | 'mostrarSinStock' | 'mostrarConImagenes'
       | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'
       | 'mostrarCodigoGenerado' | 'mostrarCodigoReal'): void {
-    if (!this.isAdminUser) return;
+    if (!this.puedeVerAlgunFiltro) return;
     this[campo] = !this[campo];
     this.seleccionados.clear();
     this.aplicarFiltrosAdmin(1);
@@ -240,7 +287,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // Rango de fecha — se dispara con (change) del <input type="date">, no con toggleFiltroAdmin
   // (ese es solo para los pares booleanos tri-estado).
   onFechaFiltroChange(): void {
-    if (!this.isAdminUser) return;
+    if (!this.puedeVerAlgunFiltro) return;
     this.seleccionados.clear();
     this.aplicarFiltrosAdmin(1);
   }

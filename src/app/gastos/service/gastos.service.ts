@@ -28,26 +28,26 @@ export class GastosService {
     p.set('page', String(params.page ?? 0));
     p.set('size', String(params.size ?? 20));
     return this.http
-      .get<{ response: IPaginadoGasto }>(`${this.base}/gastos/buscar?${p}`)
-      .pipe(map(r => r.response));
+      .get<{ data: IPaginadoGasto }>(`${this.base}/gastos/buscar?${p}`)
+      .pipe(map(r => r.data));
   }
 
   saveGasto(gasto: Partial<IGasto>): Observable<IGasto> {
     return this.http
-      .post<{ response: IGasto }>(`${this.base}/gastos/save`, gasto)
-      .pipe(map(r => r.response));
+      .post<{ data: IGasto }>(`${this.base}/gastos/save`, gasto)
+      .pipe(map(r => r.data));
   }
 
   updateGasto(id: number, gasto: Partial<IGasto>): Observable<IGasto> {
     return this.http
-      .put<{ response: IGasto }>(`${this.base}/gastos/${id}`, gasto)
-      .pipe(map(r => r.response));
+      .put<{ data: IGasto }>(`${this.base}/gastos/${id}`, gasto)
+      .pipe(map(r => r.data));
   }
 
   deleteGasto(id: number): Observable<string> {
     return this.http
-      .delete<{ response: string }>(`${this.base}/gastos/${id}`)
-      .pipe(map(r => r.response));
+      .delete<{ data: string }>(`${this.base}/gastos/${id}`)
+      .pipe(map(r => r.data));
   }
 
   buscarVentas(params: {
@@ -61,8 +61,8 @@ export class GastosService {
     p.set('page', String(params.page ?? 0));
     p.set('size', String(params.size ?? 20));
     return this.http
-      .get<{ response: IPaginadoVenta }>(`${this.base}/ventas/buscar?${p}`)
-      .pipe(map(r => r.response));
+      .get<{ data: IPaginadoVenta }>(`${this.base}/ventas/buscar?${p}`)
+      .pipe(map(r => r.data));
   }
 
   getReporte(fechaInicio?: string, fechaFin?: string): Observable<IGastoReporte> {
@@ -70,7 +70,7 @@ export class GastosService {
     if (fechaInicio) p.set('fechaInicio', fechaInicio);
     if (fechaFin)    p.set('fechaFin',    fechaFin);
     return this.http
-      .get<{ response: IGastoReporte }>(`${this.base}/gastos/reporte?${p}`)
-      .pipe(map(r => r.response));
+      .get<{ data: IGastoReporte }>(`${this.base}/gastos/reporte?${p}`)
+      .pipe(map(r => r.data));
   }
 }

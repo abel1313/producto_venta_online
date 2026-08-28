@@ -1,9 +1,14 @@
-# Propuesta — reorganización y renombrado del menú lateral (2026-08-25)
+# Reorganización y renombrado del menú lateral (2026-08-25)
 
-> Documento de propuesta, NO implementado todavía. Basado en leer completo
-> `navbar.component.html`/`.ts` + lo que ya sabemos de qué hace cada pantalla (ver
-> `AUDITORIA_ENDPOINTS_PANTALLAS*.md` en el repo compartido). Para revisar y ajustar antes de
-> tocar código.
+> ✅ **Implementado** en `navbar.component.html`/`.ts` (rama `dev`). Se dejó este documento como
+> referencia de las decisiones tomadas — el punto 1 (menú anterior) y el punto 2 (problemas) son
+> historia; el punto 3 (propuesta) es lo que hoy tiene el código, con un solo ajuste sobre lo
+> propuesto originalmente: **el dueño confirmó "Modelo" (nivel estilo) / "Producto" (nivel
+> talla+color) en vez de "Producto"/"Variante"** — evita exponer la palabra "variante" en
+> cualquier pantalla, que es justo lo que ve el público. Con esa elección, "Modelos"/"Agregar
+> modelo"/"Agregar producto" quedaron exactamente como ya estaban antes de este cambio; lo que
+> cambió de verdad fue la agrupación (Envíos separado y sin duplicar, Marketing unificado,
+> Imágenes fusionado a Sistema, Clientes fuera de Analítica, etc.) — ver punto 3.
 
 ## 1. Menú actual — inventario completo
 
@@ -122,10 +127,11 @@
 
 🛍️ Tienda
 
-📦 Catálogo                                   (antes "Inventario" — solo producto/variante)
-  Productos                     → productos/buscar        (antes "Modelos")
-  Agregar producto              → productos/agregar        (antes "Agregar modelo")
-  Agregar variante              → tienda/venta              (antes "Agregar producto")
+📦 Catálogo                                   (antes "Inventario" — solo modelo/producto, sin
+                                                Categorías-lugares-entrega mezclados)
+  Modelos                       → productos/buscar         (sin cambio de nombre — ver nota)
+  Agregar modelo                → productos/agregar        (sin cambio de nombre)
+  Agregar producto               → tienda/venta              (sin cambio de nombre)
   Carga rápida de imágenes      → carga-imagenes
   Cargar Excel                  → tienda/cargar-excel
   Categorías                    → palabras-clave
@@ -146,8 +152,8 @@
   Dashboard
   Reportes de ventas                                         (antes "Reportes")
 
-👥 Clientes                                   (NUEVO top-level — sale de "Analítica")
-  Buscar clientes               → clientes/buscar
+👥 Clientes                                   (NUEVO link top-level — sale de "Analítica",
+                                                → clientes/buscar)
 
 🎰 Rifas                                      (sin cambios)
 
@@ -178,30 +184,23 @@
 🌙/☀️ Modo oscuro/claro
 ```
 
-### Notas sobre decisiones que quedaron abiertas (para que las ajustes)
+### Decisiones ya cerradas con el dueño (2026-08-25)
 
-- **Chat**: no lo fusioné 100% al estilo Flores (un solo grupo con sub-ítems condicionados) porque
-  hoy son 2 pantallas distintas (`ChatUsuarioComponent` vs `ChatAdminComponent`) en vez de una sola
-  con vista dual — fusionarlas de verdad sería un cambio de código más grande, no solo de menú. Se
-  puede dejar como está (2 entradas) o hacer el cambio más grande si te interesa.
-- **Clientes**: lo saqué de "Analítica" a su propio grupo top-level porque es una pantalla de
-  búsqueda/CRM, no un reporte — pero si prefieres que viva dentro de otro grupo (ej. junto a
-  Pedidos, ya que ahí es donde más se usa buscar un cliente), dímelo.
-- **"Envíos" como grupo nuevo**: separé Lugares de entrega de Inventario y de Flores porque hoy es
-  un catálogo compartido por TODO el checkout (no solo flores), así que un grupo propio refleja
-  mejor su alcance real. Si en el futuro construimos ahí la configuración de anillos por zona
-  (`DISENO_ZONAS_POR_ANILLO.md`), este sería el lugar natural para esa pantalla también.
-- **Nombres "Productos"/"Agregar producto"/"Agregar variante"**: siguen exactamente la taxonomía ya
-  documentada en `CLAUDE.md` (Producto = modelo/estilo, Variante = lo que se vende) — si prefieres
-  otros nombres más "de negocio" (menos técnicos) en vez de alinearlos al código, dímelo y los
-  ajusto.
+- **"Modelo"/"Producto" en vez de "Producto"/"Variante"**: confirmado — evita exponer la palabra
+  "variante" en cualquier pantalla. Como el menú actual ya decía "Modelos"/"Agregar modelo"/
+  "Agregar producto" para estos 3 puntos, el nombre visible **no cambió**; lo único que cambió es
+  que ya no se movieron hacia la taxonomía interna del código como se había propuesto al inicio.
+- **Chat**: se dejó como estaba (2 entradas — "Chat" cliente arriba, "Chat en vivo" dentro de
+  Sistema), NO se fusionó al estilo Flores/Marketing — fusionarlas de verdad requiere unificar
+  `ChatUsuarioComponent`/`ChatAdminComponent` en un solo componente, cambio de código más grande
+  que un ajuste de menú. Queda pendiente si se quiere hacer después.
+- **Clientes**: quedó como link top-level (no accordion, es una sola pantalla) fuera de
+  "Analítica"/"Reportes".
+- **"Envíos" como grupo nuevo**: implementado — es el lugar natural para la futura pantalla de
+  configuración de anillos por zona (`DISENO_ZONAS_POR_ANILLO.md`) cuando se conecte al menú.
 
-## 4. Qué falta para implementarlo
+## 4. Implementación
 
-Esto es solo el mapa — falta:
-1. Que confirmes o ajustes la propuesta (grupos, nombres, qué se queda igual).
-2. Reescribir `navbar.component.html` (agrupaciones nuevas) y `navbar.component.ts`
-   (`GROUP_ROUTES`, para que el accordion recuerde el grupo activo con la nueva estructura).
-3. Revisar si algún componente (`SelectorUbicacionComponent`, breadcrumbs, títulos de pantalla)
-   referencia el nombre viejo del menú en algún texto visible, para no dejar nombres
-   inconsistentes entre el menú y el título de la pantalla.
+Ya aplicado en `navbar.component.html` (estructura de grupos) y `navbar.component.ts`
+(`GROUP_ROUTES`, actualizado para que el accordion recuerde el grupo activo con la nueva
+estructura). Build de producción verificado limpio.

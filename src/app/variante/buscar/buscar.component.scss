@@ -459,7 +459,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__text {
     font-size: 0.76rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     margin: 0;
     line-height: 1.4;
     display: -webkit-box;
@@ -516,8 +516,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .vb-promo__title { color: #f1f5f9; }
-  .vb-promo__text  { color: #94a3b8; }
+  .vb-promo__title { color: var(--app-text, #f1f5f9); }
+  .vb-promo__text  { color: var(--app-text-muted, #94a3b8); }
 }
 
 .vb-grid {

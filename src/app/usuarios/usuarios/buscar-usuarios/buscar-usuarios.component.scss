@@ -66,7 +66,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
     border: none;
     outline: none;
-    color: white;
+    color: var(--header-text, white);
     font-size: 0.95rem;
     &::placeholder { color: rgba(255, 255, 255, 0.65); }
   }
@@ -79,7 +79,39 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: rgba(0, 0, 0, 0.10);
   }
   .bu-search__input {
-    color: #1e293b;
+    color: var(--header-text, #1e293b);
     &::placeholder { color: rgba(0, 0, 0, 0.42); }
+  }
+}
+
+// ── Toggle "ver desactivados" ───────────────────────────────────────
+.bu-toggle-inactivos {
+  display: block;
+  margin: 0 0 20px auto;
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--header-text, white);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { background: rgba(255, 255, 255, 0.25); }
+
+  &--activo {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+}
+
+:host-context(body.theme-light) {
+  .bu-toggle-inactivos {
+    background: rgba(255, 255, 255, 0.40);
+    border-color: rgba(0, 0, 0, 0.10);
+    color: var(--header-text, #1e293b);
+    &:hover { background: rgba(255, 255, 255, 0.6); }
+    &--activo { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.3); }
   }
 }

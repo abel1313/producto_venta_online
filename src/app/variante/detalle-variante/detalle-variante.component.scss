@@ -16,12 +16,12 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   padding: 0.4rem 1rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
   cursor: pointer;
   margin-bottom: 1.25rem;
   transition: $transition;
@@ -329,7 +329,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
 
   p { margin: 0.75rem 0 0; font-size: 0.9rem; }
 }
@@ -773,7 +773,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 
 // Light mode
 :host-context(body.theme-light) {
-  .dv-indep-modal { background: #fff; }
+  .dv-indep-modal { background: var(--card-bg, #fff); }
   .dv-indep-input { background: #f9fafb; }
   .dv-resumen-resenas__num { color: rgba(255,255,255,0.9); }
   .dv-resena-form__textarea { background: #f9fafb; }

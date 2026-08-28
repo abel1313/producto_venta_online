@@ -30,7 +30,7 @@
     </a>
 
     <!-- Abrir/cerrar negocio — acceso rápido de un clic (usa la hora ya configurada
-         en Admin > Negocio & Contactos, no la vuelve a pedir). Solo admin.
+         en Sistema > Negocio & Contactos, no la vuelve a pedir). Solo admin.
          Mientras `negocioAbierto` es null (todavía no respondió GET /estado) se muestra un
          estado neutral "Cargando…" — mostrar "cerrado" ahí sería un dato falso, no un
          "no sé todavía". -->
@@ -51,27 +51,41 @@
       <span class="sb-label">Tienda</span>
     </a>
 
-    <!-- Inventario (admin) — accordion. "Modelo" agrupa (Blusa Zara),
+    <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
          "Producto" es lo que se vende (Blusa Zara / M / Negro). -->
-    <div class="sb-group" *ngIf="isAdminUser"
-         [class.sb-group--open]="openGroup === 'misproductos'">
-      <button class="sb-item sb-item--toggle" (click)="toggleGroup('misproductos')">
+    <div class="sb-group" *ngIf="grupoVisible('catalogo')"
+         [class.sb-group--open]="openGroup === 'catalogo'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('catalogo')">
         <span class="sb-icon">📦</span>
-        <span class="sb-label">Inventario</span>
+        <span class="sb-label">Catálogo</span>
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Lugares de entrega</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/buscar')" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('carga-imagenes')" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/cargar-excel')" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('palabras-clave')" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>
       </div>
     </div>
 
-    <!-- Pedidos — accordion (solo lo que es "mi pedido", la analítica vive en Analítica) -->
+    <!-- Envíos (admin) — catálogo de zonas de entrega, compartido por todo el checkout
+         (no solo flores). Antes vivía duplicado dentro de Catálogo y de Flores eternas con
+         2 nombres distintos; ahora es una sola entrada aquí. -->
+    <div class="sb-group" *ngIf="grupoVisible('envios')"
+         [class.sb-group--open]="openGroup === 'envios'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('envios')">
+        <span class="sb-icon">🚚</span>
+        <span class="sb-label">Envíos</span>
+        <span class="sb-chevron">›</span>
+      </button>
+      <div class="sb-submenu">
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Zonas de entrega</a>
+      </div>
+    </div>
+
+    <!-- Pedidos — accordion (solo lo que es "mi pedido", la analítica vive en Reportes) -->
     <div class="sb-group" *ngIf="!isAnonymous"
          [class.sb-group--open]="openGroup === 'pedidos'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('pedidos')">
@@ -81,13 +95,14 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="pedidos/mis-pedidos" (click)="closeMobile()">Mis pedidos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" *ngIf="isAdminUser"
-           routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial MP</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" *ngIf="tienePantalla('pedidos/historial-mp')"
+           routerLink="pedidos/historial-mp" (click)="closeMobile()">Historial de pagos (MP)</a>
       </div>
     </div>
 
-    <!-- Ventas (admin) — accordion: cobro + créditos + gastos, todo lo que mueve dinero -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <!-- Ventas (admin) — accordion: solo lo operativo del día a día (cobro + créditos +
+         gastos). Los reportes de ventas viven en "Reportes", no aquí. -->
+    <div class="sb-group" *ngIf="grupoVisible('ventas')"
          [class.sb-group--open]="openGroup === 'ventas'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('ventas')">
         <span class="sb-icon">💰</span>
@@ -95,29 +110,37 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos y Ventas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta-directa')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta-directa" (click)="closeMobile()">💰 Venta directa</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('abonos')" routerLinkActive="sb-subitem--active" routerLink="abonos" (click)="closeMobile()">💳 Créditos / Abonos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gastos/buscar')" routerLinkActive="sb-subitem--active" routerLink="gastos/buscar" (click)="closeMobile()">💸 Gastos</a>
       </div>
     </div>
 
-    <!-- Analítica (admin) — accordion: métricas del negocio, no operación del día a día -->
-    <div class="sb-group" *ngIf="isAdminUser"
-         [class.sb-group--open]="openGroup === 'analitica'">
-      <button class="sb-item sb-item--toggle" (click)="toggleGroup('analitica')">
+    <!-- Reportes (admin) — accordion: métricas del negocio, no operación del día a día
+         (antes "Analítica"; "Clientes" salió a su propio grupo, es búsqueda/CRM, no un reporte). -->
+    <div class="sb-group" *ngIf="grupoVisible('reportes')"
+         [class.sb-group--open]="openGroup === 'reportes'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('reportes')">
         <span class="sb-icon">📊</span>
-        <span class="sb-label">Analítica</span>
+        <span class="sb-label">Reportes</span>
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="clientes/buscar" (click)="closeMobile()">👥 Clientes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('dashboard')" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('reportes')" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes de ventas</a>
       </div>
     </div>
 
+    <!-- Clientes (admin) — búsqueda/CRM, no es un reporte. Antes vivía dentro de "Analítica". -->
+    <a class="sb-item" *ngIf="tienePantalla('clientes/buscar')"
+       routerLink="clientes/buscar" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">👥</span>
+      <span class="sb-label">Clientes</span>
+    </a>
+
     <!-- Rifas (admin) — accordion -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <div class="sb-group" *ngIf="grupoVisible('rifas')"
          [class.sb-group--open]="openGroup === 'rifas'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('rifas')">
         <span class="sb-icon">🎰</span>
@@ -125,17 +148,15 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/agregar')" routerLinkActive="sb-subitem--active" routerLink="rifas/agregar" (click)="closeMobile()">🎡 Rifa de productos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/mes')" routerLinkActive="sb-subitem--active" routerLink="rifas/mes" (click)="closeMobile()">📅 Rifa mensual</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('rifas/buscar')" routerLinkActive="sb-subitem--active" routerLink="rifas/buscar" (click)="closeMobile()">🔍 Ver rifas activas</a>
       </div>
     </div>
 
     <!-- Flores eternas — accordion único, visible a cualquier logueado (las 2 primeras las ve
-         cualquiera; las 2 de administración solo aparecen si es admin, dentro del MISMO grupo).
-         Antes estaban repartidas: 2 sueltas fuera del acordeón + 2 en un acordeón admin-only
-         aparte — se unificaron a pedido del dueño ("todo lo que tenga que ver con rosas eternas
-         hay que tenerlas juntas"). -->
+         cualquiera; las de administración solo aparecen si es admin, dentro del MISMO grupo).
+         "Zonas y envío" ya no vive aquí duplicado — ahora es la única entrada en "Envíos". -->
     <div class="sb-group" *ngIf="!isAnonymous"
          [class.sb-group--open]="openGroup === 'flores'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('flores')">
@@ -146,38 +167,40 @@
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos" (click)="closeMobile()">🌹 Ramos de flores</a>
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/configurar" (click)="closeMobile()">🌷 Arma tu ramo</a>
-        <ng-container *ngIf="isAdminUser">
+        <ng-container *ngIf="tieneAlguna(['flores/catalogos','flores/entregas','flores/frases','flores/ramos-admin'])">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/catalogos" (click)="closeMobile()">🌸 Catálogos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/entregas" (click)="closeMobile()">🚚 Entregas</a>
-        <!-- Misma pantalla que vive en Inventario: las zonas las usan los pedidos normales Y las
-             flores, pero el dueño las busca aquí porque es donde configura el envío del ramo. -->
-        <!-- Misma pantalla que "Lugares de entrega" de Inventario, pero por su propia ruta: con
-             la URL compartida, entrar desde aquí dejaba el acordeón abierto en Inventario. -->
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/zonas" (click)="closeMobile()">📍 Zonas y envío</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/frases" (click)="closeMobile()">🎗️ Frases por aprobar</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos-admin" (click)="closeMobile()">🎁 Administrar ramos armados</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/entregas" (click)="closeMobile()">🚚 Entregas</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/frases" (click)="closeMobile()">🎗️ Frases por aprobar</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="flores/ramos-admin" (click)="closeMobile()">🎁 Administrar ramos armados</a>
         </ng-container>
       </div>
     </div>
 
-    <!-- Imágenes (admin) — accordion: las 4 herramientas de imágenes, separadas de Sistema -->
-    <div class="sb-group" *ngIf="isAdminUser"
-         [class.sb-group--open]="openGroup === 'imagenes'">
-      <button class="sb-item sb-item--toggle" (click)="toggleGroup('imagenes')">
-        <span class="sb-icon">🖼️</span>
-        <span class="sb-label">Imágenes</span>
+    <!-- Marketing — accordion único, visible a cualquier logueado (mismo patrón que Flores
+         eternas): "Promociones activas" la ve cualquier cliente, el resto (gestión, cinta,
+         redes) solo admin, dentro del MISMO grupo. Antes eran 4 cosas con nombres distintos
+         repartidas entre un link suelto y "Sistema". -->
+    <div class="sb-group" *ngIf="!isAnonymous"
+         [class.sb-group--open]="openGroup === 'marketing'">
+      <button class="sb-item sb-item--toggle" (click)="toggleGroup('marketing')">
+        <span class="sb-icon">📣</span>
+        <span class="sb-label">Marketing</span>
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes presentación</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico imágenes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="promociones" (click)="closeMobile()">🎁 Promociones activas</a>
+        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta','admin/facebook','admin/hashtags'])">
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestionar promociones</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cinta" (click)="closeMobile()">📢 Cinta de anuncios</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en redes</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/hashtags" (click)="closeMobile()">🏷️ Hashtags de redes</a>
+        </ng-container>
       </div>
     </div>
 
-    <!-- Sistema (admin) — accordion: configuración del sistema en sí (antes "Admin") -->
-    <div class="sb-group" *ngIf="isAdminUser"
+    <!-- Sistema (admin) — accordion: administración general, incluye las herramientas de
+         imágenes (antes en un grupo aparte). -->
+    <div class="sb-group" *ngIf="grupoVisible('sistema')"
          [class.sb-group--open]="openGroup === 'sistema'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('sistema')">
         <span class="sb-icon">🛠️</span>
@@ -185,23 +208,18 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestión Promociones</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cinta" (click)="closeMobile()">📢 Cinta de promociones</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en redes</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/hashtags" (click)="closeMobile()">🏷️ Hashtags de redes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('usuarios/buscar')" routerLinkActive="sb-subitem--active" routerLink="usuarios/buscar" (click)="closeMobile()">👥 Usuarios</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/negocio')" routerLinkActive="sb-subitem--active" routerLink="admin/negocio" (click)="closeMobile()">🏪 Negocio &amp; Contactos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/chat')" routerLinkActive="sb-subitem--active" routerLink="admin/chat" (click)="closeMobile()">💬 Chat en vivo</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/presentacion')" routerLinkActive="sb-subitem--active" routerLink="admin/presentacion" (click)="closeMobile()">🖼️ Imágenes de presentación</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/diagnostico-imagenes')" routerLinkActive="sb-subitem--active" routerLink="admin/diagnostico-imagenes" (click)="closeMobile()">🔍 Diagnóstico de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/reconciliacion-imagenes')" routerLinkActive="sb-subitem--active" routerLink="admin/reconciliacion-imagenes" (click)="closeMobile()">🔧 Reconciliación de imágenes</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('admin/cache')" routerLinkActive="sb-subitem--active" routerLink="admin/cache" (click)="closeMobile()">🗑️ Limpiar caché</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gestion-menu')" routerLinkActive="sb-subitem--active" routerLink="gestion-menu" (click)="closeMobile()">🗂️ Menús y submenús</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('gestion-menu/roles')" routerLinkActive="sb-subitem--active" routerLink="gestion-menu/roles" (click)="closeMobile()">🛡️ Gestión de roles</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('personalizacion')" routerLinkActive="sb-subitem--active" routerLink="personalizacion" (click)="closeMobile()">🎨 Personalización</a>
       </div>
     </div>
-
-    <!-- Promociones (todos los usuarios logueados) -->
-    <a class="sb-item" *ngIf="!isAnonymous"
-       routerLink="promociones" routerLinkActive="sb-item--active"
-       (click)="closeMobile()">
-      <span class="sb-icon">🎁</span>
-      <span class="sb-label">Promociones</span>
-    </a>
 
     <!-- Favoritos (todos los usuarios logueados) -->
     <a class="sb-item" *ngIf="!isAnonymous"
@@ -223,7 +241,7 @@
     <a class="sb-item" routerLink="qr" routerLinkActive="sb-item--active"
        (click)="closeMobile()">
       <span class="sb-icon">📱</span>
-      <span class="sb-label">QR</span>
+      <span class="sb-label">Código QR de la tienda</span>
     </a>
 
     <!-- Login (anónimo) -->

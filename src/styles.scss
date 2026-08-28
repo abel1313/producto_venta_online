@@ -112,8 +112,16 @@ body.theme-light, [data-theme="light"] {
   /* ── Página (fondo principal) ── */
   --page-bg:           #F3FAF6;
 
-  /* ── Cards / paneles ── */
+  /* ── Cards / paneles ──
+     --card-header-bg/--card-body-bg/--card-footer-bg (2026-08-26): la card se
+     dividió en 3 secciones con color propio, editables desde Personalización.
+     Por defecto los 3 valen lo mismo que --card-bg -- no cambia nada visualmente
+     hasta que se editen. --card-body-bg es alias directo de --card-bg (mismo
+     valor, TemaService los setea siempre juntos). */
   --card-bg:           #FFFFFF;
+  --card-header-bg:    #FFFFFF;
+  --card-body-bg:      #FFFFFF;
+  --card-footer-bg:    #FFFFFF;
   --card-text:         #152420;
   --card-text-muted:   #55736A;
   --card-border:       #D5E8DD;
@@ -139,6 +147,35 @@ body.theme-light, [data-theme="light"] {
   --header-brand-filter: blur(20px) saturate(150%);
   --header-text:         #152420;
   --header-text-muted:   #55736A;
+
+  /* ── Tablas — encabezado, hover de fila, bordes ──
+     Úsalas en cualquier <table> nueva en vez de escribir el hex a mano (así
+     todas las tablas del sistema cambian juntas). Ver clase genérica .g-table
+     más abajo en este archivo para copiar/pegar la estructura ya lista. */
+  --table-header-bg:   #F9FAFB;
+  --table-header-text: #9CA3AF;
+  --table-row-hover:   #F9FAFB;
+  --table-border:      #E5E7EB;
+  --table-row-active:  var(--app-accent-soft);
+
+  /* ── Menú lateral (sidebar) — antes vivía solo dentro de navbar.component.scss,
+     así que cambiarlo significaba editar ese componente. Ahora es global: cambiar
+     estos 5 valores cambia el menú completo (fondo, item activo, texto, borde). */
+  --sb-bg-rgb:      255, 255, 255;
+  --sb-bg:          rgba(255,255,255,0.97);
+  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg (2026-08-26): el sidebar se dividió
+     en 3 secciones con color propio (brand/nav/footer), editables desde
+     Personalización. Por defecto los 3 valen lo mismo que --sb-bg -- no cambia
+     nada visualmente hasta que se editen. --sb-body-bg es alias directo de
+     --sb-bg (mismo valor, TemaService los setea siempre juntos). */
+  --sb-header-bg:   rgba(255,255,255,0.97);
+  --sb-body-bg:     rgba(255,255,255,0.97);
+  --sb-footer-bg:   rgba(255,255,255,0.97);
+  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
+  --sb-text:        #12241D;
+  --sb-text-active: #12241D;
+  --sb-border:      #D5E8DD;
 }
 
 /* ════════════════════════════════════════════════
@@ -207,8 +244,12 @@ body.theme-dark, [data-theme="dark"] {
 
   /* ── Cards / paneles ──
      Sobre negro puro la sombra no se ve: lo que separa la tarjeta del fondo es
-     que la tarjeta es un pelo más clara (#0C0C0C) y su borde. */
+     que la tarjeta es un pelo más clara (#0C0C0C) y su borde.
+     --card-header-bg/--card-body-bg/--card-footer-bg: ver nota en el bloque claro. */
   --card-bg:           #0C0C0C;
+  --card-header-bg:    #0C0C0C;
+  --card-body-bg:      #0C0C0C;
+  --card-footer-bg:    #0C0C0C;
   --card-text:         #E9E9EC;
   --card-text-muted:   #9A9AA0;
   --card-border:       #2A2A2E;
@@ -234,6 +275,27 @@ body.theme-dark, [data-theme="dark"] {
   --header-brand-filter: blur(20px);
   --header-text:         #E9E9EC;
   --header-text-muted:   #9A9AA0;
+
+  /* ── Tablas — ver nota en el bloque claro ── */
+  --table-header-bg:   #151517;
+  --table-header-text: #9A9AA0;
+  --table-row-hover:   #151517;
+  --table-border:      #2A2A2E;
+  --table-row-active:  var(--app-accent-soft);
+
+  /* ── Menú lateral (sidebar) — el oscuro parte de negro puro, sin tinte de marca
+     (ver nota "MODO OSCURO" arriba). Ver nota en el bloque claro. */
+  --sb-bg-rgb:      0, 0, 0;
+  --sb-bg:          rgba(var(--sb-bg-rgb), 0.92);
+  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg: ver nota en el bloque claro. */
+  --sb-header-bg:   rgba(var(--sb-bg-rgb), 0.92);
+  --sb-body-bg:     rgba(var(--sb-bg-rgb), 0.92);
+  --sb-footer-bg:   rgba(var(--sb-bg-rgb), 0.92);
+  --sb-bg-item:     rgba(255,255,255,0.06);
+  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
+  --sb-text:        #E9E9EC;
+  --sb-text-active: #FFFFFF;
+  --sb-border:      rgba(255,255,255,0.08);
 }
 
 /* ── Transición suave al cambiar de tema ──── */
@@ -364,11 +426,19 @@ body.theme-dark {
     box-shadow: 0 4px 24px rgba(0,0,0,0.45) !important;
   }
   .card-header {
-    background: rgba(255,255,255,0.06) !important;
+    background: var(--card-header-bg, rgba(255,255,255,0.06)) !important;
     border-bottom: 1px solid #2A2A2E !important;
     color: #E9E9EC !important;
   }
-  .card-body { color: #E9E9EC !important; }
+  .card-body {
+    background: var(--card-body-bg, transparent) !important;
+    color: #E9E9EC !important;
+  }
+  .card-footer {
+    background: var(--card-footer-bg, rgba(255,255,255,0.06)) !important;
+    border-top: 1px solid #2A2A2E !important;
+    color: #E9E9EC !important;
+  }
   .card-title { color: #E9E9EC !important; }
 
   /* ── Nebular cards ─────────────────────── */
@@ -550,8 +620,17 @@ body.theme-light {
     border-radius: 14px !important;
   }
   .card-header {
-    background: #E3F2EA !important;
+    background: var(--card-header-bg, #E3F2EA) !important;
     border-bottom: 1px solid #D5E8DD !important;
+    color: #12241D !important;
+  }
+  .card-body {
+    background: var(--card-body-bg, transparent) !important;
+    color: #12241D !important;
+  }
+  .card-footer {
+    background: var(--card-footer-bg, #E3F2EA) !important;
+    border-top: 1px solid #D5E8DD !important;
     color: #12241D !important;
   }
   .card-title { color: #12241D !important; font-weight: 700 !important; }

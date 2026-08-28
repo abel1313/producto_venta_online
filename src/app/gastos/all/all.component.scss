@@ -34,8 +34,8 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 
   .ga-header__title {
-    h4    { color: #1e293b; }
-    small { color: #64748b; }
+    h4    { color: var(--app-text, #1e293b); }
+    small { color: var(--app-text-muted, #64748b); }
   }
 }
 
@@ -495,9 +495,9 @@
 :host-context(body.theme-light) {
   .ga-input, .ga-select {
     color-scheme: light;
-    color: #1e293b;
-    background: #ffffff;
-    border-color: #cbd5e1;
+    color: var(--app-text, #1e293b);
+    background: var(--card-bg, #ffffff);
+    border-color: var(--card-border, #cbd5e1);
     &::placeholder { color: #9ca3af; }
   }
 }

@@ -28,7 +28,7 @@ $shadow-base: 0 4px 20px rgba(0, 0, 0, 0.08);
 
   &__sub {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     margin: 0;
     max-width: 300px;
   }
@@ -129,17 +129,17 @@ $cancelado-to:   #dc2626;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 1rem;
 }
 
 .search-input {
   width: 100%;
   padding: 0.65rem 1rem 0.65rem 2.6rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   font-size: 0.875rem;
-  background: #fff;
+  background: var(--card-bg, #fff);
   transition: $transition;
   outline: none;
 
@@ -169,17 +169,17 @@ $cancelado-to:   #dc2626;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
 }
 
 .lugar-filtro-input {
   width: 100%;
   padding: 0.55rem 2.2rem 0.55rem 2.4rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   font-size: 0.82rem;
-  background: #fff;
+  background: var(--card-bg, #fff);
   transition: $transition;
   outline: none;
 
@@ -196,7 +196,7 @@ $cancelado-to:   #dc2626;
   transform: translateY(-50%);
   border: none;
   background: none;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 4px;
@@ -210,8 +210,8 @@ $cancelado-to:   #dc2626;
   left: 0;
   right: 0;
   z-index: 20;
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--card-border, #e5e7eb);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
   max-height: 220px;
@@ -220,7 +220,7 @@ $cancelado-to:   #dc2626;
   &__item {
     padding: 0.55rem 1rem;
     font-size: 0.85rem;
-    color: #1f2937;
+    color: var(--app-text, #1f2937);
     cursor: pointer;
     &:hover { background: var(--app-accent-soft); }
   }
@@ -228,7 +228,7 @@ $cancelado-to:   #dc2626;
   &__empty {
     padding: 0.55rem 1rem;
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--app-text-muted, #9ca3af);
   }
 }
 
@@ -243,9 +243,9 @@ $cancelado-to:   #dc2626;
 .tipo-filtro-btn {
   padding: 0.45rem 0.9rem;
   border-radius: 50px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #6b7280;
+  border: 1.5px solid var(--card-border, #e5e7eb);
+  background: var(--card-bg, #fff);
+  color: var(--app-text-muted, #6b7280);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -287,18 +287,18 @@ $cancelado-to:   #dc2626;
     padding: 0.5rem 1.1rem;
     border-radius: 50px;
     border: none;
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--form-section-bg, #f3f4f6);
+    color: var(--app-text, #374151);
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: $transition;
 
-    &:hover:not(:disabled) { background: #e5e7eb; }
+    &:hover:not(:disabled) { background: var(--card-border, #e5e7eb); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
-  &__info { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
+  &__info { font-size: 0.82rem; color: var(--app-text-muted, #6b7280); font-weight: 600; }
 }
 
 // ── Scroll container ────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ $cancelado-to:   #dc2626;
 
 // ── Tarjeta base ────────────────────────────────────────────────────────────
 .pedido-card {
-  background: #fff;
+  background: var(--card-bg, #fff);
   border-radius: $radius;
   box-shadow: $shadow-base;
   overflow: hidden;
@@ -461,7 +461,7 @@ $cancelado-to:   #dc2626;
 }
 
 .info-icon {
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   margin-top: 2px;
   flex-shrink: 0;
@@ -478,14 +478,14 @@ $cancelado-to:   #dc2626;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   line-height: 1.2;
 }
 
 .info-value {
   font-size: 0.82rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -508,7 +508,7 @@ $cancelado-to:   #dc2626;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .total-amount {
@@ -635,7 +635,7 @@ $cancelado-to:   #dc2626;
 .mp-terminal__amount {
   font-size: 1.9rem;
   font-weight: 800;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   letter-spacing: -0.03em;
   display: flex;
   align-items: baseline;
@@ -646,7 +646,7 @@ $cancelado-to:   #dc2626;
 .mp-terminal__plan {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .mp-terminal__status {

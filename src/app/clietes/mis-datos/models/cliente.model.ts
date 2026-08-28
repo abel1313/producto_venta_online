@@ -17,5 +17,8 @@ export interface ICliente extends IdGenerico {
     usuario: IUsuarioDto;
     listDirecciones: IDireccion [];
     correoVerificado?: boolean;
+    // Correo nuevo escrito por el cliente, esperando el código de verificación (ver Cliente.java
+    // en el back) -- el correoElectronico "real" no cambia hasta que se confirme.
+    correoPendiente?: string;
 
 }

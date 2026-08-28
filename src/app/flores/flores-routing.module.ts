@@ -8,7 +8,18 @@ import { ConfigurarRamoComponent } from './configurar/configurar-ramo.component'
 import { BandejaFrasesComponent } from './frases/bandeja-frases.component';
 import { AuthGuard } from '../auth.guard';
 import { AdminGuardGuard } from '../guard/admin-guard.guard';
+import { PantallaGuard } from '../guard/pantalla.guard';
 
+// AdminGuardGuard se quitó de "catalogos"/"entregas"/"ramos-admin"/"frases" -- mismo hallazgo que
+// en producto-routing.module.ts (2026-08-27). Las 4 tienen Submenu.ruta propio
+// ("flores/catalogos", "flores/entregas", "flores/ramos-admin", "flores/frases" en
+// migration_menu_submenu.sql), así que usan PantallaGuard directo.
+// "zonas" se QUEDA con AdminGuardGuard -- el comentario de abajo dice que comparte pantalla con
+// /lugares-entrega, pero el catálogo submenu NO tiene una fila "flores/zonas" (solo
+// "lugares-entrega" a secas), así que PantallaGuard con la ruta compuesta real ("flores/zonas")
+// no matchearía ninguna pantalla sembrada y bloquearía a TODOS. Pendiente: decidir si se agrega
+// "flores/zonas" al catálogo o si PantallaGuard necesita un alias explícito hacia
+// "lugares-entrega" para este caso.
 const routes: Routes = [
   // Públicas — el cliente puede ver ramos ya armados (Flujo B) o armar el suyo desde cero
   // (Flujo A, "configurar"). Confirmar el pedido en "configurar" sí exige estar registrado, pero
@@ -17,10 +28,10 @@ const routes: Routes = [
   { path: 'configurar', component: ConfigurarRamoComponent },
   // Admin — catálogos de configuración y armado de ramos. El guard vive aquí, no en el módulo,
   // porque 'ramos'/'configurar' son públicas (ver comentario en app-routing.module.ts).
-  { path: 'catalogos', component: CatalogosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
-  { path: 'entregas',  component: ConfigEntregasComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
-  { path: 'ramos-admin', component: GestionRamosFloresComponent, canActivate: [AuthGuard, AdminGuardGuard] },
-  { path: 'frases', component: BandejaFrasesComponent, canActivate: [AuthGuard, AdminGuardGuard] },
+  { path: 'catalogos', component: CatalogosFloresComponent, canActivate: [AuthGuard, PantallaGuard] },
+  { path: 'entregas',  component: ConfigEntregasComponent,  canActivate: [AuthGuard, PantallaGuard] },
+  { path: 'ramos-admin', component: GestionRamosFloresComponent, canActivate: [AuthGuard, PantallaGuard] },
+  { path: 'frases', component: BandejaFrasesComponent, canActivate: [AuthGuard, PantallaGuard] },
   /**
    * Misma pantalla que `/lugares-entrega` (Inventario), con su propia dirección.
    *

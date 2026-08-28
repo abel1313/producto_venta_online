@@ -4,11 +4,17 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { GestionMenuComponent } from './gestion/gestion-menu.component';
 import { GestionRolesComponent } from './gestion-roles/gestion-roles.component';
-import { AdminGuardGuard } from '../guard/admin-guard.guard';
+import { AuthGuard } from '../auth.guard';
 
+// AdminGuardGuard (ROLE_ADMIN a secas) se quitó de aquí -- mismo hallazgo que en
+// producto-routing.module.ts (2026-08-27). La ruta padre "gestion-menu" (app-routing.module.ts)
+// ya tiene PantallaGuard. Nota: alguien con SOLO "gestion-menu" (no "gestion-menu/roles") podría
+// navegar a /gestion-menu/roles, pero las llamadas reales (GET/POST/DELETE /v1/roles/**) siguen
+// exigiendo la pantalla "gestion-menu/roles" específica en el backend (SecurityConfig) -- el
+// peor caso es una pantalla en blanco por 403, no una brecha de seguridad real.
 const routes: Routes = [
-  { path: '', component: GestionMenuComponent, canActivate: [AdminGuardGuard] },
-  { path: 'roles', component: GestionRolesComponent, canActivate: [AdminGuardGuard] }
+  { path: '', component: GestionMenuComponent, canActivate: [AuthGuard] },
+  { path: 'roles', component: GestionRolesComponent, canActivate: [AuthGuard] }
 ];
 
 @NgModule({

@@ -1,3 +1,6 @@
+<!-- Solo en modo "Agregar" (productos/agregar, standalone) -- en modo "Actualizar" ya lo pone
+     update.component.html por fuera de este componente, para no duplicarlo. -->
+<app-boton-volver *ngIf="!esActualizar" fallback="/productos/buscar"></app-boton-volver>
 <div class="pf-page">
   <div class="pf-card">
 

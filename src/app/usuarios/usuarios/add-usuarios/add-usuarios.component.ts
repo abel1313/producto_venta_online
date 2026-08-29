@@ -511,6 +511,11 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
   showPassword        = false;
   showConfirmPassword = false;
 
+  // Este componente se reusa para "Registrar" (autoservicio, público) y "Actualizar usuario"
+  // (admin, editando a otro) -- el botón Volver homologado necesita distinguir a dónde cae de
+  // respaldo si no hay una pantalla anterior real en el historial.
+  get esActualizar(): boolean { return this.textoCard === 'Actualizar usuario'; }
+
   get pwd(): string { return this.formRegistro.get('password')?.value || ''; }
   get reqMayuscula(): boolean { return /[A-Z]/.test(this.pwd); }
   get reqMinuscula(): boolean { return /[a-z]/.test(this.pwd); }

@@ -109,7 +109,13 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex: 1;
   background: var(--card-bg, #ffffff);
   display: flex;
-  align-items: center;
+  // flex-start, no center: con overflow-y:auto y contenido más alto que la pantalla (caso
+  // frecuente en "Actualizar usuario" admin -- permisos, excepciones, acciones, código
+  // pendiente), centrar recortaba el formulario por igual arriba y abajo, y la parte de arriba
+  // quedaba inaccesible aunque se scrolleara (pedido 2026-08-28: "no se alcanza a ver bien el
+  // formulario, se corta"). Con flex-start arranca siempre desde arriba y el resto se scrollea
+  // normal, sin cambiar nada para el caso corto (login/agregar) que sigue viéndose igual.
+  align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
   padding: 2rem 1.5rem;

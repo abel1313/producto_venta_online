@@ -224,15 +224,17 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   margin-top: 4px;
 }
 
+// Mismos tokens --table-* que usa gestion-lugares -- editables desde el grupo
+// "Tablas" de Personalización, antes eran tokens genéricos de card/form.
 .rm-tabla {
-  border: 1px solid var(--card-border); border-radius: 9px; overflow: hidden;
+  border: 1px solid var(--table-border); border-radius: 9px; overflow: hidden;
 
   &__head {
     display: grid;
     grid-template-columns: 28px 1fr 100px 28px;
     gap: 8px; padding: 7px 12px;
-    background: var(--form-section-bg);
-    font-size: 0.72rem; font-weight: 700; color: var(--app-text-muted); text-transform: uppercase;
+    background: var(--table-header-bg);
+    font-size: 0.72rem; font-weight: 700; color: var(--table-header-text); text-transform: uppercase;
   }
 
   &__row {
@@ -240,9 +242,10 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
     grid-template-columns: 28px 1fr 100px 28px;
     gap: 8px; padding: 7px 12px;
     font-size: 0.82rem;
-    border-top: 1px solid var(--card-border);
+    border-top: 1px solid var(--table-border);
     align-items: center;
     color: var(--card-text);
+    &:hover { background: var(--table-row-hover); }
   }
 }
 

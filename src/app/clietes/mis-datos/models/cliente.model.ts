@@ -20,5 +20,10 @@ export interface ICliente extends IdGenerico {
     // Correo nuevo escrito por el cliente, esperando el código de verificación (ver Cliente.java
     // en el back) -- el correoElectronico "real" no cambia hasta que se confirme.
     correoPendiente?: string;
+    // true = nombre/apeidoPaterno/numeroTelefonico/correoElectronico ya están llenos (back:
+    // `Cliente.recalcularDatosCompletos()`). El auto-alta al verificar el correo (registro) crea
+    // el Cliente con id real pero estos campos vacíos y `datosCompletos=false` -- sin este check,
+    // "el cliente existe" (id truthy) no es lo mismo que "el cliente puede comprar".
+    datosCompletos?: boolean;
 
 }

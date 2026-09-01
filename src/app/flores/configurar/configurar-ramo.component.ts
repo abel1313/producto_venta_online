@@ -1073,22 +1073,37 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       return;
     }
     this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
-      next: (res: any) => {
-        if (res) {
-          this.guardarPedido(res);
-        } else {
-          Swal.fire({
-            title: 'Completa tu registro',
-            icon: 'info',
-            html: '<p>Para pedir tu ramo necesitas registrarte como cliente.</p>',
-            showCancelButton: true,
-            confirmButtonText: 'Registrarme',
-            cancelButtonText: 'Cancelar'
-          }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+      next: (clienteId: any) => {
+        if (!clienteId) {
+          this.pedirCompletarRegistroRamo();
+          return;
         }
+        // ⚠️ Que exista el vínculo Usuario→Cliente (id truthy) NO es lo mismo que "puede
+        // comprar": al verificar su correo, todo usuario nuevo recibe un Cliente auto-creado
+        // con id real pero nombre/apellido/teléfono vacíos (`datosCompletos=false` -- ver
+        // `Cliente.recalcularDatosCompletos()` en el back), y el back rechaza el pedido en
+        // ese caso.
+        this.clienteService.getDataOneCliente(clienteId).subscribe({
+          next: (res) => {
+            if (res?.data?.datosCompletos) this.guardarPedido(clienteId);
+            else this.pedirCompletarRegistroRamo();
+          },
+          error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener tu perfil de cliente.' })
+        });
       },
       error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener tu perfil de cliente.' })
     });
+  }
+
+  private pedirCompletarRegistroRamo(): void {
+    Swal.fire({
+      title: 'Completa tu registro',
+      icon: 'info',
+      html: '<p>Para pedir tu ramo necesitas registrarte como cliente.</p>',
+      showCancelButton: true,
+      confirmButtonText: 'Registrarme',
+      cancelButtonText: 'Cancelar'
+    }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/agregar']); });
   }
 
   private guardarPedido(clienteId: number): void {

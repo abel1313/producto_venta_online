@@ -565,10 +565,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   // blanco (ej. variantes sin color reconocido) el header quedaba invisible,
   // como si la card no tuviera header (pedido 2026-09-01: "todas las card
   // tienen que tener el mismo estilo... header, body y footer"). Ahora el fondo
-  // es el mismo degradado --brand-2/--brand-1 que usan TODAS las cards de la
-  // app (.pk-card__header en design-system.scss) -- colorHeader() se sigue
-  // usando, pero solo para el puntito .vb-card__color-dot como referencia del
-  // color real de la prenda.
+  // es --card-header-bg, el mismo token que usan TODAS las cards de la app
+  // (.pk-card__header en design-system.scss), con su propio control en
+  // Personalización (grupo "Card") -- colorHeader() se sigue usando, pero solo
+  // para el puntito .vb-card__color-dot como referencia del color real de la prenda.
   &__header {
     padding: 18px 16px 14px;
     color: white;
@@ -576,7 +576,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: flex-start;
     gap: 12px;
     position: relative;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
 
     &::after {
       content: '';
@@ -644,6 +644,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-wrap: wrap;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
     > * { flex: 1 0 50px; }
   }
 }

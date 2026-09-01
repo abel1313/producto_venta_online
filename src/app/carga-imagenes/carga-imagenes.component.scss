@@ -179,9 +179,10 @@
 
   &__sinimg { font-size: 2rem; opacity: .5; }
 
-  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
-  // (design-system.scss .pk-card__header), editable desde Personalización.
-  &__header { padding: 8px 10px; background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); }
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card").
+  &__header { padding: 8px 10px; background: var(--card-header-bg); }
 
   &__body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
 

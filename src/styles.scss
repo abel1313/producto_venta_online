@@ -120,7 +120,7 @@ body.theme-light, [data-theme="light"] {
      hasta que se editen. --card-body-bg es alias directo de --card-bg (mismo
      valor, TemaService los setea siempre juntos). */
   --card-bg:           #FFFFFF;
-  --card-header-bg:    #FFFFFF;
+  --card-header-bg:    #00875A;
   --card-body-bg:      #FFFFFF;
   --card-footer-bg:    #FFFFFF;
   --card-text:         #152420;
@@ -267,7 +267,7 @@ body.theme-dark, [data-theme="dark"] {
      que la tarjeta es un pelo más clara (#0C0C0C) y su borde.
      --card-header-bg/--card-body-bg/--card-footer-bg: ver nota en el bloque claro. */
   --card-bg:           #0C0C0C;
-  --card-header-bg:    #0C0C0C;
+  --card-header-bg:    #00875A;
   --card-body-bg:      #0C0C0C;
   --card-footer-bg:    #0C0C0C;
   --card-text:         #E9E9EC;

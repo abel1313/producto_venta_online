@@ -71,7 +71,9 @@
     padding: 14px 20px 12px;
     background: var(--card-header-bg);
 
-    strong { font-size: .98rem; color: #fff; }
+    // .95rem/700 -- mismo tamaño de título que el resto de los headers de card
+    // de la app (gp-card__titulo, ra-card__titulo, fv-card__nombre, etc.).
+    strong { font-size: .95rem; font-weight: 700; color: #fff; }
     small  { font-size: .78rem; color: rgba(255,255,255,0.75); }
   }
 }

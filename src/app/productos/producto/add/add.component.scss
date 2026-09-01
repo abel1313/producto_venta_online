@@ -124,21 +124,23 @@ $t: all 0.22s ease;
     box-shadow: var(--input-focus-shadow);
   }
 
+  // Tokens semánticos compartidos -- ya traen su propia variante de modo oscuro (antes el fondo
+  // pastel fijo #fef2f2/#f0fdf4 se veía mal sobre fondo oscuro, no había override para eso).
   &--error {
-    border-color: #ef4444;
-    background: #fef2f2;
-    &:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+    border-color: var(--pk-danger-to);
+    background: var(--pk-danger-soft);
+    &:focus { box-shadow: 0 0 0 3px var(--pk-danger-soft); }
   }
 
   &--generated {
-    background: #f0fdf4;
-    border-color: #86efac;
-    color: #166534;
+    background: var(--pk-success-soft);
+    border-color: var(--pk-success);
+    color: var(--pk-success-to);
     font-family: monospace;
     font-size: 0.9rem;
     letter-spacing: 0.05em;
     cursor: default;
-    &:focus { box-shadow: 0 0 0 3px rgba(134,239,172,0.3); }
+    &:focus { box-shadow: 0 0 0 3px var(--pk-success-soft); }
   }
 }
 
@@ -149,7 +151,7 @@ $t: all 0.22s ease;
 
 .pf-error {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--pk-danger-to);
   font-weight: 500;
 }
 
@@ -372,7 +374,7 @@ $t: all 0.22s ease;
     align-items: center;
     justify-content: center;
     transition: $t;
-    &:hover { background: #ef4444; }
+    &:hover { background: var(--pk-danger); }
   }
 
   &--add {

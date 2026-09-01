@@ -51,7 +51,7 @@
   justify-content: center;
   color: var(--app-text-muted);
   transition: background .15s;
-  &:hover { background: #ffcdd2; color: #c62828; }
+  &:hover { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
 }
 
 .dp-visor-img {
@@ -123,7 +123,10 @@
   }
 }
 
-// ── Paginador PrimeNG — Dark mode ──────────────────────────────────
+// ── Dark mode ────────────────────────────────────────────────────────
+// El paginador/dropdown/tabla de PrimeNG ya NO se sobreescriben acá -- styles.scss trae un
+// bloque global con !important que cubre exactamente esto (comentario ahí mismo: "Usado por:
+// ...productos/detalle-productos..."), así que el override local de acá quedaba muerto/pisado.
 :host-context(body.theme-dark) {
   ::ng-deep {
     .card {
@@ -132,70 +135,14 @@
       color: var(--card-text);
     }
 
-    .p-paginator {
-      background: #1e1e2e;
-      border-color: rgba(255,255,255,0.08);
-      color: var(--app-text, #e2e8f0);
-
-      .p-paginator-element {
-        color: var(--app-text-muted, #94a3b8);
-        background: transparent;
-        border: none;
-        &:hover { background: rgba(255,255,255,0.07); color: #c7d2fe; }
-        &:disabled { color: rgba(148,163,184,0.35); }
-      }
-
-      .p-paginator-page {
-        color: var(--app-text-muted, #94a3b8);
-        &:hover { background: rgba(255,255,255,0.07); }
-        &.p-highlight {
-          background: var(--app-accent);
-          color: var(--app-accent-ink);
-          border-radius: 6px;
-        }
-      }
-
-      .p-dropdown {
-        background: #27272a;
-        border-color: rgba(255,255,255,0.15);
-        .p-dropdown-label { color: var(--app-text, #e2e8f0); }
-        .p-dropdown-trigger { color: var(--app-text-muted, #94a3b8); }
-        &:hover { border-color: rgba(255,255,255,0.3); }
-      }
-    }
-
-    .p-dropdown-panel {
-      background: #27272a;
-      border-color: rgba(255,255,255,0.15);
-      .p-dropdown-item {
-        color: var(--app-text, #e2e8f0);
-        &:hover { background: rgba(255,255,255,0.07); }
-        &.p-highlight { background: rgba(var(--app-accent-rgb),0.3); color: var(--app-accent); }
-      }
-    }
-
-    .p-datatable {
-      .p-datatable-thead > tr > th {
-        background: #27272a;
-        color: var(--app-text, #e2e8f0);
-        border-color: rgba(255,255,255,0.08);
-      }
-      .p-datatable-tbody > tr {
-        background: var(--card-bg);
-        color: var(--app-text, #e2e8f0);
-        > td { border-color: rgba(255,255,255,0.06); }
-        &:hover { background: rgba(255,255,255,0.04); }
-      }
-    }
-
     .alert-success {
-      background: rgba(34,197,94,0.12);
-      border-color: rgba(34,197,94,0.25);
-      color: #86efac;
+      background: var(--pk-success-soft);
+      border-color: var(--pk-success-soft);
+      color: var(--pk-success-to);
     }
 
     .form-control {
-      background: #27272a;
+      background: var(--form-section-bg, #27272a);
       border-color: rgba(255,255,255,0.15);
       color: var(--app-text, #e2e8f0);
       &::placeholder { color: rgba(148,163,184,0.6); }

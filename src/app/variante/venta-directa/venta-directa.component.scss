@@ -119,8 +119,8 @@ $t:  all 0.22s ease;
   &__meta { display: flex; gap: 8px; align-items: center; }
   &__precio { font-size: .85rem; font-weight: 700; color: var(--app-accent); }
   &__stock  { font-size: .72rem; font-weight: 600; padding: 1px 7px; border-radius: 20px;
-    &--ok { background: #dcfce7; color: #166534; }
-    &--agotado { background: #fee2e2; color: #991b1b; }
+    &--ok { background: var(--pk-success-soft); color: var(--pk-success-to); }
+    &--agotado { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
   }
   &__codigo { font-size: .7rem; color: var(--card-text-muted); font-family: monospace; }
 }
@@ -197,7 +197,7 @@ $t:  all 0.22s ease;
 
   &__del {
     background: none; border: none; color: var(--card-text-muted); cursor: pointer; font-size: .72rem;
-    &:hover { color: #dc2626; }
+    &:hover { color: var(--pk-danger-to); }
   }
 }
 
@@ -252,9 +252,9 @@ $t:  all 0.22s ease;
   flex-direction: column;
   gap: 8px;
   font-size: .82rem;
-  color: #b91c1c;
-  background: rgba(239, 68, 68, .10);
-  border: 1px solid rgba(239, 68, 68, .30);
+  color: var(--pk-danger-to);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 8px;
   padding: 10px 12px;
 
@@ -269,12 +269,6 @@ $t:  all 0.22s ease;
     font-weight: 600;
     cursor: pointer;
   }
-}
-
-:host-context(body.theme-dark) .vd-pay-error {
-  color: #fca5a5;
-  background: rgba(239, 68, 68, .14);
-  border-color: rgba(239, 68, 68, .40);
 }
 
 .vd-required { color: var(--app-accent); font-weight: 700; margin-left: 4px; }
@@ -334,8 +328,8 @@ $t:  all 0.22s ease;
 }
 
 .vd-credit-info {
-  font-size: .78rem; color: #d97706;
-  background: rgba(217,119,6,.1); border: 1px solid rgba(217,119,6,.25);
+  font-size: .78rem; color: var(--pk-warning-to);
+  background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft);
   border-radius: 8px; padding: 7px 12px; margin-top: 8px;
 }
 
@@ -386,31 +380,16 @@ $t:  all 0.22s ease;
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 0.82rem;
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  border: 1px solid var(--pk-success-soft);
 
   strong { font-weight: 700; }
 
   &--warn {
-    background: rgba(239, 68, 68, 0.10);
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.25);
-  }
-}
-
-:host-context(body.theme-dark) {
-  .vd-cambio {
-    background: rgba(74, 222, 128, 0.22);
-    color: #86efac;
-    border-color: rgba(74, 222, 128, 0.5);
-    font-weight: 600;
-
-    &--warn {
-      background: rgba(252, 165, 165, 0.2);
-      color: #fca5a5;
-      border-color: rgba(252, 165, 165, 0.5);
-    }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border-color: var(--pk-danger-soft);
   }
 }
 
@@ -440,11 +419,11 @@ $t:  all 0.22s ease;
     display: flex; align-items: center; gap: 8px;
     padding: 8px 12px; border-radius: 8px; font-size: .85rem;
 
-    &--procesando { background: #eff6ff; color: #1e40af; }
-    &--aprobado   { background: #dcfce7; color: #166534; }
-    &--rechazado  { background: #fee2e2; color: #991b1b; }
-    &--cancelado  { background: #f3f4f6; color: #6b7280; }
-    &--bloqueado  { background: #fef3c7; color: #92400e; }
+    &--procesando { background: var(--pk-info-soft); color: var(--pk-info-to); }
+    &--aprobado   { background: var(--pk-success-soft); color: var(--pk-success-to); }
+    &--rechazado  { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
+    &--cancelado  { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280); }
+    &--bloqueado  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
   }
 
   &__actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -460,7 +439,7 @@ $t:  all 0.22s ease;
     background: #009ee3; color: #fff;
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
-  &--cancelar { background: #dc2626; color: #fff; }
+  &--cancelar { background: var(--pk-danger-to); color: #fff; }
   &--cerrar {
     background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280);
     &:hover { background: var(--card-border, #e5e7eb); }
@@ -478,11 +457,11 @@ $t:  all 0.22s ease;
   &__name  { flex: 1; font-weight: 700; color: var(--card-text); font-size: .9rem; }
   &__phone { font-size: .78rem; color: var(--card-text-muted); }
   &__clear {
-    background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
-    border-radius: 50%; width: 26px; height: 26px; color: #dc2626;
+    background: var(--pk-danger-soft); border: 1px solid var(--pk-danger-soft);
+    border-radius: 50%; width: 26px; height: 26px; color: var(--pk-danger-to);
     cursor: pointer; font-size: .7rem;
     display: flex; align-items: center; justify-content: center;
-    &:hover { background: rgba(239,68,68,.25); }
+    &:hover { filter: brightness(0.95); }
   }
 }
 
@@ -513,14 +492,14 @@ $t:  all 0.22s ease;
   // Variante superior — sin border-top, siempre visible
   &--top {
     padding-bottom: 12px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--card-border, #f3f4f6);
   }
 }
 
 .vd-btn-limpiar {
   padding: 12px 18px; border: 1.5px solid var(--card-border); border-radius: 10px;
   background: var(--card-bg); color: var(--app-text-muted); font-weight: 600; cursor: pointer; transition: $t;
-  &:hover { border-color: #dc2626; color: #dc2626; }
+  &:hover { border-color: var(--pk-danger-to); color: var(--pk-danger-to); }
 }
 
 .vd-btn-cobrar {
@@ -563,11 +542,11 @@ $t:  all 0.22s ease;
   &__amount { font-size: 1.4rem; font-weight: 800; color: var(--app-accent); margin-bottom: 12px; }
   &__plan   { font-size: .85rem; font-weight: 400; color: var(--app-text-muted); }
   &__status { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: .85rem; margin-bottom: 12px;
-    &--procesando { background: #eff6ff; color: #1e40af; }
-    &--aprobado   { background: #dcfce7; color: #166534; }
-    &--rechazado  { background: #fee2e2; color: #991b1b; }
-    &--cancelado  { background: #f3f4f6; color: #6b7280; }
-    &--bloqueado  { background: #fef3c7; color: #92400e; }
+    &--procesando { background: var(--pk-info-soft); color: var(--pk-info-to); }
+    &--aprobado   { background: var(--pk-success-soft); color: var(--pk-success-to); }
+    &--rechazado  { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
+    &--cancelado  { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280); }
+    &--bloqueado  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
   }
   &__actions { display: flex; gap: 8px; }
 }
@@ -575,7 +554,7 @@ $t:  all 0.22s ease;
 .mp-btn {
   padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .85rem;
   &--send   { background: #009ee3; color: #fff; &:disabled { opacity: .5; cursor: not-allowed; } }
-  &--cancel { background: #dc2626; color: #fff; }
+  &--cancel { background: var(--pk-danger-to); color: #fff; }
 }
 
 
@@ -642,7 +621,7 @@ $t:  all 0.22s ease;
     &::placeholder { color: var(--input-placeholder); }
   }
 
-  &__error { font-size: .72rem; color: #dc2626; }
+  &__error { font-size: .72rem; color: var(--pk-danger-to); }
   &__hint  { font-size: .72rem; color: var(--app-text-muted); margin-top: 2px; }
 
   &__actions { display: flex; gap: 10px; }
@@ -654,8 +633,8 @@ $t:  all 0.22s ease;
 }
 
 .vd-error {
-  font-size: .82rem; color: #dc2626; background: rgba(220,38,38,.08);
-  border: 1px solid rgba(220,38,38,.25); border-radius: 8px; padding: 8px 12px;
+  font-size: .82rem; color: var(--pk-danger-to); background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft); border-radius: 8px; padding: 8px 12px;
 }
 
 .vd-verif-texto {
@@ -663,8 +642,8 @@ $t:  all 0.22s ease;
 }
 
 .vd-verif-ok {
-  font-size: .85rem; color: #16a34a; background: rgba(34,197,94,.1);
-  border: 1px solid rgba(34,197,94,.3); border-radius: 8px; padding: 10px 12px;
+  font-size: .85rem; color: var(--pk-success-to); background: var(--pk-success-soft);
+  border: 1px solid var(--pk-success-soft); border-radius: 8px; padding: 10px 12px;
 }
 
 // ── Chip cliente sin registro ──────────────────────────────────────
@@ -673,7 +652,7 @@ $t:  all 0.22s ease;
   border-color: rgba(245,158,11,.35);
 
   .vd-client-chip__badge {
-    background: rgba(245,158,11,.18); color: #92400e;
+    background: var(--pk-warning-soft); color: var(--pk-warning-to);
     font-size: .68rem; font-weight: 700; padding: 2px 8px;
     border-radius: 20px; border: 1px solid rgba(245,158,11,.3); flex-shrink: 0;
   }

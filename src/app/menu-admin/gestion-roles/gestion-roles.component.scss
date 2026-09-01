@@ -66,7 +66,7 @@ $t:  all 0.2s ease;
   &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.12); }
 }
 
-.pk-error { font-size: .72rem; color: #dc2626; }
+.pk-error { font-size: .72rem; color: var(--pk-danger-to); }
 
 .pk-btn {
   padding: 10px 16px; border: none; border-radius: 10px;

@@ -111,9 +111,9 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   }
 
   &__quitar {
-    background: none; border: none; color: #dc2626;
+    background: none; border: none; color: var(--pk-danger-to);
     font-size: .8rem; cursor: pointer; flex-shrink: 0; padding: 0 2px;
-    &:hover { color: #b91c1c; }
+    &:hover { color: var(--pk-danger); }
   }
 
   &__footer {

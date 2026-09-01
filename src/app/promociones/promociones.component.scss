@@ -109,9 +109,9 @@
   gap: 4px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: var(--pk-warning);
   margin-bottom: 8px;
-  &--urgente { color: #ef4444; }
+  &--urgente { color: var(--pk-danger-to); }
 }
 
 // ── Precios ───────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@
 
 .pm-ahorro {
   font-size: 0.78rem;
-  color: #16a34a;
+  color: var(--pk-success);
   margin: 0 0 8px;
   font-weight: 600;
 }
@@ -157,9 +157,9 @@
 // ── Disponibilidad ────────────────────────────────────────────────────────
 .pm-disponibilidad { font-size: 0.78rem; margin: 4px 0 0; }
 .pm-disp {
-  &--ok   { color: #16a34a; }
-  &--poco { color: #f59e0b; }
-  &--cero { color: #ef4444; }
+  &--ok   { color: var(--pk-success); }
+  &--poco { color: var(--pk-warning); }
+  &--cero { color: var(--pk-danger-to); }
 }
 
 // ── Botones ──────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@
   transition: opacity .15s, background .15s, color .15s;
   &--agregar  { background: var(--app-accent); color: var(--app-accent-ink); flex: 1; &:hover:not(:disabled) { opacity: .85; } }
   &--detalle  { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--quitar   { background: rgba(239,68,68,.1); color: #ef4444; padding: 6px 10px; }
+  &--quitar   { background: var(--pk-danger-soft); color: var(--pk-danger-to); padding: 6px 10px; }
   &--ghost    { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
 
   // Estado deshabilitado con colores explícitos — usar opacity aquí desvanecía el
@@ -251,7 +251,7 @@
 
   &__vence {
     font-size: 0.85rem;
-    color: #f59e0b;
+    color: var(--pk-warning);
     font-weight: 700;
     margin: 0 0 12px;
   }
@@ -310,10 +310,10 @@
     font-size: 0.78rem;
     color: var(--app-text-muted, #64748b);
     margin-top: 16px;
-    background: rgba(239,68,68,.06);
+    background: var(--pk-danger-soft);
     border-radius: 8px;
     padding: 8px 12px;
-    border-left: 3px solid #ef4444;
+    border-left: 3px solid var(--pk-danger-to);
   }
 
   &__footer {

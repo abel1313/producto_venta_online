@@ -42,8 +42,8 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 
   &--active &__num  { background: $accent; color: var(--app-accent-ink); }
   &--active &__label { color: var(--brand-2); font-weight: 700; }
-  &--done &__num    { background: rgba(22, 101, 52, 0.15); color: #166534; }
-  &--done &__label  { color: #166534; }
+  &--done &__num    { background: var(--pk-success-soft); color: var(--pk-success-to); }
+  &--done &__label  { color: var(--pk-success-to); }
 
   &__line {
     flex: 1;
@@ -127,9 +127,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   &--sortear {
     width: 100%; padding: 14px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg, #166534, #22c55e);
+    background: linear-gradient(135deg, var(--pk-success-to), var(--pk-success));
     color: #fff;
-    box-shadow: 0 6px 20px rgba(34,197,94,0.3);
+    box-shadow: 0 6px 20px var(--pk-success-soft);
     &:hover:not(:disabled) { transform: translateY(-2px); }
   }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -168,11 +168,11 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   border-bottom: 1px solid var(--card-border);
 
   &--selected { background: rgba(var(--app-accent-rgb), 0.08); border-radius: 6px; padding: 5px 6px; }
-  &--vacio    { background: rgba(252, 211, 77, 0.08); }
+  &--vacio    { background: var(--pk-warning-soft); }
 }
 
 .rm-badge-sin {
-  font-size: 0.7rem; background: rgba(253, 243, 199, 0.8); color: #92400e;
+  font-size: 0.7rem; background: var(--pk-warning-soft); color: var(--pk-warning-to);
   border-radius: 8px; padding: 2px 6px; white-space: nowrap;
 }
 
@@ -187,7 +187,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   margin-left: 8px;
   vertical-align: middle;
 }
-.rm-badge-real   { background: rgba(34, 197, 94, 0.18); color: #166534; }
+.rm-badge-real   { background: var(--pk-success-soft); color: var(--pk-success-to); }
 .rm-badge-prueba { background: rgba(var(--app-accent-rgb),0.12); color: var(--app-accent); }
 
 .rm-checkbox-label {
@@ -208,9 +208,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 700;
-  background: rgba(34, 197, 94, 0.12);
-  color: #166534;
-  border: 1px solid rgba(34, 197, 94, 0.30);
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  border: 1px solid var(--pk-success-soft);
 }
 
 .rm-edit-config {
@@ -247,8 +247,8 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 }
 
 .rm-del-btn {
-  background: transparent; border: none; cursor: pointer; color: #ef4444;
-  &:hover { color: #991b1b; }
+  background: transparent; border: none; cursor: pointer; color: var(--pk-danger-to);
+  &:hover { color: var(--pk-danger-to); }
 }
 
 .rm-empty { font-size: 0.85rem; color: var(--card-text-muted); text-align: center; padding: 12px 0; }
@@ -259,7 +259,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   border-radius: 10px;
   font-size: 0.85rem;
   margin-bottom: 10px;
-  &--warn { background: rgba(252, 211, 77, 0.12); border: 1px solid rgba(252, 211, 77, 0.4); color: #92400e; }
+  &--warn { background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft); color: var(--pk-warning-to); }
   &--info { background: rgba(var(--app-accent-rgb), 0.08); border: 1px solid rgba(var(--app-accent-rgb), 0.3); color: var(--app-text); }
 }
 
@@ -324,9 +324,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 .rm-ruleta-der { display: flex; flex-direction: column; gap: 14px; }
 
 .rm-descartado {
-  background: rgba(252, 211, 77, 0.12); border: 1px solid rgba(252, 211, 77, 0.4);
+  background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft);
   border-radius: 10px; padding: 10px 14px;
-  font-size: 0.88rem; color: #92400e; width: 100%;
+  font-size: 0.88rem; color: var(--pk-warning-to); width: 100%;
 }
 
 .rm-panel {
@@ -335,7 +335,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   &__item {
     padding: 7px 14px; font-size: 0.82rem; border-bottom: 1px solid var(--card-border); color: var(--card-text);
     &:last-child { border-bottom: none; }
-    &--elim { color: #ef4444; text-decoration: line-through; }
+    &--elim { color: var(--pk-danger-to); text-decoration: line-through; }
   }
 }
 
@@ -411,16 +411,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   }
 
   // Card ganador: borde amarillo fijo → versión oscura
-  .rm-card--ganador { border-color: rgba(252, 211, 77, 0.45); }
+  .rm-card--ganador { border-color: var(--pk-warning-soft); }
 
-  // Badges
-  .rm-badge-real   { background: rgba(34,197,94,0.12); color: #4ade80; }
-
-  // Saved/edit config
-  .rm-saved-badge { background: rgba(34,197,94,0.10); color: #4ade80; border-color: rgba(74,222,128,0.20); }
+  // .rm-badge-real / .rm-saved-badge / .rm-step--done ya no se sobreescriben acá -- las reglas
+  // base ya usan var(--pk-success-soft/-to), que trae su propia variante oscura.
   .rm-edit-config { background: rgba(var(--app-accent-rgb),0.08); border-color: rgba(var(--app-accent-rgb),0.22); }
-
-  // Stepper: paso completado
-  .rm-step--done .rm-step__num   { background: rgba(34,197,94,0.18); color: #4ade80; }
-  .rm-step--done .rm-step__label { color: #4ade80; }
 }

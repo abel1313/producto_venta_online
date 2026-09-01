@@ -91,10 +91,10 @@ $t:  all 0.25s ease;
   &__status {
     font-size: 1rem;
     font-weight: 700;
-    color: #dc2626;
+    color: var(--pk-danger-to);
     transition: color .25s;
 
-    &--open { color: #16a34a; }
+    &--open { color: var(--pk-success-to); }
   }
 
   &__hint {
@@ -129,7 +129,7 @@ $t:  all 0.25s ease;
   }
 
   &--on {
-    background: #22c55e;
+    background: var(--pk-success);
     .cn-fb-toggle__thumb { transform: translateX(28px); }
   }
 
@@ -199,12 +199,12 @@ $t:  all 0.25s ease;
   font-weight: 700;
   text-transform: none;
   letter-spacing: normal;
-  color: #ef4444;
+  color: var(--pk-danger-to);
   cursor: pointer;
   transition: $t;
   flex-shrink: 0;
 
-  &:hover { color: #dc2626; text-decoration: underline; }
+  &:hover { color: var(--pk-danger); text-decoration: underline; }
 }
 
 .cn-input {

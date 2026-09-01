@@ -1,4 +1,4 @@
-$radius:    14px;
+$radius:    var(--card-radius, 14px);
 $radius-sm: 8px;
 $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -16,7 +16,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 480px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -103,9 +103,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.15);
+  color: var(--pk-danger-to);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
   margin-bottom: 1rem;
@@ -145,7 +145,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .amc-exito-icon {
   font-size: 2.6rem;
-  color: #16a34a;
+  color: var(--pk-success);
   margin-bottom: 0.75rem;
   display: block;
 }

@@ -255,15 +255,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.35rem;
   margin-top: 0.3rem;
   font-size: 0.75rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   .pi { font-size: 0.8rem; }
 }
 
 // ── Requisitos contraseña ──────────────────────────────────────────────────
 .pwd-requirements {
   margin-top: 0.45rem;
-  background: #EFF5FF;
-  border: 1px solid #C7DDFF;
+  background: var(--pk-info-soft);
+  border: 1px solid var(--pk-info-soft);
   border-radius: 10px;
   padding: 0.75rem 0.9rem;
 }
@@ -289,16 +289,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.4rem;
   font-size: 0.78rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   transition: color 0.2s;
 
-  i { font-size: 0.82rem; color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
-  .req-example { color: #f87171; font-size: 0.72rem; }
+  i { font-size: 0.82rem; color: var(--pk-danger-to); transition: color 0.2s; flex-shrink: 0; }
+  .req-example { color: var(--pk-danger); font-size: 0.72rem; }
 
   &.met {
-    color: #374151;
-    i { color: #10b981; }
-    .req-example { color: #6b7280; }
+    color: var(--app-text, #374151);
+    i { color: var(--pk-success); }
+    .req-example { color: var(--app-text-muted, #6b7280); }
   }
 }
 
@@ -313,9 +313,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   border-radius: 99px;
   transition: width 0.3s ease, background-color 0.3s ease;
-  &.weak   { background: #ef4444; }
-  &.medium { background: #f59e0b; }
-  &.strong { background: #10b981; }
+  // Tokens semánticos compartidos -- ya traen su propia variante de modo oscuro.
+  &.weak   { background: var(--pk-danger); }
+  &.medium { background: var(--pk-warning); }
+  &.strong { background: var(--pk-success); }
 }
 
 // ── Admin ──────────────────────────────────────────────────────────────────
@@ -430,15 +431,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--suma {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.35);
-    .exc-row__estado { color: #059669; font-weight: 600; }
+    background: var(--pk-success-soft);
+    border-color: var(--pk-success-soft);
+    .exc-row__estado { color: var(--pk-success-to); font-weight: 600; }
   }
 
   &--quita {
-    background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.3);
-    .exc-row__estado { color: #dc2626; font-weight: 600; }
+    background: var(--pk-danger-soft);
+    border-color: var(--pk-danger-soft);
+    .exc-row__estado { color: var(--pk-danger-to); font-weight: 600; }
   }
 }
 
@@ -471,21 +472,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   .input-icon  { color: var(--app-text-muted, #64748b); }
   .toggle-pass { color: var(--app-text-muted, #64748b); &:hover { color: var(--app-accent); } }
 
-  .pwd-requirements {
-    background: rgba(220, 38, 38, 0.08);
-    border-color: rgba(220, 38, 38, 0.25);
-  }
-  .pwd-req-title { color: #f87171; }
-  .req-item {
-    color: #fca5a5;
-    i { color: #fca5a5; }
-    .req-example { color: #f87171; }
-    &.met {
-      color: #d1fae5;
-      i { color: #34d399; }
-      .req-example { color: #a7f3d0; }
-    }
-  }
+  // .pwd-requirements/.pwd-req-title/.req-item ya no se sobreescriben acá -- antes este bloque
+  // los pintaba en rojo/danger en modo oscuro contra azul/info en modo claro (inconsistencia,
+  // no diseño intencional); los tokens --pk-info/--pk-danger/--pk-success ya traen su propia
+  // variante oscura y quedan iguales en los dos modos.
 
   .admin-section {
     background: rgba(255, 255, 255, 0.04);
@@ -527,7 +517,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.85rem;
   color: var(--app-text-muted, #9ca3af);
   transition: color 0.2s;
-  &.on { color: #10b981; font-weight: 600; }
+  &.on { color: var(--pk-success); font-weight: 600; }
 }
 
 .flex-1 { flex: 1; }
@@ -616,17 +606,17 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-admin-reset {
-  background: rgba(217, 119, 6, 0.09);
-  color: #d97706;
-  border: 1px solid rgba(217, 119, 6, 0.2);
-  &:hover { background: rgba(217, 119, 6, 0.18); }
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  border: 1px solid var(--pk-warning-soft);
+  &:hover { filter: brightness(0.95); }
 }
 
 .btn-admin-verify {
-  background: rgba(14, 165, 233, 0.09);
-  color: #0ea5e9;
-  border: 1px solid rgba(14, 165, 233, 0.2);
-  &:hover { background: rgba(14, 165, 233, 0.18); }
+  background: var(--pk-info-soft);
+  color: var(--pk-info-to);
+  border: 1px solid var(--pk-info-soft);
+  &:hover { filter: brightness(0.95); }
 }
 
 // ── Código pendiente de cambio de correo ─────────────────────────────────────

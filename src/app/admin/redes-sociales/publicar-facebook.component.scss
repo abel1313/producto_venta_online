@@ -61,7 +61,7 @@
 .fb-card {
   background: var(--form-section-bg, var(--app-surface));
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 20px;
   margin-bottom: 18px;
 
@@ -132,7 +132,7 @@
   margin: 8px 0 0;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #dc2626;
+  color: var(--pk-danger-to);
 }
 
 // ── Buscador del producto (opcional) + dropdown ───────────────────────────
@@ -321,7 +321,7 @@
 
   &--quitar {
     background: transparent;
-    color: #ef4444;
+    color: var(--pk-danger-to);
     font-size: 1rem;
     padding: 4px 10px;
   }
@@ -383,7 +383,7 @@
   gap: 6px;
   padding: 36px 20px;
   border: 2px dashed var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   background: var(--app-surface-2);
   cursor: pointer;
   text-align: center;
@@ -659,9 +659,9 @@
 }
 
 // ── Matices por tema ──────────────────────────────────────────────────────
+// .fb-error ya no se sobreescribe acá -- var(--pk-danger-to) trae su propia variante oscura.
 :host-context(body.theme-dark) {
   .fb-archivo__preview { background: rgba(0, 0, 0, 0.5); }
-  .fb-error { color: #f87171; }
 }
 
 :host-context(body.theme-light) {

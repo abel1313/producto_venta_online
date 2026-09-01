@@ -37,9 +37,9 @@
   margin: 0 auto 20px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(239,68,68,.08);
-  border: 1px solid rgba(239,68,68,.25);
-  color: #ef4444;
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
+  color: var(--pk-danger-to);
   display: flex;
   align-items: center;
   justify-content: space-between;

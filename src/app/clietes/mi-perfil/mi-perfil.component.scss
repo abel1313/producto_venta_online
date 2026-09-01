@@ -1,4 +1,4 @@
-$radius:    14px;
+$radius:    var(--card-radius, 14px);
 $radius-sm: 8px;
 $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -18,7 +18,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 560px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -102,7 +102,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 
-.mp-req { color: #ef4444; margin-left: 2px; }
+.mp-req { color: var(--pk-danger-to); margin-left: 2px; }
 
 .mp-input-wrap { position: relative; }
 
@@ -164,7 +164,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   .pi { font-size: 0.75rem; }
 }
 
@@ -173,9 +173,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.15);
+  color: var(--pk-danger-to);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
   margin-bottom: 1rem;
@@ -258,11 +258,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.45rem;
   font-size: 0.78rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   transition: color 0.2s;
-  i { font-size: 0.8rem; color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
+  i { font-size: 0.8rem; color: var(--pk-danger-to); transition: color 0.2s; flex-shrink: 0; }
   .req-example { opacity: 0.65; font-size: 0.73rem; }
-  &.met { color: var(--app-text, #374151); i { color: #10b981; } }
+  &.met { color: var(--app-text, #374151); i { color: var(--pk-success); } }
 }
 
 .pwd-strength-bar {
@@ -276,9 +276,10 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   border-radius: 99px;
   transition: width 0.3s ease, background-color 0.3s ease;
-  &.weak   { background: #ef4444; }
-  &.medium { background: #f59e0b; }
-  &.strong { background: #10b981; }
+  // Tokens semánticos compartidos -- ya traen su propia variante de modo oscuro.
+  &.weak   { background: var(--pk-danger); }
+  &.medium { background: var(--pk-warning); }
+  &.strong { background: var(--pk-success); }
 }
 
 // ── Código pendiente ──────────────────────────────────────────────────────────
@@ -360,8 +361,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
+// box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .mp-card { background: var(--card-bg, #1e1e2e); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+  .mp-card { background: var(--card-bg, #1e1e2e); }
 
   .mp-section-label { color: var(--app-accent); }
   .mp-section-desc  { color: var(--app-text-muted, #64748b); }
@@ -385,11 +387,6 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .mp-divider { border-top-color: rgba(255, 255, 255, 0.07); }
 
-  .mp-error-msg {
-    background: rgba(220, 38, 38, 0.1);
-    border-color: rgba(220, 38, 38, 0.25);
-  }
-
   .pwd-requirements {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.08);
@@ -397,11 +394,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .pwd-req-title { color: var(--app-accent); }
 
-  .req-item {
-    color: #fca5a5;
-    i { color: #fca5a5; }
-    &.met { color: #d1fae5; i { color: #34d399; } }
-  }
+  // .mp-error-msg y .req-item ya no se sobreescriben acá -- los tokens --pk-danger/--pk-success
+  // traen su propia variante oscura.
 
   .pwd-strength-bar { background: rgba(255, 255, 255, 0.1); }
 

@@ -223,9 +223,9 @@
 .br-card__header {
   background: linear-gradient(135deg, rgba(12,20,60,0.92) 0%, rgba(var(--app-accent-rgb),0.78) 100%);
 
-  &--activa    { background: linear-gradient(135deg, #166534, #15803d); }
+  &--activa    { background: linear-gradient(135deg, var(--pk-success-to), var(--pk-success)); }
   &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
-  &--vencida   { background: linear-gradient(135deg, #7f1d1d, #b91c1c); }
+  &--vencida   { background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger)); }
 }
 
 // ── Badges de estado ───────────────────────────────────────────────
@@ -286,7 +286,7 @@
 
 .br-detalle {
   background: var(--card-bg);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.35);
   width: 100%;
   max-width: 520px;

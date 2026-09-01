@@ -1,5 +1,5 @@
 // ── Variables ────────────────────────────────────────────────────────────────
-$radius:    14px;
+$radius:    var(--card-radius, 14px);
 $radius-sm: 8px;
 $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -19,7 +19,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 720px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -107,7 +107,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 
-.md-req { color: #ef4444; margin-left: 2px; }
+.md-req { color: var(--pk-danger-to); margin-left: 2px; }
 
 .md-badge {
   display: inline-flex;
@@ -119,8 +119,10 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 20px;
   vertical-align: middle;
 
-  &--ok   { background: rgba(34,197,94,.12);  color: #15803d; border: 1px solid rgba(34,197,94,.25); }
-  &--warn { background: rgba(234,179,8,.12);  color: #92400e; border: 1px solid rgba(234,179,8,.25); }
+  // Tokens semánticos compartidos (design-system.scss) -- ya traen su propia variante de modo
+  // oscuro, no hace falta override aparte en :host-context(body.theme-dark).
+  &--ok   { background: var(--pk-success-soft); color: var(--pk-success-to); border: 1px solid var(--pk-success-soft); }
+  &--warn { background: var(--pk-warning-soft); color: var(--pk-warning-to); border: 1px solid var(--pk-warning-soft); }
 }
 
 .md-btn-verify {
@@ -132,13 +134,13 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 700;
-  border: 1px solid rgba(14,165,233,.25);
-  background: rgba(14,165,233,.08);
-  color: #0ea5e9;
+  border: 1px solid var(--pk-info-soft);
+  background: var(--pk-info-soft);
+  color: var(--pk-info-to);
   cursor: pointer;
   transition: all .2s;
 
-  &:hover { background: rgba(14,165,233,.16); }
+  &:hover { background: var(--pk-info-soft); filter: brightness(0.94); }
 }
 
 // ── Input wrap ───────────────────────────────────────────────────────────────
@@ -226,7 +228,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
 
   .pi { font-size: 0.75rem; }
 }
@@ -342,15 +344,15 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.07);
-  color: #dc2626;
+  border: 1px solid var(--pk-danger-soft);
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger-to);
   transition: $trans;
   font-family: inherit;
 
   .pi { font-size: 0.75rem; }
 
-  &:hover { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.5); }
+  &:hover { filter: brightness(0.95); }
 }
 
 // ── Footer ───────────────────────────────────────────────────────────────────
@@ -399,8 +401,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
+// box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .md-card { background: var(--card-bg, #1e1e2e); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+  .md-card { background: var(--card-bg, #1e1e2e); }
 
   .md-section__label { color: var(--app-accent); }
 
@@ -440,9 +443,6 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .md-footer { border-top-color: rgba(255, 255, 255, 0.07); }
-  .md-badge--ok   { color: #4ade80; }
-  .md-badge--warn { color: #facc15; }
-  .md-btn-verify  { color: #38bdf8; }
 }
 
 // ── LIGHT MODE ───────────────────────────────────────────────────────────────

@@ -165,8 +165,10 @@
 }
 
 // ── Tabla de detalles ─────────────────────────────────────────────────────
+// Mismos tokens --table-* que usa gestion-lugares -- editables desde el grupo
+// "Tablas" de Personalización, antes era un color fijo sin relación con eso.
 .gp-detalles {
-  border: 1.5px solid var(--card-border);
+  border: 1.5px solid var(--table-border);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -176,11 +178,10 @@
     grid-template-columns: 1fr 80px 120px 40px;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(var(--app-accent-rgb),.1);
+    background: var(--table-header-bg);
     font-size: 0.78rem;
     font-weight: 700;
-    color: var(--app-text);
-    opacity: .7;
+    color: var(--table-header-text);
     text-transform: uppercase;
   }
 
@@ -190,8 +191,9 @@
     gap: 8px;
     padding: 10px 12px;
     align-items: center;
-    border-top: 1px solid var(--card-border);
+    border-top: 1px solid var(--table-border);
     color: var(--app-text);
+    &:hover { background: var(--table-row-hover); }
   }
 
   &__nombre {

@@ -59,14 +59,19 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // ⚠️ getEstado() ya devuelve el objeto desenvuelto (ver negocio.service.ts) -- antes este
+    // código hacía `res.data`, un nivel de más, así que `estado` quedaba `undefined` y
+    // `estado.abierto` tiraba un TypeError dentro del `next` (que el `error:` del mismo
+    // subscribe NO captura). Resultado: negocioCerrado nunca pasaba de `false` y los botones
+    // flotantes de WhatsApp/Facebook/Instagram/TikTok jamás se mostraban, sin importar si el
+    // negocio estaba realmente cerrado o no.
     this.negocioService.getEstado().subscribe({
-      next: (res: any) => {
-        const estado = res.data as any;
+      next: (estado) => {
         this.negocioCerrado = !estado.abierto;
         this.whatsappUrl    = estado.whatsappUrl;
         this.facebookUrl    = estado.facebookUrl;
-        this.instagramUrl   = estado.instagramUrl;
-        this.tiktokUrl      = estado.tiktokUrl;
+        this.instagramUrl   = estado.instagramUrl ?? null;
+        this.tiktokUrl      = estado.tiktokUrl ?? null;
       },
       error: () => {}
     });

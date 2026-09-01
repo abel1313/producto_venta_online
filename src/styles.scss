@@ -9,6 +9,7 @@
 
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-alpine.css';
+@import 'design-system';
 /* ════════════════════════════════════════════════
    SISTEMA TIPOGRÁFICO — Poppins
    ────────────────────────────────────────────────
@@ -126,7 +127,26 @@ body.theme-light, [data-theme="light"] {
   --card-text-muted:   #55736A;
   --card-border:       #D5E8DD;
   --card-shadow:       0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+  --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
   --card-radius:       14px;
+
+  /* ── Estados semánticos (2026-08-28) -- éxito/alerta/peligro/info, un solo
+     origen para todo lo que hoy cada pantalla hardcodeaba a mano con su propio
+     verde/naranja/rojo/azul (pedidos, variantes, etc.). Mismo criterio que
+     --card-*: se puede llevar a Personalización más adelante sin tocar cada
+     componente que ya los use. */
+  --pk-success:      #16a34a;
+  --pk-success-to:   #059669;
+  --pk-success-soft: rgba(22,163,74,0.10);
+  --pk-warning:      #f59e0b;
+  --pk-warning-to:   #d97706;
+  --pk-warning-soft: rgba(245,158,11,0.10);
+  --pk-danger:       #ef4444;
+  --pk-danger-to:    #dc2626;
+  --pk-danger-soft:  rgba(239,68,68,0.10);
+  --pk-info:         #3b82f6;
+  --pk-info-to:      #2563eb;
+  --pk-info-soft:    rgba(59,130,246,0.10);
 
   /* ── Inputs / buscadores / textareas ── */
   --input-bg:          #FFFFFF;
@@ -254,7 +274,24 @@ body.theme-dark, [data-theme="dark"] {
   --card-text-muted:   #9A9AA0;
   --card-border:       #2A2A2E;
   --card-shadow:       0 4px 20px rgba(0,0,0,0.65);
+  --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.75);
   --card-radius:       14px;
+
+  /* ── Estados semánticos -- tonos más claros que en modo claro para que
+     mantengan contraste sobre fondo oscuro (mismo criterio ya usado en otros
+     componentes de esta sesión, ej. add-usuarios .req-item). */
+  --pk-success:      #34d399;
+  --pk-success-to:   #10b981;
+  --pk-success-soft: rgba(52,211,153,0.14);
+  --pk-warning:      #fbbf24;
+  --pk-warning-to:   #f59e0b;
+  --pk-warning-soft: rgba(251,191,36,0.14);
+  --pk-danger:       #f87171;
+  --pk-danger-to:    #ef4444;
+  --pk-danger-soft:  rgba(248,113,113,0.14);
+  --pk-info:         #60a5fa;
+  --pk-info-to:      #3b82f6;
+  --pk-info-soft:    rgba(96,165,250,0.14);
 
   /* ── Inputs / buscadores / textareas ── */
   --input-bg:          rgba(255,255,255,0.05);

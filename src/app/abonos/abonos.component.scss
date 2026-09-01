@@ -124,18 +124,26 @@
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 1rem 1.1rem;
+  overflow: hidden;
   transition: box-shadow 0.15s;
 
   &--pagado    { opacity: 0.9; }
   &--cancelado { opacity: 0.85; border-color: var(--pk-danger-soft); }
 
+  // Header con el mismo degradado --brand-2/--brand-1 que el resto de las cards de
+  // la app (design-system.scss .pk-card__header), editable desde Personalización.
+  // Se saca con márgenes negativos hasta el borde de .ab-card (que ya trae su propio
+  // padding) en vez de tocar el HTML -- así el resto del contenido (montos, progreso,
+  // historial) conserva su padding normal sin tener que envolverlo en un __body nuevo.
   &__hdr {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.6rem;
     flex-wrap: wrap;
-    margin-bottom: 0.75rem;
+    margin: -1rem -1.1rem 0.75rem;
+    padding: 14px 17.6px 12px;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
   }
 
   &__info {
@@ -145,7 +153,7 @@
     flex-wrap: wrap;
   }
 
-  &__id     { font-weight: 700; color: var(--app-text); font-size: 0.88rem; }
+  &__id     { font-weight: 700; color: #fff; font-size: 0.88rem; }
   // Ahora es un <button> (antes span) para poder llevar al detalle real del pedido en
   // /pedidos/mis-pedidos — reset de estilos nativos + affordance de "esto se puede tocar".
   &__id--link {
@@ -156,10 +164,10 @@
     cursor: pointer;
     text-decoration: underline dotted;
     text-underline-offset: 2px;
-    &:hover, &:focus-visible { color: var(--app-accent); }
+    &:hover, &:focus-visible { color: rgba(255,255,255,0.75); }
   }
-  &__cliente{ font-weight: 600; color: var(--app-text); font-size: 0.92rem; }
-  &__tel    { font-size: 0.78rem; color: var(--app-text); opacity: 0.65; }
+  &__cliente{ font-weight: 600; color: #fff; font-size: 0.92rem; }
+  &__tel    { font-size: 0.78rem; color: #fff; opacity: 0.75; }
 
   &__actions {
     display: flex;

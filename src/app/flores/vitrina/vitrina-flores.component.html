@@ -36,8 +36,12 @@
         <span>🌹</span>
       </div>
 
-      <div class="vr-card__body">
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización) -->
+      <div class="vr-card__header">
         <p class="vr-card__nombre">{{ r.nombre }}</p>
+      </div>
+
+      <div class="vr-card__body">
         <p class="vr-card__especie">{{ r.tipoFlorNombre }} · {{ r.colorFlorNombre }} · {{ r.cantidad }} flores</p>
 
         <p class="vr-card__precio">${{ r.precioTotal | number:'1.2-2' }}</p>

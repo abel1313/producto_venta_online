@@ -179,9 +179,13 @@
 
   &__sinimg { font-size: 2rem; opacity: .5; }
 
+  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), editable desde Personalización.
+  &__header { padding: 8px 10px; background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); }
+
   &__body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
 
-  &__id  { color: var(--app-text-muted); font-size: .76rem; }
+  &__id  { color: #fff; font-size: .76rem; }
 
   &__err { margin: 0; font-size: .78rem; color: var(--pk-danger-to); line-height: 1.3; }
 }

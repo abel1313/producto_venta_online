@@ -74,8 +74,12 @@
     &:hover { background: rgba(0,0,0,.55); }
   }
 
+  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), editable desde Personalización.
+  &__header { padding: 10px 14px; background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); }
+  &__nombre { font-weight: 700; font-size: .92rem; color: #fff; margin: 0; }
+
   &__body { padding: 12px 14px; flex: 1; }
-  &__nombre { font-weight: 700; font-size: .92rem; color: var(--app-text); margin: 0 0 4px; }
   &__detalle { font-size: .78rem; color: var(--app-text-muted, #64748b); margin: 0 0 8px; }
   &__row { display: flex; align-items: center; justify-content: space-between; }
   &__precio { font-weight: 800; font-size: 1.05rem; color: var(--app-accent); }

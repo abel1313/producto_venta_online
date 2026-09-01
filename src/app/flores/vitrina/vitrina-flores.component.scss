@@ -92,6 +92,13 @@
     object-fit: cover;
   }
 
+  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), editable desde Personalización.
+  &__header {
+    padding: 12px 16px;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+  }
+
   &__body {
     padding: 14px 16px;
     flex: 1;
@@ -100,8 +107,8 @@
   &__nombre {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--app-text);
-    margin: 0 0 4px;
+    color: #fff;
+    margin: 0;
   }
 
   &__especie {

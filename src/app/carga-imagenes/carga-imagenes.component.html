@@ -115,14 +115,17 @@
           <div class="ci-card__sinimg" *ngIf="!t.previewLocal && !t.urlImagen">📦</div>
         </div>
 
+        <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización) -->
+        <div class="ci-card__header">
+          <small class="ci-card__id">Producto #{{ t.productoId }}</small>
+        </div>
+
         <div class="ci-card__body">
           <div class="ci-card__estado">
             <span class="ci-badge ci-badge--pend"  *ngIf="t.estadoImagen === 'PENDIENTE'">Subiendo…</span>
             <span class="ci-badge ci-badge--ok"    *ngIf="t.estadoImagen === 'EXITOSO'">✓ Imagen lista</span>
             <span class="ci-badge ci-badge--error" *ngIf="t.estadoImagen === 'FALLIDO'">✕ Falló</span>
           </div>
-
-          <small class="ci-card__id">Producto #{{ t.productoId }}</small>
 
           <p class="ci-card__err" *ngIf="t.estadoImagen === 'FALLIDO' && t.mensajeErrorImagen">
             {{ t.mensajeErrorImagen }}

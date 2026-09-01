@@ -318,41 +318,27 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Tarjeta base ────────────────────────────────────────────────────────────
+// Fondo/borde/radio/sombra/hover ahora vienen de .pk-card (design-system.scss) --
+// la misma clase que usan todas las demás cards de la app, para que sean
+// idénticas de verdad (no "parecidas") y para que un cambio en Personalización
+// (--card-bg/--card-radius/--card-shadow/--brand-1/--brand-2) se refleje aquí
+// sin tener que duplicar el valor en este archivo.
 .pedido-card {
-  background: var(--card-bg);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: $transition;
-  border-top: 4px solid var(--app-accent);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--card-shadow-hover);
-  }
-
   // ⚠️ Antes cada estado (entregado/pendiente/cancelado) repintaba el header entero, el strip
   // de total y su color -- resultado: cards del mismo listado con "carcasa" de colores
   // distintos (una amarilla, otra verde, otra blanca), en vez de verse todas iguales como el
-  // resto de las cards de la app. El header/strip/borde ahora son SIEMPRE los mismos (ver
-  // .card-head/.total-strip/.total-amount base, unos renglones abajo) -- el estado se sigue
-  // viendo, pero solo en el badge de .estado-badge, con los tokens semánticos compartidos.
+  // resto de las cards de la app. El header/strip/borde ahora son SIEMPRE los mismos (compartidos
+  // vía .pk-card__header) -- el estado se sigue viendo, pero solo en el badge de .estado-badge,
+  // con los tokens semánticos compartidos.
   &.estado-entregado .estado-badge { background: var(--pk-success); }
   &.estado-pendiente .estado-badge { background: var(--pk-warning); }
   &.estado-cancelado .estado-badge { background: var(--pk-danger); }
 }
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
-.card-head {
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+// El fondo (degradado --brand-2/--brand-1) y el padding/layout base ya vienen de
+// .pk-card__header (design-system.scss) -- solo queda el layout interno propio
+// de pedidos (dos columnas: número de pedido a la izquierda, badges a la derecha).
 .card-head-left {
   display: flex;
   flex-direction: column;
@@ -423,14 +409,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Cuerpo ──────────────────────────────────────────────────────────────────
-.card-body-custom {
-  padding: 1rem 1.25rem 0.75rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
+// El padding/flex base ya viene de .pk-card__body (design-system.scss).
 .info-row {
   display: flex;
   align-items: flex-start;
@@ -496,14 +475,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Footer ──────────────────────────────────────────────────────────────────
-.card-footer-custom {
-  padding: 0.85rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-top: 1px solid #f3f4f6;
-  flex-wrap: wrap;
-}
+// padding/gap/border-top base ya vienen de .pk-card__footer (design-system.scss).
 
 // ── Botones de la tarjeta ───────────────────────────────────────────────────
 // Los botones con texto (Detalle/Cobrar/Cancelar) se reparten el espacio;

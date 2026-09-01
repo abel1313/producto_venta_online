@@ -28,7 +28,9 @@
         <img class="gl-card__img" [src]="urlDe(logo)" [alt]="logo.nombreOriginal">
         <span class="gl-card__badge" *ngIf="logo.activo">✓ Usado en correos</span>
       </div>
-      <p class="gl-card__nombre" [title]="logo.nombreOriginal">{{ logo.nombreOriginal }}</p>
+      <div class="gl-card__header">
+        <p class="gl-card__nombre" [title]="logo.nombreOriginal">{{ logo.nombreOriginal }}</p>
+      </div>
       <div class="gl-card__actions">
         <button class="gl-btn gl-btn--activar" type="button"
                 [disabled]="logo.activo || activando.has(logo.id)"

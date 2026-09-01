@@ -219,13 +219,15 @@
   &:hover:not(&--active) { color: var(--app-text); }
 }
 
-// ── Header de card con colores de estado ───────────────────────────
+// ── Header de card ───────────────────────────────────────────────────
+// Antes cada estado (activa/completada/vencida) repintaba el header entero de
+// un color distinto -- cards del mismo listado con "carcasa" de colores
+// distintos, en vez de verse todas iguales (mismo bug ya corregido en
+// pedidos/mis-pedidos). El header ahora es SIEMPRE el mismo degradado
+// --brand-2/--brand-1 que usa el resto de las cards de la app; el estado se
+// sigue viendo, pero solo en el badge (.br-badge--activa/completada/vencida).
 .br-card__header {
-  background: linear-gradient(135deg, rgba(12,20,60,0.92) 0%, rgba(var(--app-accent-rgb),0.78) 100%);
-
-  &--activa    { background: linear-gradient(135deg, var(--pk-success-to), var(--pk-success)); }
-  &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
-  &--vencida   { background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger)); }
+  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
 }
 
 // ── Badges de estado ───────────────────────────────────────────────

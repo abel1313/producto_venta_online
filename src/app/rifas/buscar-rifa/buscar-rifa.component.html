@@ -39,10 +39,7 @@
   <div class="br-grid" *ngIf="!cargando && rifas.length > 0">
     <div class="br-card" *ngFor="let r of rifas">
 
-      <div class="br-card__header"
-           [class.br-card__header--activa]="r.activa"
-           [class.br-card__header--completada]="!r.activa && r.totalVariantes && (r.variantesSorteadas ?? 0) >= r.totalVariantes"
-           [class.br-card__header--vencida]="!r.activa && !(r.totalVariantes && (r.variantesSorteadas ?? 0) >= r.totalVariantes)">
+      <div class="br-card__header">
         <span class="br-card__id">Rifa #{{ r.id }}</span>
         <div class="br-card__badges">
           <span class="br-card__badge" *ngIf="r.tipo === 'DIARIA'">☀️ Diaria</span>

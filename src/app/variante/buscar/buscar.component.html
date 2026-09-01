@@ -219,8 +219,10 @@
         </button>
       </div>
 
-      <!-- Header con color -->
-      <div class="vb-card__header" [style.background]="colorHeader(v.color ?? '')">
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app
+           (Personalización); colorHeader() solo se usa para el puntito de color real
+           de la prenda, no para el fondo del header. -->
+      <div class="vb-card__header">
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
           <div class="vb-card__chips">

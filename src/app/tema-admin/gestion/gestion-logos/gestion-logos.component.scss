@@ -99,10 +99,16 @@
     border-radius: 6px;
   }
 
+  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), editable desde Personalización.
+  &__header {
+    padding: 8px 10px;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+  }
+
   &__nombre {
     font-size: .78rem;
-    color: var(--app-text-muted);
-    padding: 8px 10px 0;
+    color: #fff;
     margin: 0;
     white-space: nowrap;
     overflow: hidden;

@@ -76,15 +76,17 @@
   <!-- Grid de pedidos -->
   <div class="scroll-container" (scroll)="onScroll($event)">
     <div class="pedidos-grid">
-      <div class="pedido-card" *ngFor="let item of pedidoGenerico"
+      <div class="pk-card pedido-card" *ngFor="let item of pedidoGenerico"
            [ngClass]="{
              'estado-entregado': item.pedido.estado_pedido === 'Entregado',
              'estado-pendiente': item.pedido.estado_pedido === 'Pendiente',
              'estado-cancelado': item.pedido.estado_pedido === 'Cancelado'
            }">
 
-        <!-- Cabecera de la tarjeta -->
-        <div class="card-head">
+        <!-- Cabecera de la tarjeta -- .pk-card__header es la misma clase compartida que usan
+             todas las demás cards de la app (design-system.scss): el color sale de
+             --brand-1/--brand-2, editables desde Personalización. -->
+        <div class="pk-card__header">
           <div class="card-head-left">
             <span class="order-label">PEDIDO</span>
             <span class="order-number">#{{ item.pedido.id }}</span>
@@ -106,7 +108,7 @@
         </div>
 
         <!-- Cuerpo -->
-        <div class="card-body-custom">
+        <div class="pk-card__body">
 
           <div class="info-row">
             <i class="pi pi-user info-icon"></i>
@@ -156,7 +158,7 @@
         </div>
 
         <!-- Pie de tarjeta -->
-        <div class="card-footer-custom">
+        <div class="pk-card__footer">
           <button class="btn-card btn-detalle" (click)="irDetalle(item)">
             <i class="pi pi-eye"></i> Detalle
           </button>

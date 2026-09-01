@@ -99,6 +99,10 @@
 
   &__image-placeholder { font-size: 3rem; color: var(--card-text-muted); }
 
+  // Único degradado de header para TODAS las cards de la app (pedido 2026-09-01:
+  // "si cambio el color de header, todas las card de mi aplicación tienen que
+  // tener ese mismo color"). --brand-1/--brand-2 son los mismos tokens que ya
+  // se editan en Personalización -- no se inventa un token nuevo para esto.
   &__header {
     padding: 14px 16px 12px;
     color: #fff;
@@ -106,7 +110,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.92) 0%, rgba(var(--app-accent-rgb),0.72) 100%);
+    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
   }
 
   &__body {

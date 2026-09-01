@@ -38,8 +38,12 @@
         <button class="fv-card__heart" (click)="quitarFavorito(v); $event.stopPropagation()" title="Quitar de favoritos">❤️</button>
       </div>
 
-      <div class="fv-card__body">
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización) -->
+      <div class="fv-card__header">
         <p class="fv-card__nombre">{{ v.nombreProducto }}</p>
+      </div>
+
+      <div class="fv-card__body">
         <p class="fv-card__detalle" *ngIf="v.talla || v.color || v.marca">
           {{ [v.talla, v.color, v.marca].join(' · ') }}
         </p>

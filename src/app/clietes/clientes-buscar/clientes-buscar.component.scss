@@ -79,7 +79,8 @@
   gap: 12px;
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, #e2e8f0);
-  border-radius: 10px;
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
   padding: 14px 16px;
   margin-bottom: 10px;
 
@@ -115,13 +116,15 @@
   font-weight: 600;
   white-space: nowrap;
 
-  &--ok   { background: rgba(34,197,94,.12); color: #166534; border: 1px solid rgba(34,197,94,.3); }
-  &--warn { background: rgba(234,179,8,.12);  color: #854d0e; border: 1px solid rgba(234,179,8,.3); }
+  // Tokens semánticos compartidos (design-system.scss) -- ya traen su propia variante de modo
+  // oscuro, no hace falta un override aparte en :host-context(body.theme-dark) como antes.
+  &--ok   { background: var(--pk-success-soft); color: var(--pk-success-to); border: 1px solid var(--pk-success-soft); }
+  &--warn { background: var(--pk-warning-soft); color: var(--pk-warning-to); border: 1px solid var(--pk-warning-soft); }
 }
 
 .cb-btn {
   border: none;
-  border-radius: 7px;
+  border-radius: 10px;
   padding: 6px 12px;
   font-size: .8rem;
   cursor: pointer;
@@ -129,15 +132,15 @@
   &:hover { opacity: .8; }
 
   &--reset {
-    background: rgba(239,68,68,.08);
-    color: #dc2626;
-    border: 1px solid rgba(239,68,68,.2);
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border: 1px solid var(--pk-danger-soft);
   }
 
   &--verify {
-    background: rgba(14,165,233,.08);
-    color: #0ea5e9;
-    border: 1px solid rgba(14,165,233,.2);
+    background: var(--pk-info-soft);
+    color: var(--pk-info-to);
+    border: 1px solid var(--pk-info-soft);
   }
 }
 
@@ -162,13 +165,6 @@
 }
 
 .cb-page-info { font-size: .85rem; color: var(--app-text-muted, #64748b); }
-
-:host-context(body.theme-dark) {
-  .cb-badge--ok    { color: #4ade80; }
-  .cb-badge--warn  { color: #facc15; }
-  .cb-btn--reset   { color: #f87171; }
-  .cb-btn--verify  { color: #38bdf8; }
-}
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto blanco debe pasar a oscuro ──
 :host-context(body.theme-light) {

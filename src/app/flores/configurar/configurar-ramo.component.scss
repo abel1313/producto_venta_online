@@ -46,9 +46,9 @@
   justify-content: space-between;
   gap: 12px;
   &--error {
-    background: rgba(239,68,68,.08);
-    border: 1px solid rgba(239,68,68,.25);
-    color: #ef4444;
+    background: var(--pk-danger-soft);
+    border: 1px solid var(--pk-danger-soft);
+    color: var(--pk-danger-to);
   }
 }
 
@@ -65,7 +65,7 @@
   gap: 14px;
   background: var(--app-surface);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 18px 20px;
 
   &__num {
@@ -121,8 +121,8 @@
   // en rojo... no es fácil encontrarlo") -- antes solo había un texto de aviso más abajo, sin
   // nada que dijera CUÁL campo exacto era. Mismo rojo que .cr-aviso--error.
   &--error {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, .12);
+    border-color: var(--pk-danger-to);
+    box-shadow: 0 0 0 3px var(--pk-danger-soft);
   }
 }
 
@@ -145,8 +145,8 @@
     font-weight: 700;
   }
   &--warn {
-    background: rgba(245,158,11,.1);
-    color: #b45309;
+    background: var(--pk-warning-soft);
+    color: var(--pk-warning-to);
     p { margin: 0 0 10px; }
   }
 }
@@ -174,8 +174,8 @@
   margin-top: 10px;
   font-size: 0.85rem;
   font-weight: 700;
-  &--ok   { color: #16a34a; }
-  &--warn { color: #f59e0b; }
+  &--ok   { color: var(--pk-success); }
+  &--warn { color: var(--pk-warning); }
 }
 
 // ── Paso 4 — accesorios ─────────────────────────────────────────────────
@@ -221,7 +221,7 @@
 .cr-resumen {
   background: var(--app-surface);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 20px;
 
   &__titulo {
@@ -257,8 +257,8 @@
 
 .cr-aviso-frase {
   font-size: 0.78rem;
-  color: #b45309;
-  background: rgba(245,158,11,.08);
+  color: var(--pk-warning-to);
+  background: var(--pk-warning-soft);
   border-radius: 8px;
   padding: 8px 12px;
   margin: 12px 0 0;
@@ -299,8 +299,8 @@
 // El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni
 // rojo: se puede vender, pero no es lo mismo que una cantidad que sí cierra el círculo.
 .cr-validacion--aviso {
-  border-left: 3px solid #b45309;
-  background: rgba(180, 83, 9, .1);
+  border-left: 3px solid var(--pk-warning-to);
+  background: var(--pk-warning-soft);
   color: var(--app-text);
 }
 
@@ -318,19 +318,12 @@
   opacity: .8;
 }
 
-:host-context(body.theme-dark) {
-  .cr-validacion--aviso {
-    border-left-color: #fbbf24;
-    background: rgba(251, 191, 36, .12);
-  }
-}
-
 // ── Paso 6: fecha de entrega ─────────────────────────────────────────────
 // Ámbar (no rojo): que este tamaño no tenga plazo no es un error del cliente ni una falla — es
 // que el taller no se puede comprometer, y el mensaje lo manda a contactarnos.
 .cr-aviso--warn {
-  background: rgba(180, 83, 9, .1);
-  border: 1px solid rgba(180, 83, 9, .28);
+  background: var(--pk-warning-soft);
+  border: 1px solid var(--pk-warning-soft);
   color: var(--app-text);
   margin: 10px 0 0;
   display: block;
@@ -380,15 +373,15 @@
 .cr-btn--urgente {
   margin-top: 12px;
   background: transparent;
-  border: 1.5px solid #b45309;
-  color: #b45309;
+  border: 1.5px solid var(--pk-warning-to);
+  color: var(--pk-warning-to);
   font-weight: 700;
 
   small { font-weight: 600; }
 }
 
 .cr-btn--urgente-on {
-  background: #b45309;
+  background: var(--pk-warning-to);
   color: #fff;
 }
 
@@ -397,21 +390,6 @@
   font-size: .8rem;
   line-height: 1.45;
   color: var(--app-text-muted, #5F8375);
-}
-
-:host-context(body.theme-dark) {
-  .cr-aviso--warn {
-    background: rgba(251, 191, 36, .12);
-    border-color: rgba(251, 191, 36, .3);
-  }
-  .cr-btn--urgente {
-    border-color: #fbbf24;
-    color: #fbbf24;
-  }
-  .cr-btn--urgente-on {
-    background: #fbbf24;
-    color: #12241D;
-  }
 }
 
 // Miniatura del color / accesorio, para elegir viendo y no solo por el nombre.

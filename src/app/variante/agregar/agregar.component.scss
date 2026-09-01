@@ -584,12 +584,12 @@ $primary-d: var(--brand-1);
   }
 
   &__del {
-    background: rgba(239,68,68,0.12);
-    border: 1px solid rgba(239,68,68,0.3);
+    background: var(--pk-danger-soft);
+    border: 1px solid var(--pk-danger-soft);
     border-radius: 8px;
     width: 28px;
     height: 28px;
-    color: #f87171;
+    color: var(--pk-danger-to);
     cursor: pointer;
     font-size: 0.7rem;
     display: flex;

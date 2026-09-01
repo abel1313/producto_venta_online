@@ -88,17 +88,17 @@
 .db-card {
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, rgba(0, 0, 0, 0.08));
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 20px 18px;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   transition: transform 0.15s, box-shadow 0.15s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+    box-shadow: var(--card-shadow-hover);
   }
 }
 

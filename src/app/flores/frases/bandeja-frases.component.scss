@@ -41,9 +41,9 @@
   margin-bottom: 16px;
 
   &--error {
-    background: rgba(239, 68, 68, .08);
-    border: 1px solid rgba(239, 68, 68, .25);
-    color: #ef4444;
+    background: var(--pk-danger-soft);
+    border: 1px solid var(--pk-danger-soft);
+    color: var(--pk-danger-to);
   }
 }
 
@@ -56,7 +56,7 @@
 .fp-card {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 16px;
   margin-bottom: 14px;
 

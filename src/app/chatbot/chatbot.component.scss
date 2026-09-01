@@ -44,6 +44,22 @@ $radius: 18px;
     color: white;
     &:hover { background: #0d6edf; }
   }
+
+  // Instagram — degradado de marca
+  &--ig {
+    bottom: 224px; // encima del FB (162px + 52px + 10px)
+    background: linear-gradient(135deg, #f9ce34, #ee2a7b, #6228d7);
+    color: white;
+    &:hover { filter: brightness(1.1); }
+  }
+
+  // TikTok — negro con acento cian
+  &--tt {
+    bottom: 286px; // encima del IG (224px + 52px + 10px)
+    background: #010101;
+    color: #25f4ee;
+    &:hover { background: #1a1a1a; }
+  }
 }
 
 // ── Botón flotante ─────────────────────────────────────────────────

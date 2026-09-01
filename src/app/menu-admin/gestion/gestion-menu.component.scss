@@ -70,7 +70,7 @@ $t:  all 0.2s ease;
 
 textarea.pk-input { font-family: inherit; resize: vertical; }
 
-.pk-error { font-size: .72rem; color: #dc2626; }
+.pk-error { font-size: .72rem; color: var(--pk-danger-to); }
 
 .pk-btn {
   padding: 10px 16px; border: none; border-radius: 10px;

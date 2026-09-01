@@ -39,8 +39,8 @@
     justify-content: space-between;
     gap: 14px;
     flex-wrap: wrap;
-    border-left-color: #dc2626;
-    background: rgba(220, 38, 38, .08);
+    border-left-color: var(--pk-danger-to);
+    background: var(--pk-danger-soft);
   }
 }
 
@@ -74,7 +74,7 @@
 .fl-card {
   background: var(--form-section-bg, var(--app-surface));
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 18px;
 }
 
@@ -187,8 +187,8 @@
   color: var(--app-accent);
 
   &--alt {
-    background: rgba(37, 99, 235, .12);
-    color: #2563eb;
+    background: var(--pk-info-soft);
+    color: var(--pk-info-to);
   }
 }
 
@@ -209,7 +209,7 @@
 
   &:hover { background: var(--app-accent-soft); }
   &:disabled { opacity: .4; cursor: not-allowed; }
-  &--del:hover { background: rgba(220, 38, 38, .12); }
+  &--del:hover { background: var(--pk-danger-soft); }
 }
 
 .fl-vacio {
@@ -219,16 +219,6 @@
   font-size: .86rem;
 }
 
-:host-context(body.theme-dark) {
-  .fl-aviso--error {
-    border-left-color: #f87171;
-    background: rgba(248, 113, 113, .12);
-  }
-  .fl-badge--alt {
-    background: rgba(96, 165, 250, .16);
-    color: #60a5fa;
-  }
-}
 
 @media (max-width: 575px) {
   .fl-add { flex-direction: column; align-items: stretch; }

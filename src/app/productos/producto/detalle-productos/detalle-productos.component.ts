@@ -132,14 +132,18 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
   }
 
 
-  existeClientePorIdUsuario: boolean = false;
   generarPedido() {
-    this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe(isCliente => {
-      this.existeClientePorIdUsuario = isCliente;
-    },error => {
-      console.error('Error al buscar cliente por ID de usuario', error);
-    });
-    if (this.isAnonymous || !this.existeClientePorIdUsuario) {
+    // ⚠️ Antes esto disparaba `buscarClientePorIdUsuario` de forma asíncrona y, en la misma
+    // llamada, evaluaba `existeClientePorIdUsuario` de forma SÍNCRONA sin esperar la respuesta
+    // (esa bandera arrancaba en `false` y solo se actualizaba dentro del `.subscribe()`, que para
+    // entonces ya no había corrido). Resultado: casi cualquier usuario registrado con cliente ya
+    // dado de alta caía igual al `if` de "hace falta registrarse" y se le mandaba a
+    // `/usuarios/registrar` en vez de dejarlo generar el pedido. Además se llamaba dos veces al
+    // mismo endpoint (una para esa bandera rota, otra dentro del `else` para el `clienteId` real).
+    // Ahora: `isAnonymous` (síncrono, no depende de ninguna llamada) decide primero; si hay un
+    // cliente ya asignado (admin, desde el buscador de abajo) se usa directo; si no, se hace UNA
+    // sola llamada y se decide todo dentro de su `.subscribe()`.
+    if (this.isAnonymous) {
       Swal.fire({
         title: "Generar pedido",
         icon: "info",
@@ -156,54 +160,73 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
           this.router.navigate(['/usuarios/registrar']);
         }
       });
-    } else {
+      return;
+    }
 
-      if (this.clienteSeleccionado) {
-        this.pedidosDTO.cliente.id = this.clienteSeleccionado.id;
-        this.armarYConfirmarPedido();
-      } else {
-        if (this.idUsuario === 0) {
-          Swal.fire({
-            title: "Usuario no encontrado",
-            icon: "error",
-            text: "El usuario no esta registrado, intente de nuevo",
-            showCancelButton: false
-          });
+    if (this.clienteSeleccionado) {
+      this.pedidosDTO.cliente.id = this.clienteSeleccionado.id;
+      this.armarYConfirmarPedido();
+      return;
+    }
+
+    if (this.idUsuario === 0) {
+      Swal.fire({
+        title: "Usuario no encontrado",
+        icon: "error",
+        text: "El usuario no esta registrado, intente de nuevo",
+        showCancelButton: false
+      });
+      return;
+    }
+
+    // Se usa `buscarClientePorIdUsuario` (no `getDataOneCliente(idUsuario)`): aquí solo hace
+    // falta el **clienteId**, y es la misma traducción que ya usan `venta-variante` y el
+    // configurador de ramos para armar un pedido.
+    this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+      error: () => this.errorLeerCliente(),
+      next: (clienteId: any) => {
+        if (!clienteId) {
+          this.pedirCompletarRegistro();
           return;
         }
-        // ⚠️ Se cambió `getDataOneCliente(idUsuario)` por esto: aquí solo hace falta el
-        // **clienteId**, y `buscarClientePorIdUsuario` es justo esa traducción — la misma que ya
-        // usan `venta-variante` y el configurador de ramos para armar un pedido. Antes, además,
-        // la llamada no tenía `error`: si fallaba, el botón de comprar **no hacía absolutamente
-        // nada** y el cliente se quedaba sin saber por qué. En un checkout eso es una venta
-        // perdida en silencio.
-        this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
-          error: () => {
-            Swal.fire({
-              title: 'No pudimos completar tu pedido',
-              icon: 'error',
-              text: 'No logramos leer tus datos de cliente. Revisa "Mis datos" e inténtalo de nuevo.'
-            });
-          },
-          next: (clienteId: any) => {
-            if (clienteId) {
+        // ⚠️ Que exista el vínculo Usuario→Cliente (id truthy) NO es lo mismo que "puede
+        // comprar": al verificar su correo, todo usuario nuevo recibe un Cliente auto-creado
+        // con id real pero nombre/apellido/teléfono vacíos (`datosCompletos=false` -- ver
+        // `Cliente.recalcularDatosCompletos()` en el back). El propio back rechaza el pedido en
+        // ese caso (`PedidoServiceImpl.savePedido`), pero es mejor no dejar avanzar al usuario a
+        // "Generar pedido" para que le salga un error genérico -- se revisa antes.
+        this.clienteServoce.getDataOneCliente(clienteId).subscribe({
+          error: () => this.errorLeerCliente(),
+          next: (res) => {
+            if (res?.data?.datosCompletos) {
               this.pedidosDTO.cliente.id = clienteId;
               this.armarYConfirmarPedido();
             } else {
-              Swal.fire({
-                title: 'Completa tu registro',
-                icon: 'info',
-                text: 'Para comprar necesitamos tus datos de cliente.',
-                showCancelButton: true,
-                confirmButtonText: 'Completar mis datos',
-                cancelButtonText: 'Ahora no'
-              }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+              this.pedirCompletarRegistro();
             }
           }
         });
       }
-    }
+    });
+  }
 
+  private errorLeerCliente(): void {
+    Swal.fire({
+      title: 'No pudimos completar tu pedido',
+      icon: 'error',
+      text: 'No logramos leer tus datos de cliente. Revisa "Mis datos" e inténtalo de nuevo.'
+    });
+  }
+
+  private pedirCompletarRegistro(): void {
+    Swal.fire({
+      title: 'Completa tu registro',
+      icon: 'info',
+      text: 'Para comprar necesitamos tus datos de cliente.',
+      showCancelButton: true,
+      confirmButtonText: 'Completar mis datos',
+      cancelButtonText: 'Ahora no'
+    }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
   }
 
   private armarYConfirmarPedido() {
@@ -249,13 +272,22 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
               });
             }
           },
-          error: () => {
-            Swal.fire({
-              title: "Error",
-              icon: "error",
-              text: "Ocurrió un error al guardar el pedido",
-              showCancelButton: false
-            });
+          error: (err) => {
+            // Red de seguridad: aunque ya se filtra `datosCompletos` antes de llegar aquí, el
+            // back es la fuente de verdad (ej. el cliente pudo perder la verificación de correo
+            // entre el check y el guardado) -- se interpreta su mensaje en vez de mostrar siempre
+            // el genérico, para mandar al usuario al lugar correcto igual que arriba.
+            const msg: string = err?.error?.mensaje ?? err?.error?.message ?? '';
+            if (msg.toLowerCase().includes('completar tus datos')) {
+              this.pedirCompletarRegistro();
+            } else {
+              Swal.fire({
+                title: "Error",
+                icon: "error",
+                text: msg || "Ocurrió un error al guardar el pedido",
+                showCancelButton: false
+              });
+            }
           }
         });
       }

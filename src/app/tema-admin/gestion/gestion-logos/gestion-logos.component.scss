@@ -48,7 +48,7 @@
   text-align: center;
   padding: 32px 16px;
   border: 1.5px dashed var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
 }
 
 .gl-grid {
@@ -60,7 +60,7 @@
 .gl-card {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   overflow: hidden;
   display: flex;
   flex-direction: column;

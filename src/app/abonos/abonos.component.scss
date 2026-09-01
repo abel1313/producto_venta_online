@@ -105,8 +105,8 @@
 
   &--reload     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--abono      { background: var(--app-accent); color: var(--app-accent-ink); }
-  &--cancelar   { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
-  &--transferir { background: rgba(8,145,178,0.1); color: #0891b2; border: 1px solid rgba(8,145,178,0.3); }
+  &--cancelar   { background: var(--pk-danger-soft); color: var(--pk-danger-to); border: 1px solid var(--pk-danger-soft); }
+  &--transferir { background: var(--pk-info-soft); color: var(--pk-info-to); border: 1px solid var(--pk-info-soft); }
   &--detalle    { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--cancel     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--save       { background: var(--app-accent); color: var(--app-accent-ink); min-width: 140px; }
@@ -127,7 +127,7 @@
   transition: box-shadow 0.15s;
 
   &--pagado    { opacity: 0.9; }
-  &--cancelado { opacity: 0.85; border-color: rgba(239,68,68,0.25); }
+  &--cancelado { opacity: 0.85; border-color: var(--pk-danger-soft); }
 
   &__hdr {
     display: flex;
@@ -188,10 +188,10 @@
   // "Apartado" usaba var(--app-accent) y "Pagado" verde: al volverse jade la
   // marca, ambos quedaron verdes y dejaron de distinguirse. El azul quedó libre
   // al salir de la paleta, así que ahora marca el estado "en curso".
-  &--apartado  { background: rgba(245,158,11,0.15); color: #b45309; } // esperando
-  &--fiado     { background: rgba(37,99,235,0.13);  color: #2563eb; } // en curso
-  &--pagado    { background: rgba(34,197,94,0.15);  color: #16a34a; } // éxito
-  &--cancelado { background: rgba(239,68,68,0.12);  color: #dc2626; } // error
+  &--apartado  { background: var(--pk-warning-soft); color: var(--pk-warning-to); } // esperando
+  &--fiado     { background: var(--pk-info-soft);    color: var(--pk-info-to); } // en curso
+  &--pagado    { background: var(--pk-success-soft); color: var(--pk-success-to); } // éxito
+  &--cancelado { background: var(--pk-danger-soft);  color: var(--pk-danger-to); } // error
 }
 
 // ── Montos ────────────────────────────────────────────────────────────
@@ -201,9 +201,9 @@
 
   &__label { font-size: 0.7rem; color: var(--app-text); opacity: 0.55; text-transform: uppercase; letter-spacing: .04em; }
   &__val   { font-size: 0.92rem; font-weight: 700; color: var(--app-text); }
-  &__val--ok    { color: #16a34a; }
-  &__val--saldo { color: #ef4444; }
-  &__val--favor { color: #0891b2; }
+  &__val--ok    { color: var(--pk-success); }
+  &__val--saldo { color: var(--pk-danger-to); }
+  &__val--favor { color: var(--pk-info-to); }
 }
 
 // ── Progreso ──────────────────────────────────────────────────────────
@@ -299,7 +299,7 @@
   z-index: 101;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   width: min(420px, calc(100vw - 2rem));
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
 
@@ -335,8 +335,8 @@
     border-bottom: 1px solid var(--card-border);
   }
 
-  &__ok    { color: #16a34a; }
-  &__saldo { color: #ef4444; }
+  &__ok    { color: var(--pk-success); }
+  &__saldo { color: var(--pk-danger-to); }
 
   &__body {
     padding: 1rem 1.1rem;
@@ -493,7 +493,7 @@
 
 // ── Hint warn ─────────────────────────────────────────────────────────
 .ab-hint--warn {
-  color: #f59e0b;
+  color: var(--pk-warning);
 }
 
 // ── NF-3: Cambio al cliente ────────────────────────────────────────────
@@ -508,31 +508,16 @@
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 0.82rem;
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  border: 1px solid var(--pk-success-soft);
 
   strong { font-size: 1rem; }
 
   &--warn {
-    background: rgba(239, 68, 68, 0.10);
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.25);
-  }
-}
-
-:host-context(body.theme-dark) {
-  .ab-cambio {
-    background: rgba(74, 222, 128, 0.22);
-    color: #86efac;
-    border-color: rgba(74, 222, 128, 0.5);
-    font-weight: 600;
-
-    &--warn {
-      background: rgba(252, 165, 165, 0.2);
-      color: #fca5a5;
-      border-color: rgba(252, 165, 165, 0.5);
-    }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border-color: var(--pk-danger-soft);
   }
 }
 
@@ -579,12 +564,10 @@
 }
 
 // ── Dark mode ────────────────────────────────────────────────────────
+// .ab-badge--* y .ab-monto__val--ok ya no se sobreescriben acá -- los tokens --pk-* ya traen
+// su propia variante oscura.
 :host-context(body.theme-dark) {
   .ab-input { color-scheme: dark; color: var(--app-text, #f1f5f9); }
-  .ab-badge--apartado { color: #fbbf24; }
-  .ab-badge--fiado    { color: #60a5fa; }
-  .ab-badge--pagado   { color: #4ade80; }
-  .ab-monto__val--ok  { color: #4ade80; }
 }
 
 :host-context(body.theme-light) {

@@ -42,12 +42,12 @@
 .fv-card {
   background: var(--app-surface);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: box-shadow .2s;
-  &:hover { box-shadow: 0 8px 24px rgba(var(--app-accent-rgb),.16); }
+  &:hover { box-shadow: var(--card-shadow-hover); }
 
   &__img-wrap {
     position: relative;
@@ -80,8 +80,8 @@
   &__row { display: flex; align-items: center; justify-content: space-between; }
   &__precio { font-weight: 800; font-size: 1.05rem; color: var(--app-accent); }
   &__stock {
-    font-size: .74rem; font-weight: 600; color: #16a34a;
-    &--cero { color: #ef4444; }
+    font-size: .74rem; font-weight: 600; color: var(--pk-success);
+    &--cero { color: var(--pk-danger-to); }
   }
 
   &__footer {
@@ -107,7 +107,7 @@
   transition: opacity .15s, background .15s, color .15s;
   &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #5F8375); }
   &--add    { background: var(--app-accent); color: var(--app-accent-ink); &:hover:not(:disabled) { opacity: .85; } }
-  &--remove { background: rgba(239,68,68,.1); color: #ef4444; }
+  &--remove { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
   &--primary { background: var(--app-accent); color: var(--app-accent-ink); padding: 9px 22px; }
 }
 

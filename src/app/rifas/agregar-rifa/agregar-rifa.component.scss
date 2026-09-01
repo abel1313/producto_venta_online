@@ -45,7 +45,7 @@
   &--disabled { opacity: 0.5; pointer-events: none; }
 
   // activas keeps semantic green — preserved
-  &--activas { background: #f0fdf4; border: 1px solid #86efac; }
+  &--activas { background: var(--pk-success-soft); border: 1px solid var(--pk-success-soft); }
 
   &__head {
     padding: 16px 20px;
@@ -84,7 +84,7 @@
   align-items: center;
   padding: 10px 20px;
   font-size: 0.88rem;
-  color: #166534;
+  color: var(--pk-success-to);
   border-bottom: 1px solid rgba(134,239,172,0.3);
   &:last-child { border-bottom: none; }
 }
@@ -153,9 +153,9 @@
   }
 
   &--danger {
-    background: linear-gradient(135deg,#991b1b,#dc2626);
+    background: linear-gradient(135deg,var(--pk-danger-to),var(--pk-danger));
     color: #fff;
-    &:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(220,38,38,0.35); }
+    &:hover:not(:disabled) { box-shadow: 0 6px 16px var(--pk-danger-soft); }
   }
 
   &--text { background: transparent; color: var(--app-text-muted); font-weight: 400; padding: 6px 8px; }
@@ -177,9 +177,9 @@
     width: 100%;
     padding: 14px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg,#166534,#22c55e);
+    background: linear-gradient(135deg,var(--pk-success-to),var(--pk-success));
     color: #fff;
-    box-shadow: 0 6px 20px rgba(34,197,94,0.35);
+    box-shadow: 0 6px 20px var(--pk-success-soft);
     &:hover:not(:disabled) { transform: translateY(-2px); }
   }
 
@@ -325,8 +325,8 @@
   padding: 2px 8px;
   border-radius: 10px;
   width: fit-content;
-  background: rgba(239, 68, 68, 0.12); color: #991b1b;
-  &--on { background: rgba(22, 101, 52, 0.12); color: #166534; }
+  background: var(--pk-danger-soft); color: var(--pk-danger-to);
+  &--on { background: var(--pk-success-soft); color: var(--pk-success-to); }
 }
 
 .rf-form-producto {
@@ -370,24 +370,24 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #ef4444;
+  color: var(--pk-danger-to);
   font-size: 0.85rem;
-  &:hover { color: #991b1b; }
+  &:hover { color: var(--pk-danger-to); }
 }
 
 .rf-empty { font-size: 0.85rem; color: var(--card-text-muted); text-align: center; padding: 12px 0; }
 
 .rf-elegibles {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
+  background: var(--pk-success-soft);
+  border: 1px solid var(--pk-success-soft);
   border-radius: 9px;
   padding: 12px 14px;
-  &__title { font-size: 0.8rem; font-weight: 700; color: #166534; margin: 0 0 8px; }
+  &__title { font-size: 0.8rem; font-weight: 700; color: var(--pk-success-to); margin: 0 0 8px; }
 }
 
 .rf-elegible-row {
   font-size: 0.82rem;
-  color: #166534;
+  color: var(--pk-success-to);
   padding: 3px 0;
   border-bottom: 1px solid rgba(134,239,172,0.3);
   &:last-child { border-bottom: none; }
@@ -435,7 +435,7 @@
   border-radius: 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  &--done    { background: rgba(22, 101, 52, 0.12); color: #166534; }
+  &--done    { background: var(--pk-success-soft); color: var(--pk-success-to); }
   &--current { background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); color: var(--app-accent-ink); }
   &--pending { background: var(--form-section-bg); color: var(--card-text-muted); }
 }
@@ -455,8 +455,8 @@
 
   &--ganador {
     background: rgba(253, 211, 77, 0.12);
-    border-color: rgba(252, 211, 77, 0.4);
-    color: #92400e;
+    border-color: var(--pk-warning-soft);
+    color: var(--pk-warning-to);
   }
 
   &__star { font-size: 0.82rem; }
@@ -494,7 +494,7 @@
     color: var(--card-text);
     border-bottom: 1px solid var(--card-border);
     &:last-child { border-bottom: none; }
-    &--elim { color: #ef4444; text-decoration: line-through; }
+    &--elim { color: var(--pk-danger-to); text-decoration: line-through; }
   }
 
   &__word { font-size: 0.72rem; color: var(--card-text-muted); font-family: monospace; }
@@ -506,7 +506,7 @@
   padding: 12px 16px;
   border-radius: 10px;
   font-size: 0.88rem;
-  &--warn { background: rgba(252, 211, 77, 0.12); border: 1px solid rgba(252, 211, 77, 0.4); color: #92400e; }
+  &--warn { background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft); color: var(--pk-warning-to); }
 }
 
 // ── Transición ─────────────────────────────────────────────────────
@@ -553,8 +553,8 @@
   }
 
   &__prod-titulo { font-size: 0.95rem; font-weight: 700; color: var(--app-text); margin: 0 0 8px; }
-  &__ganador { font-size: 0.88rem; color: #166534; margin: 0 0 4px; }
-  &__descartados { font-size: 0.82rem; color: #ef4444; margin: 0; }
+  &__ganador { font-size: 0.88rem; color: var(--pk-success-to); margin: 0 0 4px; }
+  &__descartados { font-size: 0.82rem; color: var(--pk-danger-to); margin: 0; }
 
   &__actions {
     display: flex;
@@ -664,7 +664,7 @@
 
   &__row { display: flex; justify-content: space-between; align-items: center; }
 
-  &__stock  { font-size: 0.75rem; color: #166534; font-weight: 600; }
+  &__stock  { font-size: 0.75rem; color: var(--pk-success-to); font-weight: 600; }
   &__codigo { font-size: 0.7rem;  color: var(--card-text-muted); font-family: monospace; }
 
   &__clave { font-size: 0.75rem; font-weight: 700; color: var(--app-accent);
@@ -772,15 +772,15 @@
 
 // ── Importar clientes ──────────────────────────────────────────────
 .rf-importar {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
+  background: var(--pk-success-soft);
+  border: 1px solid var(--pk-success-soft);
   border-radius: 10px;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  &__title { font-size: 0.88rem; font-weight: 700; color: #166534; margin: 0; }
+  &__title { font-size: 0.88rem; font-weight: 700; color: var(--pk-success-to); margin: 0; }
 }
 
 .rf-clientes-lista { display: flex; flex-direction: column; gap: 6px; }
@@ -811,9 +811,9 @@
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 700;
-  background: rgba(34, 197, 94, 0.12);
-  color: #166534;
-  border: 1px solid rgba(34, 197, 94, 0.30);
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  border: 1px solid var(--pk-success-soft);
 
   &__hint {
     font-weight: 500;
@@ -865,32 +865,10 @@
     &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
   }
 
-  // Cards con fondo verde fijo → versión oscura del mismo color
-  .rf-card--activas {
-    background: rgba(34, 197, 94, 0.07);
-    border-color: rgba(134, 239, 172, 0.20);
-  }
-  .rf-activa-row {
-    color: #4ade80;
-    border-bottom-color: rgba(134, 239, 172, 0.15);
-  }
-
-  // Sección "Importar clientes del mes" (fondo verde fijo)
-  .rf-importar {
-    background: rgba(34, 197, 94, 0.07);
-    border-color: rgba(134, 239, 172, 0.20);
-    &__title { color: #4ade80; }
-  }
-
-  // Badge "ya guardado"
-  .rf-saved-badge {
-    background: rgba(34, 197, 94, 0.12);
-    color: #4ade80;
-    border-color: rgba(134, 239, 172, 0.25);
-  }
-
-  // Chip "ya registrado en rifa" (verde semántico)
-  .rf-prod-badge--on { background: rgba(34,197,94,0.18); color: #4ade80; }
+  // .rf-card--activas / .rf-activa-row / .rf-importar / .rf-saved-badge / .rf-prod-badge--on
+  // ya no se sobreescriben acá -- ahora usan var(--pk-success-soft/-to) en la regla base, que
+  // ya trae su propia variante oscura (antes tenían un verde fijo que no se veía bien en modo
+  // oscuro, por eso existía este bloque).
 }
 
 .rf-cliente-row {
@@ -899,7 +877,7 @@
   gap: 6px;
   align-items: center;
   padding: 4px 0;
-  border-bottom: 1px solid #dcfce7;
+  border-bottom: 1px solid var(--pk-success-soft);
 
   &--vacio { background: rgba(255, 251, 235, 0.8); border-radius: 6px; padding: 4px 8px; }
 }
@@ -907,7 +885,7 @@
 .rf-badge-sin-registro {
   font-size: 0.7rem;
   background: rgba(253, 243, 199, 0.8);
-  color: #92400e;
+  color: var(--pk-warning-to);
   border-radius: 8px;
   padding: 2px 6px;
   white-space: nowrap;
@@ -961,7 +939,7 @@
 }
 
 // ── Sección activas ────────────────────────────────────────────────
-.rf-section-title { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 8px; padding: 12px 20px 0; }
+.rf-section-title { font-size: 0.9rem; font-weight: 700; color: var(--pk-success-to); margin: 0 0 8px; padding: 12px 20px 0; }
 
 .rf-activa-row {
   display: flex;
@@ -974,7 +952,7 @@
 }
 
 .rf-activa-info { display: flex; flex-direction: column; gap: 2px; }
-.rf-activa-id   { font-weight: 700; color: #166534; font-size: 0.9rem; }
+.rf-activa-id   { font-weight: 700; color: var(--pk-success-to); font-size: 0.9rem; }
 .rf-activa-fecha { font-size: 0.78rem; color: var(--card-text-muted); }
 .rf-activa-prog  { font-size: 0.75rem; color: var(--app-accent); font-weight: 600; }
 
@@ -1057,23 +1035,23 @@
   font-weight: 700;
 }
 
-.rf-resumen__ganador { font-size: 0.88rem; color: #166534; margin: 0; }
+.rf-resumen__ganador { font-size: 0.88rem; color: var(--pk-success-to); margin: 0; }
 
 // ── Badge descartado ───────────────────────────────────────────────
-.rf-tabla__badge--off { background: rgba(239, 68, 68, 0.12); color: #991b1b; }
+.rf-tabla__badge--off { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
 .rf-text-tachado { text-decoration: line-through; color: var(--card-text-muted); }
 
 // ── Descartados colapsable ─────────────────────────────────────────
 .rf-descartados {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 9px;
   padding: 8px 12px;
 
   &__title {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #991b1b;
+    color: var(--pk-danger-to);
     cursor: pointer;
     list-style: none;
     &::marker { display: none; }
@@ -1084,7 +1062,7 @@
 .rf-seleccion-modo {
   background: var(--form-section-bg);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -1100,7 +1078,7 @@
 }
 
 // ── Required ───────────────────────────────────────────────────────
-.rf-required { color: #ef4444; margin-left: 2px; }
+.rf-required { color: var(--pk-danger-to); margin-left: 2px; }
 
 // ── Form participante ──────────────────────────────────────────────
 .rf-form-participante { display: flex; flex-direction: column; gap: 10px; }
@@ -1118,9 +1096,9 @@
 }
 
 .rf-badge-real {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  border: 1px solid var(--pk-success-soft);
   border-radius: 20px;
   padding: 2px 10px;
   font-size: 0.78rem;
@@ -1128,27 +1106,17 @@
 }
 
 .rf-badge-prueba {
-  background: rgba(252, 211, 77, 0.18);
-  color: #92400e;
-  border: 1px solid rgba(252, 211, 77, 0.5);
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  border: 1px solid var(--pk-warning-soft);
   border-radius: 20px;
   padding: 2px 10px;
   font-size: 0.78rem;
   font-weight: 600;
 }
 
-:host-context(body.theme-dark) {
-  .rf-badge-real {
-    background: rgba(34, 197, 94, 0.15);
-    color: #4ade80;
-    border-color: rgba(74, 222, 128, 0.25);
-  }
-  .rf-badge-prueba {
-    background: rgba(252, 211, 77, 0.12);
-    color: #fbbf24;
-    border-color: rgba(251, 191, 36, 0.25);
-  }
-}
+// .rf-badge-real / .rf-badge-prueba ya no se sobreescriben en modo oscuro -- las reglas base ya
+// usan var(--pk-success/warning -soft/-to), que traen su propia variante oscura.
 
 // ── Confetti ──────────────────────────────────────────────────────────
 .confetti-container {
@@ -1257,7 +1225,7 @@
   flex-direction: column;
   gap: 0;
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
 }
@@ -1333,7 +1301,7 @@
     padding: 2px 6px;
     border-radius: 4px;
     line-height: 1;
-    &:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+    &:hover { color: var(--pk-danger-to); background: var(--pk-danger-soft); }
   }
 
   // Header del panel activo (expandido)
@@ -1385,7 +1353,7 @@
     justify-content: center;
     z-index: 1;
     transition: background 0.15s;
-    &:hover { background: rgba(239,68,68,0.85); }
+    &:hover { background: var(--pk-danger-soft); }
   }
 
   &__img {
@@ -1454,7 +1422,7 @@
     justify-content: center;
     flex-shrink: 0;
     transition: background 0.15s, color 0.15s;
-    &:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+    &:hover { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
   }
 
   &__body {

@@ -197,7 +197,7 @@
     font-weight: 700;
     color: var(--app-text, #1e293b);
 
-    &--green { color: #16a34a; }
+    &--green { color: var(--pk-success); }
   }
 }
 
@@ -255,7 +255,7 @@
     text-align: right;
     font-variant-numeric: tabular-nums;
 
-    &--green { color: #16a34a; }
+    &--green { color: var(--pk-success); }
   }
 }
 

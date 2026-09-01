@@ -1,5 +1,6 @@
 // ── Variables ────────────────────────────────────────────────────────────────
-$radius:     14px;
+// $radius sale del token compartido --card-radius (Personalización) en vez de un valor fijo.
+$radius:     var(--card-radius, 14px);
 $radius-sm:  8px;
 $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -18,7 +19,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 660px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -99,7 +100,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 
-.ca-req { color: #ef4444; margin-left: 2px; }
+.ca-req { color: var(--pk-danger-to); margin-left: 2px; }
 
 // ── Input wrap ───────────────────────────────────────────────────────────────
 .ca-input-wrap {
@@ -175,7 +176,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
 
   .pi { font-size: 0.75rem; }
 }
@@ -239,11 +240,9 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
+// box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .ca-card {
-    background: var(--card-bg, #1e1e2e);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  }
+  .ca-card { background: var(--card-bg, #1e1e2e); }
 
   .ca-section__label { color: var(--app-accent); }
 

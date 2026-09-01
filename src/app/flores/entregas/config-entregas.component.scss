@@ -30,8 +30,8 @@
     justify-content: space-between;
     gap: 14px;
     flex-wrap: wrap;
-    border-left-color: #dc2626;
-    background: rgba(220, 38, 38, .08);
+    border-left-color: var(--pk-danger-to);
+    background: var(--pk-danger-soft);
   }
 }
 
@@ -46,7 +46,7 @@
 .ce-card {
   background: var(--form-section-bg, var(--app-surface));
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 18px;
   margin-bottom: 14px;
 
@@ -123,7 +123,7 @@
   color: var(--app-text);
   opacity: .7;
 
-  &--warn { opacity: .95; color: #b45309; }
+  &--warn { opacity: .95; color: var(--pk-warning-to); }
 }
 
 .ce-acciones {
@@ -172,7 +172,7 @@
   background: var(--app-accent-soft);
   color: var(--app-accent);
 
-  &--urg  { background: rgba(180, 83, 9, .12); color: #b45309; }
+  &--urg  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
   // "No se puede apurar" es un estado válido y elegido a propósito, no un pendiente por llenar:
   // por eso gris neutro y no rojo.
   &--pend { background: var(--card-border); color: var(--app-text); opacity: .75; }
@@ -188,7 +188,7 @@
 
   &:hover { background: var(--app-accent-soft); }
   &:disabled { opacity: .4; cursor: not-allowed; }
-  &--del:hover { background: rgba(220, 38, 38, .12); }
+  &--del:hover { background: var(--pk-danger-soft); }
 }
 
 .ce-vacio {
@@ -196,12 +196,6 @@
   color: var(--app-text);
   opacity: .6;
   font-size: .86rem;
-}
-
-:host-context(body.theme-dark) {
-  .ce-aviso--error { border-left-color: #f87171; background: rgba(248, 113, 113, .12); }
-  .ce-nota--warn   { color: #fbbf24; }
-  .ce-badge--urg   { background: rgba(251, 191, 36, .14); color: #fbbf24; }
 }
 
 @media (max-width: 575px) {

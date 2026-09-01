@@ -63,8 +63,13 @@ export class UsuarioService extends CrudGenericService<IUsuarioDto> {
   cambiarRol(usuarioId: number, rolId: number) {
     return this.http.put<any>(`${environment.api_Url}/v1/usuarios/${usuarioId}/rol/${rolId}`, {});
   }
-  buscarClientePorIdUsuario(idUsuario: number) {
-    return this.http.get<boolean>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
+  // ⚠️ El nombre del endpoint (y de este método) sugiere que devuelve un boolean, pero el back
+  // (`UsuarioServiceImpl.existeClientePorIdUsuario` → `SELECT u.cliente.id FROM Usuario u...`)
+  // en realidad devuelve el **id real del Cliente** vinculado al usuario, o `null` si no tiene
+  // uno. Se tipaba como `boolean` acá, lo cual llevó a usar el valor como bandera en un lugar del
+  // carrito y como id numérico en otro -- ver `detalle-productos.component.ts#generarPedido()`.
+  buscarClientePorIdUsuario(idUsuario: number): Observable<number | null> {
+    return this.http.get<number | null>(`${environment.api_Url}/v1/usuarios/buscarClientePorIdUsuario/${idUsuario}`);
   }
 
   /**

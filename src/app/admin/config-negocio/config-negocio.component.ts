@@ -88,9 +88,14 @@ export class ConfigNegocioComponent implements OnInit {
       : this.negocioService.abrir();
 
     accion$.subscribe({
+      // ⚠️ Antes esto solo invertía el booleano en memoria, sin volver a preguntarle al
+      // back -- si el scheduler de auto-cierre revertía el cambio segundos después (ver fix en
+      // NegocioService.verificarAutoCierre()), esta pantalla seguía mostrando "abierto"
+      // indefinidamente aunque el resto del sitio ya viera "cerrado" otra vez. Se vuelve a
+      // pedir el estado real en vez de asumirlo.
       next: () => {
-        this.estado!.abierto = !this.estado!.abierto;
         this.toggling = false;
+        this.cargarConfig();
       },
       error: (err) => {
         this.toggling = false;

@@ -333,32 +333,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--card-shadow-hover);
   }
 
-  // Estados — cambian el acento superior y degradado del header. Colores desde
-  // los tokens semánticos compartidos (styles.scss --pk-success/warning/danger),
-  // no hardcodeados acá -- mismo verde/naranja/rojo que usa el resto de la app.
-  &.estado-entregado {
-    border-top-color: var(--pk-success);
-    .card-head { background: linear-gradient(135deg, var(--pk-success), var(--pk-success-to)); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, var(--pk-success-soft), rgba(var(--app-accent-rgb),0.12)); border-color: var(--pk-success-soft); }
-    .total-amount { color: var(--pk-success-to); }
-  }
-
-  &.estado-pendiente {
-    border-top-color: var(--pk-warning);
-    .card-head { background: linear-gradient(135deg, var(--pk-warning), var(--pk-warning-to)); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, var(--pk-warning-soft), rgba(var(--app-accent-rgb),0.12)); border-color: var(--pk-warning-soft); }
-    .total-amount { color: var(--pk-warning-to); }
-  }
-
-  &.estado-cancelado {
-    border-top-color: var(--pk-danger);
-    .card-head { background: linear-gradient(135deg, var(--pk-danger), var(--pk-danger-to)); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, var(--pk-danger-soft), rgba(var(--app-accent-rgb),0.12)); border-color: var(--pk-danger-soft); }
-    .total-amount { color: var(--pk-danger-to); }
-  }
+  // ⚠️ Antes cada estado (entregado/pendiente/cancelado) repintaba el header entero, el strip
+  // de total y su color -- resultado: cards del mismo listado con "carcasa" de colores
+  // distintos (una amarilla, otra verde, otra blanca), en vez de verse todas iguales como el
+  // resto de las cards de la app. El header/strip/borde ahora son SIEMPRE los mismos (ver
+  // .card-head/.total-strip/.total-amount base, unos renglones abajo) -- el estado se sigue
+  // viendo, pero solo en el badge de .estado-badge, con los tokens semánticos compartidos.
+  &.estado-entregado .estado-badge { background: var(--pk-success); }
+  &.estado-pendiente .estado-badge { background: var(--pk-warning); }
+  &.estado-cancelado .estado-badge { background: var(--pk-danger); }
 }
 
 // ── Cabecera ────────────────────────────────────────────────────────────────

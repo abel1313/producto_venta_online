@@ -44,6 +44,8 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   negocioCerrado = false;
   whatsappUrl:   string | null = null;
   facebookUrl:   string | null = null;
+  instagramUrl:  string | null = null;
+  tiktokUrl:     string | null = null;
 
   private countdownInterval: any = null;
   private pendingScroll = false;
@@ -63,6 +65,8 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.negocioCerrado = !estado.abierto;
         this.whatsappUrl    = estado.whatsappUrl;
         this.facebookUrl    = estado.facebookUrl;
+        this.instagramUrl   = estado.instagramUrl;
+        this.tiktokUrl      = estado.tiktokUrl;
       },
       error: () => {}
     });

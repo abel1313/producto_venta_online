@@ -401,7 +401,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__img-placeholder { font-size: 3.5rem; color: var(--app-text-muted); }
 
-  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
+  // --card-header-bg, mismo token que el resto de las cards de la app
   // (design-system.scss .pk-card__header) -- antes era un navy fijo sin relación
   // con Personalización.
   &__header {
@@ -411,7 +411,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
   }
 
   &__header-content { flex: 1; min-width: 0; }
@@ -457,6 +457,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-wrap: wrap;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
   }
 }
 

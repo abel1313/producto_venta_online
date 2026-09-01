@@ -244,16 +244,17 @@
   border-radius: var(--card-radius, 14px);
   overflow: hidden;
 
-  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
-  // (design-system.scss .pk-card__header) -- antes era un header blanco sin
-  // relación con Personalización, distinto al resto de las cards.
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card") -- antes era un header blanco sin relación
+  // con Personalización.
   &__hdr {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     padding: 14px 16px 12px;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
   }
 
   &__titulo {
@@ -294,6 +295,7 @@
     gap: 8px;
     padding: 10px 16px;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
   }
 }
 

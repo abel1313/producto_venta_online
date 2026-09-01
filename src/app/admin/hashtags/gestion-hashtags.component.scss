@@ -59,16 +59,17 @@
     p { margin: 0; font-size: .88rem; color: var(--pk-danger-to); }
   }
 
-  // Mismo degradado --brand-2/--brand-1 que el resto de las cards de la app
-  // (design-system.scss .pk-card__header), editable desde Personalización.
-  // Márgenes negativos hasta el borde de .gh-card en vez de tocar el HTML.
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card"). Márgenes negativos hasta el borde de
+  // .gh-card en vez de tocar el HTML.
   &__head {
     display: flex;
     align-items: baseline;
     gap: 10px;
     margin: -18px -20px 14px;
     padding: 14px 20px 12px;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
 
     strong { font-size: .98rem; color: #fff; }
     small  { font-size: .78rem; color: rgba(255,255,255,0.75); }

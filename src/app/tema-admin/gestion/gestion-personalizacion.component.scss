@@ -418,11 +418,11 @@
 }
 
 // La vista previa refleja cómo se ven las cards REALES de la app (pedidos,
-// productos, variantes...): header con el degradado de marca --brand-2/--brand-1,
-// body y footer con --card-body-bg (alias real de --card-bg). Antes usaba
-// --card-header-bg/--card-footer-bg, que no controlaban ninguna card real de la
-// app -- solo esta vista previa -- así que editarlos parecía funcionar pero no
-// cambiaba nada fuera de esta pantalla. Se quitaron del catálogo (ver migración).
+// productos, variantes...): cada bloque (header/body/footer) tiene su PROPIO
+// color editable en el grupo "Card" de Personalización, independiente del
+// color de marca (pedido 2026-09-01: "las card tienen que tener la forma de
+// cambiar el color del header body y footer y eso lo tomaría para todas las
+// card").
 .pv-card {
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius, 14px);
@@ -431,7 +431,7 @@
   font-size: .84rem;
 
   &__header {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
     padding: 10px 14px;
     font-weight: 700;
     color: #fff;
@@ -444,7 +444,7 @@
   }
 
   &__footer {
-    background: var(--card-body-bg);
+    background: var(--card-footer-bg);
     padding: 10px 14px;
     color: var(--app-text-muted);
   }

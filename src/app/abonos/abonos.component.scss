@@ -130,11 +130,12 @@
   &--pagado    { opacity: 0.9; }
   &--cancelado { opacity: 0.85; border-color: var(--pk-danger-soft); }
 
-  // Header con el mismo degradado --brand-2/--brand-1 que el resto de las cards de
-  // la app (design-system.scss .pk-card__header), editable desde Personalización.
-  // Se saca con márgenes negativos hasta el borde de .ab-card (que ya trae su propio
-  // padding) en vez de tocar el HTML -- así el resto del contenido (montos, progreso,
-  // historial) conserva su padding normal sin tener que envolverlo en un __body nuevo.
+  // Header con --card-header-bg, mismo token que el resto de las cards de la
+  // app (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card"). Se saca con márgenes negativos hasta el
+  // borde de .ab-card (que ya trae su propio padding) en vez de tocar el HTML
+  // -- así el resto del contenido (montos, progreso, historial) conserva su
+  // padding normal sin tener que envolverlo en un __body nuevo.
   &__hdr {
     display: flex;
     align-items: flex-start;
@@ -143,7 +144,7 @@
     flex-wrap: wrap;
     margin: -1rem -1.1rem 0.75rem;
     padding: 14px 17.6px 12px;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--card-header-bg);
   }
 
   &__info {

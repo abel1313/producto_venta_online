@@ -3,11 +3,13 @@ import { RouterModule, Routes } from '@angular/router';
 import { MisDatosComponent } from './mis-datos/mis-datos.component';
 import { ClientesAddComponent } from './clientes-add/clientes-add.component';
 import { ClientesBuscarComponent } from './clientes-buscar/clientes-buscar.component';
+import { ClientesMostrarComponent } from './clientes-mostrar/clientes-mostrar.component';
 import { CambiarPasswordComponent } from './cambiar-password/cambiar-password.component';
 import { MiPerfilComponent } from './mi-perfil/mi-perfil.component';
 import { AgregarCompraComponent } from './agregar-compra/agregar-compra.component';
 import { AuthGuard } from '../auth.guard';
 import { PantallaGuard } from '../guard/pantalla.guard';
+import { AdminGuardGuard } from '../guard/admin-guard.guard';
 
 // AdminGuardGuard se quitó de "buscar" -- mismo hallazgo que en producto-routing.module.ts
 // (2026-08-27), pero este módulo mezcla rutas de cliente (agregar, mis-datos, etc., que se
@@ -15,6 +17,9 @@ import { PantallaGuard } from '../guard/pantalla.guard';
 // que no se le pudo poner PantallaGuard al módulo completo como a los demás. "buscar" usa
 // PantallaGuard directo, que ahora arma la ruta completa "clientes/buscar" (ver comentario en
 // pantalla.guard.ts) y coincide con el Submenu.ruta sembrado en migration_menu_submenu.sql.
+// "mostrar/:id" (ver/editar cliente completo) se queda con AdminGuardGuard, no PantallaGuard --
+// mismo caso que "usuarios/update": se llega por un botón desde "buscar", no tiene fila propia
+// en el catálogo submenu, así que PantallaGuard bloquearía a todos, incluido ROLE_ADMIN.
 const routes: Routes = [
   { path: 'agregar',           component: ClientesAddComponent,      canActivate: [AuthGuard] },
   { path: 'mis-datos',         component: MisDatosComponent,         canActivate: [AuthGuard] },
@@ -22,6 +27,7 @@ const routes: Routes = [
   { path: 'mi-perfil',         component: MiPerfilComponent,         canActivate: [AuthGuard] },
   { path: 'agregar-compra',    component: AgregarCompraComponent,    canActivate: [AuthGuard] },
   { path: 'buscar',            component: ClientesBuscarComponent,   canActivate: [AuthGuard, PantallaGuard] },
+  { path: 'mostrar/:id',       component: ClientesMostrarComponent,  canActivate: [AuthGuard, AdminGuardGuard] },
   { path: '', redirectTo: 'agregar', pathMatch: 'full' }
 ];
 

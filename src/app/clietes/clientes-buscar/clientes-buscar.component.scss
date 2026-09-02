@@ -131,6 +131,12 @@
   transition: opacity .2s;
   &:hover { opacity: .8; }
 
+  &--ver {
+    background: rgba(var(--app-accent-rgb), 0.1);
+    color: var(--app-accent);
+    border: 1px solid rgba(var(--app-accent-rgb), 0.35);
+  }
+
   &--reset {
     background: var(--pk-danger-soft);
     color: var(--pk-danger-to);

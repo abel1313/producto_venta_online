@@ -49,6 +49,11 @@
       </div>
 
       <div class="cb-card__actions">
+        <button class="cb-btn cb-btn--ver"
+                title="Ver/editar información completa del cliente"
+                [routerLink]="['/clientes/mostrar', c.id]">
+          👁️ Ver/Editar
+        </button>
         <button *ngIf="c.correoVerificado !== true"
                 class="cb-btn cb-btn--verify"
                 title="Verificar correo del cliente"

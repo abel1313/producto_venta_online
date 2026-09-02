@@ -215,9 +215,10 @@ $primary-d: var(--brand-1);
 
 .vf-label {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--app-text-muted);
   letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .vf-input {

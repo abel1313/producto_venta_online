@@ -1,1 +1,270 @@
-<p>clientes-mostrar works!</p>
+<app-boton-volver fallback="/clientes/buscar" etiqueta="Volver a clientes"></app-boton-volver>
+
+<div class="md-page">
+  <div class="md-loading" *ngIf="cargando">Cargando…</div>
+
+  <div class="md-card" *ngIf="!cargando && datosCliente">
+
+    <!-- Header -->
+    <div class="md-card__header">
+      <div class="md-header-icon">
+        <i class="pi pi-user-edit"></i>
+      </div>
+      <div>
+        <h2 class="md-title">Editar cliente</h2>
+        <p class="md-subtitle">
+          Información personal y direcciones de entrega
+          <ng-container *ngIf="username">— usuario <strong>{{ username }}</strong></ng-container>
+        </p>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <form class="md-form" [formGroup]="formDatosCliente" (ngSubmit)="guardarCliente()">
+
+      <!-- ── Sección: Datos personales ─────────────────────────────── -->
+      <div class="md-section">
+        <span class="md-section__label">Datos personales</span>
+
+        <div class="md-row">
+          <!-- Nombre -->
+          <div class="md-field">
+            <label class="md-label" for="cm-nombre">Nombre <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="cm-nombre" class="md-input" type="text"
+                     formControlName="nombrePersona" placeholder="Nombre">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('nombrePersona')?.invalid && formDatosCliente.get('nombrePersona')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
+
+          <!-- Segundo nombre -->
+          <div class="md-field">
+            <label class="md-label" for="cm-segundo">Segundo nombre</label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="cm-segundo" class="md-input" type="text"
+                     formControlName="segundoNombre" placeholder="Opcional">
+            </div>
+          </div>
+        </div>
+
+        <div class="md-row">
+          <!-- Apellido paterno -->
+          <div class="md-field">
+            <label class="md-label" for="cm-paterno">Apellido paterno <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="cm-paterno" class="md-input" type="text"
+                     formControlName="apeidoPaterno" placeholder="Apellido paterno">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched">
+              <i class="pi pi-exclamation-circle"></i> Campo requerido
+            </span>
+          </div>
+
+          <!-- Apellido materno -->
+          <div class="md-field">
+            <label class="md-label" for="cm-materno">Apellido materno</label>
+            <div class="md-input-wrap">
+              <i class="pi pi-user md-input-icon"></i>
+              <input id="cm-materno" class="md-input" type="text"
+                     formControlName="apeidoMaterno" placeholder="Apellido materno">
+            </div>
+          </div>
+        </div>
+
+        <div class="md-row">
+          <!-- Fecha de nacimiento -->
+          <div class="md-field">
+            <label class="md-label" for="cm-fecha">Fecha de nacimiento</label>
+            <div class="md-input-wrap">
+              <i class="pi pi-calendar md-input-icon"></i>
+              <input id="cm-fecha" class="md-input md-input--date" type="date"
+                     formControlName="fechaNacimiento">
+            </div>
+          </div>
+
+          <!-- Sexo -->
+          <div class="md-field">
+            <label class="md-label" for="cm-sexo">Sexo</label>
+            <div class="md-input-wrap md-input-wrap--select">
+              <i class="pi pi-users md-input-icon"></i>
+              <select id="cm-sexo" class="md-input md-select" formControlName="sexo">
+                <option value="" disabled>Selecciona…</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+                <option value="Otro">Otro</option>
+              </select>
+              <i class="pi pi-chevron-down md-select-arrow"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="md-row">
+          <!-- Correo -->
+          <div class="md-field">
+            <label class="md-label" for="cm-correo">
+              Correo electrónico <span class="md-req">*</span>
+              <span *ngIf="correoVerificado === true"  class="md-badge md-badge--ok">✅ Verificado</span>
+              <span *ngIf="correoVerificado === false" class="md-badge md-badge--warn">⚠️ Sin verificar</span>
+            </label>
+            <div class="md-input-wrap">
+              <i class="pi pi-envelope md-input-icon"></i>
+              <input id="cm-correo" class="md-input" type="email"
+                     formControlName="correoElectronico" placeholder="correo@ejemplo.com">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('correoElectronico')?.errors?.['email']">Formato de correo inválido</ng-container>
+            </span>
+            <button *ngIf="correoVerificado !== true"
+                    type="button" class="md-btn-verify"
+                    (click)="verificarCorreo()">
+              ✉️ Verificar correo
+            </button>
+          </div>
+
+          <!-- Teléfono -->
+          <div class="md-field">
+            <label class="md-label" for="cm-tel">Número de contacto <span class="md-req">*</span></label>
+            <div class="md-input-wrap">
+              <i class="pi pi-phone md-input-icon"></i>
+              <input id="cm-tel" class="md-input" type="tel"
+                     formControlName="numeroTelefonico" placeholder="10 dígitos">
+            </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['pattern']">Ingresa un número de 10 dígitos</ng-container>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Sección: Direcciones ──────────────────────────────────── -->
+      <div class="md-section" formArrayName="listDirecciones">
+        <div class="md-section-hdr">
+          <span class="md-section__label">Direcciones de entrega</span>
+          <button type="button" class="md-btn-add" (click)="agregarDireccion()">
+            <i class="pi pi-plus"></i> Agregar
+          </button>
+        </div>
+
+        <div *ngFor="let dir of listDirecciones.controls; let i = index"
+             [formGroupName]="i" class="md-address-card">
+
+          <div class="md-address-hdr">
+            <span class="md-address-num">
+              <i class="pi pi-map-marker"></i> Dirección {{ i + 1 }}
+            </span>
+            <button type="button" class="md-btn-delete" *ngIf="listDirecciones.length > 1"
+                    (click)="eliminarDireccion(i)">
+              <i class="pi pi-trash"></i> Eliminar
+            </button>
+          </div>
+
+          <div class="md-row">
+            <!-- Calle -->
+            <div class="md-field">
+              <label class="md-label">Calle <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-road md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="calle"
+                       placeholder="Ej: Av. Hidalgo 123">
+              </div>
+              <span class="md-error" *ngIf="dir.get('calle')?.invalid && dir.get('calle')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
+
+            <!-- Colonia -->
+            <div class="md-field">
+              <label class="md-label">Colonia <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-building md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="colonia"
+                       placeholder="Colonia">
+              </div>
+              <span class="md-error" *ngIf="dir.get('colonia')?.invalid && dir.get('colonia')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
+          </div>
+
+          <div class="md-row">
+            <!-- Código postal -->
+            <div class="md-field">
+              <label class="md-label">Código postal <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-hashtag md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="codigoPostal"
+                       maxlength="5" placeholder="00000" (blur)="getCodigoPostal($event, i)">
+              </div>
+              <span class="md-error"
+                    *ngIf="dir.get('codigoPostal')?.errors?.['required'] && dir.get('codigoPostal')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+              <span class="md-error"
+                    *ngIf="dir.get('codigoPostal')?.errors?.['pattern'] && dir.get('codigoPostal')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Ingresa 5 dígitos
+              </span>
+            </div>
+
+            <!-- Municipio -->
+            <div class="md-field">
+              <label class="md-label">Municipio <span class="md-req">*</span></label>
+              <div class="md-input-wrap">
+                <i class="pi pi-map md-input-icon"></i>
+                <input class="md-input" type="text" formControlName="municipio"
+                       placeholder="Se llena automáticamente">
+              </div>
+              <span class="md-error"
+                    *ngIf="dir.get('municipio')?.invalid && dir.get('municipio')?.touched">
+                <i class="pi pi-exclamation-circle"></i> Campo requerido
+              </span>
+            </div>
+          </div>
+
+          <!-- Referencias -->
+          <div class="md-row md-row--single">
+            <div class="md-field">
+              <label class="md-label">Referencias</label>
+              <div class="md-input-wrap">
+                <i class="pi pi-info-circle md-input-icon md-input-icon--top"></i>
+                <textarea class="md-input md-textarea" formControlName="referencias" rows="2"
+                          placeholder="Entre calles, punto de referencia, instrucciones de entrega…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toggle predefinida -->
+          <div class="md-predefinida">
+            <label class="md-toggle-wrap">
+              <input type="checkbox" class="md-toggle-input" formControlName="predefinida">
+              <span class="md-toggle-slider"></span>
+              <span class="md-toggle-text">Dirección predefinida</span>
+            </label>
+          </div>
+
+        </div><!-- /address-card -->
+      </div><!-- /formArrayName -->
+
+      <!-- ── Footer ────────────────────────────────────────────────── -->
+      <div class="md-footer">
+        <button type="submit" class="md-btn md-btn--save"
+                [disabled]="!formDatosCliente.valid || guardando">
+          <i class="pi pi-save"></i> {{ guardando ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

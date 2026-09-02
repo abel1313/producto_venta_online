@@ -1,17 +1,14 @@
 // Diseños predefinidos para la pantalla de Personalización -- 3 paletas completas (Marca,
-// Página, Card, Tablas, Menú lateral, Formularios), cada una con su par claro ☀️ / oscuro 🌙, que
-// el dueño puede aplicar de un clic sin editar variable por variable. Colores de Marca/Página/
-// Card/Tablas en modo claro tomados 1:1 del mockup comparativo que se le mostró (3 direcciones de
-// estilo sobre un card de pedido real: navbar, botones, header/body/footer).
+// Página, Card, Tablas, Menú lateral, Formularios), cada una con su par claro ☀️ / oscuro 🌙
+// COMPLETO y propio (no un esquema oscuro compartido) -- ambos tomados 1:1 del canvas de
+// comparación día/noche que se le mostró (mismo card de pedido real: navbar, botones,
+// header/body/footer, en las 6 variantes).
 //
-// Criterio para el modo oscuro de cada preset (mismo que ya se usa en el resto de la app):
-// - Marca (brand-1/2/3) se invierte a blanco/gris claro en oscuro -- así los botones normales
-//   siguen resaltando sobre fondo negro, igual que en el resto de la app hoy.
-// - Página/Tablas/Menú lateral/Formularios usan el mismo esquema neutro casi-negro que ya existe
-//   por defecto en oscuro (probado en toda la app) -- no cambia de un preset a otro.
-// - El header de las cards SÍ mantiene el color de marca propio de cada preset, fijo de día y de
-//   noche (mismo criterio que ya se aplicó esta sesión a card-header-bg y al chatbot) -- es lo que
-//   hace reconocible cada diseño también en oscuro.
+// A diferencia de la primera versión de este archivo, aquí --brand-1/2/3 SÍ llevan un color de
+// noche propio por diseño (no se invierten a blanco/gris) -- eso es lo que hace que botones y
+// acentos de TODA la app (no solo el header de las cards) tomen el color del diseño elegido
+// también en modo oscuro. app-accent-ink cambia junto con brand-1: como el acento ya no es
+// blanco, el texto sobre el acento pasa a ser oscuro para mantener contraste.
 export interface ValorPreset {
   claro: string;
   oscuro: string;
@@ -24,45 +21,14 @@ export interface PresetDiseno {
   valores: Record<string, ValorPreset>;
 }
 
-// Bloque común de modo oscuro (Página/Tablas/Menú lateral/Formularios/Marca) -- igual en los 3
-// presets, es el mismo esquema neutro que ya usa hoy el modo oscuro por defecto.
-const OSCURO_NEUTRO_BASE = {
-  'brand-1': '#FFFFFF',
-  'brand-2': '#C7C7CC',
-  'brand-3': '#8E8E93',
-  'app-accent-ink': '#000000',
-  'app-bg': '#000000',
-  'app-text': '#E9E9EC',
-  'app-text-muted': '#9A9AA0',
-  'app-border': '#2A2A2E',
-  'card-body-bg': '#0C0C0C',
-  'card-footer-bg': '#0C0C0C',
-  'card-border': '#2A2A2E',
-  'table-header-bg': '#151517',
-  'table-header-text': '#9A9AA0',
-  'table-row-hover': '#151517',
-  'table-border': '#2A2A2E',
-  'form-section-bg': '#151517',
-  'input-bg': 'rgba(255,255,255,0.05)',
-  'sb-header-bg': 'rgba(0,0,0,0.92)',
-  'sb-body-bg': 'rgba(0,0,0,0.92)',
-  'sb-footer-bg': 'rgba(0,0,0,0.92)',
-  'sb-text': '#E9E9EC',
-  'sb-border': 'rgba(255,255,255,0.08)',
-} as const;
-
 function construirValores(
   claro: Record<string, string>,
-  headerOscuro: string
+  oscuro: Record<string, string>
 ): Record<string, ValorPreset> {
   const valores: Record<string, ValorPreset> = {};
   for (const clave of Object.keys(claro)) {
-    const oscuroBase = (OSCURO_NEUTRO_BASE as Record<string, string>)[clave];
-    valores[clave] = { claro: claro[clave], oscuro: oscuroBase ?? claro[clave] };
+    valores[clave] = { claro: claro[clave], oscuro: oscuro[clave] ?? claro[clave] };
   }
-  // El header de card mantiene el color de marca del preset también en oscuro (fijo, no invierte).
-  valores['card-header-bg'] = { claro: claro['card-header-bg'], oscuro: headerOscuro };
-  valores['card-header-text'] = { claro: claro['card-header-text'], oscuro: '#FFFFFF' };
   return valores;
 }
 
@@ -98,7 +64,32 @@ export const PRESETS_DISENO: PresetDiseno[] = [
         'sb-text': '#152018',
         'sb-border': '#E4DCC8',
       },
-      '#0B4D3A'
+      {
+        'brand-1': '#22C55E',
+        'brand-2': '#16A34A',
+        'brand-3': '#14532D',
+        'app-accent-ink': '#06210F',
+        'app-bg': '#0A130F',
+        'app-text': '#E8F5EE',
+        'app-text-muted': '#7C9C8A',
+        'app-border': '#1B2E24',
+        'card-header-bg': '#0B4D3A',
+        'card-header-text': '#FFFFFF',
+        'card-body-bg': '#0F1A15',
+        'card-footer-bg': '#0F1A15',
+        'card-border': '#1B2E24',
+        'table-header-bg': '#152018',
+        'table-header-text': '#7C9C8A',
+        'table-row-hover': '#152018',
+        'table-border': '#1B2E24',
+        'form-section-bg': '#152018',
+        'input-bg': 'rgba(255,255,255,0.05)',
+        'sb-header-bg': 'rgba(10,19,15,0.92)',
+        'sb-body-bg': 'rgba(10,19,15,0.92)',
+        'sb-footer-bg': 'rgba(10,19,15,0.92)',
+        'sb-text': '#E8F5EE',
+        'sb-border': 'rgba(255,255,255,0.08)',
+      }
     ),
   },
   {
@@ -132,7 +123,32 @@ export const PRESETS_DISENO: PresetDiseno[] = [
         'sb-text': '#2B2620',
         'sb-border': '#DDD1BC',
       },
-      '#B5654A'
+      {
+        'brand-1': '#E08A5D',
+        'brand-2': '#C46B42',
+        'brand-3': '#9A5A3C',
+        'app-accent-ink': '#2B1608',
+        'app-bg': '#140F0B',
+        'app-text': '#F2E9DE',
+        'app-text-muted': '#A6907E',
+        'app-border': '#2E241C',
+        'card-header-bg': '#B5654A',
+        'card-header-text': '#FFFFFF',
+        'card-body-bg': '#1C1512',
+        'card-footer-bg': '#1C1512',
+        'card-border': '#2E241C',
+        'table-header-bg': '#221A15',
+        'table-header-text': '#A6907E',
+        'table-row-hover': '#221A15',
+        'table-border': '#2E241C',
+        'form-section-bg': '#221A15',
+        'input-bg': 'rgba(255,255,255,0.05)',
+        'sb-header-bg': 'rgba(20,15,11,0.92)',
+        'sb-body-bg': 'rgba(20,15,11,0.92)',
+        'sb-footer-bg': 'rgba(20,15,11,0.92)',
+        'sb-text': '#F2E9DE',
+        'sb-border': 'rgba(255,255,255,0.08)',
+      }
     ),
   },
   {
@@ -166,7 +182,32 @@ export const PRESETS_DISENO: PresetDiseno[] = [
         'sb-text': '#152422',
         'sb-border': '#E2E2DA',
       },
-      '#0F5C56'
+      {
+        'brand-1': '#2DD4BF',
+        'brand-2': '#0F766E',
+        'brand-3': '#0C4A45',
+        'app-accent-ink': '#062626',
+        'app-bg': '#071414',
+        'app-text': '#E7F5F3',
+        'app-text-muted': '#7DA39F',
+        'app-border': '#163333',
+        'card-header-bg': '#0F5C56',
+        'card-header-text': '#FFFFFF',
+        'card-body-bg': '#0D1F1F',
+        'card-footer-bg': '#0D1F1F',
+        'card-border': '#163333',
+        'table-header-bg': '#11201F',
+        'table-header-text': '#7DA39F',
+        'table-row-hover': '#11201F',
+        'table-border': '#163333',
+        'form-section-bg': '#11201F',
+        'input-bg': 'rgba(255,255,255,0.05)',
+        'sb-header-bg': 'rgba(7,20,20,0.92)',
+        'sb-body-bg': 'rgba(7,20,20,0.92)',
+        'sb-footer-bg': 'rgba(7,20,20,0.92)',
+        'sb-text': '#E7F5F3',
+        'sb-border': 'rgba(255,255,255,0.08)',
+      }
     ),
   },
 ];

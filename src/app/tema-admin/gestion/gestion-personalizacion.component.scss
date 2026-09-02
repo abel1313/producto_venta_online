@@ -93,6 +93,10 @@
     width: 26px; height: 26px; border-radius: 8px;
     border: 1px solid rgba(0,0,0,0.08);
     flex-shrink: 0;
+
+    // El 3er swatch muestra el fondo de página en oscuro (casi negro) -- con el borde tenue de
+    // arriba se pierde contra fondos claros de la tarjeta, así que lleva uno más visible.
+    &--dark { border-color: rgba(128,128,128,0.35); }
   }
 
   &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }

@@ -59,6 +59,48 @@
   }
 }
 
+// ── Diseños predefinidos ─────────────────────────────────────────────
+.pz-presets {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+
+  &__title { font-size: 1rem; font-weight: 800; color: var(--app-text); margin: 0 0 4px; }
+  &__sub   { font-size: .8rem; color: var(--app-text-muted); margin: 0 0 14px; line-height: 1.5; }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+}
+
+.pz-preset {
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow .2s, border-color .2s;
+
+  &:hover { box-shadow: var(--card-shadow-hover); border-color: var(--app-accent); }
+
+  &__swatches { display: flex; gap: 6px; }
+  &__swatch {
+    width: 26px; height: 26px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    flex-shrink: 0;
+  }
+
+  &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }
+  &__desc   { font-size: .76rem; color: var(--app-text-muted); line-height: 1.4; flex: 1; }
+
+  .pz-btn { margin-top: 6px; width: 100%; justify-content: center; }
+}
+
 .pz-loading {
   color: var(--app-text-muted);
   font-size: .9rem;

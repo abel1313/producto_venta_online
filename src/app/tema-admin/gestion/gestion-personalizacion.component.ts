@@ -179,11 +179,14 @@ export class GestionPersonalizacionComponent implements OnInit {
     });
   }
 
-  /** Preview instantáneo del preset al pasar el mouse/enfocar su tarjeta -- antes de confirmar. */
+  /** Preview instantáneo del preset al pasar el mouse/enfocar su tarjeta -- antes de confirmar.
+   * Previsualiza el par que corresponde al modo en el que estás viendo la pantalla ahora mismo
+   * (TemaService ya decide claro/oscuro según la hora al aplicar). */
   previsualizarPreset(preset: PresetDiseno): void {
-    const preview = this.variables.map(v =>
-      preset.valores[v.clave] !== undefined ? { ...v, valorClaro: preset.valores[v.clave] } : v
-    );
+    const preview = this.variables.map(v => {
+      const par = preset.valores[v.clave];
+      return par !== undefined ? { ...v, valorClaro: par.claro, valorOscuro: par.oscuro } : v;
+    });
     this.svc.previsualizar(preview);
   }
 
@@ -193,12 +196,12 @@ export class GestionPersonalizacionComponent implements OnInit {
   }
 
   /** Aplica un diseño predefinido: actualiza en un solo paso todas las variables que el preset
-   * trae, solo su valor claro -- el oscuro no se toca. Solo afecta variables que YA existen en el
-   * catálogo (si el dueño borró alguna, esa se ignora en vez de recrearla). */
+   * trae, su valor claro Y su valor oscuro. Solo afecta variables que YA existen en el catálogo
+   * (si el dueño borró alguna, esa se ignora en vez de recrearla). */
   aplicarPreset(preset: PresetDiseno): void {
     Swal.fire({
       title: `¿Aplicar "${preset.nombre}"?`,
-      text: 'Se sobrescribe el valor claro de las variables de Marca, Página, Card, Tablas, Menú lateral y Formularios con esta paleta. El modo oscuro no cambia.',
+      text: 'Se sobrescriben las variables de Marca, Página, Card, Tablas, Menú lateral y Formularios con esta paleta, en modo claro ☀️ y oscuro 🌙.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, aplicar',
@@ -214,7 +217,7 @@ export class GestionPersonalizacionComponent implements OnInit {
 
       this.aplicandoPreset = preset.id;
       const llamadas = afectadas.map(v =>
-        this.svc.actualizar(v.id!, { ...v, valorClaro: preset.valores[v.clave] })
+        this.svc.actualizar(v.id!, { ...v, valorClaro: preset.valores[v.clave].claro, valorOscuro: preset.valores[v.clave].oscuro })
       );
       forkJoin(llamadas).subscribe({
         next: () => {

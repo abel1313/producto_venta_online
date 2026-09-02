@@ -16,14 +16,14 @@
   <section class="pz-presets">
     <div class="pz-presets__title">✨ Diseños predefinidos</div>
     <p class="pz-presets__sub">Aplica una paleta completa (Marca, Página, Card, Tablas, Menú lateral,
-      Formularios) de un clic. Pasa el mouse para previsualizar. Solo cambia el modo claro ☀️.</p>
+      Formularios) de un clic, con su par claro ☀️ y oscuro 🌙. Pasa el mouse para previsualizar.</p>
     <div class="pz-presets__grid">
       <div class="pz-preset" *ngFor="let p of presets"
            (mouseenter)="previsualizarPreset(p)" (mouseleave)="quitarPreviewPreset()">
         <div class="pz-preset__swatches">
-          <span class="pz-preset__swatch" [style.background]="p.valores['brand-1']"></span>
-          <span class="pz-preset__swatch" [style.background]="p.valores['brand-2']"></span>
-          <span class="pz-preset__swatch" [style.background]="p.valores['brand-3']"></span>
+          <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].claro" title="Marca (claro)"></span>
+          <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].oscuro" title="Header de card (oscuro)"></span>
+          <span class="pz-preset__swatch pz-preset__swatch--dark" [style.background]="p.valores['app-bg'].oscuro" title="Fondo (oscuro)"></span>
         </div>
         <div class="pz-preset__nombre">{{ p.nombre }}</div>
         <div class="pz-preset__desc">{{ p.descripcion }}</div>

@@ -186,10 +186,12 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
           if (registrado != null) {
             this.formRegistro.reset();
             // Enviar código de verificación automáticamente y redirigir
+            // ⚠️ `codigoEnviado: true` solo en `next` -- si el envío falla, verificar-correo debe
+            // reintentar y mostrar el error real, no asumir que ya hay un código válido esperando.
             const pwd: string = password ?? '';
             this.auth.enviarCodigoVerificacionUsuario(usrName).subscribe({
               next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } }),
-              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } })
+              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { password: pwd } })
             });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrarse.' });

@@ -84,9 +84,14 @@ export class AccederService {
     ));
   }
 
-  enviarCodigoVerificacionUsuario(userName: string) {
+  // forzarNuevo=false (default): si ya hay un código vigente sin usar, el back lo reutiliza y
+  // NO manda otro correo -- evita invalidar en silencio uno que el usuario todavía no alcanza a
+  // leer, cuando el envío lo dispara la propia app (cargar la pantalla, login fallido por correo
+  // sin verificar, modal de verificación del admin). El botón explícito "Reenviar código" debe
+  // mandar forzarNuevo=true -- ahí sí quiere uno nuevo sí o sí.
+  enviarCodigoVerificacionUsuario(userName: string, forzarNuevo = false) {
     return this.parseoTolerante(this.http.post(
-      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName }, { responseType: 'text' }
+      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName, forzarNuevo }, { responseType: 'text' }
     ));
   }
 

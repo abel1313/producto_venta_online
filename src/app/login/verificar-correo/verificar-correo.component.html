@@ -11,7 +11,14 @@
       <strong>{{ userName }}</strong>. Ingrésalo aquí para continuar.
     </p>
 
-    <!-- Input código -->
+    <!-- Input código.
+         Sin autocomplete="one-time-code" a propósito: ese atributo activa el autofill de SMS de
+         Android/Chrome (sugiere/inserta el código de un mensaje de texto reciente). Este código
+         llega por CORREO, no por SMS -- con el atributo puesto, si el celular recibía cualquier
+         otro SMS con un código de 6 dígitos (banco, paquetería, 2FA de otra app) en la misma
+         ventana, Android podía autocompletar el campo con ese código ajeno sin que se notara, y
+         el usuario lo mandaba creyendo que era el correcto -- "código inválido" con un código
+         que a simple vista se veía bien (QA 2026-09-02). -->
     <input
       class="vc-code-input"
       type="text"
@@ -20,7 +27,7 @@
       placeholder="● ● ● ● ● ●"
       [(ngModel)]="codigo"
       (keydown)="soloNumeros($event)"
-      autocomplete="one-time-code"
+      autocomplete="off"
     />
 
     <p class="vc-hint">El código vence en 15 minutos.</p>

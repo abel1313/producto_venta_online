@@ -148,6 +148,27 @@ export class BuscarComponent implements OnInit, OnDestroy {
           this.variantes       = [...this.varianteService.variantesCache];
           this.totalPaginas    = this.varianteService.totalPaginasCache;
           this.paginaActual    = this.varianteService.paginaCache;
+          // Restaura los filtros que produjeron este resultado cacheado -- sin esto, la lista
+          // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "si
+          // selecciono filtro y me voy a otros lados... quiero que se mantenga").
+          const f = this.varianteService.filtrosCache as Record<string, any> | null;
+          if (f) {
+            this.mostrarConStock      = !!f['mostrarConStock'];
+            this.mostrarSinStock      = !!f['mostrarSinStock'];
+            this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+            this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+            this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+            this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+            this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+            this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+            this.fechaDesde = f['fechaDesde'] ?? '';
+            this.fechaHasta = f['fechaHasta'] ?? '';
+            this.filtroTalla = f['filtroTalla'] ?? '';
+            this.filtroColor = f['filtroColor'] ?? '';
+            this.filtroMarca = f['filtroMarca'] ?? '';
+            this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
+            this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
+          }
         } else {
           this.buscarPagina('', 1);
         }
@@ -305,6 +326,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.fechaHasta = '';
     this.seleccionados.clear();
     this.varianteService.invalidarCache();
+    this.varianteService.setFiltrosCache(null);
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -326,6 +348,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
+        this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
+        this.varianteService.setFiltrosCache({
+          mostrarConStock: this.mostrarConStock,
+          mostrarSinStock: this.mostrarSinStock,
+          mostrarConImagenes: this.mostrarConImagenes,
+          mostrarSinImagenes: this.mostrarSinImagenes,
+          mostrarHabilitados: this.mostrarHabilitados,
+          mostrarNoHabilitados: this.mostrarNoHabilitados,
+          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+          mostrarCodigoReal: this.mostrarCodigoReal,
+          fechaDesde: this.fechaDesde,
+          fechaHasta: this.fechaHasta
+        });
       },
       error: (err) => {
         this.buscando = false;
@@ -354,6 +389,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.filtroPrecioMin = null;
     this.filtroPrecioMax = null;
     this.varianteService.invalidarCache();
+    this.varianteService.setFiltrosCache(null);
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -374,6 +410,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
+        this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
+        this.varianteService.setFiltrosCache({
+          filtroTalla: this.filtroTalla,
+          filtroColor: this.filtroColor,
+          filtroMarca: this.filtroMarca,
+          filtroPrecioMin: this.filtroPrecioMin,
+          filtroPrecioMax: this.filtroPrecioMax
+        });
       },
       error: (err) => {
         this.buscando = false;

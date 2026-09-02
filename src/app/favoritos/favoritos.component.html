@@ -30,17 +30,18 @@
   <div class="fv-grid" *ngIf="!cargando && variantes.length > 0">
     <div class="fv-card" *ngFor="let v of variantes">
 
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización);
+           va primero, como el resto de las cards con imagen. -->
+      <div class="fv-card__header">
+        <p class="fv-card__nombre">{{ v.nombreProducto }}</p>
+      </div>
+
       <div class="fv-card__img-wrap" (click)="irDetalle(v)">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
           <img [src]="src" class="fv-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="fv-card__img-placeholder">📦</div>
         <button class="fv-card__heart" (click)="quitarFavorito(v); $event.stopPropagation()" title="Quitar de favoritos">❤️</button>
-      </div>
-
-      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización) -->
-      <div class="fv-card__header">
-        <p class="fv-card__nombre">{{ v.nombreProducto }}</p>
       </div>
 
       <div class="fv-card__body">

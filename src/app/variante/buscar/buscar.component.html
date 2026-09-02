@@ -206,6 +206,22 @@
       <!-- Badge deshabilitado (solo admin) -->
       <span *ngIf="isAdminUser && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app
+           (Personalización); colorHeader() solo se usa para el puntito de color real
+           de la prenda, no para el fondo del header. Va primero, como en el resto de
+           las cards de la app (design-system.scss: header + imagen + body + footer). -->
+      <div class="vb-card__header">
+        <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
+        <div class="vb-card__header-content">
+          <div class="vb-card__chips">
+            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
+          </div>
+        </div>
+        <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
+          {{ stockDisponible(v) === 0 ? 'Agotado' : stockDisponible(v) + ' unidades' }}
+        </span>
+      </div>
+
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
@@ -217,21 +233,6 @@
                 [title]="esFavorito(v) ? 'Quitar de favoritos' : 'Agregar a favoritos'">
           {{ esFavorito(v) ? '❤️' : '🤍' }}
         </button>
-      </div>
-
-      <!-- Header -- mismo degradado de marca que el resto de las cards de la app
-           (Personalización); colorHeader() solo se usa para el puntito de color real
-           de la prenda, no para el fondo del header. -->
-      <div class="vb-card__header">
-        <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
-        <div class="vb-card__header-content">
-          <div class="vb-card__chips">
-            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
-          </div>
-        </div>
-        <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
-          {{ stockDisponible(v) === 0 ? 'Agotado' : stockDisponible(v) + ' unidades' }}
-        </span>
       </div>
 
       <!-- Body -->

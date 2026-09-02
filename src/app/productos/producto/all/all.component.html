@@ -168,6 +168,21 @@
       <span *ngIf="esVistaAdmin && !estaHabilitado(item)"
         class="pl-badge-disabled">Deshabilitado</span>
 
+      <!-- Header con color + precio + stock -- va primero, como el resto de las cards de la
+           app (design-system.scss: header + imagen + body + footer) -->
+      <div class="pl-card__header">
+        <div class="pl-card__header-content">
+          <div class="pl-card__chips">
+            <span *ngIf="item.precioVenta" class="pl-chip">
+              {{ item.precioVenta | currency:'$' }}
+            </span>
+          </div>
+        </div>
+        <span [class]="stockClase(stockDisponible(item))" style="align-self:flex-start;font-size:0.75rem;">
+          {{ stockDisponible(item) === 0 ? 'Agotado' : stockDisponible(item) + ' unidades' }}
+        </span>
+      </div>
+
       <div class="pl-card__img-wrap" (click)="irDetalleProducto(item.idProducto)" title="Ver detalle">
 
         <!-- Experimento 2026-08-27: antes pasaba por el pipe imagenSrc (baja el blob completo vía
@@ -182,20 +197,6 @@
              loading="lazy"
              (error)="$any($event.target).style.display='none'" />
         <div *ngIf="!item.imagen?.urlImagen" class="pl-card__img-placeholder">📦</div>
-      </div>
-
-      <!-- Header con color + precio + stock -->
-      <div class="pl-card__header">
-        <div class="pl-card__header-content">
-          <div class="pl-card__chips">
-            <span *ngIf="item.precioVenta" class="pl-chip">
-              {{ item.precioVenta | currency:'$' }}
-            </span>
-          </div>
-        </div>
-        <span [class]="stockClase(stockDisponible(item))" style="align-self:flex-start;font-size:0.75rem;">
-          {{ stockDisponible(item) === 0 ? 'Agotado' : stockDisponible(item) + ' unidades' }}
-        </span>
       </div>
 
       <!-- Body -->

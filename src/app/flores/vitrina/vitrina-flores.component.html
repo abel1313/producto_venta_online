@@ -29,16 +29,17 @@
   <div class="vr-grid" *ngIf="!cargando && ramos.length > 0">
     <div class="vr-card" *ngFor="let r of ramos">
 
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización);
+           va primero, como el resto de las cards con imagen. -->
+      <div class="vr-card__header">
+        <p class="vr-card__nombre">{{ r.nombre }}</p>
+      </div>
+
       <div class="vr-card__img-wrap" *ngIf="fotoDe(r) as foto">
         <img [src]="foto" class="vr-card__img" [alt]="r.nombre">
       </div>
       <div class="vr-card__img-wrap vr-card__img-wrap--placeholder" *ngIf="!fotoDe(r)">
         <span>🌹</span>
-      </div>
-
-      <!-- Header -- mismo degradado de marca que el resto de las cards de la app (Personalización) -->
-      <div class="vr-card__header">
-        <p class="vr-card__nombre">{{ r.nombre }}</p>
       </div>
 
       <div class="vr-card__body">

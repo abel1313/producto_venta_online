@@ -25,5 +25,9 @@ export interface ICliente extends IdGenerico {
     // el Cliente con id real pero estos campos vacíos y `datosCompletos=false` -- sin este check,
     // "el cliente existe" (id truthy) no es lo mismo que "el cliente puede comprar".
     datosCompletos?: boolean;
+    // Preferencia de correos no transaccionales (seguimiento de pedido, alerta de stock de
+    // favoritos) -- se cambia SOLO vía ClienteService.actualizarPreferenciaCorreo(), nunca por
+    // guardarCliente()/saveData() (el back preserva el valor existente ahí a propósito).
+    recibirCorreos?: boolean;
 
 }

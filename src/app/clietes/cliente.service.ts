@@ -59,4 +59,13 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+  // Toggle de correos no transaccionales (seguimiento de pedido, alerta de stock de favoritos).
+  // No afecta el ticket de compra ni los códigos de verificación/reset, que siguen enviándose
+  // siempre. Lo puede llamar el propio cliente o un ADMIN sobre cualquier cliente.
+  actualizarPreferenciaCorreo(clienteId: number, recibirCorreos: boolean): Observable<ResponseGeneric<string>> {
+    return this.http.put<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/preferencias-correo`, { recibirCorreos }
+    );
+  }
+
 }

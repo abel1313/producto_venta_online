@@ -105,7 +105,7 @@
   // "Card" -> --card-header-bg), independiente del color de marca.
   &__header {
     padding: 14px 16px 12px;
-    color: #fff;
+    color: var(--card-header-text, #fff);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;

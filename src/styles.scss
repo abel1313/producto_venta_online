@@ -121,6 +121,7 @@ body.theme-light, [data-theme="light"] {
      valor, TemaService los setea siempre juntos). */
   --card-bg:           #FFFFFF;
   --card-header-bg:    #00875A;
+  --card-header-text:  #FFFFFF;
   --card-body-bg:      #FFFFFF;
   --card-footer-bg:    #FFFFFF;
   --card-text:         #152420;
@@ -268,6 +269,7 @@ body.theme-dark, [data-theme="dark"] {
      --card-header-bg/--card-body-bg/--card-footer-bg: ver nota en el bloque claro. */
   --card-bg:           #0C0C0C;
   --card-header-bg:    #00875A;
+  --card-header-text:  #FFFFFF;
   --card-body-bg:      #0C0C0C;
   --card-footer-bg:    #0C0C0C;
   --card-text:         #E9E9EC;
@@ -1088,7 +1090,7 @@ body.theme-dark, [data-theme="dark"] {
 // !important les pisaba el color sin importar qué se configurara.
 body.theme-light, [data-theme="light"] {
   [class*="-header__content"],
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
     background:          rgba(255,255,255, 0.82) !important;
     backdrop-filter:     blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;

@@ -154,7 +154,7 @@
     flex-wrap: wrap;
   }
 
-  &__id     { font-weight: 700; color: #fff; font-size: 0.88rem; }
+  &__id     { font-weight: 700; color: var(--card-header-text, #fff); font-size: 0.88rem; }
   // Ahora es un <button> (antes span) para poder llevar al detalle real del pedido en
   // /pedidos/mis-pedidos — reset de estilos nativos + affordance de "esto se puede tocar".
   &__id--link {
@@ -165,10 +165,10 @@
     cursor: pointer;
     text-decoration: underline dotted;
     text-underline-offset: 2px;
-    &:hover, &:focus-visible { color: rgba(255,255,255,0.75); }
+    &:hover, &:focus-visible { opacity: 0.75; }
   }
-  &__cliente{ font-weight: 600; color: #fff; font-size: 0.92rem; }
-  &__tel    { font-size: 0.78rem; color: #fff; opacity: 0.75; }
+  &__cliente{ font-weight: 600; color: var(--card-header-text, #fff); font-size: 0.92rem; }
+  &__tel    { font-size: 0.78rem; color: var(--card-header-text, #fff); opacity: 0.75; }
 
   &__actions {
     display: flex;

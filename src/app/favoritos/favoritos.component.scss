@@ -79,7 +79,7 @@
   // Personalización (grupo "Card").
   &__header { padding: 10px 14px; background: var(--card-header-bg); }
   // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
-  &__nombre { font-weight: 700; font-size: .95rem; color: #fff; margin: 0; }
+  &__nombre { font-weight: 700; font-size: .95rem; color: var(--card-header-text, #fff); margin: 0; }
 
   &__body { padding: 12px 14px; flex: 1; }
   &__detalle { font-size: .78rem; color: var(--app-text-muted, #64748b); margin: 0 0 8px; }

@@ -456,77 +456,81 @@ body.theme-dark {
   }
 
   /* ── Bootstrap cards ───────────────────── */
+  /* Pedido 2026-09-02: estaban hardcodeados (rgba(255,255,255,0.05), #2A2A2E, #E9E9EC...) en vez
+     de tokens -- Personalización nunca los podía tocar. Toda pantalla que use .card/.table/
+     .form-control "a secas" de Bootstrap (sin su propia clase con var(--card-bg) etc.) se quedaba
+     fija en este look sin importar el diseño/color elegido. Ver auditoría 2026-09-02. */
   .card {
-    background: rgba(255,255,255,0.05) !important;
+    background: var(--card-body-bg, rgba(255,255,255,0.05)) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.45) !important;
+    border: 1px solid var(--card-border, #2A2A2E) !important;
+    color: var(--card-text, #E9E9EC) !important;
+    box-shadow: var(--card-shadow, 0 4px 24px rgba(0,0,0,0.45)) !important;
   }
   .card-header {
     background: var(--card-header-bg, rgba(255,255,255,0.06)) !important;
-    border-bottom: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    border-bottom: 1px solid var(--card-border, #2A2A2E) !important;
+    color: var(--card-header-text, #E9E9EC) !important;
   }
   .card-body {
     background: var(--card-body-bg, transparent) !important;
-    color: #E9E9EC !important;
+    color: var(--card-text, #E9E9EC) !important;
   }
   .card-footer {
     background: var(--card-footer-bg, rgba(255,255,255,0.06)) !important;
-    border-top: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    border-top: 1px solid var(--card-border, #2A2A2E) !important;
+    color: var(--card-text, #E9E9EC) !important;
   }
-  .card-title { color: #E9E9EC !important; }
+  .card-title { color: var(--card-text, #E9E9EC) !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid #2A2A2E !important;
+    background: var(--card-body-bg, rgba(255,255,255,0.05)) !important;
+    border: 1px solid var(--card-border, #2A2A2E) !important;
     backdrop-filter: blur(12px);
-    color: #E9E9EC !important;
+    color: var(--card-text, #E9E9EC) !important;
   }
   nb-card-header {
-    background: rgba(255,255,255,0.05) !important;
-    border-bottom: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--card-header-bg, rgba(255,255,255,0.05)) !important;
+    border-bottom: 1px solid var(--card-border, #2A2A2E) !important;
+    color: var(--card-header-text, #E9E9EC) !important;
   }
-  nb-card-body { color: #E9E9EC !important; }
+  nb-card-body { color: var(--card-text, #E9E9EC) !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: #E9E9EC !important;
+    color: var(--app-text, #E9E9EC) !important;
     --bs-table-bg: transparent;
     --bs-table-striped-bg: rgba(255,255,255,0.03);
-    --bs-table-hover-bg: rgba(255,255,255,0.06);
-    --bs-table-border-color: #2A2A2E;
+    --bs-table-hover-bg: var(--table-row-hover, rgba(255,255,255,0.06));
+    --bs-table-border-color: var(--table-border, #2A2A2E);
   }
   .table thead th {
-    background: rgba(255,255,255,0.06) !important;
-    color: #93B3A4 !important;
-    border-color: #2A2A2E !important;
+    background: var(--table-header-bg, rgba(255,255,255,0.06)) !important;
+    color: var(--table-header-text, #93B3A4) !important;
+    border-color: var(--table-border, #2A2A2E) !important;
   }
-  .table td, .table th { border-color: rgba(30,58,45,0.7) !important; }
+  .table td, .table th { border-color: var(--table-border, rgba(30,58,45,0.7)) !important; }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
-    background: rgba(255,255,255,0.06) !important;
-    border-color: #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--input-bg, rgba(255,255,255,0.06)) !important;
+    border-color: var(--input-border, #2A2A2E) !important;
+    color: var(--input-text, #E9E9EC) !important;
     &:focus {
-      background: rgba(255,255,255,0.09) !important;
+      background: var(--input-bg, rgba(255,255,255,0.09)) !important;
       border-color: var(--brand-1) !important;
       box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.22) !important;
     }
-    &::placeholder { color: #5F8375 !important; }
+    &::placeholder { color: var(--input-placeholder, #5F8375) !important; }
   }
   .input-group-text {
-    background: rgba(255,255,255,0.06) !important;
-    border-color: #2A2A2E !important;
-    color: #93B3A4 !important;
+    background: var(--form-section-bg, rgba(255,255,255,0.06)) !important;
+    border-color: var(--input-border, #2A2A2E) !important;
+    color: var(--app-text-muted, #93B3A4) !important;
   }
-  label { color: #93B3A4 !important; }
+  label { color: var(--app-text-muted, #93B3A4) !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {
@@ -651,74 +655,76 @@ body.theme-light {
   }
 
   /* ── Bootstrap cards ───────────────────── */
+  /* Pedido 2026-09-02: mismo hardcodeo que en el bloque oscuro de arriba -- ver ese comentario.
+     Sin esto, .card/.table/.form-control "a secas" de Bootstrap nunca reflejaban Personalización. */
   .card {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    color: #12241D !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+    background: var(--card-body-bg, #FFFFFF) !important;
+    border: 1px solid var(--card-border, #D5E8DD) !important;
+    color: var(--card-text, #12241D) !important;
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)) !important;
     border-radius: 14px !important;
   }
   .card-header {
     background: var(--card-header-bg, #E3F2EA) !important;
-    border-bottom: 1px solid #D5E8DD !important;
-    color: #12241D !important;
+    border-bottom: 1px solid var(--card-border, #D5E8DD) !important;
+    color: var(--card-header-text, #12241D) !important;
   }
   .card-body {
     background: var(--card-body-bg, transparent) !important;
-    color: #12241D !important;
+    color: var(--card-text, #12241D) !important;
   }
   .card-footer {
     background: var(--card-footer-bg, #E3F2EA) !important;
-    border-top: 1px solid #D5E8DD !important;
-    color: #12241D !important;
+    border-top: 1px solid var(--card-border, #D5E8DD) !important;
+    color: var(--card-text, #12241D) !important;
   }
-  .card-title { color: #12241D !important; font-weight: 700 !important; }
+  .card-title { color: var(--card-text, #12241D) !important; font-weight: 700 !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    color: #12241D !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
+    background: var(--card-body-bg, #FFFFFF) !important;
+    border: 1px solid var(--card-border, #D5E8DD) !important;
+    color: var(--card-text, #12241D) !important;
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)) !important;
     border-radius: 14px !important;
   }
   nb-card-header {
-    background: #E3F2EA !important;
-    border-bottom: 1px solid #D5E8DD !important;
-    color: #12241D !important;
+    background: var(--card-header-bg, #E3F2EA) !important;
+    border-bottom: 1px solid var(--card-border, #D5E8DD) !important;
+    color: var(--card-header-text, #12241D) !important;
   }
-  nb-card-body { color: #12241D !important; }
+  nb-card-body { color: var(--card-text, #12241D) !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: #12241D !important;
+    color: var(--app-text, #12241D) !important;
     --bs-table-bg: #FFFFFF;
     --bs-table-striped-bg: #E9E9EC;
-    --bs-table-hover-bg: #E3F2EA;
-    --bs-table-border-color: #D5E8DD;
+    --bs-table-hover-bg: var(--table-row-hover, #E3F2EA);
+    --bs-table-border-color: var(--table-border, #D5E8DD);
   }
   .table thead th {
-    background: #E3F2EA !important;
-    color: #5F8375 !important;
-    border-color: #D5E8DD !important;
+    background: var(--table-header-bg, #E3F2EA) !important;
+    color: var(--table-header-text, #5F8375) !important;
+    border-color: var(--table-border, #D5E8DD) !important;
   }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
-    background: #FFFFFF !important;
-    border-color: #D5E8DD !important;
-    color: #12241D !important;
+    background: var(--input-bg, #FFFFFF) !important;
+    border-color: var(--input-border, #D5E8DD) !important;
+    color: var(--input-text, #12241D) !important;
     &:focus {
       border-color: var(--brand-1) !important;
       box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
     }
   }
   .input-group-text {
-    background: #E3F2EA !important;
-    border-color: #D5E8DD !important;
-    color: #5F8375 !important;
+    background: var(--form-section-bg, #E3F2EA) !important;
+    border-color: var(--input-border, #D5E8DD) !important;
+    color: var(--app-text-muted, #5F8375) !important;
   }
-  label { color: #5F8375 !important; }
+  label { color: var(--app-text-muted, #5F8375) !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {

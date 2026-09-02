@@ -31,12 +31,17 @@
   }
 
   .sb-brand-text     { color: var(--sb-text, #12241D); }
-  .sb-subitem        { color: #5F8375; &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
-  .sb-user-link      { color: #5F8375; &:hover { color: var(--sb-text, #12241D); } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
+  /* Pedido 2026-09-02: estos 4 estaban hardcodeados a #5F8375 -- ganaban por especificidad sobre
+     la regla base var(--sb-text) de más abajo, así que Personalización nunca los podía tocar en
+     modo claro (bug global, en el sidebar de TODAS las pantallas). Usan --app-text-muted (mismo
+     tono #5F8375 por defecto) para conservar que se vean "secundarios" frente a --sb-text, pero
+     ya reaccionando al diseño elegido. */
+  .sb-subitem        { color: var(--app-text-muted, #5F8375); &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
+  .sb-user-link      { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
   .sb-logout         { color: var(--pk-danger-to); }
   .sb-username       { color: var(--sb-text, #12241D); }
-  .sb-cart-btn       { color: #5F8375; &:hover { color: var(--sb-text, #12241D); } }
-  .sb-chevron        { color: #5F8375; }
+  .sb-cart-btn       { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } }
+  .sb-chevron        { color: var(--app-text-muted, #5F8375); }
 
   .sb-avatar {
     background: var(--brand-1);

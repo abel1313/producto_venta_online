@@ -96,8 +96,11 @@
                 ✕
               </button>
             </div>
+            <!-- Nombre del producto, no el nombre del archivo subido -- antes mostraba
+                 img.nombreImagen tal cual (ej. "WhatsApp Image 2026-09-02...") al cliente
+                 (2026-09-02: "eso no está bien mostrarle al cliente"). -->
             <p class="dv-slide__label" [class.dv-slide__label--marked]="estaMarcada(img)">
-              {{ img.nombreImagen }}
+              {{ varianteSeleccionada.nombreProducto ?? 'Producto' }}
             </p>
           </div>
         </ng-template>

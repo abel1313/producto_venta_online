@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service';
 import { horaLegible } from 'src/app/shared/hora.util';
@@ -21,9 +21,11 @@ export class ConfigNegocioComponent implements OnInit {
   toggling         = false;
   guardandoHorario = false;
   guardandoContactos = false;
+  guardandoAlertaStock = false;
 
   horarioForm!:   FormGroup;
   contactosForm!: FormGroup;
+  alertaStockForm!: FormGroup;
 
   constructor(
     private readonly negocioService: NegocioService,
@@ -40,6 +42,9 @@ export class ConfigNegocioComponent implements OnInit {
       facebookUrl:  [''],
       instagramUrl: [''],
       tiktokUrl:    ['']
+    });
+    this.alertaStockForm = this.fb.group({
+      umbralStockBajo: [5, [Validators.required, Validators.min(1)]]
     });
     this.cargarConfig();
   }
@@ -63,6 +68,9 @@ export class ConfigNegocioComponent implements OnInit {
           facebookUrl:  config?.facebookUrl  ?? '',
           instagramUrl: config?.instagramUrl ?? '',
           tiktokUrl:    config?.tiktokUrl    ?? ''
+        });
+        this.alertaStockForm.patchValue({
+          umbralStockBajo: config?.umbralStockBajo ?? 5
         });
         this.configCargada = true;
       },
@@ -163,6 +171,26 @@ export class ConfigNegocioComponent implements OnInit {
       error: (err) => {
         this.guardandoContactos = false;
         Swal.fire({ icon: 'error', title: 'Error al guardar contactos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar los contactos.', timer: 1600, showConfirmButton: false });
+      }
+    });
+  }
+
+  // ── Guardar umbral de stock bajo ───────────────────────────────────
+  // Aviso diario por correo (7 AM) a todos los admin con las variantes en o por debajo de este
+  // número de unidades. Ver StockBajoScheduler en el back.
+
+  guardarAlertaStock(): void {
+    if (this.alertaStockForm.invalid) return;
+    this.guardandoAlertaStock = true;
+    this.negocioService.actualizarUmbralStockBajo(this.alertaStockForm.value).subscribe({
+      next: () => {
+        this.guardandoAlertaStock = false;
+        if (this.estado) this.estado.umbralStockBajo = this.alertaStockForm.value.umbralStockBajo;
+        Swal.fire({ icon: 'success', title: '¡Umbral actualizado!', timer: 1400, showConfirmButton: false });
+      },
+      error: (err) => {
+        this.guardandoAlertaStock = false;
+        Swal.fire({ icon: 'error', title: 'Error al guardar el umbral', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el umbral de stock bajo.', timer: 1600, showConfirmButton: false });
       }
     });
   }

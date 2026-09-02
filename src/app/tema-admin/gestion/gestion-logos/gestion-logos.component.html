@@ -24,12 +24,12 @@
 
   <div class="gl-grid" *ngIf="!cargando && logos.length > 0">
     <div class="gl-card" *ngFor="let logo of logos" [class.gl-card--activo]="logo.activo">
+      <div class="gl-card__header">
+        <p class="gl-card__nombre" [title]="logo.nombreOriginal">{{ logo.nombreOriginal }}</p>
+      </div>
       <div class="gl-card__img-wrap">
         <img class="gl-card__img" [src]="urlDe(logo)" [alt]="logo.nombreOriginal">
         <span class="gl-card__badge" *ngIf="logo.activo">✓ Usado en correos</span>
-      </div>
-      <div class="gl-card__header">
-        <p class="gl-card__nombre" [title]="logo.nombreOriginal">{{ logo.nombreOriginal }}</p>
       </div>
       <div class="gl-card__actions">
         <button class="gl-btn gl-btn--activar" type="button"

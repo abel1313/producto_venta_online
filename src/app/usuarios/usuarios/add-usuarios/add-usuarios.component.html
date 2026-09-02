@@ -151,6 +151,17 @@
         </div>
 
         <div class="admin-section" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario'">
+          <!-- Solo lectura -- viene de UserDto.aceptoPrivacidad/fechaAceptoPrivacidad, se acepta
+               una vez en el registro del propio usuario, aquí no se puede editar. -->
+          <div class="privacy-status" [class.privacy-status--ok]="updateUser.aceptoPrivacidad">
+            <i class="pi" [class.pi-check-circle]="updateUser.aceptoPrivacidad" [class.pi-times-circle]="!updateUser.aceptoPrivacidad"></i>
+            <span *ngIf="updateUser.aceptoPrivacidad">
+              Aceptó el aviso de privacidad el {{ updateUser.fechaAceptoPrivacidad | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+            <span *ngIf="!updateUser.aceptoPrivacidad">
+              No aceptó el aviso de privacidad (cuenta creada antes de este control, o dato no disponible)
+            </span>
+          </div>
           <div class="admin-row">
             <div class="toggle-wrap">
               <nz-switch formControlName="enabled"></nz-switch>

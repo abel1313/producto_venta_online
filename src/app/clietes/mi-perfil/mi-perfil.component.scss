@@ -188,6 +188,20 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0;
 }
 
+.mp-privacy-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.78rem;
+
+  .pi-check-circle { color: var(--pk-success-to, #059669); }
+  .pi-times-circle { color: var(--pk-danger-to, #dc2626); }
+
+  a { color: var(--app-accent, var(--brand-1)); font-weight: 600; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+}
+
 // ── Footer de sección ─────────────────────────────────────────────────────────
 .mp-footer-section {
   display: flex;

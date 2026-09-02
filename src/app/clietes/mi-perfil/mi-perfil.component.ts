@@ -25,6 +25,8 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   codigoPendiente      = false;
   correoNuevoPendiente = '';
   guardandoPerfil      = false;
+  aceptoPrivacidad: boolean | null = null;
+  fechaAceptoPrivacidad: string | null = null;
   private clienteId:     number | null = null;
   private clienteActual: ICliente | null = null;
   guardandoPass        = false;
@@ -50,6 +52,13 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.authService.userName$.pipe(take(1)).subscribe(name => {
       this.usernameCtrl.setValue(name || '');
+    });
+    this.acceder.obtenerMiPerfil().subscribe({
+      next: (res) => {
+        this.aceptoPrivacidad      = res?.data?.aceptoPrivacidad ?? null;
+        this.fechaAceptoPrivacidad = res?.data?.fechaAceptoPrivacidad ?? null;
+      },
+      error: () => {}
     });
     this.authService.userId$.pipe(take(1)).subscribe(userId => {
       if (!userId) return;

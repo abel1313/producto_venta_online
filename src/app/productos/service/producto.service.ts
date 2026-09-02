@@ -36,6 +36,15 @@ export class ProductoService {
     get prodTerminoCache(): string { return this._prodTermino; }
     get prodInitialized(): boolean { return this._prodInit; }
 
+    // Estado de los filtros de productos/buscar (Modelos) -- independiente de _prodInit a
+    // propósito, mismo patrón que VarianteService.filtrosCache (tienda/buscar): antes, cada
+    // filtro activo invalidaba el caché sin volver a guardarlo, así que salir de la pantalla y
+    // volver siempre perdía los checkboxes marcados (2026-09-02: "para tienda y producto en
+    // buscar... quería que se guardara su estado").
+    private _prodFiltrosCache: Record<string, unknown> | null = null;
+    get prodFiltrosCache(): Record<string, unknown> | null { return this._prodFiltrosCache; }
+    setProdFiltrosCache(filtros: Record<string, unknown> | null): void { this._prodFiltrosCache = filtros; }
+
     setProdCache(items: IProductoDTO[], pagina: number, totalPaginas: number, termino = ''): void {
         this._prodCache = items;
         this._prodPagina = pagina;

@@ -424,6 +424,22 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.rows          = [...this.srvice.prodCache];
       this.totalPaginas  = this.srvice.prodTotalCache;
       this.paginaPrimera = this.srvice.prodPaginaCache;
+      // Restaura los filtros que produjeron este resultado cacheado -- sin esto, la lista
+      // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "para tienda
+      // y producto en buscar... quería que se guardara su estado").
+      const f = this.srvice.prodFiltrosCache as Record<string, any> | null;
+      if (f) {
+        this.mostrarConStock      = !!f['mostrarConStock'];
+        this.mostrarSinStock      = !!f['mostrarSinStock'];
+        this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+        this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+        this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+        this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+        this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+        this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+        this.fechaDesde = f['fechaDesde'] ?? '';
+        this.fechaHasta = f['fechaHasta'] ?? '';
+      }
     } else {
       this.getData(1);
     }
@@ -500,6 +516,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
+    this.srvice.setProdFiltrosCache(null);
     this.paginaPrimera = 1;
     this.getData(1);
   }
@@ -520,6 +537,19 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.rows = res.t;
         this.totalPaginas = res.totalPaginas;
         this.paginaPrimera = pagina;
+        this.srvice.setProdCache(res.t, pagina, res.totalPaginas, this.buscarProd);
+        this.srvice.setProdFiltrosCache({
+          mostrarConStock: this.mostrarConStock,
+          mostrarSinStock: this.mostrarSinStock,
+          mostrarConImagenes: this.mostrarConImagenes,
+          mostrarSinImagenes: this.mostrarSinImagenes,
+          mostrarHabilitados: this.mostrarHabilitados,
+          mostrarNoHabilitados: this.mostrarNoHabilitados,
+          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+          mostrarCodigoReal: this.mostrarCodigoReal,
+          fechaDesde: this.fechaDesde,
+          fechaHasta: this.fechaHasta
+        });
       },
       error: (err) => {
         if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }

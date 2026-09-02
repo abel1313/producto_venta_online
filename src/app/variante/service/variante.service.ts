@@ -29,6 +29,16 @@ export class VarianteService {
   private _initialized = false;
   private _terminoCache = '';
 
+  // Estado de los filtros de tienda/buscar (admin y públicos) -- independiente de _cache/
+  // _initialized a propósito: antes, cada vez que había un filtro activo se llamaba
+  // invalidarCache() y el resultado filtrado NUNCA se volvía a guardar, así que salir de la
+  // pantalla y volver siempre perdía tanto los resultados como los checkboxes marcados
+  // (reportado 2026-09-02: "si selecciono filtro y me voy a otros lados... quiero que se
+  // mantenga"). Guarda un objeto de forma libre -- el componente decide qué campos manda.
+  private _filtrosCache: Record<string, unknown> | null = null;
+  get filtrosCache(): Record<string, unknown> | null { return this._filtrosCache; }
+  setFiltrosCache(filtros: Record<string, unknown> | null): void { this._filtrosCache = filtros; }
+
   get variantesCache(): IVarianteResumen[] { return this._cache; }
   get paginaCache(): number { return this._paginaCache; }
   get totalPaginasCache(): number { return this._totalPaginasCache; }
@@ -43,6 +53,9 @@ export class VarianteService {
     this._initialized = true;
   }
 
+  // No toca _filtrosCache -- invalidarCache() se llama tanto al filtrar (donde SÍ queremos
+  // recordar el filtro para la próxima vez) como al mutar datos en otra pantalla (donde no
+  // aplica). Los filtros se limpian explícitamente desde limpiarFiltrosAdmin/Publicos.
   invalidarCache(): void {
     this._initialized = false;
     this._terminoCache = '';

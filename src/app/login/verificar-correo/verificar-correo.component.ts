@@ -55,7 +55,10 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     // pestaña, porque no depende del state de navegación de Angular/el navegador.
     const yaEnviado = history.state?.codigoEnviado === true || this.yaSeEnvioRecientemente();
     if (!yaEnviado) {
-      this.reenviarCodigo();
+      // false: envío automático al cargar la pantalla -- si por alguna razón ya hay un código
+      // vigente en el back (ver forzarNuevo en acceder.service.ts), lo reutiliza en vez de
+      // invalidarlo con uno nuevo.
+      this.reenviarCodigo(false);
     } else {
       this.marcarEnviado();
       this.iniciarCooldown();
@@ -130,11 +133,14 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     });
   }
 
-  reenviarCodigo(): void {
+  // forzarNuevo=true por default: así es como lo llama el botón "Reenviar código" -- el usuario
+  // lo pidió explícitamente, así que sí o sí manda uno nuevo. ngOnInit pasa false para el envío
+  // automático al cargar la pantalla.
+  reenviarCodigo(forzarNuevo = true): void {
     if (this.cooldown > 0 || this.enviando) return;
     this.enviando = true;
     this.errorMsg = '';
-    this.acceder.enviarCodigoVerificacionUsuario(this.userName).subscribe({
+    this.acceder.enviarCodigoVerificacionUsuario(this.userName, forzarNuevo).subscribe({
       next:  () => {
         this.enviando = false;
         // El código anterior queda inválido en el back al generarse uno nuevo -- si no se

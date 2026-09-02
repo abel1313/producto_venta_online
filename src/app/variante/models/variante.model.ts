@@ -2,6 +2,7 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 
 export interface IVarianteDto {
   id: number;
+  nombreProducto?: string | null;
   talla?: string;
   descripcion?: string;
   color?: string;

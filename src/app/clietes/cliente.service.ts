@@ -25,6 +25,16 @@ export class ClienteService extends CrudGenericService<ICliente> {
     return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/v1/clientes/buscarPorIdCliente/${idCliente}`);
   }
 
+  // Detalle completo para la pantalla admin de ver/editar cliente -- a diferencia de
+  // getDataOneCliente, SÍ trae usuarioId/username (Cliente.usuario no viaja en el JSON normal,
+  // ver ClienteAdminDetalleDto en el back). Sin el usuarioId no se puede guardar después:
+  // ClienteControllerImpl.save() lo necesita para saber a qué usuario pertenece el cliente.
+  obtenerDetalleAdmin(idCliente: number): Observable<ResponseGeneric<{ cliente: ICliente; usuarioId: number; username: string }>> {
+    return this.http.get<ResponseGeneric<{ cliente: ICliente; usuarioId: number; username: string }>>(
+      `${this.url}/v1/clientes/admin/detalle/${idCliente}`
+    );
+  }
+
   buscarClientes(nombre: string, page: number, size: number): Observable<ResponseGeneric<IPageableClientes>> {
     return this.http.get<ResponseGeneric<IPageableClientes>>(
       `${this.url}/v1/clientes/buscar?nombre=${encodeURIComponent(nombre)}&page=${page}&size=${size}`

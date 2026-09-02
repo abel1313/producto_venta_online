@@ -16,15 +16,31 @@
   <section class="pz-presets">
     <div class="pz-presets__title">✨ Diseños predefinidos</div>
     <p class="pz-presets__sub">Aplica una paleta completa (Marca, Página, Card, Tablas, Menú lateral,
-      Formularios) de un clic, con su par claro ☀️ y oscuro 🌙. Pasa el mouse para previsualizar.</p>
+      Formularios) de un clic -- cada diseño trae su propia versión de día y de noche, no hace
+      falta elegir aparte. Pasa el mouse para previsualizar (la app cambia sola de día/noche según
+      la hora, así que aquí abajo ves las dos de un jalón).</p>
     <div class="pz-presets__grid">
       <div class="pz-preset" *ngFor="let p of presets"
            (mouseenter)="previsualizarPreset(p)" (mouseleave)="quitarPreviewPreset()">
-        <div class="pz-preset__swatches">
-          <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].claro" title="Marca (claro)"></span>
-          <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].oscuro" title="Header de card (oscuro)"></span>
-          <span class="pz-preset__swatch pz-preset__swatch--dark" [style.background]="p.valores['app-bg'].oscuro" title="Fondo (oscuro)"></span>
+
+        <div class="pz-preset__modo">
+          <span class="pz-preset__modo-label">☀️ Día</span>
+          <div class="pz-preset__swatches">
+            <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].claro" title="Marca"></span>
+            <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].claro" title="Header de card"></span>
+            <span class="pz-preset__swatch pz-preset__swatch--claro" [style.background]="p.valores['app-bg'].claro" title="Fondo"></span>
+          </div>
         </div>
+
+        <div class="pz-preset__modo">
+          <span class="pz-preset__modo-label">🌙 Noche</span>
+          <div class="pz-preset__swatches">
+            <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].oscuro" title="Marca"></span>
+            <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].oscuro" title="Header de card"></span>
+            <span class="pz-preset__swatch pz-preset__swatch--dark" [style.background]="p.valores['app-bg'].oscuro" title="Fondo"></span>
+          </div>
+        </div>
+
         <div class="pz-preset__nombre">{{ p.nombre }}</div>
         <div class="pz-preset__desc">{{ p.descripcion }}</div>
         <button type="button" class="pz-btn pz-btn--save" [disabled]="aplicandoPreset === p.id"

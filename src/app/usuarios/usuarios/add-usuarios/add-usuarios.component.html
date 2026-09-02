@@ -1,7 +1,9 @@
 <div class="split-page">
 
-  <!-- ── Panel izquierdo: imágenes ── -->
-  <div class="split-images">
+  <!-- ── Panel izquierdo: imágenes -- solo en "Registrar" (público, mismo diseño que login).
+       En "Actualizar usuario" (admin editando a otro) no van imágenes: pedido explícito de que
+       solo el login se vea así, el resto de las pantallas admin se queda centrado y sin imágenes. -->
+  <div class="split-images" *ngIf="!esActualizar">
     <div class="img-slot img-slot--1">
       <img [src]="imgSrc(1)" alt="imagen 1" class="img-slot__icon">
       <div class="img-slot__overlay">
@@ -32,7 +34,7 @@
   </div>
 
   <!-- ── Panel derecho: formulario ── -->
-  <div class="split-form">
+  <div class="split-form" [class.split-form--full]="esActualizar">
     <div class="form-inner">
 
       <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio

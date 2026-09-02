@@ -130,6 +130,10 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 2rem 1.5rem 1.5rem;
     align-items: flex-start;
   }
+
+  // Sin panel de imágenes al lado (Actualizar usuario) -- la sombra sugería el borde de un
+  // panel junto a otro, ya no aplica sola en el centro de la pantalla.
+  &--full { box-shadow: none; }
 }
 
 .form-inner {

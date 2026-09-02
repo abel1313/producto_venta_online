@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IResponseGeneric } from 'src/shared/responseGeneric.model';
+import { ResponseGeneric } from 'src/shared/generic-response.mode';
 
 @Injectable({
   providedIn: 'root'
@@ -101,6 +102,16 @@ export class AccederService {
     return this.parseoTolerante(this.http.put(
       `${environment.api_Url}/v1/auth/mi-perfil`, { username }, { responseType: 'text' }
     ));
+  }
+
+  // Solo lectura -- incluye si el usuario aceptó el aviso de privacidad y cuándo.
+  // ⚠️ Este endpoint envuelve la respuesta como { mensaje, code, data } (ResponseGeneric del
+  // back), NO como { response } -- ver ResponseGeneric.java. Distinto del resto de este
+  // servicio (login, etc.), que no pasa por esa clase.
+  obtenerMiPerfil() {
+    return this.http.get<ResponseGeneric<{ username: string; email: string; aceptoPrivacidad: boolean; fechaAceptoPrivacidad: string | null }>>(
+      `${environment.api_Url}/v1/auth/mi-perfil`
+    );
   }
 
   solicitarCambioCorreo(correoNuevo: string) {

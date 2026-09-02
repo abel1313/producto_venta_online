@@ -151,6 +151,17 @@
         </div>
 
         <div class="admin-section" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario'">
+          <!-- Solo lectura -- viene de UserDto.aceptoPrivacidad/fechaAceptoPrivacidad, se acepta
+               una vez en el registro del propio usuario, aquí no se puede editar. -->
+          <div class="privacy-status" [class.privacy-status--ok]="updateUser.aceptoPrivacidad">
+            <i class="pi" [class.pi-check-circle]="updateUser.aceptoPrivacidad" [class.pi-times-circle]="!updateUser.aceptoPrivacidad"></i>
+            <span *ngIf="updateUser.aceptoPrivacidad">
+              Aceptó el aviso de privacidad el {{ updateUser.fechaAceptoPrivacidad | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+            <span *ngIf="!updateUser.aceptoPrivacidad">
+              No aceptó el aviso de privacidad (cuenta creada antes de este control, o dato no disponible)
+            </span>
+          </div>
           <div class="admin-row">
             <div class="toggle-wrap">
               <nz-switch formControlName="enabled"></nz-switch>
@@ -212,11 +223,18 @@
           </div>
         </div>
 
-        <div class="field-wrap field-wrap--checkbox" *ngIf="!esActualizar">
-          <label class="checkbox-label">
-            <input type="checkbox" formControlName="aceptoPrivacidad">
-            <span>Acepto el <a routerLink="/privacidad" target="_blank">aviso de privacidad</a></span>
+        <div class="privacy-box" *ngIf="!esActualizar">
+          <label class="checkbox-label" for="chk-privacidad">
+            <input id="chk-privacidad" type="checkbox" formControlName="aceptoPrivacidad">
+            <span>Acepto el <strong>aviso de privacidad</strong> para crear mi cuenta</span>
           </label>
+          <!-- El link va FUERA del <label> a propósito: un <a> anidado dentro de un <label> que
+               envuelve un checkbox no abre confiablemente en pestaña nueva (el navegador prioriza
+               el toggle del checkbox sobre la navegación del link) -- bug real reportado en QA
+               2026-09-02, aquí se corrige sacándolo del label. -->
+          <a class="privacy-link" routerLink="/privacidad" target="_blank" rel="noopener">
+            <i class="pi pi-external-link"></i> Leer el aviso de privacidad completo
+          </a>
           <div *ngIf="formRegistro.get('aceptoPrivacidad')?.invalid && formRegistro.get('aceptoPrivacidad')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
             Debes aceptar el aviso de privacidad para registrarte

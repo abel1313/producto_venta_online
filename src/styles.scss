@@ -1083,9 +1083,12 @@ body.theme-dark, [data-theme="dark"] {
    ════════════════════════════════════════════════════════════ */
 
 /* ── DÍA — glassmorphism cálido con tinte ámbar ── */
+// Excepciones agregadas 2026-09-01: cards nuevas con header de color propio y
+// editable desde Personalización (--card-header-bg) -- este glassmorphism con
+// !important les pisaba el color sin importar qué se configurara.
 body.theme-light, [data-theme="light"] {
   [class*="-header__content"],
-  [class*="-card__head"]:not([class*="pl-card__head"]) {
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
     background:          rgba(255,255,255, 0.82) !important;
     backdrop-filter:     blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
@@ -1097,16 +1100,16 @@ body.theme-light, [data-theme="light"] {
   }
 
   [class*="-header__content"] *,
-  [class*="-card__head"]:not([class*="pl-card__head"]) * {
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) * {
     color: #12241D !important;
   }
 
   [class*="-header__content"] small,
-  [class*="-card__head"]:not([class*="pl-card__head"]) small,
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) small,
   [class*="-header__content"] [class*="__subtitle"],
-  [class*="-card__head"]:not([class*="pl-card__head"]) [class*="__subtitle"],
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__subtitle"],
   [class*="-header__content"] [class*="__sub"],
-  [class*="-card__head"]:not([class*="pl-card__head"]) [class*="__sub"] {
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__sub"] {
     color: #5F8375 !important;
   }
 }
@@ -1114,7 +1117,7 @@ body.theme-light, [data-theme="light"] {
 /* ── NOCHE — dark glass cálido ── */
 body.theme-dark, [data-theme="dark"] {
   [class*="-header__content"],
-  [class*="-card__head"]:not([class*="pl-card__head"]) {
+  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
     background:          rgba(var(--sb-bg-rgb), 0.80) !important;
     backdrop-filter:     blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;

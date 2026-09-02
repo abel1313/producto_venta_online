@@ -571,7 +571,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   // para el puntito .vb-card__color-dot como referencia del color real de la prenda.
   &__header {
     padding: 18px 16px 14px;
-    color: white;
+    color: var(--card-header-text, #fff);
     display: flex;
     align-items: flex-start;
     gap: 12px;

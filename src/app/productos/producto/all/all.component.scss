@@ -406,7 +406,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   // con Personalización.
   &__header {
     padding: 14px 16px 12px;
-    color: white;
+    color: var(--card-header-text, #fff);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;

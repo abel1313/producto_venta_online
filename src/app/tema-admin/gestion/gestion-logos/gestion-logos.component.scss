@@ -109,7 +109,7 @@
 
   &__nombre {
     font-size: .78rem;
-    color: #fff;
+    color: var(--card-header-text, #fff);
     margin: 0;
     white-space: nowrap;
     overflow: hidden;

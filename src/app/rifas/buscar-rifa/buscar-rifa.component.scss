@@ -126,7 +126,7 @@
   }
 
   // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
-  &__id { font-size: 0.95rem; font-weight: 700; color: #fff; }
+  &__id { font-size: 0.95rem; font-weight: 700; color: var(--card-header-text, #fff); }
 
   &__badges {
     display: flex;

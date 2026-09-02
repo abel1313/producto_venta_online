@@ -434,7 +434,7 @@
     background: var(--card-header-bg);
     padding: 10px 14px;
     font-weight: 700;
-    color: #fff;
+    color: var(--card-header-text, #fff);
   }
 
   &__body {

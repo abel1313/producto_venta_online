@@ -108,7 +108,7 @@
   &__nombre {
     font-weight: 700;
     font-size: 0.95rem;
-    color: #fff;
+    color: var(--card-header-text, #fff);
     margin: 0;
   }
 

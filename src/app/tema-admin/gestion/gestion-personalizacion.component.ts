@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ITemaVariable } from '../models/tema.model';
+import { PresetDiseno, PRESETS_DISENO } from '../models/presets-diseno';
 import { TemaAdminService } from '../service/tema-admin.service';
 
 // Pantalla única de Personalización -- catálogo dinámico (ver TemaVariable en el backend): cada
@@ -29,6 +31,8 @@ export class GestionPersonalizacionComponent implements OnInit {
 
   readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion'];
   readonly sombras = ['suave', 'media', 'fuerte'];
+  readonly presets: PresetDiseno[] = PRESETS_DISENO;
+  aplicandoPreset: string | null = null;
 
   // Secciones abiertas por defecto: solo la primera -- el resto empieza colapsado para que la
   // pantalla no abrume apenas se entra.
@@ -171,6 +175,58 @@ export class GestionPersonalizacionComponent implements OnInit {
           Swal.fire({ icon: 'success', title: 'Eliminado', timer: 1200, showConfirmButton: false });
         },
         error: err => Swal.fire({ icon: 'error', title: 'Error al eliminar', text: err?.error?.mensaje })
+      });
+    });
+  }
+
+  /** Preview instantáneo del preset al pasar el mouse/enfocar su tarjeta -- antes de confirmar. */
+  previsualizarPreset(preset: PresetDiseno): void {
+    const preview = this.variables.map(v =>
+      preset.valores[v.clave] !== undefined ? { ...v, valorClaro: preset.valores[v.clave] } : v
+    );
+    this.svc.previsualizar(preview);
+  }
+
+  /** Deja de previsualizar el preset y vuelve a mostrar lo guardado. */
+  quitarPreviewPreset(): void {
+    if (this.editandoId === null) this.svc.previsualizar(this.variables);
+  }
+
+  /** Aplica un diseño predefinido: actualiza en un solo paso todas las variables que el preset
+   * trae, solo su valor claro -- el oscuro no se toca. Solo afecta variables que YA existen en el
+   * catálogo (si el dueño borró alguna, esa se ignora en vez de recrearla). */
+  aplicarPreset(preset: PresetDiseno): void {
+    Swal.fire({
+      title: `¿Aplicar "${preset.nombre}"?`,
+      text: 'Se sobrescribe el valor claro de las variables de Marca, Página, Card, Tablas, Menú lateral y Formularios con esta paleta. El modo oscuro no cambia.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, aplicar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+
+      const afectadas = this.variables.filter(v => preset.valores[v.clave] !== undefined && v.id !== undefined);
+      if (afectadas.length === 0) {
+        Swal.fire({ icon: 'info', title: 'Nada que aplicar', text: 'El catálogo actual no tiene ninguna de las variables de este diseño.' });
+        return;
+      }
+
+      this.aplicandoPreset = preset.id;
+      const llamadas = afectadas.map(v =>
+        this.svc.actualizar(v.id!, { ...v, valorClaro: preset.valores[v.clave] })
+      );
+      forkJoin(llamadas).subscribe({
+        next: () => {
+          this.aplicandoPreset = null;
+          this.cargar();
+          Swal.fire({ icon: 'success', title: 'Diseño aplicado', timer: 1400, showConfirmButton: false });
+        },
+        error: err => {
+          this.aplicandoPreset = null;
+          this.cargar();
+          Swal.fire({ icon: 'error', title: 'No se aplicó completo', text: err?.error?.mensaje ?? 'Revisa el catálogo, algunas variables pudieron quedar a medias.' });
+        }
       });
     });
   }

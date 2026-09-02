@@ -11,6 +11,30 @@
   <div class="pz-loading" *ngIf="cargando">Cargando…</div>
 
   <ng-container *ngIf="!cargando">
+
+  <!-- ── Diseños predefinidos ─────────────────────────────────────── -->
+  <section class="pz-presets">
+    <div class="pz-presets__title">✨ Diseños predefinidos</div>
+    <p class="pz-presets__sub">Aplica una paleta completa (Marca, Página, Card, Tablas, Menú lateral,
+      Formularios) de un clic. Pasa el mouse para previsualizar. Solo cambia el modo claro ☀️.</p>
+    <div class="pz-presets__grid">
+      <div class="pz-preset" *ngFor="let p of presets"
+           (mouseenter)="previsualizarPreset(p)" (mouseleave)="quitarPreviewPreset()">
+        <div class="pz-preset__swatches">
+          <span class="pz-preset__swatch" [style.background]="p.valores['brand-1']"></span>
+          <span class="pz-preset__swatch" [style.background]="p.valores['brand-2']"></span>
+          <span class="pz-preset__swatch" [style.background]="p.valores['brand-3']"></span>
+        </div>
+        <div class="pz-preset__nombre">{{ p.nombre }}</div>
+        <div class="pz-preset__desc">{{ p.descripcion }}</div>
+        <button type="button" class="pz-btn pz-btn--save" [disabled]="aplicandoPreset === p.id"
+                (click)="aplicarPreset(p)">
+          {{ aplicandoPreset === p.id ? 'Aplicando…' : 'Aplicar este diseño' }}
+        </button>
+      </div>
+    </div>
+  </section>
+
   <div class="pz-layout">
 
     <!-- ── Columna 1: Alta / edición ──────────────────────────────── -->

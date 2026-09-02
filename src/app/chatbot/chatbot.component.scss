@@ -370,13 +370,54 @@ $radius: 18px;
 }
 
 // ── Dark mode ──────────────────────────────────────
+// --brand-1/--brand-2 se invierten a blanco/gris claro en modo oscuro (para que
+// botones normales resalten sobre fondo negro) -- pero el chatbot los usa como
+// color de marca sólido (header, avatar, burbuja, botones), no como acento, así
+// que heredar la inversión dejaba todo el widget blanco e ilegible como chat.
+// Se fija aquí la paleta jade real del modo claro para que el chat mantenga su
+// identidad visual también en oscuro.
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
   .cb-fab {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    box-shadow: 0 8px 28px rgba(var(--app-accent-rgb),0.5);
-    &:hover { box-shadow: 0 12px 36px rgba(var(--app-accent-rgb),0.65); }
+    background: linear-gradient(135deg, #005C3D, #00875A);
+    box-shadow: 0 8px 28px rgba(0,135,90,0.5);
+    &:hover { box-shadow: 0 12px 36px rgba(0,135,90,0.65); }
     &--open { background: linear-gradient(135deg, #374151, #1f2937); }
+    &__close { color: #FFFFFF; }
   }
+
+  .cb-header {
+    background: linear-gradient(135deg, #00301F 0%, #6B4F22 55%, #00875A 100%);
+
+    &__name, &__close { color: #FFFFFF; }
+    &__close {
+      background: rgba(255,255,255,0.14);
+      &:hover { background: rgba(255,255,255,0.28); }
+    }
+  }
+
+  .cb-avatar { background: linear-gradient(135deg, #005C3D, #00875A); }
+
+  .cb-burbuja--user {
+    background: linear-gradient(135deg, #005C3D, #00875A);
+    color: #FFFFFF !important;
+    box-shadow: 0 3px 10px rgba(0,135,90,0.35);
+
+    .cb-burbuja__text { color: #FFFFFF !important; }
+  }
+
+  .cb-send {
+    background: linear-gradient(135deg, #005C3D, #00875A);
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0,135,90,0.4);
+    &:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(0,135,90,0.5); }
+  }
+
+  .cb-btn-add {
+    background: linear-gradient(135deg, #00875A, #005C3D);
+    color: #FFFFFF;
+    &:hover:not(:disabled) { box-shadow: 0 3px 8px rgba(0,135,90,.35); }
+  }
+
   .cb-msgs { &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
 }
 

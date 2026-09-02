@@ -110,7 +110,15 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     this.enviando = true;
     this.errorMsg = '';
     this.acceder.enviarCodigoVerificacionUsuario(this.userName).subscribe({
-      next:  () => { this.enviando = false; this.iniciarCooldown(); },
+      next:  () => {
+        this.enviando = false;
+        // El código anterior queda inválido en el back al generarse uno nuevo -- si no se
+        // limpia aquí, el campo se queda mostrando los dígitos viejos y el usuario los manda
+        // sin darse cuenta, viendo "código incorrecto" con un código que a simple vista se ve
+        // bien (reportado en QA 2026-09-02: "ya lo reenvié 2 veces y dice que es incorrecto").
+        this.codigo = '';
+        this.iniciarCooldown();
+      },
       error: (err) => {
         this.enviando = false;
         const raw = err?.error;

@@ -212,11 +212,18 @@
           </div>
         </div>
 
-        <div class="field-wrap field-wrap--checkbox" *ngIf="!esActualizar">
-          <label class="checkbox-label">
-            <input type="checkbox" formControlName="aceptoPrivacidad">
-            <span>Acepto el <a routerLink="/privacidad" target="_blank">aviso de privacidad</a></span>
+        <div class="privacy-box" *ngIf="!esActualizar">
+          <label class="checkbox-label" for="chk-privacidad">
+            <input id="chk-privacidad" type="checkbox" formControlName="aceptoPrivacidad">
+            <span>Acepto el <strong>aviso de privacidad</strong> para crear mi cuenta</span>
           </label>
+          <!-- El link va FUERA del <label> a propósito: un <a> anidado dentro de un <label> que
+               envuelve un checkbox no abre confiablemente en pestaña nueva (el navegador prioriza
+               el toggle del checkbox sobre la navegación del link) -- bug real reportado en QA
+               2026-09-02, aquí se corrige sacándolo del label. -->
+          <a class="privacy-link" routerLink="/privacidad" target="_blank" rel="noopener">
+            <i class="pi pi-external-link"></i> Leer el aviso de privacidad completo
+          </a>
           <div *ngIf="formRegistro.get('aceptoPrivacidad')?.invalid && formRegistro.get('aceptoPrivacidad')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
             Debes aceptar el aviso de privacidad para registrarte

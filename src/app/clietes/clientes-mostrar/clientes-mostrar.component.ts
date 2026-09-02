@@ -28,6 +28,8 @@ export class ClientesMostrarComponent implements OnInit {
   correoVerificado: boolean | undefined = undefined;
   cargando = true;
   guardando = false;
+  recibirCorreos = true;
+  guardandoPreferenciaCorreo = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -72,6 +74,7 @@ export class ClientesMostrarComponent implements OnInit {
         this.usuarioId         = detalle.usuarioId;
         this.username           = detalle.username;
         this.correoVerificado = detalle.cliente.correoVerificado;
+        this.recibirCorreos = detalle.cliente.recibirCorreos ?? true;
 
         this.formDatosCliente.patchValue({
           nombrePersona:     detalle.cliente.nombrePersona,
@@ -132,6 +135,23 @@ export class ClientesMostrarComponent implements OnInit {
 
   volver(): void {
     this.router.navigate(['/clientes/buscar']);
+  }
+
+  // ── Preferencia de correos (admin, por cliente) ───────────────────────
+  toggleRecibirCorreos(): void {
+    if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
+    const nuevoValor = !this.recibirCorreos;
+    this.guardandoPreferenciaCorreo = true;
+    this.clienteService.actualizarPreferenciaCorreo(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirCorreos = nuevoValor;
+        this.guardandoPreferenciaCorreo = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaCorreo = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+      }
+    });
   }
 
   // ── Verificación de correo (admin) ────────────────────────────────────

@@ -151,6 +151,21 @@
         </div>
       </div>
 
+      <!-- ── Sección: Preferencias ────────────────────────────────── -->
+      <div class="md-section" *ngIf="clienteId">
+        <span class="md-section__label">Preferencias</span>
+        <div class="md-predefinida">
+          <label class="md-toggle-wrap">
+            <input type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
+                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos()">
+            <span class="md-toggle-slider"></span>
+            <span class="md-toggle-text">
+              Recibir correos de seguimiento de pedido y alertas de stock
+            </span>
+          </label>
+        </div>
+      </div>
+
       <!-- ── Sección: Direcciones ──────────────────────────────────── -->
       <div class="md-section" formArrayName="listDirecciones">
         <div class="md-section-hdr">

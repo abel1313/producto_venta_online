@@ -252,6 +252,34 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+.field-wrap--checkbox { margin-bottom: 1.1rem; }
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--app-text-muted, #374151);
+  cursor: pointer;
+  line-height: 1.4;
+
+  input[type="checkbox"] {
+    margin-top: 0.15rem;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--app-accent, var(--brand-1));
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  a {
+    color: var(--app-accent, var(--brand-1));
+    font-weight: 600;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
 // ── Errores ────────────────────────────────────────────────────────────────
 .field-error {
   display: flex;

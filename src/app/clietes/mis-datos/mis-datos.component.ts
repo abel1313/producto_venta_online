@@ -23,6 +23,8 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+  recibirCorreos = true;
+  guardandoPreferenciaCorreo = false;
 
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
@@ -86,6 +88,7 @@ export class MisDatosComponent implements OnInit {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
+        this.recibirCorreos = data.data.recibirCorreos ?? true;
         this.formDatosCliente.patchValue({
           nombrePersona: data.data.nombrePersona,
           segundoNombre: data.data.segundoNombre,
@@ -255,6 +258,22 @@ export class MisDatosComponent implements OnInit {
     });
   }
 
+
+  toggleRecibirCorreos(): void {
+    if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
+    const nuevoValor = !this.recibirCorreos;
+    this.guardandoPreferenciaCorreo = true;
+    this.clienteServoce.actualizarPreferenciaCorreo(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirCorreos = nuevoValor;
+        this.guardandoPreferenciaCorreo = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaCorreo = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+      }
+    });
+  }
 
   verificarCorreoPropio(): void {
     if (!this.clienteId) return;

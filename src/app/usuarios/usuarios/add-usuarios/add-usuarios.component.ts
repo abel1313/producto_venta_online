@@ -78,6 +78,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), passwordFuerte]],
     confirmPassword: ['', Validators.required],
+    aceptoPrivacidad: [false, Validators.requiredTrue],
     enabled: true,
     rol: '',
     rolId: [null as number | null]
@@ -104,6 +105,11 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
       this.formRegistro.get('confirmPassword')?.clearValidators();
       this.formRegistro.get('password')?.updateValueAndValidity({ emitEvent: false });
       this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
+
+      // El aviso de privacidad solo se pide en el autoregistro -- aquí es el admin editando a
+      // otro usuario, no tiene sentido pedirle que "acepte" en su nombre.
+      this.formRegistro.get('aceptoPrivacidad')?.clearValidators();
+      this.formRegistro.get('aceptoPrivacidad')?.updateValueAndValidity({ emitEvent: false });
 
       this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
       this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
@@ -173,9 +179,9 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
 
   darAltaUser(){
     if (this.formRegistro.valid) {
-      const { userName, email, password } = this.formRegistro.value;
+      const { userName, email, password, aceptoPrivacidad } = this.formRegistro.value;
       const usrName: string = userName ?? '';
-      this.auth.registrar({ userName: usrName, email, password }).subscribe({
+      this.auth.registrar({ userName: usrName, email, password, aceptoPrivacidad: aceptoPrivacidad ?? false }).subscribe({
         next: (registrado) => {
           if (registrado != null) {
             this.formRegistro.reset();

@@ -138,6 +138,9 @@
         <button class="gp-btn" [ngClass]="p.activo ? 'gp-btn--off' : 'gp-btn--on'" (click)="toggleActivo(p)">
           {{ p.activo ? '⏸ Desactivar' : '▶️ Activar' }}
         </button>
+        <button class="gp-btn" [disabled]="enviandoCorreoId === p.id" (click)="enviarCorreo(p)">
+          {{ enviandoCorreoId === p.id ? '⏳ Enviando…' : '✉️ Enviar correo' }}
+        </button>
       </div>
     </div>
   </div>

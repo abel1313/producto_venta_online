@@ -63,4 +63,29 @@ export class PagoService {
   getHistorialDirectoMp(desde: string, hasta: string): Observable<IHistorialMpMpItem[]> {
     return this.http.get<IHistorialMpMpItem[]>(`${this.url}/v1/mp/historial/mp?desde=${desde}&hasta=${hasta}`);
   }
+
+  // ── Checkout Pro Mercado Pago (pago online por redireccion, 2026-09-03) ────────────────
+  // Distinto de iniciarPagoTerminal (Point, terminal fisica) -- este crea una Preference y
+  // devuelve un link al que hay que redirigir con window.location.href, no es un polling.
+  crearPreferenceCheckoutMP(pedidoId: number): Observable<{ initPoint: string }> {
+    return this.http.post<{ initPoint: string }>(`${this.url}/v1/mp/checkout/preference/${pedidoId}`, {});
+  }
+
+  // ── PayPal Orders API v2 (2026-09-03) ───────────────────────────────────────────────────
+  crearOrdenPaypal(pedidoId: number): Observable<{ approveUrl: string }> {
+    return this.http.post<{ approveUrl: string }>(`${this.url}/v1/paypal/orden/${pedidoId}`, {});
+  }
+
+  // Se llama al volver de PayPal con estado=success (ver PagoResultadoComponent) -- PayPal no
+  // confirma el pago solo con la aprobacion, hay que capturarlo explicitamente.
+  capturarOrdenPaypal(orderId: string): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.url}/v1/paypal/orden/${orderId}/capturar`, {});
+  }
+
+  // ── Reembolso de pago online (solo ADMIN, 2026-09-03) ───────────────────────────────────
+  // Paso aparte de cancelar el pedido a propósito -- el back exige que el pedido ya esté
+  // cancelado/devuelto antes de dejar reembolsar (ver PagoOnlineService).
+  reembolsarPagoOnline(pedidoId: number): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.url}/v1/pagos-online/${pedidoId}/reembolsar`, {});
+  }
 }

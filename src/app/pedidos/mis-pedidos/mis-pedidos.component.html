@@ -174,6 +174,13 @@
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> Cobrar
           </button>
+          <button class="btn-card btn-cobrar" *ngIf="!isAdminUser"
+                  [disabled]="pedidoYaCobrado(item) || pagandoEnLinea === item.pedido.id"
+                  [title]="pedidoYaCobrado(item) ? 'Este pedido ya está pagado' : 'Pagar con tarjeta en línea'"
+                  (click)="pagarEnLinea(item)">
+            <i class="pi pi-credit-card"></i>
+            {{ pagandoEnLinea === item.pedido.id ? 'Redirigiendo…' : 'Pagar en línea' }}
+          </button>
           <button class="btn-card btn-ticket btn-icon-only"
                   [disabled]="imprimiendoTicket[item.pedido.id] || !puedeGenerarTicket(item)"
                   (click)="imprimirTicketPedido(item)"
@@ -185,6 +192,13 @@
                   (click)="enviarCorreoPedido(item)"
                   [title]="puedeGenerarTicket(item) ? 'Enviar comprobante por correo' : 'Primero hay que cobrar o recoger el pedido'">
             <i class="pi pi-envelope"></i>
+          </button>
+          <button class="btn-card btn-cobrar" *ngIf="isAdminUser && item.pedido.estado_pedido === 'Cancelado'"
+                  [disabled]="reembolsando === item.pedido.id"
+                  title="Reembolsar el pago online de este pedido (solo si se cobró por Mercado Pago o PayPal) -- el pedido ya está cancelado, confirma primero que el producto regresó."
+                  (click)="reembolsarPedido(item)">
+            <i class="pi pi-replay"></i>
+            {{ reembolsando === item.pedido.id ? 'Reembolsando…' : 'Reembolsar' }}
           </button>
           <button class="btn-card btn-cancelar"
                   [disabled]="item.pedido.estado_pedido === 'Cancelado' || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"

@@ -24,6 +24,7 @@ import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
 import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
+import { PagoResultadoComponent } from './pago-resultado/pago-resultado.component';
 import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { FormsModule } from '@angular/forms';
@@ -79,6 +80,7 @@ export function bootstrapAuth(
     TerminosComponent,
     TiktokCallbackComponent,
     ChatbotComponent,
+    PagoResultadoComponent,
   ],
   imports: [
     QRCodeModule,

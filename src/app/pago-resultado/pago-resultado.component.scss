@@ -1,0 +1,55 @@
+.pr-wrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pr-card {
+  max-width: 480px;
+  text-align: center;
+  color: var(--app-text);
+
+  h1 {
+    font-size: 1.3rem;
+    margin: 0 0 12px;
+  }
+
+  p {
+    margin: 0 0 8px;
+    color: var(--app-text-muted, #64748b);
+  }
+}
+
+.pr-ok h1 { color: #16a34a; }
+.pr-error h1 { color: #dc2626; }
+
+.pr-hint {
+  font-size: 0.85rem;
+}
+
+.pr-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  background-color: var(--app-accent, #00875A);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pr-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 16px;
+  border: 3px solid var(--card-border, #e2e8f0);
+  border-top-color: var(--app-accent);
+  border-radius: 50%;
+  animation: pr-spin 0.8s linear infinite;
+}
+
+@keyframes pr-spin {
+  to { transform: rotate(360deg); }
+}

@@ -11,6 +11,7 @@ import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
 import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
+import { PagoResultadoComponent } from './pago-resultado/pago-resultado.component';
 
 const routes: Routes = [
   {
@@ -157,6 +158,11 @@ const routes: Routes = [
     // PÚBLICA a propósito — TikTok redirige aquí con el `code` de OAuth antes de que exista
     // sesión nuestra (ver TIKTOK_SETUP.md paso 3-5 y tiktok-callback.component.ts).
     path: 'tiktok/callback', component: TiktokCallbackComponent
+  },
+  {
+    // PÚBLICA a propósito (2026-09-03) — Mercado Pago/PayPal redirigen aquí desde su propio
+    // dominio (ver pago-resultado.component.ts).
+    path: 'pago/resultado', component: PagoResultadoComponent
   },
   {
     // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+PantallaGuard (es el

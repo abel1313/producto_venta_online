@@ -963,6 +963,83 @@ export class MisPedidosComponent implements OnInit {
     return estado === 'Entregado';
   }
 
+  // ── Pago en línea (Checkout Pro MP / PayPal, 2026-09-03) ────────────────────────────────
+  // Solo el propio cliente paga su pedido en línea desde su dispositivo -- un admin no debe
+  // redirigir SU navegador a la pasarela para pagar el pedido de otra persona.
+  pagandoEnLinea: number | null = null;
+
+  pagarEnLinea(item: IPedidoGenerico): void {
+    if (this.isAdminUser || this.pedidoYaCobrado(item) || this.pagandoEnLinea) return;
+    const pedidoId = item.pedido.id;
+    Swal.fire({
+      title: '¿Cómo quieres pagar?',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: 'Mercado Pago',
+      denyButtonText: 'PayPal',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (result.isConfirmed) {
+        this.iniciarCheckoutMP(pedidoId);
+      } else if (result.isDenied) {
+        this.iniciarCheckoutPaypal(pedidoId);
+      }
+    });
+  }
+
+  private iniciarCheckoutMP(pedidoId: number): void {
+    this.pagandoEnLinea = pedidoId;
+    this.pagoService.crearPreferenceCheckoutMP(pedidoId).subscribe({
+      next: res => { window.location.href = res.initPoint; },
+      error: err => {
+        this.pagandoEnLinea = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo iniciar el pago', text: err?.error?.mensaje ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private iniciarCheckoutPaypal(pedidoId: number): void {
+    this.pagandoEnLinea = pedidoId;
+    this.pagoService.crearOrdenPaypal(pedidoId).subscribe({
+      next: res => { window.location.href = res.approveUrl; },
+      error: err => {
+        this.pagandoEnLinea = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo iniciar el pago', text: err?.error?.mensaje ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  // ── Reembolso (solo ADMIN, 2026-09-03) ──────────────────────────────────────────────────
+  // Paso aparte de "Cancelar" a propósito: el back exige que el pedido ya esté cancelado
+  // (confirma que el producto regresó) antes de dejar reembolsar el dinero.
+  reembolsando: number | null = null;
+
+  reembolsarPedido(item: IPedidoGenerico): void {
+    if (this.reembolsando) return;
+    const pedidoId = item.pedido.id;
+    Swal.fire({
+      title: '¿Reembolsar este pedido?',
+      html: 'Confirma que el producto ya regresó antes de continuar. Esto le devuelve el dinero al cliente por la pasarela con la que pagó (Mercado Pago o PayPal).',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reembolsar',
+      cancelButtonText: 'Cancelar'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.reembolsando = pedidoId;
+      this.pagoService.reembolsarPagoOnline(pedidoId).subscribe({
+        next: () => {
+          this.reembolsando = null;
+          Swal.fire({ icon: 'success', title: 'Reembolso iniciado', timer: 1800, showConfirmButton: false });
+        },
+        error: err => {
+          this.reembolsando = null;
+          Swal.fire({ icon: 'error', title: 'No se pudo reembolsar', text: err?.error?.mensaje ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
   // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
   // estado_pedido; para crédito, el back confirmó (2026-07-24) que totalPagado ya viene en
   // este mismo objeto — antes se dejaba habilitado siempre porque no había forma de saberlo

@@ -1,0 +1,46 @@
+<div class="pr-wrap">
+
+  <div class="pr-card" *ngIf="capturando">
+    <div class="pr-spinner"></div>
+    <h1>Confirmando tu pago…</h1>
+    <p>Espera un momento, esto solo toma unos segundos.</p>
+  </div>
+
+  <ng-container *ngIf="!capturando">
+
+    <div class="pr-card pr-ok" *ngIf="estado === 'success' && !errorCaptura">
+      <h1>✅ ¡Pago exitoso!</h1>
+      <p>Tu pago se procesó correctamente<ng-container *ngIf="pedidoId"> para el pedido #{{ pedidoId }}</ng-container>.</p>
+      <p class="pr-hint" *ngIf="proveedor !== 'paypal'">
+        Puede tardar unos segundos en reflejarse mientras confirmamos con la pasarela. Revisa el
+        estado desde "Mis pedidos".
+      </p>
+      <a routerLink="/pedidos/mis-pedidos" class="pr-btn">Ver mis pedidos</a>
+    </div>
+
+    <div class="pr-card pr-error" *ngIf="errorCaptura">
+      <h1>No se pudo confirmar el pago</h1>
+      <p>{{ errorCaptura }}</p>
+      <a routerLink="/pedidos/mis-pedidos" class="pr-btn">Ver mis pedidos</a>
+    </div>
+
+    <div class="pr-card" *ngIf="estado === 'pending' && !errorCaptura">
+      <h1>⏳ Pago pendiente</h1>
+      <p>Tu pago está siendo procesado. Te avisaremos por correo cuando se confirme.</p>
+      <a routerLink="/pedidos/mis-pedidos" class="pr-btn">Ver mis pedidos</a>
+    </div>
+
+    <div class="pr-card pr-error" *ngIf="estado === 'failure' && !errorCaptura">
+      <h1>❌ El pago no se pudo completar</h1>
+      <p>Puedes intentarlo de nuevo desde "Mis pedidos".</p>
+      <a routerLink="/pedidos/mis-pedidos" class="pr-btn">Ver mis pedidos</a>
+    </div>
+
+    <div class="pr-card" *ngIf="!estado">
+      <h1>Pantalla de resultado de pago</h1>
+      <p>No se detectó ningún resultado de pago en la URL.</p>
+    </div>
+
+  </ng-container>
+
+</div>

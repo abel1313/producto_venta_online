@@ -102,6 +102,13 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     return 'gp-badge--activa';
   }
 
+  // El back rechaza el envio de correo si la promocion no esta vigente (inactiva o vencida,
+  // pedido 2026-09-03) -- se deshabilita el boton aca tambien para no dejar que el admin le dé
+  // clic y se encuentre con el error recien al confirmar.
+  esVigente(p: IPromocion): boolean {
+    return !!p.activo && new Date(p.fechaVencimiento) > new Date();
+  }
+
   precioTotalNormal(p: IPromocion): number {
     return (p.detalles ?? []).reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
   }
@@ -140,6 +147,10 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
   // pantalla, ver PromocionServiceImpl.enviarCorreoPromocionAsync).
   enviarCorreo(p: IPromocion): void {
     if (this.enviandoCorreoId) return;
+    if (!this.esVigente(p)) {
+      Swal.fire({ icon: 'warning', title: 'Promoción no vigente', text: 'Esta promoción está inactiva o vencida, no se puede enviar el correo.' });
+      return;
+    }
     this.promoService.contarElegiblesParaCorreo().subscribe({
       next: res => {
         const elegibles = res?.data ?? 0;

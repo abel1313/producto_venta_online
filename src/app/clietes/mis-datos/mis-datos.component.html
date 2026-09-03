@@ -164,6 +164,16 @@
             </span>
           </label>
         </div>
+        <div class="md-predefinida">
+          <label class="md-toggle-wrap">
+            <input type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
+                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones()">
+            <span class="md-toggle-slider"></span>
+            <span class="md-toggle-text">
+              Recibir promociones
+            </span>
+          </label>
+        </div>
       </div>
 
       <!-- ── Sección: Direcciones ──────────────────────────────────── -->

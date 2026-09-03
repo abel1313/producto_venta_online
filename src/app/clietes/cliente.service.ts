@@ -68,4 +68,12 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+  // Checkbox independiente del de arriba -- solo controla si le llega el correo cuando el admin
+  // envía una promoción nueva.
+  actualizarPreferenciaPromociones(clienteId: number, recibirPromociones: boolean): Observable<ResponseGeneric<string>> {
+    return this.http.put<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/preferencias-promociones`, { recibirPromociones }
+    );
+  }
+
 }

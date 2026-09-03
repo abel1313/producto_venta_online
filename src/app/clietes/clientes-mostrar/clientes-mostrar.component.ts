@@ -30,6 +30,8 @@ export class ClientesMostrarComponent implements OnInit {
   guardando = false;
   recibirCorreos = true;
   guardandoPreferenciaCorreo = false;
+  recibirPromociones = true;
+  guardandoPreferenciaPromociones = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -75,6 +77,7 @@ export class ClientesMostrarComponent implements OnInit {
         this.username           = detalle.username;
         this.correoVerificado = detalle.cliente.correoVerificado;
         this.recibirCorreos = detalle.cliente.recibirCorreos ?? true;
+        this.recibirPromociones = detalle.cliente.recibirPromociones ?? true;
 
         this.formDatosCliente.patchValue({
           nombrePersona:     detalle.cliente.nombrePersona,
@@ -150,6 +153,22 @@ export class ClientesMostrarComponent implements OnInit {
       error: () => {
         this.guardandoPreferenciaCorreo = false;
         Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+      }
+    });
+  }
+
+  toggleRecibirPromociones(): void {
+    if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
+    const nuevoValor = !this.recibirPromociones;
+    this.guardandoPreferenciaPromociones = true;
+    this.clienteService.actualizarPreferenciaPromociones(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirPromociones = nuevoValor;
+        this.guardandoPreferenciaPromociones = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaPromociones = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
       }
     });
   }

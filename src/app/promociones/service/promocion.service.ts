@@ -34,4 +34,16 @@ export class PromocionService {
     const params = new HttpParams().set('pagina', String(pagina)).set('size', String(size));
     return this.http.get<ResponseGeneric<IPromocionPaginable>>(`${this.url}/activas`, { params });
   }
+
+  // Cuantos clientes tienen el checkbox de promociones activado ahora mismo -- para mostrarle al
+  // admin antes de disparar el envio (confirmacion "se va a mandar a N clientes").
+  contarElegiblesParaCorreo(): Observable<ResponseGeneric<number>> {
+    return this.http.get<ResponseGeneric<number>>(`${this.url}/correo/elegibles`);
+  }
+
+  // Envio en tandas de 10, corre en el back en su propio hilo -- este endpoint responde de
+  // inmediato, no espera a que termine de mandarle el correo a todos.
+  enviarCorreo(id: number): Observable<ResponseGeneric<string>> {
+    return this.http.post<ResponseGeneric<string>>(`${this.url}/${id}/enviar-correo`, {});
+  }
 }

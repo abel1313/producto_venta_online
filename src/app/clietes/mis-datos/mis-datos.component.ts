@@ -25,6 +25,8 @@ export class MisDatosComponent implements OnInit {
   correoVerificado: boolean | undefined = undefined;
   recibirCorreos = true;
   guardandoPreferenciaCorreo = false;
+  recibirPromociones = true;
+  guardandoPreferenciaPromociones = false;
 
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
@@ -89,6 +91,7 @@ export class MisDatosComponent implements OnInit {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
         this.recibirCorreos = data.data.recibirCorreos ?? true;
+        this.recibirPromociones = data.data.recibirPromociones ?? true;
         this.formDatosCliente.patchValue({
           nombrePersona: data.data.nombrePersona,
           segundoNombre: data.data.segundoNombre,
@@ -271,6 +274,22 @@ export class MisDatosComponent implements OnInit {
       error: () => {
         this.guardandoPreferenciaCorreo = false;
         Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+      }
+    });
+  }
+
+  toggleRecibirPromociones(): void {
+    if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
+    const nuevoValor = !this.recibirPromociones;
+    this.guardandoPreferenciaPromociones = true;
+    this.clienteServoce.actualizarPreferenciaPromociones(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirPromociones = nuevoValor;
+        this.guardandoPreferenciaPromociones = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaPromociones = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
       }
     });
   }

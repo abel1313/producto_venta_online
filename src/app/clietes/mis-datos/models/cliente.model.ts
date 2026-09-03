@@ -29,5 +29,8 @@ export interface ICliente extends IdGenerico {
     // favoritos) -- se cambia SOLO vía ClienteService.actualizarPreferenciaCorreo(), nunca por
     // guardarCliente()/saveData() (el back preserva el valor existente ahí a propósito).
     recibirCorreos?: boolean;
+    // Checkbox independiente del de arriba -- se cambia SOLO vía
+    // ClienteService.actualizarPreferenciaPromociones(), mismo criterio.
+    recibirPromociones?: boolean;
 
 }

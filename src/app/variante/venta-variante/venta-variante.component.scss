@@ -70,14 +70,23 @@
 // con el fondo claro fijo de Bootstrap -- texto blanco sobre fondo blanco, invisible. Mismo bug
 // y mismo arreglo ya usado en gestion-lugares.component.scss (.pk-input) y abonos.component.scss
 // (.ab-input) -- pero ahí alcanzaba con color-scheme+color porque son <input>, sin popup propio.
-// Un <select> SÍ tiene un popup nativo aparte (la lista de <option> al abrirlo) que en
-// Chromium/Brave no hereda el color-scheme del cierre del control -- si no se le pone también
-// background-color explícito, el popup se queda con su fondo claro nativo mientras el texto ya
-// se puso claro por el color de arriba: texto claro sobre fondo claro, invisible (2026-09-04,
-// reportado con capturas: "el listado de lugares se ve todo en blanco").
+//
+// Un <select> SÍ tiene un popup nativo aparte (la lista de <option> al abrirlo). Probado con
+// color-scheme:dark + background-color en el propio <select> (2026-09-04, primer intento) y
+// AÚN ASÍ el popup seguía ilegible -- varios navegadores (confirmado en Brave/Chromium) ignoran
+// el background-color del popup de opciones y lo pintan con su propio fondo nativo según
+// color-scheme, sin que CSS de autor pueda tocarlo. La única forma confiable de garantizar que
+// se lea es forzar color-scheme:light en el <select> (el popup nativo SIEMPRE sale claro con
+// texto oscuro, sin importar el tema de la app) -- el cuadro CERRADO del control sí respeta nuestro
+// background-color/color explícitos siempre, así que se ve oscuro igual, solo el popup abierto
+// se ve claro un instante.
 :host-context(body.theme-dark) {
-  .form-select, .form-control { color-scheme: dark; color: var(--app-text); }
-  .form-select { background-color: var(--card-bg); }
+  .form-control { color-scheme: dark; color: var(--app-text); }
+  .form-select {
+    color-scheme: light;
+    background-color: var(--card-bg);
+    color: var(--app-text);
+  }
 }
 
 :host-context(body.theme-light) {

@@ -161,8 +161,8 @@
         <span class="md-section__label">Preferencias</span>
         <div class="md-predefinida">
           <label class="md-toggle-wrap">
-            <input type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
-                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos()">
+            <input #chkRecibirCorreos type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
+                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos(chkRecibirCorreos)">
             <span class="md-toggle-slider"></span>
             <span class="md-toggle-text">
               Recibir correos de seguimiento de pedido y alertas de stock
@@ -171,8 +171,8 @@
         </div>
         <div class="md-predefinida">
           <label class="md-toggle-wrap">
-            <input type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
-                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones()">
+            <input #chkRecibirPromociones type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
+                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones(chkRecibirPromociones)">
             <span class="md-toggle-slider"></span>
             <span class="md-toggle-text">
               Recibir promociones
@@ -291,8 +291,7 @@
 
       <!-- ── Footer ────────────────────────────────────────────────── -->
       <div class="md-footer">
-        <button type="submit" class="md-btn md-btn--save"
-                [disabled]="!formDatosCliente.valid">
+        <button type="submit" class="md-btn md-btn--save">
           <i class="pi pi-save"></i> Guardar cambios
         </button>
       </div>

@@ -50,6 +50,8 @@ export class GestionMenuComponent implements OnInit {
       // Texto del botón ℹ️ en Gestión de roles (2026-08-28) -- qué es esta pantalla y dónde vive
       // en el menú. Opcional: si se deja vacío, el popup dice "Todavía no tiene descripción".
       descripcion: ['', [Validators.maxLength(255)]],
+      // Texto del botón ℹ️ propio de "Editar" (2026-09-04) -- ver comentario en el HTML.
+      descripcionEscritura: ['', [Validators.maxLength(255)]],
       orden: [null]
     });
     this.cargarMenus();
@@ -170,6 +172,7 @@ export class GestionMenuComponent implements OnInit {
       ruta: s.ruta,
       icono: s.icono ?? '',
       descripcion: s.descripcion ?? '',
+      descripcionEscritura: s.descripcionEscritura ?? '',
       orden: s.orden ?? null
     });
   }
@@ -188,6 +191,7 @@ export class GestionMenuComponent implements OnInit {
       ruta: this.submenuForm.value.ruta.trim().replace(/^\//, ''),
       icono: this.submenuForm.value.icono?.trim() || null,
       descripcion: this.submenuForm.value.descripcion?.trim() || null,
+      descripcionEscritura: this.submenuForm.value.descripcionEscritura?.trim() || null,
       orden: this.submenuForm.value.orden
     };
     const op$ = this.editandoSubmenuId !== null

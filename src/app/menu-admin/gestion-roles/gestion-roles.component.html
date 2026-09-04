@@ -98,6 +98,9 @@
                          (change)="toggleSubmenuEscritura(s)" />
                   <span>✏️ Editar</span>
                 </label>
+                <!-- Fuera del <label> a propósito, mismo criterio que el ℹ️ de "Ver" -- ver
+                     verInfoEscritura(). -->
+                <button type="button" class="gr-info-btn" (click)="verInfoEscritura(s)" title="¿Qué habilita 'Editar' acá?">ℹ️</button>
               </div>
 
               <!-- Fase 3 de permisos (piloto en Modelos, extendido a Tienda): acciones puntuales

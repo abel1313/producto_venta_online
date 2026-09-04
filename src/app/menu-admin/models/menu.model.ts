@@ -22,6 +22,9 @@ export interface ISubmenu {
   icono?: string | null;
   // Tooltip/popup: qué es esta pantalla y dónde vive en el menú (2026-08-28).
   descripcion?: string | null;
+  // Tooltip/popup propio del checkbox "Editar" (2026-09-04) -- distinto de `descripcion`, que
+  // es del "Ver". Null = el front usa el texto genérico de Ver/Editar.
+  descripcionEscritura?: string | null;
   orden?: number | null;
 }
 
@@ -31,6 +34,7 @@ export interface ISubmenuRequest {
   ruta: string;
   icono?: string | null;
   descripcion?: string | null;
+  descripcionEscritura?: string | null;
   orden?: number | null;
 }
 

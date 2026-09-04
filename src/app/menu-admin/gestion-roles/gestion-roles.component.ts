@@ -182,6 +182,20 @@ export class GestionRolesComponent implements OnInit {
     });
   }
 
+  // Popup del checkbox "Editar" de UNA pantalla puntual (2026-09-04) -- distinto del genérico
+  // verInfoVerEditar() de abajo. Si esa pantalla no tiene descripcionEscritura propia (la
+  // mayoría, donde "Editar" es autoexplicativo -- una sola pantalla, sin compartir con
+  // hermanas), cae en el texto genérico.
+  verInfoEscritura(submenu: ISubmenu): void {
+    Swal.fire({
+      icon: 'info',
+      title: `✏️ Editar -- ${submenu.icono ?? ''} ${submenu.nombre}`.trim(),
+      html: submenu.descripcionEscritura
+        || 'Deja crear/editar/borrar en esta pantalla (necesita "Ver" marcado primero).',
+      confirmButtonText: 'Entendido'
+    });
+  }
+
   verInfoVerEditar(): void {
     Swal.fire({
       icon: 'info',

@@ -10,7 +10,6 @@ import { PantallaGuard } from './guard/pantalla.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
-import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
 
 const routes: Routes = [
   {
@@ -162,11 +161,6 @@ const routes: Routes = [
     // PÚBLICA a propósito, mismo motivo que /privacidad — TikTok exige Terms of Service URL
     // accesible sin sesión para aprobar la app de developers.tiktok.com.
     path: 'termConditions', component: TerminosComponent
-  },
-  {
-    // PÚBLICA a propósito — TikTok redirige aquí con el `code` de OAuth antes de que exista
-    // sesión nuestra (ver TIKTOK_SETUP.md paso 3-5 y tiktok-callback.component.ts).
-    path: 'tiktok/callback', component: TiktokCallbackComponent
   },
   {
     // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+PantallaGuard (es el

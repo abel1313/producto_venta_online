@@ -42,6 +42,15 @@
       </label>
     </div>
 
+    <!-- Día recurrente del viaje de entrega a esta zona -- lo usa "Entregas por zona" para
+         sugerir la fecha. No aplica a "recoger en tienda". -->
+    <div class="pk-form__field pk-form__field--num">
+      <select class="pk-input" formControlName="diaEntregaSemanal" title="Día de entrega recurrente a esta zona">
+        <option [ngValue]="null">Sin día fijo</option>
+        <option *ngFor="let d of diasSemana" [ngValue]="d.valor">🚚 {{ d.nombre }}</option>
+      </select>
+    </div>
+
     <!-- Centro de la zona -- usado para recentrar el mapa del checkout al elegir esta zona, y
          como origen para medir los anillos de cobro por distancia (ver abajo). Zonas viejas sin
          marcar simplemente no tienen ninguno de los dos. -->

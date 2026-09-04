@@ -33,6 +33,11 @@ export interface ILugarEntrega {
    * debe haber como mucho una fila en `true`.
    */
   esRecogerEnTienda?: boolean | null;
+  /**
+   * Día de la semana (recurrente) en que se hace el viaje de entrega a esta zona — 1=lunes .. 7=domingo
+   * (2026-09-04, "Entregas por zona"). `null` = sin configurar (o "recoger en tienda", no aplica).
+   */
+  diaEntregaSemanal?: number | null;
 }
 
 export interface ILugarEntregaRequest {
@@ -42,6 +47,7 @@ export interface ILugarEntregaRequest {
   latitud?: number | null;
   longitud?: number | null;
   esRecogerEnTienda?: boolean | null;
+  diaEntregaSemanal?: number | null;
 }
 
 // Anillo (rango de distancia) de cobro dentro de una zona -- ver DISENO_ZONAS_POR_ANILLO.md en

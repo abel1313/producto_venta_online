@@ -26,6 +26,10 @@ export class ClientesMostrarComponent implements OnInit {
   usuarioId = 0;
   username = '';
   correoVerificado: boolean | undefined = undefined;
+  // Igual que en mis-datos.component.ts -- controla si hay algo guardado a donde mandar el
+  // codigo, para deshabilitar "Verificar correo" hasta que se guarde el formulario primero.
+  correoPendiente: string | null = null;
+  correoElectronicoGuardado: string | null = null;
   cargando = true;
   guardando = false;
   recibirCorreos = true;
@@ -76,6 +80,8 @@ export class ClientesMostrarComponent implements OnInit {
         this.usuarioId         = detalle.usuarioId;
         this.username           = detalle.username;
         this.correoVerificado = detalle.cliente.correoVerificado;
+        this.correoPendiente = (detalle.cliente as any).correoPendiente ?? null;
+        this.correoElectronicoGuardado = detalle.cliente.correoElectronico ?? null;
         this.recibirCorreos = detalle.cliente.recibirCorreos ?? true;
         this.recibirPromociones = detalle.cliente.recibirPromociones ?? true;
 
@@ -128,12 +134,18 @@ export class ClientesMostrarComponent implements OnInit {
       next: () => {
         this.guardando = false;
         Swal.fire({ icon: 'success', title: 'Cliente actualizado', timer: 1400, showConfirmButton: false });
+        this.cargar();
       },
       error: (err) => {
         this.guardando = false;
         Swal.fire({ icon: 'error', title: 'No se pudo guardar', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
       }
     });
+  }
+
+  /** Hay algo guardado (pendiente o ya cargado) a donde mandar el codigo -- controla si "Verificar correo" esta habilitado. */
+  get puedeVerificarCorreo(): boolean {
+    return !!(this.correoPendiente || this.correoElectronicoGuardado);
   }
 
   volver(): void {
@@ -178,7 +190,12 @@ export class ClientesMostrarComponent implements OnInit {
     if (!this.clienteId) return;
     this.clienteService.enviarCodigoVerificacion(this.clienteId).subscribe({
       next:  () => this.mostrarSwalVerificacion(),
-      error: () => this.mostrarSwalVerificacion()
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar el código', text: msg });
+      }
     });
   }
 

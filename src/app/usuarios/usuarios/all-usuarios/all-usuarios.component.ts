@@ -148,7 +148,12 @@ export class AllUsuariosComponent implements OnInit {
   verificarCorreoUsuario(item: IUsuarioDto): void {
     this.acceder.enviarCodigoVerificacionUsuario(item.username).subscribe({
       next:  () => this.mostrarSwalCodigoAdmin(item),
-      error: () => this.mostrarSwalCodigoAdmin(item)
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar el código', text: msg });
+      }
     });
   }
 

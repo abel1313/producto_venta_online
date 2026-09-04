@@ -23,6 +23,13 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+  // Lo que el back tiene guardado de verdad (pendiente de verificar, o el correo ya cargado)
+  // -- NO el valor que se este escribiendo ahora mismo en el input sin haber guardado. Sirve
+  // para deshabilitar "Verificar mi correo" hasta que primero se guarde el formulario, y avisar
+  // por que (2026-09-04: sin esto, dar clic en verificar antes de guardar tronaba con "el
+  // cliente no tiene correo registrado" sin explicarle al usuario que le faltaba un paso).
+  correoPendiente: string | null = null;
+  correoElectronicoGuardado: string | null = null;
   recibirCorreos = true;
   guardandoPreferenciaCorreo = false;
   recibirPromociones = true;
@@ -94,6 +101,8 @@ export class MisDatosComponent implements OnInit {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
+        this.correoPendiente = data.data.correoPendiente ?? null;
+        this.correoElectronicoGuardado = data.data.correoElectronico ?? null;
         this.recibirCorreos = data.data.recibirCorreos ?? true;
         this.recibirPromociones = data.data.recibirPromociones ?? true;
         this.formDatosCliente.patchValue({
@@ -181,10 +190,21 @@ export class MisDatosComponent implements OnInit {
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
 
       MensajesGenericos.mostrarMensajeSuccess(save.mensaje, save.code);
+      // Refresca correoVerificado/correoPendiente -- si el guardado acaba de dejar un correo
+      // nuevo como pendiente de verificar, "Verificar mi correo" necesita saberlo para dejar de
+      // estar deshabilitado.
+      if (this.clienteId) {
+        this.cargarCliente(this.clienteId);
+      }
 
     }, error => {
       MensajesGenericos.mostrarMensajeSuccess("Ocurrio un error, intente de nuevo", 500);
     });
+  }
+
+  /** Hay algo guardado (pendiente o ya cargado) a donde mandar el codigo -- controla si "Verificar mi correo" esta habilitado. */
+  get puedeVerificarCorreo(): boolean {
+    return !!(this.correoPendiente || this.correoElectronicoGuardado);
   }
 
   getCodigoPostal(codigoPostal: any, iteracion: number) {
@@ -302,7 +322,12 @@ export class MisDatosComponent implements OnInit {
     if (!this.clienteId) return;
     this.clienteServoce.enviarCodigoVerificacion(this.clienteId).subscribe({
       next:  () => this.mostrarSwalVerificacion(),
-      error: () => this.mostrarSwalVerificacion()
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar el código', text: msg });
+      }
     });
   }
 

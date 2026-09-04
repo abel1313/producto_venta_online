@@ -96,6 +96,12 @@ export class ClientesMostrarComponent implements OnInit {
           numeroTelefonico:  detalle.cliente.numeroTelefonico,
         });
 
+        // .clear() antes de repoblar -- este metodo tambien se llama despues de guardar (para
+        // refrescar correoPendiente/correoVerificado), y sin esto cada llamada apilaba las
+        // direcciones encima de las que ya estaban en el FormArray en vez de reemplazarlas
+        // (2026-09-04: "guarde y aparecio otra direccion" -- la BD estaba bien, era el front).
+        this.listDirecciones.clear();
+
         const direcciones = (detalle.cliente as any).listDirecciones as any[] | undefined;
         if (direcciones && direcciones.length > 0) {
           direcciones.forEach((dir, index) => {

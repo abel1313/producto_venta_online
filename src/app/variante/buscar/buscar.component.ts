@@ -282,6 +282,18 @@ export class BuscarComponent implements OnInit, OnDestroy {
         || this.puedeFiltroFecha;
   }
 
+  // Acciones de Fase 3 extendidas a "tienda/buscar" (2026-09-04) -- ver
+  // migration_accion_tienda_habilitar_compartir.sql. "habilitar" tiene back real
+  // (accion("tienda/buscar", "habilitar") en SecurityConfig); "compartir-imagen" es solo
+  // frontend, CompartirService no llama ningún endpoint propio.
+  get puedeHabilitar(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'habilitar');
+  }
+
+  get puedeCompartirImagen(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
+  }
+
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
   private get paramConStock(): boolean | undefined {
     return this.mostrarConStock === this.mostrarSinStock ? undefined : this.mostrarConStock;

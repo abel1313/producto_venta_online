@@ -159,8 +159,8 @@
   </a>
 </div>
 
-<!-- ── Barra de acciones en lote (solo admin) ─────────────────────── -->
-<div *ngIf="isAdminUser && seleccionados.size > 0" class="vb-lote-bar">
+<!-- ── Barra de acciones en lote (accion "habilitar" de tienda/buscar) ─ -->
+<div *ngIf="puedeHabilitar && seleccionados.size > 0" class="vb-lote-bar">
   <div class="vb-lote-bar__inner">
     <label class="vb-lote-bar__check">
       <input type="checkbox" [checked]="todoSeleccionado" (change)="toggleTodos()" />
@@ -308,7 +308,7 @@
           <span class="vb-btn-card__label">Editar</span>
         </button>
 
-        <button *ngIf="isAdminUser && v.imagenUrl"
+        <button *ngIf="puedeCompartirImagen && v.imagenUrl"
                 class="vb-btn-card vb-btn-card--share"
                 (click)="compartirImagen(v)"
                 title="Compartir imagen">
@@ -316,7 +316,7 @@
           <span class="vb-btn-card__label">Imagen</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--toggle"
+        <button *ngIf="puedeHabilitar" class="vb-btn-card vb-btn-card--toggle"
           [title]="estaHabilitado(v) ? 'Deshabilitar' : 'Habilitar'"
           (click)="habilitarVariante(v, !estaHabilitado(v))">
           <span>{{ estaHabilitado(v) ? '🔒' : '🔓' }}</span>

@@ -116,6 +116,12 @@ export class MisDatosComponent implements OnInit {
           numeroTelefonico: data.data.numeroTelefonico,
         });
 
+        // .clear() antes de repoblar -- este metodo tambien se llama despues de guardar (para
+        // refrescar correoPendiente/correoVerificado), y sin esto cada llamada apilaba las
+        // direcciones encima de las que ya estaban en el FormArray en vez de reemplazarlas
+        // (2026-09-04: "guarde y aparecio otra direccion" -- la BD estaba bien, era el front).
+        this.listDirecciones.clear();
+
         if (data.data.listDirecciones && data.data.listDirecciones.length > 0) {
           data.data.listDirecciones.forEach((dir: any, index: number) => {
             const direccionForm = this.fb.group({

@@ -126,11 +126,21 @@ $t:  all 0.2s ease;
 }
 
 // ── Dark mode ────────────────────────────────────────────────────────
-// Mismo bug/arreglo que gestion-lugares.component.scss (.pk-input): sin esto el select/input
-// hereda color-scheme:dark del body pero se queda con texto oscuro fijo -- invisible en oscuro.
+// Mismo bug/arreglo que gestion-lugares.component.scss (.pk-input) para el <input>, pero el
+// <select> necesita el fix real encontrado en venta-variante.component.scss (2026-09-04): el
+// popup nativo de <option> no respeta background-color de autor, y además src/styles.scss
+// (global) fuerza con !important el color del texto de TODOS los .form-select -- pero acá NO es
+// .form-select (es .ez-input, clase propia), así que esa regla global ni aplica; aun así se deja
+// el mismo patrón robusto (colores fijos + !important) para no repetir el mismo bug si el día de
+// mañana esta clase también queda alcanzada por alguna regla global nueva.
 :host-context(body.theme-dark) {
   .ez-input { color-scheme: dark; color: var(--app-text); }
-  select.ez-input { color-scheme: light; background-color: var(--card-bg); }
+  select.ez-input {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border) !important;
+  }
 }
 
 :host-context(body.theme-light) {

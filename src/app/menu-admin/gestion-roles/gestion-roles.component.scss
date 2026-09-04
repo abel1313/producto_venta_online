@@ -217,16 +217,37 @@ $t:  all 0.2s ease;
 }
 
 // Acciones puntuales dentro de una pantalla (Fase 3, piloto en Modelos 2026-08-27) -- mas finas
-// que el "Editar" general, ej. "eliminar" sin "habilitar".
+// que el "Editar" general, ej. "eliminar" sin "habilitar". Agrupadas por categoria (2026-09-04)
+// -- ver gruposDeAcciones() -- en vez de una sola lista plana con todas juntas.
 .gr-acciones {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
+  flex-direction: column;
+  gap: 6px;
   margin: 2px 0 4px 26px;
   padding: 6px 10px;
   border-left: 2px solid var(--card-border, #e5e7eb);
 
   &--bloqueado { opacity: .5; }
+}
+
+.gr-accion-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &__titulo {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--app-text-muted, #9ca3af);
+  }
+
+  &__lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
 }
 
 .gr-check--accion {

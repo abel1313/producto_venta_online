@@ -100,22 +100,29 @@
                 </label>
               </div>
 
-              <!-- Fase 3 de permisos (piloto en Modelos): acciones puntuales dentro de esta
-                   pantalla, mas finas que el "Editar" de arriba. Solo aparece si la pantalla
-                   tiene alguna dada de alta en el catalogo (hoy Modelos y Tienda). -->
+              <!-- Fase 3 de permisos (piloto en Modelos, extendido a Tienda): acciones puntuales
+                   dentro de esta pantalla, mas finas que el "Editar" de arriba. Solo aparece si
+                   la pantalla tiene alguna dada de alta en el catalogo. Agrupadas por categoria
+                   (Filtros / Tarjeta / Buscador, ver gruposDeAcciones()) para no mostrar 15+
+                   casillas todas juntas en una sola lista. -->
               <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
-                <div class="gr-accion-item" *ngFor="let a of accionesDe(s)">
-                  <label class="gr-check gr-check--accion"
-                         [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
-                    <input type="checkbox"
-                           [checked]="tieneAccion(a)"
-                           [disabled]="!tieneSubmenu(s) || estaGuardando(s)"
-                           (change)="toggleAccion(a)" />
-                    <span>{{ a.etiqueta }}</span>
-                  </label>
-                  <!-- Botón aparte (no dentro del <label>) para que el clic abra el popup en vez
-                       de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
-                  <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
+                <div class="gr-accion-grupo" *ngFor="let grupo of gruposDeAcciones(s)">
+                  <div class="gr-accion-grupo__titulo">{{ grupo.categoria }}</div>
+                  <div class="gr-accion-grupo__lista">
+                    <div class="gr-accion-item" *ngFor="let a of grupo.acciones">
+                      <label class="gr-check gr-check--accion"
+                             [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
+                        <input type="checkbox"
+                               [checked]="tieneAccion(a)"
+                               [disabled]="!tieneSubmenu(s) || estaGuardando(s)"
+                               (change)="toggleAccion(a)" />
+                        <span>{{ a.etiqueta }}</span>
+                      </label>
+                      <!-- Botón aparte (no dentro del <label>) para que el clic abra el popup en
+                           vez de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
+                      <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

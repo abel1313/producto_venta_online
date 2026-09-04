@@ -43,6 +43,9 @@ export interface IAccionSubmenu {
   etiqueta: string;
   // Tooltip opcional: dónde exactamente aparece esta acción en la pantalla real (2026-08-28).
   descripcion?: string | null;
+  // Sub-encabezado para agrupar el checklist de Gestión de roles (2026-09-04, ej. "Filtros",
+  // "Tarjeta de modelo", "Buscador"). Null = sin agrupar.
+  categoria?: string | null;
   orden?: number | null;
 }
 

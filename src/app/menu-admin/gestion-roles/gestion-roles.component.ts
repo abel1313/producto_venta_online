@@ -139,6 +139,26 @@ export class GestionRolesComponent implements OnInit {
     return this.accionesPorSubmenu.get(submenu.id) ?? [];
   }
 
+  // Agrupa el checklist de acciones de una pantalla en bloques por categoria (2026-09-04,
+  // pedido del usuario: con 15+ acciones en Modelos salian todas juntas, sin separar
+  // "Filtros" de las opciones de la tarjeta o del buscador). Agrupa por TRAMOS CONTIGUOS de la
+  // lista ya ordenada por `orden` -- no reordena por su cuenta, así que las filas de una misma
+  // categoria tienen que venir con `orden` consecutivo desde el back (ver
+  // migration_accion_submenu_categoria.sql). Sin categoria (null) cae en "Otras acciones".
+  gruposDeAcciones(submenu: ISubmenu): { categoria: string; acciones: IAccionSubmenu[] }[] {
+    const grupos: { categoria: string; acciones: IAccionSubmenu[] }[] = [];
+    for (const accion of this.accionesDe(submenu)) {
+      const categoria = accion.categoria || 'Otras acciones';
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && ultimo.categoria === categoria) {
+        ultimo.acciones.push(accion);
+      } else {
+        grupos.push({ categoria, acciones: [accion] });
+      }
+    }
+    return grupos;
+  }
+
   // Popup con "¿para qué sirve? ¿dónde lo veo?" -- pedido del usuario 2026-08-28: el tooltip al
   // pasar el mouse (title="...") no alcanzaba, quería poder hacer clic y que quedara a la vista
   // explícitamente, con la ubicación real en la pantalla ("puedes ir aquí, aquí o aquí").

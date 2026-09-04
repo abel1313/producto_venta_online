@@ -360,6 +360,22 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
+.mp-btn-accept-privacidad {
+  margin: -0.5rem 0 0.9rem;
+  padding: 0.45rem 1rem;
+  background: transparent;
+  color: var(--brand-1);
+  border: 1.5px solid rgba(var(--app-accent-rgb), 0.45);
+  border-radius: $radius-sm;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: $trans;
+  &:hover:not(:disabled) { background: rgba(var(--app-accent-rgb), 0.08); border-color: var(--brand-1); }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
 .mp-btn--cancelar-codigo {
   padding: 0.45rem 1rem;
   background: transparent;

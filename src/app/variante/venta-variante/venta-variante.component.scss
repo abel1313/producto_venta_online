@@ -64,4 +64,18 @@
   text-align: center;
 }
 
+// ── Dark mode ────────────────────────────────────────────────────────
+// Sin esto, el select/input de Bootstrap (.form-select/.form-control -- lugar de entrega,
+// referencias, búsqueda de cliente) hereda color-scheme:dark de body.theme-dark pero se queda
+// con el fondo claro fijo de Bootstrap -- texto blanco sobre fondo blanco, invisible. Mismo bug
+// y mismo arreglo ya usado en gestion-lugares.component.scss (.pk-input) y abonos.component.scss
+// (.ab-input).
+:host-context(body.theme-dark) {
+  .form-select, .form-control { color-scheme: dark; color: var(--app-text); }
+}
+
+:host-context(body.theme-light) {
+  .form-select, .form-control { color-scheme: light; color: var(--app-text); }
+}
+
 

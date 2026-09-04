@@ -32,6 +32,16 @@
              placeholder="Horas extra 🌹" title="Horas que se suman al mínimo de anticipación por ser una zona lejana — solo flores eternas" />
     </div>
 
+    <!-- Marca cuál fila del catálogo es "recoger en el local" -- el checkout de tienda/carrito
+         muestra el calendario de fecha de recogida solo cuando el cliente elige esta fila.
+         Debe haber como mucho una marcada (no se valida aquí). -->
+    <div class="pk-form__field pk-form__field--checkbox">
+      <label class="pk-checkbox">
+        <input type="checkbox" formControlName="esRecogerEnTienda" />
+        🏬 Es "recoger en tienda"
+      </label>
+    </div>
+
     <!-- Centro de la zona -- usado para recentrar el mapa del checkout al elegir esta zona, y
          como origen para medir los anillos de cobro por distancia (ver abajo). Zonas viejas sin
          marcar simplemente no tienen ninguno de los dos. -->
@@ -92,6 +102,7 @@
             {{ l.nombre }}
             <small class="pk-meta" *ngIf="l.costoEnvio">· envío ${{ l.costoEnvio | number:'1.2-2' }}</small>
             <small class="pk-meta" *ngIf="l.horasExtraAnticipacion">· +{{ l.horasExtraAnticipacion }} h</small>
+            <small class="pk-meta" *ngIf="l.esRecogerEnTienda">· 🏬 recoger en tienda</small>
           </td>
           <td class="pk-table__actions">
             <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>

@@ -107,9 +107,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Panel derecho ──────────────────────────────────────────────────────────
 .split-form {
   flex: 1;
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   display: flex;
-  align-items: center;
+  // flex-start, no center: con overflow-y:auto y contenido más alto que la pantalla (caso
+  // frecuente en "Actualizar usuario" admin -- permisos, excepciones, acciones, código
+  // pendiente), centrar recortaba el formulario por igual arriba y abajo, y la parte de arriba
+  // quedaba inaccesible aunque se scrolleara (pedido 2026-08-28: "no se alcanza a ver bien el
+  // formulario, se corta"). Con flex-start arranca siempre desde arriba y el resto se scrollea
+  // normal, sin cambiar nada para el caso corto (login/agregar) que sigue viéndose igual.
+  align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
   padding: 2rem 1.5rem;
@@ -119,11 +125,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     order: 1;
     flex: none;
     width: 100%;
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     box-shadow: none;
     padding: 2rem 1.5rem 1.5rem;
     align-items: flex-start;
   }
+
+  // Sin panel de imágenes al lado (Actualizar usuario) -- la sombra sugería el borde de un
+  // panel junto a otro, ya no aplica sola en el centro de la pantalla.
+  &--full { box-shadow: none; }
 }
 
 .form-inner {
@@ -155,7 +165,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .brand-name {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   margin: 0 0 0.2rem;
   letter-spacing: -0.03em;
 
@@ -169,7 +179,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 .brand-sub {
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   margin: 0;
 }
 
@@ -183,7 +193,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: block;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text-muted, #374151);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 0.35rem;
@@ -196,7 +206,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   left: 13px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   pointer-events: none;
   transition: $transition;
@@ -211,7 +221,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   line-height: 1;
   transition: color 0.2s;
@@ -221,25 +231,93 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .field-input {
   width: 100%;
   padding: 0.65rem 1rem 0.65rem 2.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--input-border, #e5e7eb);
   border-radius: 10px;
   font-size: 0.88rem;
-  color: #1f2937;
-  background: #f9fafb;
+  color: var(--input-text, #1f2937);
+  background: var(--input-bg, #f9fafb);
   outline: none;
   transition: $transition;
   box-sizing: border-box;
 
   &--has-toggle { padding-right: 2.5rem; }
 
-  &::placeholder { color: #d1d5db; }
+  &::placeholder { color: var(--input-placeholder, #d1d5db); }
 
   &:focus {
     border-color: var(--app-accent);
-    background: #fff;
+    background: var(--input-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.1);
     ~ .input-icon { color: var(--app-accent); }
   }
+}
+
+// Caja con presencia propia (mismo lenguaje visual que .pwd-requirements) -- antes era un
+// checkbox nativo suelto, sin fondo ni jerarquía, fácil de pasar por alto (reportado en QA
+// 2026-09-02: "se ve muy básico", "en ningún lado dice que hay que aceptar").
+.privacy-box {
+  margin-bottom: 1.1rem;
+  background: var(--pk-info-soft);
+  border: 1px solid var(--pk-info-soft);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  color: var(--app-text, #1f2937);
+  cursor: pointer;
+  line-height: 1.4;
+  margin: 0;
+
+  input[type="checkbox"] {
+    margin-top: 0.15rem;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--app-accent, var(--brand-1));
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  strong { color: var(--app-accent, var(--brand-1)); }
+}
+
+.privacy-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pk-danger-to, #b91c1c);
+  background: var(--pk-danger-soft, rgba(185,28,28,0.08));
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.9rem;
+
+  &--ok {
+    color: var(--pk-success-to, #15803d);
+    background: var(--pk-success-soft, rgba(21,128,61,0.08));
+  }
+
+  .pi { font-size: 0.95rem; flex-shrink: 0; }
+}
+
+.privacy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  margin-left: 1.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--app-accent, var(--brand-1));
+  text-decoration: none;
+
+  .pi { font-size: 0.7rem; }
+  &:hover { text-decoration: underline; }
 }
 
 // ── Errores ────────────────────────────────────────────────────────────────
@@ -249,15 +327,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.35rem;
   margin-top: 0.3rem;
   font-size: 0.75rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   .pi { font-size: 0.8rem; }
 }
 
 // ── Requisitos contraseña ──────────────────────────────────────────────────
 .pwd-requirements {
   margin-top: 0.45rem;
-  background: #EFF5FF;
-  border: 1px solid #C7DDFF;
+  background: var(--pk-info-soft);
+  border: 1px solid var(--pk-info-soft);
   border-radius: 10px;
   padding: 0.75rem 0.9rem;
 }
@@ -283,16 +361,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.4rem;
   font-size: 0.78rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
   transition: color 0.2s;
 
-  i { font-size: 0.82rem; color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
-  .req-example { color: #f87171; font-size: 0.72rem; }
+  i { font-size: 0.82rem; color: var(--pk-danger-to); transition: color 0.2s; flex-shrink: 0; }
+  .req-example { color: var(--pk-danger); font-size: 0.72rem; }
 
   &.met {
-    color: #374151;
-    i { color: #10b981; }
-    .req-example { color: #6b7280; }
+    color: var(--app-text, #374151);
+    i { color: var(--pk-success); }
+    .req-example { color: var(--app-text-muted, #6b7280); }
   }
 }
 
@@ -307,15 +385,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
   border-radius: 99px;
   transition: width 0.3s ease, background-color 0.3s ease;
-  &.weak   { background: #ef4444; }
-  &.medium { background: #f59e0b; }
-  &.strong { background: #10b981; }
+  // Tokens semánticos compartidos -- ya traen su propia variante de modo oscuro.
+  &.weak   { background: var(--pk-danger); }
+  &.medium { background: var(--pk-warning); }
+  &.strong { background: var(--pk-success); }
 }
 
 // ── Admin ──────────────────────────────────────────────────────────────────
 .admin-section {
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
+  background: var(--table-header-bg, #f9fafb);
+  border: 2px solid var(--table-border, #e5e7eb);
   border-radius: 12px;
   padding: 0.85rem;
   margin-bottom: 0.9rem;
@@ -324,6 +403,117 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .admin-row { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .toggle-wrap { display: flex; align-items: center; gap: 0.75rem; }
+
+// ── Excepciones de pantalla individuales ────────────────────────────────────
+.excepciones-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 0.6rem;
+}
+
+.excepciones-title {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--app-text, #1f2937);
+}
+
+.excepciones-sub {
+  font-size: .74rem;
+  color: var(--app-text-muted, #6b7280);
+}
+
+.pk-empty {
+  color: var(--app-text-muted, #9ca3af);
+  font-size: .8rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+// Mismo patrón acordeón que Gestión de roles (.gr-grupo)
+.gr-grupo {
+  border: 1.5px solid var(--card-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  transition: all .2s ease;
+
+  &--abierto { border-color: var(--app-accent); }
+
+  &__titulo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: .76rem;
+    font-weight: 700;
+    color: var(--app-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    text-align: left;
+  }
+
+  &__nombre { flex: 1; }
+
+  &__chevron {
+    font-size: 1rem;
+    transition: transform .2s ease;
+    color: var(--app-text-muted, #9ca3af);
+  }
+
+  &--abierto &__chevron { transform: rotate(90deg); }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 10px 10px;
+    border-top: 1px solid var(--table-border, #f0f1f3);
+    padding-top: 6px;
+  }
+}
+
+.exc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-size: .82rem;
+  color: var(--app-text, #1f2937);
+  text-align: left;
+  transition: all .15s ease;
+
+  &:hover:not(:disabled) { background: var(--form-section-bg, #f3f4f6); }
+  &:disabled { opacity: .6; cursor: wait; }
+
+  &__estado {
+    font-size: .74rem;
+    color: var(--app-text-muted, #9ca3af);
+    white-space: nowrap;
+  }
+
+  &--suma {
+    background: var(--pk-success-soft);
+    border-color: var(--pk-success-soft);
+    .exc-row__estado { color: var(--pk-success-to); font-weight: 600; }
+  }
+
+  &--quita {
+    background: var(--pk-danger-soft);
+    border-color: var(--pk-danger-soft);
+    .exc-row__estado { color: var(--pk-danger-to); font-weight: 600; }
+  }
+}
 
 // ── TEMA OSCURO ───────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
@@ -334,16 +524,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     @media (max-width: 768px) { background: #0d1117; }
   }
 
-  .brand-name  { color: #f1f5f9; }
-  .brand-sub   { color: #64748b; }
-  .field-label { color: #94a3b8; }
+  .brand-name  { color: var(--app-text, #f1f5f9); }
+  .brand-sub   { color: var(--app-text-muted, #64748b); }
+  .field-label { color: var(--app-text-muted, #94a3b8); }
 
   .field-input {
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
+    color: var(--input-text, #f1f5f9);
 
-    &::placeholder { color: #475569; }
+    &::placeholder { color: var(--input-placeholder, #475569); }
     &:focus {
       background: rgba(255, 255, 255, 0.1);
       border-color: var(--app-accent);
@@ -351,29 +541,23 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .input-icon  { color: #64748b; }
-  .toggle-pass { color: #64748b; &:hover { color: var(--app-accent); } }
+  .input-icon  { color: var(--app-text-muted, #64748b); }
+  .toggle-pass { color: var(--app-text-muted, #64748b); &:hover { color: var(--app-accent); } }
 
-  .pwd-requirements {
-    background: rgba(220, 38, 38, 0.08);
-    border-color: rgba(220, 38, 38, 0.25);
-  }
-  .pwd-req-title { color: #f87171; }
-  .req-item {
-    color: #fca5a5;
-    i { color: #fca5a5; }
-    .req-example { color: #f87171; }
-    &.met {
-      color: #d1fae5;
-      i { color: #34d399; }
-      .req-example { color: #a7f3d0; }
-    }
-  }
+  // .pwd-requirements/.pwd-req-title/.req-item ya no se sobreescriben acá -- antes este bloque
+  // los pintaba en rojo/danger en modo oscuro contra azul/info en modo claro (inconsistencia,
+  // no diseño intencional); los tokens --pk-info/--pk-danger/--pk-success ya traen su propia
+  // variante oscura y quedan iguales en los dos modos.
 
   .admin-section {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.1);
   }
+
+  .excepciones-title { color: var(--app-text, #f1f5f9); }
+  .gr-grupo { border-color: rgba(255, 255, 255, 0.12); }
+  .gr-grupo__lista { border-top-color: rgba(255, 255, 255, 0.1); }
+  .exc-row { color: var(--app-text, #f1f5f9); &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); } }
 
   .error-msg {
     background: rgba(220, 38, 38, 0.12);
@@ -387,25 +571,25 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── TEMA CLARO ────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .split-form   { background: #ffffff; }
-  .brand-name   { color: #1f2937; }
-  .field-label  { color: #374151; }
+  .split-form   { background: var(--card-bg, #ffffff); }
+  .brand-name   { color: var(--app-text, #1f2937); }
+  .field-label  { color: var(--app-text-muted, #374151); }
 
   .field-input {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #1f2937;
-    &::placeholder { color: #d1d5db; }
+    background: var(--input-bg, #f9fafb);
+    border-color: var(--input-border, #e5e7eb);
+    color: var(--input-text, #1f2937);
+    &::placeholder { color: var(--input-placeholder, #d1d5db); }
   }
 
-  .admin-section { background: #f9fafb; border-color: #e5e7eb; }
+  .admin-section { background: var(--table-header-bg, #f9fafb); border-color: var(--table-border, #e5e7eb); }
 }
 
 .toggle-label {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   transition: color 0.2s;
-  &.on { color: #10b981; font-weight: 600; }
+  &.on { color: var(--pk-success); font-weight: 600; }
 }
 
 .flex-1 { flex: 1; }
@@ -452,8 +636,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.5rem;
   padding: 0.68rem 1rem;
   background: transparent;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
+  color: var(--app-text-muted, #6b7280);
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 10px;
   font-size: 0.88rem;
   font-weight: 600;
@@ -494,17 +678,17 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-admin-reset {
-  background: rgba(217, 119, 6, 0.09);
-  color: #d97706;
-  border: 1px solid rgba(217, 119, 6, 0.2);
-  &:hover { background: rgba(217, 119, 6, 0.18); }
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  border: 1px solid var(--pk-warning-soft);
+  &:hover { filter: brightness(0.95); }
 }
 
 .btn-admin-verify {
-  background: rgba(14, 165, 233, 0.09);
-  color: #0ea5e9;
-  border: 1px solid rgba(14, 165, 233, 0.2);
-  &:hover { background: rgba(14, 165, 233, 0.18); }
+  background: var(--pk-info-soft);
+  color: var(--pk-info-to);
+  border: 1px solid var(--pk-info-soft);
+  &:hover { filter: brightness(0.95); }
 }
 
 // ── Código pendiente de cambio de correo ─────────────────────────────────────
@@ -524,12 +708,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #374151;
+  color: var(--app-text, #374151);
   line-height: 1.45;
 
   .pi { color: var(--brand-1); margin-top: 1px; font-size: 0.9rem; }
 
-  strong { color: #1e293b; }
+  strong { color: var(--app-text, #1e293b); }
 }
 
 .au-codigo-acciones {
@@ -577,15 +761,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 .au-btn-cancelar-codigo {
   padding: 0.45rem 0.9rem;
   background: transparent;
-  color: #64748b;
-  border: 1.5px solid #e5e7eb;
+  color: var(--app-text-muted, #64748b);
+  border: 1.5px solid var(--card-border, #e5e7eb);
   border-radius: 9px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: $transition;
-  &:hover { border-color: #94a3b8; color: #374151; }
+  &:hover { border-color: #94a3b8; color: var(--app-text, #374151); }
 }
 
 :host-context(body.theme-dark) {
@@ -594,8 +778,8 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: rgba(var(--app-accent-rgb),0.25);
   }
   .au-codigo-info {
-    color: #cbd5e1;
-    strong { color: #f1f5f9; }
+    color: var(--app-text, #cbd5e1);
+    strong { color: var(--app-text, #f1f5f9); }
   }
   .au-btn-reenviar {
     color: var(--brand-1);
@@ -603,9 +787,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover:not(:disabled) { background: rgba(var(--app-accent-rgb), 0.1); border-color: var(--brand-1); }
   }
   .au-btn-cancelar-codigo {
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     border-color: rgba(255,255,255,0.1);
-    &:hover { border-color: #475569; color: #e2e8f0; }
+    &:hover { border-color: #475569; color: var(--app-text, #e2e8f0); }
   }
 }
 
@@ -640,7 +824,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   margin: 1rem 0 0;
   font-size: 0.82rem;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
 
   a {
     color: var(--app-accent);

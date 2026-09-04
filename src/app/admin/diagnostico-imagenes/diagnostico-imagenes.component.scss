@@ -34,7 +34,7 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
   &__header-icon { font-size: 2.2rem; }
 
   &__title {
-    font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0;
+    font-size: 1.35rem; font-weight: 800; color: var(--app-accent-ink, #fff); margin: 0;
   }
 
   &__subtitle { font-size: 0.8rem; color: rgba(255,255,255,0.75); margin: 3px 0 0; }
@@ -45,6 +45,19 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
     flex-direction: column;
     gap: 18px;
   }
+}
+
+.di-card__help {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--card-border);
+  color: var(--card-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+
+  strong { color: var(--app-text); }
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────
@@ -158,7 +171,7 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
 
   &__code { font-family: monospace; color: var(--card-text-muted); }
 
-  &__stock { &--low { color: #ef4444; } }
+  &__stock { &--low { color: var(--pk-danger-to); } }
 }
 
 // ── Sin resultados ─────────────────────────────────────────────────
@@ -189,9 +202,9 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
 // ── Error ──────────────────────────────────────────────────────────
 .di-error {
   display: flex; align-items: center; gap: 10px;
-  background: #fef2f2; border: 1px solid #fecaca;
+  background: var(--pk-danger-soft); border: 1px solid var(--pk-danger-soft);
   border-radius: 10px; padding: 12px 16px;
-  color: #b91c1c; font-size: 0.88rem;
+  color: var(--pk-danger-to); font-size: 0.88rem;
 }
 
 // ── Estado diagnóstico ─────────────────────────────────────────────
@@ -199,9 +212,9 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
   border-radius: 10px; padding: 13px 16px;
   font-size: 0.9rem; font-weight: 600;
 
-  &--ok    { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
-  &--warn  { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
-  &--error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+  &--ok    { background: var(--pk-success-soft); border: 1px solid var(--pk-success-soft); color: var(--pk-success-to); }
+  &--warn  { background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft); color: var(--pk-warning-to); }
+  &--error { background: var(--pk-danger-soft); border: 1px solid var(--pk-danger-soft); color: var(--pk-danger-to); }
 }
 
 // ── Resultado ──────────────────────────────────────────────────────
@@ -230,8 +243,8 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
   display: inline-block; font-size: 0.8rem; font-weight: 700;
   padding: 2px 10px; border-radius: 20px; font-family: monospace; width: fit-content;
 
-  &--green { background: #dcfce7; color: #166534; }
-  &--red   { background: #fee2e2; color: #991b1b; }
+  &--green { background: var(--pk-success-soft); color: var(--pk-success-to); }
+  &--red   { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
 }
 
 // ── Imágenes locales ───────────────────────────────────────────────
@@ -257,8 +270,8 @@ $accent-light: rgba(var(--app-accent-rgb),0.12);
   &--id    { background: $accent-light; border-color: rgba(var(--app-accent-rgb),0.35); color: $accent; }
   &--ext   { background: $accent-light; border-color: rgba(var(--app-accent-rgb),0.3); color: $accent; }
   &--path  { color: var(--card-text-muted); font-size: 0.7rem; }
-  &--green { background: #dcfce7; border-color: #86efac; color: #166534; }
-  &--red   { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+  &--green { background: var(--pk-success-soft); border-color: var(--pk-success-soft); color: var(--pk-success-to); }
+  &--red   { background: var(--pk-danger-soft); border-color: var(--pk-danger-soft); color: var(--pk-danger-to); }
 }
 
 @media (max-width: 540px) {

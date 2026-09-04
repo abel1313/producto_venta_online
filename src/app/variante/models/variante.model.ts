@@ -2,6 +2,7 @@ import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 
 export interface IVarianteDto {
   id: number;
+  nombreProducto?: string | null;
   talla?: string;
   descripcion?: string;
   color?: string;
@@ -66,6 +67,8 @@ export interface IVarianteResumen {
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;
+  // Puede venir null en variantes creadas antes de la migracion del back (2026-08-22).
+  fechaCreacion?: string | null;
 }
 
 export interface IVarianteResumenPaginable {

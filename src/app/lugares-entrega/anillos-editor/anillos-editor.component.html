@@ -1,0 +1,44 @@
+<div class="ae-wrap">
+  <p class="ae-hint">
+    Cada anillo cobra distinto según qué tan lejos del centro caiga el punto que marque el
+    cliente. Arrastra el punto de color en el mapa para ajustar el radio, o escribe el número
+    directo abajo.
+  </p>
+
+  <div #mapaEl class="ae-mapa"></div>
+
+  <div class="ae-lista" *ngIf="!cargando">
+    <div class="ae-fila" *ngFor="let a of anillos">
+      <span class="ae-fila__color" [style.background]="colorDe(a.id)"></span>
+      <label class="ae-fila__campo">
+        Radio (m)
+        <input type="number" min="1" [(ngModel)]="a.radioMetros" (change)="onCambioManual(a)" />
+      </label>
+      <label class="ae-fila__campo">
+        Costo ($)
+        <input type="number" min="0" step="0.01" [(ngModel)]="a.costoEnvio" (change)="onCambioManual(a)" />
+      </label>
+      <span class="ae-fila__estado" *ngIf="guardandoId === a.id">Guardando…</span>
+      <button class="ae-btn ae-btn--del" type="button" (click)="eliminar(a)" title="Eliminar anillo">🗑️</button>
+    </div>
+
+    <div class="ae-empty" *ngIf="anillos.length === 0">
+      Sin anillos configurados — el envío a esta zona usa el costo fijo de arriba.
+    </div>
+
+    <div class="ae-fila ae-fila--nueva">
+      <span class="ae-fila__color ae-fila__color--nueva">＋</span>
+      <label class="ae-fila__campo">
+        Radio (m)
+        <input type="number" min="1" [(ngModel)]="nuevoRadio" placeholder="300" />
+      </label>
+      <label class="ae-fila__campo">
+        Costo ($)
+        <input type="number" min="0" step="0.01" [(ngModel)]="nuevoCosto" placeholder="0.00" />
+      </label>
+      <button class="ae-btn ae-btn--add" type="button" [disabled]="agregando" (click)="agregar()">
+        {{ agregando ? '…' : '➕ Agregar anillo' }}
+      </button>
+    </div>
+  </div>
+</div>

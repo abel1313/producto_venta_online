@@ -1,11 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, debounceTime, filter, take, takeUntil, timeout } from 'rxjs/operators';
+import { catchError, debounceTime, filter, map, take, takeUntil, timeout } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import {
   IAccesorioRamo, ICalcularPrecioResponse, IColorFlor, IFechasDisponiblesResponse, IFraseListon,
-  IListonRequest, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
+  IListonRequest, IRamoArmado, IRamoPedidoDetalleRequest, ITipoFlor, IValidarCantidadResponse, ICantidadFlor
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { FloresImagenService } from '../service/flores-imagen.service';
@@ -14,6 +14,7 @@ import { UsuarioService } from '../../shared/usuario.service';
 import { ClienteService } from '../../clietes/cliente.service';
 import { LugarEntregaService } from '../../lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from '../../lugares-entrega/models/lugar-entrega.model';
+import { CENTRO_MAPA_GENERICO } from '../../shared/selector-ubicacion/selector-ubicacion.component';
 import { VarianteService } from '../../variante/service/variante.service';
 import { IPedidoVarianteDTO, IPedidoVarianteDetalleDTO } from '../../variante/models/pedido-variante.model';
 
@@ -82,6 +83,29 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Paso 6 — entrega ─────────────────────────────────────────────────────
   lugarEntregaId: number | null = null;
   recogerEnLocal = false;
+  // Ubicación exacta (2026-08-22) — se ofrece el mapa solo tras elegir zona, para marcar el
+  // punto dentro de esa zona (Tejupilco es extenso, "la zona" sola no dice dónde exactamente).
+  latitud: number | null = null;
+  longitud: number | null = null;
+  referencias = '';
+
+  onUbicacionCambio(p: { lat: number; lng: number }): void {
+    this.latitud = p.lat;
+    this.longitud = p.lng;
+    // Si la zona tiene anillos de cobro por distancia, el costo depende de este punto exacto —
+    // hay que recalcular para que se muestre (y se valide) apenas se marca/mueve el pin.
+    this.pedirRecalculo();
+  }
+
+  // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
+  // (ver `onLugarChange`), no en cada ciclo de detección de cambios: un getter que devolviera
+  // un array nuevo cada vez rompería `SelectorUbicacionComponent.ngOnChanges` (recentraría el
+  // mapa en cada tecla que el cliente escriba, peleándose con que pueda mover/hacer zoom
+  // libremente antes de marcar el pin). Si la zona ya tiene latitud/longitud capturada se usa
+  // como centro; si no (zona vieja) se cae al genérico fijo de siempre — ver
+  // CENTRO_MAPA_GENERICO en selector-ubicacion.component.ts.
+  centroMapaLugar: [number, number] = CENTRO_MAPA_GENERICO;
+
   /** Cuándo puede entregarse este tamaño. Ver `consultarFechas()`. */
   fechas: IFechasDisponiblesResponse | null = null;
   consultandoFechas = false;
@@ -125,6 +149,30 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
 
   get modoEdicion(): boolean { return this.pedidoIdEdicion != null; }
 
+  // ── Entrada desde la vitrina ("Pedir este ramo") ────────────────────────
+  /**
+   * Se llega desde `VitrinaFloresComponent.pedirRamo()` con
+   * `router.navigate([...], { state: { ramoArmado } })` — no por query param (`?ramoArmadoId=`),
+   * porque no existe un endpoint público para pedir UN `RamoArmado` por id (solo listados
+   * paginados) y el objeto ya está completo en memoria en la vitrina al momento del clic.
+   *
+   * ⚠️ Por venir de `router state`, no sobrevive un F5 a medio armar — si el cliente recarga,
+   * el wizard vuelve a Paso 1 en blanco (sin `ramoArmadoOrigen` que precargar). Aceptable: no
+   * hay pedido ni cobro de por medio todavía, solo hay que volver a elegir el ramo.
+   */
+  private ramoArmadoOrigen: IRamoArmado | null = null;
+  cargandoRamoArmado = false;
+  errorRamoArmado: string | null = null;
+  get modoRamoArmado(): boolean { return this.ramoArmadoOrigen != null; }
+  get ramoArmadoOrigenNombre(): string { return this.ramoArmadoOrigen?.nombre ?? ''; }
+
+  /**
+   * Foto del ramo con el que se llegó desde "Pedir este ramo" — mismo criterio de resolución que
+   * `VitrinaFloresComponent.fotoDe()`: la variante sombra primero (foto real, se actualiza sola),
+   * `imagenUrl` de respaldo (link viejo pegado a mano) mientras tanto o si no hay variante.
+   */
+  ramoArmadoOrigenFoto: string | null = null;
+
   // ── Checkout ─────────────────────────────────────────────────────────────
   guardando = false;
   private idUsuario = 0;
@@ -152,13 +200,31 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
-  ) {}
+  ) {
+    // `router.getCurrentNavigation()` (la forma "oficial" de leer state) da `null` acá porque
+    // `flores` es un módulo LAZY — para cuando el chunk terminó de descargar y este componente
+    // se construye, el Router ya considera la navegación resuelta y borra ese objeto. `history
+    // .state` sí sobrevive: Angular lo empuja con `history.pushState` en el momento del
+    // `navigate(..., { state })`, y ahí se queda sin importar cuánto tarde el chunk en cargar.
+    this.ramoArmadoOrigen = (history.state as { ramoArmado?: IRamoArmado } | undefined)?.ramoArmado ?? null;
+  }
 
   ngOnInit(): void {
     const idEdit = Number(this.route.snapshot.queryParamMap.get('pedidoId'));
     this.pedidoIdEdicion = idEdit > 0 ? idEdit : null;
 
     this.cargarCatalogo();
+
+    // Foto del ramo de origen — no depende del catálogo, se resuelve aparte para que se vea
+    // desde el primer render en vez de esperar a `precargarDesdeRamoArmado()`.
+    if (this.ramoArmadoOrigen) {
+      this.ramoArmadoOrigenFoto = this.ramoArmadoOrigen.imagenUrl ?? null;
+      const varianteId = this.ramoArmadoOrigen.varianteId;
+      if (varianteId) {
+        this.imagenes.portadaDe(varianteId).pipe(takeUntil(this.destroy$))
+          .subscribe(url => { if (url) this.ramoArmadoOrigenFoto = url; });
+      }
+    }
 
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
 
@@ -201,6 +267,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.cargandoCatalogo = false;
         // Después del catálogo: sin especies/accesorios cargados no hay contra qué reconstruir.
         if (this.modoEdicion) this.cargarRamoParaEditar();
+        else if (this.ramoArmadoOrigen) this.precargarDesdeRamoArmado(this.ramoArmadoOrigen);
       },
       error: err => {
         this.cargandoCatalogo = false;
@@ -321,6 +388,75 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
         this.cargandoEdicion = false;
         this.errorEdicion = this.msg(err, 'No se pudo cargar el ramo de este pedido.');
       }
+    });
+  }
+
+  /**
+   * `IRamoArmado` no trae `tipoFlorId` (solo `colorFlorId` y un `tipoFlorNombre` de exhibición,
+   * no un id usable) — pero `fechas-disponibles` sí lo necesita para calcular el plazo de
+   * entrega. Sin un endpoint público de "a qué especie pertenece este color", se prueba cada
+   * especie activa del catálogo (ya cargado, público, catálogo chico) hasta encontrar la que
+   * contenga este color — en paralelo, no uno por uno.
+   */
+  private resolverTipoFlorId(colorFlorId: number, cb: (tipoFlorId: number | null) => void): void {
+    if (!this.tipos.length) { cb(null); return; }
+    forkJoin(
+      this.tipos.map(t => this.flores.coloresPorTipoFlor(t.id).pipe(
+        map(colores => ({ tipoId: t.id, tiene: colores.some(c => c.id === colorFlorId) })),
+        catchError(() => of({ tipoId: t.id, tiene: false }))
+      ))
+    ).subscribe(resultados => {
+      const match = resultados.find(r => r.tiene);
+      cb(match ? match.tipoId : null);
+    });
+  }
+
+  /**
+   * Entrada alterna al configurador: el cliente eligió un ramo YA ARMADO en la vitrina
+   * (`/flores/ramos`, "💐 Pedir este ramo") en vez de construir uno desde cero. Precarga
+   * especie/cantidad/reparto/accesorios con lo que trae el `RamoArmado` — mismo patrón que
+   * `pedirRamoDelPedido()` (edición admin) arriba, pero sin el candado de admin y sin
+   * fecha/zona restauradas (esas todavía no existen: se eligen ahora, como parte de la compra).
+   *
+   * El reparto y los accesorios quedan EDITABLES a propósito, no bloqueados: el precio final
+   * siempre se recalcula en vivo (`calcular-precio`), así que el cliente nunca paga algo
+   * distinto de lo que confirma al final, ajuste o no lo que traía el ramo. `precioTotal` del
+   * `RamoArmado` es solo el precio de referencia que se vio en la vitrina.
+   */
+  private precargarDesdeRamoArmado(ramo: IRamoArmado): void {
+    this.cargandoRamoArmado = true;
+    this.errorRamoArmado = null;
+    this.resolverTipoFlorId(ramo.colorFlorId, tipoFlorId => {
+      if (!tipoFlorId) {
+        this.cargandoRamoArmado = false;
+        this.errorRamoArmado = 'No se pudo identificar la especie de este ramo — puedes armarlo manualmente abajo.';
+        return;
+      }
+      this.tipoSeleccionadoId = tipoFlorId;
+      this.flores.coloresPorTipoFlor(tipoFlorId).subscribe({
+        next: cs => {
+          this.coloresDisponibles = cs;
+          this.cantidadDeseada = ramo.cantidad;
+          this.cantidadConfirmada = ramo.cantidad;
+          this.reparto = cs.map(c => ({
+            color: c,
+            cantidad: c.id === ramo.colorFlorId ? ramo.cantidad : 0
+          }));
+          this.cargarPortadas(cs);
+
+          (ramo.accesorios ?? []).forEach(a => {
+            const sel = this.seleccionAccesorios.find(s => s.accesorio.id === a.accesorioId);
+            if (sel) { sel.seleccionado = true; sel.cantidad = a.cantidad; }
+          });
+
+          this.cargandoRamoArmado = false;
+          this.pedirRecalculo();
+        },
+        error: err => {
+          this.cargandoRamoArmado = false;
+          this.errorRamoArmado = this.msg(err, 'No se pudieron cargar los colores de este ramo.');
+        }
+      });
     });
   }
 
@@ -581,12 +717,30 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
   // ── Paso 6 — entrega ─────────────────────────────────────────────────────
 
   onRecogerEnLocalChange(): void {
-    if (this.recogerEnLocal) this.lugarEntregaId = null;
+    if (this.recogerEnLocal) {
+      this.lugarEntregaId = null;
+      this.latitud = null;
+      this.longitud = null;
+      this.centroMapaLugar = CENTRO_MAPA_GENERICO;
+    }
     this.consultarFechas();
   }
 
   onLugarChange(): void {
     if (this.lugarEntregaId) this.recogerEnLocal = false;
+    const lugar = this.lugares.find(l => l.id === this.lugarEntregaId);
+    this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
+      ? [lugar.latitud, lugar.longitud]
+      : CENTRO_MAPA_GENERICO;
+    // Bug encontrado 2026-08-28 ("elijo una zona y el mapa se queda donde estaba"): si el
+    // cliente ya había marcado un punto (latitud/longitud con valor) y LUEGO cambia de zona,
+    // SelectorUbicacionComponent.ngOnChanges no recentra el mapa mientras lat/lng no sean null
+    // (a propósito, para no perder el punto marcado con cada re-render — ver ese componente).
+    // Pero un punto marcado en la zona vieja no tiene sentido al cambiar de zona: hay que
+    // soltarlo para que el mapa sí recentre en la zona nueva. Mismo reseteo que ya hace
+    // onRecogerEnLocalChange() al cambiar a "recoger en local".
+    this.latitud = null;
+    this.longitud = null;
     // La zona puede sumar horas de anticipación, así que el plazo cambia con ella.
     this.consultarFechas();
   }
@@ -760,7 +914,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       // Sin estos dos, un ramo urgente se entregaría en la fecha apurada pero cobrado como
       // normal y de contado — el cargo y el enganche del 50% dependen de que lleguen aquí.
       fechaHoraEntrega: this.fechaHoraEntrega,
-      urgente: this.urgente
+      urgente: this.urgente,
+      // Solo importan si la zona elegida tiene anillos de cobro por distancia configurados —
+      // sin anillos ahí, el back los ignora y usa el costo fijo de siempre.
+      latitud: this.latitud,
+      longitud: this.longitud
     }).subscribe({
       next: r => { this.calculo = r; this.calculando = false; },
       error: err => {
@@ -915,22 +1073,37 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       return;
     }
     this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
-      next: (res: any) => {
-        if (res) {
-          this.guardarPedido(res);
-        } else {
-          Swal.fire({
-            title: 'Completa tu registro',
-            icon: 'info',
-            html: '<p>Para pedir tu ramo necesitas registrarte como cliente.</p>',
-            showCancelButton: true,
-            confirmButtonText: 'Registrarme',
-            cancelButtonText: 'Cancelar'
-          }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+      next: (clienteId: any) => {
+        if (!clienteId) {
+          this.pedirCompletarRegistroRamo();
+          return;
         }
+        // ⚠️ Que exista el vínculo Usuario→Cliente (id truthy) NO es lo mismo que "puede
+        // comprar": al verificar su correo, todo usuario nuevo recibe un Cliente auto-creado
+        // con id real pero nombre/apellido/teléfono vacíos (`datosCompletos=false` -- ver
+        // `Cliente.recalcularDatosCompletos()` en el back), y el back rechaza el pedido en
+        // ese caso.
+        this.clienteService.getDataOneCliente(clienteId).subscribe({
+          next: (res) => {
+            if (res?.data?.datosCompletos) this.guardarPedido(clienteId);
+            else this.pedirCompletarRegistroRamo();
+          },
+          error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener tu perfil de cliente.' })
+        });
       },
       error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener tu perfil de cliente.' })
     });
+  }
+
+  private pedirCompletarRegistroRamo(): void {
+    Swal.fire({
+      title: 'Completa tu registro',
+      icon: 'info',
+      html: '<p>Para pedir tu ramo necesitas registrarte como cliente.</p>',
+      showCancelButton: true,
+      confirmButtonText: 'Registrarme',
+      cancelButtonText: 'Cancelar'
+    }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/agregar']); });
   }
 
   private guardarPedido(clienteId: number): void {
@@ -980,6 +1153,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fechaPedido: new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
+      latitud:        this.latitud ?? undefined,
+      longitud:       this.longitud ?? undefined,
+      referencias:    this.referencias.trim() || undefined,
       detalles
     };
 
@@ -1039,6 +1215,9 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       fraseListonPersonalizada: this.listonModo === 'personalizada' ? this.fraseTexto.trim() : null,
       lugarEntregaId: this.lugarEntregaId ?? null,
       recogerEnLocal: this.recogerEnLocal,
+      latitud: this.latitud,
+      longitud: this.longitud,
+      referencias: this.referencias.trim() || null,
       fechaHoraEntrega: this.fechaHoraEntrega,
       urgente: this.urgente
     };
@@ -1046,18 +1225,25 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     // ⚠️ `correoContacto` es lo que el back usa para avisarle al cliente cuando su frase ya tiene
     // precio. Si no lo mandamos llega `null` y ese correo **nunca sale** — el cliente se queda
     // esperando sin saber cuánto debe. Solo hace falta cuando hay frase.
-    // ⚠️ `buscarPorIdCliente/{id}` recibe el id de **USUARIO**, no el de cliente — el nombre del
-    // endpoint engaña. Así lo llaman los otros 4 puntos del proyecto (mis-datos, mi-perfil,
-    // mis-pedidos, detalle-productos). Mandarle el clienteId traería el cliente equivocado, o
-    // ninguno: se le estaría adjuntando al ramo el correo de otra persona.
+    // ⚠️ `buscarPorIdCliente/{id}` recibe el id de **cliente**, no el de usuario -- hay que
+    // traducir primero con `buscarClientePorIdUsuario`, misma traducción que ya hacen
+    // mis-datos/mi-perfil/mis-pedidos/detalle-productos (antes esto mandaba `idUsuario` directo:
+    // para un cliente real, no admin, el chequeo de dueño del back lo rechazaba con "No
+    // autorizado" y el aviso de frase nunca se armaba -- encontrado 2026-08-27).
     if (hayFrase && this.idUsuario) {
-      this.clienteService.getDataOneCliente(this.idUsuario).subscribe({
-        next: (res: any) => {
-          body.correoContacto   = res?.data?.correoElectronico ?? null;
-          body.telefonoContacto = res?.data?.numeroTelefonico ?? null;
-          this.enviarDetalleRamo(pedidoId, body, hayFrase);
+      this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
+        next: (clienteId: any) => {
+          if (!clienteId) { this.enviarDetalleRamo(pedidoId, body, hayFrase); return; }
+          this.clienteService.getDataOneCliente(clienteId).subscribe({
+            next: (res: any) => {
+              body.correoContacto   = res?.data?.correoElectronico ?? null;
+              body.telefonoContacto = res?.data?.numeroTelefonico ?? null;
+              this.enviarDetalleRamo(pedidoId, body, hayFrase);
+            },
+            // Sin contacto se manda igual: perder el aviso es malo, perder la frase es peor.
+            error: () => this.enviarDetalleRamo(pedidoId, body, hayFrase)
+          });
         },
-        // Sin contacto se manda igual: perder el aviso es malo, perder la frase es peor.
         error: () => this.enviarDetalleRamo(pedidoId, body, hayFrase)
       });
       return;
@@ -1149,12 +1335,20 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     this.fraseTexto = '';
     this.lugarEntregaId = null;
     this.recogerEnLocal = false;
+    this.latitud = null;
+    this.longitud = null;
+    this.centroMapaLugar = CENTRO_MAPA_GENERICO;
+    this.referencias = '';
     this.calculo = null;
     this.fechas = null;
     this.errorFechas = null;
     this.urgente = false;
     this.fechaEntrega = '';
     this.horaEntrega = '';
+    // Limpia el origen "vitrina → ramo armado" — sin esto, tras confirmar un pedido y volver a
+    // Paso 1, la pantalla seguiría creyendo que hay un ramo precargado pendiente.
+    this.ramoArmadoOrigen = null;
+    this.errorRamoArmado = null;
   }
 
   // ── Verificación de correo — copia exacta del flujo ya probado en

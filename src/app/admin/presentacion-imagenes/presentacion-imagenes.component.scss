@@ -24,7 +24,7 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
     top: -100px; right: -50px; pointer-events: none;
   }
   &__header-icon { font-size: 2.4rem; z-index: 1; }
-  &__title  { font-size: 1.4rem; font-weight: 800; color: #fff; margin: 0; z-index: 1; }
+  &__title  { font-size: 1.4rem; font-weight: 800; color: var(--header-text, #fff); margin: 0; z-index: 1; }
   &__subtitle { font-size: .8rem; color: rgba(255,255,255,.7); margin: 4px 0 0; z-index: 1; }
   &__body { padding: 28px 32px 36px; display: flex; flex-direction: column; gap: 20px;
     @media (max-width: 480px) { padding: 18px 14px 28px; } }
@@ -92,7 +92,7 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
     background: rgba(var(--app-accent-rgb),.55);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity .22s;
-    color: #fff; font-size: .85rem; font-weight: 700;
+    color: var(--app-accent-ink, #fff); font-size: .85rem; font-weight: 700;
     gap: 6px;
   }
 
@@ -111,9 +111,9 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   }
 
   &__quitar {
-    background: none; border: none; color: #dc2626;
+    background: none; border: none; color: var(--pk-danger-to);
     font-size: .8rem; cursor: pointer; flex-shrink: 0; padding: 0 2px;
-    &:hover { color: #b91c1c; }
+    &:hover { color: var(--pk-danger); }
   }
 
   &__footer {
@@ -173,6 +173,6 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .pi-card__title    { color: #1e293b; }
+  .pi-card__title    { color: var(--header-text, #1e293b); }
   .pi-card__subtitle { color: rgba(0,0,0,0.55); }
 }

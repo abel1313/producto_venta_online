@@ -1,0 +1,195 @@
+$p:  var(--brand-1);
+$pd: var(--brand-2);
+$t:  all 0.2s ease;
+
+.pk-wrap {
+  max-width: 980px;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.pk-header {
+  &__title { font-size: 1.1rem; font-weight: 800; color: var(--app-text, #1f2937); margin: 0; }
+  &__sub   { font-size: .78rem; color: var(--app-text-muted, #9ca3af); }
+}
+
+.pk-link {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+.gm-cols {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.gm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &--menus    { flex: 1 1 320px; min-width: 280px; }
+  &--submenus { flex: 2 1 480px; min-width: 320px; }
+
+  &__title {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--app-text, #374151);
+  }
+}
+
+.pk-form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+
+  &__field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+  &__field--num { flex: 0 1 100px; min-width: 0; }
+  &__field--full { flex: 1 1 100%; }
+  &__actions { display: flex; gap: 8px; }
+
+  &--stack { flex-direction: row; }
+}
+
+.pk-input {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--card-border, #e5e7eb); border-radius: 10px;
+  font-size: .9rem; color: var(--app-text, #1f2937); outline: none;
+  transition: $t; box-sizing: border-box;
+  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.12); }
+}
+
+textarea.pk-input { font-family: inherit; resize: vertical; }
+
+.pk-error { font-size: .72rem; color: var(--pk-danger-to); }
+
+.pk-btn {
+  padding: 10px 16px; border: none; border-radius: 10px;
+  cursor: pointer; font-weight: 600; font-size: .85rem;
+  transition: $t; white-space: nowrap;
+
+  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
+               &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--cancel { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280);
+               &:hover { background: var(--card-border, #e5e7eb); } }
+  &--edit   { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
+  &--del    { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer;
+               &:hover { filter: brightness(0.8); } }
+}
+
+.pk-empty {
+  color: var(--app-text-muted, #9ca3af); font-size: .84rem; text-align: center; padding: 24px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+
+.pk-table-wrap { display: flex; flex-direction: column; gap: 10px; }
+
+.pk-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--table-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+
+  thead th {
+    text-align: left;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--table-header-text, #9ca3af);
+    background: var(--table-header-bg, #f9fafb);
+    padding: 10px 14px;
+    border-bottom: 1.5px solid var(--table-border, #e5e7eb);
+  }
+
+  tbody tr {
+    transition: $t;
+    &:hover { background: var(--table-row-hover, #f9fafb); }
+    &:not(:last-child) td { border-bottom: 1px solid var(--table-border, #f0f1f3); }
+  }
+
+  td {
+    padding: 10px 14px;
+    font-size: .9rem;
+    color: var(--app-text, #1f2937);
+    font-weight: 600;
+  }
+
+  .pk-row--editando td { background: var(--app-accent-soft); }
+}
+
+.pk-table__col-actions { width: 1%; }
+
+.pk-table__actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.pk-meta { opacity: .65; font-size: .78rem; }
+
+// Lista de menús (columna izquierda)
+.gm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid var(--card-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 4px 4px 4px 4px;
+  transition: $t;
+
+  &--activo { border-color: var(--app-accent); background: var(--app-accent-soft); }
+  &--singrupo { margin-top: 8px; border-style: dashed; }
+}
+
+.gm-list__label {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--app-text, #1f2937);
+}
+
+.gm-list__actions {
+  display: flex;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+// ── Dark mode ────────────────────────────────────────────────────────
+// Mismo patrón usado en gestion-lugares.component.scss / abonos.component.scss: sin esto el
+// input queda con fondo oscuro nativo (color-scheme:dark heredado de body.theme-dark) pero
+// texto oscuro fijo -- invisible.
+:host-context(body.theme-dark) {
+  .pk-input { color-scheme: dark; color: var(--app-text, #f1f5f9); }
+  .gm-list__label { color: var(--app-text, #f1f5f9); }
+  .gm-col__title { color: var(--app-text, #e5e7eb); }
+}
+
+:host-context(body.theme-light) {
+  .pk-input { color-scheme: light; color: var(--app-text, #1f2937); }
+}

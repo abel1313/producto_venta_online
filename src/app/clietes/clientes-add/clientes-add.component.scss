@@ -1,5 +1,6 @@
 // ── Variables ────────────────────────────────────────────────────────────────
-$radius:     14px;
+// $radius sale del token compartido --card-radius (Personalización) en vez de un valor fijo.
+$radius:     var(--card-radius, 14px);
 $radius-sm:  8px;
 $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -18,8 +19,8 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 660px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
-  background: #fff;
+  box-shadow: var(--card-shadow);
+  background: var(--card-bg, #fff);
 }
 
 // ── Header ───────────────────────────────────────────────────────────────────
@@ -95,11 +96,11 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .ca-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text, #374151);
   letter-spacing: 0.02em;
 }
 
-.ca-req { color: #ef4444; margin-left: 2px; }
+.ca-req { color: var(--pk-danger-to); margin-left: 2px; }
 
 // ── Input wrap ───────────────────────────────────────────────────────────────
 .ca-input-wrap {
@@ -113,7 +114,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.85rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -124,7 +125,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.72rem;
   pointer-events: none;
 }
@@ -133,11 +134,11 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .ca-input {
   width: 100%;
   padding: 0.6rem 1rem 0.6rem 2.35rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: $radius-sm;
   font-size: 0.875rem;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--app-text, #111827);
+  background: var(--form-section-bg, #f9fafb);
   outline: none;
   transition: $trans;
   box-sizing: border-box;
@@ -147,7 +148,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:focus {
     border-color: var(--app-accent);
-    background: #fff;
+    background: var(--card-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
 
     ~ .ca-input-icon { color: var(--app-accent); }
@@ -175,7 +176,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
 
   .pi { font-size: 0.75rem; }
 }
@@ -186,7 +187,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: flex-end;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #f0f0f5;
+  border-top: 1px solid var(--card-border, #f0f0f5);
   margin-top: 0.5rem;
 }
 
@@ -208,13 +209,13 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &--cancel {
     background: transparent;
-    color: #6b7280;
-    border: 2px solid #e5e7eb;
+    color: var(--app-text-muted, #6b7280);
+    border: 2px solid var(--card-border, #e5e7eb);
 
     &:hover {
-      border-color: #d1d5db;
-      color: #374151;
-      background: #f9fafb;
+      border-color: var(--card-border, #d1d5db);
+      color: var(--app-text, #374151);
+      background: var(--form-section-bg, #f9fafb);
     }
   }
 
@@ -239,20 +240,18 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
+// box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .ca-card {
-    background: #1e1e2e;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  }
+  .ca-card { background: var(--card-bg, #1e1e2e); }
 
   .ca-section__label { color: var(--app-accent); }
 
-  .ca-label { color: #94a3b8; }
+  .ca-label { color: var(--app-text-muted, #94a3b8); }
 
   .ca-input {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
+    color: var(--app-text, #f1f5f9);
 
     &::placeholder { color: #475569; }
 
@@ -274,26 +273,26 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .ca-input-icon  { color: #475569; }
-  .ca-select-arrow { color: #475569; }
+  .ca-input-icon  { color: var(--app-text-muted, #475569); }
+  .ca-select-arrow { color: var(--app-text-muted, #475569); }
 
   .ca-footer { border-top-color: rgba(255, 255, 255, 0.07); }
 
   .ca-btn--cancel {
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     border-color: rgba(255, 255, 255, 0.12);
 
     &:hover {
       border-color: rgba(255, 255, 255, 0.2);
-      color: #e2e8f0;
+      color: var(--app-text, #e2e8f0);
       background: rgba(255, 255, 255, 0.05);
     }
   }
 
   // Paso 2 — Verificación
   .ca-verif-info {
-    p       { color: #cbd5e1; }
-    &__note { color: #94a3b8 !important; }
+    p       { color: var(--app-text, #cbd5e1); }
+    &__note { color: var(--app-text-muted, #94a3b8) !important; }
     &__email { color: var(--app-accent); }
   }
 
@@ -301,7 +300,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(var(--app-accent-rgb), 0.08);
     border-color: rgba(var(--app-accent-rgb), 0.18);
 
-    &__text { color: #94a3b8; }
+    &__text { color: var(--app-text-muted, #94a3b8); }
 
     &__btn {
       color: var(--app-accent);
@@ -312,11 +311,11 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         border-color: rgba(var(--app-accent-rgb), 0.5);
       }
 
-      &:disabled { color: #475569; border-color: rgba(255,255,255,0.08); }
+      &:disabled { color: var(--app-text-muted, #475569); border-color: rgba(255,255,255,0.08); }
     }
   }
 
-  .ca-btn--skip { color: #475569; &:hover { color: #94a3b8; } }
+  .ca-btn--skip { color: var(--app-text-muted, #475569); &:hover { color: var(--app-text-muted, #94a3b8); } }
 }
 
 // ── Paso 2 — Verificación ────────────────────────────────────────────────────
@@ -337,7 +336,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   p {
     margin: 0;
     font-size: 0.9rem;
-    color: #374151;
+    color: var(--app-text, #374151);
     line-height: 1.55;
   }
 
@@ -348,7 +347,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__note {
     font-size: 0.78rem !important;
-    color: #6b7280 !important;
+    color: var(--app-text-muted, #6b7280) !important;
   }
 }
 
@@ -391,7 +390,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__text {
     font-size: 0.82rem;
-    color: #6b7280;
+    color: var(--app-text-muted, #6b7280);
   }
 
   &__btn {
@@ -417,8 +416,8 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:disabled {
-      color: #9ca3af;
-      border-color: #e5e7eb;
+      color: var(--app-text-muted, #9ca3af);
+      border-color: var(--card-border, #e5e7eb);
       cursor: not-allowed;
     }
   }
@@ -432,7 +431,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.5rem;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.8rem;
   cursor: pointer;
   text-align: center;
@@ -441,16 +440,16 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
   transition: color 0.2s;
 
-  &:hover { color: #6b7280; }
+  &:hover { color: var(--app-text-muted, #6b7280); }
 }
 
 // ── LIGHT MODE ───────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .ca-card  { background: #fff; }
+  .ca-card  { background: var(--card-bg, #fff); }
   .ca-input {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #111827;
+    background: var(--form-section-bg, #f9fafb);
+    border-color: var(--card-border, #e5e7eb);
+    color: var(--app-text, #111827);
   }
 }
 

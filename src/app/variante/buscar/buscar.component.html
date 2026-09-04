@@ -63,47 +63,59 @@
        varios a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae
        ambos, solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se
        combinan con AND con la busqueda por texto. -->
-  <div *ngIf="isAdminUser" class="vb-filtros">
-    <label class="vb-filtro-check">
+  <div *ngIf="puedeVerAlgunFiltro" class="vb-filtros">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroConStock">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarConStock" (change)="toggleFiltroAdmin('mostrarConStock')" />
       <span class="vb-filtro-check__box"></span>
       Con stock
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroSinStock">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarSinStock" (change)="toggleFiltroAdmin('mostrarSinStock')" />
       <span class="vb-filtro-check__box"></span>
       Sin stock
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroConImagenes">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarConImagenes" (change)="toggleFiltroAdmin('mostrarConImagenes')" />
       <span class="vb-filtro-check__box"></span>
       Con imágenes
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroSinImagenes">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarSinImagenes" (change)="toggleFiltroAdmin('mostrarSinImagenes')" />
       <span class="vb-filtro-check__box"></span>
       Sin imágenes
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroHabilitados">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarHabilitados" (change)="toggleFiltroAdmin('mostrarHabilitados')" />
       <span class="vb-filtro-check__box"></span>
       Habilitadas
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroNoHabilitados">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarNoHabilitados" (change)="toggleFiltroAdmin('mostrarNoHabilitados')" />
       <span class="vb-filtro-check__box"></span>
       No habilitadas
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroCodigoGenerado">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarCodigoGenerado" (change)="toggleFiltroAdmin('mostrarCodigoGenerado')" />
       <span class="vb-filtro-check__box"></span>
       Código generado
     </label>
-    <label class="vb-filtro-check">
+    <label class="vb-filtro-check" *ngIf="puedeFiltroCodigoReal">
       <input type="checkbox" class="vb-filtro-check__input" [checked]="mostrarCodigoReal" (change)="toggleFiltroAdmin('mostrarCodigoReal')" />
       <span class="vb-filtro-check__box"></span>
       Código real
     </label>
+    <!-- Rango de fecha de creación — para encontrar "lo que se cargó hoy" (carga rápida de
+         imágenes). Independientes entre sí, se combinan con AND con el resto. -->
+    <ng-container *ngIf="puedeFiltroFecha">
+      <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaDesde">
+        Creado desde
+        <input type="date" class="vb-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
+      </label>
+      <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaHasta">
+        Creado hasta
+        <input type="date" class="vb-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
+      </label>
+    </ng-container>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
 
@@ -194,6 +206,22 @@
       <!-- Badge deshabilitado (solo admin) -->
       <span *ngIf="isAdminUser && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 
+      <!-- Header -- mismo degradado de marca que el resto de las cards de la app
+           (Personalización); colorHeader() solo se usa para el puntito de color real
+           de la prenda, no para el fondo del header. Va primero, como en el resto de
+           las cards de la app (design-system.scss: header + imagen + body + footer). -->
+      <div class="vb-card__header">
+        <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
+        <div class="vb-card__header-content">
+          <div class="vb-card__chips">
+            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
+          </div>
+        </div>
+        <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
+          {{ stockDisponible(v) === 0 ? 'Agotado' : stockDisponible(v) + ' unidades' }}
+        </span>
+      </div>
+
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
@@ -205,19 +233,6 @@
                 [title]="esFavorito(v) ? 'Quitar de favoritos' : 'Agregar a favoritos'">
           {{ esFavorito(v) ? '❤️' : '🤍' }}
         </button>
-      </div>
-
-      <!-- Header con color -->
-      <div class="vb-card__header" [style.background]="colorHeader(v.color ?? '')">
-        <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
-        <div class="vb-card__header-content">
-          <div class="vb-card__chips">
-            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
-          </div>
-        </div>
-        <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
-          {{ stockDisponible(v) === 0 ? 'Agotado' : stockDisponible(v) + ' unidades' }}
-        </span>
       </div>
 
       <!-- Body -->
@@ -252,6 +267,12 @@
           <div class="vb-card__detail-row" *ngIf="v.descripcion">
             <span class="vb-card__detail-label">Descripción</span>
             <span class="vb-card__detail-val">{{ v.descripcion }}</span>
+          </div>
+          <!-- Puede venir null en variantes creadas antes de la migración del back — no mostrar
+               la fila en ese caso, en vez de un "Invalid Date". -->
+          <div class="vb-card__detail-row" *ngIf="v.fechaCreacion">
+            <span class="vb-card__detail-label">Creado</span>
+            <span class="vb-card__detail-val">{{ v.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
           </div>
         </div>
 

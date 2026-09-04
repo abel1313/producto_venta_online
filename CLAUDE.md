@@ -11517,6 +11517,87 @@ y el guardado manda los campos correctos.**
 
 ---
 
+## FEAT PEDIDOS — MAPA DE UBICACIÓN TAMBIÉN AL ARMAR EL PEDIDO (CHECKOUT + ARMA TU RAMO) (2026-08-22)
+
+> Corrige un hueco de la entrega anterior (sección "FEAT PEDIDOS — UBICACIÓN EXACTA DE ENTREGA
+> CON MAPA"): el mapa solo vivía en "Mis pedidos → Editar Entrega", es decir, **después** de que
+> el pedido ya existía — el cliente tenía que acordarse de volver a editarlo. El dueño lo pidió
+> directo en el momento de armar el pedido: *"si selecciona Tejupilco, abrimos el mapa y que
+> elija el lugar de entrega... Tejupilco es extenso, ¿cómo voy a saber dónde es?"* — y lo mismo
+> para cuando arma un ramo.
+
+### Se extrajo el mapa a un componente reutilizable
+
+La primera implementación vivía **inline dentro de un `Swal.fire()`** en `mis-pedidos` (JS
+vainilla con `didOpen`/`willClose`, ver sección anterior) — eso funciona ahí porque un modal de
+SweetAlert2 no es parte del árbol de componentes de Angular. Pero **estas dos pantallas nuevas sí
+son templates normales de Angular**, así que copiar el mismo código vainilla tres veces habría
+sido pura duplicación. Se creó `<app-selector-ubicacion>`
+(`src/app/shared/selector-ubicacion/selector-ubicacion.component.ts`) como componente real:
+`@Input() lat/lng/centroDefault`, `@Output() ubicacionCambio`, con el mismo mapa/pin/geolocalizar
+por dentro. Se agregó a `SharedModule` (ahora también importado por `FloresModule`, que antes no
+lo tenía).
+
+⚠️ **El Swal de `mis-pedidos` NO se migró a usar este componente** — sigue con su propia
+implementación vainilla. SweetAlert2 renderiza su `html` fuera del árbol de Angular; insertar un
+componente Angular ahí requeriría técnicas más complejas (`ComponentFactoryResolver`/portal) que
+no valían la pena solo para no repetir ~80 líneas ya probadas y funcionando.
+
+### Dónde quedó conectado
+
+1. **`venta-variante`** (carrito/checkout normal del cliente) — debajo del select "📍 Lugar de
+   entrega", solo visible si ya se eligió una zona (`*ngIf="lugarEntregaId"`) y solo para
+   cliente (`!isAdminUser` — el admin captura esto en Venta Directa). Nuevos campos `latitud`,
+   `longitud`, `referencias` en el componente, incluidos en el `IPedidoVarianteDTO` que ya arma
+   `armarYConfirmar()`.
+2. **`configurar-ramo`** ("Arma tu ramo", flores) — mismo criterio, dentro del Paso 6 ("¿Dónde y
+   cuándo lo quieres?"), debajo del select de zona, oculto si `recogerEnLocal` o si
+   `modoEdicion` (la zona tampoco se toca al editar un ramo ya pactado — mismo motivo ya
+   documentado: cambiarla alteraría un costo de envío ya cobrado). Los 3 campos se mandan en el
+   mismo `IPedidoVarianteDTO` de `guardarPedido()` (confirmado por el back que `savePedido` los
+   acepta desde la creación).
+
+**`IPedidoVarianteDTO`** (`pedido-variante.model.ts`) ganó `latitud?`/`longitud?`/`referencias?`.
+
+### Lo que NO se tocó (fuera de alcance de este pedido)
+
+- **`venta-directa`** (admin vendiendo directo) no lleva el mapa — el dueño lo pidió para
+  flujos donde el **cliente** elige su propia ubicación ("cuando arman su pedido/ramo"), y ahí
+  es el admin quien captura los datos, normalmente por teléfono. Si se pide después, es trivial
+  de agregar con el mismo componente.
+- El mapa **no reposiciona su centro por zona** (Tejupilco vs. Zacazonapan muestran el mismo
+  centro por defecto) — el catálogo `LugarEntrega` no guarda lat/lng propio todavía. No bloquea
+  el objetivo real (el cliente puede navegar/hacer zoom en el mapa para encontrar su punto, o
+  usar "📡 Usar mi ubicación" si está parado ahí) pero sería una mejora pedirle al back que
+  agregue un centro por zona si se quiere que el mapa ya abra centrado en el pueblo correcto.
+
+### Verificado en pantalla, en el flujo real (no solo `ng build`)
+
+Con Playwright — para saltarse los 5 pasos previos del wizard de "Arma tu ramo" (especie,
+cantidad, reparto, accesorios, listón) sin tener que simularlos uno por uno con clics reales, se
+forzó el estado directo vía `window.ng.getComponent()` (`cantidadConfirmada`, `reparto`,
+`lugares`, `lugarEntregaId`) — válido porque lo que se estaba verificando es el **renderizado del
+mapa dentro de este layout específico**, no la lógica del wizard (ya cubierta por el compilador
+estricto de plantillas). Confirmado en claro y oscuro, y con un clic real sobre el mapa que sí
+actualiza `latitud`/`longitud` del componente padre y el texto en pantalla — la conexión
+`@Output()` entre el componente reutilizable y sus dos padres funciona en ambos casos.
+
+**Archivos nuevos:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts`
+
+**Archivos modificados:**
+- `src/app/shared/shared.module.ts` → declara/exporta `SelectorUbicacionComponent`
+- `src/app/flores/flores.module.ts` → importa `SharedModule` (no lo tenía)
+- `src/app/variante/models/pedido-variante.model.ts` → `IPedidoVarianteDTO` + los 3 campos
+- `src/app/variante/venta-variante/venta-variante.component.ts` + `.html` → mapa tras elegir zona
+- `src/app/flores/configurar/configurar-ramo.component.ts` + `.html` → mapa en Paso 6
+
+**Verificado con `ng build --configuration=development` sin errores, y en pantalla (Playwright,
+claro y oscuro) en ambos puntos de entrada nuevos, con clic real confirmando la actualización de
+estado en los dos.**
+
+---
+
 ## FIX URGENTE PROD — BOTÓN "ABRIR/CERRAR NEGOCIO" DE UN CLIC EN EL MENÚ (2026-08-22)
 
 > Pedido explícito del dueño, marcado como urgente: un acceso directo desde el menú principal
@@ -11547,3 +11628,436 @@ pedida.
 
 ⚠️ **Nada más se tocó** — cambio puramente aditivo, sin modificar ningún botón, ruta ni
 comportamiento existente (instrucción explícita del dueño).
+
+---
+
+## FIX FLORES — MAPA: SIN NÚMEROS DE LAT/LONG AL CLIENTE + "CÓMO LLEGAR" NO USABA EL PUNTO EXACTO (2026-08-22)
+
+> Reportado por el dueño probando en vivo "Arma tu ramo": *"el cliente no tiene por qué saber la
+> latitud y longitud, quítalo"* + *"cuando voy a ver 'cómo llegar' no me lleva al lugar que
+> seleccioné, solo muestra Tejupilco completo — ¿cuál es el chiste de seleccionar una zona si no
+> me va a llevar a donde apunté?"*
+
+### 1. Ya no se muestran los números crudos de lat/long
+
+`SelectorUbicacionComponent.textoCoords` mostraba `📍 18.916234, -100.143567` — datos sin
+sentido para un cliente. Ahora dice **"✅ Ubicación marcada"** / "Sin marcar todavía". El dato
+real (`lat`/`lng`) se sigue capturando y enviando exactamente igual — solo se dejó de imprimir
+en pantalla.
+
+### 2. "Cómo llegar" caía siempre al buscador de texto (nunca al punto exacto)
+
+**Causa encontrada:** en "Arma tu ramo", el pedido se guarda en **dos** llamadas —
+`POST /v1/pedidos/savePedido` (que sí llevaba `latitud`/`longitud`) y, justo después,
+`POST /v1/flores/pedidos/{id}/detalle` (`finalizarConDetalleRamo()`, para frase/zona/fecha) —
+**que no incluía esos 2 campos**. Esa segunda llamada ya reenvía `lugarEntregaId` a propósito
+(el comentario del propio código explica que ahí el back guarda `fechaLimitePago`/
+`cargoUrgenteMonto`, señal de que sí toca campos de entrega del pedido) — todo apunta a que
+`latitud`/`longitud` quedaban en `null` después de esa segunda llamada, aunque la primera sí
+las hubiera guardado bien. Por eso `detalle.latitud` volvía vacío al leer el pedido, y
+`linkComoLlegar` (en `detalle-pedido`) caía a su fallback de buscar por texto — que para
+"Tejupilco" sin más contexto muestra el polígono de todo el pueblo, exactamente lo que describió
+el dueño.
+
+**Fix:** `IRamoPedidoDetalleRequest` gana `latitud?`/`longitud?`/`referencias?`, y
+`finalizarConDetalleRamo()` los reenvía con los mismos valores ya usados en el `savePedido`
+inicial — mismo criterio ya usado en otros lados del proyecto (reenviar los campos que ya se
+tienen para que un endpoint de guardado parcial no los borre sin querer).
+
+⚠️ **No confirmado con el back que esto sea 100% la causa** (no hay acceso directo a su código
+desde aquí) — es la explicación más consistente con la evidencia (solo el flujo de ramos, que
+tiene esta segunda llamada, presentó el problema; el checkout normal, que no la tiene, no fue
+reportado). Si el síntoma persiste después de este fix, hay que pedirle al back que confirme si
+`POST /v1/flores/pedidos/{id}/detalle` también acepta/persiste estos 2 campos.
+
+**Archivos modificados:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts` → texto sin coordenadas
+- `src/app/flores/models/flores.model.ts` → `IRamoPedidoDetalleRequest` + 3 campos
+- `src/app/flores/configurar/configurar-ramo.component.ts` → `finalizarConDetalleRamo()` los reenvía
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo
+contra el back — pendiente que el dueño confirme en QA si el link ya lleva al punto exacto.
+
+---
+
+## FIX FLORES — SE CONFIRMÓ LA CAUSA REAL DEL "CÓMO LLEGAR" + BUSCADOR DE LUGAR EN EL PICKER (2026-08-22)
+
+> El dueño probó con un ramo genuinamente **nuevo** (creado después del fix de arriba) y el
+> síntoma seguía igual — el fix de `finalizarConDetalleRamo()` era correcto pero no era la causa
+> real. Explicación completa del propio dueño: al elegir "Zacazonapan" en el `<select>` de zona,
+> el picker de mapa **no se recentra** — sigue mostrando el centro genérico de Tejupilco. Como el
+> mapa no mostraba nada relacionado con la zona elegida, lo más probable es que nunca haya tocado
+> el mapa para marcar el punto (¿para qué, si ni siquiera mostraba su zona?) — por eso
+> `latitud`/`longitud` seguían en `null` en la práctica, aunque toda la cadena de guardado/lectura
+> (`guardarPedido()` → `savePedido` → `GET /detalle` → `linkComoLlegar`) ya estaba correcta de
+> punta a punta (confirmado leyendo el código completo otra vez, sin encontrar ningún bug nuevo).
+
+### Causa raíz real — el picker no tiene forma de saber dónde está cada zona
+
+`SelectorUbicacionComponent` siempre arranca en un `centroDefault` fijo (Tejupilco) porque
+`LugarEntrega` (el catálogo de zonas) **no tiene lat/lng propio** — no hay ningún dato de dónde
+está "Zacazonapan" para que el mapa se recentre solo al elegirla. El componente ya tenía el
+gancho listo para esto (`ngOnChanges` reacciona a cambios de `@Input() centroDefault`), pero
+nunca se conectó a nada real porque el dato no existe en el back.
+
+**Se le pidió al back agregar `latitud`/`longitud` a `LugarEntrega`** (consulta en el repo
+compartido, `CAMBIOS_FRONT.md`, 2026-08-22) — con eso, elegir una zona del select recentraría el
+mapa ahí automáticamente. De paso se dejó anotada la idea del dueño para más adelante: cobrar
+distinto (o restringir) según qué tan lejos del centroide de la zona caiga el punto marcado —
+por si les sirve considerarlo al diseñar el campo nuevo, aunque no se pide implementarlo todavía.
+
+### Mientras tanto — buscador de lugar por texto dentro del picker (sin backend)
+
+Nuevo campo de búsqueda arriba del mapa en `SelectorUbicacionComponent`, usando
+**Nominatim/OpenStreetMap** (`nominatim.openstreetmap.org/search`) — gratis, sin API key, mismo
+criterio ya usado para elegir Leaflet en vez de Google Maps. Escribir "Zacazonapan centro" y
+pulsar 🔍 (o Enter) recentra el mapa ahí; **no coloca el pin solo** — buscar es solo para llegar
+rápido a la zona correcta, marcar el punto exacto sigue siendo un toque/clic sobre el mapa, a
+propósito (la misma distinción que ya existía entre "el mapa está centrado aquí" y "ya elegiste
+este punto", documentada en el propio componente).
+
+Sin resultados o sin red, se muestra un aviso corto sin bloquear — el admin/cliente siempre puede
+seguir ubicando el punto a mano si la búsqueda no ayuda.
+
+**Archivos modificados:**
+- `src/app/shared/selector-ubicacion/selector-ubicacion.component.ts` → buscador (`terminoBusqueda`,
+  `buscando`, `errorBusqueda`, `buscarLugar()`), inyecta `HttpClient`
+
+**Verificado con `ng build --configuration=development` sin errores.** ⚠️ No probado en vivo con
+Nominatim real (solo compilación) — pendiente confirmar con el dueño que el buscador sí ubica
+zonas reales de la región. El problema de fondo (recentrar solo al elegir zona) sigue sin resolver
+hasta que el back agregue lat/lng a `LugarEntrega`.
+
+---
+
+## ✅ CERRADO — el "Cómo llegar" nunca fue bug del front: faltaba la migración en QA (2026-08-22)
+
+> Cierra la investigación de las dos secciones anteriores. El back respondió en el compartido
+> (`CAMBIOS_FRONT_2.md`, "respuesta consolidada" del mismo día) con la causa real.
+
+**La tabla `pedidos` en QA (y en cualquier otro ambiente) todavía NO tiene las columnas**
+`latitud`/`longitud`/`referencias` — cita textual del back: *"Requiere migración de base de datos
+antes de desplegar... no tiene las columnas todavía en ningún ambiente (`ddl-auto: none`)."*
+
+Esto explica TODO lo observado sin necesitar ningún fix de front:
+- `guardarPedido()` sí manda `latitud`/`longitud` correctamente en el `pedido` (confirmado
+  releyendo el código completo, dos veces, sin encontrar ningún bug).
+- `finalizarConDetalleRamo()` también los reenvía (fix de la sesión anterior, correcto pero
+  innecesario — no había nada que "perder" en esa segunda llamada, el dato nunca llegó a
+  persistir desde la primera).
+- El back podía aceptar esos campos en el JSON sin quejarse, pero sin la columna en la tabla no
+  hay dónde guardarlos — de ahí que `GET /v1/pedidos/{id}/detalle` siempre regresara sin ellos y
+  `linkComoLlegar` cayera al fallback de texto (el polígono del pueblo completo).
+
+**Nada que corregir del lado del front.** Cuando el back corra
+`migration_pedido_ubicacion_entrega.sql` en QA y despliegue, el mismo código que ya está en
+producción-de-código (sin cambios adicionales) debería empezar a funcionar solo — hay que
+reprobar en vivo hasta entonces, no antes.
+
+**Pendiente:** confirmar con el back cuándo corren la migración + despliegan en QA, y repetir la
+prueba real del dueño (marcar un pin, confirmar el ramo, y revisar "Cómo llegar" desde ese
+pedido) una vez que avisen.
+
+**Lección para la próxima vez que algo "no se refleja" a pesar de que el código se ve
+correcto:** antes de seguir cazando bugs de front, revisar si el propio backend documentó una
+migración pendiente para ese mismo campo — el repo compartido (`CAMBIOS_FRONT.md`/
+`CAMBIOS_FRONT_2.md`) suele decirlo explícito ("requiere migración antes de desplegar"), y es
+mucho más rápido de verificar que releer código que ya se confirmó correcto dos veces.
+
+---
+
+## ⚠️ REABIERTO — LAS COORDENADAS SIGUEN SIN VOLVER TRAS "CERRAR" LA INVESTIGACIÓN (2026-08-24)
+
+> El cierre de la sección de arriba fue prematuro: el dueño volvió a probar en vivo (marcar un
+> punto → confirmar pedido/ramo → "Cómo llegar") y las coordenadas SIGUEN sin aparecer, cayendo
+> siempre al fallback de buscar por texto.
+
+**Se volvió a auditar el código completo, letra por letra**, contra el ejemplo de
+request/response que el back documentó el 22 de agosto (punto 5 de la respuesta consolidada en
+`CAMBIOS_FRONT_2.md`) — los 7 puntos donde el front manda o lee `latitud`/`longitud`/`referencias`
+coinciden exacto con su spec, sin ninguna variación de nombre:
+
+| Archivo:línea | Qué hace |
+|---|---|
+| `pedido-variante.model.ts:20-22` | Declara los 3 campos en el DTO de `savePedido` |
+| `venta-variante.component.ts:254-256` | Los arma en el checkout normal |
+| `configurar-ramo.component.ts:997-999` | Los arma en el `savePedido` de "Arma tu ramo" |
+| `configurar-ramo.component.ts:1059-1061` | Los reenvía en `POST /flores/pedidos/{id}/detalle` |
+| `pedidos.service.ts:67-70` | Los declara en `actualizarEntrega()` (PUT /entrega) |
+| `mis-pedidos.component.ts:528-533` | Los arma en el picker del modal "Info de entrega" |
+| `abono.model.ts:79-81` | Los lee de `GET /detalle` |
+
+**Sin nada que corregir de nuevo del lado del front.** Se documentó el flujo completo (pantalla
+por pantalla, con el request/response exacto de cada punto) en una consulta nueva al back —
+`CAMBIOS_FRONT_2.md`, sección "❓ CONSULTA AL BACK — las coordenadas SIGUEN sin volver..."
+(2026-08-24) — pidiendo 3 cosas concretas: (1) confirmar que la migración corrió de verdad
+contra la tabla de QA, no solo que el código está desplegado; (2) probar el ciclo completo con
+curl y compartir la respuesta cruda; (3) confirmar si `POST /flores/pedidos/{id}/detalle`
+(el segundo POST del flujo de ramos) realmente persiste estos 3 campos o los ignora en
+silencio — es el único de los 3 endpoints de escritura que no tenía esto documentado
+explícitamente.
+
+**No se pudo probar en vivo contra QA** — los 3 endpoints requieren sesión (admin o cliente) y
+no hay credenciales de prueba disponibles en esta sesión de trabajo.
+
+### ✅ Causa real encontrada por el back — nunca se había fusionado a `dev`/`qa` (2026-08-25)
+
+El back revisó las 3 ramas directamente en GitHub y confirmó: **el código de
+`latitud`/`longitud`/`referencias` (y también el filtro de fecha de creación) vivía solo en
+ramas de feature — nunca se había fusionado a `dev` ni a `qa`.** No era la migración pendiente
+ni ningún bug del front — el `.jar` desplegado en QA simplemente nunca tuvo el código que
+lee/escribe esos campos. Su confirmación del 22 de agosto de "ya funciona en dev/qa" fue un
+error de ellos, sin haberlo verificado contra las ramas reales.
+
+**Ya está corregido y desplegado en QA** — ambas features (`flores-eternas-fotos-ramo` y el
+filtro de fecha) se fusionaron a `dev` y de ahí a `qa`.
+
+**De paso confirmaron la pregunta 3:** `POST /v1/flores/pedidos/{id}/detalle` **no toca para
+nada** `latitud`/`longitud`/`referencias` del `Pedido` — ni los lee del request
+(`RamoPedidoDetalleRequestDto` no tiene esos campos) ni vuelve a guardar el `Pedido`. Solo lee
+el `Pedido` para enganchar la relación con `RamoPedidoDetalle`. El reenvío que hace
+`configurar-ramo.component.ts:1059-1061` es inofensivo pero innecesario — el único que persiste
+esos 3 campos es el primer `savePedido`.
+
+**⏳ Pendiente — probar en vivo con el código ya desplegado:** el back pide confirmar que las 2
+migraciones (`migration_pedido_ubicacion_entrega.sql` y
+`migration_fecha_creacion_producto_variante.sql`) también corrieron en la base de QA, y volver a
+probar el ciclo completo (marcar pin → confirmar pedido/ramo → "Cómo llegar"). **Esto requiere
+una sesión real en QA — no se puede verificar desde esta sesión de trabajo sin credenciales.**
+
+## FEAT ADMIN — FILTRO POR RANGO DE FECHA DE CREACIÓN EN PRODUCTOS Y VARIANTES (2026-08-24)
+
+> Conecta la feature que el back documentó el 22 de agosto (`CAMBIOS_FRONT_2.md`, sección
+> "🆕 Filtro por fecha de creación") — pensada para encontrar los borradores de carga rápida de
+> imágenes ("lo que se subió hoy") sin depender del nombre/código, que en un borrador todavía no
+> son legibles (`BRD-XXXXXXXXXXXX`).
+
+**Qué se agregó:**
+- `ProductoService.adminFiltrar()` y `VarianteService.adminFiltrar()` ganan
+  `fechaDesde?`/`fechaHasta?` (formato `yyyy-MM-dd`), independientes entre sí, se combinan con
+  AND con el resto de filtros ya existentes (con/sin stock, con/sin imágenes,
+  habilitado/no-habilitado, código generado/real).
+- Dos nuevos `<input type="date">` en el bloque de filtros admin de `productos/buscar` y
+  `tienda/buscar` (`.pl-filtro-fecha`/`.vb-filtro-fecha`), mismo lenguaje visual "pill" que los
+  checkboxes existentes — se resaltan con `[class]` desde el template cuando tienen valor (no
+  con `:has(:valid)`: un `<input type="date">` vacío sin `required` ya es `:valid` por spec, así
+  que ese selector nunca habría distinguido "elegida" de "vacía").
+- `IProductoDTO`/`IVarianteResumen` ganan `fechaCreacion?: string | null` — se muestra como fila
+  extra en la card ("Creado", `dd/MM/yyyy HH:mm`) solo si viene presente, ya que el back avisó
+  que productos/variantes creados antes de su migración quedan con el campo ausente (sin
+  backfill retroactivo — mismo criterio que `correoVerificado` en clientes).
+- `onFechaFiltroChange()` (nuevo, un método por componente) se dispara con `(change)` del input
+  de fecha y llama `aplicarFiltrosAdmin(1)` — separado de `toggleFiltroAdmin()`, que es solo
+  para los pares booleanos tri-estado.
+
+**Archivos modificados:**
+- `src/app/productos/service/producto.service.ts`, `src/app/variante/service/variante.service.ts`
+- `src/app/productos/producto/models/producto.model.dto.ts` (`IProductoDTO.fechaCreacion`)
+- `src/app/variante/models/variante.model.ts` (`IVarianteResumen.fechaCreacion`)
+- `src/app/productos/producto/all/all.component.ts` + `.html` + `.scss`
+- `src/app/variante/buscar/buscar.component.ts` + `.html` + `.scss`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — depende de que el back haya corrido
+`migration_fecha_creacion_producto_variante.sql` en el ambiente donde se pruebe (pregunta
+mandada al back en la misma consulta de arriba).
+
+---
+
+## FIX RONDA DE PENDIENTES — LINK ABONOS→PEDIDO + TEXTO DIAGNÓSTICO + MENÚ (2026-08-25)
+
+> Cierra 3 de los 5 puntos que quedaron documentados en `PENDIENTES_REVISION_QA.md` tras la
+> ronda de revisión de esa fecha.
+
+### 1. `/abonos` — el número de pedido ahora es un link al detalle real
+
+Antes era texto plano `#{{ pedidoId }}` en las 3 pestañas (Cuentas por cobrar, Liquidados,
+Cancelados) — sin forma de llegar al detalle completo del pedido (historial, datos de entrega,
+etc.) sin ir a buscarlo a mano.
+
+**El obstáculo:** `DetallePedidoComponent` no tiene ruta propia — vive embebido dentro de
+`MisPedidosComponent` (`*ngIf="mostrarDetalle"`, recibe el pedido completo por `@Input()`, no
+por id de URL). La solución no fue darle ruta propia (cambio más grande, arriesgado) sino
+enseñarle a `MisPedidosComponent` a leer `?pedidoId=N` de la URL y auto-abrir el detalle — mismo
+patrón que ya usaba `AbonosComponent` al revés (`/abonos?pedidoId=N` desde "Cobrar" en
+mis-pedidos, ver sección "FIX — 'COBRAR' CRÉDITO SEGUÍA ABRIENDO..." más arriba).
+
+**Implementación:**
+- `MisPedidosComponent`: nuevo `pedidoIdDesdeUrl` (leído de `route.snapshot.queryParamMap` en
+  `ngOnInit`). Si hay valor, precarga `buscarProd` con ese número y dispara la búsqueda
+  correspondiente (`buscarPedidoAdmin()` para admin — el back ya soporta buscar por id exacto;
+  `buscarClientePorId()`, nuevo método extraído de `buscarProductos()`, para cliente).
+- Nuevo `abrirSiVieneDeUrl()`: se llama en el `next` de ambas búsquedas — si encuentra el pedido
+  en los resultados, llama `irDetalle()` automáticamente y limpia el flag (para que una búsqueda
+  posterior del usuario no se reabra sola); si no lo encuentra, `Swal` avisando en vez de dejar
+  la pantalla en silencio.
+- `AbonosComponent`: nuevo `verPedido(pedidoId)` → `router.navigate(['/pedidos/mis-pedidos'], { queryParams: { pedidoId } })`.
+  El `<span class="ab-card__id">` pasó a `<button class="ab-card__id ab-card__id--link">` en
+  las 3 pestañas — reset de estilos nativos de botón + subrayado punteado en hover (color
+  `var(--app-accent)`).
+
+### 2. `/admin/diagnostico-imagenes` — texto explicativo
+
+Solo tenía título + subtítulo genérico ("Solo administradores · Verifica BD ↔ Microservicio") —
+mostraba nombres de campos crudos (`imagenPresenteEnMicroservicio`,
+`idsSinDatosEnMicroservicio`...) sin contexto de qué hace la herramienta ni cuándo usarla.
+
+**Fix:** párrafo nuevo (`.di-card__help`) explicando en una frase qué compara (BD local vs.
+archivo real en el microservicio) y para qué sirve (cuando una foto no aparece en el catálogo y
+no se sabe si nunca se guardó o si el archivo se perdió) — con los 2 casos (⚠️/❌) mencionados en
+negritas para que se reconozcan al ver el resultado.
+
+### 3. Menú — `/ventas/buscar` (legacy) quitado; "Lugares de entrega" se queda duplicado a propósito
+
+**`/ventas/buscar`:** pantalla del módulo viejo de venta por producto (`BuscarVentaComponent`,
+anterior al sistema de variantes), sin ningún diseño (ni modo oscuro). Confirmado que ningún
+otro lugar de la app la referencia — se quitó el link del menú (`navbar.component.html:99` +
+`GROUP_ROUTES` en `.ts`). El módulo y la ruta siguen existiendo en el código, solo dejaron de
+ser accesibles desde el menú — no se borró nada, por si hace falta recuperarlo.
+
+**"Lugares de entrega" duplicado (📦 Inventario + 🌹 Flores eternas):** investigado dónde se usa
+el catálogo de zonas — en el checkout del cliente, Venta directa, "Arma tu ramo" y Mis pedidos
+(filtrar/editar zona de un pedido). El catálogo en sí es de **toda la tienda**, no solo de
+flores — no se puede quitar de ningún lado. Los 2 accesos de menú llevan a la MISMA pantalla de
+administrarlo, y esa pantalla tiene 2 campos (costo de envío, horas extra) exclusivos de
+flores — de ahí que tenga su propio acceso también desde ahí. Se dejó como estaba (ninguno de
+los 2 links se quitó) — es la sección "2.1" que queda pendiente de decisión en
+`PENDIENTES_REVISION_QA.md`, sin urgencia.
+
+**Archivos modificados:**
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` → `pedidoIdDesdeUrl`,
+  `abrirSiVieneDeUrl()`, `buscarClientePorId()`, hooks en `buscarPedidoAdmin()`
+- `src/app/abonos/abonos.component.ts` → `verPedido()`
+- `src/app/abonos/abonos.component.html` → 3 `<span>` → `<button>` clickeables
+- `src/app/abonos/abonos.component.scss` → `.ab-card__id--link`
+- `src/app/admin/diagnostico-imagenes/diagnostico-imagenes.component.html` + `.scss` →
+  `.di-card__help`
+- `src/app/navbar/navbar.component.html` + `.ts` → quita el link de `/ventas/buscar`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos.**
+⚠️ No probado en vivo — sin sesión de admin/cliente disponible en esta sesión de trabajo.
+
+---
+
+## CONFIRMADO — MODO OSCURO EN RIFAS/PRESENTACIÓN/NEGOCIO (2026-08-25)
+
+> Cierra la sección 3 de `PENDIENTES_REVISION_QA.md`, pendiente desde el fix global del 30 de
+> julio (regla que pintaba de blanco cualquier `<span>`, incluidos los de dentro de botones).
+
+Se levantó `ng serve`, se entró con sesión admin simulada (Playwright), se forzó modo oscuro y
+se compararon capturas reales de `rifas/agregar`, `rifas/buscar`, `admin/presentacion` y
+`admin/negocio`. **Las 4 se ven bien** — botones, checks/toggles y campos de texto legibles en
+las cuatro, sin ningún caso de texto invisible. El fix de julio sí las cubrió, no había ningún
+color hardcodeado escapándose. Sin cambios de código en esta sección — solo confirmación.
+
+---
+
+## FEAT FLORES — "PEDIR ESTE RAMO" EN LA VITRINA YA ES UN FLUJO DE COMPRA REAL (2026-08-25)
+
+> Cierra la pieza más grande de `PENDIENTES_REVISION_QA.md` (sección 2.5). Antes, el botón
+> "Pedir" de un `RamoArmado` (Flujo B: el admin arma y publica ramos ya listos, distinto de
+> "Arma tu ramo" donde el cliente construye el suyo desde cero) solo abría WhatsApp — sin
+> calcular precio, sin preguntar envío/recoger, sin generar ningún pedido real.
+
+### La decisión de arquitectura — reusar el configurador, no duplicar el checkout
+
+**No existe (ni existió nunca) un endpoint para confirmar un `RamoArmado` como pedido
+directamente** — el back solo expone listados paginados (`ramosActivos`/`ramosAdmin`). Construir
+un flujo de cobro paralelo en la vitrina habría significado reimplementar, sin probar, toda la
+lógica que "Arma tu ramo" ya tiene resuelta y probada: `calcular-precio`, fechas/urgencia, mapa
+de entrega, verificación de correo, `savePedido`. En vez de eso, "Pedir este ramo" ahora navega
+a `/flores/configurar` con las flores y accesorios del ramo **ya precargados**, y de ahí en
+adelante es exactamente el mismo flujo ya probado.
+
+### Cómo llega el ramo elegido al configurador
+
+`VitrinaFloresComponent.pedirRamo(r)` → `router.navigate(['/flores/configurar'], { state: { ramoArmado: r } })`.
+**No por query param** (`?ramoArmadoId=`): no hay endpoint para pedir UN `RamoArmado` por id
+suelto, y el objeto completo ya está en memoria en la vitrina al momento del clic — pasarlo por
+`state` evita una llamada HTTP innecesaria.
+
+⚠️ **Trampa encontrada al leer el state en `ConfigurarRamoComponent`:** `Router
+.getCurrentNavigation()` (la forma "oficial" de leer `extras.state`) da `null` en este caso
+porque `flores` es un módulo **lazy** — para cuando el chunk termina de descargar y el
+componente se construye, el Router ya considera la navegación resuelta y borra ese objeto. El
+mismo mecanismo funciona perfecto en módulos eager, por eso no se había topado antes en el
+proyecto. Fix: leer `history.state` directo en el constructor — Angular lo empuja con
+`history.pushState` en el momento del `navigate(..., { state })` y ahí se queda sin importar
+cuánto tarde el chunk en cargar.
+
+### Precarga — mismo patrón que "✏️ Editar ramo" (admin), pero público y editable
+
+`ConfigurarRamoComponent.precargarDesdeRamoArmado(ramo)` es un espejo cercano de
+`pedirRamoDelPedido()` (la función ya existente que reconstruye el wizard al editar un pedido
+de admin) — mismo enfoque: especie → colores del catálogo → reparto → accesorios marcados —
+pero sin el candado de `ROLE_ADMIN` (esto es para cualquier cliente) y sin fecha/zona
+restauradas (esas todavía no existen, se eligen ahora como parte de la compra, no antes).
+
+**A propósito, el reparto y los accesorios quedan EDITABLES**, no bloqueados: el precio final
+siempre se recalcula en vivo con `calcular-precio`, así que el cliente nunca paga algo distinto
+de lo que confirma al final, ajuste o no lo que traía el ramo — `precioTotal` del `RamoArmado`
+es solo el precio de referencia que vio en la vitrina.
+
+### El hueco de `tipoFlorId` — resuelto sin pedirle nada al back
+
+`IRamoArmado` no trae `tipoFlorId` (solo `colorFlorId` y un `tipoFlorNombre` de exhibición, no
+usable como id) — pero `fechas-disponibles` sí lo necesita para calcular el plazo de entrega.
+Sin un endpoint público de "a qué especie pertenece este color", `resolverTipoFlorId()` prueba
+cada especie activa del catálogo público (ya chico, cargado de todos modos) en paralelo
+(`forkJoin` sobre `coloresPorTipoFlor(tipoId)` por cada una) hasta encontrar la que contiene ese
+`colorFlorId`. Sin llamadas nuevas al back, sin depender de que respondan una consulta más.
+
+### Papel oculto en el detalle de la vitrina — mismo criterio que "Arma tu ramo"
+
+El modal "Ver detalle" mostraba `📄 Papel` como línea aparte con su precio. El papel **no es una
+decisión del cliente** (va incluido siempre que aplique) — se sacó como línea propia y se funde
+en la de flores (`subtotalFloresConPapel()` = `precioFlores + precioPapel` si `papelIncluido`),
+igual que ya se hacía en el configurador. Sin esto el total no cuadraba contra la suma de lo
+visible.
+
+### Escape hatch conservado
+
+Se mantuvo `contactarPorWhatsapp(r)` (antes era la única acción del botón "Pedir") como link
+secundario, más discreto, para quien prefiere solo preguntar antes de comprometerse — no compite
+visualmente con "💐 Pedir este ramo", que ahora es la acción principal.
+
+### 💡 Lección de la propia verificación — un botón con la misma clase CSS engañó al test
+
+Al escribir la prueba con Playwright, el primer intento de simular el clic real (en vez de
+llamar `pedirRamo()` directo por código) fallaba silenciosamente: `history.state` solo traía
+`{navigationId}`, sin el ramo. La causa: el link "🌷 Armar el mío" del header de la vitrina usa
+las **mismas clases** (`vr-btn vr-btn--pedir`) que el botón "Pedir" de cada card — el selector
+`.vr-btn--pedir` sin acotar al `.vr-card__footer` encontraba PRIMERO el link del header (que no
+lleva `state`), no el de la card. No era un bug de la app — era el selector del test. Ajustado a
+`.vr-card__footer .vr-btn--pedir` y confirmó todo correcto. Aplica en general: cuando dos
+elementos comparten clases CSS por diseño (mismo look, distinta función), un selector de prueba
+tiene que acotar al contenedor, no solo a la clase.
+
+**Archivos nuevos:**
+- Ninguno — todo se agregó a componentes existentes.
+
+**Archivos modificados:**
+- `src/app/flores/configurar/configurar-ramo.component.ts` → import `map`/`IRamoArmado`,
+  `ramoArmadoOrigen`/`cargandoRamoArmado`/`errorRamoArmado`, getters `modoRamoArmado`/
+  `ramoArmadoOrigenNombre`, lectura de `history.state` en el constructor,
+  `resolverTipoFlorId()`, `precargarDesdeRamoArmado()`, hook en `cargarCatalogo()`, reset en
+  `resetTodo()`
+- `src/app/flores/configurar/configurar-ramo.component.html` → título/subtítulo/aviso
+  condicionales a `modoRamoArmado`, bloques de carga/error nuevos
+- `src/app/flores/vitrina/vitrina-flores.component.ts` → `pedirRamo()` (nuevo, reemplaza el uso
+  principal de `contactar`), `contactarPorWhatsapp()` (antes `contactar`, ahora secundario),
+  `subtotalFloresConPapel()` (reemplaza `precioPapelTexto()`)
+- `src/app/flores/vitrina/vitrina-flores.component.html` → botones apuntan a `pedirRamo()`,
+  línea de papel fundida en flores, nuevo link de WhatsApp secundario
+- `src/app/flores/vitrina/vitrina-flores.component.scss` → `.vr-btn-whatsapp`
+
+**Verificado con `ng build --configuration=development` sin errores ni warnings nuevos, y EN
+PANTALLA con Playwright** (clic real en el botón de la card, backend simulado): confirmado que
+`ConfigurarRamoComponent` queda con la especie/cantidad/reparto/accesorios exactos del ramo
+elegido, el aviso informativo se muestra, y el resumen calcula el total correcto contra el
+`calcular-precio` simulado.
+
+⚠️ **No probado contra el backend real** — depende de que `GET /v1/tipos-flor/getAll` y
+`GET /v1/colores-flor/por-tipo-flor/{id}` sigan siendo públicos como están documentados (ya
+confirmado en sesiones anteriores) y de que el resto del checkout (fechas, savePedido) funcione
+igual que en "Arma tu ramo", que es donde ya está probado.

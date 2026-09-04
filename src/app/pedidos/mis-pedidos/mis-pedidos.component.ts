@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
 import { IPedidoGenerico } from './models/IPedidoGenerico.model';
@@ -144,6 +144,11 @@ export class MisPedidosComponent implements OnInit {
     return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
   }
 
+  // Pedido pedido por url (ej. desde /abonos?pedidoId=93, "Ver el pedido") — se guarda al
+  // arrancar y se limpia apenas se abre el detalle (o si no se encuentra), para que una
+  // búsqueda posterior del usuario no se re-abra sola.
+  private pedidoIdDesdeUrl: number | null = null;
+
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
@@ -151,12 +156,14 @@ export class MisPedidosComponent implements OnInit {
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly usuarioService: UsuarioService,
     private readonly floresService: FloresService
   ) {}
 
   ngOnInit(): void {
+    this.pedidoIdDesdeUrl = Number(this.route.snapshot.queryParamMap.get('pedidoId')) || null;
     this.authService.userId$.subscribe(idUser => { this.idUsuario = idUser; });
     this.authService.userRoles$.subscribe(roles => {
       this.roles = roles;
@@ -176,6 +183,10 @@ export class MisPedidosComponent implements OnInit {
     });
 
     if (this.isAdminUser) {
+      // Si se llegó con ?pedidoId=93 (ej. desde /abonos → "Ver el pedido"), precarga el buscador
+      // con ese número — buscarPedidoAdmin() ya sabe buscar por id exacto (el back lo agregó
+      // justo para esto), y su `next` abre el detalle solo si pedidoIdDesdeUrl sigue puesto.
+      if (this.pedidoIdDesdeUrl) this.buscarProd = String(this.pedidoIdDesdeUrl);
       this.buscarPedidoAdmin();
     } else {
       // ⚠️ Antes esto usaba `getDataOneCliente(idUsuario)`, que pega a
@@ -193,10 +204,31 @@ export class MisPedidosComponent implements OnInit {
           this.clienteId = clienteId;
           this.page = 0;
           this.size = 10;
-          this.cargarMasPedidos();
+          if (this.pedidoIdDesdeUrl) {
+            this.buscarProd = String(this.pedidoIdDesdeUrl);
+            this.buscarClientePorId(this.pedidoIdDesdeUrl);
+          } else {
+            this.cargarMasPedidos();
+          }
         },
         error: () => { this.sinPerfilCliente = true; }
       });
+    }
+  }
+
+  // Si llegó ?pedidoId=N por la URL y la búsqueda lo encontró, abre su detalle automáticamente
+  // y limpia el flag (para que la próxima búsqueda del usuario no se reabra sola). Si no lo
+  // encontró, avisa — quedarse en silencio dejaría al usuario viendo una lista vacía sin saber
+  // si el link estaba roto o el pedido ya no existe.
+  private abrirSiVieneDeUrl(): void {
+    if (!this.pedidoIdDesdeUrl) return;
+    const encontrado = this.pedidoGenerico.find(p => p.pedido.id === this.pedidoIdDesdeUrl);
+    const idBuscado = this.pedidoIdDesdeUrl;
+    this.pedidoIdDesdeUrl = null;
+    if (encontrado) {
+      this.irDetalle(encontrado);
+    } else {
+      Swal.fire({ icon: 'warning', title: `No se encontró el pedido #${idBuscado}`, text: 'Puede que ya no exista o que no tengas acceso a él.' });
     }
   }
 
@@ -356,6 +388,11 @@ export class MisPedidosComponent implements OnInit {
     // quedan colgando, aunque el DOM ya se haya borrado).
     let mapaLeaflet: L.Map | null = null;
 
+    // Latitud/longitud numéricas son un dato interno (coordenadas exactas de la casa del
+    // cliente) — solo el admin debe verlas. El cliente sigue pudiendo marcar/arrastrar el pin
+    // en el mapa igual que siempre, solo que no se le muestra el texto con los números.
+    const puedeVerCoordenadas = this.isAdminUser;
+
     const opcionesLugar = this.lugares.map(l =>
       `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
     ).join('');
@@ -435,7 +472,7 @@ export class MisPedidosComponent implements OnInit {
             <label class="mp-entrega-label">🗺️ Ubicación exacta (opcional)</label>
             <div id="sw-mapa" class="mp-mapa"></div>
             <div class="mp-mapa-row">
-              <span id="sw-coords" class="mp-mapa-coords"></span>
+              ${puedeVerCoordenadas ? '<span id="sw-coords" class="mp-mapa-coords"></span>' : '<span></span>'}
               <button type="button" id="sw-geo" class="mp-mapa-geo">📡 Usar mi ubicación</button>
             </div>
             <p class="mp-mapa-hint">Toca el mapa (o arrastra el pin) para marcar la casa exacta del cliente.</p>
@@ -777,11 +814,21 @@ export class MisPedidosComponent implements OnInit {
       sus => {
         this.resposeGenericPedido = sus;
         this.pedidoGenerico.push(...(this.resposeGenericPedido.data?.list || []));
+        // Más reciente primero. El orden de cada página tal cual la devuelve el back no está
+        // garantizado (no hay ORDER BY documentado), así que se ordena en el front por número
+        // de pedido descendente sobre el acumulado completo cada vez que llega una página nueva.
+        this.ordenarPedidosDescendente();
         this.page++;
         this.cargando = false;
       },
       err => console.error(err)
     );
+  }
+
+  // Mayor a menor por número de pedido (#id) — el más reciente arriba. Ver comentario en
+  // cargarPedidosDesdeBase(): el back no garantiza el orden, se fuerza aquí.
+  private ordenarPedidosDescendente(): void {
+    this.pedidoGenerico.sort((a, b) => b.pedido.id - a.pedido.id);
   }
 
   buscarProductos(event: KeyboardEvent) {
@@ -796,21 +843,29 @@ export class MisPedidosComponent implements OnInit {
       } else {
         const pedido = Number(this.buscarProd);
         if (!isNaN(pedido) && pedido > 0) {
-          this.cargando = true;
-          this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0).subscribe(
-            sus => {
-              this.resposeGenericPedido = sus;
-              this.pedidoGenerico = this.resposeGenericPedido.data?.list || [];
-              this.page++;
-              this.cargando = false;
-            },
-            err => console.error(err)
-          );
+          this.buscarClientePorId(pedido);
         } else {
           Swal.fire({ title: 'Ingrese el numero de pedido', icon: 'info', draggable: false });
         }
       }
     }
+  }
+
+  // Extraído de buscarProductos() para poder llamarlo también desde ngOnInit cuando se llega
+  // con ?pedidoId=N por la URL (ej. desde /abonos → "Ver el pedido").
+  private buscarClientePorId(pedido: number): void {
+    this.cargando = true;
+    this.pedidoService.getDataOnePedidoById(pedido, this.clienteId, 10, 0).subscribe({
+      next: sus => {
+        this.resposeGenericPedido = sus;
+        this.pedidoGenerico = sus.data?.list || [];
+        this.ordenarPedidosDescendente();
+        this.page++;
+        this.cargando = false;
+        this.abrirSiVieneDeUrl();
+      },
+      error: err => { this.cargando = false; console.error(err); }
+    });
   }
 
   mostrarProductos(mostrar: boolean): void {
@@ -830,8 +885,10 @@ export class MisPedidosComponent implements OnInit {
         next: sus => {
           this.resposeGenericPedido = sus;
           this.pedidoGenerico = sus.data?.list || [];
+          this.ordenarPedidosDescendente();
           this.totalPaginas = sus.data?.totalPaginas ?? 0;
           this.cargando = false;
+          this.abrirSiVieneDeUrl();
         },
         error: err => { this.cargando = false; console.error(err); }
       });

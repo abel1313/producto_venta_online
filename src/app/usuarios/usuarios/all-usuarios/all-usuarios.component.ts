@@ -26,6 +26,8 @@ export class AllUsuariosComponent implements OnInit {
   };
 
   rows: IUsuarioDto[] = [];
+  mostrandoInactivos = false;
+
   constructor(
     private readonly serviceUser: UsuarioService,
     public  readonly iconImagen:  IconService,
@@ -75,6 +77,11 @@ export class AllUsuariosComponent implements OnInit {
     this.paginacion = event.data;
     this.totalPaginas = this.paginacion?.totalPaginas || 0
     this.rows = [...this.paginacion.t]; // Agrega sin borrar los anteriores
+  }
+
+  onModoCambio(mostrandoInactivos: boolean): void {
+    this.mostrandoInactivos = mostrandoInactivos;
+    this.rows = []; // el nuevo resultado llega por usuariosResponse() justo después
   }
   updateUsuario(item: any) {
     this.router.navigate(['usuarios/update']);
@@ -191,13 +198,38 @@ export class AllUsuariosComponent implements OnInit {
                 icon: "success",
                 draggable: true
               });
-      this.router.navigate(['usuarios/buscar']);
+      // router.navigate a la MISMA ruta en la que ya estás no recarga nada (Angular no
+      // reejecuta el componente si la URL no cambia) -- por eso el usuario "eliminado" seguía
+      // viéndose hasta refrescar la página a mano. Se quita de la lista en memoria directo.
+      this.rows = this.rows.filter(u => u.id !== item.id);
     },err=>{
               Swal.fire({
                 title: `Ocurrio un erro al eliminar el usuario`,
                 icon: "error",
                 draggable: true
               });
+    });
+  }
+
+  activarUsuario(item: IUsuarioDto): void {
+    Swal.fire({
+      title: `¿Reactivar a ${item.username}?`,
+      text: 'Podrá volver a iniciar sesión normalmente.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reactivar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.serviceUser.activarUsuario(item.id!).subscribe({
+        next: () => {
+          this.rows = this.rows.filter(u => u.id !== item.id);
+          Swal.fire({ icon: 'success', title: 'Usuario reactivado', timer: 1400, showConfirmButton: false });
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error al reactivar', text: err?.error?.mensaje ?? err?.error?.message });
+        }
+      });
     });
   }
 

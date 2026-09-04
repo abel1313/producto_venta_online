@@ -1,3 +1,4 @@
+<app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
 <div class="md-page">
   <div class="md-card">
 
@@ -147,6 +148,31 @@
               <ng-container *ngIf="formDatosCliente.get('numeroTelefonico')?.errors?.['pattern']">Ingresa un número de 10 dígitos</ng-container>
             </span>
           </div>
+        </div>
+      </div>
+
+      <!-- ── Sección: Preferencias ────────────────────────────────── -->
+      <div class="md-section" *ngIf="clienteId">
+        <span class="md-section__label">Preferencias</span>
+        <div class="md-predefinida">
+          <label class="md-toggle-wrap">
+            <input type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
+                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos()">
+            <span class="md-toggle-slider"></span>
+            <span class="md-toggle-text">
+              Recibir correos de seguimiento de pedido y alertas de stock
+            </span>
+          </label>
+        </div>
+        <div class="md-predefinida">
+          <label class="md-toggle-wrap">
+            <input type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
+                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones()">
+            <span class="md-toggle-slider"></span>
+            <span class="md-toggle-text">
+              Recibir promociones
+            </span>
+          </label>
         </div>
       </div>
 

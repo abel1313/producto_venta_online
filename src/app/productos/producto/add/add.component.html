@@ -1,3 +1,6 @@
+<!-- Solo en modo "Agregar" (productos/agregar, standalone) -- en modo "Actualizar" ya lo pone
+     update.component.html por fuera de este componente, para no duplicarlo. -->
+<app-boton-volver *ngIf="!esActualizar" fallback="/productos/buscar"></app-boton-volver>
 <div class="pf-page">
   <div class="pf-card">
 
@@ -73,6 +76,9 @@
             <input class="pf-input" [class.pf-input--error]="isInvalid('stock')"
                    formControlName="stock" type="number" min="0" placeholder="0">
             <small class="pf-error" *ngIf="isInvalid('stock')">Campo requerido</small>
+            <small class="pf-hint" *ngIf="esActualizar">
+              Bloqueado en edición — usa "Actualizar stock" / "Eliminar stock" abajo para moverlo
+            </small>
           </div>
         </div>
 
@@ -115,12 +121,16 @@
           </div>
           <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
             <label class="pf-label">Actualizar stock</label>
-            <input class="pf-input" formControlName="actualizarStock" type="number" placeholder="0">
+            <input class="pf-input" formControlName="actualizarStock" type="number" min="0" placeholder="0">
           </div>
 
           <div class="pf-field" *ngIf="esActualizar && authService.isAdminService">
             <label class="pf-label">Eliminar stock</label>
-            <input class="pf-input" formControlName="eliminarStock" type="number" placeholder="0">
+            <input class="pf-input" [class.pf-input--error]="ctrl('eliminarStock')?.hasError('excedeStock')"
+                   formControlName="eliminarStock" type="number" min="0" placeholder="0">
+            <small class="pf-error" *ngIf="ctrl('eliminarStock')?.hasError('excedeStock')">
+              No puede superar el stock actual ({{ ctrl('stock')?.value }})
+            </small>
           </div>
 
         </div>
@@ -143,13 +153,17 @@
               <span *ngIf="!sinCodigoActivo" class="pf-required">*</span>
               <span *ngIf="sinCodigoActivo" class="pf-hint">generado automáticamente</span>
             </label>
-            <input class="pf-input"
-                   [class.pf-input--error]="isInvalid('codigoBarras')"
-                   [class.pf-input--generated]="sinCodigoActivo"
-                   formControlName="codigoBarras"
-                   [readonly]="sinCodigoActivo"
-                   placeholder="Ingresa el código de barras"
-                   appUppercase>
+            <div class="pf-barcode-input">
+              <input class="pf-input"
+                     [class.pf-input--error]="isInvalid('codigoBarras')"
+                     [class.pf-input--generated]="sinCodigoActivo"
+                     formControlName="codigoBarras"
+                     [readonly]="sinCodigoActivo"
+                     placeholder="Ingresa el código de barras"
+                     appUppercase>
+              <button type="button" class="pf-barcode-scan" (click)="iniciarEscanerCodigo()"
+                      title="Escanear código de barras con la cámara">📷</button>
+            </div>
             <small class="pf-error" *ngIf="isInvalid('codigoBarras')">Campo requerido</small>
           </div>
         </div>
@@ -228,5 +242,19 @@
         ✖ Cancelar
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ── Modal escáner de código de barras ────────────────────────── -->
+<div class="scanner-overlay" *ngIf="escaneandoCodigo">
+  <div class="scanner-box">
+    <p class="scanner-box__title">Apunta la cámara al código de barras</p>
+    <video #videoScanner class="scanner-video" autoplay playsinline></video>
+    <div class="scanner-frame">
+      <span class="scanner-frame__bl"></span>
+      <span class="scanner-frame__br"></span>
+    </div>
+    <div class="scanner-linea"></div>
+    <button type="button" class="cam-btn cam-btn--cancel" (click)="detenerEscanerCodigo()">✖ Cerrar escáner</button>
   </div>
 </div>

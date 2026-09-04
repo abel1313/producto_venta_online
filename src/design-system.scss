@@ -1,0 +1,305 @@
+// ════════════════════════════════════════════════════════════════════════
+// SISTEMA DE DISEÑO COMPARTIDO -- ".pk-*"
+// ════════════════════════════════════════════════════════════════════════
+// Pedido 2026-08-28: "todo tiene que quedar homologado" -- antes cada pantalla
+// se armaba su propia card/botón/input con su propio prefijo (pl-, vb-, pf-,
+// vf-, md-, cp-, ga-, amc-...), cada una con su propio font-size/padding/radio
+// a mano. Se veían "parientes" pero nunca idénticas.
+//
+// Este archivo es la ÚNICA fuente de verdad para esos bloques. Reglas:
+//   1. Toda pantalla nueva usa estas clases -- no se inventa un prefijo propio.
+//   2. Los BLOQUES son opcionales/componibles: una card puede tener solo
+//      __body, o header+imagen+body+footer -- se usa el ngIf/existencia del
+//      bloque que haga falta, nunca el que no.
+//   3. NINGÚN valor está hardcodeado -- todo sale de las custom properties ya
+//      definidas más arriba en este mismo archivo (--card-bg, --app-accent,
+//      --card-radius, etc.), que es lo que la pantalla Personalización edita
+//      en vivo. Cambiar el "look" de toda la app es tocar Personalización,
+//      nunca este archivo.
+//   4. Ya existía una familia ".pk-" en 4 pantallas de admin (gestion-roles,
+//      gestion-menu, gestion-palabras-clave, lugares-entrega) para el patrón
+//      "form arriba + tabla abajo" -- están duplicadas localmente en cada una
+//      (mismo código copiado 4 veces). Siguen funcionando igual: sus estilos
+//      locales pisan a estos por especificidad de Angular (view encapsulation
+//      agrega un atributo _ngcontent- que sube la especificidad). No se
+//      tocaron para no arriesgar una regresión visual en esas 4 sin volver a
+//      dedujarlas -- pendiente como limpieza aparte.
+//
+// Aplicado hasta ahora (2026-08-28): pedidos/historial-mp, pedidos/mis-pedidos.
+// El resto de las pantallas de la app TODAVÍA usan sus prefijos viejos -- se
+// van migrando pantalla por pantalla, no es un cambio de un solo golpe.
+// ════════════════════════════════════════════════════════════════════════
+
+// ── Página / wrapper genérico ─────────────────────────────────────────────
+.pk-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Tipografía ─────────────────────────────────────────────────────────────
+.pk-title    { font-size: 1.1rem;  font-weight: 800; color: var(--app-text); margin: 0; line-height: 1.3; }
+.pk-subtitle { font-size: .82rem;  color: var(--app-text-muted); margin: 2px 0 0; line-height: 1.4; }
+.pk-text {
+  font-size: .88rem;
+  color: var(--card-text);
+  &--muted { color: var(--card-text-muted); }
+  &--sm    { font-size: .78rem; }
+  &--bold  { font-weight: 700; }
+}
+
+// ── Card (tile de contenido -- imagen/header/body/footer, todos opcionales) ─
+.pk-card {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s ease, box-shadow .2s ease;
+
+  &:hover { transform: translateY(-4px); }
+
+  // Franja de estado (ej. "Pendiente"/"Deshabilitado"/"Cancelado") -- alternativa
+  // al header con degradado, para cuando la card necesita comunicar un estado
+  // antes que nada (mismo lugar que ocupaba el header naranja de pedidos).
+  &__estado {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: #fff;
+    font-weight: 700;
+
+    &--ok      { background: linear-gradient(135deg, #16a34a, #15803d); }
+    &--warn    { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    &--danger  { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    &--neutral { background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.92), rgba(var(--app-accent-rgb),0.72)); }
+  }
+
+  &__image {
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: var(--form-section-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    img { width: 100%; height: 100%; object-fit: contain; transition: transform .2s ease; }
+    &:hover img { transform: scale(1.04); }
+  }
+
+  &__image-placeholder { font-size: 3rem; color: var(--card-text-muted); }
+
+  // Un solo color de header para TODAS las cards de la app (pedido 2026-09-01:
+  // "si cambio el color de header, todas las card de mi aplicación tienen que
+  // tener ese mismo color"), con SU PROPIO control en Personalización (grupo
+  // "Card" -> --card-header-bg), independiente del color de marca.
+  &__header {
+    padding: 14px 16px 12px;
+    color: var(--card-header-text, #fff);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--card-header-bg);
+  }
+
+  &__body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  // Fila "etiqueta: valor" dentro del body (ej. "Correo: x@y.com")
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: .86rem;
+
+    &-label { color: var(--card-text-muted); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    &-val   { color: var(--card-text); font-weight: 600; text-align: right; }
+  }
+
+  // Caja destacada dentro del body (ej. "Total del pedido")
+  &__destacado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--form-section-bg);
+    border-radius: 10px;
+    font-size: .82rem;
+    color: var(--card-text-muted);
+    font-weight: 600;
+
+    strong { font-size: 1.05rem; color: var(--app-accent); }
+  }
+
+  &__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
+  }
+
+  // Badge flotante de estado (esquina) -- alternativa más chica a __estado
+  // para cards que ya usan __header y solo necesitan un indicador puntual.
+  &__badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #fff;
+    z-index: 2;
+
+    &--ok      { background: #16a34a; }
+    &--warn    { background: #d97706; }
+    &--danger  { background: #dc2626; }
+    &--neutral { background: var(--app-text-muted); }
+  }
+}
+
+// ── Grid de cards ────────────────────────────────────────────────────────
+// auto-fill puro a propósito, sin forzar cantidad de columnas -- ver el bug
+// homologado 2026-08-28 en productos/buscar (forzar repeat(3,1fr) infla las
+// cards en pantallas anchas).
+.pk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+// ── Botones ────────────────────────────────────────────────────────────────
+.pk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+
+  &--primary {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+    &:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+
+  &--secondary {
+    background: var(--form-section-bg);
+    color: var(--app-text-muted);
+    &:hover:not(:disabled) { background: var(--card-border); }
+  }
+
+  &--danger {
+    background: rgba(220,38,38,.08);
+    color: #dc2626;
+    &:hover:not(:disabled) { background: rgba(220,38,38,.16); }
+  }
+
+  // Solo ícono, monocromo -- mismo criterio que las acciones de productos/buscar.
+  &--icon {
+    background: transparent;
+    color: var(--app-accent);
+    padding: 8px 10px;
+    font-size: 1rem;
+    &:hover:not(:disabled) { background: var(--app-accent-soft); }
+    &:disabled { opacity: .4; cursor: not-allowed; }
+  }
+
+  // Con texto + color de fondo, para acciones que necesitan destacar más que
+  // un ícono (ej. Detalle/Entrega/Cobrar de pedidos) -- pensado para vivir
+  // dentro de .pk-card__footer, uno junto a otro.
+  &--accion {
+    flex: 1;
+    min-width: 100px;
+    padding: 8px 10px;
+    font-size: .8rem;
+
+    &-info    { background: rgba(59,130,246,.10);  color: #3b82f6; &:hover:not(:disabled) { background: rgba(59,130,246,.18); } }
+    &-exito   { background: rgba(16,185,129,.10);  color: #10b981; &:hover:not(:disabled) { background: rgba(16,185,129,.18); } }
+    &-alerta  { background: rgba(217,119,6,.10);   color: #d97706; &:hover:not(:disabled) { background: rgba(217,119,6,.18); } }
+  }
+
+  &--sm { padding: 6px 10px; font-size: .78rem; }
+  &--block { width: 100%; }
+}
+
+// ── Formularios ──────────────────────────────────────────────────────────
+.pk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  &--full { grid-column: 1 / -1; }
+}
+
+.pk-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  letter-spacing: .02em;
+}
+
+.pk-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  font-size: .9rem;
+  color: var(--input-text);
+  background: var(--input-bg);
+  outline: none;
+  transition: all .2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &::placeholder { color: var(--input-placeholder); }
+  &:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: var(--input-focus-shadow);
+  }
+  &:disabled, &[readonly] { opacity: .65; cursor: not-allowed; }
+  &--error { border-color: #dc2626; }
+}
+
+.pk-error { font-size: .74rem; color: #dc2626; margin-top: 2px; }
+.pk-hint  { font-size: .74rem; color: var(--app-text-muted); margin-top: 2px; }
+
+// ── Estado vacío ─────────────────────────────────────────────────────────
+.pk-empty {
+  color: var(--app-text-muted);
+  font-size: .84rem;
+  text-align: center;
+  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}

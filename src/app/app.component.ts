@@ -10,6 +10,7 @@ import { environment } from 'src/environments/environment';
 import { ITokenData } from './login/models/ITokenData.model';
 import { AuthService } from './auth/auth.service';
 import { ThemeService } from './services/theme/theme.service';
+import { TemaService } from './services/tema/tema.service';
 
 
 
@@ -28,8 +29,10 @@ export class AppComponent implements OnInit, AfterViewInit {
               private readonly auth: AuthenticateService,
               private readonly roles: AuthService,
               private readonly themeService: ThemeService,
+              private readonly temaService: TemaService,
   ) {
     this.themeService.init(); // aplica la clase al body antes de pintar la vista
+    this.temaService.init(); // trae la personalización guardada y la aplica (solo en modo claro)
 
     // Select-on-focus global para TODOS los inputs de precio/monto/cantidad
     // (type="number") de la app. Antes, al dar clic en un campo con "0", el cursor se

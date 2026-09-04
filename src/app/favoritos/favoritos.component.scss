@@ -42,12 +42,12 @@
 .fv-card {
   background: var(--app-surface);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: box-shadow .2s;
-  &:hover { box-shadow: 0 8px 24px rgba(var(--app-accent-rgb),.16); }
+  &:hover { box-shadow: var(--card-shadow-hover); }
 
   &__img-wrap {
     position: relative;
@@ -74,19 +74,26 @@
     &:hover { background: rgba(0,0,0,.55); }
   }
 
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card").
+  &__header { padding: 10px 14px; background: var(--card-header-bg); }
+  // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
+  &__nombre { font-weight: 700; font-size: .95rem; color: var(--card-header-text, #fff); margin: 0; }
+
   &__body { padding: 12px 14px; flex: 1; }
-  &__nombre { font-weight: 700; font-size: .92rem; color: var(--app-text); margin: 0 0 4px; }
   &__detalle { font-size: .78rem; color: var(--app-text-muted, #64748b); margin: 0 0 8px; }
   &__row { display: flex; align-items: center; justify-content: space-between; }
   &__precio { font-weight: 800; font-size: 1.05rem; color: var(--app-accent); }
   &__stock {
-    font-size: .74rem; font-weight: 600; color: #16a34a;
-    &--cero { color: #ef4444; }
+    font-size: .74rem; font-weight: 600; color: var(--pk-success);
+    &--cero { color: var(--pk-danger-to); }
   }
 
   &__footer {
     padding: 10px 14px;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
     display: flex;
     gap: 8px;
   }
@@ -107,7 +114,7 @@
   transition: opacity .15s, background .15s, color .15s;
   &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #5F8375); }
   &--add    { background: var(--app-accent); color: var(--app-accent-ink); &:hover:not(:disabled) { opacity: .85; } }
-  &--remove { background: rgba(239,68,68,.1); color: #ef4444; }
+  &--remove { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
   &--primary { background: var(--app-accent); color: var(--app-accent-ink); padding: 9px 22px; }
 }
 
@@ -138,7 +145,7 @@
 }
 
 :host-context(body.theme-light) {
-  .fv-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .fv-header__title { color: #1e293b; }
-  .fv-header__sub { color: rgba(0,0,0,.55); }
+  .fv-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .fv-header__title { color: var(--app-text, #1e293b); }
+  .fv-header__sub { color: var(--app-text-muted, rgba(0,0,0,.55)); }
 }

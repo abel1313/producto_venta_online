@@ -2,7 +2,8 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../../shared/barcode-scanner.util';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
@@ -40,6 +41,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
   mostrarNoHabilitados = false;
   mostrarCodigoGenerado = false;
   mostrarCodigoReal = false;
+  // Rango de fecha de creacion — inputs de fecha, no checkboxes tri-estado (2026-08-24).
+  fechaDesde = '';
+  fechaHasta = '';
 
   // Filtros públicos del catálogo (talla/color/marca/precio) — visibles para cualquier usuario,
   // combinables entre sí con AND. Independientes de los filtros admin de arriba (endpoints
@@ -144,6 +148,27 @@ export class BuscarComponent implements OnInit, OnDestroy {
           this.variantes       = [...this.varianteService.variantesCache];
           this.totalPaginas    = this.varianteService.totalPaginasCache;
           this.paginaActual    = this.varianteService.paginaCache;
+          // Restaura los filtros que produjeron este resultado cacheado -- sin esto, la lista
+          // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "si
+          // selecciono filtro y me voy a otros lados... quiero que se mantenga").
+          const f = this.varianteService.filtrosCache as Record<string, any> | null;
+          if (f) {
+            this.mostrarConStock      = !!f['mostrarConStock'];
+            this.mostrarSinStock      = !!f['mostrarSinStock'];
+            this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+            this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+            this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+            this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+            this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+            this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+            this.fechaDesde = f['fechaDesde'] ?? '';
+            this.fechaHasta = f['fechaHasta'] ?? '';
+            this.filtroTalla = f['filtroTalla'] ?? '';
+            this.filtroColor = f['filtroColor'] ?? '';
+            this.filtroMarca = f['filtroMarca'] ?? '';
+            this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
+            this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
+          }
         } else {
           this.buscarPagina('', 1);
         }
@@ -206,7 +231,55 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes
         || this.mostrarHabilitados || this.mostrarNoHabilitados
-        || this.mostrarCodigoGenerado || this.mostrarCodigoReal;
+        || this.mostrarCodigoGenerado || this.mostrarCodigoReal
+        || !!this.fechaDesde || !!this.fechaHasta;
+  }
+
+  // Barra de filtros de Tienda -- antes dependía solo de isAdminUser (todo o nada). Se sumó al
+  // sistema de acciones por pantalla (2026-08-28, mismo cambio que en Modelos) para poder darle
+  // a un rol, por ejemplo, solo "Con stock" sin el resto -- ver migration_filtros_granulares.sql.
+  get puedeFiltroConStock(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-con-stock');
+  }
+
+  get puedeFiltroSinStock(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-sin-stock');
+  }
+
+  get puedeFiltroConImagenes(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-con-imagenes');
+  }
+
+  get puedeFiltroSinImagenes(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-sin-imagenes');
+  }
+
+  get puedeFiltroHabilitados(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-habilitados');
+  }
+
+  get puedeFiltroNoHabilitados(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-no-habilitados');
+  }
+
+  get puedeFiltroCodigoGenerado(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-codigo-generado');
+  }
+
+  get puedeFiltroCodigoReal(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-codigo-real');
+  }
+
+  get puedeFiltroFecha(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-fecha-creacion');
+  }
+
+  get puedeVerAlgunFiltro(): boolean {
+    return this.puedeFiltroConStock || this.puedeFiltroSinStock
+        || this.puedeFiltroConImagenes || this.puedeFiltroSinImagenes
+        || this.puedeFiltroHabilitados || this.puedeFiltroNoHabilitados
+        || this.puedeFiltroCodigoGenerado || this.puedeFiltroCodigoReal
+        || this.puedeFiltroFecha;
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
@@ -226,8 +299,16 @@ export class BuscarComponent implements OnInit, OnDestroy {
   toggleFiltroAdmin(campo: 'mostrarConStock' | 'mostrarSinStock' | 'mostrarConImagenes'
       | 'mostrarSinImagenes' | 'mostrarHabilitados' | 'mostrarNoHabilitados'
       | 'mostrarCodigoGenerado' | 'mostrarCodigoReal'): void {
-    if (!this.isAdminUser) return;
+    if (!this.puedeVerAlgunFiltro) return;
     this[campo] = !this[campo];
+    this.seleccionados.clear();
+    this.aplicarFiltrosAdmin(1);
+  }
+
+  // Rango de fecha — se dispara con (change) del <input type="date">, no con toggleFiltroAdmin
+  // (ese es solo para los pares booleanos tri-estado).
+  onFechaFiltroChange(): void {
+    if (!this.puedeVerAlgunFiltro) return;
     this.seleccionados.clear();
     this.aplicarFiltrosAdmin(1);
   }
@@ -241,8 +322,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.mostrarNoHabilitados = false;
     this.mostrarCodigoGenerado = false;
     this.mostrarCodigoReal = false;
+    this.fechaDesde = '';
+    this.fechaHasta = '';
     this.seleccionados.clear();
     this.varianteService.invalidarCache();
+    this.varianteService.setFiltrosCache(null);
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -254,7 +338,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
       conStock: this.paramConStock,
       conImagenes: this.paramConImagenes,
       habilitado: this.paramHabilitado,
-      codigoGenerado: this.paramCodigoGenerado
+      codigoGenerado: this.paramCodigoGenerado,
+      fechaDesde: this.fechaDesde || undefined,
+      fechaHasta: this.fechaHasta || undefined
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.sinResultados = false;
@@ -262,6 +348,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
+        this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
+        this.varianteService.setFiltrosCache({
+          mostrarConStock: this.mostrarConStock,
+          mostrarSinStock: this.mostrarSinStock,
+          mostrarConImagenes: this.mostrarConImagenes,
+          mostrarSinImagenes: this.mostrarSinImagenes,
+          mostrarHabilitados: this.mostrarHabilitados,
+          mostrarNoHabilitados: this.mostrarNoHabilitados,
+          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+          mostrarCodigoReal: this.mostrarCodigoReal,
+          fechaDesde: this.fechaDesde,
+          fechaHasta: this.fechaHasta
+        });
       },
       error: (err) => {
         this.buscando = false;
@@ -290,6 +389,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.filtroPrecioMin = null;
     this.filtroPrecioMax = null;
     this.varianteService.invalidarCache();
+    this.varianteService.setFiltrosCache(null);
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -310,6 +410,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
+        this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
+        this.varianteService.setFiltrosCache({
+          filtroTalla: this.filtroTalla,
+          filtroColor: this.filtroColor,
+          filtroMarca: this.filtroMarca,
+          filtroPrecioMin: this.filtroPrecioMin,
+          filtroPrecioMax: this.filtroPrecioMax
+        });
       },
       error: (err) => {
         this.buscando = false;
@@ -495,9 +603,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));
     try {
-      const reader = new BrowserMultiFormatReader();
-      this.controlesEscaner = await reader.decodeFromVideoDevice(
-        undefined,
+      this.controlesEscaner = await iniciarEscanerConAutofoco(
         this.videoScanner.nativeElement,
         (result, _err, controls) => {
           if (result) {

@@ -464,7 +464,7 @@
 .dp-optional {
   font-weight: 400;
   font-size: .7rem;
-  color: #94a3b8;
+  color: var(--app-text-muted, #94a3b8);
 }
 
 .dp-check-label {
@@ -578,9 +578,13 @@
 }
 
 // "Cómo llegar" — abre la app de mapas del teléfono. Es un link normal, no una API.
+// align-self: flex-start evita que .dp-entrega (flex column, sin align-items propio => stretch
+// por default) lo estire al 100% del ancho del contenedor.
 .dp-btn-mapa {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  width: fit-content;
   gap: 6px;
   margin-top: 10px;
   padding: 9px 16px;

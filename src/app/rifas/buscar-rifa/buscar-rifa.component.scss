@@ -125,7 +125,8 @@
     padding: 12px 16px;
   }
 
-  &__id { font-size: 0.9rem; font-weight: 700; color: #fff; }
+  // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
+  &__id { font-size: 0.95rem; font-weight: 700; color: var(--card-header-text, #fff); }
 
   &__badges {
     display: flex;
@@ -156,6 +157,7 @@
   &__footer {
     padding: 10px 16px;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
   }
 }
 
@@ -219,13 +221,15 @@
   &:hover:not(&--active) { color: var(--app-text); }
 }
 
-// ── Header de card con colores de estado ───────────────────────────
+// ── Header de card ───────────────────────────────────────────────────
+// Antes cada estado (activa/completada/vencida) repintaba el header entero de
+// un color distinto -- cards del mismo listado con "carcasa" de colores
+// distintos, en vez de verse todas iguales (mismo bug ya corregido en
+// pedidos/mis-pedidos). El header ahora es SIEMPRE --card-header-bg (su propio
+// control en Personalización, grupo "Card"); el estado se sigue viendo, pero
+// solo en el badge (.br-badge--activa/completada/vencida).
 .br-card__header {
-  background: linear-gradient(135deg, rgba(12,20,60,0.92) 0%, rgba(var(--app-accent-rgb),0.78) 100%);
-
-  &--activa    { background: linear-gradient(135deg, #166534, #15803d); }
-  &--completada { background: linear-gradient(135deg, #1e293b, #334155); }
-  &--vencida   { background: linear-gradient(135deg, #7f1d1d, #b91c1c); }
+  background: var(--card-header-bg);
 }
 
 // ── Badges de estado ───────────────────────────────────────────────
@@ -286,7 +290,7 @@
 
 .br-detalle {
   background: var(--card-bg);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.35);
   width: 100%;
   max-width: 520px;

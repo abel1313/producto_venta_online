@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IResponseGeneric } from 'src/shared/responseGeneric.model';
+import { ResponseGeneric } from 'src/shared/generic-response.mode';
 
 @Injectable({
   providedIn: 'root'
@@ -83,9 +84,14 @@ export class AccederService {
     ));
   }
 
-  enviarCodigoVerificacionUsuario(userName: string) {
+  // forzarNuevo=false (default): si ya hay un código vigente sin usar, el back lo reutiliza y
+  // NO manda otro correo -- evita invalidar en silencio uno que el usuario todavía no alcanza a
+  // leer, cuando el envío lo dispara la propia app (cargar la pantalla, login fallido por correo
+  // sin verificar, modal de verificación del admin). El botón explícito "Reenviar código" debe
+  // mandar forzarNuevo=true -- ahí sí quiere uno nuevo sí o sí.
+  enviarCodigoVerificacionUsuario(userName: string, forzarNuevo = false) {
     return this.parseoTolerante(this.http.post(
-      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName }, { responseType: 'text' }
+      `${environment.api_Url}/v1/auth/enviar-codigo-verificacion`, { userName, forzarNuevo }, { responseType: 'text' }
     ));
   }
 
@@ -101,6 +107,16 @@ export class AccederService {
     return this.parseoTolerante(this.http.put(
       `${environment.api_Url}/v1/auth/mi-perfil`, { username }, { responseType: 'text' }
     ));
+  }
+
+  // Solo lectura -- incluye si el usuario aceptó el aviso de privacidad y cuándo.
+  // ⚠️ Este endpoint envuelve la respuesta como { mensaje, code, data } (ResponseGeneric del
+  // back), NO como { response } -- ver ResponseGeneric.java. Distinto del resto de este
+  // servicio (login, etc.), que no pasa por esa clase.
+  obtenerMiPerfil() {
+    return this.http.get<ResponseGeneric<{ username: string; email: string; aceptoPrivacidad: boolean; fechaAceptoPrivacidad: string | null }>>(
+      `${environment.api_Url}/v1/auth/mi-perfil`
+    );
   }
 
   solicitarCambioCorreo(correoNuevo: string) {

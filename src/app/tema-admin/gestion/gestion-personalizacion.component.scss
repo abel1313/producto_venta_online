@@ -1,0 +1,611 @@
+// Pantalla de Personalización -- construida desde cero con los tokens globales (nunca hex a
+// mano), justo lo que el resto de la app todavía tiene pendiente de migrar (ver barrido pk-*).
+.pz-wrap {
+  max-width: 1280px;
+  margin: 24px auto;
+  padding: 0 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ── Layout de 3 columnas: form | catálogo | vista previa ─────────────
+// Pedido del usuario (2026-08-28): antes había que editar, guardar, salir de Personalización y
+// navegar a una pantalla real para ver si el color quedaba bien -- mucha ida y vuelta, sobre todo
+// con grupos que quedaban lejos scrolleando. Ahora las 3 cosas están visibles a la vez y el
+// mockup de la derecha reacciona en vivo al mismo mecanismo de preview que ya existía.
+// En mobile se apilan en el mismo orden (form -> catálogo -> preview), como pidió.
+.pz-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(280px, 380px) minmax(280px, 1fr);
+  align-items: start;
+  gap: 20px;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Sticky en desktop -- el punto entero del rediseño era que, sin importar qué tan abajo esté la
+// fila que editas en la columna 2 (catálogo), el form (columna 1) y el preview (columna 3) se
+// quedan a la vista sin tener que scrollear de vuelta arriba.
+.pz-col--lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pz-col--form,
+.pz-col--preview {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+
+  @media (max-width: 1080px) {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.pz-header {
+  &__title { font-size: 1.2rem; font-weight: 800; color: var(--app-text); margin: 0 0 4px; }
+  &__sub   { font-size: .82rem; color: var(--app-text-muted); margin: 0; line-height: 1.5; }
+  &__link  {
+    display: inline-block; margin-top: 8px; font-size: .82rem; font-weight: 600;
+    color: var(--app-accent); text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ── Diseños predefinidos ─────────────────────────────────────────────
+.pz-presets {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+
+  &__title { font-size: 1rem; font-weight: 800; color: var(--app-text); margin: 0 0 4px; }
+  &__sub   { font-size: .8rem; color: var(--app-text-muted); margin: 0 0 14px; line-height: 1.5; }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+}
+
+.pz-preset {
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow .2s, border-color .2s;
+
+  &:hover { box-shadow: var(--card-shadow-hover); border-color: var(--app-accent); }
+
+  &__swatches { display: flex; gap: 6px; }
+  &__swatch {
+    width: 26px; height: 26px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    flex-shrink: 0;
+
+    // El 3er swatch muestra el fondo de página en oscuro (casi negro) -- con el borde tenue de
+    // arriba se pierde contra fondos claros de la tarjeta, así que lleva uno más visible.
+    &--dark { border-color: rgba(128,128,128,0.35); }
+  }
+
+  &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }
+  &__desc   { font-size: .76rem; color: var(--app-text-muted); line-height: 1.4; flex: 1; }
+
+  .pz-btn { margin-top: 6px; width: 100%; justify-content: center; }
+}
+
+.pz-loading {
+  color: var(--app-text-muted);
+  font-size: .9rem;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.pz-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// ── Sección colapsable ──────────────────────────────────────────────
+.pz-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  &__title {
+    font-size: .84rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--app-text);
+  }
+
+  &__chevron {
+    font-size: 1.1rem;
+    color: var(--app-text-muted);
+    transition: transform .18s ease;
+    flex-shrink: 0;
+
+    &--open { transform: rotate(90deg); }
+  }
+
+  &__body {
+    padding: 0 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-top: 1px solid var(--card-border);
+    padding-top: 16px;
+  }
+}
+
+// ── Un campo (o un par claro/oscuro) dentro de una sección ─────────
+.pz-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  &__row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  &__ayuda {
+    font-size: .74rem;
+    color: var(--app-text-muted);
+    line-height: 1.4;
+  }
+}
+
+.pz-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__mode {
+    font-size: .76rem;
+    font-weight: 500;
+    color: var(--app-text-muted);
+    white-space: nowrap;
+    min-width: 58px;
+  }
+}
+
+.pz-color {
+  width: 56px;
+  height: 36px;
+  padding: 3px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--form-bg, var(--card-bg));
+  cursor: pointer;
+}
+
+.pz-input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--form-bg, var(--card-bg));
+  color: var(--app-text);
+  font-size: .88rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .2s ease;
+
+  &--num { max-width: 140px; }
+
+  &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px var(--app-accent-soft); }
+}
+
+.pz-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pz-actions--split { justify-content: space-between; }
+
+.pz-btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: .9rem;
+  transition: opacity .2s ease, transform .15s ease;
+
+  &--save {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+
+    &:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    &:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  }
+
+  &--cancel {
+    background: var(--form-section-bg);
+    color: var(--app-text-muted);
+    font-weight: 600;
+    padding: 11px 18px;
+
+    &:hover { opacity: .85; }
+  }
+
+  &--edit, &--del {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  &--del:hover { filter: brightness(0.8); }
+}
+
+// ── Form de alta/edición ─────────────────────────────────────────────
+.pz-form--card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+}
+
+.pz-form__title {
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--app-text);
+  margin-bottom: 14px;
+}
+
+.pz-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.pz-field--col {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 6px;
+
+  .pz-field__mode { min-width: 0; }
+}
+
+.pz-error {
+  font-size: .74rem;
+  color: var(--pk-danger-to);
+}
+
+.pz-empty {
+  color: var(--app-text-muted);
+  font-size: .84rem;
+  text-align: center;
+  padding: 24px 0;
+}
+
+// ── Lista de variables ya dadas de alta ──────────────────────────────
+.pz-section__count {
+  font-size: .74rem;
+  color: var(--app-text-muted);
+  margin-left: -4px;
+}
+
+.pz-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+  &--editando { background: var(--form-section-bg); border-radius: 8px; }
+
+  &__swatches {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__etiqueta {
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  &__clave {
+    font-size: .72rem;
+    color: var(--app-text-muted);
+    font-family: monospace;
+  }
+
+  &__valor {
+    font-size: .8rem;
+    color: var(--app-text-muted);
+    font-family: monospace;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+}
+
+.pz-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--card-border);
+  display: inline-block;
+}
+
+// ── Panel de vista previa (columna 3) ────────────────────────────────
+.pz-preview {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  &__title {
+    font-size: .84rem;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+
+  &__sub {
+    font-size: .76rem;
+    color: var(--app-text-muted);
+  }
+
+  &__body {
+    min-height: 180px;
+  }
+}
+
+.pv-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1.5px solid var(--card-border);
+  display: inline-block;
+}
+
+// Mockups: cada uno usa los MISMOS var(--clave) que el resto de la app -- así lo que se ve acá es
+// exactamente lo que se va a ver en la pantalla real que usa esa variable.
+
+.pv-marca {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__swatches { display: flex; gap: 8px; }
+
+  &__btn {
+    align-self: flex-start;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: .88rem;
+    cursor: default;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+  }
+}
+
+.pv-pagina {
+  background: var(--app-bg);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__titulo { font-size: .95rem; }
+  &__texto { margin: 0; font-size: .84rem; }
+  &__muted { color: var(--app-text-muted); font-size: .76rem; }
+}
+
+// La vista previa refleja cómo se ven las cards REALES de la app (pedidos,
+// productos, variantes...): cada bloque (header/body/footer) tiene su PROPIO
+// color editable en el grupo "Card" de Personalización, independiente del
+// color de marca (pedido 2026-09-01: "las card tienen que tener la forma de
+// cambiar el color del header body y footer y eso lo tomaría para todas las
+// card").
+.pv-card {
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  font-size: .84rem;
+
+  &__header {
+    background: var(--card-header-bg);
+    padding: 10px 14px;
+    font-weight: 700;
+    color: var(--card-header-text, #fff);
+  }
+
+  &__body {
+    background: var(--card-body-bg);
+    padding: 14px;
+    color: var(--app-text);
+  }
+
+  &__footer {
+    background: var(--card-footer-bg);
+    padding: 10px 14px;
+    color: var(--app-text-muted);
+  }
+}
+
+.pv-tabla {
+  border: 1px solid var(--table-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: .82rem;
+
+  &__head, &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 8px 12px;
+  }
+
+  &__head {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-weight: 700;
+    border-bottom: 1px solid var(--table-border);
+  }
+
+  &__row {
+    color: var(--app-text);
+    transition: background .15s ease;
+    &:hover { background: var(--table-row-hover); }
+  }
+
+  &__hint {
+    display: block;
+    padding: 6px 12px;
+    color: var(--app-text-muted);
+    font-size: .72rem;
+  }
+}
+
+.pv-menu {
+  border: 1px solid var(--sb-border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: .84rem;
+
+  &__header {
+    background: var(--sb-header-bg);
+    color: var(--sb-text);
+    font-weight: 700;
+    padding: 10px 14px;
+  }
+
+  &__body {
+    background: var(--sb-body-bg);
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    color: var(--sb-text);
+    padding: 8px 14px;
+  }
+
+  &__footer {
+    background: var(--sb-footer-bg);
+    color: var(--sb-text);
+    padding: 10px 14px;
+    border-top: 1px solid var(--sb-border);
+  }
+}
+
+.pv-form {
+  &__seccion {
+    background: var(--form-section-bg);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  &__input {
+    background: var(--input-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--app-text);
+    font-size: .86rem;
+  }
+}
+
+.pv-generico {
+  &__aviso {
+    color: var(--app-text-muted);
+    font-size: .8rem;
+    margin: 0 0 10px;
+  }
+
+  &__swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--app-text);
+    font-size: .82rem;
+  }
+}

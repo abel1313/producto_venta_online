@@ -12,6 +12,11 @@ export interface INegocioEstado {
   tiktokUrl?:    string | null;
   horaApertura?: string;   // "09:00"
   horaCierre?:   string;   // "21:00"
+  umbralStockBajo?: number; // aviso diario por correo a los admin cuando una variante llega a esto o menos
+}
+
+export interface IAlertaStockRequest {
+  umbralStockBajo: number;
 }
 
 export interface IContactosRequest {
@@ -85,5 +90,9 @@ export class NegocioService {
 
   actualizarHorario(data: IHorarioRequest): Observable<any> {
     return this.http.put(`${this.url}/horario`, data);
+  }
+
+  actualizarUmbralStockBajo(data: IAlertaStockRequest): Observable<any> {
+    return this.http.put(`${this.url}/alertas-stock`, data);
   }
 }

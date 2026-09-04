@@ -1,5 +1,5 @@
 // ── Variables ────────────────────────────────────────────────────────────────
-$radius:    14px;
+$radius:    var(--card-radius, 14px);
 $radius-sm: 8px;
 $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -19,7 +19,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 720px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -103,11 +103,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text, #374151);
   letter-spacing: 0.02em;
 }
 
-.md-req { color: #ef4444; margin-left: 2px; }
+.md-req { color: var(--pk-danger-to); margin-left: 2px; }
 
 .md-badge {
   display: inline-flex;
@@ -119,8 +119,10 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 20px;
   vertical-align: middle;
 
-  &--ok   { background: rgba(34,197,94,.12);  color: #15803d; border: 1px solid rgba(34,197,94,.25); }
-  &--warn { background: rgba(234,179,8,.12);  color: #92400e; border: 1px solid rgba(234,179,8,.25); }
+  // Tokens semánticos compartidos (design-system.scss) -- ya traen su propia variante de modo
+  // oscuro, no hace falta override aparte en :host-context(body.theme-dark).
+  &--ok   { background: var(--pk-success-soft); color: var(--pk-success-to); border: 1px solid var(--pk-success-soft); }
+  &--warn { background: var(--pk-warning-soft); color: var(--pk-warning-to); border: 1px solid var(--pk-warning-soft); }
 }
 
 .md-btn-verify {
@@ -132,13 +134,13 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 700;
-  border: 1px solid rgba(14,165,233,.25);
-  background: rgba(14,165,233,.08);
-  color: #0ea5e9;
+  border: 1px solid var(--pk-info-soft);
+  background: var(--pk-info-soft);
+  color: var(--pk-info-to);
   cursor: pointer;
   transition: all .2s;
 
-  &:hover { background: rgba(14,165,233,.16); }
+  &:hover { background: var(--pk-info-soft); filter: brightness(0.94); }
 }
 
 // ── Input wrap ───────────────────────────────────────────────────────────────
@@ -157,7 +159,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.85rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -173,7 +175,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.72rem;
   pointer-events: none;
 }
@@ -182,11 +184,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-input {
   width: 100%;
   padding: 0.6rem 1rem 0.6rem 2.35rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: $radius-sm;
   font-size: 0.875rem;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--app-text, #111827);
+  background: var(--form-section-bg, #f9fafb);
   outline: none;
   transition: $trans;
   box-sizing: border-box;
@@ -196,7 +198,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:focus {
     border-color: var(--app-accent, var(--brand-1));
-    background: #fff;
+    background: var(--card-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
 
     ~ .md-input-icon { color: var(--app-accent, var(--brand-1)); }
@@ -226,7 +228,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #dc2626;
+  color: var(--pk-danger-to);
 
   .pi { font-size: 0.75rem; }
 }
@@ -306,7 +308,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-toggle-text {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-text, #374151);
 }
 
 // ── Botones de acción ─────────────────────────────────────────────────────────
@@ -342,15 +344,15 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.07);
-  color: #dc2626;
+  border: 1px solid var(--pk-danger-soft);
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger-to);
   transition: $trans;
   font-family: inherit;
 
   .pi { font-size: 0.75rem; }
 
-  &:hover { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.5); }
+  &:hover { filter: brightness(0.95); }
 }
 
 // ── Footer ───────────────────────────────────────────────────────────────────
@@ -399,19 +401,20 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
+// box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .md-card { background: #1e1e2e; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+  .md-card { background: var(--card-bg, #1e1e2e); }
 
   .md-section__label { color: var(--app-accent); }
 
-  .md-label        { color: #94a3b8; }
-  .md-toggle-text  { color: #94a3b8; }
+  .md-label        { color: var(--app-text-muted, #94a3b8); }
+  .md-toggle-text  { color: var(--app-text-muted, #94a3b8); }
   .md-address-num  { color: var(--app-accent); }
 
   .md-input {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.1);
-    color: #f1f5f9;
+    color: var(--app-text, #f1f5f9);
 
     &::placeholder { color: #475569; }
 
@@ -430,8 +433,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .md-input-icon    { color: #475569; }
-  .md-select-arrow  { color: #475569; }
+  .md-input-icon    { color: var(--app-text-muted, #475569); }
+  .md-select-arrow  { color: var(--app-text-muted, #475569); }
   .md-toggle-slider { background: #374151; }
 
   .md-address-card {
@@ -440,13 +443,10 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .md-footer { border-top-color: rgba(255, 255, 255, 0.07); }
-  .md-badge--ok   { color: #4ade80; }
-  .md-badge--warn { color: #facc15; }
-  .md-btn-verify  { color: #38bdf8; }
 }
 
 // ── LIGHT MODE ───────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .md-card  { background: #fff; }
-  .md-input { background: #f9fafb; border-color: #e5e7eb; color: #111827; }
+  .md-card  { background: var(--card-bg, #fff); }
+  .md-input { background: var(--form-section-bg, #f9fafb); border-color: var(--card-border, #e5e7eb); color: var(--app-text, #111827); }
 }

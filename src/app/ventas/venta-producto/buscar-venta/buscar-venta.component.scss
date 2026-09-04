@@ -25,12 +25,12 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
 
 // ── AG Grid — tema base ────────────────────────────────────────────────────
 ::ng-deep .ag-theme-alpine {
-  --ag-header-background-color: #f8fafc;
-  --ag-background-color: #ffffff;
+  --ag-header-background-color: var(--table-header-bg, #f8fafc);
+  --ag-background-color: var(--card-bg, #ffffff);
   --ag-odd-row-background-color: #fafafa;
-  --ag-border-color: #e2e8f0;
-  --ag-header-foreground-color: #1e293b;
-  --ag-foreground-color: #374151;
+  --ag-border-color: var(--card-border, #e2e8f0);
+  --ag-header-foreground-color: var(--app-text, #1e293b);
+  --ag-foreground-color: var(--app-text, #374151);
   --ag-row-hover-color: rgba(var(--app-accent-rgb), 0.06);
   --ag-selected-row-background-color: rgba(var(--app-accent-rgb), 0.12);
   --ag-range-selection-border-color: var(--app-accent, var(--brand-1));
@@ -38,11 +38,11 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
 
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border, #e2e8f0);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   .ag-header { font-weight: 600; font-size: 0.825rem; }
-  .ag-header-cell-label { color: #475569; }
+  .ag-header-cell-label { color: var(--app-text-muted, #475569); }
   .ag-row { font-size: 0.875rem; }
 }
 
@@ -53,11 +53,11 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
     --ag-background-color: #1e1e2e;
     --ag-odd-row-background-color: rgba(255, 255, 255, 0.03);
     --ag-border-color: rgba(255, 255, 255, 0.08);
-    --ag-header-foreground-color: #e2e8f0;
-    --ag-foreground-color: #cbd5e1;
+    --ag-header-foreground-color: var(--app-text, #e2e8f0);
+    --ag-foreground-color: var(--app-text, #cbd5e1);
     --ag-row-hover-color: rgba(255, 255, 255, 0.04);
     --ag-selected-row-background-color: rgba(var(--app-accent-rgb), 0.15);
-    --ag-icon-color: #94a3b8;
+    --ag-icon-color: var(--app-text-muted, #94a3b8);
     --ag-header-column-resize-handle-color: rgba(255, 255, 255, 0.2);
     --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.06);
     --ag-input-border-color: rgba(255, 255, 255, 0.15);
@@ -66,14 +66,14 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
     border-color: rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 
-    .ag-header-cell-label { color: #94a3b8; }
-    .ag-paging-panel      { color: #94a3b8; }
+    .ag-header-cell-label { color: var(--app-text-muted, #94a3b8); }
+    .ag-paging-panel      { color: var(--app-text-muted, #94a3b8); }
     .ag-row-even { background-color: #1e1e2e; }
     .ag-row-odd  { background-color: rgba(255,255,255,0.03); }
   }
 
-  label { color: #e2e8f0; }
-  p     { color: #e2e8f0; }
+  label { color: var(--app-text, #e2e8f0); }
+  p     { color: var(--app-text, #e2e8f0); }
 }
 
 // ── Light mode ─────────────────────────────────────────────────────────────

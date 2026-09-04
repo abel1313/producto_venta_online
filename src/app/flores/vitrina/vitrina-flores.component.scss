@@ -27,7 +27,7 @@
   }
   &__title {
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: #64748b; }
+    small { color: var(--app-text-muted, #64748b); }
   }
 }
 
@@ -37,9 +37,9 @@
   margin: 0 auto 20px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(239,68,68,.08);
-  border: 1px solid rgba(239,68,68,.25);
-  color: #ef4444;
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
+  color: var(--pk-danger-to);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -50,7 +50,7 @@
 .vr-loading, .vr-empty {
   text-align: center;
   padding: 60px 16px;
-  color: #64748b;
+  color: var(--app-text-muted, #64748b);
   font-size: 1rem;
 }
 
@@ -92,6 +92,14 @@
     object-fit: cover;
   }
 
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card").
+  &__header {
+    padding: 12px 16px;
+    background: var(--card-header-bg);
+  }
+
   &__body {
     padding: 14px 16px;
     flex: 1;
@@ -100,8 +108,8 @@
   &__nombre {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--app-text);
-    margin: 0 0 4px;
+    color: var(--card-header-text, #fff);
+    margin: 0;
   }
 
   &__especie {
@@ -127,6 +135,7 @@
   &__footer {
     padding: 10px 16px;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
     display: flex;
     gap: 8px;
   }
@@ -202,7 +211,7 @@
     border: none;
     font-size: 1.1rem;
     cursor: pointer;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     padding: 4px 8px;
     border-radius: 6px;
     &:hover { background: rgba(0,0,0,.08); }
@@ -246,7 +255,7 @@
 
   &__aviso {
     font-size: 0.78rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     margin-top: 16px;
     background: rgba(var(--app-accent-rgb),.06);
     border-radius: 8px;
@@ -262,13 +271,28 @@
   }
 }
 
+// Escape hatch secundario — no compite visualmente con "Pedir este ramo", el botón principal.
+.vr-btn-whatsapp {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 20px 14px;
+  font-size: 0.76rem;
+  color: var(--app-text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  &:hover { color: var(--app-accent); }
+}
+
 // ── Dark / Light ──────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   .vr-card { background: rgba(255,255,255,.04); }
-  .vr-modal { background: #18181b; }
+  .vr-modal { background: var(--card-bg, #18181b); }
 }
 
 :host-context(body.theme-light) {
-  .vr-card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .vr-modal { background: #fff; }
+  .vr-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .vr-modal { background: var(--card-bg, #fff); }
 }

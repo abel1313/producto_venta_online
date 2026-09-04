@@ -1,0 +1,49 @@
+<app-boton-volver etiqueta="Personalización" fallback="/personalizacion"></app-boton-volver>
+
+<div class="gl-wrap">
+
+  <div class="gl-header">
+    <h4 class="gl-header__title">🖼️ Logos</h4>
+    <small class="gl-header__sub">
+      El logo <b>activo</b> es el que se usa en el encabezado de los correos. Sube los que
+      necesites -- puedes tener varios guardados y cambiar cuál está activo cuando quieras.
+    </small>
+  </div>
+
+  <input #fileInput type="file" accept="image/png,image/jpeg,image/gif,image/svg+xml"
+         (change)="onFileSelected($event)" hidden />
+  <button class="gl-btn gl-btn--subir" type="button" [disabled]="subiendo"
+          (click)="fileInputRef.nativeElement.click()">
+    {{ subiendo ? 'Subiendo…' : '➕ Subir logo' }}
+  </button>
+
+  <div class="gl-empty" *ngIf="!cargando && logos.length === 0">
+    Todavía no hay ningún logo subido -- súbelo arriba para que los correos dejen de mostrar el
+    ícono genérico.
+  </div>
+
+  <div class="gl-grid" *ngIf="!cargando && logos.length > 0">
+    <div class="gl-card" *ngFor="let logo of logos" [class.gl-card--activo]="logo.activo">
+      <div class="gl-card__header">
+        <p class="gl-card__nombre" [title]="logo.nombreOriginal">{{ logo.nombreOriginal }}</p>
+      </div>
+      <div class="gl-card__img-wrap">
+        <img class="gl-card__img" [src]="urlDe(logo)" [alt]="logo.nombreOriginal">
+        <span class="gl-card__badge" *ngIf="logo.activo">✓ Usado en correos</span>
+      </div>
+      <div class="gl-card__actions">
+        <button class="gl-btn gl-btn--activar" type="button"
+                [disabled]="logo.activo || activando.has(logo.id)"
+                (click)="activar(logo)">
+          {{ logo.activo ? 'Activo' : (activando.has(logo.id) ? 'Activando…' : 'Usar en correos') }}
+        </button>
+        <button class="gl-btn gl-btn--eliminar" type="button"
+                [disabled]="eliminando.has(logo.id)"
+                (click)="eliminar(logo)">
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

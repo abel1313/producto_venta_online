@@ -1,5 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
 import { ProductoService } from '../productos/service/producto.service';
@@ -12,6 +14,8 @@ import { CargaImagenesService } from './service/carga-imagenes.service';
   styleUrls: ['./carga-imagenes.component.scss']
 })
 export class CargaImagenesComponent implements OnInit, OnDestroy {
+
+  @ViewChild('videoScanner') videoScanner!: ElementRef<HTMLVideoElement>;
 
   // Bandeja de selección: elegidas pero aún NO subidas. El usuario las revisa
   // (nombre, peso, miniatura) y decide; nada sale a la red hasta pulsar "Subir".
@@ -30,6 +34,10 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
   errorForm = '';
   form: ICompletarProducto = {};
   palabraClaveSel: IPalabraClave | null = null;
+
+  // Escáner de código de barras (mismo patrón que variante/buscar/buscar.component.ts)
+  escaneando = false;
+  private controlesEscaner: IScannerControls | null = null;
 
   // productoId que siguen en PENDIENTE. Cuando queda vacío se detiene el polling.
   private pendientes = new Set<number>();
@@ -74,6 +82,7 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.detenerPolling();
+    this.detenerEscaner();
     // Libera los ObjectURL de la bandeja; los de las tarjetas se liberan al quitarlas.
     this.seleccionadas.forEach(s => URL.revokeObjectURL(s.previewUrl));
   }
@@ -278,6 +287,7 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
   }
 
   cerrarForm(): void {
+    this.detenerEscaner();
     this.editando = null;
     this.form = {};
     this.errorForm = '';
@@ -303,6 +313,35 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.form.codigoBarras = `${mm}${dd}${yyyy}${rand}`;
   }
 
+  // Escanea el código de barras real con la cámara (mismo patrón que
+  // variante/buscar/buscar.component.ts → iniciarEscaner()) y lo escribe
+  // directo en el campo del formulario de completar borrador.
+  async iniciarEscaner(): Promise<void> {
+    this.escaneando = true;
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      this.controlesEscaner = await iniciarEscanerConAutofoco(
+        this.videoScanner.nativeElement,
+        (result, _err, controls) => {
+          if (result) {
+            this.form.codigoBarras = result.getText();
+            controls.stop();
+            this.escaneando = false;
+          }
+        }
+      );
+    } catch {
+      Swal.fire({ icon: 'error', title: 'No se pudo acceder a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.' });
+      this.escaneando = false;
+    }
+  }
+
+  detenerEscaner(): void {
+    this.controlesEscaner?.stop();
+    this.controlesEscaner = null;
+    this.escaneando = false;
+  }
+
   guardarAvance(publicar: boolean): void {
     if (!this.editando || this.guardando) { return; }
     this.guardando = true;
@@ -315,6 +354,14 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.svc.completar(productoId, body).subscribe({
       next: () => {
         this.guardando = false;
+        // Al publicar, el borrador deja de ser un pendiente: se saca de la
+        // grilla local de inmediato en vez de esperar a que el usuario
+        // navegue a otra pantalla y regrese para que "desaparezca".
+        if (publicar) {
+          const t = this.tarjetas.find(x => x.productoId === productoId);
+          if (t?.previewUrl) { URL.revokeObjectURL(t.previewUrl); }
+          this.tarjetas = this.tarjetas.filter(x => x.productoId !== productoId);
+        }
         Swal.fire({
           icon: 'success',
           title: publicar ? 'Producto publicado' : 'Avance guardado',

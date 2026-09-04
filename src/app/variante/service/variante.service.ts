@@ -29,6 +29,16 @@ export class VarianteService {
   private _initialized = false;
   private _terminoCache = '';
 
+  // Estado de los filtros de tienda/buscar (admin y públicos) -- independiente de _cache/
+  // _initialized a propósito: antes, cada vez que había un filtro activo se llamaba
+  // invalidarCache() y el resultado filtrado NUNCA se volvía a guardar, así que salir de la
+  // pantalla y volver siempre perdía tanto los resultados como los checkboxes marcados
+  // (reportado 2026-09-02: "si selecciono filtro y me voy a otros lados... quiero que se
+  // mantenga"). Guarda un objeto de forma libre -- el componente decide qué campos manda.
+  private _filtrosCache: Record<string, unknown> | null = null;
+  get filtrosCache(): Record<string, unknown> | null { return this._filtrosCache; }
+  setFiltrosCache(filtros: Record<string, unknown> | null): void { this._filtrosCache = filtros; }
+
   get variantesCache(): IVarianteResumen[] { return this._cache; }
   get paginaCache(): number { return this._paginaCache; }
   get totalPaginasCache(): number { return this._totalPaginasCache; }
@@ -43,6 +53,9 @@ export class VarianteService {
     this._initialized = true;
   }
 
+  // No toca _filtrosCache -- invalidarCache() se llama tanto al filtrar (donde SÍ queremos
+  // recordar el filtro para la próxima vez) como al mutar datos en otra pantalla (donde no
+  // aplica). Los filtros se limpian explícitamente desde limpiarFiltrosAdmin/Publicos.
   invalidarCache(): void {
     this._initialized = false;
     this._terminoCache = '';
@@ -173,7 +186,7 @@ export class VarianteService {
   // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
   adminFiltrar(
     filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean;
-               codigoGenerado?: boolean },
+               codigoGenerado?: boolean; fechaDesde?: string; fechaHasta?: string },
     pagina: number, size: number
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
@@ -187,6 +200,9 @@ export class VarianteService {
     // true = solo borradores de carga rápida con código autogenerado (BRD-...);
     // false = solo código real; omitido = ambos. Filtra por el producto padre.
     if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
+    // Rango de fecha de creacion (yyyy-MM-dd) — independientes entre si, se combinan con AND.
+    if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
+    if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
 
     return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
       .pipe(map(res => res.data));

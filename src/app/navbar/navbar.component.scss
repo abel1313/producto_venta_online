@@ -2,19 +2,21 @@
    SIDEBAR — Dark collapsible with accordion submenus
    ════════════════════════════════════════════════════ */
 
+/* Los colores del sidebar (--sb-bg, --sb-bg-item, --sb-bg-active, --sb-text,
+   --sb-text-active, --sb-border) YA NO se definen aquí -- son tokens globales
+   en src/styles.scss (bloques body.theme-light / body.theme-dark), para que
+   la pantalla de Personalización pueda cambiarlos sin tocar este componente.
+   Aquí solo quedan las medidas/estructura, que no son "color de marca".
+
+   2026-08-26: el sidebar se dividió en 3 secciones con color propio --
+   --sb-header-bg (.sb-brand, arriba), --sb-body-bg (.sb-nav, en medio) y
+   --sb-footer-bg (.sb-footer, abajo). --sb-bg se deja como fallback/base del
+   <aside class="sidebar"> completo (por si algún hijo no cubre el 100% del
+   área); cada sección anula ese fondo heredado con su propio token. */
 :host {
   --sb-w:           70px;          /* collapsed width */
   --sb-w-exp:       262px;         /* expanded width */
-  /* El sidebar arranca en su versión oscura; el tema claro la sobreescribe abajo.
-     Negro puro, sin tinte — antes tenía un verde muy oscuro (8,20,16). */
-  --sb-bg-rgb:      0, 0, 0;
-  --sb-bg:          rgba(var(--sb-bg-rgb), 0.88);
-  --sb-bg-item:     rgba(255,255,255,0.06);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
   --sb-accent:      var(--brand-1);
-  --sb-text:        #E9E9EC;
-  --sb-text-active: #FFFFFF;
-  --sb-border:      rgba(255,255,255,0.08);
   --sb-trans:       0.28s cubic-bezier(0.4,0,0.2,1);
   --sb-radius:      10px;
   --sb-font:        'Poppins', sans-serif;
@@ -24,24 +26,22 @@
    TEMA CLARO — sidebar blanco con letras oscuras
    ════════════════════════════════════════════════════ */
 :host-context(body.theme-light), :host-context([data-theme="light"]) {
-  --sb-bg:          rgba(255,255,255,0.97);
-  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
-  --sb-text:        #12241D;
-  --sb-text-active: #12241D;
-  --sb-border:      #D5E8DD;
-
   .sidebar {
     box-shadow: 2px 0 16px rgba(0,0,0,0.08);
   }
 
-  .sb-brand-text     { color: #12241D; }
-  .sb-subitem        { color: #5F8375; &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
-  .sb-user-link      { color: #5F8375; &:hover { color: #12241D; } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
-  .sb-logout         { color: #ef4444; }
-  .sb-username       { color: #12241D; }
-  .sb-cart-btn       { color: #5F8375; &:hover { color: #12241D; } }
-  .sb-chevron        { color: #5F8375; }
+  .sb-brand-text     { color: var(--sb-text, #12241D); }
+  /* Pedido 2026-09-02: estos 4 estaban hardcodeados a #5F8375 -- ganaban por especificidad sobre
+     la regla base var(--sb-text) de más abajo, así que Personalización nunca los podía tocar en
+     modo claro (bug global, en el sidebar de TODAS las pantallas). Usan --app-text-muted (mismo
+     tono #5F8375 por defecto) para conservar que se vean "secundarios" frente a --sb-text, pero
+     ya reaccionando al diseño elegido. */
+  .sb-subitem        { color: var(--app-text-muted, #5F8375); &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
+  .sb-user-link      { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
+  .sb-logout         { color: var(--pk-danger-to); }
+  .sb-username       { color: var(--sb-text, #12241D); }
+  .sb-cart-btn       { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } }
+  .sb-chevron        { color: var(--app-text-muted, #5F8375); }
 
   .sb-avatar {
     background: var(--brand-1);
@@ -54,23 +54,15 @@
   }
 
   .sidebar.mobile-open {
-    background: rgba(255,255,255,0.99) !important;
+    background: var(--sb-bg, rgba(255,255,255,0.99)) !important;
   }
 
   .sb-item--test {
     border-color: rgba(0,0,0,0.12);
-    &.sb-item--v2 { border-color: #f59e0b; color: #b45309; background: rgba(245,158,11,0.08); }
+    &.sb-item--v2 { border-color: var(--pk-warning); color: var(--pk-warning-to); background: var(--pk-warning-soft); }
   }
 
-  .sb-item--theme { border-color: #D5E8DD; }
-}
-
-/* ════════════════════════════════════════════════════
-   TEMA OSCURO — sidebar oscuro con letras blancas (ya definido en :host)
-   Solo sobreescribimos lo que necesita explícito
-   ════════════════════════════════════════════════════ */
-:host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  --sb-bg: rgba(var(--sb-bg-rgb),0.92);
+  .sb-item--theme { border-color: var(--sb-border, #D5E8DD); }
 }
 
 /* ── Hamburger (mobile only) ─────────────────────── */
@@ -143,6 +135,7 @@
   gap: 12px;
   padding: 18px 18px 16px;
   min-height: 62px;
+  background: var(--sb-header-bg, var(--sb-bg));
   border-bottom: 1px solid var(--sb-border);
   white-space: nowrap;
   flex-shrink: 0;
@@ -153,7 +146,7 @@
 .sb-brand-text {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--sb-text, #fff);
   letter-spacing: 0.03em;
   opacity: 0;
   transform: translateX(-6px);
@@ -172,6 +165,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 10px 8px;
+  background: var(--sb-body-bg, var(--sb-bg));
 
   &::-webkit-scrollbar { width: 3px; }
   &::-webkit-scrollbar-thumb {
@@ -208,7 +202,7 @@
 
   &.sb-item--active {
     background: var(--sb-bg-active);
-    color: #fff;
+    color: var(--sb-text-active, #fff);
     font-weight: 600;
   }
 }
@@ -275,7 +269,7 @@
   padding: 0.4rem 0.7rem;
   border-radius: 7px;
   text-decoration: none;
-  color: #e2e8f0;
+  color: var(--sb-text, #e2e8f0);
   font-size: 0.79rem;
   font-weight: 400;
   white-space: nowrap;
@@ -294,7 +288,7 @@
 
   &.sb-subitem--active {
     background: var(--sb-bg-active);
-    color: #fff;
+    color: var(--sb-text-active, #fff);
     font-weight: 600;
   }
 }
@@ -302,7 +296,7 @@
 /* ── Theme toggle button ───────────────────────────── */
 .sb-item--theme {
   margin-top: 4px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid var(--sb-border, rgba(255,255,255,0.12));
   border-radius: var(--sb-radius);
 }
 
@@ -313,15 +307,16 @@
   margin-top: 4px;
 
   &.sb-item--v2 {
-    border-color: #f59e0b;
-    color: #f59e0b;
-    background: rgba(245,158,11,0.08);
+    border-color: var(--pk-warning);
+    color: var(--pk-warning);
+    background: var(--pk-warning-soft);
   }
 }
 
 /* ── Footer ────────────────────────────────────────── */
 .sb-footer {
   flex-shrink: 0;
+  background: var(--sb-footer-bg, var(--sb-bg));
   border-top: 1px solid var(--sb-border);
   padding: 8px 8px 10px;
 }
@@ -358,13 +353,13 @@
   }
 
   &.sb-cart-btn--primary { color: var(--sb-accent); }
-  &.sb-cart-btn--warn    { color: #f59e0b; }
+  &.sb-cart-btn--warn    { color: var(--pk-warning); }
 }
 
 .sb-cart-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 .sb-badge {
-  background: #ef4444;
+  background: var(--pk-danger);
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
@@ -388,7 +383,7 @@
   height: 34px;
   border-radius: 50%;
   background: var(--sb-accent);
-  color: #fff;
+  color: var(--app-accent-ink, #fff);
   font-size: 0.88rem;
   font-weight: 700;
   display: flex;
@@ -414,7 +409,7 @@
   display: block;
   font-size: 0.81rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--sb-text-active, #fff);
   margin-bottom: 3px;
 }
 
@@ -430,10 +425,10 @@
   align-items: center;
   gap: 5px;
   font-size: 0.73rem;
-  color: #e2e8f0;
+  color: var(--sb-text, #e2e8f0);
   text-decoration: none;
   transition: color 0.13s;
-  &:hover { color: #fff; }
+  &:hover { color: var(--sb-text-active, #fff); }
 
   .pi { font-size: 0.75rem; opacity: 0.7; }
 
@@ -450,10 +445,10 @@
   gap: 12px;
   width: 100%;
   padding: 9px 18px;
-  background: rgba(248, 113, 113, 0.07);
+  background: var(--pk-danger-soft);
   border: none;
-  border-top: 1px solid rgba(248, 113, 113, 0.15);
-  color: #f87171;
+  border-top: 1px solid var(--pk-danger-soft);
+  color: var(--pk-danger-to);
   cursor: pointer;
   font-family: var(--sb-font);
   font-size: 0.82rem;
@@ -461,7 +456,7 @@
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 
-  &:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  &:hover { filter: brightness(0.95); }
 
   &__icon {
     font-size: 1rem;

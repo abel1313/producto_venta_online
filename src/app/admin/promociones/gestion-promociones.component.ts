@@ -29,6 +29,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
   modoForm: 'nuevo' | 'editar' | null = null;
   editandoId: number | null = null;
   guardando = false;
+  enviandoCorreoId: number | null = null;
 
   formDescripcion = '';
   formFechaVencimiento = '';
@@ -101,6 +102,13 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     return 'gp-badge--activa';
   }
 
+  // El back rechaza el envio de correo si la promocion no esta vigente (inactiva o vencida,
+  // pedido 2026-09-03) -- se deshabilita el boton aca tambien para no dejar que el admin le dé
+  // clic y se encuentre con el error recien al confirmar.
+  esVigente(p: IPromocion): boolean {
+    return !!p.activo && new Date(p.fechaVencimiento) > new Date();
+  }
+
   precioTotalNormal(p: IPromocion): number {
     return (p.detalles ?? []).reduce((s, d) => s + (d.precioNormal ?? 0) * d.cantidad, 0);
   }
@@ -131,6 +139,48 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
         next: () => { p.activo = nuevoValor; },
         error: err => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cambiar el estado.' })
       });
+    });
+  }
+
+  // Muestra cuántos clientes tienen el checkbox de promociones activado y, si el admin confirma,
+  // dispara el envío -- el back lo manda en tandas de 10 en su propio hilo (no bloquea la
+  // pantalla, ver PromocionServiceImpl.enviarCorreoPromocionAsync).
+  enviarCorreo(p: IPromocion): void {
+    if (this.enviandoCorreoId) return;
+    if (!this.esVigente(p)) {
+      Swal.fire({ icon: 'warning', title: 'Promoción no vigente', text: 'Esta promoción está inactiva o vencida, no se puede enviar el correo.' });
+      return;
+    }
+    this.promoService.contarElegiblesParaCorreo().subscribe({
+      next: res => {
+        const elegibles = res?.data ?? 0;
+        if (elegibles === 0) {
+          Swal.fire({ icon: 'info', title: 'Nadie a quién enviar', text: 'Ningún cliente tiene activado el checkbox de "Recibir promociones" todavía.' });
+          return;
+        }
+        Swal.fire({
+          title: '¿Enviar correo de esta promoción?',
+          html: `Se enviará a <strong>${elegibles}</strong> cliente(s) con el checkbox de promociones activado, en tandas de 10.<br><br>${p.descripcion}`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, enviar',
+          cancelButtonText: 'Cancelar'
+        }).then(r => {
+          if (!r.isConfirmed) return;
+          this.enviandoCorreoId = p.id;
+          this.promoService.enviarCorreo(p.id).subscribe({
+            next: res2 => {
+              this.enviandoCorreoId = null;
+              Swal.fire({ icon: 'success', title: 'Envío iniciado', text: res2?.data ?? 'El correo se está enviando.' });
+            },
+            error: err => {
+              this.enviandoCorreoId = null;
+              Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo iniciar el envío.' });
+            }
+          });
+        });
+      },
+      error: err => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo consultar cuántos clientes recibirían el correo.' })
     });
   }
 

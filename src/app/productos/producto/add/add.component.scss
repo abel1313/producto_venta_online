@@ -103,8 +103,8 @@ $t: all 0.22s ease;
 }
 
 .pf-required { color: var(--app-accent); }
-.pf-optional { font-weight: 400; color: #9ca3af; text-transform: none; font-size: 0.72rem; }
-.pf-hint     { font-weight: 400; color: #9ca3af; text-transform: none; font-size: 0.72rem; margin-left: 4px; }
+.pf-optional { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; }
+.pf-hint     { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; margin-left: 4px; }
 
 .pf-input {
   border: 1.5px solid var(--input-border);
@@ -124,21 +124,23 @@ $t: all 0.22s ease;
     box-shadow: var(--input-focus-shadow);
   }
 
+  // Tokens semánticos compartidos -- ya traen su propia variante de modo oscuro (antes el fondo
+  // pastel fijo #fef2f2/#f0fdf4 se veía mal sobre fondo oscuro, no había override para eso).
   &--error {
-    border-color: #ef4444;
-    background: #fef2f2;
-    &:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+    border-color: var(--pk-danger-to);
+    background: var(--pk-danger-soft);
+    &:focus { box-shadow: 0 0 0 3px var(--pk-danger-soft); }
   }
 
   &--generated {
-    background: #f0fdf4;
-    border-color: #86efac;
-    color: #166534;
+    background: var(--pk-success-soft);
+    border-color: var(--pk-success);
+    color: var(--pk-success-to);
     font-family: monospace;
     font-size: 0.9rem;
     letter-spacing: 0.05em;
     cursor: default;
-    &:focus { box-shadow: 0 0 0 3px rgba(134,239,172,0.3); }
+    &:focus { box-shadow: 0 0 0 3px var(--pk-success-soft); }
   }
 }
 
@@ -149,7 +151,7 @@ $t: all 0.22s ease;
 
 .pf-error {
   font-size: 0.75rem;
-  color: #ef4444;
+  color: var(--pk-danger-to);
   font-weight: 500;
 }
 
@@ -162,7 +164,7 @@ $t: all 0.22s ease;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #6b7280;
+    color: var(--app-text-muted, #6b7280);
     font-size: 0.9rem;
     font-weight: 600;
     pointer-events: none;
@@ -198,6 +200,27 @@ $t: all 0.22s ease;
 }
 
 .pf-barcode-toggle { display: flex; align-items: center; }
+
+.pf-barcode-input {
+  display: flex;
+  gap: 6px;
+
+  .pf-input { flex: 1; min-width: 0; }
+}
+
+.pf-barcode-scan {
+  flex: 0 0 auto;
+  width: 42px;
+  border: 1.5px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: $t;
+
+  &:hover { filter: brightness(1.15); }
+}
 
 // Toggle switch
 .pf-switch {
@@ -351,7 +374,7 @@ $t: all 0.22s ease;
     align-items: center;
     justify-content: center;
     transition: $t;
-    &:hover { background: #ef4444; }
+    &:hover { background: var(--pk-danger); }
   }
 
   &--add {
@@ -466,6 +489,99 @@ $t: all 0.22s ease;
 @media (max-width: 400px) {
   .cam-box { padding: 12px; gap: 8px; }
   .cam-video { max-height: 52dvh; }
+}
+
+// ── Modal escáner de código de barras ───────────────────────────────
+// Mismo patrón visual que variante/buscar/buscar.component.scss
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.scanner-box {
+  position: relative;
+  width: min(340px, 92vw);
+  background: #111;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+
+  &__title {
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+  }
+}
+
+.scanner-video {
+  width: 100%;
+  max-height: 60dvh;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.scanner-frame {
+  position: absolute;
+  top: 44px;
+  left: 14px;
+  right: 14px;
+  bottom: 56px;
+  pointer-events: none;
+
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: #ff3b3b;
+    border-style: solid;
+  }
+  &::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
+  &::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 3px 0 0; }
+
+  &__bl, &__br {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: #ff3b3b;
+    border-style: solid;
+  }
+  &__bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
+  &__br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 3px 0; }
+}
+
+.scanner-linea {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff3b3b, transparent);
+  animation: scanear-pf 1.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes scanear-pf {
+  from { top: 20%; }
+  to   { top: 78%; }
+}
+
+@media (max-width: 400px) {
+  .scanner-box { width: 96vw; padding: 10px; }
+  .scanner-video { max-height: 55dvh; }
 }
 
 // ── Símbolo de dinero adaptativo ────────────────────────────────────

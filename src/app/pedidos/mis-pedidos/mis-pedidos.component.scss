@@ -1,6 +1,7 @@
 // ── Variables ──────────────────────────────────────────────────────────────
-$radius: 16px;
-$shadow-base: 0 4px 20px rgba(0, 0, 0, 0.08);
+// $radius/$shadow-base ya NO se usan -- se leen de var(--card-radius)/
+// var(--card-shadow) (design-system.scss) para no tener un radio/sombra
+// propio distinto al del resto de la app (pedido de homologación 2026-08-28).
 
 // ── Estado vacío ───────────────────────────────────────────────────────────
 .mp-empty {
@@ -28,21 +29,12 @@ $shadow-base: 0 4px 20px rgba(0, 0, 0, 0.08);
 
   &__sub {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
     margin: 0;
     max-width: 300px;
   }
 }
-$shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.16);
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-
-// Estados
-$entregado-from: #10b981;
-$entregado-to:   #059669;
-$pendiente-from: #f59e0b;
-$pendiente-to:   #d97706;
-$cancelado-from: #ef4444;
-$cancelado-to:   #dc2626;
 
 // ── Layout principal ───────────────────────────────────────────────────────
 .pedidos-wrapper {
@@ -129,17 +121,17 @@ $cancelado-to:   #dc2626;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 1rem;
 }
 
 .search-input {
   width: 100%;
   padding: 0.65rem 1rem 0.65rem 2.6rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   font-size: 0.875rem;
-  background: #fff;
+  background: var(--card-bg, #fff);
   transition: $transition;
   outline: none;
 
@@ -169,17 +161,17 @@ $cancelado-to:   #dc2626;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
 }
 
 .lugar-filtro-input {
   width: 100%;
   padding: 0.55rem 2.2rem 0.55rem 2.4rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   font-size: 0.82rem;
-  background: #fff;
+  background: var(--card-bg, #fff);
   transition: $transition;
   outline: none;
 
@@ -196,7 +188,7 @@ $cancelado-to:   #dc2626;
   transform: translateY(-50%);
   border: none;
   background: none;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 4px;
@@ -210,8 +202,8 @@ $cancelado-to:   #dc2626;
   left: 0;
   right: 0;
   z-index: 20;
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
+  background: var(--card-bg, #fff);
+  border: 1.5px solid var(--card-border, #e5e7eb);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
   max-height: 220px;
@@ -220,7 +212,7 @@ $cancelado-to:   #dc2626;
   &__item {
     padding: 0.55rem 1rem;
     font-size: 0.85rem;
-    color: #1f2937;
+    color: var(--app-text, #1f2937);
     cursor: pointer;
     &:hover { background: var(--app-accent-soft); }
   }
@@ -228,7 +220,7 @@ $cancelado-to:   #dc2626;
   &__empty {
     padding: 0.55rem 1rem;
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--app-text-muted, #9ca3af);
   }
 }
 
@@ -243,9 +235,9 @@ $cancelado-to:   #dc2626;
 .tipo-filtro-btn {
   padding: 0.45rem 0.9rem;
   border-radius: 50px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #6b7280;
+  border: 1.5px solid var(--card-border, #e5e7eb);
+  background: var(--card-bg, #fff);
+  color: var(--app-text-muted, #6b7280);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -287,18 +279,18 @@ $cancelado-to:   #dc2626;
     padding: 0.5rem 1.1rem;
     border-radius: 50px;
     border: none;
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--form-section-bg, #f3f4f6);
+    color: var(--app-text, #374151);
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: $transition;
 
-    &:hover:not(:disabled) { background: #e5e7eb; }
+    &:hover:not(:disabled) { background: var(--card-border, #e5e7eb); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
-  &__info { font-size: 0.82rem; color: #6b7280; font-weight: 600; }
+  &__info { font-size: 0.82rem; color: var(--app-text-muted, #6b7280); font-weight: 600; }
 }
 
 // ── Scroll container ────────────────────────────────────────────────────────
@@ -326,56 +318,27 @@ $cancelado-to:   #dc2626;
 }
 
 // ── Tarjeta base ────────────────────────────────────────────────────────────
+// Fondo/borde/radio/sombra/hover ahora vienen de .pk-card (design-system.scss) --
+// la misma clase que usan todas las demás cards de la app, para que sean
+// idénticas de verdad (no "parecidas") y para que un cambio en Personalización
+// (--card-bg/--card-radius/--card-shadow/--brand-1/--brand-2) se refleje aquí
+// sin tener que duplicar el valor en este archivo.
 .pedido-card {
-  background: #fff;
-  border-radius: $radius;
-  box-shadow: $shadow-base;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: $transition;
-  border-top: 4px solid var(--app-accent);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: $shadow-hover;
-  }
-
-  // Estados — cambian el acento superior y degradado del header
-  &.estado-entregado {
-    border-top-color: $entregado-from;
-    .card-head { background: linear-gradient(135deg, $entregado-from, $entregado-to); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, rgba($entregado-from,0.08), rgba($entregado-to,0.12)); border-color: rgba($entregado-from,0.2); }
-    .total-amount { color: $entregado-to; }
-  }
-
-  &.estado-pendiente {
-    border-top-color: $pendiente-from;
-    .card-head { background: linear-gradient(135deg, $pendiente-from, $pendiente-to); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, rgba($pendiente-from,0.08), rgba($pendiente-to,0.12)); border-color: rgba($pendiente-from,0.2); }
-    .total-amount { color: $pendiente-to; }
-  }
-
-  &.estado-cancelado {
-    border-top-color: $cancelado-from;
-    .card-head { background: linear-gradient(135deg, $cancelado-from, $cancelado-to); }
-    .estado-badge { background: rgba(255,255,255,0.25); }
-    .total-strip { background: linear-gradient(135deg, rgba($cancelado-from,0.08), rgba($cancelado-to,0.12)); border-color: rgba($cancelado-from,0.2); }
-    .total-amount { color: $cancelado-to; }
-  }
+  // ⚠️ Antes cada estado (entregado/pendiente/cancelado) repintaba el header entero, el strip
+  // de total y su color -- resultado: cards del mismo listado con "carcasa" de colores
+  // distintos (una amarilla, otra verde, otra blanca), en vez de verse todas iguales como el
+  // resto de las cards de la app. El header/strip/borde ahora son SIEMPRE los mismos (compartidos
+  // vía .pk-card__header) -- el estado se sigue viendo, pero solo en el badge de .estado-badge,
+  // con los tokens semánticos compartidos.
+  &.estado-entregado .estado-badge { background: var(--pk-success); }
+  &.estado-pendiente .estado-badge { background: var(--pk-warning); }
+  &.estado-cancelado .estado-badge { background: var(--pk-danger); }
 }
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
-.card-head {
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+// El fondo (degradado --brand-2/--brand-1) y el padding/layout base ya vienen de
+// .pk-card__header (design-system.scss) -- solo queda el layout interno propio
+// de pedidos (dos columnas: número de pedido a la izquierda, badges a la derecha).
 .card-head-left {
   display: flex;
   flex-direction: column;
@@ -446,14 +409,7 @@ $cancelado-to:   #dc2626;
 }
 
 // ── Cuerpo ──────────────────────────────────────────────────────────────────
-.card-body-custom {
-  padding: 1rem 1.25rem 0.75rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
+// El padding/flex base ya viene de .pk-card__body (design-system.scss).
 .info-row {
   display: flex;
   align-items: flex-start;
@@ -461,7 +417,7 @@ $cancelado-to:   #dc2626;
 }
 
 .info-icon {
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   font-size: 0.9rem;
   margin-top: 2px;
   flex-shrink: 0;
@@ -478,14 +434,14 @@ $cancelado-to:   #dc2626;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #9ca3af;
+  color: var(--app-text-muted, #9ca3af);
   line-height: 1.2;
 }
 
 .info-value {
   font-size: 0.82rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -508,7 +464,7 @@ $cancelado-to:   #dc2626;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .total-amount {
@@ -519,14 +475,7 @@ $cancelado-to:   #dc2626;
 }
 
 // ── Footer ──────────────────────────────────────────────────────────────────
-.card-footer-custom {
-  padding: 0.85rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-top: 1px solid #f3f4f6;
-  flex-wrap: wrap;
-}
+// padding/gap/border-top base ya vienen de .pk-card__footer (design-system.scss).
 
 // ── Botones de la tarjeta ───────────────────────────────────────────────────
 // Los botones con texto (Detalle/Cobrar/Cancelar) se reparten el espacio;
@@ -566,21 +515,21 @@ $cancelado-to:   #dc2626;
 }
 
 .btn-detalle {
-  background: #eff6ff;
-  color: #2563eb;
-  &:not(:disabled):hover { background: #dbeafe; }
+  background: var(--pk-info-soft);
+  color: var(--pk-info-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
 }
 
 .btn-cobrar {
-  background: #f0fdf4;
-  color: #16a34a;
-  &:not(:disabled):hover { background: #dcfce7; }
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
 }
 
 .btn-cancelar {
-  background: #fef2f2;
-  color: #dc2626;
-  &:not(:disabled):hover { background: #fee2e2; }
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
 }
 
 .btn-ticket {
@@ -590,19 +539,15 @@ $cancelado-to:   #dc2626;
 }
 
 .btn-correo {
-  background: #ecfdf5;
-  color: #059669;
-  &:not(:disabled):hover { background: #d1fae5; }
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
 }
 
 .btn-entrega {
-  background: #fff7ed;
-  color: #c2410c;
-  &:not(:disabled):hover { background: #ffedd5; }
-}
-
-:host-context(body.theme-dark) {
-  .btn-entrega { background: rgba(194,65,12,0.16); color: #fb923c; &:not(:disabled):hover { background: rgba(194,65,12,0.26); } }
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
 }
 
 // ── Panel Terminal Mercado Pago ─────────────────────────────────────────────
@@ -635,7 +580,7 @@ $cancelado-to:   #dc2626;
 .mp-terminal__amount {
   font-size: 1.9rem;
   font-weight: 800;
-  color: #1f2937;
+  color: var(--app-text, #1f2937);
   letter-spacing: -0.03em;
   display: flex;
   align-items: baseline;
@@ -646,7 +591,7 @@ $cancelado-to:   #dc2626;
 .mp-terminal__plan {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .mp-terminal__status {
@@ -661,29 +606,31 @@ $cancelado-to:   #dc2626;
   .pi { font-size: 1rem; }
 
   &--procesando {
-    background: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
+    background: var(--pk-info-soft);
+    color: var(--pk-info-to);
+    border: 1px solid var(--pk-info-soft);
   }
 
   &--aprobado {
-    background: #f0fdf4;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
+    background: var(--pk-success-soft);
+    color: var(--pk-success-to);
+    border: 1px solid var(--pk-success-soft);
   }
 
   &--rechazado {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border: 1px solid var(--pk-danger-soft);
   }
 
   &--cancelado {
-    background: #fffbeb;
-    color: #d97706;
-    border: 1px solid #fde68a;
+    background: var(--pk-warning-soft);
+    color: var(--pk-warning-to);
+    border: 1px solid var(--pk-warning-soft);
   }
 
+  // Sin token propio -- morado es un caso puntual (bloqueado por seguridad de
+  // la terminal), no un estado semántico reusado en otras pantallas.
   &--bloqueado {
     background: #f5f3ff;
     color: #6d28d9;
@@ -728,8 +675,8 @@ $cancelado-to:   #dc2626;
   }
 
   &--cancel {
-    background: #fef2f2;
-    color: #dc2626;
-    &:not(:disabled):hover { background: #fee2e2; }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    &:not(:disabled):hover { filter: brightness(0.94); }
   }
 }

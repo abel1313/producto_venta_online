@@ -51,10 +51,6 @@ export class PresentacionService {
     return `${this.urlV2}/${id}/imagen`;
   }
 
-  getImagenesPorTipo(tipo: 'LOGIN' | 'REGISTRO'): Observable<IImagenPresentacion[]> {
-    return this.http.get<IImagenPresentacion[]>(`${this.urlV2}?tipo=${tipo}`);
-  }
-
     getTodasImagenesPorId(id: number): Observable<any> {
     return this.http.get<any>(`${this.url}/imagenes/${id}/imagen`);
   }

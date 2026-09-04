@@ -16,12 +16,12 @@ $primary-d:  var(--brand-2);
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: 50px;
   padding: 0.4rem 1rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--app-text-muted, #6b7280);
   cursor: pointer;
   margin-bottom: 1.25rem;
   transition: $transition;
@@ -124,8 +124,8 @@ $primary-d:  var(--brand-2);
   align-items: center;
 
   &--marked .dp-slide__img-wrap {
-    border: 2px solid #ef4444;
-    box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+    border: 2px solid var(--pk-danger-to);
+    box-shadow: 0 0 0 3px var(--pk-danger-soft);
   }
 
   @media (max-width: 575px) { padding: 0.25rem; }
@@ -203,7 +203,7 @@ $primary-d:  var(--brand-2);
   text-overflow: ellipsis;
   max-width: 100%;
 
-  &--marked { color: #ef4444; text-decoration: line-through; }
+  &--marked { color: var(--pk-danger-to); text-decoration: line-through; }
 }
 
 .dp-no-img {
@@ -220,19 +220,19 @@ $primary-d:  var(--brand-2);
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: #fef2f2;
-  border: 1.5px solid #fecaca;
-  border-radius: 14px;
+  background: var(--pk-danger-soft);
+  border: 1.5px solid var(--pk-danger-soft);
+  border-radius: var(--card-radius, 14px);
   padding: 14px 20px;
   margin-bottom: 1.25rem;
 
-  &__count { font-size: 0.9rem; color: #dc2626; font-weight: 600; }
+  &__count { font-size: 0.9rem; color: var(--pk-danger-to); font-weight: 600; }
 
   &__btn {
     padding: 9px 20px;
     border: none;
     border-radius: 10px;
-    background: linear-gradient(135deg, #dc2626, #ef4444);
+    background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
     color: #fff;
     font-size: 0.88rem;
     font-weight: 700;

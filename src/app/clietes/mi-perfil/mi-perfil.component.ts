@@ -4,6 +4,7 @@ import { take } from 'rxjs/operators';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
+import { ICliente } from '../mis-datos/models/index.model';
 import { SesionService } from 'src/app/shared/sesion.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import Swal from 'sweetalert2';
@@ -24,6 +25,10 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   codigoPendiente      = false;
   correoNuevoPendiente = '';
   guardandoPerfil      = false;
+  aceptoPrivacidad: boolean | null = null;
+  fechaAceptoPrivacidad: string | null = null;
+  private clienteId:     number | null = null;
+  private clienteActual: ICliente | null = null;
   guardandoPass        = false;
   errorPerfil          = '';
 
@@ -48,6 +53,13 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
     this.authService.userName$.pipe(take(1)).subscribe(name => {
       this.usernameCtrl.setValue(name || '');
     });
+    this.acceder.obtenerMiPerfil().subscribe({
+      next: (res) => {
+        this.aceptoPrivacidad      = res?.data?.aceptoPrivacidad ?? null;
+        this.fechaAceptoPrivacidad = res?.data?.fechaAceptoPrivacidad ?? null;
+      },
+      error: () => {}
+    });
     this.authService.userId$.pipe(take(1)).subscribe(userId => {
       if (!userId) return;
       // ⚠️ `buscarPorIdCliente` espera el id de **cliente**, no el de usuario — confirmado por el
@@ -55,44 +67,43 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
       // "No autorizado", así que el campo de correo se quedaba vacío. Hay que traducir primero.
       this.usuarioService.buscarClientePorIdUsuario(userId).subscribe({
         next: (clienteId: any) => {
-          if (!clienteId) { this.verificarCambioCorreoPendiente(); return; }
+          if (!clienteId) return;
+          this.clienteId = clienteId;
           this.cargarCorreoCliente(clienteId);
         },
-        error: () => { this.verificarCambioCorreoPendiente(); }
+        error: () => {}
       });
     });
   }
 
+  // El correo (actual y pendiente de verificar) vive en Cliente, no en Usuario -- ver
+  // Cliente.java/ClienteControllerImpl.save() en el back. Antes esta pantalla lo LEÍA de aquí
+  // pero lo GUARDABA contra el endpoint de Usuario (/v1/auth/solicitar-cambio-correo), que
+  // compara contra Usuario.email -- un valor distinto que puede llevar rato desincronizado de
+  // Cliente.correoElectronico. Resultado: intentar "arreglar" el correo mostrado aquí podía
+  // rebotar con "Ese ya es el correo actual" aunque para Cliente sí fuera un cambio real.
   private cargarCorreoCliente(clienteId: number): void {
       this.clienteService.getDataOneCliente(clienteId).subscribe({
         next: (data: any) => {
-          const correo = data?.data?.correoElectronico ?? '';
-          if (correo) {
-            this.emailOriginal = correo;
-            this.emailCtrl.setValue(correo);
+          const cliente: ICliente | undefined = data?.data;
+          if (!cliente) return;
+          this.clienteActual = cliente;
+          if (cliente.correoElectronico) {
+            this.emailOriginal = cliente.correoElectronico;
+            this.emailCtrl.setValue(cliente.correoElectronico);
           }
-          this.verificarCambioCorreoPendiente();
+          if (cliente.correoPendiente) {
+            this.codigoPendiente      = true;
+            this.correoNuevoPendiente = cliente.correoPendiente;
+            this.emailCtrl.setValue(cliente.correoPendiente);
+          }
         },
-        error: () => { this.verificarCambioCorreoPendiente(); }
+        error: () => {}
       });
   }
 
   ngOnDestroy(): void {
     if (this.cooldownTimer) clearInterval(this.cooldownTimer);
-  }
-
-  private verificarCambioCorreoPendiente(): void {
-    this.acceder.cambioCorreoPendiente().subscribe({
-      next: (res: any) => {
-        const data = res?.data ?? res;
-        if (data?.pendiente === true && data?.correoPendiente) {
-          this.codigoPendiente      = true;
-          this.correoNuevoPendiente = data.correoPendiente;
-          this.emailCtrl.setValue(data.correoPendiente);
-        }
-      },
-      error: () => { /* sin cambio pendiente — ignorar error */ }
-    });
   }
 
   // Getters de requisitos de contraseña
@@ -146,9 +157,17 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   }
 
   private flujoEmailChange(nuevoEmail: string): void {
+    if (!this.clienteId || !this.clienteActual) {
+      this.errorPerfil = 'No se encontró tu perfil de cliente, no se puede cambiar el correo desde aquí.';
+      return;
+    }
     this.guardandoPerfil = true;
     this.errorPerfil     = '';
-    this.acceder.solicitarCambioCorreo(nuevoEmail).subscribe({
+    // Manda el Cliente completo con solo correoElectronico cambiado -- el back detecta el cambio
+    // en ClienteControllerImpl.save() y dispara el código de verificación solo, sin aplicar el
+    // correo nuevo todavía (ver comentario largo en cargarCorreoCliente).
+    const body = { ...this.clienteActual, correoElectronico: nuevoEmail };
+    this.clienteService.updateData(this.clienteId, body).subscribe({
       next: () => {
         this.guardandoPerfil       = false;
         this.codigoPendiente       = true;
@@ -185,8 +204,9 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
       preConfirm: async () => {
         const codigo = (document.getElementById('swal-mp-codigo') as HTMLInputElement)?.value ?? '';
         if (codigo.length !== 6) { Swal.showValidationMessage('Ingresa los 6 dígitos'); return false; }
+        if (!this.clienteId) { Swal.showValidationMessage('No se encontró tu perfil de cliente.'); return false; }
         try {
-          await this.acceder.confirmarCambioCorreo(codigo).toPromise();
+          await this.clienteService.verificarCorreo(this.clienteId, codigo).toPromise();
           return true;
         } catch (err: any) {
           const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Código incorrecto o expirado.';
@@ -201,6 +221,11 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
         this.correoNuevoPendiente = '';
         this.reenviadoCodigo      = false;
         this.cooldownReenvio      = 0;
+        if (this.clienteActual) {
+          this.clienteActual.correoElectronico = nuevoEmail;
+          this.clienteActual.correoPendiente   = undefined;
+          this.clienteActual.correoVerificado  = true;
+        }
         Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue actualizado y verificado.', timer: 2500, showConfirmButton: false });
       }
     });
@@ -220,8 +245,10 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   }
 
   reenviarCodigo(): void {
-    if (this.cooldownReenvio > 0) return;
-    this.acceder.solicitarCambioCorreo(this.correoNuevoPendiente).subscribe({
+    if (this.cooldownReenvio > 0 || !this.clienteId) return;
+    // ClienteServiceImpl.enviarCodigoVerificacionCorreo manda el código a correoPendiente si
+    // existe (ya lo hace, ver back) -- no hace falta volver a mandar el correo nuevo.
+    this.clienteService.enviarCodigoVerificacion(this.clienteId).subscribe({
       next: () => {
         this.reenviadoCodigo = true;
         this.iniciarCooldown();

@@ -2,14 +2,24 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AccederService } from 'src/app/login/acceder.service';
 import { passwordFuerte, passwordsIguales } from 'src/app/validador/validador';
 import Swal from 'sweetalert2';
 import { IUsuarioDto } from '../models/usuario.dto';
 import { AuthService } from 'src/app/auth/auth.service';
-import { UsuarioService } from 'src/app/shared/usuario.service';
+import { UsuarioService, IExcepcionSubmenu } from 'src/app/shared/usuario.service';
 import { SesionService } from 'src/app/shared/sesion.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
+import { MenuAdminService } from 'src/app/menu-admin/service/menu.service';
+import { IMenu, ISubmenu } from 'src/app/menu-admin/models/menu.model';
+
+interface GrupoSubmenusExcepcion {
+  menu: IMenu | null;
+  submenus: ISubmenu[];
+}
+
+type EstadoExcepcion = 'ninguno' | 'suma' | 'quita';
 
 @Component({
   selector: 'app-add-usuarios',
@@ -30,6 +40,14 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
   cooldownReenvio      = 0;
   private cooldownTimer: any = null;
   imagenesV2: IImagenPresentacionV2Dto[] = [];
+  roles: { id: number; nombreRol: string }[] = [];
+
+  // ── Excepciones de pantalla individuales (encima del rol) ──────────────────────────────
+  gruposExcepciones: GrupoSubmenusExcepcion[] = [];
+  excepciones: IExcepcionSubmenu[] = [];
+  cargandoExcepciones = false;
+  guardandoExcepcionSubmenuId: number | null = null;
+  grupoExcepcionAbierto: number | 'sin-grupo' | null = null;
   private readonly FALLBACK = [
     './../../../assets/imagenes/imagene1.jpeg',
     './../../../assets/imagenes/imagen2.jpeg',
@@ -51,7 +69,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     public  readonly authService:          AuthService,
     private readonly usuario:              UsuarioService,
     private readonly presentacion:         PresentacionService,
-    private readonly sesion:               SesionService
+    private readonly sesion:               SesionService,
+    private readonly menuAdmin:            MenuAdminService
   ) { }
 
   formRegistro = this.fb.group({
@@ -59,8 +78,10 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8), passwordFuerte]],
     confirmPassword: ['', Validators.required],
+    aceptoPrivacidad: [false, Validators.requiredTrue],
     enabled: true,
-    rol: ''
+    rol: '',
+    rolId: [null as number | null]
   }, { validators: passwordsIguales });
 
 
@@ -85,8 +106,27 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
       this.formRegistro.get('password')?.updateValueAndValidity({ emitEvent: false });
       this.formRegistro.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
 
+      // El aviso de privacidad solo se pide en el autoregistro -- aquí es el admin editando a
+      // otro usuario, no tiene sentido pedirle que "acepte" en su nombre.
+      this.formRegistro.get('aceptoPrivacidad')?.clearValidators();
+      this.formRegistro.get('aceptoPrivacidad')?.updateValueAndValidity({ emitEvent: false });
+
       this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
       this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
+
+      // El selector de rol necesita el catálogo real de roles -- una vez cargado, se
+      // preselecciona el que coincide con el nombre que ya trae updateUser.rol (el back solo
+      // expone el nombre, no el id, en el listado de usuarios).
+      this.usuario.getRoles().subscribe({
+        next: roles => {
+          this.roles = roles;
+          const actual = roles.find(r => r.nombreRol === this.updateUser.rol);
+          if (actual) this.formRegistro.patchValue({ rolId: actual.id });
+        },
+        error: () => {}
+      });
+
+      if (this.updateUser.id) this.cargarExcepciones(this.updateUser.id);
 
       // Verificar si hay cambio de correo pendiente en el backend
       if (this.updateUser.id) {
@@ -139,17 +179,19 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
 
   darAltaUser(){
     if (this.formRegistro.valid) {
-      const { userName, email, password } = this.formRegistro.value;
+      const { userName, email, password, aceptoPrivacidad } = this.formRegistro.value;
       const usrName: string = userName ?? '';
-      this.auth.registrar({ userName: usrName, email, password }).subscribe({
+      this.auth.registrar({ userName: usrName, email, password, aceptoPrivacidad: aceptoPrivacidad ?? false }).subscribe({
         next: (registrado) => {
           if (registrado != null) {
             this.formRegistro.reset();
             // Enviar código de verificación automáticamente y redirigir
+            // ⚠️ `codigoEnviado: true` solo en `next` -- si el envío falla, verificar-correo debe
+            // reintentar y mostrar el error real, no asumir que ya hay un código válido esperando.
             const pwd: string = password ?? '';
             this.auth.enviarCodigoVerificacionUsuario(usrName).subscribe({
               next:  () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } }),
-              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { codigoEnviado: true, password: pwd } })
+              error: () => this.router.navigate(['/login/verificar-correo'], { queryParams: { u: usrName }, state: { password: pwd } })
             });
           } else {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrarse.' });
@@ -443,14 +485,30 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // El campo enabled se guarda vía updateUsuario (ya funcionaba). El rol se guarda aparte, con
+  // el endpoint real PUT /{usuarioId}/rol/{rolId} -- antes este botón mandaba "rol" como texto
+  // suelto a updateUsuario, que ni siquiera lee ese campo, así que nunca cambiaba nada.
   guardarPermisos(): void {
-    const { enabled, rol } = this.formRegistro.value;
-    const body = { ...this.updateUser, enabled: enabled ?? false, rol: rol ?? '' };
-    this.usuario.restablecerContra(body, body.id || 0).subscribe({
+    const { enabled, rolId } = this.formRegistro.value;
+    const id = this.updateUser.id || 0;
+    const body = { ...this.updateUser, enabled: enabled ?? false };
+
+    this.usuario.restablecerContra(body, id).subscribe({
       next: () => {
         this.updateUser.enabled = body.enabled;
-        this.updateUser.rol     = body.rol;
-        Swal.fire({ icon: 'success', title: 'Permisos guardados', text: `Estado y rol de ${this.updateUser.username} actualizados.`, timer: 2000, showConfirmButton: false });
+        if (!rolId) {
+          Swal.fire({ icon: 'success', title: 'Estado guardado', timer: 1600, showConfirmButton: false });
+          return;
+        }
+        this.usuario.cambiarRol(id, rolId).subscribe({
+          next: (res: any) => {
+            this.updateUser.rol = res?.rol ?? this.roles.find(r => r.id === rolId)?.nombreRol ?? this.updateUser.rol;
+            Swal.fire({ icon: 'success', title: 'Permisos guardados', text: `Estado y rol de ${this.updateUser.username} actualizados.`, timer: 2000, showConfirmButton: false });
+          },
+          error: (err: any) => {
+            Swal.fire({ icon: 'error', title: 'Se guardó el estado, pero no el rol', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el rol.' });
+          }
+        });
       },
       error: (err: any) => {
         Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo guardar.' });
@@ -460,6 +518,11 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
 
   showPassword        = false;
   showConfirmPassword = false;
+
+  // Este componente se reusa para "Registrar" (autoservicio, público) y "Actualizar usuario"
+  // (admin, editando a otro) -- el botón Volver homologado necesita distinguir a dónde cae de
+  // respaldo si no hay una pantalla anterior real en el historial.
+  get esActualizar(): boolean { return this.textoCard === 'Actualizar usuario'; }
 
   get pwd(): string { return this.formRegistro.get('password')?.value || ''; }
   get reqMayuscula(): boolean { return /[A-Z]/.test(this.pwd); }
@@ -474,5 +537,79 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     if (this.pwdStrength <= 2) return 'weak';
     if (this.pwdStrength === 3) return 'medium';
     return 'strong';
+  }
+
+  // ── Excepciones de pantalla individuales (PLAN_PERMISOS_PANTALLAS.md sección 3) ────────
+  // Encima de lo que ya da el rol del usuario: "suma" = le da una pantalla que su rol NO tiene;
+  // "quita" = le quita una que su rol SÍ tiene. Solo para ESTE usuario, sin tocar el rol.
+
+  private cargarExcepciones(usuarioId: number): void {
+    this.cargandoExcepciones = true;
+    this.menuAdmin.getMenus().subscribe(menus => {
+      this.menuAdmin.getSubmenus().subscribe(submenus => {
+        const ordenados = [...menus].sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999));
+        const grupos: GrupoSubmenusExcepcion[] = ordenados.map(menu => ({
+          menu,
+          submenus: submenus
+            .filter(s => s.menu?.id === menu.id)
+            .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
+        }));
+        const sinGrupo = submenus
+          .filter(s => !s.menu)
+          .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999));
+        if (sinGrupo.length > 0) grupos.push({ menu: null, submenus: sinGrupo });
+        this.gruposExcepciones = grupos;
+
+        this.usuario.listarExcepcionesSubmenu(usuarioId).subscribe({
+          next: excepciones => { this.excepciones = excepciones; this.cargandoExcepciones = false; },
+          error: () => { this.cargandoExcepciones = false; }
+        });
+      });
+    });
+  }
+
+  toggleGrupoExcepcion(g: GrupoSubmenusExcepcion): void {
+    const clave = g.menu ? g.menu.id : 'sin-grupo';
+    this.grupoExcepcionAbierto = this.grupoExcepcionAbierto === clave ? null : clave;
+  }
+
+  grupoExcepcionEstaAbierto(g: GrupoSubmenusExcepcion): boolean {
+    return this.grupoExcepcionAbierto === (g.menu ? g.menu.id : 'sin-grupo');
+  }
+
+  contarExcepcionesGrupo(g: GrupoSubmenusExcepcion): number {
+    const idsConExcepcion = new Set(this.excepciones.map(e => e.submenu.id));
+    return g.submenus.filter(s => idsConExcepcion.has(s.id)).length;
+  }
+
+  estadoExcepcion(submenu: ISubmenu): EstadoExcepcion {
+    const e = this.excepciones.find(ex => ex.submenu.id === submenu.id);
+    if (!e) return 'ninguno';
+    return e.concedido ? 'suma' : 'quita';
+  }
+
+  // Clic = ciclo de 3 estados: sin excepción -> "+ dar acceso" -> "- quitar acceso" -> sin excepción.
+  ciclarExcepcion(submenu: ISubmenu): void {
+    if (!this.updateUser.id) return;
+    const usuarioId = this.updateUser.id;
+    const estado = this.estadoExcepcion(submenu);
+    this.guardandoExcepcionSubmenuId = submenu.id;
+
+    const op$: Observable<unknown> = estado === 'ninguno'
+      ? this.usuario.agregarExcepcionSubmenu(usuarioId, submenu.id, true)
+      : estado === 'suma'
+        ? this.usuario.agregarExcepcionSubmenu(usuarioId, submenu.id, false)
+        : this.usuario.quitarExcepcionSubmenu(usuarioId, submenu.id);
+
+    op$.subscribe({
+      next: () => {
+        this.guardandoExcepcionSubmenuId = null;
+        this.cargarExcepciones(usuarioId);
+      },
+      error: (err: any) => {
+        this.guardandoExcepcionSubmenuId = null;
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la excepción.' });
+      }
+    });
   }
 }

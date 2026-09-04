@@ -48,18 +48,18 @@
 
   &--galeria { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--sm      { padding: 7px 12px; font-size: .82rem; border-radius: 10px; width: 100%; justify-content: center; }
-  &--retry   { background: #f59e0b; color: var(--app-accent-ink); }
+  &--retry   { background: var(--pk-warning); color: var(--app-accent-ink); }
   &--completar { background: var(--app-accent); color: var(--app-accent-ink); }
   &--ghost   { background: transparent; color: var(--app-text-muted); border: 1px solid var(--card-border); }
   &--save    { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
-  &--pub     { background: #10b981; color: var(--app-accent-ink); }
+  &--pub     { background: var(--pk-success); color: var(--app-accent-ink); }
 }
 
 .ci-error {
   position: relative;
   margin: 10px 0; padding: 10px 34px 10px 14px; border-radius: 10px;
-  background: rgba(239, 68, 68, .12); border: 1px solid rgba(239, 68, 68, .35);
-  color: #ef4444; font-size: .9rem;
+  background: var(--pk-danger-soft); border: 1px solid var(--pk-danger-soft);
+  color: var(--pk-danger-to); font-size: .9rem;
 
   ul    { margin: 6px 0 4px; padding-left: 18px; }
   li    { margin-bottom: 2px; word-break: break-word; }
@@ -80,7 +80,7 @@
 /* Bandeja de selección — lo elegido antes de subir */
 .ci-bandeja {
   background: var(--card-bg); border: 1.5px solid var(--card-border);
-  border-radius: 14px; padding: 14px; margin-bottom: 22px;
+  border-radius: var(--card-radius, 14px); padding: 14px; margin-bottom: 22px;
 
   &__head {
     display: flex; flex-wrap: wrap; gap: 8px;
@@ -91,8 +91,8 @@
 
   &__msg {
     margin-top: 10px; padding: 9px 12px; border-radius: 10px;
-    background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .32);
-    color: #f59e0b; font-size: .84rem;
+    background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft);
+    color: var(--pk-warning-to); font-size: .84rem;
   }
 
   &__acciones {
@@ -134,13 +134,13 @@
 
   &__meta { font-size: .76rem; color: var(--app-text-muted); }
 
-  &__err { font-size: .76rem; color: #ef4444; }
+  &__err { font-size: .76rem; color: var(--pk-danger-to); }
 
   &__quitar {
     flex: 0 0 auto; width: 26px; height: 26px;
     border: none; border-radius: 50%; cursor: pointer;
     background: transparent; color: var(--app-text-muted); font-size: .8rem;
-    &:hover { background: rgba(239, 68, 68, .14); color: #ef4444; }
+    &:hover { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
   }
 }
 
@@ -158,11 +158,11 @@
 .ci-card {
   position: relative;
   background: var(--card-bg); border: 1.5px solid var(--card-border);
-  border-radius: 14px; overflow: hidden;
+  border-radius: var(--card-radius, 14px); overflow: hidden;
   transition: border-color .15s ease, box-shadow .15s ease;
 
-  &--ok    { border-color: rgba(16, 185, 129, .5); }
-  &--error { border-color: rgba(239, 68, 68, .5); }
+  &--ok    { border-color: var(--pk-success); }
+  &--error { border-color: var(--pk-danger); }
 
   &__close {
     position: absolute; top: 6px; right: 6px; z-index: 2;
@@ -179,20 +179,25 @@
 
   &__sinimg { font-size: 2rem; opacity: .5; }
 
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card").
+  &__header { padding: 8px 10px; background: var(--card-header-bg); }
+
   &__body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
 
-  &__id  { color: var(--app-text-muted); font-size: .76rem; }
+  &__id  { color: var(--card-header-text, #fff); font-size: .76rem; }
 
-  &__err { margin: 0; font-size: .78rem; color: #ef4444; line-height: 1.3; }
+  &__err { margin: 0; font-size: .78rem; color: var(--pk-danger-to); line-height: 1.3; }
 }
 
 .ci-badge {
   display: inline-block; padding: 3px 9px; border-radius: 999px;
   font-size: .74rem; font-weight: 700;
 
-  &--pend  { background: rgba(245, 158, 11, .16); color: #f59e0b; }
-  &--ok    { background: rgba(16, 185, 129, .16); color: #10b981; }
-  &--error { background: rgba(239, 68, 68, .16);  color: #ef4444; }
+  &--pend  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
+  &--ok    { background: var(--pk-success-soft); color: var(--pk-success-to); }
+  &--error { background: var(--pk-danger-soft);  color: var(--pk-danger-to); }
 }
 
 /* Estado vacío */
@@ -280,4 +285,97 @@
 
 @media (max-width: 480px) {
   .ci-acciones .ci-btn { flex: 1 1 100%; justify-content: center; }
+}
+
+// ── Scanner overlay (código de barras) ─────────────────────────────
+// Mismo patrón visual que variante/buscar/buscar.component.scss
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.scanner-box {
+  position: relative;
+  width: min(340px, 92vw);
+  background: #111;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+
+  &__title {
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+  }
+}
+
+.scanner-video {
+  width: 100%;
+  max-height: 60dvh;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.scanner-frame {
+  position: absolute;
+  top: 44px;
+  left: 14px;
+  right: 14px;
+  bottom: 56px;
+  pointer-events: none;
+
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: #ff3b3b;
+    border-style: solid;
+  }
+  &::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
+  &::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 3px 0 0; }
+
+  &__bl, &__br {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: #ff3b3b;
+    border-style: solid;
+  }
+  &__bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
+  &__br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 3px 0; }
+}
+
+.scanner-linea {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff3b3b, transparent);
+  animation: scanear-ci 1.8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes scanear-ci {
+  from { top: 20%; }
+  to   { top: 78%; }
+}
+
+@media (max-width: 400px) {
+  .scanner-box { width: 96vw; padding: 10px; }
+  .scanner-video { max-height: 55dvh; }
 }

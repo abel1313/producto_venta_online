@@ -32,7 +32,7 @@
 
 .db-header__title {
   margin: 0;
-  color: #fff;
+  color: var(--header-text, #fff);
   font-size: 1.15rem;
   font-weight: 700;
 }
@@ -45,7 +45,7 @@
 .db-btn--refresh {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #fff;
+  color: var(--header-text, #fff);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 1rem;
@@ -88,17 +88,17 @@
 .db-card {
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, rgba(0, 0, 0, 0.08));
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 20px 18px;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
   transition: transform 0.15s, box-shadow 0.15s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+    box-shadow: var(--card-shadow-hover);
   }
 }
 
@@ -173,16 +173,16 @@
     }
   }
 
-  .db-card__label { color: #94a3b8; }
-  .db-card__val   { color: #e2e8f0; }
-  .db-card__hint  { color: #64748b; }
+  .db-card__label { color: var(--app-text-muted, #94a3b8); }
+  .db-card__val   { color: var(--app-text, #e2e8f0); }
+  .db-card__hint  { color: var(--app-text-muted, #64748b); }
 
-  .db-loading { color: #64748b; }
+  .db-loading { color: var(--app-text-muted, #64748b); }
 }
 
 /* ── Light mode ─────────────────────────────────────────────────── */
 :host-context(body.theme-light) {
-  .db-page { background: #f1f5f9; }
+  .db-page { background: var(--page-bg, #f1f5f9); }
 
   .db-header {
     background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 55%, var(--brand-1) 100%);
@@ -190,13 +190,13 @@
   }
 
   .db-card {
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     border-color: rgba(0, 0, 0, 0.07);
   }
 
-  .db-card__label { color: #64748b; }
-  .db-card__val   { color: #0f172a; }
-  .db-card__hint  { color: #94a3b8; }
+  .db-card__label { color: var(--app-text-muted, #64748b); }
+  .db-card__val   { color: var(--app-text, #0f172a); }
+  .db-card__hint  { color: var(--app-text-muted, #94a3b8); }
 
-  .db-loading { color: #94a3b8; }
+  .db-loading { color: var(--app-text-muted, #94a3b8); }
 }

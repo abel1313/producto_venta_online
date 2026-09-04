@@ -15,5 +15,10 @@ export interface IPedidoVarianteDTO {
   //fechaRecogida: string;
   observaciones: string;
   lugarEntregaId?: number;
+  // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de lugarEntregaId, que
+  // es la zona/pueblo. Se captura con el mapa al elegir zona, opcional.
+  latitud?: number;
+  longitud?: number;
+  referencias?: string;
   detalles: IPedidoVarianteDetalleDTO[];
 }

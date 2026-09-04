@@ -1,9 +1,8 @@
 // ── Variables ──────────────────────────────────────────────────────
 $primary:    var(--brand-2);
 $primary-d:  var(--brand-1);
-$radius:     16px;
-$shadow:     0 4px 24px rgba(0, 0, 0, 0.13);
-$shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
+$radius:     var(--card-radius, 16px);
+$shadow-hover: var(--card-shadow-hover);
 $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Header ─────────────────────────────────────────────────────────
@@ -103,17 +102,26 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Filtros admin ──────────────────────────────────────────────────
 // 8 filtros en PC: 4 columnas × 2 filas, para que no se vea tan estirado
 // como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
+// gap generoso (fila y columna) para que un grupo de checkbox se distinga
+// claramente del siguiente — con poco espacio se leían como una sola franja.
 .vb-filtros {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  // auto-fit/minmax en vez de repeat(4,1fr) fijo: con 4 columnas rígidas, en
+  // pantallas de laptop/desktop angostas cada columna se quedaba sin espacio
+  // para texto largo ("Código generado") y se veía amontonado. Con
+  // minmax(200px,1fr) el navegador baja solo a menos columnas según el
+  // ancho real disponible, igual que ya hace .vb-grid.
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   align-items: stretch;
-  gap: 8px 12px;
+  gap: 14px 18px;
   padding: 0 0 16px;
 }
 
-// min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
-// más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
-.vb-filtro-btn, .vb-filtro-check {
+// min-width:0 evita que un label largo ("Código generado") o el input de fecha
+// fuercen la columna del grid más allá de su 1fr y desborden el contenedor —
+// bug clásico de "grid blowout" (sin esto el date picker se corta/oculta en móvil,
+// porque el :host tiene overflow-x:hidden).
+.vb-filtro-btn, .vb-filtro-check, .vb-filtro-fecha {
   min-width: 0;
 }
 
@@ -179,8 +187,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-filtro-check {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);
@@ -262,6 +270,54 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:has(input:checked) &__box {
     border-color: var(--app-accent);
+  }
+}
+
+// Mismo look de pill que .vb-filtro-check, pero con un <input type="date"> en vez de checkbox.
+// El resalte de "activo" se hace con [class] desde el template — un date vacío sin `required`
+// ya es :valid por spec, así que :has(:valid) nunca distinguiría "elegida" de "vacía".
+.vb-filtro-fecha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: $transition;
+  min-width: 0;
+
+  &--active {
+    background: rgba(255,255,255,0.92);
+    color: var(--app-accent);
+    font-weight: 700;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  &__input {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    color-scheme: dark;
+    max-width: 120px;
+    // Sin esto el <input type="date"> (control atómico, no encoge por su cuenta)
+    // fuerza el ancho mínimo del label por encima de la columna del grid y,
+    // combinado con el overflow-x:hidden del :host, quedaba cortado/oculto en móvil.
+    min-width: 0;
+
+    &::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+  }
+
+  &--active &__input {
+    color-scheme: light;
+    &::-webkit-calendar-picker-indicator { filter: none; }
   }
 }
 
@@ -402,7 +458,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__text {
     font-size: 0.76rem;
-    color: #64748b;
+    color: var(--app-text-muted, #64748b);
     margin: 0;
     line-height: 1.4;
     display: -webkit-box;
@@ -459,8 +515,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
-  .vb-promo__title { color: #f1f5f9; }
-  .vb-promo__text  { color: #94a3b8; }
+  .vb-promo__title { color: var(--app-text, #f1f5f9); }
+  .vb-promo__text  { color: var(--app-text-muted, #94a3b8); }
 }
 
 .vb-grid {
@@ -504,13 +560,23 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: #e9a0bb;
   }
 
+  // Antes el fondo del header salía ENTERO de colorHeader(v.color) -- un color
+  // por variante, sin relación con Personalización. Si ese color caía cerca del
+  // blanco (ej. variantes sin color reconocido) el header quedaba invisible,
+  // como si la card no tuviera header (pedido 2026-09-01: "todas las card
+  // tienen que tener el mismo estilo... header, body y footer"). Ahora el fondo
+  // es --card-header-bg, el mismo token que usan TODAS las cards de la app
+  // (.pk-card__header en design-system.scss), con su propio control en
+  // Personalización (grupo "Card") -- colorHeader() se sigue usando, pero solo
+  // para el puntito .vb-card__color-dot como referencia del color real de la prenda.
   &__header {
     padding: 18px 16px 14px;
-    color: white;
+    color: var(--card-header-text, #fff);
     display: flex;
     align-items: flex-start;
     gap: 12px;
     position: relative;
+    background: var(--card-header-bg);
 
     &::after {
       content: '';
@@ -578,6 +644,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-wrap: wrap;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
     > * { flex: 1 0 50px; }
   }
 }
@@ -617,16 +684,16 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--add {
-    color: #2e7d32;
-    &:hover:not(:disabled) { background: #e8f5e9; }
+    color: var(--pk-success-to);
+    &:hover:not(:disabled) { background: var(--pk-success-soft); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
   &--remove {
-    color: #ef4444;
+    color: var(--pk-danger-to);
     border-left: 1px solid var(--card-border);
     border-right: 1px solid var(--card-border);
-    &:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
+    &:hover:not(:disabled) { background: var(--pk-danger-soft); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
@@ -642,9 +709,9 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--share {
-    color: #0891b2;
+    color: var(--pk-info-to);
     border-left: 1px solid var(--card-border);
-    &:hover { background: rgba(8,145,178,0.08); }
+    &:hover { background: var(--pk-info-soft); }
   }
 
   &--toggle {
@@ -657,7 +724,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Card deshabilitada + seleccionada ─────────────────────────────
 .vb-card--deshabilitado {
   opacity: 0.55;
-  outline: 2px dashed #ef4444;
+  outline: 2px dashed var(--pk-danger-to);
   outline-offset: 2px;
 }
 
@@ -670,7 +737,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #ef4444;
+  background: var(--pk-danger);
   color: #fff;
   font-size: 0.65rem;
   font-weight: 700;
@@ -772,18 +839,18 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
 
   &--enable {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
-    border-color: rgba(34, 197, 94, 0.3);
-    &:hover:not(:disabled) { background: rgba(34, 197, 94, 0.22); }
+    background: var(--pk-success-soft);
+    color: var(--pk-success-to);
+    border-color: var(--pk-success-soft);
+    &:hover:not(:disabled) { filter: brightness(0.95); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
   &--disable {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.25);
-    &:hover:not(:disabled) { background: rgba(239, 68, 68, 0.2); }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border-color: var(--pk-danger-soft);
+    &:hover:not(:disabled) { filter: brightness(0.95); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
@@ -961,29 +1028,36 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
-  // completo, con el texto alineado a la izquierda como una lista.
-  .vb-filtros { grid-template-columns: 1fr; gap: 6px; }
-  .vb-filtro-check, .vb-filtro-btn {
-    font-size: 0.78rem;
-    padding: 8px 14px;
+  // completo, con el texto alineado a la izquierda como una lista. gap:10px
+  // (en vez de 6px) para que un checkbox no se pegue visualmente al siguiente.
+  .vb-filtros { grid-template-columns: 1fr; gap: 10px; }
+  .vb-filtro-check, .vb-filtro-fecha, .vb-filtro-btn {
+    font-size: 0.8rem;
+    padding: 10px 16px;
     white-space: normal;
     text-align: left;
     justify-content: flex-start;
     line-height: 1.25;
   }
 
-  // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .vb-grid con
-  // auto-fill/minmax(260px) siempre colapsaba a una sola columna.
-  .vb-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  // El date picker nativo tiene un ancho mínimo interno que no siempre respeta
+  // max-width en navegadores móviles; al ir en columna única ya sobra ancho
+  // en el pill, así que se lo damos completo en vez de dejarlo fijo en 120px
+  // (fijo en 120px + label es justo lo que lo desbordaba/ocultaba antes).
+  .vb-filtro-fecha {
+    flex-wrap: wrap;
+  }
+  .vb-filtro-fecha__input {
+    max-width: 100%;
+    flex: 1;
+  }
+
+  // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco
+  // espacio por card y el texto se veía amontonado. Sin este override, .vb-grid
+  // con auto-fill/minmax(260px) cae solo a una columna, igual que productos/buscar.
+  .vb-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
-// Hueco entre "móvil" (576px) y donde .vb-grid ya cabe cómodo en varias columnas:
-// sin este bloque, .vb-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
-// white-space:nowrap, un label largo no cabía en un ancho de tablet/celular grande
-// y el texto se desbordaba encimado sobre la siguiente pill.
-@media (min-width: 577px) and (max-width: 899px) {
-  .vb-filtros { grid-template-columns: repeat(2, 1fr); }
-}
 
 @media (max-width: 400px) {
   .scanner-box { width: 96vw; padding: 10px; }
@@ -1058,6 +1132,19 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       border-color: transparent;
     }
     &:has(input:checked) &__box { border-color: var(--app-accent); }
+  }
+
+  .vb-filtro-fecha {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+    &__input { color-scheme: light; &::-webkit-calendar-picker-indicator { filter: none; } }
+    &--active {
+      background: rgba(var(--app-accent-rgb), 0.14);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
   }
 
   .vb-scan-mobile {

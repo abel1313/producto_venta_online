@@ -1,0 +1,90 @@
+.ae-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1.5px dashed var(--card-border, #e5e7eb);
+  border-radius: 10px;
+}
+
+.ae-hint {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--app-text-muted, #6b7280);
+}
+
+.ae-mapa {
+  width: 100%;
+  height: 260px;
+  border-radius: 10px;
+  border: 1.5px solid var(--card-border, #e5e7eb);
+}
+
+.ae-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ae-fila {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  &--nueva { border-top: 1px dashed var(--card-border, #e5e7eb); padding-top: 10px; margin-top: 4px; }
+
+  &__color {
+    width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+    margin-bottom: 8px;
+    &--nueva {
+      display: flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--app-accent-soft, #eef2ff); color: var(--app-accent, #007AFF);
+      font-size: .8rem; font-weight: 700;
+    }
+  }
+
+  &__campo {
+    display: flex; flex-direction: column; gap: 3px;
+    font-size: .74rem; color: var(--app-text-muted, #6b7280);
+    input {
+      width: 100px; padding: 6px 9px;
+      border: 1.5px solid var(--card-border, #e5e7eb); border-radius: 8px;
+      background: var(--card-bg, #fff); color: var(--app-text, #1f2937);
+      font-size: .84rem;
+      &:focus { outline: none; border-color: var(--app-accent, #007AFF); }
+    }
+  }
+
+  &__estado { font-size: .72rem; color: var(--app-accent, #007AFF); margin-bottom: 8px; }
+}
+
+.ae-btn {
+  border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+  &--del { background: none; font-size: 1rem; padding: 6px; margin-bottom: 4px; &:hover { filter: brightness(0.8); } }
+  &--add {
+    padding: 8px 14px; font-size: .82rem;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink, #fff);
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+}
+
+.ae-empty {
+  font-size: .8rem;
+  color: var(--app-text-muted, #9ca3af);
+  padding: 4px 0;
+}
+
+// Manija arrastrable en el mapa (L.divIcon) -- un punto de color con borde blanco, fácil de
+// agarrar en móvil (16x16, más grande que el punto visible de 14x14).
+::ng-deep .ae-manija span {
+  display: block;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}

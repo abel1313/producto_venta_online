@@ -1,11 +1,19 @@
 <div class="cr-wrap">
 
   <div class="cr-header">
-    <div class="cr-header__inner">
-      <h4 *ngIf="!modoEdicion">🌷 Arma tu propio ramo</h4>
-      <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
-      <small *ngIf="!modoEdicion">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
-      <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
+    <div class="cr-header__inner" [class.cr-header__inner--conFoto]="modoRamoArmado && ramoArmadoOrigenFoto">
+      <!-- Foto del ramo con el que se llegó desde "Pedir este ramo" (ver ramoArmadoOrigenFoto) —
+           sin esto el cliente perdía de vista qué ramo estaba pidiendo al entrar aquí. -->
+      <img *ngIf="modoRamoArmado && ramoArmadoOrigenFoto" [src]="ramoArmadoOrigenFoto"
+           class="cr-header__foto" [alt]="ramoArmadoOrigenNombre">
+      <div class="cr-header__texto">
+        <h4 *ngIf="!modoEdicion && !modoRamoArmado">🌷 Arma tu propio ramo</h4>
+        <h4 *ngIf="modoEdicion">✏️ Editar el ramo del pedido #{{ pedidoIdEdicion }}</h4>
+        <h4 *ngIf="modoRamoArmado">💐 Pedir "{{ ramoArmadoOrigenNombre }}"</h4>
+        <small *ngIf="!modoEdicion && !modoRamoArmado">Elige tu flor, cantidad, colores y accesorios — el precio se calcula al instante</small>
+        <small *ngIf="modoEdicion">Cambia flores, accesorios o la fecha — el precio se vuelve a calcular</small>
+        <small *ngIf="modoRamoArmado">Ya viene armado — ajusta lo que quieras y elige cuándo y dónde lo quieres</small>
+      </div>
     </div>
   </div>
 
@@ -16,8 +24,19 @@
     envío se quedan como estaban.
   </div>
 
+  <!-- El reparto/accesorios quedan editables a propósito (ver precargarDesdeRamoArmado) — se
+       avisa para que no parezca un error que ya vengan marcados. -->
+  <div class="cr-aviso cr-aviso--info" *ngIf="modoRamoArmado">
+    ℹ️ Este ramo ya viene armado — las flores y accesorios de abajo son los de referencia, pero
+    puedes ajustarlos si quieres. El precio final es siempre el que se calcula en vivo.
+  </div>
+
   <div class="cr-aviso cr-aviso--error" *ngIf="errorEdicion">
     <strong>⚠️ {{ errorEdicion }}</strong>
+  </div>
+
+  <div class="cr-aviso cr-aviso--error" *ngIf="errorRamoArmado">
+    <strong>⚠️ {{ errorRamoArmado }}</strong>
   </div>
 
   <div class="cr-aviso cr-aviso--error" *ngIf="errorCatalogo">
@@ -27,6 +46,7 @@
 
   <p class="cr-loading" *ngIf="cargandoCatalogo">Cargando catálogo…</p>
   <p class="cr-loading" *ngIf="cargandoEdicion">Cargando el ramo del pedido…</p>
+  <p class="cr-loading" *ngIf="cargandoRamoArmado">Cargando tu ramo…</p>
 
   <div class="cr-form" *ngIf="!cargandoCatalogo && !errorCatalogo">
 
@@ -215,7 +235,8 @@
         <!-- La zona no se toca al editar (cambia un costo de envío ya cobrado) — se ve, pero
              bloqueada, para que el admin sepa a dónde va sin poder moverla por accidente. -->
         <select class="cr-input" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarChange()"
-                [disabled]="recogerEnLocal || modoEdicion">
+                [disabled]="recogerEnLocal || modoEdicion"
+                [class.cr-input--error]="entregaSinDefinir && !modoEdicion">
           <option [ngValue]="null" disabled>Elige la zona de entrega…</option>
           <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
         </select>
@@ -223,6 +244,20 @@
           <input type="checkbox" [(ngModel)]="recogerEnLocal" (ngModelChange)="onRecogerEnLocalChange()">
           Voy a recoger en la tienda
         </label>
+
+        <!-- Ubicación exacta (opcional) — solo tras elegir zona y solo al crear el pedido (la
+             zona no se toca al editar, y esto va de la mano con ella). La zona sola ("Tejupilco")
+             es muy extensa, esto marca el punto dentro de ella. -->
+        <div class="cr-field" *ngIf="lugarEntregaId && !modoEdicion">
+          <label class="cr-label" style="font-size:.85rem">🗺️ Ubicación exacta (opcional)</label>
+          <app-selector-ubicacion
+            [lat]="latitud" [lng]="longitud" [centroDefault]="centroMapaLugar"
+            (ubicacionCambio)="onUbicacionCambio($event)">
+          </app-selector-ubicacion>
+          <input type="text" class="cr-input mt-2"
+                 placeholder="Referencias (ej. portón verde, junto a la tienda)"
+                 [(ngModel)]="referencias">
+        </div>
 
         <!-- El aviso que el admin necesita para negociar por teléfono: "si le agregamos 10, ya no
              te lo doy el 20, sería el 23 — o el 20 con el cargo de prisa". -->
@@ -350,6 +385,12 @@
           ⚠️ {{ calculo.mensajeEntrega || 'La fecha que elegiste ya no se puede cumplir — elige otra.' }}
         </div>
 
+        <!-- Zona con anillos de cobro por distancia configurados (DISENO_ZONAS_POR_ANILLO.md) y
+             el punto marcado quedó fuera de todos ellos. -->
+        <div class="cr-aviso cr-aviso--warn" *ngIf="calculo.envioDentroDeRango === false">
+          📍 {{ calculo.mensajeEnvio || 'El punto que marcaste está fuera de las zonas de entrega configuradas — marca un punto más cercano.' }}
+        </div>
+
         <!-- Se pidió urgente, hay cargo configurado, y el cálculo no lo trae: el ramo se armaría
              con prisa sin cobrar el extra. Se AVISA, no se prohíbe — confirmar pide una
              confirmación aparte. Ver `cargoUrgenteNoAplicado`: se apaga solo cuando el back
@@ -368,7 +409,7 @@
         <!-- Al editar, la zona ya viene del pedido original y está bloqueada — exigirla otra vez
              dejaría el botón muerto en un ramo que se pidió antes de que fuera obligatoria. -->
         <button class="cr-btn cr-btn--confirmar"
-                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || (entregaSinDefinir && !modoEdicion)"
+                [disabled]="guardando || entregaBloqueada || calculo.entregaValida === false || calculo.envioDentroDeRango === false || (entregaSinDefinir && !modoEdicion)"
                 (click)="confirmarPedido()">
           {{ guardando
               ? 'Guardando…'

@@ -15,6 +15,7 @@ import { VarianteService } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
+import { CENTRO_MAPA_GENERICO } from 'src/app/shared/selector-ubicacion/selector-ubicacion.component';
 
 @Component({
   selector: 'app-venta-variante',
@@ -61,6 +62,33 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   lugares: ILugarEntrega[] = [];
   lugarEntregaId: number | null = null;
+
+  // Ubicación exacta (2026-08-22) — se muestra el mapa solo después de elegir zona, para que
+  // el cliente pueda marcar el punto dentro de esa zona en vez de solo un nombre de pueblo.
+  latitud: number | null = null;
+  longitud: number | null = null;
+  referencias = '';
+
+  onUbicacionCambio(p: { lat: number; lng: number }): void {
+    this.latitud = p.lat;
+    this.longitud = p.lng;
+  }
+
+  // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
+  // (ver `onLugarEntregaChange`), no en cada ciclo de detección de cambios: un getter que
+  // devolviera un array nuevo cada vez rompería `SelectorUbicacionComponent.ngOnChanges`
+  // (recentraría el mapa en cada tecla que el cliente escriba en "referencias", peleándose con
+  // que el cliente pueda mover/hacer zoom libremente antes de marcar el pin). Si la zona ya
+  // tiene latitud/longitud capturada se usa como centro; si no (zona vieja) se cae al genérico
+  // fijo de siempre — ver CENTRO_MAPA_GENERICO en selector-ubicacion.component.ts.
+  centroMapaLugar: [number, number] = CENTRO_MAPA_GENERICO;
+
+  onLugarEntregaChange(): void {
+    const lugar = this.lugares.find(l => l.id === this.lugarEntregaId);
+    this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
+      ? [lugar.latitud, lugar.longitud]
+      : CENTRO_MAPA_GENERICO;
+  }
 
   // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
   onImgError = onImagenError;
@@ -186,26 +214,42 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         return;
       }
       this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
-        next: (res: any) => {
-          if (res) this.armarYConfirmar(res);
-          else {
-            Swal.fire({
-              title: 'Generar pedido',
-              icon: 'info',
-              html: '<p>Para completar tu pedido necesitas registrarte como cliente.</p>',
-              showCancelButton: true,
-              confirmButtonText: 'Registrarme como cliente',
-              cancelButtonText: 'Cancelar',
-              confirmButtonColor: '#3085d6',
-              cancelButtonColor: '#d33'
-            }).then(result => {
-              if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
-            });
+        next: (clienteId: any) => {
+          if (!clienteId) {
+            this.pedirCompletarRegistro();
+            return;
           }
+          // ⚠️ Que exista el vínculo Usuario→Cliente (id truthy) NO es lo mismo que "puede
+          // comprar": al verificar su correo, todo usuario nuevo recibe un Cliente auto-creado
+          // con id real pero nombre/apellido/teléfono vacíos (`datosCompletos=false` -- ver
+          // `Cliente.recalcularDatosCompletos()` en el back), y el back rechaza el pedido en
+          // ese caso.
+          this.clienteService.getDataOneCliente(clienteId).subscribe({
+            next: (res) => {
+              if (res?.data?.datosCompletos) this.armarYConfirmar(clienteId);
+              else this.pedirCompletarRegistro();
+            },
+            error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener el cliente.' })
+          });
         },
         error: () => Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener el cliente.' })
       });
     }
+  }
+
+  private pedirCompletarRegistro(): void {
+    Swal.fire({
+      title: 'Generar pedido',
+      icon: 'info',
+      html: '<p>Para completar tu pedido necesitas registrarte como cliente.</p>',
+      showCancelButton: true,
+      confirmButtonText: 'Registrarme como cliente',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33'
+    }).then(result => {
+      if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
+    });
   }
 
   private armarYConfirmar(clienteId: number): void {
@@ -240,6 +284,9 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
+      latitud:        this.latitud ?? undefined,
+      longitud:       this.longitud ?? undefined,
+      referencias:    this.referencias.trim() || undefined,
       detalles:      [...detallesVariantes, ...detallesPromos]
     };
 

@@ -23,21 +23,29 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+  recibirCorreos = true;
+  guardandoPreferenciaCorreo = false;
+  recibirPromociones = true;
+  guardandoPreferenciaPromociones = false;
 
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService,
     private readonly usuarioService: UsuarioService
   ) {
+    // Valores por default vacios a proposito (2026-09-03): antes tenian datos de prueba quemados
+    // ("abel"/"tibu"/"abel@gmail.com"/telefono) que se quedaban visibles en pantalla cuando la
+    // carga real fallaba (cargarCliente() no limpia el form en su rama error) -- parecia que
+    // habian cargado datos de una cuenta ajena, cuando en realidad eran restos de prueba.
     this.formDatosCliente = this.fb.group({
-      nombrePersona: ['abel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
+      nombrePersona: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
       segundoNombre: ['', [Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      apeidoPaterno: ['tibu', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      apeidoMaterno: ['fel', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      fechaNacimiento: [new Date(), [Validators.required]],
-      sexo: ['Hombre'],
-      correoElectronico: ['abel@gmail.com', [Validators.required, Validators.email]],
-      numeroTelefonico: ['7223475214', Validators.pattern(/^[0-9]{10}$/)],
+      apeidoPaterno: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
+      apeidoMaterno: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
+      fechaNacimiento: [null, [Validators.required]],
+      sexo: [''],
+      correoElectronico: ['', [Validators.required, Validators.email]],
+      numeroTelefonico: ['', Validators.pattern(/^[0-9]{10}$/)],
       listDirecciones: this.fb.array([])
 
     });
@@ -86,6 +94,8 @@ export class MisDatosComponent implements OnInit {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
+        this.recibirCorreos = data.data.recibirCorreos ?? true;
+        this.recibirPromociones = data.data.recibirPromociones ?? true;
         this.formDatosCliente.patchValue({
           nombrePersona: data.data.nombrePersona,
           segundoNombre: data.data.segundoNombre,
@@ -255,6 +265,38 @@ export class MisDatosComponent implements OnInit {
     });
   }
 
+
+  toggleRecibirCorreos(): void {
+    if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
+    const nuevoValor = !this.recibirCorreos;
+    this.guardandoPreferenciaCorreo = true;
+    this.clienteServoce.actualizarPreferenciaCorreo(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirCorreos = nuevoValor;
+        this.guardandoPreferenciaCorreo = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaCorreo = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+      }
+    });
+  }
+
+  toggleRecibirPromociones(): void {
+    if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
+    const nuevoValor = !this.recibirPromociones;
+    this.guardandoPreferenciaPromociones = true;
+    this.clienteServoce.actualizarPreferenciaPromociones(this.clienteId, nuevoValor).subscribe({
+      next: () => {
+        this.recibirPromociones = nuevoValor;
+        this.guardandoPreferenciaPromociones = false;
+      },
+      error: () => {
+        this.guardandoPreferenciaPromociones = false;
+        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
+      }
+    });
+  }
 
   verificarCorreoPropio(): void {
     if (!this.clienteId) return;

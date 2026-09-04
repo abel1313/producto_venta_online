@@ -1,4 +1,4 @@
-$radius:    14px;
+$radius:    var(--card-radius, 14px);
 $radius-sm: 8px;
 $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -16,7 +16,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 480px;
   border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);
 }
 
@@ -78,11 +78,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .amc-input {
   width: 100%;
   padding: 0.7rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--card-border, #e5e7eb);
   border-radius: $radius-sm;
   font-size: 0.95rem;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--app-text, #111827);
+  background: var(--form-section-bg, #f9fafb);
   outline: none;
   transition: $trans;
   box-sizing: border-box;
@@ -93,7 +93,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:focus {
     border-color: var(--app-accent, var(--brand-1));
-    background: #fff;
+    background: var(--card-bg, #fff);
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
   }
 }
@@ -103,9 +103,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 0.5rem;
   font-size: 0.82rem;
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.15);
+  color: var(--pk-danger-to);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
   margin-bottom: 1rem;
@@ -145,7 +145,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .amc-exito-icon {
   font-size: 2.6rem;
-  color: #16a34a;
+  color: var(--pk-success);
   margin-bottom: 0.75rem;
   display: block;
 }
@@ -167,12 +167,12 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 :host-context(body.theme-dark) {
   .amc-page  { background: var(--app-bg); }
   .amc-card  { background: var(--card-bg, #1e1b2e); }
-  .amc-input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: #e2e8f0; }
+  .amc-input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: var(--app-text, #e2e8f0); }
   .amc-input:focus { background: rgba(255,255,255,0.1); }
-  .amc-hint  { color: #94a3b8; }
-  .amc-btn--ghost { color: #e2e8f0; border-color: rgba(255,255,255,0.16); }
+  .amc-hint  { color: var(--app-text-muted, #94a3b8); }
+  .amc-btn--ghost { color: var(--app-text, #e2e8f0); border-color: rgba(255,255,255,0.16); }
 }
 
 :host-context(body.theme-light) {
-  .amc-input { background: #f9fafb; border-color: #e5e7eb; color: #111827; }
+  .amc-input { background: var(--form-section-bg, #f9fafb); border-color: var(--card-border, #e5e7eb); color: var(--app-text, #111827); }
 }

@@ -1,0 +1,127 @@
+.gl-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gl-header {
+  &__title { font-size: 1.15rem; font-weight: 800; color: var(--app-text); margin: 0 0 4px; }
+  &__sub   { font-size: .8rem; color: var(--app-text-muted); line-height: 1.4; }
+}
+
+.gl-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: .85rem;
+  transition: all .2s ease;
+  width: fit-content;
+
+  &--subir {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+    &:disabled { opacity: .6; cursor: not-allowed; }
+  }
+
+  &--activar {
+    background: var(--app-accent-soft);
+    color: var(--app-accent);
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
+
+  &--eliminar {
+    background: none;
+    padding: 8px 10px;
+    &:hover:not(:disabled) { background: rgba(239,68,68,0.1); }
+    &:disabled { opacity: .4; cursor: not-allowed; }
+  }
+}
+
+.gl-empty {
+  color: var(--app-text-muted);
+  font-size: .86rem;
+  text-align: center;
+  padding: 32px 16px;
+  border: 1.5px dashed var(--card-border);
+  border-radius: var(--card-radius, 14px);
+}
+
+.gl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.gl-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .2s ease;
+
+  &--activo { border-color: var(--app-accent); }
+
+  &__img-wrap {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(45deg, #00000008 25%, transparent 25%, transparent 75%, #00000008 75%),
+      linear-gradient(45deg, #00000008 25%, transparent 25%, transparent 75%, #00000008 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+    padding: 10px;
+  }
+
+  &__img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+  &__badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    font-size: .68rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 3px 6px;
+    border-radius: 6px;
+  }
+
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header), con su propio control en
+  // Personalización (grupo "Card").
+  &__header {
+    padding: 8px 10px;
+    background: var(--card-header-bg);
+  }
+
+  &__nombre {
+    font-size: .78rem;
+    color: var(--card-header-text, #fff);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 4px;
+    padding: 8px 10px 10px;
+    background: var(--card-footer-bg);
+
+    .gl-btn--activar { flex: 1; }
+  }
+}

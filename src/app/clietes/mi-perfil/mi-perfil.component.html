@@ -1,3 +1,4 @@
+<app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
 <div class="mp-page">
   <div class="mp-card">
 
@@ -15,6 +16,19 @@
       <!-- ── Sección: Datos de cuenta ──────────────────────────────── -->
       <div class="mp-section">
         <span class="mp-section-label">Datos de cuenta</span>
+
+        <!-- Solo lectura -- no se puede desmarcar aquí, se aceptó una vez al registrarte. -->
+        <p class="mp-hint mp-privacy-status" *ngIf="aceptoPrivacidad !== null">
+          <i class="pi" [class.pi-check-circle]="aceptoPrivacidad" [class.pi-times-circle]="!aceptoPrivacidad"></i>
+          <ng-container *ngIf="aceptoPrivacidad">
+            Aceptaste el <a routerLink="/privacidad" target="_blank">aviso de privacidad</a>
+            el {{ fechaAceptoPrivacidad | date:'dd/MM/yyyy HH:mm' }}.
+          </ng-container>
+          <ng-container *ngIf="!aceptoPrivacidad">
+            No hay registro de que hayas aceptado el <a routerLink="/privacidad" target="_blank">aviso de privacidad</a>
+            (cuenta creada antes de este control).
+          </ng-container>
+        </p>
 
         <!-- Usuario -->
         <div class="mp-field">

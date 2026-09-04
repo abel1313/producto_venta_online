@@ -1,9 +1,8 @@
 // ── Variables ──────────────────────────────────────────────────────
 $primary:      var(--brand-2);
 $primary-d:    var(--brand-1);
-$radius:       16px;
-$shadow:       0 4px 24px rgba(0, 0, 0, 0.13);
-$shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.22);
+$radius:       var(--card-radius, 16px);
+$shadow-hover: var(--card-shadow-hover);
 $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Host ───────────────────────────────────────────────────────────
@@ -303,11 +302,13 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   // Móvil: 1 filtro por fila (columna única) — cada pill ocupa el ancho
-  // completo, con el texto alineado a la izquierda como una lista.
-  .pl-filtros { grid-template-columns: 1fr; gap: 6px; }
-  .pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
-    font-size: 0.78rem;
-    padding: 8px 14px;
+  // completo, con el texto alineado a la izquierda como una lista. gap:10px
+  // (en vez de 6px) para que un checkbox no se pegue visualmente al siguiente
+  // — mismo criterio que .vb-filtros (tienda/buscar).
+  .pl-filtros { grid-template-columns: 1fr; gap: 10px; }
+  .pl-filtro-check, .pl-filtro-fecha, .pl-filtro-btn, .pl-excel-btn {
+    font-size: 0.8rem;
+    padding: 10px 16px;
     white-space: normal;
     text-align: left;
     justify-content: flex-start;
@@ -315,17 +316,11 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .pl-excel-btn { margin-left: 0; }
 
-  // Cards de 2 en 2 en vez de 1 en 1 — a este ancho .pl-grid con
-  // auto-fill/minmax(270px) siempre colapsaba a una sola columna.
-  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-}
-
-// Hueco entre "móvil" (576px) y "PC" (900px, donde .pl-grid ya pasa a 3 columnas):
-// sin este bloque, .pl-filtros pasaba directo de 1 columna a repeat(4,1fr) — con
-// white-space:nowrap, un label largo ("Código generado") no cabía en un ancho de
-// tablet/celular grande y el texto se desbordaba encimado sobre la siguiente pill.
-@media (min-width: 577px) and (max-width: 899px) {
-  .pl-filtros { grid-template-columns: repeat(2, 1fr); }
+  // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco
+  // espacio por card y el texto se veía amontonado. Sin este override, .pl-grid
+  // con auto-fill/minmax(270px) cae solo a una columna — mismo criterio que
+  // .vb-grid (tienda/buscar).
+  .pl-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 
 @media (max-width: 400px) {
@@ -356,15 +351,16 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Grid ───────────────────────────────────────────────────────────
+// Mismo criterio que tienda/buscar (.vb-grid): auto-fill puro, sin forzar una cantidad fija de
+// columnas -- el forzado a repeat(3,1fr) que había acá hacía que en pantallas anchas las 3
+// tarjetas se estiraran parejas hasta llenar el ancho entero, viéndose enormes comparadas con
+// tienda/buscar (pedido 2026-08-28: "las card están muy grandes, no están igual que en tienda
+// buscar").
 .pl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 22px;
   padding-bottom: 20px;
-
-  @media (min-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 // ── Card ───────────────────────────────────────────────────────────
@@ -381,9 +377,12 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover { transform: translateY(-5px); box-shadow: $shadow-hover; }
 
+  // Mismo alto fijo que tienda/buscar (.vb-card__img-wrap) -- antes usaba aspect-ratio:3/4, que
+  // en una tarjeta de ~260-270px de ancho da una imagen ~350px de alto, mucho más grande que las
+  // de tienda/buscar (parte del mismo pedido de homologación 2026-08-28).
   &__img-wrap {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    height: 180px;
     overflow: hidden;
     background: var(--form-section-bg);
     display: flex;
@@ -395,22 +394,24 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &__img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     transition: $transition;
     &:hover { transform: scale(1.04); }
   }
 
   &__img-placeholder { font-size: 3.5rem; color: var(--app-text-muted); }
 
+  // --card-header-bg, mismo token que el resto de las cards de la app
+  // (design-system.scss .pk-card__header) -- antes era un navy fijo sin relación
+  // con Personalización.
   &__header {
     padding: 14px 16px 12px;
-    color: white;
+    color: var(--card-header-text, #fff);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(135deg, rgba(12,20,60, 0.88) 0%, rgba(var(--app-accent-rgb), 0.72) 100%);
-    backdrop-filter: blur(6px);
+    background: var(--card-header-bg);
   }
 
   &__header-content { flex: 1; min-width: 0; }
@@ -456,6 +457,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-wrap: wrap;
     border-top: 1px solid var(--card-border);
+    background: var(--card-footer-bg);
   }
 }
 
@@ -494,14 +496,14 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &--add {
-    color: #2e7d32;
-    &:hover:not(:disabled) { background: #e8f5e9; }
+    color: var(--pk-success-to);
+    &:hover:not(:disabled) { background: var(--pk-success-soft); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
   &--remove {
-    color: #ef4444;
-    &:hover:not(:disabled) { background: rgba(239,68,68,0.08); }
+    color: var(--pk-danger-to);
+    &:hover:not(:disabled) { background: var(--pk-danger-soft); }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 
@@ -510,23 +512,26 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &--edit     { color: var(--app-accent); &:hover { background: var(--app-accent-soft); } }
   &--variante { color: var(--app-accent); &:hover:not(:disabled) { background: var(--app-accent-soft); } &:disabled { opacity: 0.35; cursor: not-allowed; } }
   &--toggle   { color: var(--app-accent); &:hover { background: var(--app-accent-soft); } }
-  &--share    { color: #0891b2; &:hover { background: rgba(8,145,178,0.08); } }
+  &--share    { color: var(--pk-info-to); &:hover { background: var(--pk-info-soft); } }
 }
 
 // ── Filtros admin ──────────────────────────────────────────────────
-// 8 filtros en PC: 4 columnas × 2 filas, para que no se vea tan estirado
-// como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
+// auto-fit/minmax en vez de repeat(4,1fr) fijo: con 4 columnas rígidas, en
+// pantallas de laptop/desktop angostas (sidebar + contenido) cada columna se
+// quedaba sin espacio para texto largo ("Código generado", "No habilitados")
+// y se veía amontonado. Con minmax(200px,1fr) el navegador baja solo a 3, 2
+// o 1 columna según el ancho real disponible, igual que ya hace .pl-grid.
 .pl-filtros {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   align-items: stretch;
-  gap: 8px 12px;
+  gap: 14px 18px;
   padding: 0 24px 16px;
 }
 
 // min-width:0 evita que un label largo ("Código generado") fuerce la columna del grid
 // más allá de su 1fr y desborde el contenedor — bug clásico de "grid blowout".
-.pl-filtro-check, .pl-filtro-btn, .pl-excel-btn {
+.pl-filtro-check, .pl-filtro-fecha, .pl-filtro-btn, .pl-excel-btn {
   min-width: 0;
 }
 
@@ -556,8 +561,8 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pl-filtro-check {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 14px;
+  gap: 10px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.14);
@@ -639,6 +644,52 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:has(input:checked) &__box {
     border-color: var(--app-accent);
+  }
+}
+
+// Mismo look de pill que .pl-filtro-check, pero con un <input type="date"> en vez de checkbox.
+// El resalte de "activo" se hace con [class] desde el template (no con :has(:valid) — un date
+// vacío y sin `required` YA es :valid por spec, así que ese selector nunca distinguiría "elegida"
+// de "vacía").
+.pl-filtro-fecha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: $transition;
+
+  &--active {
+    background: rgba(255,255,255,0.92);
+    color: var(--app-accent);
+    font-weight: 700;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  &__input {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    // color-scheme dark para que el icono nativo del date-picker sea legible sobre este fondo
+    // oscuro/translúcido; se corrige a light cuando el pill queda blanco (fecha ya elegida).
+    color-scheme: dark;
+    max-width: 120px;
+
+    &::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+  }
+
+  &--active &__input {
+    color-scheme: light;
+    &::-webkit-calendar-picker-indicator { filter: none; }
   }
 }
 
@@ -746,18 +797,18 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
 
   &--enable {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
-    border-color: rgba(34, 197, 94, 0.3);
-    &:hover:not(:disabled) { background: rgba(34, 197, 94, 0.22); }
+    background: var(--pk-success-soft);
+    color: var(--pk-success-to);
+    border-color: var(--pk-success-soft);
+    &:hover:not(:disabled) { filter: brightness(0.95); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
   &--disable {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-    border-color: rgba(239, 68, 68, 0.25);
-    &:hover:not(:disabled) { background: rgba(239, 68, 68, 0.2); }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    border-color: var(--pk-danger-soft);
+    &:hover:not(:disabled) { filter: brightness(0.95); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
@@ -843,6 +894,19 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       border-color: transparent;
     }
     &:has(input:checked) &__box { border-color: var(--app-accent); }
+  }
+
+  .pl-filtro-fecha {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.40);
+    color: #475569;
+    &:hover { background: rgba(255, 255, 255, 0.65); color: #1e293b; }
+    &__input { color-scheme: light; &::-webkit-calendar-picker-indicator { filter: none; } }
+    &--active {
+      background: rgba(var(--app-accent-rgb), 0.14);
+      color: var(--app-accent);
+      border-color: transparent;
+    }
   }
 
   .pl-scan-mobile {

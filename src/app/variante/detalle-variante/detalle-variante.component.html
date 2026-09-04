@@ -8,9 +8,7 @@
 <div *ngIf="varianteSeleccionada" class="dv-wrapper">
 
   <!-- Botón volver -->
-  <button class="dv-back" (click)="volver()">
-    <i class="pi pi-arrow-left"></i> Volver
-  </button>
+  <app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
 
   <!-- Selector de variantes -->
   <div class="dv-variants" *ngIf="variantesChips.length > 1">
@@ -98,8 +96,11 @@
                 ✕
               </button>
             </div>
+            <!-- Nombre del producto, no el nombre del archivo subido -- antes mostraba
+                 img.nombreImagen tal cual (ej. "WhatsApp Image 2026-09-02...") al cliente
+                 (2026-09-02: "eso no está bien mostrarle al cliente"). -->
             <p class="dv-slide__label" [class.dv-slide__label--marked]="estaMarcada(img)">
-              {{ img.nombreImagen }}
+              {{ varianteSeleccionada.nombreProducto ?? 'Producto' }}
             </p>
           </div>
         </ng-template>

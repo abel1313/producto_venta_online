@@ -154,6 +154,32 @@
         </button>
       </div>
 
+      <hr class="cn-divider">
+
+      <!-- ── 4. Alertas de stock bajo ──────────────────────────────── -->
+      <div class="cn-section">
+        <p class="cn-section__label">📦 Alertas de stock bajo</p>
+        <p class="cn-section__hint">
+          Todos los días a las 7:00 a.m. se manda un correo a los administradores con las
+          variantes que estén en este número de unidades o menos.
+        </p>
+
+        <form [formGroup]="alertaStockForm" class="cn-grid">
+          <div class="cn-field">
+            <label class="cn-label">Umbral (unidades)</label>
+            <input class="cn-input" type="number" min="1"
+                   formControlName="umbralStockBajo">
+          </div>
+        </form>
+
+        <button class="cn-btn cn-btn--save"
+                [disabled]="guardandoAlertaStock || !configCargada || alertaStockForm.invalid"
+                [title]="!configCargada ? 'Espera a que cargue lo que ya está guardado' : ''"
+                (click)="guardarAlertaStock()">
+          💾 Guardar umbral
+        </button>
+      </div>
+
     </div>
 
   </div>

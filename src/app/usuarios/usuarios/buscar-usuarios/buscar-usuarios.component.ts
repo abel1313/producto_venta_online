@@ -12,7 +12,9 @@ import Swal from 'sweetalert2';
 export class BuscarUsuariosComponent implements OnInit {
 buscarProd: string = '';
 paginaPrimera: number = 1;
+mostrandoInactivos: boolean = false;
 @Output() regresarProductos = new EventEmitter<IProductoPaginable<IUsuarioDto[]>>();
+@Output() modoCambio = new EventEmitter<boolean>();
 @Input() irABase: boolean = false;
   constructor(private usuarioService: UsuarioService) { }
 
@@ -29,8 +31,17 @@ paginaPrimera: number = 1;
     this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
   }
 
+  // Alterna entre ver los usuarios activos (default) o los desactivados (soft-delete), para
+  // poder reactivar a alguien sin tocar la base a mano.
+  toggleInactivos(): void {
+    this.mostrandoInactivos = !this.mostrandoInactivos;
+    this.paginaPrimera = 1;
+    this.modoCambio.emit(this.mostrandoInactivos);
+    this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+  }
+
    buscarProductoSinKey(paginaPrimera: number, buscarProd: string): void {
-    this.usuarioService.getDataPage(paginaPrimera, 10,buscarProd)//no es
+    this.usuarioService.getDataPage(paginaPrimera, 10, buscarProd, !this.mostrandoInactivos)
       .subscribe({
         next: (res: any) => {
           this.regresarProductos.emit(res);

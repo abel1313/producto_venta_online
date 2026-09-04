@@ -1,6 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { IScannerControls } from '@zxing/browser';
+import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IImagenDto } from '../models';
@@ -21,6 +23,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @ViewChild('fileInput',    { static: false }) fileInputRef!:   ElementRef<HTMLInputElement>;
   @ViewChild('videoCamara',  { static: false }) videoCamaraRef!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasCamara', { static: false }) canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('videoScanner', { static: false }) videoScannerRef!: ElementRef<HTMLVideoElement>;
 
   @Input() nombreCard    = 'Agregar Producto';
   @Input() productoUpdate: IProductoDTORec | null = null;
@@ -31,6 +34,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
   private formReady = false;
+
+  // Escáner de código de barras (mismo patrón que variante/buscar/buscar.component.ts)
+  escaneandoCodigo = false;
+  private controlesEscanerCodigo: IScannerControls | null = null;
   // Nuevo — palabra clave seleccionada vía autocomplete
   palabraClaveSeleccionada: IPalabraClave | null = null;
 
@@ -61,10 +68,32 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.buildForm();
     this.initPrecioVenta();
     this.initCodigoBarra();
+    this.initValidacionEliminarStock();
     this.formReady = true;
+    if (this.esActualizar) {
+      // El stock real en edición solo se mueve con "Actualizar stock" / "Eliminar stock" (que
+      // suman/restan contra el stock real de la BD, con validación de no quedar negativo -- ver
+      // guardarProducto() en el back). El campo "Stock" a secas queda bloqueado para que no se
+      // pueda pisar el valor a mano por error (pedido 2026-08-28).
+      this.formProductos.get('stock')?.disable();
+    }
     if (this.esActualizar && this.productoUpdate) {
       this.cargarProductoUpdate();
     }
+  }
+
+  // "Eliminar stock" no puede superar el stock actual -- si el admin lo intenta, se marca
+  // inválido en vivo (además de la validación del back, que es la que realmente protege el dato).
+  private initValidacionEliminarStock(): void {
+    this.formProductos.get('eliminarStock')!.valueChanges.subscribe((valor: number) => {
+      const ctrl = this.formProductos.get('eliminarStock')!;
+      const stockActual = +(this.formProductos.get('stock')?.value ?? 0);
+      if (+valor > stockActual) {
+        ctrl.setErrors({ excedeStock: true });
+      } else if (ctrl.hasError('excedeStock')) {
+        ctrl.setErrors(null);
+      }
+    });
   }
 
   ngAfterViewInit(): void {}
@@ -422,7 +451,44 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrandoCamara = false;
   }
 
+  // ── Escáner de código de barras ──────────────────────────────────────
+  // Reusa el mismo patrón que variante/buscar/buscar.component.ts →
+  // iniciarEscaner() (BrowserMultiFormatReader de @zxing/browser).
+
+  async iniciarEscanerCodigo(): Promise<void> {
+    this.escaneandoCodigo = true;
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      this.controlesEscanerCodigo = await iniciarEscanerConAutofoco(
+        this.videoScannerRef.nativeElement,
+        (result, _err, controls) => {
+          if (result) {
+            // El código escaneado siempre es el real: se apaga "generar
+            // automático" (si estaba activo) para que el valor no se
+            // sobrescriba y el input quede editable con lo escaneado.
+            this.formProductos.patchValue({
+              sinCodigoBarra: false,
+              codigoBarras: result.getText()
+            });
+            controls.stop();
+            this.escaneandoCodigo = false;
+          }
+        }
+      );
+    } catch {
+      Swal.fire({ icon: 'error', title: 'No se pudo acceder a la cámara', text: 'Verifica que el navegador tiene permiso de cámara.', timer: 2500, showConfirmButton: false });
+      this.escaneandoCodigo = false;
+    }
+  }
+
+  detenerEscanerCodigo(): void {
+    this.controlesEscanerCodigo?.stop();
+    this.controlesEscanerCodigo = null;
+    this.escaneandoCodigo = false;
+  }
+
   ngOnDestroy(): void {
     this.cerrarCamara();
+    this.detenerEscanerCodigo();
   }
 }

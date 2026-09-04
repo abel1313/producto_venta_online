@@ -18,10 +18,46 @@ export interface ILugarEntrega {
    * Solo aplica a flores eternas. `null` = no agrega tiempo.
    */
   horasExtraAnticipacion?: number | null;
+  /**
+   * Coordenadas del centro de la zona (2026-08-25) — usadas para recentrar el mapa de
+   * `SelectorUbicacionComponent` al elegir esta zona en vez de dejarlo siempre en el punto
+   * genérico fijo. `null` en zonas viejas que nunca capturaron el dato: en ese caso el mapa
+   * debe caer al centro genérico (fallback), no a `null`/`0,0`.
+   */
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
 export interface ILugarEntregaRequest {
   nombre: string;
   costoEnvio?: number | null;
   horasExtraAnticipacion?: number | null;
+  latitud?: number | null;
+  longitud?: number | null;
+}
+
+// Anillo (rango de distancia) de cobro dentro de una zona -- ver DISENO_ZONAS_POR_ANILLO.md en
+// el repo compartido. Un LugarEntrega puede tener 0 anillos (se comporta igual que hoy, costo
+// fijo de la zona) o varios, cada uno con su propio radio y precio.
+export interface IAnilloLugarEntrega {
+  id: number;
+  lugarEntregaId: number;
+  radioMetros: number;
+  costoEnvio: number;
+  orden?: number | null;
+}
+
+export interface IAnilloLugarEntregaRequest {
+  radioMetros: number;
+  costoEnvio: number;
+  orden?: number | null;
+}
+
+// Respuesta de POST /{id}/calcular-costo -- dentroDeRango=false significa que el punto marcado
+// en el mapa quedó fuera de todos los anillos configurados para la zona: el checkout debe
+// bloquear el avance en ese caso.
+export interface ICalcularCostoEnvioResponse {
+  dentroDeRango: boolean;
+  costoEnvio: number | null;
+  anilloId: number | null;
 }

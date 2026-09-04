@@ -36,6 +36,15 @@ export class ProductoService {
     get prodTerminoCache(): string { return this._prodTermino; }
     get prodInitialized(): boolean { return this._prodInit; }
 
+    // Estado de los filtros de productos/buscar (Modelos) -- independiente de _prodInit a
+    // propósito, mismo patrón que VarianteService.filtrosCache (tienda/buscar): antes, cada
+    // filtro activo invalidaba el caché sin volver a guardarlo, así que salir de la pantalla y
+    // volver siempre perdía los checkboxes marcados (2026-09-02: "para tienda y producto en
+    // buscar... quería que se guardara su estado").
+    private _prodFiltrosCache: Record<string, unknown> | null = null;
+    get prodFiltrosCache(): Record<string, unknown> | null { return this._prodFiltrosCache; }
+    setProdFiltrosCache(filtros: Record<string, unknown> | null): void { this._prodFiltrosCache = filtros; }
+
     setProdCache(items: IProductoDTO[], pagina: number, totalPaginas: number, termino = ''): void {
         this._prodCache = items;
         this._prodPagina = pagina;
@@ -175,7 +184,8 @@ export class ProductoService {
     // Filtro combinado de admin: cada dimension es independiente y tri-estado (true/false/omitido
     // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
     adminFiltrar(
-        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean },
+        filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean;
+                   fechaDesde?: string; fechaHasta?: string },
         page: number, size: number
     ): Observable<IProductoPaginable<IProductoDTO[]>> {
         let params = new HttpParams()
@@ -187,6 +197,10 @@ export class ProductoService {
         if (filtros.conImagenes !== undefined) params = params.set('conImagenes', String(filtros.conImagenes));
         if (filtros.habilitado !== undefined) params = params.set('habilitado', String(filtros.habilitado));
         if (filtros.codigoGenerado !== undefined) params = params.set('codigoGenerado', String(filtros.codigoGenerado));
+        // Rango de fecha de creacion (yyyy-MM-dd, dia calendario) — pensado para encontrar
+        // "lo que se cargo hoy" en carga rapida de imagenes. Los 2 son independientes entre si.
+        if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
+        if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
 
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }

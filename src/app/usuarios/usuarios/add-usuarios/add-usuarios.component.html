@@ -1,7 +1,9 @@
 <div class="split-page">
 
-  <!-- ── Panel izquierdo: imágenes ── -->
-  <div class="split-images">
+  <!-- ── Panel izquierdo: imágenes -- solo en "Registrar" (público, mismo diseño que login).
+       En "Actualizar usuario" (admin editando a otro) no van imágenes: pedido explícito de que
+       solo el login se vea así, el resto de las pantallas admin se queda centrado y sin imágenes. -->
+  <div class="split-images" *ngIf="!esActualizar">
     <div class="img-slot img-slot--1">
       <img [src]="imgSrc(1)" alt="imagen 1" class="img-slot__icon">
       <div class="img-slot__overlay">
@@ -32,8 +34,12 @@
   </div>
 
   <!-- ── Panel derecho: formulario ── -->
-  <div class="split-form">
+  <div class="split-form" [class.split-form--full]="esActualizar">
     <div class="form-inner">
+
+      <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio
+           público, no viene de una pantalla admin a la que volver. -->
+      <app-boton-volver *ngIf="esActualizar" etiqueta="Volver a usuarios" fallback="/usuarios/buscar"></app-boton-volver>
 
       <div class="brand">
         <div class="brand-icon">
@@ -145,6 +151,17 @@
         </div>
 
         <div class="admin-section" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario'">
+          <!-- Solo lectura -- viene de UserDto.aceptoPrivacidad/fechaAceptoPrivacidad, se acepta
+               una vez en el registro del propio usuario, aquí no se puede editar. -->
+          <div class="privacy-status" [class.privacy-status--ok]="updateUser.aceptoPrivacidad">
+            <i class="pi" [class.pi-check-circle]="updateUser.aceptoPrivacidad" [class.pi-times-circle]="!updateUser.aceptoPrivacidad"></i>
+            <span *ngIf="updateUser.aceptoPrivacidad">
+              Aceptó el aviso de privacidad el {{ updateUser.fechaAceptoPrivacidad | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+            <span *ngIf="!updateUser.aceptoPrivacidad">
+              No aceptó el aviso de privacidad (cuenta creada antes de este control, o dato no disponible)
+            </span>
+          </div>
           <div class="admin-row">
             <div class="toggle-wrap">
               <nz-switch formControlName="enabled"></nz-switch>
@@ -156,13 +173,72 @@
               <label class="field-label">Rol</label>
               <div class="input-wrap">
                 <i class="pi pi-id-card input-icon"></i>
-                <input class="field-input" formControlName="rol" type="text" placeholder="Rol del usuario">
+                <select class="field-input" formControlName="rolId">
+                  <option [ngValue]="null" disabled>Selecciona un rol…</option>
+                  <option *ngFor="let r of roles" [ngValue]="r.id">{{ r.nombreRol }}</option>
+                </select>
               </div>
             </div>
           </div>
           <button type="button" class="btn-admin-permisos" (click)="guardarPermisos()">
             💾 Guardar permisos
           </button>
+        </div>
+
+        <!-- Excepciones de pantalla individuales -- encima de lo que ya da el rol de este
+             usuario, sin tocar el rol (afecta solo a esta persona). -->
+        <div class="admin-section admin-section--excepciones" *ngIf="authService.isAdminService && textoCard === 'Actualizar usuario' && updateUser.id">
+          <div class="excepciones-header">
+            <span class="excepciones-title">🔓 Excepciones de pantalla de {{ updateUser.username }}</span>
+            <small class="excepciones-sub">Encima del rol "{{ updateUser.rol }}": dale acceso a una pantalla que su rol no tiene, o quítasela sin tocar el rol.</small>
+          </div>
+
+          <div class="pk-empty" *ngIf="!cargandoExcepciones && gruposExcepciones.length === 0">
+            Todavía no hay menús/submenús dados de alta.
+          </div>
+
+          <div class="gr-grupo" *ngFor="let g of gruposExcepciones" [class.gr-grupo--abierto]="grupoExcepcionEstaAbierto(g)">
+            <button class="gr-grupo__titulo" type="button" (click)="toggleGrupoExcepcion(g)">
+              <span *ngIf="g.menu?.icono">{{ g.menu?.icono }}</span>
+              <span class="gr-grupo__nombre">{{ g.menu?.nombre ?? 'Sin grupo' }}</span>
+              <small class="pk-meta" *ngIf="contarExcepcionesGrupo(g) > 0">{{ contarExcepcionesGrupo(g) }} excepción(es)</small>
+              <span class="gr-grupo__chevron">›</span>
+            </button>
+            <div class="gr-grupo__lista" *ngIf="grupoExcepcionEstaAbierto(g)">
+              <button type="button" class="exc-row" *ngFor="let s of g.submenus"
+                      [class.exc-row--suma]="estadoExcepcion(s) === 'suma'"
+                      [class.exc-row--quita]="estadoExcepcion(s) === 'quita'"
+                      [disabled]="guardandoExcepcionSubmenuId === s.id"
+                      (click)="ciclarExcepcion(s)">
+                <span class="exc-row__nombre">{{ s.icono }} {{ s.nombre }}</span>
+                <span class="exc-row__estado">
+                  <ng-container [ngSwitch]="estadoExcepcion(s)">
+                    <span *ngSwitchCase="'suma'">✅ Se le dio acceso</span>
+                    <span *ngSwitchCase="'quita'">🚫 Se le quitó acceso</span>
+                    <span *ngSwitchDefault class="exc-row__estado--neutro">Según su rol — clic para forzar</span>
+                  </ng-container>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="privacy-box" *ngIf="!esActualizar">
+          <label class="checkbox-label" for="chk-privacidad">
+            <input id="chk-privacidad" type="checkbox" formControlName="aceptoPrivacidad">
+            <span>Acepto el <strong>aviso de privacidad</strong> para crear mi cuenta</span>
+          </label>
+          <!-- El link va FUERA del <label> a propósito: un <a> anidado dentro de un <label> que
+               envuelve un checkbox no abre confiablemente en pestaña nueva (el navegador prioriza
+               el toggle del checkbox sobre la navegación del link) -- bug real reportado en QA
+               2026-09-02, aquí se corrige sacándolo del label. -->
+          <a class="privacy-link" routerLink="/privacidad" target="_blank" rel="noopener">
+            <i class="pi pi-external-link"></i> Leer el aviso de privacidad completo
+          </a>
+          <div *ngIf="formRegistro.get('aceptoPrivacidad')?.invalid && formRegistro.get('aceptoPrivacidad')?.touched" class="field-error">
+            <i class="pi pi-exclamation-circle"></i>
+            Debes aceptar el aviso de privacidad para registrarte
+          </div>
         </div>
 
         <button type="submit" class="btn-submit"

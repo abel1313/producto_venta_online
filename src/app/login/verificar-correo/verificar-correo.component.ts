@@ -46,12 +46,39 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     // después de verificar. Si no viene (URL directa), el usuario va al login manual.
     this.password = history.state?.password ?? '';
 
-    const yaEnviado = history.state?.codigoEnviado === true;
+    // ⚠️ `history.state` no es confiable como única fuente de "ya se mandó un código": en
+    // móvil, si el navegador descarga la pestaña mientras el usuario revisa su correo (algo
+    // muy común) y luego vuelve, Angular arranca de cero y `history.state` se pierde -- esta
+    // pantalla, sin avisar, disparaba OTRO código nuevo e invalidaba el que el usuario ya tenía
+    // abierto en su bandeja (reportado en QA 2026-09-02: "sigo detenido ahí", código rechazado
+    // aunque se veía bien). El respaldo en sessionStorage sí sobrevive a esa restauración de
+    // pestaña, porque no depende del state de navegación de Angular/el navegador.
+    const yaEnviado = history.state?.codigoEnviado === true || this.yaSeEnvioRecientemente();
     if (!yaEnviado) {
-      this.reenviarCodigo();
+      // false: envío automático al cargar la pantalla -- si por alguna razón ya hay un código
+      // vigente en el back (ver forzarNuevo en acceder.service.ts), lo reutiliza en vez de
+      // invalidarlo con uno nuevo.
+      this.reenviarCodigo(false);
     } else {
+      this.marcarEnviado();
       this.iniciarCooldown();
     }
+  }
+
+  private claveEnvio(): string {
+    return `verif-correo-enviado:${this.userName}`;
+  }
+
+  private yaSeEnvioRecientemente(): boolean {
+    const ts = Number(sessionStorage.getItem(this.claveEnvio()) ?? 0);
+    if (!ts) return false;
+    // Mismo margen que el código en el back (15 min) -- pasado eso, ya expiró de todos modos y
+    // conviene mandar uno nuevo en vez de dejar al usuario viendo una pantalla muerta.
+    return (Date.now() - ts) < 15 * 60 * 1000;
+  }
+
+  private marcarEnviado(): void {
+    sessionStorage.setItem(this.claveEnvio(), String(Date.now()));
   }
 
   ngOnDestroy(): void {
@@ -65,6 +92,7 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     this.acceder.verificarCorreoUsuario(this.userName, this.codigo).subscribe({
       next: () => {
         this.verificando = false;
+        sessionStorage.removeItem(this.claveEnvio());
         if (this.password) {
           // Auto-login con las mismas credenciales (spec punto 3e)
           this.acceder.login({ userName: this.userName, password: this.password } as any).subscribe({
@@ -105,12 +133,24 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
     });
   }
 
-  reenviarCodigo(): void {
+  // forzarNuevo=true por default: así es como lo llama el botón "Reenviar código" -- el usuario
+  // lo pidió explícitamente, así que sí o sí manda uno nuevo. ngOnInit pasa false para el envío
+  // automático al cargar la pantalla.
+  reenviarCodigo(forzarNuevo = true): void {
     if (this.cooldown > 0 || this.enviando) return;
     this.enviando = true;
     this.errorMsg = '';
-    this.acceder.enviarCodigoVerificacionUsuario(this.userName).subscribe({
-      next:  () => { this.enviando = false; this.iniciarCooldown(); },
+    this.acceder.enviarCodigoVerificacionUsuario(this.userName, forzarNuevo).subscribe({
+      next:  () => {
+        this.enviando = false;
+        // El código anterior queda inválido en el back al generarse uno nuevo -- si no se
+        // limpia aquí, el campo se queda mostrando los dígitos viejos y el usuario los manda
+        // sin darse cuenta, viendo "código incorrecto" con un código que a simple vista se ve
+        // bien (reportado en QA 2026-09-02: "ya lo reenvié 2 veces y dice que es incorrecto").
+        this.codigo = '';
+        this.marcarEnviado();
+        this.iniciarCooldown();
+      },
       error: (err) => {
         this.enviando = false;
         const raw = err?.error;

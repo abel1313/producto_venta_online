@@ -100,18 +100,40 @@
   <!-- Lugar de entrega (opcional, solo cliente — el admin lo captura en Venta Directa) -->
   <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio">
     <div class="col-12 col-sm-6">
-      <label class="form-label small mb-1">📍 Lugar de entrega (opcional)</label>
+      <label class="form-label small mb-1">📍 Lugar de entrega</label>
       <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarEntregaChange()">
         <option [ngValue]="null">Sin especificar</option>
         <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
       </select>
     </div>
+
+    <!-- Solo aparece al elegir "recoger en tienda" -- para una zona de entrega real, la fecha la
+         coordina el admin después contigo (por eso no se le pide fecha al cliente ahí). Opcional:
+         si la dejas en blanco, se recoge en 3 días por default. -->
+    <div class="col-12 col-sm-6" *ngIf="lugarEsRecogerEnTienda">
+      <label class="form-label small mb-1">📅 Fecha para recoger (opcional, hoy + 3 días)</label>
+      <input type="date" class="form-control form-control-sm"
+             [min]="minFechaRecogida" [max]="maxFechaRecogida"
+             [(ngModel)]="fechaRecogida">
+    </div>
   </div>
 
-  <!-- Ubicación exacta (opcional) — solo se ofrece una vez que ya eligió zona, para que el
-       mapa tenga sentido junto a "Tejupilco"/etc. es una zona extensa y esto marca el punto
-       exacto de la casa dentro de ella. -->
-  <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio && lugarEntregaId">
+  <!-- "Recoger en tienda": el punto es el local en sí, fijo -- no tiene sentido dejar que el
+       cliente lo mueva. Solo se ofrece un link de "cómo llegar" con Google Maps, si el admin ya
+       marcó el centro de esta fila en el catálogo de lugares de entrega. -->
+  <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio && lugarEsRecogerEnTienda">
+    <div class="col-12">
+      <a *ngIf="linkComoLlegarLocal" [href]="linkComoLlegarLocal" target="_blank" rel="noopener"
+         class="btn btn-outline-secondary btn-sm">
+        🗺️ Cómo llegar
+      </a>
+    </div>
+  </div>
+
+  <!-- Ubicación exacta (opcional) — solo para una zona de entrega real, para que el mapa tenga
+       sentido junto a "Tejupilco"/etc.: es una zona extensa y esto marca el punto exacto de la
+       casa dentro de ella. -->
+  <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio && lugarEntregaId && !lugarEsRecogerEnTienda">
     <div class="col-12 col-sm-8">
       <label class="form-label small mb-1">🗺️ Ubicación exacta (opcional)</label>
       <app-selector-ubicacion

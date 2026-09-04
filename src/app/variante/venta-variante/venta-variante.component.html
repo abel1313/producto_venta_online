@@ -101,7 +101,7 @@
   <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio">
     <div class="col-12 col-sm-6">
       <label class="form-label small mb-1">📍 Lugar de entrega</label>
-      <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId" (ngModelChange)="onLugarEntregaChange()">
+      <select class="form-select form-select-sm" [(ngModel)]="lugarEntregaId">
         <option [ngValue]="null">Sin especificar</option>
         <option *ngFor="let l of lugares" [ngValue]="l.id">{{ l.nombre }}</option>
       </select>
@@ -127,22 +127,6 @@
          class="btn btn-outline-secondary btn-sm">
         🗺️ Cómo llegar
       </a>
-    </div>
-  </div>
-
-  <!-- Ubicación exacta (opcional) — solo para una zona de entrega real, para que el mapa tenga
-       sentido junto a "Tejupilco"/etc.: es una zona extensa y esto marca el punto exacto de la
-       casa dentro de ella. -->
-  <div class="row px-3 mb-2" *ngIf="!isAdminUser && !carritoVacio && lugarEntregaId && !lugarEsRecogerEnTienda">
-    <div class="col-12 col-sm-8">
-      <label class="form-label small mb-1">🗺️ Ubicación exacta (opcional)</label>
-      <app-selector-ubicacion
-        [lat]="latitud" [lng]="longitud" [centroDefault]="centroMapaLugar"
-        (ubicacionCambio)="onUbicacionCambio($event)">
-      </app-selector-ubicacion>
-      <input type="text" class="form-control form-control-sm mt-2"
-             placeholder="Referencias (ej. portón verde, junto a la tienda)"
-             [(ngModel)]="referencias">
     </div>
   </div>
 

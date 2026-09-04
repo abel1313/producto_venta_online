@@ -71,21 +71,29 @@
 // y mismo arreglo ya usado en gestion-lugares.component.scss (.pk-input) y abonos.component.scss
 // (.ab-input) -- pero ahí alcanzaba con color-scheme+color porque son <input>, sin popup propio.
 //
-// Un <select> SÍ tiene un popup nativo aparte (la lista de <option> al abrirlo). Probado con
-// color-scheme:dark + background-color en el propio <select> (2026-09-04, primer intento) y
-// AÚN ASÍ el popup seguía ilegible -- varios navegadores (confirmado en Brave/Chromium) ignoran
-// el background-color del popup de opciones y lo pintan con su propio fondo nativo según
-// color-scheme, sin que CSS de autor pueda tocarlo. La única forma confiable de garantizar que
-// se lea es forzar color-scheme:light en el <select> (el popup nativo SIEMPRE sale claro con
-// texto oscuro, sin importar el tema de la app) -- el cuadro CERRADO del control sí respeta nuestro
-// background-color/color explícitos siempre, así que se ve oscuro igual, solo el popup abierto
-// se ve claro un instante.
+// Un <select> SÍ tiene un popup nativo aparte (la lista de <option> al abrirlo). Historial de
+// intentos (2026-09-04) hasta encontrar la causa real:
+//   1. color-scheme:dark + background-color en el select -- el popup seguía ilegible: varios
+//      navegadores (confirmado en Brave/Chromium) ignoran el background-color del popup nativo y
+//      lo pintan según color-scheme, sin que CSS de autor lo pueda tocar.
+//   2. color-scheme:light (fuerza el popup nativo a salir siempre claro) -- tampoco bastó, porque
+//      esta regla no tenía !important: styles.scss (global) ya fuerza con !important
+//      `color: var(--input-text) !important` (casi blanco) en TODOS los .form-select del sitio en
+//      modo oscuro, y ese color SÍ hereda dentro del popup -- quedaba texto casi blanco sobre un
+//      popup ahora claro, invisible otra vez. Encima el color de acá usaba var(--app-text), que en
+//      modo oscuro ES un color claro -- exactamente lo contrario de lo que hace falta para un
+//      popup forzado a claro.
+// Arreglo real: colores FIJOS (no variables de tema, que cambian de significado) + !important
+// para ganarle a la regla global -- blanco de fondo, texto oscuro, siempre, en el select Y en su
+// popup. El cuadro cerrado del control se ve como un control claro (no como el resto de la app en
+// oscuro), a propósito: es el precio de garantizar que se lea, después de 3 intentos fallidos.
 :host-context(body.theme-dark) {
   .form-control { color-scheme: dark; color: var(--app-text); }
   .form-select {
-    color-scheme: light;
-    background-color: var(--card-bg);
-    color: var(--app-text);
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border) !important;
   }
 }
 

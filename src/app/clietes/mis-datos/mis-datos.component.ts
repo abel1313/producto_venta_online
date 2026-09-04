@@ -361,7 +361,10 @@ export class MisDatosComponent implements OnInit {
   }
 
   private mostrarSwalVerificacion(): void {
-    const correo = this.formDatosCliente.get('correoElectronico')?.value ?? '';
+    // correoPendiente primero -- si el codigo se mando por onCorreoBlur() (cambio de correo ya
+    // verificado), el campo del formulario se revierte al correo viejo para no interferir con
+    // "Guardar cambios" del resto del form, asi que ya no refleja a donde se mando el codigo.
+    const correo = this.correoPendiente || this.formDatosCliente.get('correoElectronico')?.value || '';
     Swal.fire({
       title: 'Verificar correo',
       html: `
@@ -397,7 +400,43 @@ export class MisDatosComponent implements OnInit {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.correoVerificado = true;
+      if (this.correoPendiente) {
+        this.correoElectronicoGuardado = this.correoPendiente;
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoPendiente });
+        this.correoPendiente = null;
+      }
       Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue verificado correctamente.', timer: 2500, showConfirmButton: false });
+    });
+  }
+
+  // Se dispara al salir del campo de correo -- si ya cambio respecto al que esta guardado de
+  // verdad, manda el codigo directo sin depender de que se guarde el resto del formulario
+  // primero (pedido 2026-09-04: "si el correo ya lo tengo verificado y quiero cambiar el correo
+  // debe permitir cambiar solo el correo"). Si el campo esta vacio o con formato invalido, no
+  // hace nada -- los errores de formato ya los muestra el .md-error de siempre.
+  onCorreoBlur(): void {
+    if (!this.clienteId) return;
+    const ctrl = this.formDatosCliente.get('correoElectronico');
+    const nuevoCorreo = (ctrl?.value ?? '').trim();
+    if (!nuevoCorreo || ctrl?.invalid) return;
+    if (nuevoCorreo.toLowerCase() === (this.correoElectronicoGuardado ?? '').toLowerCase()) return;
+
+    this.clienteServoce.solicitarCambioCorreo(this.clienteId, nuevoCorreo).subscribe({
+      next: () => {
+        this.correoPendiente = nuevoCorreo;
+        // Revierte el campo al correo real -- todavia no cambio nada hasta confirmar el codigo,
+        // y asi "Guardar cambios" del resto del formulario no vuelve a disparar el cambio de
+        // correo por su cuenta (esa rama vive en ClienteControllerImpl.save()).
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoElectronicoGuardado ?? '' });
+        this.mostrarSwalVerificacion();
+      },
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoElectronicoGuardado ?? '' });
+        Swal.fire({ icon: 'error', title: 'No se pudo cambiar el correo', text: msg });
+      }
     });
   }
 

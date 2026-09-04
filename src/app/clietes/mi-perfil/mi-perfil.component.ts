@@ -27,6 +27,7 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
   guardandoPerfil      = false;
   aceptoPrivacidad: boolean | null = null;
   fechaAceptoPrivacidad: string | null = null;
+  aceptandoPrivacidad = false;
   private clienteId:     number | null = null;
   private clienteActual: ICliente | null = null;
   guardandoPass        = false;
@@ -104,6 +105,24 @@ export class MiPerfilComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+  }
+
+  aceptarPrivacidad(): void {
+    if (this.aceptandoPrivacidad) return;
+    this.aceptandoPrivacidad = true;
+    this.acceder.aceptarPrivacidad().subscribe({
+      next: () => {
+        this.aceptandoPrivacidad = false;
+        this.aceptoPrivacidad = true;
+        this.fechaAceptoPrivacidad = new Date().toISOString();
+        Swal.fire({ icon: 'success', title: 'Aviso de privacidad aceptado', timer: 1800, showConfirmButton: false });
+      },
+      error: (err: any) => {
+        this.aceptandoPrivacidad = false;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo registrar la aceptación.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+      }
+    });
   }
 
   // Getters de requisitos de contraseña

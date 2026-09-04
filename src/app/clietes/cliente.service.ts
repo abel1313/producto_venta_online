@@ -41,6 +41,15 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+  // Manda el codigo al correo NUEVO -- el real no cambia hasta confirmar con verificarCorreo().
+  // A diferencia de enviarCodigoVerificacion() (que manda al correo YA registrado), este es para
+  // cuando el cliente escribe un correo distinto al que ya tiene verificado.
+  solicitarCambioCorreo(clienteId: number, correoNuevo: string): Observable<ResponseGeneric<string>> {
+    return this.http.post<ResponseGeneric<string>>(
+      `${this.url}/v1/clientes/${clienteId}/solicitar-cambio-correo`, { correoNuevo }
+    );
+  }
+
   enviarCodigoVerificacion(clienteId: number): Observable<ResponseGeneric<string>> {
     return this.http.post<ResponseGeneric<string>>(
       `${this.url}/v1/clientes/${clienteId}/enviar-codigo-verificacion`, {}

@@ -118,7 +118,8 @@
             <div class="md-input-wrap">
               <i class="pi pi-envelope md-input-icon"></i>
               <input id="md-correo" class="md-input" type="email"
-                     formControlName="correoElectronico" placeholder="tu@correo.com">
+                     formControlName="correoElectronico" placeholder="tu@correo.com"
+                     (blur)="onCorreoBlur()">
             </div>
             <span class="md-error"
                   *ngIf="formDatosCliente.get('correoElectronico')?.invalid && formDatosCliente.get('correoElectronico')?.touched">
@@ -129,12 +130,12 @@
             <button *ngIf="correoVerificado !== true && clienteId"
                     type="button" class="md-btn-verify"
                     [disabled]="!puedeVerificarCorreo"
-                    [title]="!puedeVerificarCorreo ? 'Primero escribe tu correo y guarda los cambios' : ''"
+                    [title]="!puedeVerificarCorreo ? 'Primero escribe tu correo' : 'Reenviar el código'"
                     (click)="verificarCorreoPropio()">
-              ✉️ Verificar mi correo
+              ✉️ {{ puedeVerificarCorreo ? 'Reenviar código' : 'Verificar mi correo' }}
             </button>
             <span class="md-hint" *ngIf="correoVerificado !== true && clienteId && !puedeVerificarCorreo">
-              Escribe tu correo arriba y da clic en "Guardar cambios" antes de verificarlo.
+              Escribe tu correo arriba y sal del campo -- el código se manda solo.
             </span>
           </div>
 

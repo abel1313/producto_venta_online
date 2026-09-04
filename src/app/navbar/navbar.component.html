@@ -189,11 +189,9 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="promociones" (click)="closeMobile()">🎁 Promociones activas</a>
-        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta','admin/facebook','admin/hashtags'])">
+        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta'])">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestionar promociones</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cinta" (click)="closeMobile()">📢 Cinta de anuncios</a>
-          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en redes</a>
-          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/hashtags" (click)="closeMobile()">🏷️ Hashtags de redes</a>
         </ng-container>
       </div>
     </div>

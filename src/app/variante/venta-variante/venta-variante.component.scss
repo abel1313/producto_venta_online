@@ -69,9 +69,15 @@
 // referencias, búsqueda de cliente) hereda color-scheme:dark de body.theme-dark pero se queda
 // con el fondo claro fijo de Bootstrap -- texto blanco sobre fondo blanco, invisible. Mismo bug
 // y mismo arreglo ya usado en gestion-lugares.component.scss (.pk-input) y abonos.component.scss
-// (.ab-input).
+// (.ab-input) -- pero ahí alcanzaba con color-scheme+color porque son <input>, sin popup propio.
+// Un <select> SÍ tiene un popup nativo aparte (la lista de <option> al abrirlo) que en
+// Chromium/Brave no hereda el color-scheme del cierre del control -- si no se le pone también
+// background-color explícito, el popup se queda con su fondo claro nativo mientras el texto ya
+// se puso claro por el color de arriba: texto claro sobre fondo claro, invisible (2026-09-04,
+// reportado con capturas: "el listado de lugares se ve todo en blanco").
 :host-context(body.theme-dark) {
   .form-select, .form-control { color-scheme: dark; color: var(--app-text); }
+  .form-select { background-color: var(--card-bg); }
 }
 
 :host-context(body.theme-light) {

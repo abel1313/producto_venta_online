@@ -26,6 +26,18 @@ export interface ILugarEntrega {
    */
   latitud?: number | null;
   longitud?: number | null;
+  /**
+   * Marca la fila de este catálogo que representa "recoger en el local" (2026-09-04), a
+   * diferencia de una zona de entrega real (Tejupilco, Zacazonapan, etc.). El checkout de
+   * `tienda/carrito` usa esto para saber cuándo mostrar el calendario de fecha de recogida —
+   * debe haber como mucho una fila en `true`.
+   */
+  esRecogerEnTienda?: boolean | null;
+  /**
+   * Día de la semana (recurrente) en que se hace el viaje de entrega a esta zona — 1=lunes .. 7=domingo
+   * (2026-09-04, "Entregas por zona"). `null` = sin configurar (o "recoger en tienda", no aplica).
+   */
+  diaEntregaSemanal?: number | null;
 }
 
 export interface ILugarEntregaRequest {
@@ -34,6 +46,8 @@ export interface ILugarEntregaRequest {
   horasExtraAnticipacion?: number | null;
   latitud?: number | null;
   longitud?: number | null;
+  esRecogerEnTienda?: boolean | null;
+  diaEntregaSemanal?: number | null;
 }
 
 // Anillo (rango de distancia) de cobro dentro de una zona -- ver DISENO_ZONAS_POR_ANILLO.md en

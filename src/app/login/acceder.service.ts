@@ -123,6 +123,12 @@ export class AccederService {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/solicitar-cambio-correo`, { correoNuevo });
   }
 
+  // Para cuentas que nunca pasaron por el registro publico (ej. admin) y por eso nunca tuvieron
+  // oportunidad de aceptar el aviso de privacidad.
+  aceptarPrivacidad() {
+    return this.http.post<ResponseGeneric<string>>(`${environment.api_Url}/v1/auth/aceptar-privacidad`, {});
+  }
+
   confirmarCambioCorreo(codigo: string) {
     return this.http.post<any>(`${environment.api_Url}/v1/auth/confirmar-cambio-correo`, { codigo });
   }

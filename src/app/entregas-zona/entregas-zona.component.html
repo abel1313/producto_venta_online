@@ -1,0 +1,77 @@
+<app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
+<div class="ez-wrap">
+
+  <div class="ez-header">
+    <h4 class="ez-header__title">📦 Entregas por zona</h4>
+    <small class="ez-header__sub">Programa el viaje semanal a una zona y avísales a todos los que pidieron ahí</small>
+  </div>
+
+  <div class="ez-field">
+    <label class="ez-label">📍 Zona</label>
+    <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
+      <option [ngValue]="null">Elige una zona…</option>
+      <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
+    </select>
+    <p class="ez-hint" *ngIf="!cargandoZonas && zonas.length === 0">
+      No hay zonas de entrega configuradas (o todas están marcadas como "recoger en tienda").
+    </p>
+  </div>
+
+  <p class="ez-hint" *ngIf="cargandoSemana">Buscando pedidos pendientes…</p>
+
+  <ng-container *ngIf="semana && !cargandoSemana">
+    <div class="ez-semana">
+      Semana de pedido: <b>{{ semana.lunes | date:'dd/MM' }}</b> al <b>{{ semana.viernes | date:'dd/MM' }}</b>
+    </div>
+
+    <div class="ez-vacio" *ngIf="semana.pedidos.length === 0">
+      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> esta semana.
+    </div>
+
+    <ng-container *ngIf="semana.pedidos.length > 0">
+      <div class="ez-tabla-wrap">
+        <table class="ez-tabla">
+          <thead>
+            <tr>
+              <th>Pedido</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of semana.pedidos">
+              <td>#{{ p.pedidoId }}</td>
+              <td>{{ p.nombreCliente }}</td>
+              <td>{{ p.total | currency:'$' }}</td>
+              <td>{{ p.fechaPedido | date:'dd/MM/yyyy' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <form [formGroup]="form" class="ez-form">
+        <div class="ez-form__field">
+          <label class="ez-label">📅 Fecha de entrega</label>
+          <input class="ez-input" type="date" formControlName="fecha">
+        </div>
+        <div class="ez-form__field">
+          <label class="ez-label">🕐 Hora</label>
+          <input class="ez-input" type="time" formControlName="hora">
+        </div>
+        <div class="ez-form__field ez-form__field--wide">
+          <label class="ez-label">📍 Punto de encuentro</label>
+          <input class="ez-input" type="text" formControlName="puntoEncuentro"
+                 placeholder="Ej. Centro de Zacazonapan, frente a la iglesia">
+        </div>
+      </form>
+
+      <div class="ez-actions">
+        <button class="ez-btn ez-btn--enviar" type="button" [disabled]="enviando || form.invalid" (click)="programar()">
+          {{ enviando ? 'Enviando…' : '✉️ Avisar a ' + semana.pedidos.length + ' cliente(s)' }}
+        </button>
+      </div>
+    </ng-container>
+  </ng-container>
+
+</div>

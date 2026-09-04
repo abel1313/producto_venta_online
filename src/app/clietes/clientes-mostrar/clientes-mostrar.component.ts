@@ -26,6 +26,10 @@ export class ClientesMostrarComponent implements OnInit {
   usuarioId = 0;
   username = '';
   correoVerificado: boolean | undefined = undefined;
+  // Igual que en mis-datos.component.ts -- controla si hay algo guardado a donde mandar el
+  // codigo, para deshabilitar "Verificar correo" hasta que se guarde el formulario primero.
+  correoPendiente: string | null = null;
+  correoElectronicoGuardado: string | null = null;
   cargando = true;
   guardando = false;
   recibirCorreos = true;
@@ -76,6 +80,8 @@ export class ClientesMostrarComponent implements OnInit {
         this.usuarioId         = detalle.usuarioId;
         this.username           = detalle.username;
         this.correoVerificado = detalle.cliente.correoVerificado;
+        this.correoPendiente = (detalle.cliente as any).correoPendiente ?? null;
+        this.correoElectronicoGuardado = detalle.cliente.correoElectronico ?? null;
         this.recibirCorreos = detalle.cliente.recibirCorreos ?? true;
         this.recibirPromociones = detalle.cliente.recibirPromociones ?? true;
 
@@ -89,6 +95,12 @@ export class ClientesMostrarComponent implements OnInit {
           correoElectronico: detalle.cliente.correoElectronico,
           numeroTelefonico:  detalle.cliente.numeroTelefonico,
         });
+
+        // .clear() antes de repoblar -- este metodo tambien se llama despues de guardar (para
+        // refrescar correoPendiente/correoVerificado), y sin esto cada llamada apilaba las
+        // direcciones encima de las que ya estaban en el FormArray en vez de reemplazarlas
+        // (2026-09-04: "guarde y aparecio otra direccion" -- la BD estaba bien, era el front).
+        this.listDirecciones.clear();
 
         const direcciones = (detalle.cliente as any).listDirecciones as any[] | undefined;
         if (direcciones && direcciones.length > 0) {
@@ -113,7 +125,19 @@ export class ClientesMostrarComponent implements OnInit {
   }
 
   guardarCliente(): void {
-    if (this.formDatosCliente.invalid || !this.usuarioId) return;
+    if (!this.usuarioId) return;
+    if (this.formDatosCliente.invalid) {
+      // Antes se salia en silencio: si el registro tenia otros campos obligatorios vacios
+      // (ej. nombre/apellido de un cliente auto-creado sin completar), el boton no hacia nada
+      // y no habia forma de saber por que -- ver mismo bug reportado 2026-09-04 en mis-datos.
+      this.formDatosCliente.markAllAsTouched();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan datos obligatorios',
+        text: 'Revisa los campos marcados en rojo antes de guardar.'
+      });
+      return;
+    }
     this.guardando = true;
 
     const payload: ICliente = {
@@ -128,6 +152,7 @@ export class ClientesMostrarComponent implements OnInit {
       next: () => {
         this.guardando = false;
         Swal.fire({ icon: 'success', title: 'Cliente actualizado', timer: 1400, showConfirmButton: false });
+        this.cargar();
       },
       error: (err) => {
         this.guardando = false;
@@ -136,12 +161,22 @@ export class ClientesMostrarComponent implements OnInit {
     });
   }
 
+  /** Hay algo guardado (pendiente o ya cargado) a donde mandar el codigo -- controla si "Verificar correo" esta habilitado. */
+  get puedeVerificarCorreo(): boolean {
+    return !!(this.correoPendiente || this.correoElectronicoGuardado);
+  }
+
   volver(): void {
     this.router.navigate(['/clientes/buscar']);
   }
 
   // ── Preferencia de correos (admin, por cliente) ───────────────────────
-  toggleRecibirCorreos(): void {
+  // El checkbox se pasa por referencia: [checked] es de un solo sentido, y el navegador ya lo
+  // marco visualmente en cuanto el usuario le dio clic (comportamiento nativo del input) --
+  // si la peticion falla y "recibirCorreos" nunca cambia, Angular no tiene motivo para volver a
+  // aplicar el binding, y el checkbox se queda marcado aunque el dato real no haya cambiado
+  // (encontrado 2026-09-04). Se revierte el DOM a mano en el error.
+  toggleRecibirCorreos(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
     const nuevoValor = !this.recibirCorreos;
     this.guardandoPreferenciaCorreo = true;
@@ -150,14 +185,16 @@ export class ClientesMostrarComponent implements OnInit {
         this.recibirCorreos = nuevoValor;
         this.guardandoPreferenciaCorreo = false;
       },
-      error: () => {
+      error: (err) => {
         this.guardandoPreferenciaCorreo = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+        chk.checked = this.recibirCorreos;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de correos.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
 
-  toggleRecibirPromociones(): void {
+  toggleRecibirPromociones(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
     const nuevoValor = !this.recibirPromociones;
     this.guardandoPreferenciaPromociones = true;
@@ -166,9 +203,11 @@ export class ClientesMostrarComponent implements OnInit {
         this.recibirPromociones = nuevoValor;
         this.guardandoPreferenciaPromociones = false;
       },
-      error: () => {
+      error: (err) => {
         this.guardandoPreferenciaPromociones = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
+        chk.checked = this.recibirPromociones;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de promociones.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
@@ -178,7 +217,12 @@ export class ClientesMostrarComponent implements OnInit {
     if (!this.clienteId) return;
     this.clienteService.enviarCodigoVerificacion(this.clienteId).subscribe({
       next:  () => this.mostrarSwalVerificacion(),
-      error: () => this.mostrarSwalVerificacion()
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar el código', text: msg });
+      }
     });
   }
 

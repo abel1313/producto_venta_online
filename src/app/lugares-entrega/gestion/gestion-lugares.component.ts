@@ -40,13 +40,30 @@ export class GestionLugaresComponent implements OnInit {
   centroLat: number | null = null;
   centroLng: number | null = null;
 
+  // 1=lunes .. 7=domingo (java.time.DayOfWeek.getValue(), mismo valor que espera el back).
+  readonly diasSemana = [
+    { valor: 1, nombre: 'Lunes' },
+    { valor: 2, nombre: 'Martes' },
+    { valor: 3, nombre: 'Miércoles' },
+    { valor: 4, nombre: 'Jueves' },
+    { valor: 5, nombre: 'Viernes' },
+    { valor: 6, nombre: 'Sábado' },
+    { valor: 7, nombre: 'Domingo' },
+  ];
+
   ngOnInit(): void {
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(80)]],
       // Ambos solo los usa el módulo de flores eternas — el checkout normal de la tienda no lee
       // ninguno de los dos. Opcionales: vacío = sin costo de envío / sin tiempo extra.
       costoEnvio: [null],
-      horasExtraAnticipacion: [null]
+      horasExtraAnticipacion: [null],
+      // Marca cuál fila es "recoger en el local" (checkout tienda/carrito) — debe haber como
+      // mucho una en true, no se valida aquí.
+      esRecogerEnTienda: [false],
+      // Día recurrente del viaje de entrega a esta zona (1=lunes..7=domingo) — "Entregas por
+      // zona" lo usa para sugerir la fecha. Vacío = sin configurar.
+      diaEntregaSemanal: [null]
     });
     this.cargar();
   }
@@ -87,7 +104,13 @@ export class GestionLugaresComponent implements OnInit {
     this.editandoId = l.id;
     this.centroLat = l.latitud ?? null;
     this.centroLng = l.longitud ?? null;
-    this.form.patchValue({ nombre: l.nombre, costoEnvio: l.costoEnvio ?? null, horasExtraAnticipacion: l.horasExtraAnticipacion ?? null });
+    this.form.patchValue({
+      nombre: l.nombre,
+      costoEnvio: l.costoEnvio ?? null,
+      horasExtraAnticipacion: l.horasExtraAnticipacion ?? null,
+      esRecogerEnTienda: l.esRecogerEnTienda ?? false,
+      diaEntregaSemanal: l.diaEntregaSemanal ?? null
+    });
   }
 
   cancelarEdicion(): void {
@@ -107,7 +130,9 @@ export class GestionLugaresComponent implements OnInit {
       costoEnvio: this.form.value.costoEnvio,
       horasExtraAnticipacion: this.form.value.horasExtraAnticipacion,
       latitud: this.centroLat,
-      longitud: this.centroLng
+      longitud: this.centroLng,
+      esRecogerEnTienda: this.form.value.esRecogerEnTienda,
+      diaEntregaSemanal: this.form.value.diaEntregaSemanal
     };
 
     const op$ = this.editandoId !== null

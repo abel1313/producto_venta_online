@@ -123,6 +123,24 @@ $t:  all 0.2s ease;
   min-width: 0;
 }
 
+.pk-form__field--checkbox {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.pk-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--app-text);
+  white-space: nowrap;
+  cursor: pointer;
+
+  input[type="checkbox"] { cursor: pointer; }
+}
+
 // Datos secundarios en la fila de la tabla (costo de envío, horas extra).
 .pk-meta {
   margin-left: 8px;

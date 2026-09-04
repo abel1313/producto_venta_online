@@ -126,9 +126,14 @@
             </span>
             <button *ngIf="correoVerificado !== true"
                     type="button" class="md-btn-verify"
+                    [disabled]="!puedeVerificarCorreo"
+                    [title]="!puedeVerificarCorreo ? 'Primero escribe el correo y guarda los cambios' : ''"
                     (click)="verificarCorreo()">
               ✉️ Verificar correo
             </button>
+            <span class="md-hint" *ngIf="correoVerificado !== true && !puedeVerificarCorreo">
+              Escribe el correo arriba y da clic en "Guardar" antes de verificarlo.
+            </span>
           </div>
 
           <!-- Teléfono -->
@@ -154,8 +159,8 @@
         <span class="md-section__label">Preferencias</span>
         <div class="md-predefinida">
           <label class="md-toggle-wrap">
-            <input type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
-                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos()">
+            <input #chkRecibirCorreos type="checkbox" class="md-toggle-input" [checked]="recibirCorreos"
+                   [disabled]="guardandoPreferenciaCorreo" (change)="toggleRecibirCorreos(chkRecibirCorreos)">
             <span class="md-toggle-slider"></span>
             <span class="md-toggle-text">
               Este cliente recibe correos de seguimiento de pedido y alertas de stock
@@ -164,8 +169,8 @@
         </div>
         <div class="md-predefinida">
           <label class="md-toggle-wrap">
-            <input type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
-                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones()">
+            <input #chkRecibirPromociones type="checkbox" class="md-toggle-input" [checked]="recibirPromociones"
+                   [disabled]="guardandoPreferenciaPromociones" (change)="toggleRecibirPromociones(chkRecibirPromociones)">
             <span class="md-toggle-slider"></span>
             <span class="md-toggle-text">
               Este cliente recibe correos de promociones

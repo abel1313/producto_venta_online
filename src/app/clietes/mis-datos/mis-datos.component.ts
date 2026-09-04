@@ -23,6 +23,13 @@ export class MisDatosComponent implements OnInit {
   idUusario: number = 0;
   clienteId: number = 0;
   correoVerificado: boolean | undefined = undefined;
+  // Lo que el back tiene guardado de verdad (pendiente de verificar, o el correo ya cargado)
+  // -- NO el valor que se este escribiendo ahora mismo en el input sin haber guardado. Sirve
+  // para deshabilitar "Verificar mi correo" hasta que primero se guarde el formulario, y avisar
+  // por que (2026-09-04: sin esto, dar clic en verificar antes de guardar tronaba con "el
+  // cliente no tiene correo registrado" sin explicarle al usuario que le faltaba un paso).
+  correoPendiente: string | null = null;
+  correoElectronicoGuardado: string | null = null;
   recibirCorreos = true;
   guardandoPreferenciaCorreo = false;
   recibirPromociones = true;
@@ -94,6 +101,8 @@ export class MisDatosComponent implements OnInit {
       if (data && data.data) {
         this.clienteId = data.data.id ?? 0;
         this.correoVerificado = data.data.correoVerificado;
+        this.correoPendiente = data.data.correoPendiente ?? null;
+        this.correoElectronicoGuardado = data.data.correoElectronico ?? null;
         this.recibirCorreos = data.data.recibirCorreos ?? true;
         this.recibirPromociones = data.data.recibirPromociones ?? true;
         this.formDatosCliente.patchValue({
@@ -106,6 +115,12 @@ export class MisDatosComponent implements OnInit {
           correoElectronico: data.data.correoElectronico,
           numeroTelefonico: data.data.numeroTelefonico,
         });
+
+        // .clear() antes de repoblar -- este metodo tambien se llama despues de guardar (para
+        // refrescar correoPendiente/correoVerificado), y sin esto cada llamada apilaba las
+        // direcciones encima de las que ya estaban en el FormArray en vez de reemplazarlas
+        // (2026-09-04: "guarde y aparecio otra direccion" -- la BD estaba bien, era el front).
+        this.listDirecciones.clear();
 
         if (data.data.listDirecciones && data.data.listDirecciones.length > 0) {
           data.data.listDirecciones.forEach((dir: any, index: number) => {
@@ -149,6 +164,21 @@ export class MisDatosComponent implements OnInit {
 
 
   guardarCliente() {
+    // El boton antes se deshabilitaba solo con [disabled]="!formDatosCliente.valid" en el html
+    // -- si CUALQUIER campo del formulario era invalido (no solo el que se estaba editando), el
+    // boton se veia inactivo sin explicar por que, y daba la sensacion de "no me deja guardar"
+    // sin ningun error visible (2026-09-04). Ahora el boton siempre se puede presionar, y si el
+    // formulario no es valido se marcan todos los campos como tocados (asi salen los .md-error
+    // ya existentes) y se explica.
+    if (this.formDatosCliente.invalid) {
+      this.formDatosCliente.markAllAsTouched();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan datos obligatorios',
+        text: 'Revisa los campos marcados en rojo antes de guardar.'
+      });
+      return;
+    }
 
     this.datosCliente = this.formDatosCliente.value;
     const fechaRaw = this.formDatosCliente.get('fechaNacimiento')?.value;
@@ -181,10 +211,21 @@ export class MisDatosComponent implements OnInit {
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
 
       MensajesGenericos.mostrarMensajeSuccess(save.mensaje, save.code);
+      // Refresca correoVerificado/correoPendiente -- si el guardado acaba de dejar un correo
+      // nuevo como pendiente de verificar, "Verificar mi correo" necesita saberlo para dejar de
+      // estar deshabilitado.
+      if (this.clienteId) {
+        this.cargarCliente(this.clienteId);
+      }
 
     }, error => {
       MensajesGenericos.mostrarMensajeSuccess("Ocurrio un error, intente de nuevo", 500);
     });
+  }
+
+  /** Hay algo guardado (pendiente o ya cargado) a donde mandar el codigo -- controla si "Verificar mi correo" esta habilitado. */
+  get puedeVerificarCorreo(): boolean {
+    return !!(this.correoPendiente || this.correoElectronicoGuardado);
   }
 
   getCodigoPostal(codigoPostal: any, iteracion: number) {
@@ -266,7 +307,11 @@ export class MisDatosComponent implements OnInit {
   }
 
 
-  toggleRecibirCorreos(): void {
+  // chk se recibe por referencia para poder revertir el DOM a mano si falla -- [checked] es de
+  // un solo sentido y el navegador ya marco visualmente el checkbox al hacer clic, asi que si
+  // "recibirCorreos" nunca cambia (por el error), Angular no vuelve a aplicar el binding y el
+  // checkbox se queda marcado aunque el dato real no cambio (2026-09-04).
+  toggleRecibirCorreos(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
     const nuevoValor = !this.recibirCorreos;
     this.guardandoPreferenciaCorreo = true;
@@ -275,14 +320,16 @@ export class MisDatosComponent implements OnInit {
         this.recibirCorreos = nuevoValor;
         this.guardandoPreferenciaCorreo = false;
       },
-      error: () => {
+      error: (err: any) => {
         this.guardandoPreferenciaCorreo = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+        chk.checked = this.recibirCorreos;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de correos.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
 
-  toggleRecibirPromociones(): void {
+  toggleRecibirPromociones(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
     const nuevoValor = !this.recibirPromociones;
     this.guardandoPreferenciaPromociones = true;
@@ -291,9 +338,11 @@ export class MisDatosComponent implements OnInit {
         this.recibirPromociones = nuevoValor;
         this.guardandoPreferenciaPromociones = false;
       },
-      error: () => {
+      error: (err: any) => {
         this.guardandoPreferenciaPromociones = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
+        chk.checked = this.recibirPromociones;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de promociones.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
@@ -302,12 +351,20 @@ export class MisDatosComponent implements OnInit {
     if (!this.clienteId) return;
     this.clienteServoce.enviarCodigoVerificacion(this.clienteId).subscribe({
       next:  () => this.mostrarSwalVerificacion(),
-      error: () => this.mostrarSwalVerificacion()
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        Swal.fire({ icon: 'error', title: 'No se pudo enviar el código', text: msg });
+      }
     });
   }
 
   private mostrarSwalVerificacion(): void {
-    const correo = this.formDatosCliente.get('correoElectronico')?.value ?? '';
+    // correoPendiente primero -- si el codigo se mando por onCorreoBlur() (cambio de correo ya
+    // verificado), el campo del formulario se revierte al correo viejo para no interferir con
+    // "Guardar cambios" del resto del form, asi que ya no refleja a donde se mando el codigo.
+    const correo = this.correoPendiente || this.formDatosCliente.get('correoElectronico')?.value || '';
     Swal.fire({
       title: 'Verificar correo',
       html: `
@@ -343,7 +400,43 @@ export class MisDatosComponent implements OnInit {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.correoVerificado = true;
+      if (this.correoPendiente) {
+        this.correoElectronicoGuardado = this.correoPendiente;
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoPendiente });
+        this.correoPendiente = null;
+      }
       Swal.fire({ icon: 'success', title: '¡Correo verificado!', text: 'Tu correo fue verificado correctamente.', timer: 2500, showConfirmButton: false });
+    });
+  }
+
+  // Se dispara al salir del campo de correo -- si ya cambio respecto al que esta guardado de
+  // verdad, manda el codigo directo sin depender de que se guarde el resto del formulario
+  // primero (pedido 2026-09-04: "si el correo ya lo tengo verificado y quiero cambiar el correo
+  // debe permitir cambiar solo el correo"). Si el campo esta vacio o con formato invalido, no
+  // hace nada -- los errores de formato ya los muestra el .md-error de siempre.
+  onCorreoBlur(): void {
+    if (!this.clienteId) return;
+    const ctrl = this.formDatosCliente.get('correoElectronico');
+    const nuevoCorreo = (ctrl?.value ?? '').trim();
+    if (!nuevoCorreo || ctrl?.invalid) return;
+    if (nuevoCorreo.toLowerCase() === (this.correoElectronicoGuardado ?? '').toLowerCase()) return;
+
+    this.clienteServoce.solicitarCambioCorreo(this.clienteId, nuevoCorreo).subscribe({
+      next: () => {
+        this.correoPendiente = nuevoCorreo;
+        // Revierte el campo al correo real -- todavia no cambio nada hasta confirmar el codigo,
+        // y asi "Guardar cambios" del resto del formulario no vuelve a disparar el cambio de
+        // correo por su cuenta (esa rama vive en ClienteControllerImpl.save()).
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoElectronicoGuardado ?? '' });
+        this.mostrarSwalVerificacion();
+      },
+      error: (err: any) => {
+        const raw = err?.error;
+        const msg = (typeof raw === 'string' ? raw : raw?.mensaje ?? raw?.message)
+          ?? 'No se pudo enviar el código de verificación.';
+        this.formDatosCliente.patchValue({ correoElectronico: this.correoElectronicoGuardado ?? '' });
+        Swal.fire({ icon: 'error', title: 'No se pudo cambiar el correo', text: msg });
+      }
     });
   }
 

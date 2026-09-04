@@ -102,6 +102,16 @@ const routes: Routes = [
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
+    // "Entregas por zona" (2026-09-04) -- sin PantallaGuard a propósito: esa pantalla se registra
+    // en la tabla submenu/rol_submenu (Gestión de roles) y hoy no hay ningún ejemplo de migración
+    // que la siembre bien sin arriesgar el sistema de permisos existente. El back ya exige
+    // ROLE_ADMIN de verdad (SecurityConfig, /v1/entregas-zona/**), así que la seguridad real está
+    // cubierta -- falta solo, cuando se pueda revisar con calma, darle su propia pantalla.
+    path: 'entregas-zona',
+    loadChildren: () => import('./entregas-zona/entregas-zona.module').then(m => m.EntregasZonaModule),
+    canActivate: [AuthGuard, CarritoGuard]
+  },
+  {
     // Gestión del catálogo de menús/submenús -- Fase 1 de PLAN_PERMISOS_PANTALLAS.md (repo
     // compartido). PantallaGuard aquí también, protegido por la misma tabla que administra.
     path: 'gestion-menu',

@@ -15,7 +15,6 @@ import { VarianteService } from '../service/variante.service';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
-import { CENTRO_MAPA_GENERICO } from 'src/app/shared/selector-ubicacion/selector-ubicacion.component';
 
 @Component({
   selector: 'app-venta-variante',
@@ -63,32 +62,26 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   lugares: ILugarEntrega[] = [];
   lugarEntregaId: number | null = null;
 
-  // Ubicación exacta (2026-08-22) — se muestra el mapa solo después de elegir zona, para que
-  // el cliente pueda marcar el punto dentro de esa zona en vez de solo un nombre de pueblo.
-  latitud: number | null = null;
-  longitud: number | null = null;
-  referencias = '';
+  // Fecha de recogida (2026-09-04) — solo aplica cuando el lugar elegido es "recoger en tienda"
+  // (ver `lugarEsRecogerEnTienda`). Opcional: si el cliente no elige nada, el back la deja en
+  // hoy+3 días solo. `min`/`max` acotan el <input type="date"> al mismo rango que valida el back.
+  fechaRecogida: string | null = null;
+  readonly minFechaRecogida = new Date().toISOString().split('T')[0];
+  readonly maxFechaRecogida = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  onUbicacionCambio(p: { lat: number; lng: number }): void {
-    this.latitud = p.lat;
-    this.longitud = p.lng;
+  get lugarEsRecogerEnTienda(): boolean {
+    return !!this.lugares.find(l => l.id === this.lugarEntregaId)?.esRecogerEnTienda;
   }
 
-  // Centro del mapa según la zona elegida — recalculado solo cuando cambia `lugarEntregaId`
-  // (ver `onLugarEntregaChange`), no en cada ciclo de detección de cambios: un getter que
-  // devolviera un array nuevo cada vez rompería `SelectorUbicacionComponent.ngOnChanges`
-  // (recentraría el mapa en cada tecla que el cliente escriba en "referencias", peleándose con
-  // que el cliente pueda mover/hacer zoom libremente antes de marcar el pin). Si la zona ya
-  // tiene latitud/longitud capturada se usa como centro; si no (zona vieja) se cae al genérico
-  // fijo de siempre — ver CENTRO_MAPA_GENERICO en selector-ubicacion.component.ts.
-  centroMapaLugar: [number, number] = CENTRO_MAPA_GENERICO;
-
-  onLugarEntregaChange(): void {
-    const lugar = this.lugares.find(l => l.id === this.lugarEntregaId);
-    this.centroMapaLugar = (lugar?.latitud != null && lugar?.longitud != null)
-      ? [lugar.latitud, lugar.longitud]
-      : CENTRO_MAPA_GENERICO;
+  // Link de Google Maps hacia el local -- usa el centro que el admin ya marcó para la fila
+  // "recoger en tienda" en el catálogo (Lugares de entrega). Sin centro marcado ahí, no hay
+  // nada que mostrar (el botón simplemente no aparece, ver *ngIf en el HTML).
+  get linkComoLlegarLocal(): string | null {
+    const local = this.lugares.find(l => l.id === this.lugarEntregaId);
+    if (!local || local.latitud == null || local.longitud == null) return null;
+    return `https://www.google.com/maps/dir/?api=1&destination=${local.latitud},${local.longitud}`;
   }
+
 
   // El png de reemplazo no existía: cada fallo encadenaba otro y no paraba. Ver imagen-placeholder.
   onImgError = onImagenError;
@@ -100,7 +93,15 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     this.authService.userId$.subscribe(id => { this.idUsuario = id; });
 
     this.lugarEntregaService.getAll().subscribe({
-      next: data => { this.lugares = data; },
+      next: data => {
+        this.lugares = data;
+        // "Recoger en tienda" es el default implícito de siempre (nunca especificar lugar ya se
+        // trataba como recoger en el local) — ahora que existe una fila explícita para eso, se
+        // preselecciona sola en vez de dejar "Sin especificar".
+        if (this.lugarEntregaId == null) {
+          this.lugarEntregaId = data.find(l => l.esRecogerEnTienda)?.id ?? null;
+        }
+      },
       error: () => {}
     });
 
@@ -284,9 +285,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       fechaPedido:   new Date().toISOString().split('T')[0],
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
-      latitud:        this.latitud ?? undefined,
-      longitud:       this.longitud ?? undefined,
-      referencias:    this.referencias.trim() || undefined,
+      fechaRecogida:  (!this.isAdminUser && this.lugarEsRecogerEnTienda) ? (this.fechaRecogida ?? undefined) : undefined,
       detalles:      [...detallesVariantes, ...detallesPromos]
     };
 

@@ -29,6 +29,10 @@
             (cuenta creada antes de este control).
           </ng-container>
         </p>
+        <button *ngIf="aceptoPrivacidad === false" type="button" class="mp-btn-accept-privacidad"
+                [disabled]="aceptandoPrivacidad" (click)="aceptarPrivacidad()">
+          Aceptar aviso de privacidad
+        </button>
 
         <!-- Usuario -->
         <div class="mp-field">

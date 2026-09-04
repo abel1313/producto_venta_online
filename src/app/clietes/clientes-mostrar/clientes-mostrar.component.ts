@@ -119,7 +119,19 @@ export class ClientesMostrarComponent implements OnInit {
   }
 
   guardarCliente(): void {
-    if (this.formDatosCliente.invalid || !this.usuarioId) return;
+    if (!this.usuarioId) return;
+    if (this.formDatosCliente.invalid) {
+      // Antes se salia en silencio: si el registro tenia otros campos obligatorios vacios
+      // (ej. nombre/apellido de un cliente auto-creado sin completar), el boton no hacia nada
+      // y no habia forma de saber por que -- ver mismo bug reportado 2026-09-04 en mis-datos.
+      this.formDatosCliente.markAllAsTouched();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan datos obligatorios',
+        text: 'Revisa los campos marcados en rojo antes de guardar.'
+      });
+      return;
+    }
     this.guardando = true;
 
     const payload: ICliente = {
@@ -153,7 +165,12 @@ export class ClientesMostrarComponent implements OnInit {
   }
 
   // ── Preferencia de correos (admin, por cliente) ───────────────────────
-  toggleRecibirCorreos(): void {
+  // El checkbox se pasa por referencia: [checked] es de un solo sentido, y el navegador ya lo
+  // marco visualmente en cuanto el usuario le dio clic (comportamiento nativo del input) --
+  // si la peticion falla y "recibirCorreos" nunca cambia, Angular no tiene motivo para volver a
+  // aplicar el binding, y el checkbox se queda marcado aunque el dato real no haya cambiado
+  // (encontrado 2026-09-04). Se revierte el DOM a mano en el error.
+  toggleRecibirCorreos(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
     const nuevoValor = !this.recibirCorreos;
     this.guardandoPreferenciaCorreo = true;
@@ -162,14 +179,16 @@ export class ClientesMostrarComponent implements OnInit {
         this.recibirCorreos = nuevoValor;
         this.guardandoPreferenciaCorreo = false;
       },
-      error: () => {
+      error: (err) => {
         this.guardandoPreferenciaCorreo = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+        chk.checked = this.recibirCorreos;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de correos.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
 
-  toggleRecibirPromociones(): void {
+  toggleRecibirPromociones(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
     const nuevoValor = !this.recibirPromociones;
     this.guardandoPreferenciaPromociones = true;
@@ -178,9 +197,11 @@ export class ClientesMostrarComponent implements OnInit {
         this.recibirPromociones = nuevoValor;
         this.guardandoPreferenciaPromociones = false;
       },
-      error: () => {
+      error: (err) => {
         this.guardandoPreferenciaPromociones = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
+        chk.checked = this.recibirPromociones;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de promociones.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }

@@ -158,6 +158,21 @@ export class MisDatosComponent implements OnInit {
 
 
   guardarCliente() {
+    // El boton antes se deshabilitaba solo con [disabled]="!formDatosCliente.valid" en el html
+    // -- si CUALQUIER campo del formulario era invalido (no solo el que se estaba editando), el
+    // boton se veia inactivo sin explicar por que, y daba la sensacion de "no me deja guardar"
+    // sin ningun error visible (2026-09-04). Ahora el boton siempre se puede presionar, y si el
+    // formulario no es valido se marcan todos los campos como tocados (asi salen los .md-error
+    // ya existentes) y se explica.
+    if (this.formDatosCliente.invalid) {
+      this.formDatosCliente.markAllAsTouched();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Faltan datos obligatorios',
+        text: 'Revisa los campos marcados en rojo antes de guardar.'
+      });
+      return;
+    }
 
     this.datosCliente = this.formDatosCliente.value;
     const fechaRaw = this.formDatosCliente.get('fechaNacimiento')?.value;
@@ -286,7 +301,11 @@ export class MisDatosComponent implements OnInit {
   }
 
 
-  toggleRecibirCorreos(): void {
+  // chk se recibe por referencia para poder revertir el DOM a mano si falla -- [checked] es de
+  // un solo sentido y el navegador ya marco visualmente el checkbox al hacer clic, asi que si
+  // "recibirCorreos" nunca cambia (por el error), Angular no vuelve a aplicar el binding y el
+  // checkbox se queda marcado aunque el dato real no cambio (2026-09-04).
+  toggleRecibirCorreos(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaCorreo) return;
     const nuevoValor = !this.recibirCorreos;
     this.guardandoPreferenciaCorreo = true;
@@ -295,14 +314,16 @@ export class MisDatosComponent implements OnInit {
         this.recibirCorreos = nuevoValor;
         this.guardandoPreferenciaCorreo = false;
       },
-      error: () => {
+      error: (err: any) => {
         this.guardandoPreferenciaCorreo = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de correos.' });
+        chk.checked = this.recibirCorreos;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de correos.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }
 
-  toggleRecibirPromociones(): void {
+  toggleRecibirPromociones(chk: HTMLInputElement): void {
     if (!this.clienteId || this.guardandoPreferenciaPromociones) return;
     const nuevoValor = !this.recibirPromociones;
     this.guardandoPreferenciaPromociones = true;
@@ -311,9 +332,11 @@ export class MisDatosComponent implements OnInit {
         this.recibirPromociones = nuevoValor;
         this.guardandoPreferenciaPromociones = false;
       },
-      error: () => {
+      error: (err: any) => {
         this.guardandoPreferenciaPromociones = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar la preferencia de promociones.' });
+        chk.checked = this.recibirPromociones;
+        const msg = err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo actualizar la preferencia de promociones.';
+        Swal.fire({ icon: 'error', title: 'Error', text: msg });
       }
     });
   }

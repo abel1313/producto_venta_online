@@ -76,13 +76,13 @@
             <span class="gr-grupo__chevron">›</span>
           </button>
           <div class="gr-grupo__lista" *ngIf="grupoEstaAbierto(g)">
-            <div class="gr-submenu-block" *ngFor="let s of g.submenus">
+            <div class="gr-submenu-block" [class.gr-submenu-block--pendiente]="hayCambios(s)" *ngFor="let s of g.submenus">
               <div class="gr-check-row">
                 <label class="gr-check"
                        [title]="esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : ''">
                   <input type="checkbox"
                          [checked]="tieneSubmenu(s)"
-                         [disabled]="guardandoSubmenuId === s.id || (tieneSubmenu(s) && esSubmenuProtegido(s))"
+                         [disabled]="estaGuardando(s) || (tieneSubmenu(s) && esSubmenuProtegido(s))"
                          (change)="toggleSubmenu(s)" />
                   <span>{{ s.icono }} {{ s.nombre }}</span>
                   <small class="pk-meta" *ngIf="tieneSubmenu(s) && esSubmenuProtegido(s)">🔒</small>
@@ -94,7 +94,7 @@
                        [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
                   <input type="checkbox"
                          [checked]="tieneSubmenuEscritura(s)"
-                         [disabled]="!tieneSubmenu(s) || guardandoEscrituraId === s.id || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
+                         [disabled]="!tieneSubmenu(s) || estaGuardando(s) || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
                          (change)="toggleSubmenuEscritura(s)" />
                   <span>✏️ Editar</span>
                 </label>
@@ -102,14 +102,14 @@
 
               <!-- Fase 3 de permisos (piloto en Modelos): acciones puntuales dentro de esta
                    pantalla, mas finas que el "Editar" de arriba. Solo aparece si la pantalla
-                   tiene alguna dada de alta en el catalogo (hoy solo Modelos). -->
+                   tiene alguna dada de alta en el catalogo (hoy Modelos y Tienda). -->
               <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
                 <div class="gr-accion-item" *ngFor="let a of accionesDe(s)">
                   <label class="gr-check gr-check--accion"
                          [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : ''">
                     <input type="checkbox"
                            [checked]="tieneAccion(a)"
-                           [disabled]="!tieneSubmenu(s) || guardandoAccionId === a.id"
+                           [disabled]="!tieneSubmenu(s) || estaGuardando(s)"
                            (change)="toggleAccion(a)" />
                     <span>{{ a.etiqueta }}</span>
                   </label>
@@ -117,6 +117,20 @@
                        de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
                   <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
                 </div>
+              </div>
+
+              <!-- Guardado diferido (2026-09-04): los checks de arriba solo cambian en memoria --
+                   este botón es el único que manda los cambios pendientes de ESTA pantalla al
+                   back. Solo aparece si hay algo sin guardar, para no ensuciar cada pantalla con
+                   un botón siempre visible. -->
+              <div class="gr-actualizar" *ngIf="hayCambios(s)">
+                <span class="gr-actualizar__aviso">Cambios sin guardar en esta pantalla</span>
+                <button type="button" class="pk-btn pk-btn--cancel" [disabled]="estaGuardando(s)" (click)="descartarCambios(s)">
+                  ✕ Descartar
+                </button>
+                <button type="button" class="pk-btn pk-btn--save" [disabled]="estaGuardando(s)" (click)="actualizarSubmenu(s)">
+                  {{ estaGuardando(s) ? 'Guardando…' : '💾 Actualizar' }}
+                </button>
               </div>
             </div>
           </div>

@@ -155,6 +155,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return this.authService.tieneAccion('productos/buscar', 'descargar-excel');
   }
 
+  // Antes el escáner de código de barras (📷) era público -- cualquiera con acceso a Modelos lo
+  // veía, sin permiso propio -- ver migration_accion_modelos_etiquetas_y_escaner.sql (2026-09-04).
+  get puedeEscanear(): boolean {
+    return this.authService.tieneAccion('productos/buscar', 'escanear-codigo');
+  }
+
   // Antes era un solo permiso "filtros-admin" que mostraba/ocultaba TODA la barra en bloque.
   // Se separó (2026-08-28) en un permiso por checkbox para poder darle a un rol, por ejemplo,
   // solo "Con stock" sin el resto -- ver migration_filtros_granulares.sql.

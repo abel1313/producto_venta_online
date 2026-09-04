@@ -182,6 +182,31 @@ $t:  all 0.2s ease;
   flex-direction: column;
   gap: 4px;
   padding: 4px 0;
+  border-radius: 8px;
+  transition: $t;
+
+  // Con checks sin guardar, un fondo tenue marca la fila -- no hay que adivinar cuál cambiaste.
+  &--pendiente {
+    background: var(--app-accent-soft, rgba(99,102,241,.08));
+    padding: 6px 8px;
+    margin: 0 -8px;
+  }
+}
+
+// Guardado diferido por pantalla (2026-09-04): el checkbox de arriba solo cambia en memoria --
+// este botón manda los cambios pendientes de ESA pantalla nada más. Solo aparece si hay algo
+// sin guardar (hayCambios(s)).
+.gr-actualizar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px 26px;
+
+  &__aviso {
+    font-size: .74rem;
+    color: var(--app-text-muted, #6b7280);
+    font-style: italic;
+  }
 }
 
 // Fila con "Ver" (pantalla) + "Editar" (escritura, Fase 2 de permisos de acción) uno junto al otro.

@@ -19,7 +19,7 @@
     </div>
 
     <!-- Botón escáner solo en móvil (encima del buscador) -->
-    <button class="pl-scan-mobile" (click)="iniciarEscaner()">
+    <button *ngIf="puedeEscanear" class="pl-scan-mobile" (click)="iniciarEscaner()">
       📷 Escanear código de barras
     </button>
 
@@ -35,7 +35,7 @@
         autocomplete="off"
         appUppercase
       />
-      <button class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
+      <button *ngIf="puedeEscanear" class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
         📷
       </button>
     </div>

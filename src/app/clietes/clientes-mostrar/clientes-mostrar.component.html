@@ -126,9 +126,14 @@
             </span>
             <button *ngIf="correoVerificado !== true"
                     type="button" class="md-btn-verify"
+                    [disabled]="!puedeVerificarCorreo"
+                    [title]="!puedeVerificarCorreo ? 'Primero escribe el correo y guarda los cambios' : ''"
                     (click)="verificarCorreo()">
               ✉️ Verificar correo
             </button>
+            <span class="md-hint" *ngIf="correoVerificado !== true && !puedeVerificarCorreo">
+              Escribe el correo arriba y da clic en "Guardar" antes de verificarlo.
+            </span>
           </div>
 
           <!-- Teléfono -->

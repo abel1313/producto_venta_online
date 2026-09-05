@@ -195,16 +195,16 @@
 
   <div class="vb-grid">
     <div class="vb-card" *ngFor="let v of variantes"
-         [class.vb-card--deshabilitado]="isAdminUser && !estaHabilitado(v)"
+         [class.vb-card--deshabilitado]="esVistaAdmin && !estaHabilitado(v)"
          [class.vb-card--seleccionada]="seleccionados.has(v.id)">
 
-      <!-- Checkbox de selección (solo admin) -->
-      <label *ngIf="isAdminUser" class="vb-card__check" (click)="$event.stopPropagation()">
+      <!-- Checkbox de selección (solo quien puede habilitar/deshabilitar en lote) -->
+      <label *ngIf="puedeHabilitar" class="vb-card__check" (click)="$event.stopPropagation()">
         <input type="checkbox" [checked]="seleccionados.has(v.id)" (change)="toggleSeleccion(v.id)" />
       </label>
 
       <!-- Badge deshabilitado (solo admin) -->
-      <span *ngIf="isAdminUser && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
+      <span *ngIf="esVistaAdmin && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 
       <!-- Header -- mismo degradado de marca que el resto de las cards de la app
            (Personalización); colorHeader() solo se usa para el puntito de color real
@@ -303,7 +303,7 @@
           <span class="vb-btn-card__label">Carrito</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
+        <button *ngIf="puedeActualizarVariante" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
         </button>

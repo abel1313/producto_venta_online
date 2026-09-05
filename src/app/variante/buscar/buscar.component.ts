@@ -28,7 +28,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
   totalPaginas    = 0;
   terminoBusqueda = '';
   buscando        = false;
-  isAdminUser     = false;
   sinResultados   = false;
   // Cada checkbox es independiente (no excluyente entre si). Si ambos de un par estan marcados
   // (o ninguno), no se filtra por esa dimension (se traen ambos casos) — solo cuando queda
@@ -104,7 +103,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.roles = roles;
-      this.isAdminUser = roles.includes('ROLE_ADMIN');
       if (!this.isAnonymous) {
         this.favoritoService.listarIds().pipe(takeUntil(this.destroy$)).subscribe({
           next: res => { this.favoritosIds = new Set(res?.data ?? []); this.favoritosDisponibles = true; },
@@ -292,6 +290,25 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   get puedeCompartirImagen(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
+  }
+
+  // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
+  // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
+  // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la
+  // pantalla (2026-09-05).
+  get esVistaAdmin(): boolean {
+    return this.authService.tienePantalla('tienda/buscar');
+  }
+
+  // El botón "Editar" navega a "tienda/update" (editarVariante()), que todavía NO tiene fila
+  // propia en el catálogo de submenus (ver comentario en agregar-routing.module.ts) -- ponerle
+  // PantallaGuard/tienePantalla('tienda/update') bloquearía a todos, incluido ROLE_ADMIN, hasta
+  // que se cree esa pantalla desde Gestión de menú. Mientras tanto comparte el permiso de
+  // "tienda/venta" (misma pantalla real desde donde también se llega a editar una variante) --
+  // mismo criterio que puedeActualizarProducto en Modelos, que apunta a la pantalla real de
+  // destino en vez de a una que no existe todavía.
+  get puedeActualizarVariante(): boolean {
+    return this.authService.tienePantalla('tienda/venta');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

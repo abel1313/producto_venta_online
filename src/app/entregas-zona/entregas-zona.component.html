@@ -50,27 +50,29 @@
         </table>
       </div>
 
-      <form [formGroup]="form" class="ez-form">
-        <div class="ez-form__field">
-          <label class="ez-label">📅 Fecha de entrega</label>
-          <input class="ez-input" type="date" formControlName="fecha">
-        </div>
-        <div class="ez-form__field">
-          <label class="ez-label">🕐 Hora</label>
-          <input class="ez-input" type="time" formControlName="hora">
-        </div>
-        <div class="ez-form__field ez-form__field--wide">
-          <label class="ez-label">📍 Punto de encuentro</label>
-          <input class="ez-input" type="text" formControlName="puntoEncuentro"
-                 placeholder="Ej. Centro de Zacazonapan, frente a la iglesia">
-        </div>
-      </form>
+      <ng-container *ngIf="puedeProgramar">
+        <form [formGroup]="form" class="ez-form">
+          <div class="ez-form__field">
+            <label class="ez-label">📅 Fecha de entrega</label>
+            <input class="ez-input" type="date" formControlName="fecha">
+          </div>
+          <div class="ez-form__field">
+            <label class="ez-label">🕐 Hora</label>
+            <input class="ez-input" type="time" formControlName="hora">
+          </div>
+          <div class="ez-form__field ez-form__field--wide">
+            <label class="ez-label">📍 Punto de encuentro</label>
+            <input class="ez-input" type="text" formControlName="puntoEncuentro"
+                   placeholder="Ej. Centro de Zacazonapan, frente a la iglesia">
+          </div>
+        </form>
 
-      <div class="ez-actions">
-        <button class="ez-btn ez-btn--enviar" type="button" [disabled]="enviando || form.invalid" (click)="programar()">
-          {{ enviando ? 'Enviando…' : '✉️ Avisar a ' + semana.pedidos.length + ' cliente(s)' }}
-        </button>
-      </div>
+        <div class="ez-actions">
+          <button class="ez-btn ez-btn--enviar" type="button" [disabled]="enviando || form.invalid" (click)="programar()">
+            {{ enviando ? 'Enviando…' : '✉️ Avisar a ' + semana.pedidos.length + ' cliente(s)' }}
+          </button>
+        </div>
+      </ng-container>
     </ng-container>
   </ng-container>
 

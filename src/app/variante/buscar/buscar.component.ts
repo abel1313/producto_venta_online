@@ -301,6 +301,26 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
   }
 
+  // Mismo criterio que puedeEscanear -- los 4 filtros públicos del catálogo (Talla/Color/Marca/
+  // Precio) también quedan divididos (2026-09-05). Visitantes SIN sesión los siguen viendo
+  // siempre (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_filtros_publicos.sql.
+  get puedeFiltroTalla(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-talla');
+  }
+
+  get puedeFiltroColor(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-color');
+  }
+
+  get puedeFiltroMarca(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-marca');
+  }
+
+  get puedeFiltroPrecio(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-precio');
+  }
+
   // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
   // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
   // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la

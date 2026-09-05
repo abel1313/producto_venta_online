@@ -120,21 +120,22 @@
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
 
-  <!-- Filtros públicos del catálogo: talla / color / marca / precio — para cualquier usuario -->
+  <!-- Filtros públicos del catálogo: talla / color / marca / precio -- visitantes sin sesión
+       siempre los ven (isAnonymous); cuentas con sesión necesitan el permiso puntual. -->
   <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
-    <select class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroTalla" class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Talla</option>
       <option *ngFor="let t of filtrosDisponibles.tallas" [value]="t">{{ t }}</option>
     </select>
-    <select class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroColor" class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Color</option>
       <option *ngFor="let c of filtrosDisponibles.colores" [value]="c">{{ c }}</option>
     </select>
-    <select class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroMarca" class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Marca</option>
       <option *ngFor="let m of filtrosDisponibles.marcas" [value]="m">{{ m }}</option>
     </select>
-    <div class="vb-pub-precio">
+    <div *ngIf="isAnonymous || puedeFiltroPrecio" class="vb-pub-precio">
       <input type="number" class="vb-pub-input" placeholder="$ mín"
              [(ngModel)]="filtroPrecioMin" (ngModelChange)="onFiltroPublicoChange()"
              [min]="filtrosDisponibles.precioMin ?? 0" />

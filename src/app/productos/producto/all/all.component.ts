@@ -764,7 +764,35 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   buscarProductoScroll(paginaPrimera: number): void {
     if( this.totalPaginas >= paginaPrimera){
-    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, "")
+    // BUG 2026-09-05: esta funcion ignoraba los filtros de admin (conImagenes, conStock, etc.)
+    // Y el texto de busqueda -- siempre pedia mas paginas con getDataNombreCodigoBarra(nombre="")
+    // sin importar que el usuario tuviera activo "solo con imagen" o estuviera buscando por
+    // nombre. La pagina 1 salia bien filtrada (aplicarFiltrosAdmin/buscarProductoSinKey), pero al
+    // hacer scroll para pedir mas, se perdian los filtros y aparecian productos que no deberian
+    // (ej. sin imagen, con el filtro "solo con imagen" activo). Mismo patron que ya usa
+    // conOSinBuscar() para decidir a que endpoint ir.
+    if (this.hayFiltrosAdminActivos) {
+      this.srvice.adminFiltrar({
+        nombreOCodigo: this.buscarProd || undefined,
+        conStock: this.paramConStock,
+        conImagenes: this.paramConImagenes,
+        habilitado: this.paramHabilitado,
+        codigoGenerado: this.paramCodigoGenerado,
+        fechaDesde: this.fechaDesde || undefined,
+        fechaHasta: this.fechaHasta || undefined
+      }, paginaPrimera, 10).pipe(takeUntil(this.destroy$)).subscribe({
+        next: (res) => {
+          this.paginaPrimera = this.paginaPrimera + 1;
+          this.totalPaginas = res.totalPaginas;
+          this.rows = [...this.rows, ...res.t]; // Agrega sin borrar los anteriores
+        },
+        error: (err) => {
+          Swal.fire({ icon: 'error', title: 'Error al cargar más productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar más productos.' });
+        }
+      });
+      return;
+    }
+    this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, this.buscarProd)
       .subscribe({
         next: (res) => {
           this.paginaPrimera = this.paginaPrimera +1;

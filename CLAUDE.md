@@ -12061,3 +12061,55 @@ elegido, el aviso informativo se muestra, y el resumen calcula el total correcto
 `GET /v1/colores-flor/por-tipo-flor/{id}` sigan siendo públicos como están documentados (ya
 confirmado en sesiones anteriores) y de que el resto del checkout (fechas, savePedido) funcione
 igual que en "Arma tu ramo", que es donde ya está probado.
+
+## FIX MODELOS — SCROLL INFINITO IGNORABA LOS FILTROS DE ADMIN (Y LA BÚSQUEDA) (2026-09-05)
+
+**Síntoma reportado:** en `productos/buscar` (Modelos), con el filtro "solo con imagen"
+activado, la página 1 salía bien filtrada — pero al bajar el scroll para pedir más productos,
+empezaban a aparecer productos SIN imagen, como si el filtro se hubiera dejado de aplicar.
+
+**Diagnóstico (largo, con el dueño probando directo contra prod vía curl):** se descartó
+primero caché de Redis en el back (ya se limpió y el problema seguía) y luego cualquier bug en
+`buscarProductosAdmin`/`admin/filtrar` del backend (se probó ese endpoint con `size=1`, `10` y
+`40` y siempre partió el catálogo correctamente — 33 productos con imagen real de 110 totales,
+sin excepciones). El dueño terminó de confirmarlo él mismo comparando el número de página real
+(14) contra el total esperado: 110÷8 ≈ 14 páginas (catálogo completo sin filtrar) vs. 33÷8 ≈ 5
+páginas (si el filtro sí aplicara) — coincidía con lo primero. Con eso, y viendo en el Network
+tab del navegador que al hacer scroll la petición cambiaba de
+`admin/filtrar?...&conImagenes=true` a `buscarNombreOrCodigoBarra?nombre=`, quedó claro que el
+bug era 100% de este repo, no del backend.
+
+**Causa real:** `AllComponent.buscarProductoScroll()` (el handler de `(scroll)` del contenedor
+del grid, ver `onScroll()`/`loadMore()`) SIEMPRE pedía la página siguiente con
+`getDataNombreCodigoBarra(pagina, 10, "")` — sin mirar si había filtros de admin activos
+(`hayFiltrosAdminActivos`, los mismos checkboxes `mostrarConStock`/`mostrarConImagenes`/etc.) ni
+el texto de búsqueda (`buscarProd`, que además mandaba fijo como `""`). La página 1 sí salía
+bien filtrada porque `aplicarFiltrosAdmin()`/`buscarProductoSinKey()` sí revisan esos dos casos
+— pero el scroll infinito tenía su propio código, sin ese mismo chequeo, y `conOSinBuscar()` (el
+método que SÍ decide correctamente a qué endpoint ir en otros casos) nunca se llamaba desde ahí.
+
+**Fix:** `buscarProductoScroll()` ahora usa el mismo criterio que ya usa `conOSinBuscar()`:
+- Si `hayFiltrosAdminActivos` → pide la página siguiente vía `adminFiltrar()` con los MISMOS
+  filtros (`conStock`, `conImagenes`, `habilitado`, `codigoGenerado`, `fechaDesde`/`fechaHasta`,
+  `nombreOCodigo`) que produjeron la página 1, y agrega los resultados a `rows` (sin borrar lo
+  ya cargado, igual que antes).
+- Si no hay filtros de admin pero sí hay texto de búsqueda → usa `getDataNombreCodigoBarra()`
+  pero mandando `this.buscarProd` real (antes mandaba `""` fijo, así que tampoco respetaba una
+  búsqueda por nombre en curso al hacer scroll).
+- Si no hay ni filtros ni búsqueda → sigue igual que antes (catálogo completo paginado).
+
+**Archivo:** `src/app/productos/producto/all/all.component.ts` (`buscarProductoScroll()`).
+
+**Cambio de humo aparte, mismo día:** se agregó un `console.log('[SMOKE-2026-09-05-A] ...')` en
+`AppComponent.ngOnInit()` (se dispara en cualquier pantalla) para poder confirmar en la consola
+del navegador, sin ambigüedad, si un build en particular ya estaba corriendo en producción —
+útil porque en un punto de esta sesión el dueño reportó que el fix "seguía sin funcionar" y
+hacía falta descartar caché de navegador/CDN o un pod que no jaló la imagen Docker nueva antes
+de seguir tocando código. Puede quedarse o quitarse más adelante, no afecta nada funcional.
+
+**Commits:** `dev` `a944366`/`e4a9088`, `qa` `8c45ed7`/`ebf264b`, `master` `cc5f896`/`9c12721`
+(cherry-pick puntual a `master`, no merge completo de `qa` — `qa` sigue trayendo por delante el
+módulo de redes sociales excluido de `master`, ver regla más arriba).
+
+**Verificado:** `tsc --noEmit` + `ng build --configuration=production/qa` sin errores en los 3
+ambientes, y confirmado por el dueño en prod (`shop.novedades-jade.com.mx`) tras el deploy.

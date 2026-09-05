@@ -12,7 +12,7 @@
 
     <div class="vb-header__actions">
       <!-- Carrito badge -->
-      <button class="vb-btn vb-btn--cart" (click)="verCarrito()">
+      <button *ngIf="isAnonymous || puedeVerCarrito" class="vb-btn vb-btn--cart" (click)="verCarrito()">
         🛒
         <span *ngIf="totalEnCarrito > 0" class="vb-cart-badge">{{ totalEnCarrito }}</span>
       </button>
@@ -287,20 +287,20 @@
 
       <!-- Botones de carrito ─────────────────────────── -->
       <div class="vb-card__footer">
-        <button class="vb-btn-card vb-btn-card--add"
+        <button *ngIf="isAnonymous || puedeAgregarCarrito" class="vb-btn-card vb-btn-card--add"
           [disabled]="stockAgotado(v)" (click)="agregarCarrito(v)"
           title="{{ stockAgotado(v) ? 'Sin stock' : 'Agregar al carrito' }}">
           <span>{{ stockAgotado(v) ? '🚫' : '➕' }}</span>
           <span class="vb-btn-card__label">{{ stockAgotado(v) ? 'Sin stock' : 'Agregar' }}</span>
         </button>
 
-        <button class="vb-btn-card vb-btn-card--remove"
+        <button *ngIf="isAnonymous || puedeQuitarCarrito" class="vb-btn-card vb-btn-card--remove"
           [disabled]="!estaEnCarrito(v)" (click)="eliminarCarrito(v)">
           <span>➖</span>
           <span class="vb-btn-card__label">Quitar</span>
         </button>
 
-        <button class="vb-btn-card vb-btn-card--view" (click)="verCarrito()">
+        <button *ngIf="isAnonymous || puedeVerCarrito" class="vb-btn-card vb-btn-card--view" (click)="verCarrito()">
           <span>🛒</span>
           <span class="vb-btn-card__label">Carrito</span>
         </button>

@@ -292,6 +292,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
   }
 
+  // Pedido explicito del dueño (2026-09-05): TODO lo que tiene la pantalla debe tener su propio
+  // permiso separado, sin excepciones -- incluye el escaner. A diferencia de Modelos (100%
+  // admin), Tienda es publica: un visitante SIN sesion sigue viendo el boton siempre (isAnonymous
+  // en la plantilla) -- este permiso solo aplica a cuentas CON sesion (cualquier rol, incluido
+  // ROLE_ADMIN). Ver migration_accion_tienda_escanear.sql.
+  get puedeEscanear(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
+  }
+
   // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
   // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
   // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la

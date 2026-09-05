@@ -19,8 +19,9 @@
     </div>
   </div>
 
-  <!-- Botón escáner solo en móvil (encima del buscador) -->
-  <button class="vb-scan-mobile" (click)="iniciarEscaner()">
+  <!-- Botón escáner solo en móvil (encima del buscador) -- visitantes sin sesión siempre lo ven
+       (isAnonymous), cuentas con sesión necesitan el permiso puntual (puedeEscanear). -->
+  <button *ngIf="isAnonymous || puedeEscanear" class="vb-scan-mobile" (click)="iniciarEscaner()">
     📷 Escanear código de barras
   </button>
 
@@ -40,7 +41,7 @@
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
-    <button class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
+    <button *ngIf="isAnonymous || puedeEscanear" class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
     </button>
   </div>

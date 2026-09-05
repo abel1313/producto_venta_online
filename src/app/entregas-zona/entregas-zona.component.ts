@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ILugarEntrega } from '../lugares-entrega/models/lugar-entrega.model';
 import { LugarEntregaService } from '../lugares-entrega/service/lugar-entrega.service';
 import { EntregaZonaService } from './service/entrega-zona.service';
@@ -31,8 +32,17 @@ export class EntregasZonaComponent implements OnInit {
   constructor(
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly entregaZonaService: EntregaZonaService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    private readonly authService: AuthService
   ) {}
+
+  // Permisos finos (Fase 3, 2026-09-05): recién se le dio pantalla propia a esta pantalla -- ver
+  // migration_submenu_entregas_zona.sql. Ver zona/pendientes es el View general de la pantalla
+  // (PantallaGuard ya lo cubre); "programar" (el botón que manda correos reales a los clientes)
+  // es la única acción de escritura -- no hay nada más que separar en esta pantalla.
+  get puedeProgramar(): boolean {
+    return this.authService.tieneEscritura('entregas-zona');
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({

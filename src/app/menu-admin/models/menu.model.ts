@@ -22,6 +22,9 @@ export interface ISubmenu {
   icono?: string | null;
   // Tooltip/popup: qué es esta pantalla y dónde vive en el menú (2026-08-28).
   descripcion?: string | null;
+  // Tooltip/popup propio del checkbox "Editar" (2026-09-04) -- distinto de `descripcion`, que
+  // es del "Ver". Null = el front usa el texto genérico de Ver/Editar.
+  descripcionEscritura?: string | null;
   orden?: number | null;
 }
 
@@ -31,6 +34,7 @@ export interface ISubmenuRequest {
   ruta: string;
   icono?: string | null;
   descripcion?: string | null;
+  descripcionEscritura?: string | null;
   orden?: number | null;
 }
 
@@ -43,6 +47,9 @@ export interface IAccionSubmenu {
   etiqueta: string;
   // Tooltip opcional: dónde exactamente aparece esta acción en la pantalla real (2026-08-28).
   descripcion?: string | null;
+  // Sub-encabezado para agrupar el checklist de Gestión de roles (2026-09-04, ej. "Filtros",
+  // "Tarjeta de modelo", "Buscador"). Null = sin agrupar.
+  categoria?: string | null;
   orden?: number | null;
 }
 

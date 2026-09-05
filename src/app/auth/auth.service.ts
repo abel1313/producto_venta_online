@@ -29,6 +29,13 @@ export class AuthService {
   private pantallasAcciones = new BehaviorSubject<string[]>([]); // formato "ruta:clave"
   pantallasAcciones$ = this.pantallasAcciones.asObservable();
 
+  // El back ya manda este claim desde el arranque de Fase 2 (JwtUtil.generateToken, ver
+  // comentario ahi) para que el front pueda mostrar/ocultar botones de escritura (crear/editar/
+  // borrar) sin depender de isAdminUser -- pero hasta ahora nada en el front lo leia. Se suma
+  // aqui, mismo patron que "pantallas"/"pantallasAcciones" (2026-09-05).
+  private pantallasEscritura = new BehaviorSubject<string[]>([]);
+  pantallasEscritura$ = this.pantallasEscritura.asObservable();
+
   constructor(private readonly auth: AuthenticateService) {
     const token = auth.getAccessToken();
     if (token) {
@@ -44,12 +51,14 @@ export class AuthService {
       this.userId.next(payload.idUsuario || null);
       this.pantallas.next(payload.pantallas || []);
       this.pantallasAcciones.next(payload.pantallasAcciones || []);
+      this.pantallasEscritura.next(payload.pantallasEscritura || []);
     } catch (e) {
       this.userRoles.next([]);
       this.userUser.next('');
       this.userId.next(0);
       this.pantallas.next([]);
       this.pantallasAcciones.next([]);
+      this.pantallasEscritura.next([]);
     }
   }
 
@@ -57,6 +66,13 @@ export class AuthService {
    * que también da true para admin -- no hace falta chequear isAdminService aparte. */
   tienePantalla(ruta: string): boolean {
     return this.pantallas.value.includes(ruta);
+  }
+
+  /** ¿Puede escribir (crear/editar) en esta pantalla, no solo verla? (Fase 2 de permisos de
+   * accion) -- ej. tieneEscritura('palabras-clave'). Independiente de tieneAccion(): un rol
+   * puede tener Editar sin una accion puntual como "eliminar", o viceversa. */
+  tieneEscritura(ruta: string): boolean {
+    return this.pantallasEscritura.value.includes(ruta);
   }
 
   /** ¿Puede usar esta acción puntual dentro de una pantalla? (Fase 3 de permisos, piloto en

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/auth/auth.service';
 import { IPalabraClave } from '../models/palabra-clave.model';
 import { PalabraClaveService } from '../service/palabra-clave.service';
 
@@ -30,8 +31,21 @@ export class GestionPalabrasClave implements OnInit {
 
   constructor(
     private readonly svc: PalabraClaveService,
-    private readonly fb:  FormBuilder
+    private readonly fb:  FormBuilder,
+    private readonly authService: AuthService
   ) {}
+
+  // Reemplaza el gate implícito de "si llegaste aquí eres admin" -- Fase 3 de permisos
+  // (2026-09-05, mismo patrón que Modelos/Tienda). "Editar" usa tieneEscritura (permiso
+  // general de la pantalla), "Eliminar" es su propia acción puntual -- ver
+  // migration_accion_palabras_clave_eliminar.sql.
+  get puedeEditar(): boolean {
+    return this.authService.tieneEscritura('palabras-clave');
+  }
+
+  get puedeEliminar(): boolean {
+    return this.authService.tieneAccion('palabras-clave', 'eliminar');
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({

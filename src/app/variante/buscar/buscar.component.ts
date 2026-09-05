@@ -321,6 +321,23 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tieneAccion('tienda/buscar', 'filtro-precio');
   }
 
+  // Mismo criterio que puedeEscanear/puedeFiltroXxx -- los botones de carrito de la tarjeta
+  // (Agregar/Quitar/Ver) y el ícono de carrito del encabezado eran los únicos elementos de la
+  // pantalla sin permiso propio (2026-09-05). Visitantes SIN sesión los siguen viendo siempre
+  // (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_carrito.sql.
+  get puedeAgregarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'agregar-carrito');
+  }
+
+  get puedeQuitarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'quitar-carrito');
+  }
+
+  get puedeVerCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'ver-carrito');
+  }
+
   // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
   // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
   // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la

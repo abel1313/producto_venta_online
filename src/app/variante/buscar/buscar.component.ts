@@ -316,8 +316,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // "tienda/venta" (misma pantalla real desde donde también se llega a editar una variante) --
   // mismo criterio que puedeActualizarProducto en Modelos, que apunta a la pantalla real de
   // destino en vez de a una que no existe todavía.
+  //
+  // tieneEscritura, NO tienePantalla (bug encontrado 2026-09-05): editar de verdad llama a
+  // POST /tienda/v1/guardarConImagenes, protegido en SecurityConfig por pantallaEscribir (no por
+  // pantalla) de "productos/buscar"/"productos/agregar"/"tienda/venta"/"flores/catalogos"/
+  // "flores/ramos-admin" -- tienePantalla('tienda/venta') solo exige poder VER esa pantalla, un
+  // rol con Ver pero sin Editar en "Agregar producto" veía el botón y se topaba con 403 al
+  // guardar.
   get puedeActualizarVariante(): boolean {
-    return this.authService.tienePantalla('tienda/venta');
+    return this.authService.tieneEscritura('tienda/venta');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

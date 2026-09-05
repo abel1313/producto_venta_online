@@ -292,6 +292,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
   }
 
+  // Pedido explicito del dueño (2026-09-05): TODO lo que tiene la pantalla debe tener su propio
+  // permiso separado, sin excepciones -- incluye el escaner. A diferencia de Modelos (100%
+  // admin), Tienda es publica: un visitante SIN sesion sigue viendo el boton siempre (isAnonymous
+  // en la plantilla) -- este permiso solo aplica a cuentas CON sesion (cualquier rol, incluido
+  // ROLE_ADMIN). Ver migration_accion_tienda_escanear.sql.
+  get puedeEscanear(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
+  }
+
   // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
   // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
   // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la
@@ -307,8 +316,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // "tienda/venta" (misma pantalla real desde donde también se llega a editar una variante) --
   // mismo criterio que puedeActualizarProducto en Modelos, que apunta a la pantalla real de
   // destino en vez de a una que no existe todavía.
+  //
+  // tieneEscritura, NO tienePantalla (bug encontrado 2026-09-05): editar de verdad llama a
+  // POST /tienda/v1/guardarConImagenes, protegido en SecurityConfig por pantallaEscribir (no por
+  // pantalla) de "productos/buscar"/"productos/agregar"/"tienda/venta"/"flores/catalogos"/
+  // "flores/ramos-admin" -- tienePantalla('tienda/venta') solo exige poder VER esa pantalla, un
+  // rol con Ver pero sin Editar en "Agregar producto" veía el botón y se topaba con 403 al
+  // guardar.
   get puedeActualizarVariante(): boolean {
-    return this.authService.tienePantalla('tienda/venta');
+    return this.authService.tieneEscritura('tienda/venta');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

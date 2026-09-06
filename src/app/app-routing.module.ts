@@ -10,6 +10,7 @@ import { PantallaGuard } from './guard/pantalla.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
+import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
 
 const routes: Routes = [
   {
@@ -102,14 +103,12 @@ const routes: Routes = [
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
-    // "Entregas por zona" (2026-09-04) -- sin PantallaGuard a propósito: esa pantalla se registra
-    // en la tabla submenu/rol_submenu (Gestión de roles) y hoy no hay ningún ejemplo de migración
-    // que la siembre bien sin arriesgar el sistema de permisos existente. El back ya exige
-    // ROLE_ADMIN de verdad (SecurityConfig, /v1/entregas-zona/**), así que la seguridad real está
-    // cubierta -- falta solo, cuando se pueda revisar con calma, darle su propia pantalla.
+    // "Entregas por zona" (2026-09-04, PantallaGuard agregado 2026-09-05): ya tiene su propia
+    // fila en submenu/rol_submenu -- ver migration_submenu_entregas_zona.sql. Antes "vivía de
+    // prestado" del grupo de lugares-entrega en el navbar sin guard real en el front.
     path: 'entregas-zona',
     loadChildren: () => import('./entregas-zona/entregas-zona.module').then(m => m.EntregasZonaModule),
-    canActivate: [AuthGuard, CarritoGuard]
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
     // Gestión del catálogo de menús/submenús -- Fase 1 de PLAN_PERMISOS_PANTALLAS.md (repo
@@ -161,6 +160,11 @@ const routes: Routes = [
     // PÚBLICA a propósito, mismo motivo que /privacidad — TikTok exige Terms of Service URL
     // accesible sin sesión para aprobar la app de developers.tiktok.com.
     path: 'termConditions', component: TerminosComponent
+  },
+  {
+    // PÚBLICA a propósito — TikTok redirige aquí con el `code` de OAuth antes de que exista
+    // sesión nuestra (ver TIKTOK_SETUP.md paso 3-5 y tiktok-callback.component.ts).
+    path: 'tiktok/callback', component: TiktokCallbackComponent
   },
   {
     // FIX 2026-08-25: apuntaba a 'productos/buscar', que tiene AuthGuard+PantallaGuard (es el

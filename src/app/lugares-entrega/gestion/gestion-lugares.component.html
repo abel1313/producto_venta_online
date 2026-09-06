@@ -6,7 +6,7 @@
   </div>
 
   <!-- Formulario agregar / editar -->
-  <form [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
+  <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
     <div class="pk-form__field">
       <input class="pk-input"
              formControlName="nombre"
@@ -67,12 +67,12 @@
   <!-- Anillos de cobro por distancia -- solo tiene sentido una vez que la zona ya existe (tiene
        id) y tiene centro marcado arriba. Ver DISENO_ZONAS_POR_ANILLO.md (repo compartido). -->
   <app-anillos-editor
-    *ngIf="editandoId && centroLat != null && centroLng != null"
+    *ngIf="puedeEditar && editandoId && centroLat != null && centroLng != null"
     [lugarEntregaId]="editandoId"
     [centroLat]="centroLat"
     [centroLng]="centroLng">
   </app-anillos-editor>
-  <p class="pk-hint" *ngIf="editandoId && (centroLat == null || centroLng == null)">
+  <p class="pk-hint" *ngIf="puedeEditar && editandoId && (centroLat == null || centroLng == null)">
     Marca el centro de la zona arriba para poder configurar anillos de cobro por distancia.
   </p>
 
@@ -82,7 +82,7 @@
        siempre mientras estás en esta zona, sin importar cuánto scrollees. Los anillos se guardan
        solos al editarlos (ver "Guardando…" en cada fila) -- este botón es solo para
        nombre/envío/horas/centro. -->
-  <div class="pk-actions-fija">
+  <div *ngIf="puedeEditar" class="pk-actions-fija">
     <button class="pk-btn pk-btn--save" type="button" [disabled]="guardando" (click)="guardar()">
       {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
     </button>
@@ -114,8 +114,8 @@
             <small class="pk-meta" *ngIf="l.esRecogerEnTienda">· 🏬 recoger en tienda</small>
           </td>
           <td class="pk-table__actions">
-            <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>
-            <button class="pk-btn pk-btn--del"  (click)="eliminar(l)"       title="Eliminar">🗑️</button>
+            <button *ngIf="puedeEditar"   class="pk-btn pk-btn--edit" (click)="iniciarEdicion(l)" title="Editar">✏️</button>
+            <button *ngIf="puedeEliminar" class="pk-btn pk-btn--del"  (click)="eliminar(l)"       title="Eliminar">🗑️</button>
           </td>
         </tr>
       </tbody>

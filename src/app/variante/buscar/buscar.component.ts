@@ -28,7 +28,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
   totalPaginas    = 0;
   terminoBusqueda = '';
   buscando        = false;
-  isAdminUser     = false;
   sinResultados   = false;
   // Cada checkbox es independiente (no excluyente entre si). Si ambos de un par estan marcados
   // (o ninguno), no se filtra por esa dimension (se traen ambos casos) — solo cuando queda
@@ -104,7 +103,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.roles = roles;
-      this.isAdminUser = roles.includes('ROLE_ADMIN');
       if (!this.isAnonymous) {
         this.favoritoService.listarIds().pipe(takeUntil(this.destroy$)).subscribe({
           next: res => { this.favoritosIds = new Set(res?.data ?? []); this.favoritosDisponibles = true; },
@@ -280,6 +278,90 @@ export class BuscarComponent implements OnInit, OnDestroy {
         || this.puedeFiltroHabilitados || this.puedeFiltroNoHabilitados
         || this.puedeFiltroCodigoGenerado || this.puedeFiltroCodigoReal
         || this.puedeFiltroFecha;
+  }
+
+  // Acciones de Fase 3 extendidas a "tienda/buscar" (2026-09-04) -- ver
+  // migration_accion_tienda_habilitar_compartir.sql. "habilitar" tiene back real
+  // (accion("tienda/buscar", "habilitar") en SecurityConfig); "compartir-imagen" es solo
+  // frontend, CompartirService no llama ningún endpoint propio.
+  get puedeHabilitar(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'habilitar');
+  }
+
+  get puedeCompartirImagen(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
+  }
+
+  // Pedido explicito del dueño (2026-09-05): TODO lo que tiene la pantalla debe tener su propio
+  // permiso separado, sin excepciones -- incluye el escaner. A diferencia de Modelos (100%
+  // admin), Tienda es publica: un visitante SIN sesion sigue viendo el boton siempre (isAnonymous
+  // en la plantilla) -- este permiso solo aplica a cuentas CON sesion (cualquier rol, incluido
+  // ROLE_ADMIN). Ver migration_accion_tienda_escanear.sql.
+  get puedeEscanear(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
+  }
+
+  // Mismo criterio que puedeEscanear -- los 4 filtros públicos del catálogo (Talla/Color/Marca/
+  // Precio) también quedan divididos (2026-09-05). Visitantes SIN sesión los siguen viendo
+  // siempre (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_filtros_publicos.sql.
+  get puedeFiltroTalla(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-talla');
+  }
+
+  get puedeFiltroColor(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-color');
+  }
+
+  get puedeFiltroMarca(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-marca');
+  }
+
+  get puedeFiltroPrecio(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-precio');
+  }
+
+  // Mismo criterio que puedeEscanear/puedeFiltroXxx -- los botones de carrito de la tarjeta
+  // (Agregar/Quitar/Ver) y el ícono de carrito del encabezado eran los únicos elementos de la
+  // pantalla sin permiso propio (2026-09-05). Visitantes SIN sesión los siguen viendo siempre
+  // (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_carrito.sql.
+  get puedeAgregarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'agregar-carrito');
+  }
+
+  get puedeQuitarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'quitar-carrito');
+  }
+
+  get puedeVerCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'ver-carrito');
+  }
+
+  // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
+  // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
+  // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la
+  // pantalla (2026-09-05).
+  get esVistaAdmin(): boolean {
+    return this.authService.tienePantalla('tienda/buscar');
+  }
+
+  // El botón "Editar" navega a "tienda/update" (editarVariante()), que todavía NO tiene fila
+  // propia en el catálogo de submenus (ver comentario en agregar-routing.module.ts) -- ponerle
+  // PantallaGuard/tienePantalla('tienda/update') bloquearía a todos, incluido ROLE_ADMIN, hasta
+  // que se cree esa pantalla desde Gestión de menú. Mientras tanto comparte el permiso de
+  // "tienda/venta" (misma pantalla real desde donde también se llega a editar una variante) --
+  // mismo criterio que puedeActualizarProducto en Modelos, que apunta a la pantalla real de
+  // destino en vez de a una que no existe todavía.
+  //
+  // tieneEscritura, NO tienePantalla (bug encontrado 2026-09-05): editar de verdad llama a
+  // POST /tienda/v1/guardarConImagenes, protegido en SecurityConfig por pantallaEscribir (no por
+  // pantalla) de "productos/buscar"/"productos/agregar"/"tienda/venta"/"flores/catalogos"/
+  // "flores/ramos-admin" -- tienePantalla('tienda/venta') solo exige poder VER esa pantalla, un
+  // rol con Ver pero sin Editar en "Agregar producto" veía el botón y se topaba con 403 al
+  // guardar.
+  get puedeActualizarVariante(): boolean {
+    return this.authService.tieneEscritura('tienda/venta');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

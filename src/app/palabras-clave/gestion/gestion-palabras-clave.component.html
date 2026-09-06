@@ -6,7 +6,7 @@
   </div>
 
   <!-- Formulario agregar / editar -->
-  <form [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
+  <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
     <div class="pk-form__field">
       <input class="pk-input"
              formControlName="nombre"
@@ -38,8 +38,8 @@
          [class.pk-item--editando]="editandoId === p.id">
       <span class="pk-item__nombre">{{ p.nombre }}</span>
       <div class="pk-item__actions">
-        <button class="pk-btn pk-btn--edit" (click)="iniciarEdicion(p)" title="Editar">✏️</button>
-        <button class="pk-btn pk-btn--del"  (click)="eliminar(p)"       title="Eliminar">🗑️</button>
+        <button *ngIf="puedeEditar"   class="pk-btn pk-btn--edit" (click)="iniciarEdicion(p)" title="Editar">✏️</button>
+        <button *ngIf="puedeEliminar" class="pk-btn pk-btn--del"  (click)="eliminar(p)"       title="Eliminar">🗑️</button>
       </div>
     </div>
 

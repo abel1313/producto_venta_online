@@ -81,8 +81,8 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Zonas de entrega</a>
-        <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="entregas-zona" (click)="closeMobile()">📦 Entregas por zona</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('lugares-entrega')" routerLinkActive="sb-subitem--active" routerLink="lugares-entrega" (click)="closeMobile()">📍 Zonas de entrega</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('entregas-zona')" routerLinkActive="sb-subitem--active" routerLink="entregas-zona" (click)="closeMobile()">📦 Entregas por zona</a>
       </div>
     </div>
 
@@ -190,9 +190,11 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="promociones" (click)="closeMobile()">🎁 Promociones activas</a>
-        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta'])">
+        <ng-container *ngIf="tieneAlguna(['admin/promociones','admin/cinta','admin/facebook','admin/hashtags'])">
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/promociones" (click)="closeMobile()">🎁 Gestionar promociones</a>
           <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/cinta" (click)="closeMobile()">📢 Cinta de anuncios</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/facebook" (click)="closeMobile()">📘 Publicar en redes</a>
+          <a class="sb-subitem" routerLinkActive="sb-subitem--active" routerLink="admin/hashtags" (click)="closeMobile()">🏷️ Hashtags de redes</a>
         </ng-container>
       </div>
     </div>

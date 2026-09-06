@@ -68,6 +68,10 @@ export class GestionRolesComponent implements OnInit {
   // agrupado por submenu.id -- la mayoria de las pantallas hoy no tienen ninguna, solo Modelos.
   accionesPorSubmenu = new Map<number, IAccionSubmenu[]>();
 
+  // Cache de gruposDeAcciones() por submenu.id (2026-09-06) -- ver esa funcion mas abajo para el
+  // porque: sin esto, cada checkbox de accion quedaba practicamente sin poder marcarse.
+  private gruposDeAccionesPorSubmenu = new Map<number, { categoria: string; acciones: IAccionSubmenu[] }[]>();
+
   // Acordeón -- igual que el navbar: arrancan todos cerrados, uno a la vez abierto, para no
   // tirar los ~40 submenus de un jalón. 'sin-grupo' identifica al pseudo-grupo de items sueltos.
   grupoAbierto: number | 'sin-grupo' | null = null;
@@ -128,9 +132,28 @@ export class GestionRolesComponent implements OnInit {
           mapa.set(a.submenu.id, lista.sort((x, y) => (x.orden ?? 999) - (y.orden ?? 999)));
         }
         this.accionesPorSubmenu = mapa;
+        this.gruposDeAccionesPorSubmenu = new Map(
+          [...mapa.entries()].map(([submenuId, lista]) => [submenuId, this.agruparPorCategoria(lista)])
+        );
       },
       error: () => {}
     });
+  }
+
+  // Agrupa una lista de acciones (ya ordenada) en bloques por categoria -- ver gruposDeAcciones()
+  // mas abajo para el criterio de agrupamiento.
+  private agruparPorCategoria(acciones: IAccionSubmenu[]): { categoria: string; acciones: IAccionSubmenu[] }[] {
+    const grupos: { categoria: string; acciones: IAccionSubmenu[] }[] = [];
+    for (const accion of acciones) {
+      const categoria = accion.categoria || 'Otras acciones';
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && ultimo.categoria === categoria) {
+        ultimo.acciones.push(accion);
+      } else {
+        grupos.push({ categoria, acciones: [accion] });
+      }
+    }
+    return grupos;
   }
 
   // ── Fase 3 de permisos: acciones puntuales dentro de una pantalla (piloto en Modelos) ────
@@ -145,18 +168,16 @@ export class GestionRolesComponent implements OnInit {
   // lista ya ordenada por `orden` -- no reordena por su cuenta, así que las filas de una misma
   // categoria tienen que venir con `orden` consecutivo desde el back (ver
   // migration_accion_submenu_categoria.sql). Sin categoria (null) cae en "Otras acciones".
+  //
+  // OJO (encontrado 2026-09-06): esto se llama directo desde el *ngFor del template -- antes
+  // recalculaba el agrupamiento (arrays y objetos NUEVOS) en cada corrida de deteccion de
+  // cambios de Angular. Sin trackBy, el *ngFor anidado veia esos objetos como "otros" en cada
+  // ciclo y destruia/recreaba los checkboxes de acciones todo el tiempo, incluido el que
+  // acababas de clickear -- el click se perdia sin error en consola (el modelo SI se alcanzaba a
+  // actualizar en algunos casos, pero el checkbox nunca se veia reaccionar). Ahora lee del cache
+  // armado una sola vez en cargarCatalogo() (agruparPorCategoria), no recalcula nada aqui.
   gruposDeAcciones(submenu: ISubmenu): { categoria: string; acciones: IAccionSubmenu[] }[] {
-    const grupos: { categoria: string; acciones: IAccionSubmenu[] }[] = [];
-    for (const accion of this.accionesDe(submenu)) {
-      const categoria = accion.categoria || 'Otras acciones';
-      const ultimo = grupos[grupos.length - 1];
-      if (ultimo && ultimo.categoria === categoria) {
-        ultimo.acciones.push(accion);
-      } else {
-        grupos.push({ categoria, acciones: [accion] });
-      }
-    }
-    return grupos;
+    return this.gruposDeAccionesPorSubmenu.get(submenu.id) ?? [];
   }
 
   // Popup con "¿para qué sirve? ¿dónde lo veo?" -- pedido del usuario 2026-08-28: el tooltip al

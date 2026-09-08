@@ -41,7 +41,7 @@ export class PresentacionImagenesComponent implements OnInit {
   imagenSrc(img: IImagenPresentacionV2Dto): string {
     const p = this.pendientes.get(img.id);
     if (p) return p.preview;
-    return this.presentacionService.getImagenUrlV2(img.id);
+    return this.presentacionService.getImagenUrlV2(img);
   }
 
   tieneImagen(img: IImagenPresentacionV2Dto): boolean {

@@ -21,7 +21,7 @@ import Swal from 'sweetalert2';
 // salió de Analítica a un link propio, ya no es parte de ningún accordion.
 const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'catalogo',   paths: ['productos/buscar', 'productos/agregar', 'tienda/venta', 'carga-imagenes', 'tienda/cargar-excel', 'palabras-clave'] },
-  { group: 'envios',     paths: ['lugares-entrega'] },
+  { group: 'envios',     paths: ['lugares-entrega', 'entregas-zona'] },
   { group: 'pedidos',    paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
   { group: 'ventas',     paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
   { group: 'reportes',   paths: ['dashboard', 'reportes'] },

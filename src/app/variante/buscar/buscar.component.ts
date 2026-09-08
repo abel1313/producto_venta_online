@@ -28,7 +28,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
   totalPaginas    = 0;
   terminoBusqueda = '';
   buscando        = false;
-  isAdminUser     = false;
   sinResultados   = false;
   // Cada checkbox es independiente (no excluyente entre si). Si ambos de un par estan marcados
   // (o ninguno), no se filtra por esa dimension (se traen ambos casos) — solo cuando queda
@@ -104,7 +103,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.roles = roles;
-      this.isAdminUser = roles.includes('ROLE_ADMIN');
       if (!this.isAnonymous) {
         this.favoritoService.listarIds().pipe(takeUntil(this.destroy$)).subscribe({
           next: res => { this.favoritosIds = new Set(res?.data ?? []); this.favoritosDisponibles = true; },
@@ -292,6 +290,73 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   get puedeCompartirImagen(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
+  }
+
+  // Pedido explicito del dueño (2026-09-05): TODO lo que tiene la pantalla debe tener su propio
+  // permiso separado, sin excepciones -- incluye el escaner. A diferencia de Modelos (100%
+  // admin), Tienda es publica: un visitante SIN sesion sigue viendo el boton siempre (isAnonymous
+  // en la plantilla) -- este permiso solo aplica a cuentas CON sesion (cualquier rol, incluido
+  // ROLE_ADMIN). Ver migration_accion_tienda_escanear.sql.
+  get puedeEscanear(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
+  }
+
+  // Mismo criterio que puedeEscanear -- los 4 filtros públicos del catálogo (Talla/Color/Marca/
+  // Precio) también quedan divididos (2026-09-05). Visitantes SIN sesión los siguen viendo
+  // siempre (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_filtros_publicos.sql.
+  get puedeFiltroTalla(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-talla');
+  }
+
+  get puedeFiltroColor(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-color');
+  }
+
+  get puedeFiltroMarca(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-marca');
+  }
+
+  get puedeFiltroPrecio(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'filtro-precio');
+  }
+
+  // Mismo criterio que puedeEscanear/puedeFiltroXxx -- los botones de carrito de la tarjeta
+  // (Agregar/Quitar/Ver) y el ícono de carrito del encabezado eran los únicos elementos de la
+  // pantalla sin permiso propio (2026-09-05). Visitantes SIN sesión los siguen viendo siempre
+  // (isAnonymous en la plantilla); el permiso solo aplica a cuentas con sesión. Ver
+  // migration_accion_tienda_carrito.sql.
+  get puedeAgregarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'agregar-carrito');
+  }
+
+  get puedeQuitarCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'quitar-carrito');
+  }
+
+  get puedeVerCarrito(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'ver-carrito');
+  }
+
+  // Reemplaza el viejo isAdminUser (roles.includes('ROLE_ADMIN') a secas) para lo puramente
+  // informativo de esta pantalla (badge "Deshabilitado", atenuar la tarjeta) -- mismo cambio ya
+  // hecho en Modelos (esVistaAdmin), no requiere ninguna acción puntual, solo poder VER la
+  // pantalla (2026-09-05).
+  get esVistaAdmin(): boolean {
+    return this.authService.tienePantalla('tienda/buscar');
+  }
+
+  // El botón ✏️ "Editar" vive en la tarjeta de ESTA pantalla (tienda/buscar) -- hasta 2026-09-08
+  // dependía "prestado" del permiso de "tienda/venta" (otra pantalla), porque "tienda/update"
+  // (destino real de editarVariante()) todavía no tiene fila propia en el catálogo de submenus.
+  // Reportado por el usuario con capturas: marcar el checkbox "Editar" de Tienda en Gestión de
+  // roles no hacía nada -- el botón seguía sin aparecer para un rol con Editar en tienda/buscar
+  // pero no en tienda/venta. Se cambió a tieneEscritura('tienda/buscar') -- el propio permiso de
+  // esta pantalla -- y SecurityConfig.pantallaEscribir ahora también acepta "tienda/buscar" para
+  // el guardado real (POST /tienda/v1/guardarConImagenes), así el checkbox y el botón ya
+  // coinciden con lo mismo.
+  get puedeActualizarVariante(): boolean {
+    return this.authService.tieneEscritura('tienda/buscar');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

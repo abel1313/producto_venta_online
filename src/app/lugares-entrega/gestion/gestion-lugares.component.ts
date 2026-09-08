@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ILugarEntrega } from '../models/lugar-entrega.model';
 import { LugarEntregaService } from '../service/lugar-entrega.service';
 
@@ -32,8 +33,22 @@ export class GestionLugaresComponent implements OnInit {
 
   constructor(
     private readonly svc: LugarEntregaService,
-    private readonly fb:  FormBuilder
+    private readonly fb:  FormBuilder,
+    private readonly authService: AuthService
   ) {}
+
+  // Permisos finos (Fase 3, 2026-09-05, mismo patrón que palabras-clave): "Editar" cubre el
+  // formulario de alta/edición completo (nombre, envío, horas extra, recoger en tienda, día de
+  // entrega, centro de la zona) y el editor de anillos de cobro por distancia -- son un único
+  // flujo de "editar la zona", no tiene sentido partirlos más fino. "Eliminar" es su propia
+  // acción puntual -- ver migration_accion_lugares_entrega_eliminar.sql.
+  get puedeEditar(): boolean {
+    return this.authService.tieneEscritura('lugares-entrega');
+  }
+
+  get puedeEliminar(): boolean {
+    return this.authService.tieneAccion('lugares-entrega', 'eliminar');
+  }
 
   // Centro de la zona (para el mapa/picker) — no es parte del FormGroup porque
   // SelectorUbicacionComponent maneja lat/lng por [lat]/[lng]/(ubicacionCambio), no ngModel.

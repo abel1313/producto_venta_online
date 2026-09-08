@@ -152,7 +152,7 @@ export class MisPedidosComponent implements OnInit {
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
-    private readonly authService: AuthService,
+    public  readonly authService: AuthService,
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
@@ -438,6 +438,19 @@ export class MisPedidosComponent implements OnInit {
           .mp-entrega-input:disabled, .mp-entrega-select:disabled {
             opacity:.6; cursor:not-allowed;
             background:var(--app-surface-2,#f1f5f9);
+          }
+          /* El popup nativo de <option> no respeta background/color de autor via custom
+             properties (mismo bug ya encontrado en venta-variante/gestion-lugares/
+             entregas-zona/venta-directa) -- de noche el select queda ilegible aunque
+             --card-bg/--app-text ya esten bien definidos para el resto del formulario. Mismo
+             patron robusto (color-scheme forzado + colores fijos). Este bloque va dentro del
+             <style> inyectado por Swal, asi que "body.theme-dark" real basta -- no hace falta
+             :host-context aqui. */
+          body.theme-dark .mp-entrega-select {
+            color-scheme: light !important;
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+            border-color: #e5e7eb !important;
           }
           .mp-entrega-aviso {
             margin:0; padding:9px 12px; border-radius:10px; font-size:.78rem; line-height:1.45;

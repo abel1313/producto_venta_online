@@ -12113,3 +12113,100 @@ módulo de redes sociales excluido de `master`, ver regla más arriba).
 
 **Verificado:** `tsc --noEmit` + `ng build --configuration=production/qa` sin errores en los 3
 ambientes, y confirmado por el dueño en prod (`shop.novedades-jade.com.mx`) tras el deploy.
+
+## BUG RECURRENTE — `<select>` NATIVO ILEGIBLE EN MODO OSCURO (2026-09-08)
+
+> Reporte del dueño: "esto ha estado pasando" — el select de "Lugar de entrega" en
+> `venta-directa` se veía con fondo blanco y letras invisibles en modo oscuro, y no era la
+> primera vez que se arreglaba este mismo bug en una pantalla distinta.
+
+### Causa raíz
+
+El popup nativo de `<option>` de un `<select>` **no respeta `background-color`/`color` de autor**
+(ni variables CSS) en todos los navegadores — el único lever real es la propiedad `color-scheme`,
+y ni siquiera `color-scheme: dark` deja el popup consistentemente legible entre navegadores/SO.
+El bloque global `body.theme-dark { color-scheme: dark; ... }` (styles.scss línea ~220) hereda
+ese `color-scheme: dark` a TODO el árbol, incluidos los `<select>` — eso es lo que dispara el bug.
+
+**El único patrón que garantiza legibilidad cross-browser** (encontrado primero en
+`venta-variante`, repetido después en `gestion-lugares`, `entregas-zona`, `mis-pedidos`,
+`venta-directa`, `buscar`, `mis-datos`, `clientes-mostrar`): forzar el `<select>` de vuelta a
+tema **claro** con colores fijos, sacrificando "verse oscuro como el resto del form" a cambio de
+"legible siempre":
+
+```scss
+:host-context(body.theme-dark) {
+  select.mi-clase {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border) !important;
+  }
+}
+```
+
+**"Forma de pago" (venta-directa) se ve bien en modo oscuro por un motivo distinto**, no porque
+tenga este parche: es un `<p-dropdown>` de PrimeNG, no un `<select>` nativo — renderiza su propio
+panel `<div>` (`appendTo="body"`, ver `.p-dropdown-panel` en `styles.scss`), así que nunca choca
+con la limitación del popup nativo. Migrar los `<select>` problemáticos a `<p-dropdown>` sería el
+arreglo "de raíz", pero es un cambio de componente (no solo CSS) — de momento se optó por seguir
+con el parche de `color-scheme` porque ya es un patrón probado y no cambia el markup/comportamiento.
+
+### Por qué seguía pasando pantalla por pantalla
+
+Cada vez que aparecía un `<select>` nuevo (o uno viejo entraba a modo oscuro por primera vez), el
+parche se aplicaba SOLO a esa clase/componente puntual — no había ninguna regla que cubriera
+`<select>` en general, así que el bug volvía a aparecer con cada select nuevo.
+
+**Arreglo permanente (2026-09-08):** se agregó una regla GLOBAL en `src/styles.scss`, al final del
+bloque `body.theme-dark { ... }` (después de `.form-control, .form-select`):
+
+```scss
+select, select.form-select {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: var(--card-border, #2A2A2E) !important;
+}
+```
+
+Esto cubre CUALQUIER `<select>` de la app en modo oscuro, exista o no un parche puntual para su
+clase — es la red de seguridad. Los parches por componente que ya existían (más específicos, ej.
+`select.pk-input`, `select.vd-entrega__input`) se dejaron tal cual y siguen ganando donde ya
+estaban (no hacen falta, pero no estorban). Se puso al final del bloque a propósito: ante un
+empate de especificidad con `.form-select` (mismas 2 clases), gana la regla declarada después en
+el archivo — por eso se repite `select.form-select` explícitamente ahí mismo.
+
+### Modo claro — revisado, sin bug
+
+En modo claro no hay ningún `color-scheme: dark` heredado (el bloque `body.theme-light` fija
+`color-scheme: light` desde el inicio del archivo), así que el `<select>` nativo usa el
+comportamiento por default del navegador (popup claro, texto oscuro) — legible sin necesidad de
+ningún parche. Confirmado que no existe ninguna regla en `body.theme-light` que reintroduzca
+`color-scheme: dark` para selects.
+
+### "El día" (día de entrega semanal en `gestion-lugares`)
+
+El `<select>` de día de entrega semanal en `gestion-lugares.component.scss` (clase
+`select.pk-input`) ya tenía el mismo parche puntual aplicado (commit de esta sesión, ver abajo) —
+confirmado legible en ambos modos.
+
+### Archivos con el parche puntual ya aplicado (más el global de arriba como respaldo)
+
+- `src/styles.scss` — regla global nueva (`select, select.form-select`)
+- `src/app/variante/venta-variante/venta-variante.component.scss` — original, `select.form-select`
+- `src/app/lugares-entrega/gestion/gestion-lugares.component.scss` — `select.pk-input` (día de
+  entrega semanal)
+- `src/app/entregas-zona/entregas-zona.component.scss`
+- `src/app/variante/venta-directa/venta-directa.component.scss` — `select.vd-entrega__input`
+  (Lugar de entrega)
+- `src/app/pedidos/mis-pedidos/mis-pedidos.component.ts` — `.mp-entrega-select`, dentro del
+  `<style>` inyectado por SweetAlert2 (usa `body.theme-dark` real, no `:host-context`, porque el
+  modal vive fuera del `<app-root>`)
+- `src/app/variante/buscar/buscar.component.scss`
+- `src/app/clietes/mis-datos/mis-datos.component.scss`
+- `src/app/clietes/clientes-mostrar/clientes-mostrar.component.scss`
+
+**Regla a futuro:** cualquier `<select>` nuevo ya queda cubierto por la regla global de
+`styles.scss` — no hace falta acordarse de repetir el parche por componente salvo que se quiera
+un color de fondo/borde distinto al default (`#ffffff`/`#1f2937`).

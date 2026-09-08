@@ -12,15 +12,16 @@
 
     <div class="vb-header__actions">
       <!-- Carrito badge -->
-      <button class="vb-btn vb-btn--cart" (click)="verCarrito()">
+      <button *ngIf="isAnonymous || puedeVerCarrito" class="vb-btn vb-btn--cart" (click)="verCarrito()">
         🛒
         <span *ngIf="totalEnCarrito > 0" class="vb-cart-badge">{{ totalEnCarrito }}</span>
       </button>
     </div>
   </div>
 
-  <!-- Botón escáner solo en móvil (encima del buscador) -->
-  <button class="vb-scan-mobile" (click)="iniciarEscaner()">
+  <!-- Botón escáner solo en móvil (encima del buscador) -- visitantes sin sesión siempre lo ven
+       (isAnonymous), cuentas con sesión necesitan el permiso puntual (puedeEscanear). -->
+  <button *ngIf="isAnonymous || puedeEscanear" class="vb-scan-mobile" (click)="iniciarEscaner()">
     📷 Escanear código de barras
   </button>
 
@@ -40,7 +41,7 @@
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
-    <button class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
+    <button *ngIf="isAnonymous || puedeEscanear" class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
     </button>
   </div>
@@ -119,21 +120,22 @@
     <button class="vb-filtro-btn" *ngIf="hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
   </div>
 
-  <!-- Filtros públicos del catálogo: talla / color / marca / precio — para cualquier usuario -->
+  <!-- Filtros públicos del catálogo: talla / color / marca / precio -- visitantes sin sesión
+       siempre los ven (isAnonymous); cuentas con sesión necesitan el permiso puntual. -->
   <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
-    <select class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroTalla" class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Talla</option>
       <option *ngFor="let t of filtrosDisponibles.tallas" [value]="t">{{ t }}</option>
     </select>
-    <select class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroColor" class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Color</option>
       <option *ngFor="let c of filtrosDisponibles.colores" [value]="c">{{ c }}</option>
     </select>
-    <select class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
+    <select *ngIf="isAnonymous || puedeFiltroMarca" class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
       <option value="">Marca</option>
       <option *ngFor="let m of filtrosDisponibles.marcas" [value]="m">{{ m }}</option>
     </select>
-    <div class="vb-pub-precio">
+    <div *ngIf="isAnonymous || puedeFiltroPrecio" class="vb-pub-precio">
       <input type="number" class="vb-pub-input" placeholder="$ mín"
              [(ngModel)]="filtroPrecioMin" (ngModelChange)="onFiltroPublicoChange()"
              [min]="filtrosDisponibles.precioMin ?? 0" />
@@ -195,16 +197,16 @@
 
   <div class="vb-grid">
     <div class="vb-card" *ngFor="let v of variantes"
-         [class.vb-card--deshabilitado]="isAdminUser && !estaHabilitado(v)"
+         [class.vb-card--deshabilitado]="esVistaAdmin && !estaHabilitado(v)"
          [class.vb-card--seleccionada]="seleccionados.has(v.id)">
 
-      <!-- Checkbox de selección (solo admin) -->
-      <label *ngIf="isAdminUser" class="vb-card__check" (click)="$event.stopPropagation()">
+      <!-- Checkbox de selección (solo quien puede habilitar/deshabilitar en lote) -->
+      <label *ngIf="puedeHabilitar" class="vb-card__check" (click)="$event.stopPropagation()">
         <input type="checkbox" [checked]="seleccionados.has(v.id)" (change)="toggleSeleccion(v.id)" />
       </label>
 
       <!-- Badge deshabilitado (solo admin) -->
-      <span *ngIf="isAdminUser && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
+      <span *ngIf="esVistaAdmin && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 
       <!-- Header -- mismo degradado de marca que el resto de las cards de la app
            (Personalización); colorHeader() solo se usa para el puntito de color real
@@ -285,25 +287,25 @@
 
       <!-- Botones de carrito ─────────────────────────── -->
       <div class="vb-card__footer">
-        <button class="vb-btn-card vb-btn-card--add"
+        <button *ngIf="isAnonymous || puedeAgregarCarrito" class="vb-btn-card vb-btn-card--add"
           [disabled]="stockAgotado(v)" (click)="agregarCarrito(v)"
           title="{{ stockAgotado(v) ? 'Sin stock' : 'Agregar al carrito' }}">
           <span>{{ stockAgotado(v) ? '🚫' : '➕' }}</span>
           <span class="vb-btn-card__label">{{ stockAgotado(v) ? 'Sin stock' : 'Agregar' }}</span>
         </button>
 
-        <button class="vb-btn-card vb-btn-card--remove"
+        <button *ngIf="isAnonymous || puedeQuitarCarrito" class="vb-btn-card vb-btn-card--remove"
           [disabled]="!estaEnCarrito(v)" (click)="eliminarCarrito(v)">
           <span>➖</span>
           <span class="vb-btn-card__label">Quitar</span>
         </button>
 
-        <button class="vb-btn-card vb-btn-card--view" (click)="verCarrito()">
+        <button *ngIf="isAnonymous || puedeVerCarrito" class="vb-btn-card vb-btn-card--view" (click)="verCarrito()">
           <span>🛒</span>
           <span class="vb-btn-card__label">Carrito</span>
         </button>
 
-        <button *ngIf="isAdminUser" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
+        <button *ngIf="puedeActualizarVariante" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
         </button>

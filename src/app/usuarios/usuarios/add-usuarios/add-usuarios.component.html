@@ -35,6 +35,7 @@
 
   <!-- ── Panel derecho: formulario ── -->
   <div class="split-form" [class.split-form--full]="esActualizar">
+    <canvas #particlesCanvas class="particles-bg" *ngIf="!esActualizar && (isDark$ | async)"></canvas>
     <div class="form-inner">
 
       <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio

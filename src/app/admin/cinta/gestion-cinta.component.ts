@@ -4,7 +4,6 @@ import { takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { CINTA_SUGERIDAS, ICintaItem } from 'src/app/cinta/models/cinta.model';
 import { CintaService } from 'src/app/cinta/service/cinta.service';
-import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-gestion-cinta',
@@ -29,10 +28,7 @@ export class GestionCintaComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private readonly cinta: CintaService,
-    public  readonly authService: AuthService
-  ) {}
+  constructor(private readonly cinta: CintaService) {}
 
   ngOnInit(): void {
     this.cinta.items$.pipe(takeUntil(this.destroy$)).subscribe(items => this.items = items);

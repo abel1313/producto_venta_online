@@ -14,7 +14,6 @@ import { IEstadoRifa, IHistorialVariante } from '../models/estado-rifa.model';
 import { RifaService, ModoContinuacion } from '../service/rifa.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
-import { AuthService } from 'src/app/auth/auth.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
@@ -164,8 +163,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     private readonly webSocketService: WebSocketServiceService,
     private readonly clienteService: ClienteService,
     private readonly fb: FormBuilder,
-    readonly router: Router,
-    public  readonly authService: AuthService
+    readonly router: Router
   ) {}
 
   ngOnInit(): void {

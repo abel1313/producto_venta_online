@@ -4,7 +4,6 @@ import Swal from 'sweetalert2';
 import { IConfigurarRifa, TipoRifa } from '../models/configurar-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
 import { RifaService } from '../service/rifa.service';
-import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-buscar-rifa',
@@ -29,8 +28,7 @@ export class BuscarRifaComponent implements OnInit {
 
   constructor(
     private readonly rifaService: RifaService,
-    private readonly router: Router,
-    public  readonly authService: AuthService
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {

@@ -216,8 +216,7 @@
           <span>{{ i + 1 }}</span>
           <span>{{ nombreCompleto(c) }}</span>
           <span>{{ c.telefono }}</span>
-          <button class="rm-del-btn" (click)="eliminarConcursante(c)"
-                  *ngIf="authService.tieneAccion('rifas/mes', 'eliminar')">✕</button>
+          <button class="rm-del-btn" (click)="eliminarConcursante(c)">✕</button>
         </div>
       </div>
       <p class="rm-empty" *ngIf="concursantes.length === 0">Sin participantes aún</p>

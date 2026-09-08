@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { AdminService, IResultadoReconciliacion } from '../admin.service';
-import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-reconciliacion-imagenes',
@@ -23,10 +22,7 @@ export class ReconciliacionImagenesComponent {
   resultado: IResultadoReconciliacion['data'] | null = null;
   errorResultado: string | null = null;
 
-  constructor(
-    private readonly adminService: AdminService,
-    public  readonly authService: AuthService
-  ) {}
+  constructor(private readonly adminService: AdminService) {}
 
   iniciar(): void {
     this.iniciando    = true;

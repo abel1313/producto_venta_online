@@ -11,7 +11,6 @@ import { RifaService } from '../service/rifa.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { AuthService } from 'src/app/auth/auth.service';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -97,8 +96,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly rifaService: RifaService,
-    private readonly fb: FormBuilder,
-    public  readonly authService: AuthService
+    private readonly fb: FormBuilder
   ) {}
 
   ngOnInit(): void {

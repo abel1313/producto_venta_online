@@ -136,7 +136,7 @@
 
       <div class="ra-card__footer">
         <button class="ra-btn ra-btn--edit" (click)="abrirEditar(r)">✏️ Editar</button>
-        <button class="ra-btn" [ngClass]="r.activo ? 'ra-btn--off' : 'ra-btn--on'" *ngIf="authService.tieneAccion('flores/ramos-admin', 'habilitar')" (click)="toggleActivo(r)">
+        <button class="ra-btn" [ngClass]="r.activo ? 'ra-btn--off' : 'ra-btn--on'" (click)="toggleActivo(r)">
           {{ r.activo ? '⏸ Ocultar' : '▶️ Mostrar' }}
         </button>
       </div>

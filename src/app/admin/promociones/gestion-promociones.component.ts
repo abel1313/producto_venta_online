@@ -6,7 +6,6 @@ import { IPromocion, IPromocionDetalle, IPromocionRequest } from 'src/app/promoc
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
-import { AuthService } from 'src/app/auth/auth.service';
 
 interface IDetalleForm extends IPromocionDetalle {
   precioNormalStr?: string; // solo para mostrar
@@ -46,8 +45,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly promoService: PromocionService,
-    private readonly varianteService: VarianteService,
-    public  readonly authService: AuthService
+    private readonly varianteService: VarianteService
   ) {}
 
   ngOnInit(): void {

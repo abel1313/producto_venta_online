@@ -5,7 +5,6 @@ import Swal from 'sweetalert2';
 import { ITemaVariable } from '../models/tema.model';
 import { PresetDiseno, PRESETS_DISENO } from '../models/presets-diseno';
 import { TemaAdminService } from '../service/tema-admin.service';
-import { AuthService } from 'src/app/auth/auth.service';
 
 // Pantalla única de Personalización -- catálogo dinámico (ver TemaVariable en el backend): cada
 // fila ES una variable CSS, el dueño puede agregar/editar/eliminar sin que nadie toque código.
@@ -60,8 +59,7 @@ export class GestionPersonalizacionComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly svc: TemaAdminService,
-    public  readonly authService: AuthService
+    private readonly svc: TemaAdminService
   ) {}
 
   ngOnInit(): void {

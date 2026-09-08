@@ -573,14 +573,19 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .form-inner {
+    // El .form-inner BASE de este componente (arriba, fuera de este bloque) nunca tuvo forma de
+    // tarjeta -- solo padding vertical (0.5rem 0), sin border ni border-radius -- porque en modo
+    // claro Registrar usa el fondo sólido de .split-form, no una tarjeta flotante. El login sí
+    // es una tarjeta de cristal en CUALQUIER modo (padding 2.25rem 2rem, border 1px, border-radius
+    // 24px -- login-form.component.scss). El backdrop-filter solo (fix anterior) no bastaba: sin
+    // border-radius ni padding lateral, el "cristal" no tenía forma de tarjeta, solo un tinte del
+    // mismo ancho exacto que los campos -- se veía como si flotaran directo sobre la malla.
+    padding: 2.25rem 2rem;
     background: rgba(15, 20, 45, 0.72);
-    // Sin esto la malla de partículas de atrás se veía nítida atravesando la tarjeta -- el
-    // login usa backdrop-filter en su .form-inner BASE (aplica en cualquier modo), pero acá
-    // el base no tiene ninguno, así que en oscuro faltaba por completo. Mismo valor que el
-    // login (blur 20px + saturate 150%) para que la tarjeta quede "esmerilada", no transparente.
     backdrop-filter: blur(20px) saturate(150%);
     -webkit-backdrop-filter: blur(20px) saturate(150%);
-    border-color: rgba(88, 86, 214, 0.28);
+    border: 1px solid rgba(88, 86, 214, 0.28);
+    border-radius: var(--radius-premium, 24px);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.3);
   }
 

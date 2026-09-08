@@ -43,7 +43,7 @@
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
-  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
+  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.fechaHoraEntregaRamo || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
     <p class="dp-entrega__title">📍 Datos de entrega</p>
     <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
       <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
@@ -57,8 +57,16 @@
     <p class="dp-entrega__item" *ngIf="detalle.lugarEntregaNombre">
       <strong>Lugar:</strong> {{ detalle.lugarEntregaNombre }}
     </p>
+    <!-- Zona programada ("Entregas por zona"): fecha siempre que exista; hora y punto de
+         encuentro solo si ya se programó el viaje (2026-09-08 -- antes se perdían, solo iban
+         en el correo de aviso). -->
     <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
-      <strong>Fecha de entrega:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}
+      <strong>Llega el:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}<ng-container *ngIf="detalle.horaRecogida"> a las {{ detalle.horaRecogida }}</ng-container><ng-container *ngIf="detalle.puntoEncuentro">, en {{ detalle.puntoEncuentro }}</ng-container>
+    </p>
+    <!-- Ramo de flores eternas: fecha+hora exacta elegida al armar el ramo (2026-09-08 -- antes
+         se guardaba pero nunca se le mostraba al cliente en su propio pedido). -->
+    <p class="dp-entrega__item" *ngIf="detalle.fechaHoraEntregaRamo">
+      <strong>Llega el:</strong> {{ detalle.fechaHoraEntregaRamo | date:'dd/MM/yyyy' }} a las {{ detalle.fechaHoraEntregaRamo | date:'HH:mm' }}
     </p>
     <p class="dp-entrega__item" *ngIf="detalle.urlFacebook">
       <strong>Facebook:</strong>

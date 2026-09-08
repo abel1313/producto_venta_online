@@ -635,6 +635,27 @@ body.theme-dark {
   /* ── Badges neutros ────────────────────── */
   .badge.bg-light { background: rgba(255,255,255,0.12) !important; color: #E9E9EC !important; }
   .text-muted { color: #5F8375 !important; }
+
+  /* ── Selects nativos (arreglo GLOBAL) ────
+     El popup nativo de <option> no respeta background/color de autor via custom properties
+     en todos los navegadores -- .form-select de arriba deja el <select> CERRADO con fondo
+     oscuro, pero al abrirlo el popup queda ilegible (texto blanco sobre fondo blanco o
+     viceversa segun el navegador/SO). Este bug se encontro y parcheo pantalla por pantalla
+     muchas veces (venta-variante, gestion-lugares, entregas-zona, venta-directa, mis-pedidos,
+     buscar, mis-datos, clientes-mostrar) con la misma solucion cada vez: forzar color-scheme
+     claro + colores fijos, unico patron que garantiza legibilidad cross-browser. Se pone aca
+     como regla global para TODO <select> de la app, para no depender de acordarse de repetir
+     el parche cada vez que aparece un select nuevo. Va al final del bloque a proposito: ante un
+     empate de especificidad con ".form-select" (misma cantidad de clases), gana la declarada
+     despues en el archivo -- por eso "select.form-select" esta repetido explicitamente aca. Los
+     parches puntuales por componente (mas especificos, ej. "select.pk-input") siguen ganando
+     donde ya existen; esta regla es la red de seguridad para los que faltan. */
+  select, select.form-select {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border, #2A2A2E) !important;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════

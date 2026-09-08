@@ -327,6 +327,20 @@ $t:  all 0.22s ease;
   }
 }
 
+// El select de "Lugar de entrega" comparte la misma clase que el <input> de fecha, pero el
+// popup nativo de <option> no respeta background/color de autor vía custom properties (mismo
+// bug ya encontrado y arreglado en venta-variante/gestion-lugares/entregas-zona) -- de noche
+// queda con el control ilegible aunque --input-bg/--input-text ya estén bien definidos para
+// <input>. Mismo patrón robusto (color-scheme forzado + colores fijos) que en esas pantallas.
+:host-context(body.theme-dark) {
+  select.vd-entrega__input {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border) !important;
+  }
+}
+
 .vd-credit-info {
   font-size: .78rem; color: var(--pk-warning-to);
   background: var(--pk-warning-soft); border: 1px solid var(--pk-warning-soft);

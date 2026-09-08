@@ -55,7 +55,7 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
   ];
   imgSrc(orden: number): string {
     const img = this.imagenesV2.find(i => i.orden === orden && i.activo);
-    if (img) return this.presentacion.getImagenUrlV2(img.id);
+    if (img) return this.presentacion.getImagenUrlV2(img);
     return this.FALLBACK[orden - 1];
   }
   imgDesc(orden: number): string {

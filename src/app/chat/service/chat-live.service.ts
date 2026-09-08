@@ -4,7 +4,7 @@ import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
-import { ApiResponse, EstadoConexion, EventoUsuario, HistorialPaginado, MensajeUI } from '../models/chat.models';
+import { ApiResponse, EstadoConexion, EventoUsuario, HistorialPaginado, MensajeUI, nowLocalIso } from '../models/chat.models';
 
 const SESION_KEY = 'chatSesionId';
 
@@ -183,7 +183,7 @@ export class ChatLiveService implements OnDestroy {
   }
 
   private agregarMensaje(remitente: 'USUARIO' | 'ADMIN', contenido: string, timestamp?: string): void {
-    const ts = timestamp ?? new Date().toISOString().slice(0, 19);
+    const ts = timestamp ?? nowLocalIso();
     this.mensajes$.next([...this.mensajes$.value, { remitente, contenido, timestamp: ts }]);
   }
 

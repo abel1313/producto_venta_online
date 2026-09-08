@@ -9,7 +9,8 @@ import {
   EventoAdmin,
   HistorialPaginado,
   SesionActiva,
-  MensajeUI
+  MensajeUI,
+  nowLocalIso
 } from '../models/chat.models';
 
 export interface SesionUI extends SesionActiva {
@@ -159,7 +160,7 @@ export class ChatAdminService implements OnDestroy {
     contenido: string,
     timestamp?: string
   ): void {
-    const ts = timestamp ?? new Date().toISOString().slice(0, 19);
+    const ts = timestamp ?? nowLocalIso();
     this.actualizarSesion(sesionId, s => ({
       ...s,
       mensajes: [...s.mensajes, { remitente, contenido, timestamp: ts }],

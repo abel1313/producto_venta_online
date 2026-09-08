@@ -544,6 +544,32 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.3);
   }
 
+  // .brand-icon/.brand-name usan $primary/$primary-d (var(--brand-1)/--brand-2), que en modo
+  // oscuro son blanco/gris (#FFFFFF/#C7C7CC, pensados para otras pantallas monocromas) -- por
+  // eso el icono salia como un cuadro blanco liso flotando sobre el fondo azul marino nuevo
+  // ("se ve muy feo su contorno", pedido del usuario 2026-09-08). El login nunca depende de esas
+  // variables globales -- tiene su propia paleta azul/morado fija ($accent/$accent-d en
+  // login-form.component.scss). Se usan los mismos valores literales aqui para que coincida.
+  .brand-icon {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.35);
+  }
+
+  .brand-name span {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  // Mismo problema que .brand-icon -- .btn-submit tambien usa var(--brand-1)/--brand-2 (blanco/
+  // gris en oscuro) con texto en --app-accent-ink (blanco fijo): sin este override el boton
+  // quedaba blanco con texto blanco, ilegible.
+  .btn-submit {
+    background: linear-gradient(135deg, #007AFF, #5856D6);
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgba(0, 122, 255, 0.35);
+  }
+
   .brand-name  { color: var(--app-text, #f1f5f9); }
   .brand-sub   { color: var(--app-text-muted, #64748b); }
   .field-label { color: var(--app-text-muted, #94a3b8); }

@@ -621,6 +621,21 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 
+  // La regla ".form-inner .field-input" (minimalista, sin caja) de mas arriba tiene la MISMA
+  // especificidad que ".field-input" de aca arriba (dos clases cada una) -- por orden de
+  // aparicion en el archivo, esta de aca (declarada despues) le ganaba en modo oscuro, asi que
+  // el input seguia viendose en caja aunque el override ya existiera. Se repite aca, con el
+  // mismo alcance ".form-inner .field-input", para que gane por especificidad real (tres clases).
+  .form-inner .field-input {
+    background: transparent;
+    border-color: var(--input-border, #2A3050);
+
+    &:focus {
+      background: transparent;
+      box-shadow: none;
+    }
+  }
+
   .input-icon  { color: var(--app-text-muted, #64748b); }
   .toggle-pass { color: var(--app-text-muted, #64748b); &:hover { color: var(--app-accent); } }
 

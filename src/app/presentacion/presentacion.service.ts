@@ -47,8 +47,16 @@ export class PresentacionService {
     return `${this.urlV2}/${id}/imagen`;
   }
 
-  getImagenUrlV2(id: number): string {
-    return `${this.urlV2}/${id}/imagen`;
+  // Antes recibía solo el id y armaba "/{id}/imagen" a secas -- esa URL nunca cambiaba aunque el
+  // admin reemplazara la imagen, así que el navegador seguía sirviendo los bytes viejos cacheados
+  // (encontrado 2026-09-08: "subo imagen nueva de login, sigue saliendo la anterior hasta que
+  // borro cache"). Ahora usa `urlImagen` del DTO, que el back arma con "?v=<actualizadoEn>" --
+  // cambia solo cuando se actualiza la imagen, forzando a pedir los bytes de nuevo.
+  getImagenUrlV2(img: { id: number; urlImagen?: string }): string {
+    if (img.urlImagen) {
+      return `${environment.api_Url}${img.urlImagen}`;
+    }
+    return `${this.urlV2}/${img.id}/imagen`;
   }
 
     getTodasImagenesPorId(id: number): Observable<any> {

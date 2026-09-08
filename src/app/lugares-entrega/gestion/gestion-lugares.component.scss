@@ -190,8 +190,20 @@ $t:  all 0.2s ease;
 // Sin esto, .pk-input quedaba con fondo oscuro nativo del navegador (color-scheme:dark
 // heredado de body.theme-dark) pero texto oscuro fijo (#1f2937) -- texto invisible sobre
 // fondo oscuro. Mismo bug y mismo arreglo ya usado en abonos.component.scss (.ab-input).
+//
+// El <select> (día de entrega semanal) necesita ADEMÁS el fix real encontrado en
+// venta-variante.component.scss (2026-09-04, repetido en entregas-zona.component.scss): el
+// popup nativo de <option> no respeta color-scheme:dark de forma consistente entre navegadores
+// -- quedaba con el control ilegible de noche aunque .pk-input ya tuviera color-scheme:dark. Se
+// fuerza el mismo patrón robusto (light + colores fijos) que ya funciona en esas 2 pantallas.
 :host-context(body.theme-dark) {
   .pk-input { color-scheme: dark; color: var(--app-text); }
+  select.pk-input {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border-color: var(--card-border) !important;
+  }
 }
 
 :host-context(body.theme-light) {

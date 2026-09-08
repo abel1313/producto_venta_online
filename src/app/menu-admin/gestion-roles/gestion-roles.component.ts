@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { IAccionSubmenu, IMenu, IRol, ISubmenu } from '../models/menu.model';
 import { MenuAdminService } from '../service/menu.service';
 import { RolAdminService } from '../service/rol.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 interface GrupoSubmenus {
   menu: IMenu | null;   // null = "Sin grupo"
@@ -79,7 +80,8 @@ export class GestionRolesComponent implements OnInit {
   constructor(
     private readonly rolSvc: RolAdminService,
     private readonly menuSvc: MenuAdminService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    public  readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {

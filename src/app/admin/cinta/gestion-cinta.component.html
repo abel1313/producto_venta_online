@@ -55,10 +55,10 @@
           <button class="gca-icono" title="Subir"  [disabled]="i === 0 || guardando"                (click)="subir(item)">↑</button>
           <button class="gca-icono" title="Bajar"  [disabled]="i === items.length - 1 || guardando" (click)="bajar(item)">↓</button>
           <button class="gca-icono" title="Editar" [disabled]="guardando" (click)="editar(item)">✏️</button>
-          <button class="gca-icono" [disabled]="guardando"
+          <button class="gca-icono" [disabled]="guardando" *ngIf="authService.tieneAccion('admin/cinta', 'habilitar')"
                   [title]="item.activo ? 'Ocultar de la cinta' : 'Mostrar en la cinta'"
                   (click)="toggle(item)">{{ item.activo ? '👁️' : '🚫' }}</button>
-          <button class="gca-icono gca-icono--del" title="Quitar" [disabled]="guardando" (click)="eliminar(item)">🗑️</button>
+          <button class="gca-icono gca-icono--del" title="Quitar" [disabled]="guardando" *ngIf="authService.tieneAccion('admin/cinta', 'eliminar')" (click)="eliminar(item)">🗑️</button>
         </div>
       </ng-container>
 

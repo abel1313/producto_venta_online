@@ -135,11 +135,12 @@
 
       <div class="gp-card__footer">
         <button class="gp-btn gp-btn--edit" (click)="abrirEditar(p)">✏️ Editar</button>
-        <button class="gp-btn" [ngClass]="p.activo ? 'gp-btn--off' : 'gp-btn--on'" (click)="toggleActivo(p)">
+        <button class="gp-btn" [ngClass]="p.activo ? 'gp-btn--off' : 'gp-btn--on'" *ngIf="authService.tieneAccion('admin/promociones', 'habilitar')" (click)="toggleActivo(p)">
           {{ p.activo ? '⏸ Desactivar' : '▶️ Activar' }}
         </button>
         <button class="gp-btn" [disabled]="enviandoCorreoId === p.id || !esVigente(p)"
                 [title]="esVigente(p) ? '' : 'La promoción está inactiva o vencida'"
+                *ngIf="authService.tieneAccion('admin/promociones', 'enviar-correo')"
                 (click)="enviarCorreo(p)">
           {{ enviandoCorreoId === p.id ? '⏳ Enviando…' : '✉️ Enviar correo' }}
         </button>

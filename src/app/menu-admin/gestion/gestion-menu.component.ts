@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { IMenu, ISubmenu } from '../models/menu.model';
 import { MenuAdminService } from '../service/menu.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 // Admin de Menu/Submenu -- ver PLAN_PERMISOS_PANTALLAS.md (repo compartido, Fase 1). Reemplaza
 // el array fijo GROUP_ROUTES de navbar.component.ts por un catálogo editable: "Menu" es el
@@ -34,7 +35,8 @@ export class GestionMenuComponent implements OnInit {
 
   constructor(
     private readonly svc: MenuAdminService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    public  readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {

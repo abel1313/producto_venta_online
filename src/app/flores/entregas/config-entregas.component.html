@@ -45,7 +45,7 @@
         <button class="ce-btn ce-btn--ghost ce-btn--sm" [disabled]="guardando" (click)="editar(c)">
           {{ c.diasNormal ? '✏️ Editar' : '+ Configurar' }}
         </button>
-        <button class="ce-ico ce-ico--del" title="Quitar plazos" *ngIf="c.diasNormal"
+        <button class="ce-ico ce-ico--del" title="Quitar plazos" *ngIf="c.diasNormal && authService.tieneAccion('flores/entregas', 'eliminar')"
                 [disabled]="guardando" (click)="limpiar(c)">🗑️</button>
       </div>
     </div>

@@ -48,7 +48,7 @@
           </button>
           <span class="gm-list__actions">
             <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionMenu(m)" title="Editar">✏️</button>
-            <button class="pk-btn pk-btn--del" type="button" (click)="eliminarMenu(m)" title="Eliminar">🗑️</button>
+            <button class="pk-btn pk-btn--del" type="button" *ngIf="authService.tieneAccion('gestion-menu', 'eliminar-menu')" (click)="eliminarMenu(m)" title="Eliminar">🗑️</button>
           </span>
         </li>
         <li class="gm-list__item gm-list__item--singrupo"
@@ -141,7 +141,7 @@
                 <td><small class="pk-meta">/{{ s.ruta }}</small></td>
                 <td class="pk-table__actions">
                   <button class="pk-btn pk-btn--edit" (click)="iniciarEdicionSubmenu(s)" title="Editar">✏️</button>
-                  <button class="pk-btn pk-btn--del" (click)="eliminarSubmenu(s)" title="Eliminar">🗑️</button>
+                  <button class="pk-btn pk-btn--del" *ngIf="authService.tieneAccion('gestion-menu', 'eliminar-submenu')" (click)="eliminarSubmenu(s)" title="Eliminar">🗑️</button>
                 </td>
               </tr>
             </tbody>

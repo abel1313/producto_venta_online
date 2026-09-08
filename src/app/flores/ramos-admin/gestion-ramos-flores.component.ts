@@ -8,6 +8,7 @@ import {
 import { FloresService } from '../service/flores.service';
 import { FloresImagenService } from '../service/flores-imagen.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 interface IAccesorioSeleccion {
   accesorio: IAccesorioRamo;
@@ -65,7 +66,8 @@ export class GestionRamosFloresComponent implements OnInit {
   constructor(
     private readonly flores: FloresService,
     private readonly imagenes: FloresImagenService,
-    private readonly variantes: VarianteService
+    private readonly variantes: VarianteService,
+    public  readonly authService: AuthService
   ) {}
 
   /**

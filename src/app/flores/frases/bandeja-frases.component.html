@@ -39,11 +39,13 @@
       </div>
       <button class="fp-btn fp-btn--primary"
               [disabled]="procesandoId !== null"
+              *ngIf="authService.tieneAccion('flores/frases', 'aprobar')"
               (click)="aprobar(f)">
         {{ procesandoId === f.detalleId ? 'Guardando…' : '✓ Aprobar' }}
       </button>
       <button class="fp-btn fp-btn--ghost"
               [disabled]="procesandoId !== null"
+              *ngIf="authService.tieneAccion('flores/frases', 'rechazar')"
               (click)="rechazar(f)">✕ Rechazar</button>
     </div>
   </div>

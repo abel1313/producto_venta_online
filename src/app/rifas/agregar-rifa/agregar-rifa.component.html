@@ -162,7 +162,8 @@
               <span>{{ v.orden }}</span>
               <button class="rf-arrow-btn" (click)="moverVariante(i, 1); $event.stopPropagation()" [disabled]="i === variantesRifa.length - 1">↓</button>
             </div>
-            <button class="rf-del-btn" (click)="eliminarVarianteRifa(v); $event.stopPropagation()" title="Eliminar">✕</button>
+            <button class="rf-del-btn" (click)="eliminarVarianteRifa(v); $event.stopPropagation()"
+                    *ngIf="authService.tieneAccion('rifas/agregar', 'eliminar')" title="Eliminar">✕</button>
           </div>
         </div>
       </div>
@@ -480,7 +481,8 @@
             </span>
             <div class="d-flex gap-1">
               <button class="rf-arrow-btn" (click)="iniciarEdicion(c)" title="Editar">✏️</button>
-              <button class="rf-del-btn" (click)="eliminarConcursante(c)" title="Eliminar">✕</button>
+              <button class="rf-del-btn" (click)="eliminarConcursante(c)"
+                      *ngIf="authService.tieneAccion('rifas/agregar', 'eliminar-concursante')" title="Eliminar">✕</button>
             </div>
           </div>
 
@@ -536,7 +538,8 @@
             </span>
             <div class="d-flex gap-1">
               <button class="rf-arrow-btn" (click)="iniciarEdicion(c)" title="Editar">✏️</button>
-              <button class="rf-del-btn" (click)="eliminarConcursante(c)" title="Eliminar">✕</button>
+              <button class="rf-del-btn" (click)="eliminarConcursante(c)"
+                      *ngIf="authService.tieneAccion('rifas/agregar', 'eliminar-concursante')" title="Eliminar">✕</button>
             </div>
           </div>
 

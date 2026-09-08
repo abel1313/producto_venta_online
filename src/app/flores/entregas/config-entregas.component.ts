@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ICantidadFlor } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 /**
  * Configuración de entregas por tamaño de ramo — pantalla de administración.
@@ -42,7 +43,10 @@ export class ConfigEntregasComponent implements OnInit {
   editandoId: number | null = null;
   form = this.vacio();
 
-  constructor(private readonly flores: FloresService) {}
+  constructor(
+    private readonly flores: FloresService,
+    public  readonly authService: AuthService
+  ) {}
 
   ngOnInit(): void { this.cargar(); }
 

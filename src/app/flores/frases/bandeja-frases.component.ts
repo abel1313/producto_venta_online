@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { IFrasePendiente } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 /**
  * Bandeja de frases de listón por aprobar — ADMIN.
@@ -41,7 +42,8 @@ export class BandejaFrasesComponent implements OnInit {
 
   constructor(
     private readonly flores: FloresService,
-    private readonly router: Router
+    private readonly router: Router,
+    public  readonly authService: AuthService
   ) {}
 
   ngOnInit(): void { this.cargar(); }

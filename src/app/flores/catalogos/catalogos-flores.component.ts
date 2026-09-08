@@ -6,6 +6,7 @@ import {
 } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 import { FloresImagenService } from '../service/flores-imagen.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 type Tab = 'tipos' | 'colores' | 'cantidades' | 'accesorios' | 'frases';
 
@@ -58,7 +59,8 @@ export class CatalogosFloresComponent implements OnInit {
 
   constructor(
     private readonly flores: FloresService,
-    private readonly imagenes: FloresImagenService
+    private readonly imagenes: FloresImagenService,
+    public  readonly authService: AuthService
   ) {}
 
   ngOnInit(): void { this.cargar(); }

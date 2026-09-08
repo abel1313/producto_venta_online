@@ -76,7 +76,7 @@
           Ejecuta primero la reconciliación para identificar los faltantes.
         </p>
 
-        <button class="rc-btn rc-btn--danger" (click)="limpiarBD()" [disabled]="limpiando">
+        <button class="rc-btn rc-btn--danger" *ngIf="authService.tieneAccion('admin/reconciliacion-imagenes', 'limpiar-bd')" (click)="limpiarBD()" [disabled]="limpiando">
           🗑️ Limpiar BD
         </button>
 

@@ -168,7 +168,7 @@
             <span class="pz-row__valor" *ngIf="v.tipo !== 'color'">{{ v.valorClaro }}</span>
             <span class="pz-row__actions">
               <button class="pz-btn pz-btn--edit" type="button" (click)="iniciarEdicion(v)" title="Editar">✏️</button>
-              <button class="pz-btn pz-btn--del" type="button" (click)="eliminar(v)" title="Eliminar">🗑️</button>
+              <button class="pz-btn pz-btn--del" type="button" *ngIf="authService.tieneAccion('personalizacion', 'eliminar')" (click)="eliminar(v)" title="Eliminar">🗑️</button>
             </span>
           </div>
         </div>

@@ -65,14 +65,14 @@
 
       <div class="br-card__footer">
         <div class="br-card__btns">
-          <button class="br-btn br-btn--primary" *ngIf="r.activa" (click)="irAEjecucion(r)">
+          <button class="br-btn br-btn--primary" *ngIf="r.activa && authService.tieneAccion('rifas/buscar', 'ejecutar-rifa')" (click)="irAEjecucion(r)">
             🎡 Ir a ejecución
           </button>
           <button class="br-btn br-btn--secondary" (click)="verDetalle(r)" [disabled]="cargandoDetalle">
             <span *ngIf="!(cargandoDetalle && rifaDetalle === null)">📋 Ver detalle</span>
             <span *ngIf="cargandoDetalle && rifaDetalle === null" class="spinner-border spinner-border-sm"></span>
           </button>
-          <button class="br-btn br-btn--recover" *ngIf="!r.activa && r.tipo === 'MENSUAL'"
+          <button class="br-btn br-btn--recover" *ngIf="!r.activa && r.tipo === 'MENSUAL' && authService.tieneAccion('rifas/buscar', 'recuperar-rifa')"
                   (click)="recuperarRifa(r)" [disabled]="recuperando !== null">
             <span *ngIf="recuperando !== r.id">🔄 Recuperar</span>
             <span *ngIf="recuperando === r.id" class="spinner-border spinner-border-sm"></span>

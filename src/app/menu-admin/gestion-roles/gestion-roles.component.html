@@ -44,6 +44,7 @@
           <span class="gm-list__actions">
             <button class="pk-btn pk-btn--edit" type="button" (click)="iniciarEdicionRol(r)" title="Editar">✏️</button>
             <button class="pk-btn pk-btn--del" type="button" (click)="eliminarRol(r)"
+                    *ngIf="authService.tieneAccion('gestion-menu/roles', 'eliminar')"
                     [disabled]="esRolAdmin(r)"
                     [title]="esRolAdmin(r) ? 'ROLE_ADMIN no se puede eliminar' : 'Eliminar'">🗑️</button>
           </span>

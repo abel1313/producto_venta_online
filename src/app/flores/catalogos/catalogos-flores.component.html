@@ -57,9 +57,9 @@
         <span class="fl-fila__precio">${{ t.precioPorFlor | number:'1.2-2' }} c/u</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(t)">✏️</button>
-          <button class="fl-ico" [disabled]="guardando"
+          <button class="fl-ico" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'habilitar')"
                   [title]="t.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(t)">{{ t.activo ? '👁️' : '🚫' }}</button>
-          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(t, t.nombre)">🗑️</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'eliminar')" (click)="eliminar(t, t.nombre)">🗑️</button>
         </div>
       </ng-container>
 
@@ -129,9 +129,9 @@
         <span class="fl-fila__precio">{{ co.stock }} disponibles</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(co)">✏️</button>
-          <button class="fl-ico" [disabled]="guardando"
+          <button class="fl-ico" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'habilitar')"
                   [title]="co.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(co)">{{ co.activo ? '👁️' : '🚫' }}</button>
-          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(co, co.nombre)">🗑️</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'eliminar')" (click)="eliminar(co, co.nombre)">🗑️</button>
         </div>
       </ng-container>
 
@@ -231,9 +231,9 @@
         <span class="fl-fila__precio">{{ c.cantidad }} flores</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(c)">✏️</button>
-          <button class="fl-ico" [disabled]="guardando"
+          <button class="fl-ico" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'habilitar')"
                   [title]="c.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(c)">{{ c.activo ? '👁️' : '🚫' }}</button>
-          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando"
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'eliminar')"
                   (click)="eliminar(c, c.cantidad + ' flores')">🗑️</button>
         </div>
       </ng-container>
@@ -360,9 +360,9 @@
         <span class="fl-fila__precio">${{ a.precio | number:'1.2-2' }}{{ a.esPapel && a.floresPorPliego ? ' /pliego' : '' }}</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(a)">✏️</button>
-          <button class="fl-ico" [disabled]="guardando"
+          <button class="fl-ico" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'habilitar')"
                   [title]="a.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(a)">{{ a.activo ? '👁️' : '🚫' }}</button>
-          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(a, a.nombre)">🗑️</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'eliminar')" (click)="eliminar(a, a.nombre)">🗑️</button>
         </div>
       </ng-container>
 
@@ -437,9 +437,9 @@
         <span class="fl-fila__precio">${{ f.precio | number:'1.2-2' }}</span>
         <div class="fl-acciones">
           <button class="fl-ico" title="Editar" [disabled]="guardando" (click)="editar(f)">✏️</button>
-          <button class="fl-ico" [disabled]="guardando"
+          <button class="fl-ico" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'habilitar')"
                   [title]="f.activo ? 'Desactivar' : 'Activar'" (click)="toggleActivo(f)">{{ f.activo ? '👁️' : '🚫' }}</button>
-          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" (click)="eliminar(f, f.texto)">🗑️</button>
+          <button class="fl-ico fl-ico--del" title="Eliminar" [disabled]="guardando" *ngIf="authService.tieneAccion('flores/catalogos', 'eliminar')" (click)="eliminar(f, f.texto)">🗑️</button>
         </div>
       </ng-container>
 

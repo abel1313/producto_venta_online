@@ -7,6 +7,7 @@ import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
 import { ProductoService } from '../productos/service/producto.service';
 import { IArchivoSeleccionado, ICompletarProducto, IEstadoCargaProducto, ITarjetaCaptura } from './models/carga-imagen.model';
 import { CargaImagenesService } from './service/carga-imagenes.service';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-carga-imagenes',
@@ -46,7 +47,8 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
   constructor(
     private readonly svc: CargaImagenesService,
     private readonly productoSvc: ProductoService,
-    private readonly sanitizer: DomSanitizer
+    private readonly sanitizer: DomSanitizer,
+    public  readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {

@@ -100,6 +100,15 @@
             <textarea class="pk-input" formControlName="descripcion" rows="2" maxlength="255"
                       placeholder="Descripción para el botón ℹ️ de Gestión de roles: qué es esta pantalla y dónde vive en el menú…"></textarea>
           </div>
+          <!-- Texto del botón ℹ️ propio del checkbox "Editar" (2026-09-04) -- distinto del de
+               arriba (que es del "Ver"). Solo hace falta llenarlo cuando el permiso de escritura
+               de esta pantalla se comparte con otras (SecurityConfig.pantallaEscribir con varias
+               rutas) o cuando "Editar" acá no corresponde a nada visible en esta pantalla -- si
+               se deja vacío, el front muestra un texto genérico. -->
+          <div class="pk-form__field pk-form__field--full">
+            <textarea class="pk-input" formControlName="descripcionEscritura" rows="2" maxlength="255"
+                      placeholder="Descripción para el botón ℹ️ de 'Editar' (opcional -- solo si se comparte con otra pantalla o no es obvio)…"></textarea>
+          </div>
           <div class="pk-form__actions">
             <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardandoSubmenu">
               {{ editandoSubmenuId ? '💾 Actualizar' : '➕ Agregar pantalla' }}

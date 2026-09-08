@@ -1,8 +1,8 @@
 
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { AccederService } from 'src/app/login/acceder.service';
 import { passwordFuerte, passwordsIguales } from 'src/app/validador/validador';
 import Swal from 'sweetalert2';
@@ -13,6 +13,7 @@ import { SesionService } from 'src/app/shared/sesion.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 import { MenuAdminService } from 'src/app/menu-admin/service/menu.service';
 import { IMenu, ISubmenu } from 'src/app/menu-admin/models/menu.model';
+import { ThemeService } from 'src/app/services/theme/theme.service';
 
 interface GrupoSubmenusExcepcion {
   menu: IMenu | null;
@@ -26,7 +27,7 @@ type EstadoExcepcion = 'ninguno' | 'suma' | 'quita';
   templateUrl: './add-usuarios.component.html',
   styleUrls: ['./add-usuarios.component.scss']
 })
-export class AddUsuariosComponent implements OnInit, OnDestroy {
+export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() textoCard: string = 'Registrar usuario';
   @Input() updateUser: IUsuarioDto = {
     email: '',
@@ -62,6 +63,67 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     return this.imagenesV2.find(i => i.orden === orden)?.descripcion ?? '';
   }
 
+  // ── Fondo animado (malla técnica WebGL) — solo modo oscuro, mismo shader que el login
+  // (login-form.component.ts) -- pedido del usuario 2026-09-08: "así debe estar el registrar"
+  // refiriéndose al fondo del login, no solo al color plano que ya se había igualado antes.
+  @ViewChild('particlesCanvas') particlesCanvas?: ElementRef<HTMLCanvasElement>;
+  isDark$ = this.themeService.isDark$;
+  private animId: number | null = null;
+  private resizeHandler?: () => void;
+  private themeSub?: Subscription;
+  private gl: WebGLRenderingContext | null = null;
+  private uTimeLoc: WebGLUniformLocation | null = null;
+  private uResLoc: WebGLUniformLocation | null = null;
+
+  private static readonly MESH_VERTEX_SRC = `
+    attribute vec2 pos;
+    varying vec2 v_texCoord;
+    void main() {
+      v_texCoord = pos * 0.5 + 0.5;
+      gl_Position = vec4(pos, 0.0, 1.0);
+    }
+  `;
+
+  private static readonly MESH_FRAGMENT_SRC = `
+    precision highp float;
+    uniform float u_time;
+    uniform vec2 u_resolution;
+    varying vec2 v_texCoord;
+
+    float hash(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+
+    void main() {
+      vec2 uv = v_texCoord;
+      float scale = 8.0;
+      vec2 grid_uv = uv * scale;
+      vec2 id = floor(grid_uv);
+      vec2 gv = fract(grid_uv) - 0.5;
+
+      float m = 0.0;
+      for (float y = -1.0; y <= 1.0; y++) {
+        for (float x = -1.0; x <= 1.0; x++) {
+          vec2 offs = vec2(x, y);
+          vec2 p_id = id + offs;
+          vec2 p1 = offs + sin(u_time * 0.5 + hash(p_id) * 6.28) * 0.4;
+          vec2 p2 = vec2(0.0) + sin(u_time * 0.5 + hash(id) * 6.28) * 0.4;
+          vec2 pa = gv - p1;
+          vec2 ba = p2 - p1;
+          float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+          float distLine = length(pa - ba * h);
+          m += smoothstep(0.02, 0.0, distLine) * 0.5 * (1.0 - h);
+        }
+      }
+
+      vec3 color = vec3(0.0, 0.47, 1.0) * m;
+      color += vec3(0.0, 0.1, 0.2) * (1.0 - length(uv - 0.5));
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
   constructor(
     private readonly fb:                   FormBuilder,
     public  readonly auth:                 AccederService,
@@ -70,7 +132,8 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     private readonly usuario:              UsuarioService,
     private readonly presentacion:         PresentacionService,
     private readonly sesion:               SesionService,
-    private readonly menuAdmin:            MenuAdminService
+    private readonly menuAdmin:            MenuAdminService,
+    private readonly themeService:         ThemeService
   ) { }
 
   formRegistro = this.fb.group({
@@ -436,8 +499,97 @@ export class AddUsuariosComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
+  ngAfterViewInit(): void {
+    if (this.esActualizar) return; // fondo animado solo en el registro publico (split-page)
+    this.themeSub = this.themeService.isDark$.subscribe(dark => {
+      if (dark) {
+        // esperar el tick del *ngIf para que el <canvas> ya exista en el DOM
+        setTimeout(() => this.iniciarParticulas());
+      } else {
+        this.detenerParticulas();
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.detenerParticulas();
+    this.themeSub?.unsubscribe();
+  }
+
+  private iniciarParticulas(): void {
+    const canvas = this.particlesCanvas?.nativeElement;
+    if (!canvas) return;
+    const gl = canvas.getContext('webgl');
+    if (!gl) return; // sin soporte WebGL — se queda sin fondo animado, no rompe el registro
+    this.gl = gl;
+
+    const compilar = (type: number, src: string): WebGLShader | null => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.warn('[registro-bg] error compilando shader:', gl.getShaderInfoLog(shader));
+        return null;
+      }
+      return shader;
+    };
+
+    const program = gl.createProgram();
+    if (!program) return;
+    const vs = compilar(gl.VERTEX_SHADER, AddUsuariosComponent.MESH_VERTEX_SRC);
+    const fs = compilar(gl.FRAGMENT_SHADER, AddUsuariosComponent.MESH_FRAGMENT_SRC);
+    if (!vs || !fs) return;
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.warn('[registro-bg] error enlazando el programa WebGL:', gl.getProgramInfoLog(program));
+      return;
+    }
+    gl.useProgram(program);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+
+    const posLoc = gl.getAttribLocation(program, 'pos');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    this.uTimeLoc = gl.getUniformLocation(program, 'u_time');
+    this.uResLoc  = gl.getUniformLocation(program, 'u_resolution');
+
+    const resize = () => {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    };
+    resize();
+    this.resizeHandler = resize;
+    window.addEventListener('resize', this.resizeHandler);
+
+    const render = (t: number) => {
+      if (!this.gl) return;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform1f(this.uTimeLoc, t * 0.001);
+      gl.uniform2f(this.uResLoc, canvas.width, canvas.height);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      this.animId = requestAnimationFrame(render);
+    };
+    this.animId = requestAnimationFrame(render);
+  }
+
+  private detenerParticulas(): void {
+    if (this.animId !== null) {
+      cancelAnimationFrame(this.animId);
+      this.animId = null;
+    }
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+      this.resizeHandler = undefined;
+    }
+    this.gl = null;
   }
 
   private mostrarSwalCambioCorreo(correoNuevo: string, id: number): void {

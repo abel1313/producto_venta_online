@@ -259,6 +259,26 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// Dentro del formulario de Registrar (split-page), estilo minimalista igual al login -- sin caja,
+// solo borde inferior (login-form.component.scss ya usa este mismo lenguaje visual, la tarjeta de
+// cristal .form-inner ya aporta el contraste). Pedido del usuario 2026-09-08: los inputs de
+// Registrar se veian "muy pegados al contorno" comparados con el login -- eran cajas completas con
+// borde de 2px en vez del estilo de linea que usa el login. Escopado a .form-inner para no afectar
+// el mismo .field-input reusado en la seccion de admin (editar excepciones) mas abajo en este
+// mismo componente, que si debe verse como el resto de formularios admin.
+.form-inner .field-input {
+  border: none;
+  border-bottom: 2px solid var(--input-border, #e5e7eb);
+  border-radius: 0;
+  background: transparent;
+
+  &:focus {
+    background: transparent;
+    border-color: var(--app-accent);
+    box-shadow: none;
+  }
+}
+
 // Caja con presencia propia (mismo lenguaje visual que .pwd-requirements) -- antes era un
 // checkbox nativo suelto, sin fondo ni jerarquía, fácil de pasar por alto (reportado en QA
 // 2026-09-02: "se ve muy básico", "en ningún lado dice que hay que aceptar").

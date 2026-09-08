@@ -346,22 +346,17 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tienePantalla('tienda/buscar');
   }
 
-  // El botón "Editar" navega a "tienda/update" (editarVariante()), que todavía NO tiene fila
-  // propia en el catálogo de submenus (ver comentario en agregar-routing.module.ts) -- ponerle
-  // PantallaGuard/tienePantalla('tienda/update') bloquearía a todos, incluido ROLE_ADMIN, hasta
-  // que se cree esa pantalla desde Gestión de menú. Mientras tanto comparte el permiso de
-  // "tienda/venta" (misma pantalla real desde donde también se llega a editar una variante) --
-  // mismo criterio que puedeActualizarProducto en Modelos, que apunta a la pantalla real de
-  // destino en vez de a una que no existe todavía.
-  //
-  // tieneEscritura, NO tienePantalla (bug encontrado 2026-09-05): editar de verdad llama a
-  // POST /tienda/v1/guardarConImagenes, protegido en SecurityConfig por pantallaEscribir (no por
-  // pantalla) de "productos/buscar"/"productos/agregar"/"tienda/venta"/"flores/catalogos"/
-  // "flores/ramos-admin" -- tienePantalla('tienda/venta') solo exige poder VER esa pantalla, un
-  // rol con Ver pero sin Editar en "Agregar producto" veía el botón y se topaba con 403 al
-  // guardar.
+  // El botón ✏️ "Editar" vive en la tarjeta de ESTA pantalla (tienda/buscar) -- hasta 2026-09-08
+  // dependía "prestado" del permiso de "tienda/venta" (otra pantalla), porque "tienda/update"
+  // (destino real de editarVariante()) todavía no tiene fila propia en el catálogo de submenus.
+  // Reportado por el usuario con capturas: marcar el checkbox "Editar" de Tienda en Gestión de
+  // roles no hacía nada -- el botón seguía sin aparecer para un rol con Editar en tienda/buscar
+  // pero no en tienda/venta. Se cambió a tieneEscritura('tienda/buscar') -- el propio permiso de
+  // esta pantalla -- y SecurityConfig.pantallaEscribir ahora también acepta "tienda/buscar" para
+  // el guardado real (POST /tienda/v1/guardarConImagenes), así el checkbox y el botón ya
+  // coinciden con lo mismo.
   get puedeActualizarVariante(): boolean {
-    return this.authService.tieneEscritura('tienda/venta');
+    return this.authService.tieneEscritura('tienda/buscar');
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).

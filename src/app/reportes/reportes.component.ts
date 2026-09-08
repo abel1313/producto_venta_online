@@ -12,6 +12,7 @@ import {
   ReportesService,
 } from './service/reportes.service';
 import { ClienteService } from '../clietes/cliente.service';
+import { AuthService } from '../auth/auth.service';
 import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/models/pedidos.model';
 
 Chart.register(...registerables);
@@ -73,6 +74,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private readonly svc: ReportesService,
     private readonly clienteService: ClienteService,
+    public  readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {

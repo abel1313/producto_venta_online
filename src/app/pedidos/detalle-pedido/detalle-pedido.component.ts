@@ -68,7 +68,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * Editar un ramo de verdad exige rehacer la cotización, que hoy no existe (ver CLAUDE.md).
    */
   get puedeEditarLineas(): boolean {
-    return this.isAdmin && !this.esPedidoDeFlores;
+    return this.isAdmin && !this.esPedidoDeFlores && this.authService.tieneAccion('pedidos/mis-pedidos', 'ajustar-cantidad');
   }
 
   /**
@@ -81,7 +81,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * El back sí rechaza un pedido cancelado, y ese mensaje se muestra tal cual.
    */
   get puedeEditarRamo(): boolean {
-    return this.isAdmin && this.esPedidoDeFlores;
+    return this.isAdmin && this.esPedidoDeFlores && this.authService.tieneAccion('pedidos/mis-pedidos', 'editar-ramo');
+  }
+
+  get puedeImprimirTicketDetalle(): boolean {
+    return this.isAdmin && this.authService.tieneAccion('pedidos/mis-pedidos', 'imprimir-ticket');
+  }
+
+  get puedeReenviarComprobante(): boolean {
+    return this.isAdmin && this.authService.tieneAccion('pedidos/mis-pedidos', 'enviar-correo');
+  }
+
+  get puedeAbonar(): boolean {
+    return this.authService.tieneAccion('pedidos/mis-pedidos', 'abonar');
   }
 
   editarRamo(): void {

@@ -162,6 +162,7 @@
                      placeholder="Ingresa el código de barras"
                      appUppercase>
               <button type="button" class="pf-barcode-scan" (click)="iniciarEscanerCodigo()"
+                      *ngIf="authService.tieneAccion('productos/agregar', 'escanear-codigo')"
                       title="Escanear código de barras con la cámara">📷</button>
             </div>
             <small class="pf-error" *ngIf="isInvalid('codigoBarras')">Campo requerido</small>

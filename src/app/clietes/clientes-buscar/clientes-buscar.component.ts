@@ -4,6 +4,7 @@ import { debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
 import { ClienteService } from '../cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-clientes-buscar',
@@ -22,7 +23,10 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
   private input$ = new Subject<string>();
   private sub!: Subscription;
 
-  constructor(private readonly clienteService: ClienteService) {}
+  constructor(
+    private readonly clienteService: ClienteService,
+    public  readonly authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.sub = this.input$.pipe(

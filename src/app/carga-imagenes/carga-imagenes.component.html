@@ -222,8 +222,10 @@
             <div class="ci-field__con-btn">
               <input type="text" appUppercase [(ngModel)]="form.codigoBarras" placeholder="Escanéalo o escríbelo">
               <button type="button" class="ci-btn-generar" (click)="iniciarEscaner()"
+                      *ngIf="authService.tieneAccion('carga-imagenes', 'escanear-codigo')"
                       title="Escanear código de barras con la cámara">📷</button>
               <button type="button" class="ci-btn-generar" (click)="generarCodigoBarras()"
+                      *ngIf="authService.tieneAccion('carga-imagenes', 'generar-codigo-barras')"
                       title="Generar uno automático (fecha + números aleatorios)">🎲</button>
             </div>
           </div>

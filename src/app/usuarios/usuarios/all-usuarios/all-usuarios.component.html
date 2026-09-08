@@ -21,17 +21,17 @@
 
         <div class="au-card__actions">
           <ng-container *ngIf="!mostrandoInactivos; else accionesInactivo">
-            <button class="au-btn au-btn--edit" (click)="updateUsuario(item)">
+            <button class="au-btn au-btn--edit" *ngIf="authService.tieneAccion('usuarios/buscar', 'editar-usuario')" (click)="updateUsuario(item)">
               <img [src]="iconImagen.iconEditar" class="au-btn__icon" alt="" />
               Actualizar
             </button>
-            <button class="au-btn au-btn--delete" (click)="removeUsuario(item)">
+            <button class="au-btn au-btn--delete" *ngIf="authService.tieneAccion('usuarios/buscar', 'eliminar-usuario')" (click)="removeUsuario(item)">
               <img [src]="iconImagen.iconEliminar" class="au-btn__icon" alt="" />
               Eliminar
             </button>
           </ng-container>
           <ng-template #accionesInactivo>
-            <button class="au-btn au-btn--activar" (click)="activarUsuario(item)">
+            <button class="au-btn au-btn--activar" *ngIf="authService.tieneAccion('usuarios/buscar', 'activar-usuario')" (click)="activarUsuario(item)">
               ✅ Reactivar
             </button>
           </ng-template>

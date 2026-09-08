@@ -24,7 +24,7 @@
 
       <!-- Toolbar -->
       <div class="ga-toolbar">
-        <button class="ga-btn ga-btn--add" (click)="nuevoGasto()">➕ Agregar gasto</button>
+        <button class="ga-btn ga-btn--add" *ngIf="authService.tieneAccion('gastos/buscar', 'agregar-gasto')" (click)="nuevoGasto()">➕ Agregar gasto</button>
       </div>
 
       <!-- Filtros -->
@@ -123,8 +123,9 @@
                 <td class="ga-tabla__muted">{{ g.proveedor || '—' }}</td>
                 <td class="ga-tabla__monto">{{ g.monto | currency:'MXN':'symbol':'1.2-2' }}</td>
                 <td class="ga-tabla__actions">
-                  <button class="ga-icon-btn ga-icon-btn--edit" (click)="editarGasto(g)" title="Editar">✏️</button>
+                  <button class="ga-icon-btn ga-icon-btn--edit" *ngIf="authService.tieneAccion('gastos/buscar', 'editar-gasto')" (click)="editarGasto(g)" title="Editar">✏️</button>
                   <button class="ga-icon-btn ga-icon-btn--del"
+                          *ngIf="authService.tieneAccion('gastos/buscar', 'eliminar-gasto')"
                           (click)="confirmarEliminar(g)"
                           [disabled]="!!eliminandoId"
                           title="Eliminar">🗑️</button>

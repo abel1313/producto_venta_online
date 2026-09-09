@@ -26,6 +26,8 @@ $t:  all 0.2s ease;
   font-size: .78rem;
   font-weight: 600;
   color: var(--app-text-muted);
+
+  &__opt { font-weight: 500; opacity: .75; }
 }
 
 .ez-input {
@@ -150,9 +152,12 @@ $t:  all 0.2s ease;
 
 // ── Filtros: rango de fecha + zona (2026-09-09) ───────────────────────
 // Antes solo existía el select de zona y el rango lo fijaba el back (semana en curso).
+// Solo las dos fechas comparten renglón: con la zona también aquí eran tres columnas de ~196px
+// dentro de un contenedor de 640px y el nombre de la zona no cabía. La zona quedó en su propio
+// renglón, a lo ancho.
 .ez-filtros {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   align-items: start;
 }

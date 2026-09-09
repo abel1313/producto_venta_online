@@ -82,9 +82,11 @@
       🧭 Cómo llegar
     </a>
     <small class="dp-entrega__nota" *ngIf="linkComoLlegar">
-      {{ tieneUbicacionExacta
-          ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
-          : 'Se abre en tu app de mapas con la dirección escrita.' }}
+      {{ vaAlPuntoDeEncuentro
+          ? 'Se abre en tu app de mapas con la ruta al punto donde te entregamos.'
+          : (tieneUbicacionExacta
+              ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
+              : 'Se abre en tu app de mapas con la dirección escrita.') }}
     </small>
   </div>
 

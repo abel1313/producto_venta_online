@@ -6,6 +6,7 @@ import { ILugarEntrega } from '../lugares-entrega/models/lugar-entrega.model';
 import { LugarEntregaService } from '../lugares-entrega/service/lugar-entrega.service';
 import { EntregaZonaService } from './service/entrega-zona.service';
 import { IEntregaZonaSemana } from './models/entrega-zona.model';
+import { CENTRO_MAPA_GENERICO } from '../shared/selector-ubicacion/selector-ubicacion.component';
 
 // "Entregas por zona" (2026-09-04): el cliente en el checkout solo elige la ZONA (Zacazonapan,
 // Tejupilco, Luvianos...), nunca un punto exacto -- el dueño hace un viaje por semana a cada
@@ -39,6 +40,17 @@ export class EntregasZonaComponent implements OnInit {
 
   form!: FormGroup;
   enviando = false;
+
+  // Punto exacto del encuentro marcado en el mapa. Opcional: el texto de "punto de encuentro"
+  // sigue siendo el dato obligatorio, esto lo complementa para que el cliente pueda trazar la
+  // ruta en vez de interpretar una referencia escrita ("frente a la iglesia").
+  latEncuentro: number | null = null;
+  lngEncuentro: number | null = null;
+
+  // Campo, no getter: `SelectorUbicacionComponent` recentra el mapa en su `ngOnChanges` de
+  // `centroDefault`, y un getter devolvería un arreglo nuevo en cada ciclo de detección de
+  // cambios -- el mapa se estaría recentrando solo mientras el admin lo arrastra.
+  centroMapa: [number, number] = CENTRO_MAPA_GENERICO;
 
   constructor(
     private readonly lugarEntregaService: LugarEntregaService,
@@ -107,12 +119,54 @@ export class EntregasZonaComponent implements OnInit {
     return null;
   }
 
-  onZonaChange(): void { this.recargar(); }
+  /**
+   * Los dos calendarios aceptan CUALQUIER día -- ninguno le pone `min`/`max` al otro.
+   *
+   * Antes "Hasta" tenía `[min]="desde"`, y como el rango arranca en la semana en curso, mover la
+   * consulta hacia atrás significaba abrir ese calendario y encontrarse todos los días anteriores
+   * tachados: la única salida era adivinar que primero había que mover "Desde". En vez de
+   * bloquear el clic, se arrastra el otro extremo al día elegido, así que un solo clic siempre
+   * deja un rango válido y desde ahí se abre hacia donde haga falta.
+   */
+  onDesdeChange(valor: string): void {
+    this.desde = valor;
+    if (this.desde && this.hasta && this.desde > this.hasta) this.hasta = this.desde;
+    this.recargar();
+  }
+
+  onHastaChange(valor: string): void {
+    this.hasta = valor;
+    if (this.desde && this.hasta && this.hasta < this.desde) this.desde = this.hasta;
+    this.recargar();
+  }
+
+  onUbicacionEncuentro(punto: { lat: number; lng: number }): void {
+    this.latEncuentro = punto.lat;
+    this.lngEncuentro = punto.lng;
+  }
+
+  get hayPuntoEnElMapa(): boolean {
+    return this.latEncuentro != null && this.lngEncuentro != null;
+  }
+
+  // Cambiar de zona sí tira lo capturado: el día sugerido, el punto de encuentro y el punto del
+  // mapa son de ESA zona, no del viaje en general. Mover el rango de fechas (que solo cambia a
+  // QUIÉNES se les avisa) ya no lo borra -- antes cualquier ajuste del filtro dejaba el
+  // formulario en blanco y había que recapturar todo.
+  onZonaChange(): void {
+    this.form.reset();
+    this.latEncuentro = null;
+    this.lngEncuentro = null;
+    const zona = this.zonas.find(z => z.id === this.zonaId);
+    this.centroMapa = (zona?.latitud != null && zona?.longitud != null)
+      ? [zona.latitud, zona.longitud]
+      : CENTRO_MAPA_GENERICO;
+    this.recargar();
+  }
 
   /** Se dispara al cambiar la zona o cualquiera de las dos fechas -- el filtro es la combinación. */
   recargar(): void {
     this.semana = null;
-    this.form.reset();
     if (this.zonaId == null || this.problemaConElRango) return;
 
     this.cargandoSemana = true;
@@ -120,7 +174,9 @@ export class EntregasZonaComponent implements OnInit {
       next: res => {
         this.semana = res;
         this.cargandoSemana = false;
-        this.form.patchValue({ fecha: res.fechaSugerida ?? '' });
+        // Solo se sugiere si el admin todavía no eligió una: pisar su fecha en cada recarga
+        // haría imposible programar un día distinto al que calcula el back.
+        if (!this.form.value.fecha) this.form.patchValue({ fecha: res.fechaSugerida ?? '' });
       },
       error: err => {
         this.cargandoSemana = false;
@@ -143,7 +199,10 @@ export class EntregasZonaComponent implements OnInit {
     Swal.fire({
       title: `¿Avisar a ${n} cliente${n === 1 ? '' : 's'}?`,
       html: `<p>Se les avisará que la entrega en <b>${this.nombreZonaActual}</b> es el ` +
-            `<b>${fecha}</b> a las <b>${hora}</b>, en <b>${puntoEncuentro}</b>.</p>`,
+            `<b>${fecha}</b> a las <b>${hora}</b>, en <b>${puntoEncuentro}</b>.</p>` +
+            (this.hayPuntoEnElMapa
+              ? `<p>Les llega también el botón <b>Cómo llegar</b> con la ruta al punto marcado.</p>`
+              : `<p>Sin ubicación en el mapa solo verán la referencia escrita — márcala si la zona es difícil de explicar.</p>`),
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, enviar avisos',
@@ -155,11 +214,18 @@ export class EntregasZonaComponent implements OnInit {
       // Va el mismo rango que se listó: si no, el back recalcularía la semana en curso y el
       // correo le llegaría a un conjunto de pedidos distinto del que está en pantalla.
       this.entregaZonaService.programar(this.zonaId, {
-        fecha, hora, puntoEncuentro, desde: this.desde, hasta: this.hasta
+        fecha, hora, puntoEncuentro,
+        latitud: this.latEncuentro, longitud: this.lngEncuentro,
+        desde: this.desde, hasta: this.hasta
       }).subscribe({
         next: enviados => {
           this.enviando = false;
           Swal.fire({ icon: 'success', title: 'Listo', text: `Se avisó a ${enviados} cliente(s).` });
+          // El viaje ya se avisó: se limpia para no reenviar el mismo por accidente. Antes esto
+          // pasaba de rebote porque `recargar()` reseteaba el form en cada llamada.
+          this.form.reset();
+          this.latEncuentro = null;
+          this.lngEncuentro = null;
           this.recargar();
         },
         error: err => {

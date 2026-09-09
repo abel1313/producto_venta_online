@@ -6,25 +6,30 @@
     <small class="ez-header__sub">Programa el viaje semanal a una zona y avísales a todos los que pidieron ahí</small>
   </div>
 
-  <!-- Rango de fecha de pedido + zona: el filtro es la COMBINACIÓN de los dos. -->
+  <!-- Rango de fecha de pedido + zona: el filtro es la COMBINACIÓN de los dos.
+       Ninguno de los dos calendarios le pone `min` al otro: con [min]="desde" en "Hasta", mover
+       la consulta a una semana anterior mostraba ese calendario con todos los días tachados.
+       Ahora el handler arrastra el otro extremo — ver onDesdeChange/onHastaChange. -->
   <div class="ez-filtros">
     <div class="ez-field">
       <label class="ez-label">📅 Pedidos desde</label>
-      <app-selector-fecha [(ngModel)]="desde" (ngModelChange)="recargar()"
+      <app-selector-fecha [ngModel]="desde" (ngModelChange)="onDesdeChange($event)"
                           placeholder="Fecha inicial"></app-selector-fecha>
     </div>
     <div class="ez-field">
       <label class="ez-label">📅 Hasta</label>
-      <app-selector-fecha [(ngModel)]="hasta" [min]="desde" (ngModelChange)="recargar()"
+      <app-selector-fecha [ngModel]="hasta" (ngModelChange)="onHastaChange($event)"
                           placeholder="Fecha final"></app-selector-fecha>
     </div>
-    <div class="ez-field">
-      <label class="ez-label">📍 Zona</label>
-      <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
-        <option [ngValue]="null">Elige una zona…</option>
-        <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
-      </select>
-    </div>
+  </div>
+
+  <!-- La zona va en su propio renglón: en tres columnas el nombre completo no cabía. -->
+  <div class="ez-field">
+    <label class="ez-label">📍 Zona</label>
+    <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
+      <option [ngValue]="null">Elige una zona…</option>
+      <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
+    </select>
   </div>
 
   <div class="ez-presets">
@@ -81,7 +86,7 @@
         <form [formGroup]="form" class="ez-form">
           <div class="ez-form__field">
             <label class="ez-label">📅 Fecha de entrega</label>
-            <input class="ez-input" type="date" formControlName="fecha">
+            <app-selector-fecha formControlName="fecha" placeholder="Día del viaje"></app-selector-fecha>
           </div>
           <div class="ez-form__field">
             <label class="ez-label">🕐 Hora</label>
@@ -91,6 +96,21 @@
             <label class="ez-label">📍 Punto de encuentro</label>
             <input class="ez-input" type="text" formControlName="puntoEncuentro"
                    placeholder="Ej. Centro de Zacazonapan, frente a la iglesia">
+          </div>
+
+          <!-- El texto de arriba es la referencia ("frente a la iglesia"); esto es el punto
+               exacto. Va al pedido de cada cliente avisado y al correo como botón "Cómo llegar",
+               para que quien no conoce la zona pueda trazar la ruta desde donde esté. -->
+          <div class="ez-form__field ez-form__field--wide">
+            <label class="ez-label">🗺️ Ubicación exacta <span class="ez-label__opt">(opcional)</span></label>
+            <app-selector-ubicacion [lat]="latEncuentro" [lng]="lngEncuentro"
+                                    [centroDefault]="centroMapa"
+                                    (ubicacionCambio)="onUbicacionEncuentro($event)"></app-selector-ubicacion>
+            <small class="ez-hint">
+              {{ hayPuntoEnElMapa
+                  ? 'Los clientes verán un botón "Cómo llegar" con la ruta a este punto.'
+                  : 'Si no la marcas, los clientes solo verán la referencia escrita de arriba.' }}
+            </small>
           </div>
         </form>
 

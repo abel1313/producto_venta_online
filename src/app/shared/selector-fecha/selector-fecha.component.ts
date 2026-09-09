@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, HostListener, Input } from '@angular/core';
+import { Component, ElementRef, forwardRef, HostListener, Input, OnChanges } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { ConnectedPosition } from '@angular/cdk/overlay';
 
@@ -35,7 +35,7 @@ interface ICelda {
     multi: true
   }]
 })
-export class SelectorFechaComponent implements ControlValueAccessor {
+export class SelectorFechaComponent implements ControlValueAccessor, OnChanges {
 
   /** Límites inclusivos en formato yyyy-MM-dd. Vacío = sin límite. */
   @Input() min = '';
@@ -50,6 +50,19 @@ export class SelectorFechaComponent implements ControlValueAccessor {
 
   mesVista  = new Date().getMonth();
   anioVista = new Date().getFullYear();
+
+  /**
+   * ⚠️ Las celdas son un CAMPO, no un getter, y el *ngFor las sigue por `iso`.
+   *
+   * Siendo getter, cada ciclo de change detection devolvía 42 objetos nuevos; el *ngFor
+   * los veía como otros (los rastrea por identidad) y destruía y volvía a crear los 42
+   * botones. Si en la app algo dispara change detection seguido -- polling de pedidos,
+   * el countdown del chatbot -- el botón donde cayó el `mousedown` ya no existe para el
+   * `mouseup`, y el navegador entonces NO emite `click`: el calendario se veía bien pero
+   * no dejaba elegir ningún día. Recalcular solo al cambiar mes/valor/límites arregla eso
+   * y de paso deja de rehacer 42 nodos por ciclo.
+   */
+  celdas: ICelda[] = [];
 
   /**
    * Orden de preferencia del popover: pegado abajo-izquierda del campo y, si no cabe,
@@ -72,7 +85,13 @@ export class SelectorFechaComponent implements ControlValueAccessor {
   private onChange: (v: string) => void = () => {};
   private onTouched: () => void = () => {};
 
-  constructor(private readonly host: ElementRef<HTMLElement>) {}
+  constructor(private readonly host: ElementRef<HTMLElement>) {
+    this.recalcular();
+  }
+
+  // `min` y `max` vienen atados a otro campo (el "hasta" se limita con el "desde"),
+  // así que cambian solos y hay que rehacer la rejilla cuando pasa.
+  ngOnChanges(): void { this.recalcular(); }
 
   // ── ControlValueAccessor ───────────────────────────────────────────
 
@@ -111,25 +130,27 @@ export class SelectorFechaComponent implements ControlValueAccessor {
   mesAnterior(): void {
     if (this.mesVista === 0) { this.mesVista = 11; this.anioVista--; }
     else this.mesVista--;
+    this.recalcular();
   }
 
   mesSiguiente(): void {
     if (this.mesVista === 11) { this.mesVista = 0; this.anioVista++; }
     else this.mesVista++;
+    this.recalcular();
   }
 
   get tituloMes(): string { return `${this.nombresMes[this.mesVista]} ${this.anioVista}`; }
 
   // ── Rejilla ────────────────────────────────────────────────────────
 
-  get celdas(): ICelda[] {
+  private recalcular(): void {
     const primero = new Date(this.anioVista, this.mesVista, 1);
     // getDay() manda 0=domingo; la semana aquí arranca en lunes.
     const desfase = (primero.getDay() + 6) % 7;
     const inicio = new Date(this.anioVista, this.mesVista, 1 - desfase);
     const hoyIso = this.aIso(new Date());
 
-    return Array.from({ length: 42 }, (_, i) => {
+    this.celdas = Array.from({ length: 42 }, (_, i) => {
       const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
       const iso = this.aIso(d);
       return {
@@ -143,18 +164,23 @@ export class SelectorFechaComponent implements ControlValueAccessor {
     });
   }
 
+  /** Los 42 días de la rejilla son únicos, así que el iso sirve de identidad estable. */
+  porIso(_: number, celda: ICelda): string { return celda.iso; }
+
   elegir(celda: ICelda): void {
     if (celda.deshabilitado) return;
     this.valor = celda.iso;
     this.onChange(this.valor);
     this.onTouched();
     this.abierto = false;
+    this.recalcular();
   }
 
   irAHoy(): void {
     const hoy = new Date();
     this.mesVista = hoy.getMonth();
     this.anioVista = hoy.getFullYear();
+    this.recalcular();
     const iso = this.aIso(hoy);
     if (!this.fueraDeRango(iso)) this.elegir({ ...this.celdaVacia, iso });
   }
@@ -163,6 +189,7 @@ export class SelectorFechaComponent implements ControlValueAccessor {
     this.valor = '';
     this.onChange('');
     this.abierto = false;
+    this.recalcular();
   }
 
   // ── Etiqueta visible ───────────────────────────────────────────────
@@ -198,8 +225,22 @@ export class SelectorFechaComponent implements ControlValueAccessor {
   }
 
   private posicionarVistaEnValor(): void {
-    const d = this.desdeIso(this.valor) ?? new Date();
+    const d = this.desdeIso(this.valor) ?? this.primerMesUtil();
     this.mesVista = d.getMonth();
     this.anioVista = d.getFullYear();
+    this.recalcular();
+  }
+
+  /**
+   * Sin fecha elegida el calendario abría siempre en el mes de hoy, y con un `min` de otro
+   * mes (el "hasta" limitado por el "desde") eso mostraba los 30 días tachados: parecía que
+   * el calendario no dejaba elegir nada. Si hoy cae fuera del rango, se abre en el límite.
+   */
+  private primerMesUtil(): Date {
+    const hoy = new Date();
+    const hoyIso = this.aIso(hoy);
+    if (this.min && hoyIso < this.min) return this.desdeIso(this.min) ?? hoy;
+    if (this.max && hoyIso > this.max) return this.desdeIso(this.max) ?? hoy;
+    return hoy;
   }
 }

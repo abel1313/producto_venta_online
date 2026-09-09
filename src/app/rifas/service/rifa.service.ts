@@ -109,6 +109,21 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
+  // ── 6b. Editar un premio ya guardado ───────────────────────────────
+  // Antes solo se podía cambiar la palabraClave, así que corregir "¿en qué giro gana?"
+  // obligaba a eliminar el premio y volverlo a crear (devolviendo y re-reservando stock).
+  editarVarianteRifa(id: number, patch: {
+    giroGanador?: number;
+    orden?: number;
+    permitirNuevos?: boolean;
+    palabraClave?: string;
+    varianteId?: number;
+  }): Observable<IConfigurarRifaVariante> {
+    return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
+      `${this.url}/v1/configurarRifaVariante/${id}`, patch
+    ).pipe(map(r => r.data));
+  }
+
   // ── 7. Actualizar palabraClave ─────────────────────────────────────
   actualizarPalabraClave(id: number, palabraClave: string): Observable<IConfigurarRifaVariante> {
     return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
@@ -212,6 +227,14 @@ export class RifaService {
   registrarBoleto(data: IBoletoRifaRequest): Observable<IBoletoRifa> {
     return this.http.post<{ code: number; data: IBoletoRifa }>(
       `${this.url}/v1/boletoRifa/registrar`, data
+    ).pipe(map(r => r.data));
+  }
+
+  // Corrige un boleto ya capturado (plataforma, fecha, URLs) sin borrarlo: eliminarlo
+  // descuenta el boleto del participante y volver a capturarlo lo vuelve a sumar.
+  editarBoleto(id: number, data: IBoletoRifaRequest): Observable<IBoletoRifa> {
+    return this.http.put<{ code: number; data: IBoletoRifa }>(
+      `${this.url}/v1/boletoRifa/${id}`, data
     ).pipe(map(r => r.data));
   }
 

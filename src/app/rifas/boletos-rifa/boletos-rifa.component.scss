@@ -1,4 +1,68 @@
-// ── Pasos del wizard ──────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════
+// Rifa por plataformas -- estilos locales.
+//
+// Rediseño 2026-09-09: la versión anterior apilaba botones de ancho completo uno
+// tras otro (crear/guardar/nuevo participante/siguiente), así que en pantalla
+// chica se veía una torre de botones iguales y era fácil picar el equivocado.
+// Ahora: rejillas de 2-3 columnas para los campos, acciones agrupadas a la
+// derecha de su propia card y una sola acción primaria por bloque.
+//
+// Todos los colores salen de las custom properties de styles.scss -- nada
+// hardcodeado, para que la pantalla siga a Personalización como el resto.
+// ════════════════════════════════════════════════════════════════════════
+
+.br-page { max-width: 880px; }
+
+.br-encabezado { margin-bottom: 2px; }
+
+.br-h {
+  font-weight: 700;
+  font-size: .92rem;
+  line-height: 1.3;
+
+  &__sub { opacity: .85; }
+}
+
+.br-sub {
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--card-text-muted);
+  margin: 14px 0 8px;
+}
+
+.br-centro { text-align: center; }
+
+// ── Barra de selección de rifa ────────────────────────────────────────
+.br-barra-rifa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  &__label { margin: 0; white-space: nowrap; }
+  &__select { flex: 1; min-width: 200px; }
+  &__nueva { flex: 0 0 auto; white-space: nowrap; }
+}
+
+// ── Chips de estado ───────────────────────────────────────────────────
+.br-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  white-space: nowrap;
+
+  &--cerrada { background: rgba(0, 0, 0, .08); color: var(--card-text-muted); }
+  &--pendiente { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
+}
+
+// ── Pasos ─────────────────────────────────────────────────────────────
 .br-pasos {
   display: flex;
   gap: 6px;
@@ -6,113 +70,360 @@
 
 .br-paso {
   flex: 1;
-  padding: 8px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 6px;
   border: 1px solid var(--card-border);
   border-radius: 10px;
   background: var(--card-bg);
-  color: var(--app-text-muted);
+  color: var(--card-text-muted);
   font-family: inherit;
   font-size: .78rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+
+  &__n {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--form-section-bg);
+    font-size: .7rem;
+  }
+
+  // Punto naranja: hay cambios de fecha sin guardar en el paso 1.
+  &__aviso { color: var(--pk-warning); font-size: .8rem; }
 
   &--activo {
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    background: var(--app-accent);
     color: var(--app-accent-ink);
-    border-color: transparent;
+    border-color: var(--app-accent);
+
+    .br-paso__n { background: rgba(255, 255, 255, .25); color: inherit; }
   }
 }
 
-// ── Banda de modo prueba / real ───────────────────────────────────────
+// ── Aviso de modo prueba / real ───────────────────────────────────────
 .br-modo {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
-  background: var(--form-section-bg);
+  border-radius: 12px;
+  background: var(--pk-warning-soft);
+  border: 1px solid rgba(245, 158, 11, .3);
+
+  &__txt { min-width: 0; }
 
   &--real {
-    border-color: #dc2626;
-    background: rgba(220, 38, 38, .08);
+    background: var(--pk-danger-soft);
+    border-color: rgba(239, 68, 68, .3);
   }
 }
 
-// ── Participantes ─────────────────────────────────────────────────────
-.br-lista-concursantes {
+// ── Fechas ────────────────────────────────────────────────────────────
+.br-presets {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 12px;
 }
 
-.br-concursante-row {
+.br-preset {
+  padding: 5px 11px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: var(--app-accent-soft); border-color: var(--app-accent); }
+}
+
+.br-grid-fechas {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.br-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.br-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+@media (max-width: 640px) {
+  .br-grid-fechas,
+  .br-grid-2,
+  .br-grid-3 { grid-template-columns: 1fr; }
+}
+
+.br-resumen {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font-size: .8rem;
+  font-weight: 600;
+
+  &--info { background: var(--pk-info-soft); color: var(--pk-info-to); }
+}
+
+.br-alerta {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+// Botón de guardar cuando hay cambios pendientes: se marca para que no pase
+// desapercibido -- el caso "creí que ya lo había guardado".
+.br-btn--urge {
+  animation: br-latido 1.6s ease-in-out infinite;
+}
+
+@keyframes br-latido {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--app-accent-rgb), .45); }
+  50%      { box-shadow: 0 0 0 6px rgba(var(--app-accent-rgb), 0); }
+}
+
+// ── Botones chicos / iconos ───────────────────────────────────────────
+.br-mini {
+  padding: 3px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  &--ok {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+  }
+}
+
+.br-icono {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: .9rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+  &--peligro:hover { background: var(--pk-danger-soft); }
+  &--claro { color: var(--card-header-text); &:hover { background: rgba(255,255,255,.18); } }
+}
+
+// ── Barra de herramientas de una card (buscar + acción) ───────────────
+.br-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  &__buscar { flex: 1; min-width: 0; }
+  &__accion { white-space: nowrap; }
+}
+
+// ── Formulario embebido (alta/edición de participante) ────────────────
+.br-form-inline {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__titulo {
+    font-size: .82rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: var(--card-text);
+  }
+
+  &__acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+}
+
+.br-acciones-form {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.br-acciones-paso {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+// ── Lista de participantes ────────────────────────────────────────────
+.br-lista {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.br-fila {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: background .12s ease;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--form-section-bg); }
+  &--activa { background: var(--app-accent-soft); }
+
+  &__nombre { flex: 1; min-width: 0; font-size: .85rem; font-weight: 600; color: var(--card-text);
+              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__boletos { font-size: .78rem; color: var(--card-text-muted); white-space: nowrap; }
+  &__acciones { display: flex; gap: 2px; }
+}
+
+// ── Plataforma: botones en vez de <select> ────────────────────────────
+// Es obligatoria y con 4 opciones fijas: verlas todas a la vez evita el olvido
+// que dejaba boletos sin plataforma.
+.br-plataformas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+
+  &--error { border-color: var(--pk-danger); background: var(--pk-danger-soft); }
+}
+
+@media (max-width: 520px) {
+  .br-plataformas { grid-template-columns: repeat(2, 1fr); }
+}
+
+.br-plat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
   border: 1px solid var(--card-border);
   border-radius: 10px;
   background: var(--card-bg);
   color: var(--card-text);
   font-family: inherit;
-  font-size: .88rem;
+  font-size: .76rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background .15s ease;
+  transition: background .12s ease, border-color .12s ease;
 
-  &:hover { background: var(--form-section-bg); }
+  &__icono { font-size: .95rem; }
+
+  &:hover { border-color: var(--app-accent); }
+
+  &--sel {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+  }
 }
 
+.br-input--error { border-color: var(--pk-danger) !important; }
+.br-hint--error  { color: var(--pk-danger); font-weight: 600; }
+
+// ── URLs de lo compartido ─────────────────────────────────────────────
 .br-url-row {
   display: flex;
   gap: 6px;
   align-items: center;
   margin-bottom: 6px;
 
-  .pk-input { flex: 1; }
+  input { flex: 1; min-width: 0; }
 }
 
-.br-boleto-row {
+// ── Boletos ya registrados ────────────────────────────────────────────
+.br-footer-lista {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.br-boleto {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 0;
+  gap: 8px;
+  padding: 9px 0;
   border-bottom: 1px solid var(--card-border);
 
   &:last-child { border-bottom: none; }
+  &--edit { background: var(--app-accent-soft); border-radius: 8px; padding: 9px 8px; }
+
+  &__info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  &__titulo { width: 100%; font-size: .84rem; font-weight: 600; color: var(--card-text); }
+  &__url { font-size: .74rem; color: var(--app-accent); text-decoration: underline; }
+  &__acciones { display: flex; gap: 2px; }
 }
 
-// ── Buscador de producto / premios ────────────────────────────────────
+// ── Búsqueda de productos ─────────────────────────────────────────────
 .br-resultados {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 280px;
-  overflow-y: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 
 .br-resultado {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
+  padding: 7px 10px;
+  border: none;
+  border-bottom: 1px solid var(--card-border);
   background: var(--card-bg);
-  color: var(--card-text);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
 
+  &:last-child { border-bottom: none; }
   &:hover { background: var(--form-section-bg); }
 
-  img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }
-
-  &__placeholder { font-size: 1.6rem; width: 44px; text-align: center; }
+  img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; flex: none; }
+  &__txt { display: flex; flex-direction: column; min-width: 0; }
 }
 
+// ── Premios ───────────────────────────────────────────────────────────
 .br-premios {
   display: flex;
   flex-direction: column;
@@ -125,19 +436,85 @@
   gap: 10px;
   padding: 8px;
   border: 1px solid var(--card-border);
-  border-radius: 10px;
+  border-radius: 12px;
 
   &__foto {
-    border: none;
-    background: transparent;
+    width: 52px;
+    height: 52px;
+    flex: none;
     padding: 0;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--form-section-bg);
     cursor: pointer;
 
-    img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 
-  &__info { flex: 1; cursor: pointer; }
+  &__ph { font-size: 1.5rem; }
+
+  &__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  &__nombre { font-size: .86rem; font-weight: 700; color: var(--card-text); }
+  &__acciones { display: flex; gap: 2px; }
 }
+
+.br-giro {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+
+  &__val { font-size: .76rem; font-weight: 700; color: var(--app-accent); }
+  &__input { width: 74px; padding: 4px 8px; font-size: .8rem; }
+}
+
+.br-nuevo-premio {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__nombre { font-size: .85rem; font-weight: 700; margin-bottom: 8px; color: var(--card-text); }
+  &__fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  &__label { margin: 0; white-space: nowrap; }
+}
+
+.br-footer-ruleta {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.br-ganador { text-align: center; }
+.br-ganador__premio { margin-top: 10px; }
+
+// ── Único velo de carga de la pantalla ────────────────────────────────
+// Reemplaza a los spinner-border que antes vivían dentro de cada botón.
+.br-cargando {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .18);
+  backdrop-filter: blur(1px);
+
+  &__rueda {
+    width: 44px;
+    height: 44px;
+    border: 4px solid rgba(255, 255, 255, .45);
+    border-top-color: var(--app-accent);
+    border-radius: 50%;
+    animation: br-girar .8s linear infinite;
+  }
+}
+
+@keyframes br-girar { to { transform: rotate(360deg); } }
 
 // ── Ruleta ────────────────────────────────────────────────────────────
 .br-ruleta-wrap {

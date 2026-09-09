@@ -6,26 +6,58 @@
     <small class="ez-header__sub">Programa el viaje semanal a una zona y avísales a todos los que pidieron ahí</small>
   </div>
 
+  <!-- Rango de fecha de pedido + zona: el filtro es la COMBINACIÓN de los dos.
+       Ninguno de los dos calendarios le pone `min` al otro: con [min]="desde" en "Hasta", mover
+       la consulta a una semana anterior mostraba ese calendario con todos los días tachados.
+       Ahora el handler arrastra el otro extremo — ver onDesdeChange/onHastaChange. -->
+  <div class="ez-filtros">
+    <div class="ez-field">
+      <label class="ez-label">📅 Pedidos desde</label>
+      <app-selector-fecha [ngModel]="desde" (ngModelChange)="onDesdeChange($event)"
+                          placeholder="Fecha inicial"></app-selector-fecha>
+    </div>
+    <div class="ez-field">
+      <label class="ez-label">📅 Hasta</label>
+      <app-selector-fecha [ngModel]="hasta" (ngModelChange)="onHastaChange($event)"
+                          placeholder="Fecha final"></app-selector-fecha>
+    </div>
+  </div>
+
+  <!-- La zona va en su propio renglón: en tres columnas el nombre completo no cabía. -->
   <div class="ez-field">
     <label class="ez-label">📍 Zona</label>
     <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
       <option [ngValue]="null">Elige una zona…</option>
       <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
     </select>
-    <p class="ez-hint" *ngIf="!cargandoZonas && zonas.length === 0">
-      No hay zonas de entrega configuradas (o todas están marcadas como "recoger en tienda").
-    </p>
   </div>
+
+  <div class="ez-presets">
+    <button type="button" class="ez-preset" (click)="aplicarSemanaEnCurso()">Esta semana</button>
+    <button type="button" class="ez-preset" (click)="aplicarUltimos(15)">Últimos 15 días</button>
+    <button type="button" class="ez-preset" (click)="aplicarUltimos(30)">Últimos 30 días</button>
+  </div>
+
+  <p class="ez-hint ez-hint--alerta" *ngIf="problemaConElRango">⚠️ {{ problemaConElRango }}</p>
+
+  <p class="ez-hint" *ngIf="!cargandoZonas && zonas.length === 0">
+    No hay zonas de entrega configuradas (o todas están marcadas como "recoger en tienda").
+  </p>
+
+  <p class="ez-hint" *ngIf="zonaId == null && !problemaConElRango">
+    Elige una zona para ver sus pedidos pendientes en ese rango.
+  </p>
 
   <p class="ez-hint" *ngIf="cargandoSemana">Buscando pedidos pendientes…</p>
 
   <ng-container *ngIf="semana && !cargandoSemana">
     <div class="ez-semana">
-      Semana de pedido: <b>{{ semana.lunes | date:'dd/MM' }}</b> al <b>{{ semana.viernes | date:'dd/MM' }}</b>
+      Pedidos del <b>{{ semana.desde | date:'dd/MM/yyyy' }}</b> al <b>{{ semana.hasta | date:'dd/MM/yyyy' }}</b>
+      · zona <b>{{ nombreZonaActual }}</b>
     </div>
 
     <div class="ez-vacio" *ngIf="semana.pedidos.length === 0">
-      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> esta semana.
+      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> en ese rango de fechas.
     </div>
 
     <ng-container *ngIf="semana.pedidos.length > 0">
@@ -54,7 +86,7 @@
         <form [formGroup]="form" class="ez-form">
           <div class="ez-form__field">
             <label class="ez-label">📅 Fecha de entrega</label>
-            <input class="ez-input" type="date" formControlName="fecha">
+            <app-selector-fecha formControlName="fecha" placeholder="Día del viaje"></app-selector-fecha>
           </div>
           <div class="ez-form__field">
             <label class="ez-label">🕐 Hora</label>
@@ -64,6 +96,21 @@
             <label class="ez-label">📍 Punto de encuentro</label>
             <input class="ez-input" type="text" formControlName="puntoEncuentro"
                    placeholder="Ej. Centro de Zacazonapan, frente a la iglesia">
+          </div>
+
+          <!-- El texto de arriba es la referencia ("frente a la iglesia"); esto es el punto
+               exacto. Va al pedido de cada cliente avisado y al correo como botón "Cómo llegar",
+               para que quien no conoce la zona pueda trazar la ruta desde donde esté. -->
+          <div class="ez-form__field ez-form__field--wide">
+            <label class="ez-label">🗺️ Ubicación exacta <span class="ez-label__opt">(opcional)</span></label>
+            <app-selector-ubicacion [lat]="latEncuentro" [lng]="lngEncuentro"
+                                    [centroDefault]="centroMapa"
+                                    (ubicacionCambio)="onUbicacionEncuentro($event)"></app-selector-ubicacion>
+            <small class="ez-hint">
+              {{ hayPuntoEnElMapa
+                  ? 'Los clientes verán un botón "Cómo llegar" con la ruta a este punto.'
+                  : 'Si no la marcas, los clientes solo verán la referencia escrita de arriba.' }}
+            </small>
           </div>
         </form>
 

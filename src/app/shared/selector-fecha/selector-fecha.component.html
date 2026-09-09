@@ -1,0 +1,39 @@
+<div class="sf">
+
+  <button type="button" class="sf__campo" [class.sf__campo--abierto]="abierto"
+          [class.sf__campo--vacio]="!valor" [disabled]="disabled" (click)="alternar()">
+    <span class="sf__icono">📅</span>
+    <span class="sf__texto">{{ etiqueta || placeholder }}</span>
+    <span class="sf__caret">{{ abierto ? '▴' : '▾' }}</span>
+  </button>
+
+  <span class="sf__ayuda" *ngIf="ayuda">{{ ayuda }}</span>
+
+  <div class="sf__pop" *ngIf="abierto">
+    <div class="sf__pop-head">
+      <button type="button" class="sf__nav" (click)="mesAnterior()" aria-label="Mes anterior">‹</button>
+      <span class="sf__mes">{{ tituloMes }}</span>
+      <button type="button" class="sf__nav" (click)="mesSiguiente()" aria-label="Mes siguiente">›</button>
+    </div>
+
+    <div class="sf__semana">
+      <span *ngFor="let d of diasSemana">{{ d }}</span>
+    </div>
+
+    <div class="sf__dias">
+      <button type="button" *ngFor="let c of celdas"
+              class="sf__dia"
+              [class.sf__dia--otro]="c.otroMes"
+              [class.sf__dia--hoy]="c.hoy"
+              [class.sf__dia--sel]="c.seleccionado"
+              [disabled]="c.deshabilitado"
+              (click)="elegir(c)">{{ c.dia }}</button>
+    </div>
+
+    <div class="sf__pop-foot">
+      <button type="button" class="sf__link" (click)="irAHoy()">Hoy</button>
+      <button type="button" class="sf__link" (click)="limpiar()" *ngIf="valor">Limpiar</button>
+    </div>
+  </div>
+
+</div>

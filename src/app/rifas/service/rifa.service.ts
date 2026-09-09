@@ -19,7 +19,12 @@ import {
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
 import { IVarianteResumenPaginable } from 'src/app/variante/models/variante.model';
-import { IBoletoRifa, IBoletoRifaRequest } from '../models/boleto-rifa.model';
+import {
+  IBoletoRifa,
+  IBoletoRifaRequest,
+  IEstadoRifaPlataformas,
+  IResultadoSorteoPlataformas
+} from '../models/boleto-rifa.model';
 
 export type ModoContinuacion = 'RESTANTES' | 'CERO' | 'NUEVOS';
 
@@ -214,6 +219,45 @@ export class RifaService {
     return this.http.get<{ code: number; data: IBoletoRifa[] }>(
       `${this.url}/v1/boletoRifa/porConcursante/${concursanteId}`
     ).pipe(map(r => r.data ?? []));
+  }
+
+  // ── 17. Sorteo de rifa PLATAFORMAS (se sortea entre boletos) ───────
+  getEstadoPlataformas(rifaId: number): Observable<IEstadoRifaPlataformas> {
+    return this.http.get<{ code: number; data: IEstadoRifaPlataformas }>(
+      `${this.url}/v1/boletoRifa/estado/${rifaId}`
+    ).pipe(map(r => r.data));
+  }
+
+  sortearPlataformas(rifaId: number): Observable<IResultadoSorteoPlataformas> {
+    return this.http.post<{ code: number; data: IResultadoSorteoPlataformas }>(
+      `${this.url}/v1/boletoRifa/sortear/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  reiniciarPlataformas(rifaId: number): Observable<string> {
+    return this.http.post<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/reiniciar/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 18. Vista pública de la ruleta (sin sesión) ────────────────────
+  // Devuelve lo mismo pero recortado: sin URLs de evidencia ni ganadores.
+  getEstadoPublicoPlataformas(rifaId: number): Observable<IEstadoRifaPlataformas> {
+    return this.http.get<{ code: number; data: IEstadoRifaPlataformas }>(
+      `${this.url}/v1/boletoRifa/publico/estado/${rifaId}`
+    ).pipe(map(r => r.data));
+  }
+
+  sortearPublicoPlataformas(rifaId: number): Observable<IResultadoSorteoPlataformas> {
+    return this.http.post<{ code: number; data: IResultadoSorteoPlataformas }>(
+      `${this.url}/v1/boletoRifa/publico/sortear/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  reiniciarPublicoPlataformas(rifaId: number): Observable<string> {
+    return this.http.post<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/publico/reiniciar/${rifaId}`, {}
+    ).pipe(map(r => r.data));
   }
 
   eliminarBoleto(id: number): Observable<string> {

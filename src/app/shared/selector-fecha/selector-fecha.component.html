@@ -1,7 +1,8 @@
 <div class="sf">
 
   <button type="button" class="sf__campo" [class.sf__campo--abierto]="abierto"
-          [class.sf__campo--vacio]="!valor" [disabled]="disabled" (click)="alternar()">
+          [class.sf__campo--vacio]="!valor" [disabled]="disabled" (click)="alternar()"
+          cdkOverlayOrigin #origen="cdkOverlayOrigin">
     <span class="sf__icono">📅</span>
     <span class="sf__texto">{{ etiqueta || placeholder }}</span>
     <span class="sf__caret">{{ abierto ? '▴' : '▾' }}</span>
@@ -9,7 +10,23 @@
 
   <span class="sf__ayuda" *ngIf="ayuda">{{ ayuda }}</span>
 
-  <div class="sf__pop" *ngIf="abierto">
+</div>
+
+<!-- El calendario se monta en un overlay del CDK (fuera de la card) a propósito: como panel
+     normal quedaba recortado, porque .pk-card tiene `overflow: hidden` Y un `transform` en
+     :hover — y un transform convierte a la card en bloque contenedor, así que ni `position:
+     fixed` se escapaba. Desde el overlay se posiciona contra el campo, se voltea solo si no
+     cabe abajo y se empuja adentro de la pantalla en celulares. -->
+<ng-template cdkConnectedOverlay
+             [cdkConnectedOverlayOrigin]="origen"
+             [cdkConnectedOverlayOpen]="abierto"
+             [cdkConnectedOverlayPositions]="posiciones"
+             [cdkConnectedOverlayViewportMargin]="8"
+             cdkConnectedOverlayPush
+             (overlayOutsideClick)="cerrarPorFuera($event)"
+             (detach)="abierto = false">
+
+  <div class="sf__pop">
     <div class="sf__pop-head">
       <button type="button" class="sf__nav" (click)="mesAnterior()" aria-label="Mes anterior">‹</button>
       <span class="sf__mes">{{ tituloMes }}</span>
@@ -36,4 +53,4 @@
     </div>
   </div>
 
-</div>
+</ng-template>

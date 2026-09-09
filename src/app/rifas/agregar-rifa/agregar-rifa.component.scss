@@ -894,6 +894,9 @@
 .rf-input--sm { padding: 5px 8px; font-size: 0.82rem; }
 
 .rf-fecha-hora-wrap {
+  // El calendario sustituye al <input type="date"> nativo: toma el espacio libre
+  // del renglon y deja al select de hora con su ancho fijo.
+  app-selector-fecha { flex: 1 1 170px; min-width: 0; }
   display: flex;
   gap: 8px;
   align-items: center;

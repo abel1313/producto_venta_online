@@ -23,6 +23,11 @@ type PasoPlataformas = 'configurar' | 'boletos' | 'ruleta' | 'ganador';
 
 const HORA_CIERRE_POR_DEFECTO = '20:00';
 
+/** Tamaño de página del buscador de premios: se piden de 10 en 10 conforme se hace scroll. */
+const TAM_PAGINA_BUSQUEDA = 10;
+/** Píxeles antes del fondo de la lista a los que ya se pide la siguiente página. */
+const MARGEN_SCROLL = 48;
+
 @Component({
   selector: 'app-boletos-rifa',
   templateUrl: './boletos-rifa.component.html',
@@ -51,6 +56,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   terminoBusca = '';
   variantesBusqueda: IVarianteResumen[] = [];
   buscandoVariante = false;
+  /** Última página traída del buscador y cuántas hay en total, para el scroll infinito. */
+  busqPagina = 1;
+  busqTotalPaginas = 1;
+  cargandoMasVariantes = false;
   varianteParaAgregar: IVarianteResumen | null = null;
   giroGanadorInput = 1;
   guardandoVariante = false;
@@ -141,14 +150,23 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       debounceTime(400),
       distinctUntilChanged(),
       switchMap(t => {
-        if (t.length < 3) { this.variantesBusqueda = []; return EMPTY; }
+        // Término nuevo = lista nueva: se tira lo acumulado por el scroll de la búsqueda anterior.
+        this.variantesBusqueda = [];
+        this.busqPagina = 1;
+        this.busqTotalPaginas = 1;
+        if (t.length < 3) { this.buscandoVariante = false; return EMPTY; }
         this.buscandoVariante = true;
-        return this.rifaService.buscarVariante(t).pipe(
+        return this.rifaService.buscarVariante(t, 1, TAM_PAGINA_BUSQUEDA).pipe(
           catchError(() => { this.buscandoVariante = false; return EMPTY; })
         );
       })
     ).subscribe({
-      next: res => { this.variantesBusqueda = res.t ?? []; this.buscandoVariante = false; }
+      next: res => {
+        this.variantesBusqueda = res.t ?? [];
+        this.busqPagina = res.pagina ?? 1;
+        this.busqTotalPaginas = res.totalPaginas ?? 1;
+        this.buscandoVariante = false;
+      }
     });
   }
 
@@ -451,6 +469,39 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   buscarVariante(): void { this.busqSubject.next(this.terminoBusca.trim()); }
 
+  /** Quedan páginas por traer: lo usa la lista para saber si sigue pidiendo al hacer scroll. */
+  get hayMasVariantes(): boolean { return this.busqPagina < this.busqTotalPaginas; }
+
+  /**
+   * Scroll infinito de los resultados: al acercarse al fondo se pide la página siguiente y se
+   * concatena a lo que ya se ve, en vez de un botón "siguiente" que reemplaza la lista. Cuando
+   * ya se trajo la última página deja de pedir -- por eso `hayMasVariantes` corta antes de la
+   * petición y no después de recibir una respuesta vacía.
+   */
+  alScrollearResultados(evento: Event): void {
+    const el = evento.target as HTMLElement;
+    if (el.scrollTop + el.clientHeight < el.scrollHeight - MARGEN_SCROLL) return;
+    this.cargarMasVariantes();
+  }
+
+  private cargarMasVariantes(): void {
+    if (this.cargandoMasVariantes || this.buscandoVariante || !this.hayMasVariantes) return;
+    const termino = this.terminoBusca.trim();
+    if (termino.length < 3) return;
+
+    const siguiente = this.busqPagina + 1;
+    this.cargandoMasVariantes = true;
+    this.rifaService.buscarVariante(termino, siguiente, TAM_PAGINA_BUSQUEDA).subscribe({
+      next: res => {
+        this.variantesBusqueda = [...this.variantesBusqueda, ...(res.t ?? [])];
+        this.busqPagina = res.pagina ?? siguiente;
+        this.busqTotalPaginas = res.totalPaginas ?? this.busqTotalPaginas;
+        this.cargandoMasVariantes = false;
+      },
+      error: () => { this.cargandoMasVariantes = false; }
+    });
+  }
+
   elegirVarianteBusqueda(v: IVarianteResumen): void {
     this.varianteParaAgregar = v;
     this.variantesBusqueda = [];
@@ -461,6 +512,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.varianteParaAgregar = null;
     this.terminoBusca = '';
     this.variantesBusqueda = [];
+    this.busqPagina = 1;
+    this.busqTotalPaginas = 1;
     this.giroGanadorInput = 1;
   }
 
@@ -883,6 +936,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   // Cada bloqueo dice exactamente QUÉ falta y ofrece el arreglo, en vez de solo no
   // hacer nada o -- peor -- dejar pasar y fallar más adelante.
 
+  /** Suma de boletos de todos los participantes de la rifa. 0 = no se puede sortear. */
+  get totalDeBoletos(): number {
+    return this.concursantes.reduce((suma, c) => suma + (c.boletos ?? 0), 0);
+  }
+
   irAPaso(paso: PasoPlataformas): void {
     if (paso === 'boletos') {
       if (!this.rangoConfigurado) {
@@ -925,6 +983,18 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
           icon: 'warning',
           title: 'No hay participantes',
           text: 'Registra al menos un participante con boletos antes de girar.',
+          confirmButtonText: 'Ir a los boletos'
+        }).then(() => { this.paso = 'boletos'; });
+        return;
+      }
+      // Tener participantes no basta: el sorteo reparte BOLETOS, así que con todos en cero no
+      // hay de dónde sacar ganador y la ruleta se quedaba girando en vacío.
+      if (!this.totalDeBoletos) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Nadie tiene boletos',
+          html: 'Hay ' + this.concursantes.length + ' participante(s) registrado(s), pero ninguno '
+              + 'tiene boletos. Entra a un participante y registra al menos un boleto antes de girar.',
           confirmButtonText: 'Ir a los boletos'
         }).then(() => { this.paso = 'boletos'; });
         return;

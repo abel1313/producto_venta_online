@@ -876,6 +876,28 @@ body.theme-dark input[type="submit"]:disabled {
   cursor: not-allowed;
 }
 
+/* ════════════════════════════════════════════════════════════
+   OVERLAYS DEL CDK — calendario app-selector-fecha, menús de Material
+   ════════════════════════════════════════════════════════════ */
+
+/* Mismo problema que el de SweetAlert2 de abajo y por la misma causa: el
+   contenedor de overlays del CDK trae `z-index: 1000` de fábrica, por debajo
+   del cromo fijo de la app — el botón hamburguesa del navbar (1100) y la
+   botonera del chatbot (FAB y contactos de WhatsApp/Facebook, 10001), que
+   viven en las esquinas de la pantalla en TODAS las rutas.
+
+   El calendario se abría bien y en la posición correcta, pero esos botones le
+   caían encima: en el celular tapaban la esquina superior izquierda (mes
+   anterior) y la inferior derecha (últimos días del mes y los enlaces
+   Hoy/Limpiar). Por eso se veía a medias y los días de debajo no respondían al
+   clic — el clic lo recibía el botón de encima, sin ningún error en consola.
+
+   Se sube por encima del cromo y por debajo de SweetAlert2 (20000), para que
+   un Swal.fire() abierto sobre el calendario le siga ganando. */
+.cdk-overlay-container {
+  z-index: 15000;
+}
+
 .swal2-container {
   z-index: 20000 !important;
 }

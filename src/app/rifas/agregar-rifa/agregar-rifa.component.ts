@@ -238,7 +238,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     }
 
     // Cargar todas las rifas DIARIA de hoy → mostrar como wizard anteriores
-    const hoy = new Date().toISOString().slice(0, 10);
+    // Fecha LOCAL, no UTC: `toISOString()` en México (UTC-6) devuelve el día siguiente a
+    // partir de las 6 de la tarde, y entonces las rifas de hoy no aparecían.
+    const ahora = new Date();
+    const dosDig = (n: number) => String(n).padStart(2, '0');
+    const hoy = `${ahora.getFullYear()}-${dosDig(ahora.getMonth() + 1)}-${dosDig(ahora.getDate())}`;
     this.rifaService.buscarConfiguraciones({ tipo: 'DIARIA', desde: hoy, hasta: hoy }).subscribe({
       next: rifas => {
         for (const r of rifas) {

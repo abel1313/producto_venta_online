@@ -197,7 +197,10 @@
             <span class="pk-hint" *ngIf="buscandoVariante">Buscando...</span>
           </div>
 
-          <div class="br-resultados" *ngIf="variantesBusqueda.length">
+          <!-- La lista tiene su propio scroll: al llegar al fondo pide las siguientes 10 y las
+               acumula, en vez de un botón "siguiente" que reemplace lo que ya se veía. -->
+          <div class="br-resultados" *ngIf="variantesBusqueda.length"
+               (scroll)="alScrollearResultados($event)">
             <button type="button" class="br-resultado" *ngFor="let v of variantesBusqueda"
                     (click)="elegirVarianteBusqueda(v)">
               <img *ngIf="v.imagenBase64" [src]="'data:image/jpeg;base64,' + v.imagenBase64" alt="" />
@@ -207,7 +210,16 @@
                 <span class="pk-text pk-text--sm pk-text--muted">{{ v.color }} {{ v.talla }} · stock {{ v.stock }}</span>
               </span>
             </button>
+
+            <div class="br-resultados__pie" *ngIf="cargandoMasVariantes">Cargando más…</div>
+            <div class="br-resultados__pie" *ngIf="!cargandoMasVariantes && !hayMasVariantes">
+              No hay más resultados.
+            </div>
           </div>
+
+          <span class="pk-hint" *ngIf="terminoBusca.trim().length >= 3 && !buscandoVariante && !variantesBusqueda.length">
+            Ningún producto coincide. Solo se pueden rifar variantes con stock, habilitadas y con foto.
+          </span>
 
           <div class="br-nuevo-premio" *ngIf="varianteParaAgregar">
             <div class="br-nuevo-premio__nombre">📦 {{ varianteParaAgregar.nombreProducto }}</div>

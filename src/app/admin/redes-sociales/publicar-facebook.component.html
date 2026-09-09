@@ -93,7 +93,7 @@
     <div *ngIf="!seleccionado">
       <div class="fb-search-wrap">
         <input class="fb-input" type="text"
-               placeholder="Código de barras, nombre o categoría…"
+               placeholder="Código, nombre o categoría…"
                [(ngModel)]="termino" (input)="onInput()" [disabled]="publicando" appUppercase>
         <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
       </div>
@@ -140,7 +140,7 @@
     <label class="fb-label fb-label--sep">Texto del post</label>
     <textarea class="fb-textarea" rows="6" [(ngModel)]="descripcion"
               [disabled]="publicando"
-              placeholder="Lo que escribas aquí es exactamente lo que se ve en la publicación."></textarea>
+              placeholder="Texto de la publicación…"></textarea>
     <p class="fb-hint">
       ℹ️ Este texto es el <b>mismo para todas las redes</b>. La publicación sale en este orden:
       <b>código de barras</b> (si elegiste producto) → <b>este texto</b> → <b>los hashtags</b> de

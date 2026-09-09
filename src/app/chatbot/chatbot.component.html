@@ -94,7 +94,7 @@
       <textarea class="cb-input"
                 [(ngModel)]="inputTexto"
                 (keydown)="onKeyDown($event)"
-                [placeholder]="inputBloqueado ? labelEspera : 'Escribe tu mensaje… (Enter para enviar)'"
+                [placeholder]="inputBloqueado ? labelEspera : 'Escribe tu mensaje…'"
                 rows="1"
                 [disabled]="cargando || inputBloqueado">
       </textarea>

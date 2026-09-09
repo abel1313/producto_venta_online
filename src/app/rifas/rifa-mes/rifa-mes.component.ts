@@ -87,6 +87,9 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   // ── Paso 4: Ruleta ─────────────────────────────────────────────────
   elegibles: IConcursante[] = [];
   descartados: IConcursante[] = [];
+  // Un slot por boleto -- el mismo concursante se repite tantas veces como
+  // boletos tenga, para que la ruleta se vea (y sortee) proporcional a sus boletos.
+  private ruletaSlots: IConcursante[] = [];
   sorteando = false;
   descartadoActual: IConcursante | null = null;
   ganador: IGanadorRifa | null = null;
@@ -498,7 +501,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
     this.rifaService.sortear(this.rifaConfig.id).subscribe({
       next: resultado => {
-        const idx = this.elegibles.findIndex(c => c.id === resultado.concursante.id);
+        const idx = this.indiceSlotGanador(resultado.concursante.id);
         setTimeout(() => {
           this.girarAnimacionHacia(idx >= 0 ? idx : 0, () => {
             this.sorteando = false;
@@ -613,16 +616,46 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     setTimeout(() => this.generarRuleta(), 50);
   }
 
+  // Un slot por boleto: quien tiene más boletos aparece más veces en la ruleta
+  // (mismo color en todas sus repeticiones), reflejando visualmente su probabilidad real.
+  private construirSlotsRuleta(): IConcursante[] {
+    const slots: IConcursante[] = [];
+    this.elegibles.forEach(c => {
+      const veces = Math.max(1, c.boletos ?? 1);
+      for (let i = 0; i < veces; i++) slots.push(c);
+    });
+    return slots;
+  }
+
+  // Elige al azar uno de los slots (boletos) del ganador -- así la ruleta no
+  // siempre para en el mismo slot cuando alguien tiene varios boletos.
+  private indiceSlotGanador(concursanteId: number | undefined): number {
+    const candidatos = this.ruletaSlots
+      .map((c, i) => i)
+      .filter(i => this.ruletaSlots[i].id === concursanteId);
+    if (candidatos.length) return candidatos[Math.floor(Math.random() * candidatos.length)];
+    return this.elegibles.findIndex(c => c.id === concursanteId);
+  }
+
   private generarRuleta(): void {
     this.chart?.destroy();
     if (!this.elegibles.length || !this.ruletaCanvas) return;
+
+    this.ruletaSlots = this.construirSlotsRuleta();
+    const colorPorConcursante = new Map<number, string>();
+    const backgroundColor = this.ruletaSlots.map(c => {
+      const id = c.id!;
+      if (!colorPorConcursante.has(id)) colorPorConcursante.set(id, this.colorAleatorio());
+      return colorPorConcursante.get(id)!;
+    });
+
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.elegibles.map(c => this.nombreCompleto(c)),
+        labels: this.ruletaSlots.map(c => this.nombreCompleto(c)),
         datasets: [{
-          data: Array(this.elegibles.length).fill(1),
-          backgroundColor: this.elegibles.map(() => this.colorAleatorio())
+          data: Array(this.ruletaSlots.length).fill(1),
+          backgroundColor
         }]
       },
       options: {
@@ -643,7 +676,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
   private girarAnimacionHacia(index: number, onComplete: () => void): void {
     const canvas = this.ruletaCanvas?.nativeElement;
     if (!canvas) return;
-    const segmentAngle = 360 / this.elegibles.length;
+    const segmentAngle = 360 / (this.ruletaSlots.length || this.elegibles.length);
     const finalRotation = 10 * 360 + (360 - (index * segmentAngle + segmentAngle / 2));
     canvas.style.transition = 'none';
     canvas.style.transform  = 'rotate(0deg)';

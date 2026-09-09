@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { IConfigurarRifa } from '../models/configurar-rifa.model';
 import { IConcursante } from '../models/concursante.model';
-import { IBoletoRifa } from '../models/boleto-rifa.model';
+import { IBoletoRifa, PlataformaBoleto } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
 
 @Component({
@@ -24,7 +24,14 @@ export class BoletosRifaComponent implements OnInit {
   boletos: IBoletoRifa[] = [];
   cargandoBoletos = false;
 
+  // ── Rango de fechas en que se aceptan boletos (config de la rifa) ──
+  configFechaInicio = '';
+  configFechaFin = '';
+  editandoRango = false;
+  guardandoRango = false;
+
   // ── Form para registrar un boleto nuevo ────────────────────────────
+  plataforma: PlataformaBoleto | '' = '';
   motivo = '';
   fecha = '';
   fechaMin = '';
@@ -69,6 +76,9 @@ export class BoletosRifaComponent implements OnInit {
     this.rifaSeleccionada = rifa;
     this.concursanteSeleccionado = null;
     this.boletos = [];
+    this.configFechaInicio = rifa.fechaInicioBoletos ?? '';
+    this.configFechaFin = rifa.fechaFinBoletos ?? '';
+    this.editandoRango = !rifa.fechaInicioBoletos || !rifa.fechaFinBoletos;
     this.calcularRangoFecha(rifa);
     this.cargandoConcursantes = true;
     this.rifaService.getConcursantesPorRifa(rifa.id!).subscribe({
@@ -77,19 +87,54 @@ export class BoletosRifaComponent implements OnInit {
     });
   }
 
-  private calcularRangoFecha(rifa: IConfigurarRifa): void {
-    let anio: number; let mes: number; // mes 1-12
-    if (rifa.mesReferencia) {
-      const [a, m] = rifa.mesReferencia.split('-').map(Number);
-      anio = a; mes = m;
-    } else {
-      const hoy = new Date();
-      anio = hoy.getFullYear(); mes = hoy.getMonth() + 1;
+  guardarRangoBoletos(): void {
+    if (!this.rifaSeleccionada?.id || !this.configFechaInicio || !this.configFechaFin || this.guardandoRango) return;
+    if (this.configFechaInicio > this.configFechaFin) {
+      Swal.fire({ icon: 'error', title: 'Rango inválido', text: 'La fecha de inicio no puede ser posterior a la fecha fin.' });
+      return;
     }
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const ultimoDia = new Date(anio, mes, 0).getDate();
-    this.fechaMin = `${anio}-${pad(mes)}-01`;
-    this.fechaMax = `${anio}-${pad(mes)}-${pad(ultimoDia)}`;
+    this.guardandoRango = true;
+    this.rifaService.actualizarConfiguracion(this.rifaSeleccionada.id, {
+      fechaInicioBoletos: this.configFechaInicio,
+      fechaFinBoletos: this.configFechaFin
+    }).subscribe({
+      next: res => {
+        this.guardandoRango = false;
+        this.rifaSeleccionada = res;
+        const idx = this.rifas.findIndex(r => r.id === res.id);
+        if (idx >= 0) this.rifas[idx] = res;
+        this.editandoRango = false;
+        this.calcularRangoFecha(res);
+      },
+      error: err => {
+        this.guardandoRango = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo guardar el rango',
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.'
+        });
+      }
+    });
+  }
+
+  private calcularRangoFecha(rifa: IConfigurarRifa): void {
+    if (rifa.fechaInicioBoletos && rifa.fechaFinBoletos) {
+      this.fechaMin = rifa.fechaInicioBoletos;
+      this.fechaMax = rifa.fechaFinBoletos;
+    } else {
+      let anio: number; let mes: number; // mes 1-12
+      if (rifa.mesReferencia) {
+        const [a, m] = rifa.mesReferencia.split('-').map(Number);
+        anio = a; mes = m;
+      } else {
+        const hoy = new Date();
+        anio = hoy.getFullYear(); mes = hoy.getMonth() + 1;
+      }
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const ultimoDia = new Date(anio, mes, 0).getDate();
+      this.fechaMin = `${anio}-${pad(mes)}-01`;
+      this.fechaMax = `${anio}-${pad(mes)}-${pad(ultimoDia)}`;
+    }
     const hoyStr = new Date().toISOString().slice(0, 10);
     this.fecha = (hoyStr >= this.fechaMin && hoyStr <= this.fechaMax) ? hoyStr : this.fechaMin;
   }
@@ -105,6 +150,7 @@ export class BoletosRifaComponent implements OnInit {
   }
 
   resetForm(): void {
+    this.plataforma = '';
     this.motivo = '';
     this.urlPerfilRedSocial = '';
     this.urlSeguimiento = '';
@@ -126,6 +172,7 @@ export class BoletosRifaComponent implements OnInit {
     this.guardando = true;
     this.rifaService.registrarBoleto({
       concursanteId: this.concursanteSeleccionado.id,
+      plataforma: this.plataforma || null,
       motivo: this.motivo.trim() || null,
       fecha: this.fecha || null,
       urlPerfilRedSocial: this.urlPerfilRedSocial.trim() || null,

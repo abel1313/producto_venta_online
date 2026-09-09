@@ -9,6 +9,10 @@ export interface IConfigurarRifa {
   tipo?: TipoRifa;
   mesReferencia?: string | null;
   esPrueba?: boolean;
+  // Ventana en la que se aceptan boletos por acciones en redes sociales (yyyy-MM-dd).
+  // Si no está configurada, se usa el mes de la rifa (mesReferencia) como rango.
+  fechaInicioBoletos?: string | null;
+  fechaFinBoletos?: string | null;
 }
 
 // Request para crear/actualizar la sesión de la rifa

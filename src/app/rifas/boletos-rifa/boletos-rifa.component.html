@@ -19,15 +19,42 @@
 
   <ng-container *ngIf="rifaSeleccionada">
 
-    <!-- ── Buscar / seleccionar concursante (nombre una sola vez) ──── -->
-    <div class="pk-field">
-      <label class="pk-label">Concursante</label>
-      <input class="pk-input" type="text" placeholder="Buscar por nombre..." [(ngModel)]="filtroNombre" />
+    <!-- ── Paso 1: configurar el rango de fechas en que se aceptan boletos ── -->
+    <div class="pk-card" *ngIf="editandoRango">
+      <div class="pk-card__header">
+        <div style="font-weight:700">📅 Rango de fechas para esta rifa</div>
+      </div>
+      <div class="pk-card__body">
+        <p class="pk-text pk-text--muted pk-text--sm">Solo se aceptarán boletos con fecha dentro de este rango.</p>
+        <div class="pk-field">
+          <label class="pk-label">Desde</label>
+          <input class="pk-input" type="date" [(ngModel)]="configFechaInicio" />
+        </div>
+        <div class="pk-field">
+          <label class="pk-label">Hasta</label>
+          <input class="pk-input" type="date" [(ngModel)]="configFechaFin" />
+        </div>
+        <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardandoRango || !configFechaInicio || !configFechaFin" (click)="guardarRangoBoletos()">
+          <span *ngIf="!guardandoRango">Guardar rango</span>
+          <span *ngIf="guardandoRango" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
     </div>
 
-    <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
-      Sin concursantes para esta rifa.
-    </div>
+    <ng-container *ngIf="!editandoRango">
+      <div class="pk-field">
+        <span class="pk-hint">📅 Rango vigente: {{ fechaMin }} a {{ fechaMax }} — <button type="button" class="pk-btn pk-btn--icon pk-btn--sm" (click)="editandoRango = true">✎ cambiar</button></span>
+      </div>
+
+      <!-- ── Buscar / seleccionar concursante (nombre una sola vez) ──── -->
+      <div class="pk-field">
+        <label class="pk-label">Concursante</label>
+        <input class="pk-input" type="text" placeholder="Buscar por nombre..." [(ngModel)]="filtroNombre" />
+      </div>
+
+      <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
+        Sin concursantes para esta rifa.
+      </div>
 
     <div class="br-lista-concursantes" *ngIf="!concursanteSeleccionado && concursantesFiltrados.length > 0">
       <button type="button" class="br-concursante-row"
@@ -51,14 +78,25 @@
       <div class="pk-card__body">
         <!-- ── Form nuevo boleto ────────────────────────────────────── -->
         <div class="pk-field">
+          <label class="pk-label">Plataforma (opcional)</label>
+          <select class="pk-input" [(ngModel)]="plataforma">
+            <option value="">Selecciona...</option>
+            <option value="FACEBOOK">Facebook</option>
+            <option value="INSTAGRAM">Instagram</option>
+            <option value="TIKTOK">TikTok</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+
+        <div class="pk-field">
           <label class="pk-label">Motivo (opcional)</label>
-          <input class="pk-input" type="text" placeholder="Ej. Seguir en TikTok, compartir publicación..." [(ngModel)]="motivo" />
+          <input class="pk-input" type="text" placeholder="Ej. Seguir la cuenta, compartir publicación..." [(ngModel)]="motivo" />
         </div>
 
         <div class="pk-field">
           <label class="pk-label">Fecha</label>
           <input class="pk-input" type="date" [(ngModel)]="fecha" [min]="fechaMin" [max]="fechaMax" />
-          <span class="pk-hint">Solo se puede registrar dentro del mes de la rifa ({{ fechaMin }} a {{ fechaMax }}).</span>
+          <span class="pk-hint">Solo se puede registrar dentro del rango configurado ({{ fechaMin }} a {{ fechaMax }}).</span>
         </div>
 
         <div class="pk-field">
@@ -90,7 +128,7 @@
       <div class="pk-card__footer" style="flex-direction:column; align-items:stretch; gap:10px" *ngIf="boletos.length > 0">
         <div class="br-boleto-row" *ngFor="let b of boletos">
           <div>
-            <div class="pk-text pk-text--bold">{{ b.motivo || 'Sin motivo especificado' }} · {{ b.fecha | date:'dd/MM/yyyy' }}</div>
+            <div class="pk-text pk-text--bold">{{ b.plataforma ? (b.plataforma + ' · ') : '' }}{{ b.motivo || 'Sin motivo especificado' }} · {{ b.fecha | date:'dd/MM/yyyy' }}</div>
             <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlPerfilRedSocial">Perfil: {{ b.urlPerfilRedSocial }}</div>
             <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlSeguimiento">Evidencia de seguimiento: {{ b.urlSeguimiento }}</div>
             <div class="pk-text pk-text--sm pk-text--muted" *ngFor="let u of b.urlsCompartido">Compartido: {{ u }}</div>
@@ -102,6 +140,7 @@
         Este concursante todavía no tiene boletos registrados por acciones.
       </div>
     </div>
+    </ng-container>
   </ng-container>
 
 </div>

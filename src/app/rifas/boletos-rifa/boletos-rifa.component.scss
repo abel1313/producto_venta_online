@@ -1,0 +1,42 @@
+.br-lista-concursantes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.br-concursante-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .88rem;
+  cursor: pointer;
+  transition: background .15s ease;
+
+  &:hover { background: var(--form-section-bg); }
+}
+
+.br-url-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+
+  .pk-input { flex: 1; }
+}
+
+.br-boleto-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+}

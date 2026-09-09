@@ -19,6 +19,7 @@ import {
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
 import { IVarianteResumenPaginable } from 'src/app/variante/models/variante.model';
+import { IBoletoRifa, IBoletoRifaRequest } from '../models/boleto-rifa.model';
 
 export type ModoContinuacion = 'RESTANTES' | 'CERO' | 'NUEVOS';
 
@@ -194,5 +195,24 @@ export class RifaService {
     return this.http.get<{ code: number; data: IConfigurarRifa[] }>(
       `${this.url}/v1/configurarRifa/activas/hoy`
     ).pipe(map(r => r.data ?? []));
+  }
+
+  // ── 16. Boletos por acción en redes sociales ───────────────────────
+  registrarBoleto(data: IBoletoRifaRequest): Observable<IBoletoRifa> {
+    return this.http.post<{ code: number; data: IBoletoRifa }>(
+      `${this.url}/v1/boletoRifa/registrar`, data
+    ).pipe(map(r => r.data));
+  }
+
+  getBoletosPorConcursante(concursanteId: number): Observable<IBoletoRifa[]> {
+    return this.http.get<{ code: number; data: IBoletoRifa[] }>(
+      `${this.url}/v1/boletoRifa/porConcursante/${concursanteId}`
+    ).pipe(map(r => r.data ?? []));
+  }
+
+  eliminarBoleto(id: number): Observable<string> {
+    return this.http.delete<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/${id}`
+    ).pipe(map(r => r.data));
   }
 }

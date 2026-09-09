@@ -13,6 +13,9 @@ export interface IConfigurarRifa {
   // Si no está configurada, se usa el mes de la rifa (mesReferencia) como rango.
   fechaInicioBoletos?: string | null;
   fechaFinBoletos?: string | null;
+  // Es la rifa que sirve el link público (/ruleta/{id}). Publicada hay una sola:
+  // publicar otra despublica esta.
+  publica?: boolean;
 }
 
 // Request para crear/actualizar la sesión de la rifa

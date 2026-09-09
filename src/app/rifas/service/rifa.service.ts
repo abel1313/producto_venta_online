@@ -23,6 +23,7 @@ import {
   IBoletoRifa,
   IBoletoRifaRequest,
   IEstadoRifaPlataformas,
+  IPremioPublico,
   IResultadoSorteoPlataformas
 } from '../models/boleto-rifa.model';
 
@@ -73,6 +74,13 @@ export class RifaService {
   }
 
   // ── 2c. Activar/desactivar modo prueba ─────────────────────────────
+  // Marca cuál es la rifa que abre el link público. Publicar una despublica la anterior.
+  setPublica(rifaId: number, publica: boolean): Observable<IConfigurarRifa> {
+    return this.http.put<{ code: number; data: IConfigurarRifa }>(
+      `${this.url}/v1/configurarRifa/${rifaId}/publica`, { publica }
+    ).pipe(map(r => r.data));
+  }
+
   setEsPrueba(rifaId: number, esPrueba: boolean): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${rifaId}/esPrueba`, { esPrueba }
@@ -290,6 +298,14 @@ export class RifaService {
   reiniciarPublicoPlataformas(rifaId: number): Observable<string> {
     return this.http.post<{ code: number; data: string }>(
       `${this.url}/v1/boletoRifa/publico/reiniciar/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  // Ficha del premio con todas sus fotos. El premio se pide junto con su rifa porque
+  // el back comprueba que le pertenezca antes de devolverlo.
+  getPremioPublico(rifaId: number, premioId: number): Observable<IPremioPublico> {
+    return this.http.get<{ code: number; data: IPremioPublico }>(
+      `${this.url}/v1/boletoRifa/publico/premio/${rifaId}/${premioId}`
     ).pipe(map(r => r.data));
   }
 

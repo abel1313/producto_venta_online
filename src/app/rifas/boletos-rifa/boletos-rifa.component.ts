@@ -49,6 +49,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   guardandoRango = false;
   creandoRifa = false;
   cambiandoModoPrueba = false;
+  cambiandoPublica = false;
 
   // ── Premios (variantes de la rifa) ─────────────────────────────────
   variantesRifa: IConfigurarRifaVariante[] = [];
@@ -420,6 +421,52 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   get periodoTerminado(): boolean {
     const fin = this.rifaSeleccionada?.fechaFinBoletos;
     return !!fin && this.aIso(new Date()) > fin;
+  }
+
+  /**
+   * Publica o despublica la rifa: es lo que decide cuál abre el link /ruleta/{id}.
+   *
+   * Antes bastaba con que la rifa existiera, así que con el link de una se entraba a
+   * cualquier otra cambiando el número de la URL. Ahora hay que marcarla a mano, y
+   * publicada hay una sola: al publicar esta, la que estuviera antes se apaga -- por eso
+   * se avisa, para que no sorprenda que el link viejo deje de abrir.
+   */
+  togglePublica(): void {
+    const rifa = this.rifaSeleccionada;
+    if (!rifa?.id || this.cambiandoPublica) return;
+
+    if (rifa.publica) { this.aplicarPublica(false); return; }
+
+    const otraPublicada = this.rifas.find(r => r.publica && r.id !== rifa.id);
+    if (!otraPublicada) { this.aplicarPublica(true); return; }
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Ya hay otra rifa publicada',
+      text: `La rifa #${otraPublicada.id} es la que se ve hoy en el link público. Si publicas esta, su link deja de abrir.`,
+      showCancelButton: true,
+      confirmButtonText: 'Sí, publicar esta',
+      cancelButtonText: 'Cancelar'
+    }).then(r => { if (r.isConfirmed) this.aplicarPublica(true); });
+  }
+
+  private aplicarPublica(publica: boolean): void {
+    const rifa = this.rifaSeleccionada;
+    if (!rifa?.id) return;
+    this.cambiandoPublica = true;
+    this.rifaService.setPublica(rifa.id, publica).subscribe({
+      next: res => {
+        this.cambiandoPublica = false;
+        // Publicar apaga las demás en el back; se refleja aquí para que el listado no
+        // siga mostrando dos rifas publicadas hasta la próxima recarga.
+        if (publica) this.rifas.forEach(r => { if (r.id !== res.id) r.publica = false; });
+        this.aplicarRifaActualizada(res);
+      },
+      error: err => {
+        this.cambiandoPublica = false;
+        this.error('No se pudo cambiar la publicación', err);
+      }
+    });
   }
 
   toggleModoPrueba(): void {

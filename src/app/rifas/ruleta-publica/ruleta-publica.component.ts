@@ -1,8 +1,9 @@
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
-import { IBoletoRifaDto, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
+import { IBoletoRifaDto, IPremioPublico, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
@@ -33,6 +34,13 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
 
   esPrueba = true;
   nombrePremio = '';
+  premioId: number | null = null;
+  premioMiniatura: string | null = null;
+
+  premioAbierto = false;
+  premioCargando = false;
+  premio: IPremioPublico | null = null;
+  imagenIndice = 0;
   varianteNumeroActual = 0;
   totalVariantes = 0;
   giroActual = 0;
@@ -54,6 +62,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly rifaService: RifaService
   ) {}
 
@@ -73,6 +82,8 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         this.cargando = false;
         this.esPrueba = !!est.configurarRifa?.esPrueba;
         this.nombrePremio = est.varianteActual?.variante?.nombreProducto ?? '';
+        this.premioId = est.varianteActual?.id ?? null;
+        this.premioMiniatura = this.aDataUri(est.varianteActual?.variante?.imagenBase64);
         this.varianteNumeroActual = est.varianteNumeroActual;
         this.totalVariantes = est.totalVariantes;
         this.giroActual = est.giroActual;
@@ -83,11 +94,100 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         this.resumenEnJuego = this.resumir(this.boletosEnJuego);
         setTimeout(() => this.generarRuleta(), 150);
       },
-      error: () => {
+      error: (e: HttpErrorResponse) => {
         this.cargando = false;
+        // 404 = la rifa no existe o no es la que el negocio tiene publicada. Se manda a
+        // la misma pantalla de "página no disponible" que cualquier URL inventada, para
+        // que tantear ids (/ruleta/47, /ruleta/46...) no diga nada de lo que hay detrás.
+        if (e.status === 404) { this.irA404(); return; }
         this.error = 'No se pudo cargar la ruleta. Verifica el link.';
       }
     });
+  }
+
+  // skipLocationChange deja el link tal como lo abrió el visitante: se ve el 404 sin
+  // que la barra de direcciones cambie a otra ruta.
+  private irA404(): void {
+    this.router.navigateByUrl('/pagina-no-disponible', { skipLocationChange: true });
+  }
+
+  private aDataUri(base64: string | null | undefined): string | null {
+    if (!base64) return null;
+    return base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
+  }
+
+  // ── Detalle del premio ─────────────────────────────────────────────
+  // La ficha completa y todas las fotos se piden solo al abrir el detalle: el estado de
+  // la ruleta se recarga tras cada giro y mandar la galería ahí multiplicaría el payload.
+
+  abrirPremio(): void {
+    if (!this.rifaId || !this.premioId) return;
+    this.premioAbierto = true;
+    this.imagenIndice = 0;
+
+    if (this.premio?.id === this.premioId) return;   // ya está en memoria
+
+    this.premio = null;
+    this.premioCargando = true;
+    this.rifaService.getPremioPublico(this.rifaId, this.premioId).subscribe({
+      next: p => { this.premio = p; this.premioCargando = false; },
+      error: () => { this.premioCargando = false; }
+    });
+  }
+
+  cerrarPremio(): void { this.premioAbierto = false; }
+
+  @HostListener('document:keydown', ['$event'])
+  teclado(evento: KeyboardEvent): void {
+    if (!this.premioAbierto) return;
+    if (evento.key === 'Escape')     this.cerrarPremio();
+    if (evento.key === 'ArrowLeft')  this.imagenAnterior();
+    if (evento.key === 'ArrowRight') this.imagenSiguiente();
+  }
+
+  get imagenes(): string[] { return this.premio?.imagenes ?? []; }
+
+  // El carrusel da la vuelta en los dos sentidos: con dos o tres fotos, toparse con
+  // una flecha muerta se siente roto.
+  imagenAnterior(): void {
+    if (this.imagenes.length < 2) return;
+    this.imagenIndice = (this.imagenIndice - 1 + this.imagenes.length) % this.imagenes.length;
+  }
+
+  imagenSiguiente(): void {
+    if (this.imagenes.length < 2) return;
+    this.imagenIndice = (this.imagenIndice + 1) % this.imagenes.length;
+  }
+
+  irAImagen(i: number): void { this.imagenIndice = i; }
+
+  // Deslizar con el dedo: en el celular las flechas quedan chicas y lo natural es
+  // arrastrar la foto. Menos de 40 px se toma como un toque, no como un swipe.
+  private inicioToqueX: number | null = null;
+
+  inicioToque(evento: TouchEvent): void { this.inicioToqueX = evento.changedTouches[0].clientX; }
+
+  finToque(evento: TouchEvent): void {
+    if (this.inicioToqueX === null) return;
+    const recorrido = evento.changedTouches[0].clientX - this.inicioToqueX;
+    this.inicioToqueX = null;
+    if (Math.abs(recorrido) < 40) return;
+    if (recorrido > 0) this.imagenAnterior();
+    else this.imagenSiguiente();
+  }
+
+  /** Los atributos que sí tienen valor, para no pintar filas vacías en la ficha. */
+  get fichaPremio(): { etiqueta: string; valor: string }[] {
+    const p = this.premio;
+    if (!p) return [];
+    return [
+      { etiqueta: 'Descripción',   valor: p.descripcion ?? '' },
+      { etiqueta: 'Marca',         valor: p.marca ?? '' },
+      { etiqueta: 'Presentación',  valor: p.presentacion ?? '' },
+      { etiqueta: 'Contenido',     valor: p.contenidoNeto ?? '' },
+      { etiqueta: 'Talla',         valor: p.talla ?? '' },
+      { etiqueta: 'Color',         valor: p.color ?? '' }
+    ].filter(f => !!f.valor.trim());
   }
 
   private resumir(boletos: IBoletoRifaDto[]): { nombre: string; boletos: number }[] {

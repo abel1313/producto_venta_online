@@ -349,6 +349,10 @@
             <input class="pk-input" type="url" placeholder="https://facebook.com/su-perfil"
                    [class.br-input--error]="intentoGuardarBoleto && !urlPerfilRedSocial.trim()"
                    [(ngModel)]="urlPerfilRedSocial" />
+            <span class="pk-hint" *ngIf="!(intentoGuardarBoleto && !urlPerfilRedSocial.trim())">
+              El link a la cuenta de la persona (facebook.com/su-perfil), no el de la publicación:
+              es con lo que se revisa después si sigue siguiendo la página.
+            </span>
             <span class="pk-hint br-hint--error"
                   *ngIf="intentoGuardarBoleto && !urlPerfilRedSocial.trim()">
               Sin el perfil el boleto no se puede verificar después.
@@ -357,6 +361,7 @@
 
           <div class="pk-field">
             <label class="pk-label">URLs de lo que compartió</label>
+            <span class="pk-hint">El link de cada publicación que compartió, no el de su perfil.</span>
             <div class="br-url-row" *ngFor="let u of urlsCompartido; let i = index; trackBy: seguirPor">
               <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlsCompartido[i]" />
               <button type="button" class="br-icono" *ngIf="urlsCompartido.length > 1"
@@ -413,13 +418,21 @@
           <div>
             <div class="br-h">🎡 {{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</div>
             <div class="pk-text pk-text--sm br-h__sub">
-              Premio {{ varianteNumeroActual }} de {{ totalVariantes }} · giro {{ giroActual }} de {{ giroGanador }}
+              Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
+              <ng-container *ngIf="!rifaTerminada">· giro {{ giroActual }} de {{ giroGanador }}</ng-container>
+              <ng-container *ngIf="rifaTerminada">· ya se sortearon todos los premios</ng-container>
             </div>
           </div>
         </div>
 
         <div class="pk-card__body">
-          <div class="pk-empty" *ngIf="!boletosEnJuego.length">No hay boletos en juego.</div>
+          <div class="br-aviso-terminada" *ngIf="rifaTerminada">
+            🏁 Esta rifa ya sorteó todos sus premios, por eso no gira. Si agregaste un premio
+            o cambiaste los giros, usa <b>Reiniciar</b>: los boletos vuelven a estar en juego
+            y se borran los giros (los participantes y sus boletos no se pierden).
+          </div>
+
+          <div class="pk-empty" *ngIf="!boletosEnJuego.length && !rifaTerminada">No hay boletos en juego.</div>
 
           <div class="br-ruleta-wrap" *ngIf="boletosEnJuego.length">
             <div class="br-ruleta-flecha">▼</div>

@@ -200,6 +200,9 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.calcularRangoFecha(rifa);
     this.cargarPremios();
     this.cargarConcursantes();
+    // El estado del sorteo se carga desde el paso 1, no solo al abrir la ruleta: es lo
+    // que permite avisar en los premios que la rifa ya se giró (ver `rifaYaEmpezo`).
+    this.cargarEstadoRuleta();
   }
 
   /** Vuelca la rifa guardada al formulario -- es la referencia contra la que se
@@ -461,12 +464,53 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.giroGanadorInput = 1;
   }
 
+  /**
+   * La rifa ya se giró al menos una vez.
+   *
+   * Los giros que ya se registraron no se recalculan: si se agrega un premio o se le
+   * cambia el giro ganador a una rifa empezada, el cambio no entra al sorteo en curso
+   * (y si ya salió el ganador del último premio, la ruleta queda sin nada que girar,
+   * mostrando "giro 0" y el botón muerto). Reiniciar es lo que lo vuelve a abrir.
+   */
+  get rifaYaEmpezo(): boolean {
+    return this.rifaTerminada || this.boletosDescartados.length > 0;
+  }
+
+  /** Corre `accion`, pero si la rifa ya se giró primero avisa y la reinicia. */
+  private sobreRifaEmpezada(accion: () => void): void {
+    if (!this.rifaYaEmpezo) { accion(); return; }
+    Swal.fire({
+      icon: 'warning',
+      title: 'Esta rifa ya se empezó a girar',
+      text: 'Los giros que ya se hicieron no se recalculan, así que este cambio no entra al sorteo hasta reiniciar la rifa: los boletos vuelven a estar en juego y se borran los giros. Los participantes y sus boletos no se pierden.',
+      showCancelButton: true,
+      confirmButtonText: 'Reiniciar y guardar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed || !this.rifaSeleccionada?.id) return;
+      this.rifaService.reiniciarPlataformas(this.rifaSeleccionada.id).subscribe({
+        next: () => {
+          this.ganadorActual = null;
+          this.descartadoActual = null;
+          this.cargarEstadoRuleta();
+          accion();
+        },
+        error: err => this.error('No se pudo reiniciar la rifa', err)
+      });
+    });
+  }
+
   agregarPremio(): void {
     if (!this.rifaSeleccionada?.id || !this.varianteParaAgregar?.id || this.guardandoVariante) return;
     if (!this.giroGanadorInput || this.giroGanadorInput < 1) {
       this.avisar('Falta el giro ganador', 'Indica en qué giro sale el ganador de este premio (1 o más).');
       return;
     }
+    this.sobreRifaEmpezada(() => this.guardarPremioNuevo());
+  }
+
+  private guardarPremioNuevo(): void {
+    if (!this.rifaSeleccionada?.id || !this.varianteParaAgregar?.id) return;
     this.guardandoVariante = true;
     this.rifaService.guardarVarianteRifa({
       configurarRifaId: this.rifaSeleccionada.id,
@@ -505,6 +549,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.avisar('Giro inválido', 'El giro ganador debe ser 1 o más.');
       return;
     }
+    this.sobreRifaEmpezada(() => this.guardarCambioDeGiro());
+  }
+
+  private guardarCambioDeGiro(): void {
+    if (!this.premioEditandoId) return;
     this.guardandoPremioEditado = true;
     this.rifaService.editarVarianteRifa(this.premioEditandoId, { giroGanador: this.premioEditandoGiro })
       .subscribe({
@@ -614,19 +663,23 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.guardandoParticipante = true;
 
     if (this.participanteEditandoId) {
-      this.rifaService.actualizarConcursante(this.participanteEditandoId, {
+      const id = this.participanteEditandoId;
+      this.rifaService.actualizarConcursante(id, {
         nombre: this.nuevoNombre.trim(),
         apellidoPaterno: this.nuevoApellido.trim(),
         telefono: this.nuevoTelefono.trim()
       }).subscribe({
         next: res => {
           this.guardandoParticipante = false;
-          const idx = this.concursantes.findIndex(c => c.id === this.participanteEditandoId);
-          if (idx >= 0) this.concursantes[idx] = { ...this.concursantes[idx], ...res };
-          if (this.concursanteSeleccionado?.id === this.participanteEditandoId) {
-            this.concursanteSeleccionado = { ...this.concursanteSeleccionado, ...res };
-          }
+          const idx = this.concursantes.findIndex(c => c.id === id);
+          const actualizado = idx >= 0 ? { ...this.concursantes[idx], ...res } : res;
+          if (idx >= 0) this.concursantes[idx] = actualizado;
           this.cancelarFormParticipante();
+          // Se queda abierto el panel de boletos de esa persona, igual que al darla de
+          // alta. Al lápiz de editar se le corta el clic de la fila (stopPropagation), así
+          // que si se entraba a editar sin haber seleccionado antes al participante, al
+          // guardar no quedaba nadie seleccionado y no aparecía dónde registrarle boletos.
+          this.seleccionarConcursante(actualizado);
         },
         error: err => { this.guardandoParticipante = false; this.error('No se pudo guardar el participante', err); }
       });
@@ -669,6 +722,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         next: () => {
           this.concursantes = this.concursantes.filter(x => x.id !== c.id);
           if (this.concursanteSeleccionado?.id === c.id) this.concursanteSeleccionado = null;
+          // Si se eliminó justo al que estaba abierto en el formulario, este deja de
+          // apuntar a un id que ya no existe y se queda con lo escrito, pero como alta
+          // nueva: darle "Guardar" lo vuelve a registrar. Antes seguía en modo edición y
+          // el back respondía "Concursante no encontrado".
+          if (this.participanteEditandoId === c.id) this.participanteEditandoId = null;
         },
         error: err => this.error('No se pudo eliminar al participante', err)
       });

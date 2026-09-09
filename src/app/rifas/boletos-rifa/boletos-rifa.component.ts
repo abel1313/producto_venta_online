@@ -88,7 +88,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   fecha = '';
   fechaMin = '';
   fechaMax = '';
-  urlSeguimiento = '';
+  // Es `urlPerfilRedSocial`, no `urlSeguimiento`: el back exige ESTE campo al registrar
+  // (sin el perfil el boleto no se puede verificar después) y el front lo mandaba con el
+  // otro nombre, así que el alta fallaba siempre con "La URL del perfil es obligatoria".
+  urlPerfilRedSocial = '';
   urlsCompartido: string[] = [''];
   guardando = false;
   /** id del boleto en edición; null = el formulario está registrando uno nuevo. */
@@ -152,17 +155,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.busqSub?.unsubscribe();
     this.chart?.destroy();
-  }
-
-  /**
-   * Un solo velo de "cargando" para toda la pantalla, en vez de un spinner chiquito
-   * dentro de cada botón -- el giro incluido.
-   */
-  get ocupado(): boolean {
-    return this.cargandoRifas || this.creandoRifa || this.guardandoRango
-        || this.cambiandoModoPrueba || this.cargandoPremios || this.guardandoVariante
-        || this.guardandoPremioEditado || this.cargandoConcursantes || this.guardandoParticipante
-        || this.cargandoBoletos || this.guardando || this.cargandoRuleta || this.sorteando;
   }
 
   // ── Carga de rifas ─────────────────────────────────────────────────
@@ -711,7 +703,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   resetForm(): void {
     this.plataforma = '';
     this.motivo = '';
-    this.urlSeguimiento = '';
+    this.urlPerfilRedSocial = '';
     this.urlsCompartido = [''];
     this.intentoGuardarBoleto = false;
     if (this.rifaSeleccionada) this.calcularRangoFecha(this.rifaSeleccionada);
@@ -732,7 +724,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.plataforma = b.plataforma ?? '';
     this.motivo = b.motivo ?? '';
     this.fecha = b.fecha;
-    this.urlSeguimiento = b.urlSeguimiento ?? '';
+    this.urlPerfilRedSocial = b.urlPerfilRedSocial ?? '';
     this.urlsCompartido = b.urlsCompartido?.length ? [...b.urlsCompartido] : [''];
     this.intentoGuardarBoleto = false;
   }
@@ -745,6 +737,9 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   /** Motivo por el que el boleto no se puede guardar, o null si está listo. */
   problemaConElBoleto(): string | null {
     if (!this.plataforma) return 'Selecciona la plataforma en la que hizo la acción.';
+    if (!this.urlPerfilRedSocial.trim()) {
+      return 'Falta la URL del perfil: sin ella el boleto no se puede verificar después.';
+    }
     if (!this.fecha) return 'Falta la fecha de la acción.';
     if (this.fecha < this.fechaMin || this.fecha > this.fechaMax) {
       return `La fecha debe estar entre ${this.fechaMin} y ${this.fechaMax}, que es el periodo de la rifa.`;
@@ -763,7 +758,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       plataforma: this.plataforma as PlataformaBoleto,
       motivo: this.motivo.trim() || null,
       fecha: this.fecha || null,
-      urlSeguimiento: this.urlSeguimiento.trim() || null,
+      urlPerfilRedSocial: this.urlPerfilRedSocial.trim(),
       urlsCompartido: this.urlsCompartido.map(u => u.trim()).filter(u => !!u)
     };
 

@@ -345,8 +345,14 @@
           </div>
 
           <div class="pk-field">
-            <label class="pk-label">URL para verificar que sigue la cuenta</label>
-            <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlSeguimiento" />
+            <label class="pk-label">URL del perfil para verificar que sigue la cuenta *</label>
+            <input class="pk-input" type="url" placeholder="https://facebook.com/su-perfil"
+                   [class.br-input--error]="intentoGuardarBoleto && !urlPerfilRedSocial.trim()"
+                   [(ngModel)]="urlPerfilRedSocial" />
+            <span class="pk-hint br-hint--error"
+                  *ngIf="intentoGuardarBoleto && !urlPerfilRedSocial.trim()">
+              Sin el perfil el boleto no se puede verificar después.
+            </span>
           </div>
 
           <div class="pk-field">
@@ -376,8 +382,8 @@
                 {{ iconoPlataforma(b.plataforma) }} {{ b.motivo || 'Sin detalle' }}
                 <span class="pk-text pk-text--sm pk-text--muted">· {{ b.fecha | date:'dd/MM/yyyy' }}</span>
               </div>
-              <a class="br-boleto__url" *ngIf="b.urlSeguimiento"
-                 [href]="b.urlSeguimiento" target="_blank" rel="noopener">Seguimiento</a>
+              <a class="br-boleto__url" *ngIf="b.urlPerfilRedSocial"
+                 [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil</a>
               <a class="br-boleto__url" *ngFor="let u of b.urlsCompartido"
                  [href]="u" target="_blank" rel="noopener">Publicación</a>
             </div>
@@ -539,7 +545,7 @@
           <div class="pk-text pk-text--bold">
             {{ b.descartado ? '❌' : '🎟️' }} {{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}
           </div>
-          <a class="pk-text pk-text--sm" *ngIf="b.urlSeguimiento" [href]="b.urlSeguimiento" target="_blank" rel="noopener">Evidencia de seguimiento</a>
+          <a class="pk-text pk-text--sm" *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil de la persona</a>
           <a class="pk-text pk-text--sm" *ngFor="let u of b.urlsCompartido" [href]="u" target="_blank" rel="noopener">Publicación compartida</a>
         </div>
       </div>
@@ -552,13 +558,6 @@
           [style.left]="p.left" [style.background]="p.color"
           [style.animation-delay]="p.delay" [style.animation-duration]="p.duration"
           [style.width]="p.size" [style.height]="p.size"></span>
-  </div>
-
-  <!-- ── Único indicador de carga de la pantalla ──────────────────── -->
-  <!-- Antes cada botón tenía su propio spinner-border girando; ahora los botones solo
-       se deshabilitan mientras dura su petición y el "está cargando" lo dice este. -->
-  <div class="br-cargando" *ngIf="ocupado">
-    <div class="br-cargando__rueda"></div>
   </div>
 
 </div>

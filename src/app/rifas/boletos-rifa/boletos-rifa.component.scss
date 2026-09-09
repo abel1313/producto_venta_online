@@ -492,30 +492,6 @@
 .br-ganador { text-align: center; }
 .br-ganador__premio { margin-top: 10px; }
 
-// ── Único velo de carga de la pantalla ────────────────────────────────
-// Reemplaza a los spinner-border que antes vivían dentro de cada botón.
-.br-cargando {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, .18);
-  backdrop-filter: blur(1px);
-
-  &__rueda {
-    width: 44px;
-    height: 44px;
-    border: 4px solid rgba(255, 255, 255, .45);
-    border-top-color: var(--app-accent);
-    border-radius: 50%;
-    animation: br-girar .8s linear infinite;
-  }
-}
-
-@keyframes br-girar { to { transform: rotate(360deg); } }
-
 // ── Ruleta ────────────────────────────────────────────────────────────
 .br-ruleta-wrap {
   position: relative;

@@ -1040,16 +1040,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1.25;
   }
 
-  // El date picker nativo tiene un ancho mínimo interno que no siempre respeta
-  // max-width en navegadores móviles; al ir en columna única ya sobra ancho
-  // en el pill, así que se lo damos completo en vez de dejarlo fijo en 120px
-  // (fijo en 120px + label es justo lo que lo desbordaba/ocultaba antes).
+  // El pill de fecha envuelve: el label arriba y el calendario (app-selector-fecha,
+  // que ocupa el 100%) abajo. Antes aquí había un parche para el ancho mínimo interno
+  // del <input type="date"> nativo; ese input ya no existe, lo reemplazó el calendario
+  // propio que sí respeta el ancho que le den.
   .vb-filtro-fecha {
     flex-wrap: wrap;
-  }
-  .vb-filtro-fecha__input {
-    max-width: 100%;
-    flex: 1;
   }
 
   // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco

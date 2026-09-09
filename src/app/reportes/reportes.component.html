@@ -20,7 +20,8 @@
   <div *ngIf="tab === 'diario'" class="rp-panel">
     <div class="rp-filtros">
       <label class="rp-label">Fecha</label>
-      <input type="date" class="rp-input" [(ngModel)]="fechaDiario" (change)="buscarDiario()" />
+      <app-selector-fecha [ngModel]="fechaDiario" placeholder="Día del reporte"
+                          (ngModelChange)="fechaDiario = $event; buscarDiario()"></app-selector-fecha>
     </div>
 
     <div *ngIf="cargandoDiario" class="rp-loading">Cargando…</div>
@@ -180,11 +181,11 @@
     <div class="rp-filtros rp-filtros--row">
       <div class="rp-filtro-group">
         <label class="rp-label">Desde</label>
-        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="desdeVendidos" />
+        <app-selector-fecha [(ngModel)]="desdeVendidos" placeholder="Desde"></app-selector-fecha>
       </div>
       <div class="rp-filtro-group">
         <label class="rp-label">Hasta</label>
-        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="hastaVendidos" />
+        <app-selector-fecha [(ngModel)]="hastaVendidos" placeholder="Hasta"></app-selector-fecha>
       </div>
       <div class="rp-filtro-group">
         <label class="rp-label">Top</label>
@@ -239,11 +240,11 @@
     <div class="rp-filtros rp-filtros--row">
       <div class="rp-filtro-group">
         <label class="rp-label">Desde (opcional)</label>
-        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="desdePromos" />
+        <app-selector-fecha [(ngModel)]="desdePromos" placeholder="Desde"></app-selector-fecha>
       </div>
       <div class="rp-filtro-group">
         <label class="rp-label">Hasta (opcional)</label>
-        <input type="date" class="rp-input rp-input--sm" [(ngModel)]="hastaPromos" />
+        <app-selector-fecha [(ngModel)]="hastaPromos" placeholder="Hasta"></app-selector-fecha>
       </div>
       <button class="rp-btn--primary" [disabled]="cargandoPromociones" (click)="buscarPromociones()">Buscar</button>
     </div>

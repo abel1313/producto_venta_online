@@ -52,11 +52,11 @@
     <div class="hmp-filter-row" *ngIf="modo === 'mp'">
       <div class="hmp-date-group">
         <label class="hmp-date-label">Desde</label>
-        <input class="hmp-input" type="date" [(ngModel)]="filtroDesde" />
+        <app-selector-fecha [(ngModel)]="filtroDesde" placeholder="Desde"></app-selector-fecha>
       </div>
       <div class="hmp-date-group">
         <label class="hmp-date-label">Hasta</label>
-        <input class="hmp-input" type="date" [(ngModel)]="filtroHasta" />
+        <app-selector-fecha [(ngModel)]="filtroHasta" placeholder="Hasta"></app-selector-fecha>
       </div>
       <button class="hmp-btn hmp-btn--search" (click)="buscar()"
               [disabled]="!filtroDesde || !filtroHasta">

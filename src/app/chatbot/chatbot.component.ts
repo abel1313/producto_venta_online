@@ -47,6 +47,21 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   instagramUrl:  string | null = null;
   tiktokUrl:     string | null = null;
 
+  // Solo aplica en celular: ahí los 4 botones de contacto viven colapsados detrás de un
+  // toggle. Apilados ocupaban una franja fija de ~290px en el borde derecho, encima de
+  // todo (z-index 10001), y tapaban justo la orilla donde caen los botones de las cards
+  // (Deshab. en tienda/buscar, el escáner de código y "Guardar y publicar" en carga
+  // rápida). En escritorio sobra ancho y se siguen viendo los 4 siempre.
+  redesAbiertas = false;
+
+  get hayRedes(): boolean {
+    return !!(this.whatsappUrl || this.facebookUrl || this.instagramUrl || this.tiktokUrl);
+  }
+
+  toggleRedes(): void {
+    this.redesAbiertas = !this.redesAbiertas;
+  }
+
   private countdownInterval: any = null;
   private pendingScroll = false;
 

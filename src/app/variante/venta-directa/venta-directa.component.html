@@ -37,7 +37,7 @@
       <div class="vd-search">
         <span class="vd-search__icon">🔍</span>
         <input class="vd-search__input" type="text"
-               placeholder="Nombre o código de barras (mín. 3 chars)…"
+               placeholder="Nombre o código de barras…"
                [(ngModel)]="terminoVariante"
                (input)="onInputVariante()"
                autocomplete="off"
@@ -142,7 +142,7 @@
           <textarea class="vd-observaciones__input"
                     [(ngModel)]="observaciones"
                     rows="2"
-                    placeholder="Observaciones — acuerdo de pago, cómo se encargó, etc.…">
+                    placeholder="Observaciones (acuerdo de pago…)">
           </textarea>
         </div>
       </div>
@@ -235,7 +235,7 @@
           </div>
           <input type="number" class="vd-monto-input"
                  [(ngModel)]="montoInicial" min="0"
-                 placeholder="Monto del enganche (0 si no da nada ahora)">
+                 placeholder="Enganche (0 si no da nada)">
 
           <!-- Monto recibido + cambio del enganche (solo si es EFECTIVO y monto > 0) -->
           <ng-container *ngIf="metodoPagoCredito === 'EFECTIVO' && montoInicial > 0">

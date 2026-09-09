@@ -54,7 +54,8 @@
       <div class="rf-field">
         <label class="rf-label">Fecha y hora límite de registro</label>
         <div class="rf-fecha-hora-wrap">
-          <input class="rf-input" type="date" [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}" />
+          <app-selector-fecha [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}"
+                              placeholder="Día límite"></app-selector-fecha>
           <select class="rf-input rf-input--hora" [(ngModel)]="fechaLimHora" [ngModelOptions]="{standalone:true}">
             <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
           </select>
@@ -88,7 +89,8 @@
       <div *ngIf="rifaConfig?.id && editandoConfig" class="rf-edit-config">
         <label class="rf-label">Nueva fecha y hora límite</label>
         <div class="rf-fecha-hora-wrap">
-          <input class="rf-input" type="date" [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}" />
+          <app-selector-fecha [(ngModel)]="fechaLimFecha" [ngModelOptions]="{standalone:true}"
+                              placeholder="Día límite"></app-selector-fecha>
           <select class="rf-input rf-input--hora" [(ngModel)]="fechaLimHora" [ngModelOptions]="{standalone:true}">
             <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
           </select>

@@ -1,5 +1,6 @@
 import { Component, ElementRef, forwardRef, HostListener, Input } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { ConnectedPosition } from '@angular/cdk/overlay';
 
 interface ICelda {
   dia:        number;
@@ -50,6 +51,18 @@ export class SelectorFechaComponent implements ControlValueAccessor {
   mesVista  = new Date().getMonth();
   anioVista = new Date().getFullYear();
 
+  /**
+   * Orden de preferencia del popover: pegado abajo-izquierda del campo y, si no cabe,
+   * arriba; las dos últimas alinean por la derecha para los campos que quedan al borde
+   * de la pantalla. El CDK toma la primera que entre completa en el viewport.
+   */
+  readonly posiciones: ConnectedPosition[] = [
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top',    offsetY:  6 },
+    { originX: 'start', originY: 'top',    overlayX: 'start', overlayY: 'bottom', offsetY: -6 },
+    { originX: 'end',   originY: 'bottom', overlayX: 'end',   overlayY: 'top',    offsetY:  6 },
+    { originX: 'end',   originY: 'top',    overlayX: 'end',   overlayY: 'bottom', offsetY: -6 }
+  ];
+
   readonly diasSemana = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   readonly nombresMes = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -82,13 +95,12 @@ export class SelectorFechaComponent implements ControlValueAccessor {
 
   // Cerrar al dar clic fuera: si no, quedan varios calendarios abiertos encimados
   // cuando la pantalla tiene más de un campo de fecha (desde/hasta).
-  @HostListener('document:click', ['$event'])
-  clicFuera(evento: Event): void {
-    if (!this.abierto) return;
-    if (!this.host.nativeElement.contains(evento.target as Node)) {
-      this.abierto = false;
-      this.onTouched();
-    }
+  // Los clics sobre el propio campo se ignoran aquí porque ya los atiende `alternar()`:
+  // si no, el mismo clic cerraría y volvería a abrir el calendario.
+  cerrarPorFuera(evento: MouseEvent): void {
+    if (this.host.nativeElement.contains(evento.target as Node)) return;
+    this.abierto = false;
+    this.onTouched();
   }
 
   @HostListener('document:keydown.escape')

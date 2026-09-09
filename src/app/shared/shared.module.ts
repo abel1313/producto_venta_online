@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { ImagenSrcPipe } from '../productos/producto/pipes/imagen-src.pipe';
 import { PalabraClaveAutocompleteComponent } from '../palabras-clave/autocomplete/palabra-clave-autocomplete.component';
 import { UppercaseInputDirective } from './directives/uppercase-input.directive';
@@ -17,7 +18,7 @@ import { SelectorFechaComponent } from './selector-fecha/selector-fecha.componen
     BotonVolverComponent,
     SelectorFechaComponent
   ],
-  imports:  [CommonModule, FormsModule],
+  imports:  [CommonModule, FormsModule, OverlayModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,

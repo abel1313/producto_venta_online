@@ -50,7 +50,8 @@
           <div class="rm-field">
             <label class="rm-label">Fecha límite de la rifa</label>
             <div class="rm-fecha-hora-wrap">
-              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <app-selector-fecha [(ngModel)]="fechaLimFecha"
+                                  placeholder="Día límite"></app-selector-fecha>
               <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
                 <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
               </select>
@@ -147,7 +148,8 @@
           <div class="rm-field">
             <label class="rm-label">Nueva fecha límite</label>
             <div class="rm-fecha-hora-wrap">
-              <input class="rm-input" type="date" [(ngModel)]="fechaLimFecha" />
+              <app-selector-fecha [(ngModel)]="fechaLimFecha"
+                                  placeholder="Día límite"></app-selector-fecha>
               <select class="rm-input rm-input--hora" [(ngModel)]="fechaLimHora">
                 <option *ngFor="let h of horasDisponibles" [value]="h.value">{{ h.label }}</option>
               </select>

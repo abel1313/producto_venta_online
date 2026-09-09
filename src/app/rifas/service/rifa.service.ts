@@ -36,9 +36,19 @@ export class RifaService {
 
   // ── 1. Buscar variante ─────────────────────────────────────────────
   // ⚠️ Ver nota de renombrado /variantes → /tienda en variante.service.ts — mismo criterio.
+  /**
+   * Busca variantes para elegir un PREMIO de la rifa.
+   *
+   * Va contra `/buscar-filtrado` y no contra `/buscar` a propósito: un premio no se puede
+   * rifar si no hay pieza que entregar, si está deshabilitada o si no tiene foto que
+   * enseñar en la ruleta. Esa query del back ya exige las tres cosas (stock > 0,
+   * producto y variante habilitados, y que exista imagen), así que el filtro se hace del
+   * lado del server y la paginación de 10 en 10 sigue cuadrando -- filtrarlo aquí dejaría
+   * páginas medio vacías o vacías del todo.
+   */
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
-      `${this.url}/tienda/v1/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+      `${this.url}/tienda/v1/buscar-filtrado?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 

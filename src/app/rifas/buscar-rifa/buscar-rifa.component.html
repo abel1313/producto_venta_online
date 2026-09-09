@@ -16,7 +16,8 @@
     <div class="br-filtro__row">
       <div class="br-field" *ngIf="tipo === 'DIARIA'">
         <label class="br-label">Día</label>
-        <input class="br-input" type="date" [(ngModel)]="diaFiltro" (change)="buscar()" />
+        <app-selector-fecha [(ngModel)]="diaFiltro" (ngModelChange)="buscar()"
+                            placeholder="Elige el día"></app-selector-fecha>
       </div>
       <div class="br-field" *ngIf="tipo === 'MENSUAL'">
         <label class="br-label">Mes</label>

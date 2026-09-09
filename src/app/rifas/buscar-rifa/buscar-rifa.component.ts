@@ -78,6 +78,10 @@ export class BuscarRifaComponent implements OnInit {
     this.router.navigate([ruta], { state: { retomarRifaId: r.id } });
   }
 
+  irABoletos(r: IConfigurarRifa): void {
+    this.router.navigate(['/rifas/boletos'], { state: { rifaId: r.id } });
+  }
+
   verDetalle(r: IConfigurarRifa): void {
     if (this.rifaDetalle?.configurarRifa?.id === r.id) {
       this.rifaDetalle = null;

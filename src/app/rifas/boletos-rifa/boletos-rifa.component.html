@@ -1,0 +1,107 @@
+<div class="pk-page">
+
+  <div>
+    <h4 class="pk-title">🎟️ Boletos por acción en redes sociales</h4>
+    <p class="pk-subtitle">Un boleto por cada acción distinta (seguir, compartir, etc.). El nombre del participante se elige una sola vez.</p>
+  </div>
+
+  <!-- ── Selector de rifa ─────────────────────────────────────────── -->
+  <div class="pk-field">
+    <label class="pk-label">Rifa</label>
+    <select class="pk-input" [ngModel]="rifaSeleccionada?.id" (ngModelChange)="onRifaChange($event)">
+      <option [ngValue]="null" disabled>Selecciona una rifa activa</option>
+      <option *ngFor="let r of rifas" [ngValue]="r.id">
+        Rifa #{{ r.id }} · {{ r.tipo }}{{ r.mesReferencia ? ' · ' + r.mesReferencia : '' }}
+      </option>
+    </select>
+    <span class="pk-hint" *ngIf="!cargandoRifas && rifas.length === 0">No hay rifas activas en este momento.</span>
+  </div>
+
+  <ng-container *ngIf="rifaSeleccionada">
+
+    <!-- ── Buscar / seleccionar concursante (nombre una sola vez) ──── -->
+    <div class="pk-field">
+      <label class="pk-label">Concursante</label>
+      <input class="pk-input" type="text" placeholder="Buscar por nombre..." [(ngModel)]="filtroNombre" />
+    </div>
+
+    <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
+      Sin concursantes para esta rifa.
+    </div>
+
+    <div class="br-lista-concursantes" *ngIf="!concursanteSeleccionado && concursantesFiltrados.length > 0">
+      <button type="button" class="br-concursante-row"
+              *ngFor="let c of concursantesFiltrados"
+              (click)="seleccionarConcursante(c)">
+        <span>{{ nombreCompleto(c) }}</span>
+        <span class="pk-text pk-text--muted pk-text--sm">🎟️ {{ c.boletos ?? 0 }}</span>
+      </button>
+    </div>
+
+    <!-- ── Concursante seleccionado ─────────────────────────────────── -->
+    <div class="pk-card" *ngIf="concursanteSeleccionado">
+      <div class="pk-card__header">
+        <div>
+          <div style="font-weight:700">{{ nombreCompleto(concursanteSeleccionado) }}</div>
+          <div class="pk-text pk-text--sm" style="opacity:.85">Total boletos actuales: {{ concursanteSeleccionado.boletos ?? 0 }}</div>
+        </div>
+        <button type="button" class="pk-btn pk-btn--icon" (click)="concursanteSeleccionado = null">✕</button>
+      </div>
+
+      <div class="pk-card__body">
+        <!-- ── Form nuevo boleto ────────────────────────────────────── -->
+        <div class="pk-field">
+          <label class="pk-label">Motivo (opcional)</label>
+          <input class="pk-input" type="text" placeholder="Ej. Seguir en TikTok, compartir publicación..." [(ngModel)]="motivo" />
+        </div>
+
+        <div class="pk-field">
+          <label class="pk-label">Fecha</label>
+          <input class="pk-input" type="date" [(ngModel)]="fecha" [min]="fechaMin" [max]="fechaMax" />
+          <span class="pk-hint">Solo se puede registrar dentro del mes de la rifa ({{ fechaMin }} a {{ fechaMax }}).</span>
+        </div>
+
+        <div class="pk-field">
+          <label class="pk-label">URL del perfil en la red social (opcional)</label>
+          <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlPerfilRedSocial" />
+        </div>
+
+        <div class="pk-field">
+          <label class="pk-label">URL para verificar que sigue la cuenta (opcional)</label>
+          <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlSeguimiento" />
+        </div>
+
+        <div class="pk-field">
+          <label class="pk-label">URLs de lo que compartió (opcional, puede ser más de una publicación)</label>
+          <div class="br-url-row" *ngFor="let u of urlsCompartido; let i = index">
+            <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlsCompartido[i]" />
+            <button type="button" class="pk-btn pk-btn--icon" (click)="quitarCampoUrl(i)" *ngIf="urlsCompartido.length > 1">✕</button>
+          </div>
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarCampoUrl()">+ Agregar otra publicación</button>
+        </div>
+
+        <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardando" (click)="registrarBoleto()">
+          <span *ngIf="!guardando">🎟️ Registrar boleto</span>
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
+
+      <!-- ── Boletos ya registrados ───────────────────────────────── -->
+      <div class="pk-card__footer" style="flex-direction:column; align-items:stretch; gap:10px" *ngIf="boletos.length > 0">
+        <div class="br-boleto-row" *ngFor="let b of boletos">
+          <div>
+            <div class="pk-text pk-text--bold">{{ b.motivo || 'Sin motivo especificado' }} · {{ b.fecha | date:'dd/MM/yyyy' }}</div>
+            <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlPerfilRedSocial">Perfil: {{ b.urlPerfilRedSocial }}</div>
+            <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlSeguimiento">Evidencia de seguimiento: {{ b.urlSeguimiento }}</div>
+            <div class="pk-text pk-text--sm pk-text--muted" *ngFor="let u of b.urlsCompartido">Compartido: {{ u }}</div>
+          </div>
+          <button type="button" class="pk-btn pk-btn--icon" (click)="eliminarBoleto(b)">🗑️</button>
+        </div>
+      </div>
+      <div class="pk-empty" *ngIf="!cargandoBoletos && boletos.length === 0">
+        Este concursante todavía no tiene boletos registrados por acciones.
+      </div>
+    </div>
+  </ng-container>
+
+</div>

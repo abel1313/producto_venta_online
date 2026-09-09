@@ -663,6 +663,16 @@
   font-weight: 600;
 }
 
+.br-aviso-terminada {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, .1);
+  color: #1d4ed8;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
 // ── Confeti ───────────────────────────────────────────────────────────
 .br-confetti {
   position: fixed;

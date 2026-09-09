@@ -463,8 +463,29 @@
 
         <div class="pk-card__footer br-footer-ruleta">
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="reiniciar()">🔄 Reiniciar</button>
-          <a class="pk-btn pk-btn--secondary pk-btn--sm"
-             [href]="'/ruleta/' + rifaSeleccionada.id" target="_blank" rel="noopener">🔗 Página pública</a>
+
+          <!-- El link solo se ofrece si la rifa está publicada: si no, abrirlo da 404 y
+               parecería que la página está rota. -->
+          <button type="button" class="pk-btn pk-btn--sm"
+                  [class.pk-btn--primary]="!rifaSeleccionada.publica"
+                  [class.pk-btn--secondary]="rifaSeleccionada.publica"
+                  [disabled]="cambiandoPublica" (click)="togglePublica()">
+            {{ rifaSeleccionada.publica ? '🙈 Quitar de pública' : '📢 Publicar esta rifa' }}
+          </button>
+
+          <a class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="rifaSeleccionada.publica"
+             [href]="'/ruleta/' + rifaSeleccionada.id" target="_blank" rel="noopener">🔗 Abrir página pública</a>
+        </div>
+
+        <div class="br-publica-aviso" [class.br-publica-aviso--on]="rifaSeleccionada.publica">
+          <ng-container *ngIf="rifaSeleccionada.publica">
+            ✅ Esta es la rifa que ve la gente en el link público. Cualquier otro número en la
+            URL da 404.
+          </ng-container>
+          <ng-container *ngIf="!rifaSeleccionada.publica">
+            🔒 Esta rifa <b>no</b> es visible desde afuera. Publícala para poder compartir su link;
+            solo puede haber una publicada a la vez.
+          </ng-container>
         </div>
       </div>
 

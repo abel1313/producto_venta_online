@@ -2,9 +2,6 @@
 
   <div style="text-align:center">
     <h4 class="pk-title">🎡 Ruleta de la rifa</h4>
-    <p class="pk-subtitle" *ngIf="nombrePremio">
-      Premio {{ varianteNumeroActual }} de {{ totalVariantes }}: <b>{{ nombrePremio }}</b>
-    </p>
   </div>
 
   <div class="pk-text pk-text--sm" *ngIf="cargando">Cargando ruleta...</div>
@@ -18,6 +15,26 @@
     <div class="rp-aviso rp-aviso--real" *ngIf="!esPrueba">
       🔴 Rifa <b>REAL</b> en curso — solo el administrador puede girarla.
     </div>
+
+    <!-- Lo primero que ve alguien que llega por el link es qué se va a ganar. Es un
+         <button> y no un div con (click) para que se pueda abrir con teclado y el
+         lector de pantalla lo anuncie como algo que se puede tocar. -->
+    <button type="button" class="rp-premio" *ngIf="nombrePremio" (click)="abrirPremio()"
+            [attr.aria-label]="'Ver el detalle de ' + nombrePremio">
+      <span class="rp-premio__foto">
+        <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
+        <span class="rp-premio__ph" *ngIf="!premioMiniatura">🎁</span>
+      </span>
+
+      <span class="rp-premio__texto">
+        <span class="rp-premio__eyebrow">🎁 Esto se va a ganar</span>
+        <span class="rp-premio__nombre">{{ nombrePremio }}</span>
+        <span class="rp-premio__meta" *ngIf="totalVariantes > 1">
+          Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
+        </span>
+        <span class="rp-premio__vermas">Ver fotos y detalle →</span>
+      </span>
+    </button>
 
     <div class="pk-card">
       <div class="pk-card__header">
@@ -77,6 +94,59 @@
       </div>
     </div>
   </ng-container>
+
+  <!-- Detalle del premio a pantalla completa. Va al final del template y con
+       position:fixed para que ni las cards ni la ruleta lo recorten, y por encima del
+       cromo fijo de la app (navbar 1100, botonera del chatbot 10001). -->
+  <div class="rp-modal" *ngIf="premioAbierto" (click)="cerrarPremio()">
+    <div class="rp-modal__caja" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+
+      <div class="rp-modal__head">
+        <span class="rp-modal__titulo">{{ premio?.nombreProducto || nombrePremio }}</span>
+        <button type="button" class="rp-modal__cerrar" (click)="cerrarPremio()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="rp-modal__body">
+        <div class="pk-text pk-text--sm" *ngIf="premioCargando">Cargando el detalle...</div>
+
+        <ng-container *ngIf="!premioCargando">
+
+          <div class="rp-galeria" *ngIf="imagenes.length"
+               (touchstart)="inicioToque($event)" (touchend)="finToque($event)">
+            <img class="rp-galeria__foto" [src]="imagenes[imagenIndice]"
+                 [alt]="premio?.nombreProducto || nombrePremio" />
+
+            <ng-container *ngIf="imagenes.length > 1">
+              <button type="button" class="rp-galeria__nav rp-galeria__nav--izq"
+                      (click)="imagenAnterior()" aria-label="Foto anterior">‹</button>
+              <button type="button" class="rp-galeria__nav rp-galeria__nav--der"
+                      (click)="imagenSiguiente()" aria-label="Foto siguiente">›</button>
+              <span class="rp-galeria__contador">{{ imagenIndice + 1 }} / {{ imagenes.length }}</span>
+            </ng-container>
+          </div>
+
+          <div class="rp-galeria__vacia" *ngIf="!imagenes.length">🎁 Sin fotos de este premio</div>
+
+          <div class="rp-puntos" *ngIf="imagenes.length > 1">
+            <button type="button" class="rp-puntos__p" *ngFor="let img of imagenes; let i = index"
+                    [class.rp-puntos__p--on]="i === imagenIndice"
+                    (click)="irAImagen(i)" [attr.aria-label]="'Ver foto ' + (i + 1)"></button>
+          </div>
+
+          <dl class="rp-ficha" *ngIf="fichaPremio.length">
+            <ng-container *ngFor="let f of fichaPremio">
+              <dt>{{ f.etiqueta }}</dt>
+              <dd>{{ f.valor }}</dd>
+            </ng-container>
+          </dl>
+        </ng-container>
+      </div>
+
+      <div class="rp-modal__foot">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" (click)="cerrarPremio()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <div class="rp-confetti" *ngIf="confettiPieces.length">
     <span class="rp-confetti__piece" *ngFor="let p of confettiPieces"

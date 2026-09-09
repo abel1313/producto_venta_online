@@ -703,3 +703,19 @@
 @keyframes br-caida {
   to { transform: translateY(105vh) rotate(720deg); opacity: .2; }
 }
+
+/* Aviso de si la rifa se ve o no desde el link público. Va debajo del pie de la ruleta
+   porque es la consecuencia directa del botón Publicar que vive ahí. */
+.br-publica-aviso {
+  padding: 10px 14px;
+  border-top: 1px solid var(--card-border);
+  font-size: .82rem;
+  line-height: 1.4;
+  color: var(--app-text-muted);
+  background: rgba(127, 127, 127, .06);
+
+  &--on {
+    color: #10b981;
+    background: rgba(16, 185, 129, .10);
+  }
+}

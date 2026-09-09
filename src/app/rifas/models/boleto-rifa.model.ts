@@ -44,6 +44,20 @@ export interface IGrupoBoletos {
   expandido: boolean;
 }
 
+// Premio como lo ve el visitante sin sesión: la ficha y TODAS las fotos para el
+// carrusel. Se pide aparte al abrir el detalle, no viene en el estado de la ruleta.
+export interface IPremioPublico {
+  id: number;
+  nombreProducto?: string | null;
+  descripcion?: string | null;
+  talla?: string | null;
+  color?: string | null;
+  marca?: string | null;
+  presentacion?: string | null;
+  contenidoNeto?: string | null;
+  imagenes: string[];
+}
+
 export interface IEstadoRifaPlataformas {
   configurarRifa: any;
   variantes: any[];

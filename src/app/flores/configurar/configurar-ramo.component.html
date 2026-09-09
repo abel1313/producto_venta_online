@@ -295,8 +295,8 @@
           <div class="cr-fecha-row">
             <div class="cr-fecha-campo">
               <label class="cr-sub-label">Día</label>
-              <input class="cr-input" type="date" [min]="minFecha"
-                     [(ngModel)]="fechaEntrega" (ngModelChange)="onCambiarFecha()">
+              <app-selector-fecha [min]="minFecha" placeholder="Día de entrega"
+                                  [(ngModel)]="fechaEntrega" (ngModelChange)="onCambiarFecha()"></app-selector-fecha>
             </div>
             <div class="cr-fecha-campo">
               <label class="cr-sub-label">Hora</label>

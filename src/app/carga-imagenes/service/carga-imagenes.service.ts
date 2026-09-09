@@ -24,6 +24,16 @@ export class CargaImagenesService {
       .pipe(map(r => r.data));
   }
 
+  // Todos los borradores vivos (PENDIENTE + EXITOSO + FALLIDO) — es lo que pinta esta
+  // pantalla al entrar. Antes se armaba con GET /v1/productos/admin/filtrar
+  // (codigoGenerado=true + habilitado=false) + /estado, y bastaba que otra pantalla tocara
+  // uno de esos dos flags para que el borrador se cayera del filtro y quedara inalcanzable:
+  // no salía aquí para completarlo y sí seguía saliendo en productos/buscar.
+  borradores(): Observable<IEstadoCargaProducto[]> {
+    return this.http.get<ResponseGeneric<IEstadoCargaProducto[]>>(`${this.url}/borradores`)
+      .pipe(map(r => r.data ?? []));
+  }
+
   // Polling — solo con los productoId que sigan en PENDIENTE
   estado(productoIds: number[]): Observable<IEstadoCargaProducto[]> {
     let params = new HttpParams();

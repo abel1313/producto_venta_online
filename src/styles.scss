@@ -1233,3 +1233,38 @@ input[type="datetime-local"]::-webkit-datetime-edit-ampm-field,
 input[type="time"]::-webkit-datetime-edit-ampm-field {
   display: none;
 }
+
+/* ════════════════════════════════════════════════════════════
+   CELULAR — ningún campo por debajo de 16px
+
+   Safari en iPhone hace zoom él solo cuando enfocas un input,
+   select o textarea cuyo font-size es menor a 16px. Ese zoom
+   deja el documento más ancho que la pantalla y es de donde
+   sale el scroll horizontal que aparece "solo en el celular":
+   en PC no pasa porque ahí no existe ese zoom. Medido el
+   2026-09-09 en tienda/buscar: los 7 campos de la pantalla
+   estaban entre 12.5px y 14px, así que tocar cualquiera de
+   ellos desalineaba la página entera.
+
+   No se arregla con maximum-scale=1 en el meta viewport: eso
+   lo evita, pero también le quita al usuario poder hacer zoom
+   a mano, que es un problema de accesibilidad. Lo correcto es
+   que ningún campo baje de 16px en pantallas chicas.
+
+   max() respeta los campos que ya son más grandes; checkbox,
+   radio y range quedan fuera porque no abren teclado y su
+   tamaño no depende del font-size.
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 576px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    /* !important a proposito: los estilos de componente de Angular salen con el
+       atributo [_ngcontent-*], que pesa mas que este selector global y ademas se
+       cargan despues. Sin esto la regla se aplicaba a los input pero la perdian
+       los select y textarea que traen su propio font-size (medido: se quedaban
+       en 12.5px y seguian disparando el zoom). Es un guard de plataforma, no
+       una preferencia de diseno: por eso va aqui y no componente por componente. */
+    font-size: max(16px, 1em) !important;
+  }
+}

@@ -38,18 +38,18 @@
           <ng-container *ngIf="!modoRangoG">
             <div class="ga-field">
               <label class="ga-label">Fecha</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroFechaG" />
+              <app-selector-fecha [(ngModel)]="filtroFechaG" placeholder="Día"></app-selector-fecha>
             </div>
           </ng-container>
 
           <ng-container *ngIf="modoRangoG">
             <div class="ga-field">
               <label class="ga-label">Desde</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroInicioG" />
+              <app-selector-fecha [(ngModel)]="filtroInicioG" placeholder="Desde"></app-selector-fecha>
             </div>
             <div class="ga-field">
               <label class="ga-label">Hasta</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroFinG" />
+              <app-selector-fecha [(ngModel)]="filtroFinG" placeholder="Hasta"></app-selector-fecha>
             </div>
           </ng-container>
 
@@ -166,18 +166,18 @@
           <ng-container *ngIf="!modoRangoV">
             <div class="ga-field">
               <label class="ga-label">Fecha</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroFechaV" />
+              <app-selector-fecha [(ngModel)]="filtroFechaV" placeholder="Día"></app-selector-fecha>
             </div>
           </ng-container>
 
           <ng-container *ngIf="modoRangoV">
             <div class="ga-field">
               <label class="ga-label">Desde</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroInicioV" />
+              <app-selector-fecha [(ngModel)]="filtroInicioV" placeholder="Desde"></app-selector-fecha>
             </div>
             <div class="ga-field">
               <label class="ga-label">Hasta</label>
-              <input class="ga-input" type="date" [(ngModel)]="filtroFinV" />
+              <app-selector-fecha [(ngModel)]="filtroFinV" placeholder="Hasta"></app-selector-fecha>
             </div>
           </ng-container>
 
@@ -252,11 +252,11 @@
         <div class="ga-filtros__row">
           <div class="ga-field">
             <label class="ga-label">Desde</label>
-            <input class="ga-input" type="date" [(ngModel)]="reporteInicio" />
+            <app-selector-fecha [(ngModel)]="reporteInicio" placeholder="Desde"></app-selector-fecha>
           </div>
           <div class="ga-field">
             <label class="ga-label">Hasta</label>
-            <input class="ga-input" type="date" [(ngModel)]="reporteFin" />
+            <app-selector-fecha [(ngModel)]="reporteFin" placeholder="Hasta"></app-selector-fecha>
           </div>
           <button class="ga-btn ga-btn--primary" style="align-self:flex-end" (click)="cargarReporte()">
             📊 Ver reporte

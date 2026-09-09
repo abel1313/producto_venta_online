@@ -128,8 +128,8 @@
                   [(ngModel)]="direccionEntrega"
                   rows="2"
                   placeholder="Dirección de entrega"></textarea>
-        <input type="date" class="vd-entrega__input" style="margin-top:6px"
-               [(ngModel)]="fechaEntrega">
+        <app-selector-fecha style="margin-top:6px; display:block"
+                            [(ngModel)]="fechaEntrega" placeholder="Fecha de entrega"></app-selector-fecha>
         <select class="vd-entrega__input" style="margin-top:6px"
                 [(ngModel)]="lugarEntregaId">
           <option [ngValue]="null">Lugar de entrega — sin especificar</option>
@@ -494,7 +494,7 @@
 
         <div class="vd-modal__field">
           <label class="vd-modal__label">Fecha de nacimiento</label>
-          <input class="vd-modal__input" formControlName="fecha_Nacimiento" type="date">
+          <app-selector-fecha formControlName="fecha_Nacimiento" placeholder="Fecha de nacimiento"></app-selector-fecha>
         </div>
 
         <div class="vd-modal__field">

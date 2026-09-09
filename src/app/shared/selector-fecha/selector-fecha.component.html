@@ -38,7 +38,7 @@
     </div>
 
     <div class="sf__dias">
-      <button type="button" *ngFor="let c of celdas"
+      <button type="button" *ngFor="let c of celdas; trackBy: porIso"
               class="sf__dia"
               [class.sf__dia--otro]="c.otroMes"
               [class.sf__dia--hoy]="c.hoy"

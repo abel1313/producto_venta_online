@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface INegocioEstado {
@@ -43,6 +43,18 @@ export interface IHorarioRequest {
 export class NegocioService {
   private readonly url = `${environment.api_Url}/v1/negocio`;
 
+  /**
+   * Estado abierto/cerrado compartido por toda la app. Existe porque los botones flotantes de
+   * contacto (WhatsApp/Facebook/Instagram/TikTok del chatbot) solo deben verse con el negocio
+   * CERRADO, pero el chatbot leía el estado una sola vez en su ngOnInit: al abrir o cerrar el
+   * negocio desde el menú, los botones se quedaban como estaban hasta recargar o volver a
+   * entrar. Ahora `abrir()`/`cerrar()`/`getEstado()` empujan aquí el valor nuevo y cualquier
+   * pantalla suscrita reacciona en el momento. `null` = todavía no se sabe (no responde aún
+   * `/estado`), que no es lo mismo que "cerrado".
+   */
+  private readonly abiertoSubject = new BehaviorSubject<boolean | null>(null);
+  readonly abierto$ = this.abiertoSubject.asObservable();
+
   constructor(private readonly http: HttpClient) {}
 
   /**
@@ -53,7 +65,10 @@ export class NegocioService {
    * dentro de `data`).
    */
   getEstado(): Observable<INegocioEstado> {
-    return this.http.get<any>(`${this.url}/estado`).pipe(map(r => (r?.data ?? r) as INegocioEstado));
+    return this.http.get<any>(`${this.url}/estado`).pipe(
+      map(r => (r?.data ?? r) as INegocioEstado),
+      tap(estado => this.abiertoSubject.next(!!estado?.abierto))
+    );
   }
 
   getConfig(): Observable<INegocioEstado> {
@@ -61,11 +76,11 @@ export class NegocioService {
   }
 
   abrir(): Observable<any> {
-    return this.http.post(`${this.url}/abrir`, {});
+    return this.http.post(`${this.url}/abrir`, {}).pipe(tap(() => this.abiertoSubject.next(true)));
   }
 
   cerrar(): Observable<any> {
-    return this.http.post(`${this.url}/cerrar`, {});
+    return this.http.post(`${this.url}/cerrar`, {}).pipe(tap(() => this.abiertoSubject.next(false)));
   }
 
   getContactosPublicos(): Observable<IContactosPublicos> {

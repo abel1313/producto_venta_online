@@ -67,13 +67,19 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     // negocio estaba realmente cerrado o no.
     this.negocioService.getEstado().subscribe({
       next: (estado) => {
-        this.negocioCerrado = !estado.abierto;
         this.whatsappUrl    = estado.whatsappUrl;
         this.facebookUrl    = estado.facebookUrl;
         this.instagramUrl   = estado.instagramUrl ?? null;
         this.tiktokUrl      = estado.tiktokUrl ?? null;
       },
       error: () => {}
+    });
+
+    // El abierto/cerrado sale del estado compartido del servicio, no del getEstado() de arriba:
+    // leerlo una sola vez aquí dejaba estos botones como estaban al abrir o cerrar el negocio
+    // desde el menú, hasta recargar la página o volver a entrar.
+    this.negocioService.abierto$.subscribe(abierto => {
+      if (abierto !== null) this.negocioCerrado = !abierto;
     });
   }
 

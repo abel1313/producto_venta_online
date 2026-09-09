@@ -44,8 +44,14 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
-  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia) ────────
-  actualizarConfiguracion(id: number, patch: { fechaHoraLimite?: string; tipo?: TipoRifa; mesReferencia?: string | null }): Observable<IConfigurarRifa> {
+  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia, rango de boletos) ──
+  actualizarConfiguracion(id: number, patch: {
+    fechaHoraLimite?: string;
+    tipo?: TipoRifa;
+    mesReferencia?: string | null;
+    fechaInicioBoletos?: string | null;
+    fechaFinBoletos?: string | null;
+  }): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${id}`, patch
     ).pipe(map(r => r.data));

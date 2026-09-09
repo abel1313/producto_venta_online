@@ -37,6 +37,9 @@ export interface IVarianteRifaResumen {
   codigoBarras?: string;
   nombreProducto?: string;
   precio?: number;
+  // El back manda las dos: imagenUrl la resuelve el navegador contra el micro de imágenes
+  // (es la que se usa) y imagenBase64 queda como respaldo si esa URL no viniera.
+  imagenUrl?: string;
   imagenBase64?: string;
 }
 

@@ -4,7 +4,6 @@ import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from '../palabras-clave/models/palabra-clave.model';
-import { ProductoService } from '../productos/service/producto.service';
 import { IArchivoSeleccionado, ICompletarProducto, IEstadoCargaProducto, ITarjetaCaptura } from './models/carga-imagen.model';
 import { CargaImagenesService } from './service/carga-imagenes.service';
 import { AuthService } from '../auth/auth.service';
@@ -46,7 +45,6 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly svc: CargaImagenesService,
-    private readonly productoSvc: ProductoService,
     private readonly sanitizer: DomSanitizer,
     public  readonly authService: AuthService
   ) {}
@@ -55,29 +53,24 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.cargarPendientes();
   }
 
-  // Red de seguridad al entrar/recargar: antes solo se pedía GET /fallidas, así que un
-  // borrador EXITOSO (imagen lista, esperando "Completar datos") se perdía de la vista al
-  // salir de la pantalla — el producto seguía vivo en la base, solo dejaba de mostrarse.
-  // El back recomendó dejar de usar /fallidas y combinar estas dos llamadas, que sí traen
-  // TODOS los pendientes (PENDIENTE + EXITOSO + FALLIDO), no solo los fallidos.
+  // Red de seguridad al entrar/recargar: trae TODOS los borradores vivos (PENDIENTE +
+  // EXITOSO + FALLIDO). Antes esto era GET /v1/productos/admin/filtrar con
+  // codigoGenerado=true + habilitado=false y luego /estado con esos ids; el problema es que
+  // el borrador solo aparecía aquí mientras esos dos flags siguieran intactos, y cualquier
+  // otra pantalla podía moverlos (guardar desde productos/add ponía habilitado='1'). Cuando
+  // eso pasaba el borrador desaparecía de aquí — el único lugar donde se puede completar —
+  // pero seguía saliendo en productos/buscar. Ahora el back decide qué es un borrador
+  // (GET /v1/carga-imagenes/borradores) y esa es la única definición.
   private cargarPendientes(): void {
-    this.productoSvc.adminFiltrar({ codigoGenerado: true, habilitado: false }, 1, 100).subscribe({
-      next: pag => {
-        const ids = (pag?.t ?? []).map(p => p.idProducto).filter((id): id is number => !!id);
-        if (!ids.length) { return; }
-
-        this.svc.estado(ids).subscribe({
-          next: estados => estados.forEach(r => {
-            if (this.tarjetas.some(t => t.productoId === r.productoId)) { return; }
-            this.tarjetas.push(this.aTarjeta(r, null, '', 'previo'));
-            if (r.estadoImagen === 'PENDIENTE') {
-              this.pendientes.add(r.productoId);
-              this.arrancarPolling();
-            }
-          }),
-          error: () => { /* no bloquea la captura — es solo un extra al entrar */ }
-        });
-      },
+    this.svc.borradores().subscribe({
+      next: estados => estados.forEach(r => {
+        if (this.tarjetas.some(t => t.productoId === r.productoId)) { return; }
+        this.tarjetas.push(this.aTarjeta(r, null, '', 'previo'));
+        if (r.estadoImagen === 'PENDIENTE') {
+          this.pendientes.add(r.productoId);
+          this.arrancarPolling();
+        }
+      }),
       error: () => { /* no bloquea la captura — es solo un extra al entrar */ }
     });
   }

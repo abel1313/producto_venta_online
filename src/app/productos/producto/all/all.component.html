@@ -90,11 +90,13 @@
       <ng-container *ngIf="puedeFiltroFecha">
         <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaDesde">
           Creado desde
-          <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaDesde" (change)="onFechaFiltroChange()" />
+          <app-selector-fecha [ngModel]="fechaDesde" placeholder="Fecha inicial"
+                              (ngModelChange)="fechaDesde = $event; onFechaFiltroChange()"></app-selector-fecha>
         </label>
         <label class="pl-filtro-fecha" [class.pl-filtro-fecha--active]="fechaHasta">
           Creado hasta
-          <input type="date" class="pl-filtro-fecha__input" [(ngModel)]="fechaHasta" (change)="onFechaFiltroChange()" />
+          <app-selector-fecha [ngModel]="fechaHasta" placeholder="Fecha final"
+                              (ngModelChange)="fechaHasta = $event; onFechaFiltroChange()"></app-selector-fecha>
         </label>
       </ng-container>
       <button class="pl-filtro-btn" *ngIf="puedeVerAlgunFiltro && hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>

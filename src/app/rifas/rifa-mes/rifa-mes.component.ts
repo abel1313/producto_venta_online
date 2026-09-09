@@ -598,7 +598,11 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
   // ── Privados ───────────────────────────────────────────────────────
 
+  // Igual que en agregar-rifa: primero la URL del micro de imágenes (la misma foto que muestra
+  // la pantalla de modelos) y el base64 solo como respaldo. Mirar únicamente el base64 dejaba el
+  // premio sin foto cuando fallaba la llamada server-to-server con la que el back lo arma.
   imageSrc(v: IVarianteResumen | null): string | null {
+    if (v?.imagenUrl) return v.imagenUrl;
     if (!v?.imagenBase64) return null;
     return v.imagenBase64.startsWith('data:') ? v.imagenBase64 : `data:image/jpeg;base64,${v.imagenBase64}`;
   }

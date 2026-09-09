@@ -2946,7 +2946,7 @@ vinculado, se puede plantear migrar la prioridad a `usuarioId` (más robusto cro
 - Eliminado botón "Iniciar nuevo chat".
 - Banner de sesión cerrada → aviso no bloqueante: "⏱ La sesión expiró por inactividad. Escribe un mensaje para continuar."
 - Input y botón solo `[disabled]` en `sin-internet` o `reconectando`.
-- Título cambiado a **"Chat con soporte v2"** como indicador visual de deploy (saber si el bundle nuevo está activo en QA).
+- Título cambiado a **"Chat con soporte"** como indicador visual de deploy (saber si el bundle nuevo está activo en QA).
 
 ### `environment.qa.ts`
 

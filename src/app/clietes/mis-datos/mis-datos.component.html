@@ -82,8 +82,8 @@
             <label class="md-label" for="md-fecha">Fecha de nacimiento <span class="md-req">*</span></label>
             <div class="md-input-wrap">
               <i class="pi pi-calendar md-input-icon"></i>
-              <input id="md-fecha" class="md-input md-input--date" type="date"
-                     formControlName="fechaNacimiento">
+              <app-selector-fecha formControlName="fechaNacimiento"
+                                  placeholder="Fecha de nacimiento"></app-selector-fecha>
             </div>
             <span class="md-error"
                   *ngIf="formDatosCliente.get('fechaNacimiento')?.invalid && formDatosCliente.get('fechaNacimiento')?.touched">

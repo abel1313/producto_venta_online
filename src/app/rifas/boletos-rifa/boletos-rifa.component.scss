@@ -1,3 +1,46 @@
+// ── Pasos del wizard ──────────────────────────────────────────────────
+.br-pasos {
+  display: flex;
+  gap: 6px;
+}
+
+.br-paso {
+  flex: 1;
+  padding: 8px 6px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--app-text-muted);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--activo {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+    border-color: transparent;
+  }
+}
+
+// ── Banda de modo prueba / real ───────────────────────────────────────
+.br-modo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--form-section-bg);
+
+  &--real {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, .08);
+  }
+}
+
+// ── Participantes ─────────────────────────────────────────────────────
 .br-lista-concursantes {
   display: flex;
   flex-direction: column;
@@ -39,4 +82,252 @@
   border-bottom: 1px solid var(--card-border);
 
   &:last-child { border-bottom: none; }
+}
+
+// ── Buscador de producto / premios ────────────────────────────────────
+.br-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.br-resultado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+
+  img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }
+
+  &__placeholder { font-size: 1.6rem; width: 44px; text-align: center; }
+}
+
+.br-premios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.br-premio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+
+  &__foto {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+
+    img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; }
+  }
+
+  &__info { flex: 1; cursor: pointer; }
+}
+
+// ── Ruleta ────────────────────────────────────────────────────────────
+.br-ruleta-wrap {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto 12px;
+
+  canvas { width: 100%; }
+}
+
+.br-ruleta-flecha {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  color: var(--app-accent);
+  z-index: 2;
+}
+
+.br-descartado {
+  text-align: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, .10);
+  color: #dc2626;
+  font-size: .88rem;
+}
+
+// ── Agrupación de boletos por persona ─────────────────────────────────
+.br-grupo {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  overflow: hidden;
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: var(--card-bg);
+    color: var(--card-text);
+    font-family: inherit;
+    font-size: .86rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { background: var(--form-section-bg); }
+  }
+
+  &__body {
+    padding: 8px 12px 12px;
+    background: var(--form-section-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__boleto {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: .8rem;
+    color: var(--card-text-muted);
+  }
+}
+
+// ── Modales ───────────────────────────────────────────────────────────
+.br-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.br-modal {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  max-width: 480px;
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  &__body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.br-carrusel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  img {
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+
+  &__nav {
+    border: none;
+    background: var(--form-section-bg);
+    color: var(--app-text);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+
+    &:hover { background: var(--card-border); }
+  }
+}
+
+.br-detalle-boleto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+  &--out { opacity: .55; }
+
+  a { color: var(--app-accent); }
+}
+
+// ── Ganador ───────────────────────────────────────────────────────────
+.br-ganador-nombre {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--app-accent);
+  margin-bottom: 4px;
+}
+
+.br-aviso-prueba {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(217, 119, 6, .12);
+  color: #d97706;
+  font-size: .84rem;
+  font-weight: 600;
+}
+
+// ── Confeti ───────────────────────────────────────────────────────────
+.br-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1100;
+
+  &__piece {
+    position: absolute;
+    top: -20px;
+    border-radius: 2px;
+    animation-name: br-caida;
+    animation-timing-function: linear;
+    animation-iteration-count: 1;
+  }
+}
+
+@keyframes br-caida {
+  to { transform: translateY(105vh) rotate(720deg); opacity: .2; }
 }

@@ -1,8 +1,8 @@
 <div class="pk-page">
 
   <div>
-    <h4 class="pk-title">🎟️ Boletos por acción en redes sociales</h4>
-    <p class="pk-subtitle">Un boleto por cada acción distinta (seguir, compartir, etc.). El nombre del participante se elige una sola vez.</p>
+    <h4 class="pk-title">🎟️ Rifa por acciones en redes sociales</h4>
+    <p class="pk-subtitle">Cada acción en una plataforma es un boleto. Entre más boletos, más probabilidad de ganar.</p>
   </div>
 
   <!-- ── Selector de rifa ─────────────────────────────────────────── -->
@@ -11,136 +11,439 @@
     <select class="pk-input" [ngModel]="rifaSeleccionada?.id" (ngModelChange)="onRifaChange($event)">
       <option [ngValue]="null" disabled>Selecciona una rifa activa</option>
       <option *ngFor="let r of rifas" [ngValue]="r.id">
-        Rifa #{{ r.id }} · {{ r.tipo }}{{ r.mesReferencia ? ' · ' + r.mesReferencia : '' }}
+        Rifa #{{ r.id }}{{ r.fechaInicioBoletos ? ' · ' + r.fechaInicioBoletos + ' a ' + r.fechaFinBoletos : '' }}
       </option>
     </select>
-    <span class="pk-hint" *ngIf="!cargandoRifas && rifas.length === 0">No hay rifas activas en este momento.</span>
+    <span class="pk-hint" *ngIf="!cargandoRifas && rifas.length === 0">
+      No hay rifas de plataformas activas. Crea una aquí abajo.
+    </span>
+  </div>
+
+  <!-- ── Crear rifa nueva ─────────────────────────────────────────── -->
+  <div class="pk-card" *ngIf="!rifaSeleccionada">
+    <div class="pk-card__header"><div style="font-weight:700">➕ Nueva rifa de plataformas</div></div>
+    <div class="pk-card__body">
+      <p class="pk-text pk-text--muted pk-text--sm">
+        Dentro de este rango los participantes pueden juntar boletos. La rifa nace como
+        <b>prueba</b>: la activas como real cuando sea la fecha.
+      </p>
+      <div class="pk-field">
+        <label class="pk-label">Desde</label>
+        <input class="pk-input" type="date" [(ngModel)]="configFechaInicio" />
+      </div>
+      <div class="pk-field">
+        <label class="pk-label">Hasta</label>
+        <input class="pk-input" type="date" [(ngModel)]="configFechaFin" />
+      </div>
+      <button type="button" class="pk-btn pk-btn--primary pk-btn--block"
+              [disabled]="creandoRifa || !configFechaInicio || !configFechaFin" (click)="crearRifa()">
+        <span *ngIf="!creandoRifa">Crear rifa</span>
+        <span *ngIf="creandoRifa" class="spinner-border spinner-border-sm"></span>
+      </button>
+    </div>
   </div>
 
   <ng-container *ngIf="rifaSeleccionada">
 
-    <!-- ── Paso 1: configurar el rango de fechas en que se aceptan boletos ── -->
-    <div class="pk-card" *ngIf="editandoRango">
-      <div class="pk-card__header">
-        <div style="font-weight:700">📅 Rango de fechas para esta rifa</div>
-      </div>
-      <div class="pk-card__body">
-        <p class="pk-text pk-text--muted pk-text--sm">Solo se aceptarán boletos con fecha dentro de este rango.</p>
-        <div class="pk-field">
-          <label class="pk-label">Desde</label>
-          <input class="pk-input" type="date" [(ngModel)]="configFechaInicio" />
-        </div>
-        <div class="pk-field">
-          <label class="pk-label">Hasta</label>
-          <input class="pk-input" type="date" [(ngModel)]="configFechaFin" />
-        </div>
-        <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardandoRango || !configFechaInicio || !configFechaFin" (click)="guardarRangoBoletos()">
-          <span *ngIf="!guardandoRango">Guardar rango</span>
-          <span *ngIf="guardandoRango" class="spinner-border spinner-border-sm"></span>
-        </button>
-      </div>
+    <!-- ── Pasos ──────────────────────────────────────────────────── -->
+    <div class="br-pasos">
+      <button type="button" class="br-paso" [class.br-paso--activo]="paso === 'configurar'" (click)="irAPaso('configurar')">1. Configuración</button>
+      <button type="button" class="br-paso" [class.br-paso--activo]="paso === 'boletos'" (click)="irAPaso('boletos')">2. Boletos</button>
+      <button type="button" class="br-paso" [class.br-paso--activo]="paso === 'ruleta' || paso === 'ganador'" (click)="irAPaso('ruleta')">3. Ruleta</button>
     </div>
 
-    <ng-container *ngIf="!editandoRango">
-      <div class="pk-field">
-        <span class="pk-hint">📅 Rango vigente: {{ fechaMin }} a {{ fechaMax }} — <button type="button" class="pk-btn pk-btn--icon pk-btn--sm" (click)="editandoRango = true">✎ cambiar</button></span>
+    <!-- ── Estado prueba / real ───────────────────────────────────── -->
+    <div class="br-modo" [class.br-modo--real]="!rifaSeleccionada.esPrueba">
+      <div>
+        <div class="pk-text pk-text--bold">
+          {{ rifaSeleccionada.esPrueba ? '🧪 Rifa de PRUEBA' : '🔴 Rifa REAL' }}
+        </div>
+        <div class="pk-text pk-text--sm pk-text--muted">
+          {{ rifaSeleccionada.esPrueba
+              ? 'Los giros son de práctica: al reiniciar todo vuelve como estaba.'
+              : 'Los resultados son definitivos y el premio se descuenta del inventario.' }}
+        </div>
+      </div>
+      <button type="button" class="pk-btn pk-btn--sm"
+              [class.pk-btn--danger]="rifaSeleccionada.esPrueba"
+              [class.pk-btn--secondary]="!rifaSeleccionada.esPrueba"
+              [disabled]="cambiandoModoPrueba" (click)="toggleModoPrueba()">
+        {{ rifaSeleccionada.esPrueba ? 'Activar rifa real' : 'Volver a prueba' }}
+      </button>
+    </div>
+
+    <!-- ══ PASO 1 — CONFIGURACIÓN ═══════════════════════════════════ -->
+    <ng-container *ngIf="paso === 'configurar'">
+
+      <div class="pk-card">
+        <div class="pk-card__header"><div style="font-weight:700">📅 Fechas de la rifa</div></div>
+        <div class="pk-card__body">
+          <p class="pk-text pk-text--muted pk-text--sm">
+            Dentro de este rango los participantes pueden juntar boletos. Fuera de él no se aceptan.
+          </p>
+          <div class="pk-field">
+            <label class="pk-label">Desde</label>
+            <input class="pk-input" type="date" [(ngModel)]="configFechaInicio" />
+          </div>
+          <div class="pk-field">
+            <label class="pk-label">Hasta</label>
+            <input class="pk-input" type="date" [(ngModel)]="configFechaFin" />
+          </div>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--block"
+                  [disabled]="guardandoRango || !configFechaInicio || !configFechaFin" (click)="guardarRangoBoletos()">
+            <span *ngIf="!guardandoRango">Guardar fechas</span>
+            <span *ngIf="guardandoRango" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
       </div>
 
-      <!-- ── Buscar / seleccionar concursante (nombre una sola vez) ──── -->
+      <!-- ── Premios ──────────────────────────────────────────────── -->
+      <div class="pk-card">
+        <div class="pk-card__header"><div style="font-weight:700">🎁 Premios</div></div>
+        <div class="pk-card__body">
+          <div class="pk-field">
+            <label class="pk-label">Buscar producto</label>
+            <input class="pk-input" type="text" placeholder="Nombre o código de barras..."
+                   [(ngModel)]="terminoBusca" (ngModelChange)="buscarVariante()" />
+            <span class="pk-hint" *ngIf="buscandoVariante">Buscando...</span>
+          </div>
+
+          <div class="br-resultados" *ngIf="variantesBusqueda.length">
+            <button type="button" class="br-resultado" *ngFor="let v of variantesBusqueda" (click)="elegirVarianteBusqueda(v)">
+              <img *ngIf="v.imagenBase64" [src]="'data:image/jpeg;base64,' + v.imagenBase64" alt="" />
+              <span class="br-resultado__placeholder" *ngIf="!v.imagenBase64">📦</span>
+              <span>
+                <span class="pk-text pk-text--bold">{{ v.nombreProducto }}</span>
+                <span class="pk-text pk-text--sm pk-text--muted"> {{ v.color }} {{ v.talla }} · stock {{ v.stock }}</span>
+              </span>
+            </button>
+          </div>
+
+          <ng-container *ngIf="varianteParaAgregar">
+            <div class="pk-field">
+              <label class="pk-label">¿En qué giro sale el ganador?</label>
+              <input class="pk-input" type="number" min="1" [(ngModel)]="giroGanadorInput" />
+              <span class="pk-hint">Los giros anteriores salen como descartados. Ej. 4 = los giros 1, 2 y 3 descartan.</span>
+            </div>
+            <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardandoVariante" (click)="agregarPremio()">
+              <span *ngIf="!guardandoVariante">Agregar premio</span>
+              <span *ngIf="guardandoVariante" class="spinner-border spinner-border-sm"></span>
+            </button>
+          </ng-container>
+
+          <div class="pk-empty" *ngIf="!variantesRifa.length">Todavía no hay premios en esta rifa.</div>
+
+          <div class="br-premios" *ngIf="variantesRifa.length">
+            <div class="br-premio" *ngFor="let v of variantesRifa; let i = index">
+              <button type="button" class="br-premio__foto" (click)="abrirDetallePremio(v)">
+                <img *ngIf="v.variante?.imagenBase64" [src]="'data:image/jpeg;base64,' + v.variante?.imagenBase64" alt="" />
+                <span class="br-resultado__placeholder" *ngIf="!v.variante?.imagenBase64">📦</span>
+              </button>
+              <div class="br-premio__info" (click)="abrirDetallePremio(v)">
+                <div class="pk-text pk-text--bold">{{ i + 1 }}. {{ v.variante?.nombreProducto }}</div>
+                <div class="pk-text pk-text--sm pk-text--muted">
+                  {{ v.variante?.color }} {{ v.variante?.talla }} · gana al giro {{ v.giroGanador }}
+                </div>
+              </div>
+              <button type="button" class="pk-btn pk-btn--icon" (click)="quitarPremio(v)">🗑️</button>
+            </div>
+          </div>
+        </div>
+        <div class="pk-card__footer">
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--block" (click)="irAPaso('boletos')">Siguiente →</button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ══ PASO 2 — BOLETOS ═════════════════════════════════════════ -->
+    <ng-container *ngIf="paso === 'boletos'">
+
       <div class="pk-field">
-        <label class="pk-label">Concursante</label>
+        <span class="pk-hint">📅 Solo se aceptan boletos entre {{ fechaMin }} y {{ fechaMax }}.</span>
+      </div>
+
+      <!-- ── Alta de participante ─────────────────────────────────── -->
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" *ngIf="!mostrarFormParticipante"
+              (click)="mostrarFormParticipante = true">+ Nuevo participante</button>
+
+      <div class="pk-card" *ngIf="mostrarFormParticipante">
+        <div class="pk-card__header"><div style="font-weight:700">Nuevo participante</div></div>
+        <div class="pk-card__body">
+          <div class="pk-field">
+            <label class="pk-label">Nombre</label>
+            <input class="pk-input" type="text" [(ngModel)]="nuevoNombre" />
+          </div>
+          <div class="pk-field">
+            <label class="pk-label">Apellido paterno</label>
+            <input class="pk-input" type="text" [(ngModel)]="nuevoApellido" />
+          </div>
+          <div class="pk-field">
+            <label class="pk-label">Teléfono (opcional)</label>
+            <input class="pk-input" type="tel" [(ngModel)]="nuevoTelefono" />
+          </div>
+        </div>
+        <div class="pk-card__footer">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--accion" (click)="mostrarFormParticipante = false">Cancelar</button>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--accion"
+                  [disabled]="guardandoParticipante || !nuevoNombre.trim()" (click)="registrarParticipante()">
+            <span *ngIf="!guardandoParticipante">Guardar</span>
+            <span *ngIf="guardandoParticipante" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pk-field">
+        <label class="pk-label">Participante</label>
         <input class="pk-input" type="text" placeholder="Buscar por nombre..." [(ngModel)]="filtroNombre" />
       </div>
 
       <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
-        Sin concursantes para esta rifa.
+        Sin participantes en esta rifa todavía.
       </div>
 
-    <div class="br-lista-concursantes" *ngIf="!concursanteSeleccionado && concursantesFiltrados.length > 0">
-      <button type="button" class="br-concursante-row"
-              *ngFor="let c of concursantesFiltrados"
-              (click)="seleccionarConcursante(c)">
-        <span>{{ nombreCompleto(c) }}</span>
-        <span class="pk-text pk-text--muted pk-text--sm">🎟️ {{ c.boletos ?? 0 }}</span>
-      </button>
-    </div>
-
-    <!-- ── Concursante seleccionado ─────────────────────────────────── -->
-    <div class="pk-card" *ngIf="concursanteSeleccionado">
-      <div class="pk-card__header">
-        <div>
-          <div style="font-weight:700">{{ nombreCompleto(concursanteSeleccionado) }}</div>
-          <div class="pk-text pk-text--sm" style="opacity:.85">Total boletos actuales: {{ concursanteSeleccionado.boletos ?? 0 }}</div>
-        </div>
-        <button type="button" class="pk-btn pk-btn--icon" (click)="concursanteSeleccionado = null">✕</button>
-      </div>
-
-      <div class="pk-card__body">
-        <!-- ── Form nuevo boleto ────────────────────────────────────── -->
-        <div class="pk-field">
-          <label class="pk-label">Plataforma (opcional)</label>
-          <select class="pk-input" [(ngModel)]="plataforma">
-            <option value="">Selecciona...</option>
-            <option value="FACEBOOK">Facebook</option>
-            <option value="INSTAGRAM">Instagram</option>
-            <option value="TIKTOK">TikTok</option>
-            <option value="OTRO">Otro</option>
-          </select>
-        </div>
-
-        <div class="pk-field">
-          <label class="pk-label">Motivo (opcional)</label>
-          <input class="pk-input" type="text" placeholder="Ej. Seguir la cuenta, compartir publicación..." [(ngModel)]="motivo" />
-        </div>
-
-        <div class="pk-field">
-          <label class="pk-label">Fecha</label>
-          <input class="pk-input" type="date" [(ngModel)]="fecha" [min]="fechaMin" [max]="fechaMax" />
-          <span class="pk-hint">Solo se puede registrar dentro del rango configurado ({{ fechaMin }} a {{ fechaMax }}).</span>
-        </div>
-
-        <div class="pk-field">
-          <label class="pk-label">URL del perfil en la red social (opcional)</label>
-          <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlPerfilRedSocial" />
-        </div>
-
-        <div class="pk-field">
-          <label class="pk-label">URL para verificar que sigue la cuenta (opcional)</label>
-          <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlSeguimiento" />
-        </div>
-
-        <div class="pk-field">
-          <label class="pk-label">URLs de lo que compartió (opcional, puede ser más de una publicación)</label>
-          <div class="br-url-row" *ngFor="let u of urlsCompartido; let i = index">
-            <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlsCompartido[i]" />
-            <button type="button" class="pk-btn pk-btn--icon" (click)="quitarCampoUrl(i)" *ngIf="urlsCompartido.length > 1">✕</button>
-          </div>
-          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarCampoUrl()">+ Agregar otra publicación</button>
-        </div>
-
-        <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardando" (click)="registrarBoleto()">
-          <span *ngIf="!guardando">🎟️ Registrar boleto</span>
-          <span *ngIf="guardando" class="spinner-border spinner-border-sm"></span>
+      <div class="br-lista-concursantes" *ngIf="!concursanteSeleccionado && concursantesFiltrados.length > 0">
+        <button type="button" class="br-concursante-row" *ngFor="let c of concursantesFiltrados" (click)="seleccionarConcursante(c)">
+          <span>{{ nombreCompleto(c) }}</span>
+          <span class="pk-text pk-text--muted pk-text--sm">🎟️ {{ c.boletos ?? 0 }}</span>
         </button>
       </div>
 
-      <!-- ── Boletos ya registrados ───────────────────────────────── -->
-      <div class="pk-card__footer" style="flex-direction:column; align-items:stretch; gap:10px" *ngIf="boletos.length > 0">
-        <div class="br-boleto-row" *ngFor="let b of boletos">
+      <!-- ── Participante seleccionado ────────────────────────────── -->
+      <div class="pk-card" *ngIf="concursanteSeleccionado">
+        <div class="pk-card__header">
           <div>
-            <div class="pk-text pk-text--bold">{{ b.plataforma ? (b.plataforma + ' · ') : '' }}{{ b.motivo || 'Sin motivo especificado' }} · {{ b.fecha | date:'dd/MM/yyyy' }}</div>
-            <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlPerfilRedSocial">Perfil: {{ b.urlPerfilRedSocial }}</div>
-            <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlSeguimiento">Evidencia de seguimiento: {{ b.urlSeguimiento }}</div>
-            <div class="pk-text pk-text--sm pk-text--muted" *ngFor="let u of b.urlsCompartido">Compartido: {{ u }}</div>
+            <div style="font-weight:700">{{ nombreCompleto(concursanteSeleccionado) }}</div>
+            <div class="pk-text pk-text--sm" style="opacity:.85">Boletos: {{ concursanteSeleccionado.boletos ?? 0 }}</div>
           </div>
-          <button type="button" class="pk-btn pk-btn--icon" (click)="eliminarBoleto(b)">🗑️</button>
+          <button type="button" class="pk-btn pk-btn--icon" (click)="concursanteSeleccionado = null">✕</button>
+        </div>
+
+        <div class="pk-card__body">
+          <div class="pk-field">
+            <label class="pk-label">Plataforma (opcional)</label>
+            <select class="pk-input" [(ngModel)]="plataforma">
+              <option value="">Selecciona...</option>
+              <option value="FACEBOOK">Facebook</option>
+              <option value="INSTAGRAM">Instagram</option>
+              <option value="TIKTOK">TikTok</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+
+          <div class="pk-field">
+            <label class="pk-label">¿Qué hizo? (opcional)</label>
+            <input class="pk-input" type="text" placeholder="Ej. Seguir la cuenta, compartir publicación..." [(ngModel)]="motivo" />
+          </div>
+
+          <div class="pk-field">
+            <label class="pk-label">Fecha</label>
+            <input class="pk-input" type="date" [(ngModel)]="fecha" [min]="fechaMin" [max]="fechaMax" />
+          </div>
+
+          <div class="pk-field">
+            <label class="pk-label">URL del perfil para dar seguimiento *</label>
+            <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlPerfilRedSocial" />
+            <span class="pk-hint">Único campo obligatorio: es a dónde entras a verificar a la persona.</span>
+          </div>
+
+          <div class="pk-field">
+            <label class="pk-label">URL para verificar que sigue la cuenta (opcional)</label>
+            <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlSeguimiento" />
+          </div>
+
+          <div class="pk-field">
+            <label class="pk-label">URLs de lo que compartió (opcional, puede ser más de una publicación)</label>
+            <div class="br-url-row" *ngFor="let u of urlsCompartido; let i = index">
+              <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlsCompartido[i]" />
+              <button type="button" class="pk-btn pk-btn--icon" (click)="quitarCampoUrl(i)" *ngIf="urlsCompartido.length > 1">✕</button>
+            </div>
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarCampoUrl()">+ Agregar otra publicación</button>
+          </div>
+
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--block" [disabled]="guardando" (click)="registrarBoleto()">
+            <span *ngIf="!guardando">🎟️ Registrar boleto</span>
+            <span *ngIf="guardando" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+
+        <div class="pk-card__footer" style="flex-direction:column; align-items:stretch; gap:10px" *ngIf="boletos.length > 0">
+          <div class="br-boleto-row" *ngFor="let b of boletos">
+            <div>
+              <div class="pk-text pk-text--bold">
+                {{ b.plataforma ? (b.plataforma + ' · ') : '' }}{{ b.motivo || 'Sin detalle' }} · {{ b.fecha | date:'dd/MM/yyyy' }}
+              </div>
+              <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlPerfilRedSocial">Perfil: {{ b.urlPerfilRedSocial }}</div>
+              <div class="pk-text pk-text--sm pk-text--muted" *ngIf="b.urlSeguimiento">Seguimiento: {{ b.urlSeguimiento }}</div>
+              <div class="pk-text pk-text--sm pk-text--muted" *ngFor="let u of b.urlsCompartido">Compartió: {{ u }}</div>
+            </div>
+            <button type="button" class="pk-btn pk-btn--icon" (click)="eliminarBoleto(b)">🗑️</button>
+          </div>
+        </div>
+        <div class="pk-empty" *ngIf="!cargandoBoletos && boletos.length === 0">
+          Este participante todavía no tiene boletos.
         </div>
       </div>
-      <div class="pk-empty" *ngIf="!cargandoBoletos && boletos.length === 0">
-        Este concursante todavía no tiene boletos registrados por acciones.
+
+      <button type="button" class="pk-btn pk-btn--primary pk-btn--block" (click)="irAPaso('ruleta')">Siguiente → Ruleta</button>
+    </ng-container>
+
+    <!-- ══ PASO 3 — RULETA ══════════════════════════════════════════ -->
+    <ng-container *ngIf="paso === 'ruleta'">
+
+      <div class="pk-card">
+        <div class="pk-card__header">
+          <div>
+            <div style="font-weight:700">🎡 {{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</div>
+            <div class="pk-text pk-text--sm" style="opacity:.85">
+              Premio {{ varianteNumeroActual }} de {{ totalVariantes }} · giro {{ giroActual }} de {{ giroGanador }}
+            </div>
+          </div>
+        </div>
+
+        <div class="pk-card__body">
+          <div class="pk-empty" *ngIf="!boletosEnJuego.length">No hay boletos en juego.</div>
+
+          <div class="br-ruleta-wrap" *ngIf="boletosEnJuego.length">
+            <div class="br-ruleta-flecha">▼</div>
+            <canvas #ruletaCanvas></canvas>
+          </div>
+
+          <div class="br-descartado" *ngIf="descartadoActual">
+            ❌ Descartado: <b>{{ descartadoActual.nombreCompleto }}</b> — {{ etiquetaBoleto(descartadoActual) }}
+          </div>
+
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--block"
+                  [disabled]="sorteando || !boletosEnJuego.length || rifaTerminada" (click)="sortear()">
+            <span *ngIf="!sorteando">🎡 Girar</span>
+            <span *ngIf="sorteando" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+
+        <div class="pk-card__footer" style="flex-direction:column; align-items:stretch; gap:8px">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" (click)="reiniciar()">🔄 Reiniciar rifa</button>
+          <a class="pk-btn pk-btn--secondary pk-btn--block" [href]="'/ruleta/' + rifaSeleccionada.id" target="_blank" rel="noopener">
+            🔗 Abrir página pública (para compartir)
+          </a>
+        </div>
       </div>
-    </div>
+
+      <!-- ── Tablas de boletos ────────────────────────────────────── -->
+      <div class="pk-card">
+        <div class="pk-card__header"><div style="font-weight:700">🎟️ En juego ({{ boletosEnJuego.length }})</div></div>
+        <div class="pk-card__body">
+          <div class="pk-empty" *ngIf="!gruposEnJuego.length">Sin boletos en juego.</div>
+          <div class="br-grupo" *ngFor="let g of gruposEnJuego">
+            <button type="button" class="br-grupo__head" (click)="g.expandido = !g.expandido">
+              <span>{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
+              <span class="pk-text pk-text--sm pk-text--muted">{{ g.boletos.length }} boleto(s)</span>
+            </button>
+            <div class="br-grupo__body" *ngIf="g.expandido">
+              <div class="br-grupo__boleto" *ngFor="let b of g.boletos">
+                <span>{{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}</span>
+                <a *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">ver perfil</a>
+              </div>
+              <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="verDetalle(g.concursanteId)">Ver todo su detalle</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pk-card">
+        <div class="pk-card__header"><div style="font-weight:700">❌ Descartados ({{ boletosDescartados.length }})</div></div>
+        <div class="pk-card__body">
+          <div class="pk-empty" *ngIf="!gruposDescartados.length">Todavía no hay boletos descartados.</div>
+          <div class="br-grupo" *ngFor="let g of gruposDescartados">
+            <button type="button" class="br-grupo__head" (click)="g.expandido = !g.expandido">
+              <span>{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
+              <span class="pk-text pk-text--sm pk-text--muted">{{ g.boletos.length }} descartado(s)</span>
+            </button>
+            <div class="br-grupo__body" *ngIf="g.expandido">
+              <div class="br-grupo__boleto" *ngFor="let b of g.boletos">
+                <span>{{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ══ PASO 4 — GANADOR ═════════════════════════════════════════ -->
+    <ng-container *ngIf="paso === 'ganador' && ganadorActual">
+      <div class="pk-card">
+        <div class="pk-card__header"><div style="font-weight:700">🏆 ¡Tenemos ganador!</div></div>
+        <div class="pk-card__body" style="text-align:center">
+          <div class="br-ganador-nombre">{{ ganadorActual.boleto.nombreCompleto }}</div>
+          <div class="pk-text pk-text--muted">Ganó con el boleto: {{ etiquetaBoleto(ganadorActual.boleto) }}</div>
+          <div class="pk-text pk-text--bold" style="margin-top:10px">
+            🎁 {{ ganadorActual.varianteActual?.variante?.nombreProducto }}
+          </div>
+          <div class="br-aviso-prueba" *ngIf="rifaSeleccionada.esPrueba">
+            🧪 Esta rifa es de PRUEBA — el resultado no es definitivo.
+          </div>
+        </div>
+        <div class="pk-card__footer">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--accion" (click)="reiniciar()">🔄 Reiniciar</button>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--accion" (click)="irAPaso('ruleta')"
+                  *ngIf="!ganadorActual.rifaTerminada">Siguiente premio →</button>
+        </div>
+      </div>
     </ng-container>
   </ng-container>
+
+  <!-- ── Modal: detalle del producto con carrusel ─────────────────── -->
+  <div class="br-overlay" *ngIf="varianteModal" (click)="cerrarDetallePremio()">
+    <div class="br-modal" (click)="$event.stopPropagation()">
+      <div class="br-modal__header">
+        <span class="pk-text pk-text--bold">{{ varianteModal.variante?.nombreProducto }}</span>
+        <button type="button" class="pk-btn pk-btn--icon" (click)="cerrarDetallePremio()">✕</button>
+      </div>
+      <div class="br-modal__body">
+        <div class="br-carrusel" *ngIf="imagenesModal.length">
+          <button type="button" class="br-carrusel__nav" (click)="imagenAnterior()" *ngIf="imagenesModal.length > 1">‹</button>
+          <img [src]="'data:image/' + (imagenesModal[imagenIndex].extension || 'jpeg') + ';base64,' + imagenesModal[imagenIndex].base64" alt="" />
+          <button type="button" class="br-carrusel__nav" (click)="imagenSiguiente()" *ngIf="imagenesModal.length > 1">›</button>
+        </div>
+        <div class="pk-text pk-text--sm pk-text--muted" style="text-align:center" *ngIf="imagenesModal.length > 1">
+          {{ imagenIndex + 1 }} / {{ imagenesModal.length }}
+        </div>
+        <div class="pk-empty" *ngIf="!cargandoImagenes && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
+        <div class="pk-text pk-text--sm" *ngIf="cargandoImagenes">Cargando imágenes...</div>
+
+        <div class="pk-card__row"><span class="pk-card__row-label">Color</span><span class="pk-card__row-val">{{ varianteModal.variante?.color || '—' }}</span></div>
+        <div class="pk-card__row"><span class="pk-card__row-label">Talla</span><span class="pk-card__row-val">{{ varianteModal.variante?.talla || '—' }}</span></div>
+        <div class="pk-card__row"><span class="pk-card__row-label">Marca</span><span class="pk-card__row-val">{{ varianteModal.variante?.marca || '—' }}</span></div>
+        <div class="pk-card__row"><span class="pk-card__row-label">Precio</span><span class="pk-card__row-val">{{ varianteModal.variante?.precio | currency }}</span></div>
+        <div class="pk-card__row"><span class="pk-card__row-label">Gana al giro</span><span class="pk-card__row-val">{{ varianteModal.giroGanador }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: detalle de boletos de una persona ─────────────────── -->
+  <div class="br-overlay" *ngIf="detalleGrupo" (click)="cerrarDetalle()">
+    <div class="br-modal" (click)="$event.stopPropagation()">
+      <div class="br-modal__header">
+        <span class="pk-text pk-text--bold">{{ detalleGrupo.nombreCompleto }} — {{ detalleGrupo.boletos.length }} boleto(s)</span>
+        <button type="button" class="pk-btn pk-btn--icon" (click)="cerrarDetalle()">✕</button>
+      </div>
+      <div class="br-modal__body">
+        <div class="br-detalle-boleto" *ngFor="let b of detalleGrupo.boletos" [class.br-detalle-boleto--out]="b.descartado">
+          <div class="pk-text pk-text--bold">
+            {{ b.descartado ? '❌' : '🎟️' }} {{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}
+          </div>
+          <a class="pk-text pk-text--sm" *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil</a>
+          <a class="pk-text pk-text--sm" *ngIf="b.urlSeguimiento" [href]="b.urlSeguimiento" target="_blank" rel="noopener">Evidencia de seguimiento</a>
+          <a class="pk-text pk-text--sm" *ngFor="let u of b.urlsCompartido" [href]="u" target="_blank" rel="noopener">Publicación compartida</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confeti ──────────────────────────────────────────────────── -->
+  <div class="br-confetti" *ngIf="confettiPieces.length">
+    <span class="br-confetti__piece" *ngFor="let p of confettiPieces"
+          [style.left]="p.left" [style.background]="p.color"
+          [style.animation-delay]="p.delay" [style.animation-duration]="p.duration"
+          [style.width]="p.size" [style.height]="p.size"></span>
+  </div>
 
 </div>

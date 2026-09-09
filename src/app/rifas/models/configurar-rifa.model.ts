@@ -1,4 +1,4 @@
-export type TipoRifa = 'MENSUAL' | 'DIARIA';
+export type TipoRifa = 'MENSUAL' | 'DIARIA' | 'PLATAFORMAS';
 
 export interface IConfigurarRifa {
   id?: number;

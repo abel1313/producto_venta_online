@@ -7,6 +7,7 @@ import {
   IGasto, IGastoReporte, IPaginadoGasto, IPaginadoVenta, IVenta
 } from '../models/IGastos.model';
 import { GastosService } from '../service/gastos.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 type Tab = 'gastos' | 'ventas' | 'reporte';
 
@@ -72,7 +73,8 @@ export class AllComponent implements OnInit {
   constructor(
     private readonly gastosService: GastosService,
     private readonly router: Router,
-    private readonly elRef: ElementRef
+    private readonly elRef: ElementRef,
+    public  readonly authService: AuthService
   ) {}
 
   @HostListener('document:click', ['$event'])

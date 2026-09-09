@@ -20,10 +20,12 @@
 
     <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
       <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
+              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-pagados')"
               (click)="toggleFiltroEstado('PAGADO')">
         ✅ Pagados
       </button>
       <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
+              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-cancelados')"
               (click)="toggleFiltroEstado('CANCELADO')">
         ❌ Cancelados
       </button>
@@ -54,14 +56,17 @@
 
     <div class="tipo-filtro-wrap">
       <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
+              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-normal')"
               (click)="toggleFiltroTipo('NORMAL')">
         🛒 Normal
       </button>
       <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
+              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-apartado')"
               (click)="toggleFiltroTipo('APARTADO')">
         📦 Apartados
       </button>
       <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
+              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-fiado')"
               (click)="toggleFiltroTipo('FIADO')">
         💳 Ir pagando
       </button>
@@ -163,30 +168,33 @@
             <i class="pi pi-eye"></i> Detalle
           </button>
           <button class="btn-card btn-entrega"
+                  *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'editar-entrega')"
                   [disabled]="item.pedido.estado_pedido === 'Cancelado'"
                   [title]="item.pedido.estado_pedido === 'Cancelado' ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
                   (click)="abrirInfoEntrega(item)">
             <i class="pi pi-map-marker"></i> Entrega
           </button>
-          <button class="btn-card btn-cobrar" *ngIf="isAdminUser"
+          <button class="btn-card btn-cobrar" *ngIf="isAdminUser && authService.tieneAccion('pedidos/mis-pedidos', 'cobrar')"
                   [disabled]="pedidoYaCobrado(item)"
                   [title]="pedidoYaCobrado(item) ? 'Este pedido ya está pagado' : ''"
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> Cobrar
           </button>
           <button class="btn-card btn-ticket btn-icon-only"
+                  *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'imprimir-ticket')"
                   [disabled]="imprimiendoTicket[item.pedido.id] || !puedeGenerarTicket(item)"
                   (click)="imprimirTicketPedido(item)"
                   [title]="puedeGenerarTicket(item) ? 'Imprimir ticket' : 'Primero hay que cobrar o recoger el pedido'">
             <i class="pi pi-print"></i>
           </button>
-          <button class="btn-card btn-correo btn-icon-only" *ngIf="isAdminUser"
+          <button class="btn-card btn-correo btn-icon-only" *ngIf="isAdminUser && authService.tieneAccion('pedidos/mis-pedidos', 'enviar-correo')"
                   [disabled]="!puedeGenerarTicket(item)"
                   (click)="enviarCorreoPedido(item)"
                   [title]="puedeGenerarTicket(item) ? 'Enviar comprobante por correo' : 'Primero hay que cobrar o recoger el pedido'">
             <i class="pi pi-envelope"></i>
           </button>
           <button class="btn-card btn-cancelar"
+                  *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'cancelar-pedido')"
                   [disabled]="item.pedido.estado_pedido === 'Cancelado' || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"
                   [title]="item.pedido.estado_pedido === 'Cancelado' ? 'Este pedido ya está cancelado' : (!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : '')"
                   (click)="cancelarPedido(item)">

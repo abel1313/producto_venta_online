@@ -152,7 +152,7 @@ export class MisPedidosComponent implements OnInit {
   constructor(
     private readonly pedidoService: PedidosService,
     private readonly clienteService: ClienteService,
-    private readonly authService: AuthService,
+    public  readonly authService: AuthService,
     private readonly pagoService: PagoService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,

@@ -68,7 +68,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * Editar un ramo de verdad exige rehacer la cotización, que hoy no existe (ver CLAUDE.md).
    */
   get puedeEditarLineas(): boolean {
-    return this.isAdmin && !this.esPedidoDeFlores;
+    return this.isAdmin && !this.esPedidoDeFlores && this.authService.tieneAccion('pedidos/mis-pedidos', 'ajustar-cantidad');
   }
 
   /**
@@ -81,7 +81,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * El back sí rechaza un pedido cancelado, y ese mensaje se muestra tal cual.
    */
   get puedeEditarRamo(): boolean {
-    return this.isAdmin && this.esPedidoDeFlores;
+    return this.isAdmin && this.esPedidoDeFlores && this.authService.tieneAccion('pedidos/mis-pedidos', 'editar-ramo');
+  }
+
+  get puedeImprimirTicketDetalle(): boolean {
+    return this.isAdmin && this.authService.tieneAccion('pedidos/mis-pedidos', 'imprimir-ticket');
+  }
+
+  get puedeReenviarComprobante(): boolean {
+    return this.isAdmin && this.authService.tieneAccion('pedidos/mis-pedidos', 'enviar-correo');
+  }
+
+  get puedeAbonar(): boolean {
+    return this.authService.tieneAccion('pedidos/mis-pedidos', 'abonar');
   }
 
   editarRamo(): void {
@@ -168,14 +180,31 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // mis-pedidos), el botón apunta directo a ese punto con ruta trazada — más preciso que
   // buscar por texto, que depende de qué tan bien escrita quedó la dirección.
   get tieneUbicacionExacta(): boolean {
-    return this.detalle?.latitud != null && this.detalle?.longitud != null;
+    return this.vaAlPuntoDeEncuentro
+      || (this.detalle?.latitud != null && this.detalle?.longitud != null);
+  }
+
+  /**
+   * El destino correcto de la ruta depende de quién entrega a quién.
+   *
+   * Cuando "Entregas por zona" ya programó el viaje, el cliente es quien se mueve: va al punto
+   * de encuentro que puso el admin. Trazarle la ruta a `latitud`/`longitud` ahí estaba mal —
+   * esas son las coordenadas de SU PROPIA casa, capturadas en el checkout, así que el botón le
+   * daba indicaciones para llegar a donde ya está. Sin viaje programado (entrega a domicilio)
+   * el destino sigue siendo su dirección, como siempre.
+   */
+  get vaAlPuntoDeEncuentro(): boolean {
+    return this.detalle?.latitudEncuentro != null && this.detalle?.longitudEncuentro != null;
   }
 
   get linkComoLlegar(): string | null {
-    if (this.tieneUbicacionExacta) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitud},${this.detalle!.longitud}`;
+    if (this.vaAlPuntoDeEncuentro) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitudEncuentro},${this.detalle!.longitudEncuentro}`;
     }
-    const partes = [this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
+    if (this.detalle?.latitud != null && this.detalle?.longitud != null) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle.latitud},${this.detalle.longitud}`;
+    }
+    const partes = [this.detalle?.puntoEncuentro, this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
       .map(p => (p ?? '').trim())
       .filter(p => p !== '');
     if (!partes.length) return null;

@@ -8,13 +8,15 @@ import { AgregarRifaComponent } from './agregar-rifa/agregar-rifa.component';
 import { BuscarRifaComponent } from './buscar-rifa/buscar-rifa.component';
 import { MostrarRifasComponent } from './mostrar-rifas/mostrar-rifas.component';
 import { RifaMesComponent } from './rifa-mes/rifa-mes.component';
+import { BoletosRifaComponent } from './boletos-rifa/boletos-rifa.component';
 
 @NgModule({
   declarations: [
     AgregarRifaComponent,
     BuscarRifaComponent,
     MostrarRifasComponent,
-    RifaMesComponent
+    RifaMesComponent,
+    BoletosRifaComponent
   ],
   imports: [
     CommonModule,

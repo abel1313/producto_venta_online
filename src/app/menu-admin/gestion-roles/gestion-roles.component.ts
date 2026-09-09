@@ -180,6 +180,20 @@ export class GestionRolesComponent implements OnInit {
     return this.gruposDeAccionesPorSubmenu.get(submenu.id) ?? [];
   }
 
+  // El checkbox "✏️ Editar" vivía siempre arriba, junto a "Ver" -- para pantallas con categoría
+  // "Tarjeta..." (Tienda: "Tarjeta de variante", Modelos: "Tarjeta de modelo") eso lo separaba
+  // de dónde realmente aparece su efecto (el botón ✏️ de la tarjeta). Reportado por el usuario
+  // 2026-09-08 ("el editar sigue arriba en lugar de su card"). Se mueve junto a esa categoría
+  // cuando existe; si la pantalla no tiene ninguna categoría "Tarjeta..." (la mayoría), se queda
+  // arriba como antes -- no hay "su card" a la cual moverlo.
+  esCategoriaTarjeta(categoria: string): boolean {
+    return categoria.startsWith('Tarjeta');
+  }
+
+  editarVaJuntoATarjeta(submenu: ISubmenu): boolean {
+    return this.gruposDeAcciones(submenu).some(g => this.esCategoriaTarjeta(g.categoria));
+  }
+
   // Popup con "¿para qué sirve? ¿dónde lo veo?" -- pedido del usuario 2026-08-28: el tooltip al
   // pasar el mouse (title="...") no alcanzaba, quería poder hacer clic y que quedara a la vista
   // explícitamente, con la ubicación real en la pantalla ("puedes ir aquí, aquí o aquí").

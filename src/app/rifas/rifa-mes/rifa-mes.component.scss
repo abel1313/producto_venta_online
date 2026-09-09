@@ -84,6 +84,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 .rm-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
 .rm-label { font-size: 0.78rem; font-weight: 600; color: var(--app-text-muted); }
 .rm-fecha-hora-wrap {
+  // El calendario sustituye al <input type="date"> nativo: toma el espacio libre
+  // del renglon y deja al select de hora con su ancho fijo.
+  app-selector-fecha { flex: 1 1 170px; min-width: 0; }
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   .rm-hora-hint { font-size: 0.76rem; color: var(--app-text-muted); white-space: nowrap; }
 }

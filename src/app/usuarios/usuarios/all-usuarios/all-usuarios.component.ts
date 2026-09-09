@@ -6,6 +6,7 @@ import { IconService } from 'src/app/Icon/icon.service';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { AccederService } from 'src/app/login/acceder.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-all-usuarios',
@@ -33,6 +34,7 @@ export class AllUsuariosComponent implements OnInit {
     public  readonly iconImagen:  IconService,
     private readonly router:      Router,
     private readonly acceder:     AccederService,
+    public  readonly authService: AuthService,
   ) { }
 
   ngOnInit(): void {

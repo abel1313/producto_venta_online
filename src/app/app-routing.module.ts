@@ -63,6 +63,14 @@ const routes: Routes = [
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
+    // Vista pública de la ruleta (/ruleta/{idRifa}) — sin AuthGuard a propósito: el
+    // negocio comparte el link para que los clientes vean el sorteo. Solo se ve la
+    // ruleta y los nombres; el backend recorta el detalle en /v1/boletoRifa/publico.
+    path: 'ruleta',
+    loadChildren: () => import('./rifas/ruleta-publica/ruleta-publica.module').then(m => m.RuletaPublicaModule),
+    canActivate: [CarritoGuard]
+  },
+  {
     path: 'chat',
     loadChildren: () => import('./chat/chat.module').then(m => m.ChatModule),
     canActivate: [AuthGuard, CarritoGuard]

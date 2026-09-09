@@ -69,6 +69,18 @@ export interface PedidoDetalleResponse {
   nombreReceptor?:    string | null;
   direccionEntrega?:  string | null;
   fechaRecogida?:     string | null;
+  // Hora y punto de encuentro del viaje semanal a la zona (2026-09-08) — solo si "Entregas por
+  // zona" ya programó este pedido. `fechaHoraEntregaRamo` es la fecha+hora exacta de un ramo de
+  // flores eternas (RamoPedidoDetalle.fechaHoraEntrega) — antes se guardaba pero nunca se le
+  // mostraba al cliente en su propio pedido.
+  horaRecogida?:        string | null;
+  puntoEncuentro?:      string | null;
+  // Punto exacto del encuentro marcado en el mapa al programar el viaje (2026-09-09). Es A DONDE
+  // TIENE QUE IR EL CLIENTE — no confundir con `latitud`/`longitud` de más abajo, que son las de
+  // su propia casa. Ausentes si el viaje se programó sin marcar el mapa.
+  latitudEncuentro?:    number | null;
+  longitudEncuentro?:   number | null;
+  fechaHoraEntregaRamo?: string | null;
   // Lugar de entrega + link de Facebook (2026-07-24) — solo aparecen si el pedido los tiene
   // asignados (el back usa @JsonInclude(NON_NULL) en este DTO).
   lugarEntregaId?:     number | null;

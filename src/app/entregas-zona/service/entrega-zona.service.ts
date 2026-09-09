@@ -12,9 +12,14 @@ export class EntregaZonaService {
 
   constructor(private readonly http: HttpClient) {}
 
-  pendientes(lugarEntregaId: number): Observable<IEntregaZonaSemana> {
+  // Sin rango el back devuelve la semana en curso, igual que siempre.
+  pendientes(lugarEntregaId: number, desde?: string, hasta?: string): Observable<IEntregaZonaSemana> {
+    const query = new URLSearchParams();
+    if (desde) query.set('desde', desde);
+    if (hasta) query.set('hasta', hasta);
+    const qs = query.toString();
     return this.http
-      .get<{ data: IEntregaZonaSemana }>(`${this.url}/${lugarEntregaId}/pendientes`)
+      .get<{ data: IEntregaZonaSemana }>(`${this.url}/${lugarEntregaId}/pendientes${qs ? '?' + qs : ''}`)
       .pipe(map(res => res.data));
   }
 

@@ -54,13 +54,13 @@
                 [routerLink]="['/clientes/mostrar', c.id]">
           👁️ Ver/Editar
         </button>
-        <button *ngIf="c.correoVerificado !== true"
+        <button *ngIf="c.correoVerificado !== true && authService.tieneAccion('clientes/buscar', 'verificar-correo')"
                 class="cb-btn cb-btn--verify"
                 title="Verificar correo del cliente"
                 (click)="verificarCorreoCliente(c)">
           ✉️ Verificar correo
         </button>
-        <button *ngIf="c.correoVerificado !== false"
+        <button *ngIf="c.correoVerificado !== false && authService.tieneAccion('clientes/buscar', 'verificar-correo')"
                 class="cb-btn cb-btn--reset"
                 title="Resetear verificación (soporte/QA)"
                 (click)="resetVerificacion(c)">

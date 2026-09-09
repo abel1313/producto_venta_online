@@ -118,6 +118,9 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   estado: IEstadoRifa | null = null;
   elegibles: IConcursante[] = [];
   descartados: IConcursante[] = [];
+  // Un slot por boleto -- el mismo concursante se repite tantas veces como
+  // boletos tenga, para que la ruleta se vea (y sortee) proporcional a sus boletos.
+  private ruletaSlots: IConcursante[] = [];
   sorteando = false;
   descartadoActual: IConcursante | null = null;
   ganadorActual: IGanadorRifa | null = null;
@@ -235,7 +238,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     }
 
     // Cargar todas las rifas DIARIA de hoy → mostrar como wizard anteriores
-    const hoy = new Date().toISOString().slice(0, 10);
+    // Fecha LOCAL, no UTC: `toISOString()` en México (UTC-6) devuelve el día siguiente a
+    // partir de las 6 de la tarde, y entonces las rifas de hoy no aparecían.
+    const ahora = new Date();
+    const dosDig = (n: number) => String(n).padStart(2, '0');
+    const hoy = `${ahora.getFullYear()}-${dosDig(ahora.getMonth() + 1)}-${dosDig(ahora.getDate())}`;
     this.rifaService.buscarConfiguraciones({ tipo: 'DIARIA', desde: hoy, hasta: hoy }).subscribe({
       next: rifas => {
         for (const r of rifas) {
@@ -756,7 +763,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       this.errorConcursante = null;
       this.rifaService.sortear(this.rifaConfig!.id!).subscribe({
         next: resultado => {
-          const idx = this.elegibles.findIndex(c => c.id === resultado.concursante.id);
+          const idx = this.indiceSlotGanador(resultado.concursante.id);
           setTimeout(() => {
             this.girarAnimacionHacia(idx >= 0 ? idx : 0, () => {
               this.sorteando = false;
@@ -1128,17 +1135,46 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     setTimeout(() => this.generarRuleta(), 50);
   }
 
+  // Un slot por boleto: quien tiene más boletos aparece más veces en la ruleta
+  // (mismo color en todas sus repeticiones), reflejando visualmente su probabilidad real.
+  private construirSlotsRuleta(): IConcursante[] {
+    const slots: IConcursante[] = [];
+    this.elegibles.forEach(c => {
+      const veces = Math.max(1, c.boletos ?? 1);
+      for (let i = 0; i < veces; i++) slots.push(c);
+    });
+    return slots;
+  }
+
+  // Elige al azar uno de los slots (boletos) del ganador -- así la ruleta no
+  // siempre para en el mismo slot cuando alguien tiene varios boletos.
+  private indiceSlotGanador(concursanteId: number | undefined): number {
+    const candidatos = this.ruletaSlots
+      .map((c, i) => i)
+      .filter(i => this.ruletaSlots[i].id === concursanteId);
+    if (candidatos.length) return candidatos[Math.floor(Math.random() * candidatos.length)];
+    return this.elegibles.findIndex(c => c.id === concursanteId);
+  }
+
   private generarRuleta(): void {
     this.chart?.destroy();
     if (!this.elegibles.length || !this.ruletaCanvas) return;
 
+    this.ruletaSlots = this.construirSlotsRuleta();
+    const colorPorConcursante = new Map<number, string>();
+    const backgroundColor = this.ruletaSlots.map(c => {
+      const id = c.id!;
+      if (!colorPorConcursante.has(id)) colorPorConcursante.set(id, this.colorAleatorio());
+      return colorPorConcursante.get(id)!;
+    });
+
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.elegibles.map(c => this.nombreCompleto(c)),
+        labels: this.ruletaSlots.map(c => this.nombreCompleto(c)),
         datasets: [{
-          data: Array(this.elegibles.length).fill(1),
-          backgroundColor: this.elegibles.map(() => this.colorAleatorio())
+          data: Array(this.ruletaSlots.length).fill(1),
+          backgroundColor
         }]
       },
       options: {
@@ -1159,7 +1195,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   private girarAnimacionHacia(index: number, onComplete: () => void): void {
     const canvas = this.ruletaCanvas?.nativeElement;
     if (!canvas) return;
-    const segmentAngle = 360 / this.elegibles.length;
+    const segmentAngle = 360 / (this.ruletaSlots.length || this.elegibles.length);
     const centerOfTarget = index * segmentAngle + segmentAngle / 2;
     const finalRotation = 10 * 360 + (360 - centerOfTarget);
     canvas.style.transition = 'none';

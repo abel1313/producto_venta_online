@@ -19,6 +19,13 @@ import {
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
 import { IVarianteResumenPaginable } from 'src/app/variante/models/variante.model';
+import {
+  IBoletoRifa,
+  IBoletoRifaRequest,
+  IEstadoRifaPlataformas,
+  IPremioPublico,
+  IResultadoSorteoPlataformas
+} from '../models/boleto-rifa.model';
 
 export type ModoContinuacion = 'RESTANTES' | 'CERO' | 'NUEVOS';
 
@@ -30,9 +37,19 @@ export class RifaService {
 
   // ── 1. Buscar variante ─────────────────────────────────────────────
   // ⚠️ Ver nota de renombrado /variantes → /tienda en variante.service.ts — mismo criterio.
+  /**
+   * Busca variantes para elegir un PREMIO de la rifa.
+   *
+   * Va contra `/buscar-filtrado` y no contra `/buscar` a propósito: un premio no se puede
+   * rifar si no hay pieza que entregar, si está deshabilitada o si no tiene foto que
+   * enseñar en la ruleta. Esa query del back ya exige las tres cosas (stock > 0,
+   * producto y variante habilitados, y que exista imagen), así que el filtro se hace del
+   * lado del server y la paginación de 10 en 10 sigue cuadrando -- filtrarlo aquí dejaría
+   * páginas medio vacías o vacías del todo.
+   */
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
-      `${this.url}/tienda/v1/buscar?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+      `${this.url}/tienda/v1/buscar-filtrado?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 
@@ -43,14 +60,27 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
-  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia) ────────
-  actualizarConfiguracion(id: number, patch: { fechaHoraLimite?: string; tipo?: TipoRifa; mesReferencia?: string | null }): Observable<IConfigurarRifa> {
+  // ── 2b. Actualizar configuración (fecha, tipo, mesReferencia, rango de boletos) ──
+  actualizarConfiguracion(id: number, patch: {
+    fechaHoraLimite?: string;
+    tipo?: TipoRifa;
+    mesReferencia?: string | null;
+    fechaInicioBoletos?: string | null;
+    fechaFinBoletos?: string | null;
+  }): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${id}`, patch
     ).pipe(map(r => r.data));
   }
 
   // ── 2c. Activar/desactivar modo prueba ─────────────────────────────
+  // Marca cuál es la rifa que abre el link público. Publicar una despublica la anterior.
+  setPublica(rifaId: number, publica: boolean): Observable<IConfigurarRifa> {
+    return this.http.put<{ code: number; data: IConfigurarRifa }>(
+      `${this.url}/v1/configurarRifa/${rifaId}/publica`, { publica }
+    ).pipe(map(r => r.data));
+  }
+
   setEsPrueba(rifaId: number, esPrueba: boolean): Observable<IConfigurarRifa> {
     return this.http.put<{ code: number; data: IConfigurarRifa }>(
       `${this.url}/v1/configurarRifa/${rifaId}/esPrueba`, { esPrueba }
@@ -94,6 +124,21 @@ export class RifaService {
   eliminarVarianteRifa(id: number): Observable<string> {
     return this.http.delete<{ code: number; data: string }>(
       `${this.url}/v1/configurarRifaVariante/${id}`
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 6b. Editar un premio ya guardado ───────────────────────────────
+  // Antes solo se podía cambiar la palabraClave, así que corregir "¿en qué giro gana?"
+  // obligaba a eliminar el premio y volverlo a crear (devolviendo y re-reservando stock).
+  editarVarianteRifa(id: number, patch: {
+    giroGanador?: number;
+    orden?: number;
+    permitirNuevos?: boolean;
+    palabraClave?: string;
+    varianteId?: number;
+  }): Observable<IConfigurarRifaVariante> {
+    return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
+      `${this.url}/v1/configurarRifaVariante/${id}`, patch
     ).pipe(map(r => r.data));
   }
 
@@ -194,5 +239,79 @@ export class RifaService {
     return this.http.get<{ code: number; data: IConfigurarRifa[] }>(
       `${this.url}/v1/configurarRifa/activas/hoy`
     ).pipe(map(r => r.data ?? []));
+  }
+
+  // ── 16. Boletos por acción en redes sociales ───────────────────────
+  registrarBoleto(data: IBoletoRifaRequest): Observable<IBoletoRifa> {
+    return this.http.post<{ code: number; data: IBoletoRifa }>(
+      `${this.url}/v1/boletoRifa/registrar`, data
+    ).pipe(map(r => r.data));
+  }
+
+  // Corrige un boleto ya capturado (plataforma, fecha, URLs) sin borrarlo: eliminarlo
+  // descuenta el boleto del participante y volver a capturarlo lo vuelve a sumar.
+  editarBoleto(id: number, data: IBoletoRifaRequest): Observable<IBoletoRifa> {
+    return this.http.put<{ code: number; data: IBoletoRifa }>(
+      `${this.url}/v1/boletoRifa/${id}`, data
+    ).pipe(map(r => r.data));
+  }
+
+  getBoletosPorConcursante(concursanteId: number): Observable<IBoletoRifa[]> {
+    return this.http.get<{ code: number; data: IBoletoRifa[] }>(
+      `${this.url}/v1/boletoRifa/porConcursante/${concursanteId}`
+    ).pipe(map(r => r.data ?? []));
+  }
+
+  // ── 17. Sorteo de rifa PLATAFORMAS (se sortea entre boletos) ───────
+  getEstadoPlataformas(rifaId: number): Observable<IEstadoRifaPlataformas> {
+    return this.http.get<{ code: number; data: IEstadoRifaPlataformas }>(
+      `${this.url}/v1/boletoRifa/estado/${rifaId}`
+    ).pipe(map(r => r.data));
+  }
+
+  sortearPlataformas(rifaId: number): Observable<IResultadoSorteoPlataformas> {
+    return this.http.post<{ code: number; data: IResultadoSorteoPlataformas }>(
+      `${this.url}/v1/boletoRifa/sortear/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  reiniciarPlataformas(rifaId: number): Observable<string> {
+    return this.http.post<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/reiniciar/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 18. Vista pública de la ruleta (sin sesión) ────────────────────
+  // Devuelve lo mismo pero recortado: sin URLs de evidencia ni ganadores.
+  getEstadoPublicoPlataformas(rifaId: number): Observable<IEstadoRifaPlataformas> {
+    return this.http.get<{ code: number; data: IEstadoRifaPlataformas }>(
+      `${this.url}/v1/boletoRifa/publico/estado/${rifaId}`
+    ).pipe(map(r => r.data));
+  }
+
+  sortearPublicoPlataformas(rifaId: number): Observable<IResultadoSorteoPlataformas> {
+    return this.http.post<{ code: number; data: IResultadoSorteoPlataformas }>(
+      `${this.url}/v1/boletoRifa/publico/sortear/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  reiniciarPublicoPlataformas(rifaId: number): Observable<string> {
+    return this.http.post<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/publico/reiniciar/${rifaId}`, {}
+    ).pipe(map(r => r.data));
+  }
+
+  // Ficha del premio con todas sus fotos. El premio se pide junto con su rifa porque
+  // el back comprueba que le pertenezca antes de devolverlo.
+  getPremioPublico(rifaId: number, premioId: number): Observable<IPremioPublico> {
+    return this.http.get<{ code: number; data: IPremioPublico }>(
+      `${this.url}/v1/boletoRifa/publico/premio/${rifaId}/${premioId}`
+    ).pipe(map(r => r.data));
+  }
+
+  eliminarBoleto(id: number): Observable<string> {
+    return this.http.delete<{ code: number; data: string }>(
+      `${this.url}/v1/boletoRifa/${id}`
+    ).pipe(map(r => r.data));
   }
 }

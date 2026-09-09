@@ -90,17 +90,22 @@
                 <!-- Fuera del <label> a propósito -- si estuviera adentro, el clic también
                      marcaría/desmarcaría el checkbox Ver. -->
                 <button type="button" class="gr-info-btn" (click)="verInfoSubmenu(s)" title="¿Qué es esta pantalla? ¿Dónde vive en el menú?">ℹ️</button>
-                <label class="gr-check gr-check--escritura"
-                       [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
-                  <input type="checkbox"
-                         [checked]="tieneSubmenuEscritura(s)"
-                         [disabled]="!tieneSubmenu(s) || estaGuardando(s) || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
-                         (change)="toggleSubmenuEscritura(s)" />
-                  <span>✏️ Editar</span>
-                </label>
-                <!-- Fuera del <label> a propósito, mismo criterio que el ℹ️ de "Ver" -- ver
-                     verInfoEscritura(). -->
-                <button type="button" class="gr-info-btn" (click)="verInfoEscritura(s)" title="¿Qué habilita 'Editar' acá?">ℹ️</button>
+                <!-- "Editar" se queda arriba SOLO si esta pantalla no tiene categoría "Tarjeta..."
+                     entre sus acciones -- si la tiene, su efecto real vive ahí abajo (el botón ✏️
+                     de la tarjeta) y se mueve junto con ese grupo (ver editarVaJuntoATarjeta()). -->
+                <ng-container *ngIf="!editarVaJuntoATarjeta(s)">
+                  <label class="gr-check gr-check--escritura"
+                         [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
+                    <input type="checkbox"
+                           [checked]="tieneSubmenuEscritura(s)"
+                           [disabled]="!tieneSubmenu(s) || estaGuardando(s) || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
+                           (change)="toggleSubmenuEscritura(s)" />
+                    <span>✏️ Editar</span>
+                  </label>
+                  <!-- Fuera del <label> a propósito, mismo criterio que el ℹ️ de "Ver" -- ver
+                       verInfoEscritura(). -->
+                  <button type="button" class="gr-info-btn" (click)="verInfoEscritura(s)" title="¿Qué habilita 'Editar' acá?">ℹ️</button>
+                </ng-container>
               </div>
 
               <!-- Fase 3 de permisos (piloto en Modelos, extendido a Tienda): acciones puntuales
@@ -124,6 +129,18 @@
                       <!-- Botón aparte (no dentro del <label>) para que el clic abra el popup en
                            vez de marcar/desmarcar el checkbox -- ver verInfoAccion(). -->
                       <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
+                    </div>
+                    <!-- "✏️ Editar" de la pantalla, movido aquí -- ver editarVaJuntoATarjeta(). -->
+                    <div class="gr-accion-item" *ngIf="esCategoriaTarjeta(grupo.categoria)">
+                      <label class="gr-check gr-check--escritura"
+                             [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
+                        <input type="checkbox"
+                               [checked]="tieneSubmenuEscritura(s)"
+                               [disabled]="!tieneSubmenu(s) || estaGuardando(s) || (tieneSubmenuEscritura(s) && esSubmenuProtegido(s))"
+                               (change)="toggleSubmenuEscritura(s)" />
+                        <span>✏️ Editar</span>
+                      </label>
+                      <button type="button" class="gr-info-btn" (click)="verInfoEscritura(s)" title="¿Qué habilita 'Editar' acá?">ℹ️</button>
                     </div>
                   </div>
                 </div>

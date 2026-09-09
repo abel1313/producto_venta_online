@@ -9,11 +9,11 @@
 
   <!-- Tabs -->
   <div class="rp-tabs">
-    <button class="rp-tab" [class.rp-tab--active]="tab === 'diario'"     (click)="setTab('diario')">📅 Diario</button>
-    <button class="rp-tab" [class.rp-tab--active]="tab === 'mensual'"    (click)="setTab('mensual')">📆 Mensual</button>
-    <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    (click)="setTab('cliente')">👤 Por cliente</button>
-    <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
-    <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" (click)="setTab('promociones')">🎁 Promociones</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'diario'"     *ngIf="authService.tieneAccion('reportes', 'reporte-diario')" (click)="setTab('diario')">📅 Diario</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'mensual'"    *ngIf="authService.tieneAccion('reportes', 'reporte-mensual')" (click)="setTab('mensual')">📆 Mensual</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    *ngIf="authService.tieneAccion('reportes', 'reporte-cliente')" (click)="setTab('cliente')">👤 Por cliente</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" *ngIf="authService.tieneAccion('reportes', 'reporte-mas-vendidos')" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" *ngIf="authService.tieneAccion('reportes', 'reporte-promociones')" (click)="setTab('promociones')">🎁 Promociones</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->

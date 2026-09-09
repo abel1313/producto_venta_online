@@ -1,0 +1,721 @@
+// ════════════════════════════════════════════════════════════════════════
+// Rifa por plataformas -- estilos locales.
+//
+// Rediseño 2026-09-09: la versión anterior apilaba botones de ancho completo uno
+// tras otro (crear/guardar/nuevo participante/siguiente), así que en pantalla
+// chica se veía una torre de botones iguales y era fácil picar el equivocado.
+// Ahora: rejillas de 2-3 columnas para los campos, acciones agrupadas a la
+// derecha de su propia card y una sola acción primaria por bloque.
+//
+// Todos los colores salen de las custom properties de styles.scss -- nada
+// hardcodeado, para que la pantalla siga a Personalización como el resto.
+// ════════════════════════════════════════════════════════════════════════
+
+.br-page { max-width: 880px; }
+
+.br-encabezado { margin-bottom: 2px; }
+
+.br-h {
+  font-weight: 700;
+  font-size: .92rem;
+  line-height: 1.3;
+
+  &__sub { opacity: .85; }
+}
+
+.br-sub {
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--card-text-muted);
+  margin: 14px 0 8px;
+}
+
+.br-centro { text-align: center; }
+
+// ── Barra de selección de rifa ────────────────────────────────────────
+.br-barra-rifa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  &__label { margin: 0; white-space: nowrap; }
+  &__select { flex: 1; min-width: 200px; }
+  &__nueva { flex: 0 0 auto; white-space: nowrap; }
+}
+
+// ── Chips de estado ───────────────────────────────────────────────────
+.br-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  white-space: nowrap;
+
+  &--cerrada { background: rgba(0, 0, 0, .08); color: var(--card-text-muted); }
+  &--pendiente { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
+}
+
+// ── Pasos ─────────────────────────────────────────────────────────────
+.br-pasos {
+  display: flex;
+  gap: 6px;
+}
+
+.br-paso {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 6px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--card-text-muted);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+
+  &__n {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--form-section-bg);
+    font-size: .7rem;
+  }
+
+  // Punto naranja: hay cambios de fecha sin guardar en el paso 1.
+  &__aviso { color: var(--pk-warning); font-size: .8rem; }
+
+  &--activo {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+
+    .br-paso__n { background: rgba(255, 255, 255, .25); color: inherit; }
+  }
+}
+
+// ── Aviso de modo prueba / real ───────────────────────────────────────
+.br-modo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--pk-warning-soft);
+  border: 1px solid rgba(245, 158, 11, .3);
+
+  &__txt { min-width: 0; }
+
+  &--real {
+    background: var(--pk-danger-soft);
+    border-color: rgba(239, 68, 68, .3);
+  }
+}
+
+// ── Fechas ────────────────────────────────────────────────────────────
+.br-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.br-preset {
+  padding: 5px 11px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: var(--app-accent-soft); border-color: var(--app-accent); }
+}
+
+.br-grid-fechas {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.br-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.br-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+@media (max-width: 640px) {
+  .br-grid-fechas,
+  .br-grid-2,
+  .br-grid-3 { grid-template-columns: 1fr; }
+}
+
+.br-resumen {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--app-accent-soft);
+  color: var(--app-accent);
+  font-size: .8rem;
+  font-weight: 600;
+
+  &--info { background: var(--pk-info-soft); color: var(--pk-info-to); }
+}
+
+.br-alerta {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+// Botón de guardar cuando hay cambios pendientes: se marca para que no pase
+// desapercibido -- el caso "creí que ya lo había guardado".
+.br-btn--urge {
+  animation: br-latido 1.6s ease-in-out infinite;
+}
+
+@keyframes br-latido {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--app-accent-rgb), .45); }
+  50%      { box-shadow: 0 0 0 6px rgba(var(--app-accent-rgb), 0); }
+}
+
+// ── Botones chicos / iconos ───────────────────────────────────────────
+.br-mini {
+  padding: 3px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  &--ok {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+  }
+}
+
+.br-icono {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: .9rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { background: var(--form-section-bg); }
+  &--peligro:hover { background: var(--pk-danger-soft); }
+  &--claro { color: var(--card-header-text); &:hover { background: rgba(255,255,255,.18); } }
+}
+
+// ── Barra de herramientas de una card (buscar + acción) ───────────────
+.br-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+
+  &__buscar { flex: 1; min-width: 0; }
+  &__accion { white-space: nowrap; }
+}
+
+// ── Formulario embebido (alta/edición de participante) ────────────────
+.br-form-inline {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__titulo {
+    font-size: .82rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: var(--card-text);
+  }
+
+  &__acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+}
+
+.br-acciones-form {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.br-acciones-paso {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+// ── Lista de participantes ────────────────────────────────────────────
+.br-lista {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.br-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: background .12s ease;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--form-section-bg); }
+  &--activa { background: var(--app-accent-soft); }
+
+  &__nombre { flex: 1; min-width: 0; font-size: .85rem; font-weight: 600; color: var(--card-text);
+              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__boletos { font-size: .78rem; color: var(--card-text-muted); white-space: nowrap; }
+  &__acciones { display: flex; gap: 2px; }
+}
+
+// ── Plataforma: botones en vez de <select> ────────────────────────────
+// Es obligatoria y con 4 opciones fijas: verlas todas a la vez evita el olvido
+// que dejaba boletos sin plataforma.
+.br-plataformas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+
+  &--error { border-color: var(--pk-danger); background: var(--pk-danger-soft); }
+}
+
+@media (max-width: 520px) {
+  .br-plataformas { grid-template-columns: repeat(2, 1fr); }
+}
+
+.br-plat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+
+  &__icono { font-size: .95rem; }
+
+  &:hover { border-color: var(--app-accent); }
+
+  &--sel {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+  }
+}
+
+.br-input--error { border-color: var(--pk-danger) !important; }
+.br-hint--error  { color: var(--pk-danger); font-weight: 600; }
+
+// ── URLs de lo compartido ─────────────────────────────────────────────
+.br-url-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+
+  input { flex: 1; min-width: 0; }
+}
+
+// ── Boletos ya registrados ────────────────────────────────────────────
+.br-footer-lista {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.br-boleto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+  &--edit { background: var(--app-accent-soft); border-radius: 8px; padding: 9px 8px; }
+
+  &__info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  &__titulo { width: 100%; font-size: .84rem; font-weight: 600; color: var(--card-text); }
+  &__url { font-size: .74rem; color: var(--app-accent); text-decoration: underline; }
+  &__acciones { display: flex; gap: 2px; }
+}
+
+// ── Búsqueda de productos ─────────────────────────────────────────────
+.br-resultados {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  // Alto acotado + scroll propio: es lo que dispara la carga de las siguientes 10.
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+
+  &__pie {
+    padding: 8px 12px;
+    text-align: center;
+    font-size: .75rem;
+    color: var(--card-text-muted);
+  }
+}
+
+.br-resultado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: none;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--card-bg);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--form-section-bg); }
+
+  img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; flex: none; }
+  &__txt { display: flex; flex-direction: column; min-width: 0; }
+}
+
+// ── Premios ───────────────────────────────────────────────────────────
+.br-premios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.br-premio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+
+  &__foto {
+    width: 52px;
+    height: 52px;
+    flex: none;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--form-section-bg);
+    cursor: pointer;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__ph { font-size: 1.5rem; }
+
+  &__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  &__nombre { font-size: .86rem; font-weight: 700; color: var(--card-text); }
+  &__acciones { display: flex; gap: 2px; }
+}
+
+.br-giro {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+
+  &__val { font-size: .76rem; font-weight: 700; color: var(--app-accent); }
+  &__input { width: 74px; padding: 4px 8px; font-size: .8rem; }
+}
+
+.br-nuevo-premio {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__nombre { font-size: .85rem; font-weight: 700; margin-bottom: 8px; color: var(--card-text); }
+  &__fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  &__label { margin: 0; white-space: nowrap; }
+}
+
+.br-footer-ruleta {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.br-ganador { text-align: center; }
+.br-ganador__premio { margin-top: 10px; }
+
+// ── Ruleta ────────────────────────────────────────────────────────────
+.br-ruleta-wrap {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto 12px;
+
+  canvas { width: 100%; }
+}
+
+.br-ruleta-flecha {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  color: var(--app-accent);
+  z-index: 2;
+}
+
+.br-descartado {
+  text-align: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, .10);
+  color: #dc2626;
+  font-size: .88rem;
+}
+
+// ── Agrupación de boletos por persona ─────────────────────────────────
+.br-grupo {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  overflow: hidden;
+
+  &__head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: none;
+    background: var(--card-bg);
+    color: var(--card-text);
+    font-family: inherit;
+    font-size: .86rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { background: var(--form-section-bg); }
+  }
+
+  &__body {
+    padding: 8px 12px 12px;
+    background: var(--form-section-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__boleto {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: .8rem;
+    color: var(--card-text-muted);
+  }
+}
+
+// ── Modales ───────────────────────────────────────────────────────────
+.br-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.br-modal {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  max-width: 480px;
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  &__body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+.br-carrusel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  img {
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+
+  &__nav {
+    border: none;
+    background: var(--form-section-bg);
+    color: var(--app-text);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+
+    &:hover { background: var(--card-border); }
+  }
+}
+
+.br-detalle-boleto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+
+  &:last-child { border-bottom: none; }
+  &--out { opacity: .55; }
+
+  a { color: var(--app-accent); }
+}
+
+// ── Ganador ───────────────────────────────────────────────────────────
+.br-ganador-nombre {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--app-accent);
+  margin-bottom: 4px;
+}
+
+.br-aviso-prueba {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(217, 119, 6, .12);
+  color: #d97706;
+  font-size: .84rem;
+  font-weight: 600;
+}
+
+.br-aviso-terminada {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, .1);
+  color: #1d4ed8;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+// ── Confeti ───────────────────────────────────────────────────────────
+.br-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1100;
+
+  &__piece {
+    position: absolute;
+    top: -20px;
+    border-radius: 2px;
+    animation-name: br-caida;
+    animation-timing-function: linear;
+    animation-iteration-count: 1;
+  }
+}
+
+@keyframes br-caida {
+  to { transform: translateY(105vh) rotate(720deg); opacity: .2; }
+}
+
+/* Aviso de si la rifa se ve o no desde el link público. Va debajo del pie de la ruleta
+   porque es la consecuencia directa del botón Publicar que vive ahí. */
+.br-publica-aviso {
+  padding: 10px 14px;
+  border-top: 1px solid var(--card-border);
+  font-size: .82rem;
+  line-height: 1.4;
+  color: var(--app-text-muted);
+  background: rgba(127, 127, 127, .06);
+
+  &--on {
+    color: #10b981;
+    background: rgba(16, 185, 129, .10);
+  }
+}

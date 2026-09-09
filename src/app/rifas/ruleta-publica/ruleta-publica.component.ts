@@ -83,7 +83,11 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         this.esPrueba = !!est.configurarRifa?.esPrueba;
         this.nombrePremio = est.varianteActual?.variante?.nombreProducto ?? '';
         this.premioId = est.varianteActual?.id ?? null;
-        this.premioMiniatura = this.aDataUri(est.varianteActual?.variante?.imagenBase64);
+        // La URL del micro de imágenes primero (misma foto que se ve en modelos); el base64 que
+        // el back arma server-to-server queda como respaldo — cuando esa llamada falla, la
+        // miniatura del premio se quedaba vacía aunque la foto estuviera bien.
+        this.premioMiniatura = est.varianteActual?.variante?.imagenUrl
+          ?? this.aDataUri(est.varianteActual?.variante?.imagenBase64);
         this.varianteNumeroActual = est.varianteNumeroActual;
         this.totalVariantes = est.totalVariantes;
         this.giroActual = est.giroActual;

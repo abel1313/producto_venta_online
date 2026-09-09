@@ -21,6 +21,8 @@ Chart.register(ArcElement, PieController, ChartDataLabels);
 
 type PasoPlataformas = 'configurar' | 'boletos' | 'ruleta' | 'ganador';
 
+const HORA_CIERRE_POR_DEFECTO = '20:00';
+
 @Component({
   selector: 'app-boletos-rifa',
   templateUrl: './boletos-rifa.component.html',
@@ -38,18 +40,24 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   cargandoRifas = false;
   configFechaInicio = '';
   configFechaFin = '';
+  configHoraCierre = HORA_CIERRE_POR_DEFECTO;
   guardandoRango = false;
   creandoRifa = false;
   cambiandoModoPrueba = false;
 
   // ── Premios (variantes de la rifa) ─────────────────────────────────
   variantesRifa: IConfigurarRifaVariante[] = [];
+  cargandoPremios = false;
   terminoBusca = '';
   variantesBusqueda: IVarianteResumen[] = [];
   buscandoVariante = false;
   varianteParaAgregar: IVarianteResumen | null = null;
   giroGanadorInput = 1;
   guardandoVariante = false;
+  /** id del premio cuyo "gana al giro" se está editando en línea (null = ninguno). */
+  premioEditandoId: number | null = null;
+  premioEditandoGiro = 1;
+  guardandoPremioEditado = false;
   private busqSubject = new Subject<string>();
   private busqSub?: Subscription;
 
@@ -68,6 +76,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   cargandoBoletos = false;
 
   mostrarFormParticipante = false;
+  /** id del participante en edición; null = el formulario está dando de alta uno nuevo. */
+  participanteEditandoId: number | null = null;
   nuevoNombre = '';
   nuevoApellido = '';
   nuevoTelefono = '';
@@ -82,6 +92,17 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   urlSeguimiento = '';
   urlsCompartido: string[] = [''];
   guardando = false;
+  /** id del boleto en edición; null = el formulario está registrando uno nuevo. */
+  boletoEditandoId: number | null = null;
+  /** Se prende al intentar guardar: es lo que pinta de rojo los campos que faltan. */
+  intentoGuardarBoleto = false;
+
+  readonly plataformas: { valor: PlataformaBoleto; etiqueta: string; icono: string }[] = [
+    { valor: 'FACEBOOK',  etiqueta: 'Facebook',  icono: '📘' },
+    { valor: 'INSTAGRAM', etiqueta: 'Instagram', icono: '📸' },
+    { valor: 'TIKTOK',    etiqueta: 'TikTok',    icono: '🎵' },
+    { valor: 'OTRO',      etiqueta: 'Otra',      icono: '🌐' }
+  ];
 
   // ── Ruleta ─────────────────────────────────────────────────────────
   boletosEnJuego: IBoletoRifaDto[] = [];
@@ -95,6 +116,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   giroGanador = 0;
   rifaTerminada = false;
   sorteando = false;
+  cargandoRuleta = false;
   descartadoActual: IBoletoRifaDto | null = null;
   ganadorActual: IResultadoSorteoPlataformas | null = null;
   confettiPieces: { left: string; color: string; delay: string; duration: string; size: string }[] = [];
@@ -111,18 +133,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const rifaIdEstado = history.state?.rifaId as number | undefined;
-    this.cargandoRifas = true;
-    this.rifaService.getConfiguracionesActivas().subscribe({
-      next: res => {
-        this.rifas = (res ?? []).filter(r => r.tipo === 'PLATAFORMAS');
-        this.cargandoRifas = false;
-        const inicial = rifaIdEstado
-          ? this.rifas.find(r => r.id === rifaIdEstado)
-          : (this.rifas.length === 1 ? this.rifas[0] : null);
-        if (inicial) this.seleccionarRifa(inicial);
-      },
-      error: () => { this.cargandoRifas = false; }
-    });
+    this.cargarRifas(rifaIdEstado);
 
     this.busqSub = this.busqSubject.pipe(
       debounceTime(400),
@@ -144,7 +155,44 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
   }
 
-  // ── Configuración de la rifa ───────────────────────────────────────
+  /**
+   * Un solo velo de "cargando" para toda la pantalla, en vez de un spinner chiquito
+   * dentro de cada botón. El giro de la ruleta queda fuera a propósito: ahí el
+   * feedback es la rueda girando y un velo encima la taparía.
+   */
+  get ocupado(): boolean {
+    return this.cargandoRifas || this.creandoRifa || this.guardandoRango
+        || this.cambiandoModoPrueba || this.cargandoPremios || this.guardandoVariante
+        || this.guardandoPremioEditado || this.cargandoConcursantes || this.guardandoParticipante
+        || this.cargandoBoletos || this.guardando || this.cargandoRuleta;
+  }
+
+  // ── Carga de rifas ─────────────────────────────────────────────────
+
+  /**
+   * Se listan TODAS las rifas de plataformas, no solo las activas.
+   *
+   * Antes esto pegaba a `/activas`, y una rifa se marca inactiva sola cuando pasa su
+   * fecha límite (o cuando se sortea el último premio en modo real): al volver a la
+   * pantalla la rifa simplemente ya no aparecía en el selector y no había forma de
+   * abrirla otra vez para revisarla. `/buscar?tipo=PLATAFORMAS` las trae todas y aquí
+   * se marcan las cerradas con una etiqueta.
+   */
+  private cargarRifas(seleccionarId?: number): void {
+    this.cargandoRifas = true;
+    this.rifaService.buscarConfiguraciones({ tipo: 'PLATAFORMAS' }).subscribe({
+      next: res => {
+        this.rifas = (res ?? []).sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+        this.cargandoRifas = false;
+        const idPrevio = seleccionarId ?? this.rifaSeleccionada?.id;
+        const inicial = idPrevio
+          ? this.rifas.find(r => r.id === idPrevio)
+          : (this.rifas.length === 1 ? this.rifas[0] : null);
+        if (inicial) this.seleccionarRifa(inicial);
+      },
+      error: err => { this.cargandoRifas = false; this.error('No se pudieron cargar las rifas', err); }
+    });
+  }
 
   onRifaChange(id: number): void {
     const rifa = this.rifas.find(r => r.id === id) ?? null;
@@ -155,24 +203,43 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.rifaSeleccionada = rifa;
     this.concursanteSeleccionado = null;
     this.boletos = [];
-    this.configFechaInicio = rifa.fechaInicioBoletos ?? '';
-    this.configFechaFin = rifa.fechaFinBoletos ?? '';
+    this.cancelarEdicionBoleto();
+    this.cancelarFormParticipante();
+    this.premioEditandoId = null;
+    this.cargarFormularioDesdeRifa(rifa);
     this.calcularRangoFecha(rifa);
     this.cargarPremios();
     this.cargarConcursantes();
   }
 
+  /** Vuelca la rifa guardada al formulario -- es la referencia contra la que se
+   *  compara para saber si hay cambios sin guardar. */
+  private cargarFormularioDesdeRifa(rifa: IConfigurarRifa): void {
+    this.configFechaInicio = rifa.fechaInicioBoletos ?? '';
+    this.configFechaFin = rifa.fechaFinBoletos ?? '';
+    this.configHoraCierre = this.horaDe(rifa.fechaHoraLimite) || HORA_CIERRE_POR_DEFECTO;
+  }
+
+  /** "2026-09-30T20:00:00" → "20:00". Se corta el string en vez de usar Date para
+   *  no arrastrar la conversión a UTC (restaría 6 horas en México). */
+  private horaDe(fechaHora?: string | null): string {
+    if (!fechaHora) return '';
+    const t = fechaHora.indexOf('T');
+    return t >= 0 ? fechaHora.substring(t + 1, t + 6) : '';
+  }
+
+  // ── Creación / edición de la rifa ──────────────────────────────────
+
   // La rifa nace siempre como PRUEBA: se activa como real desde el botón, y solo
   // después de avisar si todavía no termina el periodo.
   crearRifa(): void {
-    if (!this.configFechaInicio || !this.configFechaFin || this.creandoRifa) return;
-    if (this.configFechaInicio > this.configFechaFin) {
-      Swal.fire({ icon: 'error', title: 'Rango inválido', text: 'La fecha de inicio no puede ser posterior a la fecha fin.' });
-      return;
-    }
+    const problema = this.problemaConLasFechas();
+    if (problema) { this.avisar('Revisa las fechas', problema); return; }
+    if (this.creandoRifa) return;
+
     this.creandoRifa = true;
     this.rifaService.configurarRifa({
-      fechaHoraLimite: `${this.configFechaFin}T23:59`,
+      fechaHoraLimite: this.fechaHoraLimiteArmada(),
       activa: true,
       tipo: 'PLATAFORMAS',
       esPrueba: true
@@ -184,8 +251,9 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         }).subscribe({
           next: rifa => {
             this.creandoRifa = false;
-            this.rifas = [...this.rifas, rifa];
+            this.rifas = [rifa, ...this.rifas];
             this.seleccionarRifa(rifa);
+            this.avisarOk('Rifa creada', 'Ya puedes agregar los premios y los participantes.');
           },
           error: err => { this.creandoRifa = false; this.error('No se pudieron guardar las fechas', err); }
         });
@@ -194,42 +262,133 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     });
   }
 
-  get rangoConfigurado(): boolean {
-    return !!this.rifaSeleccionada?.fechaInicioBoletos && !!this.rifaSeleccionada?.fechaFinBoletos;
-  }
-
-  get periodoTerminado(): boolean {
-    const fin = this.rifaSeleccionada?.fechaFinBoletos;
-    return !!fin && new Date().toISOString().slice(0, 10) > fin;
-  }
-
   guardarRangoBoletos(): void {
-    if (!this.rifaSeleccionada?.id || !this.configFechaInicio || !this.configFechaFin || this.guardandoRango) return;
-    if (this.configFechaInicio > this.configFechaFin) {
-      Swal.fire({ icon: 'error', title: 'Rango inválido', text: 'La fecha de inicio no puede ser posterior a la fecha fin.' });
-      return;
-    }
+    if (!this.rifaSeleccionada?.id || this.guardandoRango) return;
+    const problema = this.problemaConLasFechas();
+    if (problema) { this.avisar('Revisa las fechas', problema); return; }
+
     this.guardandoRango = true;
     this.rifaService.actualizarConfiguracion(this.rifaSeleccionada.id, {
-      fechaHoraLimite: `${this.configFechaFin}T23:59`,
+      fechaHoraLimite: this.fechaHoraLimiteArmada(),
       fechaInicioBoletos: this.configFechaInicio,
       fechaFinBoletos: this.configFechaFin
     }).subscribe({
-      next: res => { this.guardandoRango = false; this.aplicarRifaActualizada(res); },
+      next: res => {
+        this.guardandoRango = false;
+        this.aplicarRifaActualizada(res);
+        this.avisarOk('Fechas guardadas', this.resumenDelRango);
+      },
       error: err => { this.guardandoRango = false; this.error('No se pudo guardar el rango', err); }
     });
+  }
+
+  /** El backend guarda la hora de cierre dentro de fechaHoraLimite (fechaFinBoletos es
+   *  solo la fecha). Antes esto iba fijo a las 23:59 y no había forma de cerrar la rifa
+   *  a otra hora. */
+  private fechaHoraLimiteArmada(): string {
+    return `${this.configFechaFin}T${this.configHoraCierre || HORA_CIERRE_POR_DEFECTO}`;
   }
 
   private aplicarRifaActualizada(res: IConfigurarRifa): void {
     this.rifaSeleccionada = res;
     const idx = this.rifas.findIndex(r => r.id === res.id);
     if (idx >= 0) this.rifas[idx] = res;
+    this.cargarFormularioDesdeRifa(res);
     this.calcularRangoFecha(res);
   }
 
-  // Por default la rifa queda en prueba. Activarla como real antes de que termine
-  // el periodo casi siempre es un error de dedo, así que se avisa -- y se puede
-  // regresar a prueba mientras la rifa siga vigente.
+  // ── Validación de fechas (lo que bloquea y explica por qué) ────────
+
+  /** Devuelve el motivo por el que las fechas no sirven, o null si están bien. */
+  problemaConLasFechas(): string | null {
+    if (!this.configFechaInicio || !this.configFechaFin) {
+      return 'Falta indicar desde y hasta cuándo se pueden juntar boletos.';
+    }
+    if (this.configFechaInicio > this.configFechaFin) {
+      return 'La fecha de inicio no puede ser posterior a la fecha de fin.';
+    }
+    if (!this.configHoraCierre) {
+      return 'Falta la hora a la que cierra la rifa el último día.';
+    }
+    return null;
+  }
+
+  get rangoConfigurado(): boolean {
+    return !!this.rifaSeleccionada?.fechaInicioBoletos && !!this.rifaSeleccionada?.fechaFinBoletos;
+  }
+
+  /**
+   * Compara el formulario contra lo que está realmente guardado en la rifa.
+   *
+   * Es la respuesta al caso "creí que había guardado la fecha, me dejó seguir y luego
+   * nada cuadraba": ahora el paso 2 no se abre con cambios pendientes y el botón de
+   * guardar queda marcado mientras haya diferencia.
+   */
+  get hayCambiosSinGuardar(): boolean {
+    const r = this.rifaSeleccionada;
+    if (!r) return false;
+    return this.configFechaInicio !== (r.fechaInicioBoletos ?? '')
+        || this.configFechaFin !== (r.fechaFinBoletos ?? '')
+        || this.configHoraCierre !== (this.horaDe(r.fechaHoraLimite) || HORA_CIERRE_POR_DEFECTO);
+  }
+
+  get diasDelRango(): number {
+    if (!this.configFechaInicio || !this.configFechaFin) return 0;
+    const a = this.aDate(this.configFechaInicio);
+    const b = this.aDate(this.configFechaFin);
+    if (!a || !b) return 0;
+    return Math.round((b.getTime() - a.getTime()) / 86400000) + 1;
+  }
+
+  get resumenDelRango(): string {
+    if (this.problemaConLasFechas()) return '';
+    const dias = this.diasDelRango;
+    return `Del ${this.enPalabras(this.configFechaInicio)} al ${this.enPalabras(this.configFechaFin)}`
+         + ` · cierra a las ${this.configHoraCierre} · ${dias} día${dias === 1 ? '' : 's'}`;
+  }
+
+  /** Atajos para no tener que abrir el calendario dos veces en el caso más común. */
+  aplicarPreset(preset: 'mes' | 'quincena' | 'semana'): void {
+    const hoy = new Date();
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    let fin: Date;
+    if (preset === 'mes') {
+      fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else {
+      fin = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + (preset === 'quincena' ? 14 : 6));
+    }
+    this.configFechaInicio = this.aIso(inicio);
+    this.configFechaFin = this.aIso(fin);
+  }
+
+  private enPalabras(iso: string): string {
+    const d = this.aDate(iso);
+    if (!d) return iso;
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${d.getDate()} de ${meses[d.getMonth()]}`;
+  }
+
+  // ⚠️ Nunca `new Date(iso)` con el string completo: se parsea como UTC y en México
+  // devuelve el día anterior.
+  private aDate(iso: string): Date | null {
+    const p = iso?.split('-').map(Number);
+    if (!p || p.length !== 3 || p.some(isNaN)) return null;
+    return new Date(p[0], p[1] - 1, p[2]);
+  }
+
+  private aIso(d: Date): string {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  // ── Modo prueba / real ─────────────────────────────────────────────
+
+  get periodoTerminado(): boolean {
+    const fin = this.rifaSeleccionada?.fechaFinBoletos;
+    return !!fin && this.aIso(new Date()) > fin;
+  }
+
   toggleModoPrueba(): void {
     const rifa = this.rifaSeleccionada;
     if (!rifa?.id || this.cambiandoModoPrueba) return;
@@ -268,8 +427,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   private cargarPremios(): void {
     if (!this.rifaSeleccionada?.id) return;
+    this.cargandoPremios = true;
     this.rifaService.getVariantesRifa(this.rifaSeleccionada.id).subscribe({
-      next: res => { this.variantesRifa = res ?? []; }
+      next: res => { this.variantesRifa = res ?? []; this.cargandoPremios = false; },
+      error: err => { this.cargandoPremios = false; this.error('No se pudieron cargar los premios', err); }
     });
   }
 
@@ -281,8 +442,19 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.terminoBusca = `${v.nombreProducto ?? ''} ${v.color ?? ''} ${v.talla ?? ''}`.trim();
   }
 
+  cancelarPremioNuevo(): void {
+    this.varianteParaAgregar = null;
+    this.terminoBusca = '';
+    this.variantesBusqueda = [];
+    this.giroGanadorInput = 1;
+  }
+
   agregarPremio(): void {
     if (!this.rifaSeleccionada?.id || !this.varianteParaAgregar?.id || this.guardandoVariante) return;
+    if (!this.giroGanadorInput || this.giroGanadorInput < 1) {
+      this.avisar('Falta el giro ganador', 'Indica en qué giro sale el ganador de este premio (1 o más).');
+      return;
+    }
     this.guardandoVariante = true;
     this.rifaService.guardarVarianteRifa({
       configurarRifaId: this.rifaSeleccionada.id,
@@ -294,13 +466,44 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         this.guardandoVariante = false;
-        this.varianteParaAgregar = null;
-        this.terminoBusca = '';
-        this.giroGanadorInput = 1;
+        this.cancelarPremioNuevo();
         this.cargarPremios();
       },
       error: err => { this.guardandoVariante = false; this.error('No se pudo agregar el premio', err); }
     });
+  }
+
+  // ── Edición en línea del giro ganador de un premio ya guardado ─────
+  // Antes el giro quedaba congelado al agregar el premio: para cambiarlo había que
+  // eliminarlo y volverlo a crear.
+
+  editarPremio(v: IConfigurarRifaVariante): void {
+    if (!v.id) return;
+    this.premioEditandoId = v.id;
+    this.premioEditandoGiro = v.giroGanador;
+  }
+
+  cancelarEdicionPremio(): void {
+    this.premioEditandoId = null;
+  }
+
+  guardarPremioEditado(): void {
+    if (!this.premioEditandoId || this.guardandoPremioEditado) return;
+    if (!this.premioEditandoGiro || this.premioEditandoGiro < 1) {
+      this.avisar('Giro inválido', 'El giro ganador debe ser 1 o más.');
+      return;
+    }
+    this.guardandoPremioEditado = true;
+    this.rifaService.editarVarianteRifa(this.premioEditandoId, { giroGanador: this.premioEditandoGiro })
+      .subscribe({
+        next: actualizado => {
+          this.guardandoPremioEditado = false;
+          const idx = this.variantesRifa.findIndex(v => v.id === this.premioEditandoId);
+          if (idx >= 0) this.variantesRifa[idx] = actualizado;
+          this.premioEditandoId = null;
+        },
+        error: err => { this.guardandoPremioEditado = false; this.error('No se pudo guardar el cambio', err); }
+      });
   }
 
   quitarPremio(v: IConfigurarRifaVariante): void {
@@ -319,8 +522,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Al dar clic en el premio se abre el detalle de esa variante con TODAS sus
-  // imágenes en carrusel (las que ya estén cargadas en el catálogo).
   abrirDetallePremio(v: IConfigurarRifaVariante): void {
     this.varianteModal = v;
     this.imagenesModal = [];
@@ -368,9 +569,58 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     );
   }
 
-  registrarParticipante(): void {
-    if (!this.rifaSeleccionada?.id || !this.nuevoNombre.trim() || this.guardandoParticipante) return;
+  abrirFormParticipante(): void {
+    this.participanteEditandoId = null;
+    this.nuevoNombre = ''; this.nuevoApellido = ''; this.nuevoTelefono = '';
+    this.mostrarFormParticipante = true;
+  }
+
+  /** Faltaba por completo: solo se podía eliminar al participante, así que corregir
+   *  un nombre mal escrito significaba borrarlo y perder sus boletos. */
+  editarParticipante(c: IConcursante, evento?: Event): void {
+    evento?.stopPropagation();
+    if (!c.id) return;
+    this.participanteEditandoId = c.id;
+    this.nuevoNombre = c.nombre ?? '';
+    this.nuevoApellido = c.apellidoPaterno ?? '';
+    this.nuevoTelefono = c.telefono ?? '';
+    this.mostrarFormParticipante = true;
+  }
+
+  cancelarFormParticipante(): void {
+    this.mostrarFormParticipante = false;
+    this.participanteEditandoId = null;
+    this.nuevoNombre = ''; this.nuevoApellido = ''; this.nuevoTelefono = '';
+  }
+
+  guardarParticipante(): void {
+    if (!this.rifaSeleccionada?.id || this.guardandoParticipante) return;
+    if (!this.nuevoNombre.trim()) {
+      this.avisar('Falta el nombre', 'El nombre del participante es obligatorio.');
+      return;
+    }
     this.guardandoParticipante = true;
+
+    if (this.participanteEditandoId) {
+      this.rifaService.actualizarConcursante(this.participanteEditandoId, {
+        nombre: this.nuevoNombre.trim(),
+        apellidoPaterno: this.nuevoApellido.trim(),
+        telefono: this.nuevoTelefono.trim()
+      }).subscribe({
+        next: res => {
+          this.guardandoParticipante = false;
+          const idx = this.concursantes.findIndex(c => c.id === this.participanteEditandoId);
+          if (idx >= 0) this.concursantes[idx] = { ...this.concursantes[idx], ...res };
+          if (this.concursanteSeleccionado?.id === this.participanteEditandoId) {
+            this.concursanteSeleccionado = { ...this.concursanteSeleccionado, ...res };
+          }
+          this.cancelarFormParticipante();
+        },
+        error: err => { this.guardandoParticipante = false; this.error('No se pudo guardar el participante', err); }
+      });
+      return;
+    }
+
     this.rifaService.registrarConcursante({
       nombre: this.nuevoNombre.trim(),
       apellidoPaterno: this.nuevoApellido.trim(),
@@ -386,17 +636,36 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       next: res => {
         this.guardandoParticipante = false;
         this.concursantes = [...this.concursantes, res];
-        this.nuevoNombre = ''; this.nuevoApellido = ''; this.nuevoTelefono = '';
-        this.mostrarFormParticipante = false;
+        this.cancelarFormParticipante();
         this.seleccionarConcursante(res);
       },
       error: err => { this.guardandoParticipante = false; this.error('No se pudo registrar al participante', err); }
     });
   }
 
+  eliminarParticipante(c: IConcursante, evento?: Event): void {
+    evento?.stopPropagation();
+    if (!c.id) return;
+    Swal.fire({
+      icon: 'warning',
+      title: `¿Eliminar a ${this.nombreCompleto(c)}?`,
+      text: 'Se pierden también todos sus boletos de esta rifa.',
+      showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed || !c.id) return;
+      this.rifaService.eliminarConcursante(c.id).subscribe({
+        next: () => {
+          this.concursantes = this.concursantes.filter(x => x.id !== c.id);
+          if (this.concursanteSeleccionado?.id === c.id) this.concursanteSeleccionado = null;
+        },
+        error: err => this.error('No se pudo eliminar al participante', err)
+      });
+    });
+  }
+
   seleccionarConcursante(c: IConcursante): void {
     this.concursanteSeleccionado = c;
-    this.resetForm();
+    this.cancelarEdicionBoleto();
     this.cargandoBoletos = true;
     this.rifaService.getBoletosPorConcursante(c.id!).subscribe({
       next: res => { this.boletos = res; this.cargandoBoletos = false; },
@@ -410,14 +679,14 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.fechaMax = rifa.fechaFinBoletos;
     } else {
       const hoy = new Date();
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const anio = hoy.getFullYear(); const mes = hoy.getMonth() + 1;
-      this.fechaMin = `${anio}-${pad(mes)}-01`;
-      this.fechaMax = `${anio}-${pad(mes)}-${pad(new Date(anio, mes, 0).getDate())}`;
+      this.fechaMin = this.aIso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+      this.fechaMax = this.aIso(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
     }
-    const hoyStr = new Date().toISOString().slice(0, 10);
+    const hoyStr = this.aIso(new Date());
     this.fecha = (hoyStr >= this.fechaMin && hoyStr <= this.fechaMax) ? hoyStr : this.fechaMin;
   }
+
+  // ── Boletos ────────────────────────────────────────────────────────
 
   resetForm(): void {
     this.plataforma = '';
@@ -425,6 +694,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.urlPerfilRedSocial = '';
     this.urlSeguimiento = '';
     this.urlsCompartido = [''];
+    this.intentoGuardarBoleto = false;
     if (this.rifaSeleccionada) this.calcularRangoFecha(this.rifaSeleccionada);
   }
 
@@ -435,27 +705,76 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     if (this.urlsCompartido.length === 0) this.urlsCompartido = [''];
   }
 
-  registrarBoleto(): void {
-    if (!this.concursanteSeleccionado?.id || this.guardando) return;
-    if (!this.urlPerfilRedSocial.trim()) {
-      Swal.fire({ icon: 'error', title: 'Falta la URL', text: 'La URL del perfil para dar seguimiento es obligatoria.' });
-      return;
+  seguirPor(indice: number): number { return indice; }
+
+  editarBoleto(b: IBoletoRifa): void {
+    if (!b.id) return;
+    this.boletoEditandoId = b.id;
+    this.plataforma = b.plataforma ?? '';
+    this.motivo = b.motivo ?? '';
+    this.fecha = b.fecha;
+    this.urlPerfilRedSocial = b.urlPerfilRedSocial ?? '';
+    this.urlSeguimiento = b.urlSeguimiento ?? '';
+    this.urlsCompartido = b.urlsCompartido?.length ? [...b.urlsCompartido] : [''];
+    this.intentoGuardarBoleto = false;
+  }
+
+  cancelarEdicionBoleto(): void {
+    this.boletoEditandoId = null;
+    this.resetForm();
+  }
+
+  /** Motivo por el que el boleto no se puede guardar, o null si está listo. */
+  problemaConElBoleto(): string | null {
+    if (!this.plataforma) return 'Selecciona la plataforma en la que hizo la acción.';
+    if (!this.urlPerfilRedSocial.trim()) return 'Falta la URL del perfil para dar seguimiento.';
+    if (!this.fecha) return 'Falta la fecha de la acción.';
+    if (this.fecha < this.fechaMin || this.fecha > this.fechaMax) {
+      return `La fecha debe estar entre ${this.fechaMin} y ${this.fechaMax}, que es el periodo de la rifa.`;
     }
-    this.guardando = true;
-    this.rifaService.registrarBoleto({
+    return null;
+  }
+
+  guardarBoleto(): void {
+    if (!this.concursanteSeleccionado?.id || this.guardando) return;
+    this.intentoGuardarBoleto = true;
+    const problema = this.problemaConElBoleto();
+    if (problema) { this.avisar('Falta información del boleto', problema); return; }
+
+    const payload = {
       concursanteId: this.concursanteSeleccionado.id,
-      plataforma: this.plataforma || null,
+      plataforma: this.plataforma as PlataformaBoleto,
       motivo: this.motivo.trim() || null,
       fecha: this.fecha || null,
       urlPerfilRedSocial: this.urlPerfilRedSocial.trim(),
       urlSeguimiento: this.urlSeguimiento.trim() || null,
       urlsCompartido: this.urlsCompartido.map(u => u.trim()).filter(u => !!u)
-    }).subscribe({
+    };
+
+    this.guardando = true;
+
+    if (this.boletoEditandoId) {
+      const id = this.boletoEditandoId;
+      this.rifaService.editarBoleto(id, payload).subscribe({
+        next: actualizado => {
+          this.guardando = false;
+          const idx = this.boletos.findIndex(b => b.id === id);
+          if (idx >= 0) this.boletos[idx] = actualizado;
+          this.cancelarEdicionBoleto();
+        },
+        error: err => { this.guardando = false; this.error('No se pudo guardar el boleto', err); }
+      });
+      return;
+    }
+
+    this.rifaService.registrarBoleto(payload).subscribe({
       next: boleto => {
         this.guardando = false;
         this.boletos = [boleto, ...this.boletos];
         if (this.concursanteSeleccionado) {
           this.concursanteSeleccionado.boletos = (this.concursanteSeleccionado.boletos ?? 0) + 1;
+          const idx = this.concursantes.findIndex(c => c.id === this.concursanteSeleccionado!.id);
+          if (idx >= 0) this.concursantes[idx].boletos = this.concursanteSeleccionado.boletos;
         }
         this.resetForm();
       },
@@ -475,8 +794,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.rifaService.eliminarBoleto(b.id).subscribe({
         next: () => {
           this.boletos = this.boletos.filter(x => x.id !== b.id);
+          if (this.boletoEditandoId === b.id) this.cancelarEdicionBoleto();
           if (this.concursanteSeleccionado) {
             this.concursanteSeleccionado.boletos = Math.max(0, (this.concursanteSeleccionado.boletos ?? 1) - 1);
+            const idx = this.concursantes.findIndex(c => c.id === this.concursanteSeleccionado!.id);
+            if (idx >= 0) this.concursantes[idx].boletos = this.concursanteSeleccionado.boletos;
           }
         },
         error: err => this.error('No se pudo eliminar', err)
@@ -484,29 +806,98 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     });
   }
 
+  iconoPlataforma(p?: string | null): string {
+    return this.plataformas.find(x => x.valor === p)?.icono ?? '🎟️';
+  }
+
   // ── Navegación entre pasos ─────────────────────────────────────────
+  // Cada bloqueo dice exactamente QUÉ falta y ofrece el arreglo, en vez de solo no
+  // hacer nada o -- peor -- dejar pasar y fallar más adelante.
 
   irAPaso(paso: PasoPlataformas): void {
-    if (paso === 'boletos' && !this.rangoConfigurado) {
-      Swal.fire({ icon: 'warning', title: 'Falta el rango de fechas', text: 'Guarda primero las fechas de la rifa.' });
-      return;
+    if (paso === 'boletos') {
+      if (!this.rangoConfigurado) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Primero guarda las fechas',
+          text: 'Esta rifa todavía no tiene guardado el periodo en el que se aceptan boletos. Sin eso no se puede registrar ninguno.',
+          confirmButtonText: 'Ir a las fechas'
+        }).then(() => { this.paso = 'configurar'; });
+        return;
+      }
+      if (this.hayCambiosSinGuardar) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Tienes cambios sin guardar',
+          text: 'Cambiaste las fechas pero no las guardaste. Si sigues, los boletos se van a validar contra las fechas anteriores.',
+          showCancelButton: true,
+          confirmButtonText: 'Guardar y seguir',
+          cancelButtonText: 'Volver a las fechas'
+        }).then(r => {
+          if (r.isConfirmed) this.guardarYContinuar();
+          else this.paso = 'configurar';
+        });
+        return;
+      }
     }
+
     if (paso === 'ruleta') {
       if (!this.variantesRifa.length) {
-        Swal.fire({ icon: 'warning', title: 'Falta el premio', text: 'Agrega al menos un premio a la rifa.' });
+        Swal.fire({
+          icon: 'warning',
+          title: 'Falta el premio',
+          text: 'Agrega al menos un premio antes de girar la ruleta.',
+          confirmButtonText: 'Ir a los premios'
+        }).then(() => { this.paso = 'configurar'; });
+        return;
+      }
+      if (!this.concursantes.length) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'No hay participantes',
+          text: 'Registra al menos un participante con boletos antes de girar.',
+          confirmButtonText: 'Ir a los boletos'
+        }).then(() => { this.paso = 'boletos'; });
         return;
       }
       this.cargarEstadoRuleta();
     }
+
     this.paso = paso;
+  }
+
+  private guardarYContinuar(): void {
+    if (!this.rifaSeleccionada?.id) return;
+    const problema = this.problemaConLasFechas();
+    if (problema) { this.avisar('Revisa las fechas', problema); this.paso = 'configurar'; return; }
+
+    this.guardandoRango = true;
+    this.rifaService.actualizarConfiguracion(this.rifaSeleccionada.id, {
+      fechaHoraLimite: this.fechaHoraLimiteArmada(),
+      fechaInicioBoletos: this.configFechaInicio,
+      fechaFinBoletos: this.configFechaFin
+    }).subscribe({
+      next: res => {
+        this.guardandoRango = false;
+        this.aplicarRifaActualizada(res);
+        this.paso = 'boletos';
+      },
+      error: err => {
+        this.guardandoRango = false;
+        this.paso = 'configurar';
+        this.error('No se pudo guardar el rango', err);
+      }
+    });
   }
 
   // ── Ruleta ─────────────────────────────────────────────────────────
 
   cargarEstadoRuleta(): void {
     if (!this.rifaSeleccionada?.id) return;
+    this.cargandoRuleta = true;
     this.rifaService.getEstadoPlataformas(this.rifaSeleccionada.id).subscribe({
       next: est => {
+        this.cargandoRuleta = false;
         this.boletosEnJuego = est.boletosEnJuego ?? [];
         this.boletosDescartados = est.boletosDescartados ?? [];
         this.gruposEnJuego = this.agrupar(this.boletosEnJuego);
@@ -519,7 +910,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         this.rifaTerminada = est.rifaTerminada;
         setTimeout(() => this.generarRuleta(), 150);
       },
-      error: err => this.error('No se pudo cargar el estado de la rifa', err)
+      error: err => { this.cargandoRuleta = false; this.error('No se pudo cargar el estado de la rifa', err); }
     });
   }
 
@@ -536,8 +927,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     return Array.from(mapa.values()).sort((a, b) => b.boletos.length - a.boletos.length);
   }
 
-  // Todos los boletos de una persona (en juego + descartados), que es lo que se
-  // muestra al dar clic en su nombre.
   verDetalle(concursanteId: number): void {
     const todos = [...this.boletosEnJuego, ...this.boletosDescartados]
       .filter(b => b.concursanteId === concursanteId);
@@ -683,6 +1072,22 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   nombreCompleto(c?: { nombre?: string; apellidoPaterno?: string } | null): string {
     if (!c) return '';
     return [c.nombre, c.apellidoPaterno].filter(p => !!p).join(' ');
+  }
+
+  etiquetaRifa(r: IConfigurarRifa): string {
+    const rango = r.fechaInicioBoletos ? ` · ${r.fechaInicioBoletos} a ${r.fechaFinBoletos}` : '';
+    const estado = r.activa ? '' : ' · cerrada';
+    return `Rifa #${r.id}${rango}${estado}`;
+  }
+
+  // ── Avisos ─────────────────────────────────────────────────────────
+
+  private avisar(title: string, text: string): void {
+    Swal.fire({ icon: 'warning', title, text, confirmButtonText: 'Entendido' });
+  }
+
+  private avisarOk(title: string, text: string): void {
+    Swal.fire({ icon: 'success', title, text, timer: 1800, showConfirmButton: false });
   }
 
   private error(title: string, err: any): void {

@@ -1,0 +1,176 @@
+// Calendario propio en la línea .pk-* -- ningún color va hardcodeado: todo sale de las
+// custom properties de styles.scss, para que siga a Personalización como el resto.
+
+.sf {
+  position: relative;
+  display: block;
+}
+
+// ── Campo cerrado ────────────────────────────────────────────────────────
+.sf__campo {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  font-size: .88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+
+  &:hover:not(:disabled) { border-color: var(--input-focus-border); }
+
+  &--abierto {
+    border-color: var(--input-focus-border);
+    box-shadow: var(--input-focus-shadow);
+  }
+
+  &--vacio .sf__texto { color: var(--input-placeholder); font-weight: 500; }
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+}
+
+.sf__icono { font-size: .95rem; line-height: 1; }
+.sf__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf__caret { color: var(--card-text-muted); font-size: .7rem; }
+
+.sf__ayuda {
+  display: block;
+  margin-top: 4px;
+  font-size: .72rem;
+  color: var(--card-text-muted);
+}
+
+// ── Popover ──────────────────────────────────────────────────────────────
+.sf__pop {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  padding: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow-hover);
+  animation: sf-in .12s ease-out;
+}
+
+@keyframes sf-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sf__pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sf__mes {
+  font-size: .85rem;
+  font-weight: 800;
+  color: var(--card-text);
+}
+
+.sf__nav {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { background: var(--app-accent-soft); border-color: var(--app-accent); }
+}
+
+.sf__semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+
+  span {
+    text-align: center;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--card-text-muted);
+    padding: 2px 0;
+  }
+}
+
+.sf__dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.sf__dia {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+
+  &:hover:not(:disabled) { background: var(--app-accent-soft); }
+
+  &--otro { color: var(--card-text-muted); opacity: .45; }
+
+  // El día de hoy se marca con el borde, no con relleno: el relleno es del
+  // seleccionado y si ambos rellenaran no se distinguiría cuál está elegido.
+  &--hoy { border-color: var(--app-accent); }
+
+  &--sel {
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    border-color: var(--app-accent);
+  }
+
+  &:disabled {
+    opacity: .28;
+    cursor: not-allowed;
+    text-decoration: line-through;
+    &:hover { background: transparent; }
+  }
+}
+
+.sf__pop-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--card-border);
+}
+
+.sf__link {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-size: .76rem;
+  font-weight: 700;
+  color: var(--app-accent);
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+}

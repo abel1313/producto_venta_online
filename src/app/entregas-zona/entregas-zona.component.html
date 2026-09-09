@@ -6,26 +6,53 @@
     <small class="ez-header__sub">Programa el viaje semanal a una zona y avísales a todos los que pidieron ahí</small>
   </div>
 
-  <div class="ez-field">
-    <label class="ez-label">📍 Zona</label>
-    <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
-      <option [ngValue]="null">Elige una zona…</option>
-      <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
-    </select>
-    <p class="ez-hint" *ngIf="!cargandoZonas && zonas.length === 0">
-      No hay zonas de entrega configuradas (o todas están marcadas como "recoger en tienda").
-    </p>
+  <!-- Rango de fecha de pedido + zona: el filtro es la COMBINACIÓN de los dos. -->
+  <div class="ez-filtros">
+    <div class="ez-field">
+      <label class="ez-label">📅 Pedidos desde</label>
+      <app-selector-fecha [(ngModel)]="desde" (ngModelChange)="recargar()"
+                          placeholder="Fecha inicial"></app-selector-fecha>
+    </div>
+    <div class="ez-field">
+      <label class="ez-label">📅 Hasta</label>
+      <app-selector-fecha [(ngModel)]="hasta" [min]="desde" (ngModelChange)="recargar()"
+                          placeholder="Fecha final"></app-selector-fecha>
+    </div>
+    <div class="ez-field">
+      <label class="ez-label">📍 Zona</label>
+      <select class="ez-input" [(ngModel)]="zonaId" (ngModelChange)="onZonaChange()" [disabled]="cargandoZonas">
+        <option [ngValue]="null">Elige una zona…</option>
+        <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
+      </select>
+    </div>
   </div>
+
+  <div class="ez-presets">
+    <button type="button" class="ez-preset" (click)="aplicarSemanaEnCurso()">Esta semana</button>
+    <button type="button" class="ez-preset" (click)="aplicarUltimos(15)">Últimos 15 días</button>
+    <button type="button" class="ez-preset" (click)="aplicarUltimos(30)">Últimos 30 días</button>
+  </div>
+
+  <p class="ez-hint ez-hint--alerta" *ngIf="problemaConElRango">⚠️ {{ problemaConElRango }}</p>
+
+  <p class="ez-hint" *ngIf="!cargandoZonas && zonas.length === 0">
+    No hay zonas de entrega configuradas (o todas están marcadas como "recoger en tienda").
+  </p>
+
+  <p class="ez-hint" *ngIf="zonaId == null && !problemaConElRango">
+    Elige una zona para ver sus pedidos pendientes en ese rango.
+  </p>
 
   <p class="ez-hint" *ngIf="cargandoSemana">Buscando pedidos pendientes…</p>
 
   <ng-container *ngIf="semana && !cargandoSemana">
     <div class="ez-semana">
-      Semana de pedido: <b>{{ semana.lunes | date:'dd/MM' }}</b> al <b>{{ semana.viernes | date:'dd/MM' }}</b>
+      Pedidos del <b>{{ semana.desde | date:'dd/MM/yyyy' }}</b> al <b>{{ semana.hasta | date:'dd/MM/yyyy' }}</b>
+      · zona <b>{{ nombreZonaActual }}</b>
     </div>
 
     <div class="ez-vacio" *ngIf="semana.pedidos.length === 0">
-      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> esta semana.
+      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> en ese rango de fechas.
     </div>
 
     <ng-container *ngIf="semana.pedidos.length > 0">

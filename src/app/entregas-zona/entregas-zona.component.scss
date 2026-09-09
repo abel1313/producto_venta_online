@@ -146,3 +146,43 @@ $t:  all 0.2s ease;
 :host-context(body.theme-light) {
   .ez-input { color-scheme: light; color: var(--app-text); }
 }
+
+
+// ── Filtros: rango de fecha + zona (2026-09-09) ───────────────────────
+// Antes solo existía el select de zona y el rango lo fijaba el back (semana en curso).
+.ez-filtros {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .ez-filtros { grid-template-columns: 1fr; }
+}
+
+.ez-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.ez-preset {
+  padding: 5px 11px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--card-text);
+  font-family: inherit;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: var(--app-accent-soft); border-color: var(--app-accent); }
+}
+
+.ez-hint--alerta {
+  color: var(--pk-warning-to);
+  font-weight: 600;
+}

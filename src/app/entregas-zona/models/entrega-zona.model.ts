@@ -7,14 +7,25 @@ export interface IEntregaZonaPendiente {
 }
 
 export interface IEntregaZonaSemana {
-  lunes: string;
-  viernes: string;
+  // Rango de fecha de PEDIDO que se está mostrando. Antes la pantalla solo podía ver la
+  // semana en curso y el back la calculaba solo; ahora se elige con los dos calendarios.
+  desde: string;
+  hasta: string;
+  /** @deprecated el back los sigue mandando iguales a desde/hasta por compatibilidad. */
+  lunes?: string;
+  /** @deprecated usar `hasta`. */
+  viernes?: string;
   fechaSugerida: string | null;
   pedidos: IEntregaZonaPendiente[];
 }
 
 export interface IProgramarEntregaZonaRequest {
+  /** Fecha en la que se entregará -- es la que va en el correo al cliente. */
   fecha: string;
   hora: string;
   puntoEncuentro: string;
+  // Se manda el MISMO rango que se listó para que el correo le llegue exactamente a los
+  // pedidos que el admin tenía a la vista, no a los que el back recalcule por su cuenta.
+  desde?: string;
+  hasta?: string;
 }

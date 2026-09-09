@@ -6,6 +6,7 @@ import { PalabraClaveAutocompleteComponent } from '../palabras-clave/autocomplet
 import { UppercaseInputDirective } from './directives/uppercase-input.directive';
 import { SelectorUbicacionComponent } from './selector-ubicacion/selector-ubicacion.component';
 import { BotonVolverComponent } from './boton-volver/boton-volver.component';
+import { SelectorFechaComponent } from './selector-fecha/selector-fecha.component';
 
 @NgModule({
   declarations: [
@@ -13,7 +14,8 @@ import { BotonVolverComponent } from './boton-volver/boton-volver.component';
     PalabraClaveAutocompleteComponent,
     UppercaseInputDirective,
     SelectorUbicacionComponent,
-    BotonVolverComponent
+    BotonVolverComponent,
+    SelectorFechaComponent
   ],
   imports:  [CommonModule, FormsModule],
   exports:  [
@@ -21,7 +23,8 @@ import { BotonVolverComponent } from './boton-volver/boton-volver.component';
     PalabraClaveAutocompleteComponent,
     UppercaseInputDirective,
     SelectorUbicacionComponent,
-    BotonVolverComponent
+    BotonVolverComponent,
+    SelectorFechaComponent
   ]
 })
 export class SharedModule {}

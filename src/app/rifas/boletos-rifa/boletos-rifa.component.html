@@ -16,6 +16,8 @@
       <option *ngFor="let r of rifas" [ngValue]="r.id">{{ etiquetaRifa(r) }}</option>
     </select>
     <span class="br-chip br-chip--cerrada" *ngIf="rifaSeleccionada && !rifaSeleccionada.activa">Cerrada</span>
+    <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm br-barra-rifa__nueva"
+            *ngIf="rifaSeleccionada" (click)="nuevaRifa()">➕ Nueva rifa</button>
   </div>
 
   <div class="pk-hint" *ngIf="!cargandoRifas && rifas.length === 0">
@@ -343,14 +345,6 @@
           </div>
 
           <div class="pk-field">
-            <label class="pk-label">URL del perfil para dar seguimiento *</label>
-            <input class="pk-input" type="url" placeholder="https://..."
-                   [class.br-input--error]="intentoGuardarBoleto && !urlPerfilRedSocial.trim()"
-                   [(ngModel)]="urlPerfilRedSocial" />
-            <span class="pk-hint">Es a dónde entras a verificar a la persona.</span>
-          </div>
-
-          <div class="pk-field">
             <label class="pk-label">URL para verificar que sigue la cuenta</label>
             <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlSeguimiento" />
           </div>
@@ -382,8 +376,6 @@
                 {{ iconoPlataforma(b.plataforma) }} {{ b.motivo || 'Sin detalle' }}
                 <span class="pk-text pk-text--sm pk-text--muted">· {{ b.fecha | date:'dd/MM/yyyy' }}</span>
               </div>
-              <a class="br-boleto__url" *ngIf="b.urlPerfilRedSocial"
-                 [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil</a>
               <a class="br-boleto__url" *ngIf="b.urlSeguimiento"
                  [href]="b.urlSeguimiento" target="_blank" rel="noopener">Seguimiento</a>
               <a class="br-boleto__url" *ngFor="let u of b.urlsCompartido"
@@ -434,7 +426,7 @@
 
           <button type="button" class="pk-btn pk-btn--primary pk-btn--block"
                   [disabled]="sorteando || !boletosEnJuego.length || rifaTerminada" (click)="sortear()">
-            {{ sorteando ? 'Girando...' : '🎡 Girar' }}
+            🎡 Girar
           </button>
         </div>
 
@@ -458,7 +450,6 @@
             <div class="br-grupo__body" *ngIf="g.expandido">
               <div class="br-grupo__boleto" *ngFor="let b of g.boletos">
                 <span>{{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}</span>
-                <a *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">ver perfil</a>
               </div>
               <button type="button" class="br-mini" (click)="verDetalle(g.concursanteId)">Ver todo su detalle</button>
             </div>
@@ -548,7 +539,6 @@
           <div class="pk-text pk-text--bold">
             {{ b.descartado ? '❌' : '🎟️' }} {{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}
           </div>
-          <a class="pk-text pk-text--sm" *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil</a>
           <a class="pk-text pk-text--sm" *ngIf="b.urlSeguimiento" [href]="b.urlSeguimiento" target="_blank" rel="noopener">Evidencia de seguimiento</a>
           <a class="pk-text pk-text--sm" *ngFor="let u of b.urlsCompartido" [href]="u" target="_blank" rel="noopener">Publicación compartida</a>
         </div>

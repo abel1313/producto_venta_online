@@ -88,7 +88,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   fecha = '';
   fechaMin = '';
   fechaMax = '';
-  urlPerfilRedSocial = '';
   urlSeguimiento = '';
   urlsCompartido: string[] = [''];
   guardando = false;
@@ -157,14 +156,13 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   /**
    * Un solo velo de "cargando" para toda la pantalla, en vez de un spinner chiquito
-   * dentro de cada botón. El giro de la ruleta queda fuera a propósito: ahí el
-   * feedback es la rueda girando y un velo encima la taparía.
+   * dentro de cada botón -- el giro incluido.
    */
   get ocupado(): boolean {
     return this.cargandoRifas || this.creandoRifa || this.guardandoRango
         || this.cambiandoModoPrueba || this.cargandoPremios || this.guardandoVariante
         || this.guardandoPremioEditado || this.cargandoConcursantes || this.guardandoParticipante
-        || this.cargandoBoletos || this.guardando || this.cargandoRuleta;
+        || this.cargandoBoletos || this.guardando || this.cargandoRuleta || this.sorteando;
   }
 
   // ── Carga de rifas ─────────────────────────────────────────────────
@@ -229,6 +227,28 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   }
 
   // ── Creación / edición de la rifa ──────────────────────────────────
+
+  /**
+   * Suelta la rifa que está abierta para volver al formulario de alta.
+   *
+   * El formulario de "nueva rifa" solo se pinta cuando no hay rifa seleccionada, y en
+   * cuanto existía una sola se auto-seleccionaba al entrar: sin esto no quedaba ningún
+   * camino de regreso y no se podía crear una segunda rifa.
+   */
+  nuevaRifa(): void {
+    this.rifaSeleccionada = null;
+    this.concursanteSeleccionado = null;
+    this.boletos = [];
+    this.variantesRifa = [];
+    this.concursantes = [];
+    this.cancelarEdicionBoleto();
+    this.cancelarFormParticipante();
+    this.cancelarPremioNuevo();
+    this.premioEditandoId = null;
+    this.paso = 'configurar';
+    this.configHoraCierre = HORA_CIERRE_POR_DEFECTO;
+    this.aplicarPreset('semana');
+  }
 
   // La rifa nace siempre como PRUEBA: se activa como real desde el botón, y solo
   // después de avisar si todavía no termina el periodo.
@@ -691,7 +711,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   resetForm(): void {
     this.plataforma = '';
     this.motivo = '';
-    this.urlPerfilRedSocial = '';
     this.urlSeguimiento = '';
     this.urlsCompartido = [''];
     this.intentoGuardarBoleto = false;
@@ -713,7 +732,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.plataforma = b.plataforma ?? '';
     this.motivo = b.motivo ?? '';
     this.fecha = b.fecha;
-    this.urlPerfilRedSocial = b.urlPerfilRedSocial ?? '';
     this.urlSeguimiento = b.urlSeguimiento ?? '';
     this.urlsCompartido = b.urlsCompartido?.length ? [...b.urlsCompartido] : [''];
     this.intentoGuardarBoleto = false;
@@ -727,7 +745,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   /** Motivo por el que el boleto no se puede guardar, o null si está listo. */
   problemaConElBoleto(): string | null {
     if (!this.plataforma) return 'Selecciona la plataforma en la que hizo la acción.';
-    if (!this.urlPerfilRedSocial.trim()) return 'Falta la URL del perfil para dar seguimiento.';
     if (!this.fecha) return 'Falta la fecha de la acción.';
     if (this.fecha < this.fechaMin || this.fecha > this.fechaMax) {
       return `La fecha debe estar entre ${this.fechaMin} y ${this.fechaMax}, que es el periodo de la rifa.`;
@@ -746,7 +763,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       plataforma: this.plataforma as PlataformaBoleto,
       motivo: this.motivo.trim() || null,
       fecha: this.fecha || null,
-      urlPerfilRedSocial: this.urlPerfilRedSocial.trim(),
       urlSeguimiento: this.urlSeguimiento.trim() || null,
       urlsCompartido: this.urlsCompartido.map(u => u.trim()).filter(u => !!u)
     };

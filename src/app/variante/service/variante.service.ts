@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
@@ -163,9 +163,13 @@ export class VarianteService {
     ).pipe(map(res => res.data));
   }
 
+  // Este endpoint sale a la red por dentro: el back le pregunta al micro de imagenes que ids
+  // siguen existiendo antes de contestar. Si el micro no responde, sin este timeout el
+  // observable se queda colgado para siempre -- y el overlay global del LoadingInterceptor,
+  // que solo se baja en finalize(), deja la pantalla entera sin responder a un clic.
   getImagenesVariante(varianteId: number): Observable<IVarianteImagenDto[]> {
     return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v1/imagenes/${varianteId}`)
-      .pipe(map(res => res?.data ?? []));
+      .pipe(timeout(15000), map(res => res?.data ?? []));
   }
 
   getImagenesVarianteV2(varianteId: number): Observable<IVarianteImagenDto[]> {

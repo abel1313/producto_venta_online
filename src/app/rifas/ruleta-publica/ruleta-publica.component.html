@@ -109,12 +109,23 @@
       <div class="rp-modal__body">
         <div class="pk-text pk-text--sm" *ngIf="premioCargando">Cargando el detalle...</div>
 
-        <ng-container *ngIf="!premioCargando">
+        <div class="rp-modal__error" *ngIf="premioError && !premioCargando">
+          <p class="pk-text pk-text--sm">No se pudo cargar el detalle del premio.</p>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" (click)="reintentarPremio()">Reintentar</button>
+        </div>
+
+        <ng-container *ngIf="!premioCargando && !premioError">
 
           <div class="rp-galeria" *ngIf="imagenes.length"
                (touchstart)="inicioToque($event)" (touchend)="finToque($event)">
             <img class="rp-galeria__foto" [src]="imagenes[imagenIndice]"
+                 (load)="fotoLista()"
+                 (error)="fotoRota(imagenes[imagenIndice])"
                  [alt]="premio?.nombreProducto || nombrePremio" />
+
+            <!-- Sin este aviso, una foto que no baja deja un recuadro gris mudo y el
+                 visitante lo lee como que la pantalla se trabo. -->
+            <div class="rp-galeria__cargando" *ngIf="fotoCargando">Bajando la foto...</div>
 
             <ng-container *ngIf="imagenes.length > 1">
               <button type="button" class="rp-galeria__nav rp-galeria__nav--izq"
@@ -144,6 +155,10 @@
 
       <div class="rp-modal__foot">
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" (click)="cerrarPremio()">Cerrar</button>
+        <!-- Testigo de despliegue: va FUERA de los *ngIf de carga a proposito, para que se vea
+             aunque el detalle se quede cargando o falle -- que es justo cuando hace falta saber
+             si el build que corre es el nuevo. -->
+        <span class="rp-modal__build">v {{ versionBuild }}</span>
       </div>
     </div>
   </div>

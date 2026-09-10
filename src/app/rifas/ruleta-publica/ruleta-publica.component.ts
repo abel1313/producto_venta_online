@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { IBoletoRifaDto, IPremioPublico, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
+import { environment } from 'src/environments/environment';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -37,10 +38,22 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   premioId: number | null = null;
   premioMiniatura: string | null = null;
 
+  /**
+   * Marca del build, visible en el pie del detalle del premio. Es un testigo de despliegue:
+   * si se sube un cambio y este texto NO cambia en la pantalla, entonces lo que se esta
+   * ejecutando no es el build nuevo -- el navegador tiene el index.html viejo en cache, o el
+   * pod levanto con la imagen anterior (pasa cuando la etiqueta de Docker no cambia y k8s
+   * resuelve imagePullPolicy a IfNotPresent). Sin este testigo no hay forma de distinguir
+   * "el arreglo no funciona" de "el arreglo no esta corriendo".
+   */
+  readonly versionBuild = environment.version;
+
   premioAbierto = false;
   premioCargando = false;
+  premioError = false;
   premio: IPremioPublico | null = null;
   imagenIndice = 0;
+  fotoCargando = false;
   varianteNumeroActual = 0;
   totalVariantes = 0;
   giroActual = 0;
@@ -60,6 +73,17 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   private ruletaSlots: IBoletoRifaDto[] = [];
   private readonly DURACION_ANIMACION_MS = 4000;
 
+  /**
+   * Tope para que una foto baje del micro de imagenes.
+   *
+   * Una <img> cuyo servidor acepta la conexion y despues no contesta no dispara ni (load) ni
+   * (error): se queda colgada para siempre y el carrusel se ve como una caja gris vacia, que
+   * es justo lo que el visitante lee como "se trabo". El navegador no avisa, asi que hay que
+   * cronometrarla aqui y darla por rota al vencerse.
+   */
+  private readonly TOPE_FOTO_MS = 8000;
+  private relojFoto: any = null;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -73,7 +97,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     this.cargarEstado();
   }
 
-  ngOnDestroy(): void { this.chart?.destroy(); }
+  ngOnDestroy(): void { this.chart?.destroy(); this.pararRelojFoto(); }
 
   cargarEstado(): void {
     if (!this.rifaId) return;
@@ -125,14 +149,28 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     if (this.premio?.id === this.premioId) return;   // ya está en memoria
 
     this.premio = null;
+    this.premioError = false;
     this.premioCargando = true;
     this.rifaService.getPremioPublico(this.rifaId, this.premioId).subscribe({
-      next: p => { this.premio = p; this.premioCargando = false; },
-      error: () => { this.premioCargando = false; }
+      next: p => {
+        this.premio = p;
+        this.premioCargando = false;
+        this.mostrarFoto(0);
+      },
+      error: (err) => {
+        console.error('[ruleta-publica] Error al cargar premio:', err);
+        this.premioCargando = false;
+        this.premioError = true;
+      }
     });
   }
 
-  cerrarPremio(): void { this.premioAbierto = false; }
+  reintentarPremio(): void {
+    this.premio = null;
+    this.abrirPremio();
+  }
+
+  cerrarPremio(): void { this.premioAbierto = false; this.pararRelojFoto(); }
 
   @HostListener('document:keydown', ['$event'])
   teclado(evento: KeyboardEvent): void {
@@ -148,15 +186,61 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   // una flecha muerta se siente roto.
   imagenAnterior(): void {
     if (this.imagenes.length < 2) return;
-    this.imagenIndice = (this.imagenIndice - 1 + this.imagenes.length) % this.imagenes.length;
+    this.mostrarFoto((this.imagenIndice - 1 + this.imagenes.length) % this.imagenes.length);
   }
 
   imagenSiguiente(): void {
     if (this.imagenes.length < 2) return;
-    this.imagenIndice = (this.imagenIndice + 1) % this.imagenes.length;
+    this.mostrarFoto((this.imagenIndice + 1) % this.imagenes.length);
   }
 
-  irAImagen(i: number): void { this.imagenIndice = i; }
+  irAImagen(i: number): void { this.mostrarFoto(i); }
+
+  /** Deja el carrusel en la foto `i` y le arranca el cronometro. */
+  private mostrarFoto(i: number): void {
+    this.imagenIndice = i;
+    this.pararRelojFoto();
+    const url = this.imagenes[i];
+    if (!url) { this.fotoCargando = false; return; }
+    this.fotoCargando = true;
+    this.relojFoto = setTimeout(() => {
+      this.relojFoto = null;
+      console.warn('[ruleta-publica] la foto no bajo del micro a tiempo, se descarta:', url);
+      this.fotoRota(url);
+    }, this.TOPE_FOTO_MS);
+  }
+
+  private pararRelojFoto(): void {
+    if (this.relojFoto === null) return;
+    clearTimeout(this.relojFoto);
+    this.relojFoto = null;
+  }
+
+  /** La foto bajo bien: se apaga el cronometro y el aviso de "cargando". */
+  fotoLista(): void {
+    this.pararRelojFoto();
+    this.fotoCargando = false;
+  }
+
+  /**
+   * Foto que no baja del micro: se saca del carrusel en vez de dejar el icono de imagen
+   * rota. Antes el back preguntaba al micro que ids seguian existiendo para no mandarlas,
+   * pero eso ataba una pantalla publica a que el micro estuviera vivo -- y cuando no lo
+   * estaba, el detalle no respondia nunca. El navegador ya sabe cual no cargo, asi que el
+   * descarte se hace aqui, gratis. Si se caen todas queda el mensaje de "sin fotos".
+   */
+  fotoRota(url: string): void {
+    this.pararRelojFoto();
+    this.fotoCargando = false;
+    if (!this.premio?.imagenes) return;
+    const i = this.premio.imagenes.indexOf(url);
+    if (i < 0) return;
+    this.premio.imagenes.splice(i, 1);
+    if (!this.premio.imagenes.length) return;      // queda el mensaje de "sin fotos"
+    // Al sacar una foto, la que ocupa su lugar es otra peticion al mismo micro: hay que
+    // cronometrarla tambien o la ultima del carrusel se vuelve a colgar sin aviso.
+    this.mostrarFoto(Math.min(this.imagenIndice, this.premio.imagenes.length - 1));
+  }
 
   // Deslizar con el dedo: en el celular las flechas quedan chicas y lo natural es
   // arrastrar la foto. Menos de 40 px se toma como un toque, no como un swipe.

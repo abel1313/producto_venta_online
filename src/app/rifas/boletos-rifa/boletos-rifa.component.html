@@ -425,10 +425,34 @@
     <!-- ══ PASO 3 — RULETA ══════════════════════════════════════════ -->
     <ng-container *ngIf="paso === 'ruleta'">
 
+      <!-- Quien está viendo el sorteo tiene que ver QUÉ se juega, no solo leer el nombre. Es un
+           <button> y no un div con (click) para que se abra con teclado y el lector de pantalla
+           lo anuncie. Al tocarlo abre el carrusel con todas las fotos -- el mismo detalle que ya
+           muestra la ruleta pública. -->
+      <button type="button" class="br-premio-actual" *ngIf="varianteActual"
+              (click)="abrirDetallePremio(varianteActual)"
+              [attr.aria-label]="'Ver las fotos de ' + (varianteActual?.variante?.nombreProducto || 'el premio')">
+        <span class="br-premio-actual__foto">
+          <img *ngIf="imageSrc(varianteActual?.variante) as src" [src]="src"
+               [alt]="varianteActual?.variante?.nombreProducto || 'Premio'" />
+          <span class="br-premio-actual__ph" *ngIf="!imageSrc(varianteActual?.variante)">🎁</span>
+        </span>
+        <span class="br-premio-actual__texto">
+          <span class="br-premio-actual__eyebrow">🎁 Esto se va a ganar</span>
+          <span class="br-premio-actual__nombre">{{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</span>
+          <span class="br-premio-actual__meta">
+            Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
+            <ng-container *ngIf="!rifaTerminada">· giro {{ giroActual }} de {{ giroGanador }}</ng-container>
+            <ng-container *ngIf="rifaTerminada">· ya se sortearon todos los premios</ng-container>
+          </span>
+          <span class="br-premio-actual__vermas">Ver fotos y detalle →</span>
+        </span>
+      </button>
+
       <div class="pk-card">
-        <div class="pk-card__header">
+        <div class="pk-card__header" *ngIf="!varianteActual">
           <div>
-            <div class="br-h">🎡 {{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</div>
+            <div class="br-h">🎡 Premio</div>
             <div class="pk-text pk-text--sm br-h__sub">
               Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
               <ng-container *ngIf="!rifaTerminada">· giro {{ giroActual }} de {{ giroGanador }}</ng-container>
@@ -561,14 +585,19 @@
       <div class="br-modal__body">
         <div class="br-carrusel" *ngIf="imagenesModal.length">
           <button type="button" class="br-carrusel__nav" (click)="imagenAnterior()" *ngIf="imagenesModal.length > 1">‹</button>
-          <img [src]="imagenesModal[imagenIndex].urlImagen" alt="" />
+          <img [src]="imagenesModal[imagenIndex].urlImagen"
+               (error)="fotoRotaModal(imagenesModal[imagenIndex].urlImagen)" alt="" />
           <button type="button" class="br-carrusel__nav" (click)="imagenSiguiente()" *ngIf="imagenesModal.length > 1">›</button>
         </div>
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">
           {{ imagenIndex + 1 }} / {{ imagenesModal.length }}
         </div>
-        <div class="pk-empty" *ngIf="!cargandoImagenes && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
+        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
         <div class="pk-text pk-text--sm" *ngIf="cargandoImagenes">Cargando imágenes...</div>
+        <div class="br-modal__error" *ngIf="errorImagenesModal && !cargandoImagenes">
+          <span class="pk-text pk-text--sm">No se pudieron cargar las fotos.</span>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" (click)="reintentarImagenesModal()">Reintentar</button>
+        </div>
 
         <div class="pk-card__row"><span class="pk-card__row-label">Color</span><span class="pk-card__row-val">{{ varianteModal.variante?.color || '—' }}</span></div>
         <div class="pk-card__row"><span class="pk-card__row-label">Talla</span><span class="pk-card__row-val">{{ varianteModal.variante?.talla || '—' }}</span></div>

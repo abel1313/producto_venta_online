@@ -87,10 +87,9 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
   
   ngOnInit(): void {
-    // Cambio de humo 2026-09-05 -- log fijo para confirmar en consola del navegador que el
-    // bundle que esta corriendo en el navegador es este build (no uno cacheado/viejo). Buscar
-    // el texto "SMOKE-2026-09-05-A" en la consola al recargar cualquier pantalla.
-    console.log('[SMOKE-2026-09-05-A] build activo en este navegador');
+    // Testigo de build. Subirle la fecha/letra en CADA deploy que se quiera verificar: si el
+    // marcador no cambia, no distingue un build de otro y deja de servir para diagnosticar.
+    console.log('[SMOKE-2026-09-10-B] build activo en este navegador');
     this.http.post<ITokenData>(this.urlRefresh, {}, { withCredentials: true })
     .subscribe({
       next: tokenData => {

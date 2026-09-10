@@ -692,7 +692,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.cargandoImagenes = true;
     this.varianteService.getImagenesVariante(varianteId).subscribe({
       next: res => {
-        this.imagenesModal = (res ?? []).filter(i => !!i.base64);
+        // Se aceptan las que traen URL aunque no traigan base64. El base64 lo arma el back
+        // con una llamada server-to-server al micro de imagenes y viene null cuando esa falla;
+        // filtrando por base64, el premio decia "no tiene imagenes cargadas" aunque la foto se
+        // viera bien en la lista y en la tienda. Mismo caso que la miniatura del premio.
+        this.imagenesModal = (res ?? []).filter(i => !!i.base64 || !!i.urlImagen);
         this.cargandoImagenes = false;
       },
       error: () => { this.cargandoImagenes = false; }

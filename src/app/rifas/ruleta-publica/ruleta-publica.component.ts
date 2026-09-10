@@ -139,9 +139,18 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     this.premio = null;
     this.premioError = false;
     this.premioCargando = true;
+    console.log(`[ruleta-publica] Cargando premio ${this.premioId} de rifa ${this.rifaId}`);
     this.rifaService.getPremioPublico(this.rifaId, this.premioId).subscribe({
-      next: p => { this.premio = p; this.premioCargando = false; },
-      error: () => { this.premioCargando = false; this.premioError = true; }
+      next: p => {
+        console.log('[ruleta-publica] Premio cargado:', p);
+        this.premio = p;
+        this.premioCargando = false;
+      },
+      error: (err) => {
+        console.error('[ruleta-publica] Error al cargar premio:', err);
+        this.premioCargando = false;
+        this.premioError = true;
+      }
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, HostListener, Input, OnChanges } from '@angular/core';
+import { Component, ElementRef, forwardRef, HostBinding, HostListener, Input, OnChanges } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { ConnectedPosition } from '@angular/cdk/overlay';
 
@@ -44,6 +44,21 @@ export class SelectorFechaComponent implements ControlValueAccessor, OnChanges {
   @Input() disabled = false;
   /** Texto chico bajo el campo, para el caso "fuera de este rango no se acepta". */
   @Input() ayuda = '';
+
+  /**
+   * El campo se dibuja sin borde, sin fondo y heredando el color del padre.
+   *
+   * Es para cuando el calendario vive DENTRO de otro control que ya pone su propia
+   * caja -- los pills "Creado desde / Creado hasta" de tienda/buscar y
+   * productos/buscar. Con el estilo normal quedaba caja dentro de caja: el pill con
+   * su borde redondeado y, pegado adentro, el campo con el suyo.
+   *
+   * Tambien cambia la fecha a dd/mm/aaaa: es el mismo caso de "voy dentro de algo
+   * compacto", y la version larga no cabe en el pill (ver `etiqueta`).
+   */
+  @Input() plano = false;
+
+  @HostBinding('class.sf-plano') get clasePlano(): boolean { return this.plano; }
 
   abierto = false;
   valor = '';
@@ -198,6 +213,14 @@ export class SelectorFechaComponent implements ControlValueAccessor, OnChanges {
     if (!this.valor) return '';
     const d = this.desdeIso(this.valor);
     if (!d) return this.valor;
+    // En modo plano el campo vive dentro de un pill de filtro, que es compacto y va con
+    // white-space:nowrap: "9 de septiembre de 2026" no cabe y se desbordaba encima del
+    // pill de al lado (visto en produccion el 2026-09-10). Ahi se usa dd/mm/aaaa.
+    if (this.plano) {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return `${dd}/${mm}/${d.getFullYear()}`;
+    }
     return `${d.getDate()} de ${this.nombresMes[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`;
   }
 

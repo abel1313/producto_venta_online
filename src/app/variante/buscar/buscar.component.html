@@ -110,12 +110,12 @@
     <ng-container *ngIf="puedeFiltroFecha">
       <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaDesde">
         Creado desde
-        <app-selector-fecha [ngModel]="fechaDesde" placeholder="Fecha inicial"
+        <app-selector-fecha [plano]="true" [ngModel]="fechaDesde" placeholder="Fecha inicial"
                             (ngModelChange)="fechaDesde = $event; onFechaFiltroChange()"></app-selector-fecha>
       </label>
       <label class="vb-filtro-fecha" [class.vb-filtro-fecha--active]="fechaHasta">
         Creado hasta
-        <app-selector-fecha [ngModel]="fechaHasta" placeholder="Fecha final"
+        <app-selector-fecha [plano]="true" [ngModel]="fechaHasta" placeholder="Fecha final"
                             (ngModelChange)="fechaHasta = $event; onFechaFiltroChange()"></app-selector-fecha>
       </label>
     </ng-container>

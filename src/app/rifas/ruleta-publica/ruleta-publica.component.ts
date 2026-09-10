@@ -37,6 +37,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   nombrePremio = '';
   premioId: number | null = null;
   premioMiniatura: string | null = null;
+  rifaDescripcion = '';
 
   /**
    * Marca del build, visible en el pie del detalle del premio. Es un testigo de despliegue:
@@ -105,6 +106,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
       next: est => {
         this.cargando = false;
         this.esPrueba = !!est.configurarRifa?.esPrueba;
+        this.rifaDescripcion = est.configurarRifa?.descripcion ?? '';
         this.nombrePremio = est.varianteActual?.variante?.nombreProducto ?? '';
         this.premioId = est.varianteActual?.id ?? null;
         // La URL del micro de imágenes: misma foto que se ve en modelos, y la baja el navegador

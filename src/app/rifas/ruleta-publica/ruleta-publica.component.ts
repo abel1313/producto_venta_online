@@ -39,6 +39,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
 
   premioAbierto = false;
   premioCargando = false;
+  premioError = false;
   premio: IPremioPublico | null = null;
   imagenIndice = 0;
   varianteNumeroActual = 0;
@@ -125,11 +126,17 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     if (this.premio?.id === this.premioId) return;   // ya está en memoria
 
     this.premio = null;
+    this.premioError = false;
     this.premioCargando = true;
     this.rifaService.getPremioPublico(this.rifaId, this.premioId).subscribe({
       next: p => { this.premio = p; this.premioCargando = false; },
-      error: () => { this.premioCargando = false; }
+      error: () => { this.premioCargando = false; this.premioError = true; }
     });
+  }
+
+  reintentarPremio(): void {
+    this.premio = null;
+    this.abrirPremio();
   }
 
   cerrarPremio(): void { this.premioAbierto = false; }
@@ -157,6 +164,23 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   }
 
   irAImagen(i: number): void { this.imagenIndice = i; }
+
+  /**
+   * Foto que no baja del micro: se saca del carrusel en vez de dejar el icono de imagen
+   * rota. Antes el back preguntaba al micro que ids seguian existiendo para no mandarlas,
+   * pero eso ataba una pantalla publica a que el micro estuviera vivo -- y cuando no lo
+   * estaba, el detalle no respondia nunca. El navegador ya sabe cual no cargo, asi que el
+   * descarte se hace aqui, gratis. Si se caen todas queda el mensaje de "sin fotos".
+   */
+  fotoRota(url: string): void {
+    if (!this.premio?.imagenes) return;
+    const i = this.premio.imagenes.indexOf(url);
+    if (i < 0) return;
+    this.premio.imagenes.splice(i, 1);
+    if (this.imagenIndice >= this.premio.imagenes.length) {
+      this.imagenIndice = Math.max(0, this.premio.imagenes.length - 1);
+    }
+  }
 
   // Deslizar con el dedo: en el celular las flechas quedan chicas y lo natural es
   // arrastrar la foto. Menos de 40 px se toma como un toque, no como un swipe.

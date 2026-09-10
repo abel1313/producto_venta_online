@@ -11,8 +11,12 @@
 
     <!-- Solo la imagen del premio, no clickeable -->
     <div class="rp-premio-imagen" *ngIf="premioMiniatura || nombrePremio">
-      <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
-      <span *ngIf="!premioMiniatura">🎁</span>
+      <div class="rp-premio-imagen__contenedor">
+        <span class="rp-premio-imagen__etiqueta">🎁 Esto se va a ganar</span>
+        <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
+        <span *ngIf="!premioMiniatura" class="rp-premio-imagen__placeholder">🎁</span>
+        <span class="rp-premio-imagen__nombre" *ngIf="nombrePremio">{{ nombrePremio }}</span>
+      </div>
     </div>
 
     <div class="rp-aviso rp-aviso--prueba" *ngIf="esPrueba">

@@ -74,6 +74,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   // ── Modal de producto con carrusel ─────────────────────────────────
   varianteModal: IConfigurarRifaVariante | null = null;
   imagenesModal: IVarianteImagenDto[] = [];
+  errorImagenesModal = false;
   imagenIndex = 0;
   cargandoImagenes = false;
 
@@ -693,6 +694,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   abrirDetallePremio(v: IConfigurarRifaVariante): void {
     this.varianteModal = v;
     this.imagenesModal = [];
+    this.errorImagenesModal = false;
     this.imagenIndex = 0;
     const varianteId = v.variante?.id;
     if (!varianteId) return;
@@ -705,11 +707,34 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         this.imagenesModal = (res ?? []).filter(i => !!i.urlImagen);
         this.cargandoImagenes = false;
       },
-      error: () => { this.cargandoImagenes = false; }
+      error: () => { this.cargandoImagenes = false; this.errorImagenesModal = true; }
     });
   }
 
-  cerrarDetallePremio(): void { this.varianteModal = null; this.imagenesModal = []; }
+  reintentarImagenesModal(): void {
+    if (this.varianteModal) this.abrirDetallePremio(this.varianteModal);
+  }
+
+  /**
+   * Foto que no baja del micro: se saca del carrusel en vez de dejar el icono de imagen rota.
+   * El navegador ya sabe cual no cargo, asi que el descarte sale gratis aca. Si se caen todas
+   * queda el mensaje de "no tiene imagenes cargadas".
+   */
+  fotoRotaModal(url: string | null | undefined): void {
+    if (!url) return;
+    const i = this.imagenesModal.findIndex(img => img.urlImagen === url);
+    if (i < 0) return;
+    this.imagenesModal.splice(i, 1);
+    if (this.imagenIndex >= this.imagenesModal.length) {
+      this.imagenIndex = Math.max(0, this.imagenesModal.length - 1);
+    }
+  }
+
+  cerrarDetallePremio(): void {
+    this.varianteModal = null;
+    this.imagenesModal = [];
+    this.errorImagenesModal = false;
+  }
 
   imagenAnterior(): void {
     if (!this.imagenesModal.length) return;

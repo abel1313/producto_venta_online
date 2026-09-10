@@ -37,6 +37,47 @@
   &:disabled { opacity: .55; cursor: not-allowed; }
 }
 
+// ── Variante plana (ver el @Input `plano`) ───────────────────────────────
+// El calendario dentro de un pill de filtro: el pill ya pone borde, fondo y radio,
+// asi que el campo se queda solo con el icono y el texto y hereda color y tipografia.
+// El host tambien cambia: en modo normal es display:block para ocupar el ancho de su
+// columna, y aqui tiene que medir lo que mide su contenido para no estirar el pill.
+:host(.sf-plano) {
+  display: inline-flex;
+  min-width: 0;
+}
+
+:host(.sf-plano) .sf__campo {
+  width: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+
+  &:hover:not(:disabled),
+  &.sf__campo--abierto {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  // Cadena de min-width:0 hasta el texto. Sin esto el ellipsis de .sf__texto nunca se
+  // aplica: un item de flex no baja de su tamano de contenido, asi que la fecha empujaba
+  // el pill y se salia encima del de al lado en vez de recortarse.
+  min-width: 0;
+  .sf__texto { color: inherit; min-width: 0; }
+  .sf__caret { color: inherit; opacity: .7; flex: 0 0 auto; }
+  .sf__icono { flex: 0 0 auto; }
+
+  &.sf__campo--vacio .sf__texto {
+    color: inherit;
+    opacity: .7;
+    font-weight: inherit;
+  }
+}
+
 .sf__icono { font-size: .95rem; line-height: 1; }
 .sf__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sf__caret { color: var(--card-text-muted); font-size: .7rem; }

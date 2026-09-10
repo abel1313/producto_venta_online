@@ -61,19 +61,6 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__icon { font-size: 1.1rem; margin-right: 10px; }
 
-  &__input {
-    flex: 1;
-    min-width: 0;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--input-text);
-    font-size: 0.95rem;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-    &::placeholder { color: rgba(255, 255, 255, 0.65); }
-  }
 
   &__hint {
     font-size: 0.78rem;

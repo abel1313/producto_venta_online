@@ -80,6 +80,25 @@
   to { transform: translateY(105vh) rotate(720deg); opacity: .2; }
 }
 
+/* ── Imagen pequeña del regalo ──────────────────────────────────────────
+   Solo la imagen, centrada, tamaño moderado. */
+.rp-premio-imagen {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+
+  img {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 10px;
+    object-fit: contain;
+  }
+
+  span {
+    font-size: 3rem;
+  }
+}
+
 /* ── Tarjeta del regalo ──────────────────────────────────────────────────
    Es lo primero que ve alguien que llega por el link, así que va antes de la
    ruleta y a todo el ancho. Es un <button>, de ahí el reset de apariencia. */

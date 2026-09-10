@@ -119,8 +119,13 @@
           <div class="rp-galeria" *ngIf="imagenes.length"
                (touchstart)="inicioToque($event)" (touchend)="finToque($event)">
             <img class="rp-galeria__foto" [src]="imagenes[imagenIndice]"
+                 (load)="fotoLista()"
                  (error)="fotoRota(imagenes[imagenIndice])"
                  [alt]="premio?.nombreProducto || nombrePremio" />
+
+            <!-- Sin este aviso, una foto que no baja deja un recuadro gris mudo y el
+                 visitante lo lee como que la pantalla se trabo. -->
+            <div class="rp-galeria__cargando" *ngIf="fotoCargando">Bajando la foto...</div>
 
             <ng-container *ngIf="imagenes.length > 1">
               <button type="button" class="rp-galeria__nav rp-galeria__nav--izq"

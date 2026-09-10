@@ -21,8 +21,11 @@ export class LoadingService {
    * visitante cerraba el modal y la pagina seguia sin responder a un solo clic, como trabada.
    * Pasado este tope se suelta la pantalla pase lo que pase. La peticion sigue su curso; lo
    * unico que se pierde es el aviso de "cargando".
+   *
+   * 45 s era el tope original y resulto ser demasiado: nadie espera tres cuartos de minuto
+   * con la pantalla tomada sin darla por muerta. Ninguna peticion sana de la app tarda tanto.
    */
-  private static readonly TOPE_MS = 45000;
+  private static readonly TOPE_MS = 15000;
 
   show() {
     this.count++;

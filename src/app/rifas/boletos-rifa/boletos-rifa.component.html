@@ -561,7 +561,9 @@
       <div class="br-modal__body">
         <div class="br-carrusel" *ngIf="imagenesModal.length">
           <button type="button" class="br-carrusel__nav" (click)="imagenAnterior()" *ngIf="imagenesModal.length > 1">‹</button>
-          <img [src]="'data:image/' + (imagenesModal[imagenIndex].extension || 'jpeg') + ';base64,' + imagenesModal[imagenIndex].base64" alt="" />
+          <img [src]="imagenesModal[imagenIndex].base64
+                        ? 'data:image/' + (imagenesModal[imagenIndex].extension || 'jpeg') + ';base64,' + imagenesModal[imagenIndex].base64
+                        : imagenesModal[imagenIndex].urlImagen" alt="" />
           <button type="button" class="br-carrusel__nav" (click)="imagenSiguiente()" *ngIf="imagenesModal.length > 1">›</button>
         </div>
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">

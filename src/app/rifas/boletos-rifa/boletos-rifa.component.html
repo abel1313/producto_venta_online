@@ -425,10 +425,34 @@
     <!-- ══ PASO 3 — RULETA ══════════════════════════════════════════ -->
     <ng-container *ngIf="paso === 'ruleta'">
 
+      <!-- Quien está viendo el sorteo tiene que ver QUÉ se juega, no solo leer el nombre. Es un
+           <button> y no un div con (click) para que se abra con teclado y el lector de pantalla
+           lo anuncie. Al tocarlo abre el carrusel con todas las fotos -- el mismo detalle que ya
+           muestra la ruleta pública. -->
+      <button type="button" class="br-premio-actual" *ngIf="varianteActual"
+              (click)="abrirDetallePremio(varianteActual)"
+              [attr.aria-label]="'Ver las fotos de ' + (varianteActual?.variante?.nombreProducto || 'el premio')">
+        <span class="br-premio-actual__foto">
+          <img *ngIf="imageSrc(varianteActual?.variante) as src" [src]="src"
+               [alt]="varianteActual?.variante?.nombreProducto || 'Premio'" />
+          <span class="br-premio-actual__ph" *ngIf="!imageSrc(varianteActual?.variante)">🎁</span>
+        </span>
+        <span class="br-premio-actual__texto">
+          <span class="br-premio-actual__eyebrow">🎁 Esto se va a ganar</span>
+          <span class="br-premio-actual__nombre">{{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</span>
+          <span class="br-premio-actual__meta">
+            Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
+            <ng-container *ngIf="!rifaTerminada">· giro {{ giroActual }} de {{ giroGanador }}</ng-container>
+            <ng-container *ngIf="rifaTerminada">· ya se sortearon todos los premios</ng-container>
+          </span>
+          <span class="br-premio-actual__vermas">Ver fotos y detalle →</span>
+        </span>
+      </button>
+
       <div class="pk-card">
-        <div class="pk-card__header">
+        <div class="pk-card__header" *ngIf="!varianteActual">
           <div>
-            <div class="br-h">🎡 {{ varianteActual?.variante?.nombreProducto ?? 'Premio' }}</div>
+            <div class="br-h">🎡 Premio</div>
             <div class="pk-text pk-text--sm br-h__sub">
               Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
               <ng-container *ngIf="!rifaTerminada">· giro {{ giroActual }} de {{ giroGanador }}</ng-container>

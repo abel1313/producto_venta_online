@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { IBoletoRifaDto, IPremioPublico, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
+import { environment } from 'src/environments/environment';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
@@ -36,6 +37,16 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   nombrePremio = '';
   premioId: number | null = null;
   premioMiniatura: string | null = null;
+
+  /**
+   * Marca del build, visible en el pie del detalle del premio. Es un testigo de despliegue:
+   * si se sube un cambio y este texto NO cambia en la pantalla, entonces lo que se esta
+   * ejecutando no es el build nuevo -- el navegador tiene el index.html viejo en cache, o el
+   * pod levanto con la imagen anterior (pasa cuando la etiqueta de Docker no cambia y k8s
+   * resuelve imagePullPolicy a IfNotPresent). Sin este testigo no hay forma de distinguir
+   * "el arreglo no funciona" de "el arreglo no esta corriendo".
+   */
+  readonly versionBuild = environment.version;
 
   premioAbierto = false;
   premioCargando = false;

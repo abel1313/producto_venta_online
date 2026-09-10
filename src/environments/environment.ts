@@ -9,9 +9,11 @@ export const environment = {
   //api_Url: 'http://localhost:9091/mis-productos',
   //api_Url: 'https://qa.backend.novedades-jade.com.mx/mis-productos',
   api_Url: 'http://localhost:9091/mis-productos',
-  api_imagenes: 'http://localhost:9096/mis-productos'
-  
-
+  api_imagenes: 'http://localhost:9096/mis-productos',
+  // Se pinta en el pie del detalle del premio de la ruleta publica. Sirve para saber de un
+  // vistazo QUE build se esta ejecutando: si se sube un cambio y este texto no cambia en la
+  // pantalla, el navegador o el pod estan sirviendo la version anterior.
+  version: 'local'
 };
 
 /*

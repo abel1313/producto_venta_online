@@ -155,8 +155,8 @@
           <div class="br-premios" *ngIf="variantesRifa.length">
             <div class="br-premio" *ngFor="let v of variantesRifa; let i = index">
               <button type="button" class="br-premio__foto" (click)="abrirDetallePremio(v)">
-                <img *ngIf="v.variante?.imagenBase64" [src]="'data:image/jpeg;base64,' + v.variante?.imagenBase64" alt="" />
-                <span class="br-premio__ph" *ngIf="!v.variante?.imagenBase64">📦</span>
+                <img *ngIf="imageSrc(v.variante) as src" [src]="src" alt="" />
+                <span class="br-premio__ph" *ngIf="!imageSrc(v.variante)">📦</span>
               </button>
 
               <div class="br-premio__info">
@@ -203,8 +203,8 @@
                (scroll)="alScrollearResultados($event)">
             <button type="button" class="br-resultado" *ngFor="let v of variantesBusqueda"
                     (click)="elegirVarianteBusqueda(v)">
-              <img *ngIf="v.imagenBase64" [src]="'data:image/jpeg;base64,' + v.imagenBase64" alt="" />
-              <span class="br-premio__ph" *ngIf="!v.imagenBase64">📦</span>
+              <img *ngIf="imageSrc(v) as src" [src]="src" alt="" />
+              <span class="br-premio__ph" *ngIf="!imageSrc(v)">📦</span>
               <span class="br-resultado__txt">
                 <span class="pk-text pk-text--bold">{{ v.nombreProducto }}</span>
                 <span class="pk-text pk-text--sm pk-text--muted">{{ v.color }} {{ v.talla }} · stock {{ v.stock }}</span>
@@ -561,9 +561,7 @@
       <div class="br-modal__body">
         <div class="br-carrusel" *ngIf="imagenesModal.length">
           <button type="button" class="br-carrusel__nav" (click)="imagenAnterior()" *ngIf="imagenesModal.length > 1">‹</button>
-          <img [src]="imagenesModal[imagenIndex].base64
-                        ? 'data:image/' + (imagenesModal[imagenIndex].extension || 'jpeg') + ';base64,' + imagenesModal[imagenIndex].base64
-                        : imagenesModal[imagenIndex].urlImagen" alt="" />
+          <img [src]="imagenesModal[imagenIndex].urlImagen" alt="" />
           <button type="button" class="br-carrusel__nav" (click)="imagenSiguiente()" *ngIf="imagenesModal.length > 1">›</button>
         </div>
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">

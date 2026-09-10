@@ -122,6 +122,29 @@
   }
 }
 
+/* ── Descripción/Reglas de la rifa ──────────────────────────────────────
+   Texto informativo debajo de la imagen del premio: reglas, condiciones, etc. */
+.rp-descripcion-rifa {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  padding: 0 16px;
+
+  &__contenido {
+    max-width: 400px;
+    padding: 16px;
+    background: rgba(127, 127, 127, .08);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    font-size: .95rem;
+    line-height: 1.5;
+    color: var(--app-text, inherit);
+    text-align: center;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
 /* ── Tarjeta del regalo ──────────────────────────────────────────────────
    Es lo primero que ve alguien que llega por el link, así que va antes de la
    ruleta y a todo el ancho. Es un <button>, de ahí el reset de apariencia. */

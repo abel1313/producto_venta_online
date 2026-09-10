@@ -19,6 +19,11 @@
       </div>
     </div>
 
+    <!-- Descripción/reglas de la rifa -->
+    <div class="rp-descripcion-rifa" *ngIf="rifaDescripcion">
+      <div class="rp-descripcion-rifa__contenido">{{ rifaDescripcion }}</div>
+    </div>
+
     <div class="rp-aviso rp-aviso--prueba" *ngIf="esPrueba">
       🧪 Esta rifa está en modo <b>PRUEBA</b> — puedes girarla para ver cómo funciona. Los resultados no son definitivos.
     </div>

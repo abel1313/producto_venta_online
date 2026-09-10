@@ -549,6 +549,13 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     });
   }
 
+  // La foto se resuelve con la URL del micro de imagenes, nunca con base64: el binario en base64
+  // viaja dentro del JSON, pesa ~33% mas y el navegador no lo puede cachear, asi que una lista de
+  // premios se le comia el plan de datos al celular.
+  imageSrc(v?: { imagenUrl?: string | null } | null): string | null {
+    return v?.imagenUrl ?? null;
+  }
+
   elegirVarianteBusqueda(v: IVarianteResumen): void {
     this.varianteParaAgregar = v;
     this.variantesBusqueda = [];
@@ -692,11 +699,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.cargandoImagenes = true;
     this.varianteService.getImagenesVariante(varianteId).subscribe({
       next: res => {
-        // Se aceptan las que traen URL aunque no traigan base64. El base64 lo arma el back
-        // con una llamada server-to-server al micro de imagenes y viene null cuando esa falla;
-        // filtrando por base64, el premio decia "no tiene imagenes cargadas" aunque la foto se
-        // viera bien en la lista y en la tienda. Mismo caso que la miniatura del premio.
-        this.imagenesModal = (res ?? []).filter(i => !!i.base64 || !!i.urlImagen);
+        // Solo hace falta la URL: el back manda base64 en null desde que las imagenes se
+        // resuelven contra el micro. Filtrar por base64 dejaba el carrusel diciendo "no tiene
+        // imagenes cargadas" aunque la foto se viera bien en la lista y en la tienda.
+        this.imagenesModal = (res ?? []).filter(i => !!i.urlImagen);
         this.cargandoImagenes = false;
       },
       error: () => { this.cargandoImagenes = false; }

@@ -83,11 +83,9 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         this.esPrueba = !!est.configurarRifa?.esPrueba;
         this.nombrePremio = est.varianteActual?.variante?.nombreProducto ?? '';
         this.premioId = est.varianteActual?.id ?? null;
-        // La URL del micro de imágenes primero (misma foto que se ve en modelos); el base64 que
-        // el back arma server-to-server queda como respaldo — cuando esa llamada falla, la
-        // miniatura del premio se quedaba vacía aunque la foto estuviera bien.
-        this.premioMiniatura = est.varianteActual?.variante?.imagenUrl
-          ?? this.aDataUri(est.varianteActual?.variante?.imagenBase64);
+        // La URL del micro de imágenes: misma foto que se ve en modelos, y la baja el navegador
+        // por su cuenta en vez de que el back la mande en base64 dentro del JSON del estado.
+        this.premioMiniatura = est.varianteActual?.variante?.imagenUrl ?? null;
         this.varianteNumeroActual = est.varianteNumeroActual;
         this.totalVariantes = est.totalVariantes;
         this.giroActual = est.giroActual;
@@ -113,11 +111,6 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   // que la barra de direcciones cambie a otra ruta.
   private irA404(): void {
     this.router.navigateByUrl('/pagina-no-disponible', { skipLocationChange: true });
-  }
-
-  private aDataUri(base64: string | null | undefined): string | null {
-    if (!base64) return null;
-    return base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
   }
 
   // ── Detalle del premio ─────────────────────────────────────────────

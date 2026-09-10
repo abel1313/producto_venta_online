@@ -301,6 +301,17 @@
     border-radius: 999px;
   }
 
+  &__cargando {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    opacity: .7;
+    pointer-events: none;
+  }
+
   &__vacia {
     padding: 28px 10px;
     text-align: center;

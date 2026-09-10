@@ -585,14 +585,19 @@
       <div class="br-modal__body">
         <div class="br-carrusel" *ngIf="imagenesModal.length">
           <button type="button" class="br-carrusel__nav" (click)="imagenAnterior()" *ngIf="imagenesModal.length > 1">‹</button>
-          <img [src]="imagenesModal[imagenIndex].urlImagen" alt="" />
+          <img [src]="imagenesModal[imagenIndex].urlImagen"
+               (error)="fotoRotaModal(imagenesModal[imagenIndex].urlImagen)" alt="" />
           <button type="button" class="br-carrusel__nav" (click)="imagenSiguiente()" *ngIf="imagenesModal.length > 1">›</button>
         </div>
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">
           {{ imagenIndex + 1 }} / {{ imagenesModal.length }}
         </div>
-        <div class="pk-empty" *ngIf="!cargandoImagenes && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
+        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
         <div class="pk-text pk-text--sm" *ngIf="cargandoImagenes">Cargando imágenes...</div>
+        <div class="br-modal__error" *ngIf="errorImagenesModal && !cargandoImagenes">
+          <span class="pk-text pk-text--sm">No se pudieron cargar las fotos.</span>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" (click)="reintentarImagenesModal()">Reintentar</button>
+        </div>
 
         <div class="pk-card__row"><span class="pk-card__row-label">Color</span><span class="pk-card__row-val">{{ varianteModal.variante?.color || '—' }}</span></div>
         <div class="pk-card__row"><span class="pk-card__row-label">Talla</span><span class="pk-card__row-val">{{ varianteModal.variante?.talla || '—' }}</span></div>

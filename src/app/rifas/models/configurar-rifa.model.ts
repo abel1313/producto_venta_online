@@ -37,10 +37,9 @@ export interface IVarianteRifaResumen {
   codigoBarras?: string;
   nombreProducto?: string;
   precio?: number;
-  // El back manda las dos: imagenUrl la resuelve el navegador contra el micro de imágenes
-  // (es la que se usa) y imagenBase64 queda como respaldo si esa URL no viniera.
+  // URL al micro de imágenes: la baja y la cachea el navegador. El back ya no manda el binario
+  // en base64 — pesaba ~33% más que la imagen y no se puede cachear.
   imagenUrl?: string;
-  imagenBase64?: string;
 }
 
 export interface IConfigurarRifaVariante {

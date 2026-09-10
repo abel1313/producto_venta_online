@@ -1091,17 +1091,11 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Se prefiere la URL del micro de imágenes — es exactamente la misma foto que muestra la
-  // pantalla de modelos. Antes esto miraba SOLO imagenBase64, que el back arma con una llamada
-  // server-to-server al micro: si esa llamada fallaba (micro caído, timeout, id que el micro ya
-  // no tiene), el detalle del premio decía "Sin imagen" aunque la foto se viera perfectamente en
-  // modelos. El base64 queda como respaldo.
+  // La URL del micro de imágenes — exactamente la misma foto que muestra la pantalla de modelos.
+  // El back ya no manda base64: lo armaba con una llamada server-to-server que al fallar (micro
+  // caído, timeout, id que ya no existe) dejaba el premio sin foto aunque en modelos se viera.
   imageSrcVariante(v: IConfigurarRifaVariante): string | null {
-    const url = v.variante?.imagenUrl;
-    if (url) return url;
-    const b64 = v.variante?.imagenBase64;
-    if (!b64) return null;
-    return b64.startsWith('data:') ? b64 : `data:image/jpeg;base64,${b64}`;
+    return v.variante?.imagenUrl ?? null;
   }
 
   nombreCompleto(c?: { nombre?: string | null; apellidoPaterno?: string | null } | null): string {

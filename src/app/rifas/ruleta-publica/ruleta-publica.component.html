@@ -150,6 +150,10 @@
 
       <div class="rp-modal__foot">
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" (click)="cerrarPremio()">Cerrar</button>
+        <!-- Testigo de despliegue: va FUERA de los *ngIf de carga a proposito, para que se vea
+             aunque el detalle se quede cargando o falle -- que es justo cuando hace falta saber
+             si el build que corre es el nuevo. -->
+        <span class="rp-modal__build">v {{ versionBuild }}</span>
       </div>
     </div>
   </div>

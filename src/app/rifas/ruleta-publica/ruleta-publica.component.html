@@ -9,20 +9,10 @@
 
   <ng-container *ngIf="!cargando && !error">
 
-    <!-- Lo primero que ve alguien que llega por el link es qué se va a ganar. No clickeable. -->
-    <div class="rp-premio" *ngIf="nombrePremio">
-      <span class="rp-premio__foto">
-        <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
-        <span class="rp-premio__ph" *ngIf="!premioMiniatura">🎁</span>
-      </span>
-
-      <span class="rp-premio__texto">
-        <span class="rp-premio__eyebrow">🎁 Esto se va a ganar</span>
-        <span class="rp-premio__nombre">{{ nombrePremio }}</span>
-        <span class="rp-premio__meta" *ngIf="totalVariantes > 1">
-          Premio {{ varianteNumeroActual }} de {{ totalVariantes }}
-        </span>
-      </span>
+    <!-- Solo la imagen del premio, no clickeable -->
+    <div class="rp-premio-imagen" *ngIf="premioMiniatura || nombrePremio">
+      <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
+      <span *ngIf="!premioMiniatura">🎁</span>
     </div>
 
     <div class="rp-aviso rp-aviso--prueba" *ngIf="esPrueba">

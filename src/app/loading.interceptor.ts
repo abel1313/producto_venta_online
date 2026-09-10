@@ -22,7 +22,12 @@ export class LoadingInterceptor implements HttpInterceptor {
   // `/v1/cinta/activos` va acá porque se pide en el arranque de CADA carga de la app: es un
   // adorno y no tiene por qué tapar la pantalla con el overlay mientras responde. Las demás
   // rutas de `/v1/cinta` (las del admin) NO se saltan — ahí sí es una acción del usuario.
-  private readonly skipUrls = ['/chatbot/', '/v1/cinta/activos', '/redes-sociales/'];
+  // `/publico/premio/` va aca porque el modal del premio ya pinta su propio
+  // "Cargando el detalle..." dentro de la caja: el overlay global encima solo servia para
+  // tapar la pagina, y si esa peticion se atoraba el visitante cerraba el modal y se
+  // quedaba con la pantalla bloqueada sin nada que le explicara por que.
+  private readonly skipUrls = ['/chatbot/', '/v1/cinta/activos', '/redes-sociales/',
+                               '/publico/premio/'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.skipUrls.some(url => req.url.includes(url))) {

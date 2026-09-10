@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import {
   IConfigurarRifa,
@@ -303,10 +303,15 @@ export class RifaService {
 
   // Ficha del premio con todas sus fotos. El premio se pide junto con su rifa porque
   // el back comprueba que le pertenezca antes de devolverlo.
+  // El timeout no es decorativo: sin el, una peticion que el back nunca contesta deja el
+  // observable colgado para siempre -- el modal se queda en "Cargando el detalle..." y el
+  // overlay global del LoadingInterceptor, que solo se baja en finalize(), tapa la app
+  // entera y ya no deja hacer nada. Con el timeout el error llega, el modal lo cuenta y
+  // la pantalla se libera.
   getPremioPublico(rifaId: number, premioId: number): Observable<IPremioPublico> {
     return this.http.get<{ code: number; data: IPremioPublico }>(
       `${this.url}/v1/boletoRifa/publico/premio/${rifaId}/${premioId}`
-    ).pipe(map(r => r.data));
+    ).pipe(timeout(15000), map(r => r.data));
   }
 
   eliminarBoleto(id: number): Observable<string> {

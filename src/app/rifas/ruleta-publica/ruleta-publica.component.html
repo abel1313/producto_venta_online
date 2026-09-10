@@ -109,11 +109,17 @@
       <div class="rp-modal__body">
         <div class="pk-text pk-text--sm" *ngIf="premioCargando">Cargando el detalle...</div>
 
-        <ng-container *ngIf="!premioCargando">
+        <div class="rp-modal__error" *ngIf="premioError && !premioCargando">
+          <p class="pk-text pk-text--sm">No se pudo cargar el detalle del premio.</p>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" (click)="reintentarPremio()">Reintentar</button>
+        </div>
+
+        <ng-container *ngIf="!premioCargando && !premioError">
 
           <div class="rp-galeria" *ngIf="imagenes.length"
                (touchstart)="inicioToque($event)" (touchend)="finToque($event)">
             <img class="rp-galeria__foto" [src]="imagenes[imagenIndice]"
+                 (error)="fotoRota(imagenes[imagenIndice])"
                  [alt]="premio?.nombreProducto || nombrePremio" />
 
             <ng-container *ngIf="imagenes.length > 1">

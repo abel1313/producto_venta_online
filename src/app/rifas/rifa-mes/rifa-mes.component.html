@@ -355,10 +355,17 @@
     <div class="rm-ruleta-layout">
 
       <div class="rm-ruleta-izq">
-        <div class="ruleta-container">
+        <div class="ruleta-container" [style.maxWidth.px]="medidas.lado">
           <div class="indicador"></div>
-          <canvas #ruletaCanvas width="320" height="320"></canvas>
+          <canvas #ruletaCanvas></canvas>
         </div>
+
+        <p class="rm-ruleta-nota">
+          <ng-container *ngIf="medidas.mostrarNumeros">Cada rebanada es un boleto y lleva el
+            número del concursante — busca ese número y color en la lista de elegibles.</ng-container>
+          <ng-container *ngIf="!medidas.mostrarNumeros">Hay tantos boletos que el número ya no cabe
+            dentro de la rebanada: cada color es un concursante y los nombres están en la lista.</ng-container>
+        </p>
 
         <div class="rm-descartado" *ngIf="descartadoActual">
           ❌ Descartado: <strong>{{ nombreCompleto(descartadoActual) }}</strong>
@@ -378,14 +385,17 @@
         <div class="rm-panel">
           <h5 class="rm-panel__title">🟢 Elegibles ({{ elegibles.length }})</h5>
           <div class="rm-panel__item" *ngFor="let e of elegibles">
-            {{ nombreCompleto(e) }}
+            <span class="rm-num" [style.background]="colorDe(e)">{{ numeroDe(e) }}</span>
+            <span class="rm-panel__nombre">{{ nombreCompleto(e) }}</span>
+            <span class="rm-panel__boletos" *ngIf="(e.boletos ?? 1) > 1">🎟️ {{ e.boletos }}</span>
           </div>
           <p class="rm-empty" *ngIf="elegibles.length === 0">Sin elegibles</p>
         </div>
         <div class="rm-panel" *ngIf="descartados.length > 0">
           <h5 class="rm-panel__title">❌ Descartados ({{ descartados.length }})</h5>
           <div class="rm-panel__item rm-panel__item--elim" *ngFor="let d of descartados">
-            {{ nombreCompleto(d) }}
+            <span class="rm-num rm-num--fuera">{{ numeroDe(d) }}</span>
+            <span class="rm-panel__nombre">{{ nombreCompleto(d) }}</span>
           </div>
         </div>
       </div>

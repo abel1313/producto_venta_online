@@ -1,14 +1,28 @@
+// El ancho real lo fija el componente con [style.maxWidth.px]: la ruleta crece conforme
+// entran más boletos. El 100% de aquí es el techo en celular, para que no se salga nunca
+// de la pantalla por más participantes que haya.
 .ruleta-container {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  max-width: 320px;
+  margin-inline: auto;
 
   canvas {
-    width: 320px;
-    height: 320px;
+    width: 100%;
+    height: auto;
     display: block;
   }
+}
+
+.rf-ruleta-nota {
+  text-align: center;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--app-text-muted);
+  max-width: 42ch;
 }
 
 .indicador {
@@ -489,15 +503,38 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 7px 16px;
     font-size: 0.82rem;
     color: var(--card-text);
     border-bottom: 1px solid var(--card-border);
     &:last-child { border-bottom: none; }
-    &--elim { color: var(--pk-danger-to); text-decoration: line-through; }
+    &--elim { color: var(--pk-danger-to); }
   }
 
-  &__word { font-size: 0.72rem; color: var(--card-text-muted); font-family: monospace; }
+  // El tachado va solo en el nombre: sobre el badge del número taparía el dígito.
+  &__item--elim &__nombre { text-decoration: line-through; }
+  &__nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__word { flex: 0 0 auto; font-size: 0.72rem; color: var(--card-text-muted); font-family: monospace; }
+}
+
+// El mismo número y color que lleva la rebanada en la ruleta: es lo que permite
+// identificar de quién es cada pedazo sin escribir el nombre dentro del canvas.
+.rf-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+
+  &--fuera { background: var(--app-text-muted); opacity: 0.6; }
 }
 
 // ── Alertas ────────────────────────────────────────────────────────

@@ -16,6 +16,10 @@
         <img *ngIf="premioMiniatura" [src]="premioMiniatura" [alt]="nombrePremio" />
         <span *ngIf="!premioMiniatura" class="rp-premio-imagen__placeholder">🎁</span>
         <span class="rp-premio-imagen__nombre" *ngIf="nombrePremio">{{ nombrePremio }}</span>
+        <span class="rp-premio-imagen__desc" *ngIf="premioDescripcion">{{ premioDescripcion }}</span>
+        <span class="rp-premio-imagen__attrs" *ngIf="premioAtributos.length">
+          <span class="rp-premio-imagen__attr" *ngFor="let a of premioAtributos">{{ a }}</span>
+        </span>
       </div>
     </div>
 

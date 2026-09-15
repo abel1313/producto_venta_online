@@ -38,6 +38,11 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   nombrePremio = '';
   premioId: number | null = null;
   premioMiniatura: string | null = null;
+  // Lo que describe el premio, aparte del nombre. El estado publico ya traia estos campos
+  // (VarianteResumenDto) pero la pantalla solo leia nombreProducto e imagenUrl, asi que al
+  // visitante le salia el puro nombre del producto y nada mas (reportado 2026-09-15).
+  premioDescripcion = '';
+  premioAtributos: string[] = [];
   rifaDescripcion = '';
 
   /**
@@ -117,6 +122,13 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         // La URL del micro de imágenes: misma foto que se ve en modelos, y la baja el navegador
         // por su cuenta en vez de que el back la mande en base64 dentro del JSON del estado.
         this.premioMiniatura = est.varianteActual?.variante?.imagenUrl ?? null;
+        const v = est.varianteActual?.variante;
+        this.premioDescripcion = (v?.descripcion ?? '').trim();
+        // Sirven de respaldo cuando el premio no tiene descripcion escrita: al menos se ve talla,
+        // color y marca en vez de dejar la tarjeta con el puro nombre.
+        this.premioAtributos = [v?.talla, v?.color, v?.marca, v?.presentacion, v?.contenidoNeto]
+          .map(x => (x ?? '').trim())
+          .filter(x => !!x);
         this.varianteNumeroActual = est.varianteNumeroActual;
         this.totalVariantes = est.totalVariantes;
         this.giroActual = est.giroActual;

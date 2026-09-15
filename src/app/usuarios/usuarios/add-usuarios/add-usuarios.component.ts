@@ -14,6 +14,7 @@ import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentac
 import { MenuAdminService } from 'src/app/menu-admin/service/menu.service';
 import { IMenu, ISubmenu } from 'src/app/menu-admin/models/menu.model';
 import { ThemeService } from 'src/app/services/theme/theme.service';
+import { NegocioService, IContactosPublicos } from 'src/app/negocio/negocio.service';
 
 interface GrupoSubmenusExcepcion {
   menu: IMenu | null;
@@ -133,7 +134,8 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly presentacion:         PresentacionService,
     private readonly sesion:               SesionService,
     private readonly menuAdmin:            MenuAdminService,
-    private readonly themeService:         ThemeService
+    private readonly themeService:         ThemeService,
+    private readonly negocioService:       NegocioService
   ) { }
 
   formRegistro = this.fb.group({
@@ -149,7 +151,18 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
 
+  // Ubicacion del local para la miniatura del mapa -- el mismo bloque que el login. Solo en el
+  // registro publico: cuando un admin entra aqui a ACTUALIZAR a otro usuario no pinta nada.
+  contactos: IContactosPublicos | null = null;
+
   ngOnInit(): void {
+    if (!this.esActualizar) {
+      this.negocioService.getContactosPublicos().subscribe({
+        next: c => { this.contactos = c; },
+        error: () => {}
+      });
+    }
+
     this.presentacion.getImagenesPorTipoV2('REGISTRO').subscribe({
       next: (imgs: IImagenPresentacionV2Dto[]) => { this.imagenesV2 = imgs; },
       error: () => {}

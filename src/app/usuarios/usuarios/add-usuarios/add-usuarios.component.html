@@ -280,6 +280,12 @@
           </div>
         </div>
 
+        <app-ubicacion-local *ngIf="!esActualizar"
+          [direccion]="contactos?.direccion ?? null"
+          [lat]="contactos?.latitud ?? null"
+          [lng]="contactos?.longitud ?? null">
+        </app-ubicacion-local>
+
         <p class="footer-link" *ngIf="!authService.isAdminService">
           ¿Ya tienes cuenta?
           <a (click)="irAlLogin()">Iniciar sesión</a>

@@ -15,6 +15,7 @@ import { ClienteService } from '../clietes/cliente.service';
 import { AuthService } from '../auth/auth.service';
 import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/models/pedidos.model';
 
+import { hoyIso, mesActualIso, primerDiaMesIso } from '../shared/fecha.util';
 Chart.register(...registerables);
 
 type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones';
@@ -372,16 +373,15 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── HELPERS ───────────────────────────────────────────────────────────────
 
   private hoy(): string {
-    return new Date().toISOString().slice(0, 10);
+    return hoyIso();
   }
 
   private mesActual(): string {
-    return new Date().toISOString().slice(0, 7);
+    return mesActualIso();
   }
 
   private primerDiaMes(): string {
-    const hoy = new Date();
-    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
+    return primerDiaMesIso();
   }
 
   formatFecha(iso: string): string {

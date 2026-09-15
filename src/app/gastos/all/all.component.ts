@@ -9,6 +9,7 @@ import {
 import { GastosService } from '../service/gastos.service';
 import { AuthService } from 'src/app/auth/auth.service';
 
+import { hoyIso, primerDiaMesIso } from '../../shared/fecha.util';
 type Tab = 'gastos' | 'ventas' | 'reporte';
 
 @Component({
@@ -105,12 +106,11 @@ export class AllComponent implements OnInit {
   }
 
   private hoy(): string {
-    return new Date().toISOString().slice(0, 10);
+    return hoyIso();
   }
 
   private primerDiaMes(): string {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    return primerDiaMesIso();
   }
 
   // ── Tab navigation ────────────────────────────────────────────────

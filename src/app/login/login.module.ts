@@ -7,6 +7,7 @@ import { LoginFormComponent } from './login-form/login-form.component';
 import { OlvidePasswordComponent } from './olvide-password/olvide-password.component';
 import { VerificarCorreoComponent } from './verificar-correo/verificar-correo.component';
 import { LoginRoutingModule } from './login-routing.module';
+import { SharedModule } from '../shared/shared.module';
 
 
 @NgModule({
@@ -20,7 +21,8 @@ import { LoginRoutingModule } from './login-routing.module';
     LoginRoutingModule,
     ReactiveFormsModule,
     FormsModule,
-    RouterModule
+    RouterModule,
+    SharedModule
   ]
 })
 export class LoginModule { }

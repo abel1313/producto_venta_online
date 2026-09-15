@@ -17,6 +17,7 @@ import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 
+import { hoyIso } from '../../shared/fecha.util';
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
 type Paso = 'configurar' | 'ruleta' | 'transicion' | 'resumen';
@@ -243,11 +244,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     }
 
     // Cargar todas las rifas DIARIA de hoy → mostrar como wizard anteriores
-    // Fecha LOCAL, no UTC: `toISOString()` en México (UTC-6) devuelve el día siguiente a
-    // partir de las 6 de la tarde, y entonces las rifas de hoy no aparecían.
-    const ahora = new Date();
-    const dosDig = (n: number) => String(n).padStart(2, '0');
-    const hoy = `${ahora.getFullYear()}-${dosDig(ahora.getMonth() + 1)}-${dosDig(ahora.getDate())}`;
+    const hoy = hoyIso();
     this.rifaService.buscarConfiguraciones({ tipo: 'DIARIA', desde: hoy, hasta: hoy }).subscribe({
       next: rifas => {
         for (const r of rifas) {

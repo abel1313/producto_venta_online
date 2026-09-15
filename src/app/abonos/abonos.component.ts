@@ -17,6 +17,7 @@ import { NegocioService } from '../negocio/negocio.service';
 import { FloresService } from '../flores/service/flores.service';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
 
+import { hoyIso } from '../shared/fecha.util';
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
 @Component({
@@ -534,7 +535,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       // de solo el acumulado.
       abonos: [
         ...(detalle.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
-        { monto: body.monto, fecha: body.fechaPago ?? new Date().toISOString() }
+        { monto: body.monto, fecha: body.fechaPago ?? hoyIso() }
       ],
       metodoPago:     metodoPago,
       montoDado:      montoDado > 0 ? montoDado : null,
@@ -634,6 +635,6 @@ export class AbonosComponent implements OnInit, OnDestroy {
   }
 
   private hoy(): string {
-    return new Date().toISOString().slice(0, 10);
+    return hoyIso();
   }
 }

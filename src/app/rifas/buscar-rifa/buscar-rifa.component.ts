@@ -5,6 +5,7 @@ import { IConfigurarRifa, TipoRifa } from '../models/configurar-rifa.model';
 import { IEstadoRifa } from '../models/estado-rifa.model';
 import { RifaService } from '../service/rifa.service';
 
+import { aIsoLocal } from '../../shared/fecha.util';
 @Component({
   selector: 'app-buscar-rifa',
   templateUrl: './buscar-rifa.component.html',
@@ -33,7 +34,7 @@ export class BuscarRifaComponent implements OnInit {
 
   ngOnInit(): void {
     const hoy  = new Date();
-    this.diaFiltro = this.aIsoLocal(hoy);
+    this.diaFiltro = aIsoLocal(hoy);
     const anio = hoy.getFullYear();
     const mes  = String(hoy.getMonth() + 1).padStart(2, '0');
     this.mesFiltro = `${anio}-${mes}`;
@@ -131,13 +132,4 @@ export class BuscarRifaComponent implements OnInit {
     return [c.nombre, c.apellidoPaterno].filter(p => !!p).join(' ');
   }
 
-  /**
-   * "Hoy" en yyyy-MM-dd usando la fecha LOCAL, no la UTC.
-   * `toISOString()` convierte a UTC primero, así que en México (UTC-6) a partir de las 6 de
-   * la tarde devolvía el día siguiente: el filtro arrancaba en mañana y la rifa de hoy no salía.
-   */
-  private aIsoLocal(d: Date): string {
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
 }

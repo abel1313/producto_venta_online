@@ -18,6 +18,7 @@ import { CENTRO_MAPA_GENERICO } from '../../shared/selector-ubicacion/selector-u
 import { VarianteService } from '../../variante/service/variante.service';
 import { IPedidoVarianteDTO, IPedidoVarianteDetalleDTO } from '../../variante/models/pedido-variante.model';
 
+import { hoyIso } from '../../shared/fecha.util';
 interface IAccesorioSeleccion {
   accesorio: IAccesorioRamo;
   seleccionado: boolean;
@@ -1150,7 +1151,7 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
       cliente: { id: clienteId },
       tipoPedido: conAnticipo ? 'APARTADO' : 'NORMAL',
       estadoPedido: conAnticipo ? 'APARTADO' : 'Pendiente',
-      fechaPedido: new Date().toISOString().split('T')[0],
+      fechaPedido: hoyIso(),
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
       latitud:        this.latitud ?? undefined,

@@ -8,6 +8,7 @@ import { EntregaZonaService } from './service/entrega-zona.service';
 import { IEntregaZonaSemana } from './models/entrega-zona.model';
 import { CENTRO_MAPA_GENERICO } from '../shared/selector-ubicacion/selector-ubicacion.component';
 
+import { aIsoLocal } from '../shared/fecha.util';
 // "Entregas por zona" (2026-09-04): el cliente en el checkout solo elige la ZONA (Zacazonapan,
 // Tejupilco, Luvianos...), nunca un punto exacto -- el dueño hace un viaje por semana a cada
 // zona y decide un único punto de encuentro para todos los que pidieron ahí esa semana. Aquí se
@@ -93,25 +94,19 @@ export class EntregasZonaComponent implements OnInit {
     // getDay(): 0 = domingo. La semana de trabajo arranca en lunes.
     const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - ((hoy.getDay() + 6) % 7));
     const viernes = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 4);
-    this.desde = this.aIso(lunes);
-    this.hasta = this.aIso(viernes);
+    this.desde = aIsoLocal(lunes);
+    this.hasta = aIsoLocal(viernes);
     this.recargar();
   }
 
   aplicarUltimos(dias: number): void {
     const hoy = new Date();
     const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - (dias - 1));
-    this.desde = this.aIso(inicio);
-    this.hasta = this.aIso(hoy);
+    this.desde = aIsoLocal(inicio);
+    this.hasta = aIsoLocal(hoy);
     this.recargar();
   }
 
-  // ⚠️ Local a propósito: `new Date('2026-09-09')` se parsea como UTC y en México devuelve el
-  // día anterior.
-  private aIso(d: Date): string {
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
 
   get problemaConElRango(): string | null {
     if (!this.desde || !this.hasta) return 'Selecciona el rango de fechas de los pedidos.';

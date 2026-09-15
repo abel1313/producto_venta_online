@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service';
+import { CENTRO_MAPA_GENERICO } from 'src/app/shared/selector-ubicacion/selector-ubicacion.component';
 import { horaLegible } from 'src/app/shared/hora.util';
 
 @Component({
@@ -22,6 +23,14 @@ export class ConfigNegocioComponent implements OnInit {
   guardandoHorario = false;
   guardandoContactos = false;
   guardandoAlertaStock = false;
+  guardandoUbicacion = false;
+
+  // Ubicacion del local: lo que ve el cliente en login y registro. No va en un FormGroup porque
+  // lat/lng no se teclean -- las pone el mapa; solo la direccion es un campo escrito.
+  direccionLocal = '';
+  latitudLocal:  number | null = null;
+  longitudLocal: number | null = null;
+  readonly centroMapa = CENTRO_MAPA_GENERICO;
 
   horarioForm!:   FormGroup;
   contactosForm!: FormGroup;
@@ -72,6 +81,9 @@ export class ConfigNegocioComponent implements OnInit {
         this.alertaStockForm.patchValue({
           umbralStockBajo: config?.umbralStockBajo ?? 5
         });
+        this.direccionLocal = config?.direccion ?? '';
+        this.latitudLocal   = config?.latitud   ?? null;
+        this.longitudLocal  = config?.longitud  ?? null;
         this.configCargada = true;
       },
       error: (err) => {
@@ -172,6 +184,86 @@ export class ConfigNegocioComponent implements OnInit {
         this.guardandoContactos = false;
         Swal.fire({ icon: 'error', title: 'Error al guardar contactos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar los contactos.', timer: 1600, showConfirmButton: false });
       }
+    });
+  }
+
+  // ── Ubicacion del local ────────────────────────────────────────────
+  // El punto se marca con el mismo selector de mapa del punto de encuentro de las entregas
+  // (app-selector-ubicacion): trae buscador de direcciones y "usar mi ubicacion", asi que el
+  // dueno puede pararse en el local y marcarlo de un toque.
+
+  onUbicacionCambio(p: { lat: number; lng: number }): void {
+    this.latitudLocal  = p.lat;
+    this.longitudLocal = p.lng;
+  }
+
+  get ubicacionMarcada(): boolean {
+    return this.latitudLocal != null && this.longitudLocal != null;
+  }
+
+  /** Qué le falta para poder guardar — se muestra en pantalla en vez de solo deshabilitar. */
+  get faltaParaUbicacion(): string | null {
+    if (!this.direccionLocal.trim() && !this.ubicacionMarcada) {
+      return 'Escribe la dirección y marca el punto en el mapa.';
+    }
+    if (!this.direccionLocal.trim()) return 'Falta escribir la dirección que verá el cliente.';
+    if (!this.ubicacionMarcada) return 'Falta marcar el punto en el mapa (toca el mapa o arrastra el pin).';
+    return null;
+  }
+
+  guardarUbicacion(): void {
+    if (this.faltaParaUbicacion) return;
+    this.guardandoUbicacion = true;
+    this.negocioService.actualizarUbicacion({
+      direccion: this.direccionLocal.trim(),
+      latitud:   this.latitudLocal,
+      longitud:  this.longitudLocal
+    }).subscribe({
+      next: () => {
+        this.guardandoUbicacion = false;
+        if (this.estado) {
+          this.estado.direccion = this.direccionLocal.trim();
+          this.estado.latitud   = this.latitudLocal;
+          this.estado.longitud  = this.longitudLocal;
+        }
+        Swal.fire({ icon: 'success', title: '¡Ubicación guardada!', text: 'Ya se ve en el login y en el registro.', timer: 1600, showConfirmButton: false });
+      },
+      error: (err) => {
+        this.guardandoUbicacion = false;
+        Swal.fire({ icon: 'error', title: 'Error al guardar la ubicación', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la ubicación del local.' });
+      }
+    });
+  }
+
+  quitarUbicacion(): void {
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Quitar la ubicación?',
+      text: 'El mapa dejará de aparecer en el login y en el registro.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitarla',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.guardandoUbicacion = true;
+      this.negocioService.actualizarUbicacion({ direccion: null, latitud: null, longitud: null }).subscribe({
+        next: () => {
+          this.guardandoUbicacion = false;
+          this.direccionLocal = '';
+          this.latitudLocal   = null;
+          this.longitudLocal  = null;
+          if (this.estado) {
+            this.estado.direccion = null;
+            this.estado.latitud   = null;
+            this.estado.longitud  = null;
+          }
+          Swal.fire({ icon: 'success', title: 'Ubicación quitada', timer: 1400, showConfirmButton: false });
+        },
+        error: (err) => {
+          this.guardandoUbicacion = false;
+          Swal.fire({ icon: 'error', title: 'Error al quitar la ubicación', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo quitar la ubicación.' });
+        }
+      });
     });
   }
 

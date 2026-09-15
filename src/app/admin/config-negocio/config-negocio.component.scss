@@ -262,6 +262,32 @@ $t:  all 0.25s ease;
 
     &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
   }
+
+  &--quitar {
+    width: auto;
+    flex-shrink: 0;
+    background: transparent;
+    color: var(--pk-danger, #dc2626);
+    border: 1.5px solid var(--pk-danger, #dc2626);
+
+    &:hover:not(:disabled) { background: var(--pk-danger-soft, rgba(220,38,38,.08)); }
+    &:disabled { opacity: .45; cursor: not-allowed; }
+  }
+}
+
+// ── Ubicación del local ────────────────────────────────────────────
+.cn-ubicacion-acciones {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+// Qué le falta para poder guardar — se dice en pantalla en vez de solo dejar el botón gris
+// (mismo criterio que el botón de guardar de Agregar modelo).
+.cn-falta {
+  font-size: .8rem;
+  color: var(--app-text-muted);
+  margin: 0;
 }
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──

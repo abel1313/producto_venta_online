@@ -14,6 +14,7 @@ import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
+import { hoyIso } from '../../shared/fecha.util';
 @Component({
   selector: 'app-detalle-pedido',
   templateUrl: './detalle-pedido.component.html',
@@ -603,6 +604,6 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   private hoy(): string {
-    return new Date().toISOString().slice(0, 10);
+    return hoyIso();
   }
 }

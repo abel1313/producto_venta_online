@@ -1,0 +1,39 @@
+<a class="ul-mapa" *ngIf="hayUbicacion"
+   [href]="urlComoLlegar" target="_blank" rel="noopener"
+   [attr.aria-label]="'Cómo llegar al local' + (direccion ? ': ' + direccion : '')">
+
+  <span class="ul-teselas">
+    <img *ngFor="let t of teselas" [src]="t.url" alt="" aria-hidden="true" loading="lazy"
+         [style.left.px]="t.x" [style.top.px]="t.y">
+  </span>
+
+  <svg class="ul-pin" viewBox="0 0 26 34" aria-hidden="true">
+    <defs>
+      <linearGradient id="ulPin" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#007AFF"></stop>
+        <stop offset="1" stop-color="#5856D6"></stop>
+      </linearGradient>
+    </defs>
+    <path d="M13 0C5.82 0 0 5.82 0 13c0 9.75 13 21 13 21s13-11.25 13-21c0-7.18-5.82-13-13-13z" fill="url(#ulPin)"></path>
+    <circle cx="13" cy="12.6" r="4.6" fill="#fff"></circle>
+  </svg>
+
+  <span class="ul-scrim"></span>
+
+  <span class="ul-pie">
+    <span class="ul-texto">
+      <span class="ul-titulo">Visítanos en el local</span>
+      <span class="ul-dir" *ngIf="direccion">{{ direccion }}</span>
+    </span>
+    <span class="ul-btn">
+      Cómo llegar
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 17 17 7"></path>
+        <path d="M9 7h8v8"></path>
+      </svg>
+    </span>
+  </span>
+
+  <span class="ul-credito">&copy; OpenStreetMap</span>
+</a>

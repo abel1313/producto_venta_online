@@ -13,6 +13,9 @@ export interface INegocioEstado {
   horaApertura?: string;   // "09:00"
   horaCierre?:   string;   // "21:00"
   umbralStockBajo?: number; // aviso diario por correo a los admin cuando una variante llega a esto o menos
+  direccion?: string | null;
+  latitud?:   number | null;
+  longitud?:  number | null;
 }
 
 export interface IAlertaStockRequest {
@@ -32,6 +35,17 @@ export interface IContactosPublicos {
   instagramUrl?: string | null;
   tiktokUrl?:    string | null;
   tiendaUrl?:    string | null;
+  // Ubicacion del local -- la consumen login y registro (endpoint publico, sin sesion) para
+  // pintar la miniatura del mapa y armar el link de "Como llegar".
+  direccion?:    string | null;
+  latitud?:      number | null;
+  longitud?:     number | null;
+}
+
+export interface IUbicacionRequest {
+  direccion: string | null;
+  latitud:   number | null;
+  longitud:  number | null;
 }
 
 export interface IHorarioRequest {
@@ -93,7 +107,10 @@ export class NegocioService {
           facebookUrl:  d?.facebookUrl  ?? null,
           instagramUrl: d?.instagramUrl ?? null,
           tiktokUrl:    d?.tiktokUrl    ?? null,
-          tiendaUrl:    d?.tiendaUrl    ?? null
+          tiendaUrl:    d?.tiendaUrl    ?? null,
+          direccion:    d?.direccion    ?? null,
+          latitud:      d?.latitud      ?? null,
+          longitud:     d?.longitud     ?? null
         } as IContactosPublicos;
       })
     );
@@ -105,6 +122,10 @@ export class NegocioService {
 
   actualizarHorario(data: IHorarioRequest): Observable<any> {
     return this.http.put(`${this.url}/horario`, data);
+  }
+
+  actualizarUbicacion(data: IUbicacionRequest): Observable<any> {
+    return this.http.put(`${this.url}/ubicacion`, data);
   }
 
   actualizarUmbralStockBajo(data: IAlertaStockRequest): Observable<any> {

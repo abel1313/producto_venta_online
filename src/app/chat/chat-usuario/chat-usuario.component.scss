@@ -283,6 +283,31 @@
     .cu-bubble__time { text-align: left; }
   }
 
+  // Mensajes del asistente (izquierda, como los del admin). Se distingue con borde punteado y un
+  // fondo distinto para que el cliente vea de un golpe que le contestó el bot y no una persona.
+  &--bot {
+    align-self: flex-start;
+
+    .cu-bubble__body { align-items: flex-start; }
+
+    .cu-bubble__text {
+      background: var(--form-section-bg, #f8fafc);
+      color: var(--app-text, #1e293b);
+      border-radius: 4px 16px 16px 16px;
+      border: 1px dashed var(--card-border, #e8ecf4);
+    }
+
+    .cu-bubble__time { text-align: left; }
+  }
+
+  &__avatar--bot {
+    background: var(--form-section-bg, #f8fafc);
+    color: var(--app-text, #1e293b);
+    border: 1px solid var(--card-border, #e8ecf4);
+    box-shadow: none;
+    font-size: 0.85rem;
+  }
+
   // Mensajes del usuario (derecha)
   &--usuario {
     align-self: flex-end;

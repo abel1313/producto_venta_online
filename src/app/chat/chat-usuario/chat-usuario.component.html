@@ -75,7 +75,17 @@
       <div *ngFor="let msg of mensajes"
            class="cu-bubble"
            [class.cu-bubble--usuario]="msg.remitente === 'USUARIO'"
-           [class.cu-bubble--admin]="msg.remitente === 'ADMIN'">
+           [class.cu-bubble--admin]="msg.remitente === 'ADMIN'"
+           [class.cu-bubble--bot]="msg.remitente === 'BOT'">
+
+        <!-- Mensajes del asistente: se distingue del de una persona por el avatar -->
+        <ng-container *ngIf="msg.remitente === 'BOT'">
+          <div class="cu-bubble__avatar cu-bubble__avatar--bot">🤖</div>
+          <div class="cu-bubble__body">
+            <div class="cu-bubble__text">{{ msg.contenido || '…' }}</div>
+            <div class="cu-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+          </div>
+        </ng-container>
 
         <!-- Mensajes del admin: avatar + burbuja -->
         <ng-container *ngIf="msg.remitente === 'ADMIN'">

@@ -192,7 +192,7 @@ $radius: 18px;
 
 // ── Header ─────────────────────────────────────────────────────────
 .cb-header {
-  background: linear-gradient(135deg, var(--brand-3) 0%, #6B4F22 55%, var(--brand-1) 100%);
+  background: linear-gradient(135deg, var(--brand-3) 0%, var(--chat-accent-mid, #6B4F22) 55%, var(--brand-1) 100%);
   padding: 16px 18px;
   display: flex;
   align-items: center;
@@ -444,44 +444,44 @@ $radius: 18px;
 // identidad visual también en oscuro.
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
   .cb-fab {
-    background: linear-gradient(135deg, #005C3D, #00875A);
-    box-shadow: 0 8px 28px rgba(0,135,90,0.5);
-    &:hover { box-shadow: 0 12px 36px rgba(0,135,90,0.65); }
+    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
+    box-shadow: 0 8px 28px rgba(var(--chat-accent-rgb, 0,135,90),0.5);
+    &:hover { box-shadow: 0 12px 36px rgba(var(--chat-accent-rgb, 0,135,90),0.65); }
     &--open { background: linear-gradient(135deg, #374151, #1f2937); }
-    &__close { color: #FFFFFF; }
+    &__close { color: var(--chat-accent-ink, #FFFFFF); }
   }
 
   .cb-header {
-    background: linear-gradient(135deg, #00301F 0%, #6B4F22 55%, #00875A 100%);
+    background: linear-gradient(135deg, var(--chat-accent-3, #00301F) 0%, var(--chat-accent-mid, #6B4F22) 55%, var(--chat-accent, #00875A) 100%);
 
-    &__name, &__close { color: #FFFFFF; }
+    &__name, &__close { color: var(--chat-accent-ink, #FFFFFF); }
     &__close {
       background: rgba(255,255,255,0.14);
       &:hover { background: rgba(255,255,255,0.28); }
     }
   }
 
-  .cb-avatar { background: linear-gradient(135deg, #005C3D, #00875A); }
+  .cb-avatar { background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A)); }
 
   .cb-burbuja--user {
-    background: linear-gradient(135deg, #005C3D, #00875A);
-    color: #FFFFFF !important;
-    box-shadow: 0 3px 10px rgba(0,135,90,0.35);
+    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
+    color: var(--chat-accent-ink, #FFFFFF) !important;
+    box-shadow: 0 3px 10px rgba(var(--chat-accent-rgb, 0,135,90),0.35);
 
-    .cb-burbuja__text { color: #FFFFFF !important; }
+    .cb-burbuja__text { color: var(--chat-accent-ink, #FFFFFF) !important; }
   }
 
   .cb-send {
-    background: linear-gradient(135deg, #005C3D, #00875A);
-    color: #FFFFFF;
-    box-shadow: 0 4px 12px rgba(0,135,90,0.4);
-    &:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(0,135,90,0.5); }
+    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
+    color: var(--chat-accent-ink, #FFFFFF);
+    box-shadow: 0 4px 12px rgba(var(--chat-accent-rgb, 0,135,90),0.4);
+    &:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(var(--chat-accent-rgb, 0,135,90),0.5); }
   }
 
   .cb-btn-add {
-    background: linear-gradient(135deg, #00875A, #005C3D);
-    color: #FFFFFF;
-    &:hover:not(:disabled) { box-shadow: 0 3px 8px rgba(0,135,90,.35); }
+    background: linear-gradient(135deg, var(--chat-accent, #00875A), var(--chat-accent-2, #005C3D));
+    color: var(--chat-accent-ink, #FFFFFF);
+    &:hover:not(:disabled) { box-shadow: 0 3px 8px rgba(var(--chat-accent-rgb, 0,135,90),.35); }
   }
 
   .cb-msgs { &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
@@ -665,15 +665,15 @@ $radius: 18px;
 
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
   .cb-card {
-    box-shadow: 0 1px 6px rgba(0,0,0,.25);
-    &:hover { box-shadow: 0 3px 12px rgba(0,0,0,.4); }
+    box-shadow: var(--card-shadow, 0 1px 6px rgba(0,0,0,.25));
+    &:hover { box-shadow: var(--card-shadow-hover, 0 3px 12px rgba(0,0,0,.4)); }
   }
   .cb-card__precio { color: var(--brand-1); }
   .cb-btn-remove {
-    border-color: rgba(252,165,165,.4);
-    background: rgba(252,165,165,.08);
-    color: #fca5a5;
-    &:hover { background: rgba(252,165,165,.16); }
+    border-color: var(--pk-danger-soft, rgba(252,165,165,.4));
+    background: var(--pk-danger-soft, rgba(252,165,165,.08));
+    color: var(--pk-danger-to, #fca5a5);
+    &:hover { background: var(--pk-danger-soft, rgba(252,165,165,.16)); }
   }
 }
 

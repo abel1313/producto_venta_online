@@ -4,7 +4,11 @@ import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ITemaVariable } from '../models/tema.model';
 import { PresetDiseno, PRESETS_DISENO } from '../models/presets-diseno';
+
+/** A qué lado del tema se aplica/previsualiza un diseño predefinido. */
+export type ModoPreset = 'dia' | 'noche' | 'ambos';
 import { TemaAdminService } from '../service/tema-admin.service';
+import { ThemeService } from '../../services/theme/theme.service';
 
 // Pantalla única de Personalización -- catálogo dinámico (ver TemaVariable en el backend): cada
 // fila ES una variable CSS, el dueño puede agregar/editar/eliminar sin que nadie toque código.
@@ -32,6 +36,8 @@ export class GestionPersonalizacionComponent implements OnInit {
   readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion'];
   readonly sombras = ['suave', 'media', 'fuerte'];
   readonly presets: PresetDiseno[] = PRESETS_DISENO;
+  // Identifica el boton en curso: hay uno por modo en cada tarjeta, asi que no alcanza el id
+  // del preset solo (si no, al aplicar 'dia' se veria 'Aplicando...' tambien en el de noche).
   aplicandoPreset: string | null = null;
 
   // Secciones abiertas por defecto: solo la primera -- el resto empieza colapsado para que la
@@ -59,7 +65,8 @@ export class GestionPersonalizacionComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly svc: TemaAdminService
+    private readonly svc: TemaAdminService,
+    public  readonly theme: ThemeService
   ) {}
 
   ngOnInit(): void {
@@ -179,13 +186,48 @@ export class GestionPersonalizacionComponent implements OnInit {
     });
   }
 
+  /** ¿Este diseño es el que está puesto en ese lado del tema?
+   *
+   * Compara los valores del preset contra lo que hoy tiene el catálogo, mirando SOLO el lado
+   * que corresponde (valorClaro para día, valorOscuro para noche). Ignora las variables que el
+   * dueño haya borrado: si no está en el catálogo, no cuenta ni a favor ni en contra. Sirve
+   * para que se vea de un vistazo qué combinación quedó (p. ej. un diseño de día y otro de
+   * noche), que es justo lo que antes no se podía tener. */
+  presetActivo(preset: PresetDiseno, modo: 'dia' | 'noche'): boolean {
+    const comparables = this.variables.filter(v => preset.valores[v.clave] !== undefined);
+    if (comparables.length === 0) return false;
+    return comparables.every(v => {
+      const par = preset.valores[v.clave];
+      return modo === 'dia'
+        ? this.mismoColor(v.valorClaro, par.claro)
+        : this.mismoColor(v.valorOscuro ?? v.valorClaro, par.oscuro);
+    });
+  }
+
+  /** Los hex se guardan tal cual los escribió quien editó, así que "#00875A" y "#00875a" son el
+   * mismo color pero distinto string. */
+  private mismoColor(a: string | null | undefined, b: string): boolean {
+    return (a ?? '').trim().toLowerCase() === b.trim().toLowerCase();
+  }
+
+  /** Nombre del diseño puesto en ese lado, o null si es una mezcla hecha a mano. */
+  nombrePresetActivo(modo: 'dia' | 'noche'): string | null {
+    return this.presets.find(p => this.presetActivo(p, modo))?.nombre ?? null;
+  }
+
   /** Preview instantáneo del preset al pasar el mouse/enfocar su tarjeta -- antes de confirmar.
-   * Previsualiza el par que corresponde al modo en el que estás viendo la pantalla ahora mismo
-   * (TemaService ya decide claro/oscuro según la hora al aplicar). */
-  previsualizarPreset(preset: PresetDiseno): void {
+   * Solo toca el lado (día/noche) que se va a aplicar: así, si estás mirando la pantalla de
+   * noche y pasas el mouse por "usar de día", no se te mueve nada -- lo que ves es el diseño de
+   * noche que ya tienes elegido. Usa el interruptor ☀️/🌙 de arriba para ver el otro lado. */
+  previsualizarPreset(preset: PresetDiseno, modo: ModoPreset = 'ambos'): void {
     const preview = this.variables.map(v => {
       const par = preset.valores[v.clave];
-      return par !== undefined ? { ...v, valorClaro: par.claro, valorOscuro: par.oscuro } : v;
+      if (par === undefined) return v;
+      return {
+        ...v,
+        valorClaro:  modo === 'noche' ? v.valorClaro  : par.claro,
+        valorOscuro: modo === 'dia'   ? v.valorOscuro : par.oscuro,
+      };
     });
     this.svc.previsualizar(preview);
   }
@@ -195,13 +237,23 @@ export class GestionPersonalizacionComponent implements OnInit {
     if (this.editandoId === null) this.svc.previsualizar(this.variables);
   }
 
-  /** Aplica un diseño predefinido: actualiza en un solo paso todas las variables que el preset
-   * trae, su valor claro Y su valor oscuro. Solo afecta variables que YA existen en el catálogo
-   * (si el dueño borró alguna, esa se ignora en vez de recrearla). */
-  aplicarPreset(preset: PresetDiseno): void {
+  /** Aplica un diseño predefinido a UN lado del tema, o a los dos.
+   *
+   * `modo` es lo que hace que día y noche sean elecciones independientes: con 'dia' solo se
+   * reescribe valorClaro y el valorOscuro de cada variable queda como estaba (y al revés con
+   * 'noche'). Así se puede tener, por ejemplo, "Jade profundo" de día y "Azul medianoche" de
+   * noche. Antes el único botón escribía los dos lados a la vez, así que elegir un diseño
+   * obligaba a quedarse también con su versión de noche.
+   *
+   * Solo afecta variables que YA existen en el catálogo (si el dueño borró alguna, esa se
+   * ignora en vez de recrearla). */
+  aplicarPreset(preset: PresetDiseno, modo: ModoPreset = 'ambos'): void {
+    const queCambia = modo === 'dia'   ? 'del modo día ☀️ (el de noche 🌙 se queda como está)'
+                    : modo === 'noche' ? 'del modo noche 🌙 (el de día ☀️ se queda como está)'
+                    :                    'de los dos modos, día ☀️ y noche 🌙';
     Swal.fire({
       title: `¿Aplicar "${preset.nombre}"?`,
-      text: 'Se sobrescriben las variables de Marca, Página, Card, Tablas, Menú lateral y Formularios con esta paleta, en modo claro ☀️ y oscuro 🌙.',
+      text: `Se sobrescriben los colores ${queCambia} en Marca, Página, Card, Tablas, Menú lateral y Formularios.`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, aplicar',
@@ -215,10 +267,12 @@ export class GestionPersonalizacionComponent implements OnInit {
         return;
       }
 
-      this.aplicandoPreset = preset.id;
-      const llamadas = afectadas.map(v =>
-        this.svc.actualizar(v.id!, { ...v, valorClaro: preset.valores[v.clave].claro, valorOscuro: preset.valores[v.clave].oscuro })
-      );
+      this.aplicandoPreset = `${preset.id}:${modo}`;
+      const llamadas = afectadas.map(v => this.svc.actualizar(v.id!, {
+        ...v,
+        valorClaro:  modo === 'noche' ? v.valorClaro  : preset.valores[v.clave].claro,
+        valorOscuro: modo === 'dia'   ? v.valorOscuro : preset.valores[v.clave].oscuro,
+      }));
       forkJoin(llamadas).subscribe({
         next: () => {
           this.aplicandoPreset = null;

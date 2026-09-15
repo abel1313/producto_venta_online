@@ -513,7 +513,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // Dark mode para banners
 :host-context(body.theme-dark) {
   .vb-promo__card {
-    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    box-shadow: var(--card-shadow, 0 6px 24px rgba(0,0,0,0.35));
     &:not(.vb-promo__card--no-link):hover {
       box-shadow: 0 12px 36px rgba(var(--app-accent-rgb),0.2);
     }
@@ -1158,10 +1158,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Modo oscuro — glassmorphism oscuro ────────────────────────────
 :host-context(body.theme-dark) {
   .vb-header__content {
-    background: rgba(15, 15, 25, 0.72);
+    background: var(--form-section-bg, rgba(15, 15, 25, 0.72));
     backdrop-filter: blur(20px);
-    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.50);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: var(--card-shadow, 0 6px 28px rgba(0, 0, 0, 0.50));
+    border: 1px solid var(--app-border, rgba(255, 255, 255, 0.07));
   }
 }
 

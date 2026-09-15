@@ -926,9 +926,9 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Modo oscuro — glassmorphism oscuro ────────────────────────────
 :host-context(body.theme-dark) {
   .pl-header__content {
-    background: rgba(15, 15, 25, 0.72);
+    background: var(--form-section-bg, rgba(15, 15, 25, 0.72));
     backdrop-filter: blur(20px);
-    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.50);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: var(--card-shadow, 0 6px 28px rgba(0, 0, 0, 0.50));
+    border: 1px solid var(--app-border, rgba(255, 255, 255, 0.07));
   }
 }

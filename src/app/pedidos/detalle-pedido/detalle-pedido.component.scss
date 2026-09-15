@@ -543,24 +543,24 @@
 }
 
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  .dp-btn-reenviar, .dp-btn-imprimir { color: var(--brand-1); border-color: rgba(212,180,131,.4); }
-  .dp-tipo-badge--apartado { background: rgba(251,146,60,.2); color: #fbbf24; }
-  .dp-tipo-badge--fiado    { background: rgba(96,165,250,.18); color: #60a5fa; }
+  .dp-btn-reenviar, .dp-btn-imprimir { color: var(--brand-1); border-color: var(--app-border, rgba(212,180,131,.4)); }
+  .dp-tipo-badge--apartado { background: var(--pk-warning-soft, rgba(251,146,60,.2)); color: var(--pk-warning-to, #fbbf24); }
+  .dp-tipo-badge--fiado { background: var(--pk-info-soft, rgba(96,165,250,.18)); color: var(--pk-info-to, #60a5fa); }
   .dp-cambio {
-    background: rgba(74, 222, 128, 0.22);
-    color: #86efac;
-    border-color: rgba(74, 222, 128, 0.5);
+    background: var(--pk-success-soft, rgba(74, 222, 128, 0.22));
+    color: var(--pk-success-to, #86efac);
+    border-color: var(--pk-success-soft, rgba(74, 222, 128, 0.5));
     font-weight: 600;
     &--warn {
-      background: rgba(252, 165, 165, 0.2);
-      color: #fca5a5;
-      border-color: rgba(252, 165, 165, 0.5);
+      background: var(--pk-danger-soft, rgba(252, 165, 165, 0.2));
+      color: var(--pk-danger-to, #fca5a5);
+      border-color: var(--pk-danger-soft, rgba(252, 165, 165, 0.5));
     }
   }
   .dp-abono-liquidado {
-    background: rgba(74, 222, 128, 0.15);
-    border-color: rgba(74, 222, 128, 0.4);
-    color: #86efac;
+    background: var(--pk-success-soft, rgba(74, 222, 128, 0.15));
+    border-color: var(--pk-success-soft, rgba(74, 222, 128, 0.4));
+    color: var(--pk-success-to, #86efac);
   }
 }
 

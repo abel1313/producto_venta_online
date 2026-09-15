@@ -249,20 +249,20 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .ca-label { color: var(--app-text-muted, #94a3b8); }
 
   .ca-input {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--input-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--input-border, rgba(255, 255, 255, 0.1));
     color: var(--app-text, #f1f5f9);
 
-    &::placeholder { color: #475569; }
+    &::placeholder { color: var(--input-placeholder, #475569); }
 
     &:focus {
-      background: rgba(255, 255, 255, 0.09);
+      background: var(--input-bg, rgba(255, 255, 255, 0.09));
       border-color: var(--app-accent);
       box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.18);
     }
 
     &.ca-select {
-      color: #f1f5f9;
+      color: var(--input-text, #f1f5f9);
 
       option {
         color: #1e293b;
@@ -276,16 +276,16 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .ca-input-icon  { color: var(--app-text-muted, #475569); }
   .ca-select-arrow { color: var(--app-text-muted, #475569); }
 
-  .ca-footer { border-top-color: rgba(255, 255, 255, 0.07); }
+  .ca-footer { border-top-color: var(--app-border, rgba(255, 255, 255, 0.07)); }
 
   .ca-btn--cancel {
     color: var(--app-text-muted, #94a3b8);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--app-border, rgba(255, 255, 255, 0.12));
 
     &:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: var(--app-border, rgba(255, 255, 255, 0.2));
       color: var(--app-text, #e2e8f0);
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--table-row-hover, rgba(255, 255, 255, 0.05));
     }
   }
 
@@ -311,7 +311,7 @@ $trans:      all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         border-color: rgba(var(--app-accent-rgb), 0.5);
       }
 
-      &:disabled { color: var(--app-text-muted, #475569); border-color: rgba(255,255,255,0.08); }
+      &:disabled { color: var(--app-text-muted, #475569); border-color: var(--app-border, rgba(255,255,255,0.08)); }
     }
   }
 

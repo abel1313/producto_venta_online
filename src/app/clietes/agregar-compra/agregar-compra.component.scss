@@ -167,10 +167,10 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 :host-context(body.theme-dark) {
   .amc-page  { background: var(--app-bg); }
   .amc-card  { background: var(--card-bg, #1e1b2e); }
-  .amc-input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: var(--app-text, #e2e8f0); }
-  .amc-input:focus { background: rgba(255,255,255,0.1); }
+  .amc-input { background: var(--input-bg, rgba(255,255,255,0.06)); border-color: var(--input-border, rgba(255,255,255,0.14)); color: var(--app-text, #e2e8f0); }
+  .amc-input:focus { background: var(--input-bg, rgba(255,255,255,0.1)); }
   .amc-hint  { color: var(--app-text-muted, #94a3b8); }
-  .amc-btn--ghost { color: var(--app-text, #e2e8f0); border-color: rgba(255,255,255,0.16); }
+  .amc-btn--ghost { color: var(--app-text, #e2e8f0); border-color: var(--app-border, rgba(255,255,255,0.16)); }
 }
 
 :host-context(body.theme-light) {

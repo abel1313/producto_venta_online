@@ -52,7 +52,9 @@
     </a>
 
     <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
-         "Producto" es lo que se vende (Blusa Zara / M / Negro). -->
+         "Producto" es lo que se vende (Blusa Zara / M / Negro).
+         Los title= repiten esa distinción en pantalla: el usuario ya no distinguía
+         "Agregar modelo" de "Agregar producto" sin abrir las dos pantallas. -->
     <div class="sb-group" *ngIf="grupoVisible('catalogo')"
          [class.sb-group--open]="openGroup === 'catalogo'">
       <button class="sb-item sb-item--toggle" (click)="toggleGroup('catalogo')">
@@ -61,9 +63,12 @@
         <span class="sb-chevron">›</span>
       </button>
       <div class="sb-submenu">
-        <a class="sb-subitem" *ngIf="tienePantalla('productos/buscar')" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()">🔍 Modelos</a>
-        <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()">➕ Agregar modelo</a>
-        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()">🧩 Agregar producto</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/buscar')" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()"
+           title="Lista de modelos: el artículo genérico, sin talla ni color (ej. Blusa Zara)">🔍 Modelos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()"
+           title="Da de alta el artículo genérico (ej. Blusa Zara). Todavía no se vende: primero hay que agregarle productos con su talla y color">➕ Agregar modelo</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()"
+           title="Da de alta lo que sí se vende (ej. Blusa Zara / M / Negro) a partir de un modelo que ya existe. Esto es lo que ve el cliente en la Tienda">🧩 Agregar producto</a>
         <a class="sb-subitem" *ngIf="tienePantalla('carga-imagenes')" routerLinkActive="sb-subitem--active" routerLink="carga-imagenes" (click)="closeMobile()">📸 Carga rápida de imágenes</a>
         <a class="sb-subitem" *ngIf="tienePantalla('tienda/cargar-excel')" routerLinkActive="sb-subitem--active" routerLink="tienda/cargar-excel" (click)="closeMobile()">📂 Cargar Excel</a>
         <a class="sb-subitem" *ngIf="tienePantalla('palabras-clave')" routerLinkActive="sb-subitem--active" routerLink="palabras-clave" (click)="closeMobile()">🏷️ Categorías</a>

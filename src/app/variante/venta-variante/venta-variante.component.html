@@ -77,7 +77,7 @@
           <span class="badge bg-warning text-dark ms-2">× {{ p.cantidadCombos }} combo(s)</span>
           <div class="small text-muted mt-1">
             <span *ngFor="let d of p.detalles; let i = index">
-              {{ d.cantidad }}× {{ d.nombreProducto || 'Variante ' + d.varianteId }}
+              {{ d.cantidad }}× {{ d.nombreProducto || 'Producto ' + d.varianteId }}
               <span *ngIf="d.talla">({{ d.talla }})</span>
               <span *ngIf="i < p.detalles.length - 1"> · </span>
             </span>

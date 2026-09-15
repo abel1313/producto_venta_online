@@ -10,7 +10,9 @@
       <span class="pf-card__header-icon">{{ esActualizar ? '✏️' : '📦' }}</span>
       <div>
         <h3 class="pf-card__title">{{ nombreCard }}</h3>
-        <p class="pf-card__subtitle">Los campos con <span class="pf-required">*</span> son obligatorios</p>
+        <p class="pf-card__subtitle" *ngIf="!esActualizar">El artículo base (ej. Blusa Zara). Para venderlo,
+          después agrégale productos con su talla y color desde «Agregar producto»</p>
+        <p class="pf-card__subtitle" *ngIf="esActualizar">Los campos con <span class="pf-required">*</span> son obligatorios</p>
       </div>
     </div>
 
@@ -221,8 +223,13 @@
         <button type="button" class="pf-btn-save"
                 [disabled]="formProductos.invalid || guardando"
                 (click)="guardar()">
-          {{ esActualizar ? '💾 Actualizar producto' : '💾 Guardar producto' }}
+          {{ esActualizar ? '💾 Actualizar modelo' : '💾 Guardar modelo' }}
         </button>
+
+        <p class="pf-faltantes" *ngIf="camposFaltantes.length">
+          Falta llenar: <b>{{ camposFaltantes.join(', ') }}</b>.
+          La imagen es opcional — no bloquea el guardado.
+        </p>
 
       </form>
     </div>

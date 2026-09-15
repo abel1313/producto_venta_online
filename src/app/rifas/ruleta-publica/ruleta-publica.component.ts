@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { IBoletoRifaDto, IPremioPublico, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
 import { environment } from 'src/environments/environment';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
@@ -63,7 +64,11 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
 
   boletosEnJuego: IBoletoRifaDto[] = [];
   boletosDescartados: IBoletoRifaDto[] = [];
-  resumenEnJuego: { nombre: string; boletos: number }[] = [];
+  resumenEnJuego: { numero: number; color: string; nombre: string; boletos: number }[] = [];
+
+  /** Número y color con los que cada participante aparece en la ruleta. */
+  private numeros = new Map<number, number>();
+  medidas: IMedidasRuleta = medidasRuleta(0, 1024);
 
   sorteando = false;
   descartadoActual: IBoletoRifaDto | null = null;
@@ -119,6 +124,11 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         this.rifaTerminada = est.rifaTerminada;
         this.boletosEnJuego = est.boletosEnJuego ?? [];
         this.boletosDescartados = est.boletosDescartados ?? [];
+        // Los números se reparten sobre TODOS los participantes, descartados incluidos: así
+        // el número de cada quien no se recorre cuando alguien sale de la ruleta.
+        this.numeros = numerosDeParticipantes(
+          [...this.boletosEnJuego, ...this.boletosDescartados].map(b => b.concursanteId)
+        );
         this.resumenEnJuego = this.resumir(this.boletosEnJuego);
         setTimeout(() => this.generarRuleta(), 150);
       },
@@ -273,14 +283,36 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     ].filter(f => !!f.valor.trim());
   }
 
-  private resumir(boletos: IBoletoRifaDto[]): { nombre: string; boletos: number }[] {
-    const mapa = new Map<number, { nombre: string; boletos: number }>();
+  private resumir(boletos: IBoletoRifaDto[]): { numero: number; color: string; nombre: string; boletos: number }[] {
+    const mapa = new Map<number, { numero: number; color: string; nombre: string; boletos: number }>();
     boletos.forEach(b => {
       const actual = mapa.get(b.concursanteId);
       if (actual) { actual.boletos++; }
-      else { mapa.set(b.concursanteId, { nombre: b.nombreCompleto, boletos: 1 }); }
+      else {
+        mapa.set(b.concursanteId, {
+          numero: this.numeroDe(b.concursanteId),
+          color: this.colorDe(b.concursanteId),
+          nombre: b.nombreCompleto,
+          boletos: 1
+        });
+      }
     });
     return Array.from(mapa.values()).sort((a, b) => b.boletos - a.boletos);
+  }
+
+  numeroDe(concursanteId: number): number { return this.numeros.get(concursanteId) ?? 0; }
+
+  colorDe(concursanteId: number): string { return colorRuleta(this.numeroDe(concursanteId)); }
+
+  /**
+   * Al girar la pantalla o cambiar de tamaño la ventana hay que recalcular: la ruleta que
+   * cabía en vertical no es la misma que cabe en horizontal. Se salta durante el giro para
+   * no cortar la animación a media vuelta.
+   */
+  @HostListener('window:resize')
+  alRedimensionar(): void {
+    if (this.sorteando) return;
+    this.generarRuleta();
   }
 
   private generarRuleta(): void {
@@ -288,19 +320,17 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     if (!this.boletosEnJuego.length || !this.ruletaCanvas) return;
 
     this.ruletaSlots = [...this.boletosEnJuego];
-    const colorPorPersona = new Map<number, string>();
-    const backgroundColor = this.ruletaSlots.map(b => {
-      if (!colorPorPersona.has(b.concursanteId)) {
-        colorPorPersona.set(b.concursanteId, this.colorAleatorio());
-      }
-      return colorPorPersona.get(b.concursanteId)!;
-    });
+    this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
+    const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
 
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.ruletaSlots.map(b => b.nombreCompleto),
-        datasets: [{ data: Array(this.ruletaSlots.length).fill(1), backgroundColor }]
+        // En la rebanada va el número del participante, no su nombre: el nombre completo
+        // no cabe en cuanto hay más de un puñado de boletos. El nombre se lee en la lista
+        // de participantes, que trae el mismo número y el mismo color.
+        labels: this.ruletaSlots.map(b => String(this.numeroDe(b.concursanteId))),
+        datasets: [{ data: Array(this.ruletaSlots.length).fill(1), backgroundColor, borderWidth: 1 }]
       },
       options: {
         responsive: true,
@@ -308,8 +338,11 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
         plugins: {
           legend: { display: false },
           datalabels: {
-            color: 'white', anchor: 'center', align: 'center',
-            font: { size: 12, weight: 'bold' },
+            display: this.medidas.mostrarNumeros,
+            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
+            // caen casi en el mismo punto y se enciman entre si.
+            color: 'white', anchor: 'end', align: 'start', offset: 6,
+            font: { size: this.medidas.fuente, weight: 'bold' },
             formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
           }
         }
@@ -376,10 +409,6 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
       size: `${8 + Math.floor(Math.random() * 8)}px`
     }));
     setTimeout(() => { this.confettiPieces = []; }, 6000);
-  }
-
-  private colorAleatorio(): string {
-    return '#' + Array.from({ length: 6 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
   }
 
   etiquetaBoleto(b: IBoletoRifaDto): string {

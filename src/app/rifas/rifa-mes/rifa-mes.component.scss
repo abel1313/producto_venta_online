@@ -339,10 +339,28 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;
   &__title { padding: 10px 14px; font-size: 0.85rem; font-weight: 700; color: var(--app-text-muted); border-bottom: 1px solid var(--card-border); margin: 0; }
   &__item {
+    display: flex; align-items: center; gap: 8px;
     padding: 7px 14px; font-size: 0.82rem; border-bottom: 1px solid var(--card-border); color: var(--card-text);
     &:last-child { border-bottom: none; }
-    &--elim { color: var(--pk-danger-to); text-decoration: line-through; }
+    &--elim { color: var(--pk-danger-to); }
   }
+  // El tachado va solo en el nombre: sobre el badge del número taparía el dígito.
+  &__item--elim &__nombre { text-decoration: line-through; }
+  &__nombre   { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__boletos  { flex: 0 0 auto; font-size: 0.75rem; color: var(--card-text-muted); }
+}
+
+// El mismo número y color que lleva la rebanada en la ruleta: es lo que permite
+// identificar de quién es cada pedazo sin escribir el nombre dentro del canvas.
+.rm-num {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 24px; height: 24px; padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.74rem; font-weight: 700; color: #fff;
+  font-variant-numeric: tabular-nums;
+
+  &--fuera { background: var(--app-text-muted); opacity: 0.6; }
 }
 
 // -- Ganador
@@ -376,9 +394,16 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 }
 
 // Ruleta canvas
+// El ancho real lo fija el componente con [style.maxWidth.px]: crece conforme entran más
+// boletos. El 100% de aquí es el techo en celular, para que no se salga de la pantalla.
 .ruleta-container {
   position: relative; display: flex; justify-content: center; align-items: center;
-  canvas { width: 320px; height: 320px; display: block; }
+  width: 100%; max-width: 320px; margin-inline: auto;
+  canvas { width: 100%; height: auto; display: block; }
+}
+
+.rm-ruleta-nota {
+  text-align: center; margin: 0; font-size: 0.78rem; color: var(--app-text-muted); max-width: 42ch;
 }
 .indicador {
   position: absolute; top: -12px; left: 50%; z-index: 10; transform: translateX(-50%);

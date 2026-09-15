@@ -1,5 +1,5 @@
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -14,6 +14,7 @@ import {
   PlataformaBoleto
 } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteImagenDto, IVarianteResumen } from 'src/app/variante/models/variante.model';
 
@@ -134,6 +135,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   ganadorActual: IResultadoSorteoPlataformas | null = null;
   confettiPieces: { left: string; color: string; delay: string; duration: string; size: string }[] = [];
   detalleGrupo: IGrupoBoletos | null = null;
+
+  /** Número y color con los que cada participante aparece en la ruleta. */
+  private numeros = new Map<number, number>();
+  medidas: IMedidasRuleta = medidasRuleta(0, 1024);
 
   private chart?: Chart;
   private ruletaSlots: IBoletoRifaDto[] = [];
@@ -1121,6 +1126,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         this.cargandoRuleta = false;
         this.boletosEnJuego = est.boletosEnJuego ?? [];
         this.boletosDescartados = est.boletosDescartados ?? [];
+        // Los números se reparten sobre TODOS los participantes, descartados incluidos: así
+        // el número de cada quien no se recorre cuando alguien sale de la ruleta.
+        this.numeros = numerosDeParticipantes(
+          [...this.boletosEnJuego, ...this.boletosDescartados].map(b => b.concursanteId)
+        );
         this.gruposEnJuego = this.agrupar(this.boletosEnJuego);
         this.gruposDescartados = this.agrupar(this.boletosDescartados);
         this.varianteActual = est.varianteActual;
@@ -1162,6 +1172,21 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   cerrarDetalle(): void { this.detalleGrupo = null; }
 
+  numeroDe(concursanteId: number): number { return this.numeros.get(concursanteId) ?? 0; }
+
+  colorDe(concursanteId: number): string { return colorRuleta(this.numeroDe(concursanteId)); }
+
+  /**
+   * Al girar la pantalla o cambiar de tamaño la ventana hay que recalcular: la ruleta que
+   * cabía en vertical no es la misma que cabe en horizontal. Se salta durante el giro para
+   * no cortar la animación a media vuelta.
+   */
+  @HostListener('window:resize')
+  alRedimensionar(): void {
+    if (this.sorteando) return;
+    this.generarRuleta();
+  }
+
   private generarRuleta(): void {
     this.chart?.destroy();
     if (!this.boletosEnJuego.length || !this.ruletaCanvas) return;
@@ -1169,19 +1194,17 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     // Un slot por boleto: quien tiene más boletos ocupa más rebanadas, que es
     // exactamente su probabilidad de salir.
     this.ruletaSlots = [...this.boletosEnJuego];
-    const colorPorPersona = new Map<number, string>();
-    const backgroundColor = this.ruletaSlots.map(b => {
-      if (!colorPorPersona.has(b.concursanteId)) {
-        colorPorPersona.set(b.concursanteId, this.colorAleatorio());
-      }
-      return colorPorPersona.get(b.concursanteId)!;
-    });
+    this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
+    const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
 
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.ruletaSlots.map(b => b.nombreCompleto),
-        datasets: [{ data: Array(this.ruletaSlots.length).fill(1), backgroundColor }]
+        // En la rebanada va el número del participante, no su nombre: el nombre completo
+        // no cabe en cuanto hay más de un puñado de boletos. El nombre se lee en las tablas
+        // de abajo, que traen el mismo número y el mismo color.
+        labels: this.ruletaSlots.map(b => String(this.numeroDe(b.concursanteId))),
+        datasets: [{ data: Array(this.ruletaSlots.length).fill(1), backgroundColor, borderWidth: 1 }]
       },
       options: {
         responsive: true,
@@ -1194,8 +1217,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         plugins: {
           legend: { display: false },
           datalabels: {
-            color: 'white', anchor: 'center', align: 'center',
-            font: { size: 12, weight: 'bold' },
+            display: this.medidas.mostrarNumeros,
+            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
+            // caen casi en el mismo punto y se enciman entre si.
+            color: 'white', anchor: 'end', align: 'start', offset: 6,
+            font: { size: this.medidas.fuente, weight: 'bold' },
             formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
           }
         }
@@ -1279,10 +1305,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       size: `${8 + Math.floor(Math.random() * 8)}px`
     }));
     setTimeout(() => { this.confettiPieces = []; }, 6000);
-  }
-
-  private colorAleatorio(): string {
-    return '#' + Array.from({ length: 6 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
   }
 
   etiquetaBoleto(b: IBoletoRifaDto): string {

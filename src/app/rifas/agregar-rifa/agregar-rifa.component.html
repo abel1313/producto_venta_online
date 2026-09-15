@@ -653,10 +653,17 @@
 
     <!-- Izquierda: ruleta -->
     <div class="rf-ruleta__left">
-      <div class="ruleta-container">
+      <div class="ruleta-container" [style.maxWidth.px]="medidas.lado">
         <div class="indicador"></div>
-        <canvas #ruletaCanvas width="320" height="320"></canvas>
+        <canvas #ruletaCanvas></canvas>
       </div>
+
+      <p class="rf-ruleta-nota">
+        <ng-container *ngIf="medidas.mostrarNumeros">Cada rebanada es un boleto y lleva el
+          número del participante — busca ese número y color en la lista de elegibles.</ng-container>
+        <ng-container *ngIf="!medidas.mostrarNumeros">Hay tantos boletos que el número ya no cabe
+          dentro de la rebanada: cada color es un participante y los nombres están en la lista.</ng-container>
+      </p>
 
       <div class="rf-alert rf-alert--warn" *ngIf="descartadoActual">
         ❌ <strong>Descartado:</strong>
@@ -731,7 +738,8 @@
         <h5 class="rf-panel__title">🟢 Elegibles ({{ elegibles.length }})</h5>
         <div class="rf-panel__list">
           <div class="rf-panel__item" *ngFor="let e of elegibles">
-            {{ nombreCompleto(e) }}
+            <span class="rf-num" [style.background]="colorDe(e)">{{ numeroDe(e) }}</span>
+            <span class="rf-panel__nombre">{{ nombreCompleto(e) }}</span>
             <span class="rf-panel__word">{{ e.palabraClave }}</span>
           </div>
           <p class="rf-empty" *ngIf="elegibles.length === 0">Sin elegibles</p>
@@ -741,7 +749,8 @@
         <h5 class="rf-panel__title">❌ Descartados ({{ descartados.length }})</h5>
         <div class="rf-panel__list">
           <div class="rf-panel__item rf-panel__item--elim" *ngFor="let d of descartados">
-            {{ nombreCompleto(d) }}
+            <span class="rf-num rf-num--fuera">{{ numeroDe(d) }}</span>
+            <span class="rf-panel__nombre">{{ nombreCompleto(d) }}</span>
           </div>
         </div>
       </div>

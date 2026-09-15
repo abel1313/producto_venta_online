@@ -232,7 +232,8 @@
 
           <div class="ci-field ci-field--full">
             <label>Categoría</label>
-            <app-palabra-clave-autocomplete (seleccionada)="onPalabraClave($event)"></app-palabra-clave-autocomplete>
+            <app-palabra-clave-autocomplete [valorInicial]="palabraClaveSel"
+                                            (seleccionada)="onPalabraClave($event)"></app-palabra-clave-autocomplete>
           </div>
 
           <div class="ci-field ci-field--full">

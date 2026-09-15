@@ -25,7 +25,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @ViewChild('canvasCamara', { static: false }) canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('videoScanner', { static: false }) videoScannerRef!: ElementRef<HTMLVideoElement>;
 
-  @Input() nombreCard    = 'Agregar Producto';
+  @Input() nombreCard    = 'Agregar Modelo';
   @Input() productoUpdate: IProductoDTORec | null = null;
 
   formProductos!: FormGroup;
@@ -53,7 +53,28 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   // porque el producto cargado no traía código (ver initCodigoBarra()).
   private cargandoDesdeUpdate = false;
 
-  get esActualizar(): boolean { return this.nombreCard === 'Actualizar Producto'; }
+  get esActualizar(): boolean { return this.nombreCard.startsWith('Actualizar'); }
+
+  // Etiquetas tal cual aparecen en pantalla, para nombrar el campo que falta.
+  private static readonly ETIQUETAS: Record<string, string> = {
+    nombre:       'Nombre',
+    marca:        'Marca',
+    precioCosto:  'Precio de compra',
+    precioVenta:  'Precio de venta',
+    precioRebaja: 'Precio con descuento',
+    stock:        'Stock',
+    descripcion:  'Descripción',
+    codigoBarras: 'Código de barras',
+  };
+
+  // El botón de guardar se deshabilita con formProductos.invalid y antes no decía por qué:
+  // se leía como si la imagen fuera obligatoria (no lo es, nunca entró al form).
+  get camposFaltantes(): string[] {
+    if (!this.formProductos) return [];
+    return Object.keys(this.formProductos.controls)
+      .filter(k => this.formProductos.get(k)!.invalid)
+      .map(k => AddComponent.ETIQUETAS[k] ?? k);
+  }
 
   constructor(
     private readonly fb:      FormBuilder,

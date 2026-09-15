@@ -44,7 +44,7 @@ export interface SesionActiva {
 }
 
 export interface MensajeHistorial {
-  remitente: 'USUARIO' | 'ADMIN';
+  remitente: 'USUARIO' | 'ADMIN' | 'BOT';
   contenido: string;
   timestamp: string;
 }
@@ -64,7 +64,7 @@ export interface ApiResponse<T> {
 }
 
 export interface MensajeUI {
-  remitente: 'USUARIO' | 'ADMIN';
+  remitente: 'USUARIO' | 'ADMIN' | 'BOT';
   contenido: string;
   timestamp: string;
 }

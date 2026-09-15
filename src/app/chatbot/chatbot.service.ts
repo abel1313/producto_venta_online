@@ -30,6 +30,7 @@ export interface IChatbotBuscarResponse {
 
 export interface IChatbotResponse {
   respuesta:       string;
+  sesionId?:       string;
   bloqueado:       boolean;
   segundosEspera:  number;
   productos?:      IChatbotProducto[];
@@ -47,8 +48,8 @@ export class ChatbotService {
 
   constructor(private readonly http: HttpClient) {}
 
-  enviar(mensaje: string, historial: IMensajeChat[]): Observable<IChatbotResponse> {
-    return this.http.post<IChatbotResponse>(this.urlMensaje, { mensaje, historial });
+  enviar(mensaje: string, historial: IMensajeChat[], sesionId: string | null): Observable<IChatbotResponse> {
+    return this.http.post<IChatbotResponse>(this.urlMensaje, { mensaje, historial, sesionId });
   }
 
   buscar(q: string, offset: number): Observable<IChatbotBuscarResponse> {

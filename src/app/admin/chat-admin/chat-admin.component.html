@@ -79,11 +79,22 @@
         <div *ngFor="let msg of sesionActiva.mensajes"
              class="ca-bubble"
              [class.ca-bubble--usuario]="msg.remitente === 'USUARIO'"
-             [class.ca-bubble--admin]="msg.remitente === 'ADMIN'">
+             [class.ca-bubble--admin]="msg.remitente === 'ADMIN'"
+             [class.ca-bubble--bot]="msg.remitente === 'BOT'">
 
           <!-- Mensaje del usuario (cliente) -->
           <ng-container *ngIf="msg.remitente === 'USUARIO'">
             <div class="ca-bubble__avatar">{{ sesionActiva.nombreUsuario.charAt(0).toUpperCase() }}</div>
+            <div class="ca-bubble__body">
+              <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
+              <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>
+            </div>
+          </ng-container>
+
+          <!-- Respuesta del chatbot: se guarda en el mismo historial que el chat en vivo, con
+               remitente BOT, para distinguir lo que contesto el bot de lo que contesto una persona. -->
+          <ng-container *ngIf="msg.remitente === 'BOT'">
+            <div class="ca-bubble__avatar ca-bubble__avatar--bot" title="Respuesta del chatbot">🤖</div>
             <div class="ca-bubble__body">
               <div class="ca-bubble__text">{{ msg.contenido || '…' }}</div>
               <div class="ca-bubble__time">{{ formatHora(msg.timestamp) }}</div>

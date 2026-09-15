@@ -550,8 +550,11 @@ $primary-d: var(--brand-1);
 }
 
 .vf-extra-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
+  // Antes era un tinte blanco fijo (rgba(255,255,255,.04)), que solo se ve sobre fondo oscuro:
+  // en modo dia la tarjeta quedaba invisible, sin fondo ni borde. Va por los mismos tokens que
+  // el resto del admin para que siga al tema.
+  background: var(--form-section-bg, #f8fafc);
+  border: 1px solid var(--card-border, #e2e8f0);
   border-radius: 14px;
   padding: 14px 16px 16px;
   transition: border-color 0.2s;

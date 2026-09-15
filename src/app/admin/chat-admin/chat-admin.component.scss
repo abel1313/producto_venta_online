@@ -369,6 +369,31 @@
 
     .ca-bubble__time { text-align: right; }
   }
+
+  // Respuesta del chatbot (izquierda, como la del cliente pero marcada aparte para que se
+  // distinga de un lado un humano y del otro el bot dentro del mismo historial).
+  &--bot {
+    align-self: flex-start;
+
+    .ca-bubble__body { align-items: flex-start; }
+
+    .ca-bubble__text {
+      background: var(--form-section-bg, #f1f5f9);
+      color: var(--app-text, #1e293b);
+      border-radius: 4px 16px 16px 16px;
+      border: 1px dashed var(--card-border, #cbd5e1);
+    }
+
+    .ca-bubble__time { text-align: left; }
+  }
+
+  &__avatar--bot {
+    background: var(--form-section-bg, #e2e8f0);
+    color: var(--app-text, #1e293b);
+    border: 1px solid var(--card-border, #cbd5e1);
+    box-shadow: none;
+    font-size: 0.85rem;
+  }
 }
 
 // Input

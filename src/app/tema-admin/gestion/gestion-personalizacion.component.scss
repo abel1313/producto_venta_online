@@ -102,7 +102,84 @@
   &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }
   &__desc   { font-size: .76rem; color: var(--app-text-muted); line-height: 1.4; flex: 1; }
 
+  // Cada lado del tema se marca aparte: como dia y noche ya no van juntos, la tarjeta puede
+  // estar "en uso" solo de dia, solo de noche, o de los dos.
+  &__modo {
+    border-radius: 8px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+
+    &--activo {
+      border-color: var(--app-accent);
+      background: var(--app-accent-soft);
+    }
+  }
+
+  &__modo-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--app-text-muted);
+    margin-bottom: 4px;
+  }
+
+  // El color va anidado bajo .pz-preset__modo-label a proposito: styles.scss tiene una regla
+  // global "body.theme-dark h1, h2, ..., span { color: --app-text }" que, por llevar el body en
+  // el selector, le gana a una sola clase. Sin este nivel de mas, el chip queda con el texto del
+  // tema (casi blanco) sobre el fondo del acento (tambien casi blanco de noche) -- ilegible.
+  &__modo-label &__usado {
+    color: var(--app-accent-ink);
+  }
+
+  &__usado {
+    font-size: .64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--app-accent);
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+
+    .pz-btn { flex: 1; margin-top: 0; padding: 9px 10px; font-size: .78rem; }
+  }
+
+  &__ambos { margin-top: 6px; width: 100%; }
+
   .pz-btn { margin-top: 6px; width: 100%; justify-content: center; }
+}
+
+// Que hay puesto en cada lado + interruptor para ver el otro sin esperar a que cambie la hora.
+.pz-modo-actual {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--form-section-bg);
+
+  &__chip {
+    font-size: .78rem;
+    color: var(--app-text-muted);
+
+    strong { color: var(--app-text); font-weight: 700; }
+  }
+
+  &__toggle { margin-left: auto; }
+
+  @media (max-width: 560px) {
+    &__toggle { margin-left: 0; width: 100%; }
+  }
 }
 
 .pz-loading {
@@ -253,6 +330,20 @@
 
     &:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
     &:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  }
+
+  // Secundario: para la accion que NO es la principal de la tarjeta (aplicar a los dos lados,
+  // cambiar el modo que se esta viendo).
+  &--ghost {
+    background: transparent;
+    color: var(--app-text-muted);
+    border: 1px solid var(--card-border);
+    font-weight: 600;
+    font-size: .78rem;
+    padding: 8px 14px;
+
+    &:hover:not(:disabled) { color: var(--app-text); border-color: var(--app-accent); }
+    &:disabled { opacity: .5; cursor: not-allowed; }
   }
 
   &--cancel {

@@ -161,6 +161,20 @@ body.theme-light, [data-theme="light"] {
   --form-bg:           #FFFFFF;
   --form-section-bg:   #E3F2EA;
 
+  /* ── Chat / Chatbot ──
+     La burbuja propia, el avatar, el boton flotante y la cabecera del chat conservan el verde
+     de marca TAMBIEN de noche (es identidad, no un color de superficie) -- por eso no salen de
+     --brand-*, que en el tema oscuro de fabrica es monocromo (blanco/gris) y dejaria el chat
+     gris. Antes ese verde estaba escrito a mano dentro de los .scss del chat, asi que de dia se
+     podia elegir desde Personalizacion y de noche no. Como tokens, el dueno los da de alta en
+     Personalizacion (grupo "Chat") y elige su par claro/oscuro por separado. */
+  --chat-accent:      #00875A;
+  --chat-accent-2:    #005C3D;
+  --chat-accent-3:    #00301F;
+  --chat-accent-mid:  #6B4F22;
+  --chat-accent-ink:  #FFFFFF;
+  --chat-accent-rgb:  0, 135, 90;
+
   /* ── Cabeceras — glassmorphism Aether (mismo cristal del login) ── */
   --header-brand:        rgba(255, 255, 255, 0.78);
   --header-brand-shadow: rgba(var(--app-accent-rgb), 0.12);
@@ -306,6 +320,14 @@ body.theme-dark, [data-theme="dark"] {
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #0C0C0C;
   --form-section-bg:   #151517;
+
+  /* ── Chat / Chatbot (ver el bloque del tema claro) ── */
+  --chat-accent:      #00875A;
+  --chat-accent-2:    #005C3D;
+  --chat-accent-3:    #00301F;
+  --chat-accent-mid:  #6B4F22;
+  --chat-accent-ink:  #FFFFFF;
+  --chat-accent-rgb:  0, 135, 90;
 
   /* ── Cabeceras — cristal sobre negro ── */
   --header-brand:        rgba(12, 12, 12, 0.72);

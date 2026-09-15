@@ -167,17 +167,17 @@
   }
 
   .vc-card {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    background: var(--card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--card-border, rgba(255, 255, 255, 0.08));
+    box-shadow: var(--card-shadow, 0 8px 40px rgba(0, 0, 0, 0.4));
 
-    &__title { color: #f1f5f9; }
-    &__sub   { color: #94a3b8; }
+    &__title { color: var(--app-text, #f1f5f9); }
+    &__sub { color: var(--app-text-muted, #94a3b8); }
   }
 
   .vc-code-input {
-    color: #f1f5f9;
-    border-color: rgba(255, 255, 255, 0.12);
+    color: var(--input-text, #f1f5f9);
+    border-color: var(--input-border, rgba(255, 255, 255, 0.12));
 
     &:focus {
       border-color: var(--brand-1);
@@ -185,7 +185,7 @@
     }
   }
 
-  .vc-resend { color: #94a3b8; }
-  .vc-hint   { color: #64748b; }
-  .vc-back   { color: #64748b; }
+  .vc-resend { color: var(--app-text-muted, #94a3b8); }
+  .vc-hint { color: var(--app-text-muted, #64748b); }
+  .vc-back { color: var(--app-text-muted, #64748b); }
 }

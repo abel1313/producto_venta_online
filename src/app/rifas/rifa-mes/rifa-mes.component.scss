@@ -436,9 +436,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 
   // Botones OUTLINE en noche: borde casi invisible por defecto → reforzar
   .rm-btn--outline {
-    border-color: rgba(255, 255, 255, 0.32);
+    border-color: var(--app-border, rgba(255, 255, 255, 0.32));
     color: var(--app-text, #e2e8f0);
-    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+    &:hover:not(:disabled) { background: var(--table-row-hover, rgba(255, 255, 255, 0.08)); }
   }
 
   // Card ganador: borde amarillo fijo → versión oscura

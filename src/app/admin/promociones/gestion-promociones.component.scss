@@ -340,9 +340,9 @@
 
 // ── Dark mode ─────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .gp-form-card { background: rgba(255,255,255,.04); }
-  .gp-dropdown  { background: var(--card-bg, #18181b); border-color: rgba(255,255,255,.1); }
-  .gp-card      { background: rgba(255,255,255,.04); }
+  .gp-form-card { background: var(--card-bg, rgba(255,255,255,.04)); }
+  .gp-dropdown { background: var(--card-bg, #18181b); border-color: var(--card-border, rgba(255,255,255,.1)); }
+  .gp-card { background: var(--card-bg, rgba(255,255,255,.04)); }
 }
 :host-context(body.theme-light) {
   .gp-form-card { background: var(--card-bg, #fff); }

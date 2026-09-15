@@ -897,9 +897,9 @@
 
   // Botones OUTLINE en noche: --input-border es rgba(255,255,255,0.12) = invisible
   .rf-btn--outline {
-    border-color: rgba(255, 255, 255, 0.32);
+    border-color: var(--app-border, rgba(255, 255, 255, 0.32));
     color: var(--app-text, #e2e8f0);
-    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+    &:hover:not(:disabled) { background: var(--table-row-hover, rgba(255, 255, 255, 0.08)); }
   }
 
   // .rf-card--activas / .rf-activa-row / .rf-importar / .rf-saved-badge / .rf-prod-badge--on

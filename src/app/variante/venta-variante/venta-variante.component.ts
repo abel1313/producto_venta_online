@@ -16,6 +16,7 @@ import { UsuarioService } from 'src/app/shared/usuario.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
+import { hoyIso, hoyMasDiasIso } from '../../shared/fecha.util';
 @Component({
   selector: 'app-venta-variante',
   templateUrl: './venta-variante.component.html',
@@ -66,8 +67,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   // (ver `lugarEsRecogerEnTienda`). Opcional: si el cliente no elige nada, el back la deja en
   // hoy+3 días solo. `min`/`max` acotan el <input type="date"> al mismo rango que valida el back.
   fechaRecogida: string | null = null;
-  readonly minFechaRecogida = new Date().toISOString().split('T')[0];
-  readonly maxFechaRecogida = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  readonly minFechaRecogida = hoyIso();
+  readonly maxFechaRecogida = hoyMasDiasIso(3);
 
   get lugarEsRecogerEnTienda(): boolean {
     return !!this.lugares.find(l => l.id === this.lugarEntregaId)?.esRecogerEnTienda;
@@ -282,7 +283,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       cliente:       { id: clienteId },
       tipoPedido:    tipoPedidoFinal,
       estadoPedido:  esCreditoPedido ? this.tipoPedido : 'Pendiente',
-      fechaPedido:   new Date().toISOString().split('T')[0],
+      fechaPedido:   hoyIso(),
       observaciones: '',
       lugarEntregaId: this.lugarEntregaId ?? undefined,
       fechaRecogida:  (!this.isAdminUser && this.lugarEsRecogerEnTienda) ? (this.fechaRecogida ?? undefined) : undefined,

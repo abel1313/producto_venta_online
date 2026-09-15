@@ -23,6 +23,7 @@ import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
+import { hoyIso } from '../../shared/fecha.util';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
@@ -840,7 +841,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
               monto,
               metodoPago,
               usuarioId: this.idUsuario,
-              fechaPago: new Date().toISOString().slice(0, 10)
+              fechaPago: hoyIso()
             };
             this.abonoService.registrarAbono(pedidoId, abonoBody).subscribe({
               next:  () => mostrarSwalCredito(),

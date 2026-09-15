@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { CATEGORIA_LABELS, CATEGORIAS, CategoriaGasto, IGasto } from '../models/IGastos.model';
 import { GastosService } from '../service/gastos.service';
 
+import { hoyIso } from '../../shared/fecha.util';
 @Component({
   selector: 'app-add',
   templateUrl: './add.component.html',
@@ -48,7 +49,7 @@ export class AddComponent implements OnInit {
     this.buildForm(this.gastoEditando ?? undefined);
   }
 
-  private hoy(): string { return new Date().toISOString().slice(0, 10); }
+  private hoy(): string { return hoyIso(); }
 
   private buildForm(g?: IGasto): void {
     this.gastoForm = this.fb.group({

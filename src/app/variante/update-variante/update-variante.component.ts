@@ -4,8 +4,8 @@ import { Router } from '@angular/router';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
-import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, EMPTY, of } from 'rxjs';
+import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { VarianteService } from '../service/variante.service';
@@ -143,9 +143,13 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
 
     this.busquedaSubject.pipe(
       debounceTime(350),
+      // catchError DENTRO del switchMap: el back contesta 404/400 cuando no encuentra nada, y si
+      // ese error sube al subscribe la suscripcion muere y el buscador deja de responder hasta
+      // recargar la pantalla. Mismo caso que agregar.component.ts.
       switchMap((t: string) => t.length < 3 ? (this.productos = [], EMPTY)
-                                            : this.productoService.getDataNombreCodigoBarra(1, 10, t))
-    ).subscribe({ next: res => { this.productos = res.t ?? []; } });
+                                            : this.productoService.getDataNombreCodigoBarra(1, 10, t)
+                                                  .pipe(catchError(() => of(null))))
+    ).subscribe({ next: res => { this.productos = res?.t ?? []; } });
   }
 
   // ── Producto ───────────────────────────────────────────────────────

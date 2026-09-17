@@ -93,7 +93,7 @@
                 <!-- "Editar" se queda arriba SOLO si esta pantalla no tiene categoría "Tarjeta..."
                      entre sus acciones -- si la tiene, su efecto real vive ahí abajo (el botón ✏️
                      de la tarjeta) y se mueve junto con ese grupo (ver editarVaJuntoATarjeta()). -->
-                <ng-container *ngIf="!editarVaJuntoATarjeta(s)">
+                <ng-container *ngIf="muestraEditar(s) && !editarVaJuntoATarjeta(s)">
                   <label class="gr-check gr-check--escritura"
                          [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
                     <input type="checkbox"
@@ -131,7 +131,7 @@
                       <button type="button" class="gr-info-btn" (click)="verInfoAccion(a)" title="¿Para qué sirve? ¿Dónde lo veo?">ℹ️</button>
                     </div>
                     <!-- "✏️ Editar" de la pantalla, movido aquí -- ver editarVaJuntoATarjeta(). -->
-                    <div class="gr-accion-item" *ngIf="esCategoriaTarjeta(grupo.categoria)">
+                    <div class="gr-accion-item" *ngIf="muestraEditar(s) && esCategoriaTarjeta(grupo.categoria)">
                       <label class="gr-check gr-check--escritura"
                              [title]="!tieneSubmenu(s) ? 'Primero hay que marcar Ver' : (esSubmenuProtegido(s) ? 'Protegida para ROLE_ADMIN -- no se puede quitar' : '')">
                         <input type="checkbox"

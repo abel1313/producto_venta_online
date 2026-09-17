@@ -2,57 +2,11 @@
   <h1>Demo: Comparar Tablas (Frameworks disponibles)</h1>
   <p class="intro">Elige cuál te gusta más para aplicar a todas las tablas del sistema</p>
 
-  <!-- 1. AG Grid Alpine (ACTUAL) -->
+  <!-- 1. Angular Material Table -->
   <section class="demo-section">
     <div class="header-section">
-      <h2>1️⃣ AG Grid Alpine (ACTUAL - básico)</h2>
-      <span class="badge badge-current">Lo que usas ahora</span>
-    </div>
-    <div class="table-wrapper">
-      <ag-grid-angular
-        [rowData]="productos"
-        [columnDefs]="columnasAgGrid"
-        class="ag-theme-alpine demo-ag-grid"
-        [style]="{ width: '100%', height: '300px' }">
-      </ag-grid-angular>
-    </div>
-    <div class="analysis">
-      <p><strong>Pros:</strong> Ligero, funcional, que ya tienes</p>
-      <p><strong>Contras:</strong> Diseño básico, poco visual, "feo"</p>
-    </div>
-  </section>
-
-  <!-- 2. AG Grid Material (PROPUESTA 1) -->
-  <section class="demo-section">
-    <div class="header-section">
-      <h2>2️⃣ AG Grid Material (RECOMENDADO - moderno)</h2>
-      <span class="badge badge-recommended">5 min de cambio</span>
-    </div>
-    <div class="table-wrapper">
-      <ag-grid-angular
-        [rowData]="productos"
-        [columnDefs]="columnasAgGrid"
-        class="ag-theme-material demo-ag-grid"
-        [style]="{ width: '100%', height: '300px' }">
-      </ag-grid-angular>
-    </div>
-    <div class="analysis">
-      <p><strong>Pros:</strong> Moderno, limpio, profesional, cambio mínimo</p>
-      <p><strong>Contras:</strong> Ninguno notable</p>
-      <p class="implementation">📝 <strong>Cómo:</strong> Cambiar en <code>styles.scss</code>:</p>
-      <div class="code-block">
-Reemplazar: ag-theme-alpine.css<br>
-Con: ag-theme-material.css<br>
-Y actualizar las clases de alpine a material
-      </div>
-    </div>
-  </section>
-
-  <!-- 3. Angular Material Table -->
-  <section class="demo-section">
-    <div class="header-section">
-      <h2>3️⃣ Angular Material Table (ELEGANTE)</h2>
-      <span class="badge">Más trabajo</span>
+      <h2>1️⃣ Angular Material Table (ELEGANTE)</h2>
+      <span class="badge badge-recommended">Recomendado</span>
     </div>
     <div class="table-wrapper mat-table-wrapper">
       <table mat-table [dataSource]="productos" class="demo-mat-table">
@@ -107,11 +61,11 @@ Y actualizar las clases de alpine a material
     </div>
   </section>
 
-  <!-- 4. PrimeNG Table -->
+  <!-- 2. PrimeNG Table -->
   <section class="demo-section">
     <div class="header-section">
-      <h2>4️⃣ PrimeNG DataTable (FEATURE-RICH)</h2>
-      <span class="badge">Más fancy</span>
+      <h2>2️⃣ PrimeNG DataTable (FEATURE-RICH)</h2>
+      <span class="badge">Más funcionalidades</span>
     </div>
     <div class="table-wrapper primeng-wrapper">
       <p-table [value]="productos" [tableStyle]="{ 'min-width': '50rem' }" [rows]="5"
@@ -153,16 +107,16 @@ Y actualizar las clases de alpine a material
   <section class="recommendation">
     <h2>💡 Recomendación</h2>
     <div class="recommendation-card">
-      <h3>✅ AG Grid Quartz</h3>
-      <p>Es el equilibrio perfecto:</p>
+      <h3>✅ Angular Material Table</h3>
+      <p>Es la mejor opción para tu sistema:</p>
       <ul>
-        <li>Ya tienes AG Grid funcionando en todas partes</li>
-        <li>Quartz es el tema moderno que AG Grid ofrece</li>
-        <li>Cambio de 5 minutos (2 líneas en <code>styles.scss</code>)</li>
-        <li>Todas las tablas se ven profesionales al mismo tiempo</li>
-        <li>Sin refactor de código, solo cambio de CSS</li>
+        <li>Elegante y profesional, con buena integración visual</li>
+        <li>Componente nativo de Angular Material</li>
+        <li>Fácil de personalizar con tus tokens de diseño</li>
+        <li>Excelente soporte y comunidad activa</li>
+        <li>Hovers, estados y animaciones incluidas</li>
       </ul>
-      <p class="next-step">↓ ¿Hacemos el cambio?</p>
+      <p class="next-step">↓ ¿Empezamos con este framework?</p>
     </div>
   </section>
 

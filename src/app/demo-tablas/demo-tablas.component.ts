@@ -25,15 +25,6 @@ export class DemoTablasComponent implements OnInit {
     { id: 6, nombre: 'Falda Denim', precio: 55.99, stock: 12, estado: 'activo', categoria: 'Faldas' },
   ];
 
-  columnasAgGrid = [
-    { field: 'id', headerName: 'ID', width: 60 },
-    { field: 'nombre', headerName: 'Producto', width: 200 },
-    { field: 'categoria', headerName: 'Categoría', width: 120 },
-    { field: 'precio', headerName: 'Precio', width: 100 },
-    { field: 'stock', headerName: 'Stock', width: 80 },
-    { field: 'estado', headerName: 'Estado', width: 100 },
-  ];
-
   columnasMatTable = ['id', 'nombre', 'categoria', 'precio', 'stock', 'estado'];
 
   columnasEnc = [
@@ -48,10 +39,6 @@ export class DemoTablasComponent implements OnInit {
   constructor() { }
 
   ngOnInit(): void {
-  }
-
-  getEstadoClass(estado: string): string {
-    return estado === 'activo' ? 'estado-activo' : 'estado-inactivo';
   }
 
 }

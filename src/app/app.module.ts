@@ -6,6 +6,7 @@ import { AuthenticateService } from './auth.service';
 import { AuthService } from './auth/auth.service';
 
 import { AppRoutingModule } from './app-routing.module';
+import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavbarComponent } from './navbar/navbar.component';
@@ -28,6 +29,7 @@ import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { FormsModule } from '@angular/forms';
 import { CintaComponent } from './cinta/cinta.component';
+import { DemoTablasModule } from './demo-tablas/demo-tablas.module';
 export function bootstrapAuth(
   acceder: AccederService,
   auth: AuthenticateService,
@@ -87,6 +89,7 @@ export function bootstrapAuth(
     BrowserAnimationsModule,
     HttpClientModule,
     AppRoutingModule,
+    SharedModule,
     ProductoModule,
     VentaProductoModule,
     MisGastosModule,
@@ -94,6 +97,7 @@ export function bootstrapAuth(
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
+    DemoTablasModule,
   ],
   bootstrap: [AppComponent]
 })

@@ -12,7 +12,7 @@
   max-width: 680px;
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: var(--card-radius, 14px);
   overflow: hidden;
   box-shadow: 0 8px 40px rgba(var(--app-accent-rgb),0.14), 0 2px 8px rgba(0,0,0,0.07);
   background: var(--card-bg, #fff);

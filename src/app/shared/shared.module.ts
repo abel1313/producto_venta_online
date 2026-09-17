@@ -9,6 +9,7 @@ import { SelectorUbicacionComponent } from './selector-ubicacion/selector-ubicac
 import { UbicacionLocalComponent } from './ubicacion-local/ubicacion-local.component';
 import { BotonVolverComponent } from './boton-volver/boton-volver.component';
 import { SelectorFechaComponent } from './selector-fecha/selector-fecha.component';
+import { AyudaPantallaComponent } from './ayuda-pantalla/ayuda-pantalla.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { SelectorFechaComponent } from './selector-fecha/selector-fecha.componen
     SelectorUbicacionComponent,
     UbicacionLocalComponent,
     BotonVolverComponent,
-    SelectorFechaComponent
+    SelectorFechaComponent,
+    AyudaPantallaComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule],
   exports:  [
@@ -28,7 +30,8 @@ import { SelectorFechaComponent } from './selector-fecha/selector-fecha.componen
     SelectorUbicacionComponent,
     UbicacionLocalComponent,
     BotonVolverComponent,
-    SelectorFechaComponent
+    SelectorFechaComponent,
+    AyudaPantallaComponent
   ]
 })
 export class SharedModule {}

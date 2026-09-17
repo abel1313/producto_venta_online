@@ -179,7 +179,7 @@
   padding: 1rem 1.25rem;
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, rgba(0,0,0,.08));
-  border-radius: 10px;
+  border-radius: var(--card-radius, 14px);
   display: flex;
   flex-direction: column;
   gap: .3rem;

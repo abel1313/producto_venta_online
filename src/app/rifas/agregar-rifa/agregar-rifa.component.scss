@@ -51,7 +51,7 @@
 
 .rf-card {
   background: var(--card-bg);
-  border-radius: var(--card-radius, 14px);
+  border-radius: var(--form-card-radius, 28px);
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   overflow: hidden;

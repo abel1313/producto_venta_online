@@ -51,6 +51,13 @@ $primary-d: var(--brand-1);
     pointer-events: none;
   }
 
+  // Sin min-width:0 este item de flex no puede bajar de su ancho min-content, y como el header
+  // lleva overflow:hidden el subtitulo se recortaba a media palabra en vez de pasar al siguiente
+  // renglon (reportado en QA: "Solo el model," cortado).
+  &__header-text {
+    min-width: 0;
+  }
+
   &__header-icon {
     font-size: 2.6rem;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
@@ -58,6 +65,7 @@ $primary-d: var(--brand-1);
   }
 
   &__title {
+    overflow-wrap: anywhere;
     font-size: 1.6rem;
     font-weight: 800;
     color: white;
@@ -67,6 +75,7 @@ $primary-d: var(--brand-1);
   }
 
   &__subtitle {
+    overflow-wrap: anywhere;
     font-size: 0.82rem;
     color: rgba(255,255,255,0.7);
     margin: 4px 0 0;

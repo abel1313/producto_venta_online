@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { IPalabraClave } from '../models/palabra-clave.model';
 import { PalabraClaveService } from '../service/palabra-clave.service';
 
@@ -39,9 +39,12 @@ export class PalabraClaveAutocompleteComponent implements OnInit, OnDestroy {
       debounceTime(350),
       distinctUntilChanged(),
       switchMap(t => {
-        if (t.length < 2) { this.opciones = []; return []; }
+        if (t.length < 2) { this.opciones = []; return of([]); }
         this.buscando = true;
-        return this.svc.buscar(t);
+        // catchError DENTRO del switchMap: el handler de error del subscribe de abajo apaga el
+        // spinner pero NO revive la suscripcion -- con un solo error el autocomplete quedaba
+        // muerto hasta recargar la pantalla.
+        return this.svc.buscar(t).pipe(catchError(() => of([])));
       }),
       takeUntil(this.destroy$)
     ).subscribe({

@@ -11,6 +11,7 @@ import { IVentaDirectaRequest } from '../models/ventaDirectaRequest.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IMAGEN_PLACEHOLDER, onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
+import { Constants } from 'src/app/Constants';
 
 @Component({
   selector: 'app-add-venta',
@@ -138,9 +139,21 @@ export class AddVentaComponent implements OnInit {
   buscarProductos(event: KeyboardEvent) {
     const texto = (event.target as HTMLInputElement).value;
     this.buscarProd = texto;
+    // Minimo de caracteres: con 1 o 2 se disparaba una peticion por tecla. Vacio si pasa, para
+    // que al limpiar el input vuelva el listado completo.
+    const termino = texto.trim();
+    if (termino.length > 0 && termino.length < Constants.MIN_CARACTERES_BUSQUEDA) return;
     this.service.getDataNombreCodigoBarra(1, 10, texto).subscribe({
       next: res => { this.paginacionBuscador = res; this.rowsBuscador = res.t; },
-      error: err => Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el producto.' })
+      // 404/400 del back es "no hubo resultados", no una falla: antes saltaba un popup de error
+      // por cada busqueda sin coincidencias.
+      error: err => {
+        if (err.status === 404 || err.status === 400) {
+          this.rowsBuscador = [];
+          return;
+        }
+        Swal.fire({ icon: 'error', title: 'Error al buscar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo buscar el producto.' });
+      }
     });
   }
 

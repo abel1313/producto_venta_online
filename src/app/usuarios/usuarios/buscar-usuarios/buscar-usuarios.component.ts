@@ -3,6 +3,7 @@ import { IProductoPaginable } from 'src/app/productos/producto/models';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { IUsuarioDto } from '../models/usuario.dto';
 import Swal from 'sweetalert2';
+import { Constants } from 'src/app/Constants';
 
 @Component({
   selector: 'app-buscar-usuarios',
@@ -27,7 +28,11 @@ mostrandoInactivos: boolean = false;
     this.buscarProd = texto;
     if (this.buscarProd == '') {
       this.paginaPrimera = 1;
+      this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+      return;
     }
+    // Minimo de caracteres: con 1 o 2 se disparaba una peticion por tecla que no sirve de nada.
+    if (this.buscarProd.trim().length < Constants.MIN_CARACTERES_BUSQUEDA) return;
     this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
   }
 

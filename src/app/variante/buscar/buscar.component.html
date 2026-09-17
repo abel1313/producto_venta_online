@@ -207,6 +207,17 @@
         <input type="checkbox" [checked]="seleccionados.has(v.id)" (change)="toggleSeleccion(v.id)" />
       </label>
 
+      <!-- Boton ✕ dar de baja (baja logica: deja de mostrarse y pierde las fotos, el historial
+           de ventas y pedidos se conserva) -->
+      <button *ngIf="puedeEliminar"
+        type="button"
+        class="vb-card__del-btn"
+        [disabled]="dandoDeBajaId === v.id"
+        (click)="$event.stopPropagation(); confirmarDarDeBaja(v)"
+        title="Dar de baja este modelo">
+        ✕
+      </button>
+
       <!-- Badge deshabilitado (solo admin) -->
       <span *ngIf="esVistaAdmin && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
 

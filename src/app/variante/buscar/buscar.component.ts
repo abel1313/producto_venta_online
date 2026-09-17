@@ -63,6 +63,26 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private productoId = 0;
   get modoPorProducto(): boolean { return this.productoId > 0; }
   private reqId             = 0;
+  /**
+   * Minimo de caracteres para que un termino salga a buscar. Con 1 o 2 el LIKE '%x%' del back
+   * barre casi todo el catalogo y el resultado no le sirve a nadie.
+   */
+  private static readonly MIN_CARACTERES_BUSQUEDA = 3;
+
+  /**
+   * El termino tal como debe salir al back: vacio si no alcanza el minimo. Los filtros
+   * (admin y publicos) lo usan en vez de terminoBusqueda para que un termino corto no se les
+   * cuele -- antes onBuscar() se saltaba el minimo cuando habia filtros activos y con 1 sola
+   * letra ya se disparaba la busqueda (reportado en QA).
+   */
+  private get terminoParaBackend(): string {
+    const t = this.terminoBusqueda.trim();
+    return t.length >= BuscarComponent.MIN_CARACTERES_BUSQUEDA ? t : '';
+  }
+
+  /** id del modelo que se esta dando de baja, para no disparar dos veces. */
+  dandoDeBajaId: number | null = null;
+
   private busquedaSubject = new Subject<string>();
   private destroy$        = new Subject<void>();
 
@@ -132,7 +152,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
         } else if (this.hayFiltrosPublicosActivos) {
           this.aplicarFiltrosPublicos(1);
         } else {
-          this.buscarPagina(termino, 1);
+          // terminoParaBackend y no el termino crudo: si los filtros se apagaron mientras corria
+          // el debounce, un termino de 1-2 letras llegaria aca sin pasar por el minimo.
+          this.buscarPagina(this.terminoParaBackend, 1);
         }
       });
 
@@ -187,7 +209,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const termino = valor.trim();
     const hayFiltros = this.hayFiltrosAdminActivos || this.hayFiltrosPublicosActivos;
     if (termino.length === 0 && !hayFiltros) { this.buscarPagina('', 1); return; }
-    if (termino.length > 0 && termino.length < 3 && !hayFiltros) return;
+    // Con filtros activos si se sigue adelante (hay que reaplicarlos), pero el termino corto no
+    // viaja: los aplicarFiltros* usan terminoParaBackend, que lo deja vacio.
+    if (termino.length > 0 && termino.length < BuscarComponent.MIN_CARACTERES_BUSQUEDA && !hayFiltros) return;
     this.busquedaSubject.next(termino);
   }
 
@@ -286,6 +310,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // frontend, CompartirService no llama ningún endpoint propio.
   get puedeHabilitar(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'habilitar');
+  }
+
+  // Dar de baja un modelo (boton ✕ de la tarjeta). Accion propia, igual que el "eliminar" de
+  // Modelos: se puede otorgar sin otorgar "habilitar". Ver migration_accion_tienda_eliminar.sql.
+  get puedeEliminar(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'eliminar');
   }
 
   get puedeCompartirImagen(): boolean {
@@ -411,7 +441,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.buscando = true;
     this.varianteService.invalidarCache();
     this.varianteService.adminFiltrar({
-      nombreOCodigo: this.terminoBusqueda || undefined,
+      nombreOCodigo: this.terminoParaBackend || undefined,
       conStock: this.paramConStock,
       conImagenes: this.paramConImagenes,
       habilitado: this.paramHabilitado,
@@ -474,7 +504,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.buscando = true;
     this.varianteService.invalidarCache();
     this.varianteService.buscarFiltrado({
-      termino: this.terminoBusqueda.trim() || undefined,
+      termino: this.terminoParaBackend || undefined,
       precioMin: this.filtroPrecioMin ?? undefined,
       precioMax: this.filtroPrecioMax ?? undefined,
       talla: this.filtroTalla || undefined,
@@ -743,6 +773,40 @@ export class BuscarComponent implements OnInit, OnDestroy {
         Swal.fire({ icon: 'success', title: habilitar ? 'Variante habilitada' : 'Variante deshabilitada', timer: 1500, showConfirmButton: false });
       },
       error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cambiar el estado.' })
+    });
+  }
+
+  /**
+   * Baja logica: el back deja el modelo en habilitado=0 y le borra las fotos. El historial de
+   * ventas y pedidos NO se toca, por eso el texto dice "dar de baja" y no "eliminar".
+   */
+  confirmarDarDeBaja(v: IVarianteResumen): void {
+    if (this.dandoDeBajaId) return;
+    Swal.fire({
+      title: `¿Dar de baja ${[v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · ') || 'este modelo'}?`,
+      html: 'Deja de mostrarse en la tienda y <b>pierde sus fotos</b>.<br>'
+          + 'El historial de ventas y pedidos se conserva.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, dar de baja',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.dandoDeBajaId = v.id;
+      this.varianteService.darDeBaja(v.id).pipe(takeUntil(this.destroy$)).subscribe({
+        next: () => {
+          this.dandoDeBajaId = null;
+          this.variantes = this.variantes.filter(x => x.id !== v.id);
+          this.seleccionados.delete(v.id);
+          this.varianteService.invalidarCache();
+          Swal.fire({ icon: 'success', title: 'Modelo dado de baja', timer: 1500, showConfirmButton: false });
+        },
+        error: (err) => {
+          this.dandoDeBajaId = null;
+          Swal.fire({ icon: 'error', title: 'No se pudo dar de baja', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+        }
+      });
     });
   }
 

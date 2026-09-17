@@ -11,3 +11,8 @@
 
 <app-loading></app-loading>
 <app-chatbot></app-chatbot>
+
+<!-- Ayuda contextual del admin: una sola instancia cubre todas las pantallas porque el
+     componente resuelve el texto por la ruta activa. Se oculta solo en las pantallas que no
+     están en el catálogo (tienda pública, login) y en los roles sin el permiso. -->
+<app-ayuda-pantalla [flotante]="true"></app-ayuda-pantalla>

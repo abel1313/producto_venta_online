@@ -12,6 +12,22 @@ export interface IEstadoCargaProducto {
   imagenId: number | null;
   urlImagen: string | null;
   mensajeErrorImagen: string | null;
+
+  // Lo que ya se capturó del borrador: con esto el formulario se reabre con los
+  // datos guardados en vez de en blanco. `codigoBarras` llega null mientras el
+  // producto conserve el placeholder autogenerado (BRD-...).
+  nombre?: string | null;
+  precioCosto?: number | null;
+  piezas?: number | null;
+  color?: string | null;
+  precioVenta?: number | null;
+  precioRebaja?: number | null;
+  descripcion?: string | null;
+  marca?: string | null;
+  contenido?: string | null;
+  palabraClaveId?: number | null;
+  palabraClaveNombre?: string | null;
+  codigoBarras?: string | null;
 }
 
 // Todos los campos son opcionales — se manda solo lo que el usuario ya llenó.

@@ -1,7 +1,10 @@
-// PREVIEW — OPCIÓN D: Gris antracita puro
+// Mismo header que "Agregar producto" (variante/agregar/agregar.component.scss). Las dos
+// pantallas habían quedado con previews distintos de la misma decisión de diseño -- esta con un
+// gris antracita fijo y la otra con el verde de marca -- así que el Catálogo se veía de dos
+// colores segun la pantalla.
 :host {
-  --header-brand:        linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
-  --header-brand-shadow: rgba(24,24,27,0.35);
+  --header-brand:        linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 55%, var(--brand-1) 100%);
+  --header-brand-shadow: rgba(var(--app-accent-rgb),0.35);
 }
 
 $primary:   var(--brand-2);
@@ -22,8 +25,10 @@ $t: all 0.22s ease;
 .pf-card {
   width: 100%;
   max-width: 820px;
-  background: var(--form-bg);
-  border-radius: 24px;
+  background: var(--card-bg);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
 
@@ -414,6 +419,16 @@ $t: all 0.22s ease;
 
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.pf-faltantes {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+  text-align: center;
+
+  b { color: var(--app-text); }
 }
 
 // ── Modal cámara ───────────────────────────────────────────────────

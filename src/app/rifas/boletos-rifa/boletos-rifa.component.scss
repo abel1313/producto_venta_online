@@ -502,12 +502,37 @@
 .br-ganador__premio { margin-top: 10px; }
 
 // ── Ruleta ────────────────────────────────────────────────────────────
+// El ancho real lo fija el componente con [style.maxWidth.px]: la ruleta crece conforme
+// entran más boletos. El 100% de aquí es el techo en celular, para que no se salga nunca
+// de la pantalla por más participantes que haya.
 .br-ruleta-wrap {
   position: relative;
+  width: 100%;
   max-width: 420px;
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
 
-  canvas { width: 100%; }
+  canvas { width: 100%; height: auto; display: block; }
+}
+
+.br-ruleta-nota { text-align: center; margin: 0 0 12px; }
+
+// El mismo número y color que lleva la rebanada en la ruleta: es lo que permite
+// identificar de quién es cada pedazo sin escribir el nombre dentro del canvas.
+.br-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+
+  &--fuera { background: var(--app-text-muted); opacity: .6; }
 }
 
 .br-ruleta-flecha {
@@ -553,6 +578,17 @@
     cursor: pointer;
 
     &:hover { background: var(--form-section-bg); }
+  }
+
+  // Empuja el conteo de boletos a la derecha y corta con "…" los nombres largos
+  // en vez de desbordar la fila en celular.
+  &__nombre {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
   }
 
   &__body {

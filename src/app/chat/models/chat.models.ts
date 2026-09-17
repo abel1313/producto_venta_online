@@ -21,7 +21,8 @@ export interface ChatConexionResponse {
 
 export interface EventoUsuario {
   tipo: 'MENSAJE' | 'SESION_CERRADA';
-  remitente?: 'ADMIN' | null;
+  // BOT = lo contestó el asistente; ADMIN = lo contestó una persona del negocio.
+  remitente?: 'ADMIN' | 'BOT' | null;
   contenido?: string | null;
   timestamp?: string | null;
 }
@@ -32,6 +33,9 @@ export interface EventoAdmin {
   nombreUsuario: string;
   contenido?: string;
   timestamp?: string;
+  // Quién escribió el mensaje que se está anunciando. Sin esto el panel pintaba como del cliente
+  // lo que había contestado el asistente.
+  remitente?: 'USUARIO' | 'BOT';
 }
 
 export interface SesionActiva {
@@ -41,10 +45,13 @@ export interface SesionActiva {
   fechaInicio: string;
   ultimaActividad: string;
   ultimoMensaje: string | null;
+  // Mensajes del cliente que nadie contestó. Lo calcula el back para que el globito de no-leídos
+  // también aparezca en los que llegaron con el panel del admin cerrado.
+  sinResponder?: number;
 }
 
 export interface MensajeHistorial {
-  remitente: 'USUARIO' | 'ADMIN';
+  remitente: 'USUARIO' | 'ADMIN' | 'BOT';
   contenido: string;
   timestamp: string;
 }
@@ -64,7 +71,7 @@ export interface ApiResponse<T> {
 }
 
 export interface MensajeUI {
-  remitente: 'USUARIO' | 'ADMIN';
+  remitente: 'USUARIO' | 'ADMIN' | 'BOT';
   contenido: string;
   timestamp: string;
 }

@@ -110,7 +110,11 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    background: var(--card-header-bg);
+    // El fallback NO es decorativo: el texto del header es blanco fijo, así que si el token no
+    // resuelve (la personalización del negocio llega por API y puede tardar, o un tema guardado
+    // viejo no trae esta variable) el fondo queda transparente y en modo claro el título
+    // desaparece sobre la card blanca -- en oscuro no se nota, y por eso pasó desapercibido.
+    background: var(--card-header-bg, #00875A);
   }
 
   &__body {
@@ -154,7 +158,9 @@
     gap: 6px;
     padding: 10px 12px;
     border-top: 1px solid var(--card-border);
-    background: var(--card-footer-bg);
+    // Mismo motivo que el header: sin fallback el footer queda transparente si el token no
+    // resuelve. --card-bg sirve de respaldo porque el footer es alias suyo mientras no se edite.
+    background: var(--card-footer-bg, var(--card-bg));
   }
 
   // Badge flotante de estado (esquina) -- alternativa más chica a __estado

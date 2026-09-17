@@ -143,14 +143,14 @@
 
     .form-control {
       background: var(--form-section-bg, #27272a);
-      border-color: rgba(255,255,255,0.15);
+      border-color: var(--app-border, rgba(255,255,255,0.15));
       color: var(--app-text, #e2e8f0);
-      &::placeholder { color: rgba(148,163,184,0.6); }
+      &::placeholder { color: var(--input-placeholder, rgba(148,163,184,0.6)); }
       &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.2); }
     }
 
     .btn-primary { background: var(--app-accent); border-color: var(--app-accent); }
-    .btn-outline-secondary { color: var(--app-text-muted, #94a3b8); border-color: rgba(255,255,255,0.2); }
+    .btn-outline-secondary { color: var(--app-text-muted, #94a3b8); border-color: var(--app-border, rgba(255,255,255,0.2)); }
     .card-header.bg-primary { background: linear-gradient(135deg, var(--brand-3), var(--brand-2)) !important; }
   }
 }

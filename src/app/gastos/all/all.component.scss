@@ -472,18 +472,18 @@
 :host-context(body.theme-dark) {
   .ga-input, .ga-select {
     color-scheme: dark;
-    color: #f1f5f9;
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.22);
-    &::placeholder { color: #64748b; }
+    color: var(--input-text, #f1f5f9);
+    background: var(--input-bg, rgba(255, 255, 255, 0.07));
+    border-color: var(--input-border, rgba(255, 255, 255, 0.22));
+    &::placeholder { color: var(--input-placeholder, #64748b); }
   }
 
   // Badges categóricos (inventario/operativo/servicios/otros): paleta propia, no semántica --
   // se quedan igual en los dos modos a propósito, no se tocan.
   .ga-badge--inventario       { background: rgba(99, 102, 241, 0.25);  color: #a5b4fc; }
-  .ga-badge--operativo        { background: rgba(245, 158, 11, 0.25);  color: #fbbf24; }
+  .ga-badge--operativo { background: rgba(245, 158, 11, 0.25);  color: var(--pk-warning-to, #fbbf24); }
   .ga-badge--servicios        { background: rgba(16, 185, 129, 0.25);  color: #34d399; }
-  .ga-badge--otros            { background: rgba(100, 116, 139, 0.25); color: #94a3b8; }
+  .ga-badge--otros { background: rgba(100, 116, 139, 0.25); color: var(--app-text-muted, #94a3b8); }
 
   // .ga-badge--estado-entregado / .ga-tabla__ganancia / .ga-reporte__valor--pos/--neg /
   // .ga-reporte__neta-valor ya no se sobreescriben acá -- ahora usan var(--pk-success/-danger),

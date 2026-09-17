@@ -158,18 +158,18 @@
   .db-page { background: var(--page-bg, #09090b); }
 
   .db-header {
-    background: linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    background: var(--card-header-bg, linear-gradient(135deg, #18181b 0%, #27272a 55%, #3f3f46 100%));
+    box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.4));
   }
 
   .db-card {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: var(--card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--card-border, rgba(255, 255, 255, 0.08));
+    box-shadow: var(--card-shadow, 0 2px 8px rgba(0, 0, 0, 0.3));
 
     &:hover {
-      background: rgba(255, 255, 255, 0.07);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      background: var(--card-bg, rgba(255, 255, 255, 0.07));
+      box-shadow: var(--card-shadow-hover, 0 6px 18px rgba(0, 0, 0, 0.4));
     }
   }
 

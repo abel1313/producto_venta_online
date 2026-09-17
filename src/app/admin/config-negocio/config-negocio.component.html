@@ -156,12 +156,56 @@
 
       <hr class="cn-divider">
 
-      <!-- ── 4. Alertas de stock bajo ──────────────────────────────── -->
+      <!-- ── 4. Ubicación del local ─────────────────────────────────
+           Lo que ve el cliente en el login y en el registro. El punto se marca con el mismo
+           selector de mapa del punto de encuentro de las entregas. -->
+      <div class="cn-section">
+        <p class="cn-section__label">📍 Ubicación del local</p>
+        <p class="cn-section__hint">
+          Se muestra en el inicio de sesión y en el registro, antes de que el cliente entre. Al
+          tocarla se le abre Google Maps con la ruta desde donde esté hasta aquí.
+        </p>
+
+        <div class="cn-field">
+          <label class="cn-label">Dirección que verá el cliente</label>
+          <input class="cn-input" type="text" maxlength="255"
+                 placeholder="Ej. Av. Hidalgo 24, Centro"
+                 [(ngModel)]="direccionLocal" [ngModelOptions]="{ standalone: true }">
+        </div>
+
+        <app-selector-ubicacion
+          [lat]="latitudLocal"
+          [lng]="longitudLocal"
+          [centroDefault]="centroMapa"
+          (ubicacionCambio)="onUbicacionCambio($event)">
+        </app-selector-ubicacion>
+
+        <p class="cn-falta" *ngIf="faltaParaUbicacion">{{ faltaParaUbicacion }}</p>
+
+        <div class="cn-ubicacion-acciones">
+          <button class="cn-btn cn-btn--save"
+                  [disabled]="guardandoUbicacion || !configCargada || !!faltaParaUbicacion"
+                  [title]="!configCargada ? 'Espera a que cargue lo que ya está guardado' : ''"
+                  (click)="guardarUbicacion()">
+            💾 Guardar ubicación
+          </button>
+          <button class="cn-btn cn-btn--quitar"
+                  *ngIf="estado?.latitud != null"
+                  [disabled]="guardandoUbicacion"
+                  (click)="quitarUbicacion()">
+            Quitar
+          </button>
+        </div>
+      </div>
+
+      <hr class="cn-divider">
+
+      <!-- ── 5. Alertas de stock bajo ──────────────────────────────── -->
       <div class="cn-section">
         <p class="cn-section__label">📦 Alertas de stock bajo</p>
         <p class="cn-section__hint">
           Todos los días a las 7:00 a.m. se manda un correo a los administradores con las
-          variantes que estén en este número de unidades o menos.
+          productos que estén en este número de unidades o menos.
         </p>
 
         <form [formGroup]="alertaStockForm" class="cn-grid">

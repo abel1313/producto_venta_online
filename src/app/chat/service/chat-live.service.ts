@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { Client } from '@stomp/stompjs';
+import { Client, StompSubscription } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
@@ -28,6 +28,13 @@ export class ChatLiveService implements OnDestroy {
   private paginaActual    = 0;
   private cargandoMasFlag = false;
   private nombreUsuario   = '';
+  // Mensajes escritos mientras no había sesión válida. Se envían al quedar lista la nueva.
+  private pendientes: string[] = [];
+  private reintentosSesion = 0;
+  // Se guarda para poder soltarla antes de volver a suscribirse. Ahora el back reusa el mismo
+  // sesionId del usuario, así que sin esto una reconexión dejaba DOS suscripciones vivas al mismo
+  // canal y cada mensaje del admin se pintaba duplicado.
+  private subCanal: StompSubscription | null = null;
   private timeoutRestaurado: any;
   private onOffline = () => this.estadoConexion$.next('sin-internet');
   private onOnline  = () => this.estadoConexion$.next('reconectando');
@@ -136,17 +143,26 @@ export class ChatLiveService implements OnDestroy {
   }
 
   private suscribirseAlCanal(sesionId: string): void {
-    this.client.subscribe(`/topic/chat.usuario.${sesionId}`, msg => {
+    this.subCanal?.unsubscribe();
+    this.subCanal = this.client.subscribe(`/topic/chat.usuario.${sesionId}`, msg => {
       const evento: EventoUsuario = JSON.parse(msg.body);
       if (evento.tipo === 'SESION_CERRADA') {
         this.sesionId = null;
         sessionStorage.removeItem(SESION_KEY);
         this.sesionCerrada$.next();
+        // El back rechaza la sesión cuando ya no existe en la base. Si quedaba algo por mandar se
+        // abre una sesión nueva para entregarlo; el contador evita insistir para siempre.
+        if (this.pendientes.length && this.client?.active && this.reintentosSesion < 2) {
+          this.reintentosSesion++;
+          this.iniciarNuevaSesion();
+        }
       } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
-        this.agregarMensaje('ADMIN', evento.contenido, evento.timestamp ?? undefined);
+        // Puede venir del asistente (BOT) o de una persona (ADMIN). Antes se asumía ADMIN siempre.
+        this.agregarMensaje(evento.remitente === 'BOT' ? 'BOT' : 'ADMIN', evento.contenido, evento.timestamp ?? undefined);
       }
     });
     this.conectado$.next(true);
+    this.vaciarPendientes();
   }
 
   private marcarRestaurado(): void {
@@ -161,19 +177,33 @@ export class ChatLiveService implements OnDestroy {
     if (!contenido?.trim()) return;
 
     if (!this.sesionId) {
-      // Sesión expirada (5 min de inactividad) → reconectar y recargar historial
+      // Sesión expirada (5 min de silencio). Antes se abría una sesión nueva pero el mensaje que
+      // el cliente acababa de escribir se tiraba: nunca llegaba al admin y el cliente no se
+      // enteraba. Ahora se guarda y se manda solo en cuanto la sesión nueva queda lista.
+      this.pendientes.push(contenido);
       if (this.client?.active) {
-        this.cargarHistorial(0);
-        this.iniciarNuevaSesion();
+        this.cargarHistorial(0, () => this.iniciarNuevaSesion());
       }
       return;
     }
 
+    this.publicar(contenido);
+  }
+
+  private publicar(contenido: string): void {
     this.client.publish({
       destination: '/app/chat.mensaje',
       body: JSON.stringify({ sesionId: this.sesionId, contenido })
     });
     this.agregarMensaje('USUARIO', contenido);
+  }
+
+  private vaciarPendientes(): void {
+    if (!this.sesionId || !this.pendientes.length) return;
+    const cola = [...this.pendientes];
+    this.pendientes = [];
+    this.reintentosSesion = 0;
+    cola.forEach(contenido => this.publicar(contenido));
   }
 
   cargarMasAntiguos(): void {
@@ -182,7 +212,7 @@ export class ChatLiveService implements OnDestroy {
     this.cargarHistorial(this.paginaActual + 1, () => { this.cargandoMasFlag = false; });
   }
 
-  private agregarMensaje(remitente: 'USUARIO' | 'ADMIN', contenido: string, timestamp?: string): void {
+  private agregarMensaje(remitente: 'USUARIO' | 'ADMIN' | 'BOT', contenido: string, timestamp?: string): void {
     const ts = timestamp ?? nowLocalIso();
     this.mensajes$.next([...this.mensajes$.value, { remitente, contenido, timestamp: ts }]);
   }
@@ -191,6 +221,8 @@ export class ChatLiveService implements OnDestroy {
     clearTimeout(this.timeoutRestaurado);
     window.removeEventListener('offline', this.onOffline);
     window.removeEventListener('online',  this.onOnline);
+    this.subCanal?.unsubscribe();
+    this.subCanal = null;
     if (this.client?.active) this.client.deactivate();
     this.sesionId = null;
     sessionStorage.removeItem(SESION_KEY);
@@ -201,6 +233,8 @@ export class ChatLiveService implements OnDestroy {
     this.paginaActual    = 0;
     this.cargandoMasFlag = false;
     this.usuarioId       = null;
+    this.pendientes      = [];
+    this.reintentosSesion = 0;
   }
 
   ngOnDestroy(): void {

@@ -49,27 +49,27 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
 // ── Dark mode ──────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   ::ng-deep .ag-theme-alpine {
-    --ag-header-background-color: rgba(255, 255, 255, 0.05);
-    --ag-background-color: #1e1e2e;
-    --ag-odd-row-background-color: rgba(255, 255, 255, 0.03);
-    --ag-border-color: rgba(255, 255, 255, 0.08);
+    --ag-header-background-color: var(--table-header-bg, rgba(255, 255, 255, 0.05));
+    --ag-background-color: var(--card-bg, #1e1e2e);
+    --ag-odd-row-background-color: var(--table-row-hover, rgba(255, 255, 255, 0.03));
+    --ag-border-color: var(--table-border, rgba(255, 255, 255, 0.08));
     --ag-header-foreground-color: var(--app-text, #e2e8f0);
     --ag-foreground-color: var(--app-text, #cbd5e1);
-    --ag-row-hover-color: rgba(255, 255, 255, 0.04);
+    --ag-row-hover-color: var(--table-row-active, rgba(255, 255, 255, 0.04));
     --ag-selected-row-background-color: rgba(var(--app-accent-rgb), 0.15);
     --ag-icon-color: var(--app-text-muted, #94a3b8);
-    --ag-header-column-resize-handle-color: rgba(255, 255, 255, 0.2);
-    --ag-cell-horizontal-border: solid rgba(255, 255, 255, 0.06);
-    --ag-input-border-color: rgba(255, 255, 255, 0.15);
+    --ag-header-column-resize-handle-color: var(--table-border, rgba(255, 255, 255, 0.2));
+    --ag-cell-horizontal-border: solid var(--table-border, rgba(255, 255, 255, 0.06));
+    --ag-input-border-color: var(--input-border, rgba(255, 255, 255, 0.15));
     --ag-input-focus-border-color: var(--app-accent, var(--brand-1));
 
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    border-color: var(--app-border, rgba(255, 255, 255, 0.1));
+    box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.3));
 
     .ag-header-cell-label { color: var(--app-text-muted, #94a3b8); }
     .ag-paging-panel      { color: var(--app-text-muted, #94a3b8); }
-    .ag-row-even { background-color: #1e1e2e; }
-    .ag-row-odd  { background-color: rgba(255,255,255,0.03); }
+    .ag-row-even { background-color: var(--card-bg, #1e1e2e); }
+    .ag-row-odd { background-color: var(--table-row-hover, rgba(255,255,255,0.03)); }
   }
 
   label { color: var(--app-text, #e2e8f0); }

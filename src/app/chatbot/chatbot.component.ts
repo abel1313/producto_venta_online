@@ -28,6 +28,11 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   minimizado        = true;
   mensajes:         IBurbuja[] = [];
   historial:        IMensajeChat[] = [];
+
+  // Hilo de la conversacion con el bot. Se guarda en el navegador para que al recargar la pagina
+  // los mensajes nuevos sigan cayendo en la misma sesion y el dueno los lea juntos, no partidos.
+  private static readonly CLAVE_SESION = 'chatbot_sesion_id';
+  private sesionId: string | null = null;
   inputTexto        = '';
   cargando          = false;
   imagenesVariante  = new Map<number, string>();
@@ -74,6 +79,8 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.sesionId = this.leerSesionId();
+
     // ⚠️ getEstado() ya devuelve el objeto desenvuelto (ver negocio.service.ts) -- antes este
     // código hacía `res.data`, un nivel de más, así que `estado` quedaba `undefined` y
     // `estado.abierto` tiraba un TypeError dentro del `next` (que el `error:` del mismo
@@ -123,6 +130,17 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.pendingScroll = true;
   }
 
+  // localStorage puede tronar (modo privado, cookies bloqueadas). Si no se puede leer o escribir,
+  // la conversacion igual funciona: solo se guarda como una sesion nueva cada vez.
+  private leerSesionId(): string | null {
+    try { return localStorage.getItem(ChatbotComponent.CLAVE_SESION); } catch { return null; }
+  }
+
+  private guardarSesionId(sesionId: string): void {
+    this.sesionId = sesionId;
+    try { localStorage.setItem(ChatbotComponent.CLAVE_SESION, sesionId); } catch { /* sin persistencia */ }
+  }
+
   // ── Envío ─────────────────────────────────────────────────────────
 
   enviar(): void {
@@ -135,9 +153,10 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.mensajes.push({ rol: 'typing', contenido: '' });
     this.pendingScroll = true;
 
-    this.chatbotService.enviar(texto, this.historial.slice(-10)).subscribe({
+    this.chatbotService.enviar(texto, this.historial.slice(-10), this.sesionId).subscribe({
       next: (res: IChatbotResponse) => {
         this.mensajes = this.mensajes.filter(m => m.rol !== 'typing');
+        if (res.sesionId) this.guardarSesionId(res.sesionId);
         const burbuja: IBurbuja = {
           rol:             'assistant',
           contenido:       res.respuesta,

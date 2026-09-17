@@ -16,15 +16,30 @@
   <section class="pz-presets">
     <div class="pz-presets__title">✨ Diseños predefinidos</div>
     <p class="pz-presets__sub">Aplica una paleta completa (Marca, Página, Card, Tablas, Menú lateral,
-      Formularios) de un clic -- cada diseño trae su propia versión de día y de noche, no hace
-      falta elegir aparte. Pasa el mouse para previsualizar (la app cambia sola de día/noche según
-      la hora, así que aquí abajo ves las dos de un jalón).</p>
-    <div class="pz-presets__grid">
-      <div class="pz-preset" *ngFor="let p of presets"
-           (mouseenter)="previsualizarPreset(p)" (mouseleave)="quitarPreviewPreset()">
+      Formularios) de un clic. El día y la noche se eligen <strong>por separado</strong>: puedes
+      dejar un diseño para el día y otro distinto para la noche. Con el botón de abajo cambias lo
+      que estás viendo ahora mismo, para revisar cómo te queda cada lado.</p>
 
-        <div class="pz-preset__modo">
-          <span class="pz-preset__modo-label">☀️ Día</span>
+    <!-- Qué hay puesto en cada lado + interruptor para ver el otro. Sin esto había que esperar
+         a que cambiara la hora (o salir al menú) para ver el diseño de noche que se eligió. -->
+    <div class="pz-modo-actual">
+      <span class="pz-modo-actual__chip">
+        ☀️ Día: <strong>{{ nombrePresetActivo('dia') || 'personalizado a mano' }}</strong>
+      </span>
+      <span class="pz-modo-actual__chip">
+        🌙 Noche: <strong>{{ nombrePresetActivo('noche') || 'personalizado a mano' }}</strong>
+      </span>
+      <button type="button" class="pz-btn pz-btn--ghost pz-modo-actual__toggle" (click)="theme.toggle()">
+        Estás viendo el modo {{ theme.isDark ? '🌙 noche' : '☀️ día' }} — ver el otro
+      </button>
+    </div>
+    <div class="pz-presets__grid">
+      <div class="pz-preset" *ngFor="let p of presets">
+
+        <div class="pz-preset__modo" [class.pz-preset__modo--activo]="presetActivo(p, 'dia')">
+          <span class="pz-preset__modo-label">☀️ Día
+            <span class="pz-preset__usado" *ngIf="presetActivo(p, 'dia')">en uso</span>
+          </span>
           <div class="pz-preset__swatches">
             <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].claro" title="Marca"></span>
             <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].claro" title="Header de card"></span>
@@ -32,8 +47,10 @@
           </div>
         </div>
 
-        <div class="pz-preset__modo">
-          <span class="pz-preset__modo-label">🌙 Noche</span>
+        <div class="pz-preset__modo" [class.pz-preset__modo--activo]="presetActivo(p, 'noche')">
+          <span class="pz-preset__modo-label">🌙 Noche
+            <span class="pz-preset__usado" *ngIf="presetActivo(p, 'noche')">en uso</span>
+          </span>
           <div class="pz-preset__swatches">
             <span class="pz-preset__swatch" [style.background]="p.valores['brand-1'].oscuro" title="Marca"></span>
             <span class="pz-preset__swatch" [style.background]="p.valores['card-header-bg'].oscuro" title="Header de card"></span>
@@ -43,9 +60,24 @@
 
         <div class="pz-preset__nombre">{{ p.nombre }}</div>
         <div class="pz-preset__desc">{{ p.descripcion }}</div>
-        <button type="button" class="pz-btn pz-btn--save" [disabled]="aplicandoPreset === p.id"
-                (click)="aplicarPreset(p)">
-          {{ aplicandoPreset === p.id ? 'Aplicando…' : 'Aplicar este diseño' }}
+        <!-- Un botón por lado del tema: aplicar de día NO toca la noche y viceversa. El tercero
+             es el atajo de siempre (los dos lados de un jalón) para quien no quiera combinar. -->
+        <div class="pz-preset__acciones">
+          <button type="button" class="pz-btn pz-btn--save" [disabled]="aplicandoPreset"
+                  (mouseenter)="previsualizarPreset(p, 'dia')" (mouseleave)="quitarPreviewPreset()"
+                  (click)="aplicarPreset(p, 'dia')">
+            {{ aplicandoPreset === p.id + ':dia' ? 'Aplicando…' : '☀️ Usar de día' }}
+          </button>
+          <button type="button" class="pz-btn pz-btn--save" [disabled]="aplicandoPreset"
+                  (mouseenter)="previsualizarPreset(p, 'noche')" (mouseleave)="quitarPreviewPreset()"
+                  (click)="aplicarPreset(p, 'noche')">
+            {{ aplicandoPreset === p.id + ':noche' ? 'Aplicando…' : '🌙 Usar de noche' }}
+          </button>
+        </div>
+        <button type="button" class="pz-btn pz-btn--ghost pz-preset__ambos" [disabled]="aplicandoPreset"
+                (mouseenter)="previsualizarPreset(p, 'ambos')" (mouseleave)="quitarPreviewPreset()"
+                (click)="aplicarPreset(p, 'ambos')">
+          {{ aplicandoPreset === p.id + ':ambos' ? 'Aplicando…' : 'Usar para día y noche' }}
         </button>
       </div>
     </div>

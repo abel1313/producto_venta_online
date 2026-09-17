@@ -58,8 +58,14 @@ export class ChatAdminService implements OnDestroy {
       if (evento.tipo === 'NUEVA_SESION') {
         this.agregarSesion(evento);
       } else if (evento.tipo === 'MENSAJE' && evento.contenido) {
-        this.agregarMensajeEnSesion(evento.sesionId, 'USUARIO', evento.contenido, evento.timestamp);
-        this.incrementarNoLeidos(evento.sesionId);
+        const deQuien = evento.remitente === 'BOT' ? 'BOT' : 'USUARIO';
+        // Antes de pintar el mensaje: si llegó, el back ya reabrió la sesión. Sin esto el panel se
+        // quedaba con el 'CERRADA' que trajo el REST y dejaba bloqueado el recuadro de respuesta.
+        this.reactivar(evento.sesionId);
+        this.agregarMensajeEnSesion(evento.sesionId, deQuien, evento.contenido, evento.timestamp);
+        // Lo que ya contestó el asistente no deja pendiente al dueño: sólo cuenta como no leído
+        // lo que escribió el cliente.
+        if (deQuien === 'USUARIO') this.incrementarNoLeidos(evento.sesionId);
       }
     });
 
@@ -75,7 +81,16 @@ export class ChatAdminService implements OnDestroy {
         const actuales = this.sesiones$.value;
         const nuevas: SesionUI[] = sesiones.map(s => {
           const existente = actuales.find(a => a.sesionId === s.sesionId);
-          return existente ?? { ...s, mensajes: [], noLeidos: 0, hayMasAntiguos: false, paginaHistorial: 0 };
+          // noLeidos arranca con lo que el back calculó: los mensajes que llegaron mientras el
+          // panel estaba cerrado no se anuncian por WebSocket (el topic no guarda nada), así que
+          // sin esto la sesión se veía idéntica a una ya atendida.
+          return existente ?? {
+            ...s,
+            mensajes: [],
+            noLeidos: s.sinResponder ?? 0,
+            hayMasAntiguos: false,
+            paginaHistorial: 0
+          };
         });
         this.sesiones$.next(nuevas);
       }
@@ -138,7 +153,11 @@ export class ChatAdminService implements OnDestroy {
 
   private agregarSesion(evento: EventoAdmin): void {
     const actual = this.sesiones$.value;
-    if (actual.find(s => s.sesionId === evento.sesionId)) return;
+    if (actual.find(s => s.sesionId === evento.sesionId)) {
+      // El back reusa la conversación del cliente: si estaba CERRADA ya la reabrió al reconectarse.
+      this.reactivar(evento.sesionId);
+      return;
+    }
     const nueva: SesionUI = {
       sesionId: evento.sesionId,
       nombreUsuario: evento.nombreUsuario,
@@ -156,7 +175,7 @@ export class ChatAdminService implements OnDestroy {
 
   private agregarMensajeEnSesion(
     sesionId: string,
-    remitente: 'USUARIO' | 'ADMIN',
+    remitente: 'USUARIO' | 'ADMIN' | 'BOT',
     contenido: string,
     timestamp?: string
   ): void {
@@ -167,6 +186,12 @@ export class ChatAdminService implements OnDestroy {
       ultimoMensaje: contenido,
       ultimaActividad: ts
     }));
+  }
+
+  // El back reabre sola la conversación cuando el cliente vuelve a escribir (no exige que el dueño
+  // haga nada). El panel tiene que reflejarlo o el textarea y el botón de enviar siguen apagados.
+  private reactivar(sesionId: string): void {
+    this.actualizarSesion(sesionId, s => s.estado === 'ACTIVA' ? s : { ...s, estado: 'ACTIVA' });
   }
 
   private incrementarNoLeidos(sesionId: string): void {

@@ -369,6 +369,31 @@
 
     .ca-bubble__time { text-align: right; }
   }
+
+  // Respuesta del chatbot (izquierda, como la del cliente pero marcada aparte para que se
+  // distinga de un lado un humano y del otro el bot dentro del mismo historial).
+  &--bot {
+    align-self: flex-start;
+
+    .ca-bubble__body { align-items: flex-start; }
+
+    .ca-bubble__text {
+      background: var(--form-section-bg, #f1f5f9);
+      color: var(--app-text, #1e293b);
+      border-radius: 4px 16px 16px 16px;
+      border: 1px dashed var(--card-border, #cbd5e1);
+    }
+
+    .ca-bubble__time { text-align: left; }
+  }
+
+  &__avatar--bot {
+    background: var(--form-section-bg, #e2e8f0);
+    color: var(--app-text, #1e293b);
+    border: 1px solid var(--card-border, #cbd5e1);
+    box-shadow: none;
+    font-size: 0.85rem;
+  }
 }
 
 // Input
@@ -468,48 +493,48 @@
 // Dark mode
 :host-context(body.theme-dark) {
   .ca-sidebar {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,255,255,0.08);
+    background: var(--form-section-bg, rgba(255,255,255,0.04));
+    border-color: var(--app-border, rgba(255,255,255,0.08));
 
     &__header {
       color: var(--app-text, #e2e8f0);
-      border-color: rgba(255,255,255,0.08);
+      border-color: var(--app-border, rgba(255,255,255,0.08));
     }
   }
 
   .ca-session-item {
-    border-color: rgba(255,255,255,0.06);
-    &:hover { background: rgba(255,255,255,0.04); }
+    border-color: var(--app-border, rgba(255,255,255,0.06));
+    &:hover { background: var(--table-row-hover, rgba(255,255,255,0.04)); }
     &--active { background: rgba(var(--app-accent-rgb),0.12); }
     &__name { color: var(--app-text, #e2e8f0); }
   }
 
   .ca-chat {
     &__header {
-      background: rgba(255,255,255,0.04);
-      border-color: rgba(255,255,255,0.08);
+      background: var(--form-section-bg, rgba(255,255,255,0.04));
+      border-color: var(--app-border, rgba(255,255,255,0.08));
     }
     &__input-area {
-      background: rgba(255,255,255,0.04);
-      border-color: rgba(255,255,255,0.08);
+      background: var(--input-bg, rgba(255,255,255,0.04));
+      border-color: var(--input-border, rgba(255,255,255,0.08));
     }
     &__name { color: var(--app-text, #e2e8f0); }
   }
 
   .ca-chat__messages {
-    background: linear-gradient(180deg, rgba(var(--app-accent-rgb),0.06) 0%, rgba(30,41,59,0.3) 100%);
+    background: linear-gradient(180deg, rgba(var(--app-accent-rgb),0.06) 0%, var(--card-bg, rgba(30,41,59,0.3)) 100%);
   }
 
   .ca-bubble--usuario .ca-bubble__text {
-    background: rgba(255,255,255,0.07);
+    background: var(--form-section-bg, rgba(255,255,255,0.07));
     color: var(--app-text, #e2e8f0);
-    border-color: rgba(255,255,255,0.1);
+    border-color: var(--app-border, rgba(255,255,255,0.1));
     box-shadow: none;
   }
 
   .ca-input {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.12);
+    background: var(--input-bg, rgba(255,255,255,0.06));
+    border-color: var(--input-border, rgba(255,255,255,0.12));
     color: var(--app-text, #e2e8f0);
   }
 
@@ -517,9 +542,9 @@
   // var(--pk-danger-soft/-to), que trae su propia variante oscura.
 
   .ca-banner-cerrada {
-    background: rgba(255,255,255,0.04);
+    background: var(--form-section-bg, rgba(255,255,255,0.04));
     color: var(--app-text-muted, #94a3b8);
-    border-color: rgba(255,255,255,0.08);
+    border-color: var(--app-border, rgba(255,255,255,0.08));
   }
 
   .ca-btn--cargar-mas {

@@ -6,8 +6,10 @@ import { ImagenSrcPipe } from '../productos/producto/pipes/imagen-src.pipe';
 import { PalabraClaveAutocompleteComponent } from '../palabras-clave/autocomplete/palabra-clave-autocomplete.component';
 import { UppercaseInputDirective } from './directives/uppercase-input.directive';
 import { SelectorUbicacionComponent } from './selector-ubicacion/selector-ubicacion.component';
+import { UbicacionLocalComponent } from './ubicacion-local/ubicacion-local.component';
 import { BotonVolverComponent } from './boton-volver/boton-volver.component';
 import { SelectorFechaComponent } from './selector-fecha/selector-fecha.component';
+import { AyudaPantallaComponent } from './ayuda-pantalla/ayuda-pantalla.component';
 
 @NgModule({
   declarations: [
@@ -15,8 +17,10 @@ import { SelectorFechaComponent } from './selector-fecha/selector-fecha.componen
     PalabraClaveAutocompleteComponent,
     UppercaseInputDirective,
     SelectorUbicacionComponent,
+    UbicacionLocalComponent,
     BotonVolverComponent,
-    SelectorFechaComponent
+    SelectorFechaComponent,
+    AyudaPantallaComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule],
   exports:  [
@@ -24,8 +28,10 @@ import { SelectorFechaComponent } from './selector-fecha/selector-fecha.componen
     PalabraClaveAutocompleteComponent,
     UppercaseInputDirective,
     SelectorUbicacionComponent,
+    UbicacionLocalComponent,
     BotonVolverComponent,
-    SelectorFechaComponent
+    SelectorFechaComponent,
+    AyudaPantallaComponent
   ]
 })
 export class SharedModule {}

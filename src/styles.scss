@@ -9,6 +9,9 @@
 
 @import 'ag-grid-community/styles/ag-grid.css';
 @import 'ag-grid-community/styles/ag-theme-alpine.css';
+@import 'ag-grid-community/styles/ag-theme-material.css';
+@import 'primeng/resources/themes/lara-light-blue/theme.css';
+@import 'primeng/resources/primeng.min.css';
 @import 'design-system';
 /* ════════════════════════════════════════════════
    SISTEMA TIPOGRÁFICO — Poppins
@@ -130,6 +133,12 @@ body.theme-light, [data-theme="light"] {
   --card-shadow:       0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
   --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
   --card-radius:       14px;
+  /* Radio de la card que envuelve un FORMULARIO de captura. Va aparte de --card-radius (el de
+     las cards de listado) porque el form es una hoja grande y centrada, y con el radio chico de
+     los listados se ve cuadrado. Antes cada form traía el suyo hardcodeado -- 28, 24, 20, 16 y
+     14px conviviendo -- y por eso dos pantallas de alta no se parecían entre sí (2026-09-17).
+     El valor es el de "Nuevo Producto" (tienda/venta), que se tomó como estándar. */
+  --form-card-radius:  28px;
 
   /* ── Estados semánticos (2026-08-28) -- éxito/alerta/peligro/info, un solo
      origen para todo lo que hoy cada pantalla hardcodeaba a mano con su propio
@@ -160,6 +169,20 @@ body.theme-light, [data-theme="light"] {
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #FFFFFF;
   --form-section-bg:   #E3F2EA;
+
+  /* ── Chat / Chatbot ──
+     La burbuja propia, el avatar, el boton flotante y la cabecera del chat conservan el verde
+     de marca TAMBIEN de noche (es identidad, no un color de superficie) -- por eso no salen de
+     --brand-*, que en el tema oscuro de fabrica es monocromo (blanco/gris) y dejaria el chat
+     gris. Antes ese verde estaba escrito a mano dentro de los .scss del chat, asi que de dia se
+     podia elegir desde Personalizacion y de noche no. Como tokens, el dueno los da de alta en
+     Personalizacion (grupo "Chat") y elige su par claro/oscuro por separado. */
+  --chat-accent:      #00875A;
+  --chat-accent-2:    #005C3D;
+  --chat-accent-3:    #00301F;
+  --chat-accent-mid:  #6B4F22;
+  --chat-accent-ink:  #FFFFFF;
+  --chat-accent-rgb:  0, 135, 90;
 
   /* ── Cabeceras — glassmorphism Aether (mismo cristal del login) ── */
   --header-brand:        rgba(255, 255, 255, 0.78);
@@ -278,6 +301,7 @@ body.theme-dark, [data-theme="dark"] {
   --card-shadow:       0 4px 20px rgba(0,0,0,0.65);
   --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.75);
   --card-radius:       14px;
+  --form-card-radius:  28px;
 
   /* ── Estados semánticos -- tonos más claros que en modo claro para que
      mantengan contraste sobre fondo oscuro (mismo criterio ya usado en otros
@@ -306,6 +330,14 @@ body.theme-dark, [data-theme="dark"] {
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #0C0C0C;
   --form-section-bg:   #151517;
+
+  /* ── Chat / Chatbot (ver el bloque del tema claro) ── */
+  --chat-accent:      #00875A;
+  --chat-accent-2:    #005C3D;
+  --chat-accent-3:    #00301F;
+  --chat-accent-mid:  #6B4F22;
+  --chat-accent-ink:  #FFFFFF;
+  --chat-accent-rgb:  0, 135, 90;
 
   /* ── Cabeceras — cristal sobre negro ── */
   --header-brand:        rgba(12, 12, 12, 0.72);

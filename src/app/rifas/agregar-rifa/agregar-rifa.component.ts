@@ -1,5 +1,5 @@
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
@@ -12,10 +12,12 @@ import { IConcursante, IClientePedido, IOmitidoYaRegistrado } from '../models/co
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa, IHistorialVariante } from '../models/estado-rifa.model';
 import { RifaService, ModoContinuacion } from '../service/rifa.service';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 
+import { hoyIso } from '../../shared/fecha.util';
 Chart.register(ArcElement, PieController, ChartDataLabels);
 
 type Paso = 'configurar' | 'ruleta' | 'transicion' | 'resumen';
@@ -125,6 +127,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   descartadoActual: IConcursante | null = null;
   ganadorActual: IGanadorRifa | null = null;
   confettiPieces: { left: string; color: string; delay: string; duration: string; size: string }[] = [];
+
+  /** Número y color con los que cada concursante aparece en la ruleta. */
+  private numeros = new Map<number, number>();
+  medidas: IMedidasRuleta = medidasRuleta(0, 1024);
 
   // ── Transición — opciones ──────────────────────────────────────────
   modoElegido: ModoContinuacion | null = null;
@@ -238,11 +244,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     }
 
     // Cargar todas las rifas DIARIA de hoy → mostrar como wizard anteriores
-    // Fecha LOCAL, no UTC: `toISOString()` en México (UTC-6) devuelve el día siguiente a
-    // partir de las 6 de la tarde, y entonces las rifas de hoy no aparecían.
-    const ahora = new Date();
-    const dosDig = (n: number) => String(n).padStart(2, '0');
-    const hoy = `${ahora.getFullYear()}-${dosDig(ahora.getMonth() + 1)}-${dosDig(ahora.getDate())}`;
+    const hoy = hoyIso();
     this.rifaService.buscarConfiguraciones({ tipo: 'DIARIA', desde: hoy, hasta: hoy }).subscribe({
       next: rifas => {
         for (const r of rifas) {
@@ -1157,34 +1159,64 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     return this.elegibles.findIndex(c => c.id === concursanteId);
   }
 
+  numeroDe(c?: IConcursante | null): number { return c?.id ? (this.numeros.get(c.id) ?? 0) : 0; }
+
+  colorDe(c?: IConcursante | null): string { return colorRuleta(this.numeroDe(c)); }
+
+  /**
+   * Al girar la pantalla o cambiar de tamaño la ventana hay que recalcular: la ruleta que
+   * cabía en vertical no es la misma que cabe en horizontal. Se salta durante el giro para
+   * no cortar la animación a media vuelta.
+   */
+  @HostListener('window:resize')
+  alRedimensionar(): void {
+    if (this.sorteando) return;
+    this.generarRuleta();
+  }
+
   private generarRuleta(): void {
     this.chart?.destroy();
+
+    // Los números se reparten sobre TODOS los concursantes, descartados incluidos: así el
+    // número de cada quien no se recorre cuando alguien sale de la ruleta. Va antes del
+    // return de abajo porque el panel de descartados los necesita aunque ya no haya
+    // elegibles y por tanto no haya ruleta que dibujar.
+    this.numeros = numerosDeParticipantes(
+      [...this.elegibles, ...this.descartados].map(c => c.id!).filter(id => !!id)
+    );
+
     if (!this.elegibles.length || !this.ruletaCanvas) return;
 
     this.ruletaSlots = this.construirSlotsRuleta();
-    const colorPorConcursante = new Map<number, string>();
-    const backgroundColor = this.ruletaSlots.map(c => {
-      const id = c.id!;
-      if (!colorPorConcursante.has(id)) colorPorConcursante.set(id, this.colorAleatorio());
-      return colorPorConcursante.get(id)!;
-    });
+    this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
+    const backgroundColor = this.ruletaSlots.map(c => this.colorDe(c));
 
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
-        labels: this.ruletaSlots.map(c => this.nombreCompleto(c)),
+        // En la rebanada va el número del concursante, no su nombre: el nombre completo no
+        // cabe en cuanto hay más de un puñado de boletos. El nombre se lee en el panel de
+        // elegibles, que trae el mismo número y el mismo color.
+        labels: this.ruletaSlots.map(c => String(this.numeroDe(c))),
         datasets: [{
           data: Array(this.ruletaSlots.length).fill(1),
-          backgroundColor
+          backgroundColor,
+          borderWidth: 1
         }]
       },
       options: {
         responsive: true, animation: false,
         plugins: {
-          legend: { display: true, position: 'bottom' },
+          // La leyenda de Chart.js listaba un renglón POR SLOT: con 30 boletos ocupaba más
+          // alto que la propia ruleta y repetía el mismo nombre una vez por boleto. El panel
+          // de elegibles ya cumple esa función, agrupado por persona.
+          legend: { display: false },
           datalabels: {
-            color: 'white', anchor: 'center', align: 'center',
-            font: { size: 13, weight: 'bold' },
+            display: this.medidas.mostrarNumeros,
+            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
+            // caen casi en el mismo punto y se enciman entre si.
+            color: 'white', anchor: 'end', align: 'start', offset: 6,
+            font: { size: this.medidas.fuente, weight: 'bold' },
             formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
           }
         }
@@ -1228,7 +1260,4 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     setTimeout(() => { this.confettiPieces = []; }, 6000);
   }
 
-  private colorAleatorio(): string {
-    return '#' + Array.from({ length: 6 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('');
-  }
 }

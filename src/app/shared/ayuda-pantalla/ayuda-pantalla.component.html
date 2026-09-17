@@ -1,0 +1,63 @@
+<!-- El icono solo existe si hay explicación cargada y el rol tiene el permiso concedido. -->
+<button *ngIf="puedeVer && ayuda"
+        type="button"
+        class="ap-boton"
+        [class.ap-boton--flotante]="flotante"
+        (click)="abrir()"
+        [attr.aria-label]="'Qué es esta pantalla: ' + ayuda.titulo"
+        title="¿Qué hace esta pantalla?">
+  <span aria-hidden="true">?</span>
+</button>
+
+<div *ngIf="abierto && ayuda"
+     class="ap-overlay"
+     (click)="cerrar()"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="ap-titulo">
+
+  <!-- stopPropagation: un clic dentro del panel no debe cerrar el modal. -->
+  <div class="ap-panel" (click)="$event.stopPropagation()">
+
+    <header class="ap-panel__header">
+      <div>
+        <p class="ap-panel__eyebrow">Qué es esta pantalla</p>
+        <h2 class="ap-panel__titulo" id="ap-titulo">{{ ayuda.titulo }}</h2>
+      </div>
+      <button type="button" class="ap-panel__cerrar" (click)="cerrar()" aria-label="Cerrar">×</button>
+    </header>
+
+    <div class="ap-panel__body">
+
+      <p class="ap-resumen">{{ ayuda.queEs }}</p>
+
+      <section class="ap-bloque">
+        <h3 class="ap-bloque__titulo">Para qué sirve</h3>
+        <ul class="ap-lista">
+          <li *ngFor="let punto of ayuda.paraQue">{{ punto }}</li>
+        </ul>
+      </section>
+
+      <!-- El bloque que resuelve la confusión: solo aparece si de verdad hay otra pantalla
+           parecida con la que se puede equivocar. -->
+      <section class="ap-bloque ap-bloque--diferencia" *ngIf="ayuda.diferencia?.length">
+        <h3 class="ap-bloque__titulo">En qué se diferencia</h3>
+        <div class="ap-diferencia" *ngFor="let d of ayuda.diferencia">
+          <p class="ap-diferencia__pantalla">vs. {{ d.pantalla }}</p>
+          <p class="ap-diferencia__texto">{{ d.explicacion }}</p>
+        </div>
+      </section>
+
+      <section class="ap-bloque ap-bloque--porque" *ngIf="ayuda.porQue">
+        <h3 class="ap-bloque__titulo">Por qué está hecha así</h3>
+        <p class="ap-bloque__texto">{{ ayuda.porQue }}</p>
+      </section>
+
+    </div>
+
+    <footer class="ap-panel__footer">
+      <button type="button" class="ap-btn-ok" (click)="cerrar()">Entendido</button>
+    </footer>
+
+  </div>
+</div>

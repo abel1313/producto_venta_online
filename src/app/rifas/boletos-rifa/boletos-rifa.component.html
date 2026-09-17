@@ -470,10 +470,18 @@
 
           <div class="pk-empty" *ngIf="!boletosEnJuego.length && !rifaTerminada">No hay boletos en juego.</div>
 
-          <div class="br-ruleta-wrap" *ngIf="boletosEnJuego.length">
+          <div class="br-ruleta-wrap" *ngIf="boletosEnJuego.length" [style.maxWidth.px]="medidas.lado">
             <div class="br-ruleta-flecha">▼</div>
             <canvas #ruletaCanvas></canvas>
           </div>
+
+          <p class="pk-text pk-text--sm pk-text--muted br-ruleta-nota" *ngIf="boletosEnJuego.length">
+            <ng-container *ngIf="medidas.mostrarNumeros">Cada rebanada es un boleto y lleva el
+              número de su participante — el mismo número y color están en las tablas de abajo.</ng-container>
+            <ng-container *ngIf="!medidas.mostrarNumeros">Hay tantos boletos que el número ya no cabe
+              dentro de la rebanada: cada color es un participante y los nombres están abajo.</ng-container>
+            Toca una rebanada para ver su detalle.
+          </p>
 
           <div class="br-descartado" *ngIf="descartadoActual">
             ❌ Descartado: <b>{{ descartadoActual.nombreCompleto }}</b> — {{ etiquetaBoleto(descartadoActual) }}
@@ -520,7 +528,8 @@
           <div class="pk-empty" *ngIf="!gruposEnJuego.length">Sin boletos en juego.</div>
           <div class="br-grupo" *ngFor="let g of gruposEnJuego">
             <button type="button" class="br-grupo__head" (click)="g.expandido = !g.expandido">
-              <span>{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
+              <span class="br-num" [style.background]="colorDe(g.concursanteId)">{{ numeroDe(g.concursanteId) }}</span>
+              <span class="br-grupo__nombre">{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
               <span class="pk-text pk-text--sm pk-text--muted">{{ g.boletos.length }} boleto(s)</span>
             </button>
             <div class="br-grupo__body" *ngIf="g.expandido">
@@ -539,7 +548,8 @@
           <div class="pk-empty" *ngIf="!gruposDescartados.length">Todavía no hay boletos descartados.</div>
           <div class="br-grupo" *ngFor="let g of gruposDescartados">
             <button type="button" class="br-grupo__head" (click)="g.expandido = !g.expandido">
-              <span>{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
+              <span class="br-num br-num--fuera">{{ numeroDe(g.concursanteId) }}</span>
+              <span class="br-grupo__nombre">{{ g.expandido ? '▾' : '▸' }} {{ g.nombreCompleto }}</span>
               <span class="pk-text pk-text--sm pk-text--muted">{{ g.boletos.length }} descartado(s)</span>
             </button>
             <div class="br-grupo__body" *ngIf="g.expandido">

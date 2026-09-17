@@ -1,0 +1,123 @@
+<div class="demo-container">
+  <h1>Demo: Comparar Tablas (Frameworks disponibles)</h1>
+  <p class="intro">Elige cuál te gusta más para aplicar a todas las tablas del sistema</p>
+
+  <!-- 1. Angular Material Table -->
+  <section class="demo-section">
+    <div class="header-section">
+      <h2>1️⃣ Angular Material Table (ELEGANTE)</h2>
+      <span class="badge badge-recommended">Recomendado</span>
+    </div>
+    <div class="table-wrapper mat-table-wrapper">
+      <table mat-table [dataSource]="productos" class="demo-mat-table">
+
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matRowDef="let row">{{ row.id }}</td>
+        </ng-container>
+
+        <!-- Nombre Column -->
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Producto</th>
+          <td mat-cell *matRowDef="let row">{{ row.nombre }}</td>
+        </ng-container>
+
+        <!-- Categoría Column -->
+        <ng-container matColumnDef="categoria">
+          <th mat-header-cell *matHeaderCellDef>Categoría</th>
+          <td mat-cell *matRowDef="let row">{{ row.categoria }}</td>
+        </ng-container>
+
+        <!-- Precio Column -->
+        <ng-container matColumnDef="precio">
+          <th mat-header-cell *matHeaderCellDef>Precio</th>
+          <td mat-cell *matRowDef="let row">${{ row.precio }}</td>
+        </ng-container>
+
+        <!-- Stock Column -->
+        <ng-container matColumnDef="stock">
+          <th mat-header-cell *matHeaderCellDef>Stock</th>
+          <td mat-cell *matRowDef="let row">{{ row.stock }}</td>
+        </ng-container>
+
+        <!-- Estado Column -->
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matRowDef="let row">
+            <span [ngClass]="'badge ' + (row.estado === 'activo' ? 'bg-success' : 'bg-danger')">
+              {{ row.estado }}
+            </span>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnasMatTable"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnasMatTable;"></tr>
+      </table>
+    </div>
+    <div class="analysis">
+      <p><strong>Pros:</strong> Elegante, integrado con Material, hover effects</p>
+      <p><strong>Contras:</strong> Menos features que AG Grid, requiere refactor código</p>
+    </div>
+  </section>
+
+  <!-- 2. PrimeNG Table -->
+  <section class="demo-section">
+    <div class="header-section">
+      <h2>2️⃣ PrimeNG DataTable (FEATURE-RICH)</h2>
+      <span class="badge">Más funcionalidades</span>
+    </div>
+    <div class="table-wrapper primeng-wrapper">
+      <p-table [value]="productos" [tableStyle]="{ 'min-width': '50rem' }" [rows]="5"
+               [paginator]="true" [globalFilterFields]="['nombre', 'categoria']"
+               responsiveLayout="scroll" class="demo-primeng">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td [innerHTML]="row.id | number"></td>
+            <td [innerHTML]="row.nombre"></td>
+            <td [innerHTML]="row.categoria"></td>
+            <td [innerHTML]="'$' + (row.precio | number: '1.2-2')"></td>
+            <td [innerHTML]="row.stock | number"></td>
+            <td>
+              <span [ngClass]="'badge ' + (row.estado === 'activo' ? 'bg-success' : 'bg-danger')">
+                <span [innerHTML]="row.estado"></span>
+              </span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    <div class="analysis">
+      <p><strong>Pros:</strong> Muy feature-rich (sort, filter, paginación integrada), componente robusto</p>
+      <p><strong>Contras:</strong> Más verboso, overlap con Material, requiere módulo PrimeNG</p>
+    </div>
+  </section>
+
+  <!-- RECOMENDACIÓN FINAL -->
+  <section class="recommendation">
+    <h2>💡 Recomendación</h2>
+    <div class="recommendation-card">
+      <h3>✅ Angular Material Table</h3>
+      <p>Es la mejor opción para tu sistema:</p>
+      <ul>
+        <li>Elegante y profesional, con buena integración visual</li>
+        <li>Componente nativo de Angular Material</li>
+        <li>Fácil de personalizar con tus tokens de diseño</li>
+        <li>Excelente soporte y comunidad activa</li>
+        <li>Hovers, estados y animaciones incluidas</li>
+      </ul>
+      <p class="next-step">↓ ¿Empezamos con este framework?</p>
+    </div>
+  </section>
+
+</div>

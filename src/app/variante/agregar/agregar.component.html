@@ -8,7 +8,7 @@
       <span class="vf-card__header-icon">🧩</span>
       <div>
         <h3 class="vf-card__title">Nuevo Producto</h3>
-        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
+        <p class="vf-card__subtitle">Lo que se vende: un modelo con su talla y color. Solo el modelo es obligatorio</p>
       </div>
     </div>
 
@@ -16,7 +16,8 @@
 
       <!-- ── Búsqueda de producto ────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Producto <span class="vf-required">*</span></p>
+        <p class="vf-section__label">Modelo <span class="vf-required">*</span>
+          <span style="opacity:.6;font-weight:400">— el artículo base al que le vas a dar talla y color</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
           <div class="vf-product-search__wrap">
@@ -24,7 +25,7 @@
             <input
               class="vf-product-search__input"
               type="text"
-              placeholder="Buscar nombre o código…"
+              placeholder="Buscar modelo por nombre o código…"
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"
@@ -137,13 +138,13 @@
         type="button"
         (click)="propagarCampos()"
         title="Copia color, presentación, marca, contenido y descripción del formulario principal a todos los productos extra">
-        ↓ Propagar campos del formulario principal a las {{ totalExtras }} variante(s) extra
+        ↓ Propagar campos del formulario principal a los {{ totalExtras }} producto(s) extra
       </button>
 
       <!-- ── Variantes extra ───────────────────────────────────────── -->
       <div *ngIf="totalExtras > 0" class="vf-extras">
         <p class="vf-section__label">
-          Variantes adicionales
+          Productos adicionales
           <span class="vf-extras__count">{{ totalExtras }}</span>
         </p>
 
@@ -254,8 +255,13 @@
         [disabled]="!productoSeleccionado || guardando"
         (click)="guardar()"
       >
-        💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' variantes' : 'variante' }}
+        💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' productos' : 'producto' }}
       </button>
+
+      <p class="vf-faltantes" *ngIf="!productoSeleccionado">
+        Falta elegir el <b>modelo</b> en el buscador de arriba.
+        La imagen es opcional — no bloquea el guardado.
+      </p>
 
     </div>
   </div>

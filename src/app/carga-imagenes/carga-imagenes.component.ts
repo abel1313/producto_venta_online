@@ -238,6 +238,28 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     t.reintentando       = false;
   }
 
+  // Copia a la tarjeta lo que se acaba de mandar al back. Solo los campos presentes en el
+  // body, que son los que el back realmente pisó: `limpiar()` ya quitó los vacíos y el back
+  // trata un campo ausente como "no tocar", así que la tarjeta queda igual que la base.
+  private aplicarCapturado(productoId: number, guardado: ICompletarProducto): void {
+    const t = this.tarjetas.find(x => x.productoId === productoId);
+    if (!t) { return; }
+    if (guardado.nombre        !== undefined) { t.nombre       = guardado.nombre; }
+    if (guardado.marca         !== undefined) { t.marca        = guardado.marca; }
+    if (guardado.color         !== undefined) { t.color        = guardado.color; }
+    if (guardado.precioCosto   !== undefined) { t.precioCosto  = guardado.precioCosto; }
+    if (guardado.precioVenta   !== undefined) { t.precioVenta  = guardado.precioVenta; }
+    if (guardado.precioRebaja  !== undefined) { t.precioRebaja = guardado.precioRebaja; }
+    if (guardado.piezas        !== undefined) { t.piezas       = guardado.piezas; }
+    if (guardado.contenido     !== undefined) { t.contenido    = guardado.contenido; }
+    if (guardado.descripcion   !== undefined) { t.descripcion  = guardado.descripcion; }
+    if (guardado.codigoBarras  !== undefined) { t.codigoBarras = guardado.codigoBarras; }
+    if (guardado.palabraClaveId !== undefined) {
+      t.palabraClaveId     = guardado.palabraClaveId;
+      t.palabraClaveNombre = this.palabraClaveSel?.nombre ?? null;
+    }
+  }
+
   // ---------- Reintentar (solo tarjetas FALLIDO) ----------
 
   onReintentar(t: ITarjetaCaptura, event: Event): void {
@@ -271,14 +293,32 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   // ---------- Completar el borrador ----------
 
+  // Reabre el borrador con lo que ya se guardó. Antes el formulario arrancaba siempre en
+  // `{ piezas: 1 }`, así que después de "Guardar avance" —que sí persiste en el back— al
+  // volver a abrir la misma tarjeta todo salía vacío y se leía como que no había guardado.
+  // El código de barras autogenerado (BRD-...) sigue sin precargarse: el back lo manda como
+  // null a propósito para que el campo quede libre y se capture el real.
   abrirForm(t: ITarjetaCaptura): void {
     if (t.estadoImagen !== 'EXITOSO') { return; }
     this.editando = t;
     this.errorForm = '';
-    this.palabraClaveSel = null;
-    // El código de barras autogenerado (BRD-...) nunca se muestra ni se precarga:
-    // el campo arranca vacío para que el usuario capture el real.
-    this.form = { piezas: 1 };
+    this.palabraClaveSel = t.palabraClaveId && t.palabraClaveNombre
+      ? { id: t.palabraClaveId, nombre: t.palabraClaveNombre }
+      : null;
+    this.form = {
+      nombre:         t.nombre        ?? undefined,
+      marca:          t.marca         ?? undefined,
+      color:          t.color         ?? undefined,
+      precioCosto:    t.precioCosto   ?? undefined,
+      precioVenta:    t.precioVenta   ?? undefined,
+      precioRebaja:   t.precioRebaja  ?? undefined,
+      // Un borrador nuevo nace sin piezas; el 1 es el default de captura de siempre.
+      piezas:         t.piezas        ?? 1,
+      contenido:      t.contenido     ?? undefined,
+      descripcion:    t.descripcion   ?? undefined,
+      codigoBarras:   t.codigoBarras  ?? undefined,
+      palabraClaveId: t.palabraClaveId ?? undefined
+    };
   }
 
   cerrarForm(): void {
@@ -349,6 +389,10 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     this.svc.completar(productoId, body).subscribe({
       next: () => {
         this.guardando = false;
+        // La tarjeta se queda con lo que acaba de entrar al back. Sin esto el avance solo
+        // se veía después de recargar la pantalla (que es cuando /borradores lo trae de
+        // vuelta): al reabrir la tarjeta en la misma sesión el formulario salía en blanco.
+        this.aplicarCapturado(productoId, body);
         // Al publicar, el borrador deja de ser un pendiente: se saca de la
         // grilla local de inmediato en vez de esperar a que el usuario
         // navegue a otra pantalla y regrese para que "desaparezca".

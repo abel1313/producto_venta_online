@@ -17,7 +17,7 @@ $accent-light: #fef3c7;
   width: 100%;
   max-width: 740px;
   background: var(--card-bg);
-  border-radius: 20px;
+  border-radius: var(--card-radius, 14px);
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
 

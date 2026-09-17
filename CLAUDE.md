@@ -12210,3 +12210,75 @@ confirmado legible en ambos modos.
 **Regla a futuro:** cualquier `<select>` nuevo ya queda cubierto por la regla global de
 `styles.scss` — no hace falta acordarse de repetir el parche por componente salvo que se quiera
 un color de fondo/borde distinto al default (`#ffffff`/`#1f2937`).
+
+---
+
+## Estándar de diseño — cards, formularios y tablas (2026-09-17)
+
+Antes de esta fecha cada pantalla traía su propio radio y su propio fondo hardcodeados
+(28, 24, 20, 16 y 14px conviviendo; fondos en `--card-bg`, `--app-surface` y hasta
+`--form-section-bg`), y por eso dos pantallas de alta no se parecían entre sí. Ahora hay
+**dos estándares, uno para formularios y otro para cards**, y ambos salen de tokens.
+
+### Formularios → el de `tienda/venta` ("Nuevo Producto")
+
+Es la pantalla que se tomó como referencia. Un formulario es una **hoja grande y centrada**,
+por eso lleva un radio más generoso que las cards de listado:
+
+```scss
+.xx-card {                                   // el contenedor que envuelve el <form>
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--form-card-radius, 28px);   // ← token propio de formularios
+  box-shadow: var(--card-shadow);
+}
+```
+
+`--form-card-radius: 28px` está declarado en `src/styles.scss`, en los dos temas.
+**Un formulario nuevo usa ese token, nunca un valor en px.**
+
+### Cards → el de `pedidos/mis-pedidos`
+
+La card es un tile de listado. Usa `.pk-card` del design-system (`src/design-system.scss`),
+con la estructura `__header` / `__body` / `__footer` (las tres opcionales):
+
+```scss
+.xx-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);        // ← token de cards, más chico
+  box-shadow: var(--card-shadow);
+}
+```
+
+**Lo que se homologa es el diseño y el color, no el contenido.** Cada card conserva sus
+propios botones y sus propias filas: la de pedidos trae badges de estado, la de tienda trae
+otras cosas. Eso está bien y no se toca.
+
+### Qué NO tocar
+
+- **Login y Registro quedan fuera** de este estándar (y de Personalización, ver regla de 2026-09-03).
+  Tienen su propio diseño a propósito.
+- `tema-admin/gestion` (`.pv-card`) usa `--card-header-bg` como fondo **a propósito**: es el
+  preview de Personalización, tiene que pintar el color que el usuario está eligiendo.
+- `variante/venta-directa` y `usuarios/add-usuarios` **no son cards**: son layouts partidos
+  (paneles lado a lado / imagen + formulario). Homologarlos sería rediseñarlos, no cambiar un
+  token — quedaron fuera a propósito.
+
+### Trampa conocida: el header sin fallback
+
+`.pk-card__header` pinta texto **blanco fijo** sobre `--card-header-bg`. Ese token viaja en la
+personalización del negocio, que llega por API y puede tardar. Si se usa sin fallback, el fondo
+queda transparente y **en modo claro el título desaparece sobre la card blanca** (en oscuro no
+se nota, y por eso pasó desapercibido mucho tiempo). Siempre:
+
+```scss
+background: var(--card-header-bg, #00875A);
+```
+
+### Tablas — PENDIENTE de decidir
+
+Hoy conviven 4 estilos: `pk-table` (lugares-entrega, local pese al prefijo `pk-`),
+`rp-table` (reportes, con columnas numéricas), `ga-tabla` (gastos, con columna de acciones) y
+`ez-tabla` (entregas-zona, compacta). **Todavía no se eligió el estándar** — no homologar
+tablas hasta que se decida cuál gana.

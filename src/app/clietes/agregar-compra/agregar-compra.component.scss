@@ -14,7 +14,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .amc-card {
   width: 100%;
   max-width: 480px;
-  border-radius: $radius;
+  border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
   background: var(--card-bg, #fff);

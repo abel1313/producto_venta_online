@@ -24,8 +24,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Input() pedido!: IPedidoGenerico;
   @Output() regresarProductos = new EventEmitter<boolean>();
 
-  // Base correcta del microservicio de imágenes: GET /imagen/v1/{productoId}
-  public env: string = environment.api_Url + '/imagen/v1/';
+  // Base correcta del microservicio de imágenes: GET /v1/imagenes/{productoId}
+  public env: string = environment.api_Url + '/v1/imagenes/';
 
   // ── Detalle rico (promoción, talla/color, fecha+hora, imagen) ────────
   detalle: PedidoDetalleResponse | null = null;

@@ -5,7 +5,7 @@
 
 .venta-card {
   border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
 
@@ -14,7 +14,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.65rem 1rem;
-    background: var(--form-section-bg);
+    background: var(--card-bg);
     border-bottom: 1px solid var(--card-border);
     gap: 0.75rem;
     flex-wrap: wrap;

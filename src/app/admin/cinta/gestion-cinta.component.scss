@@ -39,9 +39,9 @@
 }
 
 .gca-card {
-  background: var(--form-section-bg, var(--app-surface));
+  background: var(--card-bg);
   border: 1.5px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--form-card-radius, 28px);
   padding: 20px;
   margin-bottom: 18px;
 

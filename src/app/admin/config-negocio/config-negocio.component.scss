@@ -17,7 +17,7 @@ $t:  all 0.25s ease;
   width: 100%;
   max-width: 680px;
   background: var(--card-bg);
-  border-radius: 24px;
+  border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);

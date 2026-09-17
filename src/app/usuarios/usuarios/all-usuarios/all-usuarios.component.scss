@@ -35,7 +35,7 @@ $shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 // ── Card ───────────────────────────────────────────────────────────
 .au-card {
   background: var(--card-bg);
-  border-radius: $radius;
+  border-radius: var(--card-radius, 14px);
   box-shadow: var(--card-shadow);
   padding: 1.4rem 1.25rem 1.1rem;
   display: flex;

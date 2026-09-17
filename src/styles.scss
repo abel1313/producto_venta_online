@@ -130,6 +130,12 @@ body.theme-light, [data-theme="light"] {
   --card-shadow:       0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
   --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
   --card-radius:       14px;
+  /* Radio de la card que envuelve un FORMULARIO de captura. Va aparte de --card-radius (el de
+     las cards de listado) porque el form es una hoja grande y centrada, y con el radio chico de
+     los listados se ve cuadrado. Antes cada form traía el suyo hardcodeado -- 28, 24, 20, 16 y
+     14px conviviendo -- y por eso dos pantallas de alta no se parecían entre sí (2026-09-17).
+     El valor es el de "Nuevo Producto" (tienda/venta), que se tomó como estándar. */
+  --form-card-radius:  28px;
 
   /* ── Estados semánticos (2026-08-28) -- éxito/alerta/peligro/info, un solo
      origen para todo lo que hoy cada pantalla hardcodeaba a mano con su propio
@@ -292,6 +298,7 @@ body.theme-dark, [data-theme="dark"] {
   --card-shadow:       0 4px 20px rgba(0,0,0,0.65);
   --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.75);
   --card-radius:       14px;
+  --form-card-radius:  28px;
 
   /* ── Estados semánticos -- tonos más claros que en modo claro para que
      mantengan contraste sobre fondo oscuro (mismo criterio ya usado en otros

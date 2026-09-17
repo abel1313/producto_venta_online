@@ -373,7 +373,7 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pl-card {
   position: relative;
   background: var(--card-bg);
-  border-radius: $radius;
+  border-radius: var(--card-radius, 14px);
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   overflow: hidden;

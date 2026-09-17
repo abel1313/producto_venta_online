@@ -6,6 +6,7 @@ import { AuthenticateService } from './auth.service';
 import { AuthService } from './auth/auth.service';
 
 import { AppRoutingModule } from './app-routing.module';
+import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NavbarComponent } from './navbar/navbar.component';
@@ -87,6 +88,7 @@ export function bootstrapAuth(
     BrowserAnimationsModule,
     HttpClientModule,
     AppRoutingModule,
+    SharedModule,
     ProductoModule,
     VentaProductoModule,
     MisGastosModule,

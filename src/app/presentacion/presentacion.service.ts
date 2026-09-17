@@ -39,7 +39,7 @@ export interface IImagenUpdateRequest {
 @Injectable({ providedIn: 'root' })
 export class PresentacionService {
   private readonly url    = `${environment.api_Url}/presentacion/imagenes`;
-  private readonly urlV2  = `${environment.api_Url}/presentacion/v1/imagenes`;
+  private readonly urlV2  = `${environment.api_Url}/v1/presentacion/imagenes`;
 
   constructor(private readonly http: HttpClient) {}
 

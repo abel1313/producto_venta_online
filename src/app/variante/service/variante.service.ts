@@ -8,12 +8,8 @@ import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
-  // ⚠️ Endpoint del backend renombrado 2026-07-24: antes /variantes, ahora /tienda —
-  // SOLO tiene efecto cuando el back haga el mismo cambio de su lado (ver CLAUDE.md y
-  // CAMBIOS_FRONT.md). Este archivo se sube a `dev` pero NO se promueve a `qa`/prod hasta
-  // que el back confirme que ya está desplegado — de lo contrario cada llamada de este
-  // servicio (25 métodos) daría 404 en cualquier ambiente donde el back siga en /variantes.
-  private readonly url = `${environment.api_Url}/tienda`;
+  // ✅ Endpoint actualizado 2026-09-17: ahora usa /v1/variantes (backend renombrado)
+  private readonly url = `${environment.api_Url}/v1/variantes`;
 
   // Para pasar la variante al componente de edición
   private _varianteUpdate = new BehaviorSubject<IVariante | null>(null);
@@ -71,7 +67,7 @@ export class VarianteService {
   // ⚠️ ADMIN-only desde 2026-08-11 (devuelve la entidad cruda, con `precioCosto`). No usarlo
   // desde ninguna pantalla pública — ver `resolverProductoId()` justo abajo.
   getOne(id: number): Observable<IVariante> {
-    return this.http.get<{ data: IVariante }>(`${this.url}/v1/getOne/${id}`)
+    return this.http.get<{ data: IVariante }>(`${this.url}/getOne/${id}`)
       .pipe(map(res => res.data));
   }
 
@@ -82,25 +78,25 @@ export class VarianteService {
    */
   resolverProductoId(varianteId: number): Observable<number> {
     return this.http
-      .get<{ data: { productoId: number } }>(`${this.url}/v1/variante/${varianteId}/producto-id`)
+      .get<{ data: { productoId: number } }>(`${this.url}/variante/${varianteId}/producto-id`)
       .pipe(map(res => res.data.productoId));
   }
 
   getPorProducto(productoId: number): Observable<IVarianteDto[]> {
-    return this.http.get<{ data: IVarianteDto[] }>(`${this.url}/v1/porProducto/${productoId}`)
+    return this.http.get<{ data: IVarianteDto[] }>(`${this.url}/porProducto/${productoId}`)
       .pipe(map(res => res.data));
   }
 
   getPorProductoPaginadoResumen(productoId: number, pagina: number, size: number): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ data: IVarianteResumenPaginable }>(
-      `${this.url}/v1/porProducto/${productoId}/paginado/resumen?pagina=${pagina}&size=${size}`
+      `${this.url}/porProducto/${productoId}/paginado/resumen?pagina=${pagina}&size=${size}`
     ).pipe(map(res => res.data));
   }
 
   buscar(params: { termino: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
     const { termino, pagina = 1, size = 10 } = params;
     const q = `termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`;
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/buscar?${q}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar?${q}`)
       .pipe(map(res => res.data));
   }
 
@@ -118,48 +114,48 @@ export class VarianteService {
     if (filtros.color)  params = params.set('color', filtros.color);
     if (filtros.marca)  params = params.set('marca', filtros.marca);
 
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/buscar-filtrado`, { params })
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar-filtrado`, { params })
       .pipe(map(res => res.data));
   }
 
   // Valores reales del catálogo visible (para armar dropdowns/slider sin adivinar opciones).
   filtrosDisponibles(): Observable<IFiltrosDisponibles> {
-    return this.http.get<{ data: IFiltrosDisponibles }>(`${this.url}/v1/filtros-disponibles`)
+    return this.http.get<{ data: IFiltrosDisponibles }>(`${this.url}/filtros-disponibles`)
       .pipe(map(res => res.data));
   }
 
   /** Crea/actualiza una o varias variantes en una sola petición. */
   save(data: IVarianteRequest[]): Observable<{ data: IVariante[] }> {
-    return this.http.post<{ data: IVariante[] }>(`${this.url}/v1/guardarConImagenes`, data);
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, data);
   }
 
   update(id: number, data: IVarianteRequest): Observable<{ data: IVariante[] }> {
-    return this.http.post<{ data: IVariante[] }>(`${this.url}/v1/guardarConImagenes`, [{ ...data, id }]);
+    return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, [{ ...data, id }]);
   }
 
   delete(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/v1/delete`, { body: id });
+    return this.http.delete(`${this.url}/delete`, { body: id });
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/v1/${varianteId}/imagenes`, { body: imageIds });
+    return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
   }
 
   eliminarImagenesV2(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/v1/${varianteId}/imagenes`, { body: imageIds });
+    return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
   }
 
   eliminarTodasImagenesVariantes(varianteIds: number[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/v1/imagenes`, { body: varianteIds });
+    return this.http.delete<{ data: string }>(`${this.url}/imagenes`, { body: varianteIds });
   }
 
   eliminarTodasImagenesVariantesV2(varianteIds: number[]): Observable<{ data: string }> {
-    return this.http.delete<{ data: string }>(`${this.url}/v1/imagenes`, { body: varianteIds });
+    return this.http.delete<{ data: string }>(`${this.url}/imagenes`, { body: varianteIds });
   }
 
   getImagenesPaginado(id: number, pagina: number, size: number): Observable<IVarianteImagenPaginable> {
     return this.http.get<{ data: IVarianteImagenPaginable }>(
-      `${this.url}/v1/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
+      `${this.url}/imagenes/${id}/paginado?pagina=${pagina}&size=${size}`
     ).pipe(map(res => res.data));
   }
 
@@ -168,21 +164,21 @@ export class VarianteService {
   // observable se queda colgado para siempre -- y el overlay global del LoadingInterceptor,
   // que solo se baja en finalize(), deja la pantalla entera sin responder a un clic.
   getImagenesVariante(varianteId: number): Observable<IVarianteImagenDto[]> {
-    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v1/imagenes/${varianteId}`)
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/imagenes/${varianteId}`)
       .pipe(timeout(15000), map(res => res?.data ?? []));
   }
 
   getImagenesVarianteV2(varianteId: number): Observable<IVarianteImagenDto[]> {
-    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/v1/imagenes/${varianteId}`)
+    return this.http.get<{ data: IVarianteImagenDto[] }>(`${this.url}/imagenes/${varianteId}`)
       .pipe(map(res => res?.data ?? []));
   }
 
   setPrincipalVariante(imagenId: string): Observable<any> {
-    return this.http.put<any>(`${this.url}/v1/imagenes/${imagenId}/principal`, null);
+    return this.http.put<any>(`${this.url}/imagenes/${imagenId}/principal`, null);
   }
 
   getAll(page: number, size: number): Observable<IVarianteResumenPaginable> {
-    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/v1/getAll?page=${page}&size=${size}`)
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/getAll?page=${page}&size=${size}`)
       .pipe(map(res => res.data));
   }
 
@@ -208,30 +204,30 @@ export class VarianteService {
     if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
     if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
 
-    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/v1/admin/filtrar`, { params })
+    return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/admin/filtrar`, { params })
       .pipe(map(res => res.data));
   }
 
   habilitarVariante(id: number, habilitar: boolean): Observable<any> {
-    return this.http.put(`${this.url}/v1/${id}/habilitar?habilitar=${habilitar}`, {});
+    return this.http.put(`${this.url}/${id}/habilitar?habilitar=${habilitar}`, {});
   }
 
   habilitarLote(ids: number[], habilitar: boolean): Observable<any> {
-    return this.http.put(`${this.url}/v1/admin/habilitar-lote`, { ids, habilitar });
+    return this.http.put(`${this.url}/admin/habilitar-lote`, { ids, habilitar });
   }
 
   inicializarDesdeProducto(form: FormData): Observable<{ mensaje: string; data: any[] }> {
-    return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/v1/inicializarDesdeProducto`, form);
+    return this.http.post<{ mensaje: string; data: any[] }>(`${this.url}/inicializarDesdeProducto`, form);
   }
 
   independizar(varianteId: number, body: IIndependizarRequest): Observable<{ mensaje: string; data: IIndependizarResponse }> {
     return this.http.post<{ mensaje: string; data: IIndependizarResponse }>(
-      `${this.url}/v1/${varianteId}/independizar`, body
+      `${this.url}/${varianteId}/independizar`, body
     );
   }
 
   diagnosticoImagenes(varianteId: number): Observable<any> {
-    return this.http.get(`${this.url}/v1/admin/diagnostico-imagenes/${varianteId}`);
+    return this.http.get(`${this.url}/admin/diagnostico-imagenes/${varianteId}`);
   }
 
   guardarPedidoVariante(data: IPedidoVarianteDTO): Observable<any> {

@@ -29,6 +29,7 @@ import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { FormsModule } from '@angular/forms';
 import { CintaComponent } from './cinta/cinta.component';
+import { DemoTablasModule } from './demo-tablas/demo-tablas.module';
 export function bootstrapAuth(
   acceder: AccederService,
   auth: AuthenticateService,
@@ -96,6 +97,7 @@ export function bootstrapAuth(
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
     NbEvaIconsModule,
+    DemoTablasModule,
   ],
   bootstrap: [AppComponent]
 })

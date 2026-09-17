@@ -133,8 +133,16 @@ export class VarianteService {
     return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, [{ ...data, id }]);
   }
 
-  delete(id: number): Observable<any> {
-    return this.http.delete(`${this.url}/delete`, { body: id });
+  /**
+   * Baja logica del modelo: lo deja en habilitado=0 y le borra las imagenes. NO borra la fila --
+   * hay 13 tablas que apuntan a variante (pedidos, ventas, resenas, favoritos...) y el historial
+   * quedaria roto.
+   *
+   * Antes apuntaba a /delete, que es el metodo heredado del AbstractController del back: un stub
+   * vacio que devuelve null sin hacer nada.
+   */
+  darDeBaja(id: number): Observable<any> {
+    return this.http.delete(`${this.url}/deleteBy/${id}`);
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {

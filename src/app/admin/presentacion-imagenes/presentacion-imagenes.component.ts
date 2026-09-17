@@ -38,10 +38,22 @@ export class PresentacionImagenesComponent implements OnInit {
   get registro(): IImagenPresentacionV2Dto[] { return this.imagenes.filter(i => i.tipo === 'REGISTRO'); }
 
   // ── URL de imagen guardada en el servidor ─────────────────────────
+  /**
+   * Version por imagen, para romper el cache del navegador despues de subir una nueva.
+   * La URL del back es /{id}/imagen y el id no cambia al reemplazar el archivo, asi que sin
+   * esto el src calculado sale IDENTICO al de antes de subir: Angular no toca el atributo y el
+   * navegador sigue pintando los bytes que ya tenia. Eso era el "la subo y no se ve aqui, pero
+   * en login y registro si" reportado en QA.
+   */
+  private versiones = new Map<number, number>();
+
   imagenSrc(img: IImagenPresentacionV2Dto): string {
     const p = this.pendientes.get(img.id);
     if (p) return p.preview;
-    return this.presentacionService.getImagenUrlV2(img);
+    const url = this.presentacionService.getImagenUrlV2(img);
+    const v = this.versiones.get(img.id);
+    if (!v) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}v=${v}`;
   }
 
   tieneImagen(img: IImagenPresentacionV2Dto): boolean {
@@ -91,8 +103,11 @@ export class PresentacionImagenesComponent implements OnInit {
     this.presentacionService.actualizarImagenV2(img.id, request).subscribe({
       next: (updated: IImagenPresentacionV2Dto) => {
         this.guardandoId = null;
-        this.pendientes.delete(img.id);
         if (updated?.urlImagen) img.urlImagen = updated.urlImagen;
+        // Solo cuando de verdad se subio archivo: un guardado de descripcion/activo no cambia
+        // los bytes y no hay por que volver a bajar la imagen.
+        if (p) this.versiones.set(img.id, Date.now());
+        this.pendientes.delete(img.id);
         Swal.fire({ icon: 'success', title: '¡Imagen actualizada!', timer: 1300, showConfirmButton: false });
       },
       error: () => {

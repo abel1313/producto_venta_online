@@ -1214,6 +1214,36 @@ body.theme-dark, [data-theme="dark"] {
 }
 
 /* ════════════════════════════════════════════════════════════
+   ANTI-RECORTE DE TEXTO EN HEADERS DE CARDS — global
+
+   Los headers de card son display:flex con overflow:hidden, y el titulo y el
+   subtitulo van dentro de un <div> sin clase. Ese <div> es un item de flex con
+   min-width:auto, asi que no puede encogerse por debajo de su ancho min-content:
+   en vez de pasar el texto al siguiente renglon, el overflow:hidden del header lo
+   recorta a media palabra.
+
+   Reportado en QA 2026-09-17 en tienda/venta ("Solo el model," cortado), pero el
+   patron esta repetido en 9 pantallas (agregar modelo, cache, config-negocio,
+   diagnostico y reconciliacion de imagenes, presentacion-imagenes, update de
+   producto y de modelo, cargar excel). Se arregla aca de una vez para que aplique
+   tambien a las cards que se agreguen despues.
+
+   No lleva !important: solo habilita el wrap, no pelea con ningun estilo local.
+   ════════════════════════════════════════════════════════════ */
+
+[class*="-card__head"],
+[class*="-header__content"] {
+  > div { min-width: 0; }
+
+  [class*="__title"],
+  [class*="__subtitle"],
+  [class*="__sub"],
+  h3, h4, h5, h6, p, small {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
    AETHER — INTERACCIÓN PREMIUM (press-scale) + TOKENS GLASS
    ────────────────────────────────────────────────────────────
    Base tomada del "MPC Aether Premium Motion System" (Stitch),

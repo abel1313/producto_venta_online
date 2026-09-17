@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
 import {
@@ -83,9 +83,11 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.clienteSearch$.pipe(
       debounceTime(350),
       distinctUntilChanged(),
+      // catchError DENTRO del switchMap: un error del buscador no debe terminar la suscripcion,
+      // porque despues de eso el input deja de responder hasta recargar la pantalla.
       switchMap(t => t.length >= 2
-        ? this.clienteService.buscarClientes(t, 0, 8)
-        : [null]
+        ? this.clienteService.buscarClientes(t, 0, 8).pipe(catchError(() => of(null)))
+        : of(null)
       )
     ).subscribe(res => {
       this.clientesSugeridos = res?.data?.list ?? [];

@@ -17,7 +17,7 @@ import { IProductoDTOImagenes, IProductoDTORec } from '../producto/models/produc
 export class ProductoService {
 
     private readonly url: string = `${environment.api_Url}/v1/productos`;
-    private readonly urlImg: string = `${environment.api_Url}/imagen`;
+    private readonly urlImg: string = `${environment.api_Url}/v1/imagenes`;
     private readonly microImagenes: string = `${environment.api_imagenes}/v1/producto-imagen`;
 
     public productoUpdate = new BehaviorSubject<IProductoDTOImagenes | null>(null);
@@ -69,7 +69,7 @@ export class ProductoService {
 
     // 🌐 Obtener datos
     getDataImg(id: number, page: number, size: number): Observable<any> {
-        return this.http.get(`${this.urlImg}/v1/${id}/detalle?size=${size}&page=${page}`, { responseType: 'text' }).pipe(
+        return this.http.get(`${this.urlImg}/${id}/detalle?size=${size}&page=${page}`, { responseType: 'text' }).pipe(
             map(text => JSON.parse(text.replace(/"(\w+)":\s*(\d{16,})/g, '"$1":"$2"')))
         );
     }
@@ -80,13 +80,13 @@ export class ProductoService {
 
 
     /**
-     * GET /imagen/v1/{id}/detalle
+     * GET /v1/imagenes/{id}/detalle
      * Devuelve 204 (null) si el producto no tiene imágenes en disco en vez de lanzar error.
      * El front NO crashea; solo se loguea el aviso.
      */
     getDataImgV2(id: number, page: number, size: number): Observable<any | null> {
         return this.http.get(
-            `${this.urlImg}/v1/${id}/detalle?size=${size}&page=${page}`,
+            `${this.urlImg}/${id}/detalle?size=${size}&page=${page}`,
             { observe: 'response', responseType: 'text' }
         ).pipe(
             map(response => {

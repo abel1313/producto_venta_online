@@ -43,8 +43,7 @@ export interface IChatbotResponse {
 export class ChatbotService {
   private readonly urlMensaje  = `${environment.api_Url}/v1/chatbot/mensaje`;
   private readonly urlBuscar   = `${environment.api_Url}/v1/chatbot/buscar`;
-  // ⚠️ Ver nota de renombrado /variantes → /tienda en variante.service.ts — mismo criterio.
-  private readonly urlImagenes = `${environment.api_Url}/tienda/v1/imagenes`;
+  private readonly urlImagenes = `${environment.api_Url}/v1/variantes/imagenes`;
 
   constructor(private readonly http: HttpClient) {}
 

@@ -53,4 +53,10 @@ export class AdminService {
       `${this.url}/reconciliacion/imagenes/limpiar-bd`, {}
     );
   }
+
+  limpiarDisco(): Observable<IReconciliacionIniciada> {
+    return this.http.post<IReconciliacionIniciada>(
+      `${this.url}/reconciliacion/imagenes/limpiar-disco`, {}
+    );
+  }
 }

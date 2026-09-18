@@ -18,6 +18,10 @@ export class ReconciliacionImagenesComponent {
   mensajeLimpieza: string | null = null;
   errorLimpieza: string | null   = null;
 
+  limpiandoDisco = false;
+  mensajeLimpiezaDisco: string | null = null;
+  errorLimpiezaDisco: string | null   = null;
+
   cargandoResultado = false;
   resultado: IResultadoReconciliacion['data'] | null = null;
   errorResultado: string | null = null;
@@ -55,6 +59,24 @@ export class ReconciliacionImagenesComponent {
       error: () => {
         this.errorLimpieza = 'No se pudo ejecutar la limpieza de BD.';
         this.limpiando     = false;
+      }
+    });
+  }
+
+  limpiarDisco(): void {
+    this.limpiandoDisco       = true;
+    this.mensajeLimpiezaDisco = null;
+    this.errorLimpiezaDisco   = null;
+
+    this.adminService.limpiarDisco().subscribe({
+      next: res => {
+        this.mensajeLimpiezaDisco = res.data;
+        this.limpiandoDisco       = false;
+      },
+      error: err => {
+        this.errorLimpiezaDisco = (err?.error?.mensaje ?? err?.error?.message)
+          ?? 'No se pudo ejecutar la limpieza de disco.';
+        this.limpiandoDisco     = false;
       }
     });
   }

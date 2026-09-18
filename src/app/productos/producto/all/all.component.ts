@@ -245,8 +245,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
                 });
                 Swal.fire({ icon: 'success', title: 'Producto dado de baja', timer: 1500, showConfirmButton: false});
               },
-              error: () => {
-                Swal.fire({ icon: 'error', title: 'No se pudo dar de baja el producto', timer: 2000, showConfirmButton: false});
+              error: (err) => {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'No se pudo dar de baja el producto',
+                  text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo en unos minutos.'
+                });
               }
             });
       });

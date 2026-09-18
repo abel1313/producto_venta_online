@@ -51,6 +51,13 @@ $primary-d: var(--brand-1);
     pointer-events: none;
   }
 
+  // Sin min-width:0 este item de flex no puede bajar de su ancho min-content, y como el header
+  // lleva overflow:hidden el subtitulo se recortaba a media palabra en vez de pasar al siguiente
+  // renglon (reportado en QA: "Solo el model," cortado).
+  &__header-text {
+    min-width: 0;
+  }
+
   &__header-icon {
     font-size: 2.6rem;
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
@@ -58,6 +65,7 @@ $primary-d: var(--brand-1);
   }
 
   &__title {
+    overflow-wrap: anywhere;
     font-size: 1.6rem;
     font-weight: 800;
     color: white;
@@ -67,6 +75,7 @@ $primary-d: var(--brand-1);
   }
 
   &__subtitle {
+    overflow-wrap: anywhere;
     font-size: 0.82rem;
     color: rgba(255,255,255,0.7);
     margin: 4px 0 0;
@@ -170,17 +179,20 @@ $primary-d: var(--brand-1);
 
   &__icon { font-size: 1.6rem; }
 
+  // El fondo del chip es un tinte translucido: sobre la card blanca del modo dia queda casi
+  // blanco, asi que el texto va por token o desaparece (QA: al seleccionar el modelo las letras
+  // quedaban blancas sobre blanco).
   &__info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    color: white;
+    color: var(--card-text);
     strong { font-size: 0.95rem; }
-    small { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-top: 2px; }
+    small { font-size: 0.8rem; color: var(--card-text-muted); margin-top: 2px; }
   }
 
   &__clear {
-    background: rgba(255,255,255,0.1);
+    background: rgba(var(--app-accent-rgb),0.12);
     border: none;
     border-radius: 50%;
     width: 28px;
@@ -188,7 +200,7 @@ $primary-d: var(--brand-1);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255,255,255,0.7);
+    color: var(--card-text-muted);
     cursor: pointer;
     font-size: 0.75rem;
     transition: $t;
@@ -337,7 +349,7 @@ $primary-d: var(--brand-1);
 .vf-drop {
   border: 2px dashed rgba(var(--app-accent-rgb),0.4);
   border-radius: 16px;
-  background: rgba(255,255,255,0.03);
+  background: var(--form-section-bg, #f8fafc);
   cursor: pointer;
   transition: $t;
   min-height: 160px;
@@ -364,9 +376,9 @@ $primary-d: var(--brand-1);
 
   &__icon { font-size: 2.5rem; }
 
-  &__text { color: rgba(255,255,255,0.7); font-size: 0.9rem; margin: 0; }
+  &__text { color: var(--card-text); font-size: 0.9rem; margin: 0; }
 
-  &__hint { color: rgba(255,255,255,0.35); font-size: 0.78rem; }
+  &__hint { color: var(--card-text-muted); font-size: 0.78rem; }
 }
 
 .vf-canvas {
@@ -393,7 +405,7 @@ $primary-d: var(--brand-1);
   border-radius: 10px;
   overflow: hidden;
   position: relative;
-  border: 2px solid rgba(255,255,255,0.12);
+  border: 2px solid var(--card-border, #e2e8f0);
 
   img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -545,7 +557,7 @@ $primary-d: var(--brand-1);
   padding-right: 4px;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
+  &::-webkit-scrollbar-track { background: var(--form-section-bg, #f8fafc); border-radius: 4px; }
   &::-webkit-scrollbar-thumb { background: rgba(var(--app-accent-rgb),0.35); border-radius: 4px; }
 }
 
@@ -574,7 +586,9 @@ $primary-d: var(--brand-1);
     gap: 6px;
     background: linear-gradient(135deg, rgba(138,106,56,0.55), rgba(var(--app-accent-rgb),0.4));
     border: 1px solid rgba(var(--app-accent-rgb),0.5);
-    color: white;
+    // Fondo translucido: aclara sobre la card blanca del modo dia, oscurece sobre la negra del
+    // modo noche. El texto va por token para leerse en los dos.
+    color: var(--card-text);
     font-size: 0.78rem;
     font-weight: 700;
     padding: 4px 12px;
@@ -662,7 +676,7 @@ $primary-d: var(--brand-1);
     gap: 14px;
     padding: 20px 22px 16px;
     background: linear-gradient(135deg, rgba(138,106,56,0.28), rgba(var(--app-accent-rgb),0.14));
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid var(--card-border, #e2e8f0);
     font-size: 1.5rem;
     flex-shrink: 0;
   }
@@ -682,12 +696,12 @@ $primary-d: var(--brand-1);
 
   &__close {
     margin-left: auto;
-    background: rgba(255,255,255,0.08);
+    background: rgba(var(--app-accent-rgb),0.12);
     border: none;
     border-radius: 50%;
     width: 32px;
     height: 32px;
-    color: rgba(255,255,255,0.6);
+    color: var(--card-text-muted);
     cursor: pointer;
     font-size: 0.8rem;
     display: flex;
@@ -701,7 +715,7 @@ $primary-d: var(--brand-1);
 
   &__footer {
     padding: 14px 22px;
-    border-top: 1px solid rgba(255,255,255,0.07);
+    border-top: 1px solid var(--card-border, #e2e8f0);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -731,7 +745,7 @@ $primary-d: var(--brand-1);
   flex: 1;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
+  &::-webkit-scrollbar-track { background: var(--form-section-bg, #f8fafc); border-radius: 4px; }
   &::-webkit-scrollbar-thumb { background: rgba(var(--app-accent-rgb),0.35); border-radius: 4px; }
 
   @media (max-width: 480px) { grid-template-columns: repeat(4, 1fr); }
@@ -743,8 +757,8 @@ $primary-d: var(--brand-1);
 
 .vf-talla-chip {
   border-radius: 12px;
-  background: rgba(255,255,255,0.05);
-  border: 1.5px solid rgba(255,255,255,0.09);
+  background: var(--form-section-bg, #f8fafc);
+  border: 1.5px solid var(--card-border, #e2e8f0);
   padding: 10px 6px 8px;
   cursor: pointer;
   display: flex;
@@ -771,18 +785,18 @@ $primary-d: var(--brand-1);
   &__num {
     font-size: 1rem;
     font-weight: 700;
-    color: white;
+    color: var(--card-text);
     line-height: 1;
   }
 
   &__stock {
     width: 100%;
-    background: rgba(255,255,255,0.12);
+    background: var(--card-bg, #ffffff);
     border: 1px solid rgba(var(--app-accent-rgb),0.6);
     border-radius: 6px;
     padding: 4px 4px;
-    color: #fff;
-    -webkit-text-fill-color: #fff;
+    color: var(--card-text);
+    -webkit-text-fill-color: var(--card-text);
     font-size: 0.72rem;
     text-align: center;
     outline: none;
@@ -792,23 +806,23 @@ $primary-d: var(--brand-1);
     &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     -moz-appearance: textfield;
 
-    &::placeholder { color: rgba(255,255,255,0.45); }
-    &:focus { border-color: var(--app-accent); background: rgba(255,255,255,0.18); box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb),0.25); }
+    &::placeholder { color: var(--card-text-muted); }
+    &:focus { border-color: var(--app-accent); background: var(--card-bg, #ffffff); box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb),0.25); }
   }
 }
 
 // ── Botones del modal ──────────────────────────────────────────────
 .vf-btn-cancel {
   padding: 9px 18px;
-  border: 1.5px solid rgba(255,255,255,0.18);
+  border: 1.5px solid var(--card-border, #e2e8f0);
   border-radius: 10px;
   background: transparent;
-  color: rgba(255,255,255,0.65);
+  color: var(--card-text-muted);
   font-size: 0.86rem;
   cursor: pointer;
   transition: $t;
 
-  &:hover { background: rgba(255,255,255,0.07); color: white; }
+  &:hover { background: var(--form-section-bg, #f8fafc); color: var(--card-text); }
 }
 
 .vf-btn-confirm {

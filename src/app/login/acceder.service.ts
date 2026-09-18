@@ -13,7 +13,7 @@ import { ResponseGeneric } from 'src/shared/generic-response.mode';
 export class AccederService {
 
   private readonly url: string = `${environment.api_Url}/v1/productos`;
-  private readonly urlImg: string = `${environment.api_Url}/imagen`;
+  private readonly urlImg: string = `${environment.api_Url}/v1/imagenes`;
   constructor(
     private readonly http: HttpClient
   ) { }

@@ -25,6 +25,11 @@ export interface ISubmenu {
   // Tooltip/popup propio del checkbox "Editar" (2026-09-04) -- distinto de `descripcion`, que
   // es del "Ver". Null = el front usa el texto genérico de Ver/Editar.
   descripcionEscritura?: string | null;
+  // ¿La pantalla tiene algo que editar? (2026-09-17) En false, Gestión de roles no pinta el
+  // checkbox "✏️ Editar": antes salía en todas por igual y en pantallas que sólo crean (Agregar
+  // Modelo) no correspondía a ningún botón real. Los submenús viejos llegan sin el campo, por eso
+  // el front lo trata como true salvo que venga false explícito.
+  tieneEscritura?: boolean;
   orden?: number | null;
 }
 

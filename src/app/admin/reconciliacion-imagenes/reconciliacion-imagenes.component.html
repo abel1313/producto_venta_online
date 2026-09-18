@@ -92,10 +92,47 @@
 
       <div class="rc-divider"></div>
 
-      <!-- ═══ SECCIÓN 3: VER RESULTADO ═══ -->
+      <!-- ═══ SECCIÓN 3: LIMPIAR DISCO ═══ -->
       <div class="rc-section">
         <div class="rc-section__header">
-          <span class="rc-section__num">3</span>
+          <span class="rc-section__num rc-section__num--red">3</span>
+          <span class="rc-section__title">Limpiar disco</span>
+        </div>
+
+        <div class="rc-endpoint">
+          <span class="rc-endpoint__method rc-endpoint__method--post">POST</span>
+          <span class="rc-endpoint__url">/admin/reconciliacion/imagenes/limpiar-disco</span>
+        </div>
+
+        <p class="rc-hint">
+          Borra del disco las <strong>imágenes huérfanas</strong>: los archivos que ya no le
+          pertenecen a ningún producto, variante, imagen de presentación ni logo.
+          <strong>No borra productos ni modelos</strong> — un producto sin imagen no se elimina,
+          solo deja de aparecer en la tienda.
+          Es la misma limpieza que corre sola todos los días a las 4 AM; este botón la dispara ahora.
+          Los archivos subidos en la última hora se respetan a propósito, por si hay una subida en curso.
+        </p>
+
+        <button class="rc-btn rc-btn--danger" (click)="limpiarDisco()" [disabled]="limpiandoDisco">
+          🧹 Limpiar disco
+        </button>
+
+        <div *ngIf="mensajeLimpiezaDisco" class="rc-alert rc-alert--info">
+          <span class="rc-alert__icon">✅</span>
+          <span>{{ mensajeLimpiezaDisco }}</span>
+        </div>
+        <div *ngIf="errorLimpiezaDisco" class="rc-alert rc-alert--error">
+          <span class="rc-alert__icon">⚠️</span>
+          <span>{{ errorLimpiezaDisco }}</span>
+        </div>
+      </div>
+
+      <div class="rc-divider"></div>
+
+      <!-- ═══ SECCIÓN 4: VER RESULTADO ═══ -->
+      <div class="rc-section">
+        <div class="rc-section__header">
+          <span class="rc-section__num">4</span>
           <span class="rc-section__title">Ver resultado</span>
         </div>
 

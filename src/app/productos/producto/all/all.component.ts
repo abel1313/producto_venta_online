@@ -92,10 +92,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         distinctUntilChanged()
       )
       .subscribe(valor => {
+        // Se compara contra el input de AHORA: el debounce de 1.5 s emite lo que se tecleo hace
+        // rato, y si mientras tanto el usuario siguio borrando, buscarProd ya es otra cosa.
+        // Leyendo this.buscarProd a ciegas se terminaba buscando con el termino vacio y la lista
+        // quedaba vacia (reportado en QA: "borro el input y no regresa nada").
+        if (valor !== this.buscarProd) return;
         if (this.hayFiltrosAdminActivos) {
           this.aplicarFiltrosAdmin(1);
         } else {
-          this.buscarProductoSinKey(this.paginaPrimera, this.buscarProd);
+          this.buscarProductoSinKey(this.paginaPrimera, valor);
         }
       });
 
@@ -213,11 +218,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     confirmarEliminarBatch(item: IProductoDTO): void {
     
       Swal.fire({
-        title: `¿Eliminar este producto ${item.nombre}?`,
-        text: 'Esta acción no se puede deshacer.',
+        // El back hace baja LOGICA (deja el producto en habilitado=0 y le borra las fotos), no
+        // borra la fila -- decia "no se puede deshacer", que no es cierto: se puede volver a
+        // habilitar. Lo unico que no vuelve son las fotos.
+        title: `¿Dar de baja ${item.nombre}?`,
+        html: 'Deja de mostrarse en la tienda y <b>pierde sus fotos</b>.<br>'
+            + 'El historial de ventas y pedidos se conserva, y se puede volver a habilitar.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'Sí, dar de baja',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#ef4444'
       }).then(result => {
@@ -234,10 +243,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
                     Swal.fire({ icon: 'error', title: 'Error al recargar productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo recargar la lista.' });
                   }
                 });
-                Swal.fire({ icon: 'success', title: 'El producto se elimino correctamente', timer: 1500, showConfirmButton: false});
+                Swal.fire({ icon: 'success', title: 'Producto dado de baja', timer: 1500, showConfirmButton: false});
               },
-              error: () => {
-                Swal.fire({ icon: 'error', title: 'Error al eliminar el producto', timer: 2000, showConfirmButton: false});
+              error: (err) => {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'No se pudo dar de baja el producto',
+                  text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo en unos minutos.'
+                });
               }
             });
       });
@@ -727,6 +740,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       this.paginaPrimera  = 1;
       this.sinResultados  = false;
       this.mensajeError   = '';
+      // El pipe del keyUpSubject filtra por length >= 3, asi que '' nunca llegaba y vaciar el
+      // buscador dejaba en pantalla el resultado de la busqueda anterior. Se recarga aca directo.
+      // conOSinBuscar en vez de getData para no perder los filtros de admin si estan activos.
+      this.conOSinBuscar(1);
+      return;
     }
     this.keyUpSubject.next(this.buscarProd);
   }

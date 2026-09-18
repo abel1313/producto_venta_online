@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject, EMPTY } from 'rxjs';
-import { debounceTime, switchMap } from 'rxjs/operators';
+import { Subject, EMPTY, of } from 'rxjs';
+import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
@@ -103,8 +103,14 @@ export class AgregarComponent implements OnInit, OnDestroy {
       debounceTime(350),
       switchMap((t: string) => t.length < 3
         ? (this.productos = [], EMPTY)
-        : this.productoService.getDataNombreCodigoBarra(1, 10, t))
-    ).subscribe({ next: res => { this.productos = res.t ?? []; } });
+        // El catchError va DENTRO del switchMap a proposito: el back contesta 404/400 cuando la
+        // busqueda no encuentra nada, y si ese error sube al subscribe la suscripcion se termina
+        // para siempre -- el buscador quedaba muerto y solo revivia recargando la pantalla
+        // (reportado en QA: "no hubo producto, busque otra cosa y ya no hace ni la peticion").
+        : this.productoService.getDataNombreCodigoBarra(1, 10, t).pipe(
+            catchError(() => of(null))
+          ))
+    ).subscribe({ next: res => { this.productos = res?.t ?? []; } });
   }
 
   // ── Búsqueda de producto ───────────────────────────────────────────

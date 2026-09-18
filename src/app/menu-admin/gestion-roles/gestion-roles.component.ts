@@ -190,6 +190,21 @@ export class GestionRolesComponent implements OnInit {
     return categoria.startsWith('Tarjeta');
   }
 
+  /**
+   * ¿Se pinta el checkbox "✏️ Editar" de esta pantalla? (2026-09-17)
+   *
+   * Antes salía en todas por igual, sin preguntar si la pantalla tenía algo que editar. En
+   * "Agregar Modelo" eso dejaba una casilla que no correspondía a ningún botón real: esa
+   * pantalla sólo crea, y crear ya va con tener la pantalla. El usuario la veía y no sabía qué
+   * habilitaba, porque no habilitaba nada.
+   *
+   * Los submenús que vienen de antes de la columna llegan sin el campo, así que se asume true y
+   * sólo se oculta con un false explícito.
+   */
+  muestraEditar(s: ISubmenu): boolean {
+    return s.tieneEscritura !== false;
+  }
+
   editarVaJuntoATarjeta(submenu: ISubmenu): boolean {
     return this.gruposDeAcciones(submenu).some(g => this.esCategoriaTarjeta(g.categoria));
   }

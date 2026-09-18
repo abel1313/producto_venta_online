@@ -18,6 +18,7 @@ import { FloresService } from '../flores/service/flores.service';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
 
 import { hoyIso } from '../shared/fecha.util';
+import { Constants } from 'src/app/Constants';
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
 @Component({
@@ -127,6 +128,12 @@ export class AbonosComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(termino => {
+      // Minimo de caracteres: con 1 o 2 la busqueda barre casi todo el catalogo.
+      if (termino.trim().length < Constants.MIN_CARACTERES_BUSQUEDA) {
+        this.resultadosTransferencia = [];
+        this.buscandoTransferencia = false;
+        return;
+      }
       this.buscandoTransferencia = true;
       this.varianteService.buscar({ termino, pagina: 1, size: 20 }).subscribe({
         next: res => { this.resultadosTransferencia = res.t ?? []; this.buscandoTransferencia = false; },

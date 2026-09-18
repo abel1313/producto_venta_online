@@ -39,6 +39,11 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 // ── Card de imagen ─────────────────────────────────────────────────
@@ -100,6 +105,11 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   &__fields {
     padding: 10px 12px 12px;
     display: flex; flex-direction: column; gap: 8px;
+
+    @media (max-width: 480px) {
+      padding: 14px 14px 14px;
+      gap: 10px;
+    }
   }
 
   &__filename {
@@ -118,6 +128,11 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
   &__footer {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
+
+    @media (max-width: 480px) {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
   }
 }
 
@@ -145,7 +160,13 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   input:checked + &__track { background: var(--app-accent); }
   input:checked + &__track::after { transform: translateX(16px); }
 
-  &__label { font-size: .75rem; font-weight: 600; color: var(--card-text-muted); }
+  &__label {
+    font-size: .75rem; font-weight: 600; color: var(--card-text-muted);
+
+    @media (max-width: 480px) {
+      font-size: .85rem;
+    }
+  }
 }
 
 // ── Inputs ─────────────────────────────────────────────────────────
@@ -156,6 +177,11 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
   &::placeholder { color: var(--input-placeholder); }
   &:focus { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    font-size: .9rem;
+  }
 }
 
 // ── Botón guardar/subir ────────────────────────────────────────────
@@ -167,6 +193,11 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
   &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),.35); }
   &:disabled { opacity: .45; cursor: not-allowed; }
+
+  @media (max-width: 480px) {
+    font-size: .85rem;
+    padding: 10px 12px;
+  }
 }
 
 .pi-divider { border: none; border-top: 1px solid var(--card-border); margin: 0; }

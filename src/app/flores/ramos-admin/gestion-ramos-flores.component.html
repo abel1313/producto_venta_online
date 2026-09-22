@@ -118,7 +118,7 @@
              que se vuelvan a guardar. -->
         <label class="ra-foto" [class.ra-foto--subiendo]="subiendoFoto === r.id"
                [title]="r.varianteId ? 'Cambiar la foto del ramo' : 'Guarda el ramo una vez para poder subirle fotos'">
-          <input type="file" accept="image/jpeg,image/png,image/gif" hidden
+          <input type="file" accept="image/*" hidden
                  [disabled]="!r.varianteId || !!subiendoFoto || guardando"
                  (change)="onFotoRamo($event, r)">
           <img class="ra-foto__img" *ngIf="fotoDe(r) as foto" [src]="foto" [alt]="r.nombre">

@@ -187,7 +187,7 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
         this.enVuelo--;
         // Entró: pasa de la bandeja a la grilla de borradores. El preview se
         // reutiliza en la tarjeta (no se revoca aquí, la tarjeta lo sigue usando).
-        this.tarjetas.unshift(this.aTarjeta(res, sel.preview, sel.previewUrl, sel.nombre, sel.firma));
+        this.tarjetas.unshift(this.aTarjeta(res, sel.preview, sel.previewUrl, sel.nombre, sel.firma, sel.file));
         const i = this.seleccionadas.indexOf(sel);
         if (i >= 0) { this.seleccionadas.splice(i, 1); }
 
@@ -262,18 +262,27 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
 
   // ---------- Reintentar (solo tarjetas FALLIDO) ----------
 
+  // Reintenta con la misma foto que falló, sin volver a buscarla en el celular.
+  reintentarMisma(t: ITarjetaCaptura): void {
+    if (t.archivo) { this.reintentarCon(t, t.archivo); }
+  }
+
   onReintentar(t: ITarjetaCaptura, event: Event): void {
     const input = event.target as HTMLInputElement;
     const file  = input.files?.[0];
     input.value = '';
     if (!file) { return; }
+    this.reintentarCon(t, file);
+  }
 
+  private reintentarCon(t: ITarjetaCaptura, file: File): void {
     t.reintentando = true;
     // Reutiliza el mismo producto/variante — no crea un borrador nuevo
     this.svc.reintentarImagen(t.productoId, file).subscribe({
       next: res => {
         t.firma         = this.firmaDe(file);
         t.nombreArchivo = file.name;
+        t.archivo       = file;
         if (t.previewUrl) { URL.revokeObjectURL(t.previewUrl); }
         const objectUrl = URL.createObjectURL(file);
         t.previewUrl    = objectUrl;
@@ -462,8 +471,8 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
   private firmaDe(f: File): string { return `${f.name}|${f.size}|${f.lastModified}`; }
 
   private aTarjeta(r: IEstadoCargaProducto, preview: SafeUrl | null, previewUrl: string,
-                   nombre: string, firma = ''): ITarjetaCaptura {
-    return { ...r, previewLocal: preview, previewUrl, nombreArchivo: nombre, firma, reintentando: false };
+                   nombre: string, firma = '', archivo: File | null = null): ITarjetaCaptura {
+    return { ...r, previewLocal: preview, previewUrl, nombreArchivo: nombre, firma, archivo, reintentando: false };
   }
 
   // Quita campos vacíos: el back interpreta null como "no tocar este campo"

@@ -7,7 +7,25 @@
  * extraído para que flores use el mismo camino y no se separen con el tiempo.
  */
 
-export const TIPOS_IMAGEN_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
+/**
+ * Lo que decide si una foto entra es si el navegador la puede abrir, no el tipo que reporta:
+ * las fotos de la galería del celular llegan muchas veces con `file.type` vacío o como
+ * HEIC/WEBP aunque el nombre diga .jpg, y un filtro por tipo las descartaba ("Formato no
+ * permitido"). Como todo se reencoda a JPEG antes de subir, al back siempre le llega JPEG.
+ * Solo se rechaza de entrada lo que el navegador marca claramente como NO imagen (un PDF).
+ */
+export function puedeSerImagen(file: File): boolean {
+  return !file.type || file.type.startsWith('image/');
+}
+
+export function mensajeNoEsImagen(nombre: string): string {
+  return `"${nombre}" no es una imagen.`;
+}
+
+export function mensajeFotoIlegible(nombre: string): string {
+  return `No se pudo abrir "${nombre}". Si es una foto HEIC del celular, compártela primero ` +
+    `por WhatsApp o cámbiala a JPG y vuelve a intentarlo.`;
+}
 
 /** Lado mayor en píxeles tras redimensionar. */
 const DIMENSION_MAX = 1280;
@@ -23,13 +41,13 @@ export interface IImagenBase64 {
 /**
  * Lee el archivo, lo redimensiona y lo reencoda como JPEG.
  *
- * Rechaza (promesa fallida) si el tipo no está permitido, para que quien llame decida cómo
+ * Rechaza (promesa fallida) si no es imagen o no se puede abrir, para que quien llame decida cómo
  * avisarle al usuario en vez de fallar en silencio.
  */
 export function comprimirImagen(file: File): Promise<IImagenBase64> {
   return new Promise((resolve, reject) => {
-    if (!TIPOS_IMAGEN_PERMITIDOS.includes(file.type)) {
-      reject(new Error(`"${file.name}" no es JPG, PNG ni GIF.`));
+    if (!puedeSerImagen(file)) {
+      reject(new Error(mensajeNoEsImagen(file.name)));
       return;
     }
 
@@ -37,7 +55,7 @@ export function comprimirImagen(file: File): Promise<IImagenBase64> {
     lector.onerror = () => reject(new Error('No se pudo leer el archivo.'));
     lector.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error('El archivo no es una imagen válida.'));
+      img.onerror = () => reject(new Error(mensajeFotoIlegible(file.name)));
       img.onload = () => {
         const escala = Math.min(1, DIMENSION_MAX / Math.max(img.width, img.height));
         const w = Math.round(img.width * escala);

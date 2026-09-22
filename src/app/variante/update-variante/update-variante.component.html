@@ -115,7 +115,7 @@
         <p class="vf-section__label">Agregar imágenes <span style="color:rgba(255,255,255,.4);font-weight:400;">(opcionales)</span></p>
 
         <!-- Input galería (oculto) -->
-        <input #fileInput type="file" accept="image/jpeg,image/png,image/gif" multiple
+        <input #fileInput type="file" accept="image/*" multiple
                (change)="onFileSelected($event)" hidden />
 
         <!-- Botones elegir / tomar -->

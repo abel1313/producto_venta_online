@@ -594,3 +594,43 @@ $primary-d: var(--brand-1);
 }
 
 
+
+// ── Stock disponible del modelo (2026-09-22) ────────────────────────────────────
+// Solo variables de tema: sin colores literales los dos modos (día/noche) salen bien solos.
+.vf-stock {
+  margin-top: .6rem;
+  padding: .6rem .85rem;
+  border-radius: 10px;
+  border-left: 3px solid var(--app-accent);
+  background: var(--app-accent-soft, rgba(0,0,0,.04));
+  color: var(--card-text);
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+
+  &__num  { font-size: .88rem; font-weight: 700; }
+  &__msg  { font-size: .76rem; color: var(--card-text-muted); line-height: 1.35; }
+
+  &__alerta {
+    margin-top: .25rem;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--pk-danger-to, #dc2626);
+    line-height: 1.35;
+  }
+
+  // Ya hay más repartido que el total del producto: datos rotos. Se avisa, no se esconde.
+  &--roto {
+    border-left-color: var(--pk-danger-to, #dc2626);
+    background: var(--pk-danger-soft, rgba(220,38,38,.1));
+  }
+
+  &--alerta { border-left-color: var(--pk-warning-to, #d97706); }
+
+  &--cargando {
+    border-left-color: var(--card-border);
+    background: transparent;
+    font-size: .78rem;
+    color: var(--card-text-muted);
+  }
+}

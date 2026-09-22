@@ -7,6 +7,11 @@ import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPedidoGenerico } from './mis-pedidos/models/IPedidoGenerico.model';
 import { IPageable } from './mis-pedidos/models/IPageable.mode';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
+import {
+  AgregarArticuloRequest,
+  CambiarArticuloRequest,
+  CambiarTipoPedidoRequest
+} from './models/editar-pedido.model';
 
 @Injectable({
   providedIn: 'root'
@@ -74,5 +79,41 @@ export class PedidosService extends CrudGenericService<IPedidos> {
 
     reenviarComprobante(pedidoId: number, body: { correo: string; ticketHtml: string }): Observable<any> {
       return this.http.post<any>(`${this.url}/v1/pedidos/${pedidoId}/notificar`, body);
+    }
+
+    // ── Editar un pedido ya creado (back 2026-09-22) ────────────────────────────────
+    // Los 4 van detrás de permisos configurables: sin la migración corrida dan 403 a todos,
+    // admin incluido, y después de correrla hay que volver a entrar (los permisos viajan
+    // dentro del JWT).
+
+    /**
+     * Cambia la forma de cobro de un pedido ya creado (Normal / Apartado / Ir pagando).
+     *
+     * Si el cliente paga en el momento, el back registra el abono ANTES de cambiar el tipo
+     * — por eso `montoCobrado` y `descripcion` van en el mismo request y no en dos llamadas.
+     */
+    cambiarTipoPedido(pedidoId: number, body: CambiarTipoPedidoRequest): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/tipo`, body);
+    }
+
+    /** Agrega un artículo al pedido, a precio de catálogo. */
+    agregarArticulo(pedidoId: number, body: AgregarArticuloRequest): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.post<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos`, body);
+    }
+
+    /**
+     * Cambia una línea por otro artículo.
+     *
+     * ⚠️ Puede contestar **409** cuando el artículo nuevo rompe un combo de promoción. Eso NO
+     * es un error: el body trae las dos salidas y hay que preguntarle al usuario cuál quiere,
+     * para después reenviar el mismo request con `modo`.
+     */
+    cambiarArticulo(pedidoId: number, detalleId: number, body: CambiarArticuloRequest): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}`, body);
+    }
+
+    /** Quita una promoción completa del pedido — todas sus líneas de una vez. */
+    quitarPromocion(pedidoId: number, promocionId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.delete<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/promociones/${promocionId}`);
     }
 }

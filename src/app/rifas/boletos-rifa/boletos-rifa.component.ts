@@ -13,6 +13,12 @@ import {
   IResultadoSorteoPlataformas,
   PlataformaBoleto
 } from '../models/boleto-rifa.model';
+import {
+  IGrupoBoletosPerfil,
+  INuevaParticipacion,
+  IParticipacion
+} from '../models/boleto-agrupado.model';
+import { AuthService } from 'src/app/auth/auth.service';
 import { RifaService } from '../service/rifa.service';
 import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
 import { VarianteService } from 'src/app/variante/service/variante.service';
@@ -146,7 +152,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly rifaService: RifaService,
-    private readonly varianteService: VarianteService
+    private readonly varianteService: VarianteService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -218,6 +225,9 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.rifaSeleccionada = rifa;
     this.concursanteSeleccionado = null;
     this.boletos = [];
+    this.grupos = [];
+    this.mostrarFormGrupo = false;
+    this.cargarGrupos();
     this.cancelarEdicionBoleto();
     this.cancelarFormParticipante();
     this.premioEditandoId = null;
@@ -1321,6 +1331,254 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     const rango = r.fechaInicioBoletos ? ` · ${r.fechaInicioBoletos} a ${r.fechaFinBoletos}` : '';
     const estado = r.activa ? '' : ' · cerrada';
     return `Rifa #${r.id}${rango}${estado}`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════════
+  //  Boletos agrupados por perfil (2026-09-22)
+  //
+  //  Resuelve los dos problemas de esta pantalla:
+  //   1. Había que bajar hasta el final de la lista para agregar uno y volver a subir →
+  //      los renglones arrancan COLAPSADOS y el alta queda siempre arriba.
+  //   2. Cada participación obligaba a recargar nombre, plataforma y perfil → ahora la
+  //      cabecera se carga una vez y se suman participaciones.
+  //
+  //  ⚠️ El sorteo NO cambia: por debajo sigue habiendo una fila por participación.
+  // ════════════════════════════════════════════════════════════════════════════════
+
+  grupos: IGrupoBoletosPerfil[] = [];
+  cargandoGrupos = false;
+
+  /** Alta agrupada: la cabecera se llena una vez. */
+  mostrarFormGrupo   = false;
+  grupoConcursanteId: number | null = null;
+  grupoPlataforma: PlataformaBoleto | '' = '';
+  grupoUrlPerfil     = '';
+  /** Cada renglón es un boleto. Arranca con uno para que no haya que apretar "+" primero. */
+  grupoParticipaciones: INuevaParticipacion[] = [{ urlParticipacion: '', motivo: '', modo: 'UNICA' }];
+  guardandoGrupo     = false;
+
+  get puedeCargarAgrupado(): boolean {
+    return this.authService.tieneAccion('rifas/boletos', 'cargar-boletos-agrupado');
+  }
+
+  get puedeAgregarParticipacion(): boolean {
+    return this.authService.tieneAccion('rifas/boletos', 'agregar-participacion');
+  }
+
+  get puedeQuitarParticipacion(): boolean {
+    return this.authService.tieneAccion('rifas/boletos', 'quitar-participacion');
+  }
+
+  /** El total de boletos de toda la rifa, sumando los grupos. */
+  get totalBoletosRifa(): number {
+    return this.grupos.reduce((t, g) => t + (g.totalBoletos ?? 0), 0);
+  }
+
+  cargarGrupos(): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId) { this.grupos = []; return; }
+
+    this.cargandoGrupos = true;
+    this.rifaService.getBoletosAgrupados(rifaId).subscribe({
+      next: gs => {
+        // Colapsados a propósito: con muchos participantes, expandidos obligan a hacer scroll
+        // hasta el final para llegar al alta — que es el problema que esto viene a resolver.
+        this.grupos = (gs ?? []).map(g => ({ ...g, expandido: false }));
+        this.cargandoGrupos = false;
+      },
+      error: () => { this.grupos = []; this.cargandoGrupos = false; }
+    });
+  }
+
+  alternarGrupo(g: IGrupoBoletosPerfil): void {
+    g.expandido = !g.expandido;
+  }
+
+  colapsarTodos(): void {
+    this.grupos.forEach(g => g.expandido = false);
+  }
+
+  // ── Alta agrupada ───────────────────────────────────────────────────────────────
+
+  abrirFormGrupo(): void {
+    this.grupoConcursanteId   = this.concursanteSeleccionado?.id ?? null;
+    this.grupoPlataforma      = '';
+    this.grupoUrlPerfil       = '';
+    this.grupoParticipaciones = [{ urlParticipacion: '', motivo: '', modo: 'UNICA' }];
+    this.mostrarFormGrupo     = true;
+  }
+
+  cerrarFormGrupo(): void {
+    this.mostrarFormGrupo = false;
+  }
+
+  agregarRenglonParticipacion(): void {
+    this.grupoParticipaciones.push({ urlParticipacion: '', motivo: '', modo: 'UNICA' });
+  }
+
+  quitarRenglonParticipacion(i: number): void {
+    this.grupoParticipaciones.splice(i, 1);
+    if (this.grupoParticipaciones.length === 0) this.agregarRenglonParticipacion();
+  }
+
+  /** Cuántos boletos va a sumar este alta: uno por URL llena. */
+  get boletosDelFormulario(): number {
+    return this.grupoParticipaciones.filter(p => (p.urlParticipacion ?? '').trim()).length;
+  }
+
+  guardarGrupo(): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId || this.guardandoGrupo) return;
+
+    if (!this.grupoConcursanteId)      { this.avisar('Falta el participante', 'Elegí a quién le corresponden estos boletos.'); return; }
+    if (!this.grupoPlataforma)         { this.avisar('Falta la plataforma', 'Elegí en qué red participó.'); return; }
+    if (!this.grupoUrlPerfil.trim())   { this.avisar('Falta el perfil', 'Poné el link del perfil del cliente en esa red.'); return; }
+    if (this.boletosDelFormulario === 0) {
+      this.avisar('No hay participaciones',
+        'Un perfil sin participaciones no suma boletos. Agregá al menos una url de algo que el cliente hizo.');
+      return;
+    }
+
+    this.guardandoGrupo = true;
+    this.rifaService.cargarBoletosAgrupados(rifaId, {
+      concursanteId:   this.grupoConcursanteId,
+      plataforma:      this.grupoPlataforma as PlataformaBoleto,
+      urlPerfil:       this.grupoUrlPerfil.trim(),
+      participaciones: this.grupoParticipaciones
+        .filter(p => (p.urlParticipacion ?? '').trim())
+        .map(p => ({
+          urlParticipacion: p.urlParticipacion.trim(),
+          motivo:           (p.motivo ?? '').trim() || null,
+          modo:             p.modo ?? 'UNICA'
+        }))
+    }).subscribe({
+      next: () => {
+        this.guardandoGrupo   = false;
+        this.mostrarFormGrupo = false;
+        this.avisarOk('Boletos cargados', `Se sumaron ${this.boletosDelFormulario} boletos.`);
+        this.cargarGrupos();
+      },
+      error: err => {
+        this.guardandoGrupo = false;
+        this.manejarErrorParticipacion(err, () => this.guardarGrupo());
+      }
+    });
+  }
+
+  // ── Sumar una participación a un grupo ya cargado ────────────────────────────────
+
+  agregandoEn: number | null = null;
+
+  /** El "+" de adentro del renglón: no vuelve a pedir nombre, plataforma ni perfil. */
+  sumarParticipacion(g: IGrupoBoletosPerfil): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId) return;
+
+    Swal.fire({
+      title: 'Sumar una participación',
+      html: `<p style="font-size:.85rem;margin-bottom:.5rem">A <b>${g.nombreConcursante}</b> en `
+          + `${this.iconoPlataforma(g.plataforma)} ${g.plataforma}</p>`,
+      input: 'text',
+      inputPlaceholder: 'URL de lo que hizo (el post, el comentario…)',
+      showCancelButton: true,
+      confirmButtonText: 'Agregar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: v => !v?.trim() ? 'Hace falta la url de la participación' : null
+    }).then(res => {
+      if (!res.isConfirmed || !res.value?.trim()) return;
+      this.enviarParticipacion(g, { urlParticipacion: res.value.trim(), modo: 'UNICA' });
+    });
+  }
+
+  private enviarParticipacion(g: IGrupoBoletosPerfil, data: INuevaParticipacion): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId) return;
+
+    this.agregandoEn = g.concursanteId;
+    this.rifaService.agregarParticipacion(rifaId, g.plataforma, g.urlPerfil, data).subscribe({
+      next: () => {
+        this.agregandoEn = null;
+        this.avisarOk('Boleto sumado', '');
+        this.cargarGrupos();
+      },
+      error: err => {
+        this.agregandoEn = null;
+        // Si era duplicada, se le ofrece cargarla igual con el otro modo.
+        this.manejarErrorParticipacion(err, () =>
+          this.enviarParticipacion(g, { ...data, modo: 'REPETIDA_PERMITIDA' }));
+      }
+    });
+  }
+
+  /**
+   * El **409** de URL repetida.
+   *
+   * No es un error: el back rechaza la url porque se mandó en modo `UNICA` y ya existe, y el
+   * mensaje dice **de quién** es la que ya estaba — que es lo primero que el admin quiere
+   * saber (¿se la está robando a otro, o es suya de antes?). Si de verdad se repite, se
+   * reenvía con `REPETIDA_PERMITIDA`.
+   *
+   * ⚠️ Se mira `err.status`, **no** el `code` del body: en los errores el envelope trae
+   * `code: 404` sin importar el status real.
+   */
+  private manejarErrorParticipacion(err: any, reintentarComoRepetida: () => void): void {
+    if (err?.status === 409) {
+      Swal.fire({
+        icon: 'question',
+        title: 'Esa url ya está cargada',
+        text: (err?.error?.mensaje ?? err?.error?.data)
+            ?? 'Esa url de participación ya existe en esta rifa.',
+        showCancelButton: true,
+        confirmButtonText: 'Cargarla igual',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      }).then(res => { if (res.isConfirmed) reintentarComoRepetida(); });
+      return;
+    }
+
+    if (err?.status === 403) {
+      this.avisar('Sin permiso',
+        'Si el permiso ya se dio de alta, cerrá sesión y volvé a entrar: los permisos viajan '
+        + 'dentro del token y uno viejo no los trae.');
+      return;
+    }
+
+    this.error('No se pudo cargar', err);
+  }
+
+  // ── Quitar una participación ────────────────────────────────────────────────────
+
+  quitandoBoleto: number | null = null;
+
+  quitarParticipacion(g: IGrupoBoletosPerfil, p: IParticipacion): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId || this.quitandoBoleto) return;
+
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Quitar esta participación?',
+      text: 'Le resta un boleto a ' + g.nombreConcursante + '.',
+      showCancelButton: true,
+      confirmButtonText: 'Quitar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then(res => {
+      if (!res.isConfirmed) return;
+
+      this.quitandoBoleto = p.boletoId;
+      this.rifaService.quitarParticipacion(rifaId, p.boletoId).subscribe({
+        next: () => {
+          this.quitandoBoleto = null;
+          // El grupo puede quedar en 0 y eso está bien: el cliente sigue en la rifa por sus
+          // otras redes. Se recarga y se dibuja vacío, no se trata como error.
+          this.cargarGrupos();
+        },
+        error: err => {
+          this.quitandoBoleto = null;
+          this.error('No se pudo quitar la participación', err);
+        }
+      });
+    });
   }
 
   // ── Avisos ─────────────────────────────────────────────────────────

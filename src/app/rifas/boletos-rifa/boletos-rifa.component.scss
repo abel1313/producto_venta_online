@@ -840,3 +840,290 @@
     color: var(--app-accent);
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+//  Boletos agrupados por perfil (2026-09-22)
+//  Sin colores literales: todo sale de las variables de tema, así los dos modos
+//  (día y noche) salen bien sin escribir el bloque oscuro aparte.
+// ════════════════════════════════════════════════════════════════════════════════
+
+.bg-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+.bg-btn-alta, .bg-btn-colapsar, .bg-btn-mas, .bg-btn-sumar {
+  padding: .42rem .9rem;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.bg-btn-alta {
+  border: none;
+  background: var(--app-accent);
+  color: var(--app-accent-ink);
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.bg-btn-colapsar, .bg-btn-mas, .bg-btn-sumar {
+  border: 1.5px solid var(--card-border);
+  background: transparent;
+  color: var(--card-text);
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &:not(:disabled):hover { border-color: var(--app-accent); background: var(--app-accent-soft); }
+}
+
+// ── Formulario de alta ──────────────────────────────────────────────────────────
+.bg-form {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: .9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__fila { display: flex; flex-direction: column; gap: .3rem; }
+
+  &__acciones {
+    display: flex;
+    gap: .6rem;
+    justify-content: flex-end;
+  }
+}
+
+.bg-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--card-text-muted);
+}
+
+.bg-contador {
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--app-accent-soft);
+  color: var(--card-text);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.bg-input {
+  padding: .48rem .7rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card-bg, var(--form-section-bg));
+  color: var(--card-text);
+  font-size: .84rem;
+  outline: none;
+
+  &:focus { border-color: var(--app-accent); }
+  &::placeholder { color: var(--card-text-muted); opacity: .7; }
+}
+
+.bg-ayuda {
+  font-size: .73rem;
+  color: var(--card-text-muted);
+  line-height: 1.4;
+
+  code {
+    padding: 0 .2rem;
+    border-radius: 3px;
+    background: var(--app-accent-soft);
+  }
+}
+
+.bg-plataformas { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+.bg-plat-btn {
+  padding: .35rem .75rem;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--activa { border-color: var(--app-accent); background: var(--app-accent-soft); }
+}
+
+// Un renglón por participación: url + qué hizo + cómo se valida
+.bg-part {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  align-items: center;
+
+  &__url    { flex: 3 1 14rem; }
+  &__motivo { flex: 2 1 9rem; }
+  &__modo   { flex: 1 1 11rem; }
+
+  &__quitar {
+    flex: 0 0 auto;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--card-text-muted);
+    cursor: pointer;
+
+    &:hover { color: var(--pk-danger-to, #dc2626); border-color: var(--pk-danger-to, #dc2626); }
+  }
+}
+
+.bg-btn-cancelar {
+  padding: .42rem .9rem;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bg-btn-guardar {
+  padding: .42rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--app-accent);
+  color: var(--app-accent-ink);
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.bg-estado {
+  margin: .5rem 0;
+  font-size: .82rem;
+  color: var(--card-text-muted);
+}
+
+// ── El renglón colapsable ───────────────────────────────────────────────────────
+.bg-grupo {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  margin-bottom: .45rem;
+  overflow: hidden;
+  background: var(--card-bg, transparent);
+
+  &--abierto { border-color: var(--app-accent); }
+
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .55rem .75rem;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover { background: var(--app-accent-soft); }
+  }
+
+  &__flecha { font-size: .8rem; color: var(--card-text-muted); width: .8rem; }
+  &__plat   { font-size: 1rem; }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: .05rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__nombre {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--card-text);
+  }
+
+  &__perfil {
+    font-size: .72rem;
+    color: var(--card-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // El total se ve sin abrir el grupo: es el dato que se busca de un vistazo
+  &__total {
+    flex: 0 0 auto;
+    padding: .18rem .55rem;
+    border-radius: 999px;
+    background: var(--app-accent-soft);
+    color: var(--card-text);
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  &__cuerpo {
+    padding: .5rem .75rem .7rem;
+    border-top: 1px solid var(--card-border);
+  }
+}
+
+.bg-vacio {
+  margin: 0 0 .5rem;
+  font-size: .78rem;
+  color: var(--card-text-muted);
+  line-height: 1.4;
+}
+
+.bg-parts {
+  list-style: none;
+  margin: 0 0 .5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .3rem .45rem;
+    border-radius: 7px;
+    background: var(--form-section-bg);
+  }
+
+  &__url {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: .76rem;
+    color: var(--app-accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__motivo, &__fecha {
+    flex: 0 0 auto;
+    font-size: .72rem;
+    color: var(--card-text-muted);
+  }
+
+  &__quitar {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: .8rem;
+
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+}

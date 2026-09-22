@@ -54,6 +54,35 @@
           </div>
           <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar producto">✕</button>
         </div>
+
+        <!-- ── Cuánto stock del modelo queda sin repartir ──────────────────────────
+             Sin esto se reparte a ciegas y se pasa del total del producto: así nacieron los
+             descuadres. `disponible` viene calculado del back — NO se recalcula acá, porque
+             si la pantalla repitiera la resta habría dos versiones del mismo número. -->
+        <div class="vf-stock" *ngIf="productoSeleccionado && stockDisponible as sd"
+             [class.vf-stock--roto]="sd.descuadrado"
+             [class.vf-stock--alerta]="seEstaPasandoDeStock">
+
+          <div class="vf-stock__num" *ngIf="!sd.descuadrado">
+            Quedan <b>{{ sd.disponible }}</b> disponibles de {{ sd.stockTotal }}
+          </div>
+
+          <div class="vf-stock__num" *ngIf="sd.descuadrado">
+            ⚠️ Modelo descuadrado
+          </div>
+
+          <!-- `mensaje` viene armado del back para mostrarse tal cual -->
+          <div class="vf-stock__msg">{{ sd.mensaje }}</div>
+
+          <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock && !sd.descuadrado">
+            Estás repartiendo <b>{{ stockEnEstaPantalla }}</b> y solo quedan
+            <b>{{ sd.disponible }}</b>. El guardado va a fallar.
+          </div>
+        </div>
+
+        <div class="vf-stock vf-stock--cargando" *ngIf="cargandoStock">
+          Consultando el stock disponible…
+        </div>
       </div>
 
       <!-- ── Formulario principal ────────────────────────────────── -->
@@ -250,13 +279,21 @@
       </div>
 
       <!-- ── Botón guardar ───────────────────────────────────────── -->
+      <!-- El número sale de `totalAGuardar`, que NO cuenta el formulario de arriba si quedó
+           vacío. Antes era `totalExtras + 1` fijo: con 2 tallas decía "Guardar 3 productos"
+           y guardaba 3, el tercero vacío. -->
       <button
         class="vf-btn-save"
-        [disabled]="!productoSeleccionado || guardando"
+        [disabled]="!productoSeleccionado || guardando || totalAGuardar === 0"
         (click)="guardar()"
       >
-        💾 Guardar {{ totalExtras > 0 ? totalExtras + 1 + ' productos' : 'producto' }}
+        💾 Guardar {{ totalAGuardar > 1 ? totalAGuardar + ' productos' : 'producto' }}
       </button>
+
+      <p class="vf-faltantes" *ngIf="productoSeleccionado && totalAGuardar === 0">
+        No hay nada que guardar todavía: llená al menos la <b>talla</b>, el <b>color</b> u otro
+        dato, o ponéle <b>stock</b>.
+      </p>
 
       <p class="vf-faltantes" *ngIf="!productoSeleccionado">
         Falta elegir el <b>modelo</b> en el buscador de arriba.

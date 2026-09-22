@@ -604,3 +604,275 @@
   font-size: .76rem;
   color: var(--card-text-muted);
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+//  Editar un pedido ya creado (2026-09-22)
+//  Todo sale de las variables de tema (--card-text, --form-section-bg, …), que es lo que
+//  evita el problema de letras claras sobre fondo claro en modo día: no hay ni un color
+//  literal acá, así que los dos modos salen bien solos.
+// ════════════════════════════════════════════════════════════════════════════════
+
+.dp-btn-tipo, .dp-btn-agregar-art {
+  padding: .38rem .9rem;
+  border: 1.5px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--form-section-bg);
+  color: var(--card-text);
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s;
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &:not(:disabled):hover { border-color: var(--app-accent); background: var(--app-accent-soft); }
+}
+
+// ── Cambiar la forma de cobro ──────────────────────────────────────────────────
+.dp-tipo-form {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__titulo {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--card-text);
+  }
+
+  &__actual {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--card-text-muted);
+  }
+}
+
+.dp-tipo-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.dp-tipo-btn {
+  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .55rem .8rem;
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg, var(--form-section-bg));
+  color: var(--card-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+
+  &__nombre { font-size: .82rem; font-weight: 700; }
+  &__ayuda  { font-size: .72rem; color: var(--card-text-muted); line-height: 1.3; }
+
+  &--active {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+  }
+
+  // El tipo actual se deshabilita: cambiar a lo mismo no es un cambio, y el back lo rechaza.
+  &:disabled { opacity: .45; cursor: not-allowed; }
+}
+
+.dp-tipo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+
+  label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--card-text-muted);
+  }
+
+  input {
+    padding: .5rem .75rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg, var(--form-section-bg));
+    color: var(--card-text);
+    font-size: .875rem;
+    outline: none;
+
+    &:focus { border-color: var(--app-accent); }
+    &::placeholder { color: var(--card-text-muted); opacity: .7; }
+  }
+
+  small {
+    font-size: .74rem;
+    color: var(--card-text-muted);
+    line-height: 1.35;
+  }
+}
+
+.dp-tipo-aviso {
+  margin: 0;
+  padding: .55rem .8rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--pk-warning-to, #d97706);
+  background: var(--pk-warning-soft, rgba(251, 146, 60, .14));
+  color: var(--card-text);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+
+.dp-tipo-acciones {
+  display: flex;
+  gap: .6rem;
+  justify-content: flex-end;
+}
+
+// ── Buscador de artículos ──────────────────────────────────────────────────────
+.dp-art-buscador {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  &__titulo {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--card-text);
+  }
+
+  &__input {
+    padding: .55rem .8rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg, var(--form-section-bg));
+    color: var(--card-text);
+    font-size: .875rem;
+    outline: none;
+
+    &:focus { border-color: var(--app-accent); }
+    &::placeholder { color: var(--card-text-muted); opacity: .7; }
+  }
+
+  &__estado {
+    margin: 0;
+    font-size: .8rem;
+    color: var(--card-text-muted);
+  }
+
+  &__acciones {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.dp-art-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.dp-art-item {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .5rem .7rem;
+  border: 1px solid var(--card-border);
+  border-radius: 9px;
+  background: var(--card-bg, var(--form-section-bg));
+
+  &__datos {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__nombre {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--card-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__variante, &__stock {
+    font-size: .72rem;
+    color: var(--card-text-muted);
+  }
+
+  &__precio {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .1rem;
+    flex: 0 0 auto;
+  }
+
+  // El precio normal tachado cuando hay rebaja: sin esto el admin ve un número que no coincide
+  // con el de la card y parece un error de precio.
+  &__tachado {
+    font-size: .72rem;
+    color: var(--card-text-muted);
+    text-decoration: line-through;
+  }
+
+  &__final {
+    font-size: .84rem;
+    font-weight: 700;
+    color: var(--card-text);
+  }
+
+  &__btn {
+    flex: 0 0 auto;
+    padding: .35rem .75rem;
+    border: none;
+    border-radius: 7px;
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    font-size: .76rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:disabled { opacity: .45; cursor: not-allowed; }
+  }
+}
+
+// ── Quitar promoción / cambiar artículo ────────────────────────────────────────
+.prod-card__quitar-promo {
+  align-self: flex-start;
+  margin-bottom: .3rem;
+  padding: .22rem .55rem;
+  border: 1px solid var(--pk-danger-soft, rgba(220, 38, 38, .35));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pk-danger-to, #dc2626);
+  font-size: .7rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &:not(:disabled):hover { background: var(--pk-danger-soft, rgba(220, 38, 38, .12)); }
+}
+
+.cantidad-btn--cambiar {
+  margin-left: .35rem;
+  font-weight: 700;
+}

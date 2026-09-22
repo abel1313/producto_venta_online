@@ -91,6 +91,24 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // Favoritos — solo usuarios logueados (con perfil de cliente completo, lo valida el back)
   private roles: string[] = [];
   get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
+
+  /**
+   * El precio de rebaja de la card (back 2026-09-22).
+   *
+   * 🔒 **`precioRebaja` solo llega si quien pregunta es admin** — al cliente el back lo omite
+   * a propósito, porque el precio rebajado es una decisión interna del negocio. Así que no
+   * hace falta esconderlo acá: si llegó, es que corresponde verlo. El chequeo de `> 0` es
+   * solo para no dibujar un tachado cuando no hay rebaja de verdad.
+   */
+  tieneRebaja(v: IVarianteResumen): boolean {
+    return (v.precioRebaja ?? 0) > 0;
+  }
+
+  /** Lo que se le va a cobrar: la rebaja si existe, si no el precio normal. */
+  precioFinal(v: IVarianteResumen): number {
+    const rebaja = v.precioRebaja ?? 0;
+    return rebaja > 0 ? rebaja : (v.precio ?? 0);
+  }
   favoritosIds = new Set<number>();
   /** Se apaga si el back dice que al usuario le falta perfil de cliente — ver `ngOnInit`. */
   favoritosDisponibles = true;

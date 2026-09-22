@@ -132,9 +132,14 @@
           </p>
 
           <!-- Solo se puede reintentar cuando la imagen falló -->
+          <button class="ci-btn ci-btn--sm ci-btn--retry" type="button"
+                  *ngIf="t.estadoImagen === 'FALLIDO' && !t.reintentando && t.archivo"
+                  (click)="reintentarMisma(t)">
+            🔄 Reintentar
+          </button>
           <label class="ci-btn ci-btn--sm ci-btn--retry"
                  *ngIf="t.estadoImagen === 'FALLIDO' && !t.reintentando">
-            🔄 Reintentar con otra foto
+            🖼️ Reintentar con otra foto
             <input type="file" accept="image/*" hidden (change)="onReintentar(t, $event)">
           </label>
 

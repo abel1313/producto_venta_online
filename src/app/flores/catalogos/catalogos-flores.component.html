@@ -473,7 +473,7 @@
   <label class="fl-foto" *ngIf="variante?.id"
          [class.fl-foto--subiendo]="subiendoFoto === variante.id"
          [title]="portadas[variante.id] ? 'Cambiar la foto' : 'Agregar una foto'">
-    <input type="file" accept="image/jpeg,image/png,image/gif" hidden
+    <input type="file" accept="image/*" hidden
            [disabled]="!!subiendoFoto || guardando"
            (change)="onFoto($event, variante)">
 

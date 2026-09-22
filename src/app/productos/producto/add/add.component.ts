@@ -11,6 +11,7 @@ import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoService } from '../../service/producto.service';
 // Nuevo — palabra clave para categorizar el producto en búsquedas
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
+import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../../shared/imagen-comprimir.util';
 
 @Component({
   selector: 'app-add',
@@ -373,13 +374,12 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     input.value = '';
   }
 
-  private readonly TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif'];
   private readonly DIMENSION_MAX = 1280;
   private readonly CALIDAD_JPEG = 0.8;
 
   private procesarImagen(file: File): void {
-    if (!this.TIPOS_PERMITIDOS.includes(file.type)) {
-      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: `"${file.name}" no es JPG, PNG ni GIF.`, timer: 2500, showConfirmButton: false });
+    if (!puedeSerImagen(file)) {
+      Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: mensajeNoEsImagen(file.name) });
       return;
     }
     const reader = new FileReader();
@@ -395,6 +395,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         });
         if (this.imagenesCargadas.length === 1) this.mostrarEnCanvas(comprimido);
       };
+      img.onerror = () => Swal.fire({ icon: 'warning', title: 'No se pudo abrir la foto', text: mensajeFotoIlegible(file.name) });
       img.src = original;
     };
     reader.readAsDataURL(file);

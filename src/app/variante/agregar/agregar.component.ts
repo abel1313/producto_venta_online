@@ -132,6 +132,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.terminoProducto = '';
     this.productos = [];
     this.stockDisponible = null;
+    this.errorStock = false;
   }
 
   // ── Stock disponible del modelo ────────────────────────────────────
@@ -140,17 +141,19 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   stockDisponible: IStockDisponible | null = null;
   cargandoStock = false;
+  errorStock = false;
 
   private cargarStockDisponible(): void {
     const id = this.productoSeleccionado?.idProducto;
+    this.errorStock = false;
     if (!id) { this.stockDisponible = null; return; }
 
     this.cargandoStock = true;
     this.varianteService.stockDisponible(id).subscribe({
       next: s => { this.stockDisponible = s; this.cargandoStock = false; },
-      // Si no se puede leer, no se bloquea el alta: el back valida igual al guardar. Solo se
-      // pierde la ayuda visual.
-      error: () => { this.stockDisponible = null; this.cargandoStock = false; }
+      // Si no se puede leer, no se bloquea el alta: el back valida igual al guardar. Se avisa
+      // en pantalla para que no parezca que el indicador no existe.
+      error: () => { this.stockDisponible = null; this.cargandoStock = false; this.errorStock = true; }
     });
   }
 

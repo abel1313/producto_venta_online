@@ -784,14 +784,42 @@ export class BuscarComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Al deshabilitar, el back deja el artículo en 0 y ese stock vuelve al disponible del producto.
+  // Por eso al habilitarlo de nuevo entra sin stock y la tienda no lo muestra (pide stock > 0):
+  // se avisa antes, y se deja decidir si se habilita igual.
   habilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
+    if (habilitar && !v.stock) {
+      this.confirmarHabilitarSinStock(1).then(ok => { if (ok) this.ejecutarHabilitarVariante(v, habilitar); });
+      return;
+    }
+    this.ejecutarHabilitarVariante(v, habilitar);
+  }
+
+  private ejecutarHabilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
     this.varianteService.habilitarVariante(v.id, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         v.habilitado = habilitar ? '1' : '0';
-        Swal.fire({ icon: 'success', title: habilitar ? 'Variante habilitada' : 'Variante deshabilitada', timer: 1500, showConfirmButton: false });
+        if (!habilitar) v.stock = 0;
+        this.varianteService.invalidarCache();
+        Swal.fire({ icon: 'success', title: habilitar ? 'Artículo habilitado' : 'Artículo deshabilitado', timer: 1500, showConfirmButton: false });
       },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cambiar el estado.' })
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el estado.' })
     });
+  }
+
+  private confirmarHabilitarSinStock(cuantos: number): Promise<boolean> {
+    return Swal.fire({
+      icon: 'warning',
+      title: cuantos === 1 ? 'Este artículo no tiene stock' : `${cuantos} artículos no tienen stock`,
+      html: 'Al deshabilitarlo su stock volvió al disponible del producto. Habilitarlo no le devuelve '
+          + 'stock: no va a aparecer en la tienda hasta que se lo asignes editándolo (y si el producto '
+          + 'ya no tiene disponible, primero hay que subirle stock al producto).<br><br>'
+          + '¿Habilitarlo de todas formas?',
+      showCancelButton: true,
+      confirmButtonText: 'Habilitar de todas formas',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then(r => r.isConfirmed);
   }
 
   /**
@@ -830,16 +858,30 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   habilitarLote(habilitar: boolean): void {
     if (this.seleccionados.size === 0 || this.procesandoLote) return;
+    const sinStock = habilitar
+      ? this.variantes.filter(v => this.seleccionados.has(v.id) && !v.stock).length
+      : 0;
+    if (sinStock > 0) {
+      this.confirmarHabilitarSinStock(sinStock).then(ok => { if (ok) this.ejecutarHabilitarLote(habilitar); });
+      return;
+    }
+    this.ejecutarHabilitarLote(habilitar);
+  }
+
+  private ejecutarHabilitarLote(habilitar: boolean): void {
     const ids = Array.from(this.seleccionados);
     this.procesandoLote = true;
     this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.variantes.forEach(v => {
-          if (this.seleccionados.has(v.id)) v.habilitado = habilitar ? '1' : '0';
+          if (!this.seleccionados.has(v.id)) return;
+          v.habilitado = habilitar ? '1' : '0';
+          if (!habilitar) v.stock = 0;
         });
         this.seleccionados.clear();
         this.procesandoLote = false;
-        Swal.fire({ icon: 'success', title: habilitar ? 'Variantes habilitadas' : 'Variantes deshabilitadas', timer: 1800, showConfirmButton: false });
+        this.varianteService.invalidarCache();
+        Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
       },
       error: (err) => {
         this.procesandoLote = false;

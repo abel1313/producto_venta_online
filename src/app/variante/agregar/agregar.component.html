@@ -83,6 +83,9 @@
         <div class="vf-stock vf-stock--cargando" *ngIf="cargandoStock">
           Consultando el stock disponible…
         </div>
+        <div class="vf-stock vf-stock--cargando" *ngIf="errorStock">
+          No se pudo consultar el stock disponible. Puedes guardar igual: el servidor valida el stock.
+        </div>
       </div>
 
       <!-- ── Formulario principal ────────────────────────────────── -->

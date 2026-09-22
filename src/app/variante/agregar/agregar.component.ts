@@ -280,6 +280,17 @@ export class AgregarComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Lo que la talla dejó vacío lo toma de arriba: si los datos generales se llenaron después de
+  // agregar las tallas y no se presionó "aplicar a todas", igual viajan.
+  private conDatosGenerales(extra: any): any {
+    const base = this.form.value ?? {};
+    const vacio = (x: any) => x == null || (typeof x === 'string' && x.trim() === '');
+    const campos = ['color', 'presentacion', 'marca', 'contenidoNeto', 'descripcion'];
+    const r = { ...extra };
+    campos.forEach(c => { if (vacio(r[c]) && !vacio(base[c])) r[c] = base[c]; });
+    return r;
+  }
+
   // Etiqueta para extras con la misma talla: "S", "S #2", "S #3"...
   extraLabel(extra: VarianteExtra, idx: number): string {
     const previos = this.variantesExtras.slice(0, idx).filter(e => e.talla === extra.talla).length;
@@ -448,6 +459,13 @@ export class AgregarComponent implements OnInit, OnDestroy {
     const v = this.form.value ?? {};
     const conTexto = (x: any) => typeof x === 'string' && x.trim().length > 0;
 
+    // Con tallas, color/marca/descripción/etc. de arriba son datos generales que se copian a
+    // cada talla, no un artículo más: "llené los datos y 5 tallas y me salían 6". Arriba solo
+    // cuenta como artículo propio si trae su talla o su stock.
+    if (this.variantesExtras.length > 0) {
+      return conTexto(v.talla) || (Number(v.stock) || 0) > 0;
+    }
+
     return conTexto(v.talla)
         || conTexto(v.color)
         || conTexto(v.marca)
@@ -501,7 +519,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
       // Variantes extra — misma palabra clave, sin imágenes para no duplicar el base64
       ...this.variantesExtras.map(e => ({
         productoId,
-        ...e.form.value,
+        ...this.conDatosGenerales(e.form.value),
         talla: e.talla,
         palabraClaveId,
         listImagenes: []

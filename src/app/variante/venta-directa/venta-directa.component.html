@@ -200,8 +200,9 @@
           </div>
         </ng-container>
 
-        <!-- Crédito — APARTADO / IR PAGANDO (oculto cuando hay promos: solo contado) -->
-        <ng-container *ngIf="!tienePromos">
+        <!-- Crédito — APARTADO / IR PAGANDO. También con promoción: el back lo acepta desde el
+             2026-09-22 y el precio de la promo queda congelado en el pedido. -->
+        <ng-container>
         <div class="vd-credit-divider"><span>o pago en parcialidades</span></div>
 
         <div class="vd-credit-btns">
@@ -257,7 +258,7 @@
             ℹ️ Los abonos siguientes se registran en <strong>Créditos / Abonos</strong> — sin pagos a meses.
           </div>
         </ng-container>
-        </ng-container><!-- /!tienePromos -->
+        </ng-container><!-- /crédito -->
       </div>
 
       <!-- ── CLIENTE ───────────────────────────────────────────── -->

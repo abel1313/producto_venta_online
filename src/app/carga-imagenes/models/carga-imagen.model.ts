@@ -74,5 +74,8 @@ export interface ITarjetaCaptura extends IEstadoCargaProducto {
   nombreArchivo: string;
   // Firma del archivo — evita subir dos veces la misma foto en la sesión
   firma: string;
+  // Archivo original, para que "Reintentar" lo vuelva a mandar sin pedir que se elija otra vez.
+  // null en las tarjetas que se recargan del back al abrir la pantalla: ahí no hay archivo.
+  archivo: File | null;
   reintentando: boolean;
 }

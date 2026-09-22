@@ -64,6 +64,14 @@ export interface IVarianteResumen {
   imagenBase64?: string | null;
   imagenUrl?: string | null;
   precio?: number | null;
+  /**
+   * Precio de rebaja del producto (back 2026-09-22).
+   *
+   * ⚠️ **Solo viaja cuando quien pregunta es admin.** Para un cliente llega `undefined` a
+   * propósito: el precio rebajado es una decisión interna del negocio y no tiene por qué verlo
+   * desde la tienda. No lo trates como "no tiene rebaja" sin mirar antes si sos admin.
+   */
+  precioRebaja?: number | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;

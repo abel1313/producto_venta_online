@@ -7,6 +7,7 @@ import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
 import Swal from 'sweetalert2';
 import { IVarianteRequest } from '../models/variante.model';
+import { IStockDisponible } from '../models/stock-disponible.model';
 import { VarianteService } from '../service/variante.service';
 // Nuevo — palabra clave para categorizar todas las variantes del lote
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
@@ -123,12 +124,46 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.cargarStockDisponible();
   }
 
   limpiarProducto(): void {
     this.productoSeleccionado = null;
     this.terminoProducto = '';
     this.productos = [];
+    this.stockDisponible = null;
+  }
+
+  // ── Stock disponible del modelo ────────────────────────────────────
+  // Sin esto el admin reparte stock a ciegas y se pasa del total del producto: así nacieron
+  // los descuadres (el 269: 12 en total, sus modelos suman 18).
+
+  stockDisponible: IStockDisponible | null = null;
+  cargandoStock = false;
+
+  private cargarStockDisponible(): void {
+    const id = this.productoSeleccionado?.idProducto;
+    if (!id) { this.stockDisponible = null; return; }
+
+    this.cargandoStock = true;
+    this.varianteService.stockDisponible(id).subscribe({
+      next: s => { this.stockDisponible = s; this.cargandoStock = false; },
+      // Si no se puede leer, no se bloquea el alta: el back valida igual al guardar. Solo se
+      // pierde la ayuda visual.
+      error: () => { this.stockDisponible = null; this.cargandoStock = false; }
+    });
+  }
+
+  /** Lo que ya se está por repartir en esta pantalla, sumando el base y las tallas. */
+  get stockEnEstaPantalla(): number {
+    const base = this.baseDescribeAlgo ? (Number(this.form.value?.stock) || 0) : 0;
+    return base + this.variantesExtras.reduce((t, e) => t + (Number(e.form.value?.stock) || 0), 0);
+  }
+
+  /** Se pasó de lo que queda libre. El back lo rechaza igual; esto avisa antes de escribir. */
+  get seEstaPasandoDeStock(): boolean {
+    return this.stockDisponible != null
+        && this.stockEnEstaPantalla > this.stockDisponible.disponible;
   }
 
   // ── Modal tallas numéricas ─────────────────────────────────────────
@@ -392,21 +427,73 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   // ── Guardar ────────────────────────────────────────────────────────
 
+  /**
+   * ¿El formulario base describe un artículo de verdad?
+   *
+   * **El bug que arregla** (reportado 2026-09-22): "si en tallas solo agrego 2 aparece que voy a
+   * guardar 3 aunque esté vacío lo que llené". El formulario de arriba y la sección de tallas
+   * son independientes: si se usa solo la de tallas, el de arriba queda vacío pero igual se
+   * mandaba como un artículo más.
+   *
+   * La regla es **deliberadamente conservadora** — es la misma que el back aplica en
+   * `ArticuloDeAlta.describeAlgo()`. Solo se descarta si no tiene NINGÚN dato propio, NI stock,
+   * NI imágenes. Así el caso legítimo de "solo quiero dar de alta uno" sigue funcionando: con
+   * llenar cualquier cosa, entra.
+   */
+  private get baseDescribeAlgo(): boolean {
+    const v = this.form.value ?? {};
+    const conTexto = (x: any) => typeof x === 'string' && x.trim().length > 0;
+
+    return conTexto(v.talla)
+        || conTexto(v.color)
+        || conTexto(v.marca)
+        || conTexto(v.descripcion)
+        || conTexto(v.presentacion)
+        || conTexto(v.contenidoNeto)
+        || (Number(v.stock) || 0) > 0
+        || this.imagenesCargadas.length > 0;
+  }
+
+  /**
+   * Cuántos artículos se van a guardar de verdad. Es lo que se muestra en pantalla, así que
+   * tiene que coincidir con lo que se manda — era justo lo que no pasaba.
+   */
+  get totalAGuardar(): number {
+    return this.variantesExtras.length + (this.baseDescribeAlgo ? 1 : 0);
+  }
+
   guardar(): void {
     if (!this.productoSeleccionado) {
       Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
       return;
     }
+
+    const incluirBase = this.baseDescribeAlgo;
+
+    if (!incluirBase && this.variantesExtras.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No hay nada que guardar',
+        text: 'Llená al menos la talla, el color u otro dato, o ponéle stock.'
+      });
+      return;
+    }
+
     this.guardando = true;
 
     const productoId = this.productoSeleccionado.idProducto;
 
     const palabraClaveId = this.palabraClaveSeleccionada?.id ?? null;
 
-    // Una sola petición con todas las variantes como lista
+    // Una sola petición con todas las variantes como lista.
+    // ⚠️ El formulario base solo entra si describe algo — si no, se estaría guardando un
+    // artículo vacío que nadie pidió. `palabraClaveId` va en TODAS: la categoría elegida
+    // arriba aplica a todo el lote, no solo al primero.
     const payloads: IVarianteRequest[] = [
       // Formulario principal — lleva las imágenes y la palabra clave
-      { productoId, ...this.form.value, palabraClaveId, listImagenes: this.imagenesCargadas },
+      ...(incluirBase
+        ? [{ productoId, ...this.form.value, palabraClaveId, listImagenes: this.imagenesCargadas }]
+        : []),
       // Variantes extra — misma palabra clave, sin imágenes para no duplicar el base64
       ...this.variantesExtras.map(e => ({
         productoId,
@@ -416,6 +503,12 @@ export class AgregarComponent implements OnInit, OnDestroy {
         listImagenes: []
       }))
     ];
+
+    // Si el base quedó fuera, las imágenes viajan con el primer artículo de tallas: si no, se
+    // perderían sin aviso — el usuario las cargó y esperaría verlas.
+    if (!incluirBase && this.imagenesCargadas.length > 0 && payloads.length > 0) {
+      payloads[0] = { ...payloads[0], listImagenes: this.imagenesCargadas };
+    }
 
     this.varianteService.save(payloads).subscribe({
       next: () => this.onExito(),
@@ -435,7 +528,9 @@ export class AgregarComponent implements OnInit, OnDestroy {
   private onExito(): void {
     this.varianteService.invalidarCache();
     this.guardando = false;
-    const total = this.variantesExtras.length + 1;
+    // Antes era `variantesExtras.length + 1`, que contaba el formulario base aunque estuviera
+    // vacío: con 2 tallas decía "3 variantes creadas".
+    const total = this.totalAGuardar;
     Swal.fire({
       icon: 'success',
       title: total > 1 ? `¡${total} variantes creadas!` : '¡Variante creada!',

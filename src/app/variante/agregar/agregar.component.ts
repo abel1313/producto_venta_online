@@ -52,6 +52,11 @@ export class AgregarComponent implements OnInit, OnDestroy {
   productoSeleccionado: IProductoDTO | null = null;
   private busquedaSubject = new Subject<string>();
 
+  // Stock disponible del producto seleccionado para repartir en variantes nuevas: stock base del
+  // producto menos lo que ya está asignado a sus variantes HABILITADAS (una deshabilitada ya
+  // devolvió su stock al producto, así que no cuenta aquí). null mientras no hay producto elegido.
+  stockDisponibleProducto: number | null = null;
+
   // Imágenes (compartidas con todas las variantes)
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
@@ -81,6 +86,19 @@ export class AgregarComponent implements OnInit, OnDestroy {
   get numSeleccionados(): number { return this.tallasNum.filter(t => t.checked).length; }
   get letrasSeleccionadas(): number { return this.tallasLetras.filter(t => t.checked).length; }
   get totalExtras(): number { return this.variantesExtras.length; }
+
+  // Cuánto stock se está por repartir entre TODAS las variantes de este guardado (la principal +
+  // las extras de los modales). Se recalcula solo al leer el getter, así que siempre refleja lo
+  // que el admin tiene tecleado en ese momento, sin necesidad de suscripciones extra.
+  get stockUsadoNuevo(): number {
+    const principal = +(this.form?.value?.stock) || 0;
+    const extras = this.variantesExtras.reduce((acc, e) => acc + (+(e.form.value.stock) || 0), 0);
+    return principal + extras;
+  }
+
+  get stockRestante(): number | null {
+    return this.stockDisponibleProducto === null ? null : this.stockDisponibleProducto - this.stockUsadoNuevo;
+  }
 
   constructor(
     private readonly fb: FormBuilder,
@@ -123,12 +141,30 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.cargarStockDisponible(p);
   }
 
   limpiarProducto(): void {
     this.productoSeleccionado = null;
     this.terminoProducto = '';
     this.productos = [];
+    this.stockDisponibleProducto = null;
+  }
+
+  // Stock base del producto menos lo ya asignado a sus variantes habilitadas -- mismo cálculo
+  // que hace el back en validarStockContraProducto(), solo que aquí es informativo: el back
+  // sigue siendo quien valida y rechaza al guardar si no cuadra.
+  private cargarStockDisponible(p: IProductoDTO): void {
+    this.stockDisponibleProducto = null;
+    this.varianteService.getPorProducto(p.idProducto).subscribe({
+      next: variantes => {
+        const usado = variantes
+          .filter(v => v.habilitado !== '0')
+          .reduce((acc, v) => acc + (v.stock || 0), 0);
+        this.stockDisponibleProducto = (p.stock || 0) - usado;
+      },
+      error: () => { this.stockDisponibleProducto = p.stock || 0; }
+    });
   }
 
   // ── Modal tallas numéricas ─────────────────────────────────────────
@@ -398,6 +434,18 @@ export class AgregarComponent implements OnInit, OnDestroy {
       Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
       return;
     }
+    // Aviso local antes de mandar al back (que es quien realmente valida y rechaza si no cuadra):
+    // evita el viaje de red cuando ya se ve en pantalla que el stock no alcanza.
+    if (this.stockRestante !== null && this.stockRestante < 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'El stock no alcanza',
+        text: `Estás repartiendo ${this.stockUsadoNuevo} entre las variantes, pero solo hay `
+            + `${this.stockDisponibleProducto} disponibles en el producto.`,
+        confirmButtonColor: '#dc2626'
+      });
+      return;
+    }
     this.guardando = true;
 
     const productoId = this.productoSeleccionado.idProducto;
@@ -450,6 +498,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.form.reset();
     this.productoSeleccionado  = null;
     this.terminoProducto       = '';
+    this.stockDisponibleProducto = null;
     this.imagenesCargadas      = [];
     this.variantesExtras       = [];
     this.palabraClaveSeleccionada = null; // Nuevo — limpia la selección de palabra clave

@@ -12,6 +12,7 @@ export interface IVarianteDto {
   contenidoNeto?: string;
   precio: number;
   codigoBarras?: string;
+  habilitado?: string;
 }
 
 export interface IVarianteRequest {

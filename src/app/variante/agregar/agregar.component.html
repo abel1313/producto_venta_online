@@ -54,6 +54,19 @@
           </div>
           <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar producto">✕</button>
         </div>
+
+        <!-- Stock disponible para repartir en variantes nuevas: total del producto menos lo que ya
+             tienen sus variantes habilitadas. Se recalcula al vuelo mientras se teclea el stock. -->
+        <div *ngIf="productoSeleccionado" class="vf-stock-info" [class.vf-stock-info--excedido]="stockRestante !== null && stockRestante < 0">
+          <ng-container *ngIf="stockDisponibleProducto === null; else stockCargado">
+            Calculando stock disponible…
+          </ng-container>
+          <ng-template #stockCargado>
+            <span>Disponible para variantes: <strong>{{ stockDisponibleProducto }}</strong></span>
+            <span>· Usando ahora: <strong>{{ stockUsadoNuevo }}</strong></span>
+            <span>· Restante: <strong>{{ stockRestante }}</strong></span>
+          </ng-template>
+        </div>
       </div>
 
       <!-- ── Formulario principal ────────────────────────────────── -->

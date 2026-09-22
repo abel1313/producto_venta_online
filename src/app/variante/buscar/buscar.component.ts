@@ -767,6 +767,30 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   habilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
+    // Al deshabilitar, el back deja la variante en 0 y ese stock queda disponible para repartir en
+    // otras variantes. Por eso, al habilitarla de nuevo entra sin stock: activarla no la vuelve
+    // vendible (la tienda pide stock > 0). Se avisa y se deja decidir si continúa igual.
+    if (habilitar && !v.stock) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Esta variante no tiene stock',
+        html: 'Al deshabilitarla su stock quedó disponible para otras variantes. Para que vuelva a '
+            + 'venderse hay que asignarle stock editándola, y si el producto ya no tiene disponible, '
+            + 'primero hay que agregarle stock al producto.<br><br>'
+            + '¿Quieres habilitarla de todas formas (quedará visible pero sin stock)?',
+        showCancelButton: true,
+        confirmButtonText: 'Habilitar de todas formas',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#f59e0b'
+      }).then(result => {
+        if (result.isConfirmed) this.ejecutarHabilitarVariante(v, habilitar);
+      });
+      return;
+    }
+    this.ejecutarHabilitarVariante(v, habilitar);
+  }
+
+  private ejecutarHabilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
     this.varianteService.habilitarVariante(v.id, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         v.habilitado = habilitar ? '1' : '0';
@@ -812,6 +836,30 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   habilitarLote(habilitar: boolean): void {
     if (this.seleccionados.size === 0 || this.procesandoLote) return;
+
+    if (habilitar) {
+      const sinStock = this.variantes.filter(v => this.seleccionados.has(v.id) && !v.stock).length;
+      if (sinStock > 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: sinStock === 1 ? 'Hay 1 variante sin stock' : `Hay ${sinStock} variantes sin stock`,
+          html: 'Al deshabilitarlas su stock quedó disponible para otras variantes. Habilitarlas ahora '
+              + 'no las hace vendibles -- hay que asignarles stock editándolas.<br><br>'
+              + '¿Continuar de todas formas?',
+          showCancelButton: true,
+          confirmButtonText: 'Habilitar de todas formas',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#f59e0b'
+        }).then(result => {
+          if (result.isConfirmed) this.ejecutarHabilitarLote(habilitar);
+        });
+        return;
+      }
+    }
+    this.ejecutarHabilitarLote(habilitar);
+  }
+
+  private ejecutarHabilitarLote(habilitar: boolean): void {
     const ids = Array.from(this.seleccionados);
     this.procesandoLote = true;
     this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({

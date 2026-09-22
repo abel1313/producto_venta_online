@@ -784,8 +784,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       urlFacebook:       this.urlFacebook || undefined
     };
 
-    // Promos son solo de contado — bloquear crédito aunque el admin lo haya seleccionado
-    if (this.esCredito && !this.tienePromos) {
+    if (this.esCredito) {
       request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;

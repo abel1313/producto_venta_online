@@ -82,7 +82,21 @@ $primary-d: var(--brand-1);
     &:focus-within { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
   }
   &__ico { font-size: 1.1rem; }
-  &__input { flex: 1; background: transparent; border: none; outline: none; color: var(--input-text); font-size: 0.95rem; &::placeholder { color: var(--input-placeholder); } }
+  &__input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--input-text, #152420);
+    font-size: 0.95rem;
+    font-weight: 500;
+    &::placeholder { color: var(--input-placeholder, #9DBAAD); }
+    &::-webkit-autofill,
+    &::-webkit-autofill:hover,
+    &::-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--input-text, #152420) !important;
+    }
+  }
   &__results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; z-index: 100; box-shadow: var(--card-shadow); max-height: 260px; overflow-y: auto; }
   &__item { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); transition: $t; &:last-child { border-bottom: none; } &:hover { background: rgba(var(--app-accent-rgb),0.12); } }
   &__name { font-size: 0.9rem; color: var(--card-text); font-weight: 600; }
@@ -94,8 +108,10 @@ $primary-d: var(--brand-1);
   background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.25), rgba(var(--app-accent-rgb),0.10));
   border: 1px solid rgba(var(--app-accent-rgb),0.4); border-radius: 14px; padding: 14px 16px;
   &__icon { font-size: 1.6rem; }
-  &__info { flex: 1; display: flex; flex-direction: column; color: white; strong { font-size: 0.95rem; } small { font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-top: 2px; } }
-  &__clear { background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 0.75rem; transition: $t; &:hover { background: rgba(239,68,68,0.3); color: white; } }
+  // Mismo arreglo que tienda/venta: el fondo es un tinte translucido que de dia queda casi blanco,
+  // asi que el texto va por token (en blanco fijo se veia el recuadro vacio).
+  &__info { flex: 1; display: flex; flex-direction: column; color: var(--card-text); strong { font-size: 0.95rem; } small { font-size: 0.8rem; color: var(--card-text-muted); margin-top: 2px; } }
+  &__clear { background: rgba(var(--app-accent-rgb),0.12); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--card-text-muted); cursor: pointer; font-size: 0.75rem; transition: $t; &:hover { background: rgba(239,68,68,0.3); color: var(--card-text); } }
 }
 
 .vf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; @media (max-width: 560px) { grid-template-columns: 1fr; } }
@@ -121,7 +137,7 @@ $primary-d: var(--brand-1);
   &:hover, &--over { border-color: var(--app-accent); background: rgba(var(--app-accent-rgb),0.08); }
   &__content { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; pointer-events: none; }
   &__icon { font-size: 2.5rem; }
-  &__text { color: rgba(255,255,255,0.7); font-size: 0.9rem; margin: 0; }
+  &__text { color: var(--card-text); font-size: 0.9rem; margin: 0; }
 }
 
 .vf-canvas { display: none; width: 100%; height: auto; max-height: 340px; &--visible { display: block; } }

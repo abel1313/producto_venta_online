@@ -20,19 +20,21 @@ $t:  all 0.22s ease;
   gap: 16px;
   box-shadow: 0 6px 24px var(--header-brand-shadow);
 
+  // --header-brand es vidrio casi blanco en modo día: el texto sale de --header-text, nunca
+  // blanco fijo (con blanco, en el día solo se veía el 💰).
   &__title {
     display: flex; align-items: center; gap: 14px; font-size: 1.8rem;
-    color: white;
+    color: var(--header-text);
   }
-  &__name { font-size: 1.2rem; font-weight: 800; margin: 0; color: #fff; }
-  &__sub  { font-size: .76rem; color: rgba(255,255,255,.7); }
+  &__name { font-size: 1.2rem; font-weight: 800; margin: 0; color: var(--header-text); }
+  &__sub  { font-size: .76rem; color: var(--header-text-muted); }
 
   &__totals { display: flex; align-items: center; gap: 12px; }
   &__badge {
-    background: rgba(255,255,255,.2); color: #fff;
+    background: var(--app-accent-soft); color: var(--app-accent);
     padding: 4px 12px; border-radius: 20px; font-size: .82rem; font-weight: 700;
   }
-  &__total { font-size: 1.3rem; font-weight: 800; color: #fff; }
+  &__total { font-size: 1.3rem; font-weight: 800; color: var(--header-text); }
 }
 
 // ── Paneles ────────────────────────────────────────────────────────

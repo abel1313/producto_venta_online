@@ -208,28 +208,6 @@ $primary-d: var(--brand-1);
   }
 }
 
-.vf-stock-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  color: var(--card-text-muted);
-  background: rgba(var(--app-accent-rgb),0.08);
-  border: 1px solid rgba(var(--app-accent-rgb),0.25);
-
-  strong { color: var(--card-text); }
-
-  &--excedido {
-    background: rgba(239,68,68,0.1);
-    border-color: rgba(239,68,68,0.4);
-    color: #ef4444;
-    strong { color: #ef4444; }
-  }
-}
-
 // ── Grid campos ────────────────────────────────────────────────────
 .vf-grid {
   display: grid;

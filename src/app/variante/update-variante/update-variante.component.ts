@@ -37,11 +37,6 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   productoSeleccionado: IProductoDTO | null = null;
   private busquedaSubject = new Subject<string>();
 
-  // Stock disponible del producto para repartir en variantes: stock base menos lo ya asignado a
-  // OTRAS variantes habilitadas (esta variante que se está editando se excluye de esa suma --
-  // mismo criterio que usa el back en validarStockContraProducto()). null mientras carga.
-  stockDisponibleProducto: number | null = null;
-
   // Imágenes nuevas a subir
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
@@ -118,7 +113,6 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
               stock:       0,
             } as IProductoDTO;
             this.terminoProducto = variante.producto.nombre ?? '';
-            this.cargarStockDisponible(variante.producto.id, nuevoId);
           }
 
           // Cargar imágenes existentes
@@ -168,43 +162,12 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
-    this.cargarStockDisponible(p.idProducto, this.variante?.id ?? null);
   }
 
   limpiarProducto(): void {
     this.productoSeleccionado = null;
     this.terminoProducto = '';
     this.productos = [];
-    this.stockDisponibleProducto = null;
-  }
-
-  // Stock base del producto menos lo ya asignado a sus OTRAS variantes habilitadas (esta se
-  // excluye porque su stock actual ya cuenta como "propio", no como usado por alguien más).
-  // productoSeleccionado.stock llega en 0 al precargar desde la variante (no lo trae ese objeto),
-  // así que el stock real del producto se pide aparte con getDataGeneric.
-  private cargarStockDisponible(productoId: number, varianteIdExcluir: number | null): void {
-    this.stockDisponibleProducto = null;
-    this.productoService.getDataGeneric<any>(productoId).subscribe({
-      next: res => {
-        const stockProducto = (res?.data?.stock ?? res?.stock ?? 0) as number;
-        if (this.productoSeleccionado) this.productoSeleccionado.stock = stockProducto;
-
-        this.varianteService.getPorProducto(productoId).subscribe({
-          next: variantes => {
-            const usado = variantes
-              .filter(v => v.habilitado !== '0' && v.id !== varianteIdExcluir)
-              .reduce((acc, v) => acc + (v.stock || 0), 0);
-            this.stockDisponibleProducto = stockProducto - usado;
-          },
-          error: () => { this.stockDisponibleProducto = stockProducto; }
-        });
-      },
-      error: () => {}
-    });
-  }
-
-  get stockRestante(): number | null {
-    return this.stockDisponibleProducto === null ? null : this.stockDisponibleProducto - this.stockFinal;
   }
 
   // ── Imágenes ───────────────────────────────────────────────────────
@@ -466,15 +429,6 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   actualizar(): void {
     if (!this.productoSeleccionado || !this.variante?.id) return;
     if (this.form.get('eliminarStock')?.hasError('excedeStock')) return;
-    if (this.stockRestante !== null && this.stockRestante < 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'El stock no alcanza',
-        text: `El producto no tiene suficiente stock disponible para dejar esta variante en ${this.stockFinal}.`,
-        confirmButtonColor: '#dc2626'
-      });
-      return;
-    }
     this.guardando = true;
 
     const { talla, color, presentacion, descripcion, marca, contenidoNeto } = this.form.getRawValue();

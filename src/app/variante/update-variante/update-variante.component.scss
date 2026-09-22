@@ -98,17 +98,6 @@ $primary-d: var(--brand-1);
   &__clear { background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 0.75rem; transition: $t; &:hover { background: rgba(239,68,68,0.3); color: white; } }
 }
 
-.vf-stock-info {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding: 8px 14px;
-  border-radius: 10px; font-size: 0.82rem; color: rgba(255,255,255,0.6);
-  background: rgba(var(--app-accent-rgb),0.08); border: 1px solid rgba(var(--app-accent-rgb),0.25);
-  strong { color: white; }
-  &--excedido {
-    background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); color: #ef4444;
-    strong { color: #ef4444; }
-  }
-}
-
 .vf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; @media (max-width: 560px) { grid-template-columns: 1fr; } }
 .vf-field { display: flex; flex-direction: column; gap: 6px; &--full { grid-column: 1 / -1; } }
 .vf-label { font-size: 0.78rem; font-weight: 600; color: var(--app-text-muted); letter-spacing: 0.03em; }

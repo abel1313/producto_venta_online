@@ -7,7 +7,6 @@ import Swal from 'sweetalert2';
 import { IConfigurarRifa, IConfigurarRifaVariante } from '../models/configurar-rifa.model';
 import { IConcursante } from '../models/concursante.model';
 import {
-  IBoletoRifa,
   IBoletoRifaDto,
   IGrupoBoletos,
   IResultadoSorteoPlataformas,
@@ -16,7 +15,10 @@ import {
 import {
   IGrupoBoletosPerfil,
   INuevaParticipacion,
-  IParticipacion
+  IFilaBoleto,
+  IParticipacion,
+  filasPorPublicacion,
+  normalizarUrl
 } from '../models/boleto-agrupado.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { RifaService } from '../service/rifa.service';
@@ -89,9 +91,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   concursantes: IConcursante[] = [];
   filtroNombre = '';
   cargandoConcursantes = false;
+  /** El participante cuyo detalle se ve: sus redes, cada publicación y sus boletos. */
   concursanteSeleccionado: IConcursante | null = null;
-  boletos: IBoletoRifa[] = [];
-  cargandoBoletos = false;
+  /** Con muchos participantes la lista empuja todo hacia abajo: se oculta al elegir a uno. */
+  mostrarListaParticipantes = true;
 
   mostrarFormParticipante = false;
   /** id del participante en edición; null = el formulario está dando de alta uno nuevo. */
@@ -101,21 +104,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   nuevoTelefono = '';
   guardandoParticipante = false;
 
-  plataforma: PlataformaBoleto | '' = '';
-  motivo = '';
-  fecha = '';
   fechaMin = '';
   fechaMax = '';
-  // Es `urlPerfilRedSocial`, no `urlSeguimiento`: el back exige ESTE campo al registrar
-  // (sin el perfil el boleto no se puede verificar después) y el front lo mandaba con el
-  // otro nombre, así que el alta fallaba siempre con "La URL del perfil es obligatoria".
-  urlPerfilRedSocial = '';
-  urlsCompartido: string[] = [''];
-  guardando = false;
-  /** id del boleto en edición; null = el formulario está registrando uno nuevo. */
-  boletoEditandoId: number | null = null;
-  /** Se prende al intentar guardar: es lo que pinta de rojo los campos que faltan. */
-  intentoGuardarBoleto = false;
 
   readonly plataformas: { valor: PlataformaBoleto; etiqueta: string; icono: string }[] = [
     { valor: 'FACEBOOK',  etiqueta: 'Facebook',  icono: '📘' },
@@ -224,11 +214,10 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   seleccionarRifa(rifa: IConfigurarRifa): void {
     this.rifaSeleccionada = rifa;
     this.concursanteSeleccionado = null;
-    this.boletos = [];
+    this.mostrarListaParticipantes = true;
     this.grupos = [];
     this.mostrarFormGrupo = false;
     this.cargarGrupos();
-    this.cancelarEdicionBoleto();
     this.cancelarFormParticipante();
     this.premioEditandoId = null;
     this.cargarFormularioDesdeRifa(rifa);
@@ -268,10 +257,9 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   nuevaRifa(): void {
     this.rifaSeleccionada = null;
     this.concursanteSeleccionado = null;
-    this.boletos = [];
+    this.mostrarListaParticipantes = true;
     this.variantesRifa = [];
     this.concursantes = [];
-    this.cancelarEdicionBoleto();
     this.cancelarFormParticipante();
     this.cancelarPremioNuevo();
     this.premioEditandoId = null;
@@ -773,7 +761,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   }
 
   get concursantesFiltrados(): IConcursante[] {
-    const termino = this.filtroNombre.trim().toLowerCase();
+    return this.filtrarConcursantes(this.filtroNombre);
+  }
+
+  private filtrarConcursantes(texto: string): IConcursante[] {
+    const termino = texto.trim().toLowerCase();
     if (!termino) return this.concursantes;
     return this.concursantes.filter(c =>
       `${c.nombre} ${c.apellidoPaterno ?? ''}`.toLowerCase().includes(termino)
@@ -853,6 +845,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         this.concursantes = [...this.concursantes, res];
         this.cancelarFormParticipante();
         this.seleccionarConcursante(res);
+        // Lo siguiente siempre es cargarle sus boletos: se abre el alta con él ya elegido.
+        if (this.puedeCargarAgrupado) this.abrirFormGrupo();
       },
       error: err => { this.guardandoParticipante = false; this.error('No se pudo registrar al participante', err); }
     });
@@ -871,7 +865,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.rifaService.eliminarConcursante(c.id).subscribe({
         next: () => {
           this.concursantes = this.concursantes.filter(x => x.id !== c.id);
-          if (this.concursanteSeleccionado?.id === c.id) this.concursanteSeleccionado = null;
+          if (this.concursanteSeleccionado?.id === c.id) this.cerrarParticipante();
+          this.cargarGrupos();
           // Si se eliminó justo al que estaba abierto en el formulario, este deja de
           // apuntar a un id que ya no existe y se queda con lo escrito, pero como alta
           // nueva: darle "Guardar" lo vuelve a registrar. Antes seguía en modo edición y
@@ -884,13 +879,34 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   }
 
   seleccionarConcursante(c: IConcursante): void {
+    if (this.concursanteSeleccionado?.id !== c.id) this.cerrarEdicionesEnCurso();
     this.concursanteSeleccionado = c;
-    this.cancelarEdicionBoleto();
-    this.cargandoBoletos = true;
-    this.rifaService.getBoletosPorConcursante(c.id!).subscribe({
-      next: res => { this.boletos = res; this.cargandoBoletos = false; },
-      error: () => { this.cargandoBoletos = false; }
-    });
+    this.mostrarListaParticipantes = false;
+  }
+
+  cerrarParticipante(): void {
+    this.cerrarEdicionesEnCurso();
+    this.concursanteSeleccionado = null;
+    this.mostrarListaParticipantes = true;
+  }
+
+  /** Sus perfiles (uno por red), cada uno con sus publicaciones y boletos. */
+  get gruposDelParticipante(): IGrupoBoletosPerfil[] {
+    const id = this.concursanteSeleccionado?.id;
+    return id == null ? [] : this.grupos.filter(g => g.concursanteId === id);
+  }
+
+  /** Se cuenta desde los boletos cargados, que es lo que entra al sorteo. */
+  boletosDe(c: IConcursante): number {
+    return this.grupos
+      .filter(g => g.concursanteId === c.id)
+      .reduce((t, g) => t + (g.totalBoletos ?? 0), 0);
+  }
+
+  /** Links pegados sin https:// abrían como ruta de la propia app. */
+  linkExterno(url?: string | null): string {
+    const limpia = (url ?? '').trim();
+    return /^https?:\/\//i.test(limpia) ? limpia : `https://${limpia}`;
   }
 
   private calcularRangoFecha(rifa: IConfigurarRifa): void {
@@ -902,127 +918,6 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.fechaMin = this.aIso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
       this.fechaMax = this.aIso(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
     }
-    const hoyStr = this.aIso(new Date());
-    this.fecha = (hoyStr >= this.fechaMin && hoyStr <= this.fechaMax) ? hoyStr : this.fechaMin;
-  }
-
-  // ── Boletos ────────────────────────────────────────────────────────
-
-  resetForm(): void {
-    this.plataforma = '';
-    this.motivo = '';
-    this.urlPerfilRedSocial = '';
-    this.urlsCompartido = [''];
-    this.intentoGuardarBoleto = false;
-    if (this.rifaSeleccionada) this.calcularRangoFecha(this.rifaSeleccionada);
-  }
-
-  agregarCampoUrl(): void { this.urlsCompartido.push(''); }
-
-  quitarCampoUrl(index: number): void {
-    this.urlsCompartido.splice(index, 1);
-    if (this.urlsCompartido.length === 0) this.urlsCompartido = [''];
-  }
-
-  seguirPor(indice: number): number { return indice; }
-
-  editarBoleto(b: IBoletoRifa): void {
-    if (!b.id) return;
-    this.boletoEditandoId = b.id;
-    this.plataforma = b.plataforma ?? '';
-    this.motivo = b.motivo ?? '';
-    this.fecha = b.fecha;
-    this.urlPerfilRedSocial = b.urlPerfilRedSocial ?? '';
-    this.urlsCompartido = b.urlsCompartido?.length ? [...b.urlsCompartido] : [''];
-    this.intentoGuardarBoleto = false;
-  }
-
-  cancelarEdicionBoleto(): void {
-    this.boletoEditandoId = null;
-    this.resetForm();
-  }
-
-  /** Motivo por el que el boleto no se puede guardar, o null si está listo. */
-  problemaConElBoleto(): string | null {
-    if (!this.plataforma) return 'Selecciona la plataforma en la que hizo la acción.';
-    if (!this.urlPerfilRedSocial.trim()) {
-      return 'Falta la URL del perfil: sin ella el boleto no se puede verificar después.';
-    }
-    if (!this.fecha) return 'Falta la fecha de la acción.';
-    if (this.fecha < this.fechaMin || this.fecha > this.fechaMax) {
-      return `La fecha debe estar entre ${this.fechaMin} y ${this.fechaMax}, que es el periodo de la rifa.`;
-    }
-    return null;
-  }
-
-  guardarBoleto(): void {
-    if (!this.concursanteSeleccionado?.id || this.guardando) return;
-    this.intentoGuardarBoleto = true;
-    const problema = this.problemaConElBoleto();
-    if (problema) { this.avisar('Falta información del boleto', problema); return; }
-
-    const payload = {
-      concursanteId: this.concursanteSeleccionado.id,
-      plataforma: this.plataforma as PlataformaBoleto,
-      motivo: this.motivo.trim() || null,
-      fecha: this.fecha || null,
-      urlPerfilRedSocial: this.urlPerfilRedSocial.trim(),
-      urlsCompartido: this.urlsCompartido.map(u => u.trim()).filter(u => !!u)
-    };
-
-    this.guardando = true;
-
-    if (this.boletoEditandoId) {
-      const id = this.boletoEditandoId;
-      this.rifaService.editarBoleto(id, payload).subscribe({
-        next: actualizado => {
-          this.guardando = false;
-          const idx = this.boletos.findIndex(b => b.id === id);
-          if (idx >= 0) this.boletos[idx] = actualizado;
-          this.cancelarEdicionBoleto();
-        },
-        error: err => { this.guardando = false; this.error('No se pudo guardar el boleto', err); }
-      });
-      return;
-    }
-
-    this.rifaService.registrarBoleto(payload).subscribe({
-      next: boleto => {
-        this.guardando = false;
-        this.boletos = [boleto, ...this.boletos];
-        if (this.concursanteSeleccionado) {
-          this.concursanteSeleccionado.boletos = (this.concursanteSeleccionado.boletos ?? 0) + 1;
-          const idx = this.concursantes.findIndex(c => c.id === this.concursanteSeleccionado!.id);
-          if (idx >= 0) this.concursantes[idx].boletos = this.concursanteSeleccionado.boletos;
-        }
-        this.resetForm();
-      },
-      error: err => { this.guardando = false; this.error('No se pudo registrar el boleto', err); }
-    });
-  }
-
-  eliminarBoleto(b: IBoletoRifa): void {
-    if (!b.id) return;
-    Swal.fire({
-      icon: 'warning',
-      title: '¿Eliminar este boleto?',
-      text: 'Se descontará del total de boletos del participante.',
-      showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar'
-    }).then(res => {
-      if (!res.isConfirmed || !b.id) return;
-      this.rifaService.eliminarBoleto(b.id).subscribe({
-        next: () => {
-          this.boletos = this.boletos.filter(x => x.id !== b.id);
-          if (this.boletoEditandoId === b.id) this.cancelarEdicionBoleto();
-          if (this.concursanteSeleccionado) {
-            this.concursanteSeleccionado.boletos = Math.max(0, (this.concursanteSeleccionado.boletos ?? 1) - 1);
-            const idx = this.concursantes.findIndex(c => c.id === this.concursanteSeleccionado!.id);
-            if (idx >= 0) this.concursantes[idx].boletos = this.concursanteSeleccionado.boletos;
-          }
-        },
-        error: err => this.error('No se pudo eliminar', err)
-      });
-    });
   }
 
   iconoPlataforma(p?: string | null): string {
@@ -1348,19 +1243,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   grupos: IGrupoBoletosPerfil[] = [];
   cargandoGrupos = false;
 
-  /** Alta agrupada: la cabecera se llena una vez. */
-  mostrarFormGrupo   = false;
-  grupoConcursanteId: number | null = null;
-  grupoPlataforma: PlataformaBoleto | '' = '';
-  grupoUrlPerfil     = '';
-  /** Cada renglón es un boleto. Arranca con uno para que no haya que apretar "+" primero. */
-  grupoParticipaciones: INuevaParticipacion[] = [{ urlParticipacion: '', motivo: '', modo: 'UNICA' }];
-  guardandoGrupo     = false;
-
   get puedeCargarAgrupado(): boolean {
     return this.authService.tieneAccion('rifas/boletos', 'cargar-boletos-agrupado');
   }
 
+  /** Agregar y editar un boleto van con el mismo permiso: ninguno cambia la cabecera. */
   get puedeAgregarParticipacion(): boolean {
     return this.authService.tieneAccion('rifas/boletos', 'agregar-participacion');
   }
@@ -1381,13 +1268,30 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.cargandoGrupos = true;
     this.rifaService.getBoletosAgrupados(rifaId).subscribe({
       next: gs => {
-        // Colapsados a propósito: con muchos participantes, expandidos obligan a hacer scroll
-        // hasta el final para llegar al alta — que es el problema que esto viene a resolver.
-        this.grupos = (gs ?? []).map(g => ({ ...g, expandido: false }));
+        // Colapsados a propósito: con muchos participantes, expandidos obligan a hacer scroll.
+        // Los que ya estaban abiertos se quedan abiertos al recargar.
+        const abiertos = new Set(this.grupos.filter(g => g.expandido).map(g => this.claveGrupo(g)));
+        this.grupos = (gs ?? []).map(g => ({
+          ...g,
+          expandido: abiertos.has(this.claveGrupo(g)),
+          filas: filasPorPublicacion(g.participaciones)
+        }));
         this.cargandoGrupos = false;
       },
       error: () => { this.grupos = []; this.cargandoGrupos = false; }
     });
+  }
+
+  claveGrupo(g: IGrupoBoletosPerfil): string {
+    return `${g.concursanteId}#${g.plataforma}|${normalizarUrl(g.urlPerfil)}`;
+  }
+
+  seguirGrupo(_: number, g: IGrupoBoletosPerfil): string { return `${g.concursanteId}#${g.plataforma}|${normalizarUrl(g.urlPerfil)}`; }
+
+  seguirFila(_: number, f: IFilaBoleto): number { return f.boletoId; }
+
+  etiquetaPlataforma(p?: string | null): string {
+    return this.plataformas.find(x => x.valor === p)?.etiqueta ?? (p ?? '');
   }
 
   alternarGrupo(g: IGrupoBoletosPerfil): void {
@@ -1398,10 +1302,34 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.grupos.forEach(g => g.expandido = false);
   }
 
-  // ── Alta agrupada ───────────────────────────────────────────────────────────────
+  /** Desde la lista general: abre al participante arriba, que es donde se edita. */
+  abrirParticipanteDelGrupo(g: IGrupoBoletosPerfil): void {
+    const c = this.concursantes.find(x => x.id === g.concursanteId);
+    if (!c) return;
+    this.seleccionarConcursante(c);
+    setTimeout(() => document.getElementById('bpDetalle')?.scrollIntoView({ block: 'start' }));
+  }
+
+  /** Limpia lo que estaba a medio escribir al cambiar de participante. */
+  private cerrarEdicionesEnCurso(): void {
+    this.mostrarFormGrupo = false;
+    this.cancelarNuevaFila();
+    this.cancelarEdicionFila();
+  }
+
+  // ── Agregar otra red social (cabecera: red + perfil, y sus primeras filas) ─────────
+
+  mostrarFormGrupo   = false;
+  grupoPlataforma: PlataformaBoleto | '' = '';
+  grupoUrlPerfil     = '';
+  /** Cada renglón es un boleto. Arranca con uno para que no haya que apretar "+" primero. */
+  grupoParticipaciones: INuevaParticipacion[] = [{ urlParticipacion: '', motivo: '', modo: 'UNICA' }];
+  guardandoGrupo     = false;
 
   abrirFormGrupo(): void {
-    this.grupoConcursanteId   = this.concursanteSeleccionado?.id ?? null;
+    if (!this.concursanteSeleccionado?.id) return;
+    this.cancelarNuevaFila();
+    this.cancelarEdicionFila();
     this.grupoPlataforma      = '';
     this.grupoUrlPerfil       = '';
     this.grupoParticipaciones = [{ urlParticipacion: '', motivo: '', modo: 'UNICA' }];
@@ -1413,12 +1341,28 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   }
 
   agregarRenglonParticipacion(): void {
-    this.grupoParticipaciones.push({ urlParticipacion: '', motivo: '', modo: 'UNICA' });
+    // La fila nueva arranca con la URL de la anterior: lo común es otra acción en la misma
+    // publicación (compartió y además comentó). Si es otra publicación, se reemplaza.
+    const anterior = this.grupoParticipaciones[this.grupoParticipaciones.length - 1];
+    const url = (anterior?.urlParticipacion ?? '').trim();
+    this.grupoParticipaciones.push({ urlParticipacion: url, motivo: '', modo: url ? 'REPETIDA_PERMITIDA' : 'UNICA' });
   }
 
   quitarRenglonParticipacion(i: number): void {
     this.grupoParticipaciones.splice(i, 1);
-    if (this.grupoParticipaciones.length === 0) this.agregarRenglonParticipacion();
+    if (this.grupoParticipaciones.length === 0) {
+      this.grupoParticipaciones.push({ urlParticipacion: '', motivo: '', modo: 'UNICA' });
+    }
+  }
+
+  /** Si la URL ya está en una fila de arriba, se sugiere "Se repite"; si no, "Única". */
+  sugerirModoEnRenglon(i: number): void {
+    const fila = this.grupoParticipaciones[i];
+    const clave = normalizarUrl(fila.urlParticipacion);
+    const yaEstaArriba = !!clave && this.grupoParticipaciones
+      .slice(0, i)
+      .some(p => normalizarUrl(p.urlParticipacion) === clave);
+    fila.modo = yaEstaArriba ? 'REPETIDA_PERMITIDA' : 'UNICA';
   }
 
   /** Cuántos boletos va a sumar este alta: uno por URL llena. */
@@ -1428,20 +1372,26 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
   guardarGrupo(): void {
     const rifaId = this.rifaSeleccionada?.id;
-    if (!rifaId || this.guardandoGrupo) return;
+    const concursanteId = this.concursanteSeleccionado?.id;
+    if (!rifaId || !concursanteId || this.guardandoGrupo) return;
 
-    if (!this.grupoConcursanteId)      { this.avisar('Falta el participante', 'Elegí a quién le corresponden estos boletos.'); return; }
-    if (!this.grupoPlataforma)         { this.avisar('Falta la plataforma', 'Elegí en qué red participó.'); return; }
-    if (!this.grupoUrlPerfil.trim())   { this.avisar('Falta el perfil', 'Poné el link del perfil del cliente en esa red.'); return; }
+    if (!this.grupoPlataforma)         { this.avisar('Falta la red social', 'Elige en qué red participó.'); return; }
+    if (!this.grupoUrlPerfil.trim())   { this.avisar('Falta el perfil', 'Pon el link del perfil del cliente en esa red.'); return; }
     if (this.boletosDelFormulario === 0) {
-      this.avisar('No hay participaciones',
-        'Un perfil sin participaciones no suma boletos. Agregá al menos una url de algo que el cliente hizo.');
+      this.avisar('No hay publicaciones',
+        'Sin publicación no hay boleto. Agrega al menos la URL de una publicación donde participó.');
+      return;
+    }
+    const sinQueHizo = this.grupoParticipaciones.findIndex(p =>
+      (p.urlParticipacion ?? '').trim() && !(p.motivo ?? '').trim());
+    if (sinQueHizo >= 0) {
+      this.avisar('Falta qué hizo', `Escribe qué hizo en el boleto ${sinQueHizo + 1} (compartió, comentó…).`);
       return;
     }
 
     this.guardandoGrupo = true;
     this.rifaService.cargarBoletosAgrupados(rifaId, {
-      concursanteId:   this.grupoConcursanteId,
+      concursanteId,
       plataforma:      this.grupoPlataforma as PlataformaBoleto,
       urlPerfil:       this.grupoUrlPerfil.trim(),
       participaciones: this.grupoParticipaciones
@@ -1455,68 +1405,143 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       next: () => {
         this.guardandoGrupo   = false;
         this.mostrarFormGrupo = false;
-        this.avisarOk('Boletos cargados', `Se sumaron ${this.boletosDelFormulario} boletos.`);
+        this.avisarOk('Boletos cargados', `Se sumaron ${this.boletosDelFormulario} boleto(s).`);
         this.cargarGrupos();
       },
       error: err => {
         this.guardandoGrupo = false;
-        this.manejarErrorParticipacion(err, () => this.guardarGrupo());
-      }
-    });
-  }
-
-  // ── Sumar una participación a un grupo ya cargado ────────────────────────────────
-
-  agregandoEn: number | null = null;
-
-  /** El "+" de adentro del renglón: no vuelve a pedir nombre, plataforma ni perfil. */
-  sumarParticipacion(g: IGrupoBoletosPerfil): void {
-    const rifaId = this.rifaSeleccionada?.id;
-    if (!rifaId) return;
-
-    Swal.fire({
-      title: 'Sumar una participación',
-      html: `<p style="font-size:.85rem;margin-bottom:.5rem">A <b>${g.nombreConcursante}</b> en `
-          + `${this.iconoPlataforma(g.plataforma)} ${g.plataforma}</p>`,
-      input: 'text',
-      inputPlaceholder: 'URL de lo que hizo (el post, el comentario…)',
-      showCancelButton: true,
-      confirmButtonText: 'Agregar',
-      cancelButtonText: 'Cancelar',
-      inputValidator: v => !v?.trim() ? 'Hace falta la url de la participación' : null
-    }).then(res => {
-      if (!res.isConfirmed || !res.value?.trim()) return;
-      this.enviarParticipacion(g, { urlParticipacion: res.value.trim(), modo: 'UNICA' });
-    });
-  }
-
-  private enviarParticipacion(g: IGrupoBoletosPerfil, data: INuevaParticipacion): void {
-    const rifaId = this.rifaSeleccionada?.id;
-    if (!rifaId) return;
-
-    this.agregandoEn = g.concursanteId;
-    this.rifaService.agregarParticipacion(rifaId, g.plataforma, g.urlPerfil, data).subscribe({
-      next: () => {
-        this.agregandoEn = null;
-        this.avisarOk('Boleto sumado', '');
-        this.cargarGrupos();
-      },
-      error: err => {
-        this.agregandoEn = null;
-        // Si era duplicada, se le ofrece cargarla igual con el otro modo.
-        this.manejarErrorParticipacion(err, () =>
-          this.enviarParticipacion(g, { ...data, modo: 'REPETIDA_PERMITIDA' }));
+        this.manejarErrorParticipacion(err, () => this.reintentarAltaComoRepetida(rifaId));
       }
     });
   }
 
   /**
-   * El **409** de URL repetida.
+   * "Sí, cargarla" de un 409 en el alta: las publicaciones que ese perfil ya tenía (o que vienen
+   * dos veces en este mismo alta) pasan a "se repite" y se reenvía. Sin marcarlas, el reintento
+   * mandaba lo mismo y el 409 volvía a salir sin fin.
+   */
+  private reintentarAltaComoRepetida(rifaId: number): void {
+    this.rifaService.getBoletosAgrupados(rifaId).subscribe({
+      next: gs => {
+        const perfil = normalizarUrl(this.grupoUrlPerfil);
+        const yaCargadas = new Set((gs ?? [])
+          .filter(g => g.plataforma === this.grupoPlataforma && normalizarUrl(g.urlPerfil) === perfil)
+          .flatMap(g => g.participaciones.map(p => normalizarUrl(p.urlParticipacion))));
+        for (const p of this.grupoParticipaciones) {
+          const clave = normalizarUrl(p.urlParticipacion);
+          if (!clave) continue;
+          if (yaCargadas.has(clave)) p.modo = 'REPETIDA_PERMITIDA';
+          yaCargadas.add(clave);
+        }
+        this.guardarGrupo();
+      },
+      error: err => this.error('No se pudo revisar lo que ya estaba cargado', err)
+    });
+  }
+
+  // ── Agregar un boleto en una red que ya tiene (fila en línea, debajo de las anteriores) ──
+
+  /** `claveGrupo` de la red donde está abierta la fila nueva; null = ninguna. */
+  agregandoEnGrupo: string | null = null;
+  nuevaFila: INuevaParticipacion = { urlParticipacion: '', motivo: '', modo: 'UNICA' };
+  guardandoFila = false;
+
+  abrirNuevaFila(g: IGrupoBoletosPerfil): void {
+    this.cancelarEdicionFila();
+    this.mostrarFormGrupo = false;
+    this.agregandoEnGrupo = this.claveGrupo(g);
+    this.nuevaFila = { urlParticipacion: '', motivo: '', modo: 'UNICA' };
+  }
+
+  cancelarNuevaFila(): void {
+    this.agregandoEnGrupo = null;
+  }
+
+  /** Si esa red ya tiene la publicación, se sugiere "Se repite"; si no, "Única". */
+  sugerirModoNuevaFila(g: IGrupoBoletosPerfil): void {
+    const clave = normalizarUrl(this.nuevaFila.urlParticipacion);
+    const yaLaTiene = !!clave && (g.participaciones ?? []).some(p => normalizarUrl(p.urlParticipacion) === clave);
+    this.nuevaFila.modo = yaLaTiene ? 'REPETIDA_PERMITIDA' : 'UNICA';
+  }
+
+  guardarNuevaFila(g: IGrupoBoletosPerfil): void {
+    const url = (this.nuevaFila.urlParticipacion ?? '').trim();
+    const motivo = (this.nuevaFila.motivo ?? '').trim();
+    if (!url)    { this.avisar('Falta la publicación', 'Pega la URL de la publicación.'); return; }
+    if (!motivo) { this.avisar('Falta qué hizo', 'Escribe qué hizo (compartió, comentó…).'); return; }
+    this.enviarNuevaFila(g, { urlParticipacion: url, motivo, modo: this.nuevaFila.modo ?? 'UNICA' });
+  }
+
+  private enviarNuevaFila(g: IGrupoBoletosPerfil, data: INuevaParticipacion): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId || this.guardandoFila) return;
+
+    this.guardandoFila = true;
+    this.rifaService.agregarParticipacion(rifaId, g.plataforma, g.urlPerfil, data).subscribe({
+      next: () => {
+        this.guardandoFila = false;
+        // La fila sigue abierta con la misma URL: lo siguiente suele ser otra acción en la
+        // misma publicación. "Qué hizo" se limpia para no duplicar sin querer.
+        this.nuevaFila = { urlParticipacion: data.urlParticipacion, motivo: '', modo: 'REPETIDA_PERMITIDA' };
+        this.cargarGrupos();
+      },
+      error: err => {
+        this.guardandoFila = false;
+        this.manejarErrorParticipacion(err, () =>
+          this.enviarNuevaFila(g, { ...data, modo: 'REPETIDA_PERMITIDA' }));
+      }
+    });
+  }
+
+  // ── Editar un boleto en su misma fila ───────────────────────────────────────────
+
+  editandoBoletoId: number | null = null;
+  edicionFila = { url: '', motivo: '' };
+  guardandoEdicion = false;
+
+  editarFila(f: IFilaBoleto): void {
+    this.cancelarNuevaFila();
+    this.editandoBoletoId = f.boletoId;
+    this.edicionFila = { url: f.urlParticipacion ?? '', motivo: f.motivo ?? '' };
+  }
+
+  cancelarEdicionFila(): void {
+    this.editandoBoletoId = null;
+  }
+
+  guardarEdicionFila(f: IFilaBoleto): void {
+    const url = this.edicionFila.url.trim();
+    const motivo = this.edicionFila.motivo.trim();
+    if (!url)    { this.avisar('Falta la publicación', 'La URL de la publicación no puede quedar vacía.'); return; }
+    if (!motivo) { this.avisar('Falta qué hizo', 'Escribe qué hizo (compartió, comentó…).'); return; }
+    this.enviarEdicion(f.boletoId, { urlParticipacion: url, motivo, modo: 'UNICA' });
+  }
+
+  private enviarEdicion(boletoId: number, data: INuevaParticipacion): void {
+    const rifaId = this.rifaSeleccionada?.id;
+    if (!rifaId || this.guardandoEdicion) return;
+
+    this.guardandoEdicion = true;
+    this.rifaService.editarParticipacion(rifaId, boletoId, data).subscribe({
+      next: () => {
+        this.guardandoEdicion = false;
+        this.editandoBoletoId = null;
+        this.cargarGrupos();
+      },
+      error: err => {
+        this.guardandoEdicion = false;
+        this.manejarErrorParticipacion(err, () =>
+          this.enviarEdicion(boletoId, { ...data, modo: 'REPETIDA_PERMITIDA' }));
+      }
+    });
+  }
+
+  /**
+   * El **409**: ese mismo perfil ya tiene esa publicación. Otro participante con la misma
+   * publicación no da 409 (en un sorteo por publicación todos pegan la misma URL).
    *
-   * No es un error: el back rechaza la url porque se mandó en modo `UNICA` y ya existe, y el
-   * mensaje dice **de quién** es la que ya estaba — que es lo primero que el admin quiere
-   * saber (¿se la está robando a otro, o es suya de antes?). Si de verdad se repite, se
-   * reenvía con `REPETIDA_PERMITIDA`.
+   * No es un error: casi siempre es que compartió y además comentó. Si es así, se reenvía
+   * con `REPETIDA_PERMITIDA`.
    *
    * ⚠️ Se mira `err.status`, **no** el `code` del body: en los errores el envelope trae
    * `code: 404` sin importar el status real.
@@ -1525,12 +1550,12 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     if (err?.status === 409) {
       Swal.fire({
         icon: 'question',
-        title: 'Esa url ya está cargada',
+        title: '¿Es otra participación en la misma publicación?',
         text: (err?.error?.mensaje ?? err?.error?.data)
-            ?? 'Esa url de participación ya existe en esta rifa.',
+            ?? 'Este perfil ya tiene cargada esa publicación.',
         showCancelButton: true,
-        confirmButtonText: 'Cargarla igual',
-        cancelButtonText: 'Cancelar',
+        confirmButtonText: 'Sí, cargarla como "se repite"',
+        cancelButtonText: 'No, cancelar',
         reverseButtons: true
       }).then(res => { if (res.isConfirmed) reintentarComoRepetida(); });
       return;
@@ -1538,15 +1563,15 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
     if (err?.status === 403) {
       this.avisar('Sin permiso',
-        'Si el permiso ya se dio de alta, cerrá sesión y volvé a entrar: los permisos viajan '
+        'Si el permiso ya se dio de alta, cierra sesión y vuelve a entrar: los permisos viajan '
         + 'dentro del token y uno viejo no los trae.');
       return;
     }
 
-    this.error('No se pudo cargar', err);
+    this.error('No se pudo guardar', err);
   }
 
-  // ── Quitar una participación ────────────────────────────────────────────────────
+  // ── Quitar un boleto ────────────────────────────────────────────────────────────
 
   quitandoBoleto: number | null = null;
 
@@ -1556,7 +1581,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
     Swal.fire({
       icon: 'warning',
-      title: '¿Quitar esta participación?',
+      title: '¿Quitar este boleto?',
       text: 'Le resta un boleto a ' + g.nombreConcursante + '.',
       showCancelButton: true,
       confirmButtonText: 'Quitar',
@@ -1569,13 +1594,13 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
       this.rifaService.quitarParticipacion(rifaId, p.boletoId).subscribe({
         next: () => {
           this.quitandoBoleto = null;
-          // El grupo puede quedar en 0 y eso está bien: el cliente sigue en la rifa por sus
-          // otras redes. Se recarga y se dibuja vacío, no se trata como error.
+          // La red puede quedar en 0 y eso está bien: el cliente sigue en la rifa por sus
+          // otras redes. Se recarga y se dibuja vacía, no se trata como error.
           this.cargarGrupos();
         },
         error: err => {
           this.quitandoBoleto = null;
-          this.error('No se pudo quitar la participación', err);
+          this.error('No se pudo quitar el boleto', err);
         }
       });
     });

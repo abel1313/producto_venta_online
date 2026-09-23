@@ -295,6 +295,14 @@ export class RifaService {
     ).pipe(map(r => r.data));
   }
 
+  /** Corrige la URL de la publicación o lo que hizo en un boleto. No cambia el total. */
+  editarParticipacion(rifaId: number, boletoId: number,
+                      data: INuevaParticipacion): Observable<IGrupoBoletosPerfil> {
+    return this.http.put<{ code: number; data: IGrupoBoletosPerfil }>(
+      `${this.url}/v1/rifas/${rifaId}/boletos-agrupados/participaciones/${boletoId}`, data
+    ).pipe(map(r => r.data));
+  }
+
   /**
    * Quita una participación. Puede devolver el grupo con `totalBoletos: 0` — eso NO es un
    * error: el perfil quedó sin participaciones y el cliente sigue en la rifa por sus otras redes.

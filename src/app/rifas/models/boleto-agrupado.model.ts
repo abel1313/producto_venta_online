@@ -47,6 +47,36 @@ export interface IGrupoBoletosPerfil {
   participaciones:    IParticipacion[];
   /** Solo del front: si el renglón está desplegado. Arranca colapsado. */
   expandido?:         boolean;
+  /** Solo del front: un renglón por boleto, con los de la misma publicación juntos. */
+  filas?:             IFilaBoleto[];
+}
+
+export interface IFilaBoleto extends IParticipacion {
+  /**
+   * La primera vez que aparece esa publicación en el perfil. Las siguientes son "se repite"
+   * (compartió y además comentó). El back no guarda el modo: se deduce del orden de alta.
+   */
+  unica: boolean;
+}
+
+/** Misma forma que `PerfilEnRed.normalizar` del back: sin protocolo, sin www., sin / final. */
+export function normalizarUrl(url?: string | null): string {
+  let limpia = (url ?? '').trim().toLowerCase();
+  limpia = limpia.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  while (limpia.endsWith('/')) limpia = limpia.slice(0, -1);
+  return limpia;
+}
+
+/** El back las manda por orden de alta; aquí se juntan las de la misma publicación. */
+export function filasPorPublicacion(participaciones: IParticipacion[] | null | undefined): IFilaBoleto[] {
+  const porUrl = new Map<string, IParticipacion[]>();
+  for (const p of participaciones ?? []) {
+    const clave = normalizarUrl(p.urlParticipacion);
+    porUrl.set(clave, [...(porUrl.get(clave) ?? []), p]);
+  }
+  return [...porUrl.entries()].flatMap(([clave, ps]) =>
+    // Sin link (boletos viejos) no hay publicación que repetir: cada uno cuenta como única.
+    ps.map((p, i) => ({ ...p, unica: i === 0 || clave === '' })));
 }
 
 /** Una URL de participación al darla de alta. */

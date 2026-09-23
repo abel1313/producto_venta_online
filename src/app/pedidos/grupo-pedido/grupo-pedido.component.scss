@@ -208,3 +208,26 @@
 
   &__ayuda { color: var(--card-text-muted); margin: 0 !important; }
 }
+
+.gp__recoge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem 1rem;
+}
+
+.gp__recoge-cambiar {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  color: var(--card-text-muted);
+
+  select { font-size: .8rem; padding: .15rem .35rem; }
+}
+
+.gp__monto {
+  width: 7rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -57,7 +57,7 @@
       </button>
       <button class="dp-btn-agregar-art" type="button"
               *ngIf="puedeAgregarArticulo"
-              [disabled]="pedidoEstaCerrado" (click)="abrirBuscadorArticulo()"
+              [disabled]="sinDondeAgregar" (click)="agregarArticulo()"
               [title]="pedidoEstaCerrado ? 'Un pedido entregado o cancelado ya no se puede editar' : 'Agregar un artículo a este pedido'">
         ➕ Agregar artículo
       </button>
@@ -411,7 +411,8 @@
   </div>
 
   <!-- ── ARTÍCULOS DE LOS OTROS PEDIDOS DEL GRUPO ─────────────────────────────────────
-       Solo lectura: cada pedido sigue siendo suyo, así que se edita abriéndolo. -->
+       Se cambian o quitan desde aquí, pero el cambio se guarda en su propio pedido: al separar,
+       cada uno se lleva lo suyo. Para sus datos de entrega se abre ese pedido. -->
   <section class="dp-otros" *ngIf="grupo && otrosPedidos.length > 0">
     <h3 class="dp-otros__titulo">🔗 Artículos de los pedidos unidos</h3>
 
@@ -424,7 +425,7 @@
         </div>
         <span class="dp-otros__total">{{ o.total | currency:'$' }}</span>
         <button type="button" class="dp-otros__abrir" (click)="abrirPedido.emit(o.pedidoId)"
-                title="Para cambiar sus artículos o sus datos de entrega">
+                title="Para ver o cambiar sus datos de entrega">
           Abrir pedido #{{ o.pedidoId }}
         </button>
       </div>
@@ -457,7 +458,23 @@
             </div>
             <div class="prod-card__fila">
               <span class="prod-card__label">Cantidad</span>
-              <span class="prod-card__valor">{{ item.cantidad }}</span>
+              <div class="cantidad-control">
+                <button class="cantidad-btn cantidad-btn--menos" type="button"
+                  *ngIf="puedeQuitarDeOtro(o)"
+                  (click)="reducirCantidad(item, o.pedidoId)"
+                  [disabled]="eliminando.has(item)"
+                  [title]="'Quitar uno del pedido #' + o.pedidoId">
+                  {{ eliminando.has(item) ? '…' : '−' }}
+                </button>
+                <span class="cantidad-valor">{{ item.cantidad }}</span>
+                <button class="cantidad-btn cantidad-btn--cambiar" type="button"
+                  *ngIf="puedeCambiarDeOtro(o)"
+                  (click)="abrirBuscadorArticulo(item, o.pedidoId)"
+                  [disabled]="guardandoArticulo"
+                  [title]="'Cambiar este artículo del pedido #' + o.pedidoId + ' por otro'">
+                  ⇄
+                </button>
+              </div>
             </div>
             <div class="prod-card__fila prod-card__fila--subtotal">
               <span class="prod-card__label">Subtotal</span>

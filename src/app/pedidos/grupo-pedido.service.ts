@@ -8,6 +8,8 @@ import {
   AbonoGrupoResponse,
   CobroContadoResponse,
   GrupoPedidos,
+  SeparacionResponse,
+  SepararRequest,
   UnirPedidosRequest
 } from './models/grupo-pedido.model';
 
@@ -35,7 +37,11 @@ export class GrupoPedidoService {
     return this.http.post<ResponseGeneric<CobroContadoResponse>>(`${this.base}/${grupoId}/cobrar-contado`, { pagosYMesesId });
   }
 
-  deshacer(grupoId: number, motivo?: string): Observable<ResponseGeneric<GrupoPedidos>> {
-    return this.http.post<ResponseGeneric<GrupoPedidos>>(`${this.base}/${grupoId}/deshacer`, { motivo });
+  separar(grupoId: number, body: SepararRequest): Observable<ResponseGeneric<SeparacionResponse>> {
+    return this.http.post<ResponseGeneric<SeparacionResponse>>(`${this.base}/${grupoId}/separar`, body);
+  }
+
+  cambiarTitular(grupoId: number, pedidoTitularId: number): Observable<ResponseGeneric<GrupoPedidos>> {
+    return this.http.put<ResponseGeneric<GrupoPedidos>>(`${this.base}/${grupoId}/titular`, { pedidoTitularId });
   }
 }

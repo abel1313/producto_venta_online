@@ -7,9 +7,18 @@
       <span class="gp__chip">{{ etiquetaTipo(grupo!.tipoPedido) }}</span>
     </header>
 
-    <p class="gp__texto">
-      Paga y recoge: <b>{{ grupo!.titularNombre || 'Sin nombre' }}</b> (pedido #{{ grupo!.pedidoTitularId }})
-    </p>
+    <div class="gp__recoge">
+      <p class="gp__texto">
+        Paga y recoge: <b>{{ grupo!.titularNombre || 'Sin nombre' }}</b> (pedido #{{ grupo!.pedidoTitularId }})
+      </p>
+      <label class="gp__recoge-cambiar" *ngIf="puedeUnir && candidatosRecoger.length > 1">
+        Cambiar a
+        <select [ngModel]="grupo!.pedidoTitularId" (ngModelChange)="cambiarTitular($event)"
+                [disabled]="cambiandoTitular" aria-label="Quién paga y recoge">
+          <option *ngFor="let id of candidatosRecoger" [ngValue]="id">el cliente del pedido #{{ id }}</option>
+        </select>
+      </label>
+    </div>
     <p class="gp__texto gp__texto--muted" *ngIf="grupo!.nota">{{ grupo!.nota }}</p>
 
     <div class="gp__tabla-wrap">
@@ -53,17 +62,88 @@
       Es de contado: cada pedido se confirma desde su propio detalle.
     </p>
 
-    <div class="gp__acciones" *ngIf="!mostrarFormAbono">
+    <div class="gp__acciones" *ngIf="!mostrarFormAbono && !mostrarFormSeparar">
       <button class="gp-btn gp-btn--principal" type="button"
               *ngIf="puedeAbonar && esCredito && grupo!.saldoGrupo > 0"
               (click)="abrirFormAbono()">
         💵 Abonar al grupo
       </button>
-      <button class="gp-btn" type="button" *ngIf="puedeUnir"
-              [disabled]="deshaciendo" (click)="deshacer()"
-              title="Cada pedido vuelve a cobrarse por separado; no se mueve dinero">
-        ↩️ Deshacer unión
+      <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormSeparar()"
+              title="Separar uno o todos los pedidos; lo que ha dado el cliente se reparte entre ellos">
+        ✂️ Separar pedidos
       </button>
+    </div>
+
+    <!-- Separar -->
+    <div class="gp-form" *ngIf="mostrarFormSeparar">
+      <h5 class="gp-form__titulo">✂️ Separar pedidos</h5>
+      <p class="gp__texto gp__texto--muted">
+        Marca los que se separan. Los que no marques siguen unidos; si queda uno solo, también se separa.
+        <ng-container *ngIf="esCredito">
+          Escribe cuánto de lo que ha dado el cliente se queda cada pedido que sale: tiene que sumar exacto.
+          El que cubre su total queda <b>pagado</b>; el que no, queda debiendo lo que le falte.
+        </ng-container>
+      </p>
+
+      <div class="gp__tabla-wrap">
+        <table class="gp__tabla">
+          <thead>
+            <tr>
+              <th>Sale</th>
+              <th>Pedido</th>
+              <th class="num">Total</th>
+              <th class="num" *ngIf="esCredito">Tiene hoy</th>
+              <th class="num" *ngIf="esCredito">Se queda con</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasSeparar">
+              <td><input type="checkbox" [(ngModel)]="f.sale" [attr.aria-label]="'Separar el pedido #' + f.pedidoId" /></td>
+              <td>#{{ f.pedidoId }} <span class="gp__texto--muted">{{ f.cliente }}</span></td>
+              <td class="num">{{ f.total | currency:'$' }}</td>
+              <td class="num" *ngIf="esCredito">{{ f.pagado | currency:'$' }}</td>
+              <td class="num" *ngIf="esCredito">
+                <input *ngIf="f.sale" class="gp__monto" type="number" min="0" step="0.01" [max]="f.total"
+                       [(ngModel)]="f.monto" [attr.aria-label]="'Cuánto se queda el pedido #' + f.pedidoId" />
+                <span *ngIf="!f.sale" class="gp__texto--muted">sigue unido</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <dl class="gp__totales" *ngIf="esCredito">
+        <div><dt>Ha dado el cliente</dt><dd>{{ abonadoGrupo | currency:'$' }}</dd></div>
+        <div><dt>Repartido</dt><dd>{{ repartido | currency:'$' }}</dd></div>
+        <div class="gp__saldo" *ngIf="quedan.length > 0">
+          <dt>{{ terminaGrupo ? 'Se queda el #' + quedan[0] : 'Sigue en el grupo' }}</dt>
+          <dd>{{ restoParaLosQueQuedan | currency:'$' }}</dd>
+        </div>
+      </dl>
+
+      <div class="gp-campo" *ngIf="necesitaTitular">
+        <label for="gpNuevoTitular">¿Quién recoge los que siguen unidos?</label>
+        <select id="gpNuevoTitular" [(ngModel)]="nuevoTitularId">
+          <option [ngValue]="null" disabled>Elige</option>
+          <option *ngFor="let id of quedan" [ngValue]="id">El cliente del pedido #{{ id }}</option>
+        </select>
+      </div>
+
+      <div class="gp-campo">
+        <label for="gpMotivoSeparar">Motivo (opcional)</label>
+        <input id="gpMotivoSeparar" type="text" maxlength="150" [(ngModel)]="motivoSeparar"
+               placeholder="Ej: cada quien paga lo suyo" />
+      </div>
+
+      <p class="gp-error" role="alert" *ngIf="problemaSeparar">{{ problemaSeparar }}</p>
+
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormSeparar()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button"
+                [disabled]="separando || !!problemaSeparar" (click)="separar()">
+          {{ separando ? 'Separando…' : 'Separar' }}
+        </button>
+      </div>
     </div>
 
     <!-- Abono al grupo -->
@@ -110,7 +190,7 @@
     <div class="gp-unir-boton" *ngIf="!mostrarFormUnir">
       <button class="gp-btn" type="button" [disabled]="!pedidoAbierto" (click)="abrirFormUnir()"
               [title]="pedidoAbierto ? 'Cobrar y entregar este pedido junto con otros'
-                                     : 'Solo se unen pedidos que no estén entregados, pagados ni cancelados'">
+                                     : 'Un pedido cancelado no se une. Uno cobrado de contado primero se pasa a Apartado o Ir pagando'">
         🔗 Unir con otros pedidos
       </button>
     </div>
@@ -118,8 +198,8 @@
     <section class="gp gp-form" *ngIf="mostrarFormUnir">
       <h4 class="gp__titulo">🔗 Unir con otros pedidos</h4>
       <p class="gp__texto gp__texto--muted">
-        Los pedidos no se mezclan: cada uno conserva sus artículos y sus abonos. Se ve la suma y los
-        abonos se reparten del más viejo al más nuevo. Se puede deshacer cuando quieras.
+        Los pedidos no se mezclan: cada uno conserva sus artículos. Se ve la suma y lo que dé el cliente
+        es del grupo. Se pueden separar cuando quieras; al separar decides cuánto se queda cada pedido.
       </p>
 
       <div class="gp-campo">

@@ -656,8 +656,14 @@
 
       <!-- ── Tablas de boletos ────────────────────────────────────── -->
       <div class="pk-card">
-        <div class="pk-card__header"><div class="br-h">🎟️ En juego ({{ boletosEnJuego.length }})</div></div>
-        <div class="pk-card__body">
+        <div class="pk-card__header">
+          <button type="button" class="br-colapsar" (click)="enJuegoAbierto = !enJuegoAbierto"
+                  [attr.aria-expanded]="enJuegoAbierto">
+            <span class="br-h">🎟️ En juego ({{ boletosEnJuego.length }})</span>
+            <span class="pk-text pk-text--sm pk-text--muted">{{ enJuegoAbierto ? '▾ Ocultar lista' : '▸ Ver lista' }}</span>
+          </button>
+        </div>
+        <div class="pk-card__body" *ngIf="enJuegoAbierto">
           <div class="pk-empty" *ngIf="!gruposEnJuego.length">Sin boletos en juego.</div>
           <div class="br-grupo" *ngFor="let g of gruposEnJuego">
             <button type="button" class="br-grupo__head" (click)="g.expandido = !g.expandido">

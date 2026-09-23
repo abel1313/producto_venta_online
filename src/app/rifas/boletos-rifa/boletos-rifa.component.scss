@@ -557,6 +557,22 @@
 }
 
 // ── Agrupación de boletos por persona ─────────────────────────────────
+.br-colapsar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid var(--card-border); outline-offset: 4px; border-radius: 6px; }
+}
+
 .br-grupo {
   border: 1px solid var(--card-border);
   border-radius: 10px;

@@ -84,3 +84,21 @@ export interface CobroContadoResponse {
   /** Los que se confirmaron, del más viejo al más nuevo. Los ya entregados no vienen. */
   pedidosCobrados: number[];
 }
+
+/** `POST /v1/grupos-pedido/{id}/separar` */
+export interface SepararRequest {
+  /** Los que se separan; todos = separar el grupo entero. */
+  pedidosQueSalen: number[];
+  /** Cuánto de lo abonado se queda cada pedido que sale. Solo a crédito; tiene que cuadrar exacto. */
+  reparto?:        { pedidoId: number; monto: number }[];
+  /** Quién recoge a los que siguen unidos. Obligatorio si el que recogía se separa. */
+  nuevoTitularId?: number;
+  motivo?:         string;
+}
+
+export interface SeparacionResponse {
+  /** El grupo ya separado, con cómo quedó cada pedido (pagado, saldo, estado). */
+  grupo:        GrupoPedidos;
+  /** El grupo en el que siguen unidos los demás, o null. */
+  grupoNuevoId: number | null;
+}

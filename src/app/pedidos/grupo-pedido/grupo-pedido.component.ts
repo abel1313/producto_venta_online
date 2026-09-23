@@ -40,7 +40,14 @@ export class GrupoPedidoComponent implements OnChanges {
   abono = { monto: 0, metodoPago: 'EFECTIVO' as 'EFECTIVO' | 'TRANSFERENCIA', montoDado: 0, nota: '' };
   readonly metodos: ('EFECTIVO' | 'TRANSFERENCIA')[] = ['EFECTIVO', 'TRANSFERENCIA'];
 
-  deshaciendo = false;
+  mostrarFormSeparar = false;
+  separando = false;
+  /** Una fila por pedido del grupo (sin cancelados): si sale y cuánto de lo abonado se queda. */
+  filasSeparar: { pedidoId: number; cliente: string; total: number; pagado: number; sale: boolean; monto: number }[] = [];
+  nuevoTitularId: number | null = null;
+  motivoSeparar = '';
+
+  cambiandoTitular = false;
 
   constructor(
     private readonly grupoService: GrupoPedidoService,
@@ -226,37 +233,133 @@ export class GrupoPedidoComponent implements OnChanges {
     });
   }
 
-  // ── Deshacer ──────────────────────────────────────────────────────────────────────
+  // ── Quién recoge ──────────────────────────────────────────────────────────────────
 
-  deshacer(): void {
-    if (this.deshaciendo || !this.grupo) return;
-    const grupoId = this.grupo.grupoId;
-    Swal.fire({
-      icon: 'question',
-      title: `¿Deshacer el grupo #${grupoId}?`,
-      text: 'Cada pedido se queda con sus artículos y con los abonos que ya le tocaron. No se mueve dinero.',
-      input: 'text',
-      inputPlaceholder: 'Motivo (opcional)',
-      showCancelButton: true,
-      confirmButtonText: 'Deshacer unión',
-      cancelButtonText: 'Cancelar'
-    }).then(res => {
-      if (!res.isConfirmed) return;
-      this.deshaciendo = true;
-      this.grupoService.deshacer(grupoId, (res.value ?? '').trim() || undefined).subscribe({
-        next: () => {
-          this.deshaciendo = false;
-          this.grupo = null;
-          this.mostrarFormAbono = false;
-          Swal.fire({ icon: 'success', title: 'Unión deshecha', timer: 2000, showConfirmButton: false });
-          this.cambio.emit();
-        },
-        error: err => {
-          this.deshaciendo = false;
-          this.avisarError(err, 'No se pudo deshacer la unión.');
-        }
-      });
+  get candidatosRecoger(): number[] {
+    return (this.grupo?.pedidos ?? []).filter(p => !this.estaCancelado(p.estadoPedido)).map(p => p.pedidoId);
+  }
+
+  cambiarTitular(pedidoTitularId: number): void {
+    if (!this.grupo || this.cambiandoTitular || pedidoTitularId === this.grupo.pedidoTitularId) return;
+    this.cambiandoTitular = true;
+    this.grupoService.cambiarTitular(this.grupo.grupoId, pedidoTitularId).subscribe({
+      next: r => {
+        this.cambiandoTitular = false;
+        this.grupo = r?.data ?? this.grupo;
+        Swal.fire({ icon: 'success', title: 'Listo', text: `Ahora paga y recoge el cliente del pedido #${pedidoTitularId}.`,
+                    timer: 2200, showConfirmButton: false });
+        this.cambio.emit();
+      },
+      error: err => {
+        this.cambiandoTitular = false;
+        this.cargar();
+        this.avisarError(err, 'No se pudo cambiar quién recoge.');
+      }
     });
+  }
+
+  // ── Separar ───────────────────────────────────────────────────────────────────────
+
+  abrirFormSeparar(): void {
+    if (!this.grupo) return;
+    // Arranca con todos saliendo y cada uno con lo que ya tiene: así ya cuadra y solo se ajusta.
+    this.filasSeparar = this.grupo.pedidos
+      .filter(p => !this.estaCancelado(p.estadoPedido))
+      .map(p => ({ pedidoId: p.pedidoId, cliente: p.cliente, total: p.total, pagado: p.pagado,
+                   sale: true, monto: this.esCredito ? p.pagado : 0 }));
+    this.nuevoTitularId = null;
+    this.motivoSeparar = '';
+    this.mostrarFormSeparar = true;
+  }
+
+  cerrarFormSeparar(): void {
+    this.mostrarFormSeparar = false;
+  }
+
+  private redondear(n: number): number {
+    return Math.round((n || 0) * 100) / 100;
+  }
+
+  /** Lo que el cliente ha dado entre todos los pedidos: eso es lo que se reparte. */
+  get abonadoGrupo(): number {
+    return this.redondear(this.filasSeparar.reduce((s, f) => s + f.pagado, 0));
+  }
+
+  get repartido(): number {
+    return this.redondear(this.filasSeparar.filter(f => f.sale).reduce((s, f) => s + (f.monto || 0), 0));
+  }
+
+  get quedan(): number[] {
+    return this.filasSeparar.filter(f => !f.sale).map(f => f.pedidoId);
+  }
+
+  /** Si queda uno solo, también sale: un grupo de uno no existe. */
+  get terminaGrupo(): boolean {
+    return this.quedan.length < 2;
+  }
+
+  get necesitaTitular(): boolean {
+    return !this.terminaGrupo && !!this.grupo && !this.quedan.includes(this.grupo.pedidoTitularId);
+  }
+
+  /** Lo que no se reparte se queda en los que siguen unidos (o en el único que queda). */
+  get restoParaLosQueQuedan(): number {
+    return this.redondear(this.abonadoGrupo - this.repartido);
+  }
+
+  /** null = se puede separar; si no, qué falta arreglar. */
+  get problemaSeparar(): string | null {
+    const salen = this.filasSeparar.filter(f => f.sale);
+    if (salen.length === 0) return 'Marca al menos un pedido para separar.';
+    if (this.esCredito) {
+      const excedido = salen.find(f => (f.monto || 0) - f.total > 0.001);
+      if (excedido) return `El pedido #${excedido.pedidoId} cuesta ${excedido.total.toFixed(2)}: no se le puede dejar más.`;
+      if (salen.some(f => (f.monto || 0) < 0)) return 'Los montos no pueden ser negativos.';
+      const resto = this.restoParaLosQueQuedan;
+      if (resto < -0.001) return `Repartiste $${this.repartido.toFixed(2)} y el cliente solo ha dado $${this.abonadoGrupo.toFixed(2)}.`;
+      if (this.quedan.length === 0 && Math.abs(resto) > 0.001) {
+        return `Faltan $${resto.toFixed(2)} por repartir: tiene que sumar exacto $${this.abonadoGrupo.toFixed(2)}.`;
+      }
+      const capacidad = this.filasSeparar.filter(f => !f.sale).reduce((s, f) => s + f.total, 0);
+      if (resto - capacidad > 0.001) return `Sobran $${(resto - capacidad).toFixed(2)}: no caben en los que siguen unidos.`;
+    }
+    if (this.necesitaTitular && !this.nuevoTitularId) return 'Elige quién recoge los pedidos que siguen unidos.';
+    return null;
+  }
+
+  separar(): void {
+    if (!this.grupo || this.separando || this.problemaSeparar) return;
+    const salen = this.filasSeparar.filter(f => f.sale);
+    this.separando = true;
+    this.grupoService.separar(this.grupo.grupoId, {
+      pedidosQueSalen: salen.map(f => f.pedidoId),
+      reparto: this.esCredito ? salen.map(f => ({ pedidoId: f.pedidoId, monto: this.redondear(f.monto) })) : [],
+      nuevoTitularId: this.necesitaTitular ? this.nuevoTitularId ?? undefined : undefined,
+      motivo: this.motivoSeparar.trim() || undefined
+    }).subscribe({
+      next: r => {
+        this.separando = false;
+        this.mostrarFormSeparar = false;
+        const res = r?.data;
+        const lineas = (res?.grupo?.pedidos ?? [])
+          .map(p => `<li>Pedido #${p.pedidoId}: pagado $${p.pagado.toFixed(2)}, debe $${p.saldo.toFixed(2)}`
+                  + `${p.estadoPedido === 'PAGADO' ? ' — <b>queda pagado</b>' : ''}</li>`)
+          .join('');
+        const siguen = res?.grupoNuevoId ? `<p>Los demás siguen unidos en el grupo #${res.grupoNuevoId}.</p>` : '';
+        Swal.fire({ icon: 'success', title: 'Pedidos separados',
+                    html: `<ul style="text-align:left">${lineas}</ul>${siguen}` });
+        this.grupo = null;
+        this.cambio.emit();
+      },
+      error: err => {
+        this.separando = false;
+        this.avisarError(err, 'No se pudieron separar los pedidos.');
+      }
+    });
+  }
+
+  private estaCancelado(estado: string | null | undefined): boolean {
+    return (estado ?? '').toLowerCase() === 'cancelado';
   }
 
   etiquetaTipo(tipo: string | null | undefined): string {

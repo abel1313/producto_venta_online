@@ -248,175 +248,9 @@
         📅 Solo se aceptan boletos entre {{ fechaMin }} y {{ fechaMax }}.
       </div>
 
-      <!-- ════════════════════════════════════════════════════════════════════════
-           BOLETOS AGRUPADOS POR PERFIL (2026-09-22)
-
-           Arreglo los dos problemas de esta pantalla:
-           1. Había que bajar hasta el final de la lista para agregar uno y volver a
-              subir → los renglones arrancan COLAPSADOS y el alta va arriba de todo.
-           2. Cada participación obligaba a recargar nombre, plataforma y perfil →
-              ahora la cabecera se carga una vez y se suman participaciones.
-
-           ⚠️ El sorteo no cambia: cada participación sigue siendo su propia fila.
-           ════════════════════════════════════════════════════════════════════════ -->
-      <div class="pk-card bg-card">
-        <div class="pk-card__header">
-          <div class="br-h">🎟️ Boletos por participación</div>
-          <span class="br-chip" *ngIf="totalBoletosRifa">{{ totalBoletosRifa }} boleto(s)</span>
-        </div>
-
-        <div class="pk-card__body">
-
-          <!-- El alta va ARRIBA de la lista, fija: es lo que evita el scroll de ida y vuelta -->
-          <div class="bg-acciones">
-            <button type="button" class="bg-btn-alta"
-                    *ngIf="puedeCargarAgrupado && !mostrarFormGrupo"
-                    (click)="abrirFormGrupo()">
-              ➕ Cargar participaciones de un perfil
-            </button>
-            <button type="button" class="bg-btn-colapsar"
-                    *ngIf="grupos.length > 1"
-                    (click)="colapsarTodos()">
-              ⊟ Colapsar todos
-            </button>
-          </div>
-
-          <!-- ── Alta: la cabecera se llena UNA vez ───────────────────────────── -->
-          <div class="bg-form" *ngIf="mostrarFormGrupo">
-            <div class="bg-form__fila">
-              <label class="bg-label">Participante</label>
-              <select class="bg-input" [(ngModel)]="grupoConcursanteId">
-                <option [ngValue]="null">— Elegí a quién —</option>
-                <option *ngFor="let c of concursantes" [ngValue]="c.id">
-                  {{ nombreCompleto(c) }}
-                </option>
-              </select>
-            </div>
-
-            <div class="bg-form__fila">
-              <label class="bg-label">Plataforma</label>
-              <div class="bg-plataformas">
-                <button type="button" class="bg-plat-btn"
-                        *ngFor="let pl of plataformas"
-                        [class.bg-plat-btn--activa]="grupoPlataforma === pl.valor"
-                        (click)="grupoPlataforma = pl.valor">
-                  {{ pl.icono }} {{ pl.etiqueta }}
-                </button>
-              </div>
-            </div>
-
-            <div class="bg-form__fila">
-              <label class="bg-label">Link del perfil del cliente en esa red</label>
-              <input class="bg-input" type="text" [(ngModel)]="grupoUrlPerfil"
-                     placeholder="facebook.com/juan.perez" />
-              <small class="bg-ayuda">
-                Se carga una sola vez. Da igual si lo escribís con <code>https://</code>, con
-                <code>www.</code> o con barra al final: todas esas formas caen en el mismo renglón.
-              </small>
-            </div>
-
-            <!-- Cada renglón es un boleto -->
-            <div class="bg-form__fila">
-              <label class="bg-label">
-                Participaciones — cada url es un boleto
-                <span class="bg-contador" *ngIf="boletosDelFormulario">
-                  {{ boletosDelFormulario }} boleto(s)
-                </span>
-              </label>
-
-              <div class="bg-part" *ngFor="let p of grupoParticipaciones; let i = index">
-                <input class="bg-input bg-part__url" type="text"
-                       [(ngModel)]="p.urlParticipacion"
-                       placeholder="URL de lo que hizo (el post, el comentario…)" />
-                <input class="bg-input bg-part__motivo" type="text"
-                       [(ngModel)]="p.motivo"
-                       placeholder="Qué hizo (dio like, compartió…)" />
-
-                <!-- Los dos modos. Se llena UNO u otro, nunca los dos: una participación es un
-                     boleto, y marcar los dos no lo convierte en dos. -->
-                <select class="bg-input bg-part__modo" [(ngModel)]="p.modo"
-                        title="Cómo se valida esta url">
-                  <option value="UNICA">Única (rechaza si ya existe)</option>
-                  <option value="REPETIDA_PERMITIDA">Se repite de verdad</option>
-                </select>
-
-                <button type="button" class="bg-part__quitar"
-                        (click)="quitarRenglonParticipacion(i)"
-                        title="Quitar este renglón">✕</button>
-              </div>
-
-              <button type="button" class="bg-btn-mas" (click)="agregarRenglonParticipacion()">
-                ＋ Otra participación
-              </button>
-            </div>
-
-            <div class="bg-form__acciones">
-              <button type="button" class="bg-btn-cancelar" (click)="cerrarFormGrupo()">
-                Cancelar
-              </button>
-              <button type="button" class="bg-btn-guardar"
-                      [disabled]="guardandoGrupo || boletosDelFormulario === 0"
-                      (click)="guardarGrupo()">
-                {{ guardandoGrupo ? 'Guardando…' : 'Guardar ' + boletosDelFormulario + ' boleto(s)' }}
-              </button>
-            </div>
-          </div>
-
-          <p class="bg-estado" *ngIf="cargandoGrupos">Cargando boletos…</p>
-          <p class="bg-estado" *ngIf="!cargandoGrupos && grupos.length === 0">
-            Todavía no hay boletos cargados en esta rifa.
-          </p>
-
-          <!-- ── La lista: un renglón por perfil, COLAPSADO ──────────────────── -->
-          <div class="bg-grupo" *ngFor="let g of grupos" [class.bg-grupo--abierto]="g.expandido">
-
-            <div class="bg-grupo__cabecera" (click)="alternarGrupo(g)">
-              <span class="bg-grupo__flecha">{{ g.expandido ? '▾' : '▸' }}</span>
-              <span class="bg-grupo__plat">{{ iconoPlataforma(g.plataforma) }}</span>
-              <div class="bg-grupo__info">
-                <span class="bg-grupo__nombre">{{ g.nombreConcursante }}</span>
-                <span class="bg-grupo__perfil">{{ g.urlPerfil }}</span>
-              </div>
-              <!-- El total va en la cabecera: es lo que se quiere ver sin abrir -->
-              <span class="bg-grupo__total">{{ g.totalBoletos }} 🎟️</span>
-            </div>
-
-            <div class="bg-grupo__cuerpo" *ngIf="g.expandido">
-
-              <p class="bg-vacio" *ngIf="g.totalBoletos === 0">
-                Este perfil se quedó sin participaciones. No es un error: el cliente sigue en la
-                rifa por sus otras redes.
-              </p>
-
-              <ul class="bg-parts">
-                <li class="bg-parts__item" *ngFor="let p of g.participaciones">
-                  <a class="bg-parts__url" [href]="p.urlParticipacion" target="_blank"
-                     rel="noopener noreferrer">{{ p.urlParticipacion }}</a>
-                  <span class="bg-parts__motivo" *ngIf="p.motivo">{{ p.motivo }}</span>
-                  <span class="bg-parts__fecha" *ngIf="p.fecha">{{ p.fecha }}</span>
-                  <button type="button" class="bg-parts__quitar"
-                          *ngIf="puedeQuitarParticipacion"
-                          [disabled]="quitandoBoleto === p.boletoId"
-                          (click)="quitarParticipacion(g, p)"
-                          title="Quitar esta participación (resta un boleto)">
-                    {{ quitandoBoleto === p.boletoId ? '…' : '🗑️' }}
-                  </button>
-                </li>
-              </ul>
-
-              <button type="button" class="bg-btn-sumar"
-                      *ngIf="puedeAgregarParticipacion"
-                      [disabled]="agregandoEn === g.concursanteId"
-                      (click)="sumarParticipacion(g)">
-                {{ agregandoEn === g.concursanteId ? 'Agregando…' : '＋ Sumar una participación' }}
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ── Participantes ────────────────────────────────────────── -->
+      <!-- ── 1. Participantes: primero, con buscador, y la lista se puede ocultar ──────────
+           Con muchos participantes la lista empujaba todo hacia abajo y había que bajar y
+           volver a subir: se oculta sola al elegir o dar de alta a alguien. -->
       <div class="pk-card">
         <div class="pk-card__header">
           <div class="br-h">👥 Participantes</div>
@@ -425,8 +259,15 @@
         <div class="pk-card__body">
 
           <div class="br-toolbar">
-            <input class="pk-input br-toolbar__buscar" type="text"
-                   placeholder="Buscar por nombre..." [(ngModel)]="filtroNombre" />
+            <input class="pk-input br-toolbar__buscar" type="search"
+                   placeholder="Buscar participante por nombre..." aria-label="Buscar participante"
+                   [(ngModel)]="filtroNombre" (ngModelChange)="mostrarListaParticipantes = true" />
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm br-toolbar__accion"
+                    *ngIf="concursantes.length"
+                    [attr.aria-expanded]="mostrarListaParticipantes"
+                    (click)="mostrarListaParticipantes = !mostrarListaParticipantes">
+              {{ mostrarListaParticipantes ? '▴ Ocultar lista' : '▾ Ver lista' }}
+            </button>
             <button type="button" class="pk-btn pk-btn--primary pk-btn--sm br-toolbar__accion"
                     *ngIf="!mostrarFormParticipante" (click)="abrirFormParticipante()">+ Nuevo</button>
           </div>
@@ -459,130 +300,238 @@
             </div>
           </div>
 
-          <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
-            {{ filtroNombre ? 'Ningún participante coincide con la búsqueda.' : 'Sin participantes en esta rifa todavía.' }}
-          </div>
-
-          <div class="br-lista" *ngIf="concursantesFiltrados.length">
-            <div class="br-fila" *ngFor="let c of concursantesFiltrados"
-                 [class.br-fila--activa]="concursanteSeleccionado?.id === c.id"
-                 (click)="seleccionarConcursante(c)">
-              <span class="br-fila__nombre">{{ nombreCompleto(c) }}</span>
-              <span class="br-fila__boletos">🎟️ {{ c.boletos ?? 0 }}</span>
-              <span class="br-fila__acciones">
-                <button type="button" class="br-icono" title="Editar" (click)="editarParticipante(c, $event)">✏️</button>
-                <button type="button" class="br-icono br-icono--peligro" title="Eliminar"
-                        (click)="eliminarParticipante(c, $event)">🗑️</button>
-              </span>
+          <ng-container *ngIf="mostrarListaParticipantes">
+            <div class="pk-empty" *ngIf="!cargandoConcursantes && concursantesFiltrados.length === 0">
+              {{ filtroNombre ? 'Ningún participante coincide con la búsqueda.' : 'Sin participantes en esta rifa todavía.' }}
             </div>
-          </div>
+
+            <div class="br-lista" *ngIf="concursantesFiltrados.length">
+              <div class="br-fila" *ngFor="let c of concursantesFiltrados"
+                   [class.br-fila--activa]="concursanteSeleccionado?.id === c.id"
+                   (click)="seleccionarConcursante(c)">
+                <span class="br-fila__nombre">{{ nombreCompleto(c) }}</span>
+                <span class="br-fila__boletos">🎟️ {{ boletosDe(c) }}</span>
+                <span class="br-fila__acciones">
+                  <button type="button" class="br-icono" title="Editar" (click)="editarParticipante(c, $event)">✏️</button>
+                  <button type="button" class="br-icono br-icono--peligro" title="Eliminar"
+                          (click)="eliminarParticipante(c, $event)">🗑️</button>
+                </span>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
 
-      <!-- ── Boletos del participante seleccionado ────────────────── -->
-      <div class="pk-card" *ngIf="concursanteSeleccionado">
+      <!-- ── 2. El participante elegido: aquí se ve y se trabaja todo lo suyo ──────────────
+           Nombre → cada red con su perfil → un renglón por boleto (publicación, qué hizo,
+           única o se repite) con editar y quitar → agregar boleto debajo de los anteriores. -->
+      <div class="pk-card" id="bpDetalle" *ngIf="concursanteSeleccionado as c">
         <div class="pk-card__header">
           <div>
-            <div class="br-h">{{ nombreCompleto(concursanteSeleccionado) }}</div>
-            <div class="pk-text pk-text--sm br-h__sub">
-              {{ concursanteSeleccionado.boletos ?? 0 }} boleto(s)
-            </div>
+            <div class="br-h">👤 {{ nombreCompleto(c) }}</div>
+            <div class="pk-text pk-text--sm br-h__sub">{{ boletosDe(c) }} boleto(s)</div>
           </div>
           <button type="button" class="br-icono br-icono--claro" title="Cerrar"
-                  (click)="concursanteSeleccionado = null">✕</button>
+                  (click)="cerrarParticipante()">✕</button>
         </div>
 
         <div class="pk-card__body">
-          <div class="br-sub">
-            {{ boletoEditandoId ? '✏️ Editando un boleto' : '➕ Registrar boleto' }}
-          </div>
+          <p class="bg-estado" *ngIf="cargandoGrupos && !gruposDelParticipante.length">Cargando sus boletos…</p>
+          <p class="bg-estado" *ngIf="!cargandoGrupos && !gruposDelParticipante.length">
+            Todavía no tiene boletos. Empieza por su primera red social.
+          </p>
 
-          <div class="pk-field">
-            <label class="pk-label">Plataforma *</label>
-            <div class="br-plataformas" [class.br-plataformas--error]="intentoGuardarBoleto && !plataforma">
-              <button type="button" class="br-plat" *ngFor="let p of plataformas"
-                      [class.br-plat--sel]="plataforma === p.valor"
-                      (click)="plataforma = p.valor">
-                <span class="br-plat__icono">{{ p.icono }}</span>{{ p.etiqueta }}
+          <section class="bp-red" *ngFor="let g of gruposDelParticipante; trackBy: seguirGrupo">
+            <div class="bp-red__cabecera">
+              <span class="bp-red__nombre">{{ iconoPlataforma(g.plataforma) }} {{ etiquetaPlataforma(g.plataforma) }}</span>
+              <a class="bp-red__perfil" *ngIf="g.urlPerfil; else sinPerfil" [href]="linkExterno(g.urlPerfil)"
+                 target="_blank" rel="noopener noreferrer" title="Abrir su perfil">{{ g.urlPerfil }}</a>
+              <ng-template #sinPerfil>
+                <span class="bp-red__perfil bp-fila__url--vacia">Sin link de perfil</span>
+              </ng-template>
+              <span class="bg-grupo__total">{{ g.totalBoletos }} 🎟️</span>
+            </div>
+
+            <ng-container *ngTemplateOutlet="filasDelPerfil; context: { $implicit: g, editable: true }"></ng-container>
+
+            <!-- Boleto nuevo: va debajo de los anteriores para ver qué ya se cargó en esta red -->
+            <div class="bp-fila bp-fila--nueva" *ngIf="agregandoEnGrupo === claveGrupo(g)">
+              <input class="bg-input bp-fila__url-input" type="text" maxlength="500"
+                     placeholder="URL de la publicación" aria-label="URL de la publicación"
+                     [(ngModel)]="nuevaFila.urlParticipacion" (ngModelChange)="sugerirModoNuevaFila(g)" />
+              <input class="bg-input bp-fila__que-input" type="text" maxlength="200"
+                     placeholder="¿Qué hizo? (compartió, comentó…)" aria-label="Qué hizo"
+                     [(ngModel)]="nuevaFila.motivo" (keyup.enter)="guardarNuevaFila(g)" />
+              <select class="bg-input bp-fila__modo-input" [(ngModel)]="nuevaFila.modo"
+                      aria-label="Única o se repite">
+                <option value="UNICA">Única</option>
+                <option value="REPETIDA_PERMITIDA">Se repite</option>
+              </select>
+              <span class="bp-fila__acciones">
+                <button type="button" class="bp-icono bp-icono--ok" title="Guardar boleto"
+                        [disabled]="guardandoFila" (click)="guardarNuevaFila(g)">{{ guardandoFila ? '…' : '✔' }}</button>
+                <button type="button" class="bp-icono" title="Cancelar" (click)="cancelarNuevaFila()">✕</button>
+              </span>
+            </div>
+
+            <button type="button" class="bp-mini"
+                    *ngIf="puedeAgregarParticipacion && agregandoEnGrupo !== claveGrupo(g)"
+                    (click)="abrirNuevaFila(g)">
+              ＋ Agregar boleto en {{ etiquetaPlataforma(g.plataforma) }}
+            </button>
+          </section>
+
+          <!-- Otra red social: la red y su perfil se capturan una vez, luego sus boletos -->
+          <div class="bg-form" *ngIf="mostrarFormGrupo">
+            <div class="bg-form__fila">
+              <label class="bg-label">Red social</label>
+              <div class="bg-plataformas">
+                <button type="button" class="bg-plat-btn"
+                        *ngFor="let pl of plataformas"
+                        [class.bg-plat-btn--activa]="grupoPlataforma === pl.valor"
+                        (click)="grupoPlataforma = pl.valor">
+                  {{ pl.icono }} {{ pl.etiqueta }}
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-form__fila">
+              <label class="bg-label" for="bgUrlPerfil">Link del perfil del cliente en esa red</label>
+              <input id="bgUrlPerfil" class="bg-input" type="text" maxlength="500" [(ngModel)]="grupoUrlPerfil"
+                     placeholder="facebook.com/juan.perez" />
+              <small class="bg-ayuda">
+                Se carga una sola vez. Da igual si lo escribes con <code>https://</code>, con
+                <code>www.</code> o con barra al final: todas esas formas son el mismo perfil.
+              </small>
+            </div>
+
+            <div class="bg-form__fila">
+              <label class="bg-label">
+                Boletos — un renglón por cada cosa que hizo
+                <span class="bg-contador" *ngIf="boletosDelFormulario">{{ boletosDelFormulario }} boleto(s)</span>
+              </label>
+
+              <div class="bg-part" *ngFor="let p of grupoParticipaciones; let i = index">
+                <input class="bg-input bg-part__url" type="text" maxlength="500"
+                       [(ngModel)]="p.urlParticipacion" (ngModelChange)="sugerirModoEnRenglon(i)"
+                       placeholder="URL de la publicación" aria-label="URL de la publicación" />
+                <input class="bg-input bg-part__motivo" type="text" maxlength="200"
+                       [(ngModel)]="p.motivo"
+                       placeholder="¿Qué hizo? (compartió, comentó…)" aria-label="Qué hizo" />
+                <select class="bg-input bg-part__modo" [(ngModel)]="p.modo" aria-label="Única o se repite">
+                  <option value="UNICA">Única</option>
+                  <option value="REPETIDA_PERMITIDA">Se repite</option>
+                </select>
+                <button type="button" class="bg-part__quitar"
+                        (click)="quitarRenglonParticipacion(i)" title="Quitar este renglón">✕</button>
+              </div>
+
+              <button type="button" class="bg-btn-mas" (click)="agregarRenglonParticipacion()">
+                ＋ Otro boleto
               </button>
             </div>
-            <span class="pk-hint br-hint--error" *ngIf="intentoGuardarBoleto && !plataforma">
-              Selecciona en qué plataforma hizo la acción.
-            </span>
-          </div>
 
-          <div class="br-grid-2">
-            <div class="pk-field">
-              <label class="pk-label">¿Qué hizo?</label>
-              <input class="pk-input" type="text"
-                     placeholder="Seguir la cuenta, compartir..." [(ngModel)]="motivo" />
-            </div>
-            <div class="pk-field">
-              <label class="pk-label">Fecha *</label>
-              <app-selector-fecha [(ngModel)]="fecha" [min]="fechaMin" [max]="fechaMax"
-                                  placeholder="Día de la acción"></app-selector-fecha>
+            <div class="bg-form__acciones">
+              <button type="button" class="bg-btn-cancelar" (click)="cerrarFormGrupo()">Cancelar</button>
+              <button type="button" class="bg-btn-guardar"
+                      [disabled]="guardandoGrupo || boletosDelFormulario === 0"
+                      (click)="guardarGrupo()">
+                {{ guardandoGrupo ? 'Guardando…' : 'Guardar ' + boletosDelFormulario + ' boleto(s)' }}
+              </button>
             </div>
           </div>
 
-          <div class="pk-field">
-            <label class="pk-label">URL del perfil para verificar que sigue la cuenta *</label>
-            <input class="pk-input" type="url" placeholder="https://facebook.com/su-perfil"
-                   [class.br-input--error]="intentoGuardarBoleto && !urlPerfilRedSocial.trim()"
-                   [(ngModel)]="urlPerfilRedSocial" />
-            <span class="pk-hint" *ngIf="!(intentoGuardarBoleto && !urlPerfilRedSocial.trim())">
-              El link a la cuenta de la persona (facebook.com/su-perfil), no el de la publicación:
-              es con lo que se revisa después si sigue siguiendo la página.
-            </span>
-            <span class="pk-hint br-hint--error"
-                  *ngIf="intentoGuardarBoleto && !urlPerfilRedSocial.trim()">
-              Sin el perfil el boleto no se puede verificar después.
-            </span>
-          </div>
-
-          <div class="pk-field">
-            <label class="pk-label">URLs de lo que compartió</label>
-            <span class="pk-hint">El link de cada publicación que compartió, no el de su perfil.</span>
-            <div class="br-url-row" *ngFor="let u of urlsCompartido; let i = index; trackBy: seguirPor">
-              <input class="pk-input" type="url" placeholder="https://..." [(ngModel)]="urlsCompartido[i]" />
-              <button type="button" class="br-icono" *ngIf="urlsCompartido.length > 1"
-                      (click)="quitarCampoUrl(i)">✕</button>
-            </div>
-            <button type="button" class="br-mini" (click)="agregarCampoUrl()">+ Otra publicación</button>
-          </div>
-
-          <div class="br-acciones-form">
-            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm"
-                    *ngIf="boletoEditandoId" (click)="cancelarEdicionBoleto()">Cancelar</button>
-            <button type="button" class="pk-btn pk-btn--primary pk-btn--sm"
-                    [disabled]="guardando" (click)="guardarBoleto()">
-              {{ boletoEditandoId ? 'Guardar cambios' : '🎟️ Registrar boleto' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="pk-card__footer br-footer-lista" *ngIf="boletos.length > 0">
-          <div class="br-boleto" *ngFor="let b of boletos" [class.br-boleto--edit]="boletoEditandoId === b.id">
-            <div class="br-boleto__info">
-              <div class="br-boleto__titulo">
-                {{ iconoPlataforma(b.plataforma) }} {{ b.motivo || 'Sin detalle' }}
-                <span class="pk-text pk-text--sm pk-text--muted">· {{ b.fecha | date:'dd/MM/yyyy' }}</span>
-              </div>
-              <a class="br-boleto__url" *ngIf="b.urlPerfilRedSocial"
-                 [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil</a>
-              <a class="br-boleto__url" *ngFor="let u of b.urlsCompartido"
-                 [href]="u" target="_blank" rel="noopener">Publicación</a>
-            </div>
-            <div class="br-boleto__acciones">
-              <button type="button" class="br-icono" title="Editar" (click)="editarBoleto(b)">✏️</button>
-              <button type="button" class="br-icono br-icono--peligro" title="Eliminar"
-                      (click)="eliminarBoleto(b)">🗑️</button>
-            </div>
-          </div>
-        </div>
-        <div class="pk-empty" *ngIf="!cargandoBoletos && boletos.length === 0">
-          Este participante todavía no tiene boletos.
+          <button type="button" class="bg-btn-alta"
+                  *ngIf="puedeCargarAgrupado && !mostrarFormGrupo" (click)="abrirFormGrupo()">
+            ➕ {{ gruposDelParticipante.length ? 'Agregar otra red social' : 'Agregar su primera red social' }}
+          </button>
         </div>
       </div>
+
+      <!-- ── 3. Todos los boletos de la rifa, por perfil (solo para consultar) ─────────────
+           Colapsados para no empujar la pantalla. Para agregar o editar se abre al
+           participante arriba. ⚠️ El sorteo no cambia: cada boleto es su propia fila. -->
+      <div class="pk-card bg-card">
+        <div class="pk-card__header">
+          <div class="br-h">🎟️ Todos los boletos de la rifa</div>
+          <span class="br-chip" *ngIf="totalBoletosRifa">{{ totalBoletosRifa }} boleto(s)</span>
+        </div>
+
+        <div class="pk-card__body">
+          <div class="bg-acciones" *ngIf="grupos.length > 1">
+            <button type="button" class="bg-btn-colapsar" (click)="colapsarTodos()">⊟ Colapsar todos</button>
+          </div>
+
+          <p class="bg-estado" *ngIf="cargandoGrupos">Cargando boletos…</p>
+          <p class="bg-estado" *ngIf="!cargandoGrupos && grupos.length === 0">
+            Todavía no hay boletos cargados en esta rifa.
+          </p>
+
+          <div class="bg-grupo" *ngFor="let g of grupos; trackBy: seguirGrupo" [class.bg-grupo--abierto]="g.expandido">
+            <div class="bg-grupo__cabecera" (click)="alternarGrupo(g)">
+              <span class="bg-grupo__flecha">{{ g.expandido ? '▾' : '▸' }}</span>
+              <span class="bg-grupo__plat">{{ iconoPlataforma(g.plataforma) }}</span>
+              <div class="bg-grupo__info">
+                <span class="bg-grupo__nombre">{{ g.nombreConcursante }}</span>
+                <span class="bg-grupo__perfil">{{ g.urlPerfil }}</span>
+              </div>
+              <span class="bg-grupo__total">{{ g.totalBoletos }} 🎟️</span>
+            </div>
+
+            <div class="bg-grupo__cuerpo" *ngIf="g.expandido">
+              <ng-container *ngTemplateOutlet="filasDelPerfil; context: { $implicit: g, editable: false }"></ng-container>
+              <button type="button" class="bp-mini" (click)="abrirParticipanteDelGrupo(g)">
+                ✏️ Abrir a {{ g.nombreConcursante }} para agregar o editar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Los boletos de una red: un renglón por boleto, los de la misma publicación juntos -->
+      <ng-template #filasDelPerfil let-g let-editable="editable">
+        <p class="bg-vacio" *ngIf="g.totalBoletos === 0">
+          Esta red se quedó sin boletos. No es un error: el cliente sigue en la rifa por sus otras redes.
+        </p>
+
+        <ul class="bp-filas" *ngIf="g.filas?.length">
+          <li class="bp-fila" *ngFor="let f of g.filas; trackBy: seguirFila">
+            <ng-container *ngIf="!(editable && editandoBoletoId === f.boletoId); else filaEnEdicion">
+              <a class="bp-fila__url" *ngIf="f.urlParticipacion; else sinLink"
+                 [href]="linkExterno(f.urlParticipacion)" target="_blank" rel="noopener noreferrer"
+                 [title]="f.urlParticipacion">{{ f.urlParticipacion }}</a>
+              <ng-template #sinLink>
+                <span class="bp-fila__url bp-fila__url--vacia">Sin link de publicación</span>
+              </ng-template>
+              <span class="bp-fila__que">{{ f.motivo || 'Sin detalle' }}</span>
+              <span class="bp-etiqueta" [class.bp-etiqueta--repite]="!f.unica">
+                {{ f.unica ? 'Única' : 'Se repite' }}
+              </span>
+              <span class="bp-fila__acciones" *ngIf="editable">
+                <button type="button" class="bp-icono" title="Editar este boleto"
+                        *ngIf="puedeAgregarParticipacion" (click)="editarFila(f)">✏️</button>
+                <button type="button" class="bp-icono bp-icono--peligro" title="Quitar este boleto"
+                        *ngIf="puedeQuitarParticipacion"
+                        [disabled]="quitandoBoleto === f.boletoId"
+                        (click)="quitarParticipacion(g, f)">{{ quitandoBoleto === f.boletoId ? '…' : '🗑️' }}</button>
+              </span>
+            </ng-container>
+
+            <ng-template #filaEnEdicion>
+              <input class="bg-input bp-fila__url-input" type="text" maxlength="500"
+                     aria-label="URL de la publicación" [(ngModel)]="edicionFila.url" />
+              <input class="bg-input bp-fila__que-input" type="text" maxlength="200"
+                     aria-label="Qué hizo" [(ngModel)]="edicionFila.motivo"
+                     (keyup.enter)="guardarEdicionFila(f)" />
+              <span class="bp-fila__acciones">
+                <button type="button" class="bp-icono bp-icono--ok" title="Guardar cambios"
+                        [disabled]="guardandoEdicion" (click)="guardarEdicionFila(f)">{{ guardandoEdicion ? '…' : '✔' }}</button>
+                <button type="button" class="bp-icono" title="Cancelar" (click)="cancelarEdicionFila()">✕</button>
+              </span>
+            </ng-template>
+          </li>
+        </ul>
+      </ng-template>
 
       <div class="br-acciones-paso">
         <button type="button" class="pk-btn pk-btn--secondary" (click)="irAPaso('configurar')">← Configuración</button>

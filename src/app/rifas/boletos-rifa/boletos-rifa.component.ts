@@ -1218,6 +1218,19 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     setTimeout(() => { this.confettiPieces = []; }, 6000);
   }
 
+  /**
+   * Las ligas de lo que hizo la persona (el like, el comentario, lo que compartió). Las
+   * participaciones cargadas por perfil la guardan en urlSeguimiento; las de antes, en
+   * urlsCompartido. Hay que leer las dos o la mitad de los boletos sale "sin liga".
+   */
+  ligasDeParticipacion(b?: IBoletoRifaDto | null): string[] {
+    if (!b) return [];
+    const todas = [b.urlSeguimiento, ...(b.urlsCompartido ?? [])]
+      .map(u => (u ?? '').trim())
+      .filter(u => !!u);
+    return [...new Set(todas)];
+  }
+
   etiquetaBoleto(b: IBoletoRifaDto): string {
     const partes = [b.plataforma, b.motivo].filter(p => !!p);
     return partes.length ? partes.join(' · ') : 'Sin detalle';

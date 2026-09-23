@@ -502,6 +502,60 @@
 .br-ganador { text-align: center; }
 .br-ganador__premio { margin-top: 10px; }
 
+.br-ganador__evidencia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px auto 0;
+  max-width: 480px;
+  padding: 12px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--form-section-bg);
+  text-align: left;
+}
+
+.br-ganador__red {
+  font-size: .9rem;
+  color: var(--card-text);
+}
+
+.br-ganador__fila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.br-ganador__etq {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--card-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+// Se muestra la URL completa y no un "ver perfil": ahí se lee el usuario (instagram.com/fulana)
+// sin tener que abrirla.
+.br-ganador__liga {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--app-accent);
+
+  &:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+}
+
+.br-ganador__vacio {
+  font-size: .82rem;
+  font-style: italic;
+  color: var(--card-text-muted);
+}
+
+.br-ganador__todas { align-self: flex-start; }
+
 // ── Ruleta ────────────────────────────────────────────────────────────
 // El ancho real lo fija el componente con [style.maxWidth.px]: la ruleta crece conforme
 // entran más boletos. El 100% de aquí es el techo en celular, para que no se salga nunca

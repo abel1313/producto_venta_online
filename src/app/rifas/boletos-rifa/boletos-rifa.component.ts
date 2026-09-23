@@ -121,6 +121,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   boletosDescartados: IBoletoRifaDto[] = [];
   gruposEnJuego: IGrupoBoletos[] = [];
   gruposDescartados: IGrupoBoletos[] = [];
+  // Cerrada: con cien boletos la lista empujaba los descartados hasta el fondo de la pantalla.
+  enJuegoAbierto = false;
   varianteActual: any = null;
   varianteNumeroActual = 0;
   totalVariantes = 0;

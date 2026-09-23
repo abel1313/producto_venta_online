@@ -159,6 +159,16 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return !this.pedidoEstaCerrado || this.esContadoEntregado;
   }
 
+  /** Unir pedidos: solo los que no estén entregados, cancelados ni ya pagados. */
+  get pedidoAbiertoParaUnir(): boolean {
+    return !this.pedidoEstaCerrado && (this.detalle?.estadoPedido ?? '').toUpperCase() !== 'PAGADO';
+  }
+
+  /** Unir, abonar al grupo o deshacer cambian totales y observaciones: se recarga el detalle. */
+  alCambiarGrupo(): void {
+    this.cargarDetalleCompleto();
+  }
+
   editarRamo(): void {
     this.router.navigate(['/flores/configurar'], {
       queryParams: { pedidoId: this.detalle?.pedidoId ?? this.pedido?.pedido?.id }

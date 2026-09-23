@@ -122,6 +122,15 @@
     </div>
   </div>
 
+  <!-- ── UNIR PEDIDOS (2026-09-23) ─────────────────────────────────────────────────
+       Cobrar y recoger varios pedidos juntos. El componente decide solo qué mostrar según los
+       permisos 'unir-pedidos' / 'abonar' y si este pedido ya está en un grupo. -->
+  <app-grupo-pedido *ngIf="isAdmin && detalle"
+                    [pedidoId]="pedido.pedido.id"
+                    [pedidoAbierto]="pedidoAbiertoParaUnir"
+                    [refrescarCon]="detalle"
+                    (cambio)="alCambiarGrupo()"></app-grupo-pedido>
+
   <!-- ── BUSCADOR DE ARTÍCULOS (agregar / cambiar) ───────────────────────────────── -->
   <div class="dp-art-buscador" *ngIf="mostrarBuscadorArticulo">
     <h4 class="dp-art-buscador__titulo">{{ tituloBuscador }}</h4>

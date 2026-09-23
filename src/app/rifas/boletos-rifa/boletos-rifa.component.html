@@ -711,6 +711,39 @@
           <div class="pk-text pk-text--bold br-ganador__premio">
             🎁 {{ ganadorActual.varianteActual?.variante?.nombreProducto }}
           </div>
+
+          <!-- Con el nombre solo no se sabe a quién entregarle: hay que encontrarla en la red y
+               comprobar que la participación con la que ganó es real. -->
+          <div class="br-ganador__evidencia" *ngIf="ganadorActual.boleto as b">
+            <div class="br-ganador__red">
+              {{ iconoPlataforma(b.plataforma) }} Ganó con su participación en
+              <b>{{ b.plataforma ? etiquetaPlataforma(b.plataforma) : 'una red sin registrar' }}</b>
+            </div>
+
+            <div class="br-ganador__fila">
+              <span class="br-ganador__etq">👤 Perfil</span>
+              <a class="br-ganador__liga" *ngIf="b.urlPerfilRedSocial; else ganadorSinPerfil"
+                 [href]="linkExterno(b.urlPerfilRedSocial)" target="_blank" rel="noopener noreferrer"
+                 title="Abrir su perfil">{{ b.urlPerfilRedSocial }}</a>
+              <ng-template #ganadorSinPerfil>
+                <span class="br-ganador__vacio">No se registró el link de su perfil</span>
+              </ng-template>
+            </div>
+
+            <div class="br-ganador__fila">
+              <span class="br-ganador__etq">👍 {{ b.motivo || 'Participación' }}</span>
+              <a class="br-ganador__liga" *ngFor="let u of ligasDeParticipacion(b)"
+                 [href]="linkExterno(u)" target="_blank" rel="noopener noreferrer"
+                 title="Abrir la publicación">{{ u }}</a>
+              <span class="br-ganador__vacio" *ngIf="!ligasDeParticipacion(b).length">
+                No se registró el link de la publicación
+              </span>
+            </div>
+
+            <button type="button" class="br-mini br-ganador__todas" (click)="verDetalle(b.concursanteId)">
+              Ver todas sus participaciones
+            </button>
+          </div>
           <div class="br-aviso-prueba" *ngIf="rifaSeleccionada.esPrueba">
             🧪 Esta rifa es de PRUEBA — el resultado no es definitivo.
           </div>
@@ -769,8 +802,8 @@
           <div class="pk-text pk-text--bold">
             {{ b.descartado ? '❌' : '🎟️' }} {{ etiquetaBoleto(b) }} · {{ b.fecha | date:'dd/MM/yyyy' }}
           </div>
-          <a class="pk-text pk-text--sm" *ngIf="b.urlPerfilRedSocial" [href]="b.urlPerfilRedSocial" target="_blank" rel="noopener">Perfil de la persona</a>
-          <a class="pk-text pk-text--sm" *ngFor="let u of b.urlsCompartido" [href]="u" target="_blank" rel="noopener">Publicación compartida</a>
+          <a class="pk-text pk-text--sm" *ngIf="b.urlPerfilRedSocial" [href]="linkExterno(b.urlPerfilRedSocial)" target="_blank" rel="noopener noreferrer">Perfil de la persona</a>
+          <a class="pk-text pk-text--sm" *ngFor="let u of ligasDeParticipacion(b)" [href]="linkExterno(u)" target="_blank" rel="noopener noreferrer">Ver la publicación</a>
         </div>
       </div>
     </div>

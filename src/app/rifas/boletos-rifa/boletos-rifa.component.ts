@@ -22,7 +22,9 @@ import {
 } from '../models/boleto-agrupado.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { RifaService } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, revolverRuleta } from '../ruleta-visual.util';
+import {
+  IMedidasRuleta, aplicarLadoRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, numerosEnRuleta, revolverRuleta
+} from '../ruleta-visual.util';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteImagenDto, IVarianteResumen } from 'src/app/variante/models/variante.model';
 
@@ -1108,6 +1110,8 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
 
+    aplicarLadoRuleta(this.ruletaCanvas.nativeElement, this.medidas);
+
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
       data: {
@@ -1127,17 +1131,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         },
         plugins: {
           legend: { display: false },
-          datalabels: {
-            display: this.medidas.mostrarNumeros,
-            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
-            // caen casi en el mismo punto y se enciman entre si.
-            color: 'white', anchor: 'end', align: 'start', offset: 6,
-            font: { size: this.medidas.fuente, weight: 'bold' },
-            formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
-          }
+          // Los números los pinta numerosEnRuleta, acostados sobre su rebanada.
+          datalabels: { display: false }
         }
       },
-      plugins: [ChartDataLabels]
+      plugins: [numerosEnRuleta(this.medidas)]
     });
   }
 

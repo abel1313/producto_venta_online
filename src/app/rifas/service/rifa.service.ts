@@ -26,6 +26,11 @@ import {
   IPremioPublico,
   IResultadoSorteoPlataformas
 } from '../models/boleto-rifa.model';
+import {
+  ICargarBoletosRequest,
+  IGrupoBoletosPerfil,
+  INuevaParticipacion
+} from '../models/boleto-agrupado.model';
 
 export type ModoContinuacion = 'RESTANTES' | 'CERO' | 'NUEVOS';
 
@@ -252,6 +257,51 @@ export class RifaService {
   editarBoleto(id: number, data: IBoletoRifaRequest): Observable<IBoletoRifa> {
     return this.http.put<{ code: number; data: IBoletoRifa }>(
       `${this.url}/v1/boletoRifa/${id}`, data
+    ).pipe(map(r => r.data));
+  }
+
+  // ── 16b. Boletos agrupados por perfil (back 2026-09-22) ────────────
+  // Conviven con los de arriba: los boletos ya cargados NO se migraron, y los dos formatos
+  // leen las mismas filas. Lo único que cambia es cómo se presentan.
+  //
+  // Van detrás de acciones configurables: sin la migración corrida dan 403 a todos, admin
+  // incluido, y después hay que volver a entrar (los permisos viajan en el JWT).
+
+  /** La pantalla: un renglón por (plataforma + perfil), lo último cargado arriba. */
+  getBoletosAgrupados(rifaId: number): Observable<IGrupoBoletosPerfil[]> {
+    return this.http.get<{ code: number; data: IGrupoBoletosPerfil[] }>(
+      `${this.url}/v1/rifas/${rifaId}/boletos-agrupados`
+    ).pipe(map(r => r.data ?? []));
+  }
+
+  /**
+   * Alta de un perfil con todas sus participaciones de una sola pasada.
+   *
+   * Es **todo o nada**: si una URL choca, no se carga ninguna. No hay que reconciliar estados
+   * parciales.
+   */
+  cargarBoletosAgrupados(rifaId: number, data: ICargarBoletosRequest): Observable<IGrupoBoletosPerfil> {
+    return this.http.post<{ code: number; data: IGrupoBoletosPerfil }>(
+      `${this.url}/v1/rifas/${rifaId}/boletos-agrupados`, data
+    ).pipe(map(r => r.data));
+  }
+
+  /** Suma una participación a un grupo que ya existe, sin recargar la cabecera. */
+  agregarParticipacion(rifaId: number, plataforma: string, urlPerfil: string,
+                       data: INuevaParticipacion): Observable<IGrupoBoletosPerfil> {
+    const q = `plataforma=${encodeURIComponent(plataforma)}&urlPerfil=${encodeURIComponent(urlPerfil)}`;
+    return this.http.post<{ code: number; data: IGrupoBoletosPerfil }>(
+      `${this.url}/v1/rifas/${rifaId}/boletos-agrupados/participaciones?${q}`, data
+    ).pipe(map(r => r.data));
+  }
+
+  /**
+   * Quita una participación. Puede devolver el grupo con `totalBoletos: 0` — eso NO es un
+   * error: el perfil quedó sin participaciones y el cliente sigue en la rifa por sus otras redes.
+   */
+  quitarParticipacion(rifaId: number, boletoId: number): Observable<IGrupoBoletosPerfil> {
+    return this.http.delete<{ code: number; data: IGrupoBoletosPerfil }>(
+      `${this.url}/v1/rifas/${rifaId}/boletos-agrupados/participaciones/${boletoId}`
     ).pipe(map(r => r.data));
   }
 

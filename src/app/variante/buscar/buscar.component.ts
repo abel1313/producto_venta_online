@@ -91,6 +91,24 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // Favoritos — solo usuarios logueados (con perfil de cliente completo, lo valida el back)
   private roles: string[] = [];
   get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
+
+  /**
+   * El precio de rebaja de la card (back 2026-09-22).
+   *
+   * 🔒 **`precioRebaja` solo llega si quien pregunta es admin** — al cliente el back lo omite
+   * a propósito, porque el precio rebajado es una decisión interna del negocio. Así que no
+   * hace falta esconderlo acá: si llegó, es que corresponde verlo. El chequeo de `> 0` es
+   * solo para no dibujar un tachado cuando no hay rebaja de verdad.
+   */
+  tieneRebaja(v: IVarianteResumen): boolean {
+    return (v.precioRebaja ?? 0) > 0;
+  }
+
+  /** Lo que se le va a cobrar: la rebaja si existe, si no el precio normal. */
+  precioFinal(v: IVarianteResumen): number {
+    const rebaja = v.precioRebaja ?? 0;
+    return rebaja > 0 ? rebaja : (v.precio ?? 0);
+  }
   favoritosIds = new Set<number>();
   /** Se apaga si el back dice que al usuario le falta perfil de cliente — ver `ngOnInit`. */
   favoritosDisponibles = true;
@@ -316,6 +334,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // Modelos: se puede otorgar sin otorgar "habilitar". Ver migration_accion_tienda_eliminar.sql.
   get puedeEliminar(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'eliminar');
+  }
+
+  // Botón 💲: cambia precio normal / con descuento del producto sin armar una promoción.
+  // Ver migration_accion_tienda_cambiar_precio.sql.
+  get puedeCambiarPrecio(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'cambiar-precio');
   }
 
   get puedeCompartirImagen(): boolean {
@@ -766,14 +790,42 @@ export class BuscarComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Al deshabilitar, el back deja el artículo en 0 y ese stock vuelve al disponible del producto.
+  // Por eso al habilitarlo de nuevo entra sin stock y la tienda no lo muestra (pide stock > 0):
+  // se avisa antes, y se deja decidir si se habilita igual.
   habilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
+    if (habilitar && !v.stock) {
+      this.confirmarHabilitarSinStock(1).then(ok => { if (ok) this.ejecutarHabilitarVariante(v, habilitar); });
+      return;
+    }
+    this.ejecutarHabilitarVariante(v, habilitar);
+  }
+
+  private ejecutarHabilitarVariante(v: IVarianteResumen, habilitar: boolean): void {
     this.varianteService.habilitarVariante(v.id, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         v.habilitado = habilitar ? '1' : '0';
-        Swal.fire({ icon: 'success', title: habilitar ? 'Variante habilitada' : 'Variante deshabilitada', timer: 1500, showConfirmButton: false });
+        if (!habilitar) v.stock = 0;
+        this.varianteService.invalidarCache();
+        Swal.fire({ icon: 'success', title: habilitar ? 'Artículo habilitado' : 'Artículo deshabilitado', timer: 1500, showConfirmButton: false });
       },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cambiar el estado.' })
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el estado.' })
     });
+  }
+
+  private confirmarHabilitarSinStock(cuantos: number): Promise<boolean> {
+    return Swal.fire({
+      icon: 'warning',
+      title: cuantos === 1 ? 'Este artículo no tiene stock' : `${cuantos} artículos no tienen stock`,
+      html: 'Al deshabilitarlo su stock volvió al disponible del producto. Habilitarlo no le devuelve '
+          + 'stock: no va a aparecer en la tienda hasta que se lo asignes editándolo (y si el producto '
+          + 'ya no tiene disponible, primero hay que subirle stock al producto).<br><br>'
+          + '¿Habilitarlo de todas formas?',
+      showCancelButton: true,
+      confirmButtonText: 'Habilitar de todas formas',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    }).then(r => r.isConfirmed);
   }
 
   /**
@@ -810,18 +862,105 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
+  cambiandoPrecioId: number | null = null;
+
+  /**
+   * El precio vive en el producto, así que el cambio alcanza a todos sus artículos: el modal lo
+   * dice para que nadie crea que solo cambia esta talla.
+   */
+  cambiarPrecio(v: IVarianteResumen): void {
+    if (this.cambiandoPrecioId || !v.productoId) return;
+    const normal = v.precio ?? 0;
+    const descuento = v.precioRebaja ?? 0;
+    const nombre = v.nombreProducto || 'este producto';
+
+    Swal.fire({
+      title: `💲 Precio de ${nombre}`,
+      html: `
+        <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio de <b>todos</b> los artículos de este producto.
+          Los pedidos y ventas ya hechos conservan su precio.</p>
+        <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
+        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
+        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento <small>(0 = sin descuento)</small></label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 0;width:100%" value="${descuento}">`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar precio',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value);
+        const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
+        if (!(nuevoNormal > 0)) {
+          Swal.showValidationMessage('El precio normal debe ser mayor a 0');
+          return false;
+        }
+        if (nuevoDesc < 0) {
+          Swal.showValidationMessage('El descuento no puede ser negativo');
+          return false;
+        }
+        if (nuevoDesc > nuevoNormal) {
+          Swal.showValidationMessage('El descuento no puede ser mayor al precio normal. Para cobrar más, sube el precio normal');
+          return false;
+        }
+        return { nuevoNormal, nuevoDesc };
+      }
+    }).then(r => {
+      if (!r.isConfirmed || !r.value) return;
+      const { nuevoNormal, nuevoDesc } = r.value;
+      this.cambiandoPrecioId = v.id;
+      this.varianteService.cambiarPrecio(v.productoId!, nuevoNormal, nuevoDesc)
+        .pipe(takeUntil(this.destroy$)).subscribe({
+          next: res => {
+            this.cambiandoPrecioId = null;
+            this.variantes
+              .filter(x => x.productoId === v.productoId)
+              .forEach(x => { x.precio = res.precioVenta; x.precioRebaja = res.precioRebaja; });
+            this.varianteService.invalidarCache();
+            Swal.fire({
+              icon: res.vendeBajoCosto ? 'warning' : 'success',
+              title: 'Precio actualizado',
+              text: res.vendeBajoCosto
+                ? `Ahora se cobra $${res.precioACobrar.toFixed(2)}. Ojo: queda por debajo de lo que costó.`
+                : `Ahora se cobra $${res.precioACobrar.toFixed(2)}.`,
+              timer: res.vendeBajoCosto ? undefined : 1800,
+              showConfirmButton: res.vendeBajoCosto
+            });
+          },
+          error: err => {
+            this.cambiandoPrecioId = null;
+            Swal.fire({ icon: 'error', title: 'No se pudo cambiar el precio',
+              text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+          }
+        });
+    });
+  }
+
   habilitarLote(habilitar: boolean): void {
     if (this.seleccionados.size === 0 || this.procesandoLote) return;
+    const sinStock = habilitar
+      ? this.variantes.filter(v => this.seleccionados.has(v.id) && !v.stock).length
+      : 0;
+    if (sinStock > 0) {
+      this.confirmarHabilitarSinStock(sinStock).then(ok => { if (ok) this.ejecutarHabilitarLote(habilitar); });
+      return;
+    }
+    this.ejecutarHabilitarLote(habilitar);
+  }
+
+  private ejecutarHabilitarLote(habilitar: boolean): void {
     const ids = Array.from(this.seleccionados);
     this.procesandoLote = true;
     this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.variantes.forEach(v => {
-          if (this.seleccionados.has(v.id)) v.habilitado = habilitar ? '1' : '0';
+          if (!this.seleccionados.has(v.id)) return;
+          v.habilitado = habilitar ? '1' : '0';
+          if (!habilitar) v.stock = 0;
         });
         this.seleccionados.clear();
         this.procesandoLote = false;
-        Swal.fire({ icon: 'success', title: habilitar ? 'Variantes habilitadas' : 'Variantes deshabilitadas', timer: 1800, showConfirmButton: false });
+        this.varianteService.invalidarCache();
+        Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
       },
       error: (err) => {
         this.procesandoLote = false;

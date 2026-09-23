@@ -14,6 +14,15 @@ import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
+import { VarianteService } from 'src/app/variante/service/variante.service';
+import { IVarianteResumen } from 'src/app/variante/models/variante.model';
+import {
+  CambiarTipoPedidoRequest,
+  ModoCambio,
+  OpcionesPromocion,
+  TipoPedido
+} from '../models/editar-pedido.model';
+
 import { hoyIso } from '../../shared/fecha.util';
 @Component({
   selector: 'app-detalle-pedido',
@@ -95,6 +104,59 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   get puedeAbonar(): boolean {
     return this.authService.tieneAccion('pedidos/mis-pedidos', 'abonar');
+  }
+
+  // ── Editar un pedido ya creado (2026-09-22) ──────────────────────────────────────
+  // Cada botón tiene su propia acción configurable: se le puede dar "agregar" a quien atiende
+  // el mostrador sin darle "quitar promoción". Si la migración no corrió, `tieneAccion`
+  // devuelve false y el botón ni aparece — mejor que mostrarlo y que el back conteste 403.
+
+  /**
+   * Cambiar la forma de cobro es una acción de dinero: mueve el pedido entre Normal, Apartado
+   * e Ir pagando y, si el cliente paga en el momento, registra el abono. Por eso NO cuelga del
+   * "Editar" general de la pantalla.
+   *
+   * Bloqueado en ramos por lo mismo que `puedeEditarLineas`: un ramo sin recotizar queda
+   * internamente inconsistente.
+   */
+  get puedeCambiarTipo(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'cambiar-tipo');
+  }
+
+  get puedeAgregarArticulo(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'agregar-articulo');
+  }
+
+  get puedeCambiarArticulo(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'cambiar-articulo');
+  }
+
+  get puedeQuitarPromocion(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'quitar-promocion');
+  }
+
+  /** Un pedido entregado o cancelado no se edita — el back también lo rechaza. */
+  get pedidoEstaCerrado(): boolean {
+    const estado = (this.detalle?.estadoPedido ?? '').toUpperCase();
+    return estado === 'ENTREGADO' || estado === 'CANCELADO';
+  }
+
+  /**
+   * Cobrado de contado y entregado. Su forma de cobro SÍ se puede cambiar, pero solo a crédito:
+   * el caso real es una promoción que se registró como efectivo cuando el cliente va pagando.
+   */
+  get esContadoEntregado(): boolean {
+    const estado = (this.detalle?.estadoPedido ?? '').toUpperCase();
+    const tipo = (this.tipoActual || 'NORMAL').toUpperCase();
+    return estado === 'ENTREGADO' && tipo === 'NORMAL';
+  }
+
+  get puedeAbrirFormTipo(): boolean {
+    return !this.pedidoEstaCerrado || this.esContadoEntregado;
   }
 
   editarRamo(): void {
@@ -245,6 +307,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly authService:    AuthService,
     private readonly negocioService: NegocioService,
     private readonly floresService:  FloresService,
+    private readonly varianteService: VarianteService,
     private readonly router:         Router
   ) {}
 
@@ -279,8 +342,23 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   eliminando = new Set<PedidoDetalleItem>();
 
+  /**
+   * El botón "−".
+   *
+   * ⚠️ **Cambio 2026-09-22:** una línea que es parte de una promoción ya no se puede quitar
+   * sola. Antes se podía, y el resto del combo se quedaba a precio promocional — o sea que se
+   * seguía cobrando un descuento por una condición que ya no se cumplía, en silencio. El back
+   * ahora lo rechaza; acá lo interceptamos antes de mandarlo para ofrecer la salida correcta
+   * en vez de mostrar un error.
+   */
   reducirCantidad(item: PedidoDetalleItem): void {
     if (this.eliminando.has(item) || item.productoId == null) return;
+
+    if (item.promocionId) {
+      this.ofrecerQuitarPromocionCompleta(item);
+      return;
+    }
+
     this.eliminando.add(item);
 
     this.pedidosService.eliminarDetalle(this.pedido.pedido.id, item.productoId).subscribe({
@@ -605,5 +683,367 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   private hoy(): string {
     return hoyIso();
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════════
+  //  Editar un pedido ya creado (2026-09-22)
+  // ════════════════════════════════════════════════════════════════════════════════
+
+  // ── 1. Cambiar la forma de cobro ────────────────────────────────────────────────
+
+  mostrarFormTipo = false;
+  cambiandoTipo   = false;
+  tipoForm: CambiarTipoPedidoRequest = { tipoPedido: 'NORMAL', montoCobrado: 0, descripcion: '' };
+
+  readonly tiposPedido: { valor: TipoPedido; etiqueta: string; ayuda: string }[] = [
+    { valor: 'NORMAL',   etiqueta: 'Normal (contado)', ayuda: 'Se paga completo ahora' },
+    { valor: 'APARTADO', etiqueta: 'Apartado',         ayuda: 'Abona y se lo lleva al terminar de pagar' },
+    { valor: 'FIADO',    etiqueta: 'Ir pagando',       ayuda: 'Se lo lleva ahora y va abonando' }
+  ];
+
+  get tipoActual(): string {
+    return this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido ?? '';
+  }
+
+  get saldoPendiente(): number {
+    return this.detalle?.saldoPendiente ?? 0;
+  }
+
+  /**
+   * Pasar a contado exige que no quede saldo. Si queda, el monto arranca en el saldo completo
+   * para que el admin no tenga que calcularlo de memoria — que es de donde salían los errores.
+   */
+  get cobroSugerido(): number {
+    return this.tipoForm.tipoPedido === 'NORMAL' ? this.saldoPendiente : 0;
+  }
+
+  get cambioDejaSaldoSinCobrar(): boolean {
+    return this.tipoForm.tipoPedido === 'NORMAL'
+        && this.saldoPendiente > 0
+        && (this.tipoForm.montoCobrado ?? 0) < this.saldoPendiente;
+  }
+
+  abrirFormTipo(): void {
+    const actual = (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
+    this.tipoForm = {
+      tipoPedido:   this.esContadoEntregado ? 'FIADO' : actual === 'NORMAL' ? 'APARTADO' : 'NORMAL',
+      montoCobrado: 0,
+      descripcion:  ''
+    };
+    this.tipoForm.montoCobrado = this.cobroSugerido;
+    this.mostrarFormTipo = true;
+  }
+
+  cancelarFormTipo(): void {
+    this.mostrarFormTipo = false;
+  }
+
+  /** Al elegir otro tipo se recalcula el monto sugerido: cambia según a dónde va el pedido. */
+  seleccionarTipo(valor: TipoPedido): void {
+    this.tipoForm.tipoPedido = valor;
+    this.tipoForm.montoCobrado = this.cobroSugerido;
+  }
+
+  cambiarTipoPedido(): void {
+    if (this.cambiandoTipo) return;
+
+    if (this.tipoForm.tipoPedido === (this.tipoActual || '').toUpperCase()) {
+      Swal.fire({ icon: 'info', title: 'Sin cambios', text: 'El pedido ya está en esa forma de cobro.' });
+      return;
+    }
+
+    if (this.cambioDejaSaldoSinCobrar) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Falta cobrar el saldo',
+        text: `Para dejarlo en contado hay que cobrar los ${this.saldoPendiente.toFixed(2)} que quedan.`
+      });
+      return;
+    }
+
+    this.cambiandoTipo = true;
+    const body: CambiarTipoPedidoRequest = {
+      tipoPedido:   this.tipoForm.tipoPedido,
+      montoCobrado: this.tipoForm.montoCobrado || 0,
+      descripcion:  (this.tipoForm.descripcion ?? '').trim() || undefined,
+      usuarioId:    this.idUsuario || undefined
+    };
+
+    this.pedidosService.cambiarTipoPedido(this.pedido.pedido.id, body).subscribe({
+      next: r => {
+        this.cambiandoTipo   = false;
+        this.mostrarFormTipo = false;
+        this.detalle = r?.data ?? this.detalle;
+        Swal.fire({
+          icon: 'success',
+          title: 'Forma de cobro actualizada',
+          text: (body.montoCobrado ?? 0) > 0
+            ? `Quedó como ${this.etiquetaTipo(body.tipoPedido)} y se registró el cobro de ${(body.montoCobrado ?? 0).toFixed(2)}.`
+            : `Quedó como ${this.etiquetaTipo(body.tipoPedido)}.`,
+          timer: 3000,
+          showConfirmButton: false
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.cambiandoTipo = false;
+        this.avisarError(err, 'No se pudo cambiar la forma de cobro.');
+      }
+    });
+  }
+
+  etiquetaTipo(valor: string): string {
+    return this.tiposPedido.find(t => t.valor === valor)?.etiqueta ?? valor;
+  }
+
+  // ── 2. Agregar un artículo ──────────────────────────────────────────────────────
+
+  mostrarBuscadorArticulo = false;
+  terminoArticulo         = '';
+  resultadosArticulo: IVarianteResumen[] = [];
+  buscandoArticulo        = false;
+  guardandoArticulo       = false;
+
+  /** La línea que se está reemplazando. `null` = se está agregando uno nuevo. */
+  private lineaACambiar: PedidoDetalleItem | null = null;
+
+  get tituloBuscador(): string {
+    return this.lineaACambiar ? 'Cambiar por otro artículo' : 'Agregar un artículo';
+  }
+
+  abrirBuscadorArticulo(linea: PedidoDetalleItem | null = null): void {
+    this.lineaACambiar           = linea;
+    this.terminoArticulo         = '';
+    this.resultadosArticulo      = [];
+    this.mostrarBuscadorArticulo = true;
+  }
+
+  cerrarBuscadorArticulo(): void {
+    this.mostrarBuscadorArticulo = false;
+    this.lineaACambiar           = null;
+  }
+
+  /**
+   * Menos de 3 caracteres no sale al back: con 1 o 2 el LIKE barre casi todo el catálogo y el
+   * resultado no le sirve a nadie (regla de CLAUDE.md). Vacío limpia la lista.
+   */
+  buscarArticulo(): void {
+    const termino = (this.terminoArticulo ?? '').trim();
+    if (!termino) { this.resultadosArticulo = []; return; }
+    if (termino.length < 3) return;
+
+    this.buscandoArticulo = true;
+    this.varianteService.buscar({ termino, pagina: 0, size: 20 }).subscribe({
+      next: r => {
+        this.resultadosArticulo = (r?.t ?? []) as IVarianteResumen[];
+        this.buscandoArticulo   = false;
+      },
+      // El back contesta 404 cuando no encuentra nada: eso es "sin resultados", no un error.
+      error: () => { this.resultadosArticulo = []; this.buscandoArticulo = false; }
+    });
+  }
+
+  /**
+   * El precio que se le va a cobrar: la rebaja si existe, si no el normal.
+   *
+   * El back solo acepta uno de esos dos — cualquier otro número lo rechaza con 400, que es
+   * justo lo que cierra el agujero de mandar el precio desde la pantalla.
+   */
+  precioACobrar(v: IVarianteResumen): number {
+    const rebaja = v.precioRebaja ?? 0;
+    return rebaja > 0 ? rebaja : (v.precio ?? 0);
+  }
+
+  tieneRebaja(v: IVarianteResumen): boolean {
+    return (v.precioRebaja ?? 0) > 0;
+  }
+
+  elegirArticulo(v: IVarianteResumen): void {
+    if (this.guardandoArticulo) return;
+    this.guardandoArticulo = true;
+
+    const pedidoId = this.pedido.pedido.id;
+    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioACobrar(v) };
+
+    const peticion = this.lineaACambiar
+      ? this.pedidosService.cambiarArticulo(pedidoId, this.lineaACambiar.id!, body)
+      : this.pedidosService.agregarArticulo(pedidoId, body);
+
+    peticion.subscribe({
+      next: r => {
+        this.guardandoArticulo = false;
+        this.detalle = r?.data ?? this.detalle;
+        this.cerrarBuscadorArticulo();
+        Swal.fire({
+          icon: 'success',
+          title: this.lineaACambiar ? 'Artículo cambiado' : 'Artículo agregado',
+          timer: 1800,
+          showConfirmButton: false
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.guardandoArticulo = false;
+        // 409 NO es un error: es la pregunta del combo.
+        if (err?.status === 409) {
+          this.preguntarQueHacerConElCombo(err, v);
+          return;
+        }
+        this.avisarError(err, 'No se pudo guardar el artículo.');
+      }
+    });
+  }
+
+  // ── 3. El combo de promoción: el 409 ────────────────────────────────────────────
+
+  /**
+   * El back no elige entre romper el combo y conservarlo porque las dos son decisiones de
+   * negocio válidas: contesta 409 con las dos salidas y pregunta.
+   *
+   * ⚠️ Se mira `err.status`, **no** el `code` del body: en los errores el envelope trae
+   * `code: 404` sin importar el status real, por cómo se arma `ResponseGeneric` en el back.
+   */
+  private preguntarQueHacerConElCombo(err: any, articulo: IVarianteResumen): void {
+    const opciones: OpcionesPromocion | null = err?.error?.data ?? null;
+    const promo   = opciones?.promocionDescripcion ?? 'la promoción';
+    const importe = opciones?.importeDelCombo ?? 0;
+    const lineas  = opciones?.lineasDelCombo ?? [];
+
+    const detalleCombo = lineas.length
+      ? `<ul style="text-align:left;margin:.6rem 0 0;padding-left:1.1rem">${
+          lineas.map(l => `<li>${l.cantidad} × ${l.nombre}</li>`).join('')
+        }</ul>`
+      : '';
+
+    Swal.fire({
+      icon: 'question',
+      title: 'Ese artículo rompe la promoción',
+      html: `<p><b>${articulo.nombreProducto ?? 'El artículo nuevo'}</b> no es parte de `
+          + `<b>${promo}</b>.</p>`
+          + `<p style="margin-top:.5rem">Si se queda, el combo ya no se cumple `
+          + `(${importe.toFixed(2)} en total):</p>${detalleCombo}`,
+      showDenyButton:   true,
+      showCancelButton: true,
+      confirmButtonText: 'Quitar la promoción',
+      denyButtonText:    'Conservarla y agregar aparte',
+      cancelButtonText:  'Cancelar',
+      reverseButtons: true
+    }).then(res => {
+      if (res.isConfirmed)   this.reintentarCambio(articulo, 'QUITAR_PROMOCION');
+      else if (res.isDenied) this.reintentarCambio(articulo, 'CONSERVAR_PROMOCION');
+    });
+  }
+
+  /** El mismo request de antes, ahora con la decisión del usuario adentro. */
+  private reintentarCambio(v: IVarianteResumen, modo: ModoCambio): void {
+    if (!this.lineaACambiar) return;
+    this.guardandoArticulo = true;
+
+    this.pedidosService.cambiarArticulo(this.pedido.pedido.id, this.lineaACambiar.id!, {
+      varianteId:     v.id,
+      cantidad:       1,
+      precioUnitario: this.precioACobrar(v),
+      modo
+    }).subscribe({
+      next: r => {
+        this.guardandoArticulo = false;
+        this.detalle = r?.data ?? this.detalle;
+        this.cerrarBuscadorArticulo();
+        Swal.fire({
+          icon: 'success',
+          title: modo === 'QUITAR_PROMOCION' ? 'Promoción quitada' : 'Se agregó aparte',
+          text:  modo === 'QUITAR_PROMOCION'
+            ? 'Salió el combo completo y entró el artículo nuevo.'
+            : 'La promoción quedó intacta y el artículo se sumó aparte.',
+          timer: 2600,
+          showConfirmButton: false
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.guardandoArticulo = false;
+        this.avisarError(err, 'No se pudo aplicar el cambio.');
+      }
+    });
+  }
+
+  // ── 4. Quitar una promoción completa ────────────────────────────────────────────
+
+  /**
+   * Lo que se ofrece cuando alguien le da al "−" sobre una línea de promoción. Quitar una sola
+   * dejaría el resto del combo a precio promocional sin que se cumpla la condición.
+   */
+  private ofrecerQuitarPromocionCompleta(item: PedidoDetalleItem): void {
+    const promo = item.promocionDescripcion || 'esta promoción';
+
+    if (!this.puedeQuitarPromocion) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Es parte de una promoción',
+        text: `"${this.nombreVisible(item.productoNombre)}" viene dentro de ${promo} y no se puede `
+            + 'quitar solo. Hay que quitar la promoción completa, y no tenés ese permiso.'
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Es parte de una promoción',
+      html: `<p>"<b>${this.nombreVisible(item.productoNombre)}</b>" viene dentro de <b>${promo}</b>.</p>`
+          + '<p style="margin-top:.5rem">Quitarlo solo dejaría el resto del combo a precio de '
+          + 'promoción sin que se cumpla la condición. Hay que quitar <b>la promoción completa</b>.</p>',
+      showCancelButton: true,
+      confirmButtonText: 'Quitar la promoción completa',
+      cancelButtonText:  'Cancelar',
+      reverseButtons: true
+    }).then(res => {
+      if (res.isConfirmed && item.promocionId) this.quitarPromocion(item.promocionId);
+    });
+  }
+
+  quitandoPromocion = false;
+
+  quitarPromocion(promocionId: number): void {
+    if (this.quitandoPromocion) return;
+    this.quitandoPromocion = true;
+
+    this.pedidosService.quitarPromocion(this.pedido.pedido.id, promocionId).subscribe({
+      next: r => {
+        this.quitandoPromocion = false;
+        this.detalle = r?.data ?? this.detalle;
+        Swal.fire({
+          icon: 'success',
+          title: 'Promoción quitada',
+          text: 'Salieron todas sus líneas y volvió su stock.',
+          timer: 2200,
+          showConfirmButton: false
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.quitandoPromocion = false;
+        this.avisarError(err, 'No se pudo quitar la promoción.');
+      }
+    });
+  }
+
+  /**
+   * Un solo lugar para los errores de estos endpoints.
+   *
+   * El 403 se explica aparte porque su causa casi siempre es la misma y no se adivina: la
+   * migración del permiso no corrió, o corrió pero el token es viejo — los permisos viajan
+   * dentro del JWT, así que hay que volver a entrar.
+   */
+  private avisarError(err: any, porDefecto: string): void {
+    if (err?.status === 403) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sin permiso',
+        text: 'Si el permiso ya se dio de alta, cerrá sesión y volvé a entrar: los permisos '
+            + 'viajan dentro del token y uno viejo no los trae.'
+      });
+      return;
+    }
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: (err?.error?.mensaje ?? err?.error?.message) ?? porDefecto
+    });
   }
 }

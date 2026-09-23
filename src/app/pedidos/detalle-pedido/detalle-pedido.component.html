@@ -39,6 +39,129 @@
               [title]="puedeGenerarTicket ? 'Reenviar ticket por correo' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
         📧 Reenviar ticket
       </button>
+
+      <!-- Botones nuevos (2026-09-22). Cada uno tiene su propia acción configurable, así que
+           pueden aparecer por separado según lo que tenga el rol. Un pedido entregado o
+           cancelado no se edita — el back también lo rechaza. -->
+      <button class="dp-btn-tipo" type="button"
+              *ngIf="puedeCambiarTipo && !mostrarFormTipo"
+              [disabled]="!puedeAbrirFormTipo" (click)="abrirFormTipo()"
+              [title]="!puedeAbrirFormTipo ? 'Un pedido cancelado o ya liquidado a crédito no se puede cambiar'
+                       : esContadoEntregado ? 'Se cobró de contado: pasarlo a Apartado o Ir pagando para recibir abonos'
+                       : 'Cambiar entre Normal, Apartado e Ir pagando'">
+        🔁 Cambiar forma de cobro
+      </button>
+      <button class="dp-btn-agregar-art" type="button"
+              *ngIf="puedeAgregarArticulo"
+              [disabled]="pedidoEstaCerrado" (click)="abrirBuscadorArticulo()"
+              [title]="pedidoEstaCerrado ? 'Un pedido entregado o cancelado ya no se puede editar' : 'Agregar un artículo a este pedido'">
+        ➕ Agregar artículo
+      </button>
+    </div>
+  </div>
+
+  <!-- ── CAMBIAR LA FORMA DE COBRO ───────────────────────────────────────────────
+       El caso real: se apartó un pedido y al ir a entregarlo el cliente decidió pagarlo
+       completo. Antes la única salida era cancelar y rehacer el pedido entero, que además
+       devuelve y vuelve a descontar el stock. -->
+  <div class="dp-tipo-form" *ngIf="mostrarFormTipo">
+    <h4 class="dp-tipo-form__titulo">🔁 Cambiar la forma de cobro</h4>
+    <p class="dp-tipo-form__actual">
+      Ahora está como <b>{{ etiquetaTipo(tipoActual) }}</b>
+      <span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>
+    </p>
+    <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
+      ⚠️ Este pedido se registró como pagado completo de contado. Al cambiarlo se anula ese cobro y
+      queda debiendo el total ({{ totalGeneral | currency:'$' }}). En "¿Cobra algo ahora?" pon lo que
+      el cliente dio de verdad, si dio algo.
+    </p>
+
+    <div class="dp-tipo-opciones">
+      <button type="button" class="dp-tipo-btn"
+              *ngFor="let t of tiposPedido"
+              [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
+              [disabled]="t.valor === tipoActual"
+              (click)="seleccionarTipo(t.valor)">
+        <span class="dp-tipo-btn__nombre">{{ t.etiqueta }}</span>
+        <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
+      </button>
+    </div>
+
+    <div class="dp-tipo-campo">
+      <label for="montoCobrado">¿Cobra algo ahora?</label>
+      <input id="montoCobrado" type="number" min="0" step="0.01"
+             [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
+      <small *ngIf="tipoForm.tipoPedido === 'NORMAL' && saldoPendiente > 0">
+        Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
+      </small>
+      <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
+        Podés dejarlo en 0 si no cobra nada en este momento.
+      </small>
+    </div>
+
+    <!-- El pedido explícito: la descripción del abono es texto libre, no una lista fija -->
+    <div class="dp-tipo-campo">
+      <label for="descripcionTipo">¿Por qué cambia? (queda como nota del abono)</label>
+      <input id="descripcionTipo" type="text" maxlength="200"
+             [(ngModel)]="tipoForm.descripcion"
+             placeholder="Ej: vino a recogerlo y lo pagó completo" />
+    </div>
+
+    <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
+      ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}
+      para poder dejarlo en contado.
+    </p>
+
+    <div class="dp-tipo-acciones">
+      <button class="dp-btn-cancelar" type="button" (click)="cancelarFormTipo()">Cancelar</button>
+      <button class="dp-btn-guardar" type="button"
+              [disabled]="cambiandoTipo || cambioDejaSaldoSinCobrar"
+              (click)="cambiarTipoPedido()">
+        {{ cambiandoTipo ? 'Guardando…' : 'Guardar cambio' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── BUSCADOR DE ARTÍCULOS (agregar / cambiar) ───────────────────────────────── -->
+  <div class="dp-art-buscador" *ngIf="mostrarBuscadorArticulo">
+    <h4 class="dp-art-buscador__titulo">{{ tituloBuscador }}</h4>
+
+    <input class="dp-art-buscador__input" type="text"
+           [(ngModel)]="terminoArticulo" (input)="buscarArticulo()"
+           placeholder="Buscar por nombre o código de barras (mínimo 3 letras)" />
+
+    <p class="dp-art-buscador__estado" *ngIf="buscandoArticulo">Buscando…</p>
+    <p class="dp-art-buscador__estado"
+       *ngIf="!buscandoArticulo && terminoArticulo.length >= 3 && resultadosArticulo.length === 0">
+      No se encontró ningún artículo con eso.
+    </p>
+
+    <ul class="dp-art-lista">
+      <li class="dp-art-item" *ngFor="let v of resultadosArticulo">
+        <div class="dp-art-item__datos">
+          <span class="dp-art-item__nombre">{{ v.nombreProducto }}</span>
+          <span class="dp-art-item__variante" *ngIf="v.talla || v.color">
+            <span *ngIf="v.talla">Talla: {{ v.talla }}</span>
+            <span *ngIf="v.color"> · Color: {{ v.color }}</span>
+          </span>
+          <span class="dp-art-item__stock">Stock: {{ v.stock ?? 0 }}</span>
+        </div>
+        <div class="dp-art-item__precio">
+          <!-- Si hay rebaja se cobra la rebaja, y se muestra el normal tachado para que se vea
+               que no es un error de precio. -->
+          <span class="dp-art-item__tachado" *ngIf="tieneRebaja(v)">{{ v.precio | currency:'$' }}</span>
+          <span class="dp-art-item__final">{{ precioACobrar(v) | currency:'$' }}</span>
+        </div>
+        <button class="dp-art-item__btn" type="button"
+                [disabled]="guardandoArticulo || (v.stock ?? 0) < 1"
+                (click)="elegirArticulo(v)">
+          {{ (v.stock ?? 0) < 1 ? 'Sin stock' : (guardandoArticulo ? '…' : 'Elegir') }}
+        </button>
+      </li>
+    </ul>
+
+    <div class="dp-art-buscador__acciones">
+      <button class="dp-btn-cancelar" type="button" (click)="cerrarBuscadorArticulo()">Cerrar</button>
     </div>
   </div>
 
@@ -197,11 +320,25 @@
         <span class="prod-card__promo-badge" *ngIf="item.promocionId">
           🏷️ {{ item.promocionDescripcion || 'Promoción' }}
         </span>
+        <!-- Quitar la promoción entera. Va acá arriba, junto a la insignia, porque la acción
+             es sobre el combo completo y no sobre esta línea en particular. -->
+        <button class="prod-card__quitar-promo" type="button"
+                *ngIf="item.promocionId && puedeQuitarPromocion && !pedidoEstaCerrado"
+                [disabled]="quitandoPromocion"
+                (click)="quitarPromocion(item.promocionId!)"
+                title="Quita el combo completo y devuelve su stock">
+          {{ quitandoPromocion ? '…' : '🗑️ Quitar promoción' }}
+        </button>
         <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
         <p class="prod-card__variante" *ngIf="item.talla || item.color">
           <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
           <span *ngIf="item.color"> · Color: {{ item.color }}</span>
         </p>
+
+        <div class="prod-card__fila" *ngIf="item.codigoBarras">
+          <span class="prod-card__label">Código de barras</span>
+          <span class="prod-card__valor">{{ item.codigoBarras | uppercase }}</span>
+        </div>
 
         <div class="prod-card__fila">
           <span class="prod-card__label">Precio unitario</span>
@@ -221,6 +358,16 @@
               {{ eliminando.has(item) ? '…' : '−' }}
             </button>
             <span class="cantidad-valor">{{ item.cantidad }}</span>
+            <!-- Cambiar esta línea por otro artículo. Si el nuevo rompe un combo, el back
+                 contesta 409 y se le pregunta al usuario qué hacer — ver
+                 `preguntarQueHacerConElCombo`. -->
+            <button class="cantidad-btn cantidad-btn--cambiar"
+              *ngIf="puedeCambiarArticulo && !pedidoEstaCerrado"
+              (click)="abrirBuscadorArticulo(item)"
+              [disabled]="guardandoArticulo"
+              title="Cambiar este artículo por otro">
+              ⇄
+            </button>
           </div>
         </div>
 

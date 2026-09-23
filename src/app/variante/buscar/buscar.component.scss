@@ -1256,3 +1256,28 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 }
+
+// ── Precio de rebaja en la card (2026-09-22) ────────────────────────────────────
+// `precioRebaja` solo viaja para el admin (el back no se lo manda al cliente), así que
+// estos dos chips no los ve un cliente aunque estén en la hoja.
+//
+// Van con los tokens del chip para que sigan el tema: este archivo está escrito
+// dark-first y el modo día se resuelve en el bloque `:host-context(body.theme-light)`
+// de más abajo, no acá.
+.vb-chip--tachado {
+  text-decoration: line-through;
+  opacity: .65;
+  font-weight: 500;
+}
+
+.vb-chip--rebaja {
+  background: rgba(34, 197, 94, 0.22);
+  font-weight: 700;
+}
+
+:host-context(body.theme-light) {
+  .vb-chip--rebaja {
+    background: rgba(22, 163, 74, 0.16);
+    color: #15803d;
+  }
+}

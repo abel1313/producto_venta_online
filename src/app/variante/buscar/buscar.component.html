@@ -229,7 +229,16 @@
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
           <div class="vb-card__chips">
-            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">{{ v.precio | currency:'$' }}</span>
+            <!-- Si hay rebaja se muestra el precio normal tachado y la rebaja al lado, para
+                 que se vea que no es un error de precio. `precioRebaja` solo llega si sos
+                 admin: al cliente el back no se lo manda. -->
+            <span *ngIf="v.precio && tieneRebaja(v)" class="vb-chip vb-chip--tachado">
+              {{ v.precio | currency:'$' }}
+            </span>
+            <span *ngIf="v.precio" class="vb-chip vb-chip--talla"
+                  [class.vb-chip--rebaja]="tieneRebaja(v)">
+              {{ precioFinal(v) | currency:'$' }}
+            </span>
           </div>
         </div>
         <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">
@@ -321,6 +330,13 @@
         <button *ngIf="puedeActualizarVariante" class="vb-btn-card vb-btn-card--edit" (click)="editarVariante(v)">
           <span>✏️</span>
           <span class="vb-btn-card__label">Editar</span>
+        </button>
+
+        <button *ngIf="puedeCambiarPrecio && v.productoId" class="vb-btn-card vb-btn-card--edit"
+                [disabled]="cambiandoPrecioId === v.id" (click)="cambiarPrecio(v)"
+                title="Cambiar el precio de este producto (todos sus artículos)">
+          <span>💲</span>
+          <span class="vb-btn-card__label">Precio</span>
         </button>
 
         <button *ngIf="puedeCompartirImagen && v.imagenUrl"

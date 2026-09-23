@@ -5,6 +5,16 @@ import { map, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
+import { IStockDisponible } from '../models/stock-disponible.model';
+
+/** Respuesta de `PUT /v1/precios/producto/{id}`. */
+export interface IPreciosProducto {
+  productoId:     number;
+  precioVenta:    number;
+  precioRebaja:   number;
+  precioACobrar:  number;
+  vendeBajoCosto: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
@@ -145,6 +155,15 @@ export class VarianteService {
     return this.http.delete(`${this.url}/deleteBy/${id}`);
   }
 
+  /**
+   * Cambia el precio normal y el de descuento del PRODUCTO: todos sus artículos lo heredan.
+   * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
+   */
+  cambiarPrecio(productoId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosProducto> {
+    return this.http.put<IPreciosProducto>(
+      `${environment.api_Url}/v1/precios/producto/${productoId}`, { precioVenta, precioRebaja });
+  }
+
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {
     return this.http.delete<{ data: string }>(`${this.url}/${varianteId}/imagenes`, { body: imageIds });
   }
@@ -269,6 +288,18 @@ export class VarianteService {
 
   verificarCodigoClienteSinRegistro(id: number, codigo: string): Observable<any> {
     return this.http.post<any>(`${environment.api_Url}/v1/clientes-sin-registro/${id}/verificar-codigo`, { codigo });
+  }
+
+  /**
+   * Cuánto stock del producto queda sin repartir entre sus artículos.
+   *
+   * No es público: expone el inventario real del negocio. Cuelga del permiso de pantalla que
+   * ya existe (`productos/buscar`, `productos/agregar`, `tienda/venta`, `tienda/update`), así
+   * que no hace falta ninguna migración.
+   */
+  stockDisponible(productoId: number): Observable<IStockDisponible> {
+    return this.http.get<{ data: IStockDisponible }>(`${environment.api_Url}/v1/stock/producto/${productoId}`)
+      .pipe(map(r => r.data));
   }
 }
 

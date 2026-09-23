@@ -50,6 +50,41 @@
           </div>
           <button class="vf-product-chip__clear" (click)="limpiarProducto()">✕</button>
         </div>
+
+        <!-- Cuánto stock del producto queda sin repartir: lo que se le puede sumar a este
+             artículo. `disponible` viene calculado del back, igual que en el alta. -->
+        <div class="vf-stock" *ngIf="productoSeleccionado && stockDisponible as sd"
+             [class.vf-stock--roto]="sd.descuadrado"
+             [class.vf-stock--alerta]="seEstaPasandoDeStock">
+
+          <div class="vf-stock__num" *ngIf="!sd.descuadrado">
+            Quedan <b>{{ sd.disponible }}</b> disponibles de {{ sd.stockTotal }}
+          </div>
+          <div class="vf-stock__num" *ngIf="sd.descuadrado">⚠️ Modelo descuadrado</div>
+
+          <div class="vf-stock__msg">{{ sd.mensaje }}</div>
+          <div class="vf-stock__msg">
+            Este artículo tiene {{ stockActual }} y va a quedar en <b>{{ stockFinal }}</b>.
+          </div>
+
+          <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock">
+            <ng-container *ngIf="!sd.descuadrado; else alertaDescuadrado">
+              Le estás sumando <b>{{ stockQuePide }}</b> y solo quedan <b>{{ sd.disponible }}</b>.
+              El guardado va a fallar: si llegó mercancía, súbele primero el stock al producto.
+            </ng-container>
+            <ng-template #alertaDescuadrado>
+              Con el modelo descuadrado no se le puede sumar stock a sus artículos: primero hay que
+              corregir el stock del producto.
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="vf-stock vf-stock--cargando" *ngIf="cargandoStock">
+          Consultando el stock disponible…
+        </div>
+        <div class="vf-stock vf-stock--cargando" *ngIf="errorStock">
+          No se pudo consultar el stock disponible. Puedes guardar igual: el servidor valida el stock.
+        </div>
       </div>
 
       <!-- ── Campos ─────────────────────────────────────────────── -->

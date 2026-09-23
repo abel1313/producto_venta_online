@@ -8,6 +8,7 @@ import { Subject, EMPTY, of } from 'rxjs';
 import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
+import { IStockDisponible } from '../models/stock-disponible.model';
 import { VarianteService } from '../service/variante.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../shared/imagen-comprimir.util';
@@ -113,6 +114,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
               stock:       0,
             } as IProductoDTO;
             this.terminoProducto = variante.producto.nombre ?? '';
+            this.cargarStockDisponible(variante.producto.id);
           }
 
           // Cargar imágenes existentes
@@ -162,12 +164,46 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.cargarStockDisponible(p.idProducto);
   }
 
   limpiarProducto(): void {
     this.productoSeleccionado = null;
     this.terminoProducto = '';
     this.productos = [];
+    this.stockDisponible = null;
+    this.errorStock = false;
+  }
+
+  // ── Stock disponible del producto ──────────────────────────────────
+  // Mismo endpoint que el alta de artículos: `disponible` viene calculado del back (base menos
+  // lo repartido en artículos habilitados) y no se recalcula aquí.
+
+  stockDisponible: IStockDisponible | null = null;
+  cargandoStock = false;
+  errorStock = false;
+
+  private cargarStockDisponible(productoId: number | undefined): void {
+    this.stockDisponible = null;
+    this.errorStock = false;
+    if (!productoId) return;
+    this.cargandoStock = true;
+    this.varianteService.stockDisponible(productoId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: s => { this.stockDisponible = s; this.cargandoStock = false; },
+      error: () => { this.errorStock = true; this.cargandoStock = false; }
+    });
+  }
+
+  /** Lo que este guardado le pide al producto: el aumento neto, no el total del artículo. */
+  get stockQuePide(): number {
+    return this.stockFinal - this.stockActual;
+  }
+
+  // Misma regla que valida el back: el aumento no puede pasar de lo que queda sin repartir.
+  get seEstaPasandoDeStock(): boolean {
+    return this.stockDisponible != null
+        && this.stockQuePide > 0
+        && this.stockQuePide > this.stockDisponible.disponible;
   }
 
   // ── Imágenes ───────────────────────────────────────────────────────
@@ -469,9 +505,18 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.guardando = false;
-        const msg = err?.error?.mensaje ?? 'No se pudo actualizar la variante.';
-        Swal.fire({ icon: 'error', title: 'Error al actualizar', text: msg, confirmButtonColor: '#dc2626' });
+        Swal.fire({ icon: 'error', title: 'Error al actualizar', text: this.motivoDelError(err), confirmButtonColor: '#dc2626' });
       }
     });
+  }
+
+  // Sin motivo del back (timeout, caída, respuesta que no es JSON) el cambio pudo haberse guardado
+  // igual: se dice el código y se pide revisar antes de reintentar, para no sumar stock dos veces.
+  private motivoDelError(err: any): string {
+    const delBack = err?.error?.mensaje ?? err?.error?.message;
+    if (delBack) return delBack;
+    const revisar = 'Antes de reintentar, revisa en la búsqueda si el cambio sí se guardó.';
+    if (!err?.status) return `No hubo respuesta del servidor. ${revisar}`;
+    return `No se pudo actualizar el artículo (error ${err.status}). ${revisar}`;
   }
 }

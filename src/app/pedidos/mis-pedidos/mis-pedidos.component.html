@@ -97,6 +97,10 @@
             <span class="order-number">#{{ item.pedido.id }}</span>
           </div>
           <div class="card-head-right">
+            <span class="tipo-badge tipo-badge--grupo" *ngIf="item.pedido.grupo as g"
+                  [title]="'Unido con los pedidos ' + numerosDe(g.otrosPedidos)">
+              🔗 {{ g.otrosPedidos.length + 1 }} pedidos
+            </span>
             <span class="tipo-badge tipo-badge--apartado"
                   *ngIf="item.pedido.tipoPedido === 'APARTADO'">
               📦 Apartado
@@ -155,10 +159,40 @@
             </div>
           </div>
 
-          <div class="total-strip">
-            <span class="total-label">Total del pedido</span>
-            <span class="total-amount">{{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
-          </div>
+          <!-- Unir pedidos: de un grupo solo sale la card del titular, con el total de todos.
+               Los demás se abren buscando su número, y ahí dicen a quién están unidos. -->
+          <ng-container *ngIf="item.pedido.grupo as g; else totalSuelto">
+            <div class="info-row grupo-row">
+              <i class="pi pi-link info-icon"></i>
+              <div class="info-content" *ngIf="g.esTitular">
+                <span class="info-label">Unido con</span>
+                <span class="info-value">{{ numerosDe(g.otrosPedidos) }}</span>
+              </div>
+              <div class="info-content" *ngIf="!g.esTitular">
+                <span class="info-label">Unido al pedido #{{ g.pedidoTitularId }}</span>
+                <span class="info-value">Paga y recoge {{ g.titularNombre || 'el titular' }}</span>
+              </div>
+            </div>
+
+            <div class="total-strip total-strip--grupo">
+              <div class="total-strip__col">
+                <span class="total-label">Total de los {{ g.otrosPedidos.length + 1 }} pedidos</span>
+                <span class="total-sub">Este pedido: {{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
+              </div>
+              <div class="total-strip__col total-strip__col--fin">
+                <span class="total-amount">{{ g.totalGrupo | currency: '$' }}</span>
+                <span class="total-sub" *ngIf="g.saldoGrupo > 0 && g.saldoGrupo < g.totalGrupo">
+                  Falta {{ g.saldoGrupo | currency: '$' }}
+                </span>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #totalSuelto>
+            <div class="total-strip">
+              <span class="total-label">Total del pedido</span>
+              <span class="total-amount">{{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
+            </div>
+          </ng-template>
 
         </div>
 
@@ -242,7 +276,11 @@
     <div class="p-fluid" *ngIf="pedidoACobrar">
 
         <div class="field mb-3">
-            <label><b>Pedido #{{ pedidoACobrar.pedido.id }}</b></label>
+            <label><b>{{ tituloCobro }}</b></label>
+            <p class="cobro-grupo-nota" *ngIf="grupoACobrar as g">
+                Se cobran juntos los que falten: {{ g.saldoGrupo | currency:'$' }}.
+                Cada pedido queda con su propia venta.
+            </p>
         </div>
 
         <div class="field mb-3">
@@ -338,4 +376,5 @@
 </p-dialog>
 
 <app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item"
-    (regresarProductos)="mostrarProductos($event)"></app-detalle-pedido>
+    (regresarProductos)="mostrarProductos($event)"
+    (abrirPedido)="abrirOtroPedido($event)"></app-detalle-pedido>

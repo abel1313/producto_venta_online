@@ -373,6 +373,13 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     background: rgba(37,99,235,0.85);
     color: #fff;
   }
+
+  // Sobre el header de color de la card: blanco translúcido, sin competir con el tipo de cobro.
+  &--grupo {
+    background: rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,255,255,0.55);
+    color: #fff;
+  }
 }
 
 .order-label {
@@ -457,6 +464,28 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.total-strip--grupo { align-items: flex-start; }
+
+.total-strip__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  &--fin { align-items: flex-end; }
+}
+
+.total-sub {
+  font-size: 0.72rem;
+  color: var(--app-text-muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.cobro-grupo-nota {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--app-text-muted, #6b7280);
 }
 
 .total-label {

@@ -24,6 +24,18 @@ import {
 } from '../models/editar-pedido.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { GrupoPedidos } from '../models/grupo-pedido.model';
+
+/** Un pedido del mismo grupo, para mostrar sus artículos debajo de los de este. */
+interface OtroPedidoDelGrupo {
+  pedidoId:  number;
+  cliente:   string;
+  esTitular: boolean;
+  total:     number;
+  lineas:    PedidoDetalleItem[];
+  cargando:  boolean;
+  error:     boolean;
+}
 @Component({
   selector: 'app-detalle-pedido',
   templateUrl: './detalle-pedido.component.html',
@@ -32,6 +44,8 @@ import { hoyIso } from '../../shared/fecha.util';
 export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Input() pedido!: IPedidoGenerico;
   @Output() regresarProductos = new EventEmitter<boolean>();
+  /** Abrir otro pedido del grupo: la lista lo busca por número y abre su detalle. */
+  @Output() abrirPedido = new EventEmitter<number>();
 
   // Base correcta del microservicio de imágenes: GET /v1/imagenes/{productoId}
   public env: string = environment.api_Url + '/v1/imagenes/';
@@ -167,6 +181,29 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   /** Unir, abonar al grupo o deshacer cambian totales y observaciones: se recarga el detalle. */
   alCambiarGrupo(): void {
     this.cargarDetalleCompleto();
+  }
+
+  /** El grupo activo de este pedido. Con él, el encabezado muestra el total de todos. */
+  grupo: GrupoPedidos | null = null;
+  otrosPedidos: OtroPedidoDelGrupo[] = [];
+
+  /**
+   * Unidos se ven como uno: debajo de los artículos de este pedido van los de los demás, cada
+   * bloque con su número. Por dentro siguen separados, por eso se editan abriendo su pedido.
+   */
+  alCargarGrupo(grupo: GrupoPedidos | null): void {
+    this.grupo = grupo?.activo ? grupo : null;
+    const propio = this.pedido.pedido.id;
+    this.otrosPedidos = (this.grupo?.pedidos ?? [])
+      .filter(p => p.pedidoId !== propio)
+      .map(p => ({ pedidoId: p.pedidoId, cliente: p.cliente, esTitular: p.esTitular, total: p.total,
+                   lineas: [], cargando: true, error: false }));
+    for (const otro of this.otrosPedidos) {
+      this.pedidosService.getDetallePedido(otro.pedidoId).subscribe({
+        next: r => { otro.lineas = r?.data?.detalles ?? []; otro.cargando = false; },
+        error: () => { otro.cargando = false; otro.error = true; }
+      });
+    }
   }
 
   editarRamo(): void {
@@ -703,7 +740,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   mostrarFormTipo = false;
   cambiandoTipo   = false;
-  tipoForm: CambiarTipoPedidoRequest = { tipoPedido: 'NORMAL', montoCobrado: 0, descripcion: '' };
+  // Arranca sin tipo elegido: preseleccionar uno hacía que el resaltado pareciera la forma de
+  // cobro vigente, y la vigente (deshabilitada) pareciera bloqueada.
+  tipoForm: { tipoPedido: TipoPedido | null; montoCobrado: number; descripcion: string } =
+    { tipoPedido: null, montoCobrado: 0, descripcion: '' };
 
   readonly tiposPedido: { valor: TipoPedido; etiqueta: string; ayuda: string }[] = [
     { valor: 'NORMAL',   etiqueta: 'Normal (contado)', ayuda: 'Se paga completo ahora' },
@@ -713,6 +753,11 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   get tipoActual(): string {
     return this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido ?? '';
+  }
+
+  /** Pedidos viejos traen el tipo vacío: son de contado. */
+  get tipoVigente(): TipoPedido {
+    return (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
   }
 
   get saldoPendiente(): number {
@@ -734,13 +779,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   abrirFormTipo(): void {
-    const actual = (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
-    this.tipoForm = {
-      tipoPedido:   this.esContadoEntregado ? 'FIADO' : actual === 'NORMAL' ? 'APARTADO' : 'NORMAL',
-      montoCobrado: 0,
-      descripcion:  ''
-    };
-    this.tipoForm.montoCobrado = this.cobroSugerido;
+    this.tipoForm = { tipoPedido: null, montoCobrado: 0, descripcion: '' };
     this.mostrarFormTipo = true;
   }
 
@@ -755,9 +794,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   cambiarTipoPedido(): void {
-    if (this.cambiandoTipo) return;
+    const tipoNuevo = this.tipoForm.tipoPedido;
+    if (this.cambiandoTipo || !tipoNuevo) return;
 
-    if (this.tipoForm.tipoPedido === (this.tipoActual || '').toUpperCase()) {
+    if (tipoNuevo === this.tipoVigente) {
       Swal.fire({ icon: 'info', title: 'Sin cambios', text: 'El pedido ya está en esa forma de cobro.' });
       return;
     }
@@ -773,7 +813,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     this.cambiandoTipo = true;
     const body: CambiarTipoPedidoRequest = {
-      tipoPedido:   this.tipoForm.tipoPedido,
+      tipoPedido:   tipoNuevo,
       montoCobrado: this.tipoForm.montoCobrado || 0,
       descripcion:  (this.tipoForm.descripcion ?? '').trim() || undefined,
       usuarioId:    this.idUsuario || undefined

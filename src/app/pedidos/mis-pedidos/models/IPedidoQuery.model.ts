@@ -1,4 +1,5 @@
 import { IDetalleQuery } from "./IDetallePedido.model";
+import { GrupoEnLista } from "../../models/grupo-pedido.model";
 
 
 
@@ -16,4 +17,6 @@ export interface IPedidoQuery {
     lugarEntregaNombre?: string;
     urlFacebook?: string;
     detalles: IDetalleQuery[];
+    /** Solo en la lista del admin, y solo si está unido con otros (back 2026-09-23). */
+    grupo?: GrupoEnLista | null;
 }

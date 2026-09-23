@@ -8,7 +8,9 @@ import { IConcursante } from '../models/concursante.model';
 import { IConfigurarRifa, IConfigurarRifaVariante, IConfigurarRifaVarianteRequest } from '../models/configurar-rifa.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { RifaService } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
+import {
+  IMedidasRuleta, aplicarLadoRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, numerosEnRuleta, revolverRuleta
+} from '../ruleta-visual.util';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { Subject, Subscription, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -672,9 +674,11 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
     if (!this.elegibles.length || !this.ruletaCanvas) return;
 
-    this.ruletaSlots = this.construirSlotsRuleta();
+    this.ruletaSlots = revolverRuleta(this.construirSlotsRuleta(), this.rifaConfig?.id, c => c.id ?? 0);
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(c => this.colorDe(c));
+
+    aplicarLadoRuleta(this.ruletaCanvas.nativeElement, this.medidas);
 
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
@@ -696,17 +700,11 @@ export class RifaMesComponent implements OnInit, OnDestroy {
           // alto que la propia ruleta y repetía el mismo nombre una vez por boleto. El panel
           // de elegibles ya cumple esa función, agrupado por persona.
           legend: { display: false },
-          datalabels: {
-            display: this.medidas.mostrarNumeros,
-            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
-            // caen casi en el mismo punto y se enciman entre si.
-            color: 'white', anchor: 'end', align: 'start', offset: 6,
-            font: { size: this.medidas.fuente, weight: 'bold' },
-            formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
-          }
+          // Los números los pinta numerosEnRuleta, acostados sobre su rebanada.
+          datalabels: { display: false }
         }
       },
-      plugins: [ChartDataLabels]
+      plugins: [numerosEnRuleta(this.medidas)]
     });
   }
 

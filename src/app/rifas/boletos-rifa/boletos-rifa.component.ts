@@ -22,7 +22,9 @@ import {
 } from '../models/boleto-agrupado.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { RifaService } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
+import {
+  IMedidasRuleta, aplicarLadoRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, numerosEnRuleta, revolverRuleta
+} from '../ruleta-visual.util';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteImagenDto, IVarianteResumen } from 'src/app/variante/models/variante.model';
 
@@ -896,6 +898,12 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     return id == null ? [] : this.grupos.filter(g => g.concursanteId === id);
   }
 
+  /** Los íconos de sus redes, para distinguir a dos con el mismo nombre en redes distintas. */
+  redesDe(c: IConcursante): string {
+    const redes = new Set(this.grupos.filter(g => g.concursanteId === c.id).map(g => this.iconoPlataforma(g.plataforma)));
+    return [...redes].join(' ');
+  }
+
   /** Se cuenta desde los boletos cargados, que es lo que entra al sorteo. */
   boletosDe(c: IConcursante): number {
     return this.grupos
@@ -1098,9 +1106,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
     // Un slot por boleto: quien tiene más boletos ocupa más rebanadas, que es
     // exactamente su probabilidad de salir.
-    this.ruletaSlots = [...this.boletosEnJuego];
+    this.ruletaSlots = revolverRuleta(this.boletosEnJuego, this.rifaSeleccionada?.id, b => b.id);
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
+
+    aplicarLadoRuleta(this.ruletaCanvas.nativeElement, this.medidas);
 
     this.chart = new Chart(this.ruletaCanvas.nativeElement, {
       type: 'pie',
@@ -1121,17 +1131,11 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         },
         plugins: {
           legend: { display: false },
-          datalabels: {
-            display: this.medidas.mostrarNumeros,
-            // Pegado al borde y apuntando hacia adentro: al centro todos los numeros
-            // caen casi en el mismo punto y se enciman entre si.
-            color: 'white', anchor: 'end', align: 'start', offset: 6,
-            font: { size: this.medidas.fuente, weight: 'bold' },
-            formatter: (_, ctx) => ctx.chart.data.labels?.[ctx.dataIndex] ?? ''
-          }
+          // Los números los pinta numerosEnRuleta, acostados sobre su rebanada.
+          datalabels: { display: false }
         }
       },
-      plugins: [ChartDataLabels]
+      plugins: [numerosEnRuleta(this.medidas)]
     });
   }
 

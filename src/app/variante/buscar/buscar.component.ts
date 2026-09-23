@@ -867,48 +867,66 @@ export class BuscarComponent implements OnInit, OnDestroy {
   /**
    * El precio vive en el producto, así que el cambio alcanza a todos sus artículos: el modal lo
    * dice para que nadie crea que solo cambia esta talla.
+   *
+   * Aquí solo se pone el descuento. El precio normal se ve pero no se toca: con los dos abiertos
+   * no quedaba claro si el descuento era el precio final o lo que se resta (es el precio final).
+   * El normal se cambia al editar el producto; se reenvía tal cual porque el back pide los dos.
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId || !v.productoId) return;
     const normal = v.precio ?? 0;
     const descuento = v.precioRebaja ?? 0;
-    const nombre = v.nombreProducto || 'este producto';
+    const pesos = (n: number) => `$${n.toFixed(2)}`;
+
+    const resumen = (desc: number): string => {
+      if (!(desc > 0)) return `Se cobra el precio normal: <b>${pesos(normal)}</b>`;
+      if (desc > normal) return `No puede ser mayor al precio normal (${pesos(normal)})`;
+      return `Se cobra <b>${pesos(desc)}</b> · descuento de ${pesos(normal - desc)}`;
+    };
 
     Swal.fire({
-      title: `💲 Precio de ${nombre}`,
+      titleText: `💲 Precio de ${v.nombreProducto || 'este producto'}`,
       html: `
         <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio de <b>todos</b> los artículos de este producto.
           Los pedidos y ventas ya hechos conservan su precio.</p>
         <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
-        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
-        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento <small>(0 = sin descuento)</small></label>
-        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 0;width:100%" value="${descuento}">`,
+        <input id="sw-precio-normal" type="number" class="swal2-input" style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
+        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio normal se cambia al editar el producto.</small>
+        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento: lo que se va a cobrar <small>(0 = sin descuento)</small></label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .4rem;width:100%" value="${descuento}">
+        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(descuento)}</p>`,
       showCancelButton: true,
       confirmButtonText: 'Guardar precio',
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
+      didOpen: () => {
+        const input = document.getElementById('sw-precio-desc') as HTMLInputElement;
+        const salida = document.getElementById('sw-precio-resumen') as HTMLElement;
+        input.addEventListener('input', () => { salida.innerHTML = resumen(Number(input.value || 0)); });
+        input.focus();
+        input.select();
+      },
       preConfirm: () => {
-        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value);
         const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
-        if (!(nuevoNormal > 0)) {
-          Swal.showValidationMessage('El precio normal debe ser mayor a 0');
+        if (!(normal > 0)) {
+          Swal.showValidationMessage('Este producto no tiene precio normal. Pónselo al editar el producto');
           return false;
         }
         if (nuevoDesc < 0) {
           Swal.showValidationMessage('El descuento no puede ser negativo');
           return false;
         }
-        if (nuevoDesc > nuevoNormal) {
-          Swal.showValidationMessage('El descuento no puede ser mayor al precio normal. Para cobrar más, sube el precio normal');
+        if (nuevoDesc > normal) {
+          Swal.showValidationMessage(`El precio con descuento no puede ser mayor al precio normal (${pesos(normal)})`);
           return false;
         }
-        return { nuevoNormal, nuevoDesc };
+        return { nuevoDesc };
       }
     }).then(r => {
       if (!r.isConfirmed || !r.value) return;
-      const { nuevoNormal, nuevoDesc } = r.value;
+      const { nuevoDesc } = r.value;
       this.cambiandoPrecioId = v.id;
-      this.varianteService.cambiarPrecio(v.productoId!, nuevoNormal, nuevoDesc)
+      this.varianteService.cambiarPrecio(v.productoId!, normal, nuevoDesc)
         .pipe(takeUntil(this.destroy$)).subscribe({
           next: res => {
             this.cambiandoPrecioId = null;

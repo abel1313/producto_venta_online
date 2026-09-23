@@ -25,8 +25,8 @@
     </div>
   </div>
 
-  <!-- Hint si escribe menos de 2 chars -->
-  <small *ngIf="termino.length === 1" class="pka-hint">
-    Escribe al menos 2 caracteres para buscar
+  <small *ngIf="buscando" class="pka-hint">Buscando…</small>
+  <small *ngIf="!seleccion && termino.length > 0 && termino.trim().length < minCaracteres" class="pka-hint">
+    Escribe al menos {{ minCaracteres }} letras para buscar
   </small>
 </div>

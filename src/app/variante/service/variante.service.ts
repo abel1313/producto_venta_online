@@ -7,6 +7,15 @@ import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVari
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
 
+/** Respuesta de `PUT /v1/precios/producto/{id}`. */
+export interface IPreciosProducto {
+  productoId:     number;
+  precioVenta:    number;
+  precioRebaja:   number;
+  precioACobrar:  number;
+  vendeBajoCosto: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
   // ✅ Endpoint actualizado 2026-09-17: ahora usa /v1/variantes (backend renombrado)
@@ -144,6 +153,15 @@ export class VarianteService {
    */
   darDeBaja(id: number): Observable<any> {
     return this.http.delete(`${this.url}/deleteBy/${id}`);
+  }
+
+  /**
+   * Cambia el precio normal y el de descuento del PRODUCTO: todos sus artículos lo heredan.
+   * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
+   */
+  cambiarPrecio(productoId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosProducto> {
+    return this.http.put<IPreciosProducto>(
+      `${environment.api_Url}/v1/precios/producto/${productoId}`, { precioVenta, precioRebaja });
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {

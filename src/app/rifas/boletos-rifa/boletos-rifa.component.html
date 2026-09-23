@@ -268,9 +268,17 @@
                     (click)="mostrarListaParticipantes = !mostrarListaParticipantes">
               {{ mostrarListaParticipantes ? '▴ Ocultar lista' : '▾ Ver lista' }}
             </button>
+            <!-- Con un participante abierto se bloquea: primero se cierra con ✕, así no se
+                 confunde a quién se le están cargando los boletos. -->
             <button type="button" class="pk-btn pk-btn--primary pk-btn--sm br-toolbar__accion"
-                    *ngIf="!mostrarFormParticipante" (click)="abrirFormParticipante()">+ Nuevo</button>
+                    *ngIf="!mostrarFormParticipante"
+                    [disabled]="!!concursanteSeleccionado"
+                    [title]="concursanteSeleccionado ? 'Cierra a ' + nombreCompleto(concursanteSeleccionado) + ' (✕) para dar de alta a otro' : 'Dar de alta un participante'"
+                    (click)="abrirFormParticipante()">+ Nuevo</button>
           </div>
+          <p class="bg-ayuda br-aviso-nuevo" *ngIf="concursanteSeleccionado && !mostrarFormParticipante">
+            Para dar de alta a otro participante, primero cierra a {{ nombreCompleto(concursanteSeleccionado) }} con ✕.
+          </p>
 
           <!-- Alta / edición de participante -->
           <div class="br-form-inline" *ngIf="mostrarFormParticipante">
@@ -310,6 +318,7 @@
                    [class.br-fila--activa]="concursanteSeleccionado?.id === c.id"
                    (click)="seleccionarConcursante(c)">
                 <span class="br-fila__nombre">{{ nombreCompleto(c) }}</span>
+                <span class="br-fila__redes" *ngIf="redesDe(c) as redes" [title]="'Red: ' + redes">{{ redes }}</span>
                 <span class="br-fila__boletos">🎟️ {{ boletosDe(c) }}</span>
                 <span class="br-fila__acciones">
                   <button type="button" class="br-icono" title="Editar" (click)="editarParticipante(c, $event)">✏️</button>
@@ -381,7 +390,9 @@
             </button>
           </section>
 
-          <!-- Otra red social: la red y su perfil se capturan una vez, luego sus boletos -->
+          <!-- Su red social: la red y su perfil se capturan una vez, luego sus boletos. Solo
+               para quien todavía no tiene: un participante es UNA red social (no se sabe si su
+               cuenta en otra red es la misma persona), así que otra red es otro participante. -->
           <div class="bg-form" *ngIf="mostrarFormGrupo">
             <div class="bg-form__fila">
               <label class="bg-label">Red social</label>
@@ -442,18 +453,23 @@
           </div>
 
           <button type="button" class="bg-btn-alta"
-                  *ngIf="puedeCargarAgrupado && !mostrarFormGrupo" (click)="abrirFormGrupo()">
-            ➕ {{ gruposDelParticipante.length ? 'Agregar otra red social' : 'Agregar su primera red social' }}
+                  *ngIf="puedeCargarAgrupado && !mostrarFormGrupo && !gruposDelParticipante.length"
+                  (click)="abrirFormGrupo()">
+            ➕ Agregar su red social y sus boletos
           </button>
+          <p class="bg-ayuda" *ngIf="gruposDelParticipante.length">
+            Un participante es una sola red social. Si también participó en otra red, dalo de alta
+            como participante nuevo: no sabemos si esa otra cuenta es la misma persona.
+          </p>
         </div>
       </div>
 
-      <!-- ── 3. Todos los boletos de la rifa, por perfil (solo para consultar) ─────────────
+      <!-- ── 3. Resumen de todos los boletos de la rifa, por perfil (solo consulta) ────────
            Colapsados para no empujar la pantalla. Para agregar o editar se abre al
            participante arriba. ⚠️ El sorteo no cambia: cada boleto es su propia fila. -->
       <div class="pk-card bg-card">
         <div class="pk-card__header">
-          <div class="br-h">🎟️ Todos los boletos de la rifa</div>
+          <div class="br-h">🎟️ Resumen de todos los boletos (solo consulta)</div>
           <span class="br-chip" *ngIf="totalBoletosRifa">{{ totalBoletosRifa }} boleto(s)</span>
         </div>
 

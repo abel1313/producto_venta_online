@@ -22,7 +22,7 @@ import {
 } from '../models/boleto-agrupado.model';
 import { AuthService } from 'src/app/auth/auth.service';
 import { RifaService } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, revolverRuleta } from '../ruleta-visual.util';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteImagenDto, IVarianteResumen } from 'src/app/variante/models/variante.model';
 
@@ -896,6 +896,12 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     return id == null ? [] : this.grupos.filter(g => g.concursanteId === id);
   }
 
+  /** Los íconos de sus redes, para distinguir a dos con el mismo nombre en redes distintas. */
+  redesDe(c: IConcursante): string {
+    const redes = new Set(this.grupos.filter(g => g.concursanteId === c.id).map(g => this.iconoPlataforma(g.plataforma)));
+    return [...redes].join(' ');
+  }
+
   /** Se cuenta desde los boletos cargados, que es lo que entra al sorteo. */
   boletosDe(c: IConcursante): number {
     return this.grupos
@@ -1098,7 +1104,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
     // Un slot por boleto: quien tiene más boletos ocupa más rebanadas, que es
     // exactamente su probabilidad de salir.
-    this.ruletaSlots = [...this.boletosEnJuego];
+    this.ruletaSlots = revolverRuleta(this.boletosEnJuego, this.rifaSeleccionada?.id, b => b.id);
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
 

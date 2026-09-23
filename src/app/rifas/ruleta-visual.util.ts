@@ -89,6 +89,38 @@ export function numerosDeParticipantes(ids: number[]): Map<number, number> {
   return new Map(unicos.map((id, i) => [id, i + 1]));
 }
 
+/**
+ * Las rebanadas revueltas. En orden de alta los boletos de una misma persona quedaban juntos
+ * y los números salían seguidos (1 1 2 2 3…), que no parece sorteo.
+ *
+ * El revuelto es fijo por rifa (la semilla es su id): el admin y la ruleta pública ven la
+ * misma rueda y no cambia al recargar. No toca la probabilidad: cada boleto sigue siendo una
+ * rebanada del mismo tamaño, y quién gana lo decide el back — la animación solo busca la
+ * rebanada del boleto que salió.
+ */
+export function revolverRuleta<T>(slots: T[], semilla: number | null | undefined, idDe: (s: T) => number): T[] {
+  // Se ordena antes de revolver para que el resultado no dependa del orden en que llegaron.
+  const revueltos = [...slots].sort((a, b) => idDe(a) - idDe(b));
+  const azar = generadorConSemilla(semilla ?? 0);
+  for (let i = revueltos.length - 1; i > 0; i--) {
+    const j = Math.floor(azar() * (i + 1));
+    [revueltos[i], revueltos[j]] = [revueltos[j], revueltos[i]];
+  }
+  return revueltos;
+}
+
+/** mulberry32: la misma semilla da siempre la misma secuencia. */
+function generadorConSemilla(semilla: number): () => number {
+  let estado = (Math.imul(semilla, 2654435761) >>> 0) || 1;
+  return () => {
+    estado = (estado + 0x6D2B79F5) >>> 0;
+    let t = estado;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function oscurecer(hex: string, factor: number): string {
   const f = Math.min(0.8, Math.max(0, factor));
   const canal = (desde: number) => {

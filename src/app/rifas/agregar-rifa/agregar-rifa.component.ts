@@ -12,7 +12,7 @@ import { IConcursante, IClientePedido, IOmitidoYaRegistrado } from '../models/co
 import { IGanadorRifa } from '../models/ganador-rifa.model';
 import { IEstadoRifa, IHistorialVariante } from '../models/estado-rifa.model';
 import { RifaService, ModoContinuacion } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, revolverRuleta } from '../ruleta-visual.util';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
@@ -1187,7 +1187,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
 
     if (!this.elegibles.length || !this.ruletaCanvas) return;
 
-    this.ruletaSlots = this.construirSlotsRuleta();
+    this.ruletaSlots = revolverRuleta(this.construirSlotsRuleta(), this.rifaConfig?.id, c => c.id ?? 0);
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(c => this.colorDe(c));
 

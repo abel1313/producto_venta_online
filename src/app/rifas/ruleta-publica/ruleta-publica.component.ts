@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ArcElement, Chart, PieController } from 'chart.js';
 import { IBoletoRifaDto, IPremioPublico, IResultadoSorteoPlataformas } from '../models/boleto-rifa.model';
 import { RifaService } from '../service/rifa.service';
-import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes } from '../ruleta-visual.util';
+import { IMedidasRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, revolverRuleta } from '../ruleta-visual.util';
 import { environment } from 'src/environments/environment';
 
 Chart.register(ArcElement, PieController, ChartDataLabels);
@@ -331,7 +331,7 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
     this.chart?.destroy();
     if (!this.boletosEnJuego.length || !this.ruletaCanvas) return;
 
-    this.ruletaSlots = [...this.boletosEnJuego];
+    this.ruletaSlots = revolverRuleta(this.boletosEnJuego, this.rifaId, b => b.id);
     this.medidas = medidasRuleta(this.ruletaSlots.length, window.innerWidth);
     const backgroundColor = this.ruletaSlots.map(b => this.colorDe(b.concursanteId));
 

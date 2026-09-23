@@ -832,7 +832,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     if (termino.length < 3) return;
 
     this.buscandoArticulo = true;
-    this.varianteService.buscar({ termino, pagina: 0, size: 20 }).subscribe({
+    this.varianteService.buscar({ termino, pagina: 1, size: 20 }).subscribe({
       next: r => {
         this.resultadosArticulo = (r?.t ?? []) as IVarianteResumen[];
         this.buscandoArticulo   = false;

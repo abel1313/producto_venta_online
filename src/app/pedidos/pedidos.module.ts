@@ -13,6 +13,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { FechaEspanolPipe } from '../fecha-espanol.pipe';
 import { TotalPedidoPipe } from '../shared/total-pedido.pipe';
 import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.component';
+import { GrupoPedidoComponent } from './grupo-pedido/grupo-pedido.component';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -21,7 +22,8 @@ import { SharedModule } from '../shared/shared.module';
     HistorialMpComponent,
     FechaEspanolPipe,
     TotalPedidoPipe,
-    DetallePedidoComponent
+    DetallePedidoComponent,
+    GrupoPedidoComponent
   ],
   imports: [
     CommonModule,

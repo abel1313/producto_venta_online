@@ -20,7 +20,11 @@
         🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
       </span>
     </div>
-    <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
+    <span class="detalle-header__total" *ngIf="!grupo">Total: {{ totalGeneral | currency:'$' }}</span>
+    <span class="detalle-header__total detalle-header__total--grupo" *ngIf="grupo">
+      Total de los {{ grupo.pedidos.length }} pedidos: {{ grupo.totalGrupo | currency:'$' }}
+      <small>Este pedido: {{ totalGeneral | currency:'$' }}</small>
+    </span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
       <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
            Ver `puedeEditarRamo`. -->
@@ -67,8 +71,8 @@
   <div class="dp-tipo-form" *ngIf="mostrarFormTipo">
     <h4 class="dp-tipo-form__titulo">🔁 Cambiar la forma de cobro</h4>
     <p class="dp-tipo-form__actual">
-      Ahora está como <b>{{ etiquetaTipo(tipoActual) }}</b>
-      <span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>
+      Ahora está como <b>{{ etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
+      Elige a cuál lo quieres pasar:
     </p>
     <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
       ⚠️ Este pedido se registró como pagado completo de contado. Al cambiarlo se anula ese cobro y
@@ -80,42 +84,48 @@
       <button type="button" class="dp-tipo-btn"
               *ngFor="let t of tiposPedido"
               [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
-              [disabled]="t.valor === tipoActual"
+              [attr.aria-pressed]="tipoForm.tipoPedido === t.valor"
+              [disabled]="t.valor === tipoVigente"
               (click)="seleccionarTipo(t.valor)">
-        <span class="dp-tipo-btn__nombre">{{ t.etiqueta }}</span>
+        <span class="dp-tipo-btn__nombre">
+          {{ t.etiqueta }}
+          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente">Así está ahora</span>
+        </span>
         <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
       </button>
     </div>
 
-    <div class="dp-tipo-campo">
-      <label for="montoCobrado">¿Cobra algo ahora?</label>
-      <input id="montoCobrado" type="number" min="0" step="0.01"
-             [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
-      <small *ngIf="tipoForm.tipoPedido === 'NORMAL' && saldoPendiente > 0">
-        Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
-      </small>
-      <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
-        Podés dejarlo en 0 si no cobra nada en este momento.
-      </small>
-    </div>
+    <ng-container *ngIf="tipoForm.tipoPedido">
+      <div class="dp-tipo-campo">
+        <label for="montoCobrado">¿Cobra algo ahora?</label>
+        <input id="montoCobrado" type="number" min="0" step="0.01"
+               [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
+        <small *ngIf="tipoForm.tipoPedido === 'NORMAL' && saldoPendiente > 0">
+          Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
+        </small>
+        <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
+          Puedes dejarlo en 0 si no cobra nada en este momento.
+        </small>
+      </div>
 
-    <!-- El pedido explícito: la descripción del abono es texto libre, no una lista fija -->
-    <div class="dp-tipo-campo">
-      <label for="descripcionTipo">¿Por qué cambia? (queda como nota del abono)</label>
-      <input id="descripcionTipo" type="text" maxlength="200"
-             [(ngModel)]="tipoForm.descripcion"
-             placeholder="Ej: vino a recogerlo y lo pagó completo" />
-    </div>
+      <!-- El pedido explícito: la descripción del abono es texto libre, no una lista fija -->
+      <div class="dp-tipo-campo">
+        <label for="descripcionTipo">¿Por qué cambia? (queda como nota del abono)</label>
+        <input id="descripcionTipo" type="text" maxlength="200"
+               [(ngModel)]="tipoForm.descripcion"
+               placeholder="Ej: vino a recogerlo y lo pagó completo" />
+      </div>
 
-    <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
-      ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}
-      para poder dejarlo en contado.
-    </p>
+      <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
+        ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}
+        para poder dejarlo en contado.
+      </p>
+    </ng-container>
 
     <div class="dp-tipo-acciones">
       <button class="dp-btn-cancelar" type="button" (click)="cancelarFormTipo()">Cancelar</button>
       <button class="dp-btn-guardar" type="button"
-              [disabled]="cambiandoTipo || cambioDejaSaldoSinCobrar"
+              [disabled]="cambiandoTipo || !tipoForm.tipoPedido || cambioDejaSaldoSinCobrar"
               (click)="cambiarTipoPedido()">
         {{ cambiandoTipo ? 'Guardando…' : 'Guardar cambio' }}
       </button>
@@ -129,7 +139,8 @@
                     [pedidoId]="pedido.pedido.id"
                     [pedidoAbierto]="pedidoAbiertoParaUnir"
                     [refrescarCon]="detalle"
-                    (cambio)="alCambiarGrupo()"></app-grupo-pedido>
+                    (cambio)="alCambiarGrupo()"
+                    (grupoCargado)="alCargarGrupo($event)"></app-grupo-pedido>
 
   <!-- ── BUSCADOR DE ARTÍCULOS (agregar / cambiar) ───────────────────────────────── -->
   <div class="dp-art-buscador" *ngIf="mostrarBuscadorArticulo">
@@ -398,5 +409,64 @@
       <p>No hay productos en este pedido.</p>
     </div>
   </div>
+
+  <!-- ── ARTÍCULOS DE LOS OTROS PEDIDOS DEL GRUPO ─────────────────────────────────────
+       Solo lectura: cada pedido sigue siendo suyo, así que se edita abriéndolo. -->
+  <section class="dp-otros" *ngIf="grupo && otrosPedidos.length > 0">
+    <h3 class="dp-otros__titulo">🔗 Artículos de los pedidos unidos</h3>
+
+    <div class="dp-otros__pedido" *ngFor="let o of otrosPedidos">
+      <div class="dp-otros__cabecera">
+        <div class="dp-otros__quien">
+          <span class="dp-otros__numero">Pedido #{{ o.pedidoId }}</span>
+          <span class="dp-otros__titular" *ngIf="o.esTitular">paga y recoge</span>
+          <span class="dp-otros__cliente">{{ o.cliente }}</span>
+        </div>
+        <span class="dp-otros__total">{{ o.total | currency:'$' }}</span>
+        <button type="button" class="dp-otros__abrir" (click)="abrirPedido.emit(o.pedidoId)"
+                title="Para cambiar sus artículos o sus datos de entrega">
+          Abrir pedido #{{ o.pedidoId }}
+        </button>
+      </div>
+
+      <div class="detalle-cargando" *ngIf="o.cargando">
+        <i class="pi pi-spin pi-spinner"></i> Cargando artículos…
+      </div>
+      <p class="dp-otros__error" *ngIf="o.error">No se pudieron cargar los artículos de este pedido.</p>
+
+      <div class="detalle-grid" *ngIf="!o.cargando && !o.error">
+        <div class="prod-card" *ngFor="let item of o.lineas">
+          <img class="prod-card__img" [src]="env + item.productoId" [alt]="item.productoNombre"
+               (error)="onImgError($event)" />
+          <div class="prod-card__body">
+            <span class="prod-card__promo-badge" *ngIf="item.promocionId">
+              🏷️ {{ item.promocionDescripcion || 'Promoción' }}
+            </span>
+            <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
+            <p class="prod-card__variante" *ngIf="item.talla || item.color">
+              <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
+              <span *ngIf="item.color"> · Color: {{ item.color }}</span>
+            </p>
+            <div class="prod-card__fila" *ngIf="item.codigoBarras">
+              <span class="prod-card__label">Código de barras</span>
+              <span class="prod-card__valor">{{ item.codigoBarras | uppercase }}</span>
+            </div>
+            <div class="prod-card__fila">
+              <span class="prod-card__label">Precio unitario</span>
+              <span class="prod-card__valor">{{ item.precioUnitario | currency:'$' }}</span>
+            </div>
+            <div class="prod-card__fila">
+              <span class="prod-card__label">Cantidad</span>
+              <span class="prod-card__valor">{{ item.cantidad }}</span>
+            </div>
+            <div class="prod-card__fila prod-card__fila--subtotal">
+              <span class="prod-card__label">Subtotal</span>
+              <span class="prod-card__subtotal">{{ item.subTotal | currency:'$' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
 </div>

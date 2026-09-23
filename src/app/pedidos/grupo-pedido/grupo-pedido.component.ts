@@ -22,6 +22,8 @@ export class GrupoPedidoComponent implements OnChanges {
   /** Cualquier cambio de este valor vuelve a leer el grupo (el detalle se recargó). */
   @Input() refrescarCon: unknown;
   @Output() cambio = new EventEmitter<void>();
+  /** Cada vez que se lee el grupo, para que el detalle muestre el total y los artículos de todos. */
+  @Output() grupoCargado = new EventEmitter<GrupoPedidos | null>();
 
   grupo: GrupoPedidos | null = null;
 
@@ -92,10 +94,10 @@ export class GrupoPedidoComponent implements OnChanges {
       return;
     }
     this.grupoService.porPedido(this.pedidoId).subscribe({
-      next: r => { this.grupo = r?.data ?? null; },
+      next: r => { this.grupo = r?.data ?? null; this.grupoCargado.emit(this.grupo); },
       // Sin la migración el back contesta 500: se oculta la sección en vez de molestar en cada
       // detalle que se abra.
-      error: () => { this.grupo = null; }
+      error: () => { this.grupo = null; this.grupoCargado.emit(null); }
     });
   }
 

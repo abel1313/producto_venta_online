@@ -57,3 +57,30 @@ export interface TipoPorPedido {
   pedidoId:   number;
   tipoPedido: string;
 }
+
+/**
+ * `pedido.grupo` en la lista de pedidos del admin. Solo viene si el pedido está en un grupo activo.
+ *
+ * De un grupo solo sale en la lista la card del titular; los demás se abren buscando su número.
+ */
+export interface GrupoEnLista {
+  grupoId:         number;
+  pedidoTitularId: number;
+  /** Si esta card es la del titular. */
+  esTitular:       boolean;
+  titularNombre:   string | null;
+  tipoPedido:      string | null;
+  /** Los demás pedidos del grupo, sin este. */
+  otrosPedidos:    number[];
+  totalGrupo:      number;
+  pagadoGrupo:     number;
+  /** Lo que falta cobrar entre todos. En un grupo de contado es lo que cobra "Cobrar". */
+  saldoGrupo:      number;
+}
+
+/** `POST /v1/grupos-pedido/{id}/cobrar-contado` */
+export interface CobroContadoResponse {
+  grupo:           GrupoPedidos;
+  /** Los que se confirmaron, del más viejo al más nuevo. Los ya entregados no vienen. */
+  pedidosCobrados: number[];
+}

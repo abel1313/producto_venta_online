@@ -6,6 +6,7 @@ import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import {
   AbonoGrupoRequest,
   AbonoGrupoResponse,
+  CobroContadoResponse,
   GrupoPedidos,
   UnirPedidosRequest
 } from './models/grupo-pedido.model';
@@ -27,6 +28,11 @@ export class GrupoPedidoService {
 
   abonar(grupoId: number, body: AbonoGrupoRequest): Observable<ResponseGeneric<AbonoGrupoResponse>> {
     return this.http.post<ResponseGeneric<AbonoGrupoResponse>>(`${this.base}/${grupoId}/abonos`, body);
+  }
+
+  /** Confirma de una vez los pedidos de contado del grupo que falten, con la misma forma de pago. */
+  cobrarDeContado(grupoId: number, pagosYMesesId: number): Observable<ResponseGeneric<CobroContadoResponse>> {
+    return this.http.post<ResponseGeneric<CobroContadoResponse>>(`${this.base}/${grupoId}/cobrar-contado`, { pagosYMesesId });
   }
 
   deshacer(grupoId: number, motivo?: string): Observable<ResponseGeneric<GrupoPedidos>> {

@@ -45,6 +45,18 @@
     font-weight: 700;
     color: var(--card-text);
     white-space: nowrap;
+
+    &--grupo {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.25;
+
+      small {
+        font-size: .75rem;
+        font-weight: 500;
+        color: var(--card-text-muted);
+      }
+    }
   }
 
   &__fecha {
@@ -676,13 +688,26 @@
   &__nombre { font-size: .82rem; font-weight: 700; }
   &__ayuda  { font-size: .72rem; color: var(--card-text-muted); line-height: 1.3; }
 
+  &__marca {
+    display: inline-block;
+    margin-left: .35rem;
+    padding: .05rem .45rem;
+    border-radius: 6px;
+    background: var(--card-border);
+    color: var(--card-text);
+    font-size: .66rem;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+
   &--active {
     border-color: var(--app-accent);
     background: var(--app-accent-soft);
   }
 
-  // El tipo actual se deshabilita: cambiar a lo mismo no es un cambio, y el back lo rechaza.
-  &:disabled { opacity: .45; cursor: not-allowed; }
+  // El tipo actual no se elige (cambiar a lo mismo no es un cambio, el back lo rechaza), pero
+  // no se apaga: con opacidad baja se leía como "bloqueado".
+  &:disabled { cursor: default; border-style: dashed; background: transparent; }
 }
 
 .dp-tipo-campo {
@@ -875,4 +900,80 @@
 .cantidad-btn--cambiar {
   margin-left: .35rem;
   font-weight: 700;
+}
+
+/* ── ARTÍCULOS DE LOS OTROS PEDIDOS DEL GRUPO ─────────────────────────── */
+.dp-otros {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+
+  &__titulo {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--card-text);
+  }
+
+  &__pedido {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding-top: .75rem;
+    border-top: 1px dashed var(--card-border);
+  }
+
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+  }
+
+  &__quien {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .4rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__numero { font-weight: 700; color: var(--card-text); }
+  &__cliente { font-size: .85rem; color: var(--card-text-muted); }
+
+  &__titular {
+    padding: .05rem .45rem;
+    border-radius: 6px;
+    background: rgba(var(--app-accent-rgb), .12);
+    color: var(--app-accent);
+    font-size: .68rem;
+    font-weight: 700;
+  }
+
+  &__total {
+    font-weight: 700;
+    color: var(--card-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__abrir {
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--card-text);
+    border-radius: 8px;
+    padding: .3rem .7rem;
+    font-size: .78rem;
+    cursor: pointer;
+
+    &:hover { border-color: var(--app-accent); color: var(--app-accent); }
+    &:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+  }
+
+  &__error {
+    margin: 0;
+    font-size: .85rem;
+    color: var(--card-text-muted);
+  }
 }

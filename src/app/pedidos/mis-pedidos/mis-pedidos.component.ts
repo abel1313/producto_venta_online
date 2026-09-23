@@ -19,6 +19,8 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
+import { GrupoPedidoService } from '../grupo-pedido.service';
+import { GrupoEnLista } from '../models/grupo-pedido.model';
 
 // Leaflet calcula la URL de sus íconos por defecto en base a dónde quedó su propio bundle, y
 // con Angular/webpack casi siempre la resuelve mal — el pin del mapa sale invisible, sin
@@ -159,7 +161,8 @@ export class MisPedidosComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly usuarioService: UsuarioService,
-    private readonly floresService: FloresService
+    private readonly floresService: FloresService,
+    private readonly grupoService: GrupoPedidoService
   ) {}
 
   ngOnInit(): void {
@@ -240,6 +243,27 @@ export class MisPedidosComponent implements OnInit {
   irDetalle(item: IPedidoGenerico) {
     this.mostrarDetalle = true;
     this.item = item;
+  }
+
+  /**
+   * Desde el detalle se abre otro pedido del grupo. Los que no son titulares no salen en la lista,
+   * así que se buscan por número (el back sí los devuelve con el número exacto) y se abren solos.
+   */
+  abrirOtroPedido(pedidoId: number): void {
+    this.mostrarDetalle = false;
+    this.pedidoIdDesdeUrl = pedidoId;
+    this.buscarProd = String(pedidoId);
+    this.buscarPedidoAdmin();
+  }
+
+  /** "#102, #105" */
+  numerosDe(ids: number[] | null | undefined): string {
+    return (ids ?? []).map(id => `#${id}`).join(', ');
+  }
+
+  esGrupoCredito(g: GrupoEnLista): boolean {
+    const tipo = (g.tipoPedido ?? '').toUpperCase();
+    return tipo === 'APARTADO' || tipo === 'FIADO';
   }
 
   cancelarPedido(item: IPedidoGenerico) {
@@ -599,6 +623,11 @@ export class MisPedidosComponent implements OnInit {
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    const grupo = item.pedido.grupo;
+    if (grupo) {
+      this.cobrarGrupo(item, grupo);
+      return;
+    }
     // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
     // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
     // ⚠️ `item.pedido.tipoPedido` viene de la LISTA (buscarClientePedido) — ese campo
@@ -625,6 +654,40 @@ export class MisPedidosComponent implements OnInit {
       // siempre; si en realidad era crédito, el back lo rechazará y el usuario lo verá.
       error: () => this.abrirDialogoCobroNormal(item)
     });
+  }
+
+  /**
+   * Un grupo se cobra entero desde la card del titular. De contado: un solo cobro por lo que falte
+   * de todos. A crédito: se abona al grupo en el detalle, que reparte del pedido más viejo al más nuevo.
+   */
+  private cobrarGrupo(item: IPedidoGenerico, grupo: GrupoEnLista): void {
+    if (this.esGrupoCredito(grupo)) {
+      Swal.fire({
+        icon: 'info',
+        title: `Pedidos unidos a ${grupo.tipoPedido === 'APARTADO' ? 'apartado' : 'crédito'}`,
+        text: 'Se cobran abonando al grupo en el detalle del pedido: el abono se reparte del pedido más viejo al más nuevo.',
+        showCancelButton: true,
+        confirmButtonText: 'Abrir el detalle',
+        cancelButtonText: 'Cerrar'
+      }).then(res => { if (res.isConfirmed) this.irDetalle(item); });
+      return;
+    }
+    if (grupo.saldoGrupo <= 0) {
+      Swal.fire({ icon: 'info', title: 'Ya está cobrado', text: 'Todos los pedidos de este grupo ya están cobrados o cancelados.' });
+      return;
+    }
+    this.abrirDialogoCobroNormal(item);
+  }
+
+  /** El grupo que se está cobrando en el diálogo, si el pedido está unido. */
+  get grupoACobrar(): GrupoEnLista | null {
+    return this.pedidoACobrar?.pedido.grupo ?? null;
+  }
+
+  get tituloCobro(): string {
+    const g = this.grupoACobrar;
+    if (!g || !this.pedidoACobrar) return `Pedido #${this.pedidoACobrar?.pedido.id ?? ''}`;
+    return `Pedidos ${this.numerosDe([this.pedidoACobrar.pedido.id, ...g.otrosPedidos])} (unidos)`;
   }
 
   private irACobrarCredito(item: IPedidoGenerico, tipo: 'APARTADO' | 'FIADO'): void {
@@ -670,6 +733,10 @@ export class MisPedidosComponent implements OnInit {
 
   confirmarCobro() {
     if (!this.pedidoACobrar) return;
+    if (this.grupoACobrar) {
+      this.confirmarCobroGrupo(this.grupoACobrar);
+      return;
+    }
 
     const item = this.pedidoACobrar;
     item.pedido.estado_pedido = 'Entregado';
@@ -694,6 +761,26 @@ export class MisPedidosComponent implements OnInit {
         Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', text: err?.error?.mensaje ?? err?.error?.message ?? '', icon: 'error', draggable: true });
       }
     );
+  }
+
+  private confirmarCobroGrupo(grupo: GrupoEnLista): void {
+    if (!this.pagosYMesesId) return;
+    this.grupoService.cobrarDeContado(grupo.grupoId, this.pagosYMesesId).subscribe({
+      next: r => {
+        this.mostrarDialogoCobro = false;
+        const cobrados = r?.data?.pedidosCobrados ?? [];
+        Swal.fire({
+          icon: 'success',
+          title: 'Pedidos cobrados',
+          text: cobrados.length ? `Se cobraron los pedidos ${this.numerosDe(cobrados)}.` : 'Los pedidos del grupo quedaron cobrados.'
+        });
+        this.buscarPedidoAdmin(false);
+      },
+      error: err => {
+        this.mostrarDialogoCobro = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo cobrar el grupo', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
   cancelarDialogo() {
@@ -725,6 +812,7 @@ export class MisPedidosComponent implements OnInit {
   }
 
   get totalPedido(): number {
+    if (this.grupoACobrar) return this.grupoACobrar.saldoGrupo;
     return (this.pedidoACobrar?.pedido.detalles ?? [])
       .reduce((sum, d) => sum + d.sub_total, 0);
   }
@@ -750,7 +838,7 @@ export class MisPedidosComponent implements OnInit {
       pagosYMesesId: this.pagosYMesesId,
       cuotas:        this.mesesSeleccionado?.cuotas ?? 1,
       totalMonto:    this.totalPedido,
-      descripcion:   `Pedido #${this.pedidoACobrar.pedido.id}`
+      descripcion:   this.grupoACobrar ? this.tituloCobro : `Pedido #${this.pedidoACobrar.pedido.id}`
     };
 
     this.pagoService.iniciarPagoTerminal(request).subscribe({
@@ -883,6 +971,9 @@ export class MisPedidosComponent implements OnInit {
 
   mostrarProductos(mostrar: boolean): void {
     this.mostrarDetalle = mostrar;
+    // En el detalle se cambia la forma de cobro, se abona o se agregan artículos: sin recargar,
+    // la card seguía mostrando el tipo y el total de antes.
+    if (!mostrar && this.isAdminUser) this.buscarPedidoAdmin(false);
   }
 
   // Admin: paginación real (Anterior/Siguiente), no infinite scroll — mismo patrón que
@@ -969,6 +1060,9 @@ export class MisPedidosComponent implements OnInit {
   // clickeable, y al hacer clic el back lo rechazaba (o mandaba a Abonos, que a su vez decía
   // "ya está pagado"). Mismo criterio de tipoPedido que ya usan estadoBadge()/puedeGenerarTicket().
   pedidoYaCobrado(item: IPedidoGenerico): boolean {
+    // Unido: lo que manda es el grupo, no el estado de este pedido (el titular puede estar
+    // cancelado y quedar otros por cobrar).
+    if (item.pedido.grupo) return item.pedido.grupo.saldoGrupo <= 0;
     const estado = item.pedido.estado_pedido;
     if (estado === 'Cancelado') return true;
     const tp = item.pedido.tipoPedido;

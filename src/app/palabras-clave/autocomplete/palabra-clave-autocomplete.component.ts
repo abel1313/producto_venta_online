@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
+import { Constants } from 'src/app/Constants';
 import { IPalabraClave } from '../models/palabra-clave.model';
 import { PalabraClaveService } from '../service/palabra-clave.service';
 
@@ -24,6 +25,8 @@ export class PalabraClaveAutocompleteComponent implements OnInit, OnDestroy {
   // Emite cada vez que el usuario selecciona o limpia la palabra clave
   @Output() seleccionada = new EventEmitter<IPalabraClave | null>();
 
+  readonly minCaracteres = Constants.MIN_CARACTERES_BUSQUEDA;
+
   termino    = '';
   opciones: IPalabraClave[] = [];
   seleccion: IPalabraClave | null = null;
@@ -36,10 +39,11 @@ export class PalabraClaveAutocompleteComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.input$.pipe(
-      debounceTime(350),
+      // Misma espera que el buscador de la tienda: con 350 ms se disparaba una busqueda por letra.
+      debounceTime(1500),
       distinctUntilChanged(),
       switchMap(t => {
-        if (t.length < 2) { this.opciones = []; return of([]); }
+        if (t.trim().length < this.minCaracteres) { this.opciones = []; this.buscando = false; return of([]); }
         this.buscando = true;
         // catchError DENTRO del switchMap: el handler de error del subscribe de abajo apaga el
         // spinner pero NO revive la suscripcion -- con un solo error el autocomplete quedaba

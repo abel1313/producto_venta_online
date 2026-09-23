@@ -332,6 +332,13 @@
           <span class="vb-btn-card__label">Editar</span>
         </button>
 
+        <button *ngIf="puedeCambiarPrecio && v.productoId" class="vb-btn-card vb-btn-card--edit"
+                [disabled]="cambiandoPrecioId === v.id" (click)="cambiarPrecio(v)"
+                title="Cambiar el precio de este producto (todos sus artículos)">
+          <span>💲</span>
+          <span class="vb-btn-card__label">Precio</span>
+        </button>
+
         <button *ngIf="puedeCompartirImagen && v.imagenUrl"
                 class="vb-btn-card vb-btn-card--share"
                 (click)="compartirImagen(v)"

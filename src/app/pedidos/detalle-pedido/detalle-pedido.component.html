@@ -45,8 +45,10 @@
            cancelado no se edita — el back también lo rechaza. -->
       <button class="dp-btn-tipo" type="button"
               *ngIf="puedeCambiarTipo && !mostrarFormTipo"
-              [disabled]="pedidoEstaCerrado" (click)="abrirFormTipo()"
-              [title]="pedidoEstaCerrado ? 'Un pedido entregado o cancelado ya no se puede cambiar' : 'Cambiar entre Normal, Apartado e Ir pagando'">
+              [disabled]="!puedeAbrirFormTipo" (click)="abrirFormTipo()"
+              [title]="!puedeAbrirFormTipo ? 'Un pedido cancelado o ya liquidado a crédito no se puede cambiar'
+                       : esContadoEntregado ? 'Se cobró de contado: pasarlo a Apartado o Ir pagando para recibir abonos'
+                       : 'Cambiar entre Normal, Apartado e Ir pagando'">
         🔁 Cambiar forma de cobro
       </button>
       <button class="dp-btn-agregar-art" type="button"
@@ -67,6 +69,11 @@
     <p class="dp-tipo-form__actual">
       Ahora está como <b>{{ etiquetaTipo(tipoActual) }}</b>
       <span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>
+    </p>
+    <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
+      ⚠️ Este pedido se registró como pagado completo de contado. Al cambiarlo se anula ese cobro y
+      queda debiendo el total ({{ totalGeneral | currency:'$' }}). En "¿Cobra algo ahora?" pon lo que
+      el cliente dio de verdad, si dio algo.
     </p>
 
     <div class="dp-tipo-opciones">
@@ -327,6 +334,11 @@
           <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
           <span *ngIf="item.color"> · Color: {{ item.color }}</span>
         </p>
+
+        <div class="prod-card__fila" *ngIf="item.codigoBarras">
+          <span class="prod-card__label">Código de barras</span>
+          <span class="prod-card__valor">{{ item.codigoBarras | uppercase }}</span>
+        </div>
 
         <div class="prod-card__fila">
           <span class="prod-card__label">Precio unitario</span>

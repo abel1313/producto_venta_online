@@ -336,6 +336,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return this.authService.tieneAccion('tienda/buscar', 'eliminar');
   }
 
+  // Botón 💲: cambia precio normal / con descuento del producto sin armar una promoción.
+  // Ver migration_accion_tienda_cambiar_precio.sql.
+  get puedeCambiarPrecio(): boolean {
+    return this.authService.tieneAccion('tienda/buscar', 'cambiar-precio');
+  }
+
   get puedeCompartirImagen(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'compartir-imagen');
   }
@@ -853,6 +859,79 @@ export class BuscarComponent implements OnInit, OnDestroy {
           Swal.fire({ icon: 'error', title: 'No se pudo dar de baja', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
         }
       });
+    });
+  }
+
+  cambiandoPrecioId: number | null = null;
+
+  /**
+   * El precio vive en el producto, así que el cambio alcanza a todos sus artículos: el modal lo
+   * dice para que nadie crea que solo cambia esta talla.
+   */
+  cambiarPrecio(v: IVarianteResumen): void {
+    if (this.cambiandoPrecioId || !v.productoId) return;
+    const normal = v.precio ?? 0;
+    const descuento = v.precioRebaja ?? 0;
+    const nombre = v.nombreProducto || 'este producto';
+
+    Swal.fire({
+      title: `💲 Precio de ${nombre}`,
+      html: `
+        <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio de <b>todos</b> los artículos de este producto.
+          Los pedidos y ventas ya hechos conservan su precio.</p>
+        <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
+        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
+        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento <small>(0 = sin descuento)</small></label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 0;width:100%" value="${descuento}">`,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar precio',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value);
+        const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
+        if (!(nuevoNormal > 0)) {
+          Swal.showValidationMessage('El precio normal debe ser mayor a 0');
+          return false;
+        }
+        if (nuevoDesc < 0) {
+          Swal.showValidationMessage('El descuento no puede ser negativo');
+          return false;
+        }
+        if (nuevoDesc > nuevoNormal) {
+          Swal.showValidationMessage('El descuento no puede ser mayor al precio normal. Para cobrar más, sube el precio normal');
+          return false;
+        }
+        return { nuevoNormal, nuevoDesc };
+      }
+    }).then(r => {
+      if (!r.isConfirmed || !r.value) return;
+      const { nuevoNormal, nuevoDesc } = r.value;
+      this.cambiandoPrecioId = v.id;
+      this.varianteService.cambiarPrecio(v.productoId!, nuevoNormal, nuevoDesc)
+        .pipe(takeUntil(this.destroy$)).subscribe({
+          next: res => {
+            this.cambiandoPrecioId = null;
+            this.variantes
+              .filter(x => x.productoId === v.productoId)
+              .forEach(x => { x.precio = res.precioVenta; x.precioRebaja = res.precioRebaja; });
+            this.varianteService.invalidarCache();
+            Swal.fire({
+              icon: res.vendeBajoCosto ? 'warning' : 'success',
+              title: 'Precio actualizado',
+              text: res.vendeBajoCosto
+                ? `Ahora se cobra $${res.precioACobrar.toFixed(2)}. Ojo: queda por debajo de lo que costó.`
+                : `Ahora se cobra $${res.precioACobrar.toFixed(2)}.`,
+              timer: res.vendeBajoCosto ? undefined : 1800,
+              showConfirmButton: res.vendeBajoCosto
+            });
+          },
+          error: err => {
+            this.cambiandoPrecioId = null;
+            Swal.fire({ icon: 'error', title: 'No se pudo cambiar el precio',
+              text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+          }
+        });
     });
   }
 

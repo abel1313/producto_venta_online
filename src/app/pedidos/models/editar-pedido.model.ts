@@ -14,6 +14,7 @@ export interface CambiarTipoPedidoRequest {
   montoCobrado?: number;
   /** Texto libre que queda como nota del abono. */
   descripcion?:  string;
+  usuarioId?:    number;
 }
 
 /** `POST /v1/pedidos/{id}/articulos` */

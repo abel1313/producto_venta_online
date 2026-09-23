@@ -145,6 +145,20 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return estado === 'ENTREGADO' || estado === 'CANCELADO';
   }
 
+  /**
+   * Cobrado de contado y entregado. Su forma de cobro SÍ se puede cambiar, pero solo a crédito:
+   * el caso real es una promoción que se registró como efectivo cuando el cliente va pagando.
+   */
+  get esContadoEntregado(): boolean {
+    const estado = (this.detalle?.estadoPedido ?? '').toUpperCase();
+    const tipo = (this.tipoActual || 'NORMAL').toUpperCase();
+    return estado === 'ENTREGADO' && tipo === 'NORMAL';
+  }
+
+  get puedeAbrirFormTipo(): boolean {
+    return !this.pedidoEstaCerrado || this.esContadoEntregado;
+  }
+
   editarRamo(): void {
     this.router.navigate(['/flores/configurar'], {
       queryParams: { pedidoId: this.detalle?.pedidoId ?? this.pedido?.pedido?.id }
@@ -712,7 +726,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   abrirFormTipo(): void {
     const actual = (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
     this.tipoForm = {
-      tipoPedido:   actual === 'NORMAL' ? 'APARTADO' : 'NORMAL',
+      tipoPedido:   this.esContadoEntregado ? 'FIADO' : actual === 'NORMAL' ? 'APARTADO' : 'NORMAL',
       montoCobrado: 0,
       descripcion:  ''
     };
@@ -751,7 +765,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     const body: CambiarTipoPedidoRequest = {
       tipoPedido:   this.tipoForm.tipoPedido,
       montoCobrado: this.tipoForm.montoCobrado || 0,
-      descripcion:  (this.tipoForm.descripcion ?? '').trim() || undefined
+      descripcion:  (this.tipoForm.descripcion ?? '').trim() || undefined,
+      usuarioId:    this.idUsuario || undefined
     };
 
     this.pedidosService.cambiarTipoPedido(this.pedido.pedido.id, body).subscribe({

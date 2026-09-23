@@ -103,6 +103,7 @@ export interface PedidoDetalleItem {
   talla:                  string | null;
   color:                  string | null;
   descripcion?:           string | null;
+  codigoBarras?:          string | null;
   cantidad:               number;
   precioUnitario:         number;
   subTotal:               number;

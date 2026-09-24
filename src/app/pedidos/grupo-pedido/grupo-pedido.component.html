@@ -79,9 +79,10 @@
       <h5 class="gp-form__titulo">✂️ Separar pedidos</h5>
       <p class="gp__texto gp__texto--muted">
         Marca los que se separan. Los que no marques siguen unidos; si queda uno solo, también se separa.
-        <ng-container *ngIf="esCredito">
-          Escribe cuánto de lo que ha dado el cliente se queda cada pedido que sale: tiene que sumar exacto.
-          El que cubre su total queda <b>pagado</b>; el que no, queda debiendo lo que le falte.
+        <ng-container *ngIf="hayQueRepartir">
+          El cliente ha dado <b>{{ abonadoGrupo | currency:'$' }}</b>: escribe cuánto se queda cada pedido
+          que sale. Tiene que sumar exacto. El que cubre su total queda <b>pagado</b>; el que no, queda
+          debiendo lo que le falte.
         </ng-container>
       </p>
 
@@ -92,19 +93,25 @@
               <th>Sale</th>
               <th>Pedido</th>
               <th class="num">Total</th>
-              <th class="num" *ngIf="esCredito">Tiene hoy</th>
-              <th class="num" *ngIf="esCredito">Se queda con</th>
+              <th class="num" *ngIf="hayQueRepartir">Tiene hoy</th>
+              <th class="num" *ngIf="hayQueRepartir">Se queda con</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let f of filasSeparar">
-              <td><input type="checkbox" [(ngModel)]="f.sale" [attr.aria-label]="'Separar el pedido #' + f.pedidoId" /></td>
+            <tr *ngFor="let f of filasSeparar" [class.gp__fila--sale]="f.sale">
+              <td>
+                <input class="gp-check" type="checkbox" [(ngModel)]="f.sale"
+                       [attr.aria-label]="'Separar el pedido #' + f.pedidoId" />
+              </td>
               <td>#{{ f.pedidoId }} <span class="gp__texto--muted">{{ f.cliente }}</span></td>
               <td class="num">{{ f.total | currency:'$' }}</td>
-              <td class="num" *ngIf="esCredito">{{ f.pagado | currency:'$' }}</td>
-              <td class="num" *ngIf="esCredito">
-                <input *ngIf="f.sale" class="gp__monto" type="number" min="0" step="0.01" [max]="f.total"
-                       [(ngModel)]="f.monto" [attr.aria-label]="'Cuánto se queda el pedido #' + f.pedidoId" />
+              <td class="num" *ngIf="hayQueRepartir">{{ f.pagado | currency:'$' }}</td>
+              <td class="num" *ngIf="hayQueRepartir">
+                <label *ngIf="f.sale" class="gp-dinero" [class.gp-dinero--error]="(f.monto || 0) - f.total > 0.001">
+                  <span class="gp-dinero__signo" aria-hidden="true">$</span>
+                  <input type="number" inputmode="decimal" min="0" step="0.01" [max]="f.total"
+                         [(ngModel)]="f.monto" [attr.aria-label]="'Cuánto se queda el pedido #' + f.pedidoId" />
+                </label>
                 <span *ngIf="!f.sale" class="gp__texto--muted">sigue unido</span>
               </td>
             </tr>
@@ -112,7 +119,7 @@
         </table>
       </div>
 
-      <dl class="gp__totales" *ngIf="esCredito">
+      <dl class="gp__totales" *ngIf="hayQueRepartir">
         <div><dt>Ha dado el cliente</dt><dd>{{ abonadoGrupo | currency:'$' }}</dd></div>
         <div><dt>Repartido</dt><dd>{{ repartido | currency:'$' }}</dd></div>
         <div class="gp__saldo" *ngIf="quedan.length > 0">

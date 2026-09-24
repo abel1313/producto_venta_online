@@ -12303,3 +12303,26 @@ Hoy conviven 4 estilos: `pk-table` (lugares-entrega, local pese al prefijo `pk-`
 `rp-table` (reportes, con columnas numéricas), `ga-tabla` (gastos, con columna de acciones) y
 `ez-tabla` (entregas-zona, compacta). **Todavía no se eligió el estándar** — no homologar
 tablas hasta que se decida cuál gana.
+
+---
+
+## GRUPO DE PEDIDOS — "SEPARAR PEDIDOS": MONTOS SOLO SI HAY ABONO + CAMPO DE DINERO (2026-09-24)
+
+Componente: `src/app/pedidos/grupo-pedido/` (sección "✂️ Separar pedidos").
+
+**Antes:** en un grupo a crédito siempre salían las columnas "Tiene hoy" / "Se queda con", los
+inputs de monto y el cuadro de totales, **aunque el cliente no hubiera dado ni un peso**. El admin
+veía campos para repartir $0. Además el input era el `<input type="number">` pelón del navegador
+(`.gp__monto`).
+
+**Ahora:**
+- Getter nuevo `hayQueRepartir` = `esCredito && abonadoGrupo > 0`. Controla el texto explicativo,
+  las dos columnas, los inputs y el `dl.gp__totales`. Sin abonos solo se marcan casillas.
+  No cambia el request: con `abonadoGrupo = 0` los montos ya valen 0 (`abrirFormSeparar` los
+  inicializa con `p.pagado`), así que el reparto en ceros sigue siendo válido para el back.
+- El texto dice cuánto ha dado el cliente: "El cliente ha dado **$X**: escribe cuánto se queda...".
+- Campo de dinero `.gp-dinero` (reemplaza a `.gp__monto`): `$` dentro del campo, monto alineado a
+  la derecha con `tabular-nums`, sin flechas de spin, anillo de foco con
+  `rgba(var(--app-accent-rgb), .18)` y borde `var(--pk-danger)` cuando el monto pasa del total.
+- Casilla `.gp-check` con `accent-color: var(--app-accent)`; la fila que sale se resalta con
+  `.gp__fila--sale` (`var(--app-accent-soft)`).

@@ -483,4 +483,22 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   get carritoVacio(): boolean { return this.carrito.length === 0 && this.promos.length === 0; }
+
+  // ── Columnas dinámicas del carrito ─────────────────────────────────
+
+  get mostrarTalla(): boolean {
+    return this.carrito.some(i => i.talla);
+  }
+
+  get mostrarColor(): boolean {
+    return this.carrito.some(i => i.color);
+  }
+
+  get mostrarMarca(): boolean {
+    return this.carrito.some(i => i.marca);
+  }
+
+  get mostrarPresentacion(): boolean {
+    return this.carrito.some(i => i.presentacion);
+  }
 }

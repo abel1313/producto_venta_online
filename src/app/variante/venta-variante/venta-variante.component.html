@@ -20,10 +20,11 @@
 
     <ng-template pTemplate="header">
       <tr>
-        <th>Talla</th>
-        <th>Color</th>
-        <th>Marca</th>
-        <th>Presentación</th>
+        <th>Código de barras</th>
+        <th *ngIf="mostrarTalla">Talla</th>
+        <th *ngIf="mostrarColor">Color</th>
+        <th *ngIf="mostrarMarca">Marca</th>
+        <th *ngIf="mostrarPresentacion">Presentación</th>
         <th>Stock orig.</th>
         <th>Precio/pza</th>
         <th>Cantidad</th>
@@ -34,10 +35,11 @@
 
     <ng-template pTemplate="body" let-item>
       <tr>
-        <td>{{ item.talla || '—' }}</td>
-        <td>{{ item.color || '—' }}</td>
-        <td>{{ item.marca || '—' }}</td>
-        <td>{{ item.presentacion || '—' }}</td>
+        <td><small>{{ item.codigoBarras || '—' }}</small></td>
+        <td *ngIf="mostrarTalla">{{ item.talla || '—' }}</td>
+        <td *ngIf="mostrarColor">{{ item.color || '—' }}</td>
+        <td *ngIf="mostrarMarca">{{ item.marca || '—' }}</td>
+        <td *ngIf="mostrarPresentacion">{{ item.presentacion || '—' }}</td>
         <td>{{ item.stock }}</td>
         <td>{{ item.precio | currency:'$' }}</td>
         <td>{{ item.cantidad }}</td>
@@ -57,7 +59,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td colspan="9" class="text-center text-muted py-4">
+        <td [attr.colspan]="(mostrarTalla ? 1 : 0) + (mostrarColor ? 1 : 0) + (mostrarMarca ? 1 : 0) + (mostrarPresentacion ? 1 : 0) + 7" class="text-center text-muted py-4">
           El carrito está vacío — agrega variantes desde <a routerLink="/tienda/buscar">buscar</a>.
         </td>
       </tr>

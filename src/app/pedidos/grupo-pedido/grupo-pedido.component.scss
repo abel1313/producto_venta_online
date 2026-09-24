@@ -226,8 +226,59 @@
   select { font-size: .8rem; padding: .15rem .35rem; }
 }
 
-.gp__monto {
-  width: 7rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+// Fila que sale: se resalta para que se vea de un vistazo qué se va del grupo.
+.gp__fila--sale td { background: var(--app-accent-soft); }
+
+// Casilla con el color de la marca en lugar de la gris del navegador.
+.gp-check {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--app-accent);
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+}
+
+// Campo de dinero: el "$" va dentro del campo y el monto alineado a la derecha, como en la tabla.
+.gp-dinero {
+  display: inline-flex;
+  align-items: center;
+  width: 8.5rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card-bg, var(--form-section-bg));
+  transition: border-color .15s, box-shadow .15s;
+
+  &:focus-within {
+    border-color: var(--app-accent);
+    box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), .18);
+  }
+
+  &--error { border-color: var(--pk-danger); }
+
+  &__signo {
+    padding: 0 0 0 .6rem;
+    color: var(--card-text-muted);
+    font-size: .85rem;
+    font-weight: 600;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: .45rem .6rem .45rem .3rem;
+    border: none;
+    background: transparent;
+    color: var(--card-text);
+    font-size: .875rem;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  }
 }

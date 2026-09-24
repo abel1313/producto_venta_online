@@ -280,6 +280,11 @@ export class GrupoPedidoComponent implements OnChanges {
     return Math.round((n || 0) * 100) / 100;
   }
 
+  /** Solo se reparte si el cliente ya dio dinero: sin abonos no hay nada que repartir y no se piden montos. */
+  get hayQueRepartir(): boolean {
+    return this.esCredito && this.abonadoGrupo > 0;
+  }
+
   /** Lo que el cliente ha dado entre todos los pedidos: eso es lo que se reparte. */
   get abonadoGrupo(): number {
     return this.redondear(this.filasSeparar.reduce((s, f) => s + f.pagado, 0));

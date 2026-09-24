@@ -23,5 +23,5 @@ export class PrivacidadComponent {
   readonly correoContacto = 'contacto@novedades-jade.com.mx';
 
   /** Se muestra al pie. Actualizar cuando cambie el contenido de la política. */
-  readonly ultimaActualizacion = '5 de agosto de 2026';
+  readonly ultimaActualizacion = '24 de septiembre de 2026';
 }

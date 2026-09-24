@@ -53,6 +53,33 @@ Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la secc
 - Si es un endpoint nuevo → anotarlo en "RESUMEN DE MIGRACIÓN"
 - Si es un cambio de layout → anotarlo en la sección del componente afectado
 
+## REGLA — EL LOGO DE LA TIENDA ES EL ÍCONO DE LAS APPS DE TIKTOK (Y META) (2026-09-24)
+
+**Antes de cambiar el favicon o el logo de la barra lateral, leer esto.**
+
+TikTok rechazó la app de desarrollador (`novedadesJade`, developers.tiktok.com) porque *"the app icon
+submitted in the Basic Info does not match the icon displayed on the website. Please ensure the same
+icon is used consistently across both the TikTok, the website and Browser tab (favicon)"*. Desde el
+2026-09-24 las tres cosas salen **del mismo archivo**:
+
+| Dónde | Archivo |
+|---|---|
+| Original | `src/assets/imagenes/logo_fondo.png` (1254×1254) |
+| Pestaña del navegador | `src/favicon.ico` (16–64 px) + `src/assets/imagenes/favicon-192.png` + `apple-touch-icon.png` (enlazados en `src/index.html`) |
+| Barra lateral (se ve en todas las pantallas, también sin sesión) | `src/assets/imagenes/logo-sidebar.png` (`navbar.component.html`, clase `.sb-brand-logo`) |
+| Ícono de la app en TikTok | versión 1024×1024 del mismo `logo_fondo.png` |
+
+**Si se cambia el logo** (en cualquiera de esos lugares):
+1. Regenerar **todos** los archivos de arriba desde el logo nuevo, no solo uno.
+2. Avisar al dueño que **también hay que cambiar el ícono en TikTok** (developers.tiktok.com → app
+   novedadesJade → Basic information → App icon, 1024×1024). Cambiar el ícono de una app ya aprobada
+   **vuelve a mandarla a revisión** **[Oficial, por buscador: "any subsequent changes must be submitted
+   for review"]**. Si no se cambia, el sitio y TikTok dejan de coincidir y en la siguiente revisión la
+   rechazan otra vez.
+3. Meta también revisa el ícono de la app (Revisar → Revisión de la app: "También revisaremos el ícono de
+   la app"): usar el mismo logo ahí.
+4. Anotarlo en `ALTA_NEGOCIO_META_TIKTOK.md` (repo `proyecto_key`, sección 4.11).
+
 ## REGLA — RAMA PROPIA PARA FEATURES QUE PUEDAN QUEDAR FUERA DE PROD (2026-08-21)
 
 > Motivo: al llevar `qa` → `master` (2026-08-21) hubo que sacar el módulo de "Publicar en

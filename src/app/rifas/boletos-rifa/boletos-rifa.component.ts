@@ -218,6 +218,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   seleccionarRifa(rifa: IConfigurarRifa): void {
     this.rifaSeleccionada = rifa;
     this.concursanteSeleccionado = null;
+    this.filtroNombre = '';
     this.mostrarListaParticipantes = true;
     this.grupos = [];
     this.mostrarFormGrupo = false;
@@ -776,7 +777,36 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * El buscador y el participante elegido van juntos: buscador vacío = nadie elegido. Elegir a
+   * alguien pone su nombre en el buscador. "Nuevo" solo se usa con el buscador vacío, y vaciarlo
+   * (a mano o con Limpiar) limpia todo sin tocar la base. Antes, borrar el texto no soltaba a
+   * nadie y "Nuevo" se quedaba bloqueado hasta recargar la pantalla.
+   */
+  get nuevoBloqueado(): boolean {
+    return !!this.filtroNombre.trim() || !!this.concursanteSeleccionado || !!this.participanteEditandoId;
+  }
+
+  get hayAlgoQueLimpiar(): boolean {
+    return !!(this.filtroNombre.trim() || this.concursanteSeleccionado || this.mostrarFormParticipante);
+  }
+
+  cambioFiltroNombre(texto: string): void {
+    this.mostrarListaParticipantes = true;
+    if (!texto.trim()) this.limpiarParticipantes();
+  }
+
+  /** Vacía el buscador y suelta al participante elegido. No borra nada de la base. */
+  limpiarParticipantes(): void {
+    this.filtroNombre = '';
+    this.cancelarFormParticipante();
+    if (this.concursanteSeleccionado) this.cerrarParticipante();
+    this.mostrarListaParticipantes = true;
+  }
+
   abrirFormParticipante(): void {
+    if (this.nuevoBloqueado) return;
+    this.mostrarListaParticipantes = false;
     this.participanteEditandoId = null;
     this.nuevoNombre = ''; this.nuevoApellido = ''; this.nuevoTelefono = '';
     this.mostrarFormParticipante = true;
@@ -787,6 +817,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   editarParticipante(c: IConcursante, evento?: Event): void {
     evento?.stopPropagation();
     if (!c.id) return;
+    if (!this.filtroNombre.trim()) this.filtroNombre = this.nombreCompleto(c);
     this.participanteEditandoId = c.id;
     this.nuevoNombre = c.nombre ?? '';
     this.nuevoApellido = c.apellidoPaterno ?? '';
@@ -885,6 +916,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
   seleccionarConcursante(c: IConcursante): void {
     if (this.concursanteSeleccionado?.id !== c.id) this.cerrarEdicionesEnCurso();
     this.concursanteSeleccionado = c;
+    if (!this.filtroNombre.trim()) this.filtroNombre = this.nombreCompleto(c);
     this.mostrarListaParticipantes = false;
   }
 

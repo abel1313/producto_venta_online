@@ -242,10 +242,11 @@
 .br-toolbar {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 10px;
 
-  &__buscar { flex: 1; min-width: 0; }
+  &__buscar { flex: 1 1 180px; min-width: 0; }
   &__accion { white-space: nowrap; }
 }
 

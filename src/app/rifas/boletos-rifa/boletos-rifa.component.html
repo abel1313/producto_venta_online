@@ -261,23 +261,25 @@
           <div class="br-toolbar">
             <input class="pk-input br-toolbar__buscar" type="search"
                    placeholder="Buscar participante por nombre..." aria-label="Buscar participante"
-                   [(ngModel)]="filtroNombre" (ngModelChange)="mostrarListaParticipantes = true" />
+                   [(ngModel)]="filtroNombre" (ngModelChange)="cambioFiltroNombre($event)" />
             <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm br-toolbar__accion"
                     *ngIf="concursantes.length"
                     [attr.aria-expanded]="mostrarListaParticipantes"
                     (click)="mostrarListaParticipantes = !mostrarListaParticipantes">
               {{ mostrarListaParticipantes ? '▴ Ocultar lista' : '▾ Ver lista' }}
             </button>
-            <!-- Con un participante abierto se bloquea: primero se cierra con ✕, así no se
-                 confunde a quién se le están cargando los boletos. -->
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm br-toolbar__accion"
+                    *ngIf="hayAlgoQueLimpiar" title="Vacía el buscador y suelta al participante elegido (no borra nada)"
+                    (click)="limpiarParticipantes()">🧹 Limpiar</button>
             <button type="button" class="pk-btn pk-btn--primary pk-btn--sm br-toolbar__accion"
                     *ngIf="!mostrarFormParticipante"
-                    [disabled]="!!concursanteSeleccionado"
-                    [title]="concursanteSeleccionado ? 'Cierra a ' + nombreCompleto(concursanteSeleccionado) + ' (✕) para dar de alta a otro' : 'Dar de alta un participante'"
+                    [disabled]="nuevoBloqueado"
+                    [title]="nuevoBloqueado ? 'Vacía el buscador o dale Limpiar para dar de alta a otro participante' : 'Dar de alta un participante'"
                     (click)="abrirFormParticipante()">+ Nuevo</button>
           </div>
-          <p class="bg-ayuda br-aviso-nuevo" *ngIf="concursanteSeleccionado && !mostrarFormParticipante">
-            Para dar de alta a otro participante, primero cierra a {{ nombreCompleto(concursanteSeleccionado) }} con ✕.
+          <p class="bg-ayuda br-aviso-nuevo" *ngIf="nuevoBloqueado && !mostrarFormParticipante">
+            <ng-container *ngIf="concursanteSeleccionado">Estás trabajando con {{ nombreCompleto(concursanteSeleccionado) }}.</ng-container>
+            Para dar de alta a un participante nuevo, vacía el buscador o dale 🧹 Limpiar.
           </p>
 
           <!-- Alta / edición de participante -->

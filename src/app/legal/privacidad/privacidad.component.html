@@ -26,6 +26,13 @@
       <li><strong>Datos de entrega:</strong> lugar de entrega, dirección, fecha acordada y el
         nombre de quien recibe, cuando tú nos los proporcionas.</li>
       <li><strong>Conversaciones:</strong> los mensajes que nos envías por el chat de la tienda.</li>
+      <li><strong>Mensajes y comentarios en redes sociales:</strong> cuando nos escribes por mensaje
+        directo de Instagram o comentas en nuestras publicaciones de Facebook o Instagram, guardamos
+        el texto, el identificador que la red social le asigna a tu cuenta para nuestro negocio, la
+        respuesta que te dimos y la fecha. No recibimos ni guardamos tu contraseña de la red social.</li>
+      <li><strong>Rifas por redes sociales:</strong> si participas en una rifa desde Facebook,
+        Instagram o TikTok, guardamos tu nombre de perfil, el enlace a tu perfil y el enlace a la
+        publicación con la que participaste, para poder avisarte si ganas.</li>
     </ul>
     <p>
       No recabamos ni almacenamos números de tarjeta bancaria dentro de este sistema.
@@ -38,7 +45,7 @@
       <li>Crear tu cuenta y permitirte iniciar sesión de forma segura.</li>
       <li>Procesar, entregar y dar seguimiento a tus pedidos.</li>
       <li>Enviarte tu comprobante de compra por correo electrónico.</li>
-      <li>Atender tus dudas por el chat de la tienda.</li>
+      <li>Atender tus dudas por el chat de la tienda y por mensajes y comentarios en redes sociales.</li>
       <li>Verificar tu correo electrónico, y avisarte si hay que cambiar tu contraseña.</li>
       <li>Registrar tu participación en rifas o promociones, cuando decides participar.</li>
       <li>Llevar el control interno de ventas e inventario del negocio.</li>
@@ -50,10 +57,29 @@
   </section>
 
   <section class="pv-sec">
+    <h2>Respuestas automáticas</h2>
+    <p>
+      Las preguntas que nos haces por el chat de la tienda, por mensaje directo de Instagram o en
+      comentarios de Facebook e Instagram las contesta primero un <strong>asistente
+      automático</strong>, no una persona.
+    </p>
+    <p>
+      Para redactar la respuesta, el texto de la conversación se envía a <strong>OpenAI</strong>, el
+      proveedor de inteligencia artificial que usamos, junto con la información de nuestro catálogo.
+      No le enviamos los datos de tu cuenta (nombre, teléfono, correo ni compras); por eso te
+      pedimos no escribir datos personales en esos mensajes.
+    </p>
+    <p>
+      Si el asistente no tiene la respuesta, una persona del negocio lee tu mensaje y te contesta
+      directamente.
+    </p>
+  </section>
+
+  <section class="pv-sec">
     <h2>Publicaciones en redes sociales</h2>
     <p>
-      Publicamos fotos y videos de <strong>nuestros productos</strong> en la página de Facebook del
-      negocio. Esas publicaciones muestran únicamente artículos del catálogo: su descripción,
+      Publicamos fotos y videos de <strong>nuestros productos</strong> en las cuentas del negocio en
+      Facebook, Instagram y TikTok. Esas publicaciones muestran únicamente artículos del catálogo: su descripción,
       precio y código. <strong>No publicamos datos de clientes</strong> —ni nombres, ni teléfonos,
       ni compras— en ninguna red social.
     </p>
@@ -66,6 +92,10 @@
       <li>El servicio de correo electrónico con el que te enviamos comprobantes y códigos de
         verificación.</li>
       <li>El proveedor donde está alojado el sistema y su base de datos.</li>
+      <li>OpenAI, que procesa el texto de tus mensajes para generar las respuestas automáticas.</li>
+      <li>Meta (Facebook e Instagram) y TikTok, porque las conversaciones y comentarios en esas
+        redes pasan por sus plataformas. Cada una trata tus datos según su propia política de
+        privacidad.</li>
     </ul>
     <p>
       También podríamos compartir información si una autoridad competente nos lo requiere
@@ -80,6 +110,10 @@
       cumplir obligaciones fiscales y contables relacionadas con tus compras. Si nos pides que
       eliminemos tu cuenta, borramos tus datos personales salvo los que estemos obligados a
       conservar por ley.
+    </p>
+    <p>
+      Los mensajes y comentarios de redes sociales los conservamos para dar seguimiento a tus
+      consultas, y los borramos cuando nos lo pides.
     </p>
   </section>
 
@@ -105,6 +139,10 @@
       Para cualquier solicitud, escríbenos a
       <a [href]="'mailto:' + correoContacto">{{ correoContacto }}</a>. Te respondemos por la misma
       vía.
+    </p>
+    <p>
+      Los pasos para pedir que borremos tus datos, incluidos tus mensajes y comentarios de redes
+      sociales, están en <a routerLink="/eliminar-datos">Eliminar mis datos</a>.
     </p>
   </section>
 

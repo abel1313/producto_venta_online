@@ -8,11 +8,11 @@ import { CintaService } from './service/cinta.service';
 /**
  * Cinta de promociones que corre de derecha a izquierda arriba del contenido.
  *
- * Rutas donde NO se muestra: las de autenticación y la política de privacidad. Son pantallas
+ * Rutas donde NO se muestra: las de autenticación y las páginas legales. Son pantallas
  * a página completa con su propio diseño (el login incluso pinta su malla WebGL); meterles una
  * cinta comercial encima se ve fuera de lugar.
  */
-const RUTAS_OCULTAS = ['/login', '/usuarios/registrar', '/privacidad', '/verificar-correo', '/olvide-password'];
+const RUTAS_OCULTAS = ['/login', '/usuarios/registrar', '/privacidad', '/eliminar-datos', '/verificar-correo', '/olvide-password'];
 
 @Component({
   selector: 'app-cinta',

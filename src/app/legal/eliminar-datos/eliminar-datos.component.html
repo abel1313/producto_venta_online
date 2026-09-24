@@ -1,0 +1,52 @@
+<div class="pv-wrap">
+
+  <header class="pv-header">
+    <h1 class="pv-title">Eliminar mis datos</h1>
+    <p class="pv-sub">Novedades Jade</p>
+  </header>
+
+  <section class="pv-sec">
+    <h2>Qué podemos borrar</h2>
+    <ul>
+      <li>Tu cuenta de la tienda y tus datos de contacto y de entrega.</li>
+      <li>Tus conversaciones del chat de la tienda.</li>
+      <li>Los mensajes directos de Instagram y los comentarios de Facebook e Instagram que
+        guardamos, junto con las respuestas que te dimos.</li>
+      <li>Tus datos de participación en rifas por redes sociales (nombre de perfil y enlaces).</li>
+    </ul>
+    <p>
+      Borrar un mensaje o comentario desde tu cuenta de Instagram o Facebook no borra la copia que
+      guardamos nosotros. Para eso hay que pedírnoslo con los pasos de abajo.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2>Cómo pedirlo</h2>
+    <ol>
+      <li>Escríbenos a <a [href]="'mailto:' + correoContacto + '?subject=Eliminar%20mis%20datos'">{{ correoContacto }}</a>
+        con el asunto <strong>"Eliminar mis datos"</strong>.</li>
+      <li>Dinos cómo encontrarte: el correo o usuario de tu cuenta de la tienda, o tu usuario de
+        Instagram, Facebook o TikTok.</li>
+      <li>Si solo quieres borrar una parte (por ejemplo, solo tus mensajes de Instagram), indícalo.</li>
+    </ol>
+    <p>
+      Te confirmamos por correo cuando esté hecho, en un plazo máximo de 20 días hábiles.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2>Qué no podemos borrar</h2>
+    <p>
+      Los datos de tus compras que la ley nos obliga a conservar por motivos fiscales y contables
+      se guardan solo el tiempo que marca la ley y no se usan para nada más.
+    </p>
+  </section>
+
+  <footer class="pv-footer">
+    <p>
+      Más detalle en nuestra <a routerLink="/privacidad">Política de Privacidad</a>.
+    </p>
+    <p>Última actualización: {{ ultimaActualizacion }}</p>
+  </footer>
+
+</div>

@@ -10,6 +10,7 @@ import { PantallaGuard } from './guard/pantalla.guard';
 import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component';
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
+import { EliminarDatosComponent } from './legal/eliminar-datos/eliminar-datos.component';
 import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
 import { DemoTablasComponent } from './demo-tablas/demo-tablas.component';
 
@@ -164,6 +165,11 @@ const routes: Routes = [
     // política de privacidad sin iniciar sesión; si se topa con un redirect al login, la
     // rechaza y no deja configurar la app de Facebook.
     path: 'privacidad', component: PrivacidadComponent
+  },
+  {
+    // PÚBLICA a propósito, mismo motivo que /privacidad — Meta pide la URL de instrucciones para
+    // eliminar datos y la tiene que poder abrir sin iniciar sesión.
+    path: 'eliminar-datos', component: EliminarDatosComponent
   },
   {
     // PÚBLICA a propósito, mismo motivo que /privacidad — TikTok exige Terms of Service URL

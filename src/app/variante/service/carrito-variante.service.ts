@@ -36,7 +36,7 @@ export class CarritoVarianteService {
       actual[idx].subTotal = actual[idx].cantidad * actual[idx].precio;
     } else {
       if ((v.stock ?? 0) <= 0) return false;
-      const precio = v.precio ?? 0;
+      const precio = (v.precioRebaja && v.precioRebaja > 0) ? v.precioRebaja : (v.precio ?? 0);
       actual.push({
         varianteId:   v.id,
         talla:        v.talla,

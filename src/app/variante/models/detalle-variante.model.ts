@@ -11,4 +11,5 @@ export interface IDetalleVariante {
   subTotal: number;
   imagenBase64?: string | null;
   imagenUrl?: string | null;
+  codigoBarras?: string | null;
 }

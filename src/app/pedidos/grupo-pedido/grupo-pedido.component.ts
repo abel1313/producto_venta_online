@@ -297,6 +297,11 @@ export class GrupoPedidoComponent implements OnChanges {
     return this.redondear(this.filasSeparar.reduce((s, f) => s + f.pagado, 0));
   }
 
+  /** Lo que le faltará al pedido después de separar con el monto que se escribió. */
+  quedaDebiendo(f: { total: number; monto: number }): number {
+    return Math.max(0, this.redondear(f.total - (f.monto || 0)));
+  }
+
   get repartido(): number {
     return this.redondear(this.filasSeparar.filter(f => f.sale).reduce((s, f) => s + (f.monto || 0), 0));
   }

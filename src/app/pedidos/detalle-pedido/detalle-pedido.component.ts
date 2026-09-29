@@ -837,6 +837,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Lo que falta en un pedido a crédito que ya tiene abonos; `null` si no aplica. Se calcula
+   * contra `totalGeneral` porque quitar un artículo recalcula el total aquí sin volver a pedir el
+   * detalle, y `saldoPendiente` del back se quedaría con el total viejo.
+   */
+  get debeCredito(): number | null {
+    const estado = this.estadoPedido.toUpperCase();
+    if (!this.esCredito || estado === 'PAGADO' || estado === 'CANCELADO') return null;
+    const pagado = this.detalle?.totalPagado ?? 0;
+    if (pagado <= 0) return null;
+    return Math.max(0, Math.round((this.totalGeneral - pagado) * 100) / 100);
+  }
+
+  /**
    * Pasar a contado exige que no quede saldo. Si queda, el monto arranca en el saldo completo
    * para que el admin no tenga que calcularlo de memoria — que es de donde salían los errores.
    */

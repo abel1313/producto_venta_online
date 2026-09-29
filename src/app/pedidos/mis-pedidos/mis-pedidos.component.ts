@@ -1070,6 +1070,22 @@ export class MisPedidosComponent implements OnInit {
     return estado === 'Entregado';
   }
 
+  /**
+   * Lo que le falta pagar a un pedido a crédito que ya tiene abonos; `null` si no aplica (contado,
+   * sin abonos, pagado o cancelado). La card mostraba solo el total, y un pedido recién separado de
+   * un grupo parecía seguir debiendo todo aunque ya se le hubiera dejado parte de lo abonado.
+   */
+  faltaDeCredito(item: IPedidoGenerico): number | null {
+    const tp = item.pedido.tipoPedido;
+    const estado = (item.pedido.estado_pedido ?? '').toUpperCase();
+    if ((tp !== 'APARTADO' && tp !== 'FIADO') || estado === 'PAGADO' || estado === 'CANCELADO') return null;
+    const pagado = item.pedido.totalPagado ?? 0;
+    if (pagado <= 0) return null;
+    const total = item.pedido.detalles.reduce((s, d) => s + d.sub_total, 0);
+    const falta = Math.round((total - pagado) * 100) / 100;
+    return falta > 0 ? falta : null;
+  }
+
   // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
   // estado_pedido; para crédito, el back confirmó (2026-07-24) que totalPagado ya viene en
   // este mismo objeto — antes se dejaba habilitado siempre porque no había forma de saberlo

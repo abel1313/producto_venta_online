@@ -187,10 +187,20 @@
               </div>
             </div>
           </ng-container>
+          <!-- A crédito con abonos: además del total, lo pagado y lo que falta (sin esto, un pedido
+               recién separado de un grupo parecía seguir debiendo su total completo). -->
           <ng-template #totalSuelto>
-            <div class="total-strip">
-              <span class="total-label">Total del pedido</span>
-              <span class="total-amount">{{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
+            <div class="total-strip" [class.total-strip--grupo]="faltaDeCredito(item) !== null">
+              <div class="total-strip__col">
+                <span class="total-label">Total del pedido</span>
+                <span class="total-sub" *ngIf="faltaDeCredito(item) !== null">
+                  Pagado {{ item.pedido.totalPagado | currency: '$' }}
+                </span>
+              </div>
+              <div class="total-strip__col total-strip__col--fin">
+                <span class="total-amount">{{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
+                <span class="total-sub" *ngIf="faltaDeCredito(item) as falta">Falta {{ falta | currency: '$' }}</span>
+              </div>
             </div>
           </ng-template>
 

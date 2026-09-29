@@ -106,6 +106,7 @@
               <th class="num">Total</th>
               <th class="num" *ngIf="hayQueRepartir">Tiene hoy</th>
               <th class="num" *ngIf="hayQueRepartir">Se queda con</th>
+              <th class="num" *ngIf="hayQueRepartir">Queda debiendo</th>
             </tr>
           </thead>
           <tbody>
@@ -124,6 +125,13 @@
                          [(ngModel)]="f.monto" [attr.aria-label]="'Cuánto se queda el pedido #' + f.pedidoId" />
                 </label>
                 <span *ngIf="!f.sale" class="gp__texto--muted">sigue unido</span>
+              </td>
+              <td class="num" *ngIf="hayQueRepartir">
+                <ng-container *ngIf="f.sale">
+                  <b *ngIf="quedaDebiendo(f) > 0">{{ quedaDebiendo(f) | currency:'$' }}</b>
+                  <span *ngIf="quedaDebiendo(f) === 0" class="gp-estado gp-estado--ok">Pagado</span>
+                </ng-container>
+                <span *ngIf="!f.sale" class="gp__texto--muted">—</span>
               </td>
             </tr>
           </tbody>

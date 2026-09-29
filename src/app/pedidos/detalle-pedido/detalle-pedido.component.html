@@ -20,7 +20,12 @@
         🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
       </span>
     </div>
-    <span class="detalle-header__total" *ngIf="!grupo">Total: {{ totalGeneral | currency:'$' }}</span>
+    <span class="detalle-header__total" *ngIf="!grupo && debeCredito === null">Total: {{ totalGeneral | currency:'$' }}</span>
+    <!-- A crédito con abonos lo que importa es lo que falta; el total va abajo, chico. -->
+    <span class="detalle-header__total detalle-header__total--grupo" *ngIf="!grupo && debeCredito !== null">
+      Debe: {{ debeCredito | currency:'$' }}
+      <small>Total {{ totalGeneral | currency:'$' }} · pagado {{ (detalle?.totalPagado ?? 0) | currency:'$' }}</small>
+    </span>
     <span class="detalle-header__total detalle-header__total--grupo" *ngIf="grupo">
       Total de los {{ grupo.pedidos.length }} pedidos: {{ grupo.totalGrupo | currency:'$' }}
       <small>Este pedido: {{ totalGeneral | currency:'$' }}</small>

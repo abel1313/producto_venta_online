@@ -235,8 +235,15 @@ export class GrupoPedidoComponent implements OnChanges {
 
   // ── Quién recoge ──────────────────────────────────────────────────────────────────
 
-  get candidatosRecoger(): number[] {
-    return (this.grupo?.pedidos ?? []).filter(p => !this.estaCancelado(p.estadoPedido)).map(p => p.pedidoId);
+  get candidatosRecoger(): { pedidoId: number; cliente: string }[] {
+    return (this.grupo?.pedidos ?? [])
+      .filter(p => !this.estaCancelado(p.estadoPedido))
+      .map(p => ({ pedidoId: p.pedidoId, cliente: p.cliente }));
+  }
+
+  /** Primera letra del nombre para el círculo de quién recoge. */
+  inicial(nombre: string | null | undefined): string {
+    return (nombre ?? '').trim().charAt(0).toUpperCase() || '?';
   }
 
   cambiarTitular(pedidoTitularId: number): void {
@@ -246,7 +253,7 @@ export class GrupoPedidoComponent implements OnChanges {
       next: r => {
         this.cambiandoTitular = false;
         this.grupo = r?.data ?? this.grupo;
-        Swal.fire({ icon: 'success', title: 'Listo', text: `Ahora paga y recoge el cliente del pedido #${pedidoTitularId}.`,
+        Swal.fire({ icon: 'success', title: 'Listo', text: `Ahora paga y recoge ${r?.data?.titularNombre || 'el cliente del pedido #' + pedidoTitularId}.`,
                     timer: 2200, showConfirmButton: false });
         this.cambio.emit();
       },
@@ -373,6 +380,30 @@ export class GrupoPedidoComponent implements OnChanges {
       case 'APARTADO': return 'Apartado';
       case 'FIADO':    return 'Ir pagando';
       default:         return tipo ?? '';
+    }
+  }
+
+  /** El estado viene crudo del back (APARTADO, FIADO, PAGADO, Entregado, cancelado…). */
+  etiquetaEstado(estado: string | null | undefined): string {
+    switch ((estado ?? '').toUpperCase()) {
+      case 'NORMAL':    return 'Contado';
+      case 'APARTADO':  return 'Apartado';
+      case 'FIADO':     return 'Ir pagando';
+      case 'PAGADO':    return 'Pagado';
+      case 'ENTREGADO': return 'Entregado';
+      case 'CANCELADO': return 'Cancelado';
+      case 'PENDIENTE': return 'Pendiente';
+      default:          return estado ?? '';
+    }
+  }
+
+  /** Color de la pastilla: abierto (marca), pagado/entregado (verde), cancelado (rojo). */
+  claseEstado(estado: string | null | undefined): string {
+    switch ((estado ?? '').toUpperCase()) {
+      case 'PAGADO':
+      case 'ENTREGADO': return 'gp-estado--ok';
+      case 'CANCELADO': return 'gp-estado--cancelado';
+      default:          return 'gp-estado--abierto';
     }
   }
 

@@ -1045,26 +1045,27 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * El precio que se le va a cobrar: la rebaja si existe, si no el normal.
+   * El precio con descuento, solo si de verdad es más barato que el normal. Se cobra únicamente
+   * con el botón "Otro precio"; "Elegir" cobra el normal (hotfix 2026-09-29).
    *
    * El back solo acepta uno de esos dos — cualquier otro número lo rechaza con 400, que es
    * justo lo que cierra el agujero de mandar el precio desde la pantalla.
    */
-  precioACobrar(v: IVarianteResumen): number {
+  otroPrecio(v: IVarianteResumen): number | null {
     const rebaja = v.precioRebaja ?? 0;
-    return rebaja > 0 ? rebaja : (v.precio ?? 0);
+    return rebaja > 0 && rebaja < (v.precio ?? 0) ? rebaja : null;
   }
 
-  tieneRebaja(v: IVarianteResumen): boolean {
-    return (v.precioRebaja ?? 0) > 0;
-  }
+  /** El precio de la última elección, para repetirlo tal cual si el back pregunta por el combo. */
+  private precioElegido = 0;
 
-  elegirArticulo(v: IVarianteResumen): void {
+  elegirArticulo(v: IVarianteResumen, conOtroPrecio = false): void {
     if (this.guardandoArticulo) return;
     this.guardandoArticulo = true;
 
     const pedidoId = this.destino;
-    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioACobrar(v) };
+    this.precioElegido = (conOtroPrecio ? this.otroPrecio(v) : null) ?? v.precio ?? 0;
+    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioElegido };
 
     const peticion = this.lineaACambiar
       ? this.pedidosService.cambiarArticulo(pedidoId, this.lineaACambiar.id!, body)
@@ -1144,7 +1145,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.pedidosService.cambiarArticulo(this.destino, this.lineaACambiar.id!, {
       varianteId:     v.id,
       cantidad:       1,
-      precioUnitario: this.precioACobrar(v),
+      precioUnitario: this.precioElegido,
       modo
     }).subscribe({
       next: r => {

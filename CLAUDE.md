@@ -12353,3 +12353,35 @@ veía campos para repartir $0. Además el input era el `<input type="number">` p
   `rgba(var(--app-accent-rgb), .18)` y borde `var(--pk-danger)` cuando el monto pasa del total.
 - Casilla `.gp-check` con `accent-color: var(--app-accent)`; la fila que sale se resalta con
   `.gp__fila--sale` (`var(--app-accent-soft)`).
+
+---
+
+## Regla de precios — el descuento NUNCA se aplica solo (hotfix 2026-09-29)
+
+**Decisión del dueño:** el producto tiene precio costo, precio venta y precio descuento
+(`precioRebaja`). **Siempre se muestra y se cobra el precio venta.** El descuento es para cuando el
+dueño decide dárselo a alguien en ese momento, y solo se cobra si él lo elige.
+
+Esto **revierte** el hotfix del 2026-09-24 (`83bf7f6f`), que hacía que el carrito cobrara la
+rebaja en automático porque la card la mostraba como precio final. No volver a ese criterio.
+
+- **Card de `tienda/buscar`:** solo `v.precio`. Sin tachado ni rebaja.
+- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio`. Guarda `precioNormal` y
+  `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **`tienda/carrito`, columna "Otro precio" (solo admin):** el monto va tapado (`$ ••••`), 👁 lo
+  destapa 3 segundos, y el check **Usar** (desmarcado por default) cobra toda la fila al precio
+  descuento (`usarOtroPrecio`). Tapado porque el cliente puede estar viendo la pantalla.
+- **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
+  (`PUT /v1/precios/articulo/{varianteId}`). El precio normal se ve **bloqueado** (se cambia al
+  editar el producto y se reenvía tal cual). El descuento se prende con el check **"Usar precio
+  con descuento en este artículo"**: marcado se guarda lo de la caja (tiene que ser > 0 y menor al
+  normal); desmarcado se guarda 0 = sin descuento, aunque la caja traiga un número. Aun con
+  descuento, el carrito cobra el normal hasta que el admin marca "Usar" en esa línea. Con precio
+  propio (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del
+  producto. (Modal ajustado 2026-09-29 en `dev`/`qa`; en `master` todavía deja editar el normal.)
+- **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
+  cobra la rebaja sin mostrar el monto.
+- **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.
+- El back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN`.
+- Cualquier pantalla nueva que agregue artículos: precio normal por default, la rebaja solo con
+  una acción explícita del admin y sin enseñar el monto.

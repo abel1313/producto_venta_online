@@ -26,6 +26,11 @@ export class CarritoVarianteService {
 
   // ── Variantes ─────────────────────────────────────────────────────────
 
+  /**
+   * Siempre entra al precio normal. El precio con descuento (`precioRebaja`) no es el precio de
+   * lista: es el que el admin decide darle a alguien en el momento, y solo se aplica si lo elige
+   * en el carrito con "Otro precio" (hotfix 2026-09-29, revierte el criterio del 2026-09-24).
+   */
   agregar(v: IVarianteResumen): boolean {
     const actual = this._carrito.getValue();
     const idx = actual.findIndex(i => i.varianteId === v.id);
@@ -36,7 +41,8 @@ export class CarritoVarianteService {
       actual[idx].subTotal = actual[idx].cantidad * actual[idx].precio;
     } else {
       if ((v.stock ?? 0) <= 0) return false;
-      const precio = (v.precioRebaja && v.precioRebaja > 0) ? v.precioRebaja : (v.precio ?? 0);
+      const precio = v.precio ?? 0;
+      const rebaja = v.precioRebaja ?? 0;
       actual.push({
         varianteId:   v.id,
         talla:        v.talla,
@@ -45,6 +51,10 @@ export class CarritoVarianteService {
         presentacion: v.presentacion,
         stock:        v.stock ?? 0,
         precio,
+        precioNormal: precio,
+        // Solo cuenta como "otro precio" si de verdad es más barato: al dar de alta un producto
+        // el descuento se llena igual al normal por default.
+        precioOtro:   rebaja > 0 && rebaja < precio ? rebaja : null,
         cantidad:     1,
         subTotal:     precio,
         imagenBase64: v.imagenBase64,
@@ -55,6 +65,32 @@ export class CarritoVarianteService {
 
     this.emitir([...actual]);
     return true;
+  }
+
+  /**
+   * El admin le cambió el precio al artículo con 💲 y ya estaba en el carrito: la línea toma los
+   * precios nuevos. Si tenía marcado "Usar" y el artículo sigue teniendo descuento, se queda con
+   * el descuento nuevo; si ya no tiene, regresa al normal.
+   */
+  actualizarPrecios(varianteId: number, precioNormal: number, precioRebaja: number): void {
+    const actual = this._carrito.getValue();
+    const item = actual.find(i => i.varianteId === varianteId);
+    if (!item) return;
+    const usaba = !!item.precioOtro && item.precio === item.precioOtro;
+    item.precioNormal = precioNormal;
+    item.precioOtro   = precioRebaja > 0 && precioRebaja < precioNormal ? precioRebaja : null;
+    item.precio       = usaba && item.precioOtro ? item.precioOtro : precioNormal;
+    item.subTotal     = item.cantidad * item.precio;
+    this.emitir([...actual]);
+  }
+
+  usarOtroPrecio(varianteId: number, usar: boolean): void {
+    const actual = this._carrito.getValue();
+    const item = actual.find(i => i.varianteId === varianteId);
+    if (!item || !item.precioOtro) return;
+    item.precio   = usar ? item.precioOtro : (item.precioNormal ?? item.precio);
+    item.subTotal = item.cantidad * item.precio;
+    this.emitir([...actual]);
   }
 
   eliminar(varianteId: number): void {

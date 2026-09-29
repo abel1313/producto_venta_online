@@ -12351,9 +12351,11 @@ rebaja en automático porque la card la mostraba como precio final. No volver a 
 - **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
   (`PUT /v1/precios/articulo/{varianteId}`); normal y descuento editables. Con precio propio
   (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del producto.
-- **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
-  cobra la rebaja sin mostrar el monto.
+- **Detalle del pedido → agregar/cambiar artículo:** en `qa`/`dev` "Elegir" cobra el normal y
+  "Otro precio" cobra la rebaja sin mostrar el monto. **En `master` no subió** (decisión del
+  dueño: a prod solo la tabla del carrito y el precio); ahí sigue cobrando la rebaja sola.
 - **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.
-- El back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN`.
+- En `qa`/`dev` el back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN` (en prod
+  todavía no). "Usar el del producto" del 💲 solo aparece en `qa`/`dev` (depende de `precioPropio`).
 - Cualquier pantalla nueva que agregue artículos: precio normal por default, la rebaja solo con
   una acción explícita del admin y sin enseñar el monto.

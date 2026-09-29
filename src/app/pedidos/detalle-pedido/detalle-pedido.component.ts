@@ -849,27 +849,26 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * El precio con descuento, solo si de verdad es más barato que el normal. Se cobra únicamente
-   * con el botón "Otro precio"; "Elegir" cobra el normal (hotfix 2026-09-29).
+   * El precio que se le va a cobrar: la rebaja si existe, si no el normal.
    *
    * El back solo acepta uno de esos dos — cualquier otro número lo rechaza con 400, que es
    * justo lo que cierra el agujero de mandar el precio desde la pantalla.
    */
-  otroPrecio(v: IVarianteResumen): number | null {
+  precioACobrar(v: IVarianteResumen): number {
     const rebaja = v.precioRebaja ?? 0;
-    return rebaja > 0 && rebaja < (v.precio ?? 0) ? rebaja : null;
+    return rebaja > 0 ? rebaja : (v.precio ?? 0);
   }
 
-  /** El precio de la última elección, para repetirlo tal cual si el back pregunta por el combo. */
-  private precioElegido = 0;
+  tieneRebaja(v: IVarianteResumen): boolean {
+    return (v.precioRebaja ?? 0) > 0;
+  }
 
-  elegirArticulo(v: IVarianteResumen, conOtroPrecio = false): void {
+  elegirArticulo(v: IVarianteResumen): void {
     if (this.guardandoArticulo) return;
     this.guardandoArticulo = true;
 
     const pedidoId = this.pedido.pedido.id;
-    this.precioElegido = (conOtroPrecio ? this.otroPrecio(v) : null) ?? v.precio ?? 0;
-    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioElegido };
+    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioACobrar(v) };
 
     const peticion = this.lineaACambiar
       ? this.pedidosService.cambiarArticulo(pedidoId, this.lineaACambiar.id!, body)
@@ -947,7 +946,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.pedidosService.cambiarArticulo(this.pedido.pedido.id, this.lineaACambiar.id!, {
       varianteId:     v.id,
       cantidad:       1,
-      precioUnitario: this.precioElegido,
+      precioUnitario: this.precioACobrar(v),
       modo
     }).subscribe({
       next: r => {

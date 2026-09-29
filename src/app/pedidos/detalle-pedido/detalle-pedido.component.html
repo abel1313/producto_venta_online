@@ -148,15 +148,11 @@
           <span class="dp-art-item__stock">Stock: {{ v.stock ?? 0 }}</span>
         </div>
         <div class="dp-art-item__precio">
-          <span class="dp-art-item__final">{{ (v.precio ?? 0) | currency:'$' }}</span>
+          <!-- Si hay rebaja se cobra la rebaja, y se muestra el normal tachado para que se vea
+               que no es un error de precio. -->
+          <span class="dp-art-item__tachado" *ngIf="tieneRebaja(v)">{{ v.precio | currency:'$' }}</span>
+          <span class="dp-art-item__final">{{ precioACobrar(v) | currency:'$' }}</span>
         </div>
-        <!-- "Otro precio" cobra el descuento sin enseñar el monto: el cliente puede estar viendo. -->
-        <button class="dp-art-item__btn dp-art-item__btn--otro" type="button"
-                *ngIf="otroPrecio(v) && (v.stock ?? 0) >= 1"
-                [disabled]="guardandoArticulo"
-                (click)="elegirArticulo(v, true)">
-          Otro precio
-        </button>
         <button class="dp-art-item__btn" type="button"
                 [disabled]="guardandoArticulo || (v.stock ?? 0) < 1"
                 (click)="elegirArticulo(v)">

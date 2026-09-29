@@ -12372,8 +12372,13 @@ rebaja en automático porque la card la mostraba como precio final. No volver a 
   destapa 3 segundos, y el check **Usar** (desmarcado por default) cobra toda la fila al precio
   descuento (`usarOtroPrecio`). Tapado porque el cliente puede estar viendo la pantalla.
 - **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
-  (`PUT /v1/precios/articulo/{varianteId}`); normal y descuento editables. Con precio propio
-  (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del producto.
+  (`PUT /v1/precios/articulo/{varianteId}`). El precio normal se ve **bloqueado** (se cambia al
+  editar el producto y se reenvía tal cual). El descuento se prende con el check **"Usar precio
+  con descuento en este artículo"**: marcado se guarda lo de la caja (tiene que ser > 0 y menor al
+  normal); desmarcado se guarda 0 = sin descuento, aunque la caja traiga un número. Aun con
+  descuento, el carrito cobra el normal hasta que el admin marca "Usar" en esa línea. Con precio
+  propio (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del
+  producto. (Modal ajustado 2026-09-29 en `dev`/`qa`; en `master` todavía deja editar el normal.)
 - **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
   cobra la rebaja sin mostrar el monto.
 - **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.

@@ -879,24 +879,29 @@ export class BuscarComponent implements OnInit, OnDestroy {
   cambiandoPrecioId: number | null = null;
 
   /**
-   * Precio de UN artículo (hotfix 2026-09-29): los demás del mismo producto no cambian. Los dos
-   * precios se pueden subir o bajar. El descuento es el precio final (no lo que se resta) y solo
-   * se cobra si el admin lo elige en el carrito con "Otro precio".
+   * Precio de UN artículo: los demás del mismo producto no cambian. Aquí solo se pone el
+   * descuento; el precio normal se ve pero no se toca (se cambia al editar el producto).
+   *
+   * "Usar precio con descuento" decide si este artículo tiene descuento: marcado se guarda lo de
+   * la caja; desmarcado se guarda 0 (sin descuento) aunque la caja traiga un número. Aun con
+   * descuento, en el carrito se cobra el normal hasta que el admin marca "Usar" en esa línea.
    *
    * Si el artículo ya tiene precio propio, "Usar el del producto" se lo quita.
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId) return;
     const normal = v.precio ?? 0;
-    const descuento = v.precioRebaja ?? 0;
+    const descuentoActual = v.precioRebaja ?? 0;
+    const teniaDescuento = descuentoActual > 0 && descuentoActual < normal;
     const pesos = (n: number) => `$${n.toFixed(2)}`;
     const nombre = [v.nombreProducto || 'este artículo', v.talla, v.color].filter(Boolean).join(' · ');
 
-    const resumen = (norm: number, desc: number): string => {
-      if (!(norm > 0)) return 'El precio normal tiene que ser mayor a 0';
-      if (!(desc > 0)) return `Sin precio con descuento: siempre se cobra <b>${pesos(norm)}</b>`;
-      if (desc > norm) return `El descuento no puede ser mayor al precio normal (${pesos(norm)})`;
-      return `Se cobra <b>${pesos(norm)}</b>. En el carrito puedes elegir <b>${pesos(desc)}</b> (descuento de ${pesos(norm - desc)})`;
+    const resumen = (usar: boolean, desc: number): string => {
+      if (!(normal > 0)) return 'Este artículo no tiene precio normal. Pónselo al editar el producto';
+      if (!usar) return `Sin descuento: siempre se cobra <b>${pesos(normal)}</b>`;
+      if (!(desc > 0)) return 'Escribe el precio con descuento, o desmarca "Usar"';
+      if (desc >= normal) return `El precio con descuento tiene que ser menor al normal (${pesos(normal)})`;
+      return `Se cobra <b>${pesos(normal)}</b>. En el carrito puedes elegir <b>${pesos(desc)}</b> (descuento de ${pesos(normal - desc)})`;
     };
 
     Swal.fire({
@@ -905,10 +910,16 @@ export class BuscarComponent implements OnInit, OnDestroy {
         <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio <b>solo de este artículo</b>. Los demás del
           producto se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
         <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
-        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
-        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento: solo si lo eliges en el carrito <small>(0 = sin descuento)</small></label>
-        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .4rem;width:100%" value="${descuento}">
-        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(normal, descuento)}</p>
+        <input id="sw-precio-normal" type="number" class="swal2-input" style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
+        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio normal se cambia al editar el producto.</small>
+        <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
+          <input id="sw-precio-usar" type="checkbox" ${teniaDescuento ? 'checked' : ''}>
+          Usar precio con descuento en este artículo
+        </label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" aria-label="Precio con descuento"
+               style="margin:.3rem 0 .4rem;width:100%" value="${teniaDescuento ? descuentoActual : ''}" placeholder="Precio con descuento"
+               ${teniaDescuento ? '' : 'disabled'}>
+        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(teniaDescuento, descuentoActual)}</p>
         ${v.precioPropio ? '<p style="font-size:.78rem;margin:.6rem 0 0;text-align:left;opacity:.8">Este artículo ya tiene precio propio.</p>' : ''}`,
       showCancelButton: true,
       showDenyButton: !!v.precioPropio,
@@ -917,31 +928,38 @@ export class BuscarComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       didOpen: () => {
-        const inNormal = document.getElementById('sw-precio-normal') as HTMLInputElement;
+        const usar = document.getElementById('sw-precio-usar') as HTMLInputElement;
         const inDesc = document.getElementById('sw-precio-desc') as HTMLInputElement;
         const salida = document.getElementById('sw-precio-resumen') as HTMLElement;
-        const refrescar = () => { salida.innerHTML = resumen(Number(inNormal.value || 0), Number(inDesc.value || 0)); };
-        inNormal.addEventListener('input', refrescar);
+        const refrescar = () => {
+          Swal.resetValidationMessage();
+          salida.innerHTML = resumen(usar.checked, Number(inDesc.value || 0));
+        };
+        usar.addEventListener('change', () => {
+          inDesc.disabled = !usar.checked;
+          if (usar.checked) { inDesc.focus(); inDesc.select(); }
+          refrescar();
+        });
         inDesc.addEventListener('input', refrescar);
-        inNormal.focus();
-        inNormal.select();
+        if (usar.checked) { inDesc.focus(); inDesc.select(); }
       },
       preConfirm: () => {
-        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value || 0);
-        const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
-        if (!(nuevoNormal > 0)) {
-          Swal.showValidationMessage('El precio normal tiene que ser mayor a 0');
+        const usar = (document.getElementById('sw-precio-usar') as HTMLInputElement).checked;
+        const caja = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
+        if (!(normal > 0)) {
+          Swal.showValidationMessage('Este artículo no tiene precio normal. Pónselo al editar el producto');
           return false;
         }
-        if (nuevoDesc < 0) {
-          Swal.showValidationMessage('El descuento no puede ser negativo');
+        if (!usar) return { nuevoDesc: 0 };
+        if (!(caja > 0)) {
+          Swal.showValidationMessage('Escribe el precio con descuento, o desmarca "Usar"');
           return false;
         }
-        if (nuevoDesc > nuevoNormal) {
-          Swal.showValidationMessage(`El precio con descuento no puede ser mayor al precio normal (${pesos(nuevoNormal)})`);
+        if (caja >= normal) {
+          Swal.showValidationMessage(`El precio con descuento tiene que ser menor al normal (${pesos(normal)})`);
           return false;
         }
-        return { nuevoNormal, nuevoDesc };
+        return { nuevoDesc: caja };
       }
     }).then(r => {
       if (r.isDenied) {
@@ -949,8 +967,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         return;
       }
       if (!r.isConfirmed || !r.value) return;
-      const { nuevoNormal, nuevoDesc } = r.value;
-      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, nuevoNormal, nuevoDesc));
+      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, normal, r.value.nuevoDesc));
     });
   }
 

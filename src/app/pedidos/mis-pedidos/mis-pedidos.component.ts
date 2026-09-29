@@ -1044,15 +1044,24 @@ export class MisPedidosComponent implements OnInit {
   // exactamente lo que ya dice el badge de tipo ("📦 Apartado" + "APARTADO" abajo). Para
   // crédito se muestra el estado de pago en su lugar; NORMAL/Cancelado no cambian.
   estadoBadge(item: IPedidoGenerico): { icono: string; texto: string } {
+    // Cancelado va primero: un Ir pagando cancelado mostraba "Por cobrar" (2026-09-29).
+    if (this.esCancelado(item)) {
+      return { icono: 'pi-times-circle', texto: 'Cancelado' };
+    }
     const tp = item.pedido.tipoPedido;
     if (tp === 'APARTADO' || tp === 'FIADO') {
       return item.pedido.estado_pedido === 'PAGADO'
         ? { icono: 'pi-check-circle', texto: 'Pagado' }
         : { icono: 'pi-clock', texto: 'Por cobrar' };
     }
-    const icono = item.pedido.estado_pedido === 'Entregado' ? 'pi-check-circle'
-      : item.pedido.estado_pedido === 'Cancelado' ? 'pi-times-circle' : 'pi-clock';
+    const icono = item.pedido.estado_pedido === 'Entregado' ? 'pi-check-circle' : 'pi-clock';
     return { icono, texto: item.pedido.estado_pedido };
+  }
+
+  // El back guarda 'cancelado' en minúscula; comparar contra 'Cancelado' nunca coincidía, así
+  // que la card no se enteraba y el botón Cancelar quedaba habilitado.
+  esCancelado(item: IPedidoGenerico): boolean {
+    return (item.pedido.estado_pedido ?? '').toLowerCase() === 'cancelado';
   }
 
   // El botón "Cobrar" solo comparaba contra 'Entregado' (venta normal) — un crédito ya
@@ -1064,7 +1073,7 @@ export class MisPedidosComponent implements OnInit {
     // cancelado y quedar otros por cobrar).
     if (item.pedido.grupo) return item.pedido.grupo.saldoGrupo <= 0;
     const estado = item.pedido.estado_pedido;
-    if (estado === 'Cancelado') return true;
+    if (this.esCancelado(item)) return true;
     const tp = item.pedido.tipoPedido;
     if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO';
     return estado === 'Entregado';

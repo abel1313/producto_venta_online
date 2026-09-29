@@ -12,8 +12,9 @@
       <span class="dp-tipo-badge dp-tipo-badge--fiado"
             *ngIf="esCredito && (detalle?.tipoPedido ?? pedido.pedido.tipoPedido) === 'FIADO'">💳 Ir pagando</span>
       <span class="detalle-header__estado"
-        [class.estado--entregado]="estadoPedido === 'Entregado' || estadoPedido === 'PAGADO'"
-        [class.estado--pendiente]="estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'">
+        [class.estado--entregado]="!estaCancelado && (estadoPedido === 'Entregado' || estadoPedido === 'PAGADO')"
+        [class.estado--pendiente]="!estaCancelado && estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'"
+        [class.estado--cancelado]="estaCancelado">
         {{ estadoPedidoLabel }}
       </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">

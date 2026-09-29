@@ -325,10 +325,16 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.detalle?.estadoPedido ?? this.pedido?.pedido?.estado_pedido ?? '';
   }
 
+  // El back guarda 'cancelado' en minúscula.
+  get estaCancelado(): boolean {
+    return this.estadoPedido.toLowerCase() === 'cancelado';
+  }
+
   // Para crédito, `estadoPedido` crudo del back es 'APARTADO'/'FIADO' (mismo valor que
   // tipoPedido) hasta liquidarlo — mostrarlo tal cual repite el badge de tipo que ya está
   // arriba ("📦 Apartado" seguido de "APARTADO"). Se reemplaza por el estado de pago real.
   get estadoPedidoLabel(): string {
+    if (this.estaCancelado) return 'Cancelado';
     if (this.esCredito) {
       return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Por cobrar';
     }

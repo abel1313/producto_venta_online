@@ -219,6 +219,22 @@ $t:  all 0.2s ease;
 // Acciones puntuales dentro de una pantalla (Fase 3, piloto en Modelos 2026-08-27) -- mas finas
 // que el "Editar" general, ej. "eliminar" sin "habilitar". Agrupadas por categoria (2026-09-04)
 // -- ver gruposDeAcciones() -- en vez de una sola lista plana con todas juntas.
+.gr-todo {
+  font-weight: 600;
+
+  &--grupo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px dashed var(--card-border, #d1d5db);
+  }
+
+  &--pantalla { margin: 2px 0 0 26px; font-size: .85rem; }
+}
+
 .gr-acciones {
   display: flex;
   flex-direction: column;

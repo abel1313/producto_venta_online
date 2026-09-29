@@ -55,8 +55,8 @@ export class GestionRolesComponent implements OnInit {
   grupos: GrupoSubmenus[] = [];
   cargandoCatalogo = false;
 
-  // Guardando (Actualizar) EN CURSO para la pantalla con este submenu.id -- null = ninguna.
-  guardandoActualizacionId: number | null = null;
+  // Pantallas (submenu.id) con un "Actualizar" en curso: una sola, o todas las de un grupo.
+  private guardandoIds = new Set<number>();
 
   // Estado local de cada pantalla mientras el admin la edita, ANTES de "Actualizar" -- solo trae
   // entrada para las pantallas que ya se tocaron (se siembra sola con el estado real del server
@@ -405,7 +405,7 @@ export class GestionRolesComponent implements OnInit {
   }
 
   estaGuardando(s: ISubmenu): boolean {
-    return this.guardandoActualizacionId === s.id;
+    return this.guardandoIds.has(s.id);
   }
 
   // Tira los checks pendientes de esta pantalla sin mandarlos -- vuelve a mostrar lo que
@@ -460,41 +460,110 @@ export class GestionRolesComponent implements OnInit {
     }
   }
 
-  // Manda los cambios pendientes de ESTA pantalla nada más -- Ver, Editar y cada acción, en el
-  // orden que el back necesita (agregar Ver antes que Editar/acciones; si Ver se apaga, el back
-  // ya cascadea Editar+acciones solo, así que no hace falta mandar nada más en ese caso).
-  actualizarSubmenu(s: ISubmenu): void {
-    if (!this.rolSeleccionado || !this.hayCambios(s)) return;
-    const rolId = this.rolSeleccionado.id;
+  // ── Seleccionar todo (2026-09-29) ─────────────────────────────────────────
+  // Marcar pantalla por pantalla y acción por acción era lento: un grupo como Tienda tiene
+  // varias pantallas y cada una hasta 15 acciones. Solo cambia los checks en memoria; se guarda
+  // con "Actualizar" (de la pantalla o de todo el grupo), igual que un check suelto.
+
+  /** ¿Esta pantalla tiene Ver, Editar (si aplica) y todas sus acciones? */
+  pantallaCompleta(s: ISubmenu): boolean {
+    const local = this.entradaLocal(s);
+    if (!local.ver) return false;
+    if (this.muestraEditar(s) && !local.editar) return false;
+    return this.accionesDe(s).every(a => local.accionIds.has(a.id));
+  }
+
+  grupoCompleto(g: GrupoSubmenus): boolean {
+    return g.submenus.length > 0 && g.submenus.every(s => this.pantallaCompleta(s));
+  }
+
+  /** Marca Ver, Editar y todas las acciones; o las quita todas, salvo lo protegido del admin. */
+  seleccionarTodoPantalla(s: ISubmenu, marcar: boolean): void {
+    if (!this.rolSeleccionado || this.estaGuardando(s)) return;
+    const local = this.entradaLocal(s);
+    if (marcar) {
+      local.ver = true;
+      if (this.muestraEditar(s)) local.editar = true;
+      this.accionesDe(s).forEach(a => local.accionIds.add(a.id));
+      return;
+    }
+    local.accionIds.clear();
+    if (this.esSubmenuProtegido(s)) return;
+    local.editar = false;
+    local.ver = false;
+  }
+
+  seleccionarTodoGrupo(g: GrupoSubmenus, marcar: boolean): void {
+    g.submenus.forEach(s => this.seleccionarTodoPantalla(s, marcar));
+  }
+
+  grupoTieneCambios(g: GrupoSubmenus): boolean {
+    return g.submenus.some(s => this.hayCambios(s));
+  }
+
+  guardandoGrupo(g: GrupoSubmenus): boolean {
+    return g.submenus.some(s => this.estaGuardando(s));
+  }
+
+  descartarCambiosGrupo(g: GrupoSubmenus): void {
+    g.submenus.forEach(s => this.descartarCambios(s));
+  }
+
+  // Lo que hay que mandar al back para ESTA pantalla, en el orden que el back necesita (agregar
+  // Ver antes que Editar/acciones; si Ver se apaga, el back ya cascadea Editar+acciones solo).
+  private operacionesDe(s: ISubmenu, rolId: number): Array<() => Observable<IRol>> {
     const base = this.estadoServidor(s);
     const local = this.entradaLocal(s);
     const operaciones: Array<() => Observable<IRol>> = [];
 
     if (!local.ver && base.ver) {
       operaciones.push(() => this.rolSvc.quitarSubmenu(rolId, s.id));
-    } else {
-      if (local.ver && !base.ver) {
-        operaciones.push(() => this.rolSvc.agregarSubmenu(rolId, s.id));
-      }
-      if (local.editar !== base.editar) {
-        operaciones.push(() => local.editar
-          ? this.rolSvc.agregarSubmenuEscritura(rolId, s.id)
-          : this.rolSvc.quitarSubmenuEscritura(rolId, s.id));
-      }
-      for (const accion of this.accionesDe(s)) {
-        const tenia = base.accionIds.has(accion.id);
-        const tiene = local.accionIds.has(accion.id);
-        if (tenia !== tiene) {
-          operaciones.push(() => tiene
-            ? this.rolSvc.agregarAccion(rolId, accion.id)
-            : this.rolSvc.quitarAccion(rolId, accion.id));
-        }
+      return operaciones;
+    }
+    if (local.ver && !base.ver) {
+      operaciones.push(() => this.rolSvc.agregarSubmenu(rolId, s.id));
+    }
+    if (local.editar !== base.editar) {
+      operaciones.push(() => local.editar
+        ? this.rolSvc.agregarSubmenuEscritura(rolId, s.id)
+        : this.rolSvc.quitarSubmenuEscritura(rolId, s.id));
+    }
+    for (const accion of this.accionesDe(s)) {
+      const tenia = base.accionIds.has(accion.id);
+      const tiene = local.accionIds.has(accion.id);
+      if (tenia !== tiene) {
+        operaciones.push(() => tiene
+          ? this.rolSvc.agregarAccion(rolId, accion.id)
+          : this.rolSvc.quitarAccion(rolId, accion.id));
       }
     }
+    return operaciones;
+  }
 
+  // Manda los cambios pendientes de ESTA pantalla nada más.
+  actualizarSubmenu(s: ISubmenu): void {
+    if (!this.rolSeleccionado || !this.hayCambios(s)) return;
+    this.guardar([s], this.operacionesDe(s, this.rolSeleccionado.id));
+  }
+
+  // Manda juntos los cambios pendientes de todas las pantallas del grupo.
+  actualizarGrupo(g: GrupoSubmenus): void {
+    if (!this.rolSeleccionado) return;
+    const rolId = this.rolSeleccionado.id;
+    const pantallas = g.submenus.filter(s => this.hayCambios(s));
+    this.guardar(pantallas, pantallas.flatMap(s => this.operacionesDe(s, rolId)));
+  }
+
+  private guardar(pantallas: ISubmenu[], operaciones: Array<() => Observable<IRol>>): void {
     if (operaciones.length === 0) return;
+    const terminar = () => {
+      pantallas.forEach(s => {
+        this.guardandoIds.delete(s.id);
+        this.estadoLocal.delete(s.id);
+      });
+    };
 
-    this.guardandoActualizacionId = s.id;
+    pantallas.forEach(s => this.guardandoIds.add(s.id));
     from(operaciones).pipe(
       concatMap(op => op())
     ).subscribe({
@@ -503,16 +572,14 @@ export class GestionRolesComponent implements OnInit {
         this.roles = this.roles.map(r => r.id === rolActualizado.id ? rolActualizado : r);
       },
       error: err => {
-        this.guardandoActualizacionId = null;
-        // No se sabe cuáles de las operaciones ya alcanzaron a aplicarse -- se descarta la
-        // entrada local (lo que se ve pasa a reflejar directo lo que sí quedó guardado, que
+        // No se sabe cuáles de las operaciones ya alcanzaron a aplicarse -- se descarta el
+        // estado local (lo que se ve pasa a reflejar directo lo que sí quedó guardado, que
         // rolSeleccionado ya trae actualizado por cada "next" que sí llegó a pasar).
-        this.estadoLocal.delete(s.id);
+        terminar();
         Swal.fire({ icon: 'error', title: err?.error?.mensaje ?? 'Error al actualizar', text: 'Los cambios que sí alcanzaron a aplicarse quedaron guardados; revisá los checks e intentá de nuevo con el resto.' });
       },
       complete: () => {
-        this.guardandoActualizacionId = null;
-        this.estadoLocal.delete(s.id);
+        terminar();
         Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1200, showConfirmButton: false });
       }
     });

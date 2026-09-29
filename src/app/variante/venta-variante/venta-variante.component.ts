@@ -126,7 +126,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void { this.subBusqueda?.unsubscribe(); }
+  ngOnDestroy(): void {
+    this.subBusqueda?.unsubscribe();
+    this.timersOtroPrecio.forEach(t => clearTimeout(t));
+  }
 
   private recalcularTotales(): void {
     const unidadesV = this.carrito.reduce((s, i) => s + i.cantidad, 0);
@@ -141,6 +144,29 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   quitarUna(item: IDetalleVariante): void {
     this.carritoService.eliminar(item.varianteId);
+  }
+
+  // ── Otro precio (admin) ────────────────────────────────────────────
+  // El descuento no se aplica solo: el admin lo elige por artículo. El monto va tapado y se
+  // destapa unos segundos, porque el cliente puede estar viendo la pantalla.
+
+  otroPrecioVisible = new Set<number>();
+  private timersOtroPrecio = new Map<number, ReturnType<typeof setTimeout>>();
+
+  usaOtroPrecio(item: IDetalleVariante): boolean {
+    return !!item.precioOtro && item.precio === item.precioOtro;
+  }
+
+  alternarOtroPrecio(item: IDetalleVariante): void {
+    this.carritoService.usarOtroPrecio(item.varianteId, !this.usaOtroPrecio(item));
+  }
+
+  verOtroPrecio(item: IDetalleVariante): void {
+    const id = item.varianteId;
+    clearTimeout(this.timersOtroPrecio.get(id));
+    if (this.otroPrecioVisible.delete(id)) return;
+    this.otroPrecioVisible.add(id);
+    this.timersOtroPrecio.set(id, setTimeout(() => this.otroPrecioVisible.delete(id), 3000));
   }
 
   quitarPromo(promocionId: number): void {

@@ -27,6 +27,7 @@
         <th *ngIf="mostrarPresentacion">Presentación</th>
         <th>Stock orig.</th>
         <th>Precio/pza</th>
+        <th *ngIf="isAdminUser">Otro precio</th>
         <th>Cantidad</th>
         <th>Subtotal</th>
         <th></th>
@@ -42,6 +43,28 @@
         <td *ngIf="mostrarPresentacion">{{ item.presentacion || '—' }}</td>
         <td>{{ item.stock }}</td>
         <td>{{ item.precio | currency:'$' }}</td>
+        <!-- El monto va tapado: el cliente puede estar viendo la pantalla junto al admin. -->
+        <td *ngIf="isAdminUser">
+          <span *ngIf="!item.precioOtro" class="text-muted">—</span>
+          <div *ngIf="item.precioOtro" class="vv-otro">
+            <span class="vv-otro__monto">
+              {{ otroPrecioVisible.has(item.varianteId) ? (item.precioOtro | currency:'$') : '$ ••••' }}
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+              (click)="verOtroPrecio(item)"
+              [attr.aria-label]="otroPrecioVisible.has(item.varianteId) ? 'Tapar el otro precio' : 'Ver el otro precio unos segundos'"
+              [title]="otroPrecioVisible.has(item.varianteId) ? 'Tapar' : 'Ver unos segundos'">
+              {{ otroPrecioVisible.has(item.varianteId) ? '🙈' : '👁' }}
+            </button>
+            <!-- Marcado = toda la fila (todas sus piezas) al otro precio. Por default no. -->
+            <label class="vv-otro__usar">
+              <input type="checkbox" class="form-check-input"
+                [checked]="usaOtroPrecio(item)"
+                (change)="alternarOtroPrecio(item)">
+              Usar
+            </label>
+          </div>
+        </td>
         <td>{{ item.cantidad }}</td>
         <td class="fw-semibold">{{ item.subTotal | currency:'$' }}</td>
         <td class="d-flex gap-1">
@@ -59,7 +82,7 @@
 
     <ng-template pTemplate="emptymessage">
       <tr>
-        <td [attr.colspan]="(mostrarTalla ? 1 : 0) + (mostrarColor ? 1 : 0) + (mostrarMarca ? 1 : 0) + (mostrarPresentacion ? 1 : 0) + 7" class="text-center text-muted py-4">
+        <td [attr.colspan]="(mostrarTalla ? 1 : 0) + (mostrarColor ? 1 : 0) + (mostrarMarca ? 1 : 0) + (mostrarPresentacion ? 1 : 0) + (isAdminUser ? 8 : 7)" class="text-center text-muted py-4">
           El carrito está vacío — agrega variantes desde <a routerLink="/tienda/buscar">buscar</a>.
         </td>
       </tr>

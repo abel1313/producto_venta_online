@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../shared/barcode-scanner.util';
@@ -9,7 +9,7 @@ import Swal from 'sweetalert2';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IFiltrosDisponibles, IVarianteResumen } from '../models/variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
-import { VarianteService } from '../service/variante.service';
+import { IPreciosArticulo, VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { FavoritoService } from 'src/app/favoritos/service/favorito.service';
@@ -93,23 +93,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
   private roles: string[] = [];
   get isAnonymous(): boolean { return !this.roles || this.roles.length === 0; }
 
-  /**
-   * El precio de rebaja de la card (back 2026-09-22).
-   *
-   * 🔒 **`precioRebaja` solo llega si quien pregunta es admin** — al cliente el back lo omite
-   * a propósito, porque el precio rebajado es una decisión interna del negocio. Así que no
-   * hace falta esconderlo acá: si llegó, es que corresponde verlo. El chequeo de `> 0` es
-   * solo para no dibujar un tachado cuando no hay rebaja de verdad.
-   */
-  tieneRebaja(v: IVarianteResumen): boolean {
-    return (v.precioRebaja ?? 0) > 0;
-  }
-
-  /** Lo que se le va a cobrar: la rebaja si existe, si no el precio normal. */
-  precioFinal(v: IVarianteResumen): number {
-    const rebaja = v.precioRebaja ?? 0;
-    return rebaja > 0 ? rebaja : (v.precio ?? 0);
-  }
   favoritosIds = new Set<number>();
   /** Se apaga si el back dice que al usuario le falta perfil de cliente — ver `ngOnInit`. */
   favoritosDisponibles = true;
@@ -896,91 +879,109 @@ export class BuscarComponent implements OnInit, OnDestroy {
   cambiandoPrecioId: number | null = null;
 
   /**
-   * El precio vive en el producto, así que el cambio alcanza a todos sus artículos: el modal lo
-   * dice para que nadie crea que solo cambia esta talla.
+   * Precio de UN artículo (hotfix 2026-09-29): los demás del mismo producto no cambian. Los dos
+   * precios se pueden subir o bajar. El descuento es el precio final (no lo que se resta) y solo
+   * se cobra si el admin lo elige en el carrito con "Otro precio".
    *
-   * Aquí solo se pone el descuento. El precio normal se ve pero no se toca: con los dos abiertos
-   * no quedaba claro si el descuento era el precio final o lo que se resta (es el precio final).
-   * El normal se cambia al editar el producto; se reenvía tal cual porque el back pide los dos.
+   * Si el artículo ya tiene precio propio, "Usar el del producto" se lo quita.
    */
   cambiarPrecio(v: IVarianteResumen): void {
-    if (this.cambiandoPrecioId || !v.productoId) return;
+    if (this.cambiandoPrecioId) return;
     const normal = v.precio ?? 0;
     const descuento = v.precioRebaja ?? 0;
     const pesos = (n: number) => `$${n.toFixed(2)}`;
+    const nombre = [v.nombreProducto || 'este artículo', v.talla, v.color].filter(Boolean).join(' · ');
 
-    const resumen = (desc: number): string => {
-      if (!(desc > 0)) return `Se cobra el precio normal: <b>${pesos(normal)}</b>`;
-      if (desc > normal) return `No puede ser mayor al precio normal (${pesos(normal)})`;
-      return `Se cobra <b>${pesos(desc)}</b> · descuento de ${pesos(normal - desc)}`;
+    const resumen = (norm: number, desc: number): string => {
+      if (!(norm > 0)) return 'El precio normal tiene que ser mayor a 0';
+      if (!(desc > 0)) return `Sin precio con descuento: siempre se cobra <b>${pesos(norm)}</b>`;
+      if (desc > norm) return `El descuento no puede ser mayor al precio normal (${pesos(norm)})`;
+      return `Se cobra <b>${pesos(norm)}</b>. En el carrito puedes elegir <b>${pesos(desc)}</b> (descuento de ${pesos(norm - desc)})`;
     };
 
     Swal.fire({
-      titleText: `💲 Precio de ${v.nombreProducto || 'este producto'}`,
+      titleText: `💲 Precio de ${nombre}`,
       html: `
-        <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio de <b>todos</b> los artículos de este producto.
-          Los pedidos y ventas ya hechos conservan su precio.</p>
+        <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio <b>solo de este artículo</b>. Los demás del
+          producto se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
         <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
-        <input id="sw-precio-normal" type="number" class="swal2-input" style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
-        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio normal se cambia al editar el producto.</small>
-        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento: lo que se va a cobrar <small>(0 = sin descuento)</small></label>
+        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
+        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento: solo si lo eliges en el carrito <small>(0 = sin descuento)</small></label>
         <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .4rem;width:100%" value="${descuento}">
-        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(descuento)}</p>`,
+        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(normal, descuento)}</p>
+        ${v.precioPropio ? '<p style="font-size:.78rem;margin:.6rem 0 0;text-align:left;opacity:.8">Este artículo ya tiene precio propio.</p>' : ''}`,
       showCancelButton: true,
+      showDenyButton: !!v.precioPropio,
       confirmButtonText: 'Guardar precio',
+      denyButtonText: 'Usar el del producto',
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       didOpen: () => {
-        const input = document.getElementById('sw-precio-desc') as HTMLInputElement;
+        const inNormal = document.getElementById('sw-precio-normal') as HTMLInputElement;
+        const inDesc = document.getElementById('sw-precio-desc') as HTMLInputElement;
         const salida = document.getElementById('sw-precio-resumen') as HTMLElement;
-        input.addEventListener('input', () => { salida.innerHTML = resumen(Number(input.value || 0)); });
-        input.focus();
-        input.select();
+        const refrescar = () => { salida.innerHTML = resumen(Number(inNormal.value || 0), Number(inDesc.value || 0)); };
+        inNormal.addEventListener('input', refrescar);
+        inDesc.addEventListener('input', refrescar);
+        inNormal.focus();
+        inNormal.select();
       },
       preConfirm: () => {
+        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value || 0);
         const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
-        if (!(normal > 0)) {
-          Swal.showValidationMessage('Este producto no tiene precio normal. Pónselo al editar el producto');
+        if (!(nuevoNormal > 0)) {
+          Swal.showValidationMessage('El precio normal tiene que ser mayor a 0');
           return false;
         }
         if (nuevoDesc < 0) {
           Swal.showValidationMessage('El descuento no puede ser negativo');
           return false;
         }
-        if (nuevoDesc > normal) {
-          Swal.showValidationMessage(`El precio con descuento no puede ser mayor al precio normal (${pesos(normal)})`);
+        if (nuevoDesc > nuevoNormal) {
+          Swal.showValidationMessage(`El precio con descuento no puede ser mayor al precio normal (${pesos(nuevoNormal)})`);
           return false;
         }
-        return { nuevoDesc };
+        return { nuevoNormal, nuevoDesc };
       }
     }).then(r => {
+      if (r.isDenied) {
+        this.guardarPrecioArticulo(v, this.varianteService.usarPrecioDelProducto(v.id));
+        return;
+      }
       if (!r.isConfirmed || !r.value) return;
-      const { nuevoDesc } = r.value;
-      this.cambiandoPrecioId = v.id;
-      this.varianteService.cambiarPrecio(v.productoId!, normal, nuevoDesc)
-        .pipe(takeUntil(this.destroy$)).subscribe({
-          next: res => {
-            this.cambiandoPrecioId = null;
-            this.variantes
-              .filter(x => x.productoId === v.productoId)
-              .forEach(x => { x.precio = res.precioVenta; x.precioRebaja = res.precioRebaja; });
-            this.varianteService.invalidarCache();
-            Swal.fire({
-              icon: res.vendeBajoCosto ? 'warning' : 'success',
-              title: 'Precio actualizado',
-              text: res.vendeBajoCosto
-                ? `Ahora se cobra $${res.precioACobrar.toFixed(2)}. Ojo: queda por debajo de lo que costó.`
-                : `Ahora se cobra $${res.precioACobrar.toFixed(2)}.`,
-              timer: res.vendeBajoCosto ? undefined : 1800,
-              showConfirmButton: res.vendeBajoCosto
-            });
-          },
-          error: err => {
-            this.cambiandoPrecioId = null;
-            Swal.fire({ icon: 'error', title: 'No se pudo cambiar el precio',
-              text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
-          }
+      const { nuevoNormal, nuevoDesc } = r.value;
+      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, nuevoNormal, nuevoDesc));
+    });
+  }
+
+  private guardarPrecioArticulo(v: IVarianteResumen, peticion: Observable<IPreciosArticulo>): void {
+    this.cambiandoPrecioId = v.id;
+    peticion.pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        this.cambiandoPrecioId = null;
+        v.precio = res.precioVenta;
+        v.precioRebaja = res.precioRebaja;
+        v.precioPropio = res.propio;
+        // Si ya estaba en el carrito, se cobra al precio nuevo (si no, el back lo rechazaría al cobrar).
+        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioRebaja);
+        this.varianteService.invalidarCache();
+        Swal.fire({
+          icon: res.vendeBajoCosto ? 'warning' : 'success',
+          title: res.propio ? 'Precio del artículo guardado' : 'Vuelve al precio del producto',
+          text: res.vendeBajoCosto
+            ? `Ojo: el precio con descuento ($${res.precioRebaja.toFixed(2)}) queda por debajo de lo que costó.`
+            : (res.precioRebaja > 0
+                ? `Se cobra $${res.precioVenta.toFixed(2)}. El descuento ($${res.precioRebaja.toFixed(2)}) solo si lo eliges en el carrito.`
+                : `Se cobra $${res.precioVenta.toFixed(2)}, sin descuento.`),
+          timer: res.vendeBajoCosto ? undefined : 2200,
+          showConfirmButton: res.vendeBajoCosto
         });
+      },
+      error: err => {
+        this.cambiandoPrecioId = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo cambiar el precio',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
     });
   }
 

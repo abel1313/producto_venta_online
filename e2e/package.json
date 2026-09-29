@@ -1,0 +1,17 @@
+{
+  "name": "e2e-producto-venta-online",
+  "private": true,
+  "description": "Pruebas de punta a punta (Playwright) contra QA. Vive aparte del front porque npm i en la raiz choca con Angular 14.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:ver": "playwright test --headed",
+    "reporte": "playwright show-report",
+    "grabar": "playwright codegen https://qa.shop.novedades-jade.com.mx/login"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^20.14.0",
+    "dotenv": "^16.4.5"
+  }
+}

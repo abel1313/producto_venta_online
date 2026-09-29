@@ -21,6 +21,7 @@ import { TemaService } from './services/tema/tema.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  readonly anio = new Date().getFullYear();
   imageUrl: string | undefined;
   private readonly urlRefresh: string = `${environment.api_Url}/v1/auth/refresh`;
   resultadoCodigo: string = '';

@@ -5,6 +5,16 @@
       <!-- Cinta de promociones. Se oculta sola en login/registro/privacidad. -->
       <app-cinta></app-cinta>
       <router-outlet></router-outlet>
+
+      <!-- TikTok (App Review) exige que Privacidad y Términos se vean en el sitio sin abrir un menú. -->
+      <footer class="pie-legal">
+        <span>© {{ anio }} Novedades Jade</span>
+        <nav aria-label="Información legal">
+          <a routerLink="/privacidad">Aviso de privacidad</a>
+          <a routerLink="/termConditions">Términos y condiciones</a>
+          <a routerLink="/eliminar-datos">Eliminar mis datos</a>
+        </nav>
+      </footer>
     </div>
   </nb-layout-column>
 </nb-layout>

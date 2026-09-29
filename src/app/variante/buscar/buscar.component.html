@@ -229,15 +229,10 @@
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
           <div class="vb-card__chips">
-            <!-- Si hay rebaja se muestra el precio normal tachado y la rebaja al lado, para
-                 que se vea que no es un error de precio. `precioRebaja` solo llega si sos
-                 admin: al cliente el back no se lo manda. -->
-            <span *ngIf="v.precio && tieneRebaja(v)" class="vb-chip vb-chip--tachado">
+            <!-- Siempre el precio normal. El precio con descuento no se muestra aquí: el admin
+                 lo elige en el carrito ("Otro precio") solo cuando decide darlo. -->
+            <span *ngIf="v.precio" class="vb-chip vb-chip--talla">
               {{ v.precio | currency:'$' }}
-            </span>
-            <span *ngIf="v.precio" class="vb-chip vb-chip--talla"
-                  [class.vb-chip--rebaja]="tieneRebaja(v)">
-              {{ precioFinal(v) | currency:'$' }}
             </span>
           </div>
         </div>
@@ -332,9 +327,9 @@
           <span class="vb-btn-card__label">Editar</span>
         </button>
 
-        <button *ngIf="puedeCambiarPrecio && v.productoId" class="vb-btn-card vb-btn-card--edit"
+        <button *ngIf="puedeCambiarPrecio" class="vb-btn-card vb-btn-card--edit"
                 [disabled]="cambiandoPrecioId === v.id" (click)="cambiarPrecio(v)"
-                title="Cambiar el precio de este producto (todos sus artículos)">
+                title="Cambiar el precio de este artículo (solo este)">
           <span>💲</span>
           <span class="vb-btn-card__label">Precio</span>
         </button>

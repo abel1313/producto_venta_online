@@ -7,12 +7,13 @@ import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVari
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
 
-/** Respuesta de `PUT /v1/precios/producto/{id}`. */
-export interface IPreciosProducto {
-  productoId:     number;
+/** Respuesta de `PUT` y `DELETE /v1/precios/articulo/{varianteId}`. */
+export interface IPreciosArticulo {
+  varianteId:     number;
   precioVenta:    number;
   precioRebaja:   number;
-  precioACobrar:  number;
+  /** true = el artículo tiene precio propio; false = cobra el de su producto. */
+  propio:         boolean;
   vendeBajoCosto: boolean;
 }
 
@@ -156,12 +157,17 @@ export class VarianteService {
   }
 
   /**
-   * Cambia el precio normal y el de descuento del PRODUCTO: todos sus artículos lo heredan.
+   * Precio propio de UN artículo: los demás del producto no cambian (2026-09-29).
    * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
    */
-  cambiarPrecio(productoId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosProducto> {
-    return this.http.put<IPreciosProducto>(
-      `${environment.api_Url}/v1/precios/producto/${productoId}`, { precioVenta, precioRebaja });
+  cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosArticulo> {
+    return this.http.put<IPreciosArticulo>(
+      `${environment.api_Url}/v1/precios/articulo/${varianteId}`, { precioVenta, precioRebaja });
+  }
+
+  /** Le quita el precio propio al artículo: vuelve a cobrar el de su producto. */
+  usarPrecioDelProducto(varianteId: number): Observable<IPreciosArticulo> {
+    return this.http.delete<IPreciosArticulo>(`${environment.api_Url}/v1/precios/articulo/${varianteId}`);
   }
 
   eliminarImagenes(varianteId: number, imageIds: string[]): Observable<{ data: string }> {

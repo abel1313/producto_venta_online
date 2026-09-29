@@ -831,14 +831,6 @@
     flex: 0 0 auto;
   }
 
-  // El precio normal tachado cuando hay rebaja: sin esto el admin ve un número que no coincide
-  // con el de la card y parece un error de precio.
-  &__tachado {
-    font-size: .72rem;
-    color: var(--card-text-muted);
-    text-decoration: line-through;
-  }
-
   &__final {
     font-size: .84rem;
     font-weight: 700;
@@ -857,6 +849,12 @@
     cursor: pointer;
 
     &:disabled { opacity: .45; cursor: not-allowed; }
+
+    &--otro {
+      background: transparent;
+      color: var(--app-accent);
+      border: 1px solid var(--app-accent);
+    }
   }
 }
 

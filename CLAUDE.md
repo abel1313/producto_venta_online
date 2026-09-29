@@ -12330,3 +12330,30 @@ Hoy conviven 4 estilos: `pk-table` (lugares-entrega, local pese al prefijo `pk-`
 `rp-table` (reportes, con columnas numéricas), `ga-tabla` (gastos, con columna de acciones) y
 `ez-tabla` (entregas-zona, compacta). **Todavía no se eligió el estándar** — no homologar
 tablas hasta que se decida cuál gana.
+
+---
+
+## Regla de precios — el descuento NUNCA se aplica solo (hotfix 2026-09-29)
+
+**Decisión del dueño:** el producto tiene precio costo, precio venta y precio descuento
+(`precioRebaja`). **Siempre se muestra y se cobra el precio venta.** El descuento es para cuando el
+dueño decide dárselo a alguien en ese momento, y solo se cobra si él lo elige.
+
+Esto **revierte** el hotfix del 2026-09-24 (`83bf7f6f`), que hacía que el carrito cobrara la
+rebaja en automático porque la card la mostraba como precio final. No volver a ese criterio.
+
+- **Card de `tienda/buscar`:** solo `v.precio`. Sin tachado ni rebaja.
+- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio`. Guarda `precioNormal` y
+  `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **`tienda/carrito`, columna "Otro precio" (solo admin):** el monto va tapado (`$ ••••`), 👁 lo
+  destapa 3 segundos, y el check **Usar** (desmarcado por default) cobra toda la fila al precio
+  descuento (`usarOtroPrecio`). Tapado porque el cliente puede estar viendo la pantalla.
+- **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
+  (`PUT /v1/precios/articulo/{varianteId}`); normal y descuento editables. Con precio propio
+  (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del producto.
+- **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
+  cobra la rebaja sin mostrar el monto.
+- **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.
+- El back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN`.
+- Cualquier pantalla nueva que agregue artículos: precio normal por default, la rebaja solo con
+  una acción explícita del admin y sin enseñar el monto.

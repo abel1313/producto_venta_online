@@ -72,6 +72,8 @@ export interface IVarianteResumen {
    * desde la tienda. No lo trates como "no tiene rebaja" sin mirar antes si sos admin.
    */
   precioRebaja?: number | null;
+  /** Solo admin: true si el artículo tiene precio propio, no el de su producto (2026-09-29). */
+  precioPropio?: boolean | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;

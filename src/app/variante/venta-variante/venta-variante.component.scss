@@ -1,5 +1,29 @@
 .card { margin: 1rem; }
 
+.vv-otro {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
+}
+
+.vv-otro__usar {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+
+  .form-check-input { margin: 0; cursor: pointer; }
+}
+
+.vv-otro__monto {
+  min-width: 4.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-muted);
+}
+
 .img-visor-overlay {
   position: fixed;
   inset: 0;

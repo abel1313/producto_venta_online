@@ -709,3 +709,16 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:not(:disabled):hover { filter: brightness(0.94); }
   }
 }
+
+/* Pedido con la fecha de entrega vencida y sin entregar */
+.atraso-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--pk-danger, #b42318);
+  background: var(--pk-danger-soft, rgba(180, 35, 24, 0.12));
+}

@@ -16,6 +16,11 @@ export interface IPedidoQuery {
     lugarEntregaId?: number;
     lugarEntregaNombre?: string;
     urlFacebook?: string;
+    /** Día en que se entrega o pasa por él (yyyy-MM-dd), si ya se sabe (back 2026-09-30). */
+    fechaEntrega?: string | null;
+    horaEntrega?: string | null;
+    /** Sin lugar de entrega o con un lugar marcado como "recoger en tienda". */
+    recogeEnLocal?: boolean;
     detalles: IDetalleQuery[];
     /** Solo en la lista del admin, y solo si está unido con otros (back 2026-09-23). */
     grupo?: GrupoEnLista | null;

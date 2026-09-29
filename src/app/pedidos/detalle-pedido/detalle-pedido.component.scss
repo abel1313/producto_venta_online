@@ -613,6 +613,13 @@
   text-decoration: none;
 
   &:hover { background: var(--app-accent-hover); color: var(--app-accent-ink); }
+
+  &:disabled {
+    border: none;
+    opacity: .45;
+    cursor: not-allowed;
+    &:hover { background: var(--app-accent); }
+  }
 }
 
 .dp-entrega__nota {

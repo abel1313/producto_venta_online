@@ -256,6 +256,44 @@ export class MisPedidosComponent implements OnInit {
     this.buscarPedidoAdmin();
   }
 
+  private static readonly DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  private static readonly MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+                                   'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  private static dia(iso: string): Date {
+    const [y, m, d] = iso.split('-').map(n => parseInt(n, 10));
+    return new Date(y, m - 1, d);
+  }
+
+  /**
+   * Entregado, cancelado y PAGADO ya no esperan entrega. La venta de mostrador guarda hoy como
+   * fecha de recogida y no tiene lugar, así que sin este filtro diría "Recoge en el local: hoy".
+   * PAGADO entra aquí porque todavía no existe el paso de marcar entregado un crédito pagado.
+   */
+  private static esperaEntrega(p: IPedidoGenerico['pedido']): boolean {
+    const estado = (p.estado_pedido ?? '').toUpperCase();
+    return estado !== 'ENTREGADO' && estado !== 'CANCELADO' && estado !== 'PAGADO';
+  }
+
+  /** "sáb 4 oct, 10:00 · Zacazonapan", o null si no tiene día o ya no espera entrega. */
+  textoEntrega(p: IPedidoGenerico['pedido']): string | null {
+    if (!p.fechaEntrega || !MisPedidosComponent.esperaEntrega(p)) return null;
+    const d = MisPedidosComponent.dia(p.fechaEntrega);
+    let texto = `${MisPedidosComponent.DIAS[d.getDay()]} ${d.getDate()} ${MisPedidosComponent.MESES[d.getMonth()]}`;
+    if (p.horaEntrega) texto += `, ${p.horaEntrega}`;
+    if (!p.recogeEnLocal && p.lugarEntregaNombre) texto += ` · ${p.lugarEntregaNombre}`;
+    return texto;
+  }
+
+  /** Días que lleva pasada la fecha de entrega sin entregarse. */
+  diasAtraso(p: IPedidoGenerico['pedido']): number {
+    if (!p.fechaEntrega || !MisPedidosComponent.esperaEntrega(p)) return 0;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const dias = Math.round((hoy.getTime() - MisPedidosComponent.dia(p.fechaEntrega).getTime()) / 86_400_000);
+    return dias > 0 ? dias : 0;
+  }
+
   /** "#102, #105" */
   numerosDe(ids: number[] | null | undefined): string {
     return (ids ?? []).map(id => `#${id}`).join(', ');

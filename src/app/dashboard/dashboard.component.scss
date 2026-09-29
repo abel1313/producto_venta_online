@@ -56,16 +56,6 @@
   &:disabled { opacity: 0.5; cursor: default; }
 }
 
-.db-spin {
-  display: inline-block;
-  animation: db-rotate 1s linear infinite;
-}
-
-@keyframes db-rotate {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
 /* ── Loading ────────────────────────────────────────────────────── */
 .db-loading {
   text-align: center;

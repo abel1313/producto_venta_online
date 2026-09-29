@@ -36,7 +36,6 @@
                [(ngModel)]="terminoVariante"
                (input)="onInputVariante()"
                appUppercase>
-        <span class="gp-search-spinner" *ngIf="buscandoVariante">⏳</span>
       </div>
       <!-- Solo aparecen variantes CON stock (ver buscarVariante() en el .ts) -->
       <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">
@@ -141,7 +140,7 @@
         <button class="gp-btn" [disabled]="enviandoCorreoId === p.id || !esVigente(p)"
                 [title]="esVigente(p) ? '' : 'La promoción está inactiva o vencida'"
                 (click)="enviarCorreo(p)">
-          {{ enviandoCorreoId === p.id ? '⏳ Enviando…' : '✉️ Enviar correo' }}
+          {{ enviandoCorreoId === p.id ? 'Enviando…' : '✉️ Enviar correo' }}
         </button>
       </div>
     </div>

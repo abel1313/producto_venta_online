@@ -29,16 +29,3 @@
   font-size: 0.85rem;
 }
 
-.ttc-spinner {
-  width: 36px;
-  height: 36px;
-  margin: 0 auto 16px;
-  border: 3px solid var(--card-border, #e2e8f0);
-  border-top-color: var(--app-accent);
-  border-radius: 50%;
-  animation: ttc-spin 0.8s linear infinite;
-}
-
-@keyframes ttc-spin {
-  to { transform: rotate(360deg); }
-}

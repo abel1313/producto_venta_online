@@ -138,14 +138,6 @@
 // ── Buscador del producto (opcional) + dropdown ───────────────────────────
 .fb-search-wrap { position: relative; }
 
-.fb-search-spinner {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.9rem;
-}
-
 .fb-dropdown {
   margin-top: 6px;
   border: 1.5px solid var(--card-border);

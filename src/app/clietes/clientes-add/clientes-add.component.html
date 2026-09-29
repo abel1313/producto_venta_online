@@ -196,8 +196,7 @@
         <button class="ca-btn ca-btn--save ca-btn--full"
                 (click)="verificar()"
                 [disabled]="codigoVerif.length !== 6 || verificando">
-          <i class="pi" [class.pi-check]="!verificando" [class.pi-spin]="verificando"
-             [class.pi-spinner]="verificando"></i>
+          <i class="pi pi-check"></i>
           {{ verificando ? 'Verificando…' : 'Verificar y continuar' }}
         </button>
 

@@ -75,7 +75,7 @@
                 [disabled]="!mesSeleccionado || cargandoClientes">
           <span *ngIf="!cargandoClientes">🔍 Cargar clientes del mes</span>
           <span *ngIf="cargandoClientes" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Cargando…
+            Cargando…
           </span>
         </button>
 
@@ -90,7 +90,7 @@
                 [disabled]="!fechaHoraLimite || !palabraClave.trim() || creandoRifa">
           <span *ngIf="!creandoRifa">✅ Crear rifa sin importar</span>
           <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Creando…
+            Creando…
           </span>
         </button>
 
@@ -121,7 +121,7 @@
                   [disabled]="clientesSeleccionados.size === 0 || !fechaHoraLimite || !palabraClave.trim() || creandoRifa">
             <span *ngIf="!creandoRifa">✅ Crear rifa e importar {{ clientesSeleccionados.size }} participantes</span>
             <span *ngIf="creandoRifa" class="d-flex gap-2 align-items-center">
-              <span class="spinner-border spinner-border-sm"></span> Creando…
+              Creando…
             </span>
           </button>
         </div>
@@ -165,7 +165,7 @@
                 [disabled]="!fechaHoraLimite || savingConfigEdit">
           <span *ngIf="!savingConfigEdit">💾 Guardar cambios</span>
           <span *ngIf="savingConfigEdit" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Guardando…
+            Guardando…
           </span>
         </button>
       </div>
@@ -188,8 +188,7 @@
         <span>⚠️ Esta rifa es de prueba. Los participantes y giros no cuentan para el sorteo real.</span>
         <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto"
                 (click)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba">
-          <span *ngIf="!cambiandoModoPrueba">Pasar a sorteo real</span>
-          <span *ngIf="cambiandoModoPrueba" class="spinner-border spinner-border-sm"></span>
+          <span>Pasar a sorteo real</span>
         </button>
       </div>
 
@@ -247,8 +246,7 @@
         <button class="rm-btn rm-btn--primary"
                 (click)="agregarManual()"
                 [disabled]="manualForm.invalid || guardandoConcursante">
-          <span *ngIf="!guardandoConcursante">Agregar</span>
-          <span *ngIf="guardandoConcursante" class="spinner-border spinner-border-sm"></span>
+          <span>Agregar</span>
         </button>
       </form>
 
@@ -289,7 +287,6 @@
                  (input)="onBuscarVariante($event)"
                  autocomplete="off"
                  appUppercase />
-          <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
         </div>
         <div class="rm-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
           <div class="rm-dropdown__item"
@@ -328,7 +325,7 @@
                 (click)="guardarVariante()">
           <span *ngIf="!guardandoVariante">🎡 Ir al sorteo →</span>
           <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Preparando…
+            Preparando…
           </span>
         </button>
       </div>
@@ -376,7 +373,7 @@
                 [disabled]="sorteando || elegibles.length === 0">
           <span *ngIf="!sorteando">🎡 Girar</span>
           <span *ngIf="sorteando" class="d-flex gap-2 align-items-center justify-content-center">
-            <span class="spinner-border spinner-border-sm"></span> Sorteando…
+            Sorteando…
           </span>
         </button>
       </div>

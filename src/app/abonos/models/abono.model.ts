@@ -85,6 +85,8 @@ export interface PedidoDetalleResponse {
   // asignados (el back usa @JsonInclude(NON_NULL) en este DTO).
   lugarEntregaId?:     number | null;
   lugarEntregaNombre?: string | null;
+  /** Sin lugar de entrega o con un lugar "recoger en tienda": "Cómo llegar" lleva al local. */
+  recogeEnLocal?: boolean | null;
   urlFacebook?:        string | null;
   // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega, que es
   // la zona/pueblo. Ausentes (no `null`) si nunca se capturó — el back usa @JsonInclude(NON_NULL).

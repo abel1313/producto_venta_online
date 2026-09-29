@@ -192,8 +192,11 @@
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
-  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.fechaHoraEntregaRamo || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
+  <div class="dp-entrega" *ngIf="detalle && (detalle.recogeEnLocal || detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.fechaHoraEntregaRamo || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
     <p class="dp-entrega__title">📍 Datos de entrega</p>
+    <p class="dp-entrega__item" *ngIf="detalle.recogeEnLocal">
+      <strong>Recoge en el local</strong>
+    </p>
     <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
       <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
     </p>
@@ -230,13 +233,14 @@
        [href]="link" target="_blank" rel="noopener">
       🧭 Cómo llegar
     </a>
-    <small class="dp-entrega__nota" *ngIf="linkComoLlegar">
-      {{ vaAlPuntoDeEncuentro
-          ? 'Se abre en tu app de mapas con la ruta al punto donde te entregamos.'
-          : (tieneUbicacionExacta
-              ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
-              : 'Se abre en tu app de mapas con la dirección escrita.') }}
-    </small>
+    <small class="dp-entrega__nota" *ngIf="linkComoLlegar">{{ notaComoLlegar }}</small>
+    <ng-container *ngIf="faltaUbicacionLocal">
+      <button type="button" class="dp-btn-mapa" disabled
+              title="Falta la ubicación del local">🧭 Cómo llegar</button>
+      <small class="dp-entrega__nota">
+        Falta configurar la ubicación del local en <b>Administración → Negocio</b>.
+      </small>
+    </ng-container>
   </div>
 
   <!-- FORM DE ABONO (solo crédito) -->

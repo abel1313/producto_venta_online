@@ -379,19 +379,62 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.detalle?.latitudEncuentro != null && this.detalle?.longitudEncuentro != null;
   }
 
+  /** Ubicación del local, la misma que usa el "Cómo llegar" del login (config del negocio). */
+  latLocal: number | null = null;
+  lngLocal: number | null = null;
+  private contactosCargados = false;
+
+  private get tienePuntoEscrito(): boolean {
+    return !!this.detalle?.puntoEncuentro?.trim();
+  }
+
+  /**
+   * Pasa por él al local y el local no tiene ubicación configurada. Solo se avisa al admin (es
+   * quien puede arreglarlo) y ya cargada la config: antes de eso lat/lng están en null y el aviso
+   * parpadeaba en cada pedido.
+   */
+  get faltaUbicacionLocal(): boolean {
+    return this.isAdmin && this.contactosCargados
+      && !!this.detalle?.recogeEnLocal && !this.vaAlPuntoDeEncuentro && !this.tienePuntoEscrito
+      && (this.latLocal == null || this.lngLocal == null);
+  }
+
+  /**
+   * En orden: (1) punto del viaje marcado en el mapa; (2) punto del viaje solo escrito -- antes
+   * se lo saltaba y mandaba a la casa del cliente; (3) recoge en el local -> el local;
+   * (4) a domicilio -> coordenadas o dirección del cliente.
+   */
   get linkComoLlegar(): string | null {
+    const d = this.detalle;
+    if (!d) return null;
     if (this.vaAlPuntoDeEncuentro) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitudEncuentro},${this.detalle!.longitudEncuentro}`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${d.latitudEncuentro},${d.longitudEncuentro}`;
     }
-    if (this.detalle?.latitud != null && this.detalle?.longitud != null) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle.latitud},${this.detalle.longitud}`;
+    if (this.tienePuntoEscrito) {
+      const punto = [d.puntoEncuentro, d.lugarEntregaNombre].map(p => (p ?? '').trim()).filter(p => p !== '');
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(punto.join(', '))}`;
     }
-    const partes = [this.detalle?.puntoEncuentro, this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
-      .map(p => (p ?? '').trim())
-      .filter(p => p !== '');
+    if (d.recogeEnLocal) {
+      return this.latLocal != null && this.lngLocal != null
+        ? `https://www.google.com/maps/dir/?api=1&destination=${this.latLocal},${this.lngLocal}`
+        : null;
+    }
+    if (d.latitud != null && d.longitud != null) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${d.latitud},${d.longitud}`;
+    }
+    const partes = [d.direccionEntrega, d.lugarEntregaNombre].map(p => (p ?? '').trim()).filter(p => p !== '');
     if (!partes.length) return null;
 
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(partes.join(', '))}`;
+  }
+
+  get notaComoLlegar(): string {
+    if (this.vaAlPuntoDeEncuentro) return 'Se abre en tu app de mapas con la ruta al punto donde te entregamos.';
+    if (this.tienePuntoEscrito) return 'Se abre en tu app de mapas buscando el punto de encuentro.';
+    if (this.detalle?.recogeEnLocal) return 'Se abre en tu app de mapas con la ruta al local.';
+    return this.tieneUbicacionExacta
+      ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
+      : 'Se abre en tu app de mapas con la dirección escrita.';
   }
 
   get yaLiquidado(): boolean {
@@ -434,7 +477,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
 
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => {
+        this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl;
+        this.latLocal = c.latitud ?? null;
+        this.lngLocal = c.longitud ?? null;
+        this.contactosCargados = true;
+      },
       error: () => {}
     });
 

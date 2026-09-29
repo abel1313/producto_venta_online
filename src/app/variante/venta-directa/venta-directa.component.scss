@@ -277,14 +277,13 @@ $t:  all 0.22s ease;
 .vd-optional { font-size: .72rem; color: var(--card-text-muted); font-weight: 400; text-transform: none; margin-left: 6px; }
 
 // ── Crédito ────────────────────────────────────────────────────────
-.vd-credit-divider {
-  display: flex; align-items: center; gap: 10px; margin: 4px 0 2px;
-  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
-  span { font-size: .7rem; color: var(--card-text-muted); white-space: nowrap; }
-}
-
 .vd-credit-btns {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+
+.vd-forma-cobro {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 10px;
 }
 
 .vd-btn-credit {

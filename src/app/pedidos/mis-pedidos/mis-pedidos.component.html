@@ -154,8 +154,21 @@
           <div class="info-row">
             <i class="pi pi-calendar info-icon"></i>
             <div class="info-content">
-              <span class="info-label">Fecha</span>
+              <span class="info-label">Pedido</span>
               <span class="info-value">{{ item.pedido.fecha_pedido | fechaEspanol }}</span>
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="textoEntrega(item.pedido) as entrega">
+            <i class="pi info-icon" [ngClass]="item.pedido.recogeEnLocal ? 'pi-building' : 'pi-truck'"></i>
+            <div class="info-content">
+              <span class="info-label">{{ item.pedido.recogeEnLocal ? 'Recoge en el local' : 'Entrega' }}</span>
+              <span class="info-value">
+                {{ entrega }}
+                <span class="atraso-badge" *ngIf="diasAtraso(item.pedido) as dias">
+                  ⚠ Atrasado {{ dias }} {{ dias === 1 ? 'día' : 'días' }}
+                </span>
+              </span>
             </div>
           </div>
 

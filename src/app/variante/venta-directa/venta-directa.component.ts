@@ -406,13 +406,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.pagosYMesesId     = opcion.pagosYMesesId;
   }
 
+  seleccionarContado(): void {
+    this.tipoPedido        = 'NORMAL';
+    this.metodoPagoCredito = 'EFECTIVO';
+    this.montoInicial      = 0;
+  }
+
   seleccionarCredito(tipo: 'APARTADO' | 'FIADO'): void {
-    if (this.tipoPedido === tipo) {
-      this.tipoPedido        = 'NORMAL';
-      this.metodoPagoCredito = 'EFECTIVO';
-      this.montoInicial      = 0;
-      return;
-    }
+    if (this.tipoPedido === tipo) return;
     this.tipoPedido        = tipo;
     this.tipoPagoActivo    = null;
     this.mesesSeleccionado = null;

@@ -16,6 +16,7 @@ import Swal from 'sweetalert2';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { CompartirService } from 'src/app/shared/compartir.service';
+import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -82,7 +83,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly varianteService: VarianteService,
     private readonly serviceCarrito: CarritoService,
     private readonly authService: AuthService,
-    private readonly compartirSvc: CompartirService
+    private readonly compartirSvc: CompartirService,
+    private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {
 
       this.keyUpSubject
@@ -447,21 +449,29 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "para tienda
       // y producto en buscar... quería que se guardara su estado").
       const f = this.srvice.prodFiltrosCache as Record<string, any> | null;
-      if (f) {
-        this.mostrarConStock      = !!f['mostrarConStock'];
-        this.mostrarSinStock      = !!f['mostrarSinStock'];
-        this.mostrarConImagenes   = !!f['mostrarConImagenes'];
-        this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
-        this.mostrarHabilitados   = !!f['mostrarHabilitados'];
-        this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
-        this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
-        this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
-        this.fechaDesde = f['fechaDesde'] ?? '';
-        this.fechaHasta = f['fechaHasta'] ?? '';
-      }
+      if (f) this.restaurarFiltros(f);
     } else {
-      this.getData(1);
+      // Sin memoria (recién recargado u otra sesión): el personal arranca con sus filtros
+      // guardados; para cualquier otro `obtener` responde null al instante.
+      this.preferenciaFiltro.obtener('productos-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+        if (f) this.restaurarFiltros(f);
+        if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
+        else this.getData(1);
+      });
     }
+  }
+
+  private restaurarFiltros(f: Record<string, any>): void {
+    this.mostrarConStock      = !!f['mostrarConStock'];
+    this.mostrarSinStock      = !!f['mostrarSinStock'];
+    this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+    this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+    this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+    this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+    this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+    this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+    this.fechaDesde = f['fechaDesde'] ?? '';
+    this.fechaHasta = f['fechaHasta'] ?? '';
   }
 
   getData(pagina: number) {
@@ -536,6 +546,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
     this.srvice.setProdFiltrosCache(null);
+    this.preferenciaFiltro.borrar('productos-buscar');
     this.paginaPrimera = 1;
     this.getData(1);
   }
@@ -557,7 +568,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.totalPaginas = res.totalPaginas;
         this.paginaPrimera = pagina;
         this.srvice.setProdCache(res.t, pagina, res.totalPaginas, this.buscarProd);
-        this.srvice.setProdFiltrosCache({
+        const filtros = {
           mostrarConStock: this.mostrarConStock,
           mostrarSinStock: this.mostrarSinStock,
           mostrarConImagenes: this.mostrarConImagenes,
@@ -568,7 +579,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           mostrarCodigoReal: this.mostrarCodigoReal,
           fechaDesde: this.fechaDesde,
           fechaHasta: this.fechaHasta
-        });
+        };
+        this.srvice.setProdFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('productos-buscar', filtros);
       },
       error: (err) => {
         if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }

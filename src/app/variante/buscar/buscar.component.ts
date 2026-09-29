@@ -13,6 +13,7 @@ import { VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { FavoritoService } from 'src/app/favoritos/service/favorito.service';
+import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
 
 @Component({
   selector: 'app-buscar',
@@ -121,7 +122,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     readonly router: Router,
     private readonly compartirSvc: CompartirService,
     private readonly promoService: PromocionService,
-    private readonly favoritoService: FavoritoService
+    private readonly favoritoService: FavoritoService,
+    private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {}
 
   compartirImagen(v: IVarianteResumen): void {
@@ -190,27 +192,46 @@ export class BuscarComponent implements OnInit, OnDestroy {
           // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "si
           // selecciono filtro y me voy a otros lados... quiero que se mantenga").
           const f = this.varianteService.filtrosCache as Record<string, any> | null;
-          if (f) {
-            this.mostrarConStock      = !!f['mostrarConStock'];
-            this.mostrarSinStock      = !!f['mostrarSinStock'];
-            this.mostrarConImagenes   = !!f['mostrarConImagenes'];
-            this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
-            this.mostrarHabilitados   = !!f['mostrarHabilitados'];
-            this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
-            this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
-            this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
-            this.fechaDesde = f['fechaDesde'] ?? '';
-            this.fechaHasta = f['fechaHasta'] ?? '';
-            this.filtroTalla = f['filtroTalla'] ?? '';
-            this.filtroColor = f['filtroColor'] ?? '';
-            this.filtroMarca = f['filtroMarca'] ?? '';
-            this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
-            this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
-          }
+          if (f) this.restaurarFiltros(f);
         } else {
-          this.buscarPagina('', 1);
+          this.arrancarConFiltrosGuardados();
         }
       }
+    });
+  }
+
+  private restaurarFiltros(f: Record<string, any>): void {
+    this.mostrarConStock      = !!f['mostrarConStock'];
+    this.mostrarSinStock      = !!f['mostrarSinStock'];
+    this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+    this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+    this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+    this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+    this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+    this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+    this.fechaDesde = f['fechaDesde'] ?? '';
+    this.fechaHasta = f['fechaHasta'] ?? '';
+    this.filtroTalla = f['filtroTalla'] ?? '';
+    this.filtroColor = f['filtroColor'] ?? '';
+    this.filtroMarca = f['filtroMarca'] ?? '';
+    this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
+    this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
+  }
+
+  /**
+   * Sin memoria (recién recargado o en otra sesión): el personal arranca con los filtros que dejó
+   * guardados. Para un cliente o un visitante `obtener` responde null al instante y todo sigue
+   * como antes. Los filtros de admin solo se aplican si todavía tiene permiso de verlos.
+   */
+  private arrancarConFiltrosGuardados(): void {
+    this.preferenciaFiltro.obtener('tienda-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+      if (f) {
+        this.restaurarFiltros(f);
+        if (!this.puedeVerAlgunFiltro) this.apagarFiltrosAdmin();
+      }
+      if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
+      else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(1);
+      else this.buscarPagina('', 1);
     });
   }
 
@@ -444,7 +465,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.aplicarFiltrosAdmin(1);
   }
 
-  limpiarFiltrosAdmin(): void {
+  private apagarFiltrosAdmin(): void {
     this.mostrarConStock = false;
     this.mostrarSinStock = false;
     this.mostrarConImagenes = false;
@@ -455,9 +476,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.mostrarCodigoReal = false;
     this.fechaDesde = '';
     this.fechaHasta = '';
+  }
+
+  limpiarFiltrosAdmin(): void {
+    this.apagarFiltrosAdmin();
     this.seleccionados.clear();
     this.varianteService.invalidarCache();
     this.varianteService.setFiltrosCache(null);
+    this.preferenciaFiltro.borrar('tienda-buscar');
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -480,7 +506,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        this.varianteService.setFiltrosCache({
+        const filtros = {
           mostrarConStock: this.mostrarConStock,
           mostrarSinStock: this.mostrarSinStock,
           mostrarConImagenes: this.mostrarConImagenes,
@@ -491,7 +517,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
           mostrarCodigoReal: this.mostrarCodigoReal,
           fechaDesde: this.fechaDesde,
           fechaHasta: this.fechaHasta
-        });
+        };
+        this.varianteService.setFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
         this.buscando = false;
@@ -521,6 +549,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.filtroPrecioMax = null;
     this.varianteService.invalidarCache();
     this.varianteService.setFiltrosCache(null);
+    this.preferenciaFiltro.borrar('tienda-buscar');
     this.buscarPagina(this.terminoBusqueda, 1);
   }
 
@@ -542,13 +571,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        this.varianteService.setFiltrosCache({
+        const filtros = {
           filtroTalla: this.filtroTalla,
           filtroColor: this.filtroColor,
           filtroMarca: this.filtroMarca,
           filtroPrecioMin: this.filtroPrecioMin,
           filtroPrecioMax: this.filtroPrecioMax
-        });
+        };
+        this.varianteService.setFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
         this.buscando = false;

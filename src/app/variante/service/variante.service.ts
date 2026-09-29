@@ -14,6 +14,10 @@ export interface IPreciosArticulo {
   precioRebaja:   number;
   /** true = el artículo tiene precio propio; false = cobra el de su producto. */
   propio:         boolean;
+  /** true = se vende al descuento ("Precio descuento" en el 💲). */
+  usarDescuento:  boolean;
+  /** Al que se vende: precioRebaja con usarDescuento, si no precioVenta. */
+  precioACobrar:  number;
   vendeBajoCosto: boolean;
 }
 
@@ -160,9 +164,10 @@ export class VarianteService {
    * Precio propio de UN artículo: los demás del producto no cambian (2026-09-29).
    * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
    */
-  cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosArticulo> {
+  cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number,
+                        usarDescuento: boolean): Observable<IPreciosArticulo> {
     return this.http.put<IPreciosArticulo>(
-      `${environment.api_Url}/v1/precios/articulo/${varianteId}`, { precioVenta, precioRebaja });
+      `${environment.api_Url}/v1/precios/articulo/${varianteId}`, { precioVenta, precioRebaja, usarDescuento });
   }
 
   /** Le quita el precio propio al artículo: vuelve a cobrar el de su producto. */

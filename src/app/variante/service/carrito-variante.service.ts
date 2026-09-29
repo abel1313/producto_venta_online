@@ -27,9 +27,10 @@ export class CarritoVarianteService {
   // ── Variantes ─────────────────────────────────────────────────────────
 
   /**
-   * Siempre entra al precio normal. El precio con descuento (`precioRebaja`) no es el precio de
-   * lista: es el que el admin decide darle a alguien en el momento, y solo se aplica si lo elige
-   * en el carrito con "Otro precio" (hotfix 2026-09-29, revierte el criterio del 2026-09-24).
+   * Entra al precio al que se vende el artículo (`v.precio`): el normal, o el descuento si el admin
+   * activó "Precio descuento" en el 💲 de la card. En ese caso la línea arranca con "Usar" marcado
+   * y desmarcarlo cobra el normal solo en esta venta. Sin eso, el descuento solo se aplica si el
+   * admin lo elige aquí (hotfix 2026-09-29).
    */
   agregar(v: IVarianteResumen): boolean {
     const actual = this._carrito.getValue();
@@ -42,6 +43,8 @@ export class CarritoVarianteService {
     } else {
       if ((v.stock ?? 0) <= 0) return false;
       const precio = v.precio ?? 0;
+      // Al cliente no le llega precioNormal: para él el precio de la card es el único.
+      const normal = v.precioNormal ?? precio;
       const rebaja = v.precioRebaja ?? 0;
       actual.push({
         varianteId:   v.id,
@@ -51,10 +54,10 @@ export class CarritoVarianteService {
         presentacion: v.presentacion,
         stock:        v.stock ?? 0,
         precio,
-        precioNormal: precio,
+        precioNormal: normal,
         // Solo cuenta como "otro precio" si de verdad es más barato: al dar de alta un producto
         // el descuento se llena igual al normal por default.
-        precioOtro:   rebaja > 0 && rebaja < precio ? rebaja : null,
+        precioOtro:   rebaja > 0 && rebaja < normal ? rebaja : null,
         cantidad:     1,
         subTotal:     precio,
         imagenBase64: v.imagenBase64,
@@ -69,17 +72,15 @@ export class CarritoVarianteService {
 
   /**
    * El admin le cambió el precio al artículo con 💲 y ya estaba en el carrito: la línea toma los
-   * precios nuevos. Si tenía marcado "Usar" y el artículo sigue teniendo descuento, se queda con
-   * el descuento nuevo; si ya no tiene, regresa al normal.
+   * precios nuevos y lo que eligió en la card ("Precio venta" o "Precio descuento").
    */
-  actualizarPrecios(varianteId: number, precioNormal: number, precioRebaja: number): void {
+  actualizarPrecios(varianteId: number, precioNormal: number, precioRebaja: number, usarDescuento: boolean): void {
     const actual = this._carrito.getValue();
     const item = actual.find(i => i.varianteId === varianteId);
     if (!item) return;
-    const usaba = !!item.precioOtro && item.precio === item.precioOtro;
     item.precioNormal = precioNormal;
     item.precioOtro   = precioRebaja > 0 && precioRebaja < precioNormal ? precioRebaja : null;
-    item.precio       = usaba && item.precioOtro ? item.precioOtro : precioNormal;
+    item.precio       = usarDescuento && item.precioOtro ? item.precioOtro : precioNormal;
     item.subTotal     = item.cantidad * item.precio;
     this.emitir([...actual]);
   }

@@ -74,6 +74,13 @@ export interface IVarianteResumen {
   precioRebaja?: number | null;
   /** Solo admin: true si el artículo tiene precio propio, no el de su producto (2026-09-29). */
   precioPropio?: boolean | null;
+  /**
+   * Solo admin: el precio normal. `precio` es al que se vende, que con `usarDescuento` es el
+   * descuento; aquí queda el normal para poder cobrarlo en una venta puntual.
+   */
+  precioNormal?: number | null;
+  /** Solo admin: el artículo se vende al descuento (check "Precio descuento" del 💲). */
+  usarDescuento?: boolean | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;

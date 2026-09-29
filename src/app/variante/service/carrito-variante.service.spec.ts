@@ -50,14 +50,35 @@ describe('CarritoVarianteService — precio', () => {
   it('si le cambian el precio al artículo, la línea del carrito toma el nuevo', () => {
     carrito.agregar(articulo(400, 350));
     carrito.agregar(articulo(400, 350));
-    carrito.usarOtroPrecio(7, true);
 
-    carrito.actualizarPrecios(7, 450, 300);
+    carrito.actualizarPrecios(7, 450, 300, true);
     expect(carrito.obtener()[0].precio).toBe(300);
     expect(carrito.obtener()[0].subTotal).toBe(600);
 
-    carrito.actualizarPrecios(7, 450, 0);
+    carrito.actualizarPrecios(7, 450, 300, false);
     expect(carrito.obtener()[0].precio).toBe(450);
+    expect(carrito.obtener()[0].precioOtro).toBe(300);
+
+    carrito.actualizarPrecios(7, 450, 0, true);
+    expect(carrito.obtener()[0].precio).toBe(450);
+    expect(carrito.obtener()[0].precioOtro).toBeNull();
+  });
+
+  it('con "Precio descuento" activo entra al descuento, y quitar Usar cobra el normal solo en esta venta', () => {
+    // Así llega al admin un artículo con descuento activo: precio = al que se vende.
+    const conDescuento = { id: 7, precio: 350, precioNormal: 400, precioRebaja: 350, usarDescuento: true, stock: 5 } as IVarianteResumen;
+    carrito.agregar(conDescuento);
+    expect(carrito.obtener()[0].precio).toBe(350);
+    expect(carrito.obtener()[0].precioOtro).toBe(350);
+    expect(carrito.obtener()[0].precioNormal).toBe(400);
+
+    carrito.usarOtroPrecio(7, false);
+    expect(carrito.obtener()[0].precio).toBe(400);
+  });
+
+  it('a un cliente, un artículo con descuento activo le llega ya con el descuento como precio', () => {
+    carrito.agregar({ id: 7, precio: 350, stock: 5 } as IVarianteResumen);
+    expect(carrito.obtener()[0].precio).toBe(350);
     expect(carrito.obtener()[0].precioOtro).toBeNull();
   });
 });

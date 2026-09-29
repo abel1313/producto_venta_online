@@ -7,17 +7,28 @@
       <span class="gp__chip">{{ etiquetaTipo(grupo!.tipoPedido) }}</span>
     </header>
 
-    <div class="gp__recoge">
-      <p class="gp__texto">
-        Paga y recoge: <b>{{ grupo!.titularNombre || 'Sin nombre' }}</b> (pedido #{{ grupo!.pedidoTitularId }})
-      </p>
-      <label class="gp__recoge-cambiar" *ngIf="puedeUnir && candidatosRecoger.length > 1">
-        Cambiar a
-        <select [ngModel]="grupo!.pedidoTitularId" (ngModelChange)="cambiarTitular($event)"
-                [disabled]="cambiandoTitular" aria-label="Quién paga y recoge">
-          <option *ngFor="let id of candidatosRecoger" [ngValue]="id">el cliente del pedido #{{ id }}</option>
-        </select>
-      </label>
+    <div class="gp-recoge">
+      <div class="gp-recoge__quien">
+        <span class="gp-recoge__avatar" aria-hidden="true">{{ inicial(grupo!.titularNombre) }}</span>
+        <div class="gp-recoge__datos">
+          <span class="gp-recoge__eyebrow">Paga y recoge</span>
+          <span class="gp-recoge__nombre">{{ grupo!.titularNombre || 'Sin nombre' }}</span>
+          <span class="gp-recoge__pedido">Pedido #{{ grupo!.pedidoTitularId }}</span>
+        </div>
+      </div>
+
+      <div class="gp-recoge__cambiar" *ngIf="puedeUnir && candidatosRecoger.length > 1">
+        <label for="gpCambiarTitular">Cambiar quién recoge</label>
+        <div class="gp-select" [class.gp-select--ocupado]="cambiandoTitular">
+          <select id="gpCambiarTitular" [ngModel]="grupo!.pedidoTitularId" (ngModelChange)="cambiarTitular($event)"
+                  [disabled]="cambiandoTitular">
+            <option *ngFor="let c of candidatosRecoger" [ngValue]="c.pedidoId">
+              {{ c.cliente || 'Sin nombre' }} · pedido #{{ c.pedidoId }}
+            </option>
+          </select>
+          <i class="pi" [ngClass]="cambiandoTitular ? 'pi-spin pi-spinner' : 'pi-chevron-down'" aria-hidden="true"></i>
+        </div>
+      </div>
     </div>
     <p class="gp__texto gp__texto--muted" *ngIf="grupo!.nota">{{ grupo!.nota }}</p>
 
@@ -43,7 +54,7 @@
               <span class="gp__titular" *ngIf="p.esTitular">titular</span>
             </td>
             <td>{{ p.cliente }}</td>
-            <td>{{ p.estadoPedido }}</td>
+            <td><span class="gp-estado" [ngClass]="claseEstado(p.estadoPedido)">{{ etiquetaEstado(p.estadoPedido) }}</span></td>
             <td class="num">{{ p.total | currency:'$' }}</td>
             <td class="num">{{ p.pagado | currency:'$' }}</td>
             <td class="num">{{ p.saldo | currency:'$' }}</td>

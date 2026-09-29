@@ -209,21 +209,134 @@
   &__ayuda { color: var(--card-text-muted); margin: 0 !important; }
 }
 
-.gp__recoge {
+// Quién paga y recoge: tarjeta con la persona a la izquierda y el cambio a la derecha. En
+// celular el selector baja y ocupa todo el ancho.
+.gp-recoge {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .25rem 1rem;
+  justify-content: space-between;
+  gap: .75rem 1.25rem;
+  padding: .75rem .9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--card-bg, var(--form-section-bg));
+
+  &__quien {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    min-width: 0;
+  }
+
+  &__avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    color: var(--app-accent-ink);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  &__datos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
+  }
+
+  &__eyebrow {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--card-text-muted);
+  }
+
+  &__nombre {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--card-text);
+    overflow-wrap: anywhere;
+  }
+
+  &__pedido {
+    font-size: .76rem;
+    color: var(--card-text-muted);
+  }
+
+  &__cambiar {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    flex: 0 1 17rem;
+    min-width: 12rem;
+
+    label {
+      font-size: .74rem;
+      font-weight: 600;
+      color: var(--card-text-muted);
+    }
+  }
+
+  @media (max-width: 575px) {
+    &__cambiar { flex: 1 1 100%; }
+  }
 }
 
-.gp__recoge-cambiar {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  font-size: .8rem;
-  color: var(--card-text-muted);
+// Select con la flecha de la app en lugar de la del navegador.
+.gp-select {
+  position: relative;
 
-  select { font-size: .8rem; padding: .15rem .35rem; }
+  select {
+    width: 100%;
+    padding: .5rem 2.3rem .5rem .75rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--form-section-bg);
+    color: var(--card-text);
+    font-size: .85rem;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+
+    &:hover:not(:disabled) { border-color: var(--app-accent); }
+    &:focus-visible {
+      border-color: var(--app-accent);
+      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), .18);
+    }
+    &:disabled { opacity: .6; cursor: progress; }
+  }
+
+  i {
+    position: absolute;
+    right: .8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: .75rem;
+    color: var(--card-text-muted);
+    pointer-events: none;
+  }
+}
+
+// Estado de cada pedido en la tabla del grupo.
+.gp-estado {
+  display: inline-block;
+  padding: .1rem .55rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+
+  &--abierto   { background: var(--app-accent-soft); color: var(--card-text); }
+  &--ok        { background: var(--pk-success-soft); color: var(--pk-success); }
+  &--cancelado { background: var(--pk-danger-soft);  color: var(--pk-danger); }
 }
 
 // Fila que sale: se resalta para que se vea de un vistazo qué se va del grupo.

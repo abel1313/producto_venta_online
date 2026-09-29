@@ -239,7 +239,7 @@
   <!-- Acción admin: Convertir en modelo propio -->
   <div *ngIf="isAdminUser" class="dv-admin-actions">
     <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()" [disabled]="cargandoIndependizar">
-      <span *ngIf="cargandoIndependizar"><span class="spinner-border spinner-border-sm"></span> Cargando…</span>
+      <span *ngIf="cargandoIndependizar">Cargando…</span>
       <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Convertir en modelo propio</span>
     </button>
   </div>
@@ -345,7 +345,7 @@
         Cancelar
       </button>
       <button class="dv-indep-btn dv-indep-btn--confirm" (click)="confirmarIndependizar()" [disabled]="independizando">
-        <span *ngIf="independizando"><span class="spinner-border spinner-border-sm"></span> Procesando…</span>
+        <span *ngIf="independizando">Procesando…</span>
         <span *ngIf="!independizando"><i class="pi pi-external-link"></i> Confirmar independizar</span>
       </button>
     </div>

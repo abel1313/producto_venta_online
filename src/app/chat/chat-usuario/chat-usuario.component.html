@@ -22,7 +22,6 @@
          [ngClass]="estadoConexion">
       <ng-container [ngSwitch]="estadoConexion">
         <ng-container *ngSwitchCase="'reconectando'">
-          <span class="cu-conexion-spinner"></span>
           <span>Reconectando...</span>
         </ng-container>
         <ng-container *ngSwitchCase="'sin-internet'">
@@ -51,7 +50,7 @@
 
       <!-- Cargar mensajes anteriores -->
       <div *ngIf="hayMasAntiguos || cargandoMas" class="cu-load-more">
-        <span *ngIf="cargandoMas" class="cu-load-more__spinner"></span>
+        <span *ngIf="cargandoMas" class="cu-load-more__texto">Cargando mensajes…</span>
         <button *ngIf="hayMasAntiguos && !cargandoMas"
                 class="cu-load-more__btn"
                 (click)="cargarMasAntiguos()">
@@ -68,7 +67,6 @@
       </div>
 
       <div *ngIf="!conectado && mensajes.length === 0" class="cu-empty">
-        <span class="cu-spinner"></span>
         <p>Conectando con el chat…</p>
       </div>
 

@@ -45,8 +45,7 @@
       <span>⚠️ Esta rifa es de prueba</span>
       <button class="rf-btn rf-btn--sm rf-btn--outline" style="margin-left:auto"
               (click)="toggleModoPrueba()" [disabled]="cambiandoModoPrueba">
-        <span *ngIf="!cambiandoModoPrueba">Pasar a sorteo real</span>
-        <span *ngIf="cambiandoModoPrueba" class="spinner-border spinner-border-sm"></span>
+        <span>Pasar a sorteo real</span>
       </button>
     </div>
 
@@ -75,7 +74,7 @@
               [disabled]="configForm.invalid || savingConfig">
         <span *ngIf="!savingConfig">💾 Guardar configuración</span>
         <span *ngIf="savingConfig" class="d-flex gap-2 align-items-center">
-          <span class="spinner-border spinner-border-sm"></span> Guardando…
+          Guardando…
         </span>
       </button>
       <div *ngIf="rifaConfig?.id" class="rf-saved-badge">
@@ -104,7 +103,7 @@
                 [disabled]="!configForm.get('fechaHoraLimite')?.value || savingConfig">
           <span *ngIf="!savingConfig">💾 Guardar cambios</span>
           <span *ngIf="savingConfig" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Guardando…
+            Guardando…
           </span>
         </button>
       </div>
@@ -206,7 +205,6 @@
                    (input)="onBuscarVariante($event)"
                    autocomplete="off"
                    appUppercase />
-            <span *ngIf="buscandoVariante" class="spinner-border spinner-border-sm text-secondary"></span>
           </div>
           <div class="rf-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
             <div class="rf-dropdown__item" *ngFor="let v of variantesBusqueda"
@@ -251,7 +249,7 @@
                 [disabled]="!varianteParaAgregar || !palabraClaveInput.trim() || giroGanadorInput < 1 || guardandoVariante">
           <span *ngIf="!guardandoVariante">✅ Confirmar producto</span>
           <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span> Guardando…
+            Guardando…
           </span>
         </button>
 
@@ -319,8 +317,7 @@
           <button class="rf-btn rf-btn--outline rf-btn--sm" style="align-self:flex-end"
                   (click)="copiarDeRifaAnterior()"
                   [disabled]="!rifaOrigenId || !palabraClaveCopia.trim() || copiandoDeRifa">
-            <span *ngIf="!copiandoDeRifa">📋 Copiar</span>
-            <span *ngIf="copiandoDeRifa" class="spinner-border spinner-border-sm"></span>
+            <span>📋 Copiar</span>
           </button>
         </div>
       </div>
@@ -362,7 +359,6 @@
                    (input)="onBuscarCliente($event)"
                    autocomplete="off"
                    appUppercase />
-            <span *ngIf="buscandoCliente" class="spinner-border spinner-border-sm text-secondary"></span>
           </div>
           <div class="rf-dropdown" *ngIf="clientesBusqueda.length > 0" [ngStyle]="dropdownStyleCliente">
             <div class="rf-dropdown__item" *ngFor="let c of clientesBusqueda"
@@ -400,9 +396,7 @@
                 (click)="agregarConcursante()"
                 [disabled]="concursanteForm.invalid || guardandoConcursante">
           <span *ngIf="!guardandoConcursante">Registrar</span>
-          <span *ngIf="guardandoConcursante" class="d-flex gap-2 align-items-center">
-            <span class="spinner-border spinner-border-sm"></span>
-          </span>
+          <span *ngIf="guardandoConcursante">Registrando…</span>
         </button>
       </form>
 
@@ -423,8 +417,7 @@
           </div>
           <button class="rf-btn rf-btn--outline rf-btn--sm" style="align-self:flex-end"
                   (click)="cargarClientesMes()" [disabled]="!mesSeleccionado || cargandoClientes">
-            <span *ngIf="!cargandoClientes">Buscar</span>
-            <span *ngIf="cargandoClientes" class="spinner-border spinner-border-sm"></span>
+            <span>Buscar</span>
           </button>
         </div>
 
@@ -451,7 +444,7 @@
                   [disabled]="clientesSeleccionados.size === 0 || !palabraClaveImport || importando">
             <span *ngIf="!importando">⬇️ Importar {{ clientesSeleccionados.size }} cliente(s)</span>
             <span *ngIf="importando" class="d-flex gap-2 align-items-center">
-              <span class="spinner-border spinner-border-sm"></span> Importando…
+              Importando…
             </span>
           </button>
         </div>
@@ -703,7 +696,7 @@
               [disabled]="sorteando || elegibles.length === 0 || mostrarSeleccionModo">
         <span *ngIf="!sorteando">🎡 Girar</span>
         <span *ngIf="sorteando" class="d-flex gap-2 align-items-center justify-content-center">
-          <span class="spinner-border spinner-border-sm"></span> Sorteando…
+          Sorteando…
         </span>
       </button>
 
@@ -953,8 +946,7 @@
       <button class="rf-btn rf-btn--primary"
               (click)="guardarParticipanteRuleta()"
               [disabled]="participanteRuletaForm.invalid || guardandoParticipanteRuleta">
-        <span *ngIf="!guardandoParticipanteRuleta">Registrar</span>
-        <span *ngIf="guardandoParticipanteRuleta" class="spinner-border spinner-border-sm"></span>
+        <span>Registrar</span>
       </button>
     </form>
   </div>

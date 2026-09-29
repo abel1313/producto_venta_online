@@ -90,6 +90,11 @@
   color: #f57f17;
 }
 
+.estado--cancelado {
+  background: rgba(198, 40, 40, 0.12);
+  color: #c62828;
+}
+
 /* ── CARGANDO ────────────────────────────────────── */
 .detalle-cargando {
   display: flex;

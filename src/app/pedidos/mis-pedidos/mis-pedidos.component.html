@@ -85,7 +85,7 @@
            [ngClass]="{
              'estado-entregado': item.pedido.estado_pedido === 'Entregado',
              'estado-pendiente': item.pedido.estado_pedido === 'Pendiente',
-             'estado-cancelado': item.pedido.estado_pedido === 'Cancelado'
+             'estado-cancelado': esCancelado(item)
            }">
 
         <!-- Cabecera de la tarjeta -- .pk-card__header es la misma clase compartida que usan
@@ -169,8 +169,8 @@
           </button>
           <button class="btn-card btn-entrega"
                   *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'editar-entrega')"
-                  [disabled]="item.pedido.estado_pedido === 'Cancelado'"
-                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
+                  [disabled]="esCancelado(item)"
+                  [title]="esCancelado(item) ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
                   (click)="abrirInfoEntrega(item)">
             <i class="pi pi-map-marker"></i> Entrega
           </button>
@@ -195,8 +195,8 @@
           </button>
           <button class="btn-card btn-cancelar"
                   *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'cancelar-pedido')"
-                  [disabled]="item.pedido.estado_pedido === 'Cancelado' || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"
-                  [title]="item.pedido.estado_pedido === 'Cancelado' ? 'Este pedido ya está cancelado' : (!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : '')"
+                  [disabled]="esCancelado(item) || (!isAdminUser && item.pedido.estado_pedido === 'Entregado')"
+                  [title]="esCancelado(item) ? 'Este pedido ya está cancelado' : (!isAdminUser && item.pedido.estado_pedido === 'Entregado' ? 'Solo un administrador puede cancelar un pedido ya entregado' : '')"
                   (click)="cancelarPedido(item)">
             <i class="pi pi-times"></i> Cancelar
           </button>

@@ -40,7 +40,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
    * El único límite que queda es de Instagram, y no es decisión nuestra ni del back: ahí no
    * existe el "video de feed", todo video es Reel.
    */
-  redesSel: Record<PlataformaRed, boolean> = { facebook: true, instagram: false, tiktok: false };
+  redesSel: Record<PlataformaRed, boolean> = { facebook: false, instagram: false, tiktok: false };
 
   /**
    * El texto va **una sola vez** (es el mismo post en todas), y los hashtags **por red**: lo que
@@ -306,14 +306,6 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   // ── Pestañas de hashtags ──────────────────────────────────────────────
-
-  /**
-   * Qué pestaña se está viendo. El texto del post es uno solo para todas; **lo único que cambia
-   * por red son los hashtags**, y por eso son ellos los que viven en pestañas.
-   */
-  pestana: PlataformaRed = 'facebook';
-
-  verPestana(r: PlataformaRed): void { this.pestana = r; }
 
   /** La vista previa va detrás de un botón, al final — no estorbando mientras se escribe. */
   mostrarPreview = false;

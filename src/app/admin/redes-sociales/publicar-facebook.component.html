@@ -172,14 +172,42 @@
       </label>
     </div>
 
+    <!-- A qué cuenta de TikTok llegan los videos (nombre y foto, lo pide TikTok), y cómo quitarle
+         el acceso. Siempre visible con cuenta conectada, esté o no marcada TikTok. Sin cuenta, el
+         botón Conectar está en el aviso rojo de abajo. -->
+    <div class="fb-cuenta" *ngIf="tiktokCuenta?.conectado">
+      <img class="fb-cuenta__foto" *ngIf="tiktokCuenta?.avatarUrl" [src]="tiktokCuenta?.avatarUrl"
+           alt="" referrerpolicy="no-referrer">
+      <span class="fb-cuenta__foto fb-cuenta__foto--vacia" *ngIf="!tiktokCuenta?.avatarUrl" aria-hidden="true">🎵</span>
+      <span class="fb-cuenta__texto">
+        <small>🎵 TikTok conectado · los videos llegan a</small>
+        <strong>{{ tiktokCuenta?.nombre || 'tu cuenta de TikTok' }}</strong>
+      </span>
+      <span class="fb-cuenta__acciones">
+        <button class="fb-btn fb-btn--ghost fb-btn--sm" [disabled]="publicando || conectandoTikTok || desconectandoTikTok"
+                (click)="conectarTikTok()">
+          {{ conectandoTikTok ? 'Abriendo TikTok…' : 'Cambiar de cuenta' }}
+        </button>
+        <button class="fb-btn fb-btn--peligro fb-btn--sm" [disabled]="publicando || conectandoTikTok || desconectandoTikTok"
+                (click)="desconectarTikTok()">
+          {{ desconectandoTikTok ? 'Quitando…' : 'Quitar acceso' }}
+        </button>
+      </span>
+    </div>
+
     <!-- Por qué una red no se deja marcar, con la salida cuando la hay. -->
     <ng-container *ngFor="let r of TODAS">
       <div class="fb-bloqueo" *ngIf="motivoNoDisponible(r) as m">
         <p class="fb-bloqueo__txt">🚫 <b>{{ nombreDeRed(r) }}:</b> {{ m }}</p>
         <button class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="r === 'instagram' && tipo === 'video'"
                 (click)="setTipo('reel')">Cambiar a Reel</button>
+        <button class="fb-btn fb-btn--primary fb-btn--sm" *ngIf="r === 'tiktok' && !yaPublicadas.includes(r)"
+                [disabled]="conectandoTikTok" (click)="conectarTikTok()">
+          {{ conectandoTikTok ? 'Abriendo TikTok…' : '🎵 Conectar TikTok' }}
+        </button>
       </div>
     </ng-container>
+    <p class="fb-error" *ngIf="errorConectarTikTok">{{ errorConectarTikTok }}</p>
 
     <!-- Hashtags solo de las redes marcadas. Los fijos se escriben solos al abrir la pantalla,
          así que marcar una red ya trae los suyos puestos. -->

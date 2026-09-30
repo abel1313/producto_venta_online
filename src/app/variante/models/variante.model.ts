@@ -64,16 +64,15 @@ export interface IVarianteResumen {
   imagenBase64?: string | null;
   imagenUrl?: string | null;
   precio?: number | null;
-  /**
-   * Precio de rebaja del producto (back 2026-09-22).
-   *
-   * ⚠️ **Solo viaja cuando quien pregunta es admin.** Para un cliente llega `undefined` a
-   * propósito: el precio rebajado es una decisión interna del negocio y no tiene por qué verlo
-   * desde la tienda. No lo trates como "no tiene rebaja" sin mirar antes si sos admin.
-   */
-  precioRebaja?: number | null;
   /** Solo admin: true si el artículo tiene precio propio, no el de su producto (2026-09-29). */
   precioPropio?: boolean | null;
+  /**
+   * Solo admin: el precio normal. `precio` es al que se vende, que con `usarDescuento` es el
+   * descuento; aquí queda el normal para poder cobrarlo en una venta puntual.
+   */
+  precioNormal?: number | null;
+  /** Solo admin: el artículo se vende al descuento (check "Precio descuento" del 💲). */
+  usarDescuento?: boolean | null;
   codigoBarras?: string | null;
   nombreProducto?: string | null;
   habilitado?: string | null;

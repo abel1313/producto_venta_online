@@ -1,7 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map, timeout } from 'rxjs/operators';
+import { distinctUntilChanged, map, timeout } from 'rxjs/operators';
+import { AuthService } from 'src/app/auth/auth.service';
 import { environment } from 'src/environments/environment';
 import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
@@ -14,7 +15,19 @@ export interface IPreciosArticulo {
   precioRebaja:   number;
   /** true = el artículo tiene precio propio; false = cobra el de su producto. */
   propio:         boolean;
+  /** true = se vende al descuento ("Precio descuento" en el 💲). */
+  usarDescuento:  boolean;
+  /** Al que se vende: precioRebaja con usarDescuento, si no precioVenta. */
+  precioACobrar:  number;
   vendeBajoCosto: boolean;
+}
+
+/** El precio con descuento de UN artículo, pedido al momento (R9). */
+export interface IDescuentoArticulo {
+  varianteId:     number;
+  /** 0 si no tiene descuento. */
+  precioRebaja:   number;
+  tieneDescuento: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -68,7 +81,20 @@ export class VarianteService {
     this._terminoCache = '';
   }
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient, authService: AuthService) {
+    // La lista trae el precio con descuento solo si quien la pidió es admin. Al entrar o salir
+    // como admin se tira la que haya en memoria: si no, el admin reusaba la que cargó como
+    // visitante (sin descuento, y el carrito mostraba "—") y el siguiente en usar el equipo
+    // heredaba la del admin.
+    authService.userRoles$.pipe(
+      map(roles => roles.includes('ROLE_ADMIN')),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.invalidarCache();
+      this._cache = [];
+      this._filtrosCache = null;
+    });
+  }
 
   getPaginado(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/paginado?pagina=${pagina}&size=${size}`)
@@ -160,9 +186,18 @@ export class VarianteService {
    * Precio propio de UN artículo: los demás del producto no cambian (2026-09-29).
    * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
    */
-  cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number): Observable<IPreciosArticulo> {
+  /**
+   * El descuento ya no viaja en la lista de la tienda (R9): se pide cuando el admin lo destapa, lo
+   * aplica o abre el 💲. Quien lo pide lo usa y lo suelta; no se guarda en el servicio.
+   */
+  descuentoArticulo(varianteId: number): Observable<IDescuentoArticulo> {
+    return this.http.get<IDescuentoArticulo>(`${environment.api_Url}/v1/precios/articulo/${varianteId}/descuento`);
+  }
+
+  cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number,
+                        usarDescuento: boolean): Observable<IPreciosArticulo> {
     return this.http.put<IPreciosArticulo>(
-      `${environment.api_Url}/v1/precios/articulo/${varianteId}`, { precioVenta, precioRebaja });
+      `${environment.api_Url}/v1/precios/articulo/${varianteId}`, { precioVenta, precioRebaja, usarDescuento });
   }
 
   /** Le quita el precio propio al artículo: vuelve a cobrar el de su producto. */

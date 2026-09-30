@@ -1045,26 +1045,41 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * El precio con descuento, solo si de verdad es más barato que el normal. Se cobra únicamente
-   * con el botón "Otro precio"; "Elegir" cobra el normal (hotfix 2026-09-29).
+   * "Otro precio" cobra el descuento; "Elegir" cobra el normal (hotfix 2026-09-29). El monto no
+   * viene en la lista (R9): se le pide al back en el momento y no se muestra.
    *
-   * El back solo acepta uno de esos dos — cualquier otro número lo rechaza con 400, que es
-   * justo lo que cierra el agujero de mandar el precio desde la pantalla.
+   * El back solo acepta el normal o el descuento — cualquier otro número lo rechaza con 400, que
+   * es justo lo que cierra el agujero de mandar el precio desde la pantalla.
    */
-  otroPrecio(v: IVarianteResumen): number | null {
-    const rebaja = v.precioRebaja ?? 0;
-    return rebaja > 0 && rebaja < (v.precio ?? 0) ? rebaja : null;
+  elegirConOtroPrecio(v: IVarianteResumen): void {
+    if (this.guardandoArticulo) return;
+    this.guardandoArticulo = true;
+    this.varianteService.descuentoArticulo(v.id).subscribe({
+      next: d => {
+        this.guardandoArticulo = false;
+        if (!d.tieneDescuento) {
+          Swal.fire({ icon: 'info', title: 'Este artículo no tiene precio con descuento', timer: 1800, showConfirmButton: false });
+          return;
+        }
+        this.elegirArticulo(v, d.precioRebaja);
+      },
+      error: err => {
+        this.guardandoArticulo = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el descuento',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
   /** El precio de la última elección, para repetirlo tal cual si el back pregunta por el combo. */
   private precioElegido = 0;
 
-  elegirArticulo(v: IVarianteResumen, conOtroPrecio = false): void {
+  elegirArticulo(v: IVarianteResumen, precioOtro?: number): void {
     if (this.guardandoArticulo) return;
     this.guardandoArticulo = true;
 
     const pedidoId = this.destino;
-    this.precioElegido = (conOtroPrecio ? this.otroPrecio(v) : null) ?? v.precio ?? 0;
+    this.precioElegido = precioOtro ?? v.precio ?? 0;
     const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioElegido };
 
     const peticion = this.lineaACambiar

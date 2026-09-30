@@ -12366,19 +12366,35 @@ Esto **revierte** el hotfix del 2026-09-24 (`83bf7f6f`), que hacía que el carri
 rebaja en automático porque la card la mostraba como precio final. No volver a ese criterio.
 
 - **Card de `tienda/buscar`:** solo `v.precio`. Sin tachado ni rebaja.
-- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio`. Guarda `precioNormal` y
-  `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio` (al que se vende). Guarda
+  `precioNormal` y `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **El descuento no viaja en las listas (R9, 2026-09-30):** `IVarianteResumen` ya no trae
+  `precioRebaja`, ni para el admin. Se pide uno por uno con
+  `VarianteService.descuentoArticulo(id)` (`GET /v1/precios/articulo/{id}/descuento`): 👁 del
+  carrito (🙈 lo borra de la página), "Usar" del carrito, "Otro precio" del detalle del pedido y el
+  💲 al abrirse. La línea del carrito guarda solo `usaOtroPrecio` y el `precio` que se cobra, nunca
+  un descuento sin aplicar. **Cualquier pantalla nueva que necesite el descuento lo pide así; no
+  volver a meterlo en la lista.**
+- **La lista de `tienda/buscar` en memoria (`VarianteService`) se tira al cambiar el rol** (entrar o
+  salir como admin). Antes el admin reusaba la que cargó como visitante, sin `precioRebaja`, y el
+  carrito mostraba "—" aunque el artículo tuviera descuento.
 - **`tienda/carrito`, columna "Otro precio" (solo admin):** el monto va tapado (`$ ••••`), 👁 lo
   destapa 3 segundos, y el check **Usar** (desmarcado por default) cobra toda la fila al precio
   descuento (`usarOtroPrecio`). Tapado porque el cliente puede estar viendo la pantalla.
 - **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
-  (`PUT /v1/precios/articulo/{varianteId}`). El precio normal se ve **bloqueado** (se cambia al
-  editar el producto y se reenvía tal cual). El descuento se prende con el check **"Usar precio
-  con descuento en este artículo"**: marcado se guarda lo de la caja (tiene que ser > 0 y menor al
-  normal); desmarcado se guarda 0 = sin descuento, aunque la caja traiga un número. Aun con
-  descuento, el carrito cobra el normal hasta que el admin marca "Usar" en esa línea. Con precio
-  propio (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del
-  producto. (Modal ajustado 2026-09-29 en `dev`/`qa`; en `master` todavía deja editar el normal.)
+  (`PUT /v1/precios/articulo/{varianteId}`, body `{ precioVenta, precioRebaja, usarDescuento }`).
+  Dos checks que se excluyen: **"Precio venta"** (el input no se edita nunca; se cambia al editar el
+  producto) y **"Precio descuento"** (con su caja editable). Con "Precio descuento" el artículo se
+  **vende al descuento para todos** (R8 del back: tienda, carrito, chatbot, pedidos de clientes)
+  hasta que se vuelva a elegir "Precio venta". Con "Precio venta" el descuento se conserva para
+  elegirlo en una venta. Abre con el check de lo que el artículo tiene hoy; si se deja en "Precio
+  venta" sin haber tenido descuento activo, no se guarda nada. Con precio propio (`precioPropio`),
+  "Usar el del producto" lo quita (`DELETE`) y apaga el descuento. (En `master` todavía es la
+  versión anterior, que deja editar el normal.)
+- **`v.precio` es al que se vende** (el descuento si `usarDescuento`); el admin recibe además
+  `precioNormal` y `usarDescuento`. El carrito toma `precioNormal ?? precio` como normal: un
+  artículo con descuento activo entra con **"Usar" ya marcado**, y quitarlo cobra el normal **solo
+  en esa venta**.
 - **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
   cobra la rebaja sin mostrar el monto.
 - **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.

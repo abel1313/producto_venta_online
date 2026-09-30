@@ -32,8 +32,27 @@ Agregar modelo, Modelos y Agregar producto.
 
 - `tests/login.spec.ts`: entrar con usuario y contraseña lleva a la lista de modelos.
 - `tests/modelo.spec.ts`: dar de alta un modelo y encontrarlo en la lista por su código.
-- `tests/articulo.spec.ts`: dar de alta un artículo de 3 piezas sobre un modelo de 10 deja
-  "Quedan 7 disponibles de 10".
+- `tests/articulo.spec.ts`: un artículo de 3 piezas sobre un modelo de 10 deja "Quedan 7
+  disponibles de 10", y al elegir el modelo el artículo nuevo arranca con su marca y descripción.
+- `tests/descuento.spec.ts`: el 💲 de la card con "Precio descuento" hace que el artículo se venda
+  con descuento y entre al carrito con "Usar" marcado; con "Precio venta" el descuento solo se
+  aplica con "Usar", el 👁 lo pide y 🙈 lo borra, y nunca queda en el navegador.
+
+## Solas, después de cada deploy a QA
+
+`.github/workflows/e2e-qa.yml` las corre en GitHub Actions cuando termina bien el deploy de QA
+del front, y también a mano (Actions → "Pruebas E2E en QA" → Run workflow). El reporte queda
+como artefacto `reporte-e2e-qa` de esa corrida (14 días).
+
+Para que funcione:
+1. El archivo tiene que estar en `master`: GitHub no activa workflows que solo viven en otra rama.
+2. Dar de alta los secretos `E2E_USUARIO` y `E2E_PASSWORD` en el repo (Settings → Secrets and
+   variables → Actions).
+
+## Limpiar lo que crean
+
+Todo lleva un código de barras `E2E` + 13 dígitos. `limpiar_datos_e2e_qa.sql` (repo del back) los
+da de baja en `inventario_key_qa`; se puede correr cuando se quiera.
 
 ## Cosas que hay que saber
 

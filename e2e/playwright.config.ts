@@ -22,7 +22,10 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // En GitHub Actions además marca las fallas en el resumen de la corrida.
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never' }], ['github']]
+    : [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: URL_FRONT,
     locale: 'es-MX',

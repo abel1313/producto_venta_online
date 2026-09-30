@@ -879,29 +879,45 @@ export class BuscarComponent implements OnInit, OnDestroy {
   cambiandoPrecioId: number | null = null;
 
   /**
-   * Precio de UN artículo: los demás del mismo producto no cambian. Aquí solo se pone el
-   * descuento; el precio normal se ve pero no se toca (se cambia al editar el producto).
+   * Precio de UN artículo: los demás del mismo producto no cambian. El precio normal se ve pero
+   * no se toca (se cambia al editar el producto).
    *
-   * "Usar precio con descuento" decide si este artículo tiene descuento: marcado se guarda lo de
-   * la caja; desmarcado se guarda 0 (sin descuento) aunque la caja traiga un número. Aun con
-   * descuento, en el carrito se cobra el normal hasta que el admin marca "Usar" en esa línea.
+   * Dos checks que se excluyen, "Precio venta" y "Precio descuento": con descuento el artículo se
+   * vende a ese precio para todos hasta que se vuelva a elegir "Precio venta" (R8 del back). En
+   * el carrito, desmarcar "Usar" cobra el normal solo en esa venta, sin cambiar el artículo.
    *
    * Si el artículo ya tiene precio propio, "Usar el del producto" se lo quita.
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId) return;
-    const normal = v.precio ?? 0;
-    const descuentoActual = v.precioRebaja ?? 0;
-    const teniaDescuento = descuentoActual > 0 && descuentoActual < normal;
+    // El descuento no viene en la lista (R9): se pide al abrir y se suelta al cerrar.
+    this.cambiandoPrecioId = v.id;
+    this.varianteService.descuentoArticulo(v.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: d => {
+        this.cambiandoPrecioId = null;
+        this.abrirModalPrecio(v, d.tieneDescuento ? d.precioRebaja : 0);
+      },
+      error: err => {
+        this.cambiandoPrecioId = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el precio',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private abrirModalPrecio(v: IVarianteResumen, descuentoActual: number): void {
+    const normal = v.precioNormal ?? v.precio ?? 0;
+    const teniaDescuentoActivo = !!v.usarDescuento;
     const pesos = (n: number) => `$${n.toFixed(2)}`;
     const nombre = [v.nombreProducto || 'este artículo', v.talla, v.color].filter(Boolean).join(' · ');
+    const valorCaja = descuentoActual > 0 && descuentoActual < normal ? descuentoActual : '';
 
-    const resumen = (usar: boolean, desc: number): string => {
+    const resumen = (conDescuento: boolean, desc: number): string => {
       if (!(normal > 0)) return 'Este artículo no tiene precio normal. Pónselo al editar el producto';
-      if (!usar) return `Sin descuento: siempre se cobra <b>${pesos(normal)}</b>`;
-      if (!(desc > 0)) return 'Escribe el precio con descuento, o desmarca "Usar"';
+      if (!conDescuento) return `Se vende a <b>${pesos(normal)}</b>`;
+      if (!(desc > 0)) return 'Escribe el precio con descuento, o elige "Precio venta"';
       if (desc >= normal) return `El precio con descuento tiene que ser menor al normal (${pesos(normal)})`;
-      return `Se cobra <b>${pesos(normal)}</b>. En el carrito puedes elegir <b>${pesos(desc)}</b> (descuento de ${pesos(normal - desc)})`;
+      return `Se vende a <b>${pesos(desc)}</b> (descuento de ${pesos(normal - desc)}). En el carrito puedes cobrar el normal en una venta quitando "Usar".`;
     };
 
     Swal.fire({
@@ -909,17 +925,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
       html: `
         <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio <b>solo de este artículo</b>. Los demás del
           producto se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
-        <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
-        <input id="sw-precio-normal" type="number" class="swal2-input" style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
-        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio normal se cambia al editar el producto.</small>
         <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
-          <input id="sw-precio-usar" type="checkbox" ${teniaDescuento ? 'checked' : ''}>
-          Usar precio con descuento en este artículo
+          <input id="sw-usar-venta" type="checkbox" ${teniaDescuentoActivo ? '' : 'checked'}> Precio venta
         </label>
-        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" aria-label="Precio con descuento"
-               style="margin:.3rem 0 .4rem;width:100%" value="${teniaDescuento ? descuentoActual : ''}" placeholder="Precio con descuento"
-               ${teniaDescuento ? '' : 'disabled'}>
-        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(teniaDescuento, descuentoActual)}</p>
+        <input id="sw-precio-normal" type="number" class="swal2-input" aria-label="Precio venta"
+               style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
+        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio venta se cambia al editar el producto.</small>
+        <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
+          <input id="sw-usar-desc" type="checkbox" ${teniaDescuentoActivo ? 'checked' : ''}> Precio descuento
+        </label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" aria-label="Precio descuento"
+               style="margin:.3rem 0 .4rem;width:100%" value="${valorCaja}" placeholder="Precio con descuento"
+               ${teniaDescuentoActivo ? '' : 'disabled'}>
+        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(teniaDescuentoActivo, Number(valorCaja || 0))}</p>
         ${v.precioPropio ? '<p style="font-size:.78rem;margin:.6rem 0 0;text-align:left;opacity:.8">Este artículo ya tiene precio propio.</p>' : ''}`,
       showCancelButton: true,
       showDenyButton: !!v.precioPropio,
@@ -928,38 +946,44 @@ export class BuscarComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       didOpen: () => {
-        const usar = document.getElementById('sw-precio-usar') as HTMLInputElement;
+        const usarVenta = document.getElementById('sw-usar-venta') as HTMLInputElement;
+        const usarDesc = document.getElementById('sw-usar-desc') as HTMLInputElement;
         const inDesc = document.getElementById('sw-precio-desc') as HTMLInputElement;
         const salida = document.getElementById('sw-precio-resumen') as HTMLElement;
+        // Siempre queda exactamente uno marcado: marcar uno apaga el otro, y desmarcar uno prende el otro.
+        const elegir = (conDescuento: boolean) => {
+          usarDesc.checked = conDescuento;
+          usarVenta.checked = !conDescuento;
+          inDesc.disabled = !conDescuento;
+          if (conDescuento) { inDesc.focus(); inDesc.select(); }
+          refrescar();
+        };
         const refrescar = () => {
           Swal.resetValidationMessage();
-          salida.innerHTML = resumen(usar.checked, Number(inDesc.value || 0));
+          salida.innerHTML = resumen(usarDesc.checked, Number(inDesc.value || 0));
         };
-        usar.addEventListener('change', () => {
-          inDesc.disabled = !usar.checked;
-          if (usar.checked) { inDesc.focus(); inDesc.select(); }
-          refrescar();
-        });
+        usarVenta.addEventListener('change', () => elegir(!usarVenta.checked));
+        usarDesc.addEventListener('change', () => elegir(usarDesc.checked));
         inDesc.addEventListener('input', refrescar);
-        if (usar.checked) { inDesc.focus(); inDesc.select(); }
+        if (usarDesc.checked) { inDesc.focus(); inDesc.select(); }
       },
       preConfirm: () => {
-        const usar = (document.getElementById('sw-precio-usar') as HTMLInputElement).checked;
+        const conDescuento = (document.getElementById('sw-usar-desc') as HTMLInputElement).checked;
         const caja = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
         if (!(normal > 0)) {
           Swal.showValidationMessage('Este artículo no tiene precio normal. Pónselo al editar el producto');
           return false;
         }
-        if (!usar) return { nuevoDesc: 0 };
+        if (!conDescuento) return { conDescuento, descuento: descuentoActual };
         if (!(caja > 0)) {
-          Swal.showValidationMessage('Escribe el precio con descuento, o desmarca "Usar"');
+          Swal.showValidationMessage('Escribe el precio con descuento, o elige "Precio venta"');
           return false;
         }
         if (caja >= normal) {
           Swal.showValidationMessage(`El precio con descuento tiene que ser menor al normal (${pesos(normal)})`);
           return false;
         }
-        return { nuevoDesc: caja };
+        return { conDescuento, descuento: caja };
       }
     }).then(r => {
       if (r.isDenied) {
@@ -967,7 +991,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
         return;
       }
       if (!r.isConfirmed || !r.value) return;
-      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, normal, r.value.nuevoDesc));
+      const { conDescuento, descuento } = r.value;
+      // Con "Precio venta" y sin haber tenido descuento activo no cambia nada: no se guarda, para
+      // no dejarle al artículo un precio propio que nadie pidió.
+      if (!conDescuento && !teniaDescuentoActivo) return;
+      // Con "Precio venta" el descuento se conserva: sigue disponible para elegirlo en una venta.
+      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, normal, descuento, conDescuento));
     });
   }
 
@@ -976,20 +1005,21 @@ export class BuscarComponent implements OnInit, OnDestroy {
     peticion.pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.cambiandoPrecioId = null;
-        v.precio = res.precioVenta;
-        v.precioRebaja = res.precioRebaja;
+        v.precio = res.precioACobrar;
+        v.precioNormal = res.precioVenta;
+        v.usarDescuento = res.usarDescuento;
         v.precioPropio = res.propio;
         // Si ya estaba en el carrito, se cobra al precio nuevo (si no, el back lo rechazaría al cobrar).
-        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioRebaja);
+        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioACobrar, res.usarDescuento);
         this.varianteService.invalidarCache();
         Swal.fire({
           icon: res.vendeBajoCosto ? 'warning' : 'success',
           title: res.propio ? 'Precio del artículo guardado' : 'Vuelve al precio del producto',
           text: res.vendeBajoCosto
             ? `Ojo: el precio con descuento ($${res.precioRebaja.toFixed(2)}) queda por debajo de lo que costó.`
-            : (res.precioRebaja > 0
-                ? `Se cobra $${res.precioVenta.toFixed(2)}. El descuento ($${res.precioRebaja.toFixed(2)}) solo si lo eliges en el carrito.`
-                : `Se cobra $${res.precioVenta.toFixed(2)}, sin descuento.`),
+            : (res.usarDescuento
+                ? `Se vende a $${res.precioACobrar.toFixed(2)} con descuento. El normal es $${res.precioVenta.toFixed(2)}.`
+                : `Se vende a $${res.precioVenta.toFixed(2)}.`),
           timer: res.vendeBajoCosto ? undefined : 2200,
           showConfirmButton: res.vendeBajoCosto
         });

@@ -124,10 +124,46 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.precargarDelModelo(p);
     this.cargarStockDisponible();
   }
 
+  /**
+   * El artículo nace con los datos que comparte con su modelo, a la vista y editables: antes el
+   * back los copiaba en silencio si se dejaban vacíos, pero el formulario salía en blanco y había
+   * que volver a escribirlos. Solo llena lo vacío: no pisa lo que ya se escribió. La categoría la
+   * hereda el back (esta búsqueda no la trae).
+   */
+  private precargarDelModelo(p: IProductoDTO): void {
+    const delModelo: Record<string, string | null | undefined> = {
+      color:         p.color,
+      marca:         p.marca,
+      descripcion:   p.descripcion,
+      contenidoNeto: p.contenido
+    };
+    this.precargados = {};
+    for (const [campo, valor] of Object.entries(delModelo)) {
+      const control = this.form.get(campo);
+      if (control && !control.value && valor) {
+        control.setValue(valor);
+        this.precargados[campo] = valor;
+      }
+    }
+  }
+
+  /** Lo que se precargó del modelo; al cambiar de modelo se borra lo que siga igual. */
+  private precargados: Record<string, string> = {};
+
+  private quitarPrecargados(): void {
+    for (const [campo, valor] of Object.entries(this.precargados)) {
+      const control = this.form.get(campo);
+      if (control && control.value === valor) control.setValue('');
+    }
+    this.precargados = {};
+  }
+
   limpiarProducto(): void {
+    this.quitarPrecargados();
     this.productoSeleccionado = null;
     this.terminoProducto = '';
     this.productos = [];

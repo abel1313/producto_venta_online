@@ -496,6 +496,25 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
+  /** Los filtros ocupan media pantalla en celular: arrancan cerrados y cada navegador recuerda si los dejó abiertos. */
+  filtrosAbiertos = AllComponent.leerFiltrosAbiertos();
+
+  private static leerFiltrosAbiertos(): boolean {
+    try { return localStorage.getItem('productos-buscar:filtros-abiertos') === '1'; } catch { return false; }
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos = !this.filtrosAbiertos;
+    try { localStorage.setItem('productos-buscar:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  /** Cuántos filtros están aplicados, para verlo aunque el panel esté cerrado. */
+  get filtrosActivos(): number {
+    return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
+            this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
+            !!this.fechaDesde, !!this.fechaHasta].filter(Boolean).length;
+  }
+
   get hayFiltrosAdminActivos(): boolean {
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes

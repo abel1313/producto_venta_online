@@ -1198,9 +1198,12 @@ body.theme-light, [data-theme="light"] {
 }
 
 /* ── NOCHE — dark glass cálido ── */
+// :not([class*="-glow"]): "pf-card__header-glow" (el brillo decorativo de 280px de varios headers)
+// también contiene "-card__head" y recibía este fondo casi negro: quedaba como un cuadro que
+// oscurecía el título y el subtítulo (QA 2026-09-30, Agregar modelo en celular).
 body.theme-dark, [data-theme="dark"] {
   [class*="-header__content"],
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
+  [class*="-card__head"]:not([class*="-glow"]):not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
     background:          rgba(var(--sb-bg-rgb), 0.80) !important;
     backdrop-filter:     blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
@@ -1210,6 +1213,29 @@ body.theme-dark, [data-theme="dark"] {
 
     h4, h5, h6     { color: #E9E9EC !important; }
     small           { color: #93B3A4 !important; }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODO OSCURO — LABELS Y PLACEHOLDERS LEGIBLES (2026-09-30)
+
+   En oscuro los placeholders quedaban en #5F8375 (o #6E6E73), varios formularios les
+   bajaban además la opacidad a .7, y los labels usaban el "texto atenuado" de cada tema
+   (#7C9C8A, #8A9690…): sobre fondo casi negro casi no se leían. Aquí se aclaran en toda
+   la app, solo en oscuro; el modo día no cambia.
+
+   El color mezcla el atenuado del tema con el texto principal: se lee claro y conserva el
+   tono de cada tema de Personalización. :not(#_) sube la especificidad para ganarle a las
+   reglas de cada componente sin tener que tocarlas una por una.
+   ════════════════════════════════════════════════════════════ */
+body.theme-dark, [data-theme="dark"] {
+  :is(label, [class*="__label"], [class$="-label"]):not(#_) {
+    color: color-mix(in srgb, var(--app-text-muted, #9A9AA0) 40%, var(--card-text, #E9E9EC)) !important;
+  }
+
+  :is(input, textarea, .form-control, .p-inputtext, .swal2-input, .swal2-textarea):not(#_)::placeholder {
+    color: color-mix(in srgb, var(--app-text-muted, #9A9AA0) 55%, var(--card-text, #E9E9EC)) !important;
+    opacity: 1 !important;
   }
 }
 

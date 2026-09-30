@@ -1,8 +1,13 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import { GrupoPedidoService } from '../grupo-pedido.service';
-import { GrupoPedidos, TipoPorPedido } from '../models/grupo-pedido.model';
+import { CandidatoUnir, GrupoPedidos, TipoPorPedido } from '../models/grupo-pedido.model';
+
+/** Con menos letras el LIKE barre casi todo; un número de pedido sí vale desde 1 dígito. */
+const MIN_LETRAS = 3;
 
 /**
  * Unir pedidos para cobrarlos y recogerlos juntos, y deshacerlo (back 2026-09-23).
@@ -15,7 +20,7 @@ import { GrupoPedidos, TipoPorPedido } from '../models/grupo-pedido.model';
   templateUrl: './grupo-pedido.component.html',
   styleUrls: ['./grupo-pedido.component.scss']
 })
-export class GrupoPedidoComponent implements OnChanges {
+export class GrupoPedidoComponent implements OnChanges, OnDestroy {
   @Input() pedidoId!: number;
   /** No entregado, no cancelado, no pagado: solo esos se pueden unir. */
   @Input() pedidoAbierto = false;
@@ -28,8 +33,24 @@ export class GrupoPedidoComponent implements OnChanges {
   grupo: GrupoPedidos | null = null;
 
   mostrarFormUnir = false;
-  otrosPedidosTexto = '';
+  /** Agregar pedidos a un grupo que ya existe: mismo buscador, sin titular ni nota. */
+  mostrarFormAgregar = false;
+  agregando = false;
   titularId: number | null = null;
+
+  // Buscador de pedidos a unir: el back ya filtra por misma forma de cobro, abiertos y sin grupo.
+  terminoBusqueda = '';
+  avisoBusqueda = '';
+  resultados: CandidatoUnir[] = [];
+  hayMas = false;
+  cargandoMas = false;
+  buscado = false;
+  elegidos: CandidatoUnir[] = [];
+  private pagina = 0;
+  /** El término de los resultados en pantalla: una página que llega de otra búsqueda se descarta. */
+  private terminoMostrado = '';
+  private readonly busqueda$ = new Subject<string>();
+  private readonly destroy$ = new Subject<void>();
   notaUnir = '';
   uniendo = false;
   errorUnir = '';
@@ -52,7 +73,29 @@ export class GrupoPedidoComponent implements OnChanges {
   constructor(
     private readonly grupoService: GrupoPedidoService,
     private readonly authService: AuthService
-  ) {}
+  ) {
+    // catchError va dentro del switchMap: si llega al subscribe, el buscador muere hasta recargar.
+    this.busqueda$.pipe(
+      debounceTime(400),
+      switchMap(termino => this.grupoService.candidatos(this.pedidoId, termino, 0).pipe(
+        map(r => ({ termino, pagina: r?.data ?? null, fallo: false })),
+        catchError(() => of({ termino, pagina: null, fallo: true }))
+      )),
+      takeUntil(this.destroy$)
+    ).subscribe(({ termino, pagina, fallo }) => {
+      this.buscado = true;
+      this.terminoMostrado = termino;
+      this.pagina = 0;
+      this.resultados = pagina?.pedidos ?? [];
+      this.hayMas = !!pagina?.hayMas;
+      this.avisoBusqueda = fallo ? 'No se pudo buscar. Intenta de nuevo.' : '';
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   get puedeUnir(): boolean {
     return this.authService.tieneAccion('pedidos/mis-pedidos', 'unir-pedidos');
@@ -71,17 +114,14 @@ export class GrupoPedidoComponent implements OnChanges {
     return tipo === 'APARTADO' || tipo === 'FIADO';
   }
 
-  /** Los números que escribió, sin repetir y sin este mismo pedido. */
   get otrosIds(): number[] {
-    const ids = this.otrosPedidosTexto
-      .split(/[\s,;#]+/)
-      .map(t => Number(t))
-      .filter(n => Number.isInteger(n) && n > 0 && n !== this.pedidoId);
-    return [...new Set(ids)];
+    return this.elegidos.map(e => e.pedidoId);
   }
 
-  get candidatosTitular(): number[] {
-    return [this.pedidoId, ...this.otrosIds];
+  /** Quién puede pagar y recoger: este pedido o cualquiera de los elegidos. */
+  get candidatosTitular(): { pedidoId: number; cliente: string | null }[] {
+    return [{ pedidoId: this.pedidoId, cliente: null },
+            ...this.elegidos.map(e => ({ pedidoId: e.pedidoId, cliente: e.cliente }))];
   }
 
   get cambioDelAbono(): number {
@@ -111,11 +151,9 @@ export class GrupoPedidoComponent implements OnChanges {
   // ── Unir ──────────────────────────────────────────────────────────────────────────
 
   abrirFormUnir(): void {
-    this.otrosPedidosTexto = '';
     this.titularId = this.pedidoId;
     this.notaUnir = '';
-    this.errorUnir = '';
-    this.tiposDistintos = [];
+    this.limpiarBuscador();
     this.mostrarFormUnir = true;
   }
 
@@ -123,24 +161,107 @@ export class GrupoPedidoComponent implements OnChanges {
     this.mostrarFormUnir = false;
   }
 
-  /** Si el titular elegido deja de estar en la lista (lo borró), vuelve a ser este pedido. */
+  abrirFormAgregar(): void {
+    this.limpiarBuscador();
+    this.mostrarFormAgregar = true;
+  }
+
+  cerrarFormAgregar(): void {
+    this.mostrarFormAgregar = false;
+  }
+
+  /** Si el titular elegido deja de estar en la lista (lo quitó), vuelve a ser este pedido. */
   otrosCambiaron(): void {
-    if (this.titularId == null || !this.candidatosTitular.includes(this.titularId)) {
+    if (this.titularId == null || !this.candidatosTitular.some(c => c.pedidoId === this.titularId)) {
       this.titularId = this.pedidoId;
     }
+  }
+
+  // ── Buscador ──────────────────────────────────────────────────────────────────────
+
+  private limpiarBuscador(): void {
+    this.terminoBusqueda = '';
+    this.avisoBusqueda = '';
+    this.resultados = [];
+    this.hayMas = false;
+    this.buscado = false;
+    this.elegidos = [];
+    this.errorUnir = '';
+    this.tiposDistintos = [];
+    // Al abrir se muestran de una vez los que se pueden unir, del más nuevo al más viejo.
+    this.busqueda$.next('');
+  }
+
+  alEscribir(valor: string): void {
+    const termino = (valor ?? '').trim();
+    if (termino && !/^\d+$/.test(termino) && termino.length < MIN_LETRAS) {
+      this.avisoBusqueda = `Escribe al menos ${MIN_LETRAS} letras del nombre, o el número de pedido.`;
+      return;
+    }
+    this.avisoBusqueda = '';
+    this.busqueda$.next(termino);
+  }
+
+  /** Al llegar al final de la lista se pide la siguiente página y se agrega abajo. */
+  alHacerScroll(ev: Event): void {
+    const el = ev.target as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) {
+      this.cargarMas();
+    }
+  }
+
+  cargarMas(): void {
+    if (!this.hayMas || this.cargandoMas) return;
+    const termino = this.terminoMostrado;
+    const siguiente = this.pagina + 1;
+    this.cargandoMas = true;
+    this.grupoService.candidatos(this.pedidoId, termino, siguiente).pipe(takeUntil(this.destroy$)).subscribe({
+      next: r => {
+        this.cargandoMas = false;
+        if (termino !== this.terminoMostrado) return;
+        const nuevos = (r?.data?.pedidos ?? []).filter(n => !this.resultados.some(x => x.pedidoId === n.pedidoId));
+        this.resultados = [...this.resultados, ...nuevos];
+        this.pagina = siguiente;
+        this.hayMas = !!r?.data?.hayMas;
+      },
+      error: () => {
+        this.cargandoMas = false;
+        this.avisoBusqueda = 'No se pudieron traer más pedidos. Baja otra vez para reintentar.';
+      }
+    });
+  }
+
+  estaElegido(c: CandidatoUnir): boolean {
+    return this.elegidos.some(e => e.pedidoId === c.pedidoId);
+  }
+
+  alternarElegido(c: CandidatoUnir): void {
+    this.elegidos = this.estaElegido(c)
+      ? this.elegidos.filter(e => e.pedidoId !== c.pedidoId)
+      : [...this.elegidos, c];
+    this.otrosCambiaron();
+  }
+
+  quitarElegido(c: CandidatoUnir): void {
+    this.elegidos = this.elegidos.filter(e => e.pedidoId !== c.pedidoId);
+    this.otrosCambiaron();
+  }
+
+  get totalElegidos(): number {
+    return this.redondear(this.elegidos.reduce((s, e) => s + e.total, 0));
   }
 
   unir(): void {
     if (this.uniendo) return;
     if (this.otrosIds.length === 0) {
-      Swal.fire({ icon: 'info', title: 'Falta el otro pedido', text: 'Escribe el número de al menos otro pedido para unirlo con este.' });
+      Swal.fire({ icon: 'info', title: 'Falta el otro pedido', text: 'Busca y elige al menos otro pedido para unirlo con este.' });
       return;
     }
     this.uniendo = true;
     this.errorUnir = '';
     this.tiposDistintos = [];
     this.grupoService.unir({
-      pedidoIds: this.candidatosTitular,
+      pedidoIds: [this.pedidoId, ...this.otrosIds],
       pedidoTitularId: this.titularId ?? this.pedidoId,
       nota: this.notaUnir.trim() || undefined
     }).subscribe({
@@ -159,20 +280,55 @@ export class GrupoPedidoComponent implements OnChanges {
       },
       error: err => {
         this.uniendo = false;
-        // 400 de distinta forma de cobro: se queda abierto con los datos para reintentar después
-        // de cambiar el tipo del que no coincide.
-        if (err?.status === 400 && Array.isArray(err?.error?.data)) {
-          this.tiposDistintos = err.error.data;
-          this.errorUnir = err.error.mensaje ?? 'Los pedidos no tienen la misma forma de cobro.';
-          return;
-        }
-        if (err?.status === 400) {
-          this.errorUnir = err?.error?.mensaje ?? 'No se pudieron unir los pedidos.';
-          return;
-        }
-        this.avisarError(err, 'No se pudieron unir los pedidos.');
+        this.mostrarErrorDeUnion(err, 'No se pudieron unir los pedidos.');
       }
     });
+  }
+
+  agregarAlGrupo(): void {
+    if (!this.grupo || this.agregando) return;
+    if (this.elegidos.length === 0) {
+      Swal.fire({ icon: 'info', title: 'Elige los pedidos', text: 'Busca y elige al menos un pedido para agregarlo al grupo.' });
+      return;
+    }
+    const antes = this.grupo.pedidos.length;
+    this.agregando = true;
+    this.errorUnir = '';
+    this.tiposDistintos = [];
+    this.grupoService.agregar(this.grupo.grupoId, { pedidoIds: this.otrosIds }).subscribe({
+      next: r => {
+        this.agregando = false;
+        this.mostrarFormAgregar = false;
+        this.grupo = r?.data ?? this.grupo;
+        const ahora = this.grupo?.pedidos.length ?? antes;
+        Swal.fire({
+          icon: 'success',
+          title: `Ahora son ${ahora} pedidos unidos`,
+          text: 'Lo que ya tenían abonado cuenta para el grupo. Cada pedido conserva sus artículos.',
+          timer: 2800,
+          showConfirmButton: false
+        });
+        this.cambio.emit();
+      },
+      error: err => {
+        this.agregando = false;
+        this.mostrarErrorDeUnion(err, 'No se pudieron agregar los pedidos.');
+      }
+    });
+  }
+
+  /** 400 de distinta forma de cobro: el formulario se queda abierto con el tipo de cada pedido. */
+  private mostrarErrorDeUnion(err: any, porDefecto: string): void {
+    if (err?.status === 400 && Array.isArray(err?.error?.data)) {
+      this.tiposDistintos = err.error.data;
+      this.errorUnir = err.error.mensaje ?? 'Los pedidos no tienen la misma forma de cobro.';
+      return;
+    }
+    if (err?.status === 400) {
+      this.errorUnir = err?.error?.mensaje ?? porDefecto;
+      return;
+    }
+    this.avisarError(err, porDefecto);
   }
 
   // ── Abonar al grupo ───────────────────────────────────────────────────────────────

@@ -429,22 +429,35 @@
        Se cambian o quitan desde aquí, pero el cambio se guarda en su propio pedido: al separar,
        cada uno se lleva lo suyo. Para sus datos de entrega se abre ese pedido. -->
   <section class="dp-otros" *ngIf="grupo && otrosPedidos.length > 0">
-    <h3 class="dp-otros__titulo">🔗 Artículos de los pedidos unidos</h3>
+    <div class="dp-otros__encabezado">
+      <h3 class="dp-otros__titulo">🔗 {{ grupo.pedidos.length }} pedidos unidos</h3>
+      <span class="dp-otros__resumen">
+        Este y {{ otrosPedidos.length }} más · total {{ grupo.totalGrupo | currency:'$' }}
+      </span>
+    </div>
 
-    <div class="dp-otros__pedido" *ngFor="let o of otrosPedidos">
+    <div class="dp-otros__pedido" *ngFor="let o of otrosPedidos" [class.dp-otros__pedido--abierto]="otroAbierto(o)">
       <div class="dp-otros__cabecera">
-        <div class="dp-otros__quien">
-          <span class="dp-otros__numero">Pedido #{{ o.pedidoId }}</span>
-          <span class="dp-otros__titular" *ngIf="o.esTitular">paga y recoge</span>
-          <span class="dp-otros__cliente">{{ o.cliente }}</span>
-        </div>
-        <span class="dp-otros__total">{{ o.total | currency:'$' }}</span>
+        <button type="button" class="dp-otros__alternar" (click)="alternarOtro(o)"
+                [attr.aria-expanded]="otroAbierto(o)" [attr.aria-controls]="'dp-otro-' + o.pedidoId">
+          <span class="dp-otros__flecha" aria-hidden="true">▸</span>
+          <span class="dp-otros__quien">
+            <span class="dp-otros__numero">Pedido #{{ o.pedidoId }}</span>
+            <span class="dp-otros__titular" *ngIf="o.esTitular">paga y recoge</span>
+            <span class="dp-otros__cliente">{{ o.cliente }}</span>
+            <span class="dp-otros__cuantos" *ngIf="!o.cargando && !o.error">
+              · {{ piezasDe(o) }} {{ piezasDe(o) === 1 ? 'artículo' : 'artículos' }}
+            </span>
+          </span>
+          <span class="dp-otros__total">{{ o.total | currency:'$' }}</span>
+        </button>
         <button type="button" class="dp-otros__abrir" (click)="abrirPedido.emit(o.pedidoId)"
                 title="Para ver o cambiar sus datos de entrega">
           Abrir pedido #{{ o.pedidoId }}
         </button>
       </div>
 
+      <div class="dp-otros__contenido" [id]="'dp-otro-' + o.pedidoId" *ngIf="otroAbierto(o)">
       <div class="detalle-cargando" *ngIf="o.cargando">
         Cargando artículos…
       </div>
@@ -497,6 +510,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </section>

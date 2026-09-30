@@ -37,6 +37,30 @@ export interface UnirPedidosRequest {
   nota?:           string;
 }
 
+/** `POST /v1/grupos-pedido/{id}/pedidos`: suma pedidos a un grupo que ya existe. */
+export interface AgregarPedidosRequest {
+  pedidoIds: number[];
+}
+
+/** Un pedido que sale en el buscador de "Unir pedidos": ya viene filtrado por el back. */
+export interface CandidatoUnir {
+  pedidoId:     number;
+  cliente:      string;
+  tipoPedido:   string;
+  estadoPedido: string;
+  total:        number;
+  pagado:       number;
+  saldo:        number;
+  fecha:        string | null;
+}
+
+/** `GET /v1/grupos-pedido/candidatos`: una página de 10. */
+export interface CandidatosPagina {
+  pedidos: CandidatoUnir[];
+  pagina:  number;
+  hayMas:  boolean;
+}
+
 /** `POST /v1/grupos-pedido/{id}/abonos` */
 export interface AbonoGrupoRequest {
   monto:       number;

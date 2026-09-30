@@ -216,6 +216,22 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Los pedidos unidos arrancan cerrados (una fila cada uno); se abren con clic. */
+  private otrosAbiertos = new Set<number>();
+
+  otroAbierto(o: OtroPedidoDelGrupo): boolean {
+    return this.otrosAbiertos.has(o.pedidoId);
+  }
+
+  alternarOtro(o: OtroPedidoDelGrupo): void {
+    if (this.otrosAbiertos.has(o.pedidoId)) this.otrosAbiertos.delete(o.pedidoId);
+    else this.otrosAbiertos.add(o.pedidoId);
+  }
+
+  piezasDe(o: OtroPedidoDelGrupo): number {
+    return o.lineas.reduce((s, l) => s + (l.cantidad ?? 0), 0);
+  }
+
   /**
    * Los artículos de los otros pedidos del grupo se editan desde aquí, pero el cambio se guarda
    * en su propio pedido: al separar, cada uno se lleva lo suyo con los cambios.

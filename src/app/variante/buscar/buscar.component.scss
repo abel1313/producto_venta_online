@@ -108,6 +108,41 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // como una sola fila. En móvil baja a 1 columna (ver breakpoint 576px).
 // gap generoso (fila y columna) para que un grupo de checkbox se distinga
 // claramente del siguiente — con poco espacio se leían como una sola franja.
+.vb-filtros-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { background: rgba(255,255,255,0.24); }
+  &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  &__cuenta {
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.92);
+    color: var(--app-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  &__flecha { transition: transform .15s ease; }
+  &--abierto &__flecha { transform: rotate(180deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    &, &__flecha { transition: none; }
+  }
+}
+
 .vb-filtros {
   display: grid;
   // auto-fit/minmax en vez de repeat(4,1fr) fijo: con 4 columnas rígidas, en

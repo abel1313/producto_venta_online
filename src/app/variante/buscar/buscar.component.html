@@ -60,6 +60,14 @@
     </div>
   </div>
 
+  <ng-container *ngIf="hayFiltrosQueMostrar">
+  <button type="button" class="vb-filtros-toggle" [class.vb-filtros-toggle--abierto]="filtrosAbiertos"
+          (click)="alternarFiltros()" [attr.aria-expanded]="filtrosAbiertos" aria-controls="vb-filtros-panel">
+    <span>⚙️ Filtros</span>
+    <span class="vb-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
+    <span class="vb-filtros-toggle__flecha" aria-hidden="true">▾</span>
+  </button>
+  <div id="vb-filtros-panel" *ngIf="filtrosAbiertos">
   <!-- Filtros solo admin: cada checkbox es independiente (no excluyente). Se pueden marcar
        varios a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae
        ambos, solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se
@@ -148,6 +156,8 @@
     </div>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
   </div>
+  </div>
+  </ng-container>
   </div><!-- /vb-header__content -->
 </div>
 

@@ -1,5 +1,8 @@
 name: Build and Push Docker QA
 
+# Todo lo de QA vive aquí y se lee de la rama qa: construir, desplegar y probar.
+# (Un workflow aparte que se dispare "cuando termina otro" solo lo activa GitHub si está en master;
+# por eso las pruebas van como un job más de este.)
 on:
   push:
     branches: [ qa ]
@@ -26,10 +29,62 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/front-jade-service:qa
           build-args: BUILD_CONFIGURATION=qa
 
+      # rollout status espera a que el pod nuevo quede arriba; sin eso las pruebas de abajo
+      # correrían contra la versión anterior. La del back solo espera si el back se está
+      # reiniciando en ese momento (si no, contesta al instante).
       - name: Deploy to QA
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: sudo kubectl rollout restart deployment proyecto-key-front-deployment -n qa
+          script: |
+            sudo kubectl rollout restart deployment proyecto-key-front-deployment -n qa
+            sudo kubectl rollout status deployment proyecto-key-front-deployment -n qa --timeout=300s
+            sudo kubectl rollout status deployment proyecto-key-deployment -n qa --timeout=300s
+
+  # Pruebas de punta a punta (carpeta e2e/) contra QA, con el código que se acaba de desplegar.
+  # Si fallan, el deploy ya quedó hecho: el rojo es de las pruebas, no del deploy.
+  # Para correrlas otra vez sin redesplegar: abrir la corrida en Actions → Re-run jobs → solo este.
+  # Necesita los secretos E2E_USUARIO / E2E_PASSWORD (usuario de QA solo para pruebas).
+  e2e:
+    name: Pruebas E2E en QA
+    needs: docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Una corrida a la vez: dos al mismo tiempo se pisarían en la base de QA.
+    concurrency:
+      group: e2e-qa
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Instalar Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Correr las pruebas
+        run: npx playwright test
+        env:
+          E2E_USUARIO: ${{ secrets.E2E_USUARIO }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+      # Con capturas, video y pasos de cada prueba, pase o falle.
+      - name: Guardar el reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-e2e-qa
+          path: e2e/playwright-report/
+          retention-days: 14
+          overwrite: true

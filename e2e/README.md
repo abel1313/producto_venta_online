@@ -40,14 +40,25 @@ Agregar modelo, Modelos y Agregar producto.
 
 ## Solas, después de cada deploy a QA
 
-`.github/workflows/e2e-qa.yml` las corre en GitHub Actions cuando termina bien el deploy de QA
-del front, y también a mano (Actions → "Pruebas E2E en QA" → Run workflow). El reporte queda
-como artefacto `reporte-e2e-qa` de esa corrida (14 días).
+Son el último paso del workflow de QA (`.github/workflows/producto-actions-qa.yml`, job
+"Pruebas E2E en QA"). Cada push a `qa`:
 
-Para que funcione:
-1. El archivo tiene que estar en `master`: GitHub no activa workflows que solo viven en otra rama.
-2. Dar de alta los secretos `E2E_USUARIO` y `E2E_PASSWORD` en el repo (Settings → Secrets and
-   variables → Actions).
+1. construye la imagen del front,
+2. la despliega en QA y espera a que el pod nuevo quede arriba,
+3. corre estas pruebas contra QA con el mismo código que se acaba de desplegar.
+
+Todo se lee de la rama `qa`; `master` no interviene. El reporte queda como artefacto
+`reporte-e2e-qa` de esa corrida (14 días): se descarga, se descomprime y se abre `index.html`.
+
+- **Si salen en rojo, el deploy sí quedó hecho:** el rojo es de las pruebas. El job del deploy
+  tiene su propia palomita.
+- **Correrlas otra vez sin redesplegar:** Actions → abrir la última corrida de "Build and Push
+  Docker QA" → Re-run jobs → solo "Pruebas E2E en QA".
+- **Si solo cambió el back**, no se disparan solas (el back es otro repo): se corren a mano igual
+  que el punto anterior.
+
+Necesita los secretos `E2E_USUARIO` y `E2E_PASSWORD` en el repo (Settings → Secrets and
+variables → Actions): el usuario de QA solo para pruebas.
 
 ## Limpiar lo que crean
 

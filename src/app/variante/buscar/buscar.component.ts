@@ -169,6 +169,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (this.varianteService.initialized) {
           this.terminoBusqueda = this.varianteService.terminoCache;
           this.variantes       = [...this.varianteService.variantesCache];
+          this.carritoVariante.completarOtrosPrecios(this.variantes);
           this.totalPaginas    = this.varianteService.totalPaginasCache;
           this.paginaActual    = this.varianteService.paginaCache;
           // Restaura los filtros que produjeron este resultado cacheado -- sin esto, la lista
@@ -253,6 +254,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (this.reqId !== id) return;
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
+        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, termino);
@@ -485,6 +487,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       next: res => {
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
+        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
@@ -550,6 +553,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       next: res => {
         this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
+        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
@@ -577,6 +581,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: res => {
           this.variantes    = res.t ?? [];
+          this.carritoVariante.completarOtrosPrecios(this.variantes);
           this.totalPaginas = res.totalPaginas;
           this.paginaActual = pagina;
           this.buscando = false;

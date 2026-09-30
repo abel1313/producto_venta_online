@@ -81,4 +81,26 @@ describe('CarritoVarianteService — precio', () => {
     expect(carrito.obtener()[0].precio).toBe(350);
     expect(carrito.obtener()[0].precioOtro).toBeNull();
   });
+
+  it('el otro precio no se guarda en el navegador', () => {
+    carrito.agregar(articulo(400, 350));
+    const guardado = localStorage.getItem('carritoVariante') ?? '';
+    expect(guardado).not.toContain('precioOtro');
+    expect(guardado).not.toContain('350');
+  });
+
+  it('al recargar: con Usar marcado recupera el otro precio; sin Usar lo completa la tienda', () => {
+    carrito.agregar(articulo(400, 350));
+    carrito.agregar({ id: 8, precio: 300, precioRebaja: 250, stock: 5 } as IVarianteResumen);
+    carrito.usarOtroPrecio(7, true);
+
+    const recargado = new CarritoVarianteService();
+    const [conUsar, sinUsar] = recargado.obtener();
+    expect(conUsar.precioOtro).toBe(350);
+    expect(sinUsar.precioOtro).toBeUndefined();
+
+    recargado.completarOtrosPrecios([{ id: 8, precio: 300, precioRebaja: 250 } as IVarianteResumen]);
+    expect(recargado.obtener()[1].precioOtro).toBe(250);
+    expect(recargado.obtener()[1].precio).toBe(300);
+  });
 });

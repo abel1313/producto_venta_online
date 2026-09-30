@@ -185,14 +185,45 @@ export class CarritoVarianteService {
     this._promos.next([]);
   }
 
+  /**
+   * El admin volvió a ver la tienda: las líneas que perdieron su otro precio al recargar (no se
+   * guarda en el navegador, ver emitir()) lo recuperan de la lista que acaba de mandar el back.
+   * Para un cliente la lista no trae precioRebaja y no pasa nada.
+   */
+  completarOtrosPrecios(lista: IVarianteResumen[]): void {
+    const actual = this._carrito.getValue();
+    let cambio = false;
+    for (const item of actual) {
+      if (item.precioOtro) continue;
+      const v = lista.find(x => x.id === item.varianteId);
+      const normal = item.precioNormal ?? item.precio;
+      const rebaja = v?.precioRebaja ?? 0;
+      if (rebaja > 0 && rebaja < normal) {
+        item.precioOtro = rebaja;
+        cambio = true;
+      }
+    }
+    if (cambio) this._carrito.next([...actual]);
+  }
+
+  // El otro precio (el descuento sin aplicar) NO se guarda en localStorage: cualquiera con las
+  // herramientas del navegador lo leería, y sobrevive a cerrar la pestaña sin cerrar sesión.
+  // Vive solo en memoria; al recargar se recupera en leerStorage() o en completarOtrosPrecios().
   private emitir(items: IDetalleVariante[]): void {
     this._carrito.next(items);
-    localStorage.setItem(LS_KEY, JSON.stringify(items));
+    localStorage.setItem(LS_KEY, JSON.stringify(items.map(({ precioOtro, ...resto }) => resto)));
   }
 
   private leerStorage(): IDetalleVariante[] {
     try {
-      return JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
+      const items: IDetalleVariante[] = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
+      // Si la línea se estaba cobrando más barata que el normal, era con "Usar" marcado: ese
+      // precio ya está a la vista en la tabla, así que se recupera como otro precio.
+      return items.map(i => {
+        const { precioOtro, ...resto } = i;
+        const normal = i.precioNormal ?? i.precio;
+        return i.precio < normal ? { ...resto, precioOtro: i.precio } : resto;
+      });
     } catch { return []; }
   }
 }

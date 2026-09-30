@@ -1,7 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map, timeout } from 'rxjs/operators';
+import { distinctUntilChanged, map, timeout } from 'rxjs/operators';
+import { AuthService } from 'src/app/auth/auth.service';
 import { environment } from 'src/environments/environment';
 import { IFiltrosDisponibles, IVariante, IVarianteDto, IVarianteImagenDto, IVarianteImagenPaginable, IVarianteRequest, IVarianteResumen, IVarianteResumenPaginable } from '../models/variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
@@ -72,7 +73,20 @@ export class VarianteService {
     this._terminoCache = '';
   }
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient, authService: AuthService) {
+    // La lista trae el precio con descuento solo si quien la pidió es admin. Al entrar o salir
+    // como admin se tira la que haya en memoria: si no, el admin reusaba la que cargó como
+    // visitante (sin descuento, y el carrito mostraba "—") y el siguiente en usar el equipo
+    // heredaba la del admin.
+    authService.userRoles$.pipe(
+      map(roles => roles.includes('ROLE_ADMIN')),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.invalidarCache();
+      this._cache = [];
+      this._filtrosCache = null;
+    });
+  }
 
   getPaginado(pagina: number, size: number): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/paginado?pagina=${pagina}&size=${size}`)

@@ -403,49 +403,139 @@
   &__sub    { font-size: .8rem; color: var(--app-text-muted); }
 }
 
-// ── Selector de red (radio) ───────────────────────────────────────────────
-// El radio elige cuál red se está CONFIGURANDO. A cuáles se publica es la casilla de abajo —
-// por eso el ✓ y el estado "on" son dos cosas distintas y se ven distinto.
-.fb-radios {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+// ── A qué redes se publica: tarjetas con casilla ──────────────────────────
+// Casillas, no radio: se puede marcar 1, 2 o las 3. El <input> real sigue ahí (teclado, lector de
+// pantalla) pero oculto; lo que se ve es la caja dibujada. Todo con variables del tema.
+.fb-redes__ayuda { margin: -4px 0 12px; }
+
+.fb-redes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
   margin-bottom: 14px;
+
+  // En celular una debajo de otra: con 2 columnas la tercera quedaba sola en su fila.
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
 }
 
-.fb-radio {
-  display: inline-flex;
+.fb-red-op {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
   border: 1.5px solid var(--card-border);
-  border-radius: 999px;
+  border-radius: 14px;
   background: var(--card-bg);
-  color: var(--app-text-muted);
-  font-size: .88rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s;
+  user-select: none;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
 
-  &:hover { color: var(--app-text); }
+  &:hover { border-color: rgba(var(--app-accent-rgb), 0.55); }
 
-  &__input { accent-color: var(--app-accent); cursor: inherit; margin: 0; }
+  // El foco del teclado cae en el <input> oculto: se marca la tarjeta entera (solo con teclado,
+  // no después de un clic).
+  &:has(.fb-red-op__input:focus-visible) { outline: 2px solid var(--app-accent); outline-offset: 2px; }
 
-  // La que se está viendo ahora.
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  &__caja {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: 2px solid var(--card-border);
+    background: var(--input-bg, transparent);
+    transition: background .18s ease, border-color .18s ease, transform .18s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: var(--app-accent-ink, #fff);
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      // La palomita se "dibuja" al marcar.
+      stroke-dasharray: 16;
+      stroke-dashoffset: 16;
+      transition: stroke-dashoffset .22s ease .05s;
+    }
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__nombre {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--app-text);
+    white-space: nowrap;
+  }
+
+  &__estado {
+    font-size: .74rem;
+    color: var(--app-text-muted);
+  }
+
   &--on {
     border-color: var(--app-accent);
     background: var(--app-accent-soft);
-    color: var(--app-text);
+    box-shadow: 0 6px 18px rgba(var(--app-accent-rgb), 0.18);
+    transform: translateY(-1px);
+
+    .fb-red-op__caja {
+      border-color: var(--app-accent);
+      background: var(--app-accent);
+      transform: scale(1.04);
+      svg { stroke-dashoffset: 0; }
+    }
+    .fb-red-op__estado { color: var(--app-accent); font-weight: 600; }
   }
 
-  // Distinto de `--on`: esta red SÍ va a recibir la publicación, se esté viendo o no.
-  &--activa { color: var(--app-text); }
+  // Apagada pero legible: el motivo va debajo, en su propio aviso.
+  &--off {
+    cursor: not-allowed;
+    opacity: .6;
+    background: var(--app-surface-2);
+    &:hover { border-color: var(--card-border); }
+  }
 
-  &__check  { color: var(--app-accent); font-weight: 800; }
-  &__nombre { white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) {
+    &, &__caja, &__caja svg { transition: none; }
+    &--on { transform: none; }
+  }
 }
 
-.fb-tab-body { padding-top: 2px; }
+// Una sección por red marcada, con sus hashtags.
+.fb-red-hashtags {
+  margin-top: 12px;
+  padding: 14px 16px 6px;
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--app-accent);
+  border-radius: 12px;
+  background: var(--card-bg);
+
+  &__titulo {
+    margin: 0 0 8px;
+    font-size: .92rem;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+}
 
 // Alta de los hashtags fijos de esa red. Con recuadro y título propio: un botón suelto no se
 // lee como "aquí es donde se dan de alta" (el dueño preguntó dónde, teniéndolo enfrente).
@@ -505,49 +595,6 @@
 }
 
 .fb-ver-preview { margin-top: 14px; }
-
-// ── Redes (casillas) ──────────────────────────────────────────────────────
-.fb-redes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.fb-red {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  border: 1.5px solid var(--card-border);
-  border-radius: 10px;
-  background: var(--card-bg);
-  cursor: pointer;
-  transition: border-color .15s, background .15s;
-
-  &--on {
-    border-color: var(--app-accent);
-    background: var(--app-accent-soft);
-  }
-
-  // Apagada pero legible: el motivo tiene que poder leerse, es la explicación.
-  &--off {
-    cursor: not-allowed;
-    opacity: .75;
-    background: var(--app-surface-2);
-  }
-
-  &__check { accent-color: var(--app-accent); cursor: inherit; }
-  &__nombre { font-weight: 600; font-size: .9rem; color: var(--app-text); }
-
-  &__motivo {
-    flex-basis: 100%;
-    font-size: .74rem;
-    line-height: 1.35;
-    color: var(--app-text-muted);
-  }
-}
 
 // ── Red bloqueada ─────────────────────────────────────────────────────────
 // Rojo (no ámbar): esto SÍ impide publicar en esa red, a diferencia de `.fb-hint--warn`.

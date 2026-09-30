@@ -148,99 +148,97 @@
     </p>
   </div>
 
-  <!-- ── PASO 2 · UNA OPCIÓN POR RED, SOLO PARA LOS HASHTAGS ──────────── -->
-  <!-- El texto es uno solo para todas (arriba); lo único que cambia por red son los hashtags.
-       El radio elige QUÉ RED se está configurando (no a cuál se publica: eso es la casilla de
-       abajo, y pueden ir varias a la vez). -->
+  <!-- ── PASO 2 · A QUÉ REDES VA, Y SUS HASHTAGS ─────────────────────────── -->
+  <!-- Casillas, no radio: se publica en 1, 2 o las 3 a la vez. Ninguna viene marcada: el admin
+       elige siempre a propósito (antes Facebook venía marcada y se publicaba ahí sin querer). -->
   <div class="fb-card">
     <h5 class="fb-card__title">2 · Redes y hashtags</h5>
+    <p class="fb-hint fb-redes__ayuda">Marca una, dos o las tres. El texto de arriba va igual en todas; los hashtags son de cada red.</p>
 
-    <div class="fb-radios">
-      <label class="fb-radio" *ngFor="let r of TODAS"
-             [class.fb-radio--on]="pestana === r"
-             [class.fb-radio--activa]="redesSel[r] && puedeUsar(r)">
-        <input type="radio" name="redConfig" class="fb-radio__input"
-               [checked]="pestana === r" (change)="verPestana(r)">
-        <span class="fb-radio__check" *ngIf="redesSel[r] && puedeUsar(r)">✓</span>
-        <span class="fb-radio__nombre">{{ nombreDeRed(r) }}</span>
+    <div class="fb-redes" role="group" aria-label="Redes donde se publica">
+      <label class="fb-red-op" *ngFor="let r of TODAS"
+             [class.fb-red-op--on]="redesSel[r] && puedeUsar(r)"
+             [class.fb-red-op--off]="!puedeUsar(r)"
+             [attr.title]="motivoNoDisponible(r)">
+        <input type="checkbox" class="fb-red-op__input"
+               [checked]="redesSel[r] && puedeUsar(r)" [disabled]="!puedeUsar(r) || publicando"
+               (change)="toggleRed(r)">
+        <span class="fb-red-op__caja" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
+        </span>
+        <span class="fb-red-op__texto">
+          <span class="fb-red-op__nombre">{{ nombreDeRed(r) }}</span>
+          <small class="fb-red-op__estado">{{ !puedeUsar(r) ? 'No disponible' : (redesSel[r] ? 'Se publica aquí' : 'No se publica') }}</small>
+        </span>
       </label>
     </div>
 
-    <div class="fb-tab-body" *ngFor="let r of TODAS" [hidden]="pestana !== r">
-      <label class="fb-red" [class.fb-red--on]="redesSel[r]" [class.fb-red--off]="!puedeUsar(r)">
-        <input type="checkbox" class="fb-red__check"
-               [checked]="redesSel[r]" [disabled]="!puedeUsar(r) || publicando"
-               (change)="toggleRed(r)">
-        <span class="fb-red__nombre">Publicar en {{ nombreDeRed(r) }}</span>
-      </label>
-
-      <!-- El motivo iba dentro del label y se perdía. Ahora es un aviso propio, con la salida:
-           el admin llegaba aquí sin entender por qué la casilla no se dejaba marcar. -->
+    <!-- Por qué una red no se deja marcar, con la salida cuando la hay. -->
+    <ng-container *ngFor="let r of TODAS">
       <div class="fb-bloqueo" *ngIf="motivoNoDisponible(r) as m">
-        <p class="fb-bloqueo__txt">🚫 {{ m }}</p>
+        <p class="fb-bloqueo__txt">🚫 <b>{{ nombreDeRed(r) }}:</b> {{ m }}</p>
         <button class="fb-btn fb-btn--ghost fb-btn--sm" *ngIf="r === 'instagram' && tipo === 'video'"
                 (click)="setTipo('reel')">Cambiar a Reel</button>
       </div>
+    </ng-container>
 
-      <!-- Aviso que NO impide publicar (hoy: el video privado de TikTok en Sandbox). -->
-      <p class="fb-hint fb-hint--warn" *ngIf="redesSel[r] && advertenciaDe(r) as a">⚠️ {{ a }}</p>
+    <!-- Hashtags solo de las redes marcadas. Los fijos se escriben solos al abrir la pantalla,
+         así que marcar una red ya trae los suyos puestos. -->
+    <div class="fb-red-hashtags" *ngFor="let r of redesActivas">
+      <h6 class="fb-red-hashtags__titulo">{{ nombreDeRed(r) }}</h6>
+      <p class="fb-hint fb-hint--warn" *ngIf="advertenciaDe(r) as a">⚠️ {{ a }}</p>
+        <div class="fb-field">
+          <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
+          <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
+                 placeholder="#novedadesjade #bolsas">
 
-      <!-- Los hashtags se pueden escribir SIEMPRE, aunque la red no esté marcada todavía: el
-           flujo del dueño es llenar los 3 de corrido (uno por radio) y decidir después. Si una
-           red se queda sin hashtags no pasa nada — se manda solo el texto. -->
-      <div class="fb-field">
-        <label class="fb-label">Hashtags para {{ nombreDeRed(r) }}</label>
-        <input class="fb-input" [(ngModel)]="hashtags[r]" [disabled]="publicando"
-               placeholder="#novedadesjade #bolsas">
-        <p class="fb-hint">Solo los hashtags cambian por red — el texto de arriba va igual en todas.</p>
+          <!-- Aquí se dan de alta los fijos. Va con título propio porque el dueño preguntó "¿dónde
+               doy de alta hashtags?" teniendo el botón enfrente: un botón suelto no se lee como
+               "esta es la pantalla donde se guardan". Guardar reemplaza lo guardado (sirve para
+               agregar, corregir y borrar); restaurar deshace un cambio de un solo post. -->
+          <div class="fb-fijos">
+            <div class="fb-fijos__head">
+              <strong>
+                📌 Mis hashtags fijos de {{ nombreDeRed(r) }}
+                <!-- El alta también vive en su propia pantalla del menú: el dueño preguntó dos
+                     veces dónde se daban de alta, su modelo mental es "los registro en un lado y
+                     aquí se toman". Se deja el enlace para que los dos caminos se encuentren. -->
+                <a class="fb-fijos__link" routerLink="/admin/hashtags">gestionar todos ↗</a>
+              </strong>
+              <small *ngIf="hashtagsFijos[r]">
+                Guardados: <code>{{ hashtagsFijos[r] }}</code> — se escriben solos cada vez que
+                abres esta pantalla.
+              </small>
+              <small *ngIf="!hashtagsFijos[r]">
+                Todavía no tienes. Escríbelos arriba y guárdalos: la próxima vez ya van a estar
+                puestos.
+              </small>
+            </div>
 
-        <!-- Aquí se dan de alta los fijos. Va con título propio porque el dueño preguntó "¿dónde
-             doy de alta hashtags?" teniendo el botón enfrente: un botón suelto no se lee como
-             "esta es la pantalla donde se guardan". Guardar reemplaza lo guardado (sirve para
-             agregar, corregir y borrar); restaurar deshace un cambio de un solo post. -->
-        <div class="fb-fijos">
-          <div class="fb-fijos__head">
-            <strong>
-              📌 Mis hashtags fijos de {{ nombreDeRed(r) }}
-              <!-- El alta también vive en su propia pantalla del menú: el dueño preguntó dos
-                   veces dónde se daban de alta, su modelo mental es "los registro en un lado y
-                   aquí se toman". Se deja el enlace para que los dos caminos se encuentren. -->
-              <a class="fb-fijos__link" routerLink="/admin/hashtags">gestionar todos ↗</a>
-            </strong>
-            <small *ngIf="hashtagsFijos[r]">
-              Guardados: <code>{{ hashtagsFijos[r] }}</code> — se escriben solos cada vez que
-              abres esta pantalla.
-            </small>
-            <small *ngIf="!hashtagsFijos[r]">
-              Todavía no tienes. Escríbelos arriba y guárdalos: la próxima vez ya van a estar
-              puestos.
-            </small>
+            <div class="fb-fijos__acciones">
+              <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                      [disabled]="publicando || !!guardandoFijos || fijosSinCambios(r)"
+                      (click)="guardarFijos(r)">
+                {{ guardandoFijos === r
+                    ? 'Guardando…'
+                    : (hashtagsFijos[r] ? '💾 Actualizar mis fijos' : '💾 Guardar como fijos') }}
+              </button>
+              <button class="fb-btn fb-btn--ghost fb-btn--sm"
+                      *ngIf="!fijosSinCambios(r)"
+                      [disabled]="publicando" (click)="restaurarFijos(r)">
+                ↩ Volver a los fijos
+              </button>
+              <small class="fb-fijos__txt" *ngIf="fijosSinCambios(r) && hashtagsFijos[r]">
+                ✓ Lo de arriba ya es igual a tus fijos.
+              </small>
+            </div>
           </div>
 
-          <div class="fb-fijos__acciones">
-            <button class="fb-btn fb-btn--ghost fb-btn--sm"
-                    [disabled]="publicando || !!guardandoFijos || fijosSinCambios(r)"
-                    (click)="guardarFijos(r)">
-              {{ guardandoFijos === r
-                  ? 'Guardando…'
-                  : (hashtagsFijos[r] ? '💾 Actualizar mis fijos' : '💾 Guardar como fijos') }}
-            </button>
-            <button class="fb-btn fb-btn--ghost fb-btn--sm"
-                    *ngIf="!fijosSinCambios(r)"
-                    [disabled]="publicando" (click)="restaurarFijos(r)">
-              ↩ Volver a los fijos
-            </button>
-            <small class="fb-fijos__txt" *ngIf="fijosSinCambios(r) && hashtagsFijos[r]">
-              ✓ Lo de arriba ya es igual a tus fijos.
-            </small>
-          </div>
+          <p class="fb-hint fb-hint--warn" *ngIf="errorFijos">
+            ⚠️ No se pudieron traer tus hashtags guardados. Escríbelos a mano — publicar sigue
+            funcionando igual.
+          </p>
         </div>
-
-        <p class="fb-hint fb-hint--warn" *ngIf="errorFijos">
-          ⚠️ No se pudieron traer tus hashtags guardados. Escríbelos a mano — publicar sigue
-          funcionando igual.
-        </p>
-      </div>
     </div>
 
     <!-- Tras un "volver a editar": recuerda dónde ya quedó publicado, para que no se pregunte

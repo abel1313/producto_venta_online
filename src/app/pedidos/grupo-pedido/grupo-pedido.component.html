@@ -3,7 +3,10 @@
   <!-- ── PEDIDO UNIDO ───────────────────────────────────────────────────────────── -->
   <section class="gp" *ngIf="grupo?.activo">
     <header class="gp__head">
-      <h4 class="gp__titulo">🔗 Unido en el grupo #{{ grupo!.grupoId }}</h4>
+      <span class="gp__head-titulo">
+        <h4 class="gp__titulo">🔗 Unido en el grupo #{{ grupo!.grupoId }}</h4>
+        <span class="gp__chip gp__chip--cuantos">{{ grupo!.pedidos.length }} pedidos</span>
+      </span>
       <span class="gp__chip">{{ etiquetaTipo(grupo!.tipoPedido) }}</span>
     </header>
 
@@ -73,16 +76,38 @@
       Es de contado: cada pedido se confirma desde su propio detalle.
     </p>
 
-    <div class="gp__acciones" *ngIf="!mostrarFormAbono && !mostrarFormSeparar">
+    <div class="gp__acciones" *ngIf="!mostrarFormAbono && !mostrarFormSeparar && !mostrarFormAgregar">
       <button class="gp-btn gp-btn--principal" type="button"
               *ngIf="puedeAbonar && esCredito && grupo!.saldoGrupo > 0"
               (click)="abrirFormAbono()">
         💵 Abonar al grupo
       </button>
+      <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormAgregar()"
+              title="Sumar más pedidos a este grupo; tienen que tener la misma forma de cobro">
+        ➕ Agregar pedidos
+      </button>
       <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormSeparar()"
               title="Separar uno o todos los pedidos; lo que ha dado el cliente se reparte entre ellos">
         ✂️ Separar pedidos
       </button>
+    </div>
+
+    <!-- Agregar pedidos al grupo -->
+    <div class="gp-form" *ngIf="mostrarFormAgregar">
+      <h5 class="gp-form__titulo">➕ Agregar pedidos al grupo</h5>
+      <p class="gp__texto gp__texto--muted">
+        Solo salen los de {{ etiquetaTipo(grupo!.tipoPedido) }} que no estén en otro grupo. Lo que ya
+        tengan abonado cuenta para el grupo y queda anotado en cada pedido.
+      </p>
+      <ng-container *ngTemplateOutlet="buscador"></ng-container>
+      <ng-container *ngTemplateOutlet="errores"></ng-container>
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormAgregar()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="agregando || elegidos.length === 0"
+                (click)="agregarAlGrupo()">
+          {{ agregando ? 'Agregando…' : elegidos.length > 1 ? 'Agregar ' + elegidos.length + ' pedidos' : 'Agregar' }}
+        </button>
+      </div>
     </div>
 
     <!-- Separar -->
@@ -228,19 +253,13 @@
         es del grupo. Se pueden separar cuando quieras; al separar decides cuánto se queda cada pedido.
       </p>
 
-      <div class="gp-campo">
-        <label for="gpOtros">Números de los otros pedidos</label>
-        <input id="gpOtros" type="text" inputmode="numeric"
-               [(ngModel)]="otrosPedidosTexto" (ngModelChange)="otrosCambiaron()"
-               placeholder="Ej: 102, 105" />
-        <small>Tienen que tener la misma forma de cobro que este pedido.</small>
-      </div>
+      <ng-container *ngTemplateOutlet="buscador"></ng-container>
 
-      <div class="gp-campo">
+      <div class="gp-campo" *ngIf="elegidos.length > 0">
         <label for="gpTitular">¿Quién paga y recoge?</label>
         <select id="gpTitular" [(ngModel)]="titularId">
-          <option *ngFor="let id of candidatosTitular" [ngValue]="id">
-            El cliente del pedido #{{ id }}{{ id === pedidoId ? ' (este)' : '' }}
+          <option *ngFor="let c of candidatosTitular" [ngValue]="c.pedidoId">
+            {{ c.cliente ? c.cliente + ' · ' : '' }}pedido #{{ c.pedidoId }}{{ c.pedidoId === pedidoId ? ' (este)' : '' }}
           </option>
         </select>
       </div>
@@ -251,28 +270,85 @@
                placeholder="Ej: los recoge su hermana" />
       </div>
 
-      <div class="gp-error" *ngIf="errorUnir" role="alert">
-        <p>{{ errorUnir }}</p>
-        <ul *ngIf="tiposDistintos.length">
-          <li *ngFor="let t of tiposDistintos">
-            <ng-container *ngIf="t.pedidoId === pedidoId">Pedido #{{ t.pedidoId }} (este)</ng-container>
-            <a *ngIf="t.pedidoId !== pedidoId" [routerLink]="['/pedidos/mis-pedidos']"
-               [queryParams]="{ pedidoId: t.pedidoId }" target="_blank" rel="noopener">Pedido #{{ t.pedidoId }} ↗</a>
-            — {{ etiquetaTipo(t.tipoPedido) }}
-          </li>
-        </ul>
-        <p *ngIf="tiposDistintos.length" class="gp-error__ayuda">
-          Abre el que no coincida, usa <b>🔁 Cambiar forma de cobro</b> y después vuelve a presionar <b>Unir</b>.
-          Si es este pedido, el botón está aquí arriba.
-        </p>
-      </div>
+      <ng-container *ngTemplateOutlet="errores"></ng-container>
 
       <div class="gp-form__acciones">
         <button class="gp-btn" type="button" (click)="cerrarFormUnir()">Cancelar</button>
-        <button class="gp-btn gp-btn--principal" type="button" [disabled]="uniendo" (click)="unir()">
-          {{ uniendo ? 'Uniendo…' : 'Unir' }}
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="uniendo || elegidos.length === 0" (click)="unir()">
+          {{ uniendo ? 'Uniendo…' : elegidos.length ? 'Unir ' + (elegidos.length + 1) + ' pedidos' : 'Unir' }}
         </button>
       </div>
     </section>
   </ng-container>
+
+  <!-- ── BUSCADOR DE PEDIDOS A UNIR (unir y agregar) ─────────────────────────────── -->
+  <ng-template #buscador>
+    <div class="gp-buscar">
+      <label class="gp-buscar__label" for="gpBuscar">Buscar pedido</label>
+      <input id="gpBuscar" class="gp-buscar__input" type="search" autocomplete="off"
+             [(ngModel)]="terminoBusqueda" (ngModelChange)="alEscribir($event)"
+             placeholder="Número de pedido o nombre del cliente" />
+      <small class="gp-buscar__ayuda" [class.gp-buscar__ayuda--aviso]="avisoBusqueda">
+        {{ avisoBusqueda || 'Solo salen los que se pueden unir: misma forma de cobro, abiertos y sin otro grupo.' }}
+      </small>
+
+      <div class="gp-elegidos" *ngIf="elegidos.length > 0">
+        <span class="gp-elegidos__resumen">
+          {{ elegidos.length }} {{ elegidos.length === 1 ? 'elegido' : 'elegidos' }} · {{ totalElegidos | currency:'$' }}
+        </span>
+        <span class="gp-etiqueta" *ngFor="let e of elegidos">
+          #{{ e.pedidoId }} {{ e.cliente }}
+          <button type="button" class="gp-etiqueta__quitar" (click)="quitarElegido(e)"
+                  [attr.aria-label]="'Quitar el pedido #' + e.pedidoId">✕</button>
+        </span>
+      </div>
+
+      <ul class="gp-resultados" (scroll)="alHacerScroll($event)" aria-label="Pedidos que se pueden unir">
+        <li *ngFor="let c of resultados">
+          <button type="button" class="gp-resultado" [class.gp-resultado--elegido]="estaElegido(c)"
+                  [attr.aria-pressed]="estaElegido(c)" (click)="alternarElegido(c)">
+            <span class="gp-resultado__marca" aria-hidden="true">{{ estaElegido(c) ? '✓' : '+' }}</span>
+            <span class="gp-resultado__datos">
+              <span class="gp-resultado__linea">
+                <b>#{{ c.pedidoId }}</b> {{ c.cliente || 'Sin nombre' }}
+              </span>
+              <span class="gp-resultado__sub">
+                <span class="gp-estado" [ngClass]="claseEstado(c.estadoPedido)">{{ etiquetaEstado(c.estadoPedido) }}</span>
+                <span *ngIf="c.fecha">{{ c.fecha | date:'dd/MM/yyyy' }}</span>
+                <span *ngIf="c.pagado > 0">abonado {{ c.pagado | currency:'$' }}</span>
+              </span>
+            </span>
+            <span class="gp-resultado__total">{{ c.total | currency:'$' }}</span>
+          </button>
+        </li>
+        <li class="gp-resultados__vacio" *ngIf="buscado && resultados.length === 0">
+          No hay pedidos que se puedan unir{{ terminoBusqueda.trim() ? ' con "' + terminoBusqueda.trim() + '"' : '' }}.
+        </li>
+        <li class="gp-resultados__mas" *ngIf="hayMas">
+          <button type="button" class="gp-btn" (click)="cargarMas()" [disabled]="cargandoMas">
+            {{ cargandoMas ? 'Trayendo más…' : 'Ver más' }}
+          </button>
+        </li>
+      </ul>
+    </div>
+  </ng-template>
+
+  <ng-template #errores>
+    <div class="gp-error" *ngIf="errorUnir" role="alert">
+      <p>{{ errorUnir }}</p>
+      <ul *ngIf="tiposDistintos.length">
+        <li *ngFor="let t of tiposDistintos">
+          <ng-container *ngIf="t.pedidoId === pedidoId">Pedido #{{ t.pedidoId }} (este)</ng-container>
+          <a *ngIf="t.pedidoId !== pedidoId" [routerLink]="['/pedidos/mis-pedidos']"
+             [queryParams]="{ pedidoId: t.pedidoId }" target="_blank" rel="noopener">Pedido #{{ t.pedidoId }} ↗</a>
+          — {{ etiquetaTipo(t.tipoPedido) }}
+        </li>
+      </ul>
+      <p *ngIf="tiposDistintos.length" class="gp-error__ayuda">
+        Abre el que no coincida, usa <b>🔁 Cambiar forma de cobro</b> y después vuelve a presionar <b>Unir</b>.
+        Si es este pedido, el botón está aquí arriba.
+      </p>
+    </div>
+
+  </ng-template>
 </ng-container>

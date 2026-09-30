@@ -38,27 +38,11 @@ Agregar modelo, Modelos y Agregar producto.
   con descuento y entre al carrito con "Usar" marcado; con "Precio venta" el descuento solo se
   aplica con "Usar", el 👁 lo pide y 🙈 lo borra, y nunca queda en el navegador.
 
-## Solas, después de cada deploy a QA
+## No corren solas
 
-Son el último paso del workflow de QA (`.github/workflows/producto-actions-qa.yml`, job
-"Pruebas E2E en QA"). Cada push a `qa`:
-
-1. construye la imagen del front,
-2. la despliega en QA y espera a que el pod nuevo quede arriba,
-3. corre estas pruebas contra QA con el mismo código que se acaba de desplegar.
-
-Todo se lee de la rama `qa`; `master` no interviene. El reporte queda como artefacto
-`reporte-e2e-qa` de esa corrida (14 días): se descarga, se descomprime y se abre `index.html`.
-
-- **Si salen en rojo, el deploy sí quedó hecho:** el rojo es de las pruebas. El job del deploy
-  tiene su propia palomita.
-- **Correrlas otra vez sin redesplegar:** Actions → abrir la última corrida de "Build and Push
-  Docker QA" → Re-run jobs → solo "Pruebas E2E en QA".
-- **Si solo cambió el back**, no se disparan solas (el back es otro repo): se corren a mano igual
-  que el punto anterior.
-
-Necesita los secretos `E2E_USUARIO` y `E2E_PASSWORD` en el repo (Settings → Secrets and
-variables → Actions): el usuario de QA solo para pruebas.
+Se quitaron del deploy de QA (2026-09-30): en GitHub corren sin ventana y solo dejan la grabación
+al final. Se corren a mano desde tu máquina con `npm run test:ver` o `npm run test:ui`, que sí se
+ven en vivo.
 
 ## Limpiar lo que crean
 

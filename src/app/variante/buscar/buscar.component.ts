@@ -271,6 +271,31 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Los filtros ocupan media pantalla en celular: arrancan cerrados y cada navegador recuerda si los dejó abiertos. */
+  filtrosAbiertos = BuscarComponent.leerFiltrosAbiertos();
+
+  private static leerFiltrosAbiertos(): boolean {
+    try { return localStorage.getItem('tienda-buscar:filtros-abiertos') === '1'; } catch { return false; }
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos = !this.filtrosAbiertos;
+    try { localStorage.setItem('tienda-buscar:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  get hayFiltrosQueMostrar(): boolean {
+    return this.puedeVerAlgunFiltro || (!this.modoPorProducto && !!this.filtrosDisponibles);
+  }
+
+  /** Cuántos filtros están aplicados, para verlo aunque el panel esté cerrado. */
+  get filtrosActivos(): number {
+    return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
+            this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
+            !!this.fechaDesde, !!this.fechaHasta,
+            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca,
+            this.filtroPrecioMin !== null, this.filtroPrecioMax !== null].filter(Boolean).length;
+  }
+
   get hayFiltrosAdminActivos(): boolean {
     return this.mostrarConStock || this.mostrarSinStock
         || this.mostrarConImagenes || this.mostrarSinImagenes

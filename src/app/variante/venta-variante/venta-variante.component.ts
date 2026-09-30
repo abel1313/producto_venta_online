@@ -173,18 +173,18 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       this.carritoService.quitarOtroPrecio(item.varianteId);
       return;
     }
-    // Hasta que el back conteste, la casilla queda como estaba.
-    check.checked = false;
+    // La casilla se queda marcada mientras el back contesta; se desmarca sola si no hay descuento.
     this.pedirDescuento(item.varianteId, monto => {
       if (monto > 0) {
         this.carritoService.aplicarOtroPrecio(item.varianteId, monto);
       } else {
+        check.checked = false;
         Swal.fire({ icon: 'info', title: 'Este artículo no tiene precio con descuento', timer: 1800, showConfirmButton: false });
       }
-    });
+    }, () => { check.checked = false; });
   }
 
-  private pedirDescuento(varianteId: number, usar: (monto: number) => void): void {
+  private pedirDescuento(varianteId: number, usar: (monto: number) => void, siFalla?: () => void): void {
     this.consultandoOtroPrecio.add(varianteId);
     this.varianteService.descuentoArticulo(varianteId).subscribe({
       next: d => {
@@ -193,6 +193,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.consultandoOtroPrecio.delete(varianteId);
+        siFalla?.();
         Swal.fire({ icon: 'error', title: 'No se pudo consultar el descuento',
           text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
       }

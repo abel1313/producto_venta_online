@@ -1,0 +1,78 @@
+# Corre las pruebas de punta a punta (carpeta e2e/, Playwright) contra QA.
+#
+# Cuándo:
+#   - solo, cada vez que termina bien el deploy de QA del front ("Build and Push Docker QA");
+#   - a mano, desde la pestaña Actions → "Pruebas E2E en QA" → Run workflow.
+# GitHub solo activa este archivo cuando está en la rama principal (master): mientras viva solo en
+# dev/qa no se dispara.
+#
+# Necesita dos secretos del repo (Settings → Secrets and variables → Actions):
+#   E2E_USUARIO / E2E_PASSWORD — usuario de QA solo para pruebas, con permisos de admin.
+#
+# Nunca corre contra prod: playwright.config.ts se niega a usar las URLs de producción.
+# Lo que crean las pruebas lleva E2E en el código de barras; se da de baja con
+# limpiar_datos_e2e_qa.sql (repo del back).
+name: Pruebas E2E en QA
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build and Push Docker QA"]
+    types: [completed]
+    branches: [qa]
+
+# Una corrida a la vez: dos al mismo tiempo se pisarían en la base de QA.
+concurrency:
+  group: e2e-qa
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Las pruebas de la misma versión que se acaba de desplegar en QA.
+          ref: ${{ github.event.workflow_run.head_sha || 'qa' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Instalar Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # El deploy termina al mandar "rollout restart"; el pod nuevo tarda 1-2 minutos en quedar.
+      - name: Esperar a que QA termine de reiniciar
+        if: github.event_name == 'workflow_run'
+        run: |
+          sleep 90
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null https://qa.shop.novedades-jade.com.mx/login && exit 0
+            sleep 10
+          done
+          echo "QA no respondió después del deploy" && exit 1
+
+      - name: Correr las pruebas
+        run: npx playwright test
+        env:
+          E2E_USUARIO: ${{ secrets.E2E_USUARIO }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+      # Con capturas, video y pasos de cada prueba, pase o falle.
+      - name: Guardar el reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-e2e-qa
+          path: e2e/playwright-report/
+          retention-days: 14

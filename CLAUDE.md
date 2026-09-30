@@ -12368,11 +12368,13 @@ rebaja en automático porque la card la mostraba como precio final. No volver a 
 - **Card de `tienda/buscar`:** solo `v.precio`. Sin tachado ni rebaja.
 - **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio` (al que se vende). Guarda
   `precioNormal` y `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
-- **`precioOtro` NO se guarda en `localStorage`** (2026-09-30): el descuento sin aplicar se leería
-  con las herramientas del navegador y sobrevivía a cerrar la pestaña. Vive en memoria. Al recargar,
-  una línea con "Usar" marcado lo recupera de su propio precio; las demás lo recuperan cuando el
-  admin vuelve a ver la tienda (`completarOtrosPrecios`, llamado en cada carga de lista de
-  `tienda/buscar`). Mientras tanto la columna muestra "—".
+- **El descuento no viaja en las listas (R9, 2026-09-30):** `IVarianteResumen` ya no trae
+  `precioRebaja`, ni para el admin. Se pide uno por uno con
+  `VarianteService.descuentoArticulo(id)` (`GET /v1/precios/articulo/{id}/descuento`): 👁 del
+  carrito (🙈 lo borra de la página), "Usar" del carrito, "Otro precio" del detalle del pedido y el
+  💲 al abrirse. La línea del carrito guarda solo `usaOtroPrecio` y el `precio` que se cobra, nunca
+  un descuento sin aplicar. **Cualquier pantalla nueva que necesite el descuento lo pide así; no
+  volver a meterlo en la lista.**
 - **La lista de `tienda/buscar` en memoria (`VarianteService`) se tira al cambiar el rol** (entrar o
   salir como admin). Antes el admin reusaba la que cargó como visitante, sin `precioRebaja`, y el
   carrito mostraba "—" aunque el artículo tuviera descuento.

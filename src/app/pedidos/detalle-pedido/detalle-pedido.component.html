@@ -175,11 +175,12 @@
         <div class="dp-art-item__precio">
           <span class="dp-art-item__final">{{ (v.precio ?? 0) | currency:'$' }}</span>
         </div>
-        <!-- "Otro precio" cobra el descuento sin enseñar el monto: el cliente puede estar viendo. -->
+        <!-- "Otro precio" cobra el descuento sin enseñar el monto: el cliente puede estar viendo.
+             El monto no viene en la lista (R9): se le pide al back al dar clic. -->
         <button class="dp-art-item__btn dp-art-item__btn--otro" type="button"
-                *ngIf="otroPrecio(v) && (v.stock ?? 0) >= 1"
+                *ngIf="(v.stock ?? 0) >= 1"
                 [disabled]="guardandoArticulo"
-                (click)="elegirArticulo(v, true)">
+                (click)="elegirConOtroPrecio(v)">
           Otro precio
         </button>
         <button class="dp-art-item__btn" type="button"

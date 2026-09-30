@@ -22,6 +22,14 @@ export interface IPreciosArticulo {
   vendeBajoCosto: boolean;
 }
 
+/** El precio con descuento de UN artículo, pedido al momento (R9). */
+export interface IDescuentoArticulo {
+  varianteId:     number;
+  /** 0 si no tiene descuento. */
+  precioRebaja:   number;
+  tieneDescuento: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
   // ✅ Endpoint actualizado 2026-09-17: ahora usa /v1/variantes (backend renombrado)
@@ -178,6 +186,14 @@ export class VarianteService {
    * Precio propio de UN artículo: los demás del producto no cambian (2026-09-29).
    * `precioRebaja` 0 = sin descuento. Lo ya vendido conserva su precio.
    */
+  /**
+   * El descuento ya no viaja en la lista de la tienda (R9): se pide cuando el admin lo destapa, lo
+   * aplica o abre el 💲. Quien lo pide lo usa y lo suelta; no se guarda en el servicio.
+   */
+  descuentoArticulo(varianteId: number): Observable<IDescuentoArticulo> {
+    return this.http.get<IDescuentoArticulo>(`${environment.api_Url}/v1/precios/articulo/${varianteId}/descuento`);
+  }
+
   cambiarPrecioArticulo(varianteId: number, precioVenta: number, precioRebaja: number,
                         usarDescuento: boolean): Observable<IPreciosArticulo> {
     return this.http.put<IPreciosArticulo>(

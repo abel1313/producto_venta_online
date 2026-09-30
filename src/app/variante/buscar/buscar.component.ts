@@ -169,7 +169,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (this.varianteService.initialized) {
           this.terminoBusqueda = this.varianteService.terminoCache;
           this.variantes       = [...this.varianteService.variantesCache];
-          this.carritoVariante.completarOtrosPrecios(this.variantes);
           this.totalPaginas    = this.varianteService.totalPaginasCache;
           this.paginaActual    = this.varianteService.paginaCache;
           // Restaura los filtros que produjeron este resultado cacheado -- sin esto, la lista
@@ -254,7 +253,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (this.reqId !== id) return;
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
-        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, termino);
@@ -487,7 +485,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
       next: res => {
         this.sinResultados = false;
         this.variantes    = res.t ?? [];
-        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
@@ -553,7 +550,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
       next: res => {
         this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
-        this.carritoVariante.completarOtrosPrecios(this.variantes);
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
@@ -581,7 +577,6 @@ export class BuscarComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: res => {
           this.variantes    = res.t ?? [];
-          this.carritoVariante.completarOtrosPrecios(this.variantes);
           this.totalPaginas = res.totalPaginas;
           this.paginaActual = pagina;
           this.buscando = false;
@@ -895,8 +890,23 @@ export class BuscarComponent implements OnInit, OnDestroy {
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId) return;
+    // El descuento no viene en la lista (R9): se pide al abrir y se suelta al cerrar.
+    this.cambiandoPrecioId = v.id;
+    this.varianteService.descuentoArticulo(v.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: d => {
+        this.cambiandoPrecioId = null;
+        this.abrirModalPrecio(v, d.tieneDescuento ? d.precioRebaja : 0);
+      },
+      error: err => {
+        this.cambiandoPrecioId = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el precio',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private abrirModalPrecio(v: IVarianteResumen, descuentoActual: number): void {
     const normal = v.precioNormal ?? v.precio ?? 0;
-    const descuentoActual = v.precioRebaja ?? 0;
     const teniaDescuentoActivo = !!v.usarDescuento;
     const pesos = (n: number) => `$${n.toFixed(2)}`;
     const nombre = [v.nombreProducto || 'este artículo', v.talla, v.color].filter(Boolean).join(' · ');
@@ -997,11 +1007,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.cambiandoPrecioId = null;
         v.precio = res.precioACobrar;
         v.precioNormal = res.precioVenta;
-        v.precioRebaja = res.precioRebaja;
         v.usarDescuento = res.usarDescuento;
         v.precioPropio = res.propio;
         // Si ya estaba en el carrito, se cobra al precio nuevo (si no, el back lo rechazaría al cobrar).
-        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioRebaja, res.usarDescuento);
+        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioACobrar, res.usarDescuento);
         this.varianteService.invalidarCache();
         Swal.fire({
           icon: res.vendeBajoCosto ? 'warning' : 'success',

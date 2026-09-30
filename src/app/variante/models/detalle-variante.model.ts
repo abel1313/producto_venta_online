@@ -6,11 +6,14 @@ export interface IDetalleVariante {
   marca?: string | null;
   presentacion?: string | null;
   stock: number;
-  /** Lo que se cobra: `precioNormal`, o `precioOtro` si el admin lo eligió en el carrito. */
+  /** Lo que se cobra: `precioNormal`, o el descuento si `usaOtroPrecio`. */
   precio: number;
   precioNormal?: number;
-  /** El precio con descuento; solo le llega al admin. null = el producto no tiene. */
-  precioOtro?: number | null;
+  /**
+   * true = la línea se cobra con el precio con descuento. El monto del descuento sin aplicar no
+   * se guarda en ningún lado: se le pide al back al destaparlo o al marcar "Usar" (R9).
+   */
+  usaOtroPrecio?: boolean;
   cantidad: number;
   subTotal: number;
   imagenBase64?: string | null;

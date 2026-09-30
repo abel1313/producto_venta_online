@@ -28,9 +28,11 @@ export class CarritoVarianteService {
 
   /**
    * Entra al precio al que se vende el artículo (`v.precio`): el normal, o el descuento si el admin
-   * activó "Precio descuento" en el 💲 de la card. En ese caso la línea arranca con "Usar" marcado
-   * y desmarcarlo cobra el normal solo en esta venta. Sin eso, el descuento solo se aplica si el
-   * admin lo elige aquí (hotfix 2026-09-29).
+   * activó "Precio descuento" en el 💲 de la card; en ese caso la línea arranca con "Usar" marcado
+   * y desmarcarlo cobra el normal solo en esta venta.
+   *
+   * El monto del descuento no llega en la lista (R9): si el admin lo quiere aplicar a una línea,
+   * la pantalla se lo pide al back y llama a aplicarOtroPrecio().
    */
   agregar(v: IVarianteResumen): boolean {
     const actual = this._carrito.getValue();
@@ -43,9 +45,6 @@ export class CarritoVarianteService {
     } else {
       if ((v.stock ?? 0) <= 0) return false;
       const precio = v.precio ?? 0;
-      // Al cliente no le llega precioNormal: para él el precio de la card es el único.
-      const normal = v.precioNormal ?? precio;
-      const rebaja = v.precioRebaja ?? 0;
       actual.push({
         varianteId:   v.id,
         talla:        v.talla,
@@ -54,10 +53,9 @@ export class CarritoVarianteService {
         presentacion: v.presentacion,
         stock:        v.stock ?? 0,
         precio,
-        precioNormal: normal,
-        // Solo cuenta como "otro precio" si de verdad es más barato: al dar de alta un producto
-        // el descuento se llena igual al normal por default.
-        precioOtro:   rebaja > 0 && rebaja < normal ? rebaja : null,
+        // Al cliente no le llega precioNormal: para él el precio de la card es el único.
+        precioNormal: v.precioNormal ?? precio,
+        usaOtroPrecio: !!v.usarDescuento,
         cantidad:     1,
         subTotal:     precio,
         imagenBase64: v.imagenBase64,
@@ -71,26 +69,39 @@ export class CarritoVarianteService {
   }
 
   /**
-   * El admin le cambió el precio al artículo con 💲 y ya estaba en el carrito: la línea toma los
-   * precios nuevos y lo que eligió en la card ("Precio venta" o "Precio descuento").
+   * El admin le cambió el precio al artículo con 💲 y ya estaba en el carrito: la línea toma el
+   * precio nuevo y lo que eligió en la card ("Precio venta" o "Precio descuento").
    */
-  actualizarPrecios(varianteId: number, precioNormal: number, precioRebaja: number, usarDescuento: boolean): void {
+  actualizarPrecios(varianteId: number, precioNormal: number, precioACobrar: number, usarDescuento: boolean): void {
     const actual = this._carrito.getValue();
     const item = actual.find(i => i.varianteId === varianteId);
     if (!item) return;
-    item.precioNormal = precioNormal;
-    item.precioOtro   = precioRebaja > 0 && precioRebaja < precioNormal ? precioRebaja : null;
-    item.precio       = usarDescuento && item.precioOtro ? item.precioOtro : precioNormal;
-    item.subTotal     = item.cantidad * item.precio;
+    item.precioNormal  = precioNormal;
+    item.usaOtroPrecio = usarDescuento;
+    item.precio        = precioACobrar;
+    item.subTotal      = item.cantidad * item.precio;
     this.emitir([...actual]);
   }
 
-  usarOtroPrecio(varianteId: number, usar: boolean): void {
+  /** Cobra la línea con el descuento que la pantalla acaba de pedirle al back. */
+  aplicarOtroPrecio(varianteId: number, descuento: number): void {
     const actual = this._carrito.getValue();
     const item = actual.find(i => i.varianteId === varianteId);
-    if (!item || !item.precioOtro) return;
-    item.precio   = usar ? item.precioOtro : (item.precioNormal ?? item.precio);
-    item.subTotal = item.cantidad * item.precio;
+    if (!item || !(descuento > 0)) return;
+    item.precio        = descuento;
+    item.usaOtroPrecio = true;
+    item.subTotal      = item.cantidad * item.precio;
+    this.emitir([...actual]);
+  }
+
+  /** Regresa la línea a su precio normal, solo en esta venta. */
+  quitarOtroPrecio(varianteId: number): void {
+    const actual = this._carrito.getValue();
+    const item = actual.find(i => i.varianteId === varianteId);
+    if (!item) return;
+    item.precio        = item.precioNormal ?? item.precio;
+    item.usaOtroPrecio = false;
+    item.subTotal      = item.cantidad * item.precio;
     this.emitir([...actual]);
   }
 
@@ -185,45 +196,21 @@ export class CarritoVarianteService {
     this._promos.next([]);
   }
 
-  /**
-   * El admin volvió a ver la tienda: las líneas que perdieron su otro precio al recargar (no se
-   * guarda en el navegador, ver emitir()) lo recuperan de la lista que acaba de mandar el back.
-   * Para un cliente la lista no trae precioRebaja y no pasa nada.
-   */
-  completarOtrosPrecios(lista: IVarianteResumen[]): void {
-    const actual = this._carrito.getValue();
-    let cambio = false;
-    for (const item of actual) {
-      if (item.precioOtro) continue;
-      const v = lista.find(x => x.id === item.varianteId);
-      const normal = item.precioNormal ?? item.precio;
-      const rebaja = v?.precioRebaja ?? 0;
-      if (rebaja > 0 && rebaja < normal) {
-        item.precioOtro = rebaja;
-        cambio = true;
-      }
-    }
-    if (cambio) this._carrito.next([...actual]);
-  }
-
-  // El otro precio (el descuento sin aplicar) NO se guarda en localStorage: cualquiera con las
-  // herramientas del navegador lo leería, y sobrevive a cerrar la pestaña sin cerrar sesión.
-  // Vive solo en memoria; al recargar se recupera en leerStorage() o en completarOtrosPrecios().
+  // En localStorage solo va lo que se ve en la tabla: si la línea usa el descuento, ese precio ya
+  // está a la vista. El descuento sin aplicar nunca pasa por aquí (R9).
   private emitir(items: IDetalleVariante[]): void {
     this._carrito.next(items);
-    localStorage.setItem(LS_KEY, JSON.stringify(items.map(({ precioOtro, ...resto }) => resto)));
+    localStorage.setItem(LS_KEY, JSON.stringify(items));
   }
 
   private leerStorage(): IDetalleVariante[] {
     try {
-      const items: IDetalleVariante[] = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
-      // Si la línea se estaba cobrando más barata que el normal, era con "Usar" marcado: ese
-      // precio ya está a la vista en la tabla, así que se recupera como otro precio.
-      return items.map(i => {
-        const { precioOtro, ...resto } = i;
-        const normal = i.precioNormal ?? i.precio;
-        return i.precio < normal ? { ...resto, precioOtro: i.precio } : resto;
-      });
+      // Carritos guardados antes de R9 traían precioOtro: se tira al leerlos.
+      const items: (IDetalleVariante & { precioOtro?: unknown })[] = JSON.parse(localStorage.getItem(LS_KEY) ?? '[]');
+      return items.map(({ precioOtro, ...resto }) => ({
+        ...resto,
+        usaOtroPrecio: resto.usaOtroPrecio ?? (resto.precioNormal != null && resto.precio < resto.precioNormal)
+      }));
     } catch { return []; }
   }
 }

@@ -43,24 +43,24 @@
         <td *ngIf="mostrarPresentacion">{{ item.presentacion || '—' }}</td>
         <td>{{ item.stock }}</td>
         <td>{{ item.precio | currency:'$' }}</td>
-        <!-- El monto va tapado: el cliente puede estar viendo la pantalla junto al admin. -->
+        <!-- El monto va tapado y ni siquiera está en la página hasta que se destapa: 👁 se lo pide
+             al back y 🙈 lo borra (R9). El cliente puede estar viendo la pantalla. -->
         <td *ngIf="isAdminUser">
-          <span *ngIf="!item.precioOtro" class="text-muted">—</span>
-          <div *ngIf="item.precioOtro" class="vv-otro">
-            <span class="vv-otro__monto">
-              {{ otroPrecioVisible.has(item.varianteId) ? (item.precioOtro | currency:'$') : '$ ••••' }}
-            </span>
+          <div class="vv-otro">
+            <span class="vv-otro__monto">{{ textoOtroPrecio(item) }}</span>
             <button type="button" class="btn btn-sm btn-outline-secondary"
+              [disabled]="consultandoOtroPrecio.has(item.varianteId)"
               (click)="verOtroPrecio(item)"
-              [attr.aria-label]="otroPrecioVisible.has(item.varianteId) ? 'Tapar el otro precio' : 'Ver el otro precio unos segundos'"
-              [title]="otroPrecioVisible.has(item.varianteId) ? 'Tapar' : 'Ver unos segundos'">
+              [attr.aria-label]="otroPrecioVisible.has(item.varianteId) ? 'Tapar el otro precio' : 'Ver el otro precio'"
+              [title]="otroPrecioVisible.has(item.varianteId) ? 'Tapar' : 'Ver'">
               {{ otroPrecioVisible.has(item.varianteId) ? '🙈' : '👁' }}
             </button>
-            <!-- Marcado = toda la fila (todas sus piezas) al otro precio. Por default no. -->
+            <!-- Marcado = toda la fila (todas sus piezas) al otro precio. -->
             <label class="vv-otro__usar">
               <input type="checkbox" class="form-check-input"
-                [checked]="usaOtroPrecio(item)"
-                (change)="alternarOtroPrecio(item)">
+                [checked]="!!item.usaOtroPrecio"
+                [disabled]="consultandoOtroPrecio.has(item.varianteId)"
+                (change)="alternarOtroPrecio(item, $event)">
               Usar
             </label>
           </div>

@@ -128,7 +128,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subBusqueda?.unsubscribe();
-    this.timersOtroPrecio.forEach(t => clearTimeout(t));
+    this.otroPrecioVisible.clear();
   }
 
   private recalcularTotales(): void {
@@ -147,26 +147,56 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   // ── Otro precio (admin) ────────────────────────────────────────────
-  // El descuento no se aplica solo: el admin lo elige por artículo. El monto va tapado y se
-  // destapa unos segundos, porque el cliente puede estar viendo la pantalla.
+  // El descuento no se aplica solo: el admin lo elige por artículo. El monto no llega con la
+  // lista (R9): 👁 lo pide al back para esa línea y 🙈 lo borra de la página; "Usar" lo pide al
+  // marcarse. Así solo existe en el navegador el descuento que el admin destapó.
 
-  otroPrecioVisible = new Set<number>();
-  private timersOtroPrecio = new Map<number, ReturnType<typeof setTimeout>>();
+  /** Montos destapados: varianteId → descuento (0 = no tiene). Se borra al tapar o al salir. */
+  otroPrecioVisible = new Map<number, number>();
+  consultandoOtroPrecio = new Set<number>();
 
-  usaOtroPrecio(item: IDetalleVariante): boolean {
-    return !!item.precioOtro && item.precio === item.precioOtro;
-  }
-
-  alternarOtroPrecio(item: IDetalleVariante): void {
-    this.carritoService.usarOtroPrecio(item.varianteId, !this.usaOtroPrecio(item));
+  textoOtroPrecio(item: IDetalleVariante): string {
+    if (!this.otroPrecioVisible.has(item.varianteId)) return '$ ••••';
+    const monto = this.otroPrecioVisible.get(item.varianteId)!;
+    return monto > 0 ? `$${monto.toFixed(2)}` : 'Sin descuento';
   }
 
   verOtroPrecio(item: IDetalleVariante): void {
     const id = item.varianteId;
-    clearTimeout(this.timersOtroPrecio.get(id));
     if (this.otroPrecioVisible.delete(id)) return;
-    this.otroPrecioVisible.add(id);
-    this.timersOtroPrecio.set(id, setTimeout(() => this.otroPrecioVisible.delete(id), 3000));
+    this.pedirDescuento(id, monto => this.otroPrecioVisible.set(id, monto));
+  }
+
+  alternarOtroPrecio(item: IDetalleVariante, event: Event): void {
+    const check = event.target as HTMLInputElement;
+    if (!check.checked) {
+      this.carritoService.quitarOtroPrecio(item.varianteId);
+      return;
+    }
+    // Hasta que el back conteste, la casilla queda como estaba.
+    check.checked = false;
+    this.pedirDescuento(item.varianteId, monto => {
+      if (monto > 0) {
+        this.carritoService.aplicarOtroPrecio(item.varianteId, monto);
+      } else {
+        Swal.fire({ icon: 'info', title: 'Este artículo no tiene precio con descuento', timer: 1800, showConfirmButton: false });
+      }
+    });
+  }
+
+  private pedirDescuento(varianteId: number, usar: (monto: number) => void): void {
+    this.consultandoOtroPrecio.add(varianteId);
+    this.varianteService.descuentoArticulo(varianteId).subscribe({
+      next: d => {
+        this.consultandoOtroPrecio.delete(varianteId);
+        usar(d.tieneDescuento ? d.precioRebaja : 0);
+      },
+      error: err => {
+        this.consultandoOtroPrecio.delete(varianteId);
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el descuento',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
   quitarPromo(promocionId: number): void {

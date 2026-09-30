@@ -12,7 +12,7 @@ import {
   PROGRAMAR_MIN_MINUTOS,
   PlataformaRed
 } from 'src/app/redes-sociales/models/publicacion.model';
-import { IProgresoPublicacion, RedesSocialesService } from 'src/app/redes-sociales/service/redes-sociales.service';
+import { CLAVE_STATE_TIKTOK, IConexionTikTok, IProgresoPublicacion, RedesSocialesService } from 'src/app/redes-sociales/service/redes-sociales.service';
 
 /**
  * Lo único que se publica desde aquí.
@@ -111,6 +111,17 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   readonly limiteMb = LIMITE_ARCHIVO_MB;
 
+  /**
+   * Cuenta de TikTok a la que llegan los videos. TikTok pide que se vea nombre y foto antes de
+   * publicar, y así el dueño sabe a qué cuenta va. `null` mientras se consulta.
+   */
+  tiktokCuenta: IConexionTikTok | null = null;
+  /** `error` = no se pudo preguntar (red, back caído): no se bloquea TikTok por eso. */
+  tiktokEstado: 'cargando' | 'listo' | 'error' = 'cargando';
+  conectandoTikTok = false;
+  desconectandoTikTok = false;
+  errorConectarTikTok = '';
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -121,6 +132,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarFijos();
+    this.cargarCuentaTikTok();
 
     this.input$.pipe(
       filter(t => t.trim().length >= 2),
@@ -382,6 +394,14 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       return `Este video ya se publicó en ${this.nombreDeRed(r)}. Para mandarlo otra vez, empieza una publicación nueva.`;
     }
 
+    // Sin cuenta conectada el back no tiene a dónde mandar el video. Solo cuando se SABE que no
+    // hay: si la consulta falló no se bloquea, que publicar diga el error real.
+    if (r === 'tiktok' && this.tiktokEstado === 'listo' && !this.tiktokCuenta?.conectado) {
+      return this.tiktokCuenta?.motivo
+        ? 'TikTok ya no acepta el permiso que se dio. Vuelve a conectar la cuenta.'
+        : 'Primero conecta la cuenta de TikTok donde van a llegar los videos.';
+    }
+
     // Instagram no tiene "video de feed": ahí todo video es Reel.
     if (r === 'instagram' && this.tipo === 'video') {
       return 'Para video en Instagram usa Reel (el video de feed no aplica).';
@@ -390,14 +410,96 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Aviso que NO impide publicar, a diferencia de `motivoNoDisponible`. Hoy solo TikTok: mientras
-   * su app siga en Sandbox el video sale privado, y eso hay que decirlo antes de publicar o el
-   * admin va a creer que salió mal.
+   * Aviso que NO impide publicar, a diferencia de `motivoNoDisponible`. Hoy solo TikTok: el video
+   * no sale publicado solo, y eso hay que decirlo antes o el admin va a creer que salió mal.
    */
   advertenciaDe(r: PlataformaRed): string | null {
     return r === 'tiktok'
-      ? 'Mientras TikTok no apruebe la app, el video se sube como privado y solo lo ves tú.'
+      ? 'En TikTok no se publica solo: el video te llega como notificación (Bandeja → Notificaciones del sistema) y desde ahí lo terminas de editar y publicar.'
       : null;
+  }
+
+  // ── Cuenta de TikTok ──────────────────────────────────────────────────
+
+  private cargarCuentaTikTok(): void {
+    this.tiktokEstado = 'cargando';
+    this.redes.conexionTikTok().pipe(takeUntil(this.destroy$)).subscribe({
+      next: c => {
+        this.tiktokCuenta = c;
+        this.tiktokEstado = 'listo';
+        this.sincronizarRestricciones();
+      },
+      error: () => { this.tiktokEstado = 'error'; }
+    });
+  }
+
+  /**
+   * Manda al dueño a la pantalla de TikTok para iniciar sesión y dar permiso; TikTok lo regresa a
+   * `/tiktok/callback`. El `state` se guarda aquí y el callback lo compara: si no coincide, la
+   * respuesta no la pidió esta pantalla y se descarta.
+   */
+  conectarTikTok(): void {
+    if (this.conectandoTikTok) return;
+    const state = this.estadoAleatorio();
+    try { sessionStorage.setItem(CLAVE_STATE_TIKTOK, state); } catch { /* sin storage: el callback lo avisa */ }
+
+    this.conectandoTikTok = true;
+    this.errorConectarTikTok = '';
+    const redirectUri = window.location.origin + '/tiktok/callback';
+    this.redes.urlConectarTikTok(redirectUri, state).pipe(takeUntil(this.destroy$)).subscribe({
+      next: url => { window.location.href = url; },
+      error: err => {
+        this.conectandoTikTok = false;
+        this.errorConectarTikTok = err?.error?.mensaje ?? 'No se pudo abrir TikTok. Intenta de nuevo.';
+      }
+    });
+  }
+
+  /**
+   * Quita el acceso a TikTok. Se confirma antes: después de esto no se puede mandar nada a TikTok
+   * (tampoco lo programado) hasta volver a conectar.
+   */
+  desconectarTikTok(): void {
+    if (this.desconectandoTikTok || this.publicando) return;
+    const nombre = this.tiktokCuenta?.nombre ? ` de ${this.tiktokCuenta.nombre}` : '';
+    Swal.fire({
+      icon: 'warning',
+      title: '¿Quitar el acceso a TikTok?',
+      text: `El sistema deja de poder mandar videos a la cuenta${nombre}, también los que estén programados. ` +
+            'Para volver a usarla hay que tocar "Conectar TikTok".',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar acceso',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.desconectandoTikTok = true;
+      this.errorConectarTikTok = '';
+      this.redes.desconectarTikTok().pipe(takeUntil(this.destroy$)).subscribe({
+        next: res => {
+          this.desconectandoTikTok = false;
+          this.tiktokCuenta = { conectado: false };
+          this.tiktokEstado = 'listo';
+          this.sincronizarRestricciones();
+          Swal.fire(res.revocadoEnTikTok
+            ? { icon: 'success', title: 'Acceso quitado', text: 'TikTok ya no le da permiso a este sistema.' }
+            : { icon: 'info', title: 'Desconectado de aquí',
+                text: 'Este sistema ya no manda videos, pero TikTok no confirmó quitar el permiso. ' +
+                      'Si quieres quitarlo también allá: app de TikTok → Ajustes y privacidad → Seguridad → ' +
+                      'Apps y servicios con permiso.' });
+        },
+        error: err => {
+          this.desconectandoTikTok = false;
+          this.errorConectarTikTok = err?.error?.mensaje ?? 'No se pudo quitar el acceso. Intenta de nuevo.';
+        }
+      });
+    });
+  }
+
+  private estadoAleatorio(): string {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
   }
 
   puedeUsar(r: PlataformaRed): boolean { return this.motivoNoDisponible(r) === null; }

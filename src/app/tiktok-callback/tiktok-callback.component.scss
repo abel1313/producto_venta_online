@@ -29,3 +29,30 @@
   font-size: 0.85rem;
 }
 
+
+.ttc-foto {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--app-accent);
+  margin-bottom: 12px;
+}
+
+// Mismo botón principal que Publicar en redes (`fb-btn--primary`): sale de las variables del
+// tema, así que se ve igual en claro y oscuro.
+.ttc-btn {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .92rem;
+  text-decoration: none;
+  background: var(--app-accent);
+  color: var(--app-accent-ink);
+  transition: opacity .15s;
+
+  &:hover { opacity: .87; color: var(--app-accent-ink); }
+  &:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 3px; }
+}

@@ -318,6 +318,15 @@
     padding: 4px 10px;
   }
 
+  // Acción que quita algo (desconectar): rojo en el texto y el borde, sin relleno, para que no
+  // compita con el botón principal. --pk-danger-to ya trae su variante para modo oscuro.
+  &--peligro {
+    background: transparent;
+    color: var(--pk-danger-to);
+    border: 1.5px solid currentColor;
+    &:hover:not(:disabled) { background: rgba(220, 38, 38, .1); }
+  }
+
   &--lg { padding: 13px 32px; font-size: 0.98rem; border-radius: 10px; }
 }
 
@@ -610,6 +619,55 @@
   }
 }
 
+// ── Cuenta de TikTok conectada ────────────────────────────────────────────
+.fb-cuenta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--app-surface-2);
+
+  &__foto {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--app-accent);
+
+    &--vacia {
+      display: grid;
+      place-items: center;
+      background: var(--app-accent-soft);
+    }
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__texto {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    small { font-size: .74rem; color: var(--app-text-muted); }
+    strong {
+      font-size: .92rem;
+      color: var(--app-text);
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
 // ── Vista previa del texto final ──────────────────────────────────────────
 .fb-preview {
   border: 1px solid var(--card-border);
@@ -695,6 +753,8 @@
   .fb-card { padding: 16px; }
   .fb-tipo { flex-direction: column; }
   .fb-btn--lg { width: 100%; }
+  .fb-cuenta__acciones { width: 100%; justify-content: stretch; }
+  .fb-cuenta__acciones .fb-btn { flex: 1; }
 }
 
 // ── Matices por tema ──────────────────────────────────────────────────────

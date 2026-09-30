@@ -30,6 +30,23 @@ export interface IProgresoPublicacion {
   publicacion?: IPublicacionRed;
 }
 
+/**
+ * Qué cuenta de TikTok recibe los videos. `conectado: false` con `motivo` = había una cuenta pero
+ * TikTok ya no acepta el permiso (se revocó o venció): hay que volver a conectar.
+ */
+/**
+ * Dónde se guarda el `state` del login de TikTok entre la ida y la vuelta. `sessionStorage` y no
+ * `localStorage`: el login pasa en la misma pestaña, y así no queda un valor viejo reutilizable.
+ */
+export const CLAVE_STATE_TIKTOK = 'tiktok-oauth-state';
+
+export interface IConexionTikTok {
+  conectado: boolean;
+  nombre?: string;
+  avatarUrl?: string;
+  motivo?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RedesSocialesService {
 
@@ -155,8 +172,8 @@ export class RedesSocialesService {
   /**
    * Publica un video en TikTok. Solo ADMIN. **Multipart. Solo video** — su API no tiene foto.
    *
-   * ⚠️ Mientras la app no pase la auditoría de TikTok, el video sale **forzado a privado** y solo
-   * funciona con las cuentas del Sandbox. Es de TikTok, no del back.
+   * No se publica solo: llega a la cuenta conectada como notificación (Bandeja → Notificaciones
+   * del sistema) y desde ahí el dueño lo edita y lo publica. Es el modo "Upload" de TikTok.
    */
   publicarTikTok(req: IPublicarTikTokRequest): Observable<IProgresoPublicacion> {
     const form = new FormData();
@@ -166,6 +183,40 @@ export class RedesSocialesService {
     if (req.scheduledPublishTime) form.append('scheduledPublishTime', req.scheduledPublishTime);
 
     return this.enviar(`${this.urlTikTok}/publicar`, form);
+  }
+
+  /**
+   * URL de la pantalla de TikTok donde el dueño inicia sesión y da permiso. El back la arma con el
+   * client key de su configuración; `redirectUri` tiene que terminar en `/tiktok/callback` y estar
+   * dada de alta en la app de TikTok (Login Kit), o TikTok responde "redirect_uri" inválido.
+   */
+  urlConectarTikTok(redirectUri: string, state: string): Observable<string> {
+    return this.http
+      .get<{ data: { url: string } }>(`${this.urlTikTok}/url-autorizacion`, { params: { redirectUri, state } })
+      .pipe(map(r => r?.data?.url));
+  }
+
+  /** Cuenta de TikTok conectada (nombre y foto), para mostrarla antes de publicar. */
+  conexionTikTok(): Observable<IConexionTikTok> {
+    return this.http
+      .get<{ data: IConexionTikTok }>(`${this.urlTikTok}/conexion`)
+      .pipe(map(r => r?.data ?? { conectado: false }));
+  }
+
+  /**
+   * Quita el acceso: el back le pide a TikTok que revoque el permiso y borra el guardado.
+   * `revocadoEnTikTok: false` = aquí ya quedó desconectado, pero TikTok no lo confirmó; el permiso
+   * puede seguir en la app de TikTok y se quita ahí a mano.
+   */
+  desconectarTikTok(): Observable<{ habiaCuenta: boolean; revocadoEnTikTok: boolean }> {
+    return this.http
+      .delete<{ data: { habiaCuenta: boolean; revocadoEnTikTok: boolean } }>(`${this.urlTikTok}/conexion`)
+      .pipe(map(r => r?.data ?? { habiaCuenta: false, revocadoEnTikTok: false }));
+  }
+
+  /** Cambia el `code` que TikTok manda al volver por el permiso guardado en el back. */
+  autorizarTikTok(code: string, redirectUri: string): Observable<unknown> {
+    return this.http.post(`${this.urlTikTok}/autorizar`, { code, redirectUri });
   }
 
   /**

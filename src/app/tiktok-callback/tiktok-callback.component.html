@@ -2,28 +2,34 @@
 
   <div class="ttc-card" *ngIf="estado === 'procesando'">
     <h1>Conectando con TikTok…</h1>
-    <p>Espera un momento mientras completamos la autorización.</p>
+    <p>Espera un momento mientras guardamos el permiso.</p>
   </div>
 
   <div class="ttc-card ttc-ok" *ngIf="estado === 'ok'">
+    <img class="ttc-foto" *ngIf="cuenta?.avatarUrl" [src]="cuenta?.avatarUrl" alt="" referrerpolicy="no-referrer">
     <h1>✅ Cuenta de TikTok conectada</h1>
-    <p>La autorización se completó correctamente. Ya puedes cerrar esta pestaña.</p>
+    <p *ngIf="cuenta?.nombre">Los videos van a llegar a <strong>{{ cuenta?.nombre }}</strong>.</p>
+    <p *ngIf="!cuenta?.nombre">Ya puedes mandar videos a TikTok desde Publicar en redes.</p>
+    <a class="ttc-btn" routerLink="/admin/facebook">Ir a Publicar en redes</a>
   </div>
 
   <div class="ttc-card ttc-error" *ngIf="estado === 'error'">
-    <h1>No se pudo completar la conexión</h1>
+    <h1>No se pudo conectar TikTok</h1>
     <p>{{ mensaje }}</p>
-    <p class="ttc-hint">
-      Si el problema persiste, copia el código de la URL (parámetro <code>code</code>) y
-      complétalo manualmente siguiendo <code>TIKTOK_SETUP.md</code>.
-    </p>
+    <a class="ttc-btn" routerLink="/admin/facebook">Volver a Publicar en redes</a>
+  </div>
+
+  <div class="ttc-card" *ngIf="estado === 'cancelado'">
+    <h1>No se conectó TikTok</h1>
+    <p>Cancelaste el permiso en TikTok. No se cambió nada.</p>
+    <a class="ttc-btn" routerLink="/admin/facebook">Volver a Publicar en redes</a>
   </div>
 
   <div class="ttc-card" *ngIf="estado === 'sin-code'">
-    <h1>Página de conexión con TikTok</h1>
+    <h1>Conexión con TikTok</h1>
     <p>
-      Esta página recibe la autorización cuando TikTok redirige de vuelta tras iniciar sesión.
-      No se detectó ningún código en la URL.
+      Aquí regresa TikTok después de dar permiso. Para conectar la cuenta entra a
+      Publicar en redes y toca "Conectar TikTok".
     </p>
   </div>
 

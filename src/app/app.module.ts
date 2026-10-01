@@ -25,6 +25,7 @@ import { QrVentasJadeComponent } from './qr-ventas-jade/qr-ventas-jade.component
 import { PrivacidadComponent } from './legal/privacidad/privacidad.component';
 import { TerminosComponent } from './legal/terminos/terminos.component';
 import { EliminarDatosComponent } from './legal/eliminar-datos/eliminar-datos.component';
+import { RegresarLegalComponent } from './legal/regresar-legal/regresar-legal.component';
 import { TiktokCallbackComponent } from './tiktok-callback/tiktok-callback.component';
 import { QRCodeModule } from 'angularx-qrcode';   // ✅ este es el correcto
 import { ChatbotComponent } from './chatbot/chatbot.component';
@@ -81,6 +82,7 @@ export function bootstrapAuth(
     PrivacidadComponent,
     TerminosComponent,
     EliminarDatosComponent,
+    RegresarLegalComponent,
     TiktokCallbackComponent,
     ChatbotComponent,
   ],

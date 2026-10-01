@@ -406,6 +406,12 @@
     margin: 0 0 .25rem;
   }
 
+  &__nota {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--app-text-muted, #6b7280);
+  }
+
   &__row {
     display: flex;
     flex-direction: column;

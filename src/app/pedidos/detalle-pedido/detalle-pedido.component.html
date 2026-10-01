@@ -91,7 +91,8 @@
               *ngFor="let t of tiposPedido"
               [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
               [attr.aria-pressed]="tipoForm.tipoPedido === t.valor"
-              [disabled]="t.valor === tipoVigente"
+              [disabled]="t.valor === tipoVigente || (t.valor === 'APARTADO' && tieneDinero)"
+              [title]="t.valor === 'APARTADO' && tieneDinero ? 'Ya dio dinero: un Apartado es sin dinero, queda como Ir pagando' : ''"
               (click)="seleccionarTipo(t.valor)">
         <span class="dp-tipo-btn__nombre">
           {{ t.etiqueta }}
@@ -102,7 +103,11 @@
     </div>
 
     <ng-container *ngIf="tipoForm.tipoPedido">
-      <div class="dp-tipo-campo">
+      <p class="dp-tipo-aviso" *ngIf="tipoForm.tipoPedido === 'APARTADO'">
+        Un Apartado es sin dinero: el cliente lo paga completo cuando lo recoge. Si te deja algo
+        ahora, elige <b>Ir pagando</b>.
+      </p>
+      <div class="dp-tipo-campo" *ngIf="tipoForm.tipoPedido !== 'APARTADO'">
         <label for="montoCobrado">¿Cobra algo ahora?</label>
         <input id="montoCobrado" type="number" min="0" step="0.01"
                [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
@@ -274,6 +279,9 @@
 
     <div class="dp-abono-form" *ngIf="mostrarFormAbono">
       <p class="dp-abono-form__title">💳 Registrar abono — Pedido #{{ pedido.pedido.id }}</p>
+      <p class="dp-abono-form__nota" *ngIf="esApartado">
+        Es un Apartado: se paga completo ({{ saldoPendiente | currency:'$' }}). Para dejar un adelanto, cámbialo a Ir pagando.
+      </p>
 
       <div class="dp-abono-form__row">
         <label class="dp-abono-form__label">Monto <span style="color:#ef4444">*</span></label>

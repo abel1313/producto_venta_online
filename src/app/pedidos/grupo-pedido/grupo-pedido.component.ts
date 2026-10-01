@@ -333,8 +333,13 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
 
   // ── Abonar al grupo ───────────────────────────────────────────────────────────────
 
+  /** Apartados unidos: sin dinero, se pagan completos al recogerlos (no hay adelantos). */
+  get esApartado(): boolean {
+    return this.grupo?.tipoPedido === 'APARTADO';
+  }
+
   abrirFormAbono(): void {
-    this.abono = { monto: 0, metodoPago: 'EFECTIVO', montoDado: 0, nota: '' };
+    this.abono = { monto: this.esApartado ? (this.grupo?.saldoGrupo ?? 0) : 0, metodoPago: 'EFECTIVO', montoDado: 0, nota: '' };
     this.mostrarFormAbono = true;
   }
 
@@ -351,6 +356,15 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
     }
     if (this.abono.monto - saldo > 0.001) {
       Swal.fire({ icon: 'warning', title: 'Monto mayor al saldo', text: `El saldo del grupo es de $${saldo.toFixed(2)}.` });
+      return;
+    }
+    if (this.esApartado && saldo - this.abono.monto > 0.001) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Los Apartados se pagan completos',
+        html: `<p>Un Apartado es sin dinero: el grupo se paga completo (<b>$${saldo.toFixed(2)}</b>) cuando lo recogen.</p>
+               <p>Si te dejaron un adelanto, los pedidos tienen que pasar a <b>Ir pagando</b>.</p>`
+      });
       return;
     }
     const efectivo = this.abono.metodoPago === 'EFECTIVO';

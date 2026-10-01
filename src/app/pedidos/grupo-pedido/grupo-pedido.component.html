@@ -80,7 +80,7 @@
       <button class="gp-btn gp-btn--principal" type="button"
               *ngIf="puedeAbonar && esCredito && grupo!.saldoGrupo > 0"
               (click)="abrirFormAbono()">
-        💵 Abonar al grupo
+        {{ esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}
       </button>
       <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormAgregar()"
               title="Sumar más pedidos a este grupo; tienen que tener la misma forma de cobro">
@@ -199,9 +199,13 @@
 
     <!-- Abono al grupo -->
     <div class="gp-form" *ngIf="mostrarFormAbono">
-      <h5 class="gp-form__titulo">💵 Abonar al grupo</h5>
-      <p class="gp__texto gp__texto--muted">
+      <h5 class="gp-form__titulo">{{ esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}</h5>
+      <p class="gp__texto gp__texto--muted" *ngIf="!esApartado">
         Se reparte del pedido más viejo al más nuevo. Saldo del grupo: {{ grupo!.saldoGrupo | currency:'$' }}.
+      </p>
+      <p class="gp__texto gp__texto--muted" *ngIf="esApartado">
+        Son Apartados: se pagan completos, {{ grupo!.saldoGrupo | currency:'$' }}. Para dejar un adelanto,
+        los pedidos tienen que pasar a Ir pagando.
       </p>
 
       <div class="gp-form__fila">

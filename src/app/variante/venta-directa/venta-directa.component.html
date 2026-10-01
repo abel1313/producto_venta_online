@@ -240,8 +240,11 @@
             </button>
           </div>
           <input type="number" class="vd-monto-input"
-                 [(ngModel)]="montoInicial" min="0"
+                 [ngModel]="montoInicial" (ngModelChange)="alCambiarEnganche($event)" min="0"
                  placeholder="Enganche (0 si no da nada)">
+          <p class="vd-nota-apartado" *ngIf="pasoAIrPagando && tipoPedido === 'FIADO'">
+            Un Apartado es sin dinero: como te dio {{ montoInicial | currency:'$' }}, queda como <b>Ir pagando</b>.
+          </p>
 
           <!-- Monto recibido + cambio del enganche (solo si es EFECTIVO y monto > 0) -->
           <ng-container *ngIf="metodoPagoCredito === 'EFECTIVO' && montoInicial > 0">

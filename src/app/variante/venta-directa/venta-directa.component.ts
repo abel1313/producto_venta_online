@@ -407,13 +407,27 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
 
   seleccionarContado(): void {
+    this.pasoAIrPagando    = false;
     this.tipoPedido        = 'NORMAL';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial      = 0;
   }
 
+  /** Se eligió Apartado y luego se escribió un enganche: quedó como Ir pagando. */
+  pasoAIrPagando = false;
+
+  /** Un Apartado es sin dinero: si el cliente da algo, el pedido es Ir pagando. */
+  alCambiarEnganche(monto: number): void {
+    this.montoInicial = monto;
+    if (this.tipoPedido === 'APARTADO' && monto > 0) {
+      this.tipoPedido     = 'FIADO';
+      this.pasoAIrPagando = true;
+    }
+  }
+
   seleccionarCredito(tipo: 'APARTADO' | 'FIADO'): void {
     if (this.tipoPedido === tipo) return;
+    this.pasoAIrPagando    = false;
     this.tipoPedido        = tipo;
     this.tipoPagoActivo    = null;
     this.mesesSeleccionado = null;
@@ -786,6 +800,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     };
 
     if (this.esCredito) {
+      if (this.tipoPedido === 'APARTADO' && this.montoInicial > 0) this.tipoPedido = 'FIADO';
       request.tipoPedido    = this.tipoPedido as 'APARTADO' | 'FIADO';
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;

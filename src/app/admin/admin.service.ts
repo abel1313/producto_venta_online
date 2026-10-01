@@ -24,11 +24,51 @@ export interface IResultadoReconciliacion {
   };
 }
 
+/** Avance del generador de datos de prueba (back: dominio datosprueba). */
+export interface IAvanceDatosPrueba {
+  estado: 'SIN_CORRER' | 'EN_CURSO' | 'TERMINADO' | 'FALLO';
+  fase: string;
+  modelosPedidos: number;
+  modelosCreados: number;
+  articulosCreados: number;
+  pedidosPedidos: number;
+  pedidosCreados: number;
+  pedidosConError: number;
+  ultimoError: string | null;
+  aviso: string | null;
+  inicio: string | null;
+  fin: string | null;
+}
+
+export interface IGenerarDatosPrueba {
+  modelos: number;
+  articulosMin: number;
+  articulosMax: number;
+  pedidos: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly url = `${environment.api_Url}/v1/admin`;
 
   constructor(private readonly http: HttpClient) {}
+
+  // ── Datos de prueba (solo QA, solo administrador) ──────────────────────
+  // El back se niega fuera de inventario_key_qa (403) y si ya hay una corrida (409).
+
+  generarDatosPrueba(plan: IGenerarDatosPrueba): Observable<IAvanceDatosPrueba> {
+    return this.http.post<{ data: IAvanceDatosPrueba }>(`${this.url}/datos-prueba/generar`, plan)
+      .pipe(map(res => res.data));
+  }
+
+  avanceDatosPrueba(): Observable<IAvanceDatosPrueba> {
+    return this.http.get<{ data: IAvanceDatosPrueba }>(`${this.url}/datos-prueba/avance`)
+      .pipe(map(res => res.data));
+  }
+
+  darDeBajaDatosPrueba(): Observable<{ data: number; mensaje: string }> {
+    return this.http.post<{ data: number; mensaje: string }>(`${this.url}/datos-prueba/dar-de-baja`, {});
+  }
 
   limpiarCache(): Observable<string[]> {
     return this.http.delete<{ data: string[] }>(`${this.url}/cache`)

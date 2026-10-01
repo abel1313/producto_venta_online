@@ -51,4 +51,69 @@
 
     </div>
   </div>
+
+  <!-- ── Datos de prueba (solo QA, solo administrador) ── -->
+  <section class="pk-card ac-datos" *ngIf="esAdmin">
+    <div class="pk-card__header">
+      <!-- Sin .pk-title: esa clase pinta con el color del texto de la página y sobre el verde
+           del encabezado no se leía de día. Así hereda --card-header-text del encabezado. -->
+      <div>
+        <h3 class="ac-datos__titulo">🧪 Datos de prueba</h3>
+        <p class="ac-datos__subtitulo">Solo en QA · solo administradores</p>
+      </div>
+    </div>
+    <div class="pk-card__body">
+      <p class="pk-text pk-text--muted">
+        Crea modelos, artículos y pedidos de prueba para no darlos de alta a mano. Todo queda con la marca
+        <strong>"Prueba QA"</strong> y código de barras <strong>2098…</strong>, y los pedidos a nombre de
+        "Cliente Prueba QA". Corre en segundo plano: puedes salir de esta pantalla. En producción el servidor se niega.
+      </p>
+
+      <div class="ac-datos__campos">
+        <label class="pk-field">
+          <span class="pk-label">Modelos</span>
+          <input class="pk-input" type="number" min="1" max="20000" [(ngModel)]="plan.modelos" [disabled]="corriendo" />
+          <span class="pk-hint">De 1 a 20 000</span>
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Artículos por modelo (mín.)</span>
+          <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMin" [disabled]="corriendo" />
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Artículos por modelo (máx.)</span>
+          <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMax" [disabled]="corriendo" />
+          <span class="pk-hint">De 1 a 4</span>
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Pedidos</span>
+          <input class="pk-input" type="number" min="0" max="3000" [(ngModel)]="plan.pedidos" [disabled]="corriendo" />
+          <span class="pk-hint">De 0 a 3 000 · contado, Apartado e Ir pagando</span>
+        </label>
+      </div>
+
+      <div class="ac-datos__acciones">
+        <button class="pk-btn pk-btn--primary" type="button" [disabled]="corriendo" (click)="generarDatosPrueba()">
+          {{ corriendo ? 'Generando…' : '🧪 Generar datos de prueba' }}
+        </button>
+        <button class="pk-btn pk-btn--danger" type="button" [disabled]="corriendo" (click)="darDeBajaDatosPrueba()">
+          Dar de baja los datos de prueba
+        </button>
+      </div>
+
+      <div class="ac-datos__avance" *ngIf="avance && avance.estado !== 'SIN_CORRER'">
+        <div class="ac-datos__barra" role="progressbar" [attr.aria-valuenow]="porcentaje" aria-valuemin="0" aria-valuemax="100">
+          <span [style.width.%]="porcentaje"></span>
+        </div>
+        <p class="pk-text pk-text--bold">{{ avance.fase }} · {{ porcentaje }}%</p>
+        <p class="pk-text pk-text--sm">
+          Modelos: {{ avance.modelosCreados }} de {{ avance.modelosPedidos }} ·
+          Artículos: {{ avance.articulosCreados }} ·
+          Pedidos: {{ avance.pedidosCreados }} de {{ avance.pedidosPedidos }}
+          <span *ngIf="avance.pedidosConError"> · con error: {{ avance.pedidosConError }}</span>
+        </p>
+        <p class="pk-text pk-text--sm pk-text--muted" *ngIf="avance.ultimoError">Último error: {{ avance.ultimoError }}</p>
+        <p class="pk-hint" *ngIf="avance.aviso">⚠️ {{ avance.aviso }}</p>
+      </div>
+    </div>
+  </section>
 </div>

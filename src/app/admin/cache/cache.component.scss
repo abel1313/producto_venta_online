@@ -4,8 +4,10 @@ $t: all 0.22s ease;
   min-height: 100vh;
   background: var(--page-bg);
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: flex-start;
+  align-items: center;
   padding: 36px 16px 60px;
 }
 
@@ -192,4 +194,47 @@ $t: all 0.22s ease;
 :host-context(body.theme-light) {
   .ac-card__title    { color: var(--header-text, #1e293b); }
   .ac-card__subtitle { color: rgba(0,0,0,0.55); }
+}
+
+// ── Datos de prueba: solo acomodo; colores y bordes salen de .pk-* y de los tokens ──
+.ac-datos {
+  width: 100%;
+  max-width: 640px;
+
+  &__titulo    { margin: 0; font-size: 1.05rem; font-weight: 700; color: inherit; }
+  &__subtitulo { margin: 2px 0 0; font-size: .8rem; color: inherit; opacity: .85; }
+
+  &__campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__avance {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__barra {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--app-border);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--app-accent);
+      transition: width .4s ease;
+    }
+  }
 }

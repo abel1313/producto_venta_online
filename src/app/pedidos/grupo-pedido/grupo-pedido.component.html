@@ -43,8 +43,6 @@
             <th>Cliente</th>
             <th>Estado</th>
             <th class="num">Total</th>
-            <th class="num">Pagado</th>
-            <th class="num">Saldo</th>
           </tr>
         </thead>
         <tbody>
@@ -59,8 +57,6 @@
             <td>{{ p.cliente }}</td>
             <td><span class="gp-estado" [ngClass]="claseEstado(p.estadoPedido)">{{ etiquetaEstado(p.estadoPedido) }}</span></td>
             <td class="num">{{ p.total | currency:'$' }}</td>
-            <td class="num">{{ p.pagado | currency:'$' }}</td>
-            <td class="num">{{ p.saldo | currency:'$' }}</td>
           </tr>
         </tbody>
       </table>
@@ -71,6 +67,10 @@
       <div><dt>Pagado</dt><dd>{{ grupo!.pagadoGrupo | currency:'$' }}</dd></div>
       <div class="gp__saldo"><dt>Saldo</dt><dd>{{ grupo!.saldoGrupo | currency:'$' }}</dd></div>
     </dl>
+    <!-- El dinero es del grupo: lo que se queda cada pedido se decide al separar (regla 2026-10-01). -->
+    <p class="gp__texto gp__texto--muted" *ngIf="esCredito && grupo!.pagadoGrupo > 0">
+      Lo pagado es de todo el grupo. Cuánto se queda cada pedido se decide al ✂️ Separar pedidos.
+    </p>
 
     <p class="gp__texto gp__texto--muted" *ngIf="!esCredito">
       Es de contado: cada pedido se confirma desde su propio detalle.
@@ -201,7 +201,7 @@
     <div class="gp-form" *ngIf="mostrarFormAbono">
       <h5 class="gp-form__titulo">{{ esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}</h5>
       <p class="gp__texto gp__texto--muted" *ngIf="!esApartado">
-        Se reparte del pedido más viejo al más nuevo. Saldo del grupo: {{ grupo!.saldoGrupo | currency:'$' }}.
+        El abono es para todo el grupo. Saldo del grupo: {{ grupo!.saldoGrupo | currency:'$' }}.
       </p>
       <p class="gp__texto gp__texto--muted" *ngIf="esApartado">
         Son Apartados: se pagan completos, {{ grupo!.saldoGrupo | currency:'$' }}. Para dejar un adelanto,
@@ -211,7 +211,13 @@
       <div class="gp-form__fila">
         <div class="gp-campo">
           <label for="gpMonto">Monto</label>
-          <input id="gpMonto" type="number" min="0" step="0.01" [(ngModel)]="abono.monto" placeholder="0.00" />
+          <input id="gpMonto" type="number" min="0" step="0.01" [(ngModel)]="abono.monto" placeholder="0.00"
+                 [class.gp-campo__input--error]="!!errorMontoAbono" />
+          <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->
+          <small class="gp-campo__error" *ngIf="errorMontoAbono">{{ errorMontoAbono }}</small>
+          <small *ngIf="!errorMontoAbono && abono.monto > 0">
+            Quedaría debiendo {{ (grupo!.saldoGrupo - abono.monto) | currency:'$' }}
+          </small>
         </div>
         <div class="gp-campo">
           <label for="gpMetodo">Forma de pago</label>
@@ -233,8 +239,8 @@
 
       <div class="gp-form__acciones">
         <button class="gp-btn" type="button" (click)="cerrarFormAbono()">Cancelar</button>
-        <button class="gp-btn gp-btn--principal" type="button" [disabled]="abonando" (click)="abonar()">
-          {{ abonando ? 'Registrando…' : 'Registrar abono' }}
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="abonando || !!errorMontoAbono" (click)="abonar()">
+          {{ abonando ? 'Guardando…' : (esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo') }}
         </button>
       </div>
     </div>

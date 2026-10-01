@@ -347,6 +347,15 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
     this.mostrarFormAbono = false;
   }
 
+  /** Aviso debajo del monto, al escribir: así no se llenan los demás campos para nada. */
+  get errorMontoAbono(): string | null {
+    if (!this.grupo || !(this.abono.monto > 0)) return null;
+    const saldo = this.grupo.saldoGrupo;
+    if (this.abono.monto - saldo > 0.001) return `Es más de lo que se debe: el saldo del grupo es de $${saldo.toFixed(2)}.`;
+    if (this.esApartado && saldo - this.abono.monto > 0.001) return `Son Apartados: se pagan completos ($${saldo.toFixed(2)}).`;
+    return null;
+  }
+
   abonar(): void {
     if (this.abonando || !this.grupo) return;
     const saldo = this.grupo.saldoGrupo;
@@ -385,15 +394,15 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
         this.mostrarFormAbono = false;
         const res = r?.data;
         if (res) this.grupo = res.grupo;
-        const lineas = (res?.repartos ?? [])
-          .map(x => `<li>Pedido #${x.pedidoId}: $${x.monto.toFixed(2)}${x.liquida ? ' — <b>queda pagado</b>' : ''}</li>`)
-          .join('');
-        const cambio = res && res.cambio > 0 ? `<p>Cambio: <b>$${res.cambio.toFixed(2)}</b></p>` : '';
-        Swal.fire({
-          icon: 'success',
-          title: 'Abono registrado',
-          html: `<p>Se repartió así:</p><ul style="text-align:left">${lineas}</ul>${cambio}`
-        });
+        // Todo centrado y en el mismo formato (el dueño vio textos a la izquierda, al centro y a la
+        // derecha). No se muestra el reparto por pedido: el dinero es del grupo.
+        const g = res?.grupo;
+        const renglon = (etiqueta: string, valor: number, fuerte = false) =>
+          `<p style="margin:4px 0">${etiqueta}: ${fuerte ? '<b>' : ''}$${valor.toFixed(2)}${fuerte ? '</b>' : ''}</p>`;
+        const html = renglon('Abono', this.abono.monto, true)
+          + (g ? renglon('Pagado del grupo', g.pagadoGrupo) + renglon('Falta', g.saldoGrupo, true) : '')
+          + (res && res.cambio > 0 ? renglon('Cambio para el cliente', res.cambio, true) : '');
+        Swal.fire({ icon: 'success', title: g && g.saldoGrupo <= 0.001 ? 'Grupo pagado' : 'Abono registrado', html });
         this.cambio.emit();
       },
       error: err => {

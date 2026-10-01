@@ -228,6 +228,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     else this.otrosAbiertos.add(o.pedidoId);
   }
 
+  /** El pedido abierto tal como sale en la tabla del grupo (para darle la misma cabecera). */
+  get esteEnGrupo() {
+    return this.grupo?.pedidos.find(p => p.pedidoId === this.pedido.pedido.id) ?? null;
+  }
+
+  get piezasEste(): number {
+    return (this.detalle?.detalles ?? []).reduce((s: number, l: any) => s + (l.cantidad ?? 0), 0);
+  }
+
   piezasDe(o: OtroPedidoDelGrupo): number {
     return o.lineas.reduce((s, l) => s + (l.cantidad ?? 0), 0);
   }
@@ -546,8 +555,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     this.pedidosService.eliminarDetalle(pedidoId, item.productoId).subscribe({
       next: () => {
-        if (pedidoId !== this.pedido.pedido.id) {
+        if (pedidoId !== this.pedido.pedido.id || this.esCredito) {
           // Línea de otro pedido del grupo: se recarga todo para que el total del grupo cuadre.
+          // Apartado / Ir pagando: al bajar el total puede quedar Pagado (lo abonado ya lo cubre);
+          // sin recargar, el estado de arriba seguía diciendo que debía hasta salir y volver a entrar.
           this.eliminando.delete(item);
           this.cargarDetalleCompleto();
           return;
@@ -602,6 +613,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * ⚠️ Este es el **segundo** punto de cobro de la app; el otro es `/abonos`. Lo que se toque
    * aquí hay que revisarlo allá y al revés.
    */
+  /** Aviso debajo del monto, al escribir: así no se llenan los demás campos para nada. */
+  get errorMontoAbono(): string | null {
+    const monto = this.abonoForm.monto;
+    if (!(monto > 0) || !this.detalle) return null;
+    if (monto - this.saldoPendiente > 0.01) return `Es más de lo que se debe: el saldo es de $${this.saldoPendiente.toFixed(2)}.`;
+    if (this.esApartado && this.saldoPendiente - monto > 0.01) return `Es un Apartado: se paga completo ($${this.saldoPendiente.toFixed(2)}).`;
+    return null;
+  }
+
   registrarAbono(): void {
     if (this.registrandoAbono) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {

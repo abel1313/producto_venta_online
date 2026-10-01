@@ -1041,3 +1041,18 @@
     color: var(--card-text-muted);
   }
 }
+
+.dp-otros__alternar--este { cursor: default; &:hover { background: transparent; } }
+.dp-otros__este { font-size: .8rem; color: var(--card-text-muted); }
+.dp-abono-grupo-nota {
+  margin: 1rem 0;
+  padding: .75rem 1rem;
+  border-radius: 10px;
+  background: var(--form-section-bg);
+  color: var(--card-text-muted);
+  font-size: .9rem;
+}
+
+.dp-abono-form small.dp-abono-form__error { display: block; margin-top: 4px; color: var(--pk-danger); font-weight: 600; font-size: .78rem; }
+.dp-abono-form small.dp-abono-form__ayuda { display: block; margin-top: 4px; color: var(--card-text-muted); font-size: .78rem; }
+.dp-abono-form__input--error { border-color: var(--pk-danger) !important; }

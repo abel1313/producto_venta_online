@@ -588,3 +588,6 @@
     }
   }
 }
+
+.gp-campo small.gp-campo__error { color: var(--pk-danger); font-weight: 600; }
+.gp-campo__input--error { border-color: var(--pk-danger) !important; }

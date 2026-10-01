@@ -29,7 +29,7 @@
     </span>
     <span class="detalle-header__total detalle-header__total--grupo" *ngIf="grupo">
       Total de los {{ grupo.pedidos.length }} pedidos: {{ grupo.totalGrupo | currency:'$' }}
-      <small>Este pedido: {{ totalGeneral | currency:'$' }}</small>
+      <small *ngIf="grupo.pagadoGrupo > 0">Pagado {{ grupo.pagadoGrupo | currency:'$' }} · falta {{ grupo.saldoGrupo | currency:'$' }}</small>
     </span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
       <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
@@ -253,8 +253,15 @@
     </ng-container>
   </div>
 
-  <!-- FORM DE ABONO (solo crédito) -->
-  <div class="dp-abono-wrap" *ngIf="esCredito">
+  <!-- Unido: el dinero es del grupo y se abona solo con "💵 Abonar al grupo" (regla del dueño
+       2026-10-01). Aquí ya no sale el abono de este pedido solo, que daba dos botones de abonar. -->
+  <p class="dp-abono-grupo-nota" *ngIf="esCredito && grupo">
+    Este pedido está unido: los pagos se registran para todo el grupo con
+    <strong>{{ grupo.tipoPedido === 'APARTADO' ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}</strong>, en el bloque de arriba.
+  </p>
+
+  <!-- FORM DE ABONO (solo crédito, pedido suelto) -->
+  <div class="dp-abono-wrap" *ngIf="esCredito && !grupo">
 
     <!-- Historial de pagos ya registrados — viene en la misma respuesta del detalle -->
     <div class="dp-abono-historial" *ngIf="(detalle?.abonos?.length ?? 0) > 0">
@@ -286,7 +293,13 @@
       <div class="dp-abono-form__row">
         <label class="dp-abono-form__label">Monto <span style="color:#ef4444">*</span></label>
         <input class="dp-abono-form__input" type="number" min="0.01" step="0.01"
-               [(ngModel)]="abonoForm.monto" placeholder="0.00">
+               [(ngModel)]="abonoForm.monto" placeholder="0.00"
+               [class.dp-abono-form__input--error]="!!errorMontoAbono">
+        <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->
+        <small class="dp-abono-form__error" *ngIf="errorMontoAbono">{{ errorMontoAbono }}</small>
+        <small class="dp-abono-form__ayuda" *ngIf="!errorMontoAbono && abonoForm.monto > 0">
+          Quedaría debiendo {{ (saldoPendiente - abonoForm.monto) | currency:'$' }}
+        </small>
       </div>
 
       <div class="dp-abono-form__row">
@@ -338,7 +351,7 @@
           Cancelar
         </button>
         <button class="dp-btn-guardar" type="button"
-                [disabled]="registrandoAbono || !abonoForm.monto || abonoForm.monto <= 0"
+                [disabled]="registrandoAbono || !abonoForm.monto || abonoForm.monto <= 0 || !!errorMontoAbono"
                 (click)="registrarAbono()">
           {{ registrandoAbono ? 'Guardando…' : '💾 Guardar abono' }}
         </button>
@@ -442,6 +455,23 @@
       <span class="dp-otros__resumen">
         Este y {{ otrosPedidos.length }} más · total {{ grupo.totalGrupo | currency:'$' }}
       </span>
+    </div>
+
+    <!-- El pedido abierto con la misma cabecera que los demás; sus artículos son los de arriba. -->
+    <div class="dp-otros__pedido" *ngIf="esteEnGrupo as e">
+      <div class="dp-otros__cabecera">
+        <span class="dp-otros__alternar dp-otros__alternar--este">
+          <span class="dp-otros__flecha" aria-hidden="true">•</span>
+          <span class="dp-otros__quien">
+            <span class="dp-otros__numero">Pedido #{{ e.pedidoId }}</span>
+            <span class="dp-otros__titular" *ngIf="e.esTitular">paga y recoge</span>
+            <span class="dp-otros__cliente">{{ e.cliente }}</span>
+            <span class="dp-otros__cuantos">· {{ piezasEste }} {{ piezasEste === 1 ? 'artículo' : 'artículos' }}</span>
+          </span>
+          <span class="dp-otros__total">{{ e.total | currency:'$' }}</span>
+        </span>
+        <span class="dp-otros__este">Es el que tienes abierto (sus artículos están arriba)</span>
+      </div>
     </div>
 
     <div class="dp-otros__pedido" *ngFor="let o of otrosPedidos" [class.dp-otros__pedido--abierto]="otroAbierto(o)">

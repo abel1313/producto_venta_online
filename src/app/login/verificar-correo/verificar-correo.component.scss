@@ -8,8 +8,8 @@
   --app-bg:     #F3FAF6;
   --app-border: #D5E8DD;
   --app-text:   #152420;
-  --brand-1:    #00875A;
-  --brand-2:    #005C3D;
+  --brand-1:    var(--brand-1);
+  --brand-2:    var(--brand-2);
 }
 
 .vc-page {
@@ -17,13 +17,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--app-bg, #f1f5f9);
+  background: var(--app-bg, var(--form-section-bg));
   padding: 1.5rem;
 }
 
 .vc-card {
-  background: var(--app-surface, #ffffff);
-  border: 1px solid var(--app-border, #e2e8f0);
+  background: var(--app-surface, var(--card-body-bg));
+  border: 1px solid var(--app-border);
   border-radius: 20px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
   padding: 2.5rem 2rem;
@@ -44,13 +44,13 @@
   &__title {
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text);
     margin: 0;
   }
 
   &__sub {
     font-size: 0.92rem;
-    color: #64748b;
+    color: var(--app-text-muted);
     line-height: 1.6;
     margin: 0;
     max-width: 340px;
@@ -65,10 +65,10 @@
   font-weight: 700;
   letter-spacing: 10px;
   padding: 0.75rem 1rem;
-  border: 2px solid var(--app-border, #e2e8f0);
+  border: 2px solid var(--app-border);
   border-radius: 12px;
   background: transparent;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text);
   outline: none;
   transition: border-color 0.2s;
   margin-top: 0.5rem;
@@ -79,7 +79,7 @@
   }
 
   &::placeholder {
-    color: #cbd5e1;
+    color: var(--app-text-faint);
     letter-spacing: 6px;
     font-size: 1.2rem;
   }
@@ -87,28 +87,28 @@
 
 .vc-hint {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--app-text-faint);
   margin: 0;
 }
 
 .vc-error {
   width: 100%;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: var(--pk-danger-soft);
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 10px;
   padding: 0.6rem 0.9rem;
   font-size: 0.85rem;
-  color: #dc2626;
+  color: var(--pk-danger);
   text-align: left;
 }
 
 .vc-btn-primary {
   width: 100%;
   padding: 0.85rem;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -129,7 +129,7 @@
 
 .vc-resend {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--app-text-muted);
   margin-top: 0.25rem;
 
   &__btn {
@@ -143,7 +143,7 @@
     font-size: 0.85rem;
 
     &:disabled {
-      color: #94a3b8;
+      color: var(--app-text-faint);
       cursor: default;
       text-decoration: none;
     }
@@ -152,7 +152,7 @@
 
 .vc-back {
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: var(--app-text-faint);
   text-decoration: none;
   margin-top: 0.5rem;
   transition: color 0.2s;
@@ -163,21 +163,21 @@
 /* Dark mode */
 :host-context(body.theme-dark) {
   .vc-page {
-    background: var(--app-bg, #0f172a);
+    background: var(--app-bg);
   }
 
   .vc-card {
-    background: var(--card-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--card-border, rgba(255, 255, 255, 0.08));
+    background: var(--card-bg);
+    border-color: var(--card-border);
     box-shadow: var(--card-shadow, 0 8px 40px rgba(0, 0, 0, 0.4));
 
-    &__title { color: var(--app-text, #f1f5f9); }
-    &__sub { color: var(--app-text-muted, #94a3b8); }
+    &__title { color: var(--app-text); }
+    &__sub { color: var(--app-text-muted); }
   }
 
   .vc-code-input {
-    color: var(--input-text, #f1f5f9);
-    border-color: var(--input-border, rgba(255, 255, 255, 0.12));
+    color: var(--input-text, var(--app-text));
+    border-color: var(--input-border);
 
     &:focus {
       border-color: var(--brand-1);
@@ -185,7 +185,7 @@
     }
   }
 
-  .vc-resend { color: var(--app-text-muted, #94a3b8); }
-  .vc-hint { color: var(--app-text-muted, #64748b); }
-  .vc-back { color: var(--app-text-muted, #64748b); }
+  .vc-resend { color: var(--app-text-muted); }
+  .vc-hint { color: var(--app-text-muted, var(--app-text-faint)); }
+  .vc-back { color: var(--app-text-muted, var(--app-text-faint)); }
 }

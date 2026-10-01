@@ -331,8 +331,7 @@ export class MisPedidosComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Cancelar pedido',
       cancelButtonText: 'No cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6b7280',
+      confirmButtonColor: 'var(--pk-danger)',
       didOpen: motivoFrag.didOpen,
       preConfirm: motivoFrag.preConfirm
     }).then(result => {
@@ -388,9 +387,7 @@ export class MisPedidosComponent implements OnInit {
           showCancelButton: true,
           confirmButtonText: 'Sí, cancelar mi ramo',
           cancelButtonText: 'No, dejarlo así',
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#6b7280'
-        }).then(res => {
+          confirmButtonColor: 'var(--pk-danger)',}).then(res => {
           if (!res.isConfirmed) return;
 
           this.floresService.cancelarPedidoFlores(pedidoId).subscribe({

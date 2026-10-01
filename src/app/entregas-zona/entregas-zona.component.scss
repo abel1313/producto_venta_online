@@ -121,8 +121,9 @@ $t:  all 0.2s ease;
   transition: $t;
 
   &--enviar {
-    background: linear-gradient(135deg, $p, $pd);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
 }
@@ -135,7 +136,7 @@ $t:  all 0.2s ease;
 // .form-select (es .ez-input, clase propia), así que esa regla global ni aplica; aun así se deja
 // el mismo patrón robusto (colores fijos + !important) para no repetir el mismo bug si el día de
 // mañana esta clase también queda alcanzada por alguna regla global nueva.
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
   .ez-input { color-scheme: dark; color: var(--app-text); }
   select.ez-input {
     color-scheme: light !important;

@@ -177,7 +177,7 @@ export class GestionPersonalizacionComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.svc.eliminar(v.id!).subscribe({

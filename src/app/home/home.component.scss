@@ -15,7 +15,7 @@
     inset: 0;
     background: linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.15) 0%,
+      color-mix(in srgb, var(--card-header-text) 15%, transparent) 0%,
       rgba(0, 0, 0, 0.45) 100%
     );
   }
@@ -30,7 +30,7 @@
     line-height: 1.1;
     margin: 0;
     padding: clamp(24px, 6vh, 64px) 24px 0;
-    color: #fff;
+    color: var(--card-header-text);
     text-align: center;
     text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.5);
   }
@@ -40,7 +40,7 @@
     z-index: 1;
     width: 72px;
     height: 2px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--app-glass-strong);
     border-radius: 2px;
     margin-top: clamp(12px, 3vh, 28px);
   }
@@ -49,10 +49,10 @@
     position: relative;
     z-index: 1;
     margin-top: clamp(16px, 4vh, 40px);
-    background: rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--card-header-text) 15%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid color-mix(in srgb, var(--card-header-text) 25%, transparent);
     border-radius: 16px;
     padding: clamp(14px, 3vw, 24px) clamp(24px, 6vw, 56px);
   }
@@ -64,7 +64,7 @@
     letter-spacing: 0.04em;
     line-height: 1.05;
     margin: 0;
-    color: #fff;
+    color: var(--card-header-text);
     text-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 40px rgba(0,0,0,0.3);
 
     span {

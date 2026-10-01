@@ -317,9 +317,7 @@ export class DetalleVarianteComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;
@@ -554,7 +552,7 @@ export class DetalleVarianteComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
+      confirmButtonColor: 'var(--pk-danger)',
     }).then(result => {
       if (!result.isConfirmed) return;
       this.resenaService.eliminar(r.id).subscribe({

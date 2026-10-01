@@ -40,7 +40,7 @@ $t:  all 0.2s ease;
   cursor: pointer; font-weight: 600; font-size: .85rem;
   transition: $t; white-space: nowrap;
 
-  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
+  &--save   { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text);
                &:disabled { opacity: .5; cursor: not-allowed; } }
   &--cancel { background: var(--form-section-bg); color: var(--app-text-muted);
                &:hover { background: var(--card-border); } }
@@ -159,12 +159,12 @@ $t:  all 0.2s ease;
 .pk-form__label {
   font-size: .78rem;
   font-weight: 600;
-  color: var(--app-text-muted, #6b7280);
+  color: var(--app-text-muted);
 }
 
 .pk-hint {
   font-size: .78rem;
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   margin: 4px 0 0;
 }
 
@@ -196,7 +196,7 @@ $t:  all 0.2s ease;
 // popup nativo de <option> no respeta color-scheme:dark de forma consistente entre navegadores
 // -- quedaba con el control ilegible de noche aunque .pk-input ya tuviera color-scheme:dark. Se
 // fuerza el mismo patrón robusto (light + colores fijos) que ya funciona en esas 2 pantallas.
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
   .pk-input { color-scheme: dark; color: var(--app-text); }
   select.pk-input {
     color-scheme: light !important;

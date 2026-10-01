@@ -65,7 +65,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   &__head {
     // Fondo lo aplica la regla global de glassmorphism en styles.scss
     padding: 20px 24px;
-    color: #fff;
+    color: var(--card-header-text);
     h4 { margin: 0; font-size: 1.15rem; font-weight: 800; }
     p  { margin: 4px 0 0; font-size: 0.82rem; opacity: 0.85; }
   }
@@ -76,7 +76,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
     flex-direction: column;
     gap: 16px;
   }
-  &--ganador { border: 3px solid #fcd34d; }
+  &--ganador { border: 3px solid var(--pk-warning); }
 }
 
 // -- Campos
@@ -116,8 +116,9 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, var(--brand-2), $accent);
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
     &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(var(--app-accent-rgb),0.40); }
   }
   &--outline {
@@ -131,7 +132,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
     width: 100%; padding: 14px;
     font-size: 1.05rem;
     background: linear-gradient(135deg, var(--pk-success-to), var(--pk-success));
-    color: #fff;
+    color: var(--pk-ink);
     box-shadow: 0 6px 20px var(--pk-success-soft);
     &:hover:not(:disabled) { transform: translateY(-2px); }
   }
@@ -357,7 +358,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 24px; height: 24px; padding: 0 6px;
   border-radius: 999px;
-  font-size: 0.74rem; font-weight: 700; color: #fff;
+  font-size: 0.74rem; font-weight: 700; color: var(--card-header-text);
   font-variant-numeric: tabular-nums;
 
   &--fuera { background: var(--app-text-muted); opacity: 0.6; }
@@ -409,7 +410,7 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   position: absolute; top: -12px; left: 50%; z-index: 10; transform: translateX(-50%);
   width: 0; height: 0;
   border-left: 12px solid transparent; border-right: 12px solid transparent;
-  border-top: 24px solid #dc3545;
+  border-top: 24px solid var(--pk-danger);
 }
 
 // ── Tema DÍA ───────────────────────────────────────────────────────
@@ -418,27 +419,28 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
   .rm-step--active .rm-step__label { color: var(--brand-2); }
   // Botón outline dentro del card head: borde visible sobre blanco
   .rm-card__head .rm-btn--outline {
-    border-color: rgba(0, 0, 0, 0.18);
-    color: var(--app-text, #1e293b);
+    border-color: color-mix(in srgb, var(--app-text) 18%, transparent);
+    color: var(--app-text);
   }
 }
 
 // ── Tema NOCHE — ajustes completos ────────────────────────────────
 :host-context(body.theme-dark) {
   // Texto en heads de card (glassmorphism oscuro)
-  .rm-card__head h4, .rm-card__head p { color: var(--app-text, #f1f5f9); }
+  .rm-card__head h4, .rm-card__head p { color: var(--app-text); }
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rm-btn--primary {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
   }
 
   // Botones OUTLINE en noche: borde casi invisible por defecto → reforzar
   .rm-btn--outline {
-    border-color: var(--app-border, rgba(255, 255, 255, 0.32));
-    color: var(--app-text, #e2e8f0);
-    &:hover:not(:disabled) { background: var(--table-row-hover, rgba(255, 255, 255, 0.08)); }
+    border-color: var(--app-border);
+    color: var(--app-text);
+    &:hover:not(:disabled) { background: var(--table-row-hover); }
   }
 
   // Card ganador: borde amarillo fijo → versión oscura

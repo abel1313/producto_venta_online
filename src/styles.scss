@@ -44,6 +44,9 @@ body {
   --radius-lg: 14px;
   --radius-pill: 999px;
   --ease-jade: cubic-bezier(.2, .8, .2, 1);
+  /* Texto e íconos sobre un velo oscuro o una foto (✕ de quitar imagen, contador, estrella):
+     blanco en todos los diseños, porque el fondo es la foto, no el tema. */
+  --overlay-text: #ffffff;
   /* Botón principal: delineado en Jade, relleno con el degradado de marca en Clásico. */
   --btn-primary-bg: transparent;
   --btn-primary-text: var(--app-accent-text);
@@ -778,9 +781,11 @@ label {
 }
 
 /* ── PLACEHOLDERS más suaves ─────────────── */
+/* Gris fijo a propósito: es el del diseño Clásico y el de Login/Registro (que no cambian). En
+   Jade el placeholder sale del token --input-placeholder (tema-jade.scss le gana a esta regla). */
 ::placeholder {
   font-weight: 300;
-  color: var(--input-placeholder) !important;
+  color: #9ca3af !important;
   opacity: 1;
 }
 

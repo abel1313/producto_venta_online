@@ -43,7 +43,7 @@ $primary-d: var(--brand-1);
 
   &__header {
     position: relative;
-    background: linear-gradient(135deg, var(--brand-3) 0%, #6B4F22 55%, var(--brand-1) 100%);
+    background: var(--card-header-bg);
     padding: 32px 32px 28px;
     display: flex;
     align-items: center;
@@ -54,16 +54,16 @@ $primary-d: var(--brand-1);
   &__header-glow {
     position: absolute;
     width: 300px; height: 300px;
-    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--app-tint) 0%, transparent 70%);
     top: -120px; right: -60px;
     pointer-events: none;
   }
 
   &__header-icon { font-size: 2.6rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); z-index: 1; }
 
-  &__title { font-size: 1.6rem; font-weight: 800; color: white; margin: 0; letter-spacing: -0.02em; z-index: 1; }
+  &__title { font-size: 1.6rem; font-weight: 800; color: var(--app-text); margin: 0; letter-spacing: -0.02em; z-index: 1; }
   &__id    { font-size: 1rem; font-weight: 400; opacity: 0.65; margin-left: 6px; }
-  &__subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.7); margin: 4px 0 0; z-index: 1; }
+  &__subtitle { font-size: 0.82rem; color: var(--app-text-muted); margin: 4px 0 0; z-index: 1; }
 
   &__body { padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 24px; }
 }
@@ -87,14 +87,14 @@ $primary-d: var(--brand-1);
     background: transparent;
     border: none;
     outline: none;
-    color: var(--input-text, #152420);
+    color: var(--input-text, var(--app-text));
     font-size: 0.95rem;
     font-weight: 500;
-    &::placeholder { color: var(--input-placeholder, #9DBAAD); }
+    &::placeholder { color: var(--input-placeholder); }
     &::-webkit-autofill,
     &::-webkit-autofill:hover,
     &::-webkit-autofill:focus {
-      -webkit-text-fill-color: var(--input-text, #152420) !important;
+      -webkit-text-fill-color: var(--input-text, var(--app-text)) !important;
     }
   }
   &__results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; z-index: 100; box-shadow: var(--card-shadow); max-height: 260px; overflow-y: auto; }
@@ -111,7 +111,7 @@ $primary-d: var(--brand-1);
   // Mismo arreglo que tienda/venta: el fondo es un tinte translucido que de dia queda casi blanco,
   // asi que el texto va por token (en blanco fijo se veia el recuadro vacio).
   &__info { flex: 1; display: flex; flex-direction: column; color: var(--card-text); strong { font-size: 0.95rem; } small { font-size: 0.8rem; color: var(--card-text-muted); margin-top: 2px; } }
-  &__clear { background: rgba(var(--app-accent-rgb),0.12); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--card-text-muted); cursor: pointer; font-size: 0.75rem; transition: $t; &:hover { background: rgba(239,68,68,0.3); color: var(--card-text); } }
+  &__clear { background: rgba(var(--app-accent-rgb),0.12); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--card-text-muted); cursor: pointer; font-size: 0.75rem; transition: $t; &:hover { background: var(--pk-danger-soft); color: var(--card-text); } }
 }
 
 .vf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; @media (max-width: 560px) { grid-template-columns: 1fr; } }
@@ -132,7 +132,7 @@ $primary-d: var(--brand-1);
 
 .vf-drop {
   border: 2px dashed rgba(var(--app-accent-rgb),0.4); border-radius: 16px;
-  background: rgba(255,255,255,0.03); cursor: pointer; transition: $t;
+  background: color-mix(in srgb, var(--card-header-text) 3%, transparent); cursor: pointer; transition: $t;
   min-height: 160px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;
   &:hover, &--over { border-color: var(--app-accent); background: rgba(var(--app-accent-rgb),0.08); }
   &__content { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; text-align: center; pointer-events: none; }
@@ -144,16 +144,16 @@ $primary-d: var(--brand-1);
 
 .vf-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
 .vf-thumb {
-  width: 72px; height: 72px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid rgba(255,255,255,0.12);
+  width: 72px; height: 72px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid color-mix(in srgb, var(--card-header-text) 12%, transparent);
   img { width: 100%; height: 100%; object-fit: cover; }
-  &__del { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.65); border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.6rem; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: $t; &:hover { background: #ef4444; } }
+  &__del { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.65); border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.6rem; color: var(--overlay-text); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: $t; &:hover { background: var(--pk-danger); } }
   &--add { background: rgba(var(--app-accent-rgb),0.12); border: 2px dashed rgba(var(--app-accent-rgb),0.4); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: rgba(var(--app-accent-rgb),0.7); cursor: pointer; transition: $t; &:hover { background: rgba(var(--app-accent-rgb),0.22); color: var(--app-accent); } }
 }
 
 .vf-btn-save {
-  width: 100%; padding: 16px; border: none; border-radius: 14px;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; transition: $t;
+  width: 100%; padding: 16px; border: 1px solid var(--btn-primary-border); border-radius: 14px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text); font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; transition: $t;
   box-shadow: 0 8px 24px rgba(var(--app-accent-rgb),0.4);
   &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(var(--app-accent-rgb),0.55); }
   &:active:not(:disabled) { transform: translateY(0); }
@@ -162,8 +162,8 @@ $primary-d: var(--brand-1);
 
 // ── Widget ajuste de stock ──────────────────────────────────────────
 .vf-stock-adjust {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: color-mix(in srgb, var(--card-header-text) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-header-text) 12%, transparent);
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -214,11 +214,11 @@ $primary-d: var(--brand-1);
 .vf-stock-qty {
   width: 80px;
   text-align: center;
-  background: rgba(255,255,255,0.08);
-  border: 1.5px solid rgba(255,255,255,0.15);
+  background: color-mix(in srgb, var(--card-header-text) 8%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--card-header-text) 15%, transparent);
   border-radius: 8px;
   padding: 9px 8px;
-  color: white;
+  color: var(--card-header-text);
   font-size: 1rem;
   font-weight: 700;
   outline: none;
@@ -255,8 +255,9 @@ $primary-d: var(--brand-1);
   }
 
   &--camera {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:hover { filter: brightness(0.88); }
   }
 }
@@ -285,7 +286,7 @@ $primary-d: var(--brand-1);
   box-shadow: 0 8px 40px rgba(0,0,0,0.7);
 
   &__title {
-    color: #fff;
+    color: var(--card-header-text);
     font-size: 0.9rem;
     font-weight: 700;
     text-align: center;
@@ -309,11 +310,11 @@ $primary-d: var(--brand-1);
   align-items: center;
   gap: 8px;
   padding: 20px;
-  color: rgba(255,255,255,0.5);
+  color: color-mix(in srgb, var(--card-header-text) 50%, transparent);
   font-size: 0.88rem;
-  background: rgba(255,255,255,0.05);
+  background: color-mix(in srgb, var(--card-header-text) 5%, transparent);
   border-radius: 12px;
-  border: 1.5px dashed rgba(255,255,255,0.15);
+  border: 1.5px dashed color-mix(in srgb, var(--card-header-text) 15%, transparent);
   flex-direction: column;
   text-align: center;
 
@@ -336,18 +337,18 @@ $primary-d: var(--brand-1);
   gap: 5px;
 
   &--principal &__wrap {
-    border-color: #f59e0b !important;
-    box-shadow: 0 0 0 2px rgba(245,158,11,0.4);
+    border-color: var(--pk-warning) !important;
+    box-shadow: 0 0 0 2px var(--pk-warning-soft);
   }
 
   &__wrap {
     position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
-    background: rgba(255,255,255,0.08);
+    background: color-mix(in srgb, var(--card-header-text) 8%, transparent);
     border-radius: 10px;
     overflow: hidden;
-    border: 1.5px solid rgba(255,255,255,0.12);
+    border: 1.5px solid color-mix(in srgb, var(--card-header-text) 12%, transparent);
     transition: $t;
   }
 
@@ -361,8 +362,8 @@ $primary-d: var(--brand-1);
     position: absolute;
     bottom: 5px;
     left: 5px;
-    background: rgba(245,158,11,0.9);
-    color: #fff;
+    background: var(--pk-warning);
+    color: var(--pk-ink);
     font-size: 0.62rem;
     font-weight: 700;
     padding: 2px 7px;
@@ -380,7 +381,7 @@ $primary-d: var(--brand-1);
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.5);
-    color: rgba(255,255,255,0.9);
+    color: color-mix(in srgb, var(--overlay-text) 90%, transparent);
     font-size: 0.82rem;
     cursor: pointer;
     display: flex;
@@ -389,8 +390,8 @@ $primary-d: var(--brand-1);
     transition: $t;
     z-index: 2;
 
-    &:hover:not(:disabled) { background: rgba(245,158,11,0.85); transform: scale(1.12); }
-    &--active { background: rgba(245,158,11,0.85); cursor: default; }
+    &:hover:not(:disabled) { background: var(--pk-warning); transform: scale(1.12); }
+    &--active { background: var(--pk-warning); cursor: default; }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
@@ -403,7 +404,7 @@ $primary-d: var(--brand-1);
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.5);
-    color: rgba(255,255,255,0.85);
+    color: color-mix(in srgb, var(--overlay-text) 85%, transparent);
     font-size: 0.7rem;
     cursor: pointer;
     display: flex;
@@ -412,13 +413,13 @@ $primary-d: var(--brand-1);
     transition: $t;
     z-index: 2;
 
-    &:hover:not(:disabled) { background: rgba(239,68,68,0.85); transform: scale(1.12); }
+    &:hover:not(:disabled) { background: var(--pk-danger); transform: scale(1.12); }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
   &__name {
     font-size: 0.68rem;
-    color: rgba(255,255,255,0.45);
+    color: color-mix(in srgb, var(--card-header-text) 45%, transparent);
     margin: 0;
     text-align: center;
     white-space: nowrap;
@@ -442,7 +443,7 @@ $primary-d: var(--brand-1);
   cursor: pointer;
   transition: $t;
 
-  &--capture { background: var(--app-accent); color: var(--app-accent-ink); font-size: 1.1rem; &:hover { filter: brightness(0.88); } }
+  &--capture { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); font-size: 1.1rem; &:hover { filter: brightness(0.88); } }
   &--cancel  { background: #333; color: #ccc; &:hover { background: #444; } }
 }
 
@@ -524,8 +525,8 @@ $primary-d: var(--brand-1);
     @media (max-width: 767px) { height: 140px; }
     &:hover { border-color: var(--app-accent); box-shadow: 0 4px 16px rgba(var(--app-accent-rgb),0.15); }
     &--principal {
-      border-color: #f59e0b !important;
-      box-shadow: 0 0 0 2px rgba(245,158,11,0.35) !important;
+      border-color: var(--pk-warning) !important;
+      box-shadow: 0 0 0 2px var(--pk-warning-soft) !important;
     }
   }
 
@@ -542,8 +543,8 @@ $primary-d: var(--brand-1);
     position: absolute;
     bottom: 6px;
     left: 6px;
-    background: rgba(245,158,11,0.9);
-    color: #fff;
+    background: var(--pk-warning);
+    color: var(--pk-ink);
     font-size: 0.65rem;
     font-weight: 700;
     padding: 2px 8px;
@@ -561,7 +562,7 @@ $primary-d: var(--brand-1);
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.45);
-    color: rgba(255,255,255,0.9);
+    color: color-mix(in srgb, var(--overlay-text) 90%, transparent);
     font-size: 0.85rem;
     cursor: pointer;
     display: flex;
@@ -570,8 +571,8 @@ $primary-d: var(--brand-1);
     transition: $t;
     z-index: 2;
 
-    &:hover:not(:disabled) { background: rgba(245,158,11,0.85); transform: scale(1.12); }
-    &--active { background: rgba(245,158,11,0.85); cursor: default; }
+    &:hover:not(:disabled) { background: var(--pk-warning); transform: scale(1.12); }
+    &--active { background: var(--pk-warning); cursor: default; }
     &:disabled { opacity: 0.6; cursor: not-allowed; }
   }
 
@@ -584,7 +585,7 @@ $primary-d: var(--brand-1);
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.55);
-    color: rgba(255,255,255,0.9);
+    color: color-mix(in srgb, var(--overlay-text) 90%, transparent);
     font-size: 0.72rem;
     cursor: pointer;
     display: flex;
@@ -593,7 +594,7 @@ $primary-d: var(--brand-1);
     transition: $t;
     z-index: 2;
 
-    &:hover:not(:disabled) { background: rgba(239,68,68,0.9); transform: scale(1.12); }
+    &:hover:not(:disabled) { background: var(--pk-danger); transform: scale(1.12); }
     &:disabled { opacity: 0.6; cursor: not-allowed; }
   }
 
@@ -618,7 +619,7 @@ $primary-d: var(--brand-1);
   padding: .6rem .85rem;
   border-radius: 10px;
   border-left: 3px solid var(--app-accent);
-  background: var(--app-accent-soft, rgba(0,0,0,.04));
+  background: var(--app-accent-soft);
   color: var(--card-text);
   display: flex;
   flex-direction: column;
@@ -631,17 +632,17 @@ $primary-d: var(--brand-1);
     margin-top: .25rem;
     font-size: .78rem;
     font-weight: 600;
-    color: var(--pk-danger-to, #dc2626);
+    color: var(--pk-danger-to, var(--pk-danger));
     line-height: 1.35;
   }
 
   // Ya hay más repartido que el total del producto: datos rotos. Se avisa, no se esconde.
   &--roto {
-    border-left-color: var(--pk-danger-to, #dc2626);
-    background: var(--pk-danger-soft, rgba(220,38,38,.1));
+    border-left-color: var(--pk-danger-to, var(--pk-danger));
+    background: var(--pk-danger-soft);
   }
 
-  &--alerta { border-left-color: var(--pk-warning-to, #d97706); }
+  &--alerta { border-left-color: var(--pk-warning-to, var(--pk-warning)); }
 
   &--cargando {
     border-left-color: var(--card-border);

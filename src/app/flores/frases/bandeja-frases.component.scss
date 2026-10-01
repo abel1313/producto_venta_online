@@ -15,7 +15,7 @@
   }
 
   &__sub {
-    color: var(--app-text-muted, #5F8375);
+    color: var(--app-text-muted);
   }
 }
 
@@ -50,7 +50,7 @@
 .fp-vacio {
   text-align: center;
   padding: 32px 16px;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
 }
 
 .fp-card {
@@ -75,7 +75,7 @@
     align-items: center;
     margin-top: 8px;
     font-size: .82rem;
-    color: var(--app-text-muted, #5F8375);
+    color: var(--app-text-muted);
   }
 
   &__acciones {
@@ -107,7 +107,7 @@
   display: block;
   font-size: .76rem;
   font-weight: 600;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
   margin-bottom: 4px;
 }
 
@@ -137,8 +137,9 @@
   &:disabled { opacity: .55; cursor: not-allowed; }
 
   &--primary {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
   }
 
   &--ghost {
@@ -163,6 +164,6 @@
 
   &__info {
     font-size: .82rem;
-    color: var(--app-text-muted, #5F8375);
+    color: var(--app-text-muted);
   }
 }

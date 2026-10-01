@@ -169,9 +169,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando.add(item.dto.id);

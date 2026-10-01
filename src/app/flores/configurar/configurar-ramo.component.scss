@@ -11,7 +11,7 @@
   &__inner {
     padding: 24px 0;
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: var(--app-text-muted, #64748b); }
+    small { color: var(--app-text-muted); }
 
     &--conFoto {
       display: flex;
@@ -34,7 +34,7 @@
 .cr-loading {
   text-align: center;
   padding: 40px 16px;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .cr-aviso {
@@ -74,7 +74,7 @@
     height: 28px;
     border-radius: 50%;
     background: var(--app-accent);
-    color: var(--app-accent-ink, #fff);
+    color: var(--app-accent-ink);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -98,7 +98,7 @@
 
 .cr-hint {
   font-size: 0.8rem;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
   margin: 6px 0 0;
   line-height: 1.4;
 }
@@ -167,7 +167,7 @@
   &:last-of-type { border-bottom: none; }
 
   &__nombre { flex: 1; font-size: 0.9rem; color: var(--app-text); }
-  &__stock { font-size: 0.78rem; color: var(--app-text-muted, #5F8375); white-space: nowrap; }
+  &__stock { font-size: 0.78rem; color: var(--app-text-muted); white-space: nowrap; }
 }
 
 .cr-restante {
@@ -242,7 +242,7 @@
   color: var(--app-text);
   gap: 12px;
 
-  small { color: var(--app-text-muted, #5F8375); font-weight: 400; }
+  small { color: var(--app-text-muted); font-weight: 400; }
 
   &--total {
     border-bottom: none;
@@ -273,8 +273,8 @@
   cursor: pointer;
   transition: opacity .15s;
   &:disabled { cursor: not-allowed; opacity: .5; }
-  &--primary { background: linear-gradient(135deg, var(--brand-2), var(--brand-1)); color: var(--app-accent-ink); &:hover:not(:disabled) { opacity: .85; } }
-  &--ghost   { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--primary { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); &:hover:not(:disabled) { opacity: .85; } }
+  &--ghost   { background: color-mix(in srgb, var(--app-text) 10%, transparent); color: var(--app-text); border: 1px solid var(--card-border); }
   &--alt     { background: rgba(var(--app-accent-rgb),.1); color: var(--app-accent); font-weight: 700; }
   &--confirmar {
     width: 100%;
@@ -282,18 +282,19 @@
     padding: 13px;
     font-size: 1rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:hover:not(:disabled) { opacity: .9; }
   }
 }
 
 // ── Dark / Light ─────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .cr-step, .cr-resumen { background: rgba(255,255,255,.04); }
+  .cr-step, .cr-resumen { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
 }
 :host-context(body.theme-light) {
-  .cr-step, .cr-resumen { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .cr-step, .cr-resumen { background: var(--card-bg, var(--card-body-bg)); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
 
 // El cliente eligió seguir con una cantidad que el back marcó como dudosa. Ámbar, no verde ni
@@ -364,7 +365,7 @@
   display: block;
   font-size: .76rem;
   font-weight: 600;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
   margin-bottom: 4px;
 }
 
@@ -382,14 +383,14 @@
 
 .cr-btn--urgente-on {
   background: var(--pk-warning-to);
-  color: #fff;
+  color: var(--pk-ink);
 }
 
 .cr-nota-urgente {
   margin: 8px 0 0;
   font-size: .8rem;
   line-height: 1.45;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
 }
 
 // Miniatura del color / accesorio, para elegir viendo y no solo por el nombre.

@@ -190,7 +190,6 @@
             <div class="total-strip total-strip--grupo">
               <div class="total-strip__col">
                 <span class="total-label">Total de los {{ g.otrosPedidos.length + 1 }} pedidos</span>
-                <span class="total-sub">Este pedido: {{ item.pedido.detalles | totalPedido | currency: '$' }}</span>
               </div>
               <div class="total-strip__col total-strip__col--fin">
                 <span class="total-amount">{{ g.totalGrupo | currency: '$' }}</span>

@@ -330,7 +330,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
 
   abrirModal(ec: EstadoCuenta): void {
     this.pedidoSeleccionado = ec;
-    this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    // Un Apartado se paga completo: el monto ya viene con lo que debe.
+    this.abonoForm = { monto: ec.tipoPedido === 'APARTADO' ? ec.saldo : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
     this.detalleActual = null;
     // EstadoCuenta no expone email — correoDisponible en false hasta que el back lo incluya
@@ -362,6 +363,25 @@ export class AbonosComponent implements OnInit, OnDestroy {
     if (!this.pedidoSeleccionado || this.registrando) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
       Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
+      return;
+    }
+    const ec = this.pedidoSeleccionado;
+    if (ec.tipoPedido === 'APARTADO' && ec.saldo - this.abonoForm.monto > 0.01) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Un Apartado se paga completo',
+        html: `<p>Un Apartado es un pedido sin dinero: el cliente lo paga completo
+               (<b>$${ec.saldo.toFixed(2)}</b>) cuando lo recoge.</p>
+               <p>Si te dejó un adelanto, primero cambia el pedido a <b>Ir pagando</b>
+               (en su detalle, con 🔁 Cambiar forma de cobro) y ahí registra el abono.</p>`,
+        showCancelButton: true,
+        confirmButtonText: 'Ir al pedido',
+        cancelButtonText: 'Cancelar'
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        this.cerrarModal();
+        this.router.navigate(['/pedidos/mis-pedidos'], { queryParams: { pedidoId: ec.pedidoId } });
+      });
       return;
     }
 

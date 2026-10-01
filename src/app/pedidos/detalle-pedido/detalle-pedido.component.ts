@@ -584,7 +584,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // ── Abono inline ──────────────────────────────────────────────────
 
   abrirFormAbono(): void {
-    this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    this.abonoForm = { monto: this.esApartado ? this.saldoPendiente : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
     this.mostrarFormAbono = true;
   }
@@ -606,6 +606,10 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     if (this.registrandoAbono) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
       Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
+      return;
+    }
+    if (this.esApartado && this.saldoPendiente - this.abonoForm.monto > 0.01) {
+      this.avisarApartadoSinAbonos(this.abonoForm.monto);
       return;
     }
     this.registrandoAbono = true;
@@ -889,8 +893,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   readonly tiposPedido: { valor: TipoPedido; etiqueta: string; ayuda: string }[] = [
     { valor: 'NORMAL',   etiqueta: 'Normal (contado)', ayuda: 'Se paga completo ahora' },
-    { valor: 'APARTADO', etiqueta: 'Apartado',         ayuda: 'Abona y se lo lleva al terminar de pagar' },
-    { valor: 'FIADO',    etiqueta: 'Ir pagando',       ayuda: 'Se lo lleva ahora y va abonando' }
+    { valor: 'APARTADO', etiqueta: 'Apartado',         ayuda: 'Sin dinero: lo paga completo al recogerlo' },
+    { valor: 'FIADO',    etiqueta: 'Ir pagando',       ayuda: 'Ya dio algo y va abonando' }
   ];
 
   get tipoActual(): string {
@@ -936,6 +940,36 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   abrirFormTipo(): void {
     this.tipoForm = { tipoPedido: null, montoCobrado: 0, descripcion: '' };
     this.mostrarFormTipo = true;
+  }
+
+  /** Un Apartado es sin dinero: si el cliente ya dio algo, el pedido es Ir pagando. */
+  get tieneDinero(): boolean {
+    return !this.esContadoEntregado && (this.detalle?.totalPagado ?? 0) > 0;
+  }
+
+  get esApartado(): boolean {
+    return (this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido) === 'APARTADO';
+  }
+
+  /** Un Apartado solo acepta el pago completo; para un adelanto hay que pasarlo a Ir pagando. */
+  private avisarApartadoSinAbonos(monto: number): void {
+    const puedeCambiar = this.puedeCambiarTipo && this.puedeAbrirFormTipo;
+    Swal.fire({
+      icon: 'info',
+      title: 'Un Apartado se paga completo',
+      html: `<p>Un Apartado es un pedido sin dinero: el cliente lo paga completo
+             (<b>$${this.saldoPendiente.toFixed(2)}</b>) cuando lo recoge.</p>
+             <p>Si te dejó un adelanto, primero cambia el pedido a <b>Ir pagando</b> y ahí registra el abono.</p>`,
+      showCancelButton: puedeCambiar,
+      confirmButtonText: puedeCambiar ? '🔁 Cambiar a Ir pagando' : 'Entendido',
+      cancelButtonText: 'Cancelar'
+    }).then(res => {
+      if (!res.isConfirmed || !puedeCambiar) return;
+      this.mostrarFormAbono = false;
+      this.abrirFormTipo();
+      this.seleccionarTipo('FIADO');
+      this.tipoForm.montoCobrado = monto;
+    });
   }
 
   cancelarFormTipo(): void {

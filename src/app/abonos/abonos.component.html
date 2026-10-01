@@ -272,6 +272,9 @@
       <label class="ab-label">Monto *</label>
       <input class="ab-input" type="number" min="0.01" step="0.01"
              [(ngModel)]="abonoForm.monto" placeholder="0.00">
+      <span class="ab-optional" *ngIf="pedidoSeleccionado?.tipoPedido === 'APARTADO'">
+        Es un Apartado: se paga completo. Para dejar un adelanto, cámbialo a Ir pagando.
+      </span>
     </div>
 
     <div class="ab-field">

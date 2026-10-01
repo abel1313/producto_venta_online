@@ -101,6 +101,11 @@
 
   &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }
   &__desc   { font-size: .76rem; color: var(--app-text-muted); line-height: 1.4; flex: 1; }
+  &__default {
+    display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+    font-size: .68rem; font-weight: 600; vertical-align: middle;
+    background: var(--badge-bg, var(--app-accent-soft)); color: var(--badge-text, var(--app-accent));
+  }
 
   // Cada lado del tema se marca aparte: como dia y noche ya no van juntos, la tarjeta puede
   // estar "en uso" solo de dia, solo de noche, o de los dos.

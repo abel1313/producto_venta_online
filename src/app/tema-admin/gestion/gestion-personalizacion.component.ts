@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ITemaVariable } from '../models/tema.model';
+import { ITemaVariable, OPCIONES_SELECCION } from '../models/tema.model';
 import { PresetDiseno, PRESETS_DISENO } from '../models/presets-diseno';
 
 /** A qué lado del tema se aplica/previsualiza un diseño predefinido. */
@@ -33,8 +33,7 @@ export class GestionPersonalizacionComponent implements OnInit {
   editandoId: number | null = null;
   form!: FormGroup;
 
-  readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion'];
-  readonly sombras = ['suave', 'media', 'fuerte'];
+  readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion', 'texto'];
   readonly presets: PresetDiseno[] = PRESETS_DISENO;
   // Identifica el boton en curso: hay uno por modo en cada tarjeta, asi que no alcanza el id
   // del preset solo (si no, al aplicar 'dia' se veria 'Aplicando...' tambien en el de noche).
@@ -100,6 +99,11 @@ export class GestionPersonalizacionComponent implements OnInit {
         Swal.fire({ icon: 'error', title: 'No se pudo cargar la personalización' });
       }
     });
+  }
+
+  /** Opciones de una variable tipo "seleccion" según su clave (sombra de la card, estilo...). */
+  get opcionesSeleccion(): string[] {
+    return OPCIONES_SELECCION[(this.form.value.clave ?? '').trim()] ?? OPCIONES_SELECCION['card-shadow'];
   }
 
   porGrupo(g: string): ITemaVariable[] {

@@ -4,7 +4,10 @@
   padding: 16px 20px;
   min-height: 100vh;
   box-sizing: border-box;
-  background: var(--app-bg);
+  background-color: var(--app-bg);
+  // Degradado del diseño (Jade: brillo verde arriba a la izquierda; Clásico: none).
+  background-image: var(--app-bg-fx, none);
+  background-attachment: fixed;
   color: var(--app-text);
   transition: background 0.35s ease, color 0.35s ease;
 }

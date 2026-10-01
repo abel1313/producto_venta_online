@@ -14,7 +14,8 @@
 @import 'primeng/resources/primeng.min.css';
 @import 'design-system';
 /* ════════════════════════════════════════════════
-   SISTEMA TIPOGRÁFICO — Poppins
+   SISTEMA TIPOGRÁFICO — Poppins (diseño Clásico)
+   En el diseño Jade la letra es Inter y la escala está en tema-jade.scss.
    ────────────────────────────────────────────────
    300 Light    → texto secundario, placeholders
    400 Regular  → texto de cuerpo, labels
@@ -23,6 +24,33 @@
    700 Bold     → títulos de sección, h2-h3
    800 ExtraBold→ títulos grandes, h1
    ════════════════════════════════════════════════ */
+
+/* Desde 2026-10-01 la letra sale de Personalización (fila "font-family"): Inter en el diseño
+   Jade, Poppins en el Clásico. Se lee en cada elemento con var(--font-family) porque los alias
+   de :root (Bootstrap, Material) no ven lo que TemaService escribe en <body>. */
+body {
+  --font-family: "Inter", system-ui, sans-serif;
+  --title-weight: 500;
+  --h1-size: 40px;
+  --h2-size: 28px;
+  --h3-size: 20px;
+  --body-size: 14px;
+  --small-size: 12px;
+  --label-size: 12px;
+  --input-size: 15px;
+  --input-height: 44px;
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --ease-jade: cubic-bezier(.2, .8, .2, 1);
+  /* Botón principal: delineado en Jade, relleno con el degradado de marca en Clásico. */
+  --btn-primary-bg: transparent;
+  --btn-primary-text: var(--app-accent-text);
+  --btn-primary-border: var(--app-accent);
+  --btn-primary-hover-bg: var(--app-tint);
+  --btn-primary-hover-text: var(--app-accent-hover);
+}
 
 :root {
   --font-base: 'Poppins', sans-serif;
@@ -44,7 +72,7 @@ input, button, select, textarea, label,
 .mat-mdc-button, .mat-mdc-form-field,
 .p-component, .p-inputtext, .p-dropdown,
 nb-card, nb-menu, nb-select {
-  font-family: 'Poppins', sans-serif !important;
+  font-family: var(--font-family, "Inter", system-ui, sans-serif) !important;
 }
 
 /* Excepción: iconos de fuente — deben conservar su font-family propio */
@@ -69,52 +97,52 @@ body.theme-light, [data-theme="light"] {
      cambiar el oscuro obligaba a cambiar también el claro. Ahora son variables:
      `--brand-1` es el acento, `--brand-2` y `--brand-3` los stops del degradado.
      ⚠️ Regla del proyecto: nunca escribir el hex de marca en un componente. */
-  --brand-1:            #00875A;
-  --brand-2:            #005C3D;
-  --brand-3:            #00301F;
+  --brand-1:            #2d7560;
+  --brand-2:            #2f7f67;
+  --brand-3:            #1f5244;
 
   /* ── Paleta de marca — variables canónicas ── */
-  --color-bg:           #F3FAF6;
-  --color-surface:      #FFFFFF;
-  --color-surface-alt:  #E3F2EA;
-  --color-text:         #152420;
-  --color-text-secondary: #55736A;
+  --color-bg:           #f6f3ec;
+  --color-surface:      #ebe6da;
+  --color-surface-alt:  #f6f3ec;
+  --color-text:         #1c2a26;
+  --color-text-secondary: #5f6373;
   --color-accent:       var(--brand-1);
-  --color-border:       #D5E8DD;
+  --color-border:       rgba(28,42,38,0.16);
   --color-success-bg:   #E4E9E4;
   --color-success-text: #3A4A3D;
   --color-warning-bg:   #F1E1E1;
   --color-warning-text: #8A3A3A;
 
   /* ── Base (aliases a la paleta) ── */
-  --app-bg:            #F3FAF6;
-  --app-surface:       #FFFFFF;
-  --app-surface-2:     #E3F2EA;
-  --app-text:          #152420;
-  --app-text-muted:    #55736A;
-  --app-border:        #D5E8DD;
+  --app-bg:            #f6f3ec;
+  --app-surface:       #ebe6da;
+  --app-surface-2:     #f6f3ec;
+  --app-text:          #1c2a26;
+  --app-text-muted:    #5f6373;
+  --app-border:        rgba(28,42,38,0.16);
   --app-accent:        var(--brand-1);
-  --app-accent-soft:   rgba(var(--app-accent-rgb),0.10);
+  --app-accent-soft:   var(--app-tint);
   /* Tinta = color del TEXTO que va encima del acento. En claro el acento es
      oscuro (var(--brand-1)) → texto blanco. En oscuro el acento es brillante → texto
      casi negro. Sin esto, un botón jade brillante con texto blanco queda
      ilegible (se detectó en la captura del paginador). */
-  --app-accent-ink:    #FFFFFF;
-  --app-accent-hover:  #006B47;
-  --app-accent-rgb:    0, 135, 90;
+  --app-accent-ink:    #f6f3ec;
+  --app-accent-hover:  #2f7f67;
+  --app-accent-rgb:    45, 117, 96;
 
   /* Bootstrap lee estas para .text-primary / .bg-primary / .link-primary /
      anillos de foco. Declaradas aquí (body.theme-* = mayor especificidad que
      el :root de Bootstrap) para que sigan el acento del sistema. */
   --bs-primary:        var(--brand-1);
-  --bs-primary-rgb:    0, 135, 90;
+  --bs-primary-rgb:    45, 117, 96;
   --bs-link-color:     var(--brand-1);
-  --bs-link-color-rgb: 0, 135, 90;
-  --bs-link-hover-color: #006B47;
-  --app-shadow:        0 1px 4px rgba(0,0,0,0.08);
+  --bs-link-color-rgb: 45, 117, 96;
+  --bs-link-hover-color: #2f7f67;
+  --app-shadow:        0 0 0 1px #ddd6c8;
 
   /* ── Página (fondo principal) ── */
-  --page-bg:           #F3FAF6;
+  --page-bg:           #f6f3ec;
 
   /* ── Cards / paneles ──
      --card-header-bg/--card-body-bg/--card-footer-bg (2026-08-26): la card se
@@ -122,23 +150,23 @@ body.theme-light, [data-theme="light"] {
      Por defecto los 3 valen lo mismo que --card-bg -- no cambia nada visualmente
      hasta que se editen. --card-body-bg es alias directo de --card-bg (mismo
      valor, TemaService los setea siempre juntos). */
-  --card-bg:           #FFFFFF;
-  --card-header-bg:    #00875A;
-  --card-header-text:  #FFFFFF;
-  --card-body-bg:      #FFFFFF;
-  --card-footer-bg:    #FFFFFF;
-  --card-text:         #152420;
-  --card-text-muted:   #55736A;
-  --card-border:       #D5E8DD;
-  --card-shadow:       0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
-  --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
-  --card-radius:       14px;
+  --card-bg:           #ebe6da;
+  --card-header-bg:    #ebe6da;
+  --card-header-text:  #1c2a26;
+  --card-body-bg:      #ebe6da;
+  --card-footer-bg:    #ebe6da;
+  --card-text:         #1c2a26;
+  --card-text-muted:   #5f6373;
+  --card-border:       rgba(28,42,38,0.16);
+  --card-shadow:       0 0 0 1px var(--card-border);
+  --card-shadow-hover: var(--shadow-md);
+  --card-radius:       8px;
   /* Radio de la card que envuelve un FORMULARIO de captura. Va aparte de --card-radius (el de
      las cards de listado) porque el form es una hoja grande y centrada, y con el radio chico de
      los listados se ve cuadrado. Antes cada form traía el suyo hardcodeado -- 28, 24, 20, 16 y
      14px conviviendo -- y por eso dos pantallas de alta no se parecían entre sí (2026-09-17).
      El valor es el de "Nuevo Producto" (tienda/venta), que se tomó como estándar. */
-  --form-card-radius:  28px;
+  --form-card-radius:  14px;
 
   /* ── Estados semánticos (2026-08-28) -- éxito/alerta/peligro/info, un solo
      origen para todo lo que hoy cada pantalla hardcodeaba a mano con su propio
@@ -157,18 +185,19 @@ body.theme-light, [data-theme="light"] {
   --pk-info:         #3b82f6;
   --pk-info-to:      #2563eb;
   --pk-info-soft:    rgba(59,130,246,0.10);
+  --pk-ink:          #ffffff;
 
   /* ── Inputs / buscadores / textareas ── */
-  --input-bg:          #FFFFFF;
-  --input-text:        #152420;
-  --input-border:      #D5E8DD;
-  --input-placeholder: #9DBAAD;
+  --input-bg:          #ebe6da;
+  --input-text:        #1c2a26;
+  --input-border:      rgba(28,42,38,0.16);
+  --input-placeholder: #6f7384;
   --input-focus-border: var(--brand-1);
-  --input-focus-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18);
+  --input-focus-shadow: 0 0 0 3px var(--app-tint);
 
   /* ── Formularios de guardado/actualización ── */
-  --form-bg:           #FFFFFF;
-  --form-section-bg:   #E3F2EA;
+  --form-bg:           #ebe6da;
+  --form-section-bg:   #f6f3ec;
 
   /* ── Chat / Chatbot ──
      La burbuja propia, el avatar, el boton flotante y la cabecera del chat conservan el verde
@@ -177,56 +206,81 @@ body.theme-light, [data-theme="light"] {
      gris. Antes ese verde estaba escrito a mano dentro de los .scss del chat, asi que de dia se
      podia elegir desde Personalizacion y de noche no. Como tokens, el dueno los da de alta en
      Personalizacion (grupo "Chat") y elige su par claro/oscuro por separado. */
-  --chat-accent:      #00875A;
-  --chat-accent-2:    #005C3D;
-  --chat-accent-3:    #00301F;
-  --chat-accent-mid:  #6B4F22;
-  --chat-accent-ink:  #FFFFFF;
-  --chat-accent-rgb:  0, 135, 90;
+  --chat-accent:      #2d7560;
+  --chat-accent-2:    #2f7f67;
+  --chat-accent-3:    #1f5244;
+  --chat-accent-mid:  #94712a;
+  --chat-accent-ink:  #f6f3ec;
+  --chat-accent-rgb:  45, 117, 96;
 
   /* ── Cabeceras — glassmorphism Aether (mismo cristal del login) ── */
-  --header-brand:        rgba(255, 255, 255, 0.78);
-  --header-brand-shadow: rgba(var(--app-accent-rgb), 0.12);
-  --header-brand-border: rgba(var(--app-accent-rgb), 0.16);
-  --header-brand-filter: blur(20px) saturate(150%);
-  --header-text:         #152420;
-  --header-text-muted:   #55736A;
+  --header-brand:        rgba(246,243,236,0.72);
+  --header-brand-shadow: rgba(60,50,30,0.12);
+  --header-brand-border: rgba(148,113,42,0.30);
+  --header-brand-filter: blur(18px);
+  --header-text:         #1c2a26;
+  --header-text-muted:   #5f6373;
 
   /* ── Tablas — encabezado, hover de fila, bordes ──
      Úsalas en cualquier <table> nueva en vez de escribir el hex a mano (así
      todas las tablas del sistema cambian juntas). Ver clase genérica .g-table
      más abajo en este archivo para copiar/pegar la estructura ya lista. */
-  --table-header-bg:   #F9FAFB;
-  --table-header-text: #9CA3AF;
-  --table-row-hover:   #F9FAFB;
-  --table-border:      #E5E7EB;
-  --table-row-active:  var(--app-accent-soft);
+  --table-header-bg:   transparent;
+  --table-header-text: #6f7384;
+  --table-row-hover:   rgba(45,117,96,0.10);
+  --table-border:      rgba(28,42,38,0.10);
+  --table-row-active:  var(--app-tint);
 
   /* ── Menú lateral (sidebar) — antes vivía solo dentro de navbar.component.scss,
      así que cambiarlo significaba editar ese componente. Ahora es global: cambiar
      estos 5 valores cambia el menú completo (fondo, item activo, texto, borde). */
-  --sb-bg-rgb:      255, 255, 255;
-  --sb-bg:          rgba(255,255,255,0.97);
+  --sb-bg-rgb:      235, 230, 218;
+  --sb-bg:          #ebe6da;
   /* --sb-header-bg/--sb-body-bg/--sb-footer-bg (2026-08-26): el sidebar se dividió
      en 3 secciones con color propio (brand/nav/footer), editables desde
      Personalización. Por defecto los 3 valen lo mismo que --sb-bg -- no cambia
      nada visualmente hasta que se editen. --sb-body-bg es alias directo de
      --sb-bg (mismo valor, TemaService los setea siempre juntos). */
-  --sb-header-bg:   rgba(255,255,255,0.97);
-  --sb-body-bg:     rgba(255,255,255,0.97);
-  --sb-footer-bg:   rgba(255,255,255,0.97);
-  --sb-bg-item:     rgba(var(--app-accent-rgb),0.07);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.14);
-  --sb-text:        #12241D;
-  --sb-text-active: #12241D;
-  --sb-border:      #D5E8DD;
+  --sb-header-bg:   #ebe6da;
+  --sb-body-bg:     #ebe6da;
+  --sb-footer-bg:   #ebe6da;
+  --sb-bg-item:     rgba(45,117,96,0.06);
+  --sb-bg-active:   var(--app-tint);
+  --sb-text:        #1c2a26;
+  --sb-text-active: var(--app-accent-text);
+  --sb-border:      rgba(28,42,38,0.10);
+
+  /* ── Jade (2026-10-01): tokens nuevos ──
+     Texto en 4 niveles (texto, descripciones, secundario, ayuda), línea fina de filas, color de
+     precios/enlaces, fondo de lo seleccionado, dorado de los detalles, etiquetas, cristal de
+     barras flotantes y 3 sombras. En Personalización cada uno es una fila (migration_tema_jade.sql). */
+  --app-accent-text: #2d7560;
+  --app-tint: rgba(45,117,96,0.10);
+  --app-gold: #94712a;
+  --app-gold-line: rgba(148,113,42,0.50);
+  --badge-bg: #d5ece2;
+  --badge-text: #16362e;
+  --app-bg-fx: radial-gradient(120% 60% at 0% 0%, #e3ede7 0%, #f6f3ec 55%);
+  --app-text-soft: #4d5160;
+  --app-text-faint: #6f7384;
+  --app-hairline: rgba(28,42,38,0.10);
+  --app-glass: rgba(246,243,236,0.72);
+  --app-glass-strong: rgba(246,243,236,0.90);
+  --shadow-sm: 0 0 0 1px #ddd6c8;
+  --shadow-md: 0 0 0 1px #d6cfc0, 0 6px 18px rgba(60,50,30,0.12);
+  --shadow-lg: 0 0 0 1px #d6cfc0, 0 16px 40px rgba(60,50,30,0.20);
 }
 
 /* ════════════════════════════════════════════════
    TEMA OSCURO (19:00 – 5:59)
    ════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════════════════
-   MODO OSCURO — MONOCROMÁTICO SOBRE NEGRO PURO (2026-08-21)
+   Desde 2026-10-01 los valores de fábrica de estos dos bloques son los del diseño JADE
+   (día crema/verde jade, noche azul tinta con verde y dorado). El monocromático de abajo
+   se conserva como diseño "Clásico" en Personalización y en body.sin-diseno (Login/Registro).
+   ══════════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   (Historia) MODO OSCURO — MONOCROMÁTICO SOBRE NEGRO PURO (2026-08-21)
 
    Decisión del dueño tras descartar seis paletas de color seguidas (índigo,
    ámbar, azul/morado, jade, y las cuatro candidatas violeta/oro/coral/rubí):
@@ -244,64 +298,63 @@ body.theme-dark, [data-theme="dark"] {
 
   /* Marca monocromática: blanco → plata → gris. Los degradados que antes iban
      de verde oscuro a verde brillante ahora van de gris a blanco. */
-  --brand-1:            #FFFFFF;
-  --brand-2:            #C7C7CC;
-  --brand-3:            #8E8E93;
+  --brand-1:            #5bb99a;
+  --brand-2:            #7fd2b2;
+  --brand-3:            #1f5244;
 
   /* ── Paleta de marca — variables canónicas ── */
-  --color-bg:           #000000;
-  --color-surface:      #0C0C0C;
-  --color-surface-alt:  #151517;
-  --color-text:         #E9E9EC;
-  --color-text-secondary: #9A9AA0;
+  --color-bg:           #161826;
+  --color-surface:      #232532;
+  --color-surface-alt:  #1c1e2c;
+  --color-text:         #e9e9ed;
+  --color-text-secondary: #b2b6ca;
   --color-accent:       var(--brand-1);
-  --color-border:       #2A2A2E;
+  --color-border:       rgba(233,233,237,0.16);
   --color-success-bg:   #233326;
   --color-success-text: #8FB894;
   --color-warning-bg:   #3A2323;
   --color-warning-text: #D48B8B;
 
   /* ── Base (aliases a la paleta) ── */
-  --app-bg:            #000000;
-  --app-surface:       #0C0C0C;
-  --app-surface-2:     #151517;
-  --app-text:          #E9E9EC;
-  --app-text-muted:    #9A9AA0;
-  --app-border:        #2A2A2E;
+  --app-bg:            #161826;
+  --app-surface:       #232532;
+  --app-surface-2:     #1c1e2c;
+  --app-text:          #e9e9ed;
+  --app-text-muted:    #b2b6ca;
+  --app-border:        rgba(233,233,237,0.16);
   --app-accent:        var(--brand-1);
-  --app-accent-soft:   rgba(255,255,255,0.10);
+  --app-accent-soft:   var(--app-tint);
   /* Acento blanco → la tinta encima tiene que ser negra. */
-  --app-accent-ink:    #000000;
-  --app-accent-hover:  #D4D4D8;
-  --app-accent-rgb:    255, 255, 255;
+  --app-accent-ink:    #161826;
+  --app-accent-hover:  #7fd2b2;
+  --app-accent-rgb:    91, 185, 154;
 
   /* Ver nota en el bloque claro — Bootstrap usa estas para utilidades/enlaces. */
   --bs-primary:        var(--brand-1);
-  --bs-primary-rgb:    255, 255, 255;
+  --bs-primary-rgb:    91, 185, 154;
   --bs-link-color:     var(--brand-1);
-  --bs-link-color-rgb: 255, 255, 255;
-  --bs-link-hover-color: #D4D4D8;
-  --app-shadow:        0 1px 4px rgba(0,0,0,0.60);
+  --bs-link-color-rgb: 91, 185, 154;
+  --bs-link-hover-color: #7fd2b2;
+  --app-shadow:        0 0 0 1px #3f424d;
 
   /* ── Página (fondo principal) ── */
-  --page-bg:           #000000;
+  --page-bg:           #161826;
 
   /* ── Cards / paneles ──
      Sobre negro puro la sombra no se ve: lo que separa la tarjeta del fondo es
      que la tarjeta es un pelo más clara (#0C0C0C) y su borde.
-     --card-header-bg/--card-body-bg/--card-footer-bg: ver nota en el bloque claro. */
-  --card-bg:           #0C0C0C;
-  --card-header-bg:    #00875A;
-  --card-header-text:  #FFFFFF;
-  --card-body-bg:      #0C0C0C;
+     --card-header-bg/--card-body-bg/--card-footer-bg: #232532;
+  --card-header-bg:    #232532;
+  --card-header-text:  #e9e9ed;
+  --card-body-bg:      #232532;
   --card-footer-bg:    #0C0C0C;
-  --card-text:         #E9E9EC;
-  --card-text-muted:   #9A9AA0;
-  --card-border:       #2A2A2E;
-  --card-shadow:       0 4px 20px rgba(0,0,0,0.65);
-  --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.75);
-  --card-radius:       14px;
-  --form-card-radius:  28px;
+  --card-text:         #e9e9ed;
+  --card-text-muted:   #b2b6ca;
+  --card-border:       rgba(233,233,237,0.16);
+  --card-shadow:       0 0 0 1px var(--card-border);
+  --card-shadow-hover: var(--shadow-md);
+  --card-radius:       8px;
+  --form-card-radius:  14px;
 
   /* ── Estados semánticos -- tonos más claros que en modo claro para que
      mantengan contraste sobre fondo oscuro (mismo criterio ya usado en otros
@@ -318,61 +371,325 @@ body.theme-dark, [data-theme="dark"] {
   --pk-info:         #60a5fa;
   --pk-info-to:      #3b82f6;
   --pk-info-soft:    rgba(96,165,250,0.14);
+  --pk-ink:          #161826;
 
   /* ── Inputs / buscadores / textareas ── */
-  --input-bg:          rgba(255,255,255,0.05);
-  --input-text:        #E9E9EC;
-  --input-border:      #2A2A2E;
-  --input-placeholder: #6E6E73;
+  --input-bg:          #232532;
+  --input-text:        #e9e9ed;
+  --input-border:      rgba(233,233,237,0.16);
+  --input-placeholder: #9397ab;
   --input-focus-border: var(--brand-1);
-  --input-focus-shadow: 0 0 0 3px rgba(255,255,255,0.18);
+  --input-focus-shadow: 0 0 0 3px var(--app-tint);
 
   /* ── Formularios de guardado/actualización ── */
-  --form-bg:           #0C0C0C;
-  --form-section-bg:   #151517;
+  --form-bg:           #232532;
+  --form-section-bg:   #1c1e2c;
 
   /* ── Chat / Chatbot (ver el bloque del tema claro) ── */
-  --chat-accent:      #00875A;
-  --chat-accent-2:    #005C3D;
-  --chat-accent-3:    #00301F;
-  --chat-accent-mid:  #6B4F22;
-  --chat-accent-ink:  #FFFFFF;
-  --chat-accent-rgb:  0, 135, 90;
+  --chat-accent:      #2d7560;
+  --chat-accent-2:    #1f5244;
+  --chat-accent-3:    #163b31;
+  --chat-accent-mid:  #94712a;
+  --chat-accent-ink:  #eefaf5;
+  --chat-accent-rgb:  45, 117, 96;
 
   /* ── Cabeceras — cristal sobre negro ── */
-  --header-brand:        rgba(12, 12, 12, 0.72);
-  --header-brand-shadow: rgba(0, 0, 0, 0.70);
-  --header-brand-border: rgba(255, 255, 255, 0.14);
-  --header-brand-filter: blur(20px);
-  --header-text:         #E9E9EC;
-  --header-text-muted:   #9A9AA0;
+  --header-brand:        rgba(22,24,38,0.60);
+  --header-brand-shadow: rgba(0,0,0,0.55);
+  --header-brand-border: rgba(212,179,106,0.30);
+  --header-brand-filter: blur(18px);
+  --header-text:         #e9e9ed;
+  --header-text-muted:   #b2b6ca;
 
   /* ── Tablas — ver nota en el bloque claro ── */
-  --table-header-bg:   #151517;
-  --table-header-text: #9A9AA0;
-  --table-row-hover:   #151517;
-  --table-border:      #2A2A2E;
-  --table-row-active:  var(--app-accent-soft);
+  --table-header-bg:   transparent;
+  --table-header-text: #9397ab;
+  --table-row-hover:   rgba(91,185,154,0.14);
+  --table-border:      rgba(233,233,237,0.10);
+  --table-row-active:  var(--app-tint);
 
   /* ── Menú lateral (sidebar) — el oscuro parte de negro puro, sin tinte de marca
      (ver nota "MODO OSCURO" arriba). Ver nota en el bloque claro. */
-  --sb-bg-rgb:      0, 0, 0;
-  --sb-bg:          rgba(var(--sb-bg-rgb), 0.92);
-  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg: ver nota en el bloque claro. */
-  --sb-header-bg:   rgba(var(--sb-bg-rgb), 0.92);
-  --sb-body-bg:     rgba(var(--sb-bg-rgb), 0.92);
+  --sb-bg-rgb:      35, 37, 50;
+  --sb-bg:          #232532;
+  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg: #232532;
+  --sb-body-bg:     #232532;
   --sb-footer-bg:   rgba(var(--sb-bg-rgb), 0.92);
-  --sb-bg-item:     rgba(255,255,255,0.06);
-  --sb-bg-active:   rgba(var(--app-accent-rgb),0.22);
-  --sb-text:        #E9E9EC;
-  --sb-text-active: #FFFFFF;
-  --sb-border:      rgba(255,255,255,0.08);
+  --sb-bg-item:     rgba(91,185,154,0.08);
+  --sb-bg-active:   var(--app-tint);
+  --sb-text:        #e9e9ed;
+  --sb-text-active: var(--app-accent-text);
+  --sb-border:      rgba(233,233,237,0.10);
+
+  /* ── Jade (2026-10-01): tokens nuevos ──
+     Texto en 4 niveles (texto, descripciones, secundario, ayuda), línea fina de filas, color de
+     precios/enlaces, fondo de lo seleccionado, dorado de los detalles, etiquetas, cristal de
+     barras flotantes y 3 sombras. En Personalización cada uno es una fila (migration_tema_jade.sql). */
+  --app-accent-text: #aee6cf;
+  --app-tint: rgba(91,185,154,0.14);
+  --app-gold: #d4b36a;
+  --app-gold-line: rgba(212,179,106,0.55);
+  --badge-bg: #1f5244;
+  --badge-text: #eefaf5;
+  --app-bg-fx: radial-gradient(120% 60% at 0% 0%, #1b2a2a 0%, #161826 55%);
+  --app-text-soft: #cfd3e5;
+  --app-text-faint: #9397ab;
+  --app-hairline: rgba(233,233,237,0.10);
+  --app-glass: rgba(22,24,38,0.60);
+  --app-glass-strong: rgba(22,24,38,0.82);
+  --shadow-sm: 0 0 0 1px #3f424d;
+  --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
+  --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
 }
+
+/* ════════════════════════════════════════════════
+   LOGIN Y REGISTRO — siempre con el diseño de fábrica de antes de Jade
+   ────────────────────────────────────────────────
+   AppComponent pone body.sin-diseno en /login y /usuarios/registrar. Estos valores son los
+   que tenían los bloques de arriba hasta 2026-09-30 (= diseño "Clásico" de Personalización).
+   !important a propósito: TemaService escribe los tokens del diseño elegido como estilo en
+   línea de <body>, y solo una declaración !important de hoja de estilos le gana a eso.
+   ════════════════════════════════════════════════ */
+body.sin-diseno.theme-light {
+  --brand-1: #00875A !important;
+  --brand-2: #005C3D !important;
+  --brand-3: #00301F !important;
+  --color-bg: #F3FAF6 !important;
+  --color-surface: #FFFFFF !important;
+  --color-surface-alt: #E3F2EA !important;
+  --color-text: #152420 !important;
+  --color-text-secondary: #55736A !important;
+  --color-accent: var(--brand-1) !important;
+  --color-border: #D5E8DD !important;
+  --color-success-bg: #E4E9E4 !important;
+  --color-success-text: #3A4A3D !important;
+  --color-warning-bg: #F1E1E1 !important;
+  --color-warning-text: #8A3A3A !important;
+  --app-bg: #F3FAF6 !important;
+  --app-surface: #FFFFFF !important;
+  --app-surface-2: #E3F2EA !important;
+  --app-text: #152420 !important;
+  --app-text-muted: #55736A !important;
+  --app-border: #D5E8DD !important;
+  --app-accent: var(--brand-1) !important;
+  --app-accent-soft: rgba(var(--app-accent-rgb),0.10) !important;
+  --app-accent-ink: #FFFFFF !important;
+  --app-accent-hover: #006B47 !important;
+  --app-accent-rgb: 0, 135, 90 !important;
+  --bs-primary: var(--brand-1) !important;
+  --bs-primary-rgb: 0, 135, 90 !important;
+  --bs-link-color: var(--brand-1) !important;
+  --bs-link-color-rgb: 0, 135, 90 !important;
+  --bs-link-hover-color: #006B47 !important;
+  --app-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+  --page-bg: #F3FAF6 !important;
+  --card-bg: #FFFFFF !important;
+  --card-header-bg: #00875A !important;
+  --card-header-text: #FFFFFF !important;
+  --card-body-bg: #FFFFFF !important;
+  --card-footer-bg: #FFFFFF !important;
+  --card-text: #152420 !important;
+  --card-text-muted: #55736A !important;
+  --card-border: #D5E8DD !important;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04) !important;
+  --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06) !important;
+  --card-radius: 14px !important;
+  --form-card-radius: 28px !important;
+  --pk-success: #16a34a !important;
+  --pk-success-to: #059669 !important;
+  --pk-success-soft: rgba(22,163,74,0.10) !important;
+  --pk-warning: #f59e0b !important;
+  --pk-warning-to: #d97706 !important;
+  --pk-warning-soft: rgba(245,158,11,0.10) !important;
+  --pk-danger: #ef4444 !important;
+  --pk-danger-to: #dc2626 !important;
+  --pk-danger-soft: rgba(239,68,68,0.10) !important;
+  --pk-info: #3b82f6 !important;
+  --pk-info-to: #2563eb !important;
+  --pk-info-soft: rgba(59,130,246,0.10) !important;
+  --pk-ink:          #ffffff !important;
+  --input-bg: #FFFFFF !important;
+  --input-text: #152420 !important;
+  --input-border: #D5E8DD !important;
+  --input-placeholder: #9DBAAD !important;
+  --input-focus-border: var(--brand-1) !important;
+  --input-focus-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
+  --form-bg: #FFFFFF !important;
+  --form-section-bg: #E3F2EA !important;
+  --chat-accent: #00875A !important;
+  --chat-accent-2: #005C3D !important;
+  --chat-accent-3: #00301F !important;
+  --chat-accent-mid: #6B4F22 !important;
+  --chat-accent-ink: #FFFFFF !important;
+  --chat-accent-rgb: 0, 135, 90 !important;
+  --header-brand: rgba(255, 255, 255, 0.78) !important;
+  --header-brand-shadow: rgba(var(--app-accent-rgb), 0.12) !important;
+  --header-brand-border: rgba(var(--app-accent-rgb), 0.16) !important;
+  --header-brand-filter: blur(20px) saturate(150%) !important;
+  --header-text: #152420 !important;
+  --header-text-muted: #55736A !important;
+  --table-header-bg: #F9FAFB !important;
+  --table-header-text: #9CA3AF !important;
+  --table-row-hover: #F9FAFB !important;
+  --table-border: #E5E7EB !important;
+  --table-row-active: var(--app-accent-soft) !important;
+  --sb-bg-rgb: 255, 255, 255 !important;
+  --sb-bg: rgba(255,255,255,0.97) !important;
+  --sb-header-bg: rgba(255,255,255,0.97) !important;
+  --sb-body-bg: rgba(255,255,255,0.97) !important;
+  --sb-footer-bg: rgba(255,255,255,0.97) !important;
+  --sb-bg-item: rgba(var(--app-accent-rgb),0.07) !important;
+  --sb-bg-active: rgba(var(--app-accent-rgb),0.14) !important;
+  --sb-text: #12241D !important;
+  --sb-text-active: #12241D !important;
+  --sb-border: #D5E8DD !important;
+  --app-accent-text: #00875A !important;
+  --app-tint: rgba(0,135,90,0.10) !important;
+  --app-gold: #00875A !important;
+  --app-gold-line: #D5E8DD !important;
+  --badge-bg: rgba(0,135,90,0.12) !important;
+  --badge-text: #00875A !important;
+  --app-bg-fx: none !important;
+  --app-text-soft: #152420 !important;
+  --app-text-faint: #55736A !important;
+  --app-hairline: #D5E8DD !important;
+  --app-glass: rgba(255,255,255,0.78) !important;
+  --app-glass-strong: rgba(255,255,255,0.82) !important;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.08) !important;
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06) !important;
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.12) !important;
+  --font-family: 'Poppins', sans-serif !important;
+  --btn-primary-bg: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
+  --btn-primary-text: var(--app-accent-ink) !important;
+  --btn-primary-border: transparent !important;
+  --btn-primary-hover-bg: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
+  --btn-primary-hover-text: var(--app-accent-ink) !important;
+}
+
+body.sin-diseno.theme-dark {
+  --brand-1: #FFFFFF !important;
+  --brand-2: #C7C7CC !important;
+  --brand-3: #8E8E93 !important;
+  --color-bg: #000000 !important;
+  --color-surface: #0C0C0C !important;
+  --color-surface-alt: #151517 !important;
+  --color-text: #E9E9EC !important;
+  --color-text-secondary: #9A9AA0 !important;
+  --color-accent: var(--brand-1) !important;
+  --color-border: #2A2A2E !important;
+  --color-success-bg: #233326 !important;
+  --color-success-text: #8FB894 !important;
+  --color-warning-bg: #3A2323 !important;
+  --color-warning-text: #D48B8B !important;
+  --app-bg: #000000 !important;
+  --app-surface: #0C0C0C !important;
+  --app-surface-2: #151517 !important;
+  --app-text: #E9E9EC !important;
+  --app-text-muted: #9A9AA0 !important;
+  --app-border: #2A2A2E !important;
+  --app-accent: var(--brand-1) !important;
+  --app-accent-soft: rgba(255,255,255,0.10) !important;
+  --app-accent-ink: #000000 !important;
+  --app-accent-hover: #D4D4D8 !important;
+  --app-accent-rgb: 255, 255, 255 !important;
+  --bs-primary: var(--brand-1) !important;
+  --bs-primary-rgb: 255, 255, 255 !important;
+  --bs-link-color: var(--brand-1) !important;
+  --bs-link-color-rgb: 255, 255, 255 !important;
+  --bs-link-hover-color: #D4D4D8 !important;
+  --app-shadow: 0 1px 4px rgba(0,0,0,0.60) !important;
+  --page-bg: #000000 !important;
+  --card-bg: #0C0C0C !important;
+  --card-header-bg: #00875A !important;
+  --card-header-text: #FFFFFF !important;
+  --card-body-bg: #0C0C0C !important;
+  --card-footer-bg: #0C0C0C !important;
+  --card-text: #E9E9EC !important;
+  --card-text-muted: #9A9AA0 !important;
+  --card-border: #2A2A2E !important;
+  --card-shadow: 0 4px 20px rgba(0,0,0,0.65) !important;
+  --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.75) !important;
+  --card-radius: 14px !important;
+  --form-card-radius: 28px !important;
+  --pk-success: #34d399 !important;
+  --pk-success-to: #10b981 !important;
+  --pk-success-soft: rgba(52,211,153,0.14) !important;
+  --pk-warning: #fbbf24 !important;
+  --pk-warning-to: #f59e0b !important;
+  --pk-warning-soft: rgba(251,191,36,0.14) !important;
+  --pk-danger: #f87171 !important;
+  --pk-danger-to: #ef4444 !important;
+  --pk-danger-soft: rgba(248,113,113,0.14) !important;
+  --pk-info: #60a5fa !important;
+  --pk-info-to: #3b82f6 !important;
+  --pk-info-soft: rgba(96,165,250,0.14) !important;
+  --pk-ink:          #ffffff !important;
+  --input-bg: rgba(255,255,255,0.05) !important;
+  --input-text: #E9E9EC !important;
+  --input-border: #2A2A2E !important;
+  --input-placeholder: #6E6E73 !important;
+  --input-focus-border: var(--brand-1) !important;
+  --input-focus-shadow: 0 0 0 3px rgba(255,255,255,0.18) !important;
+  --form-bg: #0C0C0C !important;
+  --form-section-bg: #151517 !important;
+  --chat-accent: #00875A !important;
+  --chat-accent-2: #005C3D !important;
+  --chat-accent-3: #00301F !important;
+  --chat-accent-mid: #6B4F22 !important;
+  --chat-accent-ink: #FFFFFF !important;
+  --chat-accent-rgb: 0, 135, 90 !important;
+  --header-brand: rgba(12, 12, 12, 0.72) !important;
+  --header-brand-shadow: rgba(0, 0, 0, 0.70) !important;
+  --header-brand-border: rgba(255, 255, 255, 0.14) !important;
+  --header-brand-filter: blur(20px) !important;
+  --header-text: #E9E9EC !important;
+  --header-text-muted: #9A9AA0 !important;
+  --table-header-bg: #151517 !important;
+  --table-header-text: #9A9AA0 !important;
+  --table-row-hover: #151517 !important;
+  --table-border: #2A2A2E !important;
+  --table-row-active: var(--app-accent-soft) !important;
+  --sb-bg-rgb: 0, 0, 0 !important;
+  --sb-bg: rgba(var(--sb-bg-rgb), 0.92) !important;
+  --sb-header-bg: rgba(var(--sb-bg-rgb), 0.92) !important;
+  --sb-body-bg: rgba(var(--sb-bg-rgb), 0.92) !important;
+  --sb-footer-bg: rgba(var(--sb-bg-rgb), 0.92) !important;
+  --sb-bg-item: rgba(255,255,255,0.06) !important;
+  --sb-bg-active: rgba(var(--app-accent-rgb),0.22) !important;
+  --sb-text: #E9E9EC !important;
+  --sb-text-active: #FFFFFF !important;
+  --sb-border: rgba(255,255,255,0.08) !important;
+  --app-accent-text: #FFFFFF !important;
+  --app-tint: rgba(255,255,255,0.10) !important;
+  --app-gold: #FFFFFF !important;
+  --app-gold-line: #2A2A2E !important;
+  --badge-bg: rgba(255,255,255,0.12) !important;
+  --badge-text: #FFFFFF !important;
+  --app-bg-fx: none !important;
+  --app-text-soft: #E9E9EC !important;
+  --app-text-faint: #9A9AA0 !important;
+  --app-hairline: #2A2A2E !important;
+  --app-glass: rgba(12,12,12,0.72) !important;
+  --app-glass-strong: rgba(0,0,0,0.80) !important;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.60) !important;
+  --shadow-md: 0 8px 28px rgba(0,0,0,0.75) !important;
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.55) !important;
+  --font-family: 'Poppins', sans-serif !important;
+  --btn-primary-bg: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
+  --btn-primary-text: var(--app-accent-ink) !important;
+  --btn-primary-border: transparent !important;
+  --btn-primary-hover-bg: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
+  --btn-primary-hover-text: var(--app-accent-ink) !important;
+}
+
 
 /* ── Transición suave al cambiar de tema ──── */
 body {
-  background:  var(--app-bg, #f1f5f9);
-  color:       var(--app-text, #1e293b);
+  background-color: var(--app-bg);
+  /* Degradado de fondo del diseño (Jade: brillo verde arriba a la izquierda; Clásico: none). */
+  background-image: var(--app-bg-fx, none);
+  background-attachment: fixed;
+  color:       var(--app-text);
   transition:  background 0.35s ease, color 0.35s ease;
 }
 
@@ -383,7 +700,7 @@ body {
   line-height: 1.6;
 }
 
-/* ── ESCALA DE TÍTULOS ────────────────────── */
+/* ── ESCALA DE TÍTULOS (diseño Clásico; la de Jade está en tema-jade.scss) ── */
 h1 {
   font-size: 2rem;
   font-weight: 800;
@@ -422,7 +739,7 @@ h6 {
 .text-subtitle { font-size: 1rem;    font-weight: 600; }
 .text-body     { font-size: 0.875rem; font-weight: 400; }
 .text-small    { font-size: 0.78rem;  font-weight: 400; }
-.text-caption  { font-size: 0.72rem;  font-weight: 300; color: #6b7280; }
+.text-caption  { font-size: 0.72rem;  font-weight: 300; color: var(--app-text-faint); }
 
 /* ── CARD HEADERS, TABLE HEADERS ─────────── */
 .card-header, .card-title,
@@ -444,7 +761,7 @@ th, .ag-header-cell-text {
 label {
   font-weight: 500;
   font-size: 0.83rem;
-  color: #374151;
+  color: var(--app-text-muted);
 }
 
 /* ── INPUTS ───────────────────────────────── */
@@ -463,403 +780,229 @@ label {
 /* ── PLACEHOLDERS más suaves ─────────────── */
 ::placeholder {
   font-weight: 300;
-  color: #9ca3af !important;
+  color: var(--input-placeholder) !important;
   opacity: 1;
 }
 
 /* ════════════════════════════════════════════════════════════
-   TEMA OSCURO — glassmorphism combinando con el sidebar
+   LIBRERÍAS (Bootstrap, Nebular, PrimeNG, AG Grid) — día y noche con los mismos tokens
+   ────────────────────────────────────────────────────────────
+   Hasta 2026-09-30 había un bloque para el modo oscuro y otro para el claro, cada uno con sus
+   colores escritos a mano (#2A2A2E, #93B3A4, #D5E8DD…): Personalización no los alcanzaba y al
+   escoger otro diseño los modales, menús desplegables y tablas de PrimeNG se quedaban con el
+   verde/negro de fábrica. Ahora es un solo bloque y cada color sale de un token, así que sigue
+   al diseño elegido de día y de noche. `body:is(.theme-dark, .theme-light)` conserva la misma
+   especificidad (0,1,1) que tenían los dos bloques.
    ════════════════════════════════════════════════════════════ */
-body.theme-dark {
+body:is(.theme-dark, .theme-light) {
 
   /* ── Tipografía general ────────────────── */
-  color: #E9E9EC;
-  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: #E9E9EC; }
+  color: var(--app-text);
+  h1, h2, h3, h4, h5, h6, p, span, label, td, th, li { color: var(--app-text); }
 
-  /* ⚠️ …pero NO adentro de un botón. Esa regla de arriba pinta de blanco CUALQUIER
-     `<span>`, y desde que el acento es blanco eso deja el texto invisible sobre los
-     botones de marca — es la causa real del "no se ve lo que dice" que se reportó en
-     rifas, y del mismo síntoma en cualquier botón cuyo texto vaya envuelto en un span.
-     El texto de un botón tiene que heredar SU color, que ya está resuelto con
-     `--app-accent-ink`. (0,1,2) le gana a (0,1,1), sin `!important`. */
+  /* ⚠️ …pero NO adentro de un botón. Esa regla de arriba pinta CUALQUIER `<span>`, y deja el
+     texto invisible sobre los botones de marca. El texto de un botón hereda SU color.
+     (0,1,2) le gana a (0,1,1), sin `!important`. */
   button span, button label, button p,
   .btn span, [class*="-btn"] span, [class*="-btn"] label {
     color: inherit;
   }
 
   /* ── Bootstrap cards ───────────────────── */
-  /* Pedido 2026-09-02: estaban hardcodeados (rgba(255,255,255,0.05), #2A2A2E, #E9E9EC...) en vez
-     de tokens -- Personalización nunca los podía tocar. Toda pantalla que use .card/.table/
-     .form-control "a secas" de Bootstrap (sin su propia clase con var(--card-bg) etc.) se quedaba
-     fija en este look sin importar el diseño/color elegido. Ver auditoría 2026-09-02. */
   .card {
-    background: var(--card-body-bg, rgba(255,255,255,0.05)) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--card-border, #2A2A2E) !important;
-    color: var(--card-text, #E9E9EC) !important;
-    box-shadow: var(--card-shadow, 0 4px 24px rgba(0,0,0,0.45)) !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--card-text) !important;
+    box-shadow: var(--card-shadow) !important;
+    border-radius: var(--card-radius) !important;
   }
   .card-header {
-    background: var(--card-header-bg, rgba(255,255,255,0.06)) !important;
-    border-bottom: 1px solid var(--card-border, #2A2A2E) !important;
-    color: var(--card-header-text, #E9E9EC) !important;
+    background: var(--card-header-bg) !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--card-header-text) !important;
   }
   .card-body {
     background: var(--card-body-bg, transparent) !important;
-    color: var(--card-text, #E9E9EC) !important;
+    color: var(--card-text) !important;
   }
   .card-footer {
-    background: var(--card-footer-bg, rgba(255,255,255,0.06)) !important;
-    border-top: 1px solid var(--card-border, #2A2A2E) !important;
-    color: var(--card-text, #E9E9EC) !important;
+    background: var(--card-footer-bg) !important;
+    border-top: 1px solid var(--card-border) !important;
+    color: var(--card-text) !important;
   }
-  .card-title { color: var(--card-text, #E9E9EC) !important; }
+  .card-title { color: var(--card-text) !important; }
 
   /* ── Nebular cards ─────────────────────── */
   nb-card {
-    background: var(--card-body-bg, rgba(255,255,255,0.05)) !important;
-    border: 1px solid var(--card-border, #2A2A2E) !important;
-    backdrop-filter: blur(12px);
-    color: var(--card-text, #E9E9EC) !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--card-text) !important;
+    box-shadow: var(--card-shadow) !important;
+    border-radius: var(--card-radius) !important;
   }
   nb-card-header {
-    background: var(--card-header-bg, rgba(255,255,255,0.05)) !important;
-    border-bottom: 1px solid var(--card-border, #2A2A2E) !important;
-    color: var(--card-header-text, #E9E9EC) !important;
+    background: var(--card-header-bg) !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--card-header-text) !important;
   }
-  nb-card-body { color: var(--card-text, #E9E9EC) !important; }
+  nb-card-body { color: var(--card-text) !important; }
 
   /* ── Bootstrap tables ──────────────────── */
   .table {
-    color: var(--app-text, #E9E9EC) !important;
+    color: var(--app-text) !important;
     --bs-table-bg: transparent;
-    --bs-table-striped-bg: rgba(255,255,255,0.03);
-    --bs-table-hover-bg: var(--table-row-hover, rgba(255,255,255,0.06));
-    --bs-table-border-color: var(--table-border, #2A2A2E);
+    --bs-table-color: var(--app-text);
+    --bs-table-striped-bg: var(--app-tint);
+    --bs-table-hover-bg: var(--table-row-hover);
+    --bs-table-border-color: var(--table-border);
   }
   .table thead th {
-    background: var(--table-header-bg, rgba(255,255,255,0.06)) !important;
-    color: var(--table-header-text, #93B3A4) !important;
-    border-color: var(--table-border, #2A2A2E) !important;
+    background: var(--table-header-bg) !important;
+    color: var(--table-header-text) !important;
+    border-color: var(--table-border) !important;
   }
-  .table td, .table th { border-color: var(--table-border, rgba(30,58,45,0.7)) !important; }
+  .table td, .table th { border-color: var(--table-border) !important; }
 
   /* ── Bootstrap forms ───────────────────── */
   .form-control, .form-select {
-    background: var(--input-bg, rgba(255,255,255,0.06)) !important;
-    border-color: var(--input-border, #2A2A2E) !important;
-    color: var(--input-text, #E9E9EC) !important;
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-text) !important;
     &:focus {
-      background: var(--input-bg, rgba(255,255,255,0.09)) !important;
-      border-color: var(--brand-1) !important;
-      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.22) !important;
+      border-color: var(--input-focus-border) !important;
+      box-shadow: var(--input-focus-shadow) !important;
     }
-    &::placeholder { color: var(--input-placeholder, #5F8375) !important; }
+    &::placeholder { color: var(--input-placeholder) !important; }
   }
   .input-group-text {
-    background: var(--form-section-bg, rgba(255,255,255,0.06)) !important;
-    border-color: var(--input-border, #2A2A2E) !important;
-    color: var(--app-text-muted, #93B3A4) !important;
+    background: var(--form-section-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--app-text-muted) !important;
   }
-  label { color: var(--app-text-muted, #93B3A4) !important; }
+  label { color: var(--app-text-muted) !important; }
 
   /* ── Bootstrap modals ──────────────────── */
   .modal-content {
-    background: rgba(var(--sb-bg-rgb),0.97) !important;
-    backdrop-filter: blur(16px);
-    border: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: var(--form-card-radius) !important;
+    box-shadow: var(--shadow-lg) !important;
+    color: var(--app-text) !important;
   }
   .modal-header {
-    border-bottom: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--app-text) !important;
   }
-  .modal-footer { border-top: 1px solid #2A2A2E !important; }
-  .btn-close { filter: invert(1); }
+  .modal-footer { border-top: 1px solid var(--card-border) !important; }
 
   /* ── Bootstrap dropdowns ───────────────── */
   .dropdown-menu {
-    background: rgba(var(--sb-bg-rgb),0.97) !important;
-    backdrop-filter: blur(12px);
-    border: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: var(--shadow-md) !important;
+    border-radius: var(--radius-lg, 12px) !important;
+    color: var(--app-text) !important;
   }
   .dropdown-item {
-    color: #E3F2EA !important;
-    &:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+    color: var(--app-text) !important;
+    &:hover { background: var(--app-tint) !important; color: var(--app-accent-text) !important; }
   }
-  .dropdown-divider { border-color: #2A2A2E !important; }
+  .dropdown-divider { border-color: var(--card-border) !important; }
 
   /* ── PrimeNG ───────────────────────────── */
   .p-card {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--app-text) !important;
+    box-shadow: var(--card-shadow) !important;
   }
   .p-datatable .p-datatable-thead > tr > th {
-    background: rgba(255,255,255,0.06) !important;
-    color: #93B3A4 !important;
-    border-color: #2A2A2E !important;
+    background: var(--table-header-bg) !important;
+    color: var(--table-header-text) !important;
+    border-color: var(--table-border) !important;
   }
   .p-datatable .p-datatable-tbody > tr {
     background: transparent !important;
-    color: #E9E9EC !important;
-    &:hover { background: rgba(255,255,255,0.05) !important; }
+    color: var(--app-text) !important;
+    &:hover { background: var(--table-row-hover) !important; }
   }
-  .p-datatable .p-datatable-tbody > tr > td { border-color: rgba(30,58,45,0.6) !important; }
+  .p-datatable .p-datatable-tbody > tr > td { border-color: var(--table-border) !important; }
   .p-inputtext {
-    background: rgba(255,255,255,0.06) !important;
-    border-color: #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-text) !important;
   }
   .p-dropdown {
-    background: #0D1E17 !important;
-    border-color: #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-text) !important;
   }
-  .p-dropdown-label { color: #E9E9EC !important; }
-  .p-dropdown-trigger { color: #93B3A4 !important; }
+  .p-dropdown-label { color: var(--input-text) !important; }
+  .p-dropdown-trigger { color: var(--app-text-muted) !important; }
   .p-dropdown-panel {
-    background: #0C0C0C !important;
-    border: 1px solid #2A2A2E !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.55) !important;
+    background: var(--card-body-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: var(--shadow-md) !important;
   }
-  .p-dropdown-items-wrapper { background: #0C0C0C !important; }
+  .p-dropdown-items-wrapper { background: var(--card-body-bg) !important; }
   .p-dropdown-item {
-    color: #E9E9EC !important;
+    color: var(--app-text) !important;
     background: transparent !important;
-    &:hover { background: rgba(var(--app-accent-rgb),0.16) !important; color: var(--brand-1) !important; }
+    &:hover { background: var(--app-tint) !important; color: var(--app-accent-text) !important; }
   }
-  .p-dropdown-item.p-highlight { background: rgba(var(--app-accent-rgb),0.20) !important; color: var(--brand-1) !important; }
+  .p-dropdown-item.p-highlight { background: var(--app-tint) !important; color: var(--app-accent-text) !important; }
   .p-dialog .p-dialog-header {
-    background: rgba(var(--sb-bg-rgb),0.97) !important;
-    border-bottom: 1px solid #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--card-body-bg) !important;
+    border-bottom: 1px solid var(--card-border) !important;
+    color: var(--app-text) !important;
   }
   .p-dialog .p-dialog-content {
-    background: rgba(var(--sb-bg-rgb),0.95) !important;
-    color: #E9E9EC !important;
+    background: var(--card-body-bg) !important;
+    color: var(--app-text) !important;
   }
   .p-dialog .p-dialog-footer {
-    background: rgba(var(--sb-bg-rgb),0.97) !important;
-    border-top: 1px solid #2A2A2E !important;
+    background: var(--card-footer-bg) !important;
+    border-top: 1px solid var(--card-border) !important;
   }
 
   /* ── AG Grid ────────────────────────────── */
   .ag-theme-alpine {
-    --ag-background-color:        rgba(255,255,255,0.04);
-    --ag-header-background-color: rgba(255,255,255,0.07);
-    --ag-odd-row-background-color: rgba(255,255,255,0.02);
-    --ag-row-hover-color:         rgba(255,255,255,0.06);
-    --ag-border-color:            #2A2A2E;
-    --ag-foreground-color:        #E9E9EC;
-    --ag-header-foreground-color: #93B3A4;
+    --ag-background-color:        var(--card-body-bg);
+    --ag-header-background-color: var(--form-section-bg);
+    --ag-odd-row-background-color: var(--app-tint);
+    --ag-row-hover-color:         var(--table-row-hover);
+    --ag-border-color:            var(--table-border);
+    --ag-foreground-color:        var(--app-text);
+    --ag-header-foreground-color: var(--table-header-text);
   }
 
   /* ── Bootstrap alerts ──────────────────── */
   .alert {
-    background: rgba(255,255,255,0.06) !important;
-    border-color: #2A2A2E !important;
-    color: #E9E9EC !important;
+    background: var(--form-section-bg) !important;
+    border-color: var(--card-border) !important;
+    color: var(--app-text) !important;
   }
 
-  /* ── Badges neutros ────────────────────── */
-  .badge.bg-light { background: rgba(255,255,255,0.12) !important; color: #E9E9EC !important; }
-  .text-muted { color: #5F8375 !important; }
+  /* ── Badges y texto ────────────────────── */
+  .badge.bg-light { background: var(--badge-bg) !important; color: var(--badge-text) !important; }
+  .text-muted { color: var(--app-text-muted) !important; }
+}
 
-  /* ── Selects nativos (arreglo GLOBAL) ────
-     El popup nativo de <option> no respeta background/color de autor via custom properties
-     en todos los navegadores -- .form-select de arriba deja el <select> CERRADO con fondo
-     oscuro, pero al abrirlo el popup queda ilegible (texto blanco sobre fondo blanco o
-     viceversa segun el navegador/SO). Este bug se encontro y parcheo pantalla por pantalla
-     muchas veces (venta-variante, gestion-lugares, entregas-zona, venta-directa, mis-pedidos,
-     buscar, mis-datos, clientes-mostrar) con la misma solucion cada vez: forzar color-scheme
-     claro + colores fijos, unico patron que garantiza legibilidad cross-browser. Se pone aca
-     como regla global para TODO <select> de la app, para no depender de acordarse de repetir
-     el parche cada vez que aparece un select nuevo. Va al final del bloque a proposito: ante un
-     empate de especificidad con ".form-select" (misma cantidad de clases), gana la declarada
-     despues en el archivo -- por eso "select.form-select" esta repetido explicitamente aca. Los
-     parches puntuales por componente (mas especificos, ej. "select.pk-input") siguen ganando
-     donde ya existen; esta regla es la red de seguridad para los que faltan. */
+body.theme-dark .btn-close { filter: invert(1); }
+
+body.theme-dark:not([data-estilo="jade"]), body.theme-dark.sin-diseno {
+  /* ── Selects nativos (arreglo GLOBAL, diseño Clásico) ────
+     El popup nativo de <option> no respeta background/color de autor en todos los
+     navegadores: con fondo negro el popup quedaba ilegible. Forzar color-scheme claro +
+     colores fijos fue el único patrón que garantizó legibilidad cross-browser (se parchó
+     pantalla por pantalla muchas veces). En el diseño Jade el select usa `color-scheme: dark`
+     con los tokens del campo (ver tema-jade.scss), que deja el popup oscuro y legible. */
   select, select.form-select {
     color-scheme: light !important;
     background-color: #ffffff !important;
     color: #1f2937 !important;
-    border-color: var(--card-border, #2A2A2E) !important;
+    border-color: var(--card-border) !important;
   }
-}
-
-/* ════════════════════════════════════════════════════════════
-   TEMA CLARO — blanco limpio con acento índigo
-   ════════════════════════════════════════════════════════════ */
-body.theme-light {
-
-  /* ── Tipografía ────────────────────────── */
-  color: #12241D;
-  h1, h2, h3, h4, h5, h6 { color: #12241D; }
-  p, span, label, td, th, li { color: #12241D; }
-
-  /* Misma excepción que en oscuro, y aquí el riesgo es el espejo: un `<span>` con
-     texto oscuro dentro de un botón de marca (verde oscuro) también desaparece. */
-  button span, button label, button p,
-  .btn span, [class*="-btn"] span, [class*="-btn"] label {
-    color: inherit;
-  }
-
-  /* ── Bootstrap cards ───────────────────── */
-  /* Pedido 2026-09-02: mismo hardcodeo que en el bloque oscuro de arriba -- ver ese comentario.
-     Sin esto, .card/.table/.form-control "a secas" de Bootstrap nunca reflejaban Personalización. */
-  .card {
-    background: var(--card-body-bg, #FFFFFF) !important;
-    border: 1px solid var(--card-border, #D5E8DD) !important;
-    color: var(--card-text, #12241D) !important;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)) !important;
-    border-radius: 14px !important;
-  }
-  .card-header {
-    background: var(--card-header-bg, #E3F2EA) !important;
-    border-bottom: 1px solid var(--card-border, #D5E8DD) !important;
-    color: var(--card-header-text, #12241D) !important;
-  }
-  .card-body {
-    background: var(--card-body-bg, transparent) !important;
-    color: var(--card-text, #12241D) !important;
-  }
-  .card-footer {
-    background: var(--card-footer-bg, #E3F2EA) !important;
-    border-top: 1px solid var(--card-border, #D5E8DD) !important;
-    color: var(--card-text, #12241D) !important;
-  }
-  .card-title { color: var(--card-text, #12241D) !important; font-weight: 700 !important; }
-
-  /* ── Nebular cards ─────────────────────── */
-  nb-card {
-    background: var(--card-body-bg, #FFFFFF) !important;
-    border: 1px solid var(--card-border, #D5E8DD) !important;
-    color: var(--card-text, #12241D) !important;
-    box-shadow: var(--card-shadow, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)) !important;
-    border-radius: 14px !important;
-  }
-  nb-card-header {
-    background: var(--card-header-bg, #E3F2EA) !important;
-    border-bottom: 1px solid var(--card-border, #D5E8DD) !important;
-    color: var(--card-header-text, #12241D) !important;
-  }
-  nb-card-body { color: var(--card-text, #12241D) !important; }
-
-  /* ── Bootstrap tables ──────────────────── */
-  .table {
-    color: var(--app-text, #12241D) !important;
-    --bs-table-bg: #FFFFFF;
-    --bs-table-striped-bg: #E9E9EC;
-    --bs-table-hover-bg: var(--table-row-hover, #E3F2EA);
-    --bs-table-border-color: var(--table-border, #D5E8DD);
-  }
-  .table thead th {
-    background: var(--table-header-bg, #E3F2EA) !important;
-    color: var(--table-header-text, #5F8375) !important;
-    border-color: var(--table-border, #D5E8DD) !important;
-  }
-
-  /* ── Bootstrap forms ───────────────────── */
-  .form-control, .form-select {
-    background: var(--input-bg, #FFFFFF) !important;
-    border-color: var(--input-border, #D5E8DD) !important;
-    color: var(--input-text, #12241D) !important;
-    &:focus {
-      border-color: var(--brand-1) !important;
-      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
-    }
-  }
-  .input-group-text {
-    background: var(--form-section-bg, #E3F2EA) !important;
-    border-color: var(--input-border, #D5E8DD) !important;
-    color: var(--app-text-muted, #5F8375) !important;
-  }
-  label { color: var(--app-text-muted, #5F8375) !important; }
-
-  /* ── Bootstrap modals ──────────────────── */
-  .modal-content {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    border-radius: 16px !important;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
-    color: #12241D !important;
-  }
-  .modal-header {
-    border-bottom: 1px solid #D5E8DD !important;
-    color: #12241D !important;
-  }
-  .modal-footer { border-top: 1px solid #D5E8DD !important; }
-
-  /* ── Bootstrap dropdowns ───────────────── */
-  .dropdown-menu {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
-    border-radius: 12px !important;
-  }
-  .dropdown-item {
-    color: #12241D !important;
-    &:hover { background: #E3F2EA !important; color: var(--brand-1) !important; }
-  }
-
-  /* ── PrimeNG ───────────────────────────── */
-  .p-card {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    color: #12241D !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04) !important;
-  }
-  .p-datatable .p-datatable-thead > tr > th {
-    background: #E3F2EA !important;
-    color: #5F8375 !important;
-    border-color: #D5E8DD !important;
-  }
-  .p-datatable .p-datatable-tbody > tr {
-    background: #FFFFFF !important;
-    color: #12241D !important;
-    &:hover { background: #E9E9EC !important; }
-  }
-  .p-datatable .p-datatable-tbody > tr > td { border-color: #E3F2EA !important; }
-  .p-inputtext {
-    background: #FFFFFF !important;
-    border-color: #D5E8DD !important;
-    color: #12241D !important;
-  }
-  .p-dropdown {
-    background: #FFFFFF !important;
-    border-color: #D5E8DD !important;
-    color: #12241D !important;
-  }
-  .p-dropdown-panel {
-    background: #FFFFFF !important;
-    border: 1px solid #D5E8DD !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
-  }
-  .p-dropdown-item { color: #12241D !important; &:hover { background: #E3F2EA !important; color: var(--brand-1) !important; } }
-  .p-dialog .p-dialog-header {
-    background: #FFFFFF !important;
-    border-bottom: 1px solid #D5E8DD !important;
-    color: #12241D !important;
-  }
-  .p-dialog .p-dialog-content { background: #FFFFFF !important; color: #12241D !important; }
-  .p-dialog .p-dialog-footer { background: #E3F2EA !important; border-top: 1px solid #D5E8DD !important; }
-
-  /* ── AG Grid ────────────────────────────── */
-  .ag-theme-alpine {
-    --ag-background-color:        #FFFFFF;
-    --ag-header-background-color: #E3F2EA;
-    --ag-odd-row-background-color: #E9E9EC;
-    --ag-row-hover-color:         #E3F2EA;
-    --ag-border-color:            #D5E8DD;
-    --ag-foreground-color:        #12241D;
-    --ag-header-foreground-color: #5F8375;
-  }
-
-  /* ── Badges y texto ────────────────────── */
-  .text-muted { color: #5F8375 !important; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -934,67 +1077,39 @@ body.theme-dark input[type="submit"]:disabled {
   z-index: 20000 !important;
 }
 
-body.theme-light, [data-theme="light"] {
+/* Un solo bloque para día y noche: cada color sale de un token (antes eran dos bloques con
+   #FFFFFF/#12241D/#0C0C0C escritos a mano y el aviso no seguía el diseño elegido). */
+body:is(.theme-light, .theme-dark) {
   .swal2-popup {
-    background: #FFFFFF !important;
-    color: #12241D !important;
-    border-radius: 24px !important;
-    border: 1px solid rgba(var(--app-accent-rgb), 0.22) !important;
-    box-shadow:
-      0 8px 32px rgba(var(--app-accent-rgb), 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.07) !important;
+    background: var(--card-body-bg) !important;
+    color: var(--app-text) !important;
+    border-radius: var(--form-card-radius, 24px) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: var(--shadow-lg) !important;
   }
-  .swal2-title         { color: #12241D !important; }
+  .swal2-title         { color: var(--app-text) !important; }
   .swal2-html-container,
-  .swal2-content       { color: #5F8375 !important; }
+  .swal2-content       { color: var(--app-text-muted) !important; }
+  .swal2-label         { color: var(--app-text-muted) !important; }
   .swal2-input,
+  .swal2-textarea,
+  .swal2-select,
   .swal2-file          {
-    background: #E3F2EA !important;
-    border: 1.5px solid #D5E8DD !important;
-    color: #12241D !important;
-    border-radius: 10px !important;
+    background: var(--input-bg) !important;
+    border: 1.5px solid var(--input-border) !important;
+    color: var(--input-text) !important;
+    border-radius: var(--radius, 10px) !important;
     box-shadow: none !important;
+    &::placeholder     { color: var(--input-placeholder) !important; }
     &:focus {
-      border-color: var(--brand-1) !important;
-      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.18) !important;
+      border-color: var(--input-focus-border) !important;
+      box-shadow: var(--input-focus-shadow) !important;
     }
   }
   .swal2-validation-message {
-    background: #fef2f2 !important;
-    color: #ef4444 !important;
-    border-color: #fca5a5 !important;
-  }
-}
-
-body.theme-dark, [data-theme="dark"] {
-  .swal2-popup {
-    background: #0C0C0C !important;
-    color: #E9E9EC !important;
-    border-radius: 24px !important;
-    border: 1px solid #2A2A2E !important;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55) !important;
-  }
-  .swal2-title         { color: #E9E9EC !important; }
-  .swal2-html-container,
-  .swal2-content       { color: #93B3A4 !important; }
-  .swal2-input,
-  .swal2-file          {
-    background: rgba(255,255,255,0.06) !important;
-    border: 1.5px solid #2A2A2E !important;
-    color: #E9E9EC !important;
-    border-radius: 10px !important;
-    box-shadow: none !important;
-    &::placeholder     { color: #5F8375 !important; }
-    &:focus {
-      border-color: var(--brand-1) !important;
-      box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.22) !important;
-    }
-  }
-  .swal2-label         { color: #93B3A4 !important; }
-  .swal2-validation-message {
-    background: rgba(239,68,68,0.12) !important;
-    color: #fca5a5 !important;
-    border-color: rgba(239,68,68,0.3) !important;
+    background: var(--pk-danger-soft) !important;
+    color: var(--pk-danger) !important;
+    border-color: var(--pk-danger-soft) !important;
   }
 }
 
@@ -1165,26 +1280,26 @@ body.theme-dark, [data-theme="dark"] {
      .pl-card__header   →  tira azul marino de los cards de productos (NO cambia)
    ════════════════════════════════════════════════════════════ */
 
-/* ── DÍA — glassmorphism cálido con tinte ámbar ── */
+/* ── DÍA — cristal con el token --app-glass-strong y la línea --app-gold-line del diseño ── */
 // Excepciones agregadas 2026-09-01: cards nuevas con header de color propio y
 // editable desde Personalización (--card-header-bg) -- este glassmorphism con
 // !important les pisaba el color sin importar qué se configurara.
 body.theme-light, [data-theme="light"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
-    background:          rgba(255,255,255, 0.82) !important;
+    background:          var(--app-glass-strong) !important;
     backdrop-filter:     blur(20px) saturate(160%) !important;
     -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
     box-shadow:
       0 8px 32px rgba(var(--app-accent-rgb), 0.12),
       0 2px 8px rgba(0, 0, 0, 0.05) !important;
-    border-bottom:       1px solid rgba(var(--app-accent-rgb), 0.22) !important;
-    color:               #12241D !important;
+    border-bottom:       1px solid var(--app-gold-line) !important;
+    color:               var(--app-text) !important;
   }
 
   [class*="-header__content"] *,
   [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) * {
-    color: #12241D !important;
+    color: var(--app-text) !important;
   }
 
   [class*="-header__content"] small,
@@ -1193,7 +1308,7 @@ body.theme-light, [data-theme="light"] {
   [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__subtitle"],
   [class*="-header__content"] [class*="__sub"],
   [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__sub"] {
-    color: #5F8375 !important;
+    color: var(--app-text-muted) !important;
   }
 }
 
@@ -1204,15 +1319,15 @@ body.theme-light, [data-theme="light"] {
 body.theme-dark, [data-theme="dark"] {
   [class*="-header__content"],
   [class*="-card__head"]:not([class*="-glow"]):not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
-    background:          rgba(var(--sb-bg-rgb), 0.80) !important;
+    background:          var(--app-glass-strong) !important;
     backdrop-filter:     blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     box-shadow:          0 6px 28px rgba(0, 0, 0, 0.50) !important;
-    border-bottom:       1px solid rgba(var(--app-accent-rgb), 0.15) !important;
-    color:               #E9E9EC !important;
+    border-bottom:       1px solid var(--app-gold-line) !important;
+    color:               var(--app-text) !important;
 
-    h4, h5, h6     { color: #E9E9EC !important; }
-    small           { color: #93B3A4 !important; }
+    h4, h5, h6     { color: var(--app-text) !important; }
+    small           { color: var(--app-text-muted) !important; }
   }
 }
 
@@ -1356,3 +1471,4 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     font-size: max(16px, 1em) !important;
   }
 }
+@import 'tema-jade';

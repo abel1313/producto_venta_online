@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, HostBinding, Input } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 
@@ -22,6 +22,22 @@ import { Router } from '@angular/router';
 export class BotonVolverComponent {
   @Input() etiqueta = 'Volver';
   @Input() fallback: string = '/tienda/buscar';
+
+  /**
+   * Alinear el botón con el borde izquierdo del contenido (como en Privacidad): `anchoContenido` es
+   * el max-width de la tarjeta centrada de la pantalla y `margen` el padding lateral de su página.
+   * Sin ellos el botón queda pegado al borde de la página, que es lo correcto cuando el contenido
+   * ocupa todo el ancho.
+   */
+  @Input() anchoContenido: string | null = null;
+  @Input() margen: string | null = null;
+
+  @HostBinding('style.max-width') get anchoMaximo(): string | null {
+    return this.anchoContenido ? `calc(${this.anchoContenido} + 2 * ${this.margen ?? '0px'})` : null;
+  }
+  @HostBinding('style.padding-inline') get paddingLateral(): string | null { return this.margen; }
+  @HostBinding('style.margin-inline') get centrado(): string | null { return this.anchoContenido ? 'auto' : null; }
+  @HostBinding('style.box-sizing') readonly cajaBorde = 'border-box';
 
   constructor(private readonly location: Location, private readonly router: Router) {}
 

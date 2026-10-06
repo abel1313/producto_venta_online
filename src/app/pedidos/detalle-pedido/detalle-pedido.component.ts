@@ -27,6 +27,11 @@ import {
 import { hoyIso } from '../../shared/fecha.util';
 import { GrupoPedidos } from '../models/grupo-pedido.model';
 
+function escaparHtml(texto: string | null | undefined): string {
+  return (texto ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 /** Un pedido del mismo grupo, para mostrar sus artículos debajo de los de este. */
 interface OtroPedidoDelGrupo {
   pedidoId:  number;
@@ -555,7 +560,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     this.eliminando.add(item);
 
-    this.pedidosService.eliminarDetalle(pedidoId, item.productoId).subscribe({
+    this.pedidosService.eliminarDetalle(pedidoId, item.productoId, item.id).subscribe({
       next: () => {
         if (pedidoId !== this.pedido.pedido.id || this.esCredito) {
           // Línea de otro pedido del grupo: se recarga todo para que el total del grupo cuadre.
@@ -752,7 +757,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       const nombre = d.clienteNombre || this.pedido.cliente.nombreCliente;
       Swal.fire({
         title: '📧 Reenviar ticket',
-        html: `¿Enviar el ticket al correo de <b>${nombre}</b>:<br><b>${correoReg}</b>?`,
+        // Nombre y correo los escribe el cliente: se escapan antes de meterlos en HTML.
+        html: `¿Enviar el ticket al correo de <b>${escaparHtml(nombre)}</b>:<br><b>${escaparHtml(correoReg)}</b>?`,
         icon: 'question',
         showCancelButton: true,
         showDenyButton: true,

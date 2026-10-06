@@ -1168,14 +1168,53 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   /** El precio de la última elección, para repetirlo tal cual si el back pregunta por el combo. */
   private precioElegido = 0;
+  /** Piezas de la línea que se cambian (1 a 1 por el artículo nuevo); el resto se queda. */
+  private piezasACambiar = 1;
 
+  /**
+   * Al cambiar una línea con varias piezas se pregunta cuántas: cambiar 1 de 3 deja 2 del
+   * artículo de antes y agrega 1 del nuevo. Una línea de promoción se cambia completa (el back
+   * no deja partir un combo).
+   */
   elegirArticulo(v: IVarianteResumen, precioOtro?: number): void {
+    if (this.guardandoArticulo) return;
+    const linea = this.lineaACambiar;
+    const piezas = linea?.cantidad ?? 1;
+    if (!linea || piezas <= 1 || linea.promocionId) {
+      this.guardarArticulo(v, precioOtro, linea ? piezas : 1);
+      return;
+    }
+    Swal.fire({
+      icon: 'question',
+      title: '¿Cuántas piezas cambias?',
+      text: `En el pedido hay ${piezas} de "${this.nombreVisible(linea.productoNombre)}". `
+          + `Las que cambies se reemplazan por "${v.nombreProducto ?? 'el artículo nuevo'}" `
+          + 'y las demás se quedan como están.',
+      input: 'number',
+      inputValue: '1',
+      inputAttributes: { min: '1', max: String(piezas), step: '1' },
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: valor => {
+        const n = Number(valor);
+        if (!Number.isInteger(n) || n < 1) return 'Escribe al menos 1 pieza';
+        if (n > piezas) return `Solo hay ${piezas} pieza(s) en el pedido`;
+        return null;
+      }
+    }).then(res => {
+      if (res.isConfirmed) this.guardarArticulo(v, precioOtro, Number(res.value));
+    });
+  }
+
+  private guardarArticulo(v: IVarianteResumen, precioOtro: number | undefined, piezas: number): void {
     if (this.guardandoArticulo) return;
     this.guardandoArticulo = true;
 
     const pedidoId = this.destino;
     this.precioElegido = precioOtro ?? v.precio ?? 0;
-    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioElegido };
+    this.piezasACambiar = piezas;
+    const body     = { varianteId: v.id, cantidad: piezas, precioUnitario: this.precioElegido };
 
     const peticion = this.lineaACambiar
       ? this.pedidosService.cambiarArticulo(pedidoId, this.lineaACambiar.id!, body)
@@ -1185,11 +1224,13 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       next: r => {
         this.guardandoArticulo = false;
         const eraCambio = !!this.lineaACambiar;
+        const quedan = (this.lineaACambiar?.cantidad ?? 0) - piezas;
         if (!this.destinoEsOtro) this.detalle = r?.data ?? this.detalle;
         this.cerrarBuscadorArticulo();
         Swal.fire({
           icon: 'success',
           title: eraCambio ? 'Artículo cambiado' : (pedidoId !== this.pedido.pedido.id ? `Artículo agregado al pedido #${pedidoId}` : 'Artículo agregado'),
+          text: eraCambio && quedan > 0 ? `Se cambiaron ${piezas} pieza(s); quedan ${quedan} del artículo de antes.` : undefined,
           timer: 1800,
           showConfirmButton: false
         }).then(() => this.cargarDetalleCompleto());
@@ -1254,7 +1295,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     const esOtro = this.destinoEsOtro;
     this.pedidosService.cambiarArticulo(this.destino, this.lineaACambiar.id!, {
       varianteId:     v.id,
-      cantidad:       1,
+      cantidad:       this.piezasACambiar,
       precioUnitario: this.precioElegido,
       modo
     }).subscribe({

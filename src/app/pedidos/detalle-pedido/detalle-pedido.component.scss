@@ -918,6 +918,25 @@
   font-weight: 700;
 }
 
+// Celular: cada resultado del buscador en dos renglones (datos arriba; precio y botones abajo).
+// En una sola fila el nombre se quedaba en "B." y el precio se encimaba con "Color:".
+@media (max-width: 575px) {
+  .dp-art-item {
+    flex-wrap: wrap;
+
+    &__datos { flex: 1 1 100%; }
+    &__nombre { white-space: normal; }
+    &__precio { margin-right: auto; }
+    &__btn { min-height: 2.5rem; padding: .45rem .9rem; }
+  }
+
+  .detalle-header {
+    // "Regresar" en su renglón: al lado del título lo apretaba y la hora se partía.
+    &__info { flex: 1 1 100%; }
+    &__total { white-space: normal; }
+  }
+}
+
 /* ── ARTÍCULOS DE LOS OTROS PEDIDOS DEL GRUPO ─────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .dp-otros__flecha { transition: none; }

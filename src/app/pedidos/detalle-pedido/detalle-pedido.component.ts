@@ -1094,6 +1094,13 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.terminoArticulo         = '';
     this.resultadosArticulo      = [];
     this.mostrarBuscadorArticulo = true;
+    // El buscador vive debajo del bloque del grupo: en celular quedaba una pantalla abajo del
+    // botón que se tocó y parecía que no había pasado nada.
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('.dp-art-buscador__input');
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input?.focus({ preventScroll: true });
+    });
   }
 
   cerrarBuscadorArticulo(): void {

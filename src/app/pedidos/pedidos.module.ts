@@ -15,6 +15,11 @@ import { TotalPedidoPipe } from '../shared/total-pedido.pipe';
 import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.component';
 import { GrupoPedidoComponent } from './grupo-pedido/grupo-pedido.component';
 import { SharedModule } from '../shared/shared.module';
+import { CampoPagoComponent } from './cobro/campo-pago/campo-pago.component';
+import { LiquidarApartadoComponent } from './cobro/liquidar-apartado/liquidar-apartado.component';
+import { DarAbonoComponent } from './cobro/dar-abono/dar-abono.component';
+import { LiquidarGrupoComponent } from './cobro/liquidar-grupo/liquidar-grupo.component';
+import { AbonarGrupoComponent } from './cobro/abonar-grupo/abonar-grupo.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +28,12 @@ import { SharedModule } from '../shared/shared.module';
     FechaEspanolPipe,
     TotalPedidoPipe,
     DetallePedidoComponent,
-    GrupoPedidoComponent
+    GrupoPedidoComponent,
+    CampoPagoComponent,
+    LiquidarApartadoComponent,
+    DarAbonoComponent,
+    LiquidarGrupoComponent,
+    AbonarGrupoComponent
   ],
   imports: [
     CommonModule,

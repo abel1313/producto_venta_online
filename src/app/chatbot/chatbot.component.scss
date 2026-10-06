@@ -33,23 +33,23 @@ $radius: 18px;
   &--wa {
     bottom: 100px;  // justo encima del FAB (24px + 62px + 14px)
     background: #25d366;
-    color: white;
-    &:hover { background: #1ebe57; }
+    color: var(--overlay-text);
+    &:hover { background: var(--pk-success-to); }
   }
 
   // Facebook — azul
   &--fb {
     bottom: 162px; // encima del WA (100px + 52px + 10px)
     background: #1877f2;
-    color: white;
-    &:hover { background: #0d6edf; }
+    color: var(--overlay-text);
+    &:hover { background: var(--pk-info); }
   }
 
   // Instagram — degradado de marca
   &--ig {
     bottom: 224px; // encima del FB (162px + 52px + 10px)
     background: linear-gradient(135deg, #f9ce34, #ee2a7b, #6228d7);
-    color: white;
+    color: var(--overlay-text);
     &:hover { filter: brightness(1.1); }
   }
 
@@ -192,7 +192,7 @@ $radius: 18px;
 
 // ── Header ─────────────────────────────────────────────────────────
 .cb-header {
-  background: linear-gradient(135deg, var(--brand-3) 0%, var(--chat-accent-mid, #6B4F22) 55%, var(--brand-1) 100%);
+  background: var(--card-header-bg);
   padding: 16px 18px;
   display: flex;
   align-items: center;
@@ -202,7 +202,7 @@ $radius: 18px;
   &__avatar {
     width: 40px;
     height: 40px;
-    background: rgba(255,255,255,0.18);
+    background: color-mix(in srgb, var(--card-header-text) 18%, transparent);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -227,14 +227,14 @@ $radius: 18px;
 
   &__status {
     font-size: 0.72rem;
-    color: rgba(255,255,255,0.75);
+    color: color-mix(in srgb, var(--card-header-text) 75%, transparent);
     display: flex;
     align-items: center;
     gap: 5px;
   }
 
   &__close {
-    background: rgba(255,255,255,0.14);
+    background: color-mix(in srgb, var(--card-header-text) 14%, transparent);
     border: none;
     border-radius: 50%;
     width: 30px;
@@ -248,7 +248,7 @@ $radius: 18px;
     transition: background 0.2s;
     flex-shrink: 0;
 
-    &:hover { background: rgba(255,255,255,0.28); }
+    &:hover { background: color-mix(in srgb, var(--card-header-text) 28%, transparent); }
   }
 }
 
@@ -256,12 +256,12 @@ $radius: 18px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #4ade80;
+  background: var(--pk-success);
   display: inline-block;
   animation: cb-pulse 2s infinite;
   transition: background 0.3s;
 
-  &--blocked { background: #f59e0b; animation: none; }
+  &--blocked { background: var(--pk-warning); animation: none; }
 }
 
 @keyframes cb-pulse {
@@ -351,7 +351,7 @@ $radius: 18px;
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #9ca3af;
+    background: var(--app-text-faint);
     animation: cb-bounce 1.2s infinite;
 
     &:nth-child(2) { animation-delay: 0.2s; }
@@ -366,12 +366,12 @@ $radius: 18px;
 
 // ── Banner cooldown ────────────────────────────────────────────────
 .cb-cooldown {
-  background: #fef3c7;
-  border-top: 1px solid #fde68a;
+  background: var(--pk-warning-soft);
+  border-top: 1px solid var(--pk-warning);
   padding: 6px 14px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #92400e;
+  color: var(--pk-warning-to);
   text-align: center;
   flex-shrink: 0;
 }
@@ -388,8 +388,8 @@ $radius: 18px;
   transition: background 0.25s;
 
   &--blocked {
-    background: rgba(251,191,36,0.06);
-    border-top-color: rgba(251,191,36,0.2);
+    background: var(--pk-warning-soft);
+    border-top-color: var(--pk-warning-soft);
   }
 }
 
@@ -420,8 +420,9 @@ $radius: 18px;
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+  color: var(--btn-primary-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -444,47 +445,48 @@ $radius: 18px;
 // identidad visual también en oscuro.
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
   .cb-fab {
-    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
+    background: linear-gradient(135deg, var(--chat-accent-2, var(--brand-2)), var(--chat-accent, var(--brand-1)));
     box-shadow: 0 8px 28px rgba(var(--chat-accent-rgb, 0,135,90),0.5);
     &:hover { box-shadow: 0 12px 36px rgba(var(--chat-accent-rgb, 0,135,90),0.65); }
     &--open { background: linear-gradient(135deg, #374151, #1f2937); }
-    &__close { color: var(--chat-accent-ink, #FFFFFF); }
+    &__close { color: var(--chat-accent-ink, var(--app-text)); }
   }
 
   .cb-header {
-    background: linear-gradient(135deg, var(--chat-accent-3, #00301F) 0%, var(--chat-accent-mid, #6B4F22) 55%, var(--chat-accent, #00875A) 100%);
+    background: linear-gradient(135deg, var(--chat-accent-3, var(--brand-3)) 0%, var(--chat-accent-mid, var(--pk-warning-to)) 55%, var(--chat-accent, var(--brand-1)) 100%);
 
-    &__name, &__close { color: var(--chat-accent-ink, #FFFFFF); }
+    &__name, &__close { color: var(--chat-accent-ink, var(--app-text)); }
     &__close {
-      background: rgba(255,255,255,0.14);
-      &:hover { background: rgba(255,255,255,0.28); }
+      background: color-mix(in srgb, var(--app-text) 14%, transparent);
+      &:hover { background: color-mix(in srgb, var(--app-text) 28%, transparent); }
     }
   }
 
-  .cb-avatar { background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A)); }
+  .cb-avatar { background: linear-gradient(135deg, var(--chat-accent-2, var(--brand-2)), var(--chat-accent, var(--brand-1))); }
 
   .cb-burbuja--user {
-    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
-    color: var(--chat-accent-ink, #FFFFFF) !important;
+    background: linear-gradient(135deg, var(--chat-accent-2, var(--brand-2)), var(--chat-accent, var(--brand-1)));
+    color: var(--chat-accent-ink, var(--app-text)) !important;
     box-shadow: 0 3px 10px rgba(var(--chat-accent-rgb, 0,135,90),0.35);
 
-    .cb-burbuja__text { color: var(--chat-accent-ink, #FFFFFF) !important; }
+    .cb-burbuja__text { color: var(--chat-accent-ink, var(--app-text)) !important; }
   }
 
   .cb-send {
-    background: linear-gradient(135deg, var(--chat-accent-2, #005C3D), var(--chat-accent, #00875A));
-    color: var(--chat-accent-ink, #FFFFFF);
+    background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+    color: var(--chat-accent-ink, var(--app-text));
     box-shadow: 0 4px 12px rgba(var(--chat-accent-rgb, 0,135,90),0.4);
     &:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(var(--chat-accent-rgb, 0,135,90),0.5); }
   }
 
   .cb-btn-add {
-    background: linear-gradient(135deg, var(--chat-accent, #00875A), var(--chat-accent-2, #005C3D));
-    color: var(--chat-accent-ink, #FFFFFF);
+    background: linear-gradient(135deg, var(--chat-accent, var(--brand-1)), var(--chat-accent-2, var(--brand-2)));
+    color: var(--chat-accent-ink, var(--app-text));
     &:hover:not(:disabled) { box-shadow: 0 3px 8px rgba(var(--chat-accent-rgb, 0,135,90),.35); }
   }
 
-  .cb-msgs { &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); } }
+  .cb-msgs { &::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--app-text) 12%, transparent); } }
 }
 
 // ── Fila de tarjetas de productos ─────────────────────────────────
@@ -620,10 +622,10 @@ $radius: 18px;
   padding: .32rem .3rem;
   font-size: .7rem;
   font-weight: 700;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 6px;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   cursor: pointer;
   transition: box-shadow .15s;
   white-space: nowrap;
@@ -636,15 +638,15 @@ $radius: 18px;
   padding: .32rem .5rem;
   font-size: .7rem;
   font-weight: 700;
-  border: 1.5px solid rgba(239,68,68,.45);
+  border: 1.5px solid var(--pk-danger-soft);
   border-radius: 6px;
-  background: rgba(239,68,68,.08);
-  color: #ef4444;
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger);
   cursor: pointer;
   flex-shrink: 0;
   transition: background .15s;
 
-  &:hover { background: rgba(239,68,68,.16); }
+  &:hover { background: var(--pk-danger-soft); }
 }
 
 .cb-btn-mas {
@@ -670,10 +672,10 @@ $radius: 18px;
   }
   .cb-card__precio { color: var(--brand-1); }
   .cb-btn-remove {
-    border-color: var(--pk-danger-soft, rgba(252,165,165,.4));
-    background: var(--pk-danger-soft, rgba(252,165,165,.08));
-    color: var(--pk-danger-to, #fca5a5);
-    &:hover { background: var(--pk-danger-soft, rgba(252,165,165,.16)); }
+    border-color: var(--pk-danger-soft);
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to, var(--pk-danger));
+    &:hover { background: var(--pk-danger-soft); }
   }
 }
 
@@ -735,9 +737,9 @@ $radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   transition: background .15s;
-  &:hover { background: #ffcdd2; color: #c62828; }
+  &:hover { background: var(--pk-danger-soft); color: var(--pk-danger); }
 }
 
 .cb-visor-img {
@@ -762,4 +764,14 @@ $radius: 18px;
   text-align: center;
   max-width: min(80vw, 500px);
   word-break: break-word;
+}
+
+// pk-jade-fab: en el diseño Jade los botones flotantes (chat) son círculos de cristal con borde
+// dorado, no rellenos de marca. Los de redes conservan el color de cada red.
+:host-context(body[data-estilo="jade"]:not(.sin-diseno)) .cb-fab:not(.cb-fab--open) {
+  background: var(--app-glass-strong);
+  border: 1px solid var(--app-gold-line);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }

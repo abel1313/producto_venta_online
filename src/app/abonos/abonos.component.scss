@@ -24,9 +24,9 @@
   }
 
   &__title {
-    color: #fff;
+    color: var(--app-text);
     h4 { margin: 0; font-size: 1.05rem; font-weight: 700; }
-    small { color: rgba(255,255,255,0.72); font-size: 0.78rem; }
+    small { color: var(--app-text-muted); font-size: 0.78rem; }
   }
 }
 
@@ -38,9 +38,9 @@
 }
 
 .ab-tab {
-  background: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.8);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--app-tint);
+  color: var(--app-text-muted);
+  border: 1px solid var(--app-border);
   border-radius: 8px;
   padding: 0.35rem 0.9rem;
   font-size: 0.82rem;
@@ -51,22 +51,22 @@
   gap: 0.4rem;
 
   &--active {
-    background: rgba(255,255,255,0.26);
-    color: #fff;
-    border-color: rgba(255,255,255,0.4);
+    background: var(--app-tint);
+    color: var(--app-text);
+    border-color: var(--app-border);
     font-weight: 600;
   }
 
   &__badge {
-    background: #ef4444;
-    color: #fff;
+    background: var(--pk-danger);
+    color: var(--pk-ink);
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: 700;
     padding: 0.05rem 0.45rem;
     line-height: 1.4;
 
-    &--cancel { background: #dc2626; }
+    &--cancel { background: var(--pk-danger); }
   }
 }
 
@@ -104,12 +104,12 @@
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 
   &--reload     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--abono      { background: var(--app-accent); color: var(--app-accent-ink); }
+  &--abono      { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); }
   &--cancelar   { background: var(--pk-danger-soft); color: var(--pk-danger-to); border: 1px solid var(--pk-danger-soft); }
   &--transferir { background: var(--pk-info-soft); color: var(--pk-info-to); border: 1px solid var(--pk-info-soft); }
   &--detalle    { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
   &--cancel     { background: var(--form-section-bg); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--save       { background: var(--app-accent); color: var(--app-accent-ink); min-width: 140px; }
+  &--save       { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); min-width: 140px; }
 }
 
 // ── Cards ─────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@
     flex-wrap: wrap;
   }
 
-  &__id     { font-weight: 700; color: var(--card-header-text, #fff); font-size: 0.88rem; }
+  &__id     { font-weight: 700; color: var(--card-header-text); font-size: 0.88rem; }
   // Ahora es un <button> (antes span) para poder llevar al detalle real del pedido en
   // /pedidos/mis-pedidos — reset de estilos nativos + affordance de "esto se puede tocar".
   &__id--link {
@@ -167,8 +167,8 @@
     text-underline-offset: 2px;
     &:hover, &:focus-visible { opacity: 0.75; }
   }
-  &__cliente{ font-weight: 600; color: var(--card-header-text, #fff); font-size: 0.92rem; }
-  &__tel    { font-size: 0.78rem; color: var(--card-header-text, #fff); opacity: 0.75; }
+  &__cliente{ font-weight: 600; color: var(--card-header-text); font-size: 0.92rem; }
+  &__tel    { font-size: 0.78rem; color: var(--card-header-text); opacity: 0.75; }
 
   &__actions {
     display: flex;
@@ -225,7 +225,7 @@
 
   &__bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--app-accent), #22c55e);
+    background: linear-gradient(90deg, var(--app-accent), var(--pk-success));
     border-radius: 999px;
     transition: width 0.4s ease;
   }
@@ -509,7 +509,7 @@
 .ab-optional {
   font-weight: 400;
   font-size: 0.72rem;
-  color: var(--app-text-muted, #94a3b8);
+  color: var(--app-text-muted, var(--app-text-faint));
 }
 
 .ab-cambio {
@@ -576,14 +576,14 @@
 // .ab-badge--* y .ab-monto__val--ok ya no se sobreescriben acá -- los tokens --pk-* ya traen
 // su propia variante oscura.
 :host-context(body.theme-dark) {
-  .ab-input { color-scheme: dark; color: var(--app-text, #f1f5f9); }
+  .ab-input { color-scheme: dark; color: var(--app-text); }
 }
 
 :host-context(body.theme-light) {
-  .ab-input { color-scheme: light; color: var(--app-text, #1e293b); }
+  .ab-input { color-scheme: light; color: var(--app-text); }
   .ab-header__title {
-    color: #1e293b;
-    h4    { color: #1e293b; }
-    small { color: rgba(0,0,0,0.55); }
+    color: var(--app-text);
+    h4    { color: var(--app-text); }
+    small { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
   }
 }

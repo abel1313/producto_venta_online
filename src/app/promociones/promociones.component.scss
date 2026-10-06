@@ -19,7 +19,7 @@
   }
   &__title {
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: var(--app-text-muted, #64748b); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -27,7 +27,7 @@
 .pm-loading, .pm-empty {
   text-align: center;
   padding: 60px 16px;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   font-size: 1rem;
 }
 
@@ -93,7 +93,7 @@
   top: 10px;
   left: 10px;
   background: var(--header-brand);
-  color: #fff;
+  color: var(--app-text);
   font-size: 0.75rem;
   font-weight: 800;
   padding: 4px 10px;
@@ -123,7 +123,7 @@
 }
 
 .pm-precio {
-  &--normal { font-size: 0.85rem; color: var(--app-text-muted, #94a3b8); text-decoration: line-through; }
+  &--normal { font-size: 0.85rem; color: var(--app-text-muted, var(--app-text-faint)); text-decoration: line-through; }
   &--promo  { font-size: 1.15rem; font-weight: 800; color: var(--app-accent); }
 }
 
@@ -170,10 +170,10 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: opacity .15s, background .15s, color .15s;
-  &--agregar  { background: var(--app-accent); color: var(--app-accent-ink); flex: 1; &:hover:not(:disabled) { opacity: .85; } }
-  &--detalle  { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--agregar  { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); flex: 1; &:hover:not(:disabled) { opacity: .85; } }
+  &--detalle  { background: color-mix(in srgb, var(--app-text) 10%, transparent); color: var(--app-text); border: 1px solid var(--card-border); }
   &--quitar   { background: var(--pk-danger-soft); color: var(--pk-danger-to); padding: 6px 10px; }
-  &--ghost    { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--ghost    { background: color-mix(in srgb, var(--app-text) 10%, transparent); color: var(--app-text); border: 1px solid var(--card-border); }
 
   // Estado deshabilitado con colores explícitos — usar opacity aquí desvanecía el
   // texto blanco casi hasta invisible sobre la card blanca en modo claro (--app-accent
@@ -181,7 +181,7 @@
   &:disabled {
     cursor: not-allowed;
     background: var(--card-border);
-    color: var(--app-text-muted, #5F8375);
+    color: var(--app-text-muted);
   }
 }
 
@@ -241,7 +241,7 @@
     border: none;
     font-size: 1.1rem;
     cursor: pointer;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
     padding: 4px 8px;
     border-radius: 6px;
     &:hover { background: rgba(0,0,0,.08); }
@@ -287,8 +287,8 @@
       margin: 4px 0 0;
       font-size: 0.72rem;
       font-family: monospace;
-      color: var(--app-text-muted, #5F8375);
-      background: rgba(128,128,128,.08);
+      color: var(--app-text-muted);
+      background: color-mix(in srgb, var(--app-text) 8%, transparent);
       display: inline-block;
       padding: 2px 6px;
       border-radius: 4px;
@@ -304,11 +304,11 @@
 
   &__cantidad-label { font-size: 0.85rem; color: var(--app-text); opacity: .8; }
 
-  &__max { font-size: 0.78rem; color: var(--app-text-muted, #64748b); }
+  &__max { font-size: 0.78rem; color: var(--app-text-muted); }
 
   &__aviso-credito {
     font-size: 0.78rem;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
     margin-top: 16px;
     background: var(--pk-danger-soft);
     border-radius: 8px;
@@ -358,11 +358,11 @@
 
 // ── Dark / Light ──────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .pm-card { background: rgba(255,255,255,.04); }
-  .pm-modal { background: var(--app-surface, #18181b); }
+  .pm-card { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
+  .pm-modal { background: var(--app-surface); }
 }
 
 :host-context(body.theme-light) {
-  .pm-card { background: var(--app-surface, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .pm-modal { background: var(--app-surface, #fff); }
+  .pm-card { background: var(--app-surface, var(--card-body-bg)); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .pm-modal { background: var(--app-surface, var(--card-body-bg)); }
 }

@@ -93,10 +93,10 @@
 
 .br-btn--filtro {
   padding: 9px 20px;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink) !important;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text) !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -126,7 +126,7 @@
   }
 
   // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
-  &__id { font-size: 0.95rem; font-weight: 700; color: var(--card-header-text, #fff); }
+  &__id { font-size: 0.95rem; font-weight: 700; color: var(--card-header-text); }
 
   &__badges {
     display: flex;
@@ -138,14 +138,14 @@
 
   &__badge {
     font-size: 0.7rem;
-    background: rgba(255,255,255,0.2);
-    color: #fff;
+    background: color-mix(in srgb, var(--card-header-text) 20%, transparent);
+    color: var(--card-header-text);
     padding: 2px 8px;
     border-radius: 10px;
     font-weight: 600;
     white-space: nowrap;
 
-    &--prueba { background: rgba(252, 211, 77, 0.35); }
+    &--prueba { background: var(--pk-warning-soft); }
   }
 
   &__body { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
@@ -181,10 +181,10 @@
 .br-btn {
   width: 100%;
   padding: 9px;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink) !important;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text) !important;
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -233,9 +233,9 @@
 }
 
 // ── Badges de estado ───────────────────────────────────────────────
-.br-badge--activa    { background: rgba(134,239,172,0.3); }
-.br-badge--completada { background: rgba(148,163,184,0.3); }
-.br-badge--vencida   { background: rgba(252,165,165,0.3); }
+.br-badge--activa    { background: var(--pk-success-soft); }
+.br-badge--completada { background: color-mix(in srgb, var(--app-text) 30%, transparent); }
+.br-badge--vencida   { background: var(--pk-danger-soft); }
 
 // ── Botones del footer ─────────────────────────────────────────────
 .br-card__btns {
@@ -246,7 +246,7 @@
 
 .br-btn {
   padding: 8px 14px;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 700;
@@ -255,8 +255,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
     &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),0.35); }
   }
 
@@ -268,8 +269,9 @@
   }
 
   &--recover {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
     &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),0.35); }
   }
 
@@ -404,7 +406,8 @@
   // Botones de acción: ámbar en noche
   .br-btn--filtro,
   .br-btn {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
   }
 
   // Barra de progreso: ámbar

@@ -46,7 +46,7 @@ $t: all 0.22s ease;
     position: absolute;
     width: 280px;
     height: 280px;
-    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--app-tint) 0%, transparent 70%);
     top: -100px;
     right: -50px;
     pointer-events: none;
@@ -61,14 +61,14 @@ $t: all 0.22s ease;
   &__title {
     font-size: 1.5rem;
     font-weight: 800;
-    color: white;
+    color: var(--app-text);
     margin: 0;
     z-index: 1;
   }
 
   &__subtitle {
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.7);
+    color: var(--app-text-muted);
     margin: 4px 0 0;
     z-index: 1;
   }
@@ -108,8 +108,8 @@ $t: all 0.22s ease;
 }
 
 .pf-required { color: var(--app-accent); }
-.pf-optional { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; }
-.pf-hint     { font-weight: 400; color: var(--app-text-muted, #9ca3af); text-transform: none; font-size: 0.72rem; margin-left: 4px; }
+.pf-optional { font-weight: 400; color: var(--app-text-muted, var(--app-text-faint)); text-transform: none; font-size: 0.72rem; }
+.pf-hint     { font-weight: 400; color: var(--app-text-muted, var(--app-text-faint)); text-transform: none; font-size: 0.72rem; margin-left: 4px; }
 
 .pf-input {
   border: 1.5px solid var(--input-border);
@@ -169,7 +169,7 @@ $t: all 0.22s ease;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--app-text-muted, #6b7280);
+    color: var(--app-text-muted);
     font-size: 0.9rem;
     font-weight: 600;
     pointer-events: none;
@@ -241,7 +241,7 @@ $t: all 0.22s ease;
     width: 40px;
     height: 22px;
     border-radius: 11px;
-    background: #d1d5db;
+    background: var(--app-border);
     position: relative;
     flex-shrink: 0;
     transition: background 0.22s ease;
@@ -254,7 +254,7 @@ $t: all 0.22s ease;
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: white;
+      background: var(--card-body-bg);
       box-shadow: 0 1px 4px rgba(0,0,0,0.2);
       transition: transform 0.22s ease;
     }
@@ -296,8 +296,9 @@ $t: all 0.22s ease;
   }
 
   &--camera {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:hover { filter: brightness(0.88); }
   }
 }
@@ -373,7 +374,7 @@ $t: all 0.22s ease;
     width: 20px;
     height: 20px;
     font-size: 0.6rem;
-    color: white;
+    color: var(--overlay-text);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -400,10 +401,10 @@ $t: all 0.22s ease;
 .pf-btn-save {
   width: 100%;
   padding: 15px;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -455,7 +456,7 @@ $t: all 0.22s ease;
   box-shadow: 0 8px 40px rgba(0,0,0,0.7);
 
   &__title {
-    color: #fff;
+    color: var(--card-header-text);
     font-size: 0.9rem;
     font-weight: 700;
     text-align: center;
@@ -488,8 +489,9 @@ $t: all 0.22s ease;
   transition: $t;
 
   &--capture {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     font-size: 1.1rem;
     &:hover { filter: brightness(0.88); }
   }
@@ -533,7 +535,7 @@ $t: all 0.22s ease;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 
   &__title {
-    color: #fff;
+    color: var(--card-header-text);
     font-size: 0.85rem;
     font-weight: 600;
     text-align: center;
@@ -562,7 +564,7 @@ $t: all 0.22s ease;
     position: absolute;
     width: 22px;
     height: 22px;
-    border-color: #ff3b3b;
+    border-color: var(--pk-danger);
     border-style: solid;
   }
   &::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
@@ -572,7 +574,7 @@ $t: all 0.22s ease;
     position: absolute;
     width: 22px;
     height: 22px;
-    border-color: #ff3b3b;
+    border-color: var(--pk-danger);
     border-style: solid;
   }
   &__bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
@@ -584,7 +586,7 @@ $t: all 0.22s ease;
   left: 22px;
   right: 22px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #ff3b3b, transparent);
+  background: linear-gradient(90deg, transparent, var(--pk-danger), transparent);
   animation: scanear-pf 1.8s ease-in-out infinite alternate;
   pointer-events: none;
 }

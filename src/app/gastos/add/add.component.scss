@@ -20,20 +20,20 @@
   }
 
   &__title {
-    h4    { margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; }
-    small { color: rgba(255,255,255,0.65); font-size: 0.78rem; }
+    h4    { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--app-text); }
+    small { color: var(--app-text-muted); font-size: 0.78rem; }
   }
 }
 
 :host-context(body.theme-light) .ga-header {
-  background: rgba(255,255,255,0.72);
+  background: var(--app-glass);
   backdrop-filter: blur(18px);
   box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-text) 8%, transparent);
 
   .ga-header__title {
-    h4    { color: var(--app-text, #1e293b); }
-    small { color: var(--app-text-muted, #64748b); }
+    h4    { color: var(--app-text); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -136,20 +136,20 @@
 :host-context(body.theme-dark) {
   .ga-input, .ga-select {
     color-scheme: dark;
-    color: var(--input-text, #f1f5f9);
-    background: var(--input-bg, rgba(255, 255, 255, 0.07));
-    border-color: var(--input-border, rgba(255, 255, 255, 0.22));
-    &::placeholder { color: var(--input-placeholder, #64748b); }
+    color: var(--input-text, var(--app-text));
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    &::placeholder { color: var(--input-placeholder); }
   }
 }
 
 :host-context(body.theme-light) {
   .ga-input, .ga-select {
     color-scheme: light;
-    color: var(--app-text, #1e293b);
-    background: var(--card-bg, #ffffff);
-    border-color: var(--card-border, #cbd5e1);
-    &::placeholder { color: #9ca3af; }
+    color: var(--app-text);
+    background: var(--card-bg, var(--card-body-bg));
+    border-color: var(--card-border, var(--app-border));
+    &::placeholder { color: var(--app-text-faint); }
   }
 }
 
@@ -177,8 +177,8 @@
 
   &--primary {
     background: linear-gradient(135deg, var(--pk-info-to), var(--pk-info));
-    color: #fff !important;
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(59,130,246,0.3); }
+    color: var(--pk-ink) !important;
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px var(--pk-info-soft); }
     &:disabled             { opacity: 0.45; cursor: not-allowed; }
   }
 

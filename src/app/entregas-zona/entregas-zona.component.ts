@@ -201,9 +201,7 @@ export class EntregasZonaComponent implements OnInit {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, enviar avisos',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3085d6'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',}).then(result => {
       if (!result.isConfirmed || !this.zonaId) return;
       this.enviando = true;
       // Va el mismo rango que se listó: si no, el back recalcularía la semana en curso y el

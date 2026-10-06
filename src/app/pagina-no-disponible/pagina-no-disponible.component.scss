@@ -14,7 +14,7 @@
     inset: 0;
     background: linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.15) 0%,
+      color-mix(in srgb, var(--card-header-text) 15%, transparent) 0%,
       rgba(0, 0, 0, 0.45) 100%
     );
   }
@@ -23,16 +23,16 @@
     position: relative;
     z-index: 1;
     text-align: center;
-    color: #fff;
+    color: var(--card-header-text);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: clamp(12px, 2.5vh, 20px);
     padding: clamp(24px, 5vw, 48px) clamp(28px, 6vw, 64px);
-    background: rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--card-header-text) 15%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid color-mix(in srgb, var(--card-header-text) 25%, transparent);
     border-radius: 20px;
     margin: 24px;
   }
@@ -51,7 +51,7 @@
   &__divider {
     width: 72px;
     height: 2px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--app-glass-strong);
     border-radius: 2px;
   }
 

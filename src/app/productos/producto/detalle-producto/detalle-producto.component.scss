@@ -16,12 +16,12 @@ $primary-d:  var(--brand-2);
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 2px solid var(--card-border, #e5e7eb);
+  border: 2px solid var(--card-border, var(--app-border));
   border-radius: 50px;
   padding: 0.4rem 1rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--app-text-muted, #6b7280);
+  color: var(--app-text-muted);
   cursor: pointer;
   margin-bottom: 1.25rem;
   transition: $transition;
@@ -32,10 +32,10 @@ $primary-d:  var(--brand-2);
 
 // ── Header ─────────────────────────────────────────────────────────
 .dp-header {
-  background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-1) 55%, var(--brand-2) 100%);
+  background: var(--card-header-bg);
   border-radius: $radius;
   padding: 22px 24px 20px;
-  color: var(--app-accent-ink);
+  color: var(--card-header-text);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -57,7 +57,7 @@ $primary-d:  var(--brand-2);
 
   &__desc {
     font-size: 0.88rem;
-    color: rgba(255,255,255,0.75);
+    color: color-mix(in srgb, var(--card-header-text) 75%, transparent);
     margin: 0 0 10px;
   }
 
@@ -79,15 +79,15 @@ $primary-d:  var(--brand-2);
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.35);
+  border: 1px solid color-mix(in srgb, var(--card-header-text) 35%, transparent);
 
-  &--codigo { background: rgba(255,255,255,0.18); color: white; }
+  &--codigo { background: color-mix(in srgb, var(--card-header-text) 18%, transparent); color: var(--card-header-text); }
 }
 
 .dp-price {
   font-size: 1.8rem;
   font-weight: 800;
-  color: white;
+  color: var(--card-header-text);
   text-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
@@ -100,9 +100,9 @@ $primary-d:  var(--brand-2);
   padding: 4px 12px;
   border-radius: 20px;
 
-  &--ok  { background: rgba(34,197,94,0.25);  color: #86efac; }
-  &--low { background: rgba(251,191,36,0.25); color: #fde68a; }
-  &--out { background: rgba(239,68,68,0.25);  color: #fca5a5; }
+  &--ok  { background: var(--pk-success-soft);  color: var(--pk-success); }
+  &--low { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
+  &--out { background: var(--pk-danger-soft);  color: var(--pk-danger); }
 }
 
 // ── Carrusel ───────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ $primary-d:  var(--brand-2);
 .dp-slide__del-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(239,68,68,0.18);
+  background: var(--pk-danger-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,7 +180,7 @@ $primary-d:  var(--brand-2);
   border-radius: 50%;
   border: none;
   background: rgba(0,0,0,0.55);
-  color: rgba(255,255,255,0.85);
+  color: color-mix(in srgb, var(--overlay-text) 85%, transparent);
   font-size: 0.72rem;
   cursor: pointer;
   display: flex;
@@ -189,8 +189,8 @@ $primary-d:  var(--brand-2);
   transition: $transition;
   z-index: 2;
 
-  &:hover { background: rgba(239,68,68,0.85); color: #fff; transform: scale(1.12); }
-  &--on   { background: #ef4444; color: #fff; box-shadow: 0 2px 8px rgba(239,68,68,0.5); }
+  &:hover { background: var(--pk-danger); color: var(--pk-ink); transform: scale(1.12); }
+  &--on   { background: var(--pk-danger); color: var(--pk-ink); box-shadow: 0 2px 8px var(--pk-danger-soft); }
 }
 
 .dp-slide__label {
@@ -233,15 +233,15 @@ $primary-d:  var(--brand-2);
     border: none;
     border-radius: 10px;
     background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
-    color: #fff;
+    color: var(--pk-ink);
     font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     transition: $transition;
-    box-shadow: 0 4px 12px rgba(220,38,38,0.35);
+    box-shadow: 0 4px 12px var(--pk-danger-soft);
     white-space: nowrap;
 
-    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(220,38,38,0.5); }
+    &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px var(--pk-danger-soft); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
@@ -269,8 +269,9 @@ $primary-d:  var(--brand-2);
   transition: $transition;
 
   &--add {
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 6px 18px rgba(var(--app-accent-rgb),0.4);
 
     &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(var(--app-accent-rgb),0.5); }
@@ -301,11 +302,11 @@ $primary-d:  var(--brand-2);
   box-shadow: 0 6px 24px var(--header-brand-shadow);
 }
 
-.dp-header__name { color: #fff; }
-.dp-header__desc { color: rgba(255,255,255,0.75); }
+.dp-header__name { color: var(--card-header-text); }
+.dp-header__desc { color: color-mix(in srgb, var(--card-header-text) 75%, transparent); }
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .dp-header__name { color: #1e293b; }
-  .dp-header__desc { color: rgba(0,0,0,0.55); }
+  .dp-header__name { color: var(--app-text); }
+  .dp-header__desc { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
 }

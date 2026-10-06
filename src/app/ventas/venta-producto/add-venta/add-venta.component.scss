@@ -41,8 +41,8 @@
 .toggle-costos-btn {
   white-space: nowrap;
   &.active {
-    background-color: #e9ecef;
-    border-color: #6c757d;
+    background-color: var(--form-section-bg);
+    border-color: var(--app-border);
   }
 }
 
@@ -159,7 +159,7 @@
 
 .total-badge {
   background: var(--pk-success);
-  color: #fff;
+  color: var(--pk-ink);
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   font-weight: 600;

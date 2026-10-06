@@ -230,7 +230,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         showCancelButton: true,
         confirmButtonText: 'Sí, dar de baja',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ef4444'
+        confirmButtonColor: 'var(--pk-danger)'
       }).then(result => {
         if (!result.isConfirmed) return;
             this.srvice.deleteProductoPorId(item.idProducto).subscribe({
@@ -343,9 +343,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       Swal.fire({
         icon: 'warning',
         title: 'Sin stock disponible',
-        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,
-        confirmButtonColor: '#4f46e5'
-      });
+        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,});
     }
   }
 
@@ -695,7 +693,6 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       confirmButtonText: 'Crear variantes',
       cancelButtonText: 'Cancelar',
       showCancelButton: true,
-      confirmButtonColor: '#4f46e5',
       preConfirm: () => {
         const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
         if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }

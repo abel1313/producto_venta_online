@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { ALIAS_LEGACY, ITemaVariable, SOMBRAS_CARD } from './tema.model';
+import { ALIAS_LEGACY, aRgb, ITemaVariable, RGB_DERIVADOS, SOMBRAS_CARD } from './tema.model';
 import { ThemeService } from '../theme/theme.service';
 
 // Personalización visual en vivo -- lee GET /v1/tema-variable/activo una vez al iniciar la app y
@@ -16,6 +16,8 @@ import { ThemeService } from '../theme/theme.service';
 // `body.theme-light`/`body.theme-dark` esté activo, y se re-aplica cada vez que
 // ThemeService.isDark$ cambia (auto-switch por hora o toggle manual). Si valorOscuro es NULL
 // (variables estructurales como card-radius/card-shadow) se usa valorClaro para los dos modos.
+const ESTILO_DEFAULT = 'jade';
+
 @Injectable({ providedIn: 'root' })
 export class TemaService {
 
@@ -29,6 +31,9 @@ export class TemaService {
 
   /** Llamar una vez al iniciar la app (ver app.component.ts), después de themeService.init(). */
   init(): void {
+    // El diseño de fábrica es Jade: sin catálogo (back caído, base sin la fila "estilo") la capa
+    // de letra/campos/botones de tema-jade.scss queda encendida igual.
+    document.body.dataset['estilo'] = ESTILO_DEFAULT;
     this.getActivo().subscribe({
       next: variables => {
         this.variables = variables;
@@ -78,6 +83,10 @@ export class TemaService {
     for (const v of this.variables) {
       const valor = (isDark ? v.valorOscuro : v.valorClaro) || v.valorClaro;
       if (!valor) continue;
+      if (v.clave === 'estilo') {
+        document.body.dataset['estilo'] = valor;
+        continue;
+      }
       if (v.clave === 'card-shadow') {
         body.setProperty('--card-shadow', SOMBRAS_CARD[valor] ?? SOMBRAS_CARD['media']);
       } else if (v.tipo === 'numero') {
@@ -87,6 +96,8 @@ export class TemaService {
       }
       const alias = ALIAS_LEGACY[v.clave];
       if (alias) alias.forEach(a => body.setProperty(a, valor));
+      const rgb = RGB_DERIVADOS[v.clave] ? aRgb(valor) : null;
+      if (rgb) RGB_DERIVADOS[v.clave].forEach(a => body.setProperty(a, rgb));
     }
   }
 }

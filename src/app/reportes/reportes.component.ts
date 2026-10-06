@@ -16,6 +16,16 @@ import { AuthService } from '../auth/auth.service';
 import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/models/pedidos.model';
 
 import { hoyIso, mesActualIso, primerDiaMesIso } from '../shared/fecha.util';
+import { aRgb } from '../services/tema/tema.model';
+
+/** Chart.js pinta en un canvas y no entiende var(--x): se lee el valor del token del diseño al
+ * dibujar (así las gráficas cambian con Personalización y con día/noche). */
+function tema(token: string, alfa = 1): string {
+  const valor = getComputedStyle(document.body).getPropertyValue(token).trim();
+  const rgb = aRgb(valor);
+  if (!rgb) return valor;
+  return alfa === 1 ? `rgb(${rgb})` : `rgba(${rgb}, ${alfa})`;
+}
 Chart.register(...registerables);
 
 type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones';
@@ -189,8 +199,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
             type: 'bar' as const,
             label: 'Ventas ($)',
             data: ventas,
-            backgroundColor: 'rgba(99,102,241,.55)',
-            borderColor: '#6366f1',
+            backgroundColor: tema('--brand-1', .55),
+            borderColor: tema('--brand-1'),
             borderWidth: 1,
             borderRadius: 4,
             order: 2,
@@ -199,8 +209,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
             type: 'line' as const,
             label: 'Ganancia ($)',
             data: ganancias,
-            borderColor: '#16a34a',
-            backgroundColor: 'rgba(22,163,74,.12)',
+            borderColor: tema('--pk-success'),
+            backgroundColor: tema('--pk-success', .12),
             fill: true,
             tension: 0.4,
             pointRadius: 3,
@@ -213,11 +223,11 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         plugins: {
-          legend: { display: true, position: 'top', labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } },
+          legend: { display: true, position: 'top', labels: { color: tema('--app-text-faint'), boxWidth: 12, font: { size: 11 } } },
         },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.15)' } },
-          x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: tema('--app-text-faint') }, grid: { color: tema('--app-text-faint', .15) } },
+          x: { ticks: { color: tema('--app-text-faint'), maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
         },
       },
     } as any);
@@ -273,8 +283,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
         datasets: [{
           label: 'Total compra ($)',
           data: datos,
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,.1)',
+          borderColor: tema('--brand-1'),
+          backgroundColor: tema('--brand-1', .1),
           fill: true,
           tension: 0.35,
           pointRadius: 4,
@@ -286,8 +296,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.15)' } },
-          x: { ticks: { color: '#94a3b8', maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
+          y: { beginAtZero: true, ticks: { color: tema('--app-text-faint') }, grid: { color: tema('--app-text-faint', .15) } },
+          x: { ticks: { color: tema('--app-text-faint'), maxRotation: 45, font: { size: 10 } }, grid: { display: false } },
         },
       },
     } as any);
@@ -348,8 +358,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          x: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(148,163,184,.15)' } },
-          y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+          x: { beginAtZero: true, ticks: { color: tema('--app-text-faint'), stepSize: 1 }, grid: { color: tema('--app-text-faint', .15) } },
+          y: { ticks: { color: tema('--app-text-faint'), font: { size: 10 } }, grid: { display: false } },
         },
       },
     } as any);

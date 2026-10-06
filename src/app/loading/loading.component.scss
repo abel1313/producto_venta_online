@@ -15,7 +15,7 @@
 .spinner {
   width: 60px;
   height: 60px;
-  border: 6px solid rgba(255,255,255,0.25);
+  border: 6px solid color-mix(in srgb, var(--card-header-text) 25%, transparent);
   border-top: 6px solid var(--app-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;

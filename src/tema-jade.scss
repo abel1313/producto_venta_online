@@ -1,0 +1,193 @@
+// ════════════════════════════════════════════════════════════════════════
+// ESTILO JADE — letra, campos, tablas y botones (2026-10-01)
+// ════════════════════════════════════════════════════════════════════════
+// Se enciende con body[data-estilo="jade"] (fila "estilo" de Personalización) y nunca en Login
+// ni Registro (body.sin-diseno, ver AppComponent). Con el estilo "clasico" nada de este archivo
+// aplica y cada pantalla se ve con su letra y sus tamaños de antes.
+//
+// Aquí NO hay colores: todos salen de los tokens del diseño elegido (styles.scss y
+// Personalización). Aquí solo va la forma del diseño Jade:
+//   - Letra Inter; títulos con peso 500, nunca negrita (jerarquía por tamaño).
+//   - Escala: h1 40, h2 28, h3 20, texto 14, label 12, campo 15 (todo editable en Personalización).
+//   - Campos de mínimo 44px de alto, esquinas de 8px.
+//   - Tablas: encabezado en mayúsculas pequeñas, línea dorada abajo, filas con línea fina.
+//   - Botones delineados (borde 1px, fondo transparente, al pasar el mouse el fondo --app-tint).
+//
+// Especificidad, para no pelear con las pantallas:
+//   - Títulos, párrafos y enlaces van con `html :where(...) h1` = (0,0,2): le ganan a los de
+//     Bootstrap (0,0,1, que carga después) y PIERDEN contra cualquier regla de una pantalla
+//     (h2[_ngcontent-x] = 0,1,1). Si una pantalla eligió su tamaño de título, se respeta.
+//   - Labels, campos, placeholders, tablas y <hr> van con :not(#_) = (1,x,x): se unifican en
+//     toda la app, que es lo que pide el diseño. De los campos NO se fuerza el grosor ni el
+//     fondo del borde: hay buscadores con el input sin borde dentro de una caja con borde.
+// ════════════════════════════════════════════════════════════════════════
+
+$jade: 'body[data-estilo="jade"]:not(.sin-diseno)';
+
+#{$jade} {
+  font-size: var(--body-size);
+  // Inter se carga solo en 400 y 500 (index.html) y sin síntesis de negrita: cualquier
+  // font-weight 600/700/800 que traiga una pantalla se pinta en 500. Así se cumple "nunca
+  // negrita" sin tocar los ~800 font-weight de las pantallas.
+  font-synthesis: none;
+
+  ::selection { background: var(--app-tint); }
+  :focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+}
+
+// ── Escala de texto (pierde contra las pantallas) ────────────────────────
+html :where(#{$jade}) {
+  h1 { font-size: var(--h1-size); line-height: 1.05; font-weight: var(--title-weight); letter-spacing: -0.025em; }
+  h2 { font-size: var(--h2-size); line-height: 1.1;  font-weight: var(--title-weight); letter-spacing: -0.02em; }
+  h3 { font-size: var(--h3-size); line-height: 1.2;  font-weight: var(--title-weight); }
+  h4 { font-size: 16px; line-height: 1.3; font-weight: var(--title-weight); }
+  p  { line-height: 1.6; text-wrap: pretty; }
+  small { font-size: var(--small-size); color: var(--app-text-muted); }
+  a { color: var(--app-accent-text); }
+  a:hover { color: var(--app-accent-hover); }
+}
+
+// ── Labels ───────────────────────────────────────────────────────────────
+#{$jade} :is(label, .pk-label):not(#_) {
+  font-size: var(--label-size);
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--app-text-muted) !important;
+}
+
+// ── Campos ───────────────────────────────────────────────────────────────
+#{$jade} :is(
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]):not([type=image]),
+  select, textarea, .form-control, .form-select, .p-inputtext:not(.p-dropdown-label), .pk-input
+):not(#_) {
+  min-height: var(--input-height);
+  font-size: var(--input-size);
+  font-weight: 400;
+  color: var(--input-text);
+  caret-color: var(--app-accent);
+  border-color: var(--input-border);
+  border-radius: var(--radius);
+}
+#{$jade} textarea:not(#_) { min-height: calc(var(--input-height) * 2); }
+#{$jade} :is(input, textarea, select, .form-control, .p-inputtext):not(#_):focus {
+  border-color: var(--input-focus-border);
+}
+#{$jade} :is(input, textarea, .form-control, .p-inputtext, .swal2-input, .swal2-textarea):not(#_)::placeholder {
+  color: var(--input-placeholder) !important;
+  font-weight: 400;
+  opacity: 1 !important;
+}
+#{$jade} :is(input[type=checkbox], input[type=radio]):not(#_) { accent-color: var(--app-accent); }
+
+// Select: popup del color del tema (en Clásico se forzaba blanco para que se leyera).
+#{$jade}.theme-dark select:not(#_) { color-scheme: dark; background-color: var(--input-bg); }
+#{$jade}.theme-light select:not(#_) { color-scheme: light; background-color: var(--input-bg); }
+#{$jade} option { background-color: var(--input-bg); color: var(--input-text); }
+
+// En celular ningún campo baja de 16px (zoom de Safari, ver styles.scss).
+@media (max-width: 576px) {
+  #{$jade} :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea):not(#_) {
+    font-size: max(16px, var(--input-size)) !important;
+  }
+}
+
+// ── Tablas ───────────────────────────────────────────────────────────────
+#{$jade} th:not(#_) {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--table-header-text) !important;
+  border-bottom: 1px solid var(--app-gold-line) !important;
+}
+#{$jade} td:not(#_) { border-bottom-color: var(--app-hairline); }
+
+// ── Línea divisoria: dorada y se desvanece en las puntas (firma del logo) ─
+#{$jade} hr:not(#_) {
+  height: 1px;
+  border: 0;
+  opacity: 1;
+  background: linear-gradient(to right, transparent, var(--app-gold-line) 48px, var(--app-gold-line) calc(100% - 48px), transparent);
+}
+
+#{$jade} dialog {
+  background: var(--card-body-bg);
+  color: var(--app-text);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+// ── Botones de librerías: delineados, nunca rellenos ─────────────────────
+// Los botones propios de cada pantalla ya leen --btn-primary-* (delineado en Jade, relleno en
+// Clásico). Aquí van los de Bootstrap, PrimeNG, Material y SweetAlert2.
+@mixin jade-delineado($color, $texto, $tinte) {
+  --bs-btn-bg: transparent;
+  --bs-btn-color: #{$texto};
+  --bs-btn-border-color: #{$color};
+  --bs-btn-hover-bg: #{$tinte};
+  --bs-btn-hover-color: #{$texto};
+  --bs-btn-hover-border-color: #{$color};
+  --bs-btn-active-bg: #{$tinte};
+  --bs-btn-active-color: #{$texto};
+  --bs-btn-active-border-color: #{$color};
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-color: #{$texto};
+  --bs-btn-disabled-border-color: #{$color};
+}
+#{$jade} {
+  .btn.btn-primary, .btn.btn-success { @include jade-delineado(var(--app-accent), var(--app-accent-text), var(--app-tint)); }
+  .btn.btn-danger  { @include jade-delineado(var(--pk-danger), var(--pk-danger), var(--pk-danger-soft)); }
+  .btn.btn-warning { @include jade-delineado(var(--pk-warning), var(--pk-warning), var(--pk-warning-soft)); }
+  .btn.btn-info    { @include jade-delineado(var(--pk-info), var(--pk-info), var(--pk-info-soft)); }
+  .btn.btn-secondary, .btn.btn-light, .btn.btn-dark {
+    @include jade-delineado(var(--app-border), var(--app-text), var(--app-tint));
+  }
+  .btn { border-radius: var(--radius); }
+
+  .p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
+    background: transparent !important;
+    color: var(--app-accent-text) !important;
+    border: 1px solid var(--app-accent) !important;
+    border-radius: var(--radius);
+    &:hover { background: var(--app-tint) !important; }
+  }
+
+  .mat-mdc-unelevated-button, .mat-mdc-raised-button {
+    background: transparent !important;
+    color: var(--app-accent-text) !important;
+    border: 1px solid var(--app-accent) !important;
+    box-shadow: none !important;
+  }
+
+  // SweetAlert2: los que pasan confirmButtonColor (rojo de borrar) lo traen en línea y se quedan.
+  .swal2-styled.swal2-confirm:not([style*="background-color"]) {
+    background: transparent !important;
+    color: var(--app-accent-text) !important;
+    border: 1px solid var(--app-accent) !important;
+    box-shadow: none !important;
+    &:hover { background: var(--app-tint) !important; }
+  }
+  .swal2-styled.swal2-cancel:not([style*="background-color"]),
+  .swal2-styled.swal2-deny:not([style*="background-color"]) {
+    background: transparent !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    &:hover { background: var(--app-tint) !important; }
+  }
+  .swal2-styled { border-radius: var(--radius) !important; min-height: 44px; }
+
+  .p-paginator .p-paginator-page.p-highlight {
+    background: var(--app-tint) !important;
+    color: var(--app-accent-text) !important;
+    box-shadow: inset 0 0 0 1px var(--app-accent);
+  }
+}
+
+// ── Movimiento: respeta "reducir movimiento" del sistema ──────────────────
+@media (prefers-reduced-motion: reduce) {
+  #{$jade} *, #{$jade} *::before, #{$jade} *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

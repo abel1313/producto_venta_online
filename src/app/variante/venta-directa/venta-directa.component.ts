@@ -493,7 +493,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     Swal.fire({
       title: '¿Limpiar la venta?', icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sí, limpiar',
-      cancelButtonText: 'Cancelar', confirmButtonColor: '#d33'
+      cancelButtonText: 'Cancelar', confirmButtonColor: 'var(--pk-danger)'
     }).then(r => { if (r.isConfirmed) this.limpiarTodo(); });
   }
 
@@ -844,9 +844,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
               text: `Pedido #${pedidoId} creado.${textoMonto} Registra los abonos en Créditos / Abonos.`,
               showCancelButton: true,
               confirmButtonText: '💳 Ir a Créditos / Abonos',
-              cancelButtonText: 'Cerrar',
-              confirmButtonColor: '#4f46e5'
-            }).then(result => {
+              cancelButtonText: 'Cerrar',}).then(result => {
               if (result.isConfirmed) this.router.navigate(['/abonos']);
             });
           };

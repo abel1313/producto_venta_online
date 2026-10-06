@@ -86,12 +86,12 @@
 :host-context(body.theme-light) {
   ::ng-deep {
     .p-paginator {
-      background: var(--table-header-bg, #f8fafc);
-      border-color: var(--table-border, #e2e8f0);
-      color: var(--app-text, #1e293b);
+      background: var(--table-header-bg, var(--card-body-bg));
+      border-color: var(--table-border, var(--app-border));
+      color: var(--app-text);
 
       .p-paginator-element {
-        color: var(--app-text-muted, #475569);
+        color: var(--app-text-muted);
         background: transparent;
         border: none;
         &:hover { background: rgba(var(--app-accent-rgb),0.08); color: var(--app-accent); }
@@ -104,18 +104,18 @@
       }
 
       .p-dropdown {
-        background: var(--card-bg, #fff);
-        border-color: var(--card-border, #cbd5e1);
-        .p-dropdown-label { color: var(--app-text, #1e293b); }
-        .p-dropdown-trigger { color: var(--app-text-muted, #64748b); }
+        background: var(--card-bg, var(--card-body-bg));
+        border-color: var(--card-border, var(--app-border));
+        .p-dropdown-label { color: var(--app-text); }
+        .p-dropdown-trigger { color: var(--app-text-muted); }
       }
     }
 
     .p-dropdown-panel {
-      background: var(--card-bg, #fff);
-      border-color: var(--table-border, #e2e8f0);
+      background: var(--card-bg, var(--card-body-bg));
+      border-color: var(--table-border, var(--app-border));
       .p-dropdown-item {
-        color: var(--app-text, #1e293b);
+        color: var(--app-text);
         &:hover { background: rgba(var(--app-accent-rgb),0.07); }
         &.p-highlight { background: rgba(var(--app-accent-rgb),0.12); color: var(--app-accent); }
       }
@@ -142,16 +142,16 @@
     }
 
     .form-control {
-      background: var(--form-section-bg, #27272a);
-      border-color: var(--app-border, rgba(255,255,255,0.15));
-      color: var(--app-text, #e2e8f0);
-      &::placeholder { color: var(--input-placeholder, rgba(148,163,184,0.6)); }
+      background: var(--form-section-bg);
+      border-color: var(--app-border);
+      color: var(--app-text);
+      &::placeholder { color: var(--input-placeholder); }
       &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),0.2); }
     }
 
-    .btn-primary { background: var(--app-accent); border-color: var(--app-accent); }
-    .btn-outline-secondary { color: var(--app-text-muted, #94a3b8); border-color: var(--app-border, rgba(255,255,255,0.2)); }
-    .card-header.bg-primary { background: linear-gradient(135deg, var(--brand-3), var(--brand-2)) !important; }
+    .btn-primary { background: var(--btn-primary-bg); border-color: var(--app-accent); }
+    .btn-outline-secondary { color: var(--app-text-muted); border-color: var(--app-border); }
+    .card-header.bg-primary { background: var(--card-header-bg) !important; }
   }
 }
 

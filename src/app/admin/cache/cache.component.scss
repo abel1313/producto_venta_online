@@ -35,7 +35,7 @@ $t: all 0.22s ease;
     position: absolute;
     width: 280px;
     height: 280px;
-    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--app-tint) 0%, transparent 70%);
     top: -110px;
     right: -50px;
     pointer-events: none;
@@ -50,7 +50,7 @@ $t: all 0.22s ease;
   &__title {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--header-text, white);
+    color: var(--header-text, var(--app-text));
     margin: 0;
     letter-spacing: -0.02em;
     z-index: 1;
@@ -58,7 +58,7 @@ $t: all 0.22s ease;
 
   &__subtitle {
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.65);
+    color: var(--app-text-muted);
     margin: 4px 0 0;
     z-index: 1;
   }
@@ -135,17 +135,17 @@ $t: all 0.22s ease;
   border: none;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
-  color: white;
+  color: var(--pk-ink);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: $t;
-  box-shadow: 0 8px 24px rgba(239,68,68,0.35);
+  box-shadow: 0 8px 24px var(--pk-danger-soft);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(239,68,68,0.5);
+    box-shadow: 0 12px 32px var(--pk-danger-soft);
   }
 
   &:active:not(:disabled) { transform: translateY(0); }
@@ -192,8 +192,8 @@ $t: all 0.22s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .ac-card__title    { color: var(--header-text, #1e293b); }
-  .ac-card__subtitle { color: rgba(0,0,0,0.55); }
+  .ac-card__title    { color: var(--header-text, var(--app-text)); }
+  .ac-card__subtitle { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
 }
 
 // ── Datos de prueba: solo acomodo; colores y bordes salen de .pk-* y de los tokens ──

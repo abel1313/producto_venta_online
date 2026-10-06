@@ -120,9 +120,7 @@ export class ClientesAddComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'success',
           title: '¡Correo verificado!',
-          text: 'Tu cuenta está lista para generar pedidos.',
-          confirmButtonColor: '#4f46e5'
-        }).then(() => {
+          text: 'Tu cuenta está lista para generar pedidos.',}).then(() => {
           this.$hideComponent.emit(true);
           if (this.idUsuario) this.router.navigate(['/tienda/buscar']);
         });

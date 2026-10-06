@@ -470,7 +470,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, quitar acceso',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc2626'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.desconectandoTikTok = true;

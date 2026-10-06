@@ -67,7 +67,7 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Resetear',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.clienteService.resetVerificacion(c.id).subscribe({

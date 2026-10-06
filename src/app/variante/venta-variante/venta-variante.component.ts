@@ -207,7 +207,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   limpiar(): void {
     Swal.fire({
       title: '¿Limpiar carrito de variantes?', icon: 'warning',
-      showCancelButton: true, confirmButtonColor: '#d33',
+      showCancelButton: true, confirmButtonColor: 'var(--pk-danger)',
       cancelButtonText: 'Cancelar', confirmButtonText: 'Limpiar'
     }).then(r => { if (r.isConfirmed) this.carritoService.limpiar(); });
   }
@@ -265,7 +265,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
           showCancelButton: true,
           confirmButtonText: 'Ir a registro',
           cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#3085d6',
           cancelButtonColor: '#d33'
         }).then(result => {
           if (result.isConfirmed) this.router.navigate(['/usuarios/registrar']);
@@ -304,7 +303,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Registrarme como cliente',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33'
     }).then(result => {
       if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
@@ -359,7 +357,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
       cancelButtonText:  'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor:  '#d33'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -379,9 +376,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
                 `,
                 confirmButtonText: '💳 Ir a Créditos / Abonos',
                 showCancelButton: true,
-                cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#6366f1'
-              }).then(r => {
+                cancelButtonText: 'Cerrar',}).then(r => {
                 if (r.isConfirmed) this.router.navigate(['/abonos']);
                 else this.router.navigate(['/tienda/buscar']);
               });

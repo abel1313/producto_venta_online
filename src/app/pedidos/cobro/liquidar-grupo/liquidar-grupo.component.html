@@ -1,0 +1,48 @@
+<div class="cb-overlay" (click)="cancelar()"></div>
+<div class="cb-modal" role="dialog" aria-modal="true" aria-labelledby="cb-titulo-lg">
+  <div class="cb-modal__hdr">
+    <h5 id="cb-titulo-lg">💵 Liquidar pedidos unidos</h5>
+    <button type="button" class="cb-modal__close" (click)="cancelar()" aria-label="Cerrar">✕</button>
+  </div>
+
+  <div class="cb-modal__info" *ngIf="grupo">
+    <span>Grupo <strong>#{{ grupo.grupoId }}</strong></span>
+    <span>Paga y recoge: {{ grupo.titularNombre }}</span>
+    <span>Total: <strong>${{ grupo.totalGrupo | number:'1.2-2' }}</strong></span>
+  </div>
+
+  <div class="cb-modal__body">
+    <p class="cb-nota" *ngIf="cargando">Cargando el grupo…</p>
+
+    <ng-container *ngIf="!cargando && grupo">
+      <p class="cb-aviso" *ngIf="saldo <= 0.005">Estos pedidos ya están pagados.</p>
+
+      <ul class="cb-pedidos">
+        <li *ngFor="let p of pedidosVivos">
+          <span>#{{ p.pedidoId }} · {{ p.cliente }}</span>
+          <span>${{ p.total | number:'1.2-2' }}</span>
+        </li>
+      </ul>
+
+      <div class="cb-field">
+        <span class="cb-label">Se cobra completo</span>
+        <span class="cb-monto-fijo">${{ monto | number:'1.2-2' }}</span>
+        <small class="cb-nota">Son Apartados: aunque estén unidos se pagan completos cuando los recogen.</small>
+      </div>
+
+      <app-campo-pago [(metodoPago)]="metodoPago" [(montoDado)]="montoDado" [monto]="monto" [cambio]="cambio"></app-campo-pago>
+
+      <div class="cb-field">
+        <label class="cb-label" for="cb-nota-lg">{{ metodoPago === 'TRANSFERENCIA' ? 'Número de referencia (opcional)' : 'Nota (opcional)' }}</label>
+        <input id="cb-nota-lg" class="cb-input" type="text" [(ngModel)]="nota">
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="cb-modal__footer">
+    <button type="button" class="cb-btn cb-btn--cancel" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="cb-btn cb-btn--save" [disabled]="!puedeGuardar" (click)="guardar()">
+      {{ guardando ? 'Cobrando…' : '💵 Liquidar' }}
+    </button>
+  </div>
+</div>

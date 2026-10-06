@@ -321,11 +321,11 @@
                   (click)="abrirInfoEntrega(item)">
             <i class="pi pi-map-marker"></i> Entrega
           </button>
-          <button class="btn-card btn-cobrar" *ngIf="isAdminUser && authService.tieneAccion('pedidos/mis-pedidos', 'cobrar')"
+          <button class="btn-card btn-cobrar" *ngIf="puedeCobrarCard(item)"
                   [disabled]="pedidoYaCobrado(item)"
                   [title]="pedidoYaCobrado(item) ? 'Este pedido ya está pagado' : ''"
                   (click)="cobrarAdmin(item)">
-            <i class="pi pi-dollar"></i> Cobrar
+            <i class="pi pi-dollar"></i> {{ textoBotonCobro(item) }}
           </button>
           <button class="btn-card btn-ticket btn-icon-only"
                   *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'imprimir-ticket')"
@@ -487,6 +487,18 @@
     </ng-template>
 
 </p-dialog>
+
+<!-- Cobro a crédito desde la card: un formulario por caso (carpeta ../cobro) -->
+<ng-container *ngIf="cobroCredito as c">
+  <app-liquidar-apartado *ngIf="c.forma === 'liquidar'" [pedidoId]="c.item.pedido.id"
+      (cerrar)="cerrarCobroCredito()" (cobrado)="alCobrarCredito()" (irAlDetalle)="irAlDetalleDesdeCobro(c.item)"></app-liquidar-apartado>
+  <app-dar-abono *ngIf="c.forma === 'abonar'" [pedidoId]="c.item.pedido.id"
+      (cerrar)="cerrarCobroCredito()" (cobrado)="alCobrarCredito()"></app-dar-abono>
+  <app-liquidar-grupo *ngIf="c.forma === 'liquidar-grupo'" [pedidoId]="c.item.pedido.id"
+      (cerrar)="cerrarCobroCredito()" (cobrado)="alCobrarCredito()"></app-liquidar-grupo>
+  <app-abonar-grupo *ngIf="c.forma === 'abonar-grupo'" [pedidoId]="c.item.pedido.id"
+      (cerrar)="cerrarCobroCredito()" (cobrado)="alCobrarCredito()"></app-abonar-grupo>
+</ng-container>
 
 <app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item"
     (regresarProductos)="mostrarProductos($event)"

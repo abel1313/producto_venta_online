@@ -29,6 +29,9 @@ import {
   OPCIONES_DINERO, OPCIONES_ENTREGA, OPCIONES_ESTADO, OPCIONES_FORMA, OPCIONES_MODO, OPCIONES_ORDEN, OPCIONES_UNIDOS
 } from './models/filtros-pedidos.model';
 
+/** Los cuatro formularios de cobro a crédito de la card (carpeta ../cobro). */
+type FormaCobroCredito = 'liquidar' | 'abonar' | 'liquidar-grupo' | 'abonar-grupo';
+
 // Leaflet calcula la URL de sus íconos por defecto en base a dónde quedó su propio bundle, y
 // con Angular/webpack casi siempre la resuelve mal — el pin del mapa sale invisible, sin
 // ningún error en consola. Fix estándar: apuntar a copias propias en assets/leaflet en vez de
@@ -835,6 +838,11 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    const forma = this.formaCobroCredito(item);
+    if (forma) {
+      this.abrirCobroCredito(item, forma);
+      return;
+    }
     const grupo = item.pedido.grupo;
     if (grupo) {
       this.cobrarGrupo(item, grupo);
@@ -874,14 +882,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
    */
   private cobrarGrupo(item: IPedidoGenerico, grupo: GrupoEnLista): void {
     if (this.esGrupoCredito(grupo)) {
-      Swal.fire({
-        icon: 'info',
-        title: `Pedidos unidos a ${grupo.tipoPedido === 'APARTADO' ? 'apartado' : 'crédito'}`,
-        text: 'Se cobran abonando al grupo en el detalle del pedido: el abono se reparte del pedido más viejo al más nuevo.',
-        showCancelButton: true,
-        confirmButtonText: 'Abrir el detalle',
-        cancelButtonText: 'Cerrar'
-      }).then(res => { if (res.isConfirmed) this.irDetalle(item); });
+      this.abrirCobroCredito(item, (grupo.tipoPedido ?? '').toUpperCase() === 'APARTADO' ? 'liquidar-grupo' : 'abonar-grupo');
       return;
     }
     if (grupo.saldoGrupo <= 0) {
@@ -902,19 +903,67 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     return `Pedidos ${this.numerosDe([this.pedidoACobrar.pedido.id, ...g.otrosPedidos])} (unidos)`;
   }
 
+  // ── Cobro a crédito desde la card (2026-10-06) ──────────────────────────────────
+  // Antes "Cobrar" mandaba a Créditos / Abonos y había que regresar a la lista. Ahora cada caso
+  // abre su propio formulario ahí mismo (carpeta ../cobro, un formulario por caso).
+
+  /** El formulario de cobro a crédito que está abierto, y de qué card. */
+  cobroCredito: { forma: FormaCobroCredito; item: IPedidoGenerico } | null = null;
+
+  /** Qué formulario le toca a la card; `null` = es de contado y va con "Cobrar". */
+  formaCobroCredito(item: IPedidoGenerico): FormaCobroCredito | null {
+    // Unido (sea la card del titular o un miembro abierto por su número): el dinero es del grupo.
+    const g = item.pedido.grupo;
+    if (g) {
+      if (!this.esGrupoCredito(g)) return null;
+      return (g.tipoPedido ?? '').toUpperCase() === 'APARTADO' ? 'liquidar-grupo' : 'abonar-grupo';
+    }
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO') return 'liquidar';
+    if (tp === 'FIADO') return 'abonar';
+    return null;
+  }
+
+  textoBotonCobro(item: IPedidoGenerico): string {
+    switch (this.formaCobroCredito(item)) {
+      case 'liquidar':
+      case 'liquidar-grupo': return 'Liquidar';
+      case 'abonar': return 'Dar abono';
+      case 'abonar-grupo': return 'Abonar al grupo';
+      default: return 'Cobrar';
+    }
+  }
+
+  /** Contado pide la acción "cobrar"; un Apartado o Ir pagando, "abonar" (la del detalle). */
+  puedeCobrarCard(item: IPedidoGenerico): boolean {
+    if (!this.isAdminUser) return false;
+    const accion = this.formaCobroCredito(item) ? 'abonar' : 'cobrar';
+    return this.authService.tieneAccion('pedidos/mis-pedidos', accion);
+  }
+
+  private abrirCobroCredito(item: IPedidoGenerico, forma: FormaCobroCredito): void {
+    this.cobroCredito = { forma, item };
+  }
+
+  cerrarCobroCredito(): void {
+    this.cobroCredito = null;
+  }
+
+  /** Ya se cobró: la card se vuelve a pedir y se queda en la misma página. */
+  alCobrarCredito(): void {
+    this.cobroCredito = null;
+    this.buscarPedidoAdmin(false);
+  }
+
+  /** "¿Dejó solo una parte?" en Liquidar: el detalle tiene 🔁 Cambiar forma de cobro. */
+  irAlDetalleDesdeCobro(item: IPedidoGenerico): void {
+    this.cobroCredito = null;
+    this.irDetalle(item);
+  }
+
+  /** El tipo se supo por el detalle (la card no lo traía): se abre el formulario que le toca. */
   private irACobrarCredito(item: IPedidoGenerico, tipo: 'APARTADO' | 'FIADO'): void {
-    Swal.fire({
-      icon: 'info',
-      title: tipo === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
-      text: 'Este pedido se cobra registrando un abono, no desde este botón.',
-      showCancelButton: true,
-      confirmButtonText: 'Ir a Créditos / Abonos',
-      cancelButtonText: 'Cerrar'
-    }).then(res => {
-      if (res.isConfirmed) {
-        this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
-      }
-    });
+    this.abrirCobroCredito(item, tipo === 'APARTADO' ? 'liquidar' : 'abonar');
   }
 
   private abrirDialogoCobroNormal(item: IPedidoGenerico): void {

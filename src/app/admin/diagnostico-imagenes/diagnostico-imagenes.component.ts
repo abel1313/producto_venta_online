@@ -176,7 +176,7 @@ export class DiagnosticoImagenesComponent implements OnDestroy {
     this.resultadoVariante = null;
     this.varianteService.diagnosticoImagenes(id).subscribe({
       next: res => { this.resultadoVariante = res; this.cargando = false; },
-      error: ()  => { this.error = 'No se pudo consultar el diagnóstico de la variante'; this.cargando = false; }
+      error: ()  => { this.error = 'No se pudo consultar el diagnóstico del artículo'; this.cargando = false; }
     });
   }
 

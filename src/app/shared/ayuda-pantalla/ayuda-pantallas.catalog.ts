@@ -63,7 +63,7 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
     ],
     diferencia: [{
       pantalla: 'Agregar Modelo (Catálogo)',
-      explicacion: 'Allá se crea el artículo base (el modelo). Aquí se le cuelgan las variantes que ' +
+      explicacion: 'Allá se crea el modelo. Aquí se le agregan los artículos que ' +
         'se venden. Por eso el primer campo de esta pantalla es un buscador: el modelo tiene que ' +
         'existir antes.',
     }],

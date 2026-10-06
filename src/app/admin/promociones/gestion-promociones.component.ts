@@ -223,7 +223,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.formDetalles.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'Sin piezas', text: 'Agrega al menos una variante al combo.' });
+      Swal.fire({ icon: 'warning', title: 'Sin piezas', text: 'Agrega al menos un artículo al combo.' });
       return;
     }
     if (this.formDetalles.some(d => !d.precioEnPromocion || d.precioEnPromocion <= 0)) {
@@ -285,7 +285,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'error',
           title: 'No se pudo buscar',
-          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Error al buscar variantes.'
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Error al buscar artículos.'
         });
       }
     });
@@ -293,7 +293,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
 
   seleccionarVariante(v: IVarianteResumen): void {
     if (this.formDetalles.some(d => d.varianteId === v.id)) {
-      Swal.fire({ icon: 'info', title: 'Ya agregada', text: 'Esta variante ya está en el combo.', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'info', title: 'Ya agregado', text: 'Este artículo ya está en el combo.', timer: 1500, showConfirmButton: false });
     } else {
       this.formDetalles.push({
         varianteId:       v.id,
@@ -317,10 +317,10 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
   }
 
   labelVariante(v: IVarianteResumen): string {
-    return [v.nombreProducto, v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Variante #${v.id}`;
+    return [v.nombreProducto, v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Artículo #${v.id}`;
   }
 
   labelDetalle(d: IDetalleForm): string {
-    return [d.nombreProducto, d.talla, d.color, d.marca].filter(Boolean).join(' · ') || `Variante #${d.varianteId}`;
+    return [d.nombreProducto, d.talla, d.color, d.marca].filter(Boolean).join(' · ') || `Artículo #${d.varianteId}`;
   }
 }

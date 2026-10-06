@@ -500,7 +500,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         this.varianteService.invalidarCache();
         this.varianteService.clearVarianteUpdate();
         this.guardando = false;
-        Swal.fire({ icon: 'success', title: '¡Variante actualizada!', timer: 1600, showConfirmButton: false })
+        Swal.fire({ icon: 'success', title: '¡Artículo actualizado!', timer: 1600, showConfirmButton: false })
           .then(() => this.router.navigate(['/tienda/buscar']));
       },
       error: (err) => {

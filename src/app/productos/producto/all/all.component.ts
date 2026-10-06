@@ -669,7 +669,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'productos_sin_variantes.xlsx';
+        a.download = 'productos_sin_articulos.xlsx';
         a.click();
         URL.revokeObjectURL(url);
       },
@@ -679,26 +679,26 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   async inicializarVariantes(producto: IProductoDTO): Promise<void> {
     const { value: formValues } = await Swal.fire({
-      title: `Inicializar variantes`,
+      title: `Crear artículos`,
       html: `
         <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b> — Stock disponible: <b>${producto.stock}</b></p>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de variantes:</label>
+        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de artículos:</label>
         <input id="swal-cantidad" type="number" min="1" max="${producto.stock}" value="1"
           class="swal2-input" style="margin:0 0 12px;" />
         <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
           <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
-          Misma imagen para todas las variantes
+          Misma imagen para todos los artículos
         </label>
         <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
         <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
       `,
-      confirmButtonText: 'Crear variantes',
+      confirmButtonText: 'Crear artículos',
       cancelButtonText: 'Cancelar',
       showCancelButton: true,
       confirmButtonColor: '#4f46e5',
       preConfirm: () => {
         const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
-        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
+        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 artículo'); return false; }
         if (cantidad > producto.stock) { Swal.showValidationMessage(`El stock máximo es ${producto.stock}`); return false; }
         return {
           cantidadVariantes: cantidad,
@@ -725,10 +725,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
     this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
-        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false});
+        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} artículo(s) creado(s)`, timer: 2000, showConfirmButton: false});
         this.getData(this.paginaPrimera);
       },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
+      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear artículos', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
     });
   }
 

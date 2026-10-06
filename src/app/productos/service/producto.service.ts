@@ -214,7 +214,7 @@ export class ProductoService {
     }
 
     descargarReporteExcel(): Observable<Blob> {
-        return this.http.get(`${this.url}/admin/sin-variantes/reporte`, { responseType: 'blob' });
+        return this.http.get(`${this.url}/admin/sin-articulos/reporte`, { responseType: 'blob' });
     }
 
     diagnosticoImagenes(productoId: number): Observable<any> {
@@ -222,6 +222,6 @@ export class ProductoService {
     }
 
     compartirImagenesVariante(compartirImagenesVarianteDto: CompartirImagenesVarianteDto): Observable<any> {
-        return this.http.post(`${this.url}/compartir-imagenes-variantes`, compartirImagenesVarianteDto);
+        return this.http.post(`${this.url}/compartir-imagenes-articulos`, compartirImagenesVarianteDto);
     }
 }

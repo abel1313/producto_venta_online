@@ -572,7 +572,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
       next: () => this.onExito(),
       error: (err) => {
         this.guardando = false;
-        const msg = err?.error?.mensaje ?? 'No se pudo guardar la variante.';
+        const msg = err?.error?.mensaje ?? 'No se pudo guardar el artículo.';
         Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: '#dc2626' });
       }
     });
@@ -591,7 +591,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     const total = this.totalAGuardar;
     Swal.fire({
       icon: 'success',
-      title: total > 1 ? `¡${total} variantes creadas!` : '¡Variante creada!',
+      title: total > 1 ? `¡${total} artículos creados!` : '¡Artículo creado!',
       timer: 1600,
       showConfirmButton: false
     });

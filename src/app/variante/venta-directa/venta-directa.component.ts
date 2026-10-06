@@ -561,7 +561,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   cerrarVisor(): void { this.mostrarVisor = false; }
 
   labelVariante(v: IVarianteResumen): string {
-    return [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Variante #${v.id}`;
+    return [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Artículo #${v.id}`;
   }
 
   // ── Cliente ────────────────────────────────────────────────────────
@@ -753,7 +753,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       cantidad:       l.cantidad,
       productoNombre: l.variante.marca
         ? `${l.variante.marca}${l.variante.talla ? ' ' + l.variante.talla : ''}`
-        : (l.variante.color ?? `Variante #${l.variante.id}`),
+        : (l.variante.color ?? `Artículo #${l.variante.id}`),
       talla:    null as string | null,
       subTotal: l.subTotal
     }));

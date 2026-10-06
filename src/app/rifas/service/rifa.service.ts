@@ -53,7 +53,7 @@ export class RifaService {
    */
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
-      `${this.url}/v1/variantes/buscar-filtrado?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+      `${this.url}/v2/articulos/buscar-filtrado?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 
@@ -106,28 +106,28 @@ export class RifaService {
   // ── 3. Agregar variante a la rifa ──────────────────────────────────
   guardarVarianteRifa(data: IConfigurarRifaVarianteRequest): Observable<IConfigurarRifaVariante> {
     return this.http.post<{ code: number; data: IConfigurarRifaVariante }>(
-      `${this.url}/v1/configurarRifaVariante/save`, data
+      `${this.url}/v2/configurarRifaArticulo/save`, data
     ).pipe(map(r => r.data));
   }
 
   // ── 4. Listar variantes de la rifa ─────────────────────────────────
   getVariantesRifa(rifaId: number): Observable<IConfigurarRifaVariante[]> {
     return this.http.get<{ code: number; data: IConfigurarRifaVariante[] }>(
-      `${this.url}/v1/configurarRifaVariante/porRifa/${rifaId}`
+      `${this.url}/v2/configurarRifaArticulo/porRifa/${rifaId}`
     ).pipe(map(r => r.data));
   }
 
   // ── 5. Palabras clave disponibles ──────────────────────────────────
   getPalabrasClave(rifaId: number): Observable<string[]> {
     return this.http.get<{ code: number; data: string[] }>(
-      `${this.url}/v1/configurarRifaVariante/palabrasClave/${rifaId}`
+      `${this.url}/v2/configurarRifaArticulo/palabrasClave/${rifaId}`
     ).pipe(map(r => r.data));
   }
 
   // ── 6. Eliminar variante de la rifa ────────────────────────────────
   eliminarVarianteRifa(id: number): Observable<string> {
     return this.http.delete<{ code: number; data: string }>(
-      `${this.url}/v1/configurarRifaVariante/${id}`
+      `${this.url}/v2/configurarRifaArticulo/${id}`
     ).pipe(map(r => r.data));
   }
 
@@ -142,14 +142,14 @@ export class RifaService {
     varianteId?: number;
   }): Observable<IConfigurarRifaVariante> {
     return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
-      `${this.url}/v1/configurarRifaVariante/${id}`, patch
+      `${this.url}/v2/configurarRifaArticulo/${id}`, patch
     ).pipe(map(r => r.data));
   }
 
   // ── 7. Actualizar palabraClave ─────────────────────────────────────
   actualizarPalabraClave(id: number, palabraClave: string): Observable<IConfigurarRifaVariante> {
     return this.http.put<{ code: number; data: IConfigurarRifaVariante }>(
-      `${this.url}/v1/configurarRifaVariante/${id}/palabraClave`, { palabraClave }
+      `${this.url}/v2/configurarRifaArticulo/${id}/palabraClave`, { palabraClave }
     ).pipe(map(r => r.data));
   }
 
@@ -212,9 +212,9 @@ export class RifaService {
   }
 
   // ── 13. Continuar a la siguiente variante ──────────────────────────
-  continuarVariante(rifaId: number, modo: ModoContinuacion): Observable<IEstadoRifa> {
+  continuarArticulo(rifaId: number, modo: ModoContinuacion): Observable<IEstadoRifa> {
     return this.http.post<{ code: number; data: IEstadoRifa }>(
-      `${this.url}/v1/ganadorRifa/continuarVariante/${rifaId}?modo=${modo}`, {}
+      `${this.url}/v1/ganadorRifa/continuarArticulo/${rifaId}?modo=${modo}`, {}
     ).pipe(map(r => r.data));
   }
 

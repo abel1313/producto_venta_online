@@ -51,8 +51,8 @@
         <span class="pl-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
         <span class="pl-filtros-toggle__flecha" aria-hidden="true">▾</span>
       </button>
-      <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel modelos sin productos">
-        📥 Excel sin productos
+      <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel de modelos sin artículos">
+        📥 Excel sin artículos
       </button>
     </div>
 
@@ -286,7 +286,7 @@
         </button>
 
         <button *ngIf="puedeCrearVariantes" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
-          [disabled]="item.stock === 0" title="Crear productos a partir de este modelo">
+          [disabled]="item.stock === 0" title="Crear artículos a partir de este modelo">
           <span>🧩</span>
           <span class="pl-btn-card__label">Productos</span>
         </button>

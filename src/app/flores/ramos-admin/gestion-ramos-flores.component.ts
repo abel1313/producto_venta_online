@@ -131,7 +131,7 @@ export class GestionRamosFloresComponent implements OnInit {
         this.subiendoFoto = null;
         Swal.fire({
           icon: 'error',
-          title: 'No se pudo leer la variante del ramo',
+          title: 'No se pudo leer el artículo del ramo',
           text: err?.error?.mensaje ?? err?.message ?? 'Intenta de nuevo.'
         });
       }

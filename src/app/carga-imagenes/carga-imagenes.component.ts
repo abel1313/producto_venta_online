@@ -438,7 +438,7 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
     Swal.fire({
       icon: 'warning',
       title: '¿Descartar este borrador?',
-      text: 'Se borra el producto, su variante y la imagen para siempre — no se puede deshacer.',
+      text: 'Se borra el producto, su artículo y la imagen para siempre — no se puede deshacer.',
       showCancelButton: true,
       confirmButtonText: 'Sí, descartar',
       cancelButtonText: 'Cancelar'

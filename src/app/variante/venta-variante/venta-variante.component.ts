@@ -206,7 +206,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   limpiar(): void {
     Swal.fire({
-      title: '¿Limpiar carrito de variantes?', icon: 'warning',
+      title: '¿Limpiar carrito de artículos?', icon: 'warning',
       showCancelButton: true, confirmButtonColor: '#d33',
       cancelButtonText: 'Cancelar', confirmButtonText: 'Limpiar'
     }).then(r => { if (r.isConfirmed) this.carritoService.limpiar(); });
@@ -250,7 +250,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   generarPedido(): void {
     if (!this.carrito.length) {
-      Swal.fire({ icon: 'warning', title: 'Carrito vacío', text: 'Agrega variantes antes de generar el pedido.' });
+      Swal.fire({ icon: 'warning', title: 'Carrito vacío', text: 'Agrega artículos antes de generar el pedido.' });
       return;
     }
 
@@ -350,10 +350,10 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     const total = this.totalImporte.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
     Swal.fire({
-      title: 'Confirmar pedido de variantes',
+      title: 'Confirmar pedido de artículos',
       icon: 'question',
       html: `
-        <p>${this.carrito.length} variante(s) — ${this.totalUnidades} unidad(es)</p>
+        <p>${this.carrito.length} artículo(s) — ${this.totalUnidades} unidad(es)</p>
         <p class="fw-bold fs-5">Total: ${total}</p>
       `,
       showCancelButton: true,
@@ -536,7 +536,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   // ── Helper ─────────────────────────────────────────────────────────
 
   labelItem(item: IDetalleVariante): string {
-    return [item.talla, item.color, item.marca].filter(Boolean).join(' · ') || `Variante #${item.varianteId}`;
+    return [item.talla, item.color, item.marca].filter(Boolean).join(' · ') || `Artículo #${item.varianteId}`;
   }
 
   get carritoVacio(): boolean { return this.carrito.length === 0 && this.promos.length === 0; }

@@ -443,12 +443,12 @@ export class DetalleVarianteComponent implements OnInit {
         const d = res.data;
         Swal.fire({
           icon: 'success',
-          title: '✅ Variante independizada',
+          title: '✅ Artículo independizado',
           html: `Producto nuevo creado con ID <strong>#${d.productoNuevoId}</strong><br>
                  Código: <strong>${d.codigoBarras}</strong><br>
                  Stock restante del producto origen: <strong>${d.stockProductoOrigenRestante}</strong>`,
           showCancelButton: true,
-          confirmButtonText: '🔍 Ver variantes',
+          confirmButtonText: '🔍 Ver artículos',
           cancelButtonText: 'Cerrar',
         }).then(result => {
           if (result.isConfirmed) {
@@ -466,7 +466,7 @@ export class DetalleVarianteComponent implements OnInit {
       },
       error: (err) => {
         this.independizando = false;
-        this.independizarError = err?.error?.mensaje ?? 'No se pudo independizar la variante.';
+        this.independizarError = err?.error?.mensaje ?? 'No se pudo independizar el artículo.';
       }
     });
   }

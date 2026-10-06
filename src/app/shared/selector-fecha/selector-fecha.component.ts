@@ -110,8 +110,15 @@ export class SelectorFechaComponent implements ControlValueAccessor, OnChanges {
 
   // ── ControlValueAccessor ───────────────────────────────────────────
 
-  writeValue(v: string | null): void {
-    this.valor = v ?? '';
+  writeValue(v: string | Date | null): void {
+    // Si una pantalla le pasa un Date en vez de texto, se convierte aqui: con un Date el
+    // `split` de desdeIso() tronaba en cada ciclo y dejaba la pantalla congelada con el
+    // spinner arriba (paso en Mis datos, hotfix 2026-10-06).
+    if (v instanceof Date) {
+      this.valor = isNaN(v.getTime()) ? '' : this.aIso(v);
+    } else {
+      this.valor = typeof v === 'string' ? v : '';
+    }
     this.posicionarVistaEnValor();
   }
   registerOnChange(fn: (v: string) => void): void { this.onChange = fn; }

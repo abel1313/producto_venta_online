@@ -5,13 +5,14 @@ import { catchError, debounceTime, groupBy, map, mergeMap, switchMap } from 'rxj
 import { environment } from 'src/environments/environment';
 import { AuthService } from '../auth/auth.service';
 
-export type PantallaFiltros = 'tienda-buscar' | 'productos-buscar';
+export type PantallaFiltros = 'tienda-buscar' | 'productos-buscar' | 'pedidos-mis-pedidos';
 
 type Filtros = Record<string, unknown>;
 
 const RUTA_PANTALLA: Record<PantallaFiltros, string> = {
   'tienda-buscar': 'tienda/buscar',
-  'productos-buscar': 'productos/buscar'
+  'productos-buscar': 'productos/buscar',
+  'pedidos-mis-pedidos': 'pedidos/mis-pedidos'
 };
 
 /**

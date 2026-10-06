@@ -7,75 +7,166 @@
     </a>
   </div>
 
-  <!-- Grupo 1: buscador de texto (número de pedido) + su filtro asociado (Pagados/Cancelados).
-       PC: uno junto al otro en la misma fila. Móvil: buscador arriba, filtro abajo. -->
+  <!-- Buscador + botón de filtros + orden. El administrador busca por número, nombre (cliente,
+       sin registro o quien recibe), teléfono, correo o artículo; el cliente, solo por número. -->
   <div class="mp-filtro-grupo">
     <div class="search-bar">
       <div class="search-input-wrap">
         <i class="pi pi-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Buscar por número de pedido…"
-               (keyup)="buscarProductos($event)" appUppercase>
+        <input type="text" class="search-input"
+               [placeholder]="isAdminUser ? 'Número, nombre, teléfono, correo o artículo…' : 'Buscar por número de pedido…'"
+               [value]="buscarProd" (keyup)="buscarProductos($event)" appUppercase>
       </div>
+      <small class="mp-aviso-busqueda" *ngIf="avisoBusqueda">{{ avisoBusqueda }}</small>
     </div>
 
-    <div class="tipo-filtro-wrap" *ngIf="isAdminUser">
-      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroPagados"
-              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-pagados')"
-              (click)="toggleFiltroEstado('PAGADO')">
-        ✅ Pagados
+    <ng-container *ngIf="isAdminUser">
+      <button type="button" class="mp-filtros-toggle" [class.mp-filtros-toggle--abierto]="filtrosAbiertos"
+              (click)="alternarFiltros()" [attr.aria-expanded]="filtrosAbiertos" aria-controls="mp-filtros-panel">
+        <span>⚙️ Filtros</span>
+        <span class="mp-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
+        <span class="mp-filtros-toggle__flecha" aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroCancelados"
-              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-cancelados')"
-              (click)="toggleFiltroEstado('CANCELADO')">
-        ❌ Cancelados
+
+      <label class="mp-orden">
+        <span class="mp-orden__label">Ordenar</span>
+        <select class="mp-orden__select" [(ngModel)]="filtros.orden" (ngModelChange)="alCambiarFiltros()">
+          <option *ngFor="let o of opcionesOrden" [ngValue]="o.valor">{{ o.texto }}</option>
+        </select>
+      </label>
+    </ng-container>
+  </div>
+
+  <!-- Panel de filtros (solo admin). Cada bloque es un filtro; dentro de un bloque las opciones se
+       suman (Apartado o Ir pagando), y los bloques se combinan entre sí (Ir pagando y Debe dinero). -->
+  <div id="mp-filtros-panel" class="mp-filtros" *ngIf="isAdminUser && filtrosAbiertos">
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Forma de cobro</h4>
+      <div class="tipo-filtro-wrap">
+        <ng-container *ngFor="let o of opcionesForma">
+          <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
+                  [class.tipo-filtro-btn--active]="estaMarcado('formas', o.valor)"
+                  (click)="alternar('formas', o.valor)">{{ o.texto }}</button>
+        </ng-container>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Estado</h4>
+      <div class="tipo-filtro-wrap">
+        <ng-container *ngFor="let o of opcionesEstado">
+          <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
+                  [class.tipo-filtro-btn--active]="estaMarcado('estados', o.valor)"
+                  (click)="alternar('estados', o.valor)">{{ o.texto }}</button>
+        </ng-container>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Dinero <small>(Apartado e Ir pagando)</small></h4>
+      <div class="tipo-filtro-wrap">
+        <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesDinero"
+                [class.tipo-filtro-btn--active]="estaMarcado('dinero', o.valor)"
+                (click)="alternar('dinero', o.valor)">{{ o.texto }}</button>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Fecha de entrega <small>(los que faltan por entregar)</small></h4>
+      <div class="tipo-filtro-wrap">
+        <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesEntrega"
+                [class.tipo-filtro-btn--active]="filtros.entrega === o.valor"
+                (click)="elegirUno('entrega', o.valor)">{{ o.texto }}</button>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Dónde se entrega</h4>
+      <div class="mp-filtros__fila">
+        <div class="lugar-filtro-wrap">
+          <div class="lugar-filtro-input-wrap">
+            <i class="pi pi-map-marker lugar-filtro-icon"></i>
+            <input type="text" class="lugar-filtro-input" placeholder="Lugar de entrega…"
+                   [(ngModel)]="terminoLugar"
+                   (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
+                   (blur)="cerrarDropdownLugarConDelay()">
+            <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
+          </div>
+          <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
+            <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
+              {{ l.nombre }}
+            </div>
+            <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
+              Sin coincidencias
+            </div>
+          </div>
+        </div>
+        <div class="tipo-filtro-wrap">
+          <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesModo"
+                  [class.tipo-filtro-btn--active]="filtros.modoEntrega === o.valor"
+                  (click)="elegirUno('modoEntrega', o.valor)">{{ o.texto }}</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque">
+      <h4 class="mp-filtros__titulo">Unidos y otros</h4>
+      <div class="tipo-filtro-wrap">
+        <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesUnidos"
+                [class.tipo-filtro-btn--active]="filtros.unidos === o.valor"
+                (click)="elegirUno('unidos', o.valor)">{{ o.texto }}</button>
+        <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtros.soloRamos"
+                (click)="alternarOtro('soloRamos')">💐 Ramos de flores</button>
+        <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtros.soloConPromocion"
+                (click)="alternarOtro('soloConPromocion')">🏷️ Con promoción</button>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque mp-filtros__bloque--rangos">
+      <div class="mp-filtros__rango">
+        <h4 class="mp-filtros__titulo">Registrado</h4>
+        <div class="mp-filtros__fila">
+          <label class="mp-filtros__campo">
+            <span>Desde</span>
+            <input type="date" class="mp-filtros__input" [(ngModel)]="filtros.registroDesde"
+                   [max]="filtros.registroHasta || null" (change)="alCambiarRango()">
+          </label>
+          <label class="mp-filtros__campo">
+            <span>Hasta</span>
+            <input type="date" class="mp-filtros__input" [(ngModel)]="filtros.registroHasta"
+                   [min]="filtros.registroDesde || null" (change)="alCambiarRango()">
+          </label>
+        </div>
+      </div>
+      <div class="mp-filtros__rango">
+        <h4 class="mp-filtros__titulo">Total del pedido</h4>
+        <div class="mp-filtros__fila">
+          <label class="mp-filtros__campo">
+            <span>Desde $</span>
+            <input type="number" min="0" step="1" class="mp-filtros__input" placeholder="0"
+                   [(ngModel)]="filtros.totalDesde" (change)="alCambiarRango()">
+          </label>
+          <label class="mp-filtros__campo">
+            <span>Hasta $</span>
+            <input type="number" min="0" step="1" class="mp-filtros__input" placeholder="sin tope"
+                   [(ngModel)]="filtros.totalHasta" (change)="alCambiarRango()">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div class="mp-filtros__pie">
+      <button type="button" class="mp-filtros__limpiar" [disabled]="filtrosActivos === 0" (click)="quitarFiltros()">
+        ✕ Quitar filtros
       </button>
     </div>
   </div>
 
-  <!-- Grupo 2: buscador de lugar de entrega ("el otro buscador") + su filtro asociado
-       (Normal/Apartados/Ir pagando). Mismo criterio de agrupación que el grupo 1. -->
-  <div class="mp-filtro-grupo" *ngIf="isAdminUser">
-    <div class="lugar-filtro-wrap">
-      <div class="lugar-filtro-input-wrap">
-        <i class="pi pi-map-marker lugar-filtro-icon"></i>
-        <input type="text" class="lugar-filtro-input" placeholder="Filtrar por lugar de entrega…"
-               [(ngModel)]="terminoLugar"
-               (focus)="onBuscarLugar()" (input)="onBuscarLugar()"
-               (blur)="cerrarDropdownLugarConDelay()">
-        <button *ngIf="lugarFiltroId" class="lugar-filtro-clear" (click)="limpiarFiltroLugar()" title="Quitar filtro">✕</button>
-      </div>
-      <div class="lugar-filtro-dropdown" *ngIf="mostrarDropdownLugar">
-        <div class="lugar-filtro-dropdown__item" *ngFor="let l of lugaresFiltrados" (mousedown)="seleccionarLugar(l)">
-          {{ l.nombre }}
-        </div>
-        <div class="lugar-filtro-dropdown__empty" *ngIf="lugaresFiltrados.length === 0">
-          Sin coincidencias
-        </div>
-      </div>
-    </div>
-
-    <div class="tipo-filtro-wrap">
-      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroNormal"
-              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-normal')"
-              (click)="toggleFiltroTipo('NORMAL')">
-        🛒 Normal
-      </button>
-      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroApartado"
-              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-apartado')"
-              (click)="toggleFiltroTipo('APARTADO')">
-        📦 Apartados
-      </button>
-      <button type="button" class="tipo-filtro-btn" [class.tipo-filtro-btn--active]="filtroIrPagando"
-              *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'filtro-fiado')"
-              (click)="toggleFiltroTipo('FIADO')">
-        💳 Ir pagando
-      </button>
-    </div>
-  </div>
-
-  <!-- Resumen de filtros activos -->
-  <div class="mp-descripcion-busqueda" *ngIf="isAdminUser && descripcionBusqueda">
-    <i class="pi pi-filter"></i> {{ descripcionBusqueda }}
+  <!-- Resumen de filtros activos y cuántos pedidos salen -->
+  <div class="mp-descripcion-busqueda" *ngIf="isAdminUser && (descripcionBusqueda || totalRegistros > 0)">
+    <i class="pi pi-filter"></i>
+    <span>{{ descripcionBusqueda || 'Todos los pedidos' }} · {{ totalRegistros }} {{ totalRegistros === 1 ? 'pedido' : 'pedidos' }}</span>
   </div>
 
   <!-- Grid de pedidos -->

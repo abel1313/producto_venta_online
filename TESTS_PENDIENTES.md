@@ -16,6 +16,20 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-06 — Cada bloque de ⚙️ Filtros de Mis pedidos pide su acción de Gestión de roles
+**Dónde:** `MisPedidosComponent.puedeFiltro()`, `algunaVisible()`, `puedeVerOpcion()`, `aplicarFiltrosGuardados()` · `models/filtros-pedidos.model.ts` (campo `accion` de cada opción) · plantilla del panel
+**Tipo:** unitario del componente (`AuthService.tieneAccion` simulado) + e2e con un rol recortado
+**Debe comprobar:**
+- [ ] Con todas las acciones: salen los 8 bloques y todas sus opciones (igual que antes).
+- [ ] Sin `filtro-dinero`: no sale el bloque Dinero; los demás sí.
+- [ ] Sin `filtro-pendientes`: en Estado no sale ⏳ Pendiente, las otras 4 sí.
+- [ ] Sin ninguna de las 5 de Estado: no sale el bloque ni su título.
+- [ ] Sin `filtro-registrado` pero con `filtro-total`: sale solo el rango de montos.
+- [ ] Filtros guardados con `dinero: ['CON_SALDO']`, `lugarEntregaId: 3`, `soloRamos: true`, `totalDesde: 100` y sin esas acciones → se cargan vacíos (null / false / []); con las acciones → se cargan tal cual.
+- [ ] `entrega: 'HOY'` guardado sin `filtro-fecha-entrega` → `null`.
+- [ ] El orden (Ordenar) no depende de ninguna acción.
+- [ ] Ayuda "?" de `pedidos/mis-pedidos` y `abonos`: textos nuevos (`ayuda-pantallas.catalog.ts`).
+
 ### 2026-10-06 — Cobro a crédito desde la card de Mis pedidos (rama `feature/cobro-desde-card`)
 **Dónde:** `pedidos/cobro/` (`FormularioCobroBase`, `CobroPedidoBase`, `CobroGrupoBase`, `LiquidarApartadoComponent`, `DarAbonoComponent`, `LiquidarGrupoComponent`, `AbonarGrupoComponent`, `CampoPagoComponent`) · `MisPedidosComponent.formaCobroCredito()`, `textoBotonCobro()`, `puedeCobrarCard()`, `cobrarAdmin()`
 **Tipo:** unitario de cada formulario (servicios simulados) + componente de la lista + e2e

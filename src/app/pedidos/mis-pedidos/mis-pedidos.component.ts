@@ -31,6 +31,9 @@ import {
 
 /** Los cuatro formularios de cobro a crédito de la card (carpeta ../cobro). */
 type FormaCobroCredito = 'liquidar' | 'abonar' | 'liquidar-grupo' | 'abonar-grupo';
+/** Bloques del panel ⚙️ Filtros con una sola acción de Gestión de roles para todo el bloque. */
+type AccionFiltroBloque = 'filtro-dinero' | 'filtro-fecha-entrega' | 'filtro-lugar'
+  | 'filtro-unidos-otros' | 'filtro-registrado' | 'filtro-total';
 
 // Leaflet calcula la URL de sus íconos por defecto en base a dónde quedó su propio bundle, y
 // con Angular/webpack casi siempre la resuelve mal — el pin del mapa sale invisible, sin
@@ -132,9 +135,19 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     try { localStorage.setItem('mis-pedidos:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
   }
 
-  /** Las 5 opciones que ya existían siguen pidiendo su acción de Gestión de roles. */
+  /** Cada opción del panel pide su acción de Gestión de roles (Mis pedidos → Filtros). */
   puedeVerOpcion(o: IOpcionFiltro<unknown>): boolean {
-    return !o.accion || this.authService.tieneAccion('pedidos/mis-pedidos', o.accion);
+    return !o.accion || this.puedeFiltro(o.accion);
+  }
+
+  /** Un bloque completo del panel (Dinero, Fecha de entrega, Dónde se entrega...). */
+  puedeFiltro(accion: AccionFiltroBloque | string): boolean {
+    return this.authService.tieneAccion('pedidos/mis-pedidos', accion);
+  }
+
+  /** Forma de cobro y Estado van opción por opción: el bloque se esconde si no queda ninguna. */
+  algunaVisible(opciones: IOpcionFiltro<unknown>[]): boolean {
+    return opciones.some(o => this.puedeVerOpcion(o));
   }
 
   estaMarcado(lista: 'formas' | 'estados' | 'dinero', valor: string): boolean {
@@ -210,25 +223,31 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     const lista = <T>(v: unknown, validos: IOpcionFiltro<T>[]): T[] =>
       Array.isArray(v) ? (v as T[]).filter(x => validos.some(o => o.valor === x && this.puedeVerOpcion(o))) : [];
     const uno = <T>(v: unknown, validos: IOpcionFiltro<T>[]): T | null =>
-      validos.some(o => o.valor === v) ? v as T : null;
-    const numero = (v: unknown): number | null => typeof v === 'number' && v >= 0 ? v : null;
-    const fecha = (v: unknown): string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+      validos.some(o => o.valor === v && this.puedeVerOpcion(o)) ? v as T : null;
+    // Un filtro guardado de un bloque que ya no se tiene permitido no se aplica: no se vería en
+    // el panel y la persona no tendría cómo quitarlo.
+    const numero = (v: unknown, accion: AccionFiltroBloque): number | null =>
+      this.puedeFiltro(accion) && typeof v === 'number' && v >= 0 ? v : null;
+    const fecha = (v: unknown): string =>
+      this.puedeFiltro('filtro-registrado') && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+    const lugar = this.puedeFiltro('filtro-lugar');
+    const otros = this.puedeFiltro('filtro-unidos-otros');
     this.filtros = {
       ...base,
       formas: lista(g['formas'], OPCIONES_FORMA),
       estados: lista(g['estados'], OPCIONES_ESTADO),
       dinero: lista(g['dinero'], OPCIONES_DINERO),
-      totalDesde: numero(g['totalDesde']),
-      totalHasta: numero(g['totalHasta']),
+      totalDesde: numero(g['totalDesde'], 'filtro-total'),
+      totalHasta: numero(g['totalHasta'], 'filtro-total'),
       registroDesde: fecha(g['registroDesde']),
       registroHasta: fecha(g['registroHasta']),
       entrega: uno(g['entrega'], OPCIONES_ENTREGA),
-      lugarEntregaId: numero(g['lugarEntregaId']),
-      lugarNombre: typeof g['lugarNombre'] === 'string' ? g['lugarNombre'] as string : '',
+      lugarEntregaId: numero(g['lugarEntregaId'], 'filtro-lugar'),
+      lugarNombre: lugar && typeof g['lugarNombre'] === 'string' ? g['lugarNombre'] as string : '',
       modoEntrega: uno(g['modoEntrega'], OPCIONES_MODO),
       unidos: uno(g['unidos'], OPCIONES_UNIDOS),
-      soloRamos: g['soloRamos'] === true,
-      soloConPromocion: g['soloConPromocion'] === true,
+      soloRamos: otros && g['soloRamos'] === true,
+      soloConPromocion: otros && g['soloConPromocion'] === true,
       orden: uno(g['orden'], OPCIONES_ORDEN) ?? 'RECIENTES'
     };
     this.terminoLugar = this.filtros.lugarEntregaId ? this.filtros.lugarNombre : '';

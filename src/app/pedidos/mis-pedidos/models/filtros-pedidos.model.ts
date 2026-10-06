@@ -55,9 +55,9 @@ export interface IOpcionFiltro<T> {
   valor: T;
   texto: string;
   /**
-   * Acción de Gestión de roles que hace falta para ver la opción. Solo las 5 que ya existían
-   * (filtro-normal, -apartado, -fiado, -pagados, -cancelados); las nuevas las ve todo el que
-   * entra a la lista, que ya es solo administrador.
+   * Acción de Gestión de roles que hace falta para ver la opción (Mis pedidos → Filtros). Forma
+   * de cobro y Estado van opción por opción; los demás bloques, una acción por bloque. Se dieron
+   * de alta en migration_accion_pedidos_filtros_y_cobro.sql (2026-10-06).
    */
   accion?: string;
 }
@@ -69,34 +69,34 @@ export const OPCIONES_FORMA: IOpcionFiltro<FormaCobroFiltro>[] = [
 ];
 
 export const OPCIONES_ESTADO: IOpcionFiltro<EstadoFiltro>[] = [
-  { valor: 'PENDIENTE',  texto: '⏳ Pendiente' },
-  { valor: 'POR_COBRAR', texto: '🕒 Por cobrar' },
+  { valor: 'PENDIENTE',  texto: '⏳ Pendiente',  accion: 'filtro-pendientes' },
+  { valor: 'POR_COBRAR', texto: '🕒 Por cobrar', accion: 'filtro-por-cobrar' },
   { valor: 'PAGADO',     texto: '✅ Pagado',    accion: 'filtro-pagados' },
-  { valor: 'ENTREGADO',  texto: '🤝 Entregado' },
+  { valor: 'ENTREGADO',  texto: '🤝 Entregado',  accion: 'filtro-entregados' },
   { valor: 'CANCELADO',  texto: '❌ Cancelado', accion: 'filtro-cancelados' }
 ];
 
 export const OPCIONES_DINERO: IOpcionFiltro<DineroFiltro>[] = [
-  { valor: 'CON_SALDO',     texto: '💰 Debe dinero' },
-  { valor: 'SIN_ABONOS',    texto: '🚫 Sin abonos' },
-  { valor: 'SALDO_A_FAVOR', texto: '↩️ Saldo a favor' }
+  { valor: 'CON_SALDO',     texto: '💰 Debe dinero',    accion: 'filtro-dinero' },
+  { valor: 'SIN_ABONOS',    texto: '🚫 Sin abonos',     accion: 'filtro-dinero' },
+  { valor: 'SALDO_A_FAVOR', texto: '↩️ Saldo a favor', accion: 'filtro-dinero' }
 ];
 
 export const OPCIONES_ENTREGA: IOpcionFiltro<EntregaFiltro>[] = [
-  { valor: 'HOY',         texto: '📅 Hoy' },
-  { valor: 'MANANA',      texto: 'Mañana' },
-  { valor: 'ESTA_SEMANA', texto: 'Esta semana' },
-  { valor: 'ATRASADOS',   texto: '⚠ Atrasados' }
+  { valor: 'HOY',         texto: '📅 Hoy',        accion: 'filtro-fecha-entrega' },
+  { valor: 'MANANA',      texto: 'Mañana',        accion: 'filtro-fecha-entrega' },
+  { valor: 'ESTA_SEMANA', texto: 'Esta semana',   accion: 'filtro-fecha-entrega' },
+  { valor: 'ATRASADOS',   texto: '⚠ Atrasados',   accion: 'filtro-fecha-entrega' }
 ];
 
 export const OPCIONES_MODO: IOpcionFiltro<ModoEntregaFiltro>[] = [
-  { valor: 'RECOGE_EN_TIENDA', texto: '🏪 Recoge en tienda' },
-  { valor: 'ENVIO',            texto: '🚚 Envío' }
+  { valor: 'RECOGE_EN_TIENDA', texto: '🏪 Recoge en tienda', accion: 'filtro-lugar' },
+  { valor: 'ENVIO',            texto: '🚚 Envío',            accion: 'filtro-lugar' }
 ];
 
 export const OPCIONES_UNIDOS: IOpcionFiltro<UnidosFiltro>[] = [
-  { valor: 'SOLO_UNIDOS', texto: '🔗 Solo unidos' },
-  { valor: 'SIN_UNIR',    texto: 'Sin unir' }
+  { valor: 'SOLO_UNIDOS', texto: '🔗 Solo unidos', accion: 'filtro-unidos-otros' },
+  { valor: 'SIN_UNIR',    texto: 'Sin unir',      accion: 'filtro-unidos-otros' }
 ];
 
 export const OPCIONES_ORDEN: IOpcionFiltro<OrdenPedidos>[] = [

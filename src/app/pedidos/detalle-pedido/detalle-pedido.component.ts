@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Constants } from 'src/app/Constants';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
 import { environment } from 'src/environments/environment';
 import { PedidosService } from '../pedidos.service';
@@ -511,6 +512,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       error: () => {}
     });
 
+    this.prepararBuscadorArticulo();
     this.cargarDetalleCompleto();
   }
 
@@ -1094,24 +1096,47 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.pedidoDestino           = null;
   }
 
+  /** Cada tecla del buscador de ⇄ / ➕ pasa por aquí (skill `buscadores`). */
+  private readonly terminoArticulo$ = new Subject<string>();
+
   /**
-   * Menos de 3 caracteres no sale al back: con 1 o 2 el LIKE barre casi todo el catálogo y el
-   * resultado no le sirve a nadie (regla de CLAUDE.md). Vacío limpia la lista.
+   * Reglas de buscadores (skill `buscadores`, CLAUDE.md):
+   * - Se espera 400 ms después de la última tecla: antes salía una búsqueda por cada letra desde la
+   *   3.ª ("blu", "blus", "blusa"…) y la lista brincaba (QA 2026-10-06).
+   * - Menos de 3 letras no sale al back y limpia la lista. Vacío limpia de inmediato.
+   * - switchMap descarta la respuesta de una búsqueda vieja que llega tarde, y el catchError va
+   *   adentro: si fuera en el subscribe, un error mataría el buscador hasta recargar.
+   * - Solo artículos que se pueden vender ahora: `GET /v1/variantes/para-pedido`.
    */
+  private prepararBuscadorArticulo(): void {
+    this.terminoArticulo$.pipe(
+      debounceTime(400),
+      map(t => t.trim()),
+      switchMap(termino => {
+        if (termino.length < Constants.MIN_CARACTERES_BUSQUEDA) {
+          return of<IVarianteResumen[]>([]);
+        }
+        this.buscandoArticulo = true;
+        return this.varianteService.buscarParaPedido({ termino, pagina: 1, size: 20 }).pipe(
+          map(r => (r?.t ?? []) as IVarianteResumen[]),
+          catchError(() => of<IVarianteResumen[]>([]))
+        );
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(lista => {
+      this.resultadosArticulo = lista;
+      this.buscandoArticulo   = false;
+    });
+  }
+
   buscarArticulo(): void {
     const termino = (this.terminoArticulo ?? '').trim();
-    if (!termino) { this.resultadosArticulo = []; return; }
-    if (termino.length < 3) return;
-
-    this.buscandoArticulo = true;
-    this.varianteService.buscar({ termino, pagina: 1, size: 20 }).subscribe({
-      next: r => {
-        this.resultadosArticulo = (r?.t ?? []) as IVarianteResumen[];
-        this.buscandoArticulo   = false;
-      },
-      // El back contesta 404 cuando no encuentra nada: eso es "sin resultados", no un error.
-      error: () => { this.resultadosArticulo = []; this.buscandoArticulo = false; }
-    });
+    // Vacío y corto se atienden aquí mismo: esperar los 400 ms dejaría en pantalla la lista anterior.
+    if (termino.length < Constants.MIN_CARACTERES_BUSQUEDA) {
+      this.resultadosArticulo = [];
+      this.buscandoArticulo   = false;
+    }
+    this.terminoArticulo$.next(termino);
   }
 
   /**

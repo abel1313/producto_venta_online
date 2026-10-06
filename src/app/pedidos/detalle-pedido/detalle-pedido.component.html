@@ -164,7 +164,7 @@
     <p class="dp-art-buscador__estado" *ngIf="buscandoArticulo">Buscando…</p>
     <p class="dp-art-buscador__estado"
        *ngIf="!buscandoArticulo && terminoArticulo.length >= 3 && resultadosArticulo.length === 0">
-      No se encontró ningún artículo con eso.
+      No hay ningún artículo con existencias que coincida. Los que no tienen stock o están dados de baja no salen aquí.
     </p>
 
     <ul class="dp-art-lista">

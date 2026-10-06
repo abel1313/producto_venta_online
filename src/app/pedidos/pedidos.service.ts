@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { CrudGenericService } from '../crud-generic.service';
 import { IPedidos } from '../productos/producto/detalle-productos/models/pedidos.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPedidoGenerico } from './mis-pedidos/models/IPedidoGenerico.model';
 import { IPageable } from './mis-pedidos/models/IPageable.mode';
+import { IFiltrosPedidos, IPedidosEncontrados } from './mis-pedidos/models/filtros-pedidos.model';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import {
   AgregarArticuloRequest,
@@ -39,6 +40,29 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     // Repetible, OR entre valores (PAGADO/CANCELADO), AND contra tipo/lugar — confirmado con el back.
     const queryEstado = (estadosPedido ?? []).map(e => `&estadoPedido=${encodeURIComponent(e)}`).join('');
     return this.http.get<ResponseGeneric<IPageable<IPedidoGenerico[]>>>(`${this.url}/v1/pedidos/buscarClientePedido?size=${size}&page=${page}${queryBuscar}${queryLugar}${queryTipo}${queryEstado}`);
+  }
+
+  /**
+   * La lista del administrador con todos los filtros (back GET /v1/pedidos/buscar, 2026-10-06).
+   * Las listas van repetidas (`estado=A&estado=B`); lo vacío no se manda.
+   */
+  buscarPedidosAdmin(buscar: string, f: IFiltrosPedidos, pagina: number, tamano: number): Observable<ResponseGeneric<IPedidosEncontrados>> {
+    let params = new HttpParams().set('pagina', String(pagina)).set('tamano', String(tamano)).set('orden', f.orden);
+    if (buscar) params = params.set('buscar', buscar);
+    f.formas.forEach(v => params = params.append('formaCobro', v));
+    f.estados.forEach(v => params = params.append('estado', v));
+    f.dinero.forEach(v => params = params.append('dinero', v));
+    if (f.totalDesde != null) params = params.set('totalDesde', String(f.totalDesde));
+    if (f.totalHasta != null) params = params.set('totalHasta', String(f.totalHasta));
+    if (f.registroDesde) params = params.set('registroDesde', f.registroDesde);
+    if (f.registroHasta) params = params.set('registroHasta', f.registroHasta);
+    if (f.entrega) params = params.set('entrega', f.entrega);
+    if (f.lugarEntregaId) params = params.set('lugarEntregaId', String(f.lugarEntregaId));
+    if (f.modoEntrega) params = params.set('modoEntrega', f.modoEntrega);
+    if (f.unidos) params = params.set('unidos', f.unidos);
+    if (f.soloRamos) params = params.set('soloRamos', 'true');
+    if (f.soloConPromocion) params = params.set('soloConPromocion', 'true');
+    return this.http.get<ResponseGeneric<IPedidosEncontrados>>(`${this.url}/v1/pedidos/buscar`, { params });
   }
 
     updateService(id:number,data: IPedidoGenerico): Observable<ResponseGeneric<IPedidoGenerico>> {

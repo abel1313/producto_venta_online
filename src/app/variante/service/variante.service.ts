@@ -137,6 +137,15 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
+  // Buscador de "Agregar / Cambiar artículo" del detalle de pedido: solo artículos con stock y
+  // habilitados (artículo y modelo), sin caché en el back. Nunca 404: sin resultados, t: [].
+  buscarParaPedido(params: { termino: string; pagina?: number; size?: number }): Observable<IVarianteResumenPaginable> {
+    const { termino, pagina = 1, size = 20 } = params;
+    const httpParams = new HttpParams().set('termino', termino).set('pagina', String(pagina)).set('size', String(size));
+    return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/para-pedido`, { params: httpParams })
+      .pipe(map(res => res.data));
+  }
+
   // Catálogo público con filtros combinables (AND). Todos los parámetros son opcionales — a
   // diferencia de /buscar, nunca 404: sin resultados devuelve t: [].
   buscarFiltrado(

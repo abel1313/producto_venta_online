@@ -252,6 +252,167 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ── Panel de filtros (2026-10-06) ──────────────────────────────────────────
+// Solo tokens: cambia con Personalización, de día y de noche. Las opciones reusan .tipo-filtro-btn.
+.mp-aviso-busqueda {
+  display: block;
+  margin-top: 6px;
+  padding-left: 1rem;
+  font-size: 0.78rem;
+  color: var(--app-text-muted);
+}
+
+.mp-filtros-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 50px;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--app-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover { border-color: var(--app-accent); }
+  &:focus-visible { outline: none; box-shadow: var(--input-focus-shadow); }
+
+  &--abierto {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    .mp-filtros-toggle__flecha { transform: rotate(180deg); }
+  }
+
+  &__cuenta {
+    padding: 2px 8px;
+    border-radius: 50px;
+    background: var(--app-accent);
+    color: var(--app-accent-ink);
+    font-size: 0.72rem;
+  }
+
+  &__flecha { transition: transform .18s ease; }
+}
+
+.mp-orden {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+
+  &__label { font-weight: 600; }
+
+  &__select {
+    padding: 0.45rem 0.8rem;
+    border-radius: 50px;
+    border: 1.5px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--input-text);
+    font-size: 0.82rem;
+    outline: none;
+
+    &:focus { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  }
+}
+
+.mp-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px 22px;
+  padding: 1rem 1.1rem;
+  margin: -0.5rem 0 1.25rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  background: var(--form-section-bg);
+
+  @media (max-width: 575px) {
+    grid-template-columns: 1fr;
+    padding: 0.85rem;
+  }
+
+  &__bloque {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+
+    &--rangos {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 14px 28px;
+    }
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--app-text-muted);
+
+    small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  }
+
+  &__fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__rango { display: flex; flex-direction: column; gap: 8px; }
+
+  &__campo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--app-text-muted);
+  }
+
+  &__input {
+    width: 150px;
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--input-text);
+    font-size: 0.82rem;
+    outline: none;
+
+    &::placeholder { color: var(--input-placeholder); }
+    &:focus { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+
+    @media (max-width: 575px) { width: 130px; }
+  }
+
+  &__pie {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__limpiar {
+    padding: 0.45rem 1rem;
+    border-radius: 50px;
+    border: 1.5px solid var(--card-border);
+    background: transparent;
+    color: var(--app-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: $transition;
+
+    &:hover:not(:disabled) { border-color: var(--pk-danger); color: var(--pk-danger); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+}
+
 // ── Resumen de filtros activos ──────────────────────────────────────────────
 .mp-descripcion-busqueda {
   display: flex;

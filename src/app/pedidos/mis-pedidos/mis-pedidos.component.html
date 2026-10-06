@@ -41,7 +41,7 @@
        suman (Apartado o Ir pagando), y los bloques se combinan entre sí (Ir pagando y Debe dinero). -->
   <div id="mp-filtros-panel" class="mp-filtros" *ngIf="isAdminUser && filtrosAbiertos">
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesForma)">
       <h4 class="mp-filtros__titulo">Forma de cobro</h4>
       <div class="tipo-filtro-wrap">
         <ng-container *ngFor="let o of opcionesForma">
@@ -52,7 +52,7 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesEstado)">
       <h4 class="mp-filtros__titulo">Estado</h4>
       <div class="tipo-filtro-wrap">
         <ng-container *ngFor="let o of opcionesEstado">
@@ -63,7 +63,7 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-dinero')">
       <h4 class="mp-filtros__titulo">Dinero <small>(Apartado e Ir pagando)</small></h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesDinero"
@@ -72,7 +72,7 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-fecha-entrega')">
       <h4 class="mp-filtros__titulo">Fecha de entrega <small>(los que faltan por entregar)</small></h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesEntrega"
@@ -81,7 +81,7 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-lugar')">
       <h4 class="mp-filtros__titulo">Dónde se entrega</h4>
       <div class="mp-filtros__fila">
         <div class="lugar-filtro-wrap">
@@ -110,7 +110,7 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque">
+    <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-unidos-otros')">
       <h4 class="mp-filtros__titulo">Unidos y otros</h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesUnidos"
@@ -123,8 +123,9 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque mp-filtros__bloque--rangos">
-      <div class="mp-filtros__rango">
+    <section class="mp-filtros__bloque mp-filtros__bloque--rangos"
+             *ngIf="puedeFiltro('filtro-registrado') || puedeFiltro('filtro-total')">
+      <div class="mp-filtros__rango" *ngIf="puedeFiltro('filtro-registrado')">
         <h4 class="mp-filtros__titulo">Registrado</h4>
         <div class="mp-filtros__fila">
           <label class="mp-filtros__campo">
@@ -139,7 +140,7 @@
           </label>
         </div>
       </div>
-      <div class="mp-filtros__rango">
+      <div class="mp-filtros__rango" *ngIf="puedeFiltro('filtro-total')">
         <h4 class="mp-filtros__titulo">Total del pedido</h4>
         <div class="mp-filtros__fila">
           <label class="mp-filtros__campo">

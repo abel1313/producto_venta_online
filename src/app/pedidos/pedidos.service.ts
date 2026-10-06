@@ -69,8 +69,10 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.put<ResponseGeneric<IPedidoGenerico>>(`${this.url}/v1/pedidos/confirmar/${id}`, data);
     }
 
-    eliminarDetalle(pedidoId: number, productoId: number, cantidad: number = 1): Observable<ResponseGeneric<string>> {
-      return this.http.delete<ResponseGeneric<string>>(`${this.url}/v1/pedidos/${pedidoId}/detalle/${productoId}?cantidad=${cantidad}`);
+    /** `detalleId` = la línea exacta; sin él, el back quita la primera línea de ese modelo. */
+    eliminarDetalle(pedidoId: number, productoId: number, detalleId?: number, cantidad: number = 1): Observable<ResponseGeneric<string>> {
+      const linea = detalleId != null ? `&detalleId=${detalleId}` : '';
+      return this.http.delete<ResponseGeneric<string>>(`${this.url}/v1/pedidos/${pedidoId}/detalle/${productoId}?cantidad=${cantidad}${linea}`);
     }
 
     cancelarConMotivo(id: number, motivo: string): Observable<any> {

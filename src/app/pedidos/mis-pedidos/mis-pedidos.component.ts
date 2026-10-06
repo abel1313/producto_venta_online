@@ -280,6 +280,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   /** Cada tecla del buscador pasa por aquí; se busca 400 ms después de la última. */
   private readonly texto$ = new Subject<void>();
+  /** Lo último que se buscó: una tecla que no cambia el texto (flechas, Tab) no vuelve a buscar. */
+  private ultimoTextoAdmin = '';
   /**
    * Toda búsqueda del administrador sale por aquí. switchMap descarta la respuesta de una búsqueda
    * vieja que llega tarde (antes se veía el resultado de lo que se escribió antes), y el
@@ -293,7 +295,9 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   }
 
   private prepararBusquedaAdmin(): void {
-    this.texto$.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => this.buscarPedidoAdmin());
+    this.texto$.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => {
+      if ((this.buscarProd ?? '').trim() !== this.ultimoTextoAdmin) this.buscarPedidoAdmin();
+    });
     this.busquedaAdmin$.pipe(
       switchMap(c => this.pedidoService.buscarPedidosAdmin(c.buscar, c.filtros, c.pagina, this.size).pipe(
         catchError(err => {
@@ -420,6 +424,11 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   private static readonly MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
                                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
+  private static escaparHtml(texto: string | null | undefined): string {
+    return (texto ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   private static dia(iso: string): Date {
     const [y, m, d] = iso.split('-').map(n => parseInt(n, 10));
     return new Date(y, m - 1, d);
@@ -431,6 +440,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
    * PAGADO entra aquí porque todavía no existe el paso de marcar entregado un crédito pagado.
    */
   private static esperaEntrega(p: IPedidoGenerico['pedido']): boolean {
+    // Un grupo espera entrega mientras le falte cobrar, aunque el titular ya esté pagado.
+    if (p.grupo?.esTitular) return p.grupo.totalGrupo > 0 && p.grupo.saldoGrupo > 0.005;
     const estado = (p.estado_pedido ?? '').toUpperCase();
     return estado !== 'ENTREGADO' && estado !== 'CANCELADO' && estado !== 'PAGADO';
   }
@@ -589,13 +600,16 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   }
 
   private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null): void {
-    const nombreReceptor   = actual?.nombreReceptor ?? '';
-    const direccionEntrega = actual?.direccionEntrega ?? '';
-    const fechaEntrega     = actual?.fechaRecogida ?? '';
-    const observaciones    = actual?.observaciones ?? '';
+    // Lo escribe el cliente al hacer su pedido: se escapa porque va dentro del HTML del aviso, y
+    // un nombre con `"><img onerror=…>` corría código en la sesión del administrador.
+    const esc = MisPedidosComponent.escaparHtml;
+    const nombreReceptor   = esc(actual?.nombreReceptor);
+    const direccionEntrega = esc(actual?.direccionEntrega);
+    const fechaEntrega     = esc(actual?.fechaRecogida);
+    const observaciones    = esc(actual?.observaciones);
     const lugarEntregaId   = actual?.lugarEntregaId ?? null;
-    const urlFacebook      = actual?.urlFacebook ?? '';
-    const referencias      = actual?.referencias ?? '';
+    const urlFacebook      = esc(actual?.urlFacebook);
+    const referencias      = esc(actual?.referencias);
 
     // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega (la
     // zona/pueblo). Variables mutables capturadas por el `didOpen`/`preConfirm` del Swal de
@@ -616,7 +630,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     const puedeVerCoordenadas = this.isAdminUser;
 
     const opcionesLugar = this.lugares.map(l =>
-      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
+      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${esc(l.nombre)}</option>`
     ).join('');
 
     // En un ramo, fecha y lugar NO se editan desde aquí — ni el cliente ni el admin. Este campo
@@ -1183,6 +1197,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     if (reset) this.page = 0;
 
     const texto = (this.buscarProd ?? '').trim();
+    this.ultimoTextoAdmin = texto;
     const esNumero = /^#?\s*\d+$/.test(texto);
     if (texto && !esNumero && texto.length < 3) {
       this.avisoBusqueda = 'Escribe al menos 3 letras para buscar por nombre, teléfono, correo o artículo.';
@@ -1244,6 +1259,16 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   // exactamente lo que ya dice el badge de tipo ("📦 Apartado" + "APARTADO" abajo). Para
   // crédito se muestra el estado de pago en su lugar; NORMAL/Cancelado no cambian.
   estadoBadge(item: IPedidoGenerico): { icono: string; texto: string } {
+    // La card del titular habla del grupo: un abono al grupo liquida primero al pedido más viejo,
+    // así que el titular podía decir "Pagado" mientras la misma card decía "Falta $100".
+    const g = item.pedido.grupo;
+    if (g?.esTitular) {
+      if (g.totalGrupo <= 0) return { icono: 'pi-times-circle', texto: 'Cancelado' };
+      const credito = this.esGrupoCredito(g);
+      return g.saldoGrupo > 0.005
+        ? { icono: 'pi-clock', texto: credito ? 'Por cobrar' : 'Pendiente' }
+        : { icono: 'pi-check-circle', texto: credito ? 'Pagado' : 'Entregado' };
+    }
     // Cancelado va primero: un Ir pagando cancelado mostraba "Por cobrar" (2026-09-29).
     if (this.esCancelado(item)) {
       return { icono: 'pi-times-circle', texto: 'Cancelado' };
@@ -1434,7 +1459,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
         if (correoDefault) {
           Swal.fire({
             title: `Enviar comprobante #${pedidoId}`,
-            html: `¿Enviar el ticket al correo de <b>${item.cliente.nombreCliente}</b>:<br><b>${correoDefault}</b>?`,
+            html: `¿Enviar el ticket al correo de <b>${MisPedidosComponent.escaparHtml(item.cliente.nombreCliente)}</b>:<br><b>${MisPedidosComponent.escaparHtml(correoDefault)}</b>?`,
             icon: 'question',
             showCancelButton: true,
             showDenyButton: true,

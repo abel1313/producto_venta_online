@@ -12,89 +12,136 @@
     <p>
       Al usar el sitio y el sistema de ventas en línea de Novedades Jade (bolsas, pantalones,
       blusas, perfumes y ramos de flores eternas), aceptas estos Términos y Condiciones. Si no
-      estás de acuerdo, te pedimos no usar el sistema.
+      estás de acuerdo, te pedimos no usar el sistema. Nada de lo que dicen estos Términos te quita
+      los derechos que te da la Ley Federal de Protección al Consumidor.
     </p>
   </section>
 
   <section class="tc-sec">
-    <h2>Quiénes somos</h2>
-    <p>
-      Novedades Jade es una tienda en línea de moda femenina y regalos. Vendemos directamente a
-      través de este sitio, y algunos productos también se ofrecen por redes sociales,
-      redirigiendo siempre a esta misma tienda para completar la compra.
-    </p>
+    <h2>Quién vende</h2>
+    <ng-container *ngIf="datos$ | async as d">
+      <p>
+        Novedades Jade es una tienda en línea de moda femenina y regalos. Vendemos directamente a
+        través de este sitio, y algunos productos también se ofrecen por redes sociales,
+        redirigiendo siempre a esta misma tienda para completar la compra.
+      </p>
+      <ul *ngIf="d.nombreResponsable || d.domicilio || d.telefono || d.rfc">
+        <li *ngIf="d.nombreResponsable">Responsable: <strong>{{ d.nombreResponsable }}</strong></li>
+        <li *ngIf="d.rfc">RFC: {{ d.rfc }}</li>
+        <li *ngIf="d.domicilio">Domicilio para aclaraciones y reclamaciones: {{ d.domicilio }}</li>
+        <li *ngIf="d.telefono">Teléfono: <a [href]="'tel:+52' + d.telefono">{{ telefonoLegible(d.telefono) }}</a></li>
+        <li *ngIf="d.horarioAtencion">Horario de atención: {{ d.horarioAtencion }}</li>
+      </ul>
+      <p>
+        Correo: <a [href]="'mailto:' + d.correo">{{ d.correo }}</a>
+      </p>
+    </ng-container>
   </section>
 
   <section class="tc-sec">
     <h2>Cuentas de usuario</h2>
     <p>
-      Para comprar necesitas crear una cuenta con datos de contacto reales. Eres responsable de
-      mantener tu contraseña segura y de la actividad que ocurra en tu cuenta. Si sospechas que
-      alguien más accedió a tu cuenta sin tu permiso, avísanos de inmediato.
+      Para comprar necesitas crear una cuenta con datos de contacto reales y ser mayor de edad.
+      Eres responsable de mantener tu contraseña segura y de la actividad que ocurra en tu cuenta.
+      Si sospechas que alguien más accedió a tu cuenta sin tu permiso, avísanos de inmediato.
     </p>
   </section>
 
   <section class="tc-sec">
     <h2>Productos, precios y disponibilidad</h2>
     <p>
-      Los precios se muestran en pesos mexicanos e incluyen los impuestos aplicables, salvo que
-      se indique lo contrario. Trabajamos para que las fotos y descripciones sean fieles al
-      producto real, pero pueden existir variaciones menores de color o tela entre lo mostrado en
-      pantalla y la pieza física. La disponibilidad de stock puede cambiar en cualquier momento;
-      si compras un producto que se agotó justo antes de confirmarse tu pedido, te avisaremos y
-      te ofreceremos un reembolso o un producto equivalente.
+      Los precios se muestran en pesos mexicanos e incluyen los impuestos aplicables. Lo que
+      decimos de un producto (material, medidas, contenido) es lo que viene en su descripción; las
+      fotos son del producto, pero puede haber variaciones menores de color entre la pantalla y la
+      pieza física. La disponibilidad puede cambiar en cualquier momento; si compras un producto
+      que se agotó justo antes de confirmarse tu pedido, te avisamos y te devolvemos lo que hayas
+      pagado o, si tú lo prefieres, te ofrecemos uno equivalente.
+    </p>
+    <p>
+      Las promociones y ofertas dicen sus condiciones y hasta cuándo valen o cuántas piezas hay.
     </p>
   </section>
 
   <section class="tc-sec">
-    <h2>Pedidos y pagos</h2>
+    <h2>Formas de pago</h2>
+    <ul>
+      <li>
+        <strong>Contado:</strong> pagas el total al comprar, en efectivo, transferencia o tarjeta.
+      </li>
+      <li>
+        <strong>Apartado:</strong> separamos tu pedido <strong>sin que pagues nada</strong>, y lo pagas
+        completo cuando lo recoges o te lo entregamos.
+      </li>
+      <li>
+        <strong>Ir pagando:</strong> te llevas tu pedido y lo pagas en abonos, en efectivo o
+        transferencia. <strong>No cobramos intereses ni comisiones</strong>: el total a pagar es el mismo
+        precio de contado (costo anual total, CAT, de 0%). Puedes liquidar antes cuando quieras, sin
+        cargo, y cada abono te lo confirmamos con su comprobante.
+      </li>
+    </ul>
     <p>
-      Un pedido se considera confirmado hasta que recibimos el pago (completo o el abono
-      acordado, según el método de pago disponible). Nos reservamos el derecho de cancelar un
-      pedido si detectamos un error evidente de precio o inventario, o indicios de fraude —en ese
-      caso, se reembolsa cualquier monto ya pagado.
+      Un pedido se confirma cuando lo registramos con la forma de pago que elegiste. Podemos
+      cancelar un pedido si hay un error evidente de precio o de inventario, o indicios de fraude; en
+      ese caso te devolvemos lo que hayas pagado.
     </p>
   </section>
 
   <section class="tc-sec">
     <h2>Entrega</h2>
     <p>
-      Coordinamos la entrega según el lugar y la fecha que elijas al momento de tu pedido. Los
-      tiempos de entrega son estimados y pueden variar por causas fuera de nuestro control (clima,
-      disponibilidad del transporte, datos de contacto incorrectos, etc.). Es tu responsabilidad
-      proporcionar una dirección y referencias de entrega correctas.
+      Coordinamos la entrega según el lugar y la fecha que elijas al hacer tu pedido. Si el lugar
+      de entrega tiene costo de envío, se te muestra <strong>antes de confirmar</strong>. Los tiempos son
+      estimados y pueden variar por causas fuera de nuestro control (clima, transporte, datos de
+      contacto incorrectos); si cambian, te avisamos. Es tu responsabilidad dar una dirección y
+      referencias correctas.
     </p>
   </section>
 
   <section class="tc-sec">
-    <h2>Cambios, devoluciones y cancelaciones</h2>
+    <h2>Cancelar tu compra (5 días hábiles)</h2>
     <p>
-      Si tu producto llega con un defecto de fabricación o distinto a lo pedido, contáctanos
-      dentro de los siguientes días para resolverlo (cambio, reparación o reembolso, según el
-      caso). Por higiene, los perfumes no tienen cambio una vez abiertos, salvo defecto de
-      fábrica. Un pedido puede cancelarse antes de ser entregado siguiendo el proceso disponible
-      en <em>Mis pedidos</em>; una vez entregado, aplica la política de cambios de este párrafo.
+      Por ser una compra a distancia, puedes <strong>cancelarla dentro de los 5 días hábiles</strong>
+      siguientes a que recibes el producto, sin dar explicaciones (Ley Federal de Protección al
+      Consumidor, art. 56). Avísanos por correo o en el teléfono de arriba y regresa el producto como
+      lo recibiste; te devolvemos lo que pagaste por él. El envío de regreso corre por tu cuenta.
     </p>
     <p>
-      Cuando el pago se realiza con tarjeta u otro medio electrónico, la cancelación de un pedido
-      no se resuelve devolviendo efectivo, sino mediante un reembolso al mismo medio de pago
-      utilizado. Ese reembolso lo procesa el banco o la institución financiera emisora de tu
-      tarjeta, no Novedades Jade directamente, por lo que el tiempo en que el dinero aparece
-      reflejado en tu estado de cuenta depende de las políticas de tu banco y puede tardar varios
-      días hábiles después de que confirmamos la cancelación o devolución de nuestro lado.
+      Antes de la entrega puedes cancelar tu pedido desde <strong>Mis pedidos</strong> o pidiéndonoslo.
+    </p>
+  </section>
+
+  <section class="tc-sec">
+    <h2>Garantía, cambios y devoluciones</h2>
+    <p>
+      Todos nuestros productos tienen <strong>garantía de 90 días</strong> desde que los recibes (art. 77
+      de la Ley Federal de Protección al Consumidor). Si tu producto llega con un defecto, no
+      funciona como se ofreció o es distinto a lo que pediste, avísanos <strong>dentro de esos 90 días</strong>
+      y lo resolvemos con cambio, reparación o la devolución de tu dinero, según el caso.
     </p>
     <p>
-      Si tienes un problema con un cargo (no reconoces el pedido, el producto no llegó, llegó
-      defectuoso, etc.), te pedimos contactarnos primero a través de los medios indicados en la
-      sección de <em>Contacto</em> para resolverlo directamente —la gran mayoría de los casos se
-      solucionan así, de forma más rápida que iniciando una disputa con el banco. Si en lugar de
-      contactarnos se presenta directamente una impugnación o contracargo (<em>chargeback</em>)
-      con el banco emisor de la tarjeta y, al revisar el caso, se comprueba que la compra fue
-      legítima y el producto fue entregado o el reembolso ya había sido procesado por Novedades
-      Jade, nos reservamos el derecho de aportar la evidencia correspondiente (comprobante de
-      entrega, comunicaciones, historial del pedido) ante el banco o la pasarela de pago, de
-      suspender la cuenta involucrada y, en casos de fraude comprobado, de iniciar las acciones
-      legales que correspondan.
+      Por higiene, los perfumes cuyo sello ya se abrió no tienen cambio por gusto; esto no aplica
+      si el perfume tiene un defecto, y no limita tu derecho a cancelar la compra.
+    </p>
+  </section>
+
+  <section class="tc-sec">
+    <h2>Si cancelas un pedido en el que ya pagaste algo</h2>
+    <p>
+      Si cancelas un Apartado o un Ir pagando en el que ya diste dinero, ese dinero <strong>es tuyo</strong>:
+      te lo devolvemos o, si tú lo prefieres, queda como saldo a favor para otra compra. Si en un Ir
+      pagando todavía no te habías llevado el producto, se regresa a la tienda; si ya te lo llevaste,
+      cancelar no borra lo que falta por pagar.
+    </p>
+    <p>
+      Si pagaste con tarjeta u otro medio electrónico, el reembolso se hace al mismo medio de
+      pago. Lo procesa el banco o la institución emisora de tu tarjeta, por lo que el tiempo en que
+      se ve reflejado en tu estado de cuenta depende de ellos y puede tardar varios días hábiles.
+    </p>
+    <p>
+      Si tienes un problema con un cargo (no reconoces el pedido, no llegó, llegó con defecto),
+      escríbenos primero: casi siempre se resuelve más rápido que con una aclaración en el banco. Si
+      se presenta un contracargo y la compra fue legítima y entregada, podemos aportar al banco las
+      pruebas del pedido y de la entrega.
     </p>
   </section>
 
@@ -102,8 +149,9 @@
     <h2>Rifas y promociones</h2>
     <p>
       Cuando ofrecemos rifas o promociones, sus reglas específicas (vigencia, forma de participar,
-      mecánica de selección del ganador) se publican junto a cada promoción activa y forman parte
-      de estos Términos mientras esa promoción esté vigente.
+      premios, mecánica de selección del ganador y entrega del premio) se publican junto a cada
+      una y forman parte de estos Términos mientras esté vigente. Facebook, Instagram y TikTok no
+      patrocinan ni administran nuestras dinámicas.
     </p>
   </section>
 
@@ -121,15 +169,24 @@
     <p>
       Las fotos, textos, logotipos y diseño de este sitio son propiedad de Novedades Jade o de sus
       proveedores autorizados. No está permitido reproducirlos con fines comerciales sin permiso
-      escrito.
+      escrito. Las marcas de terceros que aparecen pertenecen a sus dueños.
     </p>
   </section>
 
   <section class="tc-sec">
     <h2>Privacidad</h2>
     <p>
-      El tratamiento de tus datos personales se explica por separado en nuestra
-      <a routerLink="/privacidad">Política de Privacidad</a>, que forma parte de estos Términos.
+      El tratamiento de tus datos personales se explica en nuestro
+      <a routerLink="/privacidad">Aviso de privacidad</a>.
+    </p>
+  </section>
+
+  <section class="tc-sec">
+    <h2>Quejas y PROFECO</h2>
+    <p>
+      Si tienes una queja, escríbenos primero y te contestamos. También puedes acudir a la
+      Procuraduría Federal del Consumidor (PROFECO): Teléfono del Consumidor 55 5568 8722 o
+      800 468 8722, y <a href="https://www.gob.mx/profeco" target="_blank" rel="noopener">gob.mx/profeco</a>.
     </p>
   </section>
 
@@ -137,22 +194,15 @@
     <h2>Cambios a estos términos</h2>
     <p>
       Podemos actualizar estos Términos cuando cambie algo en cómo operamos la tienda. Si lo
-      hacemos, actualizamos esta misma página y la fecha que aparece abajo.
-    </p>
-  </section>
-
-  <section class="tc-sec">
-    <h2>Contacto</h2>
-    <p>
-      Para cualquier duda sobre estos Términos, escríbenos a
-      <a [href]="'mailto:' + correoContacto">{{ correoContacto }}</a>.
+      hacemos, actualizamos esta misma página y la fecha que aparece abajo. Una compra se rige por
+      los Términos vigentes el día en que se hizo.
     </p>
   </section>
 
   <footer class="tc-footer">
     <p>Última actualización: {{ ultimaActualizacion }}</p>
-    <p>
-      Contacto: <a [href]="'mailto:' + correoContacto">{{ correoContacto }}</a>
+    <p *ngIf="datos$ | async as d">
+      Contacto: <a [href]="'mailto:' + d.correo">{{ d.correo }}</a>
     </p>
   </footer>
 

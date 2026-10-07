@@ -296,3 +296,30 @@ $t:  all 0.25s ease;
   .cn-card__title    { color: var(--header-text, var(--app-text)); }
   .cn-card__subtitle { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
 }
+
+/* ── Datos legales ─────────────────────────────────────────── */
+.cn-grid--legal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  @media (max-width: 575.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cn-field--ancho {
+  grid-column: 1 / -1;
+}
+
+.cn-legal-aviso {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--pk-warning-soft);
+  color: var(--app-text);
+  font-size: 0.85rem;
+}
+
+.cn-error {
+  color: var(--pk-danger);
+  font-size: 0.78rem;
+}

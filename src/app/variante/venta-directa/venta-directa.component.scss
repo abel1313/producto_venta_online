@@ -746,3 +746,15 @@ $t:  all 0.22s ease;
   color: var(--app-text);
   background: var(--app-accent-soft);
 }
+
+/* Lo que pide la LFPC art. 66 antes de una venta a crédito (2026-10-07). */
+.vd-nota-legal {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: .78rem;
+  line-height: 1.35;
+  color: var(--app-text);
+  background: var(--app-tint);
+  border: 1px solid var(--app-border);
+}

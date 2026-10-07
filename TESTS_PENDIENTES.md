@@ -17,6 +17,45 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-07 — Datos legales: pie de página, Términos, Aviso de privacidad y Configuración
+**Dónde:** `legal/datos-legales.service.ts`, `AppComponent` (pie), `TerminosComponent`, `PrivacidadComponent`, `ConfigNegocioComponent` (`guardarDatosLegales`), `loading.interceptor.ts`
+**Tipo:** unitario (servicio y componentes con HttpTestingController) · e2e
+**Debe comprobar:**
+- [ ] Una sola petición a `/v1/datos-legales` por carga de la app (shareReplay) y sin spinner global
+- [ ] El back falla → pie y páginas legales muestran `contacto@novedades-jade.com.mx`, sin error en pantalla
+- [ ] Pie: con nombre, domicilio, teléfono y correo los muestra; sin domicilio no pinta esa parte; teléfono `5512345678` → "Tel. 55 1234 5678" y `href="tel:+525512345678"`
+- [ ] Configuración → Datos legales: carga lo guardado; "⚠️ Falta: …" con lo que falte; RFC inválido → mensaje y no envía; 400 del back → Swal con el `mensaje`
+- [ ] Términos: muestran 90 días, 5 días hábiles, Apartado, Ir pagando sin intereses (CAT 0%), PROFECO
+- [ ] Aviso de privacidad: responsable, finalidades separadas, OVHcloud/Google/OpenAI/Mercado Pago, plazos ARCO 5 + 15 días hábiles
+
+### 2026-10-07 — Registro: aviso corto y casilla de Términos
+**Dónde:** `AddUsuariosComponent` (`aceptoTerminos`, `darAltaUser`)
+**Tipo:** unitario (componente)
+**Debe comprobar:**
+- [ ] Sin marcar Términos → botón Registrarse deshabilitado y mensaje al tocar la casilla
+- [ ] Con las dos casillas → manda `aceptoPrivacidad: true` y `aceptoTerminos: true`
+- [ ] "Actualizar usuario" (admin) no pide ninguna de las dos
+
+### 2026-10-07 — Ir pagando / Apartado: precio de contado y sin intereses, y ticket
+**Dónde:** `VentaDirectaComponent` (`.vd-nota-legal`), `VentaVarianteComponent` (`.venta-nota-legal`), `shared/ticket.util.ts` (`fijarDatosNegocioTicket`, `encabezadoNegocio`, `filaSinIntereses`)
+**Tipo:** unitario
+**Debe comprobar:**
+- [ ] Ir pagando con total $350 → "Precio de contado $350.00 · Total a pagar $350.00 (CAT 0%)"
+- [ ] Apartado → "Se paga completo ($350.00) al recogerlo"; Contado → ninguna nota
+- [ ] `generarHtmlTicket` con datos del negocio → los imprime arriba, escapando `<` y `&`; sin datos → ticket igual que antes
+- [ ] Ticket de abono y de liquidado → "Abonos sin intereses (CAT 0%)"; de venta de contado → no
+- [ ] Todos los tickets → "Garantía de 90 días desde que lo recibes"
+
+### 2026-10-07 — SEO: título por artículo, datos de producto, noindex y sitemap
+**Dónde:** `shared/seo/seo.service.ts`, `DetalleVarianteComponent.seleccionar()`, `PaginaNoDisponibleComponent`, `src/sitemap.xml`, `src/robots.txt`, `index.html`
+**Tipo:** unitario · e2e
+**Debe comprobar:**
+- [ ] Detalle de un artículo → `document.title` = "<nombre talla color> — Novedades Jade" y un `<script type="application/ld+json">` con `@type: Product`, precio en MXN y `InStock`/`OutOfStock`
+- [ ] Cambiar de artículo en el detalle → hay un solo script JSON-LD (no se acumulan)
+- [ ] Salir del detalle → título y descripción vuelven a los de index.html y se quita el JSON-LD
+- [ ] Ruta inexistente → `<meta name="robots" content="noindex">`; al salir vuelve a `index, follow`
+- [ ] Fotos de la tienda y de Favoritos con `alt` = nombre del artículo (no "Imagen variante")
+
 ### 2026-10-07 — Card de pedido: Pagado / Falta pagar y Entregado / Falta entregar, 📦 Entregar y ↺
 **Dónde:** `pedidos/entrega/entrega.ts` (`etiquetaPago`, `etiquetaEntrega`, `preguntarSiSeLoLlevo`, `preguntarYEntregar`), `MisPedidosComponent` (`pagoDeCard`, `entregadoDeCard`, `puedeEntregar`, `entregar`, `regresarEntrega`), `PedidosService.entregar/regresarEntrega`
 **Tipo:** unitario (funciones y componente con HttpTestingController) · e2e

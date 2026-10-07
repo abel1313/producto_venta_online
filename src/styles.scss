@@ -1312,6 +1312,12 @@ body:is(.theme-light, .theme-dark) {
   }
 }
 
+/* El brillo decorativo de los encabezados (*__header-glow) va DEBAJO del texto (2026-10-07).
+   El título traía z-index sin position, así que el brillo (absoluto, 280px a la derecha) lo tapaba:
+   en celular se cortaba el subtítulo en Agregar modelo, Cargar catálogo Excel y 6 pantallas más. */
+[class*="__header-glow"] { z-index: 0; }
+[class*="__header-glow"] ~ * { position: relative; z-index: 1; }
+
 /* ════════════════════════════════════════════════════════════
    GLASSMORPHISM GLOBAL — todos los headers de todos los
    componentes del sistema (día y noche iguales en todos).

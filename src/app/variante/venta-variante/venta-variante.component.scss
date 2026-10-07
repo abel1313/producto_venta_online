@@ -126,3 +126,14 @@
 }
 
 
+
+/* LFPC art. 66 (2026-10-07). */
+.venta-nota-legal {
+  flex-basis: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: .78rem;
+  color: var(--app-text);
+  background: var(--app-tint);
+  border: 1px solid var(--app-border);
+}

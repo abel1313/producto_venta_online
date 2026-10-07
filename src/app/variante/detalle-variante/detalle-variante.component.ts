@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -11,6 +11,7 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { ResenaService } from 'src/app/resenas/service/resena.service';
 import { IResena, IResenaResumen } from 'src/app/resenas/models/resena.model';
+import { SeoService } from 'src/app/shared/seo/seo.service';
 
 const PAGE_SIZE = 4;
 
@@ -19,7 +20,7 @@ const PAGE_SIZE = 4;
   templateUrl: './detalle-variante.component.html',
   styleUrls: ['./detalle-variante.component.scss']
 })
-export class DetalleVarianteComponent implements OnInit {
+export class DetalleVarianteComponent implements OnInit, OnDestroy {
 
   productoId!: number;
   variantes: IVarianteDto[] = [];
@@ -93,7 +94,12 @@ export class DetalleVarianteComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly productoService: ProductoService,
     private readonly resenaService: ResenaService,
+    private readonly seo: SeoService,
   ) {}
+
+  ngOnDestroy(): void {
+    this.seo.restablecer();
+  }
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
@@ -148,6 +154,11 @@ export class DetalleVarianteComponent implements OnInit {
 
   seleccionar(v: IVarianteDto): void {
     this.varianteSeleccionada = v;
+    const nombre = [v.nombreProducto, v.talla, v.color].filter(x => !!x).join(' ') || 'Artículo';
+    this.seo.producto({
+      nombre, descripcion: v.descripcion, precio: v.precio ?? 0, disponible: (v.stock ?? 0) > 0,
+      marca: v.marca, codigo: v.codigoBarras, url: window.location.href
+    });
     this.displayImages = [];
     this.paginasCargadas = new Set<number>();
     this.cargaInicialCompletada = false;

@@ -990,3 +990,15 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 @media (max-height: 600px) {
   .split-form { align-items: flex-start; padding-top: 1.5rem; }
 }
+
+/* Aviso de privacidad simplificado y casilla de Términos (2026-10-07). */
+.privacy-resumen {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--app-text-muted, #4b5563);
+}
+
+.checkbox-label--terminos {
+  margin-top: 0.75rem;
+}

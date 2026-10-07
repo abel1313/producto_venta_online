@@ -77,7 +77,7 @@
             <div class="dv-slide__img-wrap">
               <img *ngIf="imageSrc(img) | imagenSrc | async as src"
                 [src]="src"
-                [alt]="img.nombreImagen ?? 'Imagen variante'"
+                [alt]="(varianteSeleccionada.nombreProducto || 'Artículo') + (varianteSeleccionada.talla ? ' talla ' + varianteSeleccionada.talla : '')"
                 class="dv-slide__img"
                 (error)="$any($event.target).style.display='none'" />
 

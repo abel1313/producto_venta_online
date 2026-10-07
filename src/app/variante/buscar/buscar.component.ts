@@ -622,6 +622,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
     else this.buscarPagina(this.terminoBusqueda, p);
   }
 
+  private recargarPagina(): void {
+    const p = this.paginaActual || 1;
+    if (this.productoId > 0) this.cargarResumen(p);
+    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
+    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
+    else this.buscarPagina(this.terminoBusqueda, p);
+  }
+
   siguientePagina(): void {
     if (this.paginaActual >= this.totalPaginas) return;
     const p = this.paginaActual + 1;
@@ -846,6 +854,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (!habilitar) v.stock = 0;
         this.varianteService.invalidarCache();
         Swal.fire({ icon: 'success', title: habilitar ? 'Artículo habilitado' : 'Artículo deshabilitado', timer: 1500, showConfirmButton: false });
+        if (habilitar) this.recargarPagina();
       },
       error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el estado.' })
     });
@@ -1072,7 +1081,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const ids = Array.from(this.seleccionados);
     this.procesandoLote = true;
     this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.variantes.forEach(v => {
           if (!this.seleccionados.has(v.id)) return;
           v.habilitado = habilitar ? '1' : '0';
@@ -1081,7 +1090,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.seleccionados.clear();
         this.procesandoLote = false;
         this.varianteService.invalidarCache();
-        Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
+        // Al habilitar, el back puede recortar el stock a lo libre del modelo y lo dice en el
+        // mensaje; se recarga la página para que la card muestre el stock que quedó.
+        const mensaje: string = typeof res?.data === 'string' ? res.data : '';
+        if (habilitar && mensaje.includes('Se ajustó')) {
+          Swal.fire({ icon: 'info', title: 'Artículos habilitados', text: mensaje });
+        } else {
+          Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
+        }
+        if (habilitar) this.recargarPagina();
       },
       error: (err) => {
         this.procesandoLote = false;

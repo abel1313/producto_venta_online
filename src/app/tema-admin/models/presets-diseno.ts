@@ -85,6 +85,7 @@ const JADE_CLARO: Lado = {
   'sb-header-bg': '#ebe6da', 'sb-body-bg': '#ebe6da', 'sb-footer-bg': '#ebe6da',
   'sb-text': '#1c2a26', 'sb-border': 'rgba(28,42,38,0.10)',
   'form-section-bg': '#f6f3ec', 'input-bg': '#ebe6da', 'input-placeholder': '#6f7384',
+  'filtros-panel-bg': 'rgba(255,255,255,0.70)', 'filtro-bg': 'rgba(45,117,96,0.10)',
 };
 
 const JADE_OSCURO: Lado = {
@@ -108,6 +109,7 @@ const JADE_OSCURO: Lado = {
   'sb-header-bg': '#232532', 'sb-body-bg': '#232532', 'sb-footer-bg': '#232532',
   'sb-text': '#e9e9ed', 'sb-border': 'rgba(233,233,237,0.10)',
   'form-section-bg': '#1c1e2c', 'input-bg': '#232532', 'input-placeholder': '#9397ab',
+  'filtros-panel-bg': '#1c1e2c', 'filtro-bg': 'rgba(91,185,154,0.14)',
 };
 
 // El de fábrica antes de Jade (styles.scss hasta 2026-09-30): verde de marca de día, negro y
@@ -132,6 +134,7 @@ const CLASICO_CLARO: Lado = {
   'sb-header-bg': 'rgba(255,255,255,0.97)', 'sb-body-bg': 'rgba(255,255,255,0.97)', 'sb-footer-bg': 'rgba(255,255,255,0.97)',
   'sb-text': '#12241D', 'sb-border': '#D5E8DD',
   'form-section-bg': '#E3F2EA', 'input-bg': '#FFFFFF', 'input-placeholder': '#9DBAAD',
+  'filtros-panel-bg': 'rgba(255,255,255,0.78)', 'filtro-bg': 'rgba(0,135,90,0.10)',
 };
 
 const CLASICO_OSCURO: Lado = {
@@ -154,12 +157,13 @@ const CLASICO_OSCURO: Lado = {
   'sb-header-bg': 'rgba(0,0,0,0.92)', 'sb-body-bg': 'rgba(0,0,0,0.92)', 'sb-footer-bg': 'rgba(0,0,0,0.92)',
   'sb-text': '#E9E9EC', 'sb-border': 'rgba(255,255,255,0.08)',
   'form-section-bg': '#151517', 'input-bg': 'rgba(255,255,255,0.05)', 'input-placeholder': '#6E6E73',
+  'filtros-panel-bg': '#151517', 'filtro-bg': 'rgba(255,255,255,0.10)',
 };
 
 /** Paleta de solo colores (como eran los diseños antes de Jade) → diseño completo: la letra,
  * tamaños y botones son los del Clásico, y las claves nuevas salen de la misma paleta, así que
  * se ve igual que antes de Jade. */
-function completarPaleta(paleta: Lado, base: Lado, alfa: number): Lado {
+function completarPaleta(paleta: Lado, base: Lado, alfa: number, oscuro: boolean): Lado {
   const marca = paleta['brand-1'];
   const rgb = aRgb(marca) ?? '0, 0, 0';
   return {
@@ -176,6 +180,8 @@ function completarPaleta(paleta: Lado, base: Lado, alfa: number): Lado {
     'badge-text': marca,
     'app-glass': paleta['sb-body-bg'],
     'app-glass-strong': paleta['sb-body-bg'],
+    'filtros-panel-bg': oscuro ? paleta['form-section-bg'] : paleta['sb-body-bg'],
+    'filtro-bg': `rgba(${rgb.replace(/ /g, '')},${alfa})`,
     ...paleta,
   };
 }
@@ -184,8 +190,8 @@ function presetDePaleta(id: string, nombre: string, descripcion: string, claro: 
   return {
     id, nombre, descripcion,
     valores: construirValores(
-      completarPaleta(claro, CLASICO_CLARO, 0.10),
-      completarPaleta(oscuro, CLASICO_OSCURO, 0.14)
+      completarPaleta(claro, CLASICO_CLARO, 0.10, false),
+      completarPaleta(oscuro, CLASICO_OSCURO, 0.14, true)
     ),
   };
 }

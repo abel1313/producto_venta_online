@@ -1001,6 +1001,14 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * El pedido que el cliente hizo desde su cuenta y nadie ha cobrado ni apartado (contado con estado
+   * 'Pendiente'). Se pasa a Apartado o Ir pagando aquí; para cobrarlo completo está 💵 Cobrar de la card.
+   */
+  get esPedidoEnLinea(): boolean {
+    return this.tipoVigente === 'NORMAL' && this.estadoPedido.toLowerCase() === 'pendiente';
+  }
+
+  /**
    * Lo que falta en un pedido a crédito que ya tiene abonos; `null` si no aplica. Se calcula
    * contra `totalGeneral` porque quitar un artículo recalcula el total aquí sin volver a pedir el
    * detalle, y `saldoPendiente` del back se quedaría con el total viejo.

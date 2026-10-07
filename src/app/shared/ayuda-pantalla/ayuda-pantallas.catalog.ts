@@ -124,11 +124,15 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   // ─── Envíos ────────────────────────────────────────────────────────────────
   {
     ruta: 'lugares-entrega',
-    titulo: 'Lugares de entrega',
-    queEs: 'Catálogo de los puntos donde se entregan pedidos.',
+    titulo: 'Zonas de entrega',
+    queEs: 'Catálogo de las zonas y puntos donde se entregan pedidos (Envíos → Zonas de entrega). ' +
+      'Es la lista que sale en "📍 Lugar de entrega" del Carrito y de Ventas → Venta directa.',
     paraQue: [
       'Dar de alta un punto de encuentro nuevo con su ubicación en el mapa.',
-      'Habilitar o deshabilitar puntos según la temporada.',
+      'Editar ✏️ o eliminar 🗑️ una zona.',
+      'Anillos de cobro (solo Flores eternas): hasta dónde entregas y cuánto cobras según la distancia.',
+      'Marcar con "🏬 Recoger en tienda" la fila del local: al elegirla, el cliente pone fecha de recogida.',
+      '"Horas extra 🌹" solo cuenta para pedidos de Flores eternas (zona lejana = más anticipación).',
     ],
     diferencia: [{
       pantalla: 'Entregas por zona',

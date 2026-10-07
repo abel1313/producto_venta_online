@@ -502,3 +502,59 @@
   font-size: 13px;
   border-top: 1px solid var(--app-hairline, var(--card-border));
 }
+
+// ── Interruptor (sí / no) ───────────────────────────────────────────────────────────────────
+// Para opciones de prender o apagar en lugar del checkbox del navegador. El input sigue ahí
+// (oculto a la vista, no con display:none) para que funcione con teclado y con formControlName.
+//   <label class="pk-switch"><input type="checkbox" formControlName="x">
+//     <span class="pk-switch__track"></span><span class="pk-switch__label">Texto</span></label>
+.pk-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--app-text);
+  font-size: .86rem;
+  font-weight: 600;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  &__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--app-border);
+    transition: background .2s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--card-body-bg, var(--app-bg));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+      transition: transform .2s ease;
+    }
+  }
+
+  input:checked + &__track { background: var(--app-accent); }
+  input:checked + &__track::after { transform: translateX(18px); }
+  input:focus-visible + &__track { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+  input:disabled + &__track { opacity: .5; cursor: not-allowed; }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__track, &__track::after { transition: none; }
+  }
+}

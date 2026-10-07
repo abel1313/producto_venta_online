@@ -17,6 +17,80 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-07 — Datos legales: de dónde sale cada campo
+**Dónde:** `admin/config-negocio` (recuadro `.cn-legal-origen` y un `.cn-hint` por campo)
+**Tipo:** e2e (captura día/noche, 1360 y 400 px)
+**Debe comprobar:**
+- [ ] Los 6 campos tienen su "De dónde" y "Se ve en"; a 400 px los textos bajan de línea sin scroll lateral
+
+### 2026-10-07 — 🕓 Pendiente en filtros y card, 🔁 desde Pendiente, íconos ⓘ
+**Dónde:** `filtros-pedidos.model.ts` (`PENDIENTE`, campo `ayuda`), `mis-pedidos` (`esPedidoEnLinea`, badge, ⓘ por bloque, `opcionesUnidosConAyuda`), `detalle-pedido` (`esPedidoEnLinea` en el form 🔁), `shared/ayuda-opciones` (nuevo), `entregas-zona` (ⓘ del título)
+**Tipo:** unitario (componente) · e2e
+**Debe comprobar:**
+- [ ] `esPedidoEnLinea`: NORMAL/null + 'Pendiente' (cualquier mayúscula) → true; APARTADO + 'Pendiente' → false; NORMAL + 'Entregado' → false
+- [ ] Filtro guardado con `PENDIENTE` se vuelve a pintar marcado al cargar
+- [ ] `app-ayuda-opciones`: sin `ayuda-contextual` y sin admin → no se pinta; opciones sin `ayuda` no salen; si ninguna tiene, no hay ícono
+- [ ] Popover: abre/cierra con clic, Esc y clic afuera; el clic no alterna el filtro de abajo; a 400 px cabe sin scroll lateral
+- [ ] Form 🔁 de un Pendiente: "Ahora está como 🕓 Pendiente…"; el botón Normal deshabilitado dice "Para cobrarlo completo usa Cobrar en la card"
+
+### 2026-10-07 — Agregar producto: la categoría del modelo se precarga en el artículo
+**Dónde:** `variante/agregar` (`precargarDelModelo` / `quitarPrecargados` con `categoriaPrecargada`), `palabra-clave-autocomplete` (`valorInicial = null` ahora limpia el texto), `IProductoDTO.palabraClave`
+**Tipo:** unitario (componente) · e2e
+**Debe comprobar:**
+- [ ] Modelo con `palabraClave` → `palabraClaveSeleccionada` = esa; el autocomplete muestra su nombre
+- [ ] Modelo sin `palabraClave` → queda `null`
+- [ ] Ya había una categoría elegida a mano → no se pisa
+- [ ] ✕ del modelo (o elegir otro): se quita la precargada solo si nadie la cambió
+- [ ] Autocomplete: `valorInicial` pasa de X a `null` → texto vacío; en Agregar modelo, actualizar artículo, detalle de artículo y Carga de imágenes nada cambia al elegir / limpiar
+- [ ] Al guardar, `palabraClaveId` del payload = el id precargado
+
+### 2026-10-07 — Agregar artículo con código de barras; interruptor y recuadro en Lugares / Entregas por zona
+**Dónde:** `variante/agregar` (resultados y chip con `codigoBarras`), `design-system.scss` (`.pk-switch`), `lugares-entrega/gestion` (interruptor "Recoger en tienda", `.pk-wrap` con `--filtros-panel-bg`), `entregas-zona` (`.ez-wrap` igual)
+**Tipo:** unitario (plantilla) · e2e (captura día/noche, 1360 y 400 px)
+**Debe comprobar:**
+- [ ] Resultado con `codigoBarras` → "NOMBRE · CODIGO"; sin código → solo el nombre
+- [ ] `.pk-switch`: clic y tecla espacio cambian `esRecogerEnTienda`; foco visible con Tab
+- [ ] Recuadro de Lugares y Entregas por zona con fondo `--filtros-panel-bg`; a 400 px sin scroll horizontal
+- [ ] Botón Volver de Entregas por zona alineado con el borde izquierdo del recuadro
+- [ ] Zonas de entrega: recuadro `.pk-explica` (`<details open>`) visible al entrar; `summary` lo cierra/abre; día y noche
+- [ ] Interruptor "Recoger en tienda" prendido → sin Envío/Horas/Día/anillos, nota visible; el body manda esos tres en `null`
+- [ ] Segunda fila de recoger en tienda → Swal con el `mensaje` del back (400)
+- [ ] Zonas de entrega sin select de día; el body manda `diaEntregaSemanal: null` (al editar se borra el viejo)
+- [ ] Entregas por zona: la fecha del viaje no se prellena con `fechaSugerida`
+- [ ] `.pk-wrap` y `.ez-wrap` con `--card-bg` (mismo fondo que Agregar Modelo); la tabla de zonas sigue con su borde
+
+### 2026-10-07 — HOTFIX prod: 🧩 Productos del modelo con el stock disponible real
+**Dónde:** `productos/producto/all/all.component.ts` (`inicializarVariantes`), `variante.model.ts` (`IVarianteDto.habilitado`)
+**Tipo:** unitario (componente con `VarianteService` y `Swal` simulados)
+**Debe comprobar:**
+- [ ] Modelo 3, artículos `[{stock:1,habilitado:'1'},{stock:2,habilitado:'1'}]` → no abre el formulario; Swal "No queda stock para artículos nuevos" con 3 y 3
+- [ ] Artículos deshabilitados (`'0'`) o con stock 0 no cuentan
+- [ ] Modelo 5, artículos con 3 → muestra "Puedes crear: 2"; cantidad 3 → "Puedes crear hasta 2"
+- [ ] Fotos elegidas sin "Misma imagen para todas" → no envía y avisa
+- [ ] Si `getPorProducto` falla → abre con disponible = stock del modelo (valida el back)
+
+### 2026-10-07 — Recuadro de búsqueda y filtros con fondo, configurable desde Personalización
+**Dónde:** `styles.scss` (regla `[class*="-header__content"]` sin `vb-`/`pl-`; tokens `--filtros-panel-bg` y `--filtro-bg` en día y noche), `variante/buscar/buscar.component.scss` y `.html` (`vb-header__content`, pills, subtítulo sin `text-white-50`), `productos/producto/all/all.component.scss` y `.html` (lo mismo con `pl-`), `tema-admin/models/presets-diseno.ts` (los 5 diseños traen las 2 claves)
+**Tipo:** e2e (captura de día y de noche, 1360 y 400 px) · unitario (presets)
+**Debe comprobar:**
+- [ ] Tienda y Catálogo → Modelos, de día: `getComputedStyle(.vb-header__content).backgroundColor` = `rgba(255, 255, 255, 0.7)`; de noche `rgb(28, 30, 44)` (con los valores de fábrica)
+- [ ] Créditos / Abonos, Clientes, Reportes, Gastos: su `*-header__content` sigue `transparent` (no cambió)
+- [ ] El subtítulo de Tienda ("Todos nuestros productos") y de Modelos ("Catálogo de productos") tiene color `--app-text-muted`, no blanco
+- [ ] Casillas, fechas, `$ mín` / `$ máx` y "✕ Limpiar filtros" con `--filtro-bg`; Talla / Color / Marca con `--input-bg` (regla global de selects)
+- [ ] Cambiar `filtros-panel-bg` en Personalización (inline en `body`) cambia el recuadro sin recargar
+- [ ] Cada uno de los 5 `PRESETS_DISENO` tiene `filtros-panel-bg` y `filtro-bg` en `claro` y `oscuro`; los 3 de paleta: de día = `sb-body-bg`, de noche = `form-section-bg` de su paleta
+- [ ] A 400 px el recuadro no provoca scroll horizontal (`scrollWidth` = ancho de la ventana)
+
+### 2026-10-07 — Encabezados de seguridad en el nginx de la tienda
+**Dónde:** `default.conf` (las dos `location`: archivos y `/`)
+**Tipo:** e2e contra QA (o `curl -sI`)
+**Debe comprobar:**
+- [ ] `/`, una ruta de Angular (`/tienda/buscar`) y un `.js` responden 200 y traen `X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), geolocation=(self), microphone=()`, `Strict-Transport-Security: max-age=31536000`
+- [ ] `Server: nginx` sin versión
+- [ ] Los `.js` siguen con `Cache-Control: public, max-age=31536000, immutable` y `/` con `no-cache`
+- [ ] Escanear código de barras (cámara) y "📡 Usar mi ubicación" siguen pidiendo permiso y funcionan
+- [ ] Una página de otro dominio con `<iframe src="https://qa.shop…">` no la muestra
+
 ### 2026-10-07 — Datos legales: pie de página, Términos, Aviso de privacidad y Configuración
 **Dónde:** `legal/datos-legales.service.ts`, `AppComponent` (pie), `TerminosComponent`, `PrivacidadComponent`, `ConfigNegocioComponent` (`guardarDatosLegales`), `loading.interceptor.ts`
 **Tipo:** unitario (servicio y componentes con HttpTestingController) · e2e

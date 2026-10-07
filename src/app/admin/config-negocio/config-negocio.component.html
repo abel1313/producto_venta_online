@@ -206,8 +206,19 @@
         <p class="cn-section__hint">
           La ley pide que el cliente vea quién vende, el domicilio, el teléfono y un correo
           <strong>antes de comprar</strong>. Se muestran en el pie de página de la tienda, en Términos,
-          en el Aviso de privacidad y en el ticket. Usa los mismos datos de tu constancia del SAT.
+          en el Aviso de privacidad y en el ticket.
         </p>
+        <!-- De dónde sale cada dato (pedido del dueño 2026-10-07: "explica de dónde sale cada campo
+             para no poner cualquiera"). Si cambia el trámite del SAT, revisar este texto con
+             LEGAL_PLAN_DE_ACCION.md punto 1. -->
+        <div class="cn-legal-origen">
+          <p><strong>📄 Antes de llenar, ten a la mano tu Constancia de Situación Fiscal</strong> (la "constancia del SAT").
+            Se descarga gratis en <strong>sat.gob.mx → Genera tu Constancia de Situación Fiscal</strong> o en la app
+            <strong>SAT Móvil</strong>, con tu RFC y contraseña. De ahí salen el nombre y el RFC.</p>
+          <p>⚠️ <strong>El domicilio no lo copies de la constancia que tienes hoy</strong>: esa trae el domicilio de tu
+            patrón (tu alta de hoy en el SAT es por sueldos y salarios). Va el domicilio de tu negocio; cuando hagas el cambio de
+            domicilio en el SAT, la constancia nueva debe decir lo mismo que pongas aquí.</p>
+        </div>
         <p class="cn-legal-aviso" *ngIf="datosLegalesCargados && faltanDatosLegales.length">
           ⚠️ Falta: {{ faltanDatosLegales.join(', ') }}
         </p>
@@ -217,6 +228,10 @@
             <label class="cn-label" for="dl-nombre">Nombre del responsable (como en tu constancia)</label>
             <input id="dl-nombre" class="cn-input" formControlName="nombreResponsable" maxlength="150"
                    placeholder="Ej. Ana Pérez López">
+            <small class="cn-hint">📄 <b>De dónde:</b> constancia del SAT, recuadro "Datos de identificación del
+              contribuyente": Nombre(s), Primer apellido y Segundo apellido, en ese orden y sin abreviar (es el mismo
+              de tu INE). Si algún día vendes como empresa, va la "Denominación o razón social".
+              <b>Se ve en:</b> pie de página, Términos, Aviso de privacidad y ticket.</small>
           </div>
           <div class="cn-field">
             <label class="cn-label" for="dl-rfc">RFC</label>
@@ -224,24 +239,41 @@
             <small class="cn-error" *ngIf="datosLegalesForm.get('rfc')?.invalid && datosLegalesForm.get('rfc')?.touched">
               RFC de 13 caracteres (persona física) o 12 (empresa).
             </small>
+            <small class="cn-hint">📄 <b>De dónde:</b> constancia del SAT, arriba donde dice "RFC" (también viene en la
+              cédula con el código QR). Es el mismo RFC que ya tienes: al darte de alta en RESICO no cambia.
+              <b>Se ve en:</b> Términos y ticket. Es opcional: si lo dejas vacío no sale (la ley no pide mostrarlo
+              antes de comprar; sí en la factura).</small>
           </div>
           <div class="cn-field">
             <label class="cn-label" for="dl-tel">Teléfono</label>
             <input id="dl-tel" class="cn-input" formControlName="telefono" inputmode="tel" placeholder="10 dígitos">
+            <small class="cn-hint">📄 <b>De dónde:</b> no sale de un documento: es el número donde de verdad contestas a
+              los clientes (puede ser tu WhatsApp del negocio). 10 dígitos, sin +52.
+              <b>Se ve en:</b> pie de página (se puede tocar para llamar), Términos, Aviso de privacidad y ticket.</small>
           </div>
           <div class="cn-field cn-field--ancho">
             <label class="cn-label" for="dl-dom">Domicilio para reclamaciones</label>
             <input id="dl-dom" class="cn-input" formControlName="domicilio" maxlength="300"
                    placeholder="Calle, número, colonia, municipio, estado, C.P.">
+            <small class="cn-hint">📄 <b>De dónde:</b> la dirección física de tu negocio, donde un cliente o PROFECO te
+              puede llevar una queja (tu local). <b>No</b> la de la constancia que tienes hoy (es la de tu patrón).
+              Escríbela en el orden de la constancia: calle, número exterior e interior, colonia, código postal,
+              municipio y estado. Si no quieres publicar tu casa, hace falta una oficina o local, y esa misma
+              dirección se registra en el SAT. <b>Se ve en:</b> pie de página, Términos, Aviso de privacidad y ticket.</small>
           </div>
           <div class="cn-field">
             <label class="cn-label" for="dl-correo">Correo de contacto</label>
             <input id="dl-correo" class="cn-input" type="email" formControlName="correo" maxlength="150">
+            <small class="cn-hint">📄 <b>De dónde:</b> un correo que revises seguido; ahí llegan quejas y las
+              solicitudes de datos personales del Aviso de privacidad. El del negocio es
+              contacto@novedades-jade.com.mx. <b>Se ve en:</b> pie de página, Términos, Aviso de privacidad y ticket.</small>
           </div>
           <div class="cn-field">
             <label class="cn-label" for="dl-horario">Horario de atención (opcional)</label>
             <input id="dl-horario" class="cn-input" formControlName="horarioAtencion" maxlength="150"
                    placeholder="Ej. Lunes a sábado, 10:00 a 19:00">
+            <small class="cn-hint">📄 <b>De dónde:</b> el mismo de "🕐 Horario de atención" de arriba, escrito con
+              palabras (días y horas). <b>Se ve en:</b> pie de página y Términos.</small>
           </div>
         </form>
 

@@ -118,6 +118,12 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   readonly opcionesDinero  = OPCIONES_DINERO;
   readonly opcionesEntrega = OPCIONES_ENTREGA;
   readonly opcionesModo    = OPCIONES_MODO;
+  /** Para el ⓘ de "Unidos y otros": los dos atajos sueltos también se explican. */
+  readonly opcionesUnidosConAyuda = [
+    ...OPCIONES_UNIDOS,
+    { texto: '💐 Ramos de flores', ayuda: 'Solo los pedidos de Flores eternas (ramos).' },
+    { texto: '🏷️ Con promoción',   ayuda: 'Solo los pedidos que llevan alguna promoción.' }
+  ];
   readonly opcionesUnidos  = OPCIONES_UNIDOS;
   readonly opcionesOrden   = OPCIONES_ORDEN;
 
@@ -1370,6 +1376,15 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     }
     const icono = item.pedido.estado_pedido === 'Entregado' ? 'pi-check-circle' : 'pi-clock';
     return { icono, texto: item.pedido.estado_pedido };
+  }
+
+  /**
+   * El pedido que el cliente hizo desde su cuenta y nadie ha cobrado ni apartado: contado
+   * (`NORMAL`) con estado 'Pendiente'. Es la forma de cobro "🕓 Pendiente" de los filtros (2026-10-07).
+   */
+  esPedidoEnLinea(item: IPedidoGenerico): boolean {
+    const tp = item.pedido.tipoPedido ?? 'NORMAL';
+    return tp === 'NORMAL' && (item.pedido.estado_pedido ?? '').toLowerCase() === 'pendiente';
   }
 
   // El back guarda 'cancelado' en minúscula; comparar contra 'Cancelado' nunca coincidía, así

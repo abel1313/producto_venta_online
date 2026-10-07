@@ -132,6 +132,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.quitarPrecargados();
     this.precargarDelModelo(p);
     this.cargarStockDisponible();
   }
@@ -139,8 +140,8 @@ export class AgregarComponent implements OnInit, OnDestroy {
   /**
    * El artículo nace con los datos que comparte con su modelo, a la vista y editables: antes el
    * back los copiaba en silencio si se dejaban vacíos, pero el formulario salía en blanco y había
-   * que volver a escribirlos. Solo llena lo vacío: no pisa lo que ya se escribió. La categoría la
-   * hereda el back (esta búsqueda no la trae).
+   * que volver a escribirlos. Solo llena lo vacío: no pisa lo que ya se escribió. La categoría
+   * también se precarga (antes salía vacía aunque el modelo la tuviera).
    */
   private precargarDelModelo(p: IProductoDTO): void {
     const delModelo: Record<string, string | null | undefined> = {
@@ -157,7 +158,15 @@ export class AgregarComponent implements OnInit, OnDestroy {
         this.precargados[campo] = valor;
       }
     }
+    this.categoriaPrecargada = null;
+    if (!this.palabraClaveSeleccionada && p.palabraClave) {
+      this.palabraClaveSeleccionada = { id: p.palabraClave.id, nombre: p.palabraClave.nombre };
+      this.categoriaPrecargada = this.palabraClaveSeleccionada;
+    }
   }
+
+  /** La categoría que se puso del modelo; al cambiar de modelo se quita si nadie la cambió. */
+  private categoriaPrecargada: IPalabraClave | null = null;
 
   /** Lo que se precargó del modelo; al cambiar de modelo se borra lo que siga igual. */
   private precargados: Record<string, string> = {};
@@ -168,6 +177,10 @@ export class AgregarComponent implements OnInit, OnDestroy {
       if (control && control.value === valor) control.setValue('');
     }
     this.precargados = {};
+    if (this.categoriaPrecargada && this.palabraClaveSeleccionada === this.categoriaPrecargada) {
+      this.palabraClaveSeleccionada = null;
+    }
+    this.categoriaPrecargada = null;
   }
 
   limpiarProducto(): void {

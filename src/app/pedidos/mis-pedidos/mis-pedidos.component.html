@@ -42,7 +42,7 @@
   <div id="mp-filtros-panel" class="mp-filtros" *ngIf="isAdminUser && filtrosAbiertos">
 
     <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesForma)">
-      <h4 class="mp-filtros__titulo">Forma de cobro</h4>
+      <h4 class="mp-filtros__titulo">Forma de cobro<app-ayuda-opciones titulo="Forma de cobro" [opciones]="opcionesForma"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <ng-container *ngFor="let o of opcionesForma">
           <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
@@ -53,7 +53,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesPago)">
-      <h4 class="mp-filtros__titulo">Pago</h4>
+      <h4 class="mp-filtros__titulo">Pago<app-ayuda-opciones titulo="Pago" [opciones]="opcionesPago"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <ng-container *ngFor="let o of opcionesPago">
           <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
@@ -64,7 +64,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesEntregaEstado)">
-      <h4 class="mp-filtros__titulo">Entrega <small>(con Pago: "Pagado" + "Falta entregar")</small></h4>
+      <h4 class="mp-filtros__titulo">Entrega <small>(con Pago: "Pagado" + "Falta entregar")</small><app-ayuda-opciones titulo="Entrega" [opciones]="opcionesEntregaEstado"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <ng-container *ngFor="let o of opcionesEntregaEstado">
           <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
@@ -75,7 +75,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-dinero')">
-      <h4 class="mp-filtros__titulo">Dinero <small>(Apartado e Ir pagando)</small></h4>
+      <h4 class="mp-filtros__titulo">Dinero <small>(Apartado e Ir pagando)</small><app-ayuda-opciones titulo="Dinero" [opciones]="opcionesDinero"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesDinero"
                 [class.tipo-filtro-btn--active]="estaMarcado('dinero', o.valor)"
@@ -84,7 +84,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-fecha-entrega')">
-      <h4 class="mp-filtros__titulo">Fecha de entrega <small>(los que faltan por entregar)</small></h4>
+      <h4 class="mp-filtros__titulo">Fecha de entrega <small>(los que faltan por entregar)</small><app-ayuda-opciones titulo="Fecha de entrega" [opciones]="opcionesEntrega"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesEntrega"
                 [class.tipo-filtro-btn--active]="filtros.entrega === o.valor"
@@ -93,7 +93,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-lugar')">
-      <h4 class="mp-filtros__titulo">Dónde se entrega</h4>
+      <h4 class="mp-filtros__titulo">Dónde se entrega<app-ayuda-opciones titulo="Dónde se entrega" [opciones]="opcionesModo"></app-ayuda-opciones></h4>
       <div class="mp-filtros__fila">
         <div class="lugar-filtro-wrap">
           <div class="lugar-filtro-input-wrap">
@@ -122,7 +122,7 @@
     </section>
 
     <section class="mp-filtros__bloque" *ngIf="puedeFiltro('filtro-unidos-otros')">
-      <h4 class="mp-filtros__titulo">Unidos y otros</h4>
+      <h4 class="mp-filtros__titulo">Unidos y otros<app-ayuda-opciones titulo="Unidos y otros" [opciones]="opcionesUnidosConAyuda"></app-ayuda-opciones></h4>
       <div class="tipo-filtro-wrap">
         <button type="button" class="tipo-filtro-btn" *ngFor="let o of opcionesUnidos"
                 [class.tipo-filtro-btn--active]="filtros.unidos === o.valor"
@@ -203,6 +203,10 @@
             <span class="tipo-badge tipo-badge--grupo" *ngIf="item.pedido.grupo as g"
                   [title]="'Unido con los pedidos ' + numerosDe(g.otrosPedidos)">
               🔗 {{ g.otrosPedidos.length + 1 }} pedidos
+            </span>
+            <span class="tipo-badge tipo-badge--pendiente" *ngIf="esPedidoEnLinea(item)"
+                  title="Lo pidió el cliente desde su cuenta y nadie lo ha cobrado ni apartado. Si te pide que se lo apartes, ábrelo y usa 🔁 Cambiar forma de cobro.">
+              🕓 Pendiente
             </span>
             <span class="tipo-badge tipo-badge--apartado"
                   *ngIf="item.pedido.tipoPedido === 'APARTADO'">

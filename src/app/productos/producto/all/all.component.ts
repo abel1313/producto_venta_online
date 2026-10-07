@@ -676,12 +676,37 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   async inicializarVariantes(producto: IProductoDTO): Promise<void> {
+    // El back descuenta el stock que ya tienen los artículos habilitados del modelo; aquí se hace
+    // la misma cuenta para no ofrecer más de lo que se puede crear. Si la consulta falla, el back
+    // valida igual.
+    let enArticulos = 0;
+    try {
+      const articulos = await this.varianteService.getPorProducto(producto.idProducto).toPromise();
+      enArticulos = (articulos ?? [])
+        .filter(a => a.habilitado === '1' && a.stock > 0)
+        .reduce((total, a) => total + a.stock, 0);
+    } catch { /* sin el dato, valida el back */ }
+    const disponible = Math.max((producto.stock ?? 0) - enArticulos, 0);
+
+    if (disponible < 1) {
+      await Swal.fire({
+        icon: 'info',
+        title: 'No queda stock para artículos nuevos',
+        html: `El modelo tiene <b>${producto.stock}</b> y sus artículos ya tienen <b>${enArticulos}</b>.<br><br>`
+          + `Sube el stock del modelo (✏️ Actualizar) o quítale stock a un artículo.<br><br>`
+          + `<small>Si en la tienda ves menos artículos, búscalos con el filtro <b>Sin imágenes</b>: `
+          + `los que no tienen foto no salen en la tienda, pero sí ocupan stock.</small>`
+      });
+      return;
+    }
+
     const { value: formValues } = await Swal.fire({
       title: `Inicializar variantes`,
       html: `
-        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b> — Stock disponible: <b>${producto.stock}</b></p>
+        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b><br>
+          Stock del modelo: <b>${producto.stock}</b> · En sus artículos: <b>${enArticulos}</b> · Puedes crear: <b>${disponible}</b></p>
         <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de variantes:</label>
-        <input id="swal-cantidad" type="number" min="1" max="${producto.stock}" value="1"
+        <input id="swal-cantidad" type="number" min="1" max="${disponible}" value="1"
           class="swal2-input" style="margin:0 0 12px;" />
         <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
           <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
@@ -689,6 +714,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         </label>
         <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
         <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
+        <p style="margin:8px 0 0;font-size:0.8rem;color:#666;text-align:left;">Un artículo sin foto no sale en la tienda.</p>
       `,
       confirmButtonText: 'Crear variantes',
       cancelButtonText: 'Cancelar',
@@ -696,12 +722,15 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       preConfirm: () => {
         const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
         if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
-        if (cantidad > producto.stock) { Swal.showValidationMessage(`El stock máximo es ${producto.stock}`); return false; }
-        return {
-          cantidadVariantes: cantidad,
-          imagenParaTodas: (document.getElementById('swal-para-todas') as HTMLInputElement).checked,
-          files: (document.getElementById('swal-imagenes') as HTMLInputElement).files
-        };
+        if (cantidad > disponible) { Swal.showValidationMessage(`Puedes crear hasta ${disponible}`); return false; }
+        const paraTodas = (document.getElementById('swal-para-todas') as HTMLInputElement).checked;
+        const files = (document.getElementById('swal-imagenes') as HTMLInputElement).files;
+        // El back solo usa las fotos con esta casilla marcada; sin ella las descartaba sin avisar.
+        if (!paraTodas && files && files.length > 0) {
+          Swal.showValidationMessage('Para usar las fotos marca "Misma imagen para todas las variantes"');
+          return false;
+        }
+        return { cantidadVariantes: cantidad, imagenParaTodas: paraTodas, files };
       }
     });
 

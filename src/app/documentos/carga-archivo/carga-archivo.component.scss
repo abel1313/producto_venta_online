@@ -15,7 +15,7 @@ $t:  all 0.22s ease;
 // ── Card ───────────────────────────────────────────────────────────
 .ca-card {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--form-ancho, 820px);
   background: var(--card-bg);
   border-radius: var(--form-card-radius, 28px);
   overflow: hidden;

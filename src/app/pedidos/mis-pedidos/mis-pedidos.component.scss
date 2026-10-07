@@ -70,6 +70,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pi { font-size: 0.85rem; }
+
 }
 
 // ── Grupo buscador + su filtro asociado ─────────────────────────────────────
@@ -492,9 +493,9 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   // resto de las cards de la app. El header/strip/borde ahora son SIEMPRE los mismos (compartidos
   // vía .pk-card__header) -- el estado se sigue viendo, pero solo en el badge de .estado-badge,
   // con los tokens semánticos compartidos.
-  &.estado-entregado .estado-badge { background: var(--pk-success); }
-  &.estado-pendiente .estado-badge { background: var(--pk-warning); }
-  &.estado-cancelado .estado-badge { background: var(--pk-danger); }
+  // Desde 2026-10-06 la card trae DOS etiquetas (pago y entrega) y cada una lleva su propio
+  // color con .estado-badge--ok / --falta (verde lo hecho, rojo lo que falta). El color ya no
+  // sale del estado de la card entera: pintaba las dos etiquetas igual.
 }
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
@@ -575,6 +576,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 
   .pi { font-size: 0.85rem; }
+
+  // Pago y entrega (2026-10-06): verde lo hecho, rojo lo que falta. :not(#_) le gana a la regla
+  // global de los headers de card, que pinta todo su texto con --card-header-text.
+  &--ok:not(#_)    { background: var(--pk-success) !important; color: var(--pk-ink) !important; }
+  &--falta:not(#_) { background: var(--pk-danger) !important;  color: var(--pk-ink) !important; }
+  &--ok:not(#_) .pi, &--falta:not(#_) .pi { color: var(--pk-ink) !important; }
 }
 
 // ── Cuerpo ──────────────────────────────────────────────────────────────────
@@ -712,6 +719,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-cobrar {
+  background: var(--pk-success-soft);
+  color: var(--pk-success-to);
+  &:not(:disabled):hover { filter: brightness(0.94); }
+}
+
+.btn-entregar {
   background: var(--pk-success-soft);
   color: var(--pk-success-to);
   &:not(:disabled):hover { filter: brightness(0.94); }

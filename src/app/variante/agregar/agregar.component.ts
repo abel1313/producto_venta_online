@@ -5,6 +5,7 @@ import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteRequest } from '../models/variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
@@ -86,8 +87,15 @@ export class AgregarComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly varianteService: VarianteService,
-    private readonly productoService: ProductoService
+    private readonly productoService: ProductoService,
+    private readonly authService: AuthService
   ) {}
+
+  /** Mismo permiso que actualizar el modelo (el back lo vuelve a revisar). */
+  get puedeAjustarStockModelo(): boolean {
+    return this.authService.isAdminService
+      || ['productos/buscar', 'productos/agregar', 'tienda/venta'].some(r => this.authService.tieneEscritura(r));
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -169,6 +177,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productos = [];
     this.stockDisponible = null;
     this.errorStock = false;
+    this.ajusteStockModelo = 0;
   }
 
   // ── Stock disponible del modelo ────────────────────────────────────
@@ -199,10 +208,34 @@ export class AgregarComponent implements OnInit, OnDestroy {
     return base + this.variantesExtras.reduce((t, e) => t + (Number(e.form.value?.stock) || 0), 0);
   }
 
+  /**
+   * Agregar (+) o quitar (-) stock al modelo en el mismo guardado (2026-10-06, decisión del dueño:
+   * "el stock total bloqueado y otro campo para agregar o quitar"). Se manda en el primer artículo;
+   * el back lo aplica en la misma transacción. 0 = no se toca el modelo.
+   */
+  ajusteStockModelo = 0;
+
+  /** Cómo quedaría el modelo con el ajuste. */
+  get stockModeloQuedaria(): number | null {
+    return this.stockDisponible ? this.stockDisponible.stockTotal + (Number(this.ajusteStockModelo) || 0) : null;
+  }
+
+  /** Lo libre contando el ajuste (el back calcula `disponible`; aquí solo se le suma lo que se agrega). */
+  get disponibleConAjuste(): number | null {
+    return this.stockDisponible ? this.stockDisponible.disponible + (Number(this.ajusteStockModelo) || 0) : null;
+  }
+
+  /** Quitar no puede dejar al modelo con menos de lo que ya está repartido. */
+  get ajusteInvalido(): boolean {
+    const sd = this.stockDisponible;
+    return !!sd && (Number(this.ajusteStockModelo) || 0) < 0
+      && sd.stockTotal + Number(this.ajusteStockModelo) < sd.enVariantes;
+  }
+
   /** Se pasó de lo que queda libre. El back lo rechaza igual; esto avisa antes de escribir. */
   get seEstaPasandoDeStock(): boolean {
-    return this.stockDisponible != null
-        && this.stockEnEstaPantalla > this.stockDisponible.disponible;
+    const libre = this.disponibleConAjuste;
+    return libre != null && this.stockEnEstaPantalla > libre;
   }
 
   // ── Modal tallas numéricas ─────────────────────────────────────────
@@ -525,6 +558,11 @@ export class AgregarComponent implements OnInit, OnDestroy {
       Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
       return;
     }
+    if (this.ajusteInvalido) {
+      Swal.fire({ icon: 'warning', title: 'Revisa el stock del modelo',
+        text: `No se puede dejar el modelo en ${this.stockModeloQuedaria}: ya tiene ${this.stockDisponible?.enVariantes} repartidos en sus artículos.` });
+      return;
+    }
 
     const incluirBase = this.baseDescribeAlgo;
 
@@ -568,6 +606,12 @@ export class AgregarComponent implements OnInit, OnDestroy {
       payloads[0] = { ...payloads[0], listImagenes: this.imagenesCargadas };
     }
 
+    // El ajuste de stock del modelo va una sola vez (en el primero): el back toma el primero que llega.
+    const ajuste = Number(this.ajusteStockModelo) || 0;
+    if (ajuste !== 0 && payloads.length > 0) {
+      payloads[0] = { ...payloads[0], ajusteStockModelo: ajuste };
+    }
+
     this.varianteService.save(payloads).subscribe({
       next: () => this.onExito(),
       error: (err) => {
@@ -596,6 +640,9 @@ export class AgregarComponent implements OnInit, OnDestroy {
       showConfirmButton: false
     });
     this.resetForm();
+    // Si se le movió stock al modelo, el indicador tiene que mostrar ya el número nuevo.
+    this.ajusteStockModelo = 0;
+    this.cargarStockDisponible();
   }
 
   private resetForm(): void {

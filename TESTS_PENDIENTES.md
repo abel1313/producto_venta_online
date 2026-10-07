@@ -17,6 +17,60 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-07 — Card de pedido: Pagado / Falta pagar y Entregado / Falta entregar, 📦 Entregar y ↺
+**Dónde:** `pedidos/entrega/entrega.ts` (`etiquetaPago`, `etiquetaEntrega`, `preguntarSiSeLoLlevo`, `preguntarYEntregar`), `MisPedidosComponent` (`pagoDeCard`, `entregadoDeCard`, `puedeEntregar`, `entregar`, `regresarEntrega`), `PedidosService.entregar/regresarEntrega`
+**Tipo:** unitario (funciones y componente con HttpTestingController) · e2e
+**Debe comprobar:**
+- [ ] Contado cobrado + entregado → "✅ Pagado" verde y "🤝 Entregado" verde; Apartado abierto → "Falta pagar" rojo y "Falta entregar" rojo
+- [ ] Cancelado → solo "Cancelado", sin etiqueta de entrega ni botón 📦
+- [ ] Grupo: usa `grupo.entregadoGrupo`, no el `entregado` del titular
+- [ ] 📦 Entregar sale solo con la acción `entregar`, si falta entregar y (pagado o Ir pagando); ↺ solo con `regresar-entrega` y entregado
+- [ ] 📦 → `POST /v1/pedidos/{id}/entrega`; 400 → Swal con el `mensaje` del back; 200 → la card se recarga en Entregado
+- [ ] ↺ pide confirmación y manda `DELETE`; "Cancelar" en la confirmación no llama al back
+- [ ] `preguntarSiSeLoLlevo`: "Sí" → true; "Todavía no" o cerrar con Esc → false (queda Falta entregar con 📦 en la card); clic fuera no la cierra
+
+### 2026-10-07 — "¿Ya se lo llevó?" al terminar de pagar o al vender
+**Dónde:** `DetallePedidoComponent` (liquidar abono), `GrupoPedidoComponent` (grupo pagado), `AbonosComponent` (Créditos / Abonos), `MisPedidosComponent` (`alCobrarCredito`, `confirmarCobro`, `confirmarCobroGrupo`), `VentaDirectaComponent` (manda `entregado`), `VentaVarianteComponent` (Ir pagando)
+**Tipo:** unitario (componente) · e2e
+**Debe comprobar:**
+- [ ] Abono que liquida un Apartado → pregunta; "Sí" → `POST …/entrega`; "Todavía no" → no llama
+- [ ] Abono que **no** liquida → no pregunta
+- [ ] Liquidar un pedido que ya está entregado (`detalle.entregado === true`) → no pregunta
+- [ ] Cobro de contado desde la card → pregunta y la card se **recarga** (ya no desaparece de la lista)
+- [ ] Grupo pagado completo → pregunta una vez y entrega a todos
+- [ ] Venta directa contado: pregunta **antes** de guardar y manda `entregado: true|false`; Apartado no pregunta
+- [ ] Venta Ir pagando (venta por artículo) → pregunta después de crear el pedido
+
+### 2026-10-07 — ⚙️ Filtros de Mis pedidos: bloque Pago y bloque Entrega
+**Dónde:** `filtros-pedidos.model.ts` (`OPCIONES_ESTADO_PAGO`, `OPCIONES_ESTADO_ENTREGA`, `ESTADOS_ANTERIORES`), `MisPedidosComponent` (panel de filtros, carga de filtros guardados)
+**Tipo:** unitario
+**Debe comprobar:**
+- [ ] Marcar "Pagado" + "Falta entregar" → `estado=PAGADO&estado=FALTA_ENTREGAR`
+- [ ] Filtro guardado viejo con `PENDIENTE` o `POR_COBRAR` → se carga como "Falta pagar" (una sola vez, sin duplicar)
+- [ ] Cada opción se esconde sin su acción (`filtro-por-cobrar`, `filtro-pagados`, `filtro-cancelados`, `filtro-pendientes`, `filtro-entregados`)
+
+### 2026-10-07 — Agregar artículo: stock total del modelo bloqueado + agregar / quitar stock
+**Dónde:** `AgregarComponent` de artículo (`ajusteStockModelo`, `stockModeloQuedaria`, `disponibleConAjuste`, `ajusteInvalido`, `puedeAjustarStockModelo`)
+**Tipo:** unitario (componente)
+**Debe comprobar:**
+- [ ] Modelo 10, repartido 10, ajuste +3 → "Repartido: 10 · Libre: 3 · El modelo quedaría en 13"; artículo con 3 se deja guardar
+- [ ] Ajuste −3 con modelo 10 y repartido 8 → "No se puede dejar el modelo en 7: ya tiene 8 repartidos." y Guardar no envía
+- [ ] Sin permiso de editar modelos → el campo de ajuste no sale (solo se ve el stock bloqueado)
+- [ ] El ajuste viaja **solo** en el primer detalle (`ajusteStockModelo`) y después de guardar se recarga el stock del modelo
+- [ ] El campo "Stock total del modelo" no se puede editar
+
+### 2026-10-07 — Homologación de pantallas: ancho, encabezados, selects, tablas y "Volver"
+**Dónde:** `styles.scss` (regla de encabezados por token, `--form-ancho`, `--lista-ancho`, `select` global), `design-system.scss` (`.pk-tabla`), Clientes, Palabras clave (tablas), Gastos, Cambiar contraseña, `app-boton-volver` en todas las pantallas
+**Tipo:** e2e (captura de día y de noche)
+**Debe comprobar:**
+- [ ] Formularios (Agregar modelo, Nuevo producto, Carga rápida, Lugares, Entregas por zona, Cinta, Hashtags, Configuración, Diagnóstico, Reconciliación, Caché, Agregar mi compra, Mi perfil, Mis datos, Cambiar contraseña, Publicar en redes) miden 820px y quedan centrados
+- [ ] Encabezado de cada card con el color de **Personalización** (`--card-header-bg`), sin "un div dentro de otro div"
+- [ ] Las etiquetas y botones dentro del encabezado conservan su color
+- [ ] Clientes y Palabras clave: tabla diseño A de día y colores Jade oscuros de noche
+- [ ] Todos los selects iguales (alto, borde, flecha) de día y de noche
+- [ ] Todos los botones de regresar dicen "Volver"; Cambiar contraseña no lo tiene y el formulario queda arriba
+- [ ] Gastos sin permiso de agregar → no dice "agrega uno"
+
 ### 2026-10-06 — HOTFIX prod: Mis datos se quedaba con el spinner encima
 **Dónde:** `MisDatosComponent.cargarCliente()` / `aFechaIso()` y `SelectorFechaComponent.writeValue()`
 **Tipo:** unitario (componente)

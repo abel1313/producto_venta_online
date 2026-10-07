@@ -3,7 +3,7 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .pk-wrap {
-  max-width: 560px;
+  max-width: var(--form-ancho, 820px);
   margin: 24px auto;
   display: flex;
   flex-direction: column;
@@ -79,3 +79,7 @@ $t:  all 0.2s ease;
 
   &__info { font-size: .82rem; color: var(--app-text-muted); font-weight: 600; }
 }
+
+// Fila que se está editando, dentro de la tabla homologada.
+.pk-tabla tr.pk-item--editando td { background: var(--app-tint); }
+.pk-tabla-card__toolbar.pk-form { margin: 0; }

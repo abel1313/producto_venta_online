@@ -3,7 +3,7 @@
 // funciona solo. Los pocos casos que necesitan matiz por tema van al final.
 
 .fb-wrap {
-  max-width: 820px;
+  max-width: var(--form-ancho, 820px);
   margin: 0 auto;
   padding: 24px 16px;
 }

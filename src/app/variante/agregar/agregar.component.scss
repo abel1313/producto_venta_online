@@ -22,7 +22,7 @@ $primary-d: var(--brand-1);
 // ── Card principal ─────────────────────────────────────────────────
 .vf-card {
   width: 100%;
-  max-width: 780px;
+  max-width: var(--form-ancho, 820px);
   background: var(--card-bg);
   backdrop-filter: blur(18px);
   border: 1px solid var(--card-border);
@@ -891,6 +891,21 @@ $primary-d: var(--brand-1);
 
 // ── Stock disponible del modelo (2026-09-22) ────────────────────────────────────
 // Solo variables de tema: sin colores literales los dos modos (día/noche) salen bien solos.
+.vf-stock__fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-bottom: .5rem;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+.vf-stock__campo {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  font-size: .8rem;
+  color: var(--card-text-muted);
+}
+
 .vf-stock {
   margin-top: .6rem;
   padding: .6rem .85rem;

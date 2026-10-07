@@ -9,6 +9,7 @@ import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-producto
 import { PagoService } from 'src/app/pedidos/pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from 'src/app/pedidos/mis-pedidos/models/IPago.model';
 import Swal from 'sweetalert2';
+import { preguntarSiSeLoLlevo } from 'src/app/pedidos/entrega/entrega';
 import { IVarianteResumen } from '../models/variante.model';
 import { VarianteService, IVentaDirectaRequest, IVentaDirectaResponse, IClienteSinRegistro } from '../service/variante.service';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
@@ -744,7 +745,11 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private ejecutarVenta(clienteId: number): void {
+  private async ejecutarVenta(clienteId: number): Promise<void> {
+    // "¿Ya se lo llevó?" (dominio entrega, 2026-10-06): contado e Ir pagando casi siempre sí; un
+    // Apartado nunca (se lleva al pagarlo completo). Si dice que no, queda "Falta entregar".
+    const entregado = this.tipoPedido === 'APARTADO' ? undefined
+      : await preguntarSiSeLoLlevo('Si todavía no, queda como "Falta entregar" y lo marcas en Mis pedidos con 📦 Entregar.');
     this.procesando = true;
 
     // ── Snapshot de artículos y datos de ticket ANTES del POST ────────
@@ -796,7 +801,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       direccionEntrega:  this.direccionEntrega || undefined,
       fechaEntrega:      this.fechaEntrega || undefined,
       lugarEntregaId:    this.lugarEntregaId ?? undefined,
-      urlFacebook:       this.urlFacebook || undefined
+      urlFacebook:       this.urlFacebook || undefined,
+      entregado
     };
 
     if (this.esCredito) {

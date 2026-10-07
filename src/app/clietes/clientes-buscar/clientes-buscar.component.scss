@@ -13,7 +13,7 @@
   box-shadow: 0 2px 12px rgba(0,0,0,.18);
 
   &__content {
-    max-width: 900px;
+    max-width: var(--lista-ancho, 1100px);
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -59,7 +59,7 @@
 }
 
 .cb-body {
-  max-width: 900px;
+  max-width: var(--lista-ancho, 1100px);
   margin: 24px auto;
   padding: 0 16px;
 }
@@ -155,7 +155,7 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 20px 0;
+  padding: 0;
 }
 
 .cb-page-btn {

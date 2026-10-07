@@ -2,7 +2,7 @@
 // Color por variables globales → dark/light automático.
 
 .gca-wrap {
-  max-width: 720px;
+  max-width: var(--form-ancho, 820px);
   margin: 0 auto;
   padding: 24px 16px;
 }

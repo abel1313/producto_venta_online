@@ -52,10 +52,21 @@
       </div>
     </section>
 
-    <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesEstado)">
-      <h4 class="mp-filtros__titulo">Estado</h4>
+    <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesPago)">
+      <h4 class="mp-filtros__titulo">Pago</h4>
       <div class="tipo-filtro-wrap">
-        <ng-container *ngFor="let o of opcionesEstado">
+        <ng-container *ngFor="let o of opcionesPago">
+          <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
+                  [class.tipo-filtro-btn--active]="estaMarcado('estados', o.valor)"
+                  (click)="alternar('estados', o.valor)">{{ o.texto }}</button>
+        </ng-container>
+      </div>
+    </section>
+
+    <section class="mp-filtros__bloque" *ngIf="algunaVisible(opcionesEntregaEstado)">
+      <h4 class="mp-filtros__titulo">Entrega <small>(con Pago: "Pagado" + "Falta entregar")</small></h4>
+      <div class="tipo-filtro-wrap">
+        <ng-container *ngFor="let o of opcionesEntregaEstado">
           <button type="button" class="tipo-filtro-btn" *ngIf="puedeVerOpcion(o)"
                   [class.tipo-filtro-btn--active]="estaMarcado('estados', o.valor)"
                   (click)="alternar('estados', o.valor)">{{ o.texto }}</button>
@@ -201,9 +212,13 @@
                   *ngIf="item.pedido.tipoPedido === 'FIADO'">
               💳 Ir pagando
             </span>
-            <span class="estado-badge">
-              <i class="pi" [ngClass]="estadoBadge(item).icono"></i>
-              {{ estadoBadge(item).texto }}
+            <!-- Pago y entrega son dos cosas (back 2026-10-06): verde lo hecho, rojo lo que falta -->
+            <span class="estado-badge" *ngIf="etiquetaPagoCard(item) as e" [ngClass]="'estado-badge--' + e.clase">
+              <i class="pi" [ngClass]="e.icono"></i> {{ e.texto }}
+            </span>
+            <span class="estado-badge" *ngIf="pagoDeCard(item) !== 'CANCELADO' && etiquetaEntregaCard(item) as e"
+                  [ngClass]="'estado-badge--' + e.clase">
+              <i class="pi" [ngClass]="e.icono"></i> {{ e.texto }}
             </span>
           </div>
         </div>
@@ -327,6 +342,14 @@
                   [title]="pedidoYaCobrado(item) ? 'Este pedido ya está pagado' : ''"
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> {{ textoBotonCobro(item) }}
+          </button>
+          <button class="btn-card btn-entregar" *ngIf="puedeEntregar(item)"
+                  title="El cliente ya se lo llevó" (click)="entregar(item)">
+            📦 Entregar
+          </button>
+          <button class="btn-card btn-icon-only" *ngIf="puedeRegresarEntrega(item)"
+                  title='Regresar a "Falta entregar" (si se marcó por error)' (click)="regresarEntrega(item)">
+            <i class="pi pi-undo"></i>
           </button>
           <button class="btn-card btn-ticket btn-icon-only"
                   *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'imprimir-ticket')"

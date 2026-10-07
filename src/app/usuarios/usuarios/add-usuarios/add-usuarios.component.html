@@ -40,7 +40,7 @@
 
       <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio
            público, no viene de una pantalla admin a la que volver. -->
-      <app-boton-volver *ngIf="esActualizar" etiqueta="Volver a usuarios" fallback="/usuarios/buscar"></app-boton-volver>
+      <app-boton-volver *ngIf="esActualizar" fallback="/usuarios/buscar"></app-boton-volver>
 
       <div class="brand">
         <div class="brand-icon">

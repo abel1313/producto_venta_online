@@ -7,6 +7,7 @@ tiene que comprobar**. Lo más nuevo va arriba.
 Formato de cada entrada:
 
 ```
+
 ### AAAA-MM-DD — Qué se hizo
 **Dónde:** componente / servicio / método
 **Tipo:** unitario (componente o servicio con HttpTestingController) · e2e (Playwright contra QA)
@@ -15,6 +16,17 @@ Formato de cada entrada:
 ```
 
 ---
+
+### 2026-10-06 — HOTFIX prod: Mis datos se quedaba con el spinner encima
+**Dónde:** `MisDatosComponent.cargarCliente()` / `aFechaIso()` y `SelectorFechaComponent.writeValue()`
+**Tipo:** unitario (componente)
+**Contexto:** Mis datos le pasaba un `Date` al campo de fecha, que solo entiende texto `yyyy-MM-dd`; el campo tronaba (`iso.split is not a function`) en cada ciclo y el spinner global nunca se quitaba.
+**Debe comprobar:**
+- [ ] El back manda `fechaNacimiento: "1990-05-12"` → el campo muestra "12 de mayo de 1990" y el spinner se quita
+- [ ] `fechaNacimiento: null` → campo vacío, sin error
+- [ ] `writeValue(new Date(1990, 4, 12))` → `valor = "1990-05-12"`; `writeValue(new Date("x"))` → `valor = ""`
+- [ ] Guardar sin tocar la fecha → manda la misma fecha (no un día antes)
+
 
 ### 2026-10-06 — Cada bloque de ⚙️ Filtros de Mis pedidos pide su acción de Gestión de roles
 **Dónde:** `MisPedidosComponent.puedeFiltro()`, `algunaVisible()`, `puedeVerOpcion()`, `aplicarFiltrosGuardados()` · `models/filtros-pedidos.model.ts` (campo `accion` de cada opción) · plantilla del panel

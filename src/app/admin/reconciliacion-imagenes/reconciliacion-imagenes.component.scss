@@ -1,6 +1,6 @@
 $t: all 0.2s ease;
-$accent: #d97706;
-$accent-light: #fef3c7;
+$accent: var(--pk-warning-to);
+$accent-light: var(--pk-warning-soft);
 
 // ── Página ─────────────────────────────────────────────────────────
 .rc-page {
@@ -32,8 +32,8 @@ $accent-light: #fef3c7;
 
   &__header-icon { font-size: 2.2rem; }
 
-  &__title { font-size: 1.35rem; font-weight: 800; color: var(--header-text, #fff); margin: 0; }
-  &__subtitle { font-size: 0.8rem; color: rgba(255,255,255,0.75); margin: 3px 0 0; }
+  &__title { font-size: 1.35rem; font-weight: 800; color: var(--header-text, var(--app-text)); margin: 0; }
+  &__subtitle { font-size: 0.8rem; color: var(--app-text-muted); margin: 3px 0 0; }
 
   &__body {
     padding: 28px;
@@ -156,11 +156,11 @@ $accent-light: #fef3c7;
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, #92400e, #d97706, #f59e0b);
-    color: #fff;
-    box-shadow: 0 4px 16px rgba(217,119,6,0.3);
+    background: linear-gradient(135deg, var(--pk-warning-to), var(--pk-warning-to), var(--pk-warning));
+    color: var(--pk-ink);
+    box-shadow: 0 4px 16px var(--pk-warning-soft);
 
-    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(217,119,6,0.4); }
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px var(--pk-warning-soft); }
     &:active:not(:disabled) { transform: translateY(0); }
   }
 
@@ -174,10 +174,10 @@ $accent-light: #fef3c7;
 
   &--danger {
     background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
-    color: #fff;
-    box-shadow: 0 4px 16px rgba(239,68,68,0.3);
+    color: var(--pk-ink);
+    box-shadow: 0 4px 16px var(--pk-danger-soft);
 
-    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.4); }
+    &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px var(--pk-danger-soft); }
     &:active:not(:disabled) { transform: translateY(0); }
   }
 
@@ -298,6 +298,6 @@ $accent-light: #fef3c7;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .rc-card__title    { color: var(--header-text, #1e293b); }
-  .rc-card__subtitle { color: rgba(0,0,0,0.55); }
+  .rc-card__title    { color: var(--header-text, var(--app-text)); }
+  .rc-card__subtitle { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
 }

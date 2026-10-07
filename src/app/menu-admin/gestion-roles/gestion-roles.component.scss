@@ -12,8 +12,8 @@ $t:  all 0.2s ease;
 }
 
 .pk-header {
-  &__title { font-size: 1.1rem; font-weight: 800; color: var(--app-text, #1f2937); margin: 0; }
-  &__sub   { font-size: .78rem; color: var(--app-text-muted, #9ca3af); }
+  &__title { font-size: 1.1rem; font-weight: 800; color: var(--app-text); margin: 0; }
+  &__sub   { font-size: .78rem; color: var(--app-text-muted, var(--app-text-faint)); }
 }
 
 .pk-link {
@@ -42,7 +42,7 @@ $t:  all 0.2s ease;
   &__title {
     font-size: .85rem;
     font-weight: 700;
-    color: var(--app-text, #374151);
+    color: var(--app-text);
   }
 }
 
@@ -60,8 +60,8 @@ $t:  all 0.2s ease;
 
 .pk-input {
   width: 100%; padding: 10px 14px;
-  border: 1.5px solid var(--card-border, #e5e7eb); border-radius: 10px;
-  font-size: .9rem; color: var(--app-text, #1f2937); outline: none;
+  border: 1.5px solid var(--card-border, var(--app-border)); border-radius: 10px;
+  font-size: .9rem; color: var(--app-text); outline: none;
   transition: $t; box-sizing: border-box;
   &:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb),.12); }
 }
@@ -73,17 +73,17 @@ $t:  all 0.2s ease;
   cursor: pointer; font-weight: 600; font-size: .85rem;
   transition: $t; white-space: nowrap;
 
-  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
+  &--save   { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text);
                &:disabled { opacity: .5; cursor: not-allowed; } }
-  &--cancel { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280);
-               &:hover { background: var(--card-border, #e5e7eb); } }
+  &--cancel { background: var(--form-section-bg); color: var(--app-text-muted);
+               &:hover { background: var(--card-border, var(--form-section-bg)); } }
   &--edit   { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer; }
   &--del    { background: none; border: none; font-size: 1rem; padding: 4px 8px; cursor: pointer;
                &:hover { filter: brightness(0.8); } }
 }
 
 .pk-empty {
-  color: var(--app-text-muted, #9ca3af); font-size: .84rem; text-align: center; padding: 24px 0;
+  color: var(--app-text-muted, var(--app-text-faint)); font-size: .84rem; text-align: center; padding: 24px 0;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 
@@ -103,7 +103,7 @@ $t:  all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1.5px solid var(--card-border, #e5e7eb);
+  border: 1.5px solid var(--card-border, var(--app-border));
   border-radius: 10px;
   padding: 4px;
   transition: $t;
@@ -120,7 +120,7 @@ $t:  all 0.2s ease;
   padding: 8px 10px;
   font-size: .88rem;
   font-weight: 600;
-  color: var(--app-text, #1f2937);
+  color: var(--app-text);
 }
 
 .gm-list__actions {
@@ -132,7 +132,7 @@ $t:  all 0.2s ease;
 // Checklist de pantallas por grupo (columna derecha) -- acordeón, mismo patrón que el navbar
 // (.sb-group): arrancan cerrados, un click en el título expande/colapsa su lista.
 .gr-grupo {
-  border: 1.5px solid var(--card-border, #e5e7eb);
+  border: 1.5px solid var(--card-border, var(--app-border));
   border-radius: 10px;
   overflow: hidden;
   transition: $t;
@@ -150,7 +150,7 @@ $t:  all 0.2s ease;
     cursor: pointer;
     font-size: .8rem;
     font-weight: 700;
-    color: var(--app-text-muted, #6b7280);
+    color: var(--app-text-muted);
     text-transform: uppercase;
     letter-spacing: .03em;
     text-align: left;
@@ -161,7 +161,7 @@ $t:  all 0.2s ease;
   &__chevron {
     font-size: 1rem;
     transition: transform .2s ease;
-    color: var(--app-text-muted, #9ca3af);
+    color: var(--app-text-muted, var(--app-text-faint));
   }
 
   &--abierto &__chevron { transform: rotate(90deg); }
@@ -171,7 +171,7 @@ $t:  all 0.2s ease;
     flex-direction: column;
     gap: 6px;
     padding: 0 14px 12px;
-    border-top: 1px solid var(--table-border, #f0f1f3);
+    border-top: 1px solid var(--table-border, var(--app-border));
     padding-top: 8px;
   }
 }
@@ -187,7 +187,7 @@ $t:  all 0.2s ease;
 
   // Con checks sin guardar, un fondo tenue marca la fila -- no hay que adivinar cuál cambiaste.
   &--pendiente {
-    background: var(--app-accent-soft, rgba(99,102,241,.08));
+    background: var(--app-accent-soft, var(--pk-info-soft));
     padding: 6px 8px;
     margin: 0 -8px;
   }
@@ -204,7 +204,7 @@ $t:  all 0.2s ease;
 
   &__aviso {
     font-size: .74rem;
-    color: var(--app-text-muted, #6b7280);
+    color: var(--app-text-muted);
     font-style: italic;
   }
 }
@@ -229,7 +229,7 @@ $t:  all 0.2s ease;
     gap: 10px;
     padding: 6px 0 8px;
     margin-bottom: 4px;
-    border-bottom: 1px dashed var(--card-border, #d1d5db);
+    border-bottom: 1px dashed var(--card-border, var(--app-border));
   }
 
   &--pantalla { margin: 2px 0 0 26px; font-size: .85rem; }
@@ -241,7 +241,7 @@ $t:  all 0.2s ease;
   gap: 6px;
   margin: 2px 0 4px 26px;
   padding: 6px 10px;
-  border-left: 2px solid var(--card-border, #e5e7eb);
+  border-left: 2px solid var(--card-border, var(--app-border));
 
   &--bloqueado { opacity: .5; }
 }
@@ -256,7 +256,7 @@ $t:  all 0.2s ease;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .04em;
-    color: var(--app-text-muted, #9ca3af);
+    color: var(--app-text-muted, var(--app-text-faint));
   }
 
   &__lista {
@@ -268,7 +268,7 @@ $t:  all 0.2s ease;
 
 .gr-check--accion {
   font-size: .78rem;
-  color: var(--app-text-muted, #6b7280);
+  color: var(--app-text-muted);
 }
 
 // Fila de una acción puntual: su checkbox+etiqueta a la izquierda, el botón ℹ️ aparte a la
@@ -289,7 +289,7 @@ $t:  all 0.2s ease;
   opacity: .65;
   border-radius: 6px;
 
-  &:hover { opacity: 1; background: var(--form-section-bg, rgba(0,0,0,0.05)); }
+  &:hover { opacity: 1; background: var(--form-section-bg); }
 }
 
 .gr-check {
@@ -297,7 +297,7 @@ $t:  all 0.2s ease;
   align-items: center;
   gap: 8px;
   font-size: .88rem;
-  color: var(--app-text, #1f2937);
+  color: var(--app-text);
   cursor: pointer;
   padding: 2px 0;
 
@@ -311,7 +311,7 @@ $t:  all 0.2s ease;
 
   &--escritura {
     font-size: .8rem;
-    color: var(--app-text-muted, #6b7280);
+    color: var(--app-text-muted);
     &:has(input:disabled) { opacity: .45; cursor: not-allowed; }
   }
 
@@ -322,17 +322,17 @@ $t:  all 0.2s ease;
 
 // ── Dark mode ────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .pk-input { color-scheme: dark; color: var(--app-text, #f1f5f9); }
-  .gm-list__label { color: var(--app-text, #f1f5f9); }
-  .gm-col__title { color: var(--app-text, #e5e7eb); }
-  .gr-check { color: var(--app-text, #f1f5f9); }
-  .gr-grupo { border-color: var(--card-border, #374151); }
-  .gr-grupo__titulo { color: var(--app-text-muted, #cbd5e1); }
-  .gr-grupo__lista { border-top-color: var(--card-border, #374151); }
-  .gm-list__item { border-color: var(--card-border, #374151); }
-  .gr-acciones { border-left-color: var(--card-border, #374151); }
+  .pk-input { color-scheme: dark; color: var(--app-text); }
+  .gm-list__label { color: var(--app-text); }
+  .gm-col__title { color: var(--app-text); }
+  .gr-check { color: var(--app-text); }
+  .gr-grupo { border-color: var(--card-border, var(--app-border)); }
+  .gr-grupo__titulo { color: var(--app-text-muted, var(--app-text)); }
+  .gr-grupo__lista { border-top-color: var(--card-border, var(--app-border)); }
+  .gm-list__item { border-color: var(--card-border, var(--app-border)); }
+  .gr-acciones { border-left-color: var(--card-border, var(--app-border)); }
 }
 
 :host-context(body.theme-light) {
-  .pk-input { color-scheme: light; color: var(--app-text, #1f2937); }
+  .pk-input { color-scheme: light; color: var(--app-text); }
 }

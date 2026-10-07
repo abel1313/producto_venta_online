@@ -639,8 +639,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     if (!ok) {
       Swal.fire({
         icon: 'warning', title: 'Sin stock',
-        text: `No hay más unidades disponibles.`,
-        confirmButtonColor: '#3085d6', timer: 2000, showConfirmButton: false
+        text: `No hay más unidades disponibles.`, timer: 2000, showConfirmButton: false
       });
     }
   }
@@ -863,7 +862,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Habilitar de todas formas',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#f59e0b'
+      confirmButtonColor: 'var(--pk-warning-to)'
     }).then(r => r.isConfirmed);
   }
 
@@ -881,7 +880,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, dar de baja',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.dandoDeBajaId = v.id;

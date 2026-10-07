@@ -269,7 +269,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       showCancelButton:    true,
       confirmButtonText:   opts.confirmButtonText,
       cancelButtonText:    'No',
-      confirmButtonColor:  '#ef4444',
+      confirmButtonColor:  'var(--pk-danger)',
       didOpen:    motivoFrag.didOpen,
       preConfirm: motivoFrag.preConfirm
     }).then(result => {

@@ -30,18 +30,18 @@
     box-shadow: 2px 0 16px rgba(0,0,0,0.08);
   }
 
-  .sb-brand-text     { color: var(--sb-text, #12241D); }
+  .sb-brand-text     { color: var(--sb-text, var(--app-text)); }
   /* Pedido 2026-09-02: estos 4 estaban hardcodeados a #5F8375 -- ganaban por especificidad sobre
      la regla base var(--sb-text) de más abajo, así que Personalización nunca los podía tocar en
      modo claro (bug global, en el sidebar de TODAS las pantallas). Usan --app-text-muted (mismo
      tono #5F8375 por defecto) para conservar que se vean "secundarios" frente a --sb-text, pero
      ya reaccionando al diseño elegido. */
-  .sb-subitem        { color: var(--app-text-muted, #5F8375); &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
-  .sb-user-link      { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
+  .sb-subitem        { color: var(--app-text-muted); &:hover { color: var(--brand-1); background: rgba(var(--app-accent-rgb),0.10); } }
+  .sb-user-link      { color: var(--app-text-muted); &:hover { color: var(--sb-text, var(--app-text)); } &--pass { opacity: 0.75; &:hover { opacity: 1; color: var(--brand-1); } } }
   .sb-logout         { color: var(--pk-danger-to); }
-  .sb-username       { color: var(--sb-text, #12241D); }
-  .sb-cart-btn       { color: var(--app-text-muted, #5F8375); &:hover { color: var(--sb-text, #12241D); } }
-  .sb-chevron        { color: var(--app-text-muted, #5F8375); }
+  .sb-username       { color: var(--sb-text, var(--app-text)); }
+  .sb-cart-btn       { color: var(--app-text-muted); &:hover { color: var(--sb-text, var(--app-text)); } }
+  .sb-chevron        { color: var(--app-text-muted); }
 
   .sb-avatar {
     background: var(--brand-1);
@@ -54,15 +54,15 @@
   }
 
   .sidebar.mobile-open {
-    background: var(--sb-bg, rgba(255,255,255,0.99)) !important;
+    background: var(--sb-bg, var(--app-glass-strong)) !important;
   }
 
   .sb-item--test {
-    border-color: rgba(0,0,0,0.12);
+    border-color: color-mix(in srgb, var(--app-text) 12%, transparent);
     &.sb-item--v2 { border-color: var(--pk-warning); color: var(--pk-warning-to); background: var(--pk-warning-soft); }
   }
 
-  .sb-item--theme { border-color: var(--sb-border, #D5E8DD); }
+  .sb-item--theme { border-color: var(--sb-border, var(--app-border)); }
 }
 
 /* ── Hamburger (mobile only) ─────────────────────── */
@@ -147,7 +147,7 @@
 .sb-brand-text {
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--sb-text, #fff);
+  color: var(--sb-text, var(--card-header-text));
   letter-spacing: 0.03em;
   opacity: 0;
   transform: translateX(-6px);
@@ -203,7 +203,7 @@
 
   &.sb-item--active {
     background: var(--sb-bg-active);
-    color: var(--sb-text-active, #fff);
+    color: var(--sb-text-active, var(--card-header-text));
     font-weight: 600;
   }
 }
@@ -270,7 +270,7 @@
   padding: 0.4rem 0.7rem;
   border-radius: 7px;
   text-decoration: none;
-  color: var(--sb-text, #e2e8f0);
+  color: var(--sb-text);
   font-size: 0.79rem;
   font-weight: 400;
   white-space: nowrap;
@@ -289,7 +289,7 @@
 
   &.sb-subitem--active {
     background: var(--sb-bg-active);
-    color: var(--sb-text-active, #fff);
+    color: var(--sb-text-active, var(--card-header-text));
     font-weight: 600;
   }
 }
@@ -297,14 +297,14 @@
 /* ── Theme toggle button ───────────────────────────── */
 .sb-item--theme {
   margin-top: 4px;
-  border: 1px solid var(--sb-border, rgba(255,255,255,0.12));
+  border: 1px solid var(--sb-border);
   border-radius: var(--sb-radius);
 }
 
 /* ── Test toggle button ────────────────────────────── */
 .sb-item--test {
   font-size: 0.79rem;
-  border: 1px dashed rgba(255,255,255,0.12);
+  border: 1px dashed color-mix(in srgb, var(--card-header-text) 12%, transparent);
   margin-top: 4px;
 
   &.sb-item--v2 {
@@ -361,7 +361,7 @@
 
 .sb-badge {
   background: var(--pk-danger);
-  color: #fff;
+  color: var(--pk-ink);
   font-size: 0.62rem;
   font-weight: 700;
   border-radius: 10px;
@@ -384,7 +384,7 @@
   height: 34px;
   border-radius: 50%;
   background: var(--sb-accent);
-  color: var(--app-accent-ink, #fff);
+  color: var(--app-accent-ink, var(--card-header-text));
   font-size: 0.88rem;
   font-weight: 700;
   display: flex;
@@ -410,7 +410,7 @@
   display: block;
   font-size: 0.81rem;
   font-weight: 600;
-  color: var(--sb-text-active, #fff);
+  color: var(--sb-text-active, var(--card-header-text));
   margin-bottom: 3px;
 }
 
@@ -426,10 +426,10 @@
   align-items: center;
   gap: 5px;
   font-size: 0.73rem;
-  color: var(--sb-text, #e2e8f0);
+  color: var(--sb-text);
   text-decoration: none;
   transition: color 0.13s;
-  &:hover { color: var(--sb-text-active, #fff); }
+  &:hover { color: var(--sb-text-active, var(--card-header-text)); }
 
   .pi { font-size: 0.75rem; opacity: 0.7; }
 

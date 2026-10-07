@@ -94,7 +94,6 @@ export class CompartirService {
       cancelButtonText:   '⬇️ Descargar',
       confirmButtonColor: '#25d366',
       denyButtonColor:    '#1877f2',
-      cancelButtonColor:  '#6b7280',
       width: '420px'
     });
 

@@ -20,12 +20,12 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
   }
   &__header-glow {
     position: absolute; width: 260px; height: 260px;
-    background: radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--app-tint) 0%, transparent 70%);
     top: -100px; right: -50px; pointer-events: none;
   }
   &__header-icon { font-size: 2.4rem; z-index: 1; }
-  &__title  { font-size: 1.4rem; font-weight: 800; color: var(--header-text, #fff); margin: 0; z-index: 1; }
-  &__subtitle { font-size: .8rem; color: rgba(255,255,255,.7); margin: 4px 0 0; z-index: 1; }
+  &__title  { font-size: 1.4rem; font-weight: 800; color: var(--header-text, var(--app-text)); margin: 0; z-index: 1; }
+  &__subtitle { font-size: .8rem; color: var(--app-text-muted); margin: 4px 0 0; z-index: 1; }
   &__body { padding: 28px 32px 36px; display: flex; flex-direction: column; gap: 20px;
     @media (max-width: 480px) { padding: 18px 14px 28px; } }
 }
@@ -80,7 +80,7 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
   &__orden {
     position: absolute; top: 8px; left: 8px;
-    background: rgba(0,0,0,.55); color: #fff;
+    background: rgba(0,0,0,.55); color: var(--overlay-text);
     font-size: .7rem; font-weight: 700;
     padding: 2px 8px; border-radius: 20px;
   }
@@ -97,7 +97,7 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
     background: rgba(var(--app-accent-rgb),.55);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity .22s;
-    color: var(--app-accent-ink, #fff); font-size: .85rem; font-weight: 700;
+    color: var(--app-accent-ink, var(--card-header-text)); font-size: .85rem; font-weight: 700;
     gap: 6px;
   }
 
@@ -145,13 +145,13 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
   &__track {
     width: 34px; height: 18px; border-radius: 9px;
-    background: #d1d5db; position: relative; flex-shrink: 0;
+    background: var(--app-border); position: relative; flex-shrink: 0;
     transition: background .22s;
 
     &::after {
       content: ''; position: absolute;
       top: 2px; left: 2px; width: 14px; height: 14px;
-      border-radius: 50%; background: #fff;
+      border-radius: 50%; background: var(--card-body-bg);
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
       transition: transform .22s cubic-bezier(.34,1.56,.64,1);
     }
@@ -186,9 +186,9 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
 // ── Botón guardar/subir ────────────────────────────────────────────
 .pi-btn-save {
-  flex: 1; padding: 8px 10px; border: none; border-radius: 8px;
-  background: linear-gradient(135deg, $p, $pd);
-  color: var(--app-accent-ink); font-size: .8rem; font-weight: 700;
+  flex: 1; padding: 8px 10px; border: 1px solid var(--btn-primary-border); border-radius: 8px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text); font-size: .8rem; font-weight: 700;
   cursor: pointer; transition: $t;
 
   &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--app-accent-rgb),.35); }
@@ -204,6 +204,6 @@ $p: var(--brand-2); $pd: var(--brand-1); $t: all 0.22s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .pi-card__title    { color: var(--header-text, #1e293b); }
-  .pi-card__subtitle { color: rgba(0,0,0,0.55); }
+  .pi-card__title    { color: var(--header-text, var(--app-text)); }
+  .pi-card__subtitle { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
 }

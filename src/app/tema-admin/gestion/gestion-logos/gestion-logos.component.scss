@@ -23,8 +23,9 @@
   width: fit-content;
 
   &--subir {
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:disabled { opacity: .6; cursor: not-allowed; }
   }
 
@@ -37,7 +38,7 @@
   &--eliminar {
     background: none;
     padding: 8px 10px;
-    &:hover:not(:disabled) { background: rgba(239,68,68,0.1); }
+    &:hover:not(:disabled) { background: var(--pk-danger-soft); }
     &:disabled { opacity: .4; cursor: not-allowed; }
   }
 }
@@ -109,7 +110,7 @@
 
   &__nombre {
     font-size: .78rem;
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text);
     margin: 0;
     white-space: nowrap;
     overflow: hidden;

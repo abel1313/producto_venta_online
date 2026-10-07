@@ -319,7 +319,7 @@ export class GestionRolesComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(res => {
       if (!res.isConfirmed) return;
       this.rolSvc.deleteRol(r.id).subscribe({

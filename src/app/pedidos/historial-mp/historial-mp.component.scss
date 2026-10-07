@@ -1,6 +1,6 @@
 $radius: 16px;
 $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-$shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+$shadow: 0 4px 20px color-mix(in srgb, var(--app-text) 8%, transparent);
 $indigo: var(--brand-1);
 $indigo-dark: var(--brand-2);
 
@@ -89,8 +89,8 @@ $indigo-dark: var(--brand-2);
 
   &--active {
     border-color: $indigo;
-    background: linear-gradient(135deg, $indigo, $indigo-dark);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 12px rgba(var(--app-accent-rgb), 0.3);
   }
 }
@@ -155,8 +155,9 @@ $indigo-dark: var(--brand-2);
   &:not(:disabled):hover { transform: translateY(-1px); }
 
   &--search {
-    background: linear-gradient(135deg, $indigo, $indigo-dark);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 12px rgba(var(--app-accent-rgb), 0.28);
     &:not(:disabled):hover { box-shadow: 0 6px 18px rgba(var(--app-accent-rgb), 0.42); }
   }
@@ -182,9 +183,9 @@ $indigo-dark: var(--brand-2);
 
   &--inactive { opacity: 0.45; }
 
-  &--open     { border-color: #f59e0b; background: rgba(245, 158, 11, 0.12); color: #b45309; }
-  &--finished { border-color: #10b981; background: rgba(16, 185, 129, 0.12); color: #065f46; }
-  &--canceled { border-color: #ef4444; background: rgba(239, 68, 68, 0.12);  color: #991b1b; }
+  &--open     { border-color: var(--pk-warning); background: var(--pk-warning-soft); color: var(--pk-warning-to); }
+  &--finished { border-color: var(--pk-success); background: var(--pk-success-soft); color: var(--app-accent-text); }
+  &--canceled { border-color: var(--pk-danger); background: var(--pk-danger-soft);  color: var(--pk-danger); }
 
   &:hover:not(.hmp-chip--inactive) { filter: brightness(0.95); }
 }
@@ -269,9 +270,9 @@ $indigo-dark: var(--brand-2);
 
   .pi { font-size: 0.72rem; }
 
-  &--open     { background: rgba(245, 158, 11, 0.12); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.4); }
-  &--finished { background: rgba(16, 185, 129, 0.12); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.4); }
-  &--canceled { background: rgba(239, 68, 68, 0.12);  color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.4); }
+  &--open     { background: var(--pk-warning-soft); color: var(--pk-warning-to); border: 1px solid var(--pk-warning-soft); }
+  &--finished { background: var(--pk-success-soft); color: var(--app-accent-text); border: 1px solid var(--pk-success-soft); }
+  &--canceled { background: var(--pk-danger-soft);  color: var(--pk-danger); border: 1px solid var(--pk-danger-soft); }
 }
 
 // ── Cuerpo del item ────────────────────────────────────────────────────────

@@ -400,9 +400,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed || !img.id || !this.variante?.id) return;
       this.eliminandoExistente.add(img.id);
@@ -505,7 +503,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.guardando = false;
-        Swal.fire({ icon: 'error', title: 'Error al actualizar', text: this.motivoDelError(err), confirmButtonColor: '#dc2626' });
+        Swal.fire({ icon: 'error', title: 'Error al actualizar', text: this.motivoDelError(err), confirmButtonColor: 'var(--pk-danger)' });
       }
     });
   }

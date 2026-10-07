@@ -11,7 +11,7 @@
   margin-bottom: 20px;
   &__title {
     h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
-    small { color: var(--app-text-muted, #64748b); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -88,7 +88,7 @@
     border-color: var(--input-focus-border, var(--app-accent));
     box-shadow: var(--input-focus-shadow);
   }
-  &::placeholder { color: var(--app-placeholder, #94a3b8); }
+  &::placeholder { color: var(--app-placeholder, var(--app-text-faint)); }
 
   &--edit { flex: 1 1 200px; }
 }
@@ -97,7 +97,7 @@
   margin: 10px 0 0;
   font-size: 0.78rem;
   line-height: 1.45;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 
   &--pie { text-align: center; margin-top: 4px; }
 }
@@ -107,7 +107,7 @@
   padding: 18px 4px;
   text-align: center;
   font-size: 0.86rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 // ── Filas de la lista ────────────────────────────────────────────────
@@ -160,7 +160,7 @@
   &:hover:not(:disabled) { background: var(--app-accent-soft); }
   &:disabled { opacity: .28; cursor: not-allowed; }
 
-  &--del:hover:not(:disabled) { background: rgba(239, 68, 68, .14); }
+  &--del:hover:not(:disabled) { background: var(--pk-danger-soft); }
 }
 
 .gca-btn {
@@ -176,8 +176,9 @@
   &:disabled { opacity: .45; cursor: not-allowed; }
 
   &--primary {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:hover:not(:disabled) { opacity: .87; }
   }
 

@@ -1,7 +1,7 @@
 // ── Variables ──────────────────────────────────────────────────────────────
 $radius: 16px;
 $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-$shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+$shadow: 0 4px 24px color-mix(in srgb, var(--app-text) 10%, transparent);
 
 // ── Wrapper ────────────────────────────────────────────────────────────────
 .dv-wrapper {
@@ -16,12 +16,12 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
   gap: 0.4rem;
   background: none;
-  border: 2px solid var(--card-border, #e5e7eb);
+  border: 2px solid var(--card-border, var(--app-border));
   border-radius: 50px;
   padding: 0.4rem 1rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--app-text-muted, #6b7280);
+  color: var(--app-text-muted);
   cursor: pointer;
   margin-bottom: 1.25rem;
   transition: $transition;
@@ -72,8 +72,8 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 
   &--active {
     border-color: var(--app-accent);
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 14px rgba(var(--app-accent-rgb),0.35);
   }
 }
@@ -108,15 +108,15 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  background: rgba(255,255,255,0.25);
-  color: #fff;
+  background: color-mix(in srgb, var(--card-header-text) 25%, transparent);
+  color: var(--card-header-text);
   backdrop-filter: blur(4px);
 }
 
 .dv-header__name {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--card-header-text);
   margin: 0 0 0.4rem;
   letter-spacing: -0.02em;
   text-shadow: 0 1px 4px rgba(0,0,0,0.2);
@@ -124,7 +124,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 
 .dv-header__desc {
   font-size: 0.85rem;
-  color: rgba(255,255,255,0.85);
+  color: color-mix(in srgb, var(--card-header-text) 85%, transparent);
   margin: 0;
 }
 
@@ -139,7 +139,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 .dv-price {
   font-size: 2rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--card-header-text);
   letter-spacing: -0.03em;
   text-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
@@ -156,9 +156,9 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 
-  &--ok  { background: rgba(255,255,255,0.25); color: #fff; }
-  &--low { background: rgba(251,191,36,0.35);  color: #fff; }
-  &--out { background: rgba(239,68,68,0.35);   color: #fff; }
+  &--ok  { background: color-mix(in srgb, var(--card-header-text) 25%, transparent); color: var(--card-header-text); }
+  &--low { background: var(--pk-warning-soft);  color: var(--overlay-text); }
+  &--out { background: var(--pk-danger-soft);   color: var(--overlay-text); }
 
   .pi { font-size: 0.85rem; }
 }
@@ -182,8 +182,8 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
 
   &--marked .dv-slide__img-wrap {
-    border: 2px solid #ef4444;
-    box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+    border: 2px solid var(--pk-danger);
+    box-shadow: 0 0 0 3px var(--pk-danger-soft);
   }
 }
 
@@ -228,7 +228,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 .dv-slide__del-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(239,68,68,0.18);
+  background: var(--pk-danger-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,7 +248,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   border: none;
   background: rgba(0,0,0,0.55);
-  color: rgba(255,255,255,0.85);
+  color: color-mix(in srgb, var(--overlay-text) 85%, transparent);
   font-size: 0.72rem;
   cursor: pointer;
   display: flex;
@@ -258,12 +258,12 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   z-index: 2;
   line-height: 1;
 
-  &:hover { background: rgba(239,68,68,0.85); color: #fff; transform: scale(1.12); }
+  &:hover { background: var(--pk-danger); color: var(--pk-ink); transform: scale(1.12); }
 
   &--on {
-    background: #ef4444;
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(239,68,68,0.5);
+    background: var(--pk-danger);
+    color: var(--pk-ink);
+    box-shadow: 0 2px 8px var(--pk-danger-soft);
   }
 }
 
@@ -278,7 +278,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   max-width: 100%;
 
   &--marked {
-    color: #ef4444;
+    color: var(--pk-danger);
     text-decoration: line-through;
   }
 }
@@ -306,17 +306,17 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
     border: none;
     border-radius: 10px;
     background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
-    color: #fff;
+    color: var(--pk-ink);
     font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     transition: $transition;
-    box-shadow: 0 4px 12px rgba(220,38,38,0.35);
+    box-shadow: 0 4px 12px var(--pk-danger-soft);
     white-space: nowrap;
 
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(220,38,38,0.5);
+      box-shadow: 0 6px 18px var(--pk-danger-soft);
     }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
@@ -329,7 +329,7 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
 
   p { margin: 0.75rem 0 0; font-size: 0.9rem; }
 }
@@ -405,8 +405,9 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   &:not(:disabled):hover { transform: translateY(-2px); }
 
   &--add {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 6px 20px rgba(var(--app-accent-rgb),0.35);
     &:not(:disabled):hover { box-shadow: 0 10px 28px rgba(var(--app-accent-rgb),0.5); }
   }
@@ -641,8 +642,9 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   }
 
   &--confirm {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 14px rgba(var(--app-accent-rgb),0.35);
     &:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(var(--app-accent-rgb),0.5); transform: translateY(-1px); }
   }
@@ -655,13 +657,13 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   gap: 3px;
   cursor: pointer;
   margin-top: 0.35rem;
-  &__num { margin-left: 4px; font-size: 0.8rem; color: rgba(255,255,255,0.85); }
+  &__num { margin-left: 4px; font-size: 0.8rem; color: color-mix(in srgb, var(--card-header-text) 85%, transparent); }
 }
 
 .dv-star {
-  color: rgba(255,255,255,0.35);
+  color: color-mix(in srgb, var(--card-header-text) 35%, transparent);
   font-size: 1rem;
-  &--on { color: #fbbf24; }
+  &--on { color: var(--pk-warning-to); }
   &--pick { cursor: pointer; font-size: 1.4rem; transition: $transition; &:hover { transform: scale(1.15); } }
 }
 
@@ -768,16 +770,16 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 // .dv-indep-alert ya no se sobreescribe acá -- var(--pk-danger-soft/-to) trae su propia
 // variante oscura.
 :host-context(body.theme-dark) {
-  .dv-indep-input { background: rgba(255,255,255,0.06); }
-  .dv-resena-form__textarea { background: rgba(255,255,255,0.06); }
+  .dv-indep-input { background: color-mix(in srgb, var(--app-text) 6%, transparent); }
+  .dv-resena-form__textarea { background: color-mix(in srgb, var(--app-text) 6%, transparent); }
 }
 
 // Light mode
 :host-context(body.theme-light) {
-  .dv-indep-modal { background: var(--card-bg, #fff); }
-  .dv-indep-input { background: #f9fafb; }
-  .dv-resumen-resenas__num { color: rgba(255,255,255,0.9); }
-  .dv-resena-form__textarea { background: #f9fafb; }
+  .dv-indep-modal { background: var(--card-bg, var(--card-body-bg)); }
+  .dv-indep-input { background: var(--card-body-bg); }
+  .dv-resumen-resenas__num { color: color-mix(in srgb, var(--card-header-text) 90%, transparent); }
+  .dv-resena-form__textarea { background: var(--card-body-bg); }
 }
 
 
@@ -800,12 +802,12 @@ $shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   }
 
   &__btn {
-    border: none;
+    border: 1px solid var(--btn-primary-border);
     border-radius: 10px;
     padding: 10px 22px;
     font-weight: 600;
     cursor: pointer;
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
   }
 }

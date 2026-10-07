@@ -35,7 +35,7 @@
   height: 0;
   border-left: 12px solid transparent;
   border-right: 12px solid transparent;
-  border-top: 24px solid #dc3545;
+  border-top: 24px solid var(--pk-danger);
 }
 
 // ── Layout general ─────────────────────────────────────────────────
@@ -67,7 +67,7 @@
     align-items: center;
     gap: 14px;
     // Los colores de fondo los aplica la regla global de glassmorphism en styles.scss
-    &--purple, &--blue, &--green { color: #fff; }
+    &--purple, &--blue, &--green { color: var(--card-header-text); }
   }
 
   &__step {
@@ -76,7 +76,7 @@
     justify-content: center;
     width: 32px; height: 32px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.25);
+    background: var(--app-tint);
     font-weight: 800; font-size: 1rem;
     flex-shrink: 0;
   }
@@ -99,7 +99,7 @@
   padding: 10px 20px;
   font-size: 0.88rem;
   color: var(--pk-success-to);
-  border-bottom: 1px solid rgba(134,239,172,0.3);
+  border-bottom: 1px solid var(--pk-success-soft);
   &:last-child { border-bottom: none; }
 }
 
@@ -154,8 +154,9 @@
   white-space: nowrap;
 
   &--primary {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg) !important;
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
     &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(var(--app-accent-rgb),0.40); }
   }
 
@@ -168,7 +169,7 @@
 
   &--danger {
     background: linear-gradient(135deg,var(--pk-danger-to),var(--pk-danger));
-    color: #fff;
+    color: var(--pk-ink);
     &:hover:not(:disabled) { box-shadow: 0 6px 16px var(--pk-danger-soft); }
   }
 
@@ -180,8 +181,9 @@
     width: 100%;
     padding: 16px 36px;
     font-size: 1.05rem;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg) !important;
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
     box-shadow: 0 8px 24px rgba(var(--app-accent-rgb),0.35);
     border-radius: 12px;
     &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(var(--app-accent-rgb),0.45); }
@@ -192,7 +194,7 @@
     padding: 14px;
     font-size: 1.05rem;
     background: linear-gradient(135deg,var(--pk-success-to),var(--pk-success));
-    color: #fff;
+    color: var(--pk-ink);
     box-shadow: 0 6px 20px var(--pk-success-soft);
     &:hover:not(:disabled) { transform: translateY(-2px); }
   }
@@ -221,7 +223,7 @@
 
   &__slider {
     width: 42px; height: 24px;
-    background: #d1d5db;
+    background: var(--app-border);
     border-radius: 12px;
     position: relative;
     transition: background 0.2s;
@@ -231,7 +233,7 @@
       position: absolute;
       top: 3px; left: 3px;
       width: 18px; height: 18px;
-      background: #fff;
+      background: var(--card-body-bg);
       border-radius: 50%;
       transition: transform 0.2s;
     }
@@ -403,7 +405,7 @@
   font-size: 0.82rem;
   color: var(--pk-success-to);
   padding: 3px 0;
-  border-bottom: 1px solid rgba(134,239,172,0.3);
+  border-bottom: 1px solid var(--pk-success-soft);
   &:last-child { border-bottom: none; }
 }
 
@@ -468,7 +470,7 @@
   width: fit-content;
 
   &--ganador {
-    background: rgba(253, 211, 77, 0.12);
+    background: var(--pk-warning-soft);
     border-color: var(--pk-warning-soft);
     color: var(--pk-warning-to);
   }
@@ -531,7 +533,7 @@
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--card-header-text);
   font-variant-numeric: tabular-nums;
 
   &--fuera { background: var(--app-text-muted); opacity: 0.6; }
@@ -879,27 +881,28 @@
   }
   // Botón outline dentro del head del card: borde visible sobre blanco
   .rf-card__head .rf-btn--outline {
-    border-color: rgba(0, 0, 0, 0.18);
-    color: var(--app-text, #1e293b);
+    border-color: color-mix(in srgb, var(--app-text) 18%, transparent);
+    color: var(--app-text);
   }
 }
 
 // ── Tema NOCHE — ajustes completos ────────────────────────────────
 :host-context(body.theme-dark) {
   // Círculo de paso: texto blanco
-  .rf-card__step { color: var(--app-text, #f1f5f9); }
+  .rf-card__step { color: var(--app-text); }
 
   // Botones PRIMARY en noche: ámbar visible sobre fondo oscuro
   .rf-btn--primary {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1)) !important;
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg) !important;
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
   }
 
   // Botones OUTLINE en noche: --input-border es rgba(255,255,255,0.12) = invisible
   .rf-btn--outline {
-    border-color: var(--app-border, rgba(255, 255, 255, 0.32));
-    color: var(--app-text, #e2e8f0);
-    &:hover:not(:disabled) { background: var(--table-row-hover, rgba(255, 255, 255, 0.08)); }
+    border-color: var(--app-border);
+    color: var(--app-text);
+    &:hover:not(:disabled) { background: var(--table-row-hover); }
   }
 
   // .rf-card--activas / .rf-activa-row / .rf-importar / .rf-saved-badge / .rf-prod-badge--on
@@ -916,12 +919,12 @@
   padding: 4px 0;
   border-bottom: 1px solid var(--pk-success-soft);
 
-  &--vacio { background: rgba(255, 251, 235, 0.8); border-radius: 6px; padding: 4px 8px; }
+  &--vacio { background: var(--pk-warning-soft); border-radius: 6px; padding: 4px 8px; }
 }
 
 .rf-badge-sin-registro {
   font-size: 0.7rem;
-  background: rgba(253, 243, 199, 0.8);
+  background: var(--pk-warning-soft);
   color: var(--pk-warning-to);
   border-radius: 8px;
   padding: 2px 6px;
@@ -987,7 +990,7 @@
   align-items: center;
   padding: 10px 20px;
   font-size: 0.88rem;
-  border-bottom: 1px solid rgba(134,239,172,0.3);
+  border-bottom: 1px solid var(--pk-success-soft);
   &:last-child { border-bottom: none; }
 }
 
@@ -1346,7 +1349,7 @@
 
   // Header del panel activo (expandido)
   &--active {
-    background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.08) 0%, rgba(138,106,56,0.05) 100%);
+    background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.08) 0%, var(--pk-warning-soft) 100%);
     border-bottom: 1px solid rgba(var(--app-accent-rgb),0.2);
     cursor: default;
   }
@@ -1384,7 +1387,7 @@
     border-radius: 50%;
     border: none;
     background: rgba(0,0,0,0.7);
-    color: #fff;
+    color: var(--overlay-text);
     font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;

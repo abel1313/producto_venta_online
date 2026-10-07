@@ -18,12 +18,12 @@
 
   p {
     margin: 0 0 8px;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
   }
 }
 
-.ttc-ok h1 { color: #16a34a; }
-.ttc-error h1 { color: #dc2626; }
+.ttc-ok h1 { color: var(--pk-success); }
+.ttc-error h1 { color: var(--pk-danger); }
 
 .ttc-hint {
   font-size: 0.85rem;
@@ -49,8 +49,9 @@
   font-weight: 600;
   font-size: .92rem;
   text-decoration: none;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+  color: var(--btn-primary-text);
   transition: opacity .15s;
 
   &:hover { opacity: .87; color: var(--app-accent-ink); }

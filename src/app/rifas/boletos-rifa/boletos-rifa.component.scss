@@ -104,7 +104,7 @@
     color: var(--app-accent-ink);
     border-color: var(--app-accent);
 
-    .br-paso__n { background: rgba(255, 255, 255, .25); color: inherit; }
+    .br-paso__n { background: color-mix(in srgb, var(--card-header-text) 25%, transparent); color: inherit; }
   }
 }
 
@@ -117,13 +117,13 @@
   padding: 10px 14px;
   border-radius: 12px;
   background: var(--pk-warning-soft);
-  border: 1px solid rgba(245, 158, 11, .3);
+  border: 1px solid var(--pk-warning-soft);
 
   &__txt { min-width: 0; }
 
   &--real {
     background: var(--pk-danger-soft);
-    border-color: rgba(239, 68, 68, .3);
+    border-color: var(--pk-danger-soft);
   }
 }
 
@@ -214,8 +214,8 @@
   &:disabled { opacity: .5; cursor: not-allowed; }
 
   &--ok {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     border-color: var(--app-accent);
   }
 }
@@ -235,7 +235,7 @@
 
   &:hover { background: var(--form-section-bg); }
   &--peligro:hover { background: var(--pk-danger-soft); }
-  &--claro { color: var(--card-header-text); &:hover { background: rgba(255,255,255,.18); } }
+  &--claro { color: var(--card-header-text); &:hover { background: color-mix(in srgb, var(--card-header-text) 18%, transparent); } }
 }
 
 // ── Barra de herramientas de una card (buscar + acción) ───────────────
@@ -354,8 +354,8 @@
   &:hover { border-color: var(--app-accent); }
 
   &--sel {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     border-color: var(--app-accent);
   }
 }
@@ -585,7 +585,7 @@
   border-radius: 999px;
   font-size: .78rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--card-header-text);
   font-variant-numeric: tabular-nums;
 
   &--fuera { background: var(--app-text-muted); opacity: .6; }
@@ -606,8 +606,8 @@
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 10px;
-  background: rgba(220, 38, 38, .10);
-  color: #dc2626;
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger);
   font-size: .88rem;
 }
 
@@ -785,8 +785,8 @@
   margin-top: 12px;
   padding: 10px;
   border-radius: 10px;
-  background: rgba(217, 119, 6, .12);
-  color: #d97706;
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
   font-size: .84rem;
   font-weight: 600;
 }
@@ -795,8 +795,8 @@
   margin-bottom: 14px;
   padding: 12px;
   border-radius: 10px;
-  background: rgba(37, 99, 235, .1);
-  color: #1d4ed8;
+  background: var(--pk-info-soft);
+  color: var(--pk-info);
   font-size: .84rem;
   line-height: 1.5;
 }
@@ -831,11 +831,11 @@
   font-size: .82rem;
   line-height: 1.4;
   color: var(--app-text-muted);
-  background: rgba(127, 127, 127, .06);
+  background: color-mix(in srgb, var(--app-text) 6%, transparent);
 
   &--on {
-    color: #10b981;
-    background: rgba(16, 185, 129, .10);
+    color: var(--pk-success);
+    background: var(--pk-success-soft);
   }
 }
 
@@ -853,7 +853,7 @@
   font: inherit;
   color: inherit;
   cursor: pointer;
-  background: var(--app-surface-2, rgba(127, 127, 127, .08));
+  background: var(--app-surface-2);
   border: 1px solid var(--card-border);
   border-radius: 14px;
   transition: border-color .15s ease, transform .15s ease;
@@ -870,7 +870,7 @@
     justify-content: center;
     overflow: hidden;
     border-radius: 12px;
-    background: rgba(127, 127, 127, .12);
+    background: color-mix(in srgb, var(--app-text) 12%, transparent);
 
     img { width: 100%; height: 100%; object-fit: cover; }
   }
@@ -936,9 +936,9 @@
 }
 
 .bg-btn-alta {
-  border: none;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  border: 1px solid var(--btn-primary-border);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
 
   &:disabled { opacity: .5; cursor: not-allowed; }
 }
@@ -1051,7 +1051,7 @@
     color: var(--card-text-muted);
     cursor: pointer;
 
-    &:hover { color: var(--pk-danger-to, #dc2626); border-color: var(--pk-danger-to, #dc2626); }
+    &:hover { color: var(--pk-danger-to, var(--pk-danger)); border-color: var(--pk-danger-to, var(--pk-danger)); }
   }
 }
 
@@ -1068,10 +1068,10 @@
 
 .bg-btn-guardar {
   padding: .42rem 1rem;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: .8rem;
   font-weight: 700;
   cursor: pointer;
@@ -1091,7 +1091,7 @@
   border-radius: 10px;
   margin-bottom: .45rem;
   overflow: hidden;
-  background: var(--card-bg, transparent);
+  background: var(--card-bg);
 
   &--abierto { border-color: var(--app-accent); }
 
@@ -1311,7 +1311,7 @@
 
   &:hover, &:focus-visible { border-color: var(--card-border); outline: none; }
   &--ok { color: var(--app-accent); font-weight: 800; }
-  &--peligro:hover { border-color: var(--pk-danger-to, #dc2626); }
+  &--peligro:hover { border-color: var(--pk-danger-to, var(--pk-danger)); }
   &:disabled { opacity: .5; cursor: not-allowed; }
 }
 

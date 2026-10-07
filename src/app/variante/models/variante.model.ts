@@ -16,6 +16,8 @@ export interface IVarianteDto {
 
 export interface IVarianteRequest {
   id?: number;
+  /** Agregar (+) o quitar (-) stock al modelo en el mismo guardado (back 2026-10-06). */
+  ajusteStockModelo?: number;
   productoId: number;
   talla?: string;
   descripcion?: string;

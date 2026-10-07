@@ -200,6 +200,60 @@
 
       <hr class="cn-divider">
 
+      <!-- ── 6. Datos legales (LFPC 76 bis III, LEGAL_PLAN_DE_ACCION.md punto 4) ── -->
+      <div class="cn-section">
+        <p class="cn-section__label">⚖️ Datos legales del negocio</p>
+        <p class="cn-section__hint">
+          La ley pide que el cliente vea quién vende, el domicilio, el teléfono y un correo
+          <strong>antes de comprar</strong>. Se muestran en el pie de página de la tienda, en Términos,
+          en el Aviso de privacidad y en el ticket. Usa los mismos datos de tu constancia del SAT.
+        </p>
+        <p class="cn-legal-aviso" *ngIf="datosLegalesCargados && faltanDatosLegales.length">
+          ⚠️ Falta: {{ faltanDatosLegales.join(', ') }}
+        </p>
+
+        <form [formGroup]="datosLegalesForm" class="cn-grid cn-grid--legal">
+          <div class="cn-field cn-field--ancho">
+            <label class="cn-label" for="dl-nombre">Nombre del responsable (como en tu constancia)</label>
+            <input id="dl-nombre" class="cn-input" formControlName="nombreResponsable" maxlength="150"
+                   placeholder="Ej. Ana Pérez López">
+          </div>
+          <div class="cn-field">
+            <label class="cn-label" for="dl-rfc">RFC</label>
+            <input id="dl-rfc" class="cn-input" formControlName="rfc" maxlength="13" placeholder="13 caracteres">
+            <small class="cn-error" *ngIf="datosLegalesForm.get('rfc')?.invalid && datosLegalesForm.get('rfc')?.touched">
+              RFC de 13 caracteres (persona física) o 12 (empresa).
+            </small>
+          </div>
+          <div class="cn-field">
+            <label class="cn-label" for="dl-tel">Teléfono</label>
+            <input id="dl-tel" class="cn-input" formControlName="telefono" inputmode="tel" placeholder="10 dígitos">
+          </div>
+          <div class="cn-field cn-field--ancho">
+            <label class="cn-label" for="dl-dom">Domicilio para reclamaciones</label>
+            <input id="dl-dom" class="cn-input" formControlName="domicilio" maxlength="300"
+                   placeholder="Calle, número, colonia, municipio, estado, C.P.">
+          </div>
+          <div class="cn-field">
+            <label class="cn-label" for="dl-correo">Correo de contacto</label>
+            <input id="dl-correo" class="cn-input" type="email" formControlName="correo" maxlength="150">
+          </div>
+          <div class="cn-field">
+            <label class="cn-label" for="dl-horario">Horario de atención (opcional)</label>
+            <input id="dl-horario" class="cn-input" formControlName="horarioAtencion" maxlength="150"
+                   placeholder="Ej. Lunes a sábado, 10:00 a 19:00">
+          </div>
+        </form>
+
+        <button class="cn-btn cn-btn--save"
+                [disabled]="guardandoDatosLegales || !datosLegalesCargados"
+                (click)="guardarDatosLegales()">
+          💾 Guardar datos legales
+        </button>
+      </div>
+
+      <hr class="cn-divider">
+
       <!-- ── 5. Alertas de stock bajo ──────────────────────────────── -->
       <div class="cn-section">
         <p class="cn-section__label">📦 Alertas de stock bajo</p>

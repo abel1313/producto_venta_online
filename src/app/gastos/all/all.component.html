@@ -86,7 +86,10 @@
       <!-- Empty state -->
       <div *ngIf="!cargandoGastos && gastos.length === 0" class="ga-empty">
         <span class="ga-empty__icon">📋</span>
-        <p>No se encontraron gastos. Usa el botón <strong>➕ Agregar gasto</strong> para registrar uno.</p>
+        <p>No se encontraron gastos.
+          <ng-container *ngIf="authService.tieneAccion('gastos/buscar', 'agregar-gasto')">Usa el botón <strong>➕ Agregar gasto</strong> para registrar uno.</ng-container>
+          <ng-container *ngIf="!authService.tieneAccion('gastos/buscar', 'agregar-gasto')">Para registrar gastos necesitas el permiso <strong>Agregar gasto</strong> (Gestión de roles).</ng-container>
+        </p>
       </div>
 
       <!-- Tabla gastos -->

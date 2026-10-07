@@ -3,6 +3,8 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
+import { PedidosService } from '../pedidos.service';
+import { preguntarYEntregar } from '../entrega/entrega';
 import { GrupoPedidoService } from '../grupo-pedido.service';
 import { CandidatoUnir, GrupoPedidos, TipoPorPedido } from '../models/grupo-pedido.model';
 
@@ -72,7 +74,8 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
 
   constructor(
     private readonly grupoService: GrupoPedidoService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly pedidosService: PedidosService
   ) {
     // catchError va dentro del switchMap: si llega al subscribe, el buscador muere hasta recargar.
     this.busqueda$.pipe(
@@ -402,8 +405,16 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
         const html = renglon('Abono', this.abono.monto, true)
           + (g ? renglon('Pagado del grupo', g.pagadoGrupo) + renglon('Falta', g.saldoGrupo, true) : '')
           + (res && res.cambio > 0 ? renglon('Cambio para el cliente', res.cambio, true) : '');
-        Swal.fire({ icon: 'success', title: g && g.saldoGrupo <= 0.001 ? 'Grupo pagado' : 'Abono registrado', html });
-        this.cambio.emit();
+        const pagado = !!g && g.saldoGrupo <= 0.001;
+        Swal.fire({ icon: 'success', title: pagado ? 'Grupo pagado' : 'Abono registrado', html }).then(() => {
+          // E1/E7: al liquidar el grupo se pregunta si ya se lo llevaron (marca a todos).
+          if (pagado && g && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')) {
+            preguntarYEntregar(() => this.pedidosService.entregar(g.pedidoTitularId), () => this.cambio.emit(),
+              '¿Ya se llevaron los pedidos del grupo?');
+          } else {
+            this.cambio.emit();
+          }
+        });
       },
       error: err => {
         this.abonando = false;

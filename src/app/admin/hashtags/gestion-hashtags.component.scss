@@ -1,7 +1,7 @@
 // Alta de los hashtags fijos por red. Todo el color sale de las variables globales, así que
 // responde solo a claro/oscuro (ver "HOMOLOGACIÓN DE PALETA — JADE" en CLAUDE.md).
 .gh-wrap {
-  max-width: 760px;
+  max-width: var(--form-ancho, 820px);
   margin: 0 auto;
   padding: 24px 20px 60px;
 }

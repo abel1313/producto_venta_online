@@ -415,3 +415,90 @@
 @media (prefers-reduced-motion: reduce) {
   .pk-enter-slide-next, .pk-enter-slide-prev, .pk-enter-rise { animation: none; }
 }
+
+// ── Tabla homologada (diseño A, elegido por el dueño 2026-10-06) ─────────────────────────────
+// Encabezados chicos en mayúsculas con línea dorada, filas con línea fina, hover con el tinte de
+// marca, etiquetas (.pk-tabla__chip) y botones de icono. Todo con tokens: de día y de noche
+// cambia sola con Personalización. Uso: Clientes y Categorías; las tablas nuevas, esta.
+.pk-tabla-card {
+  background: var(--card-body-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 20px);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.pk-tabla-card__toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-hairline, var(--card-border));
+}
+.pk-tabla-scroll { overflow-x: auto; }
+.pk-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--card-text, var(--app-text));
+  font-size: .9rem;
+
+  th {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--table-header-text, var(--app-text-muted));
+    background: var(--table-header-bg, transparent);
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--app-gold-line, var(--table-border));
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--app-hairline, var(--table-border));
+    vertical-align: middle;
+  }
+  tbody tr:hover td { background: var(--table-row-hover, var(--app-tint)); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .pk-tabla__num { font-variant-numeric: tabular-nums; color: var(--app-text-muted); white-space: nowrap; }
+  .pk-tabla__acciones { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  th.pk-tabla__der { text-align: right; }
+}
+.pk-tabla__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--badge-bg, var(--app-accent-soft));
+  color: var(--badge-text, var(--app-accent));
+  white-space: nowrap;
+
+  &--alerta { background: var(--pk-warning-soft); color: var(--pk-warning-to, var(--pk-warning)); }
+}
+.pk-tabla__icono {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text-soft, var(--app-text));
+  display: inline-grid;
+  place-items: center;
+  font-size: 15px;
+  cursor: pointer;
+  &:hover { background: var(--app-tint); border-color: var(--app-accent); }
+}
+.pk-tabla-card__pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  color: var(--app-text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--app-hairline, var(--card-border));
+}

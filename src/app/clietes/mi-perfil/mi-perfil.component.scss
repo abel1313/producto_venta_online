@@ -15,7 +15,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Card ─────────────────────────────────────────────────────────────────────
 .mp-card {
   width: 100%;
-  max-width: 560px;
+  max-width: var(--form-ancho, 820px);
   border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);

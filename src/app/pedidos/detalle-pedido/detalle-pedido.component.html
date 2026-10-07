@@ -3,7 +3,7 @@
   <!-- HEADER -->
   <div class="detalle-header">
     <button class="btn-regresar" (click)="irPedido()">
-      ← Regresar
+      ← Volver
     </button>
     <div class="detalle-header__info">
       <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
@@ -16,6 +16,12 @@
         [class.estado--pendiente]="!estaCancelado && estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'"
         [class.estado--cancelado]="estaCancelado">
         {{ estadoPedidoLabel }}
+      </span>
+      <!-- La entrega va aparte del pago (back 2026-10-06) -->
+      <span class="detalle-header__estado" *ngIf="!estaCancelado && entregadoDetalle !== null"
+        [class.estado--entregado]="entregadoDetalle"
+        [class.estado--cancelado]="!entregadoDetalle">
+        {{ entregadoDetalle ? 'Entregado' : 'Falta entregar' }}
       </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">
         🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
@@ -32,6 +38,10 @@
       <small *ngIf="grupo.pagadoGrupo > 0">Pagado {{ grupo.pagadoGrupo | currency:'$' }} · falta {{ grupo.saldoGrupo | currency:'$' }}</small>
     </span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeEntregarDetalle" (click)="entregarDetalle()"
+              title="El cliente ya se lo llevó">📦 Entregar</button>
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeRegresarEntregaDetalle" (click)="regresarEntregaDetalle()"
+              title='Regresar a "Falta entregar" (si se marcó por error)'>↩️ Falta entregar</button>
       <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
            Ver `puedeEditarRamo`. -->
       <button class="dp-btn-editar-ramo" type="button" *ngIf="puedeEditarRamo"

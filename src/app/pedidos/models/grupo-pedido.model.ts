@@ -100,6 +100,8 @@ export interface GrupoEnLista {
   pagadoGrupo:     number;
   /** Lo que falta cobrar entre todos. En un grupo de contado es lo que cobra "Cobrar". */
   saldoGrupo:      number;
+  /** Todos los del grupo (sin cancelados) ya se lo llevaron (back 2026-10-06). */
+  entregadoGrupo?: boolean | null;
 }
 
 /** `POST /v1/grupos-pedido/{id}/cobrar-contado` */

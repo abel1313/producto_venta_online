@@ -13,6 +13,9 @@ import { ThemeService } from './services/theme/theme.service';
 import { TemaService } from './services/tema/tema.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { DatosLegalesService, telefonoLegible } from './legal/datos-legales.service';
+import { fijarDatosNegocioTicket } from './shared/ticket.util';
+import { tap } from 'rxjs/operators';
 
 
 
@@ -26,6 +29,9 @@ const RUTAS_SIN_DISENO = ['/login', '/usuarios/registrar'];
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly anio = new Date().getFullYear();
+  readonly telefonoLegible = telefonoLegible;
+  /** Contacto del pie de página (LFPC 76 bis III). Público: no necesita sesión. */
+  readonly datosLegales$ = this.datosLegalesService.obtener().pipe(tap(d => fijarDatosNegocioTicket(d)));
   imageUrl: string | undefined;
   private readonly urlRefresh: string = `${environment.api_Url}/v1/auth/refresh`;
   resultadoCodigo: string = '';
@@ -36,6 +42,7 @@ export class AppComponent implements OnInit, AfterViewInit {
               private readonly themeService: ThemeService,
               private readonly temaService: TemaService,
               private readonly router: Router,
+              private readonly datosLegalesService: DatosLegalesService,
   ) {
     this.themeService.init(); // aplica la clase al body antes de pintar la vista
     this.temaService.init(); // trae la personalización guardada y la aplica

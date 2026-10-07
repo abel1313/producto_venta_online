@@ -38,6 +38,15 @@
     gap: 4px 16px;
   }
 
+  /* Contacto del negocio (LFPC 76 bis III): una línea que se acomoda sola en celular. */
+  &__contacto {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 14px;
+    font-style: normal;
+  }
+
   a {
     color: var(--app-text-muted);
     text-decoration: underline;
@@ -55,6 +64,10 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 16px 0 80px;
+
+    &__contacto {
+      justify-content: flex-start;
+    }
   }
 }
 

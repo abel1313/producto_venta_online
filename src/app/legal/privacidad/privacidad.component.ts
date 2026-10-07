@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { CORREO_CONTACTO_RESPALDO, DatosLegalesService, telefonoLegible } from '../datos-legales.service';
 
 /**
  * Política de Privacidad — página PÚBLICA (sin `AuthGuard`), ruta `/privacidad`.
@@ -13,15 +15,25 @@ import { Component } from '@angular/core';
   templateUrl: './privacidad.component.html',
   styleUrls: ['./privacidad.component.scss']
 })
-export class PrivacidadComponent {
+export class PrivacidadComponent implements OnDestroy {
 
   /**
-   * ⚠️ CONFIRMAR ANTES DE PUBLICAR: este es el correo al que van a escribir los clientes que
-   * quieran consultar, corregir o eliminar sus datos. Tiene que ser una cuenta que alguien
-   * realmente lea.
+   * Responsable, domicilio, teléfono y correo: Configuración del negocio → Datos legales. El correo
+   * es al que escriben los clientes para sus derechos ARCO: tiene que ser una cuenta que alguien lea.
    */
-  readonly correoContacto = 'contacto@novedades-jade.com.mx';
+  readonly datos$ = this.datosLegales.obtener();
+  readonly telefonoLegible = telefonoLegible;
+  correo = CORREO_CONTACTO_RESPALDO;
+  private readonly sub: Subscription;
 
-  /** Se muestra al pie. Actualizar cuando cambie el contenido de la política. */
-  readonly ultimaActualizacion = '24 de septiembre de 2026';
+  /** Se muestra al pie. Actualizar cuando cambie el contenido del aviso. */
+  readonly ultimaActualizacion = '7 de octubre de 2026';
+
+  constructor(private readonly datosLegales: DatosLegalesService) {
+    this.sub = this.datos$.subscribe(d => this.correo = d.correo || CORREO_CONTACTO_RESPALDO);
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
 }

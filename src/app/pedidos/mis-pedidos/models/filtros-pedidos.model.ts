@@ -7,7 +7,12 @@ import { IPedidoGenerico } from './IPedidoGenerico.model';
  * Reglas R1–R13: `hexagonal/busquedapedido/README.md` en el back.
  */
 export type FormaCobroFiltro = 'CONTADO' | 'APARTADO' | 'IR_PAGANDO';
-export type EstadoFiltro     = 'PENDIENTE' | 'POR_COBRAR' | 'PAGADO' | 'ENTREGADO' | 'CANCELADO';
+/**
+ * Pago y entrega (back 2026-10-06): dentro de cada bloque se suman, entre bloques se cruzan
+ * ("Pagado" + "Falta entregar" = ya pagó y no se lo ha llevado). PENDIENTE y POR_COBRAR son los
+ * nombres de antes; el back los acepta como FALTA_PAGAR y aquí se convierten al leer los guardados.
+ */
+export type EstadoFiltro     = 'FALTA_PAGAR' | 'PAGADO' | 'CANCELADO' | 'FALTA_ENTREGAR' | 'ENTREGADO';
 export type DineroFiltro     = 'CON_SALDO' | 'SIN_ABONOS' | 'SALDO_A_FAVOR';
 export type EntregaFiltro    = 'HOY' | 'MANANA' | 'ESTA_SEMANA' | 'ATRASADOS';
 export type ModoEntregaFiltro = 'RECOGE_EN_TIENDA' | 'ENVIO';
@@ -68,13 +73,22 @@ export const OPCIONES_FORMA: IOpcionFiltro<FormaCobroFiltro>[] = [
   { valor: 'IR_PAGANDO', texto: '💳 Ir pagando', accion: 'filtro-fiado' }
 ];
 
-export const OPCIONES_ESTADO: IOpcionFiltro<EstadoFiltro>[] = [
-  { valor: 'PENDIENTE',  texto: '⏳ Pendiente',  accion: 'filtro-pendientes' },
-  { valor: 'POR_COBRAR', texto: '🕒 Por cobrar', accion: 'filtro-por-cobrar' },
-  { valor: 'PAGADO',     texto: '✅ Pagado',    accion: 'filtro-pagados' },
-  { valor: 'ENTREGADO',  texto: '🤝 Entregado',  accion: 'filtro-entregados' },
-  { valor: 'CANCELADO',  texto: '❌ Cancelado', accion: 'filtro-cancelados' }
+export const OPCIONES_ESTADO_PAGO: IOpcionFiltro<EstadoFiltro>[] = [
+  { valor: 'FALTA_PAGAR', texto: '💰 Falta pagar', accion: 'filtro-por-cobrar' },
+  { valor: 'PAGADO',      texto: '✅ Pagado',      accion: 'filtro-pagados' },
+  { valor: 'CANCELADO',   texto: '❌ Cancelado',   accion: 'filtro-cancelados' }
 ];
+
+export const OPCIONES_ESTADO_ENTREGA: IOpcionFiltro<EstadoFiltro>[] = [
+  { valor: 'FALTA_ENTREGAR', texto: '📦 Falta entregar', accion: 'filtro-pendientes' },
+  { valor: 'ENTREGADO',      texto: '🤝 Entregado',      accion: 'filtro-entregados' }
+];
+
+/** Las dos juntas: para leer los filtros guardados y armar el resumen. */
+export const OPCIONES_ESTADO: IOpcionFiltro<EstadoFiltro>[] = [...OPCIONES_ESTADO_PAGO, ...OPCIONES_ESTADO_ENTREGA];
+
+/** Nombres de antes del 2026-10-06 en filtros guardados. */
+export const ESTADOS_ANTERIORES: Record<string, EstadoFiltro> = { PENDIENTE: 'FALTA_PAGAR', POR_COBRAR: 'FALTA_PAGAR' };
 
 export const OPCIONES_DINERO: IOpcionFiltro<DineroFiltro>[] = [
   { valor: 'CON_SALDO',     texto: '💰 Debe dinero',    accion: 'filtro-dinero' },

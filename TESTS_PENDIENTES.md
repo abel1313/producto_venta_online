@@ -17,6 +17,99 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-07 — Datos legales: pie de página, Términos, Aviso de privacidad y Configuración
+**Dónde:** `legal/datos-legales.service.ts`, `AppComponent` (pie), `TerminosComponent`, `PrivacidadComponent`, `ConfigNegocioComponent` (`guardarDatosLegales`), `loading.interceptor.ts`
+**Tipo:** unitario (servicio y componentes con HttpTestingController) · e2e
+**Debe comprobar:**
+- [ ] Una sola petición a `/v1/datos-legales` por carga de la app (shareReplay) y sin spinner global
+- [ ] El back falla → pie y páginas legales muestran `contacto@novedades-jade.com.mx`, sin error en pantalla
+- [ ] Pie: con nombre, domicilio, teléfono y correo los muestra; sin domicilio no pinta esa parte; teléfono `5512345678` → "Tel. 55 1234 5678" y `href="tel:+525512345678"`
+- [ ] Configuración → Datos legales: carga lo guardado; "⚠️ Falta: …" con lo que falte; RFC inválido → mensaje y no envía; 400 del back → Swal con el `mensaje`
+- [ ] Términos: muestran 90 días, 5 días hábiles, Apartado, Ir pagando sin intereses (CAT 0%), PROFECO
+- [ ] Aviso de privacidad: responsable, finalidades separadas, OVHcloud/Google/OpenAI/Mercado Pago, plazos ARCO 5 + 15 días hábiles
+
+### 2026-10-07 — Registro: aviso corto y casilla de Términos
+**Dónde:** `AddUsuariosComponent` (`aceptoTerminos`, `darAltaUser`)
+**Tipo:** unitario (componente)
+**Debe comprobar:**
+- [ ] Sin marcar Términos → botón Registrarse deshabilitado y mensaje al tocar la casilla
+- [ ] Con las dos casillas → manda `aceptoPrivacidad: true` y `aceptoTerminos: true`
+- [ ] "Actualizar usuario" (admin) no pide ninguna de las dos
+
+### 2026-10-07 — Ir pagando / Apartado: precio de contado y sin intereses, y ticket
+**Dónde:** `VentaDirectaComponent` (`.vd-nota-legal`), `VentaVarianteComponent` (`.venta-nota-legal`), `shared/ticket.util.ts` (`fijarDatosNegocioTicket`, `encabezadoNegocio`, `filaSinIntereses`)
+**Tipo:** unitario
+**Debe comprobar:**
+- [ ] Ir pagando con total $350 → "Precio de contado $350.00 · Total a pagar $350.00 (CAT 0%)"
+- [ ] Apartado → "Se paga completo ($350.00) al recogerlo"; Contado → ninguna nota
+- [ ] `generarHtmlTicket` con datos del negocio → los imprime arriba, escapando `<` y `&`; sin datos → ticket igual que antes
+- [ ] Ticket de abono y de liquidado → "Abonos sin intereses (CAT 0%)"; de venta de contado → no
+- [ ] Todos los tickets → "Garantía de 90 días desde que lo recibes"
+
+### 2026-10-07 — SEO: título por artículo, datos de producto, noindex y sitemap
+**Dónde:** `shared/seo/seo.service.ts`, `DetalleVarianteComponent.seleccionar()`, `PaginaNoDisponibleComponent`, `src/sitemap.xml`, `src/robots.txt`, `index.html`
+**Tipo:** unitario · e2e
+**Debe comprobar:**
+- [ ] Detalle de un artículo → `document.title` = "<nombre talla color> — Novedades Jade" y un `<script type="application/ld+json">` con `@type: Product`, precio en MXN y `InStock`/`OutOfStock`
+- [ ] Cambiar de artículo en el detalle → hay un solo script JSON-LD (no se acumulan)
+- [ ] Salir del detalle → título y descripción vuelven a los de index.html y se quita el JSON-LD
+- [ ] Ruta inexistente → `<meta name="robots" content="noindex">`; al salir vuelve a `index, follow`
+- [ ] Fotos de la tienda y de Favoritos con `alt` = nombre del artículo (no "Imagen variante")
+
+### 2026-10-07 — Card de pedido: Pagado / Falta pagar y Entregado / Falta entregar, 📦 Entregar y ↺
+**Dónde:** `pedidos/entrega/entrega.ts` (`etiquetaPago`, `etiquetaEntrega`, `preguntarSiSeLoLlevo`, `preguntarYEntregar`), `MisPedidosComponent` (`pagoDeCard`, `entregadoDeCard`, `puedeEntregar`, `entregar`, `regresarEntrega`), `PedidosService.entregar/regresarEntrega`
+**Tipo:** unitario (funciones y componente con HttpTestingController) · e2e
+**Debe comprobar:**
+- [ ] Contado cobrado + entregado → "✅ Pagado" verde y "🤝 Entregado" verde; Apartado abierto → "Falta pagar" rojo y "Falta entregar" rojo
+- [ ] Cancelado → solo "Cancelado", sin etiqueta de entrega ni botón 📦
+- [ ] Grupo: usa `grupo.entregadoGrupo`, no el `entregado` del titular
+- [ ] 📦 Entregar sale solo con la acción `entregar`, si falta entregar y (pagado o Ir pagando); ↺ solo con `regresar-entrega` y entregado
+- [ ] 📦 → `POST /v1/pedidos/{id}/entrega`; 400 → Swal con el `mensaje` del back; 200 → la card se recarga en Entregado
+- [ ] ↺ pide confirmación y manda `DELETE`; "Cancelar" en la confirmación no llama al back
+- [ ] `preguntarSiSeLoLlevo`: "Sí" → true; "Todavía no" o cerrar con Esc → false (queda Falta entregar con 📦 en la card); clic fuera no la cierra
+
+### 2026-10-07 — "¿Ya se lo llevó?" al terminar de pagar o al vender
+**Dónde:** `DetallePedidoComponent` (liquidar abono), `GrupoPedidoComponent` (grupo pagado), `AbonosComponent` (Créditos / Abonos), `MisPedidosComponent` (`alCobrarCredito`, `confirmarCobro`, `confirmarCobroGrupo`), `VentaDirectaComponent` (manda `entregado`), `VentaVarianteComponent` (Ir pagando)
+**Tipo:** unitario (componente) · e2e
+**Debe comprobar:**
+- [ ] Abono que liquida un Apartado → pregunta; "Sí" → `POST …/entrega`; "Todavía no" → no llama
+- [ ] Abono que **no** liquida → no pregunta
+- [ ] Liquidar un pedido que ya está entregado (`detalle.entregado === true`) → no pregunta
+- [ ] Cobro de contado desde la card → pregunta y la card se **recarga** (ya no desaparece de la lista)
+- [ ] Grupo pagado completo → pregunta una vez y entrega a todos
+- [ ] Venta directa contado: pregunta **antes** de guardar y manda `entregado: true|false`; Apartado no pregunta
+- [ ] Venta Ir pagando (venta por artículo) → pregunta después de crear el pedido
+
+### 2026-10-07 — ⚙️ Filtros de Mis pedidos: bloque Pago y bloque Entrega
+**Dónde:** `filtros-pedidos.model.ts` (`OPCIONES_ESTADO_PAGO`, `OPCIONES_ESTADO_ENTREGA`, `ESTADOS_ANTERIORES`), `MisPedidosComponent` (panel de filtros, carga de filtros guardados)
+**Tipo:** unitario
+**Debe comprobar:**
+- [ ] Marcar "Pagado" + "Falta entregar" → `estado=PAGADO&estado=FALTA_ENTREGAR`
+- [ ] Filtro guardado viejo con `PENDIENTE` o `POR_COBRAR` → se carga como "Falta pagar" (una sola vez, sin duplicar)
+- [ ] Cada opción se esconde sin su acción (`filtro-por-cobrar`, `filtro-pagados`, `filtro-cancelados`, `filtro-pendientes`, `filtro-entregados`)
+
+### 2026-10-07 — Agregar artículo: stock total del modelo bloqueado + agregar / quitar stock
+**Dónde:** `AgregarComponent` de artículo (`ajusteStockModelo`, `stockModeloQuedaria`, `disponibleConAjuste`, `ajusteInvalido`, `puedeAjustarStockModelo`)
+**Tipo:** unitario (componente)
+**Debe comprobar:**
+- [ ] Modelo 10, repartido 10, ajuste +3 → "Repartido: 10 · Libre: 3 · El modelo quedaría en 13"; artículo con 3 se deja guardar
+- [ ] Ajuste −3 con modelo 10 y repartido 8 → "No se puede dejar el modelo en 7: ya tiene 8 repartidos." y Guardar no envía
+- [ ] Sin permiso de editar modelos → el campo de ajuste no sale (solo se ve el stock bloqueado)
+- [ ] El ajuste viaja **solo** en el primer detalle (`ajusteStockModelo`) y después de guardar se recarga el stock del modelo
+- [ ] El campo "Stock total del modelo" no se puede editar
+
+### 2026-10-07 — Homologación de pantallas: ancho, encabezados, selects, tablas y "Volver"
+**Dónde:** `styles.scss` (regla de encabezados por token, `--form-ancho`, `--lista-ancho`, `select` global), `design-system.scss` (`.pk-tabla`), Clientes, Palabras clave (tablas), Gastos, Cambiar contraseña, `app-boton-volver` en todas las pantallas
+**Tipo:** e2e (captura de día y de noche)
+**Debe comprobar:**
+- [ ] Formularios (Agregar modelo, Nuevo producto, Carga rápida, Lugares, Entregas por zona, Cinta, Hashtags, Configuración, Diagnóstico, Reconciliación, Caché, Agregar mi compra, Mi perfil, Mis datos, Cambiar contraseña, Publicar en redes) miden 820px y quedan centrados
+- [ ] Encabezado de cada card con el color de **Personalización** (`--card-header-bg`), sin "un div dentro de otro div"
+- [ ] Las etiquetas y botones dentro del encabezado conservan su color
+- [ ] Clientes y Palabras clave: tabla diseño A de día y colores Jade oscuros de noche
+- [ ] Todos los selects iguales (alto, borde, flecha) de día y de noche
+- [ ] Todos los botones de regresar dicen "Volver"; Cambiar contraseña no lo tiene y el formulario queda arriba
+- [ ] Gastos sin permiso de agregar → no dice "agrega uno"
+
 ### 2026-10-06 — HOTFIX prod: Mis datos se quedaba con el spinner encima
 **Dónde:** `MisDatosComponent.cargarCliente()` / `aFechaIso()` y `SelectorFechaComponent.writeValue()`
 **Tipo:** unitario (componente)

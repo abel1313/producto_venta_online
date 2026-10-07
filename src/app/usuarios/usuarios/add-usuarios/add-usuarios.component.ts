@@ -144,6 +144,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
     password: ['', [Validators.required, Validators.minLength(8), passwordFuerte]],
     confirmPassword: ['', Validators.required],
     aceptoPrivacidad: [false, Validators.requiredTrue],
+    aceptoTerminos: [false, Validators.requiredTrue],
     enabled: true,
     rol: '',
     rolId: [null as number | null]
@@ -186,6 +187,8 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
       // otro usuario, no tiene sentido pedirle que "acepte" en su nombre.
       this.formRegistro.get('aceptoPrivacidad')?.clearValidators();
       this.formRegistro.get('aceptoPrivacidad')?.updateValueAndValidity({ emitEvent: false });
+      this.formRegistro.get('aceptoTerminos')?.clearValidators();
+      this.formRegistro.get('aceptoTerminos')?.updateValueAndValidity({ emitEvent: false });
 
       this.formRegistro.get('password')?.valueChanges.subscribe(() => this.togglePasswordValidators());
       this.formRegistro.get('confirmPassword')?.valueChanges.subscribe(() => this.togglePasswordValidators());
@@ -255,9 +258,10 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
 
   darAltaUser(){
     if (this.formRegistro.valid) {
-      const { userName, email, password, aceptoPrivacidad } = this.formRegistro.value;
+      const { userName, email, password, aceptoPrivacidad, aceptoTerminos } = this.formRegistro.value;
       const usrName: string = userName ?? '';
-      this.auth.registrar({ userName: usrName, email, password, aceptoPrivacidad: aceptoPrivacidad ?? false }).subscribe({
+      this.auth.registrar({ userName: usrName, email, password, aceptoPrivacidad: aceptoPrivacidad ?? false,
+                            aceptoTerminos: aceptoTerminos ?? false }).subscribe({
         next: (registrado) => {
           if (registrado != null) {
             this.formRegistro.reset();

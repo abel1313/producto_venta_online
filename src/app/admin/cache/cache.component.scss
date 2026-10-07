@@ -13,7 +13,7 @@ $t: all 0.22s ease;
 
 .ac-card {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--form-ancho, 820px);
   background: var(--card-bg);
   backdrop-filter: blur(18px);
   border: 1px solid var(--card-border);
@@ -199,7 +199,7 @@ $t: all 0.22s ease;
 // ── Datos de prueba: solo acomodo; colores y bordes salen de .pk-* y de los tokens ──
 .ac-datos {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--form-ancho, 820px);
 
   &__titulo    { margin: 0; font-size: 1.05rem; font-weight: 700; color: inherit; }
   &__subtitulo { margin: 2px 0 0; font-size: .8rem; color: inherit; opacity: .85; }

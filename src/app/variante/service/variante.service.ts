@@ -354,6 +354,8 @@ export class VarianteService {
 }
 
 export interface IVentaDirectaRequest {
+  /** "¿Ya se lo llevó?" (back 2026-10-06). Sin mandar: contado e Ir pagando sí, Apartado no. */
+  entregado?:    boolean;
   usuarioId:     number;
   clienteId:     number;
   pagosYMesesId?: number;

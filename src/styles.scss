@@ -56,6 +56,10 @@ body {
 }
 
 :root {
+  /* Anchos homologados (2026-10-06, pedido del dueño): formularios = Agregar Modelo (820px);
+     listas y tablas = como Tienda / Créditos (1100px). Cada pantalla usa estos, no un número propio. */
+  --form-ancho:  820px;
+  --lista-ancho: 1100px;
   --font-base: 'Poppins', sans-serif;
 
   /* Override Bootstrap */
@@ -1011,6 +1015,41 @@ body.theme-dark:not([data-estilo="jade"]), body.theme-dark.sin-diseno {
 }
 
 /* ════════════════════════════════════════════════════════════
+   SELECT HOMOLOGADO (2026-10-06) — todos los <select> de la app con el mismo diseño
+   Pedido del dueño: "los select están bien feos, no quedaron como quedamos" (Ordenar en Mis
+   pedidos, "sin día fijo" en Lugares de entrega, Entregas por zona…). Cada pantalla tenía el
+   suyo (o ninguno: la flecha y el borde del navegador). Aquí va uno solo, con los tokens del
+   campo (Personalización): fondo, texto, borde, foco y la flecha dibujada con el color del texto.
+   Login y Registro (body.sin-diseno) no se tocan. Un select de varias filas (multiple / size)
+   se queda como lista.
+   ════════════════════════════════════════════════════════════ */
+body:not(.sin-diseno) select:not([multiple]):not([size]):not(#_) {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: var(--input-height, 44px);
+  padding: 0 40px 0 14px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius, 12px);
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--input-text) 50%),
+    linear-gradient(135deg, var(--input-text) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  transition: border-color .15s ease, box-shadow .15s ease;
+
+  &:hover:not(:disabled) { border-color: var(--input-focus-border); }
+  &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+body:not(.sin-diseno) select option:not(#_) { background-color: var(--input-bg); color: var(--input-text); }
+
+/* ════════════════════════════════════════════════════════════
    SWEETALERT2 — mismo look que las cards del sistema
    ════════════════════════════════════════════════════════════ */
 
@@ -1273,6 +1312,12 @@ body:is(.theme-light, .theme-dark) {
   }
 }
 
+/* El brillo decorativo de los encabezados (*__header-glow) va DEBAJO del texto (2026-10-07).
+   El título traía z-index sin position, así que el brillo (absoluto, 280px a la derecha) lo tapaba:
+   en celular se cortaba el subtítulo en Agregar modelo, Cargar catálogo Excel y 6 pantallas más. */
+[class*="__header-glow"] { z-index: 0; }
+[class*="__header-glow"] ~ * { position: relative; z-index: 1; }
+
 /* ════════════════════════════════════════════════════════════
    GLASSMORPHISM GLOBAL — todos los headers de todos los
    componentes del sistema (día y noche iguales en todos).
@@ -1285,54 +1330,48 @@ body:is(.theme-light, .theme-dark) {
      .pl-card__header   →  tira azul marino de los cards de productos (NO cambia)
    ════════════════════════════════════════════════════════════ */
 
-/* ── DÍA — cristal con el token --app-glass-strong y la línea --app-gold-line del diseño ── */
-// Excepciones agregadas 2026-09-01: cards nuevas con header de color propio y
-// editable desde Personalización (--card-header-bg) -- este glassmorphism con
-// !important les pisaba el color sin importar qué se configurara.
-body.theme-light, [data-theme="light"] {
-  [class*="-header__content"],
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
-    background:          var(--app-glass-strong) !important;
-    backdrop-filter:     blur(20px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-    box-shadow:
-      0 8px 32px rgba(var(--app-accent-rgb), 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.05) !important;
-    border-bottom:       1px solid var(--app-gold-line) !important;
-    color:               var(--app-text) !important;
+/* ── 2026-10-06: UNA sola regla para todos, sacada de Personalización ──
+   Pedido del dueño: "al cambiar en Personalización un color, todas las card deben quedar
+   idénticas en header, body y footer". Antes esto pintaba de cristal blanco los headers
+   `*-card__head` con una lista de 9 excepciones que se quedaban con su color: por eso unas
+   cards salían blancas y otras verdes (Hashtags, Agregar mi compra, Mi perfil…), y
+   `*-header__content` era un segundo cuadro de cristal DENTRO de la franja del encabezado
+   (el "div dentro de div" de Créditos y Abonos, Dashboard, Reportes, Clientes, Carga rápida).
+
+   Ahora:
+   - Header de card  → --card-header-bg / --card-header-text (los de Personalización), en TODAS.
+   - Encabezado de pantalla → una sola capa: la franja de afuera (--header-brand) y el contenido
+     de adentro transparente, con --header-text.
+   Única excepción: .pl-card__header, la tira de las cards de productos (no cambia). */
+:is(body.theme-light, body.theme-dark, [data-theme="light"], [data-theme="dark"]) {
+  [class*="-card__head"]:not([class*="-glow"]):not([class*="-icon"]):not([class*="pl-card__head"]):not(#_) {
+    background:          var(--card-header-bg) !important;
+    backdrop-filter:     none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:          none !important;
+    border-bottom:       1px solid var(--card-border) !important;
+    color:               var(--card-header-text) !important;
+
+    // Etiquetas y botones dentro del header (estado de un pedido, ✕ de cerrar…) traen su propio
+    // color: no se repintan.
+    :is(h1, h2, h3, h4, h5, h6, p, span, label, strong, b, i, a):not([class*="badge"]):not([class*="btn"]):not([class*="chip"]):not([class*="badge"] *):not([class*="btn"] *):not(button *) {
+      color: var(--card-header-text) !important;
+    }
+    :is(small, [class*="__subtitle"], [class*="__sub"]) {
+      color: color-mix(in srgb, var(--card-header-text) 78%, transparent) !important;
+    }
   }
 
-  [class*="-header__content"] *,
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) * {
-    color: var(--app-text) !important;
-  }
+  [class*="-header__content"]:not(#_) {
+    background:          transparent !important;
+    backdrop-filter:     none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:          none !important;
+    border:              0 !important;
+    color:               var(--header-text) !important;
 
-  [class*="-header__content"] small,
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) small,
-  [class*="-header__content"] [class*="__subtitle"],
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__subtitle"],
-  [class*="-header__content"] [class*="__sub"],
-  [class*="-card__head"]:not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) [class*="__sub"] {
-    color: var(--app-text-muted) !important;
-  }
-}
-
-/* ── NOCHE — dark glass cálido ── */
-// :not([class*="-glow"]): "pf-card__header-glow" (el brillo decorativo de 280px de varios headers)
-// también contiene "-card__head" y recibía este fondo casi negro: quedaba como un cuadro que
-// oscurecía el título y el subtítulo (QA 2026-09-30, Agregar modelo en celular).
-body.theme-dark, [data-theme="dark"] {
-  [class*="-header__content"],
-  [class*="-card__head"]:not([class*="-glow"]):not([class*="pl-card__head"]):not([class*="pk-card__header"]):not([class*="vb-card__header"]):not([class*="br-card__header"]):not([class*="gh-card__head"]):not([class*="fv-card__header"]):not([class*="gl-card__header"]):not([class*="ci-card__header"]):not([class*="vr-card__header"]) {
-    background:          var(--app-glass-strong) !important;
-    backdrop-filter:     blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    box-shadow:          0 6px 28px rgba(0, 0, 0, 0.50) !important;
-    border-bottom:       1px solid var(--app-gold-line) !important;
-    color:               var(--app-text) !important;
-
-    h4, h5, h6     { color: var(--app-text) !important; }
-    small           { color: var(--app-text-muted) !important; }
+    :is(h1, h2, h3, h4, h5, h6) { color: var(--header-text) !important; }
+    :is(small, [class*="__subtitle"], [class*="__sub"]) { color: var(--header-text-muted) !important; }
   }
 }
 

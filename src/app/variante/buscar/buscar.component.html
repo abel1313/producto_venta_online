@@ -254,7 +254,7 @@
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
-          <img [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+          <img [src]="src" class="vb-card__img" [alt]="(v.nombreProducto || 'Artículo') + (v.talla ? ' talla ' + v.talla : '') + (v.color ? ' ' + v.color : '')" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
         <button *ngIf="!isAnonymous && favoritosDisponibles" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"

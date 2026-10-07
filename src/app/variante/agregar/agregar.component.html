@@ -1,4 +1,4 @@
-<app-boton-volver anchoContenido="780px" margen="16px" fallback="/tienda/buscar"></app-boton-volver>
+<app-boton-volver anchoContenido="820px" margen="16px" fallback="/tienda/buscar"></app-boton-volver>
 <div class="vf-page">
   <div class="vf-card">
 
@@ -63,8 +63,26 @@
              [class.vf-stock--roto]="sd.descuadrado"
              [class.vf-stock--alerta]="seEstaPasandoDeStock">
 
+          <!-- Stock del modelo (2026-10-06): el total bloqueado y, aparte, cuánto agregarle o
+               quitarle. Se guarda junto con el artículo, en una sola operación. -->
+          <div class="vf-stock__fila">
+            <label class="vf-stock__campo">
+              <span>Stock total del modelo</span>
+              <input class="vf-input" type="number" [value]="sd.stockTotal" disabled
+                     title="Solo se lee: para cambiarlo usa el campo de al lado">
+            </label>
+            <label class="vf-stock__campo" *ngIf="puedeAjustarStockModelo">
+              <span>Agregar (+) o quitar (−) al modelo</span>
+              <input class="vf-input" type="number" step="1" [(ngModel)]="ajusteStockModelo"
+                     [ngModelOptions]="{ standalone: true }" placeholder="0">
+            </label>
+          </div>
           <div class="vf-stock__num" *ngIf="!sd.descuadrado">
-            Quedan <b>{{ sd.disponible }}</b> disponibles de {{ sd.stockTotal }}
+            Repartido: <b>{{ sd.enVariantes }}</b> · Libre: <b>{{ disponibleConAjuste }}</b>
+            <ng-container *ngIf="ajusteStockModelo"> · El modelo quedaría en <b>{{ stockModeloQuedaria }}</b></ng-container>
+          </div>
+          <div class="vf-stock__alerta" *ngIf="ajusteInvalido">
+            No se puede dejar el modelo en {{ stockModeloQuedaria }}: ya tiene {{ sd.enVariantes }} repartidos.
           </div>
 
           <div class="vf-stock__num" *ngIf="sd.descuadrado">
@@ -76,7 +94,9 @@
 
           <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock && !sd.descuadrado">
             Estás repartiendo <b>{{ stockEnEstaPantalla }}</b> y solo quedan
-            <b>{{ sd.disponible }}</b>. El guardado va a fallar.
+            <b>{{ disponibleConAjuste }}</b>.
+            <ng-container *ngIf="puedeAjustarStockModelo">Súbele stock al modelo en el campo de arriba.</ng-container>
+            <ng-container *ngIf="!puedeAjustarStockModelo">El guardado va a fallar.</ng-container>
           </div>
         </div>
 

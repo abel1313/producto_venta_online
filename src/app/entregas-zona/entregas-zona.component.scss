@@ -3,7 +3,7 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .ez-wrap {
-  max-width: 640px;
+  max-width: var(--form-ancho, 820px);
   margin: 24px auto;
   display: flex;
   flex-direction: column;

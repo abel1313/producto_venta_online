@@ -3,17 +3,26 @@
   <app-regresar-legal></app-regresar-legal>
 
   <header class="pv-header">
-    <h1 class="pv-title">Política de Privacidad</h1>
+    <h1 class="pv-title">Aviso de privacidad</h1>
     <p class="pv-sub">Novedades Jade</p>
   </header>
 
   <section class="pv-sec">
-    <h2>Quiénes somos</h2>
+    <h2>Quién es responsable de tus datos</h2>
     <p>
-      Novedades Jade es una tienda de venta de bolsas, blusas, pantalones y perfumes. Esta
-      política explica qué datos personales recabamos a través de nuestro sistema de ventas en
-      línea, para qué los usamos y cómo puedes controlarlos.
+      Novedades Jade es una tienda de venta de bolsas, blusas, pantalones y perfumes. Este aviso
+      explica qué datos personales recabamos a través de nuestro sistema de ventas en línea, para
+      qué los usamos y cómo puedes controlarlos, conforme a la Ley Federal de Protección de Datos
+      Personales en Posesión de los Particulares.
     </p>
+    <ul *ngIf="datos$ | async as d">
+      <li *ngIf="d.nombreResponsable">Responsable: <strong>{{ d.nombreResponsable }}</strong></li>
+      <li *ngIf="d.domicilio">Domicilio: {{ d.domicilio }}</li>
+      <li *ngIf="d.telefono">Teléfono: {{ telefonoLegible(d.telefono) }}</li>
+      <li>Correo para todo lo relacionado con tus datos:
+        <a [href]="'mailto:' + d.correo">{{ d.correo }}</a></li>
+    </ul>
+    <p>No tratamos datos sensibles (salud, religión, origen, preferencias, datos biométricos ni financieros).</p>
   </section>
 
   <section class="pv-sec">
@@ -43,14 +52,20 @@
 
   <section class="pv-sec">
     <h2>Para qué los usamos</h2>
+    <p><strong>Para lo necesario de tu compra</strong> (sin esto no podemos venderte):</p>
     <ul>
       <li>Crear tu cuenta y permitirte iniciar sesión de forma segura.</li>
-      <li>Procesar, entregar y dar seguimiento a tus pedidos.</li>
+      <li>Procesar, cobrar, entregar y dar seguimiento a tus pedidos, incluidos los abonos de Ir pagando.</li>
       <li>Enviarte tu comprobante de compra por correo electrónico.</li>
-      <li>Atender tus dudas por el chat de la tienda y por mensajes y comentarios en redes sociales.</li>
+      <li>Atender tus dudas, aclaraciones, cambios y garantías por el chat de la tienda y por mensajes y comentarios en redes sociales.</li>
       <li>Verificar tu correo electrónico, y avisarte si hay que cambiar tu contraseña.</li>
-      <li>Registrar tu participación en rifas o promociones, cuando decides participar.</li>
-      <li>Llevar el control interno de ventas e inventario del negocio.</li>
+      <li>Cumplir obligaciones fiscales y contables, y llevar el control interno de ventas e inventario.</li>
+    </ul>
+    <p><strong>Para lo que tú decides</strong> (puedes decir que no y seguir comprando):</p>
+    <ul>
+      <li>Avisarte por correo cuando cambia el estado de tu pedido o cuando un producto de tus
+        <em>Favoritos</em> vuelve a tener existencias. Se apaga en <em>Mi perfil</em> → "Recibir correos".</li>
+      <li>Registrar tu participación en rifas o promociones, solo si decides participar.</li>
     </ul>
     <p>
       <strong>No vendemos ni rentamos tus datos personales a terceros</strong>, ni los usamos para
@@ -89,15 +104,21 @@
 
   <section class="pv-sec">
     <h2>Con quién compartimos información</h2>
-    <p>Únicamente con proveedores que nos permiten operar la tienda, y solo con lo indispensable:</p>
+    <p>
+      Únicamente con proveedores que nos permiten operar la tienda, que tratan tus datos por cuenta
+      nuestra y solo con lo indispensable. Algunos están fuera de México:
+    </p>
     <ul>
-      <li>El servicio de correo electrónico con el que te enviamos comprobantes y códigos de
-        verificación.</li>
-      <li>El proveedor donde está alojado el sistema y su base de datos.</li>
-      <li>OpenAI, que procesa el texto de tus mensajes para generar las respuestas automáticas.</li>
-      <li>Meta (Facebook e Instagram) y TikTok, porque las conversaciones y comentarios en esas
-        redes pasan por sus plataformas. Cada una trata tus datos según su propia política de
-        privacidad.</li>
+      <li><strong>OVHcloud</strong> (Europa): el servidor donde está alojado el sistema y su base de datos.</li>
+      <li><strong>Google</strong> (Estados Unidos): el servicio de correo con el que te enviamos
+        comprobantes y códigos de verificación.</li>
+      <li><strong>OpenAI</strong> (Estados Unidos): procesa el texto de tus mensajes para generar las
+        respuestas automáticas.</li>
+      <li><strong>Mercado Pago</strong> (México): procesa los pagos con tarjeta. Los datos de tu tarjeta
+        los captura Mercado Pago; nosotros nunca los vemos ni los guardamos.</li>
+      <li><strong>Meta</strong> (Facebook e Instagram) y <strong>TikTok</strong>, porque las conversaciones y
+        comentarios en esas redes pasan por sus plataformas. Cada una trata tus datos según su
+        propia política de privacidad.</li>
     </ul>
     <p>
       También podríamos compartir información si una autoridad competente nos lo requiere
@@ -130,21 +151,41 @@
   </section>
 
   <section class="pv-sec">
-    <h2>Tus derechos</h2>
+    <h2>Tus derechos (ARCO) y cómo pedirlos</h2>
     <p>
       Puedes pedirnos en cualquier momento <strong>acceder</strong> a los datos que tenemos de ti,
-      <strong>corregirlos</strong> si están mal, <strong>eliminarlos</strong> o pedir que dejemos
-      de usarlos. Algunos los puedes editar tú directamente desde la sección
+      <strong>rectificarlos</strong> si están mal, <strong>cancelarlos</strong> (borrarlos) u
+      <strong>oponerte</strong> a que los usemos para algo. Algunos los puedes editar tú directamente desde
       <em>Mi perfil</em> / <em>Mis datos</em> de tu cuenta.
     </p>
+    <p>Para pedirlo, escríbenos a <a [href]="'mailto:' + correo">{{ correo }}</a> con:</p>
+    <ul>
+      <li>Tu nombre y el correo o teléfono con el que te registraste, para contestarte.</li>
+      <li>Qué pides (ver, corregir, borrar u oponerte) y sobre qué datos.</li>
+      <li>Una identificación, o escribir desde el mismo correo de tu cuenta, para saber que eres tú.</li>
+    </ul>
     <p>
-      Para cualquier solicitud, escríbenos a
-      <a [href]="'mailto:' + correoContacto">{{ correoContacto }}</a>. Te respondemos por la misma
-      vía.
+      Te contestamos si procede en un máximo de <strong>5 días hábiles</strong> y, si procede, lo hacemos
+      dentro de los <strong>15 días hábiles</strong> siguientes. Es gratis.
+    </p>
+    <p>
+      <strong>Limitar el uso o revocar tu consentimiento:</strong> puedes apagar los correos de avisos en
+      <em>Mi perfil</em>, dejar de participar en rifas, o escribirnos para que dejemos de usar tus datos
+      para algo en particular. Revocar no tiene efectos hacia atrás, y si pides que dejemos de usar
+      un dato necesario para un pedido en curso, puede que ya no podamos atenderlo.
     </p>
     <p>
       Los pasos para pedir que borremos tus datos, incluidos tus mensajes y comentarios de redes
       sociales, están en <a routerLink="/eliminar-datos">Eliminar mis datos</a>.
+    </p>
+  </section>
+
+  <section class="pv-sec">
+    <h2>Cómo cuidamos tus datos</h2>
+    <p>
+      Las contraseñas se guardan cifradas, la conexión con la tienda va cifrada (https) y solo el
+      personal autorizado ve los datos que necesita para su trabajo. Si alguna vez hubiera un
+      incidente que afecte tus datos de forma importante, te avisaremos para que puedas protegerte.
     </p>
   </section>
 
@@ -157,16 +198,17 @@
   </section>
 
   <section class="pv-sec">
-    <h2>Cambios a esta política</h2>
+    <h2>Cambios a este aviso</h2>
     <p>
-      Si cambiamos esta política, actualizaremos esta misma página y la fecha que aparece abajo.
+      Si cambiamos este aviso, actualizaremos esta misma página y la fecha que aparece abajo. Si
+      algún día usamos tus datos para algo nuevo que necesite tu permiso, te lo pediremos antes.
     </p>
   </section>
 
   <footer class="pv-footer">
     <p>Última actualización: {{ ultimaActualizacion }}</p>
     <p>
-      Contacto: <a [href]="'mailto:' + correoContacto">{{ correoContacto }}</a>
+      Contacto: <a [href]="'mailto:' + correo">{{ correo }}</a>
     </p>
   </footer>
 

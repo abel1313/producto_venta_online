@@ -25,6 +25,7 @@ import {
 } from '../models/editar-pedido.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { preguntarYEntregar } from '../entrega/entrega';
 import { GrupoPedidos } from '../models/grupo-pedido.model';
 
 function escaparHtml(texto: string | null | undefined): string {
@@ -366,10 +367,65 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // arriba ("📦 Apartado" seguido de "APARTADO"). Se reemplaza por el estado de pago real.
   get estadoPedidoLabel(): string {
     if (this.estaCancelado) return 'Cancelado';
+    // Pago y entrega van aparte desde 2026-10-06: aquí solo el pago. Un contado cobrado se
+    // guarda 'Entregado', que es el pago, no la entrega.
     if (this.esCredito) {
-      return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Por cobrar';
+      return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Falta pagar';
     }
-    return this.estadoPedido;
+    return this.estadoPedido === 'Entregado' ? 'Pagado' : 'Falta pagar';
+  }
+
+  // ── Entrega (dominio entrega del back, 2026-10-06) ──────────────────────────────────
+  /** null mientras el detalle no llega (no se pinta la etiqueta). */
+  get entregadoDetalle(): boolean | null {
+    const d = this.detalle?.entregado;
+    if (d !== undefined && d !== null) return d;
+    const l = this.pedido?.pedido?.entregado;
+    return l === undefined ? null : l;
+  }
+
+  private get pagadoDetalle(): boolean {
+    if (this.esCredito) return this.estadoPedido === 'PAGADO' || (this.detalle?.saldoPendiente ?? 1) <= 0.005;
+    return this.estadoPedido === 'Entregado';
+  }
+
+  private get esIrPagandoDetalle(): boolean {
+    return (this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido) === 'FIADO';
+  }
+
+  get puedeEntregarDetalle(): boolean {
+    return this.isAdmin && !this.estaCancelado && this.entregadoDetalle === false
+      && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')
+      && (this.pagadoDetalle || this.esIrPagandoDetalle);
+  }
+
+  get puedeRegresarEntregaDetalle(): boolean {
+    return this.isAdmin && !this.estaCancelado && this.entregadoDetalle === true
+      && this.authService.tieneAccion('pedidos/mis-pedidos', 'regresar-entrega');
+  }
+
+  entregarDetalle(): void {
+    const id = this.pedido.pedido.id;
+    Swal.fire({ icon: 'question', title: '📦 Entregar', text: `¿El cliente ya se llevó el pedido #${id}${this.grupo ? ' (y los de su grupo)' : ''}?`,
+      showCancelButton: true, confirmButtonText: 'Sí, entregado', cancelButtonText: 'No' }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidosService.entregar(id).subscribe({
+        next: () => { Swal.fire({ icon: 'success', title: 'Entregado', timer: 1500, showConfirmButton: false }); this.cargarDetalleCompleto(); },
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo marcar como entregado', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
+  regresarEntregaDetalle(): void {
+    const id = this.pedido.pedido.id;
+    Swal.fire({ icon: 'warning', title: 'Regresar a "Falta entregar"', text: `El pedido #${id} quedará como "Falta entregar". ¿Seguro?`,
+      showCancelButton: true, confirmButtonText: 'Sí, regresar', cancelButtonText: 'No' }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidosService.regresarEntrega(id).subscribe({
+        next: () => this.cargarDetalleCompleto(),
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo regresar', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
   }
 
   // "Registrar abono" seguía apareciendo clickeable en un crédito ya liquidado — esCredito
@@ -695,7 +751,13 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
           ? `El pedido #${pedidoId} ha sido liquidado.${txtCambio}`
           : `Saldo restante: $${saldoCalculado.toFixed(2)}.${txtCambio}`;
 
-        Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(() => {
+        const preguntarEntrega = liquidado && this.entregadoDetalle === false
+          && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar');
+        Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(async () => {
+          if (preguntarEntrega) {
+            // E1: al liquidar se pregunta si ya se lo llevó (si no, queda "Falta entregar").
+            await preguntarYEntregar(() => this.pedidosService.entregar(pedidoId), () => this.cargarDetalleCompleto());
+          }
           if (correoDisponibleSnap && enviarCorreoSnap) {
             // Cliente con correo y checkbox marcado → enviar automáticamente al correo registrado
             this.enviarTicketPorCorreo(pedidoId, this.pedido.cliente.correoElectronico);

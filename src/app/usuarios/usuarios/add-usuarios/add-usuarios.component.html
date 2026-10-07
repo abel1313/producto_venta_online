@@ -40,7 +40,7 @@
 
       <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio
            público, no viene de una pantalla admin a la que volver. -->
-      <app-boton-volver *ngIf="esActualizar" etiqueta="Volver a usuarios" fallback="/usuarios/buscar"></app-boton-volver>
+      <app-boton-volver *ngIf="esActualizar" fallback="/usuarios/buscar"></app-boton-volver>
 
       <div class="brand">
         <div class="brand-icon">
@@ -225,6 +225,13 @@
         </div>
 
         <div class="privacy-box" *ngIf="!esActualizar">
+          <!-- Aviso de privacidad simplificado (LFPDPPP): quién trata los datos, para qué y dónde
+               leer el completo, en el momento en que se piden. -->
+          <p class="privacy-resumen">
+            <strong>Novedades Jade</strong> usa tus datos para crear tu cuenta, venderte, entregarte y
+            darle seguimiento a tus pedidos. No los vendemos. Puedes pedir verlos, corregirlos o
+            borrarlos cuando quieras.
+          </p>
           <label class="checkbox-label" for="chk-privacidad">
             <input id="chk-privacidad" type="checkbox" formControlName="aceptoPrivacidad">
             <span>Acepto el <strong>aviso de privacidad</strong> para crear mi cuenta</span>
@@ -239,6 +246,18 @@
           <div *ngIf="formRegistro.get('aceptoPrivacidad')?.invalid && formRegistro.get('aceptoPrivacidad')?.touched" class="field-error">
             <i class="pi pi-exclamation-circle"></i>
             Debes aceptar el aviso de privacidad para registrarte
+          </div>
+
+          <label class="checkbox-label checkbox-label--terminos" for="chk-terminos">
+            <input id="chk-terminos" type="checkbox" formControlName="aceptoTerminos">
+            <span>Acepto los <strong>Términos y condiciones</strong> de compra</span>
+          </label>
+          <a class="privacy-link" routerLink="/termConditions" target="_blank" rel="noopener">
+            <i class="pi pi-external-link"></i> Leer los Términos y condiciones
+          </a>
+          <div *ngIf="formRegistro.get('aceptoTerminos')?.invalid && formRegistro.get('aceptoTerminos')?.touched" class="field-error">
+            <i class="pi pi-exclamation-circle"></i>
+            Debes aceptar los Términos y condiciones para registrarte
           </div>
         </div>
 

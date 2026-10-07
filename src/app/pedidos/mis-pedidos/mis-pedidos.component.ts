@@ -23,10 +23,11 @@ import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
 import { GrupoPedidoService } from '../grupo-pedido.service';
 import { GrupoEnLista } from '../models/grupo-pedido.model';
+import { EstadoPago, EtiquetaCard, etiquetaEntrega, etiquetaPago, preguntarYEntregar } from '../entrega/entrega';
 import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
 import {
   filtrosPedidosVacios, IFiltrosPedidos, IOpcionFiltro, IPedidosEncontrados,
-  OPCIONES_DINERO, OPCIONES_ENTREGA, OPCIONES_ESTADO, OPCIONES_FORMA, OPCIONES_MODO, OPCIONES_ORDEN, OPCIONES_UNIDOS
+  OPCIONES_DINERO, OPCIONES_ENTREGA, OPCIONES_ESTADO, OPCIONES_ESTADO_ENTREGA, OPCIONES_ESTADO_PAGO, ESTADOS_ANTERIORES, OPCIONES_FORMA, OPCIONES_MODO, OPCIONES_ORDEN, OPCIONES_UNIDOS
 } from './models/filtros-pedidos.model';
 
 /** Los cuatro formularios de cobro a crédito de la card (carpeta ../cobro). */
@@ -112,6 +113,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   filtros: IFiltrosPedidos = filtrosPedidosVacios();
   readonly opcionesForma   = OPCIONES_FORMA;
   readonly opcionesEstado  = OPCIONES_ESTADO;
+  readonly opcionesPago    = OPCIONES_ESTADO_PAGO;
+  readonly opcionesEntregaEstado = OPCIONES_ESTADO_ENTREGA;
   readonly opcionesDinero  = OPCIONES_DINERO;
   readonly opcionesEntrega = OPCIONES_ENTREGA;
   readonly opcionesModo    = OPCIONES_MODO;
@@ -235,7 +238,9 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     this.filtros = {
       ...base,
       formas: lista(g['formas'], OPCIONES_FORMA),
-      estados: lista(g['estados'], OPCIONES_ESTADO),
+      estados: lista(Array.isArray(g['estados'])
+        ? Array.from(new Set((g['estados'] as string[]).map(e => ESTADOS_ANTERIORES[e] ?? e))) : g['estados'],
+        OPCIONES_ESTADO),
       dinero: lista(g['dinero'], OPCIONES_DINERO),
       totalDesde: numero(g['totalDesde'], 'filtro-total'),
       totalHasta: numero(g['totalHasta'], 'filtro-total'),
@@ -262,7 +267,10 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     const partes: string[] = [];
     if (this.buscarProd) partes.push(`"${this.buscarProd}"`);
     if (f.formas.length)  partes.push(textos(f.formas, OPCIONES_FORMA).join(' o '));
-    if (f.estados.length) partes.push(textos(f.estados, OPCIONES_ESTADO).join(' o '));
+    const pago = f.estados.filter(e => OPCIONES_ESTADO_PAGO.some(o => o.valor === e));
+    const entrega = f.estados.filter(e => OPCIONES_ESTADO_ENTREGA.some(o => o.valor === e));
+    if (pago.length) partes.push(textos(pago, OPCIONES_ESTADO).join(' o '));
+    if (entrega.length) partes.push(textos(entrega, OPCIONES_ESTADO).join(' o '));
     if (f.dinero.length)  partes.push(textos(f.dinero, OPCIONES_DINERO).join(' o '));
     if (f.totalDesde != null || f.totalHasta != null) {
       partes.push(`total ${f.totalDesde != null ? 'desde $' + f.totalDesde : ''}${f.totalDesde != null && f.totalHasta != null ? ' ' : ''}${f.totalHasta != null ? 'hasta $' + f.totalHasta : ''}`);
@@ -339,6 +347,9 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       this.totalPaginas = data?.totalPaginas ?? 0;
       this.totalRegistros = data?.totalRegistros ?? 0;
       this.abrirSiVieneDeUrl();
+      const alRecargar = this.alRecargar;
+      this.alRecargar = null;
+      alRecargar?.(this.pedidoGenerico);
     });
   }
 
@@ -967,7 +978,14 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
 
   /** Ya se cobró: la card se vuelve a pedir y se queda en la misma página. */
   alCobrarCredito(): void {
+    const id = this.cobroCredito?.item.pedido.id;
     this.cobroCredito = null;
+    // Si con este cobro quedó pagado y no se lo ha llevado, se pregunta (E1/E3). Se decide con la
+    // card recién leída: así cuenta igual un pedido suelto que un grupo.
+    this.alRecargar = lista => {
+      const card = lista.find(p => p.pedido.id === id);
+      if (card && this.debePreguntarEntrega(card)) this.preguntarEntregaDe(card);
+    };
     this.buscarPedidoAdmin(false);
   }
 
@@ -1020,9 +1038,14 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     item.pagosYMesesId = this.pagosYMesesId ?? 0;
     this.pedidoService.updateService(item.pedido.id, item).subscribe(
       () => {
-        this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
         this.mostrarDialogoCobro = false;
-        Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+        // Ya no se quita de la lista: ahora queda "Pagado" y, si no se lo llevó, "Falta entregar" (E4).
+        if (this.puedeEntregarAccion()) {
+          this.preguntarEntregaDe(item, 'Pedido cobrado. ¿El cliente ya se lo llevó?');
+        } else {
+          Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+          this.buscarPedidoAdmin(false);
+        }
       },
       (err) => {
         this.mostrarDialogoCobro = false;
@@ -1046,12 +1069,13 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       next: r => {
         this.mostrarDialogoCobro = false;
         const cobrados = r?.data?.pedidosCobrados ?? [];
-        Swal.fire({
-          icon: 'success',
-          title: 'Pedidos cobrados',
-          text: cobrados.length ? `Se cobraron los pedidos ${this.numerosDe(cobrados)}.` : 'Los pedidos del grupo quedaron cobrados.'
-        });
-        this.buscarPedidoAdmin(false);
+        const texto = cobrados.length ? `Se cobraron los pedidos ${this.numerosDe(cobrados)}.` : 'Los pedidos del grupo quedaron cobrados.';
+        if (this.puedeEntregarAccion() && this.pedidoACobrar) {
+          this.preguntarEntregaDe(this.pedidoACobrar, `${texto} ¿Ya se los llevó?`);
+        } else {
+          Swal.fire({ icon: 'success', title: 'Pedidos cobrados', text: texto });
+          this.buscarPedidoAdmin(false);
+        }
       },
       error: err => {
         this.mostrarDialogoCobro = false;
@@ -1374,6 +1398,113 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
    * sin abonos, pagado o cancelado). La card mostraba solo el total, y un pedido recién separado de
    * un grupo parecía seguir debiendo todo aunque ya se le hubiera dejado parte de lo abonado.
    */
+  // ── Pago y entrega (dominio entrega del back, 2026-10-06; skill reglas-pedidos 2.4) ─────
+  // La card dice siempre dos cosas: Pagado / Falta pagar y Entregado / Falta entregar.
+
+  /** Lo que se ejecuta una vez cuando llega la siguiente página de la lista. */
+  private alRecargar: ((lista: IPedidoGenerico[]) => void) | null = null;
+
+  pagoDeCard(item: IPedidoGenerico): EstadoPago {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) {
+      if (g.totalGrupo <= 0) return 'CANCELADO';
+      return g.saldoGrupo > 0.005 ? 'FALTA_PAGAR' : 'PAGADO';
+    }
+    if (this.esCancelado(item)) return 'CANCELADO';
+    const estado = (item.pedido.estado_pedido ?? '').toUpperCase();
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO' ? 'PAGADO' : 'FALTA_PAGAR';
+    return estado === 'ENTREGADO' ? 'PAGADO' : 'FALTA_PAGAR';
+  }
+
+  /** Cuánto falta, para "Falta pagar $X". */
+  private faltaDeCard(item: IPedidoGenerico): number | null {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) return g.saldoGrupo;
+    const total = item.pedido.detalles.reduce((s, d) => s + d.sub_total, 0);
+    const falta = Math.round((total - (item.pedido.totalPagado ?? 0)) * 100) / 100;
+    return falta > 0 ? falta : null;
+  }
+
+  entregadoDeCard(item: IPedidoGenerico): boolean {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) return g.entregadoGrupo === true;
+    return item.pedido.entregado === true;
+  }
+
+  etiquetaPagoCard(item: IPedidoGenerico): EtiquetaCard {
+    return etiquetaPago(this.pagoDeCard(item), this.faltaDeCard(item));
+  }
+
+  etiquetaEntregaCard(item: IPedidoGenerico): EtiquetaCard {
+    return etiquetaEntrega(this.entregadoDeCard(item));
+  }
+
+  /** Ir pagando (suelto o grupo) se puede entregar debiendo; lo demás, solo pagado (E8). */
+  private esIrPagando(item: IPedidoGenerico): boolean {
+    const g = item.pedido.grupo;
+    return (g?.tipoPedido ?? item.pedido.tipoPedido ?? '').toUpperCase() === 'FIADO';
+  }
+
+  puedeEntregarAccion(): boolean {
+    return this.isAdminUser && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar');
+  }
+
+  /** 📦 Entregar en la card. */
+  puedeEntregar(item: IPedidoGenerico): boolean {
+    const pago = this.pagoDeCard(item);
+    if (!this.puedeEntregarAccion() || pago === 'CANCELADO' || this.entregadoDeCard(item)) return false;
+    return pago === 'PAGADO' || this.esIrPagando(item);
+  }
+
+  puedeRegresarEntrega(item: IPedidoGenerico): boolean {
+    return this.isAdminUser && this.authService.tieneAccion('pedidos/mis-pedidos', 'regresar-entrega')
+      && this.pagoDeCard(item) !== 'CANCELADO' && this.entregadoDeCard(item);
+  }
+
+  /** Tras cobrar: preguntar solo si quedó pagado, no se lo ha llevado y se puede marcar. */
+  private debePreguntarEntrega(item: IPedidoGenerico): boolean {
+    return this.puedeEntregar(item) && this.pagoDeCard(item) === 'PAGADO';
+  }
+
+  private preguntarEntregaDe(item: IPedidoGenerico, texto?: string): void {
+    preguntarYEntregar(() => this.pedidoService.entregar(item.pedido.id),
+      () => this.buscarPedidoAdmin(false), texto);
+  }
+
+  entregar(item: IPedidoGenerico): void {
+    const g = item.pedido.grupo;
+    const quien = g ? `los pedidos ${this.numerosDe([item.pedido.id, ...g.otrosPedidos])}` : `el pedido #${item.pedido.id}`;
+    Swal.fire({
+      icon: 'question', title: '📦 Entregar',
+      text: `¿El cliente ya se llevó ${quien}?`,
+      showCancelButton: true, confirmButtonText: 'Sí, entregado', cancelButtonText: 'No'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidoService.entregar(item.pedido.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Entregado', timer: 1500, showConfirmButton: false });
+          this.buscarPedidoAdmin(false);
+        },
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo marcar como entregado', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
+  regresarEntrega(item: IPedidoGenerico): void {
+    Swal.fire({
+      icon: 'warning', title: 'Regresar a "Falta entregar"',
+      text: `El pedido #${item.pedido.id}${item.pedido.grupo ? ' y los de su grupo' : ''} quedará como "Falta entregar". ¿Seguro?`,
+      showCancelButton: true, confirmButtonText: 'Sí, regresar', cancelButtonText: 'No'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidoService.regresarEntrega(item.pedido.id).subscribe({
+        next: () => this.buscarPedidoAdmin(false),
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo regresar', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
   faltaDeCredito(item: IPedidoGenerico): number | null {
     const tp = item.pedido.tipoPedido;
     const estado = (item.pedido.estado_pedido ?? '').toUpperCase();

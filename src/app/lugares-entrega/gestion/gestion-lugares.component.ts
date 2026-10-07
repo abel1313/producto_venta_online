@@ -55,17 +55,6 @@ export class GestionLugaresComponent implements OnInit {
   centroLat: number | null = null;
   centroLng: number | null = null;
 
-  // 1=lunes .. 7=domingo (java.time.DayOfWeek.getValue(), mismo valor que espera el back).
-  readonly diasSemana = [
-    { valor: 1, nombre: 'Lunes' },
-    { valor: 2, nombre: 'Martes' },
-    { valor: 3, nombre: 'Miércoles' },
-    { valor: 4, nombre: 'Jueves' },
-    { valor: 5, nombre: 'Viernes' },
-    { valor: 6, nombre: 'Sábado' },
-    { valor: 7, nombre: 'Domingo' },
-  ];
-
   ngOnInit(): void {
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(80)]],
@@ -73,14 +62,16 @@ export class GestionLugaresComponent implements OnInit {
       // ninguno de los dos. Opcionales: vacío = sin costo de envío / sin tiempo extra.
       costoEnvio: [null],
       horasExtraAnticipacion: [null],
-      // Marca cuál fila es "recoger en el local" (checkout tienda/carrito) — debe haber como
-      // mucho una en true, no se valida aquí.
-      esRecogerEnTienda: [false],
-      // Día recurrente del viaje de entrega a esta zona (1=lunes..7=domingo) — "Entregas por
-      // zona" lo usa para sugerir la fecha. Vacío = sin configurar.
-      diaEntregaSemanal: [null]
+      // Marca cuál fila es "recoger en el local" (checkout tienda/carrito). Solo una: el back
+      // rechaza la segunda y le borra envío, horas extra y día (no aplican al local).
+      esRecogerEnTienda: [false]
     });
     this.cargar();
+  }
+
+  /** La fila del local: se esconden los datos que solo tienen sentido en una zona. */
+  get esFilaDelLocal(): boolean {
+    return !!this.form?.get('esRecogerEnTienda')?.value;
   }
 
   onCentroCambio(p: { lat: number; lng: number }): void {
@@ -123,8 +114,7 @@ export class GestionLugaresComponent implements OnInit {
       nombre: l.nombre,
       costoEnvio: l.costoEnvio ?? null,
       horasExtraAnticipacion: l.horasExtraAnticipacion ?? null,
-      esRecogerEnTienda: l.esRecogerEnTienda ?? false,
-      diaEntregaSemanal: l.diaEntregaSemanal ?? null
+      esRecogerEnTienda: l.esRecogerEnTienda ?? false
     });
   }
 
@@ -140,14 +130,17 @@ export class GestionLugaresComponent implements OnInit {
     this.guardando = true;
     const nombre = this.form.value.nombre.trim();
 
+    const local = this.esFilaDelLocal;
     const body = {
       nombre,
-      costoEnvio: this.form.value.costoEnvio,
-      horasExtraAnticipacion: this.form.value.horasExtraAnticipacion,
+      costoEnvio: local ? null : this.form.value.costoEnvio,
+      horasExtraAnticipacion: local ? null : this.form.value.horasExtraAnticipacion,
       latitud: this.centroLat,
       longitud: this.centroLng,
       esRecogerEnTienda: this.form.value.esRecogerEnTienda,
-      diaEntregaSemanal: this.form.value.diaEntregaSemanal
+      // Se quitó el "día de la semana" de la zona (2026-10-07): la fecha del viaje ya dice el día
+      // y se escoge en Entregas por zona. Se manda null para que al editar se borre el viejo.
+      diaEntregaSemanal: null
     };
 
     const op$ = this.editandoId !== null

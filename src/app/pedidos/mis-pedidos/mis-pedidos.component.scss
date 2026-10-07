@@ -537,6 +537,13 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--pk-ink);
   }
 
+  // Pedido en línea sin forma de cobro: contorno punteado sobre el header (todavía no es nada).
+  &--pendiente {
+    background: transparent;
+    border: 1px dashed var(--card-header-text);
+    color: var(--card-header-text);
+  }
+
   // Sobre el header de color de la card: blanco translúcido, sin competir con el tipo de cobro.
   &--grupo {
     background: color-mix(in srgb, var(--card-header-text) 22%, transparent);

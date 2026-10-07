@@ -87,7 +87,7 @@
   <div class="dp-tipo-form" *ngIf="mostrarFormTipo">
     <h4 class="dp-tipo-form__titulo">🔁 Cambiar la forma de cobro</h4>
     <p class="dp-tipo-form__actual">
-      Ahora está como <b>{{ etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
+      Ahora está como <b>{{ esPedidoEnLinea ? '🕓 Pendiente (lo pidió el cliente desde su cuenta, sin cobrar)' : etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
       Elige a cuál lo quieres pasar:
     </p>
     <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
@@ -106,7 +106,7 @@
               (click)="seleccionarTipo(t.valor)">
         <span class="dp-tipo-btn__nombre">
           {{ t.etiqueta }}
-          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente">Así está ahora</span>
+          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente">{{ esPedidoEnLinea ? 'Para cobrarlo completo usa Cobrar en la card' : 'Así está ahora' }}</span>
         </span>
         <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
       </button>

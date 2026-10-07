@@ -3,12 +3,20 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .ez-wrap {
+  box-sizing: border-box;
   max-width: var(--form-ancho, 820px);
   margin: 24px auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 0 16px;
+  padding: 20px;
+  // Mismo fondo que la card de Agregar Modelo (Personalización → Card).
+  background: var(--card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--form-card-radius, 14px);
+  box-shadow: var(--card-shadow, none);
+
+  @media (max-width: 576px) { margin: 16px; padding: 16px; }
 }
 
 .ez-header {

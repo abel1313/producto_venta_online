@@ -38,7 +38,7 @@
               *ngFor="let p of productos"
               (click)="seleccionarProducto(p)"
             >
-              <span class="vf-product-search__name">{{ p.nombre }}</span>
+              <span class="vf-product-search__name">{{ p.nombre }}<ng-container *ngIf="p.codigoBarras"> · {{ p.codigoBarras }}</ng-container></span>
               <span class="vf-product-search__meta">
                 Stock {{ p.stock }} &nbsp;·&nbsp; {{ p.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
               </span>
@@ -49,7 +49,7 @@
         <div *ngIf="productoSeleccionado" class="vf-product-chip">
           <span class="vf-product-chip__icon">📦</span>
           <div class="vf-product-chip__info">
-            <strong>{{ productoSeleccionado.nombre }}</strong>
+            <strong>{{ productoSeleccionado.nombre }}<ng-container *ngIf="productoSeleccionado.codigoBarras"> · {{ productoSeleccionado.codigoBarras }}</ng-container></strong>
             <small>{{ productoSeleccionado.precioVenta | currency:'MXN':'symbol':'1.2-2' }} · Stock {{ productoSeleccionado.stock }}</small>
           </div>
           <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar producto">✕</button>
@@ -150,7 +150,7 @@
 
           <!-- Nuevo — categoría que se aplica a todas las variantes del lote -->
           <div class="vf-field vf-field--full">
-            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(opcional — aplica a todos; si la dejas vacía toma la del modelo)</span></label>
+            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(aplica a todos; viene la del modelo y la puedes cambiar)</span></label>
             <app-palabra-clave-autocomplete
               [valorInicial]="palabraClaveSeleccionada"
               (seleccionada)="onPalabraClaveSeleccionada($event)">

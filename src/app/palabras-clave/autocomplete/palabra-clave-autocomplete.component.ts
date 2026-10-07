@@ -19,6 +19,11 @@ export class PalabraClaveAutocompleteComponent implements OnInit, OnDestroy {
     if (v) {
       this.termino   = v.nombre;
       this.seleccion = v;
+    } else if (v === null && this.seleccion) {
+      // El padre la limpió (cambió de modelo o se reinició el formulario): el texto también se va.
+      this.termino   = '';
+      this.seleccion = null;
+      this.opciones  = [];
     }
   }
 

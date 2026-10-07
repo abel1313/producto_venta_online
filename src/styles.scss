@@ -205,6 +205,9 @@ body.theme-light, [data-theme="light"] {
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #ebe6da;
   --form-section-bg:   #f6f3ec;
+  /* Recuadro de búsqueda y filtros (Tienda, Catálogo → Modelos) y cada filtro adentro */
+  --filtros-panel-bg:  rgba(255,255,255,0.70);
+  --filtro-bg:         rgba(45,117,96,0.10);
 
   /* ── Chat / Chatbot ──
      La burbuja propia, el avatar, el boton flotante y la cabecera del chat conservan el verde
@@ -391,6 +394,8 @@ body.theme-dark, [data-theme="dark"] {
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #232532;
   --form-section-bg:   #1c1e2c;
+  --filtros-panel-bg:  #1c1e2c;
+  --filtro-bg:         rgba(91,185,154,0.14);
 
   /* ── Chat / Chatbot (ver el bloque del tema claro) ── */
   --chat-accent:      #2d7560;
@@ -1362,7 +1367,9 @@ body:is(.theme-light, .theme-dark) {
     }
   }
 
-  [class*="-header__content"]:not(#_) {
+  // Tienda (vb-) y Catálogo → Modelos (pl-) no tienen franja afuera: su __content ES el recuadro
+  // de búsqueda y filtros, así que conserva su fondo (--filtros-panel-bg, Personalización).
+  [class*="-header__content"]:not(.vb-header__content):not(.pl-header__content):not(#_) {
     background:          transparent !important;
     backdrop-filter:     none !important;
     -webkit-backdrop-filter: none !important;

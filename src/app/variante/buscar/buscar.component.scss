@@ -178,7 +178,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 5px 14px;
   border-radius: 20px;
   border: 1px solid var(--app-border);
-  background: var(--app-tint);
+  background: var(--filtro-bg);
   color: var(--app-text);
   font-size: 0.78rem;
   font-weight: 500;
@@ -211,7 +211,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 5px 12px;
   border-radius: 20px;
   border: 1px solid var(--app-border);
-  background: var(--input-bg);
+  background: var(--filtro-bg);
   color: var(--app-text);
   font-size: 0.78rem;
   font-weight: 500;
@@ -240,7 +240,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid var(--app-border);
-  background: var(--app-tint);
+  background: var(--filtro-bg);
   color: var(--app-text);
   font-size: 0.78rem;
   font-weight: 500;
@@ -332,7 +332,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid var(--app-border);
-  background: var(--app-tint);
+  background: var(--filtro-bg);
   color: var(--app-text);
   font-size: 0.78rem;
   font-weight: 500;
@@ -1155,7 +1155,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .vb-header__content {
-    background: var(--app-glass);
+    background: var(--filtros-panel-bg);
     backdrop-filter: blur(20px) saturate(180%);
     box-shadow:
       0 8px 32px var(--pk-info-soft),
@@ -1182,7 +1182,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .vb-filtro-btn {
     border: 1px solid color-mix(in srgb, var(--app-text) 12%, transparent);
-    background: var(--app-tint);
+    background: var(--filtro-bg);
     color: var(--app-text-muted);
     &:hover { background: var(--app-glass); color: var(--app-text); }
     &--active {
@@ -1195,7 +1195,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .vb-pub-select,
   .vb-pub-input {
     border: 1px solid color-mix(in srgb, var(--app-text) 12%, transparent);
-    background: var(--app-tint);
+    background: var(--filtro-bg);
     color: var(--app-text-muted);
     &:hover, &:focus { background: var(--app-glass); color: var(--app-text); }
     &::placeholder { color: color-mix(in srgb, var(--app-text) 42%, transparent); }
@@ -1204,7 +1204,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .vb-filtro-check {
     border: 1px solid color-mix(in srgb, var(--app-text) 12%, transparent);
-    background: var(--app-tint);
+    background: var(--filtro-bg);
     color: var(--app-text-muted);
     &:hover { background: var(--app-glass); color: var(--app-text); }
 
@@ -1224,7 +1224,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   .vb-filtro-fecha {
     border: 1px solid color-mix(in srgb, var(--app-text) 12%, transparent);
-    background: var(--app-tint);
+    background: var(--filtro-bg);
     color: var(--app-text-muted);
     &:hover { background: var(--app-glass); color: var(--app-text); }
     &__input { color-scheme: light; &::-webkit-calendar-picker-indicator { filter: none; } }
@@ -1246,7 +1246,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Modo oscuro — glassmorphism oscuro ────────────────────────────
 :host-context(body.theme-dark) {
   .vb-header__content {
-    background: var(--form-section-bg, var(--app-glass));
+    background: var(--filtros-panel-bg);
     backdrop-filter: blur(20px);
     box-shadow: var(--card-shadow, 0 6px 28px rgba(0, 0, 0, 0.50));
     border: 1px solid var(--app-border);

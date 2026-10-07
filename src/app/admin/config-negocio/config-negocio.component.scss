@@ -310,6 +310,23 @@ $t:  all 0.25s ease;
   grid-column: 1 / -1;
 }
 
+.cn-legal-origen {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--form-section-bg);
+  border: 1px solid var(--app-border);
+  border-left: 3px solid var(--app-accent);
+  border-radius: 10px;
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--app-text);
+
+  p { margin: 0; }
+  p + p { margin-top: 6px; }
+}
+
+.cn-grid--legal .cn-hint { display: block; margin-top: 4px; line-height: 1.4; }
+
 .cn-legal-aviso {
   margin: 0 0 12px;
   padding: 8px 12px;

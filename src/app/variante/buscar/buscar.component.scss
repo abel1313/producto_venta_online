@@ -211,14 +211,14 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 5px 12px;
   border-radius: 20px;
   border: 1px solid var(--app-border);
-  background: var(--app-tint);
+  background: var(--input-bg);
   color: var(--app-text);
   font-size: 0.78rem;
   font-weight: 500;
   outline: none;
   transition: $transition;
 
-  &:hover, &:focus { background: var(--app-tint); }
+  &:hover, &:focus { background: var(--app-accent-soft); }
 
   option { color: var(--input-text); }
 }

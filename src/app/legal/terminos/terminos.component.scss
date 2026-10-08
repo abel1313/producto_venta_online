@@ -25,7 +25,7 @@
 .tc-sub {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .tc-sec {
@@ -51,7 +51,7 @@
   padding-top: 20px;
   border-top: 1px solid var(--card-border);
   font-size: 0.86rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 
   p { margin: 0 0 4px; }
 }

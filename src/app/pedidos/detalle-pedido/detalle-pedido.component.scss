@@ -93,18 +93,18 @@
 }
 
 .estado--entregado {
-  background: rgba(46, 125, 50, 0.12);
-  color: #2e7d32;
+  background: var(--pk-success-soft);
+  color: var(--pk-success);
 }
 
 .estado--pendiente {
-  background: rgba(245, 127, 23, 0.12);
-  color: #f57f17;
+  background: var(--pk-warning-soft);
+  color: var(--pk-warning-to);
 }
 
 .estado--cancelado {
-  background: rgba(198, 40, 40, 0.12);
-  color: #c62828;
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger);
 }
 
 /* ── CARGANDO ────────────────────────────────────── */
@@ -232,11 +232,11 @@
   transition: background .15s;
 
   &--menos {
-    background: rgba(198, 40, 40, 0.12);
-    color: #c62828;
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger);
 
     &:hover:not(:disabled) {
-      background: rgba(198, 40, 40, 0.22);
+      background: var(--pk-danger-soft);
     }
 
     &:disabled {
@@ -275,14 +275,14 @@
   margin-top: .15rem;
 
   &--apartado {
-    background: rgba(251, 146, 60, 0.18);
-    color: #b45309;
+    background: var(--pk-warning-soft);
+    color: var(--pk-warning-to);
   }
 
   // Azul = "en curso" (semántico, no marca) — ver nota en abonos.component.scss.
   &--fiado {
-    background: rgba(37,99,235, 0.13);
-    color: #2563eb;
+    background: var(--pk-info-soft);
+    color: var(--pk-info);
   }
 }
 
@@ -300,10 +300,10 @@
   align-items: center;
   gap: .4rem;
   padding: .55rem 1.2rem;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-weight: 700;
   font-size: .85rem;
   cursor: pointer;
@@ -318,9 +318,9 @@
   gap: .4rem;
   padding: .6rem 1rem;
   border-radius: 8px;
-  background: rgba(22,163,74,.10);
-  border: 1px solid rgba(22,163,74,.3);
-  color: #16a34a;
+  background: var(--pk-success-soft);
+  border: 1px solid var(--pk-success-soft);
+  color: var(--pk-success);
   font-weight: 600;
   font-size: .85rem;
   margin: 0 0 .5rem;
@@ -409,7 +409,7 @@
   &__nota {
     margin: 0;
     font-size: .82rem;
-    color: var(--app-text-muted, #6b7280);
+    color: var(--app-text-muted);
   }
 
   &__row {
@@ -471,23 +471,23 @@
   font-size: .8rem;
   padding: .35rem .65rem;
   border-radius: 6px;
-  background: rgba(34,197,94,.12);
-  color: #16a34a;
-  border: 1px solid rgba(34,197,94,.25);
+  background: var(--pk-success-soft);
+  color: var(--pk-success);
+  border: 1px solid var(--pk-success-soft);
 
   strong { font-size: .9rem; }
 
   &--warn {
-    background: rgba(239,68,68,.1);
-    color: #dc2626;
-    border-color: rgba(239,68,68,.25);
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger);
+    border-color: var(--pk-danger-soft);
   }
 }
 
 .dp-optional {
   font-weight: 400;
   font-size: .7rem;
-  color: var(--app-text-muted, #94a3b8);
+  color: var(--app-text-muted, var(--app-text-faint));
 }
 
 .dp-check-label {
@@ -515,10 +515,10 @@
 
 .dp-btn-guardar {
   padding: .45rem 1.1rem;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: .82rem;
   font-weight: 700;
   cursor: pointer;
@@ -532,10 +532,10 @@
 // de ticket (que van en contorno).
 .dp-btn-editar-ramo {
   padding: .38rem .9rem;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: .8rem;
   font-weight: 700;
   cursor: pointer;
@@ -566,24 +566,24 @@
 }
 
 :host-context(body.theme-dark), :host-context([data-theme="dark"]) {
-  .dp-btn-reenviar, .dp-btn-imprimir { color: var(--brand-1); border-color: var(--app-border, rgba(212,180,131,.4)); }
-  .dp-tipo-badge--apartado { background: var(--pk-warning-soft, rgba(251,146,60,.2)); color: var(--pk-warning-to, #fbbf24); }
-  .dp-tipo-badge--fiado { background: var(--pk-info-soft, rgba(96,165,250,.18)); color: var(--pk-info-to, #60a5fa); }
+  .dp-btn-reenviar, .dp-btn-imprimir { color: var(--brand-1); border-color: var(--app-border, var(--pk-warning-soft)); }
+  .dp-tipo-badge--apartado { background: var(--pk-warning-soft); color: var(--pk-warning-to, var(--pk-warning)); }
+  .dp-tipo-badge--fiado { background: var(--pk-info-soft); color: var(--pk-info-to, var(--pk-info)); }
   .dp-cambio {
-    background: var(--pk-success-soft, rgba(74, 222, 128, 0.22));
-    color: var(--pk-success-to, #86efac);
-    border-color: var(--pk-success-soft, rgba(74, 222, 128, 0.5));
+    background: var(--pk-success-soft);
+    color: var(--pk-success-to, var(--pk-success));
+    border-color: var(--pk-success-soft);
     font-weight: 600;
     &--warn {
-      background: var(--pk-danger-soft, rgba(252, 165, 165, 0.2));
-      color: var(--pk-danger-to, #fca5a5);
-      border-color: var(--pk-danger-soft, rgba(252, 165, 165, 0.5));
+      background: var(--pk-danger-soft);
+      color: var(--pk-danger-to, var(--pk-danger));
+      border-color: var(--pk-danger-soft);
     }
   }
   .dp-abono-liquidado {
-    background: var(--pk-success-soft, rgba(74, 222, 128, 0.15));
-    border-color: var(--pk-success-soft, rgba(74, 222, 128, 0.4));
-    color: var(--pk-success-to, #86efac);
+    background: var(--pk-success-soft);
+    border-color: var(--pk-success-soft);
+    color: var(--pk-success-to, var(--pk-success));
   }
 }
 
@@ -593,7 +593,7 @@
   margin: 10px 0 0;
   font-size: .82rem;
   line-height: 1.45;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
   background: var(--app-accent-soft);
   border-left: 3px solid var(--app-accent);
   border-radius: 0 8px 8px 0;
@@ -612,8 +612,9 @@
   margin-top: 10px;
   padding: 9px 16px;
   border-radius: 999px;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+  color: var(--btn-primary-text);
   font-size: .86rem;
   font-weight: 700;
   text-decoration: none;
@@ -624,7 +625,7 @@
     border: none;
     opacity: .45;
     cursor: not-allowed;
-    &:hover { background: var(--app-accent); }
+    &:hover { background: var(--btn-primary-hover-bg); }
   }
 }
 
@@ -726,6 +727,19 @@
   // El tipo actual no se elige (cambiar a lo mismo no es un cambio, el back lo rechaza), pero
   // no se apaga: con opacidad baja se leía como "bloqueado".
   &:disabled { cursor: default; border-style: dashed; background: transparent; }
+
+  // Bloqueado por una regla (Apartado con dinero, regresar a Pendiente): se ve gris y dice por qué.
+  &--bloqueado:disabled {
+    background: var(--app-hairline, var(--card-border));
+    color: var(--card-text-muted);
+  }
+
+  &__bloqueo {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--card-text);
+    line-height: 1.3;
+  }
 }
 
 .dp-tipo-campo {
@@ -763,8 +777,8 @@
   margin: 0;
   padding: .55rem .8rem;
   border-radius: 8px;
-  border-left: 3px solid var(--pk-warning-to, #d97706);
-  background: var(--pk-warning-soft, rgba(251, 146, 60, .14));
+  border-left: 3px solid var(--pk-warning-to, var(--pk-warning));
+  background: var(--pk-warning-soft);
   color: var(--card-text);
   font-size: .8rem;
   line-height: 1.4;
@@ -878,10 +892,10 @@
   &__btn {
     flex: 0 0 auto;
     padding: .35rem .75rem;
-    border: none;
+    border: 1px solid var(--btn-primary-border);
     border-radius: 7px;
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     font-size: .76rem;
     font-weight: 700;
     cursor: pointer;
@@ -901,16 +915,16 @@
   align-self: flex-start;
   margin-bottom: .3rem;
   padding: .22rem .55rem;
-  border: 1px solid var(--pk-danger-soft, rgba(220, 38, 38, .35));
+  border: 1px solid var(--pk-danger-soft);
   border-radius: 6px;
   background: transparent;
-  color: var(--pk-danger-to, #dc2626);
+  color: var(--pk-danger-to, var(--pk-danger));
   font-size: .7rem;
   font-weight: 600;
   cursor: pointer;
 
   &:disabled { opacity: .5; cursor: not-allowed; }
-  &:not(:disabled):hover { background: var(--pk-danger-soft, rgba(220, 38, 38, .12)); }
+  &:not(:disabled):hover { background: var(--pk-danger-soft); }
 }
 
 .cantidad-btn--cambiar {
@@ -1075,3 +1089,4 @@
 .dp-abono-form small.dp-abono-form__error { display: block; margin-top: 4px; color: var(--pk-danger); font-weight: 600; font-size: .78rem; }
 .dp-abono-form small.dp-abono-form__ayuda { display: block; margin-top: 4px; color: var(--card-text-muted); font-size: .78rem; }
 .dp-abono-form__input--error { border-color: var(--pk-danger) !important; }
+

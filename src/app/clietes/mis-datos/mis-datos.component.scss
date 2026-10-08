@@ -10,17 +10,17 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   padding: 2rem 1rem 3rem;
   min-height: 100%;
-  background: var(--page-bg, #f1f5f9);
+  background: var(--page-bg, var(--form-section-bg));
 }
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 .md-card {
   width: 100%;
-  max-width: 720px;
+  max-width: var(--form-ancho, 820px);
   border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  background: var(--card-bg, #fff);
+  background: var(--card-bg, var(--card-body-bg));
 }
 
 // ── Header ───────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 1rem;
   padding: 1.4rem 1.75rem;
-  background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 55%, var(--brand-1) 100%);
+  background: var(--card-header-bg);
 }
 
 .md-header-icon {
@@ -40,23 +40,23 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
   min-width: 50px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--app-tint);
   backdrop-filter: blur(8px);
 
-  .pi { font-size: 1.4rem; color: #fff; }
+  .pi { font-size: 1.4rem; color: var(--app-text); }
 }
 
 .md-title {
   font-size: 1.22rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--app-text);
   margin: 0 0 2px;
   letter-spacing: -0.02em;
 }
 
 .md-subtitle {
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--app-text-muted);
   margin: 0;
 }
 
@@ -103,7 +103,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: var(--app-text, #374151);
+  color: var(--app-text);
   letter-spacing: 0.02em;
 }
 
@@ -153,7 +153,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: block;
   margin-top: 4px;
   font-size: 0.72rem;
-  color: var(--pk-text-secondary, #6b7280);
+  color: var(--pk-text-secondary, var(--app-text-muted));
 }
 
 // ── Input wrap ───────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   font-size: 0.85rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -188,7 +188,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   font-size: 0.72rem;
   pointer-events: none;
 }
@@ -197,21 +197,21 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-input {
   width: 100%;
   padding: 0.6rem 1rem 0.6rem 2.35rem;
-  border: 2px solid var(--card-border, #e5e7eb);
+  border: 2px solid var(--card-border, var(--app-border));
   border-radius: $radius-sm;
   font-size: 0.875rem;
-  color: var(--app-text, #111827);
-  background: var(--form-section-bg, #f9fafb);
+  color: var(--app-text);
+  background: var(--form-section-bg, var(--card-body-bg));
   outline: none;
   transition: $trans;
   box-sizing: border-box;
   font-family: inherit;
 
-  &::placeholder { color: #c4c9d4; }
+  &::placeholder { color: var(--app-text-faint); }
 
   &:focus {
     border-color: var(--app-accent, var(--brand-1));
-    background: var(--card-bg, #fff);
+    background: var(--card-bg, var(--card-body-bg));
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
 
     ~ .md-input-icon { color: var(--app-accent, var(--brand-1)); }
@@ -220,11 +220,11 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &--date { color-scheme: light dark; }
 
   &.md-select {
-    color: #111827;
+    color: var(--app-text);
     cursor: pointer;
 
-    option { color: #111827; background: #fff; }
-    option[value=""][disabled] { color: #c4c9d4; }
+    option { color: var(--input-text); background: var(--input-bg); }
+    option[value=""][disabled] { color: var(--input-text); }
   }
 }
 
@@ -248,8 +248,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Tarjeta de dirección ──────────────────────────────────────────────────────
 .md-address-card {
-  background: var(--form-section-bg, #f8fafc);
-  border: 1px solid var(--card-border, #e5e7eb);
+  background: var(--form-section-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border, var(--app-border));
   border-radius: 10px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 0.75rem;
@@ -299,7 +299,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-block;
   width: 38px;
   height: 22px;
-  background: #d1d5db;
+  background: var(--app-border);
   border-radius: 11px;
   transition: background 0.2s;
   flex-shrink: 0;
@@ -311,7 +311,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     top: 3px;
     width: 16px;
     height: 16px;
-    background: #fff;
+    background: var(--card-body-bg);
     border-radius: 50%;
     transition: transform 0.2s;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -321,7 +321,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .md-toggle-text {
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--app-text, #374151);
+  color: var(--app-text);
 }
 
 // ── Botones de acción ─────────────────────────────────────────────────────────
@@ -373,7 +373,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   justify-content: flex-end;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--card-border, #f0f0f5);
+  border-top: 1px solid var(--card-border, var(--app-border));
   margin-top: 0.5rem;
 }
 
@@ -393,8 +393,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .pi { font-size: 0.9rem; }
 
   &--save {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 14px rgba(var(--app-accent-rgb), 0.38);
 
     &:hover:not(:disabled) {
@@ -405,7 +406,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &:active:not(:disabled) { transform: translateY(0); }
 
     &:disabled {
-      background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+      background: var(--btn-primary-bg);
+      border: 1px solid var(--btn-primary-border);
       cursor: not-allowed;
       box-shadow: none;
       opacity: 0.6;
@@ -416,23 +418,23 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── DARK MODE ────────────────────────────────────────────────────────────────
 // box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .md-card { background: var(--card-bg, #1e1e2e); }
+  .md-card { background: var(--card-bg); }
 
   .md-section__label { color: var(--app-accent); }
 
-  .md-label        { color: var(--app-text-muted, #94a3b8); }
-  .md-toggle-text  { color: var(--app-text-muted, #94a3b8); }
+  .md-label        { color: var(--app-text-muted); }
+  .md-toggle-text  { color: var(--app-text-muted); }
   .md-address-num  { color: var(--app-accent); }
 
   .md-input {
-    background: var(--input-bg, rgba(255, 255, 255, 0.06));
-    border-color: var(--input-border, rgba(255, 255, 255, 0.1));
-    color: var(--app-text, #f1f5f9);
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--app-text);
 
-    &::placeholder { color: var(--input-placeholder, #475569); }
+    &::placeholder { color: var(--input-placeholder); }
 
     &:focus {
-      background: var(--input-bg, rgba(255, 255, 255, 0.09));
+      background: var(--input-bg);
       border-color: var(--app-accent);
       box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.18);
     }
@@ -440,26 +442,26 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     &--date { color-scheme: dark; }
 
     &.md-select {
-      color: var(--input-text, #f1f5f9);
-      option { color: #1e293b; background: #f1f5f9; }
-      option[value=""][disabled] { color: #94a3b8; }
+      color: var(--input-text, var(--app-text));
+      option { color: var(--input-text); background: var(--input-bg); }
+      option[value=""][disabled] { color: var(--input-text); }
     }
   }
 
-  .md-input-icon    { color: var(--app-text-muted, #475569); }
-  .md-select-arrow  { color: var(--app-text-muted, #475569); }
-  .md-toggle-slider { background: #374151; }
+  .md-input-icon    { color: var(--app-text-muted, var(--app-text-faint)); }
+  .md-select-arrow  { color: var(--app-text-muted, var(--app-text-faint)); }
+  .md-toggle-slider { background: var(--app-border); }
 
   .md-address-card {
-    background: var(--card-bg, rgba(255, 255, 255, 0.03));
-    border-color: var(--card-border, rgba(255, 255, 255, 0.08));
+    background: var(--card-bg);
+    border-color: var(--card-border);
   }
 
-  .md-footer { border-top-color: var(--app-border, rgba(255, 255, 255, 0.07)); }
+  .md-footer { border-top-color: var(--app-border); }
 }
 
 // ── LIGHT MODE ───────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .md-card  { background: var(--card-bg, #fff); }
-  .md-input { background: var(--form-section-bg, #f9fafb); border-color: var(--card-border, #e5e7eb); color: var(--app-text, #111827); }
+  .md-card  { background: var(--card-bg, var(--card-body-bg)); }
+  .md-input { background: var(--form-section-bg, var(--card-body-bg)); border-color: var(--card-border, var(--app-border)); color: var(--app-text); }
 }

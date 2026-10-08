@@ -79,6 +79,16 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.delete<any>(`${this.url}/v1/pedidos/delete/${id}?motivo=${encodeURIComponent(motivo)}`);
     }
 
+    /** 📦 Entregar: el cliente ya se lo llevó (si está unido, todo el grupo). Dominio entrega. */
+    entregar(pedidoId: number): Observable<ResponseGeneric<{ pedidos: number[]; entregado: boolean }>> {
+      return this.http.post<ResponseGeneric<{ pedidos: number[]; entregado: boolean }>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`, {});
+    }
+
+    /** Regresa a "Falta entregar" (se marcó por error). Solo con la acción regresar-entrega. */
+    regresarEntrega(pedidoId: number): Observable<ResponseGeneric<{ pedidos: number[]; entregado: boolean }>> {
+      return this.http.delete<ResponseGeneric<{ pedidos: number[]; entregado: boolean }>>(`${this.url}/v1/pedidos/${pedidoId}/entrega`);
+    }
+
     getDetallePedido(pedidoId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.get<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/detalle`);
     }

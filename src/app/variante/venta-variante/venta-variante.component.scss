@@ -111,7 +111,7 @@
 // para ganarle a la regla global -- blanco de fondo, texto oscuro, siempre, en el select Y en su
 // popup. El cuadro cerrado del control se ve como un control claro (no como el resto de la app en
 // oscuro), a propósito: es el precio de garantizar que se lea, después de 3 intentos fallidos.
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
   .form-control { color-scheme: dark; color: var(--app-text); }
   .form-select {
     color-scheme: light !important;
@@ -126,3 +126,14 @@
 }
 
 
+
+/* LFPC art. 66 (2026-10-07). */
+.venta-nota-legal {
+  flex-basis: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: .78rem;
+  color: var(--app-text);
+  background: var(--app-tint);
+  border: 1px solid var(--app-border);
+}

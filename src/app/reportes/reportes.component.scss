@@ -1,12 +1,12 @@
 .rp-page {
   min-height: 100vh;
-  background: var(--page-bg, #f1f5f9);
+  background: var(--page-bg, var(--form-section-bg));
 }
 
 // Header
 .rp-header {
   background: var(--header-brand);
-  box-shadow: 0 2px 12px var(--header-brand-shadow, rgba(0,0,0,.35));
+  box-shadow: 0 2px 12px var(--header-brand-shadow);
   padding: .9rem 1.5rem;
 
   &__content {
@@ -15,7 +15,7 @@
   }
 
   &__title {
-    color: var(--header-text, #fff);
+    color: var(--header-text, var(--app-text));
     font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
@@ -35,18 +35,18 @@
 .rp-tab {
   padding: .45rem 1rem;
   border-radius: 8px;
-  border: 1.5px solid var(--card-border, rgba(0,0,0,.1));
-  background: var(--card-bg, #fff);
-  color: var(--app-text, #1e293b);
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg, var(--card-body-bg));
+  color: var(--app-text);
   font-size: .82rem;
   font-weight: 500;
   cursor: pointer;
   transition: background .15s, color .15s;
 
   &--active {
-    background: var(--app-accent);
+    background: var(--btn-primary-bg);
     border-color: var(--app-accent);
-    color: var(--app-accent-ink);
+    color: var(--btn-primary-text);
   }
 
   &:hover:not(.rp-tab--active) {
@@ -69,8 +69,8 @@
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
   padding: 1rem 1.25rem;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, rgba(0,0,0,.08));
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   margin-top: .75rem;
 
@@ -97,8 +97,8 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--card-bg, #fff);
-  border: 1.5px solid var(--card-border, rgba(0,0,0,.12));
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1.5px solid var(--card-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0,0,0,.12);
   z-index: 200;
@@ -112,8 +112,8 @@
     flex-direction: column;
     gap: 2px;
     font-size: .85rem;
-    color: var(--app-text, #1e293b);
-    border-bottom: 1px solid var(--card-border, rgba(0,0,0,.06));
+    color: var(--app-text);
+    border-bottom: 1px solid var(--card-border);
 
     &:last-child { border-bottom: none; }
     &:hover { background: rgba(var(--app-accent-rgb),.08); }
@@ -121,24 +121,24 @@
 
   &__sub {
     font-size: .75rem;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
   }
 }
 
 .rp-label {
   font-size: .75rem;
   font-weight: 600;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   text-transform: uppercase;
   letter-spacing: .05em;
 }
 
 .rp-input {
   padding: .42rem .75rem;
-  border: 1.5px solid var(--card-border, rgba(0,0,0,.12));
+  border: 1.5px solid var(--card-border);
   border-radius: 7px;
-  background: var(--form-section-bg, #f8fafc);
-  color: var(--app-text, #1e293b);
+  background: var(--form-section-bg, var(--card-body-bg));
+  color: var(--app-text);
   font-size: .85rem;
 
   &--sm { width: 130px; }
@@ -152,16 +152,16 @@
 
 .rp-btn--primary {
   padding: .45rem 1.1rem;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
-  border: none;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
   font-size: .85rem;
   font-weight: 600;
   cursor: pointer;
   align-self: flex-end;
 
-  &:hover:not(:disabled) { background: var(--app-accent); }
+  &:hover:not(:disabled) { background: var(--btn-primary-hover-bg); }
   &:disabled { opacity: .55; cursor: default; }
 }
 
@@ -177,8 +177,8 @@
   flex: 1;
   min-width: 160px;
   padding: 1rem 1.25rem;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, rgba(0,0,0,.08));
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border);
   border-radius: var(--card-radius, 14px);
   display: flex;
   flex-direction: column;
@@ -189,13 +189,13 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .05em;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
   }
 
   &__val {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text);
 
     &--green { color: var(--pk-success); }
   }
@@ -203,8 +203,8 @@
 
 // Gráfica
 .rp-chart-wrap {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, rgba(0,0,0,.08));
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   padding: 1rem 1.25rem 1.5rem;
   margin-bottom: 1.25rem;
@@ -213,14 +213,14 @@
 .rp-chart-title {
   font-size: .85rem;
   font-weight: 600;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   margin: 0 0 .75rem;
 }
 
 // Tabla
 .rp-table-wrap {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, rgba(0,0,0,.08));
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   overflow: auto;
   margin-bottom: 1.25rem;
@@ -232,21 +232,21 @@
   font-size: .83rem;
 
   th {
-    background: var(--form-section-bg, #f8fafc);
-    color: var(--app-text-muted, #64748b);
+    background: var(--form-section-bg, var(--card-body-bg));
+    color: var(--app-text-muted);
     font-size: .72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .05em;
     padding: .65rem 1rem;
     text-align: left;
-    border-bottom: 1px solid var(--card-border, rgba(0,0,0,.08));
+    border-bottom: 1px solid var(--card-border);
   }
 
   td {
     padding: .6rem 1rem;
-    color: var(--app-text, #1e293b);
-    border-bottom: 1px solid var(--card-border, rgba(0,0,0,.05));
+    color: var(--app-text);
+    border-bottom: 1px solid var(--card-border);
   }
 
   tr:last-child td { border-bottom: none; }
@@ -278,13 +278,13 @@
 .rp-cliente-nombre {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--app-text, #1e293b);
+  color: var(--app-text);
 }
 
 .rp-cliente-id {
   font-size: .8rem;
-  color: var(--app-text-muted, #64748b);
-  background: var(--form-section-bg, #f1f5f9);
+  color: var(--app-text-muted);
+  background: var(--form-section-bg);
   padding: 2px 8px;
   border-radius: 99px;
 }
@@ -293,21 +293,21 @@
 .rp-loading {
   text-align: center;
   padding: 2.5rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   font-size: .9rem;
 }
 
 .rp-empty {
   text-align: center;
   padding: 2rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   font-size: .88rem;
 }
 
 .rp-hint {
   margin: -.4rem 0 .9rem;
   font-size: .8rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .rp-tr--sin-ventas td { opacity: .55; }
@@ -315,20 +315,20 @@
 // Dark mode
 :host-context(body.theme-dark) {
   .rp-page   { background: var(--app-bg); }
-  .rp-input { background: var(--input-bg, #27272a); color: var(--app-text, #e2e8f0); border-color: var(--input-border, rgba(255,255,255,.12)); }
-  .rp-table th { background: var(--table-header-bg, #27272a); }
+  .rp-input { background: var(--input-bg); color: var(--app-text); border-color: var(--input-border); }
+  .rp-table th { background: var(--table-header-bg); }
   .rp-tr--top3 td { background: rgba(var(--app-accent-rgb),.08); }
-  .rp-stat-card__val { color: var(--app-text, #e2e8f0); }
-  .rp-cliente-nombre { color: var(--app-text, #e2e8f0); }
+  .rp-stat-card__val { color: var(--app-text); }
+  .rp-cliente-nombre { color: var(--app-text); }
   .rp-dropdown {
-    background: var(--card-bg, #27272a);
-    border-color: var(--card-border, rgba(255,255,255,.12));
-    &__item { color: var(--app-text, #e2e8f0); border-color: rgba(255,255,255,.06); &:hover { background: rgba(var(--app-accent-rgb),.15); } }
-    &__sub  { color: var(--app-text-muted, #94a3b8); }
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    &__item { color: var(--app-text); border-color: color-mix(in srgb, var(--app-text) 6%, transparent); &:hover { background: rgba(var(--app-accent-rgb),.15); } }
+    &__sub  { color: var(--app-text-muted); }
   }
 }
 
 :host-context(body.theme-light) {
-  .rp-page { background: var(--page-bg, #f1f5f9); }
-  .rp-header__title { color: var(--header-text, #1e293b); }
+  .rp-page { background: var(--page-bg, var(--form-section-bg)); }
+  .rp-header__title { color: var(--header-text, var(--app-text)); }
 }

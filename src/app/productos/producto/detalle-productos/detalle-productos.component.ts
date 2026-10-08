@@ -153,7 +153,6 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
         showCancelButton: true,
         confirmButtonText: "Ir a registro",
         cancelButtonText: "Cancelar",
-        confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33"
       }).then((result) => {
         if (result.isConfirmed) {
@@ -249,7 +248,6 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: "Generar pedido",
       cancelButtonText: "Cancelar",
-      confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33"
     }).then((result) => {
       if (result.isConfirmed) {

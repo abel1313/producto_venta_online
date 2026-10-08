@@ -12,6 +12,7 @@ import {
 } from './models/abono.model';
 import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
+import { preguntarYEntregar } from '../pedidos/entrega/entrega';
 import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
 import { NegocioService } from '../negocio/negocio.service';
 import { FloresService } from '../flores/service/flores.service';
@@ -53,6 +54,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
     metodoPago: 'EFECTIVO',
     nota:       ''
   };
+  /** Apartado: el monto queda fijo en el saldo; el botón 🔒 explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
 
   readonly metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
   montoDado = 0;
@@ -269,7 +272,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       showCancelButton:    true,
       confirmButtonText:   opts.confirmButtonText,
       cancelButtonText:    'No',
-      confirmButtonColor:  '#ef4444',
+      confirmButtonColor:  'var(--pk-danger)',
       didOpen:    motivoFrag.didOpen,
       preConfirm: motivoFrag.preConfirm
     }).then(result => {
@@ -332,6 +335,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
     this.pedidoSeleccionado = ec;
     // Un Apartado se paga completo: el monto ya viene con lo que debe.
     this.abonoForm = { monto: ec.tipoPedido === 'APARTADO' ? ec.saldo : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    this.verPorqueMontoFijo = false;
     this.montoDado = 0;
     this.detalleActual = null;
     // EstadoCuenta no expone email — correoDisponible en false hasta que el back lo incluya
@@ -488,9 +492,23 @@ export class AbonosComponent implements OnInit, OnDestroy {
             timer:              htmlTicket ? undefined : (esLiquidado ? 4000 : 2500)
           }).then(result => {
             if (result.isConfirmed && htmlTicket) imprimirTicket(htmlTicket);
-            // Si el cliente no tiene correo registrado → preguntar si quiere recibir el ticket
-            if (!this.correoDisponible && htmlTicket) {
-              this.pedirCorreoPostTransaccion(pedidoSnap.pedidoId, htmlTicket);
+            const seguir = () => {
+              // Si el cliente no tiene correo registrado → preguntar si quiere recibir el ticket
+              if (!this.correoDisponible && htmlTicket) {
+                this.pedirCorreoPostTransaccion(pedidoSnap.pedidoId, htmlTicket);
+              }
+            };
+            // E1: al liquidar se pregunta si ya se lo llevó. Se mira el detalle porque un Ir pagando
+            // casi siempre ya está entregado y no hay que volver a preguntar.
+            if (esLiquidado && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')) {
+              this.pedidosService.getDetallePedido(pedidoSnap.pedidoId).subscribe({
+                next: d => d?.data?.entregado === false
+                  ? preguntarYEntregar(() => this.pedidosService.entregar(pedidoSnap.pedidoId), seguir)
+                  : seguir(),
+                error: () => seguir()
+              });
+            } else {
+              seguir();
             }
           });
         },

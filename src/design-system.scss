@@ -74,12 +74,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    color: #fff;
+    color: var(--pk-ink);
     font-weight: 700;
 
-    &--ok      { background: linear-gradient(135deg, #16a34a, #15803d); }
-    &--warn    { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    &--danger  { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    &--ok      { background: linear-gradient(135deg, var(--pk-success), var(--pk-success-to)); }
+    &--warn    { background: linear-gradient(135deg, var(--pk-warning), var(--pk-warning-to)); }
+    &--danger  { background: linear-gradient(135deg, var(--pk-danger), var(--pk-danger-to)); }
     &--neutral { background: linear-gradient(135deg, rgba(var(--app-accent-rgb),0.92), rgba(var(--app-accent-rgb),0.72)); }
   }
 
@@ -105,7 +105,7 @@
   // "Card" -> --card-header-bg), independiente del color de marca.
   &__header {
     padding: 14px 16px 12px;
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text, var(--app-accent-ink));
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -114,7 +114,7 @@
     // resuelve (la personalización del negocio llega por API y puede tardar, o un tema guardado
     // viejo no trae esta variable) el fondo queda transparente y en modo claro el título
     // desaparece sobre la card blanca -- en oscuro no se nota, y por eso pasó desapercibido.
-    background: var(--card-header-bg, #00875A);
+    background: var(--card-header-bg, var(--brand-1));
   }
 
   &__body {
@@ -144,12 +144,12 @@
     justify-content: space-between;
     padding: 10px 12px;
     background: var(--form-section-bg);
-    border-radius: 10px;
+    border-radius: var(--radius, 10px);
     font-size: .82rem;
     color: var(--card-text-muted);
     font-weight: 600;
 
-    strong { font-size: 1.05rem; color: var(--app-accent); }
+    strong { font-size: 1.05rem; color: var(--app-accent-text); }
   }
 
   &__footer {
@@ -175,12 +175,12 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .03em;
-    color: #fff;
+    color: var(--pk-ink);
     z-index: 2;
 
-    &--ok      { background: #16a34a; }
-    &--warn    { background: #d97706; }
-    &--danger  { background: #dc2626; }
+    &--ok      { background: var(--pk-success); }
+    &--warn    { background: var(--pk-warning-to); }
+    &--danger  { background: var(--pk-danger-to); }
     &--neutral { background: var(--app-text-muted); }
   }
 }
@@ -211,10 +211,12 @@
   font-family: inherit;
   white-space: nowrap;
 
+  // Relleno con el degradado de marca en Clásico, delineado en Jade (tokens --btn-primary-*).
   &--primary {
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-    color: var(--app-accent-ink);
-    &:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: 1px solid var(--btn-primary-border);
+    &:hover:not(:disabled) { background: var(--btn-primary-hover-bg); color: var(--btn-primary-hover-text); transform: translateY(-1px); }
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
 
@@ -225,15 +227,15 @@
   }
 
   &--danger {
-    background: rgba(220,38,38,.08);
-    color: #dc2626;
-    &:hover:not(:disabled) { background: rgba(220,38,38,.16); }
+    background: var(--pk-danger-soft);
+    color: var(--pk-danger-to);
+    &:hover:not(:disabled) { background: var(--app-tint); box-shadow: inset 0 0 0 1px var(--pk-danger); }
   }
 
   // Solo ícono, monocromo -- mismo criterio que las acciones de productos/buscar.
   &--icon {
     background: transparent;
-    color: var(--app-accent);
+    color: var(--app-accent-text);
     padding: 8px 10px;
     font-size: 1rem;
     &:hover:not(:disabled) { background: var(--app-accent-soft); }
@@ -249,9 +251,9 @@
     padding: 8px 10px;
     font-size: .8rem;
 
-    &-info    { background: rgba(59,130,246,.10);  color: #3b82f6; &:hover:not(:disabled) { background: rgba(59,130,246,.18); } }
-    &-exito   { background: rgba(16,185,129,.10);  color: #10b981; &:hover:not(:disabled) { background: rgba(16,185,129,.18); } }
-    &-alerta  { background: rgba(217,119,6,.10);   color: #d97706; &:hover:not(:disabled) { background: rgba(217,119,6,.18); } }
+    &-info    { background: var(--pk-info-soft);    color: var(--pk-info);    &:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--pk-info); } }
+    &-exito   { background: var(--pk-success-soft); color: var(--pk-success); &:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--pk-success); } }
+    &-alerta  { background: var(--pk-warning-soft); color: var(--pk-warning-to); &:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--pk-warning); } }
   }
 
   &--sm { padding: 6px 10px; font-size: .78rem; }
@@ -292,10 +294,10 @@
     box-shadow: var(--input-focus-shadow);
   }
   &:disabled, &[readonly] { opacity: .65; cursor: not-allowed; }
-  &--error { border-color: #dc2626; }
+  &--error { border-color: var(--pk-danger); }
 }
 
-.pk-error { font-size: .74rem; color: #dc2626; margin-top: 2px; }
+.pk-error { font-size: .74rem; color: var(--pk-danger); margin-top: 2px; }
 .pk-hint  { font-size: .74rem; color: var(--app-text-muted); margin-top: 2px; }
 
 // ── Estado vacío ─────────────────────────────────────────────────────────
@@ -308,4 +310,307 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// PIEZAS DEL DISEÑO JADE (2026-10-01) — para pantallas nuevas y el rediseño de Tienda/Detalle
+// ════════════════════════════════════════════════════════════════════════
+// Vienen de tema-jade.css (el archivo que mandó el dueño, clases .jd-*). Aquí llevan el prefijo
+// del sistema (.pk-*) y leen los tokens de siempre, así que también funcionan con los demás
+// diseños. Equivalencias: .jd-kicker → .pk-kicker, .jd-rule → .pk-rule, .jd-chip → .pk-chip,
+// .jd-tag-accent → .pk-tag--accent, .jd-price → .pk-price, .jd-glass-btn → .pk-glass-btn,
+// .jd-product → .pk-product, .jd-grid → .pk-product-grid, .jd-photo → .pk-photo,
+// .jd-tabbar → .pk-tabbar, .jd-sidebar → .pk-sidebar, .jd-btn → .pk-btn,
+// .jd-input → .pk-input, .jd-card → .pk-card.
+
+// ── Escala de texto con clase ───────────────────────────────────────────
+.pk-display { font-size: 58px; line-height: 0.92; font-weight: var(--title-weight, 500); letter-spacing: -0.035em; }
+.pk-h1      { font-size: var(--h1-size, 40px); line-height: 1.05; font-weight: var(--title-weight, 500); letter-spacing: -0.025em; }
+.pk-h2      { font-size: var(--h2-size, 28px); line-height: 1.1;  font-weight: var(--title-weight, 500); letter-spacing: -0.02em; }
+.pk-h3      { font-size: var(--h3-size, 20px); line-height: 1.2;  font-weight: var(--title-weight, 500); }
+.pk-body    { font-size: var(--body-size, 14px); line-height: 1.6; color: var(--app-text-soft); }
+.pk-caption { font-size: 11px; color: var(--app-text-faint); }
+.pk-code    { font-size: 11px; letter-spacing: 0.08em; color: var(--app-text-faint); }
+.pk-cat     { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--app-text-faint); }
+// Título pequeño dorado sobre un título grande ("NOVEDADES BOLSAS JADE")
+.pk-kicker  { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--app-gold); }
+.pk-price   { color: var(--app-accent-text); }
+.pk-muted   { color: var(--app-text-muted); }
+
+// ── Líneas ──────────────────────────────────────────────────────────────
+// Dorada, se desvanece en las puntas (firma del logo)
+.pk-rule {
+  height: 1px; border: 0; margin: 0;
+  background: linear-gradient(to right, transparent, var(--app-gold-line) 48px, var(--app-gold-line) calc(100% - 48px), transparent);
+}
+// Separador de filas de una lista
+.pk-row-rule {
+  background: linear-gradient(to right, transparent, var(--app-hairline) 48px, var(--app-hairline) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+}
+
+// ── Chips (filtros, tallas) ─────────────────────────────────────────────
+.pk-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 0 14px;
+  border-radius: var(--radius-pill, 999px);
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: transparent; color: var(--app-text);
+  border: 1px solid var(--app-border);
+  &[aria-pressed="true"], &.is-on {
+    background: var(--app-tint); color: var(--app-accent-text); border-color: var(--app-accent);
+  }
+}
+
+// ── Etiquetas ("3 unidades", "Agotado") ─────────────────────────────────
+.pk-tag {
+  display: inline-flex; align-items: center;
+  font-size: 11px; padding: 3px 10px; border-radius: 6px; white-space: nowrap;
+  &--accent  { background: var(--badge-bg); color: var(--badge-text); }
+  &--outline { border: 1px solid var(--app-accent); color: var(--app-accent-text); }
+  &--neutral { background: var(--card-body-bg); color: var(--app-text-muted); }
+}
+
+// ── Botón redondo sobre una foto (volver, favorito) ─────────────────────
+.pk-glass-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 0;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--app-glass); color: var(--app-text);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+
+// ── Foto y tarjeta de producto (foto 4:5 + categoría + nombre + precio) ─
+.pk-photo {
+  position: relative; overflow: hidden;
+  border-radius: var(--radius, 8px); background: var(--card-body-bg);
+  img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 600ms var(--ease-jade, ease); }
+  &:hover img { transform: scale(1.04); }
+}
+.pk-product {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  .pk-photo { aspect-ratio: 4 / 5; border-radius: var(--radius-lg, 14px); }
+  &__name  { font-size: 13px; line-height: 1.3; color: var(--app-text); }
+  &__price { font-size: 13px; color: var(--app-accent-text); }
+}
+.pk-product-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px;
+  @media (min-width: 768px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 16px; }
+  @media (min-width: 1100px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+// ── Barras de navegación ────────────────────────────────────────────────
+.pk-tabbar  { background: var(--app-glass-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 var(--app-hairline); }
+.pk-sidebar { background: var(--card-body-bg); box-shadow: inset -1px 0 0 var(--app-hairline); }
+
+// ── Transiciones de producto ────────────────────────────────────────────
+// 1) Tarjeta → detalle: view-transition-name: pk-foto en la foto tocada y en la del detalle.
+// 2) Anterior / siguiente: la foto entra deslizando 70px con fundido.
+// 3) La información sube 18px con fundido, 140ms después de la foto.
+.pk-enter-slide-next { animation: pk-slide-next 420ms var(--ease-jade, ease) both; }
+.pk-enter-slide-prev { animation: pk-slide-prev 420ms var(--ease-jade, ease) both; }
+.pk-enter-rise       { animation: pk-rise 420ms var(--ease-jade, ease) 140ms both; }
+@keyframes pk-slide-next { from { transform: translateX(70px);  opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pk-slide-prev { from { transform: translateX(-70px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pk-rise       { from { transform: translateY(18px);  opacity: 0; } to { transform: none; opacity: 1; } }
+::view-transition-group(pk-foto) { animation-duration: 560ms; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .pk-enter-slide-next, .pk-enter-slide-prev, .pk-enter-rise { animation: none; }
+}
+
+// ── Tabla homologada (diseño A, elegido por el dueño 2026-10-06) ─────────────────────────────
+// Encabezados chicos en mayúsculas con línea dorada, filas con línea fina, hover con el tinte de
+// marca, etiquetas (.pk-tabla__chip) y botones de icono. Todo con tokens: de día y de noche
+// cambia sola con Personalización. Uso: Clientes y Categorías; las tablas nuevas, esta.
+.pk-tabla-card {
+  background: var(--card-body-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 20px);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.pk-tabla-card__toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-hairline, var(--card-border));
+}
+.pk-tabla-scroll { overflow-x: auto; }
+.pk-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--card-text, var(--app-text));
+  font-size: .9rem;
+
+  th {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--table-header-text, var(--app-text-muted));
+    background: var(--table-header-bg, transparent);
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--app-gold-line, var(--table-border));
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--app-hairline, var(--table-border));
+    vertical-align: middle;
+  }
+  tbody tr:hover td { background: var(--table-row-hover, var(--app-tint)); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .pk-tabla__num { font-variant-numeric: tabular-nums; color: var(--app-text-muted); white-space: nowrap; }
+  .pk-tabla__acciones { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  th.pk-tabla__der { text-align: right; }
+}
+.pk-tabla__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--badge-bg, var(--app-accent-soft));
+  color: var(--badge-text, var(--app-accent));
+  white-space: nowrap;
+
+  &--alerta { background: var(--pk-warning-soft); color: var(--pk-warning-to, var(--pk-warning)); }
+}
+.pk-tabla__icono {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text-soft, var(--app-text));
+  display: inline-grid;
+  place-items: center;
+  font-size: 15px;
+  cursor: pointer;
+  &:hover { background: var(--app-tint); border-color: var(--app-accent); }
+}
+.pk-tabla-card__pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  color: var(--app-text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--app-hairline, var(--card-border));
+}
+
+// ── Interruptor (sí / no) ───────────────────────────────────────────────────────────────────
+// Para opciones de prender o apagar en lugar del checkbox del navegador. El input sigue ahí
+// (oculto a la vista, no con display:none) para que funcione con teclado y con formControlName.
+//   <label class="pk-switch"><input type="checkbox" formControlName="x">
+//     <span class="pk-switch__track"></span><span class="pk-switch__label">Texto</span></label>
+.pk-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--app-text);
+  font-size: .86rem;
+  font-weight: 600;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  &__track {
+    position: relative;
+    flex-shrink: 0;
+    width: 42px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--app-border);
+    transition: background .2s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--card-body-bg, var(--app-bg));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+      transition: transform .2s ease;
+    }
+  }
+
+  input:checked + &__track { background: var(--app-accent); }
+  input:checked + &__track::after { transform: translateX(18px); }
+  input:focus-visible + &__track { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+  input:disabled + &__track { opacity: .5; cursor: not-allowed; }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__track, &__track::after { transition: none; }
+  }
+}
+
+// ── Monto fijo (Apartado) ─────────────────────────────────────────────────────
+// Un Apartado se paga completo en un solo pago: el monto se muestra y no se edita, y un botón
+// explica por qué (QA 2026-10-08). Lo usan el detalle del pedido, Créditos / Abonos y Pagar el
+// grupo completo.
+.pk-monto-fijo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+
+  > input { flex: 1 1 8rem; min-width: 0; }
+
+  &__input {
+    background: var(--app-tint, var(--input-bg)) !important;
+    font-weight: 700;
+    cursor: not-allowed;
+  }
+
+  &__porque {
+    padding: .35rem .7rem;
+    border: 1px solid var(--app-accent);
+    border-radius: 999px;
+    background: var(--app-accent-soft);
+    color: var(--app-accent-text);
+    font-size: .76rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+  }
+
+  &__explica {
+    margin-top: .45rem;
+    padding: .6rem .8rem;
+    border-left: 3px solid var(--app-accent);
+    border-radius: 8px;
+    background: var(--app-accent-soft);
+    color: var(--app-text);
+    font-size: .8rem;
+    line-height: 1.45;
+
+    p { margin: 0 0 .35rem; }
+  }
+
+  &__accion {
+    margin-top: .2rem;
+    padding: .4rem .8rem;
+    border: 1px solid var(--btn-primary-border);
+    border-radius: 8px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
 }

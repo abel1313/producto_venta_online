@@ -5,9 +5,11 @@ import { catchError, debounceTime, switchMap } from 'rxjs/operators';
 import { IImagenDto } from 'src/app/productos/producto/models/imagen.dto.mode';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 import { ProductoService } from 'src/app/productos/service/producto.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteRequest } from '../models/variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { VarianteService } from '../service/variante.service';
 // Nuevo — palabra clave para categorizar todas las variantes del lote
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
@@ -86,8 +88,15 @@ export class AgregarComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly varianteService: VarianteService,
-    private readonly productoService: ProductoService
+    private readonly productoService: ProductoService,
+    private readonly authService: AuthService
   ) {}
+
+  /** Mismo permiso que actualizar el modelo (el back lo vuelve a revisar). */
+  get puedeAjustarStockModelo(): boolean {
+    return this.authService.isAdminService
+      || ['productos/buscar', 'productos/agregar', 'tienda/venta'].some(r => this.authService.tieneEscritura(r));
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -108,7 +117,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
         // busqueda no encuentra nada, y si ese error sube al subscribe la suscripcion se termina
         // para siempre -- el buscador quedaba muerto y solo revivia recargando la pantalla
         // (reportado en QA: "no hubo producto, busque otra cosa y ya no hace ni la peticion").
-        : this.productoService.getDataNombreCodigoBarra(1, 10, t).pipe(
+        : this.productoService.getDataNombreCodigoBarra(1, 10, t, this.puedeVerTodosLosModelos).pipe(
             catchError(() => of(null))
           ))
     ).subscribe({ next: res => { this.productos = res?.t ?? []; } });
@@ -124,6 +133,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productoSeleccionado = p;
     this.terminoProducto = p.nombre;
     this.productos = [];
+    this.quitarPrecargados();
     this.precargarDelModelo(p);
     this.cargarStockDisponible();
   }
@@ -131,8 +141,8 @@ export class AgregarComponent implements OnInit, OnDestroy {
   /**
    * El artículo nace con los datos que comparte con su modelo, a la vista y editables: antes el
    * back los copiaba en silencio si se dejaban vacíos, pero el formulario salía en blanco y había
-   * que volver a escribirlos. Solo llena lo vacío: no pisa lo que ya se escribió. La categoría la
-   * hereda el back (esta búsqueda no la trae).
+   * que volver a escribirlos. Solo llena lo vacío: no pisa lo que ya se escribió. La categoría
+   * también se precarga (antes salía vacía aunque el modelo la tuviera).
    */
   private precargarDelModelo(p: IProductoDTO): void {
     const delModelo: Record<string, string | null | undefined> = {
@@ -149,7 +159,15 @@ export class AgregarComponent implements OnInit, OnDestroy {
         this.precargados[campo] = valor;
       }
     }
+    this.categoriaPrecargada = null;
+    if (!this.palabraClaveSeleccionada && p.palabraClave) {
+      this.palabraClaveSeleccionada = { id: p.palabraClave.id, nombre: p.palabraClave.nombre };
+      this.categoriaPrecargada = this.palabraClaveSeleccionada;
+    }
   }
+
+  /** La categoría que se puso del modelo; al cambiar de modelo se quita si nadie la cambió. */
+  private categoriaPrecargada: IPalabraClave | null = null;
 
   /** Lo que se precargó del modelo; al cambiar de modelo se borra lo que siga igual. */
   private precargados: Record<string, string> = {};
@@ -160,6 +178,158 @@ export class AgregarComponent implements OnInit, OnDestroy {
       if (control && control.value === valor) control.setValue('');
     }
     this.precargados = {};
+    if (this.categoriaPrecargada && this.palabraClaveSeleccionada === this.categoriaPrecargada) {
+      this.palabraClaveSeleccionada = null;
+    }
+    this.categoriaPrecargada = null;
+  }
+
+  // ── Modelos sin stock, deshabilitados o dados de baja (2026-10-08) ────────────────
+  // Pedido del dueño: buscar TODOS los modelos, ver en qué estado está el elegido y, ahí mismo,
+  // habilitarlo o subirle stock; y en cuanto tenga stock libre, ofrecer sus artículos de una vez.
+
+  /** Permiso "Ver todos los modelos" de esta pantalla (el admin siempre). */
+  get puedeVerTodosLosModelos(): boolean {
+    return this.authService.isAdminService || this.authService.tieneAccion('tienda/venta', 'ver-todos-los-modelos');
+  }
+
+  /** El mismo permiso que el botón Habilitar de Catálogo → 🔍 Modelos. */
+  get puedeHabilitarModelo(): boolean {
+    return this.authService.isAdminService || this.authService.tieneAccion('productos/buscar', 'habilitar');
+  }
+
+  /** Etiquetas del buscador: en qué estado viene cada modelo. */
+  estadoEnLista(p: IProductoDTO): string[] {
+    const etiquetas: string[] = [];
+    if (String(p.habilitado) === '0' || p.habilitado === false) etiquetas.push('⛔ Deshabilitado');
+    if ((p.stock ?? 0) <= 0) etiquetas.push('Sin stock');
+    if (!p.imagen?.urlImagen) etiquetas.push('Sin foto');
+    return etiquetas;
+  }
+
+  get modeloDeshabilitado(): boolean {
+    return this.stockDisponible?.habilitado === false;
+  }
+
+  get modeloSinFoto(): boolean {
+    return this.stockDisponible?.conFoto === false;
+  }
+
+  /** Cuántos artículos más se pueden hacer; si el back no lo manda, lo libre (nunca negativo). */
+  get articulosQueCaben(): number {
+    const sd = this.stockDisponible;
+    if (!sd) return 0;
+    return sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
+  }
+
+  habilitando = false;
+
+  habilitarModelo(): void {
+    const p = this.productoSeleccionado;
+    if (!p || this.habilitando) return;
+    Swal.fire({
+      icon: 'question',
+      title: `¿Habilitar "${p.nombre}"?`,
+      html: 'Vuelve a salir en la tienda y en ventas, junto con sus artículos que tengan stock y foto. '
+        + 'Sus artículos dados de baja siguen de baja.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, habilitar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.habilitando = true;
+      this.productoService.habilitarProducto(p.idProducto, true).subscribe({
+        next: () => {
+          this.habilitando = false;
+          p.habilitado = '1';
+          this.productoService.invalidarProdCache();
+          // Después de habilitar se revisa su stock y se dice cuántos artículos caben.
+          this.cargarStockDisponible(sd => Swal.fire({
+            icon: 'success',
+            title: 'Modelo habilitado',
+            html: this.resumenStock(sd),
+            confirmButtonText: 'Entendido'
+          }));
+        },
+        error: err => {
+          this.habilitando = false;
+          Swal.fire({ icon: 'error', title: 'No se pudo habilitar',
+            text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
+  /** "Tiene 2 artículos con 10 piezas. Puedes hacer hasta 5 artículos más." */
+  private resumenStock(sd: IStockDisponible): string {
+    const caben = sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
+    const articulos = sd.variantesActivas === 1 ? '1 artículo' : `${sd.variantesActivas} artículos`;
+    const base = `<p>Stock del modelo: <b>${sd.stockTotal}</b>. Tiene <b>${articulos}</b> con <b>${sd.enVariantes}</b> piezas.</p>`;
+    return base + (caben > 0
+      ? `<p>Puedes hacer hasta <b>${caben}</b> artículo${caben === 1 ? '' : 's'} más.</p>`
+      : '<p>No le queda stock libre: agrégale stock para hacer artículos nuevos.</p>');
+  }
+
+  guardandoAjuste = false;
+
+  /** Guarda el ajuste en el modelo al momento; si se agregó, ofrece sus artículos de una vez. */
+  guardarAjusteEnModelo(): void {
+    const p = this.productoSeleccionado;
+    const ajuste = Math.trunc(Number(this.ajusteStockModelo) || 0);
+    if (!p || !ajuste || this.ajusteInvalido || this.guardandoAjuste) return;
+    this.guardandoAjuste = true;
+    this.varianteService.ajustarStockModelo(p.idProducto, ajuste).subscribe({
+      next: sd => {
+        this.guardandoAjuste = false;
+        this.stockDisponible = sd;
+        this.ajusteStockModelo = 0;
+        p.stock = sd.stockTotal;
+        this.productoService.invalidarProdCache();
+        if (ajuste < 0) {
+          Swal.fire({ icon: 'success', title: `Se quitaron ${-ajuste} al modelo`, html: this.resumenStock(sd), confirmButtonText: 'Entendido' });
+          return;
+        }
+        Swal.fire({
+          icon: 'success',
+          title: `Se agregaron ${ajuste} al modelo`,
+          html: this.resumenStock(sd) + '<p><b>¿Deseas agregar los artículos de una vez?</b></p>',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, agregar artículos',
+          cancelButtonText: 'Después'
+        }).then(r => { if (r.isConfirmed) this.abrirAltaArticulos(); });
+      },
+      error: err => {
+        this.guardandoAjuste = false;
+        Swal.fire({ icon: 'error', title: 'No se cambió el stock',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Productos). */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
+
+  abrirAltaArticulos(): void {
+    const p = this.productoSeleccionado;
+    const sd = this.stockDisponible;
+    if (!p || !sd) return;
+    this.modeloParaArticulos = {
+      id: p.idProducto,
+      nombre: p.nombre,
+      stock: sd.stockTotal,
+      enArticulos: sd.enVariantes,
+      color: p.color,
+      marca: p.marca,
+      descripcion: p.descripcion,
+      contenido: p.contenido,
+      categoria: p.palabraClave ?? null,
+      tieneImagen: sd.conFoto ?? !!p.imagen?.urlImagen
+    };
+  }
+
+  alCerrarAltaArticulos(guardo: boolean): void {
+    this.modeloParaArticulos = null;
+    if (guardo) this.cargarStockDisponible();
   }
 
   limpiarProducto(): void {
@@ -169,6 +339,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.productos = [];
     this.stockDisponible = null;
     this.errorStock = false;
+    this.ajusteStockModelo = 0;
   }
 
   // ── Stock disponible del modelo ────────────────────────────────────
@@ -179,14 +350,20 @@ export class AgregarComponent implements OnInit, OnDestroy {
   cargandoStock = false;
   errorStock = false;
 
-  private cargarStockDisponible(): void {
+  private cargarStockDisponible(despues?: (sd: IStockDisponible) => void): void {
     const id = this.productoSeleccionado?.idProducto;
     this.errorStock = false;
     if (!id) { this.stockDisponible = null; return; }
 
     this.cargandoStock = true;
     this.varianteService.stockDisponible(id).subscribe({
-      next: s => { this.stockDisponible = s; this.cargandoStock = false; },
+      next: s => {
+        // Si en lo que llegaba se eligió otro modelo, esta respuesta ya no sirve.
+        this.cargandoStock = false;
+        if (this.productoSeleccionado?.idProducto !== id) return;
+        this.stockDisponible = s;
+        if (despues) despues(s);
+      },
       // Si no se puede leer, no se bloquea el alta: el back valida igual al guardar. Se avisa
       // en pantalla para que no parezca que el indicador no existe.
       error: () => { this.stockDisponible = null; this.cargandoStock = false; this.errorStock = true; }
@@ -199,10 +376,34 @@ export class AgregarComponent implements OnInit, OnDestroy {
     return base + this.variantesExtras.reduce((t, e) => t + (Number(e.form.value?.stock) || 0), 0);
   }
 
+  /**
+   * Agregar (+) o quitar (-) stock al modelo en el mismo guardado (2026-10-06, decisión del dueño:
+   * "el stock total bloqueado y otro campo para agregar o quitar"). Se manda en el primer artículo;
+   * el back lo aplica en la misma transacción. 0 = no se toca el modelo.
+   */
+  ajusteStockModelo = 0;
+
+  /** Cómo quedaría el modelo con el ajuste. */
+  get stockModeloQuedaria(): number | null {
+    return this.stockDisponible ? this.stockDisponible.stockTotal + (Number(this.ajusteStockModelo) || 0) : null;
+  }
+
+  /** Lo libre contando el ajuste (el back calcula `disponible`; aquí solo se le suma lo que se agrega). */
+  get disponibleConAjuste(): number | null {
+    return this.stockDisponible ? this.stockDisponible.disponible + (Number(this.ajusteStockModelo) || 0) : null;
+  }
+
+  /** Quitar no puede dejar al modelo con menos de lo que ya está repartido. */
+  get ajusteInvalido(): boolean {
+    const sd = this.stockDisponible;
+    return !!sd && (Number(this.ajusteStockModelo) || 0) < 0
+      && sd.stockTotal + Number(this.ajusteStockModelo) < sd.enVariantes;
+  }
+
   /** Se pasó de lo que queda libre. El back lo rechaza igual; esto avisa antes de escribir. */
   get seEstaPasandoDeStock(): boolean {
-    return this.stockDisponible != null
-        && this.stockEnEstaPantalla > this.stockDisponible.disponible;
+    const libre = this.disponibleConAjuste;
+    return libre != null && this.stockEnEstaPantalla > libre;
   }
 
   // ── Modal tallas numéricas ─────────────────────────────────────────
@@ -525,6 +726,16 @@ export class AgregarComponent implements OnInit, OnDestroy {
       Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
       return;
     }
+    if (this.modeloDeshabilitado) {
+      Swal.fire({ icon: 'warning', title: 'Primero habilita el modelo',
+        text: 'Está deshabilitado: sus artículos no saldrían en la tienda ni en ventas.' });
+      return;
+    }
+    if (this.ajusteInvalido) {
+      Swal.fire({ icon: 'warning', title: 'Revisa el stock del modelo',
+        text: `No se puede dejar el modelo en ${this.stockModeloQuedaria}: ya tiene ${this.stockDisponible?.enVariantes} repartidos en sus artículos.` });
+      return;
+    }
 
     const incluirBase = this.baseDescribeAlgo;
 
@@ -568,12 +779,18 @@ export class AgregarComponent implements OnInit, OnDestroy {
       payloads[0] = { ...payloads[0], listImagenes: this.imagenesCargadas };
     }
 
+    // El ajuste de stock del modelo va una sola vez (en el primero): el back toma el primero que llega.
+    const ajuste = Number(this.ajusteStockModelo) || 0;
+    if (ajuste !== 0 && payloads.length > 0) {
+      payloads[0] = { ...payloads[0], ajusteStockModelo: ajuste };
+    }
+
     this.varianteService.save(payloads).subscribe({
       next: () => this.onExito(),
       error: (err) => {
         this.guardando = false;
         const msg = err?.error?.mensaje ?? 'No se pudo guardar el artículo.';
-        Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: '#dc2626' });
+        Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: 'var(--pk-danger)' });
       }
     });
   }
@@ -596,6 +813,9 @@ export class AgregarComponent implements OnInit, OnDestroy {
       showConfirmButton: false
     });
     this.resetForm();
+    // Si se le movió stock al modelo, el indicador tiene que mostrar ya el número nuevo.
+    this.ajusteStockModelo = 0;
+    this.cargarStockDisponible();
   }
 
   private resetForm(): void {

@@ -190,6 +190,14 @@
     <small class="text-muted" *ngIf="tipoPedido !== 'NORMAL'">
       ℹ️ Los abonos pueden ser en efectivo, transferencia o tarjeta — sin meses
     </small>
+    <!-- LFPC art. 66: precio de contado, total y costo antes de vender a crédito. -->
+    <small class="venta-nota-legal" *ngIf="tipoPedido === 'FIADO'">
+      💳 <b>Ir pagando, sin intereses.</b> Precio de contado {{ totalImporte | currency:'$' }} ·
+      Total a pagar {{ totalImporte | currency:'$' }} (CAT 0%). Se puede liquidar antes sin cargo.
+    </small>
+    <small class="venta-nota-legal" *ngIf="tipoPedido === 'APARTADO'">
+      📦 <b>Apartado, sin dinero ahora.</b> Se paga completo ({{ totalImporte | currency:'$' }}) al recogerlo.
+    </small>
   </div>
 </div>
 

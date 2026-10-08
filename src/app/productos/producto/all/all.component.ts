@@ -13,6 +13,7 @@ import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import Swal from 'sweetalert2';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { CompartirService } from 'src/app/shared/compartir.service';
@@ -230,7 +231,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         showCancelButton: true,
         confirmButtonText: 'Sí, dar de baja',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ef4444'
+        confirmButtonColor: 'var(--pk-danger)'
       }).then(result => {
         if (!result.isConfirmed) return;
             this.srvice.deleteProductoPorId(item.idProducto).subscribe({
@@ -343,9 +344,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       Swal.fire({
         icon: 'warning',
         title: 'Sin stock disponible',
-        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,
-        confirmButtonColor: '#4f46e5'
-      });
+        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,});
     }
   }
 
@@ -678,58 +677,52 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   async inicializarVariantes(producto: IProductoDTO): Promise<void> {
-    const { value: formValues } = await Swal.fire({
-      title: `Crear artículos`,
-      html: `
-        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b> — Stock disponible: <b>${producto.stock}</b></p>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de artículos:</label>
-        <input id="swal-cantidad" type="number" min="1" max="${producto.stock}" value="1"
-          class="swal2-input" style="margin:0 0 12px;" />
-        <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
-          <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
-          Misma imagen para todos los artículos
-        </label>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
-        <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
-      `,
-      confirmButtonText: 'Crear artículos',
-      cancelButtonText: 'Cancelar',
-      showCancelButton: true,
-      confirmButtonColor: '#4f46e5',
-      preConfirm: () => {
-        const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
-        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 artículo'); return false; }
-        if (cantidad > producto.stock) { Swal.showValidationMessage(`El stock máximo es ${producto.stock}`); return false; }
-        return {
-          cantidadVariantes: cantidad,
-          imagenParaTodas: (document.getElementById('swal-para-todas') as HTMLInputElement).checked,
-          files: (document.getElementById('swal-imagenes') as HTMLInputElement).files
-        };
-      }
-    });
+    // El back descuenta el stock que ya tienen los artículos habilitados del modelo; aquí se hace
+    // la misma cuenta para no ofrecer más de lo que se puede crear. Si la consulta falla, el back
+    // valida igual.
+    let enArticulos = 0;
+    try {
+      const articulos = await this.varianteService.getPorProducto(producto.idProducto).toPromise();
+      enArticulos = (articulos ?? [])
+        .filter(a => a.habilitado === '1' && a.stock > 0)
+        .reduce((total, a) => total + a.stock, 0);
+    } catch { /* sin el dato, valida el back */ }
+    const disponible = Math.max((producto.stock ?? 0) - enArticulos, 0);
 
-    if (!formValues) return;
-
-    const form = new FormData();
-  form.append(
-    'request',
-    new Blob([JSON.stringify({
-      productoId: producto.idProducto,
-      cantidadVariantes: formValues.cantidadVariantes,
-      imagenParaTodas: formValues.imagenParaTodas
-    })], { type: 'application/json' })
-  );
-    if (formValues.files) {
-      Array.from(formValues.files as FileList).forEach(f => form.append('files[]', f));
+    if (disponible < 1) {
+      await Swal.fire({
+        icon: 'info',
+        title: 'No queda stock para artículos nuevos',
+        html: `El modelo tiene <b>${producto.stock}</b> y sus artículos ya tienen <b>${enArticulos}</b>.<br><br>`
+          + `Sube el stock del modelo (✏️ Actualizar) o quítale stock a un artículo.<br><br>`
+          + `<small>Si en la tienda ves menos artículos, búscalos con el filtro <b>Sin imágenes</b>: `
+          + `los que no tienen foto no salen en la tienda, pero sí ocupan stock.</small>`
+      });
+      return;
     }
 
-    this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} artículo(s) creado(s)`, timer: 2000, showConfirmButton: false});
-        this.getData(this.paginaPrimera);
-      },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear artículos', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
-    });
+    // Misma ventana que Agregar modelo (flujo A, decidido 2026-10-08): reemplaza a "Inicializar
+    // variantes", que creaba N artículos iguales con stock 1 y sin talla.
+    this.modeloParaArticulos = {
+      id: producto.idProducto,
+      nombre: producto.nombre,
+      stock: producto.stock ?? 0,
+      enArticulos,
+      color: producto.color,
+      marca: producto.marca,
+      descripcion: producto.descripcion,
+      contenido: producto.contenido,
+      categoria: producto.palabraClave ?? null,
+      tieneImagen: !!producto.imagen
+    };
+  }
+
+  /** Modelo al que se le están agregando artículos desde 🧩 Productos. */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
+
+  alCerrarAltaArticulos(guardo: boolean): void {
+    this.modeloParaArticulos = null;
+    if (guardo) this.getData(this.paginaPrimera);
   }
 
   primeraPagina(): void {

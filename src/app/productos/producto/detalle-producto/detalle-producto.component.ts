@@ -93,9 +93,7 @@ export class DetalleProductoComponent implements OnInit {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, compartir',
-      cancelButtonText: 'No, cancelar',
-      background: '#0F2A20',
-      color: '#fff'
+      cancelButtonText: 'No, cancelar'
     }).then((res) => {
       if(!res.isConfirmed){
         Swal.fire({ icon: 'info', title: 'Acción cancelada', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
@@ -174,9 +172,7 @@ toggleMarcar(img: ImagenUpdateDto): void {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;

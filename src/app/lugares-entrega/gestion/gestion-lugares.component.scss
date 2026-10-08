@@ -3,12 +3,37 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .pk-wrap {
-  max-width: 560px;
+  box-sizing: border-box;
+  max-width: var(--form-ancho, 820px);
   margin: 24px auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 0 16px;
+  padding: 20px;
+  // Mismo fondo que la card de Agregar Modelo (Personalización → Card).
+  background: var(--card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--form-card-radius, 14px);
+  box-shadow: var(--card-shadow, none);
+
+  @media (max-width: 576px) { margin: 16px; padding: 16px; }
+}
+
+.pk-explica {
+  background: var(--form-section-bg);
+  border: 1px solid var(--app-border);
+  border-left: 3px solid var(--app-accent);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: .86rem;
+  line-height: 1.5;
+  color: var(--app-text);
+
+  summary { cursor: pointer; font-weight: 700; color: var(--app-text); }
+  p { margin: 10px 0 4px; }
+  ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+  b { font-weight: 700; }
+  &__sub { font-weight: 700; color: var(--app-accent-text); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
 }
 
 .pk-header {
@@ -40,7 +65,7 @@ $t:  all 0.2s ease;
   cursor: pointer; font-weight: 600; font-size: .85rem;
   transition: $t; white-space: nowrap;
 
-  &--save   { background: linear-gradient(135deg, $p, $pd); color: var(--app-accent-ink);
+  &--save   { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text);
                &:disabled { opacity: .5; cursor: not-allowed; } }
   &--cancel { background: var(--form-section-bg); color: var(--app-text-muted);
                &:hover { background: var(--card-border); } }
@@ -159,12 +184,14 @@ $t:  all 0.2s ease;
 .pk-form__label {
   font-size: .78rem;
   font-weight: 600;
-  color: var(--app-text-muted, #6b7280);
+  color: var(--app-text-muted);
 }
+
+.pk-form__field--full { flex-basis: 100%; margin: 0; }
 
 .pk-hint {
   font-size: .78rem;
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   margin: 4px 0 0;
 }
 
@@ -196,7 +223,7 @@ $t:  all 0.2s ease;
 // popup nativo de <option> no respeta color-scheme:dark de forma consistente entre navegadores
 // -- quedaba con el control ilegible de noche aunque .pk-input ya tuviera color-scheme:dark. Se
 // fuerza el mismo patrón robusto (light + colores fijos) que ya funciona en esas 2 pantallas.
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
   .pk-input { color-scheme: dark; color: var(--app-text); }
   select.pk-input {
     color-scheme: light !important;

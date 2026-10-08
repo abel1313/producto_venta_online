@@ -358,7 +358,6 @@ export class RifaMesComponent implements OnInit, OnDestroy {
         showCancelButton: true,
         confirmButtonText: 'Sí, pasar a real',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#4f46e5',
       }).then(result => { if (result.isConfirmed) ejecutar(); });
       return;
     }

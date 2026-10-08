@@ -4,7 +4,10 @@
   padding: 16px 20px;
   min-height: 100vh;
   box-sizing: border-box;
-  background: var(--app-bg);
+  background-color: var(--app-bg);
+  // Degradado del diseño (Jade: brillo verde arriba a la izquierda; Clásico: none).
+  background-image: var(--app-bg-fx, none);
+  background-attachment: fixed;
   color: var(--app-text);
   transition: background 0.35s ease, color 0.35s ease;
 }
@@ -35,6 +38,15 @@
     gap: 4px 16px;
   }
 
+  /* Contacto del negocio (LFPC 76 bis III): una línea que se acomoda sola en celular. */
+  &__contacto {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 14px;
+    font-style: normal;
+  }
+
   a {
     color: var(--app-text-muted);
     text-decoration: underline;
@@ -52,6 +64,10 @@
     flex-direction: column;
     align-items: flex-start;
     padding: 16px 0 80px;
+
+    &__contacto {
+      justify-content: flex-start;
+    }
   }
 }
 

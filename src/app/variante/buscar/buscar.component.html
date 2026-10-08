@@ -6,7 +6,7 @@
       <span class="vb-header__icon">🛍️</span>
       <div>
         <h4 class="mb-0">Tienda</h4>
-        <small class="text-white-50">Todos nuestros productos</small>
+        <small>Todos nuestros productos</small>
       </div>
     </div>
 
@@ -147,11 +147,11 @@
     </select>
     <div *ngIf="isAnonymous || puedeFiltroPrecio" class="vb-pub-precio">
       <input type="number" class="vb-pub-input" placeholder="$ mín"
-             [(ngModel)]="filtroPrecioMin" (ngModelChange)="onFiltroPublicoChange()"
+             [(ngModel)]="filtroPrecioMin" (ngModelChange)="onPrecioChange()"
              [min]="filtrosDisponibles.precioMin ?? 0" />
       <span class="vb-pub-precio__sep">–</span>
       <input type="number" class="vb-pub-input" placeholder="$ máx"
-             [(ngModel)]="filtroPrecioMax" (ngModelChange)="onFiltroPublicoChange()"
+             [(ngModel)]="filtroPrecioMax" (ngModelChange)="onPrecioChange()"
              [max]="filtrosDisponibles.precioMax ?? null" />
     </div>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
@@ -254,7 +254,7 @@
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
-          <img [src]="src" class="vb-card__img" alt="Imagen del artículo" (error)="$any($event.target).style.display='none'" />
+          <img [src]="src" class="vb-card__img" [alt]="(v.nombreProducto || 'Artículo') + (v.talla ? ' talla ' + v.talla : '') + (v.color ? ' ' + v.color : '')" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
         <button *ngIf="!isAnonymous && favoritosDisponibles" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"

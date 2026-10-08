@@ -27,7 +27,7 @@
   }
   &__title {
     h4 { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-    small { color: var(--app-text-muted, #64748b); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -50,7 +50,7 @@
 .vr-loading, .vr-empty {
   text-align: center;
   padding: 60px 16px;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   font-size: 1rem;
 }
 
@@ -108,7 +108,7 @@
   &__nombre {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text);
     margin: 0;
   }
 
@@ -148,7 +148,7 @@
   border-radius: 999px;
   background: rgba(var(--app-accent-rgb),.12);
   color: var(--app-accent);
-  &--alt { background: rgba(128,128,128,.12); color: var(--app-text); opacity: .8; }
+  &--alt { background: color-mix(in srgb, var(--app-text) 12%, transparent); color: var(--app-text); opacity: .8; }
 }
 
 // ── Botones ──────────────────────────────────────────────────────────────
@@ -159,9 +159,9 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: opacity .15s, background .15s, color .15s;
-  &--pedir    { background: var(--app-accent); color: var(--app-accent-ink, #fff); flex: 1; font-weight: 700; &:hover:not(:disabled) { opacity: .85; } }
-  &--detalle  { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
-  &--ghost    { background: rgba(128,128,128,.1); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--pedir    { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); flex: 1; font-weight: 700; &:hover:not(:disabled) { opacity: .85; } }
+  &--detalle  { background: color-mix(in srgb, var(--app-text) 10%, transparent); color: var(--app-text); border: 1px solid var(--card-border); }
+  &--ghost    { background: color-mix(in srgb, var(--app-text) 10%, transparent); color: var(--app-text); border: 1px solid var(--card-border); }
   &:disabled { cursor: not-allowed; opacity: .5; }
 }
 
@@ -211,7 +211,7 @@
     border: none;
     font-size: 1.1rem;
     cursor: pointer;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
     padding: 4px 8px;
     border-radius: 6px;
     &:hover { background: rgba(0,0,0,.08); }
@@ -255,7 +255,7 @@
 
   &__aviso {
     font-size: 0.78rem;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
     margin-top: 16px;
     background: rgba(var(--app-accent-rgb),.06);
     border-radius: 8px;
@@ -288,11 +288,11 @@
 
 // ── Dark / Light ──────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .vr-card { background: rgba(255,255,255,.04); }
-  .vr-modal { background: var(--card-bg, #18181b); }
+  .vr-card { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
+  .vr-modal { background: var(--card-bg); }
 }
 
 :host-context(body.theme-light) {
-  .vr-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .vr-modal { background: var(--card-bg, #fff); }
+  .vr-card { background: var(--card-bg, var(--card-body-bg)); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .vr-modal { background: var(--card-bg, var(--card-body-bg)); }
 }

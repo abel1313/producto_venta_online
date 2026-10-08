@@ -12,10 +12,13 @@ export interface IVarianteDto {
   contenidoNeto?: string;
   precio: number;
   codigoBarras?: string;
+  habilitado?: string | null;
 }
 
 export interface IVarianteRequest {
   id?: number;
+  /** Agregar (+) o quitar (-) stock al modelo en el mismo guardado (back 2026-10-06). */
+  ajusteStockModelo?: number;
   productoId: number;
   talla?: string;
   descripcion?: string;
@@ -27,6 +30,10 @@ export interface IVarianteRequest {
   listImagenes?: IImagenDto[];
   palabraClaveId?: number | null;
   imagenPrincipalId?: string | null;
+  /** true: las fotos de listImagenes son solo de este artículo (Agregar artículos, flujo A). */
+  imagenesPropias?: boolean;
+  /** true: el artículo usa la foto principal del modelo, sin subirla otra vez (A8). */
+  usarImagenDelModelo?: boolean;
 }
 
 export interface IVariante {

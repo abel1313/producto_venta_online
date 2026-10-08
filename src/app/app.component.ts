@@ -11,9 +11,16 @@ import { ITokenData } from './login/models/ITokenData.model';
 import { AuthService } from './auth/auth.service';
 import { ThemeService } from './services/theme/theme.service';
 import { TemaService } from './services/tema/tema.service';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { DatosLegalesService, telefonoLegible } from './legal/datos-legales.service';
+import { fijarDatosNegocioTicket } from './shared/ticket.util';
+import { tap } from 'rxjs/operators';
 
 
 
+
+const RUTAS_SIN_DISENO = ['/login', '/usuarios/registrar'];
 
 @Component({
   selector: 'app-root',
@@ -22,6 +29,9 @@ import { TemaService } from './services/tema/tema.service';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly anio = new Date().getFullYear();
+  readonly telefonoLegible = telefonoLegible;
+  /** Contacto del pie de página (LFPC 76 bis III). Público: no necesita sesión. */
+  readonly datosLegales$ = this.datosLegalesService.obtener().pipe(tap(d => fijarDatosNegocioTicket(d)));
   imageUrl: string | undefined;
   private readonly urlRefresh: string = `${environment.api_Url}/v1/auth/refresh`;
   resultadoCodigo: string = '';
@@ -31,9 +41,19 @@ export class AppComponent implements OnInit, AfterViewInit {
               private readonly roles: AuthService,
               private readonly themeService: ThemeService,
               private readonly temaService: TemaService,
+              private readonly router: Router,
+              private readonly datosLegalesService: DatosLegalesService,
   ) {
     this.themeService.init(); // aplica la clase al body antes de pintar la vista
-    this.temaService.init(); // trae la personalización guardada y la aplica (solo en modo claro)
+    this.temaService.init(); // trae la personalización guardada y la aplica
+
+    // Login y Registro se quedan con su diseño de siempre, sea cual sea el diseño elegido en
+    // Personalización: body.sin-diseno apaga la capa de tema-jade.scss y fija los colores de
+    // fábrica (ver el bloque body.sin-diseno en styles.scss).
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
+      const ruta = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
+      document.body.classList.toggle('sin-diseno', RUTAS_SIN_DISENO.some(r => ruta === r || ruta.startsWith(r + '/')));
+    });
 
     // Select-on-focus global para TODOS los inputs de precio/monto/cantidad
     // (type="number") de la app. Antes, al dar clic en un campo con "0", el cursor se

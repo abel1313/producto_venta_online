@@ -7,6 +7,8 @@ import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
+import { PedidosService } from 'src/app/pedidos/pedidos.service';
+import { preguntarYEntregar } from 'src/app/pedidos/entrega/entrega';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
@@ -57,7 +59,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     private readonly clienteService: ClienteService,
     private readonly router: Router,
     private readonly usuarioService: UsuarioService,
-    private readonly lugarEntregaService: LugarEntregaService
+    private readonly lugarEntregaService: LugarEntregaService,
+    private readonly pedidosService: PedidosService
   ) {}
 
   lugares: ILugarEntrega[] = [];
@@ -207,7 +210,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   limpiar(): void {
     Swal.fire({
       title: '¿Limpiar carrito de artículos?', icon: 'warning',
-      showCancelButton: true, confirmButtonColor: '#d33',
+      showCancelButton: true, confirmButtonColor: 'var(--pk-danger)',
       cancelButtonText: 'Cancelar', confirmButtonText: 'Limpiar'
     }).then(r => { if (r.isConfirmed) this.carritoService.limpiar(); });
   }
@@ -265,7 +268,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
           showCancelButton: true,
           confirmButtonText: 'Ir a registro',
           cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#3085d6',
           cancelButtonColor: '#d33'
         }).then(result => {
           if (result.isConfirmed) this.router.navigate(['/usuarios/registrar']);
@@ -304,7 +306,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Registrarme como cliente',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33'
     }).then(result => {
       if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
@@ -359,7 +360,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
       cancelButtonText:  'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor:  '#d33'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -370,7 +370,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
             this.varianteService.invalidarCache();
             if (esCreditoPedido) {
               const label = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
-              Swal.fire({
+              const mostrarRegistrado = () => Swal.fire({
                 icon: 'success',
                 title: 'Pedido registrado',
                 html: `
@@ -379,12 +379,16 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
                 `,
                 confirmButtonText: '💳 Ir a Créditos / Abonos',
                 showCancelButton: true,
-                cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#6366f1'
-              }).then(r => {
+                cancelButtonText: 'Cerrar',}).then(r => {
                 if (r.isConfirmed) this.router.navigate(['/abonos']);
                 else this.router.navigate(['/tienda/buscar']);
               });
+              // E3: un Ir pagando casi siempre se lo lleva al hacerlo. Un Apartado nunca.
+              if (this.tipoPedido === 'FIADO' && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')) {
+                preguntarYEntregar(() => this.pedidosService.entregar(res.data.id), () => mostrarRegistrado());
+              } else {
+                mostrarRegistrado();
+              }
             } else {
               Swal.fire({
                 icon: 'success',

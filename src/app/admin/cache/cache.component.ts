@@ -137,9 +137,7 @@ export class CacheComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, limpiar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.limpiando = true;
@@ -153,9 +151,7 @@ export class CacheComponent implements OnInit, OnDestroy {
             icon: 'success',
             title: `¡${this.cachesLimpiadas.length} cachés limpiadas!`,
             timer: 1800,
-            showConfirmButton: false,
-            background: '#0F2A20',
-            color: '#fff'
+            showConfirmButton: false
           });
         },
         error: (err) => {
@@ -165,9 +161,7 @@ export class CacheComponent implements OnInit, OnDestroy {
             title: 'Error al limpiar la caché',
             text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo limpiar la caché.',
             timer: 2000,
-            showConfirmButton: false,
-            background: '#0F2A20',
-            color: '#fff'
+            showConfirmButton: false
           });
         }
       });

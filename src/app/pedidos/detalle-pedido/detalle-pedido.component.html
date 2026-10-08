@@ -3,7 +3,7 @@
   <!-- HEADER -->
   <div class="detalle-header">
     <button class="btn-regresar" (click)="irPedido()">
-      ← Regresar
+      ← Volver
     </button>
     <div class="detalle-header__info">
       <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
@@ -16,6 +16,12 @@
         [class.estado--pendiente]="!estaCancelado && estadoPedido !== 'Entregado' && estadoPedido !== 'PAGADO'"
         [class.estado--cancelado]="estaCancelado">
         {{ estadoPedidoLabel }}
+      </span>
+      <!-- La entrega va aparte del pago (back 2026-10-06) -->
+      <span class="detalle-header__estado" *ngIf="!estaCancelado && entregadoDetalle !== null"
+        [class.estado--entregado]="entregadoDetalle"
+        [class.estado--cancelado]="!entregadoDetalle">
+        {{ entregadoDetalle ? 'Entregado' : 'Falta entregar' }}
       </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">
         🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
@@ -32,6 +38,10 @@
       <small *ngIf="grupo.pagadoGrupo > 0">Pagado {{ grupo.pagadoGrupo | currency:'$' }} · falta {{ grupo.saldoGrupo | currency:'$' }}</small>
     </span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeEntregarDetalle" (click)="entregarDetalle()"
+              title="El cliente ya se lo llevó">📦 Entregar</button>
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeRegresarEntregaDetalle" (click)="regresarEntregaDetalle()"
+              title='Regresar a "Falta entregar" (si se marcó por error)'>↩️ Falta entregar</button>
       <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
            Ver `puedeEditarRamo`. -->
       <button class="dp-btn-editar-ramo" type="button" *ngIf="puedeEditarRamo"
@@ -77,7 +87,7 @@
   <div class="dp-tipo-form" *ngIf="mostrarFormTipo">
     <h4 class="dp-tipo-form__titulo">🔁 Cambiar la forma de cobro</h4>
     <p class="dp-tipo-form__actual">
-      Ahora está como <b>{{ etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
+      Ahora está como <b>{{ esPedidoEnLinea ? '🕓 Pendiente (lo pidió el cliente desde su cuenta, sin cobrar)' : etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
       Elige a cuál lo quieres pasar:
     </p>
     <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
@@ -87,18 +97,36 @@
     </p>
 
     <div class="dp-tipo-opciones">
+      <!-- 🕓 Pendiente se ve siempre (QA 2026-10-08: "no veo la opción de Pendiente"). Solo lo tiene
+           el pedido que hace el cliente desde su cuenta; a Pendiente no se regresa. -->
+      <button type="button" class="dp-tipo-btn" disabled
+              [class.dp-tipo-btn--bloqueado]="!esPedidoEnLinea">
+        <span class="dp-tipo-btn__nombre">
+          🕓 Pendiente
+          <span class="dp-tipo-btn__marca" *ngIf="esPedidoEnLinea">Así está ahora</span>
+        </span>
+        <span class="dp-tipo-btn__ayuda">Lo pidió el cliente desde su cuenta y nadie lo ha cobrado ni apartado</span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="!esPedidoEnLinea">🔒 Solo los pedidos que hace el cliente desde su cuenta quedan así; no se puede regresar a Pendiente</span>
+      </button>
       <button type="button" class="dp-tipo-btn"
               *ngFor="let t of tiposPedido"
               [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
+              [class.dp-tipo-btn--bloqueado]="t.valor === 'APARTADO' && tieneDinero"
               [attr.aria-pressed]="tipoForm.tipoPedido === t.valor"
-              [disabled]="t.valor === tipoVigente || (t.valor === 'APARTADO' && tieneDinero)"
-              [title]="t.valor === 'APARTADO' && tieneDinero ? 'Ya dio dinero: un Apartado es sin dinero, queda como Ir pagando' : ''"
+              [disabled]="(t.valor === tipoVigente && !esPedidoEnLinea) || (esPedidoEnLinea && t.valor === 'NORMAL') || (t.valor === 'APARTADO' && tieneDinero)"
               (click)="seleccionarTipo(t.valor)">
         <span class="dp-tipo-btn__nombre">
           {{ t.etiqueta }}
-          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente">Así está ahora</span>
+          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente && !esPedidoEnLinea">Así está ahora</span>
         </span>
         <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
+        <!-- El motivo va escrito, no solo al pasar el mouse: en el celular no hay mouse (QA 2026-10-08). -->
+        <span class="dp-tipo-btn__bloqueo" *ngIf="t.valor === 'APARTADO' && tieneDinero">
+          🔒 No se puede: ya dio {{ detalle?.totalPagado | currency:'$' }}. Un Apartado es sin dinero; por eso queda como Ir pagando.
+        </span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="esPedidoEnLinea && t.valor === 'NORMAL'">
+          Para cobrarlo completo usa el botón Cobrar de la card.
+        </span>
       </button>
     </div>
 
@@ -292,7 +320,24 @@
 
       <div class="dp-abono-form__row">
         <label class="dp-abono-form__label">Monto <span style="color:#ef4444">*</span></label>
-        <input class="dp-abono-form__input" type="number" min="0.01" step="0.01"
+        <!-- Apartado: un solo pago por el total, así que el monto no se mueve (QA 2026-10-08). -->
+        <div class="pk-monto-fijo" *ngIf="esApartado">
+          <input class="dp-abono-form__input pk-monto-fijo__input" type="number"
+                 [(ngModel)]="abonoForm.monto" readonly tabindex="-1" aria-describedby="porqueMontoFijo">
+          <button type="button" class="pk-monto-fijo__porque" (click)="verPorqueMontoFijo = !verPorqueMontoFijo"
+                  [attr.aria-expanded]="verPorqueMontoFijo">
+            🔒 ¿Por qué no puedo cambiar el monto?
+          </button>
+        </div>
+        <div class="pk-monto-fijo__explica" id="porqueMontoFijo" *ngIf="esApartado && verPorqueMontoFijo">
+          <p>Un <b>Apartado</b> es un pedido sin dinero: el cliente lo paga <b>completo, en un solo pago</b>,
+            cuando lo recoge. Por eso el monto es el total que debe ({{ saldoPendiente | currency:'$' }}).</p>
+          <p>Si el cliente quiere dejar solo una parte, el pedido ya no es Apartado: primero cámbialo a
+            <b>Ir pagando</b> y ahí registra lo que dio.</p>
+          <button type="button" class="pk-monto-fijo__accion" *ngIf="puedeCambiarTipo && puedeAbrirFormTipo"
+                  (click)="pasarApartadoAIrPagando()">🔁 Cambiar a Ir pagando</button>
+        </div>
+        <input class="dp-abono-form__input" type="number" min="0.01" step="0.01" *ngIf="!esApartado"
                [(ngModel)]="abonoForm.monto" placeholder="0.00"
                [class.dp-abono-form__input--error]="!!errorMontoAbono">
         <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->

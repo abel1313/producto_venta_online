@@ -264,7 +264,8 @@ export class VarianteService {
   // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
   adminFiltrar(
     filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean;
-               codigoGenerado?: boolean; fechaDesde?: string; fechaHasta?: string },
+               codigoGenerado?: boolean; fechaDesde?: string; fechaHasta?: string;
+               talla?: string; color?: string; marca?: string; precioMin?: number; precioMax?: number },
     pagina: number, size: number
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
@@ -281,6 +282,12 @@ export class VarianteService {
     // Rango de fecha de creacion (yyyy-MM-dd) — independientes entre si, se combinan con AND.
     if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
     if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
+    // Los del catálogo también aquí (2026-10-08): Tienda combina todos los filtros en una búsqueda.
+    if (filtros.talla) params = params.set('talla', filtros.talla);
+    if (filtros.color) params = params.set('color', filtros.color);
+    if (filtros.marca) params = params.set('marca', filtros.marca);
+    if (filtros.precioMin !== undefined && filtros.precioMin !== null) params = params.set('precioMin', String(filtros.precioMin));
+    if (filtros.precioMax !== undefined && filtros.precioMax !== null) params = params.set('precioMax', String(filtros.precioMax));
 
     return this.http.get<{ mensaje: string; data: IVarianteResumenPaginable }>(`${this.url}/admin/filtrar`, { params })
       .pipe(map(res => res.data));
@@ -348,13 +355,22 @@ export class VarianteService {
    * ya existe (`productos/buscar`, `productos/agregar`, `tienda/venta`, `tienda/update`), así
    * que no hace falta ninguna migración.
    */
+  // El back responde la disponibilidad directo, sin envolverla en `data`. Antes se leía `r.data`
+  // (undefined) y el recuadro de stock del modelo nunca aparecía en Agregar artículo (2026-10-08).
   stockDisponible(productoId: number): Observable<IStockDisponible> {
-    return this.http.get<{ data: IStockDisponible }>(`${environment.api_Url}/v1/stock/producto/${productoId}`)
-      .pipe(map(r => r.data));
+    return this.http.get<IStockDisponible | { data: IStockDisponible }>(`${environment.api_Url}/v1/stock/producto/${productoId}`)
+      .pipe(map(r => ('data' in r ? r.data : r)));
+  }
+
+  /** Agregar (+) o quitar (−) stock al modelo, al momento (Agregar artículo, 2026-10-08). */
+  ajustarStockModelo(productoId: number, ajuste: number): Observable<IStockDisponible> {
+    return this.http.put<IStockDisponible>(`${environment.api_Url}/v1/stock/producto/${productoId}/ajuste`, { ajuste });
   }
 }
 
 export interface IVentaDirectaRequest {
+  /** "¿Ya se lo llevó?" (back 2026-10-06). Sin mandar: contado e Ir pagando sí, Apartado no. */
+  entregado?:    boolean;
   usuarioId:     number;
   clienteId:     number;
   pagosYMesesId?: number;

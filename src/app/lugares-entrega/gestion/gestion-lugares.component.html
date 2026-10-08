@@ -1,9 +1,65 @@
 <div class="pk-wrap">
 
   <div class="pk-header">
-    <h4 class="pk-header__title">📍 Catálogo de lugares de entrega</h4>
-    <small class="pk-header__sub">Zonas usadas para filtrar pedidos por lugar de entrega</small>
+    <h4 class="pk-header__title">📍 Zonas de entrega</h4>
+    <small class="pk-header__sub">Los lugares a donde llevas pedidos y la fila del local para recoger</small>
   </div>
+
+  <!-- Explicación a la vista (pedido del dueño 2026-10-07: "no es la primera vez que te
+       pregunto, ponlo en la pantalla bien detallado"). Si cambia cómo se usa una zona en el
+       carrito, la venta directa, flores o Entregas por zona, actualizar este texto. -->
+  <details class="pk-explica" open>
+    <summary>ℹ️ Para qué sirve esta pantalla y dónde se usa cada dato</summary>
+
+    <p>
+      Aquí das de alta <b>los lugares a donde llevas pedidos</b> (Tejupilco, Zacazonapan…) y
+      <b>una fila para el local</b> (recoger en tienda). Es una sola lista y la usan cuatro partes del sistema:
+    </p>
+    <ul>
+      <li>
+        <b>Carrito</b> (el 🛒 de la Tienda): el cliente escoge su zona en <b>"📍 Lugar de entrega"</b>.
+        Solo escoge el nombre: <b>no sale mapa, no se cobra envío y no se revisa la distancia</b>.
+        Si escoge la fila del local, <b>él escoge el día que va a recoger</b> (de hoy a 3 días; si no escoge,
+        se queda en 3 días) y le sale el botón para llegar al local.
+      </li>
+      <li><b>Ventas → Venta directa</b>: tú escoges la zona en los datos de entrega.</li>
+      <li>
+        <b>Flores eternas</b>, cuando el cliente arma su ramo: escoge la zona y <b>ahí sí sale el mapa</b>
+        para marcar su casa. Se le cobra el envío y, si la zona tiene anillos, no lo deja seguir si marca
+        un punto más lejos de lo que entregas.
+      </li>
+      <li>
+        <b>Envíos → Entregas por zona</b>: ahí ves los pedidos de cada zona — los que hizo el cliente desde su
+        cuenta y los <b>Apartados</b> que hiciste tú en Venta directa (sin los ramos de flores) — y armas el viaje:
+        <b>escoges fecha, hora y un punto de encuentro</b> en el mapa, y a todos los clientes de esa zona les llega
+        un correo con ese lugar. El cliente no escoge dónde lo esperas: solo dice su zona y tú decides el punto.
+      </li>
+    </ul>
+
+    <p class="pk-explica__sub">Qué hace cada dato</p>
+    <ul>
+      <li><b>Nombre</b>: lo que ve el cliente en la lista.</li>
+      <li><b>Envío ($) 🌹</b>: solo Flores eternas. La tienda normal no cobra envío.</li>
+      <li><b>Horas extra 🌹</b>: solo Flores eternas. Horas de más que se piden de anticipación por ser una zona lejana.</li>
+      <li><b>🏬 Recoger en tienda</b>: préndelo <b>solo en la fila del local</b> (una sola fila).</li>
+      <li>
+        <b>📍 Centro de la zona</b>: un punto en el mapa. En la fila del local es la dirección para "cómo llegar";
+        en una zona, es donde abre el mapa de Flores eternas y desde donde se miden los anillos.
+      </li>
+      <li>
+        <b>Anillos de cobro</b> (salen al editar ✏️ una zona que ya tiene centro): círculos alrededor del centro,
+        cada uno con su precio. <b>Solo Flores eternas.</b> El anillo más grande es <b>hasta dónde entregas</b>.
+        Sin anillos se cobra el Envío fijo de arriba y no se limita la distancia.
+      </li>
+    </ul>
+
+    <p class="pk-explica__sub">Lo que esta pantalla no hace</p>
+    <ul>
+      <li>No limita hasta dónde entregas en la tienda normal: eso solo existe en Flores eternas, con los anillos.</li>
+      <li>No reparte pedidos: eso es <b>Envíos → Entregas por zona</b>.</li>
+      <li>El cargo por entrega urgente y la anticipación por tamaño de ramo están en <b>Flores eternas → Entregas</b>.</li>
+    </ul>
+  </details>
 
   <!-- Formulario agregar / editar -->
   <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
@@ -22,12 +78,12 @@
     <!-- Los dos campos de abajo SOLO los usa flores eternas: el checkout normal de la tienda no
          cobra envío ni valida tiempos. Por eso van marcados, para que no se malinterprete que
          afectan a todos los pedidos. -->
-    <div class="pk-form__field pk-form__field--num">
+    <div class="pk-form__field pk-form__field--num" *ngIf="!esFilaDelLocal">
       <input class="pk-input" formControlName="costoEnvio" type="number" min="0" step="0.01"
              placeholder="Envío ($) 🌹" title="Costo de envío a esta zona — solo aplica a flores eternas" />
     </div>
 
-    <div class="pk-form__field pk-form__field--num">
+    <div class="pk-form__field pk-form__field--num" *ngIf="!esFilaDelLocal">
       <input class="pk-input" formControlName="horasExtraAnticipacion" type="number" min="0"
              placeholder="Horas extra 🌹" title="Horas que se suman al mínimo de anticipación por ser una zona lejana — solo flores eternas" />
     </div>
@@ -36,26 +92,26 @@
          muestra el calendario de fecha de recogida solo cuando el cliente elige esta fila.
          Debe haber como mucho una marcada (no se valida aquí). -->
     <div class="pk-form__field pk-form__field--checkbox">
-      <label class="pk-checkbox">
+      <label class="pk-switch" title="Prendido: esta fila es recoger en el local (el cliente elige fecha de recogida)">
         <input type="checkbox" formControlName="esRecogerEnTienda" />
-        🏬 Es "recoger en tienda"
+        <span class="pk-switch__track"></span>
+        <span class="pk-switch__label">🏬 Recoger en tienda</span>
       </label>
     </div>
 
-    <!-- Día recurrente del viaje de entrega a esta zona -- lo usa "Entregas por zona" para
-         sugerir la fecha. No aplica a "recoger en tienda". -->
-    <div class="pk-form__field pk-form__field--num">
-      <select class="pk-input" formControlName="diaEntregaSemanal" title="Día de entrega recurrente a esta zona">
-        <option [ngValue]="null">Sin día fijo</option>
-        <option *ngFor="let d of diasSemana" [ngValue]="d.valor">🚚 {{ d.nombre }}</option>
-      </select>
-    </div>
+    <!-- La fila del local no es una zona: envío, horas extra, día y anillos no aplican (el back
+         los borra al guardar) y solo puede haber una (el back rechaza la segunda). -->
+    <p class="pk-hint pk-form__field--full" *ngIf="esFilaDelLocal">
+      🏬 Esta fila es <b>tu local</b>: el cliente la ve como "recoger en tienda" y le pide fecha para recoger.
+      Envío y horas extra no aplican. Marca abajo el punto de tu local para el botón de "cómo llegar".
+      Solo puede haber una fila así.
+    </p>
 
     <!-- Centro de la zona -- usado para recentrar el mapa del checkout al elegir esta zona, y
          como origen para medir los anillos de cobro por distancia (ver abajo). Zonas viejas sin
          marcar simplemente no tienen ninguno de los dos. -->
     <div class="pk-form__field pk-form__field--mapa">
-      <small class="pk-form__label">📍 Centro de la zona (opcional)</small>
+      <small class="pk-form__label">{{ esFilaDelLocal ? '📍 Dónde está tu local (opcional)' : '📍 Centro de la zona (opcional)' }}</small>
       <app-selector-ubicacion
         [lat]="centroLat"
         [lng]="centroLng"
@@ -67,12 +123,12 @@
   <!-- Anillos de cobro por distancia -- solo tiene sentido una vez que la zona ya existe (tiene
        id) y tiene centro marcado arriba. Ver DISENO_ZONAS_POR_ANILLO.md (repo compartido). -->
   <app-anillos-editor
-    *ngIf="puedeEditar && editandoId && centroLat != null && centroLng != null"
+    *ngIf="puedeEditar && editandoId && !esFilaDelLocal && centroLat != null && centroLng != null"
     [lugarEntregaId]="editandoId"
     [centroLat]="centroLat"
     [centroLng]="centroLng">
   </app-anillos-editor>
-  <p class="pk-hint" *ngIf="puedeEditar && editandoId && (centroLat == null || centroLng == null)">
+  <p class="pk-hint" *ngIf="puedeEditar && editandoId && !esFilaDelLocal && (centroLat == null || centroLng == null)">
     Marca el centro de la zona arriba para poder configurar anillos de cobro por distancia.
   </p>
 

@@ -5,48 +5,62 @@
     <small class="pk-header__sub">Categorías usadas para mejorar la búsqueda de modelos y productos</small>
   </div>
 
-  <!-- Formulario agregar / editar -->
-  <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
-    <div class="pk-form__field">
-      <input class="pk-input"
-             formControlName="nombre"
-             type="text"
-             [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nueva palabra clave…'"
-             autocomplete="off"
-             maxlength="80" />
-      <small class="pk-error" *ngIf="ctrl?.invalid && ctrl?.touched">
-        El nombre es obligatorio
-      </small>
-    </div>
-
-    <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
-      {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
-    </button>
-
-    <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
-      ✕ Cancelar
-    </button>
-  </form>
-
-  <!-- Lista -->
-  <div *ngIf="!cargando && palabras.length === 0 && page === 0" class="pk-empty">
-    Sin palabras clave — agrega la primera arriba
-  </div>
-
-  <div class="pk-list" *ngIf="!cargando && palabras.length > 0">
-    <div class="pk-item" *ngFor="let p of palabras"
-         [class.pk-item--editando]="editandoId === p.id">
-      <span class="pk-item__nombre">{{ p.nombre }}</span>
-      <div class="pk-item__actions">
-        <button *ngIf="puedeEditar"   class="pk-btn pk-btn--edit" (click)="iniciarEdicion(p)" title="Editar">✏️</button>
-        <button *ngIf="puedeEliminar" class="pk-btn pk-btn--del"  (click)="eliminar(p)"       title="Eliminar">🗑️</button>
+  <!-- Tabla homologada (diseño A, 2026-10-06): agregar arriba, lista abajo -->
+  <div class="pk-tabla-card">
+    <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form pk-tabla-card__toolbar">
+      <div class="pk-form__field">
+        <input class="pk-input"
+               formControlName="nombre"
+               type="text"
+               [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nueva categoría…'"
+               autocomplete="off"
+               maxlength="80" />
+        <small class="pk-error" *ngIf="ctrl?.invalid && ctrl?.touched">
+          El nombre es obligatorio
+        </small>
       </div>
+
+      <button class="pk-btn pk-btn--save" type="submit" [disabled]="guardando">
+        {{ editandoId ? '💾 Actualizar' : '➕ Agregar' }}
+      </button>
+
+      <button *ngIf="editandoId" class="pk-btn pk-btn--cancel" type="button" (click)="cancelarEdicion()">
+        ✕ Cancelar
+      </button>
+    </form>
+
+    <div *ngIf="!cargando && palabras.length === 0 && page === 0" class="pk-empty">
+      Sin categorías — agrega la primera arriba
     </div>
 
-    <div class="pk-pagination">
-      <button class="pk-btn pk-btn--page" [disabled]="page === 0" (click)="paginaAnterior()">← Anterior</button>
-      <span class="pk-pagination__info">Página {{ page + 1 }}</span>
-      <button class="pk-btn pk-btn--page" [disabled]="!haySiguiente" (click)="siguientePagina()">Siguiente →</button>
+    <div class="pk-tabla-scroll" *ngIf="!cargando && palabras.length > 0">
+      <table class="pk-tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th class="pk-tabla__der" *ngIf="puedeEditar || puedeEliminar">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of palabras" [class.pk-item--editando]="editandoId === p.id">
+            <td>{{ p.nombre }}</td>
+            <td *ngIf="puedeEditar || puedeEliminar">
+              <div class="pk-tabla__acciones">
+                <button *ngIf="puedeEditar"   class="pk-tabla__icono" (click)="iniciarEdicion(p)" title="Editar">✏️</button>
+                <button *ngIf="puedeEliminar" class="pk-tabla__icono" (click)="eliminar(p)"       title="Eliminar">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pk-tabla-card__pie" *ngIf="!cargando && palabras.length > 0">
+      <span>Página {{ page + 1 }}</span>
+      <span class="pk-pagination">
+        <button class="pk-btn pk-btn--page" [disabled]="page === 0" (click)="paginaAnterior()">‹ Anterior</button>
+        <button class="pk-btn pk-btn--page" [disabled]="!haySiguiente" (click)="siguientePagina()">Siguiente ›</button>
+      </span>
     </div>
   </div>
 

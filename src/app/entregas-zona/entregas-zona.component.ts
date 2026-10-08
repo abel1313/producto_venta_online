@@ -27,6 +27,22 @@ import { aIsoLocal } from '../shared/fecha.util';
 })
 export class EntregasZonaComponent implements OnInit {
 
+  /** Lo que explica el ⓘ del título (solo roles con Ayuda contextual). */
+  readonly ayudaPantalla = [
+    { texto: 'Qué pedidos salen',
+      ayuda: 'Todos los de la zona que todavía no se entregan: los que pidió el cliente desde su cuenta ' +
+             '(🕓 Pendiente), los Apartados, los Ir pagando que no se ha llevado y los ya pagados que faltan ' +
+             'por entregar. No salen los cancelados, los ya entregados ni los ramos de flores.' },
+    { texto: 'Rango de fechas',
+      ayuda: 'Es la fecha en que se hizo el pedido. Sin fechas, es esta semana de lunes a viernes.' },
+    { texto: 'Programar la entrega',
+      ayuda: 'Escoges fecha, hora y punto de encuentro (y si quieres, el punto en el mapa). A todos los ' +
+             'clientes de la lista les llega un correo con esos datos.' },
+    { texto: 'Ojo con los 🕓 Pendientes',
+      ayuda: 'Al programar, el pedido queda con esa fecha. Si es Pendiente y pasan 2 días de la fecha sin ' +
+             'entregarse, se cancela solo. Si el cliente pidió que se lo aparten, cámbialo antes a Apartado.' }
+  ];
+
   zonas: ILugarEntrega[] = [];
   zonaId: number | null = null;
   cargandoZonas = true;
@@ -169,9 +185,8 @@ export class EntregasZonaComponent implements OnInit {
       next: res => {
         this.semana = res;
         this.cargandoSemana = false;
-        // Solo se sugiere si el admin todavía no eligió una: pisar su fecha en cada recarga
-        // haría imposible programar un día distinto al que calcula el back.
-        if (!this.form.value.fecha) this.form.patchValue({ fecha: res.fechaSugerida ?? '' });
+        // Ya no se prellena la fecha con `fechaSugerida` (día fijo de la zona, quitado 2026-10-07):
+        // la fecha del viaje la escoge el admin aquí y esa fecha ya dice el día.
       },
       error: err => {
         this.cargandoSemana = false;
@@ -201,9 +216,7 @@ export class EntregasZonaComponent implements OnInit {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, enviar avisos',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3085d6'
-    }).then(result => {
+      cancelButtonText: 'Cancelar',}).then(result => {
       if (!result.isConfirmed || !this.zonaId) return;
       this.enviando = true;
       // Va el mismo rango que se listó: si no, el back recalcularía la semana en curso y el

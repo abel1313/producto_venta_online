@@ -110,7 +110,7 @@ export class MisDatosComponent implements OnInit {
           segundoNombre: data.data.segundoNombre,
           apeidoPaterno: data.data.apeidoPaterno,
           apeidoMaterno: data.data.apeidoMaterno,
-          fechaNacimiento: new Date(data.data.fechaNacimiento),
+          fechaNacimiento: this.aFechaIso(data.data.fechaNacimiento),
           sexo: data.data.sexo,
           correoElectronico: data.data.correoElectronico,
           numeroTelefonico: data.data.numeroTelefonico,
@@ -221,6 +221,21 @@ export class MisDatosComponent implements OnInit {
     }, error => {
       MensajesGenericos.mostrarMensajeSuccess("Ocurrio un error, intente de nuevo", 500);
     });
+  }
+
+  /**
+   * El campo de fecha (`app-selector-fecha`) trabaja con texto `yyyy-MM-dd`, igual que
+   * `<input type="date">`. Antes se le pasaba un `Date` y el componente tronaba al pintarse en
+   * cada ciclo: los datos se veian, pero el spinner global ya no se quitaba y la pantalla
+   * quedaba bloqueada (hotfix 2026-10-06).
+   */
+  private aFechaIso(valor: unknown): string | null {
+    if (!valor) return null;
+    if (typeof valor === 'string') return valor.substring(0, 10);
+    const d = new Date(valor as any);
+    if (isNaN(d.getTime())) return null;
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   }
 
   /** Hay algo guardado (pendiente o ya cargado) a donde mandar el codigo -- controla si "Verificar mi correo" esta habilitado. */

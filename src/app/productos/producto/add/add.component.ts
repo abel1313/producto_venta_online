@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import Swal from 'sweetalert2';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IImagenDto } from '../models';
 import { IProducto } from '../models/producto.model';
@@ -303,11 +304,30 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     };
 
     this.guardando = true;
+    const categoria = this.palabraClaveSeleccionada;
+    const tieneImagen = this.imagenesCargadas.length > 0;
     this.service.saveProducto(productoSave).subscribe({
-      next: () => {
+      next: (guardado: { id?: number } | null) => {
         this.guardando = false;
         this.resetForm();
         this.service.invalidarProdCache();
+        // Modelo nuevo: en vez del aviso, la pregunta "¿Quieres agregar sus artículos ahora?"
+        // (PLAN_ALTA_MODELO_Y_ARTICULOS.md, flujo A; A1: solo al dar de alta, no al actualizar).
+        if (!this.esActualizar && guardado?.id) {
+          this.modeloParaArticulos = {
+            id: guardado.id,
+            nombre: productoSave.nombre,
+            stock: productoSave.stock,
+            enArticulos: 0,
+            color: productoSave.color,
+            marca: productoSave.marca,
+            descripcion: productoSave.descripcion,
+            contenido: productoSave.contenido,
+            categoria,
+            tieneImagen
+          };
+          return;
+        }
         Swal.fire({
           title: this.esActualizar ? '¡Producto actualizado!' : '¡Producto guardado!',
           icon: 'success',
@@ -322,6 +342,13 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         Swal.fire({ icon: 'error', title: 'Error al guardar', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar el producto.', timer: 2000, showConfirmButton: false });
       }
     });
+  }
+
+  /** Modelo recién guardado al que se le ofrece agregar sus artículos (flujo A). */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
+
+  alCerrarAltaArticulos(): void {
+    this.modeloParaArticulos = null;
   }
 
   // alias usado en template del modo actualizar

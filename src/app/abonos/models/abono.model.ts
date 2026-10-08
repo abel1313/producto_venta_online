@@ -49,6 +49,8 @@ export interface PedidoDetalleResponse {
   totalPedido:       number;
   totalPagado:       number;
   saldoPendiente:    number;
+  /** Ya se lo llevó (aparte del pago, dominio entrega del back 2026-10-06). */
+  entregado?:        boolean;
   fechaPedido:       string;
   // Fecha+hora completa de la compra (ISO). En pedidos anteriores a 2026-07-07 no hay hora
   // real registrada y el back rellena con medianoche.

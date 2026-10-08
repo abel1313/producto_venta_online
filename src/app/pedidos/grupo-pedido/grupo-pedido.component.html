@@ -211,8 +211,24 @@
       <div class="gp-form__fila">
         <div class="gp-campo">
           <label for="gpMonto">Monto</label>
-          <input id="gpMonto" type="number" min="0" step="0.01" [(ngModel)]="abono.monto" placeholder="0.00"
-                 [class.gp-campo__input--error]="!!errorMontoAbono" />
+          <!-- Apartados: un solo pago por el total del grupo, el monto no se mueve (QA 2026-10-08). -->
+          <div class="pk-monto-fijo" *ngIf="esApartado; else gpMontoLibre">
+            <input id="gpMonto" class="pk-monto-fijo__input" type="number" [(ngModel)]="abono.monto" readonly tabindex="-1" />
+            <button type="button" class="pk-monto-fijo__porque" (click)="verPorqueMontoFijo = !verPorqueMontoFijo"
+                    [attr.aria-expanded]="verPorqueMontoFijo">
+              🔒 ¿Por qué no puedo cambiar el monto?
+            </button>
+          </div>
+          <ng-template #gpMontoLibre>
+            <input id="gpMonto" type="number" min="0" step="0.01" [(ngModel)]="abono.monto" placeholder="0.00"
+                   [class.gp-campo__input--error]="!!errorMontoAbono" />
+          </ng-template>
+          <div class="pk-monto-fijo__explica" *ngIf="esApartado && verPorqueMontoFijo">
+            <p>Son <b>Apartados</b>: pedidos sin dinero que se pagan <b>completos, en un solo pago</b>, cuando
+              los recogen. Por eso el monto es lo que debe todo el grupo ({{ grupo!.saldoGrupo | currency:'$' }}).</p>
+            <p>Si el cliente quiere dejar solo una parte, los pedidos tienen que pasar a <b>Ir pagando</b>:
+              sepáralos, cambia cada uno con 🔁 Cambiar forma de cobro y vuelve a unirlos.</p>
+          </div>
           <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->
           <small class="gp-campo__error" *ngIf="errorMontoAbono">{{ errorMontoAbono }}</small>
           <small *ngIf="!errorMontoAbono && abono.monto > 0">

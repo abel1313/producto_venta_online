@@ -128,8 +128,8 @@ $t:  all 0.22s ease;
 }
 
 .vd-btn-add {
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: var(--app-accent-ink);
-  border: none; border-radius: 8px; padding: 8px 12px;
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border); border-radius: 8px; padding: 8px 12px;
   cursor: pointer; font-size: 1rem; flex-shrink: 0;
   transition: $t;
   &:hover:not(:disabled) { transform: scale(1.08); }
@@ -262,8 +262,9 @@ $t:  all 0.22s ease;
 
   .vd-pay-retry {
     align-self: flex-start;
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     border: none;
     border-radius: 6px;
     padding: 5px 14px;
@@ -333,7 +334,7 @@ $t:  all 0.22s ease;
 // bug ya encontrado y arreglado en venta-variante/gestion-lugares/entregas-zona) -- de noche
 // queda con el control ilegible aunque --input-bg/--input-text ya estén bien definidos para
 // <input>. Mismo patrón robusto (color-scheme forzado + colores fijos) que en esas pantallas.
-:host-context(body.theme-dark) {
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
   select.vd-entrega__input {
     color-scheme: light !important;
     background-color: #ffffff !important;
@@ -421,7 +422,7 @@ $t:  all 0.22s ease;
   &__header {
     display: flex; align-items: center; gap: 8px;
     font-weight: 700; color: var(--app-text); font-size: .9rem;
-    .pi { color: #009ee3; font-size: 1.1rem; }
+    .pi { color: var(--pk-info); font-size: 1.1rem; }
   }
 
   &__amount {
@@ -437,7 +438,7 @@ $t:  all 0.22s ease;
     &--procesando { background: var(--pk-info-soft); color: var(--pk-info-to); }
     &--aprobado   { background: var(--pk-success-soft); color: var(--pk-success-to); }
     &--rechazado  { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
-    &--cancelado  { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280); }
+    &--cancelado  { background: var(--form-section-bg); color: var(--app-text-muted); }
     &--bloqueado  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
   }
 
@@ -451,13 +452,13 @@ $t:  all 0.22s ease;
   transition: $t;
 
   &--enviar {
-    background: #009ee3; color: #fff;
+    background: var(--pk-info); color: var(--pk-ink);
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
-  &--cancelar { background: var(--pk-danger-to); color: #fff; }
+  &--cancelar { background: var(--pk-danger-to); color: var(--pk-ink); }
   &--cerrar {
-    background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280);
-    &:hover { background: var(--card-border, #e5e7eb); }
+    background: var(--form-section-bg); color: var(--app-text-muted);
+    &:hover { background: var(--card-border, var(--form-section-bg)); }
   }
 }
 
@@ -507,7 +508,7 @@ $t:  all 0.22s ease;
   // Variante superior — sin border-top, siempre visible
   &--top {
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--card-border, #f3f4f6);
+    border-bottom: 1px solid var(--card-border, var(--app-border));
   }
 }
 
@@ -518,8 +519,8 @@ $t:  all 0.22s ease;
 }
 
 .vd-btn-cobrar {
-  flex: 1; padding: 13px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand-1), var(--brand-2)); color: var(--app-accent-ink);
+  flex: 1; padding: 13px; border: 1px solid var(--btn-primary-border); border-radius: 10px;
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
   font-size: .95rem; font-weight: 700; cursor: pointer; transition: $t;
   box-shadow: 0 5px 16px rgba(var(--app-accent-rgb),.35);
   &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(var(--app-accent-rgb),.5); }
@@ -540,9 +541,9 @@ $t:  all 0.22s ease;
   &__close {
     position: absolute; top: 10px; right: 10px; z-index: 1;
     background: rgba(0,0,0,.55); border: none; border-radius: 50%;
-    width: 30px; height: 30px; color: #fff; cursor: pointer; font-size: .8rem;
+    width: 30px; height: 30px; color: var(--overlay-text); cursor: pointer; font-size: .8rem;
     display: flex; align-items: center; justify-content: center;
-    &:hover { background: #dc2626; }
+    &:hover { background: var(--pk-danger); }
   }
   &__img    { width: 100%; max-height: 420px; object-fit: contain; display: block; }
   &__nombre { padding: 10px 14px; font-size: .82rem; color: var(--card-text-muted); margin: 0; text-align: center; }
@@ -553,14 +554,14 @@ $t:  all 0.22s ease;
   border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; margin-top: 0.5rem;
   background: var(--form-section-bg);
   &__header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--app-text); margin-bottom: 10px; }
-  &__icon   { font-size: 1.2rem; color: #009ee3; }
+  &__icon   { font-size: 1.2rem; color: var(--pk-info); }
   &__amount { font-size: 1.4rem; font-weight: 800; color: var(--app-accent); margin-bottom: 12px; }
   &__plan   { font-size: .85rem; font-weight: 400; color: var(--app-text-muted); }
   &__status { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: .85rem; margin-bottom: 12px;
     &--procesando { background: var(--pk-info-soft); color: var(--pk-info-to); }
     &--aprobado   { background: var(--pk-success-soft); color: var(--pk-success-to); }
     &--rechazado  { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
-    &--cancelado  { background: var(--form-section-bg, #f3f4f6); color: var(--app-text-muted, #6b7280); }
+    &--cancelado  { background: var(--form-section-bg); color: var(--app-text-muted); }
     &--bloqueado  { background: var(--pk-warning-soft); color: var(--pk-warning-to); }
   }
   &__actions { display: flex; gap: 8px; }
@@ -568,8 +569,8 @@ $t:  all 0.22s ease;
 
 .mp-btn {
   padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .85rem;
-  &--send   { background: #009ee3; color: #fff; &:disabled { opacity: .5; cursor: not-allowed; } }
-  &--cancel { background: var(--pk-danger-to); color: #fff; }
+  &--send   { background: var(--pk-info); color: var(--pk-ink); &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--cancel { background: var(--pk-danger-to); color: var(--pk-ink); }
 }
 
 
@@ -595,19 +596,19 @@ $t:  all 0.22s ease;
 
   &__header {
     display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    padding: 18px 20px; color: var(--app-accent-ink);
+    background: var(--card-header-bg);
+    padding: 18px 20px; color: var(--card-header-text);
   }
   &__icon  { font-size: 1.6rem; flex-shrink: 0; }
-  &__title { font-size: 1rem; font-weight: 800; margin: 0; color: #fff; }
-  &__sub   { font-size: .74rem; color: rgba(255,255,255,.75); }
+  &__title { font-size: 1rem; font-weight: 800; margin: 0; color: var(--card-header-text); }
+  &__sub   { font-size: .74rem; color: color-mix(in srgb, var(--card-header-text) 75%, transparent); }
   &__close {
-    margin-left: auto; background: rgba(255,255,255,.18); border: none;
-    border-radius: 50%; width: 30px; height: 30px; color: #fff;
+    margin-left: auto; background: color-mix(in srgb, var(--card-header-text) 18%, transparent); border: none;
+    border-radius: 50%; width: 30px; height: 30px; color: var(--card-header-text);
     cursor: pointer; font-size: .8rem; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     transition: $t;
-    &:hover { background: rgba(220,38,38,.55); }
+    &:hover { background: var(--pk-danger-soft); }
   }
 
   &__form { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
@@ -663,20 +664,20 @@ $t:  all 0.22s ease;
 
 // ── Chip cliente sin registro ──────────────────────────────────────
 .vd-client-chip--sinreg {
-  background: linear-gradient(135deg, rgba(251,191,36,.12), rgba(245,158,11,.06));
-  border-color: rgba(245,158,11,.35);
+  background: linear-gradient(135deg, var(--pk-warning-soft), var(--pk-warning-soft));
+  border-color: var(--pk-warning-soft);
 
   .vd-client-chip__badge {
     background: var(--pk-warning-soft); color: var(--pk-warning-to);
     font-size: .68rem; font-weight: 700; padding: 2px 8px;
-    border-radius: 20px; border: 1px solid rgba(245,158,11,.3); flex-shrink: 0;
+    border-radius: 20px; border: 1px solid var(--pk-warning-soft); flex-shrink: 0;
   }
 }
 
 // ── Divider "o" ────────────────────────────────────────────────────
 .vd-client-divider {
-  display: flex; align-items: center; gap: 10px; color: #d1d5db; font-size: .78rem;
-  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border, #e5e7eb); }
+  display: flex; align-items: center; gap: 10px; color: var(--app-text-faint); font-size: .78rem;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--card-border, var(--form-section-bg)); }
 }
 
 // ── Botón agregar sin registro ─────────────────────────────────────
@@ -744,4 +745,16 @@ $t:  all 0.22s ease;
   font-size: .8rem;
   color: var(--app-text);
   background: var(--app-accent-soft);
+}
+
+/* Lo que pide la LFPC art. 66 antes de una venta a crédito (2026-10-07). */
+.vd-nota-legal {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: .78rem;
+  line-height: 1.35;
+  color: var(--app-text);
+  background: var(--app-tint);
+  border: 1px solid var(--app-border);
 }

@@ -232,7 +232,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
         confirmButtonText: 'Crear cuenta',
         showCancelButton: true,
         cancelButtonText: 'Cerrar',
-        confirmButtonColor: '#6366f1',
       }).then(res => {
         if (res.isConfirmed) this.router.navigate(['/usuarios/registrar']);
       });

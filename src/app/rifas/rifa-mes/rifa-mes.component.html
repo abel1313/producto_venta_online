@@ -277,12 +277,12 @@
         <button class="rm-btn rm-btn--sm rm-btn--outline" style="margin-left:auto" (click)="errorConcursante = null">✕</button>
       </div>
 
-      <!-- Buscador de variante -->
+      <!-- Buscador de artículo -->
       <div class="rm-search-wrap" #searchWrapVariante>
         <div class="rm-search-box">
           <span>🔍</span>
           <input class="rm-search-input" type="text"
-                 placeholder="Buscar por nombre, talla o color…"
+                 placeholder="Buscar artículo por nombre, talla o color…"
                  [value]="terminoBusca"
                  (input)="onBuscarVariante($event)"
                  autocomplete="off"

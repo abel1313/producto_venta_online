@@ -16,11 +16,11 @@
       <!-- Sin esto la pantalla no explicaba para qué sirve — solo mostraba nombres de campos
            crudos (imagenPresenteEnMicroservicio, idsSinDatosEnMicroservicio...) sin contexto. -->
       <p class="di-card__help">
-        Cuando la foto de un modelo o un producto <strong>no aparece en el catálogo</strong>, esta
+        Cuando la foto de un modelo o un artículo <strong>no aparece en el catálogo</strong>, esta
         herramienta dice por qué: compara el registro que existe en la base de datos local
         (nombre del archivo, extensión) contra si el archivo <strong>realmente está guardado</strong>
         en el microservicio de imágenes. Puede pasar que el registro exista pero el archivo se haya
-        perdido (⚠️), o que nunca se haya guardado nada (❌). Busca el modelo o el producto y
+        perdido (⚠️), o que nunca se haya guardado nada (❌). Busca el modelo o el artículo y
         compara los resultados.
       </p>
 
@@ -30,7 +30,7 @@
           📦 Modelo
         </button>
         <button class="di-tab" [class.di-tab--active]="tab === 'variante'" (click)="cambiarTab('variante')">
-          🏷️ Producto
+          🏷️ Artículo
         </button>
       </div>
 
@@ -47,7 +47,7 @@
             <input
               class="di-search-box__input"
               type="text"
-              placeholder="Buscar producto o código…"
+              placeholder="Buscar modelo por nombre o código…"
               [value]="terminoProducto"
               (input)="onBuscarProducto($event)"
               autocomplete="off"
@@ -76,7 +76,7 @@
 
           <!-- Sin resultados -->
           <div class="di-no-results" *ngIf="!buscandoProducto && terminoProducto.length >= 3 && productosEncontrados.length === 0 && !productoSeleccionado && !resultadoProducto">
-            No se encontraron productos con "{{ terminoProducto }}"
+            No se encontraron modelos con "{{ terminoProducto }}"
           </div>
         </div>
 
@@ -90,7 +90,7 @@
         </div>
       </ng-container>
 
-      <!-- ═══ BÚSQUEDA VARIANTE ═══ -->
+      <!-- ═══ BÚSQUEDA ARTÍCULO ═══ -->
       <ng-container *ngIf="tab === 'variante'">
         <div class="di-endpoint">
           <span class="di-endpoint__method">GET</span>
@@ -103,7 +103,7 @@
             <input
               class="di-search-box__input"
               type="text"
-              placeholder="Buscar producto o código…"
+              placeholder="Buscar artículo por nombre o código…"
               [value]="terminoVariante"
               (input)="onBuscarVariante($event)"
               autocomplete="off"
@@ -132,7 +132,7 @@
 
           <!-- Sin resultados -->
           <div class="di-no-results" *ngIf="!buscandoVariante && terminoVariante.length >= 3 && variantesEncontradas.length === 0 && !varianteSeleccionada && !resultadoVariante">
-            No se encontraron productos con "{{ terminoVariante }}"
+            No se encontraron artículos con "{{ terminoVariante }}"
           </div>
         </div>
 
@@ -219,7 +219,7 @@
 
         <div class="di-grid">
           <div class="di-field">
-            <span class="di-field__label">varianteId</span>
+            <span class="di-field__label">Id del artículo</span>
             <span class="di-field__value">{{ resultadoVariante.varianteId }}</span>
           </div>
           <div class="di-field">

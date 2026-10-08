@@ -47,7 +47,7 @@ interface FormArticulo {
  * Agregar los artículos de un modelo en un solo paso (PLAN_ALTA_MODELO_Y_ARTICULOS.md, flujo A).
  *
  * Lo abren dos pantallas: Agregar modelo, al guardar uno nuevo (primero pregunta "¿Quieres agregar
- * sus artículos ahora?"), y la tarjeta del modelo en Catálogo → 🔍 Modelos (botón 🧩 Productos), que
+ * sus artículos ahora?"), y la tarjeta del modelo en Catálogo → 🔍 Modelos (botón 🧩 Artículos), que
  * va directo a los formularios.
  *
  * Reglas (A3–A12): casillas solo de lo que el modelo tiene lleno, todas marcadas; talla,

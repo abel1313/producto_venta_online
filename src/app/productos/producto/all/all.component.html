@@ -6,8 +6,8 @@
       <div class="pl-header__title">
         <span class="pl-header__icon">📦</span>
         <div>
-          <h4 class="mb-0">Productos</h4>
-          <small>Catálogo de productos</small>
+          <h4 class="mb-0">Modelos</h4>
+          <small>Catálogo de modelos (producto base)</small>
         </div>
       </div>
       <div class="pl-header__actions">
@@ -29,7 +29,7 @@
       <input
         class="pl-search__input"
         type="text"
-        placeholder="Buscar nombre o código…"
+        placeholder="Buscar modelo por nombre o código…"
         [(ngModel)]="buscarProd"
         (keyup)="buscarProductos($event)"
         autocomplete="off"
@@ -288,7 +288,7 @@
         <button *ngIf="puedeCrearVariantes" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
           [disabled]="item.stock === 0" title="Agregar artículos a este modelo (cada talla o color con su stock)">
           <span>🧩</span>
-          <span class="pl-btn-card__label">Productos</span>
+          <span class="pl-btn-card__label">Artículos</span>
         </button>
 
         <button *ngIf="puedeCompartirImagen && item.imagen?.urlImagen"
@@ -313,7 +313,7 @@
 
 </div>
 
-<!-- 🧩 Productos: agregar artículos al modelo (misma ventana que Agregar modelo, 2026-10-08) -->
+<!-- 🧩 Artículos: agregar artículos al modelo (misma ventana que Agregar modelo, 2026-10-08) -->
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"
                     (cerrar)="alCerrarAltaArticulos($event)"></app-alta-articulos>

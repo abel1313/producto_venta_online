@@ -121,7 +121,7 @@
       <button class="rf-btn rf-btn--sm rf-btn--outline ms-auto"
               (click)="mostrarFormVariante = !mostrarFormVariante"
               [disabled]="!rifaConfig?.id">
-        {{ mostrarFormVariante ? '✕ Cancelar' : '+ Agregar variante' }}
+        {{ mostrarFormVariante ? '✕ Cancelar' : '+ Agregar artículo' }}
       </button>
     </div>
 
@@ -194,13 +194,13 @@
         </div>
       </div>
 
-      <!-- Form agregar variante -->
+      <!-- Form agregar artículo -->
       <div class="rf-form-variante" *ngIf="mostrarFormVariante">
         <div class="rf-search-wrap" #searchWrapVariante>
           <div class="rf-search-box">
             <span>🔍</span>
             <input class="rf-search-input" type="text"
-                   placeholder="Buscar por nombre, color o código…"
+                   placeholder="Buscar artículo por nombre, color o código…"
                    [value]="terminoBusca"
                    (input)="onBuscarVariante($event)"
                    autocomplete="off"

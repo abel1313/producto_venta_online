@@ -717,7 +717,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     };
   }
 
-  /** Modelo al que se le están agregando artículos desde 🧩 Productos. */
+  /** Modelo al que se le están agregando artículos desde 🧩 Artículos. */
   modeloParaArticulos: ModeloParaArticulos | null = null;
 
   alCerrarAltaArticulos(guardo: boolean): void {

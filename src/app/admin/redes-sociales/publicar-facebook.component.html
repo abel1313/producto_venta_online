@@ -88,12 +88,12 @@
     <!-- ····· PRODUCTO (opcional) ····· -->
     <!-- Va aquí, justo antes del texto, porque su código de barras encabeza el post: el orden de
          la pantalla es el mismo con el que se arma la publicación. -->
-    <label class="fb-label fb-label--sep">¿Es de algún producto? <small>(opcional)</small></label>
+    <label class="fb-label fb-label--sep">¿Es de algún artículo? <small>(opcional)</small></label>
 
     <div *ngIf="!seleccionado">
       <div class="fb-search-wrap">
         <input class="fb-input" type="text"
-               placeholder="Código, nombre o categoría…"
+               placeholder="Buscar artículo por código, nombre o categoría…"
                [(ngModel)]="termino" (input)="onInput()" [disabled]="publicando" appUppercase>
       </div>
 

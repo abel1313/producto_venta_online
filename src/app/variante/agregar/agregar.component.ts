@@ -306,7 +306,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Productos). */
+  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Artículos). */
   modeloParaArticulos: ModeloParaArticulos | null = null;
 
   abrirAltaArticulos(): void {
@@ -723,7 +723,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   guardar(): void {
     if (!this.productoSeleccionado) {
-      Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Selecciona un modelo', timer: 1800, showConfirmButton: false });
       return;
     }
     if (this.modeloDeshabilitado) {

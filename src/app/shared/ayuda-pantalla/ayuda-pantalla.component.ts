@@ -8,7 +8,7 @@ import { AyudaPantalla, ayudaDeRuta } from './ayuda-pantallas.catalog';
 /**
  * Icono de ayuda con la explicación de la pantalla actual (pedido 2026-09-17).
  *
- * Motivo: pantallas con nombres parecidos ("Agregar Modelo" vs "Nuevo Producto") no dejaban
+ * Motivo: pantallas con nombres parecidos ("Agregar Modelo" vs "Agregar artículo") no dejaban
  * claro cuál usar ni en qué se diferenciaban, y había que entrar a probar para acordarse.
  *
  * Solo lo ven los roles con el permiso `ayuda-contextual` concedido desde Gestión de roles

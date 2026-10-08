@@ -1,7 +1,7 @@
 /**
  * Catálogo de ayudas contextuales del admin (pedido 2026-09-17).
  *
- * Motivo: pantallas con nombres parecidos ("Agregar Modelo" vs "Nuevo Producto",
+ * Motivo: pantallas con nombres parecidos ("Agregar Modelo" vs "Agregar artículo",
  * "Promociones" vs "Gestión de promociones", "Entregas" vs "Lugares de entrega") no dejaban
  * claro cuál usar, y el usuario tenía que entrar a probar para acordarse. Cada entrada
  * responde las cuatro preguntas que causaban la duda: qué es, cuándo se usa, en qué se
@@ -38,15 +38,15 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
     titulo: 'Agregar Modelo',
     queEs: 'Da de alta el artículo base del catálogo: el modelo, sin talla ni color todavía.',
     paraQue: [
-      'Registrar un artículo nuevo que aún no existe en el sistema (ej. «Blusa Zara»).',
+      'Registrar un modelo (producto base) que aún no existe en el sistema (ej. «Blusa Zara»).',
       'Definir lo que no cambia entre tallas: nombre, marca, precios, descripción y categoría.',
       'Es el paso 1 de 2 — el modelo por sí solo todavía no se puede vender.',
     ],
     diferencia: [{
-      pantalla: 'Nuevo Producto (Tienda › Venta)',
+      pantalla: 'Agregar artículo (Catálogo)',
       explicacion: 'Allá se crea lo que SE VENDE (el modelo ya con talla y color). Aquí se crea el ' +
         'modelo base. Primero pasas por esta pantalla, después por aquella. Si el modelo ya existe, ' +
-        'sáltate esta pantalla y ve directo a «Nuevo Producto».',
+        'sáltate esta pantalla y ve directo a «Agregar artículo».',
     }],
     porQue: 'Se separó en dos pantallas porque un mismo modelo suele tener muchas combinaciones de ' +
       'talla y color. Si se capturara todo junto, habría que reescribir nombre, marca y precios en ' +
@@ -54,7 +54,7 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   },
   {
     ruta: 'tienda/venta',
-    titulo: 'Nuevo Producto',
+    titulo: 'Agregar artículo',
     queEs: 'Crea lo que realmente se vende: un modelo ya con su talla, color y stock.',
     paraQue: [
       'Darle tallas y colores a un modelo que ya existe en el catálogo.',
@@ -76,11 +76,11 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
     queEs: 'Listado de los modelos del catálogo, para consultarlos o editarlos.',
     paraQue: [
       'Encontrar un modelo por nombre o código de barras.',
-      'Entrar a editar sus datos base o ver qué productos tiene colgando.',
+      'Entrar a editar sus datos base o ver qué artículos tiene.',
     ],
     diferencia: [{
       pantalla: 'Buscar en Tienda',
-      explicacion: 'Aquí ves modelos (el artículo base). Allá ves los productos vendibles, ya con ' +
+      explicacion: 'Aquí ves modelos (el producto base). Allá ves los artículos que se venden, ya con ' +
         'talla y color.',
     }],
   },
@@ -104,7 +104,7 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
       'Evitar capturar a mano decenas de artículos.',
     ],
     diferencia: [{
-      pantalla: 'Agregar Modelo / Nuevo Producto',
+      pantalla: 'Agregar Modelo / Agregar artículo',
       explicacion: 'Esas son de uno en uno. Esta es para muchos a la vez, pero exige que el Excel ' +
         'venga con el formato exacto.',
     }],

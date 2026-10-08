@@ -192,7 +192,7 @@
           <!-- Alta de premio -->
           <div class="br-sub">Agregar premio</div>
           <div class="pk-field">
-            <input class="pk-input" type="text" placeholder="Buscar producto por nombre o código..."
+            <input class="pk-input" type="text" placeholder="Buscar artículo por nombre o código…"
                    [(ngModel)]="terminoBusca" (ngModelChange)="buscarVariante()" />
             <span class="pk-hint" *ngIf="buscandoVariante">Buscando...</span>
           </div>
@@ -218,7 +218,7 @@
           </div>
 
           <span class="pk-hint" *ngIf="terminoBusca.trim().length >= 3 && !buscandoVariante && !variantesBusqueda.length">
-            Ningún producto coincide. Solo se pueden rifar artículos con stock, habilitados y con foto.
+            Ningún artículo coincide. Solo se pueden rifar artículos con stock, habilitados y con foto.
           </span>
 
           <div class="br-nuevo-premio" *ngIf="varianteParaAgregar">

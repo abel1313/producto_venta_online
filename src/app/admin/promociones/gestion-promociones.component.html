@@ -27,17 +27,17 @@
       </div>
     </div>
 
-    <!-- Buscador de variante -->
+    <!-- Buscador de artículo -->
     <div class="gp-variante-search">
-      <label class="gp-label">Agregar producto al combo</label>
+      <label class="gp-label">Agregar artículo al combo</label>
       <div class="gp-search-wrap">
         <input class="gp-input gp-input--search" type="text"
-               placeholder="Buscar por nombre, talla o color…"
+               placeholder="Buscar artículo por nombre, talla o color…"
                [(ngModel)]="terminoVariante"
                (input)="onInputVariante()"
                appUppercase>
       </div>
-      <!-- Solo aparecen variantes CON stock (ver buscarVariante() en el .ts) -->
+      <!-- Solo aparecen artículos CON stock (ver buscarVariante() en el .ts) -->
       <div class="gp-dropdown" *ngIf="resultadosVariante.length > 0">
         <div class="gp-dropdown__item"
              *ngFor="let v of resultadosVariante"
@@ -52,10 +52,10 @@
       </div>
       <p class="gp-hint-sinresultados"
          *ngIf="!buscandoVariante && terminoVariante.trim().length >= 2 && resultadosVariante.length === 0">
-        Sin resultados con stock disponible. Solo se muestran productos con piezas para armar el combo.
+        Sin resultados con stock disponible. Solo se muestran artículos con piezas para armar el combo.
       </p>
       <p class="gp-hint-duplicados" *ngIf="resultadosVariante.length > 1">
-        ⚠️ Si ves varios productos idénticos (mismo nombre/talla/color), pueden ser registros
+        ⚠️ Si ves varios artículos idénticos (mismo nombre/talla/color), pueden ser registros
         duplicados del mismo modelo con el stock repartido entre ellos — revisa el número de
         piezas de cada una antes de elegir.
       </p>

@@ -8,7 +8,7 @@ export interface DatosArticulo {
 }
 
 /**
- * Da de alta un artículo sobre un modelo desde "Catálogo → Agregar producto" (tienda/venta), igual
+ * Da de alta un artículo sobre un modelo desde "Catálogo → Agregar artículo" (tienda/venta), igual
  * que una persona. El buscador de modelos reacciona a cada tecla, por eso se escribe con
  * pressSequentially y no con fill.
  */
@@ -18,12 +18,12 @@ export async function crearArticulo(page: Page, modelo: ModeloCreado, datos: Dat
   await page.locator('[formcontrolname="talla"]').fill(datos.talla);
   await page.locator('[formcontrolname="color"]').fill(datos.color);
   await page.locator('[formcontrolname="stock"]').fill(String(datos.stock));
-  await page.getByRole('button', { name: /Guardar producto/ }).click();
+  await page.getByRole('button', { name: /Guardar artículo/ }).click();
   await expect(page.locator('.swal2-title')).toHaveText('¡Artículo creado!');
   await expect(page.locator('.swal2-container')).toBeHidden();
 }
 
-/** En "Agregar producto", busca el modelo por su código y lo elige. */
+/** En "Agregar artículo", busca el modelo por su código y lo elige. */
 export async function elegirModelo(page: Page, modelo: ModeloCreado): Promise<void> {
   await page.getByPlaceholder('Buscar modelo por nombre o código…').pressSequentially(modelo.codigo);
   await page.locator('.vf-product-search__item', { hasText: modelo.nombre }).click();

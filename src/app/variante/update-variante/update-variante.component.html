@@ -15,9 +15,9 @@
 
     <div class="vf-card__body">
 
-      <!-- ── Producto ───────────────────────────────────────────── -->
+      <!-- ── Modelo ───────────────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Producto <span class="vf-required">*</span></p>
+        <p class="vf-section__label">Modelo <span class="vf-required">*</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
           <div class="vf-product-search__wrap">
@@ -25,7 +25,7 @@
             <input
               class="vf-product-search__input"
               type="text"
-              placeholder="Buscar nombre o código…"
+              placeholder="Buscar modelo por nombre o código…"
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"

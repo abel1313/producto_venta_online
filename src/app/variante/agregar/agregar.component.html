@@ -7,17 +7,17 @@
       <div class="vf-card__header-glow"></div>
       <span class="vf-card__header-icon">🧩</span>
       <div class="vf-card__header-text">
-        <h3 class="vf-card__title">Nuevo Producto</h3>
+        <h3 class="vf-card__title">Nuevo artículo</h3>
         <p class="vf-card__subtitle">Lo que se vende: un modelo con su talla y color. Solo el modelo es obligatorio</p>
       </div>
     </div>
 
     <div class="vf-card__body">
 
-      <!-- ── Búsqueda de producto ────────────────────────────────── -->
+      <!-- ── Búsqueda de modelo ────────────────────────────────── -->
       <div class="vf-section">
         <p class="vf-section__label">Modelo <span class="vf-required">*</span>
-          <span style="opacity:.6;font-weight:400">— el artículo base al que le vas a dar talla y color</span></p>
+          <span style="opacity:.6;font-weight:400">— el producto base al que le vas a dar talla y color</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
           <div class="vf-product-search__wrap">
@@ -56,7 +56,7 @@
             <strong>{{ productoSeleccionado.nombre }}<ng-container *ngIf="productoSeleccionado.codigoBarras"> · {{ productoSeleccionado.codigoBarras }}</ng-container></strong>
             <small>{{ productoSeleccionado.precioVenta | currency:'MXN':'symbol':'1.2-2' }} · Stock {{ productoSeleccionado.stock }}</small>
           </div>
-          <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar producto">✕</button>
+          <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar modelo">✕</button>
         </div>
 
         <!-- ── Cuánto stock del modelo queda sin repartir ──────────────────────────
@@ -189,7 +189,7 @@
           <div class="vf-field vf-field--full">
             <label class="vf-label">Descripción</label>
             <textarea class="vf-input vf-textarea" formControlName="descripcion" rows="2"
-              placeholder="Descripción del producto…"></textarea>
+              placeholder="Descripción del artículo…"></textarea>
           </div>
 
           <!-- Nuevo — categoría que se aplica a todas las variantes del lote -->
@@ -233,14 +233,14 @@
         class="vf-btn-propagate-full"
         type="button"
         (click)="propagarCampos()"
-        title="Copia color, presentación, marca, contenido y descripción del formulario principal a todos los productos extra">
-        ↓ Propagar campos del formulario principal a los {{ totalExtras }} producto(s) extra
+        title="Copia color, presentación, marca, contenido y descripción del formulario principal a todos los artículos extra">
+        ↓ Propagar campos del formulario principal a los {{ totalExtras }} artículo(s) extra
       </button>
 
-      <!-- ── Variantes extra ───────────────────────────────────────── -->
+      <!-- ── Artículos extra ───────────────────────────────────────── -->
       <div *ngIf="totalExtras > 0" class="vf-extras">
         <p class="vf-section__label">
-          Productos adicionales
+          Artículos adicionales
           <span class="vf-extras__count">{{ totalExtras }}</span>
         </p>
 
@@ -298,7 +298,7 @@
       <div class="vf-section">
         <p class="vf-section__label">
           Imágenes
-          <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todos los productos</span>
+          <span *ngIf="totalExtras > 0" class="vf-shared-badge">compartidas con todos los artículos</span>
         </p>
 
         <!-- Input galería (oculto) -->
@@ -347,14 +347,14 @@
 
       <!-- ── Botón guardar ───────────────────────────────────────── -->
       <!-- El número sale de `totalAGuardar`, que NO cuenta el formulario de arriba si quedó
-           vacío. Antes era `totalExtras + 1` fijo: con 2 tallas decía "Guardar 3 productos"
+           vacío. Antes era `totalExtras + 1` fijo: con 2 tallas decía "Guardar 3 artículos"
            y guardaba 3, el tercero vacío. -->
       <button
         class="vf-btn-save"
         [disabled]="!productoSeleccionado || guardando || totalAGuardar === 0 || modeloDeshabilitado"
         (click)="guardar()"
       >
-        💾 Guardar {{ totalAGuardar > 1 ? totalAGuardar + ' productos' : 'producto' }}
+        💾 Guardar {{ totalAGuardar > 1 ? totalAGuardar + ' artículos' : 'artículo' }}
       </button>
 
       <p class="vf-faltantes" *ngIf="productoSeleccionado && totalAGuardar === 0">
@@ -486,7 +486,7 @@
   </div>
 </div>
 
-<!-- 🧩 Agregar artículos de una vez (la misma ventana de Agregar modelo y de 🧩 Productos) -->
+<!-- 🧩 Agregar artículos de una vez (la misma ventana de Agregar modelo y de 🧩 Artículos) -->
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"
                     (cerrar)="alCerrarAltaArticulos($event)"></app-alta-articulos>

@@ -16,7 +16,7 @@ cp .env.example .env      # y llena E2E_USUARIO / E2E_PASSWORD
 ```
 
 El usuario de pruebas tiene que ser admin (o tener el correo verificado) y ver las pantallas
-Agregar modelo, Modelos y Agregar producto.
+Agregar modelo, Modelos y Agregar artículo.
 
 ## Correrlas
 

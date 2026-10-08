@@ -890,9 +890,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return Swal.fire({
       icon: 'warning',
       title: cuantos === 1 ? 'Este artículo no tiene stock' : `${cuantos} artículos no tienen stock`,
-      html: 'Al deshabilitarlo su stock volvió al disponible del producto. Habilitarlo no le devuelve '
-          + 'stock: no va a aparecer en la tienda hasta que se lo asignes editándolo (y si el producto '
-          + 'ya no tiene disponible, primero hay que subirle stock al producto).<br><br>'
+      html: 'Al deshabilitarlo su stock volvió al disponible del modelo. Habilitarlo no le devuelve '
+          + 'stock: no va a aparecer en la tienda hasta que se lo asignes editándolo (y si el modelo '
+          + 'ya no tiene disponible, primero hay que subirle stock al modelo).<br><br>'
           + '¿Habilitarlo de todas formas?',
       showCancelButton: true,
       confirmButtonText: 'Habilitar de todas formas',
@@ -908,7 +908,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   confirmarDarDeBaja(v: IVarianteResumen): void {
     if (this.dandoDeBajaId) return;
     Swal.fire({
-      title: `¿Dar de baja ${[v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · ') || 'este modelo'}?`,
+      title: `¿Dar de baja ${[v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · ') || 'este artículo'}?`,
       html: 'Deja de mostrarse en la tienda y <b>pierde sus fotos</b>.<br>'
           + 'El historial de ventas y pedidos se conserva.',
       icon: 'warning',
@@ -945,7 +945,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
    * vende a ese precio para todos hasta que se vuelva a elegir "Precio venta" (R8 del back). En
    * el carrito, desmarcar "Usar" cobra el normal solo en esa venta, sin cambiar el artículo.
    *
-   * Si el artículo ya tiene precio propio, "Usar el del producto" se lo quita.
+   * Si el artículo ya tiene precio propio, "Usar el del modelo" se lo quita.
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId) return;
@@ -972,7 +972,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const valorCaja = descuentoActual > 0 && descuentoActual < normal ? descuentoActual : '';
 
     const resumen = (conDescuento: boolean, desc: number): string => {
-      if (!(normal > 0)) return 'Este artículo no tiene precio normal. Pónselo al editar el producto';
+      if (!(normal > 0)) return 'Este artículo no tiene precio normal. Pónselo al editar el modelo';
       if (!conDescuento) return `Se vende a <b>${pesos(normal)}</b>`;
       if (!(desc > 0)) return 'Escribe el precio con descuento, o elige "Precio venta"';
       if (desc >= normal) return `El precio con descuento tiene que ser menor al normal (${pesos(normal)})`;
@@ -983,7 +983,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       titleText: `💲 Precio de ${nombre}`,
       html: `
         <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio <b>solo de este artículo</b>. Los demás del
-          producto se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
+          modelo se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
         <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
           <input id="sw-usar-venta" type="checkbox" ${teniaDescuentoActivo ? '' : 'checked'}> Precio venta
         </label>
@@ -1001,7 +1001,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       showDenyButton: !!v.precioPropio,
       confirmButtonText: 'Guardar precio',
-      denyButtonText: 'Usar el del producto',
+      denyButtonText: 'Usar el del modelo',
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       didOpen: () => {
@@ -1030,7 +1030,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         const conDescuento = (document.getElementById('sw-usar-desc') as HTMLInputElement).checked;
         const caja = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
         if (!(normal > 0)) {
-          Swal.showValidationMessage('Este artículo no tiene precio normal. Pónselo al editar el producto');
+          Swal.showValidationMessage('Este artículo no tiene precio normal. Pónselo al editar el modelo');
           return false;
         }
         if (!conDescuento) return { conDescuento, descuento: descuentoActual };
@@ -1073,7 +1073,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.varianteService.invalidarCache();
         Swal.fire({
           icon: res.vendeBajoCosto ? 'warning' : 'success',
-          title: res.propio ? 'Precio del artículo guardado' : 'Vuelve al precio del producto',
+          title: res.propio ? 'Precio del artículo guardado' : 'Vuelve al precio del modelo',
           text: res.vendeBajoCosto
             ? `Ojo: el precio con descuento ($${res.precioRebaja.toFixed(2)}) queda por debajo de lo que costó.`
             : (res.usarDescuento

@@ -178,7 +178,7 @@
               </div>
 
               <div class="br-premio__acciones">
-                <button type="button" class="br-icono" title="Ver producto" (click)="abrirDetallePremio(v)">👁️</button>
+                <button type="button" class="br-icono" title="Ver artículo" (click)="abrirDetallePremio(v)">👁️</button>
                 <button type="button" class="br-icono br-icono--peligro" title="Quitar premio"
                         (click)="quitarPremio(v)">🗑️</button>
               </div>
@@ -776,7 +776,7 @@
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">
           {{ imagenIndex + 1 }} / {{ imagenesModal.length }}
         </div>
-        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
+        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este artículo no tiene imágenes cargadas.</div>
         <div class="pk-text pk-text--sm" *ngIf="cargandoImagenes">Cargando imágenes...</div>
         <div class="br-modal__error" *ngIf="errorImagenesModal && !cargandoImagenes">
           <span class="pk-text pk-text--sm">No se pudieron cargar las fotos.</span>

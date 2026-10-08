@@ -323,7 +323,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.cargandoVendidos = false;
-        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el ranking de productos.' });
+        Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? 'No se pudo cargar el ranking de artículos.' });
       },
     });
   }

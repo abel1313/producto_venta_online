@@ -198,7 +198,7 @@
 
     <!-- Gráfica de barras horizontales -->
     <div *ngIf="masVendidos.length > 0 && !cargandoVendidos" class="rp-chart-wrap">
-      <h6 class="rp-chart-title">Top {{ masVendidos.length }} productos más vendidos</h6>
+      <h6 class="rp-chart-title">Top {{ masVendidos.length }} artículos más vendidos</h6>
       <canvas #masVendidosCanvas></canvas>
     </div>
 
@@ -207,7 +207,7 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Producto</th>
+            <th>Artículo</th>
             <th>Talla</th>
             <th>Color</th>
             <th class="rp-table__num">Unidades</th>

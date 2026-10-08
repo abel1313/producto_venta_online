@@ -8,8 +8,8 @@
       <div class="vf-card__header-glow"></div>
       <span class="vf-card__header-icon">✏️</span>
       <div>
-        <h3 class="vf-card__title">Editar Producto <span class="vf-card__id">#{{ variante.id }}</span></h3>
-        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
+        <h3 class="vf-card__title">Editar artículo <span class="vf-card__id">#{{ variante.id }}</span></h3>
+        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el modelo</p>
       </div>
     </div>
 
@@ -70,11 +70,11 @@
           <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock">
             <ng-container *ngIf="!sd.descuadrado; else alertaDescuadrado">
               Le estás sumando <b>{{ stockQuePide }}</b> y solo quedan <b>{{ sd.disponible }}</b>.
-              El guardado va a fallar: si llegó mercancía, súbele primero el stock al producto.
+              El guardado va a fallar: si llegó mercancía, súbele primero el stock al modelo.
             </ng-container>
             <ng-template #alertaDescuadrado>
               Con el modelo descuadrado no se le puede sumar stock a sus artículos: primero hay que
-              corregir el stock del producto.
+              corregir el stock del modelo.
             </ng-template>
           </div>
         </div>
@@ -189,7 +189,7 @@
       <!-- ── Botón ──────────────────────────────────────────────────
            Modal cámara se coloca fuera del card más abajo         -->
       <button class="vf-btn-save" [disabled]="!productoSeleccionado || guardando" (click)="actualizar()">
-        💾 Actualizar producto
+        💾 Actualizar artículo
       </button>
 
     </div>
@@ -199,7 +199,7 @@
   <div class="vf-imgs" *ngIf="variante">
 
     <div class="vf-imgs__header">
-      <span class="vf-imgs__title">🖼️ Imágenes del producto</span>
+      <span class="vf-imgs__title">🖼️ Imágenes del artículo</span>
       <span class="vf-imgs__count" *ngIf="imagenesExistentes.length > 0">
         {{ imagenesExistentes.length }} cargadas
       </span>

@@ -82,7 +82,7 @@
 
         <!-- Producto seleccionado (chip) -->
         <div *ngIf="productoSeleccionado" class="di-selected">
-          <span class="di-selected__label">Producto seleccionado:</span>
+          <span class="di-selected__label">Modelo seleccionado:</span>
           <span class="di-selected__chip">
             {{ productoSeleccionado.nombre }}
             <span class="di-selected__id">ID {{ productoSeleccionado.idProducto }}</span>
@@ -136,9 +136,9 @@
           </div>
         </div>
 
-        <!-- Variante seleccionada (chip) -->
+        <!-- Artículo seleccionado (chip) -->
         <div *ngIf="varianteSeleccionada" class="di-selected">
-          <span class="di-selected__label">Producto seleccionado:</span>
+          <span class="di-selected__label">Artículo seleccionado:</span>
           <span class="di-selected__chip">
             {{ etiquetaVariante(varianteSeleccionada) }}
             <span class="di-selected__id">ID {{ varianteSeleccionada.id }}</span>

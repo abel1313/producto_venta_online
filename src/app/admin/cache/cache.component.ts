@@ -83,7 +83,7 @@ export class CacheComponent implements OnInit, OnDestroy {
     Swal.fire({
       title: '¿Dar de baja los datos de prueba?',
       text: 'Los modelos y artículos con marca "Prueba QA" dejan de salir en la tienda y en Modelos. '
-          + 'No se borra ninguna foto ni ningún producto real. Los pedidos de prueba se quedan como historial.',
+          + 'No se borra ninguna foto ni ningún modelo o artículo real. Los pedidos de prueba se quedan como historial.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, dar de baja',

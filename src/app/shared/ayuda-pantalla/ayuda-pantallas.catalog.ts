@@ -249,10 +249,10 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
     titulo: 'Agregar rifa',
     queEs: 'Crea una rifa nueva: premios, fechas y cómo se sortea.',
     paraQue: [
-      'Configurar los premios (productos que ya tienes en catálogo con stock).',
+      'Configurar los premios (artículos que ya tienes en catálogo con stock).',
       'Definir la fecha del sorteo y el tipo de rifa.',
     ],
-    porQue: 'Solo deja elegir como premio productos con stock, imagen y habilitados: un premio sin ' +
+    porQue: 'Solo deja elegir como premio artículos con stock, imagen y habilitados: un premio sin ' +
       'foto no se puede mostrar en la ruleta pública.',
   },
   {
@@ -358,8 +358,8 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   {
     ruta: 'admin/facebook',
     titulo: 'Publicar en Facebook',
-    queEs: 'Publica productos del catálogo en la página de Facebook.',
-    paraQue: ['Sacar un producto a la página sin volver a subir la foto y el texto a mano.'],
+    queEs: 'Publica artículos del catálogo en la página de Facebook.',
+    paraQue: ['Sacar un artículo a la página sin volver a subir la foto y el texto a mano.'],
   },
   {
     ruta: 'admin/hashtags',
@@ -401,7 +401,7 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
       'Revisar qué le contestó el bot antes de escalar.',
     ],
     porQue: 'El chat manda solo texto, sin fotos: la pantalla del cliente no las puede dibujar. ' +
-      'Para enseñar un producto se pega el link y el cliente lo abre en la tienda.',
+      'Para enseñar un artículo se pega el link y el cliente lo abre en la tienda.',
   },
   {
     ruta: 'admin/presentacion',

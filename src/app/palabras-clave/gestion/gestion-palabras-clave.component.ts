@@ -117,7 +117,7 @@ export class GestionPalabrasClave implements OnInit {
   eliminar(p: IPalabraClave): void {
     Swal.fire({
       title: `¿Eliminar "${p.nombre}"?`,
-      text:  'Los productos/artículos que la usan quedarán sin categoría.',
+      text:  'Los modelos y artículos que la usan quedarán sin categoría.',
       icon:  'warning',
       showCancelButton:   true,
       confirmButtonText:  'Sí, eliminar',

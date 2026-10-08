@@ -64,7 +64,7 @@
     <!-- Tabla de piezas del combo -->
     <div class="gp-detalles" *ngIf="formDetalles.length > 0">
       <div class="gp-detalles__hdr">
-        <span>Producto</span>
+        <span>Artículo</span>
         <span>Cant.</span>
         <span>Precio promo $</span>
         <span></span>
@@ -84,7 +84,7 @@
     </div>
 
     <div class="gp-form-empty" *ngIf="formDetalles.length === 0">
-      Busca y agrega productos para armar el combo.
+      Busca y agrega artículos para armar el combo.
     </div>
 
     <div class="gp-form-actions">
@@ -121,7 +121,7 @@
         </div>
         <ul class="gp-card__piezas-list">
           <li *ngFor="let d of (p.detalles ?? [])">
-            {{ d.nombreProducto ?? 'Producto #' + d.varianteId }}
+            {{ d.nombreProducto ?? 'Artículo #' + d.varianteId }}
             <span *ngIf="d.talla"> · {{ d.talla }}</span>
             <span *ngIf="d.color"> · {{ d.color }}</span>
             — x{{ d.cantidad }} · ${{ d.precioEnPromocion | number:'1.2-2' }}

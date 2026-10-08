@@ -642,7 +642,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.eliminando.delete(item);
-        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo eliminar el producto.' });
+        Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo quitar el artículo.' });
       }
     });
   }

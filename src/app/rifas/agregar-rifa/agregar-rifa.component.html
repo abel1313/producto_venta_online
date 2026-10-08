@@ -115,7 +115,7 @@
     <div class="rf-card__head rf-card__head--blue">
       <span class="rf-card__step">B</span>
       <div>
-        <h4 class="rf-card__title">Productos a rifar</h4>
+        <h4 class="rf-card__title">Artículos a rifar</h4>
         <p class="rf-card__sub">{{ variantesRifa.length }} artículo(s) agregado(s)</p>
       </div>
       <button class="rf-btn rf-btn--sm rf-btn--outline ms-auto"
@@ -247,7 +247,7 @@
         <button class="rf-btn rf-btn--primary"
                 (click)="guardarVarianteRifa()"
                 [disabled]="!varianteParaAgregar || !palabraClaveInput.trim() || giroGanadorInput < 1 || guardandoVariante">
-          <span *ngIf="!guardandoVariante">✅ Confirmar producto</span>
+          <span *ngIf="!guardandoVariante">✅ Confirmar artículo</span>
           <span *ngIf="guardandoVariante" class="d-flex gap-2 align-items-center">
             Guardando…
           </span>
@@ -781,7 +781,7 @@
     <p class="rf-transicion__clave">Palabra: "{{ ganadorActual.concursante.palabraClave }}"</p>
 
     <ng-container *ngIf="!ganadorActual.rifaTerminada">
-      <p class="rf-transicion__sub">¿Con qué participantes continúa el siguiente producto?</p>
+      <p class="rf-transicion__sub">¿Con qué participantes continúa el siguiente artículo?</p>
       <div class="rf-modos">
         <button class="rf-modo-btn" [class.rf-modo-btn--active]="modoElegido === 'RESTANTES'"
                 (click)="elegirModo('RESTANTES')">
@@ -805,7 +805,7 @@
 
       <!-- Form para nuevos participantes en modo NUEVOS -->
       <div class="rf-nuevos-form" *ngIf="modoElegido === 'NUEVOS' && mostrarFormNuevo">
-        <h6 class="rf-nuevos-form__title">➕ Agregar participante para el siguiente producto</h6>
+        <h6 class="rf-nuevos-form__title">➕ Agregar participante para el siguiente artículo</h6>
         <form [formGroup]="participanteNuevoForm" class="rf-form-participante">
           <div class="rf-row">
             <div class="rf-field rf-field--flex1">
@@ -983,7 +983,7 @@
       <!-- Datos -->
       <div class="rf-var-modal__datos">
         <div class="rf-var-modal__row" *ngIf="varianteModal.variante?.nombreProducto">
-          <span class="rf-var-modal__lbl">Producto</span>
+          <span class="rf-var-modal__lbl">Artículo</span>
           <span class="rf-var-modal__val">{{ varianteModal.variante!.nombreProducto }}</span>
         </div>
         <div class="rf-var-modal__row">

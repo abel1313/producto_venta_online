@@ -17,6 +17,15 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-08 — Pantallas que usan los endpoints de artículos dicen "artículo" (rama `rename/variante-a-articulo`)
+**Dónde:** `update-variante`, `venta-directa`, `detalle-pedido`, `abonos`, `gestion-promociones`, `publicar-facebook`, `agregar-rifa`, `rifa-mes`, `buscar-rifa`, `boletos-rifa`, `reportes`, `dashboard`, `config-negocio`, `buscar` (avisos de admin), `detalle-variante` (independizar), `navbar`, `ayuda-pantallas.catalog.ts`
+**Tipo:** e2e (textos visibles)
+**Debe comprobar:**
+- [ ] Editar artículo: título "Editar artículo #N", botón "💾 Actualizar artículo".
+- [ ] Menú Rifas: "🎡 Rifa de artículos"; Reportes: "Top N artículos más vendidos"; Dashboard: "Artículos con 1–4 piezas".
+- [ ] Tienda → Buscar (admin): dar de baja un artículo sin nombre pregunta "¿Dar de baja este artículo?"; 💲 tiene el botón "Usar el del modelo".
+- [ ] Tienda → Buscar sin sesión, ficha, Favoritos y carrito siguen diciendo "producto".
+
 ### 2026-10-07 — Datos legales: de dónde sale cada campo
 **Dónde:** `admin/config-negocio` (recuadro `.cn-legal-origen` y un `.cn-hint` por campo)
 **Tipo:** e2e (captura día/noche, 1360 y 400 px)
@@ -291,4 +300,5 @@ Formato de cada entrada:
 
 | Test | Desde | Por qué falla |
 |---|---|---|
-| — | — | — |
+| `e2e/tests/login.spec.ts`, `e2e/tests/modelo.spec.ts` | 2026-10-08 (rama `rename/variante-a-articulo`) | Buscan el buscador de Modelos por `'Buscar nombre o código…'`; en la rama dice `'Buscar modelo por nombre o código…'`. |
+| `e2e/support/articulo.ts` → `crearArticulo()` (lo usa `descuento.spec.ts`) | 2026-10-08 (rama `rename/variante-a-articulo`) | Busca el botón `/Guardar producto/`; en la rama dice "💾 Guardar artículo". **Ojo:** el workflow de e2e corre solo después del deploy de QA, así que cuando la rama llegue a `qa` estas 3 pruebas van a salir en rojo hasta que se ajusten. |

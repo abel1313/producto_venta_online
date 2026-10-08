@@ -727,6 +727,19 @@
   // El tipo actual no se elige (cambiar a lo mismo no es un cambio, el back lo rechaza), pero
   // no se apaga: con opacidad baja se leía como "bloqueado".
   &:disabled { cursor: default; border-style: dashed; background: transparent; }
+
+  // Bloqueado por una regla (Apartado con dinero, regresar a Pendiente): se ve gris y dice por qué.
+  &--bloqueado:disabled {
+    background: var(--app-hairline, var(--card-border));
+    color: var(--card-text-muted);
+  }
+
+  &__bloqueo {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--card-text);
+    line-height: 1.3;
+  }
 }
 
 .dp-tipo-campo {
@@ -1076,3 +1089,4 @@
 .dp-abono-form small.dp-abono-form__error { display: block; margin-top: 4px; color: var(--pk-danger); font-weight: 600; font-size: .78rem; }
 .dp-abono-form small.dp-abono-form__ayuda { display: block; margin-top: 4px; color: var(--card-text-muted); font-size: .78rem; }
 .dp-abono-form__input--error { border-color: var(--pk-danger) !important; }
+

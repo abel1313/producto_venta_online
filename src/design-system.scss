@@ -558,3 +558,59 @@
     &__track, &__track::after { transition: none; }
   }
 }
+
+// ── Monto fijo (Apartado) ─────────────────────────────────────────────────────
+// Un Apartado se paga completo en un solo pago: el monto se muestra y no se edita, y un botón
+// explica por qué (QA 2026-10-08). Lo usan el detalle del pedido, Créditos / Abonos y Pagar el
+// grupo completo.
+.pk-monto-fijo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+
+  > input { flex: 1 1 8rem; min-width: 0; }
+
+  &__input {
+    background: var(--app-tint, var(--input-bg)) !important;
+    font-weight: 700;
+    cursor: not-allowed;
+  }
+
+  &__porque {
+    padding: .35rem .7rem;
+    border: 1px solid var(--app-accent);
+    border-radius: 999px;
+    background: var(--app-accent-soft);
+    color: var(--app-accent-text);
+    font-size: .76rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+  }
+
+  &__explica {
+    margin-top: .45rem;
+    padding: .6rem .8rem;
+    border-left: 3px solid var(--app-accent);
+    border-radius: 8px;
+    background: var(--app-accent-soft);
+    color: var(--app-text);
+    font-size: .8rem;
+    line-height: 1.45;
+
+    p { margin: 0 0 .35rem; }
+  }
+
+  &__accion {
+    margin-top: .2rem;
+    padding: .4rem .8rem;
+    border: 1px solid var(--btn-primary-border);
+    border-radius: 8px;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}

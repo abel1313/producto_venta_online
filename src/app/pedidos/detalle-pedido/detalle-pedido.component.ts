@@ -660,7 +660,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   abrirFormAbono(): void {
     this.abonoForm = { monto: this.esApartado ? this.saldoPendiente : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
+    this.verPorqueMontoFijo = false;
     this.mostrarFormAbono = true;
+  }
+
+  /** Apartado: el monto queda fijo en el total; este botón explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
+
+  pasarApartadoAIrPagando(): void {
+    this.mostrarFormAbono = false;
+    this.abrirFormTipo();
+    this.seleccionarTipo('FIADO');
   }
 
   cancelarFormAbono(): void {
@@ -1070,6 +1080,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
+  private queSigueTrasCambiarTipo(tipo: TipoPedido): string {
+    switch (tipo) {
+      case 'APARTADO':
+        return 'Un Apartado es sin dinero. Cuando el cliente venga a recogerlo, cobra el total con '
+          + '<b>💳 Registrar abono</b>: se paga completo, en un solo pago.';
+      case 'FIADO':
+        return 'Cada vez que el cliente dé dinero, regístralo con <b>💳 Registrar abono</b>. '
+          + 'Cuando complete el total, el pedido queda Pagado solo.';
+      default:
+        return 'El pedido queda cobrado de contado.';
+    }
+  }
+
   cancelarFormTipo(): void {
     this.mostrarFormTipo = false;
   }
@@ -1111,14 +1134,14 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.cambiandoTipo   = false;
         this.mostrarFormTipo = false;
         this.detalle = r?.data ?? this.detalle;
+        // Se queda hasta que lo cierren y dice qué sigue: con 3 segundos no se alcanzaba a leer (QA 2026-10-08).
+        const cobro = body.montoCobrado ?? 0;
         Swal.fire({
           icon: 'success',
-          title: 'Forma de cobro actualizada',
-          text: (body.montoCobrado ?? 0) > 0
-            ? `Quedó como ${this.etiquetaTipo(body.tipoPedido)} y se registró el cobro de ${(body.montoCobrado ?? 0).toFixed(2)}.`
-            : `Quedó como ${this.etiquetaTipo(body.tipoPedido)}.`,
-          timer: 3000,
-          showConfirmButton: false
+          title: `Quedó como ${this.etiquetaTipo(body.tipoPedido)}`,
+          html: (cobro > 0 ? `<p>Se registró el cobro de <b>$${cobro.toFixed(2)}</b>.</p>` : '')
+            + `<p>${this.queSigueTrasCambiarTipo(body.tipoPedido)}</p>`,
+          confirmButtonText: 'Entendido'
         }).then(() => this.cargarDetalleCompleto());
       },
       error: err => {

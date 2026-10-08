@@ -85,6 +85,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   dandoDeBajaId: number | null = null;
 
   private busquedaSubject = new Subject<string>();
+  /** $ mín / $ máx: buscan cuando terminas de escribir, no con cada tecla (con "100" salían 1, 10 y 100). */
+  private precioSubject = new Subject<void>();
   private destroy$        = new Subject<void>();
 
   hayPromos = false;
@@ -149,17 +151,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
-      .subscribe((termino: string) => {
-        if (this.hayFiltrosAdminActivos) {
-          this.aplicarFiltrosAdmin(1);
-        } else if (this.hayFiltrosPublicosActivos) {
-          this.aplicarFiltrosPublicos(1);
-        } else {
-          // terminoParaBackend y no el termino crudo: si los filtros se apagaron mientras corria
-          // el debounce, un termino de 1-2 letras llegaria aca sin pasar por el minimo.
-          this.buscarPagina(this.terminoParaBackend, 1);
-        }
-      });
+      .subscribe(() => this.aplicarFiltros(1));
+
+    this.precioSubject.pipe(debounceTime(600), takeUntil(this.destroy$))
+      .subscribe(() => { this.seleccionados.clear(); this.aplicarFiltros(1); });
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.productoId = Number(params['productoId']) || 0;
@@ -212,9 +207,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.restaurarFiltros(f);
         if (!this.puedeVerAlgunFiltro) this.apagarFiltrosAdmin();
       }
-      if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
-      else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(1);
-      else this.buscarPagina('', 1);
+      this.aplicarFiltros(1);
     });
   }
 
@@ -238,14 +231,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   private buscarPagina(termino: string, pagina: number): void {
+    // Antes del return de la caché: así una búsqueda con filtros que llegue tarde ya no pisa la lista.
+    const id = ++this.reqId;
     if (
       this.varianteService.initialized &&
       this.varianteService.terminoCache === termino &&
       this.varianteService.paginaCache  === pagina
-    ) return;
+    ) { this.buscando = false; return; }
 
     this.buscando = true;
-    const id = ++this.reqId;
     const params = { termino, pagina, size: 10 };
 
     this.varianteService.buscar(params).pipe(takeUntil(this.destroy$)).subscribe({
@@ -462,7 +456,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     if (!this.puedeVerAlgunFiltro) return;
     this[campo] = !this[campo];
     this.seleccionados.clear();
-    this.aplicarFiltrosAdmin(1);
+    this.aplicarFiltros(1);
   }
 
   // Rango de fecha — se dispara con (change) del <input type="date">, no con toggleFiltroAdmin
@@ -470,7 +464,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   onFechaFiltroChange(): void {
     if (!this.puedeVerAlgunFiltro) return;
     this.seleccionados.clear();
-    this.aplicarFiltrosAdmin(1);
+    this.aplicarFiltros(1);
   }
 
   private apagarFiltrosAdmin(): void {
@@ -486,18 +480,65 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.fechaHasta = '';
   }
 
+  /** Quita los de admin; si quedan talla/color/marca/precio, se vuelve a buscar con esos. */
   limpiarFiltrosAdmin(): void {
     this.apagarFiltrosAdmin();
     this.seleccionados.clear();
-    this.varianteService.invalidarCache();
-    this.varianteService.setFiltrosCache(null);
-    this.preferenciaFiltro.borrar('tienda-buscar');
-    this.buscarPagina(this.terminoBusqueda, 1);
+    this.aplicarFiltros(1);
+  }
+
+  /**
+   * Una sola búsqueda con TODOS los filtros activos (QA 2026-10-08). Antes los de admin (stock,
+   * habilitadas, imágenes, código, fechas) y los del catálogo (talla, color, marca, precio) iban por
+   * dos búsquedas y cada una ignoraba a la otra; al quitar un filtro se volvía a buscar con la de
+   * admin aunque solo quedaran filtros del catálogo. Ahora:
+   * - quien puede ver los filtros de admin → todo junto en admin/filtrar (ve también sin stock,
+   *   deshabilitados y sin foto, igual que su lista sin filtros);
+   * - un cliente (solo talla/color/marca/precio) → buscar-filtrado (catálogo público);
+   * - sin filtros → la lista normal.
+   */
+  private aplicarFiltros(pagina: number): void {
+    if (this.hayFiltrosAdminActivos || (this.puedeVerAlgunFiltro && this.hayFiltrosPublicosActivos)) {
+      this.aplicarFiltrosAdmin(pagina);
+    } else if (this.hayFiltrosPublicosActivos) {
+      this.aplicarFiltrosPublicos(pagina);
+    } else {
+      // Sin filtros: la caché de la lista puede tener el resultado filtrado de antes con el mismo
+      // término y página, y buscarPagina la reusaría tal cual.
+      this.varianteService.invalidarCache();
+      this.varianteService.setFiltrosCache(null);
+      this.preferenciaFiltro.borrar('tienda-buscar');
+      // terminoParaBackend y no el termino crudo: un termino de 1-2 letras no sale a buscar.
+      this.buscarPagina(this.terminoParaBackend, pagina);
+    }
+  }
+
+  /** Todos los filtros juntos, para recordarlos al volver a la pantalla y entre sesiones. */
+  private get filtrosActuales(): Record<string, unknown> {
+    return {
+      mostrarConStock: this.mostrarConStock,
+      mostrarSinStock: this.mostrarSinStock,
+      mostrarConImagenes: this.mostrarConImagenes,
+      mostrarSinImagenes: this.mostrarSinImagenes,
+      mostrarHabilitados: this.mostrarHabilitados,
+      mostrarNoHabilitados: this.mostrarNoHabilitados,
+      mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+      mostrarCodigoReal: this.mostrarCodigoReal,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+      filtroTalla: this.filtroTalla,
+      filtroColor: this.filtroColor,
+      filtroMarca: this.filtroMarca,
+      filtroPrecioMin: this.filtroPrecioMin,
+      filtroPrecioMax: this.filtroPrecioMax
+    };
   }
 
   private aplicarFiltrosAdmin(pagina: number): void {
     this.buscando = true;
     this.varianteService.invalidarCache();
+    // Solo cuenta la última respuesta: si una búsqueda vieja llega después, se ignora.
+    const id = ++this.reqId;
     this.varianteService.adminFiltrar({
       nombreOCodigo: this.terminoParaBackend || undefined,
       conStock: this.paramConStock,
@@ -505,31 +546,27 @@ export class BuscarComponent implements OnInit, OnDestroy {
       habilitado: this.paramHabilitado,
       codigoGenerado: this.paramCodigoGenerado,
       fechaDesde: this.fechaDesde || undefined,
-      fechaHasta: this.fechaHasta || undefined
+      fechaHasta: this.fechaHasta || undefined,
+      talla: this.filtroTalla || undefined,
+      color: this.filtroColor || undefined,
+      marca: this.filtroMarca || undefined,
+      precioMin: this.filtroPrecioMin ?? undefined,
+      precioMax: this.filtroPrecioMax ?? undefined
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
-        this.sinResultados = false;
+        if (this.reqId !== id) return;
+        this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        const filtros = {
-          mostrarConStock: this.mostrarConStock,
-          mostrarSinStock: this.mostrarSinStock,
-          mostrarConImagenes: this.mostrarConImagenes,
-          mostrarSinImagenes: this.mostrarSinImagenes,
-          mostrarHabilitados: this.mostrarHabilitados,
-          mostrarNoHabilitados: this.mostrarNoHabilitados,
-          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
-          mostrarCodigoReal: this.mostrarCodigoReal,
-          fechaDesde: this.fechaDesde,
-          fechaHasta: this.fechaHasta
-        };
+        const filtros = this.filtrosActuales;
         this.varianteService.setFiltrosCache(filtros);
         this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
+        if (this.reqId !== id) return;
         this.buscando = false;
         if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
         else Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
@@ -546,24 +583,29 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   onFiltroPublicoChange(): void {
     this.seleccionados.clear();
-    this.aplicarFiltrosPublicos(1);
+    this.aplicarFiltros(1);
   }
 
+  /** $ mín / $ máx: espera a que termines de escribir. */
+  onPrecioChange(): void {
+    this.precioSubject.next();
+  }
+
+  /** Quita talla/color/marca/precio; si quedan filtros de admin, se vuelve a buscar con esos. */
   limpiarFiltrosPublicos(): void {
     this.filtroTalla = '';
     this.filtroColor = '';
     this.filtroMarca = '';
     this.filtroPrecioMin = null;
     this.filtroPrecioMax = null;
-    this.varianteService.invalidarCache();
-    this.varianteService.setFiltrosCache(null);
-    this.preferenciaFiltro.borrar('tienda-buscar');
-    this.buscarPagina(this.terminoBusqueda, 1);
+    this.seleccionados.clear();
+    this.aplicarFiltros(1);
   }
 
   private aplicarFiltrosPublicos(pagina: number): void {
     this.buscando = true;
     this.varianteService.invalidarCache();
+    const id = ++this.reqId;
     this.varianteService.buscarFiltrado({
       termino: this.terminoParaBackend || undefined,
       precioMin: this.filtroPrecioMin ?? undefined,
@@ -573,23 +615,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
       marca: this.filtroMarca || undefined,
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
+        if (this.reqId !== id) return;
         this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        const filtros = {
-          filtroTalla: this.filtroTalla,
-          filtroColor: this.filtroColor,
-          filtroMarca: this.filtroMarca,
-          filtroPrecioMin: this.filtroPrecioMin,
-          filtroPrecioMax: this.filtroPrecioMax
-        };
+        const filtros = this.filtrosActuales;
         this.varianteService.setFiltrosCache(filtros);
         this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
+        if (this.reqId !== id) return;
         this.buscando = false;
         Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
       }
@@ -617,17 +655,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual - 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
-    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
-    else this.buscarPagina(this.terminoBusqueda, p);
+    else this.aplicarFiltros(p);
   }
 
   private recargarPagina(): void {
     const p = this.paginaActual || 1;
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
-    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
-    else this.buscarPagina(this.terminoBusqueda, p);
+    else this.aplicarFiltros(p);
   }
 
   siguientePagina(): void {
@@ -635,9 +669,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual + 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
-    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
-    else this.buscarPagina(this.terminoBusqueda, p);
+    else this.aplicarFiltros(p);
   }
 
   // ── Carrito variante ───────────────────────────────────────────────
@@ -786,13 +818,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
           if (result) {
             const codigo = result.getText();
             this.terminoBusqueda = codigo;
-            if (this.hayFiltrosAdminActivos) {
-              this.aplicarFiltrosAdmin(1);
-            } else if (this.hayFiltrosPublicosActivos) {
-              this.aplicarFiltrosPublicos(1);
-            } else {
-              this.buscarPagina(codigo, 1);
-            }
+            this.aplicarFiltros(1);
             controls.stop();
             this.escaneando = false;
           }

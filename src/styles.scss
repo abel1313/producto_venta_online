@@ -207,6 +207,7 @@ body.theme-light, [data-theme="light"] {
   --form-section-bg:   #f6f3ec;
   /* Recuadro de búsqueda y filtros (Tienda, Catálogo → Modelos) y cada filtro adentro */
   --filtros-panel-bg:  rgba(255,255,255,0.70);
+  --modal-backdrop:    rgba(22,24,38,0.55);
   --filtro-bg:         rgba(45,117,96,0.10);
 
   /* ── Chat / Chatbot ──
@@ -395,6 +396,7 @@ body.theme-dark, [data-theme="dark"] {
   --form-bg:           #232532;
   --form-section-bg:   #1c1e2c;
   --filtros-panel-bg:  #1c1e2c;
+  --modal-backdrop:    rgba(0,0,0,0.65);
   --filtro-bg:         rgba(91,185,154,0.14);
 
   /* ── Chat / Chatbot (ver el bloque del tema claro) ── */

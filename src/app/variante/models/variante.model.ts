@@ -30,6 +30,10 @@ export interface IVarianteRequest {
   listImagenes?: IImagenDto[];
   palabraClaveId?: number | null;
   imagenPrincipalId?: string | null;
+  /** true: las fotos de listImagenes son solo de este artículo (Agregar artículos, flujo A). */
+  imagenesPropias?: boolean;
+  /** true: el artículo usa la foto principal del modelo, sin subirla otra vez (A8). */
+  usarImagenDelModelo?: boolean;
 }
 
 export interface IVariante {

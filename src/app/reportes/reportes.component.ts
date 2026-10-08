@@ -3,6 +3,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
+import { Constants } from 'src/app/Constants/Constants.model';
 import {
   ProductoMasVendido,
   PromocionReporte,
@@ -95,7 +96,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
       distinctUntilChanged(),
       // catchError DENTRO del switchMap: un error del buscador no debe terminar la suscripcion,
       // porque despues de eso el input deja de responder hasta recargar la pantalla.
-      switchMap(t => t.length >= 2
+      switchMap(t => t.trim().length >= Constants.MIN_CARACTERES_BUSQUEDA
         ? this.clienteService.buscarClientes(t, 0, 8).pipe(catchError(() => of(null)))
         : of(null)
       )

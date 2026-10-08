@@ -11,6 +11,7 @@ import { BotonVolverComponent } from './boton-volver/boton-volver.component';
 import { SelectorFechaComponent } from './selector-fecha/selector-fecha.component';
 import { AyudaPantallaComponent } from './ayuda-pantalla/ayuda-pantalla.component';
 import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.component';
+import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
     BotonVolverComponent,
     SelectorFechaComponent,
     AyudaPantallaComponent,
-    AyudaOpcionesComponent
+    AyudaOpcionesComponent,
+    AltaArticulosComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule],
   exports:  [
@@ -34,7 +36,8 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
     BotonVolverComponent,
     SelectorFechaComponent,
     AyudaPantallaComponent,
-    AyudaOpcionesComponent
+    AyudaOpcionesComponent,
+    AltaArticulosComponent
   ]
 })
 export class SharedModule {}

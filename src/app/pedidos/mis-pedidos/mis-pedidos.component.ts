@@ -1246,15 +1246,16 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     if (this.isAdminUser) {
       this.texto$.next();
     } else {
-      if (this.buscarProd === '') {
+      // El cliente busca solo por número de pedido, con cualquier cantidad de dígitos (#1 ya se
+      // encuentra). Si escribe letras, el aviso va debajo del buscador, no en una ventana por tecla.
+      if (this.buscarProd.trim() === '') {
+        this.avisoBusqueda = null;
         this.cargarMasPedidos();
+      } else if (/^\d+$/.test(this.buscarProd.trim()) && Number(this.buscarProd) > 0) {
+        this.avisoBusqueda = null;
+        this.buscarClientePorId(Number(this.buscarProd));
       } else {
-        const pedido = Number(this.buscarProd);
-        if (!isNaN(pedido) && pedido > 0) {
-          this.buscarClientePorId(pedido);
-        } else {
-          Swal.fire({ title: 'Ingrese el numero de pedido', icon: 'info', draggable: false });
-        }
+        this.avisoBusqueda = 'Escribe solo el número de tu pedido (por ejemplo 15).';
       }
     }
   }

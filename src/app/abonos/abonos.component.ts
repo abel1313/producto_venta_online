@@ -54,6 +54,8 @@ export class AbonosComponent implements OnInit, OnDestroy {
     metodoPago: 'EFECTIVO',
     nota:       ''
   };
+  /** Apartado: el monto queda fijo en el saldo; el botón 🔒 explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
 
   readonly metodos: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA'];
   montoDado = 0;
@@ -333,6 +335,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
     this.pedidoSeleccionado = ec;
     // Un Apartado se paga completo: el monto ya viene con lo que debe.
     this.abonoForm = { monto: ec.tipoPedido === 'APARTADO' ? ec.saldo : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    this.verPorqueMontoFijo = false;
     this.montoDado = 0;
     this.detalleActual = null;
     // EstadoCuenta no expone email — correoDisponible en false hasta que el back lo incluya

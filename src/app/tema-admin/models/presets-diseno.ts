@@ -86,6 +86,7 @@ const JADE_CLARO: Lado = {
   'sb-text': '#1c2a26', 'sb-border': 'rgba(28,42,38,0.10)',
   'form-section-bg': '#f6f3ec', 'input-bg': '#ebe6da', 'input-placeholder': '#6f7384',
   'filtros-panel-bg': 'rgba(255,255,255,0.70)', 'filtro-bg': 'rgba(45,117,96,0.10)',
+  'modal-backdrop': 'rgba(22,24,38,0.55)',
 };
 
 const JADE_OSCURO: Lado = {
@@ -110,6 +111,7 @@ const JADE_OSCURO: Lado = {
   'sb-text': '#e9e9ed', 'sb-border': 'rgba(233,233,237,0.10)',
   'form-section-bg': '#1c1e2c', 'input-bg': '#232532', 'input-placeholder': '#9397ab',
   'filtros-panel-bg': '#1c1e2c', 'filtro-bg': 'rgba(91,185,154,0.14)',
+  'modal-backdrop': 'rgba(0,0,0,0.65)',
 };
 
 // El de fábrica antes de Jade (styles.scss hasta 2026-09-30): verde de marca de día, negro y
@@ -135,6 +137,7 @@ const CLASICO_CLARO: Lado = {
   'sb-text': '#12241D', 'sb-border': '#D5E8DD',
   'form-section-bg': '#E3F2EA', 'input-bg': '#FFFFFF', 'input-placeholder': '#9DBAAD',
   'filtros-panel-bg': 'rgba(255,255,255,0.78)', 'filtro-bg': 'rgba(0,135,90,0.10)',
+  'modal-backdrop': 'rgba(22,24,38,0.55)',
 };
 
 const CLASICO_OSCURO: Lado = {
@@ -158,6 +161,7 @@ const CLASICO_OSCURO: Lado = {
   'sb-text': '#E9E9EC', 'sb-border': 'rgba(255,255,255,0.08)',
   'form-section-bg': '#151517', 'input-bg': 'rgba(255,255,255,0.05)', 'input-placeholder': '#6E6E73',
   'filtros-panel-bg': '#151517', 'filtro-bg': 'rgba(255,255,255,0.10)',
+  'modal-backdrop': 'rgba(0,0,0,0.65)',
 };
 
 /** Paleta de solo colores (como eran los diseños antes de Jade) → diseño completo: la letra,
@@ -182,6 +186,7 @@ function completarPaleta(paleta: Lado, base: Lado, alfa: number, oscuro: boolean
     'app-glass-strong': paleta['sb-body-bg'],
     'filtros-panel-bg': oscuro ? paleta['form-section-bg'] : paleta['sb-body-bg'],
     'filtro-bg': `rgba(${rgb.replace(/ /g, '')},${alfa})`,
+    'modal-backdrop': oscuro ? 'rgba(0,0,0,0.65)' : 'rgba(22,24,38,0.55)',
     ...paleta,
   };
 }

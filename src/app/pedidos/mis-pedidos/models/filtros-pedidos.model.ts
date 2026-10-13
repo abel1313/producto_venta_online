@@ -7,17 +7,19 @@ import { IPedidoGenerico } from './IPedidoGenerico.model';
  * Reglas R1–R13: `hexagonal/busquedapedido/README.md` en el back.
  */
 /**
- * PENDIENTE (2026-10-07): el pedido que el cliente hizo desde su cuenta y nadie ha cobrado ni pasado
- * a Apartado / Ir pagando (en la base: NORMAL + estado 'Pendiente'). CONTADO ya no los incluye.
+ * CONTADO no incluye los 🕓 Pendientes (2026-10-07). Pendiente fue botón de este bloque hasta el
+ * 2026-10-13; ahora está en Pago (estado PENDIENTE) y un filtro guardado con la forma vieja se pasa
+ * solo al leerlo.
  */
-export type FormaCobroFiltro = 'PENDIENTE' | 'CONTADO' | 'APARTADO' | 'IR_PAGANDO';
+export type FormaCobroFiltro = 'CONTADO' | 'APARTADO' | 'IR_PAGANDO';
 /**
  * Pago y entrega (back 2026-10-06): dentro de cada bloque se suman, entre bloques se cruzan
- * ("Pagado" + "Falta entregar" = ya pagó y no se lo ha llevado). PENDIENTE y POR_COBRAR son los
- * nombres de antes; el back los acepta como FALTA_PAGAR y aquí se convierten al leer los guardados.
+ * ("Pagado" + "Falta entregar" = ya pagó y no se lo ha llevado). PENDIENTE (2026-10-13, R16 del
+ * back) es su propio botón de Pago y ya no entra en FALTA_PAGAR. POR_COBRAR es un nombre de antes;
+ * aquí se convierte en FALTA_PAGAR al leer los guardados.
  */
-// SIN_TERMINAR no es un chip: lo manda la pantalla sola al abrir (todo menos lo ya pagado y entregado).
-export type EstadoFiltro     = 'FALTA_PAGAR' | 'PAGADO' | 'CANCELADO' | 'FALTA_ENTREGAR' | 'ENTREGADO' | 'SIN_TERMINAR';
+// SIN_TERMINAR no es un chip: lo manda la pantalla sola al abrir (sin lo pagado y entregado ni lo cancelado).
+export type EstadoFiltro     = 'PENDIENTE' | 'FALTA_PAGAR' | 'PAGADO' | 'CANCELADO' | 'FALTA_ENTREGAR' | 'ENTREGADO' | 'SIN_TERMINAR';
 export type DineroFiltro     = 'CON_SALDO' | 'SIN_ABONOS' | 'SALDO_A_FAVOR';
 export type EntregaFiltro    = 'HOY' | 'MANANA' | 'ESTA_SEMANA' | 'ATRASADOS';
 export type ModoEntregaFiltro = 'RECOGE_EN_TIENDA' | 'ENVIO';
@@ -79,11 +81,6 @@ export interface IOpcionFiltro<T> {
 }
 
 export const OPCIONES_FORMA: IOpcionFiltro<FormaCobroFiltro>[] = [
-  // Usa el mismo permiso que Contado: en la base los dos son NORMAL y antes salían juntos.
-  { valor: 'PENDIENTE',  texto: '🕓 Pendiente',  accion: 'filtro-normal',
-    ayuda: 'Lo pidió el cliente desde su cuenta y nadie lo ha cobrado ni apartado. Si tiene fecha para ' +
-           'recoger y pasan 2 días sin que venga, se cancela solo. Si te pide que se lo apartes o que ' +
-           'va a ir pagando, ábrelo y usa 🔁 Cambiar forma de cobro.' },
   { valor: 'CONTADO',    texto: '🛒 Contado',    accion: 'filtro-normal',
     ayuda: 'Se cobró completo de una vez (efectivo, tarjeta o transferencia). Puede faltar entregarlo.' },
   { valor: 'APARTADO',   texto: '📦 Apartado',   accion: 'filtro-apartado',
@@ -94,8 +91,14 @@ export const OPCIONES_FORMA: IOpcionFiltro<FormaCobroFiltro>[] = [
 ];
 
 export const OPCIONES_ESTADO_PAGO: IOpcionFiltro<EstadoFiltro>[] = [
+  // Mismo permiso que Falta pagar: hasta el 2026-10-13 los Pendientes salían dentro de ese botón.
+  { valor: 'PENDIENTE',   texto: '🕓 Pendiente',   accion: 'filtro-por-cobrar',
+    ayuda: 'Lo pidió el cliente desde su cuenta y nadie lo ha cobrado ni apartado. Si tiene fecha para ' +
+           'recoger y pasan 2 días sin que venga, se cancela solo. Si te pide que se lo apartes o que ' +
+           'va a ir pagando, ábrelo y usa 🔁 Cambiar forma de cobro.' },
   { valor: 'FALTA_PAGAR', texto: '💰 Falta pagar', accion: 'filtro-por-cobrar',
-    ayuda: 'Todavía debe algo: los Pendientes, y los Apartados e Ir pagando que no se han liquidado.' },
+    ayuda: 'Todavía debe algo: los Apartados e Ir pagando que no se han liquidado. Los 🕓 Pendientes ' +
+           'tienen su propio botón.' },
   { valor: 'PAGADO',      texto: '✅ Pagado',      accion: 'filtro-pagados',
     ayuda: 'Ya se cobró todo. Combínalo con "Falta entregar" para ver lo pagado que el cliente no se ha llevado.' },
   { valor: 'CANCELADO',   texto: '❌ Cancelado',   accion: 'filtro-cancelados',
@@ -113,7 +116,7 @@ export const OPCIONES_ESTADO_ENTREGA: IOpcionFiltro<EstadoFiltro>[] = [
 export const OPCIONES_ESTADO: IOpcionFiltro<EstadoFiltro>[] = [...OPCIONES_ESTADO_PAGO, ...OPCIONES_ESTADO_ENTREGA];
 
 /** Nombres de antes del 2026-10-06 en filtros guardados. */
-export const ESTADOS_ANTERIORES: Record<string, EstadoFiltro> = { PENDIENTE: 'FALTA_PAGAR', POR_COBRAR: 'FALTA_PAGAR' };
+export const ESTADOS_ANTERIORES: Record<string, EstadoFiltro> = { POR_COBRAR: 'FALTA_PAGAR' };
 
 export const OPCIONES_DINERO: IOpcionFiltro<DineroFiltro>[] = [
   { valor: 'CON_SALDO',     texto: '💰 Debe dinero',    accion: 'filtro-dinero',

@@ -269,7 +269,8 @@
           <div class="info-row">
             <i class="pi pi-calendar info-icon"></i>
             <div class="info-content">
-              <span class="info-label">Pedido</span>
+              <!-- Es cuándo se hizo el pedido; "Pedido" a secas se confundía con la entrega. -->
+              <span class="info-label">Pedido hecho el</span>
               <span class="info-value">{{ item.pedido.fecha_pedido | fechaEspanol }}</span>
             </div>
           </div>
@@ -277,7 +278,7 @@
           <div class="info-row" *ngIf="textoEntrega(item.pedido) as entrega">
             <i class="pi info-icon" [ngClass]="item.pedido.recogeEnLocal ? 'pi-building' : 'pi-truck'"></i>
             <div class="info-content">
-              <span class="info-label">{{ item.pedido.recogeEnLocal ? 'Recoge en el local' : 'Entrega' }}</span>
+              <span class="info-label">{{ item.pedido.recogeEnLocal ? 'Recoge en el local' : 'Se entrega' }}{{ item.pedido.fechaEntrega ? ' el' : '' }}</span>
               <span class="info-value">
                 {{ entrega }}
                 <span class="atraso-badge" *ngIf="diasAtraso(item.pedido) as dias">

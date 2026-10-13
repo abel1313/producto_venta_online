@@ -68,7 +68,8 @@
               <th>Pedido</th>
               <th>Cliente</th>
               <th>Total</th>
-              <th>Fecha</th>
+              <th>Pedido hecho el</th>
+              <th>Se entrega el</th>
             </tr>
           </thead>
           <tbody>
@@ -77,6 +78,12 @@
               <td>{{ p.nombreCliente }}</td>
               <td>{{ p.total | currency:'$' }}</td>
               <td>{{ p.fechaPedido | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <ng-container *ngIf="p.fechaEntrega; else sinFecha">
+                  {{ p.fechaEntrega | date:'dd/MM/yyyy' }}<ng-container *ngIf="p.horaEntrega">, {{ p.horaEntrega }}</ng-container>
+                </ng-container>
+                <ng-template #sinFecha><span class="ez-sin-fecha">Sin fecha todavía</span></ng-template>
+              </td>
             </tr>
           </tbody>
         </table>

@@ -24,7 +24,7 @@
         {{ entregadoDetalle ? 'Entregado' : 'Falta entregar' }}
       </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">
-        🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
+        🕒 Pedido hecho el {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
       </span>
     </div>
     <span class="detalle-header__total" *ngIf="!grupo && debeCredito === null">Total: {{ totalGeneral | currency:'$' }}</span>
@@ -260,12 +260,12 @@
          encuentro solo si ya se programó el viaje (2026-09-08 -- antes se perdían, solo iban
          en el correo de aviso). -->
     <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
-      <strong>Llega el:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}<ng-container *ngIf="detalle.horaRecogida"> a las {{ detalle.horaRecogida }}</ng-container><ng-container *ngIf="detalle.puntoEncuentro">, en {{ detalle.puntoEncuentro }}</ng-container>
+      <strong>Se entrega el:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}<ng-container *ngIf="detalle.horaRecogida"> a las {{ detalle.horaRecogida }}</ng-container><ng-container *ngIf="detalle.puntoEncuentro">, en {{ detalle.puntoEncuentro }}</ng-container>
     </p>
     <!-- Ramo de flores eternas: fecha+hora exacta elegida al armar el ramo (2026-09-08 -- antes
          se guardaba pero nunca se le mostraba al cliente en su propio pedido). -->
     <p class="dp-entrega__item" *ngIf="detalle.fechaHoraEntregaRamo">
-      <strong>Llega el:</strong> {{ detalle.fechaHoraEntregaRamo | date:'dd/MM/yyyy' }} a las {{ detalle.fechaHoraEntregaRamo | date:'HH:mm' }}
+      <strong>Se entrega el:</strong> {{ detalle.fechaHoraEntregaRamo | date:'dd/MM/yyyy' }} a las {{ detalle.fechaHoraEntregaRamo | date:'HH:mm' }}
     </p>
     <p class="dp-entrega__item" *ngIf="detalle.urlFacebook">
       <strong>Facebook:</strong>

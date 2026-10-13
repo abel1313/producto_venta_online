@@ -342,9 +342,10 @@
           <button class="btn-card btn-entrega"
                   *ngIf="authService.tieneAccion('pedidos/mis-pedidos', 'editar-entrega')"
                   [disabled]="esCancelado(item)"
-                  [title]="esCancelado(item) ? 'No se puede editar la entrega de un pedido cancelado' : 'Agregar/editar info de entrega'"
+                  [title]="esCancelado(item) ? 'No se puede editar la dirección de un pedido cancelado' : 'A quién, dónde y cuándo se entrega: dirección, mapa, zona y fecha'"
                   (click)="abrirInfoEntrega(item)">
-            <i class="pi pi-map-marker"></i> Entrega
+            <!-- "Dirección" y no "Entrega": junto está 📦 Entregar y se confundían (QA 2026-10-13) -->
+            <i class="pi pi-map-marker"></i> Dirección
           </button>
           <button class="btn-card btn-cobrar" *ngIf="puedeCobrarCard(item)"
                   [disabled]="pedidoYaCobrado(item)"

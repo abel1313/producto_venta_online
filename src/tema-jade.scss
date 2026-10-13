@@ -48,7 +48,10 @@ html :where(#{$jade}) {
 }
 
 // ── Labels ───────────────────────────────────────────────────────────────
-#{$jade} :is(label, .pk-label):not(#_) {
+// Las casillas de filtro de Tienda y Modelos son <label> con forma de botón: no son la etiqueta de
+// un campo. Con esta regla salían en gris tenue y letra chica, y de noche casi no se leían (QA
+// 2026-10-13); se quedan con el color y tamaño de su pantalla, como los filtros de Mis pedidos.
+#{$jade} :is(label:not(.vb-filtro-check):not(.vb-filtro-fecha):not(.pl-filtro-check):not(.pl-filtro-fecha), .pk-label):not(#_) {
   font-size: var(--label-size);
   font-weight: 400;
   letter-spacing: normal;
@@ -79,10 +82,10 @@ html :where(#{$jade}) {
 }
 #{$jade} :is(input[type=checkbox], input[type=radio]):not(#_) { accent-color: var(--app-accent); }
 
-// Select: popup del color del tema (en Clásico se forzaba blanco para que se leyera).
-#{$jade}.theme-dark select:not(#_) { color-scheme: dark; background-color: var(--input-bg); }
-#{$jade}.theme-light select:not(#_) { color-scheme: light; background-color: var(--input-bg); }
-#{$jade} option { background-color: var(--input-bg); color: var(--input-text); }
+// Select: el campo con los colores del campo; el menú de opciones con el trío --menu-* (fondo
+// sólido, letra y color-scheme del mismo lado), igual que en Clásico. Ver styles.scss, "Menú de opciones".
+#{$jade} select:not(#_) { color-scheme: var(--menu-scheme, light); background-color: var(--input-bg); }
+#{$jade} :is(option, optgroup) { background-color: var(--menu-bg); color: var(--menu-text); }
 
 // En celular ningún campo baja de 16px (zoom de Safari, ver styles.scss).
 @media (max-width: 576px) {

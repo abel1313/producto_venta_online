@@ -224,8 +224,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--app-text);
     cursor: pointer;
 
-    option { color: var(--input-text); background: var(--input-bg); }
-    option[value=""][disabled] { color: var(--input-text); }
+    option { color: var(--menu-text); background: var(--menu-bg); }
+    option[value=""][disabled] { color: var(--menu-text); }
   }
 }
 
@@ -444,8 +444,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
     &.md-select {
       color: var(--input-text, var(--app-text));
-      option { color: var(--input-text); background: var(--input-bg); }
-      option[value=""][disabled] { color: var(--input-text); }
+      option { color: var(--menu-text); background: var(--menu-bg); }
+      option[value=""][disabled] { color: var(--menu-text); }
     }
   }
 

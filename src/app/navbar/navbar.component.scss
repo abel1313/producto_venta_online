@@ -282,13 +282,15 @@
   transition: background 0.13s, color 0.13s;
   margin-bottom: 1px;
 
+  // Con respaldo: si un color del menú no llega (Personalización o styles.scss), al pasar el mouse
+  // el texto se quedaba sin color y salía negro de noche (QA 2026-10-13).
   &:hover {
-    background: var(--sb-bg-item);
-    color: var(--sb-text-active);
+    background: var(--sb-bg-item, var(--app-tint));
+    color: var(--sb-text-active, var(--sb-text));
   }
 
   &.sb-subitem--active {
-    background: var(--sb-bg-active);
+    background: var(--sb-bg-active, var(--app-tint));
     color: var(--sb-text-active, var(--card-header-text));
     font-weight: 600;
   }

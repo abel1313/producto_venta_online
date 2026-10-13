@@ -694,7 +694,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       : '';
 
     Swal.fire({
-      title: `📍 Info de entrega — Pedido #${pedidoId}`,
+      title: `📍 Dirección y fecha de entrega — Pedido #${pedidoId}`,
       width: 480,
       html: `
         <style>
@@ -875,7 +875,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.pedidoService.actualizarEntrega(pedidoId, result.value).subscribe({
-        next: () => Swal.fire({ icon: 'success', title: 'Datos de entrega guardados', timer: 1800, showConfirmButton: false }),
+        next: () => Swal.fire({ icon: 'success', title: 'Dirección y fecha guardadas', timer: 1800, showConfirmButton: false }),
         error: err => Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la información de entrega.' })
       });
     });

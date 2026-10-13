@@ -220,7 +220,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover, &:focus { background: var(--app-tint); }
 
-  option { color: var(--input-text); }
+  option { color: var(--menu-text); background: var(--menu-bg); }
 }
 
 .vb-pub-input { width: 90px; }

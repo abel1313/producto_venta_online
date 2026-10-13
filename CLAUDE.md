@@ -5717,6 +5717,10 @@ if (this.detalle) {
 
 ### 2. Feat — botón "📍 Entrega" en la card de `mis-pedidos` (no en el detalle)
 
+> **2026-10-13: ahora dice "📍 Dirección"** (pedido del dueño: junto está "📦 Entregar" y se
+> confundían). Mismo botón, mismo permiso `editar-entrega`; su texto en Gestión de roles lo cambia
+> `migration_accion_editar_entrega_direccion.sql` (back).
+
 Decisión del usuario: el punto de entrada para capturar/editar `nombreReceptor`,
 `direccionEntrega`, `fechaEntrega` y `observaciones` va en la **card de la lista** (`mis-pedidos`),
 no dentro de `detalle-pedido`. Nuevo botón "📍 Entrega" en el footer de cada card → abre un Swal
@@ -12186,6 +12190,18 @@ módulo de redes sociales excluido de `master`, ver regla más arriba).
 ambientes, y confirmado por el dueño en prod (`shop.novedades-jade.com.mx`) tras el deploy.
 
 ## BUG RECURRENTE — `<select>` NATIVO ILEGIBLE EN MODO OSCURO (2026-09-08)
+
+> **⚠️ REEMPLAZADO el 2026-10-13 — no volver a aplicar el parche de abajo.** El parche (select blanco con
+> letra oscura y `color-scheme: light !important`) volvió a fallar: la regla global de `<option>` les
+> ponía la letra del tema (clara de noche) y el fondo del campo (casi transparente en los 4 diseños de
+> estilo Clásico) → **menú blanco con letra blanca** (reporte del dueño: *"cuando salían todas las
+> opciones aparecía en blanco y no se veían"*; contraste medido 1.1–1.2).
+> **Arreglo vigente:** el menú usa el trío `--menu-bg` / `--menu-text` / `--menu-scheme` (fondo sólido,
+> letra que contrasta, `color-scheme` del mismo lado), calculado por `TemaService.derivarColoresMenu()`
+> con los colores de Personalización; reglas en `styles.scss` ("Menú de opciones"); se quitaron los
+> parches de `venta-directa`, `venta-variante`, `gestion-lugares` y `entregas-zona`. Login y Registro
+> (`body.sin-diseno`) conservan el parche a propósito. Cómo medirlo: skill `revision-colores` (back,
+> `.claude/skills/revision-colores`). Detalle: `CAMBIOS_FRONT.md`, BUG-KEY-38.
 
 > Reporte del dueño: "esto ha estado pasando" — el select de "Lugar de entrega" en
 > `venta-directa` se veía con fondo blanco y letras invisibles en modo oscuro, y no era la

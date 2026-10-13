@@ -221,7 +221,9 @@ $radius: 18px;
   &__name {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--app-accent-ink);
+    // Letra del encabezado, no --app-accent-ink (esa es para ir SOBRE el color de marca): de día en
+    // Jade el encabezado es claro y el nombre salía casi blanco sobre claro (revision-colores, 2026-10-13).
+    color: var(--card-header-text);
     letter-spacing: 0.01em;
   }
 
@@ -242,7 +244,7 @@ $radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--app-accent-ink);
+    color: var(--card-header-text);
     cursor: pointer;
     font-size: 0.8rem;
     transition: background 0.2s;

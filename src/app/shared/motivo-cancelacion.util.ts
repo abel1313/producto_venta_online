@@ -31,14 +31,14 @@ export function motivoCancelacionSwalFragment(
       .mc-motivo-group { display:flex; flex-direction:column; gap:8px; margin-top:4px; text-align:left; }
       .mc-motivo-btn {
         padding:10px 14px; border-radius:10px; font-size:.92rem; text-align:left;
-        border:1.5px solid var(--card-border, #d1d5db); background:var(--card-bg, #fff);
-        color:var(--app-text, #374151); cursor:pointer; transition:all .15s ease;
+        border:1.5px solid var(--app-border); background:var(--card-body-bg);
+        color:var(--app-text); cursor:pointer; transition:all .15s ease;
       }
-      .mc-motivo-btn:hover { border-color:var(--app-accent, #6366f1); }
+      .mc-motivo-btn:hover { border-color:var(--app-accent); }
       .mc-motivo-btn.mc-motivo-btn--activo {
-        border-color:var(--app-accent, #6366f1);
-        background:var(--app-accent-soft, rgba(99,102,241,.1));
-        color:var(--app-accent, #4338ca);
+        border-color:var(--app-accent);
+        background:var(--app-tint);
+        color:var(--app-accent-text);
         font-weight:600;
       }
     </style>`;

@@ -201,6 +201,12 @@ body.theme-light, [data-theme="light"] {
   --input-placeholder: #6f7384;
   --input-focus-border: var(--brand-1);
   --input-focus-shadow: 0 0 0 3px var(--app-tint);
+  /* Menú de opciones de las listas (select, p-dropdown, datalist): fondo SÓLIDO, letra y esquema
+     del mismo lado. TemaService los recalcula de --input-bg/--input-text/--app-bg al aplicar
+     Personalización (ver coloresDelMenu en tema.model.ts); estos son los de fábrica. */
+  --menu-bg:           #ebe6da;
+  --menu-text:         #1c2a26;
+  --menu-scheme:       light;
 
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #ebe6da;
@@ -354,9 +360,14 @@ body.theme-dark, [data-theme="dark"] {
   /* ── Cards / paneles ──
      Sobre negro puro la sombra no se ve: lo que separa la tarjeta del fondo es
      que la tarjeta es un pelo más clara (#0C0C0C) y su borde.
-     --card-header-bg/--card-body-bg/--card-footer-bg: #232532;
+     --card-header-bg/--card-body-bg/--card-footer-bg: #232532. Este comentario estuvo sin cerrar
+     hasta el 2026-10-13 y apagaba de noche los colores de las cards (fondo, borde, texto, encabezado);
+     solo se veían bien cuando Personalización los mandaba. */
   --card-header-bg:    #232532;
   --card-header-text:  #e9e9ed;
+  /* --card-bg solo existía de día: de noche, si Personalización no lo mandaba, las pantallas que lo
+     usan caían a su respaldo (casi siempre blanco). Ej.: las opciones de "¿Por qué cancelas?". */
+  --card-bg:           #232532;
   --card-body-bg:      #232532;
   --card-footer-bg:    #0C0C0C;
   --card-text:         #e9e9ed;
@@ -391,6 +402,10 @@ body.theme-dark, [data-theme="dark"] {
   --input-placeholder: #9397ab;
   --input-focus-border: var(--brand-1);
   --input-focus-shadow: 0 0 0 3px var(--app-tint);
+  /* Menú de opciones de las listas: ver la nota en el bloque claro. */
+  --menu-bg:           #232532;
+  --menu-text:         #e9e9ed;
+  --menu-scheme:       dark;
 
   /* ── Formularios de guardado/actualización ── */
   --form-bg:           #232532;
@@ -426,7 +441,11 @@ body.theme-dark, [data-theme="dark"] {
      (ver nota "MODO OSCURO" arriba). Ver nota en el bloque claro. */
   --sb-bg-rgb:      35, 37, 50;
   --sb-bg:          #232532;
-  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg: #232532;
+  /* --sb-header-bg/--sb-body-bg/--sb-footer-bg: ver nota en el bloque claro. Este comentario
+     estuvo sin cerrar hasta el 2026-10-13 y apagaba de noche todo lo de abajo hasta "Jade": sin
+     --sb-text-active ni --sb-bg-item (que no tienen fila en Personalización), el submenú se ponía
+     negro al pasarle el mouse. */
+  --sb-header-bg:   #232532;
   --sb-body-bg:     #232532;
   --sb-footer-bg:   rgba(var(--sb-bg-rgb), 0.92);
   --sb-bg-item:     rgba(91,185,154,0.08);
@@ -956,13 +975,13 @@ body:is(.theme-dark, .theme-light) {
   .p-dropdown-label { color: var(--input-text) !important; }
   .p-dropdown-trigger { color: var(--app-text-muted) !important; }
   .p-dropdown-panel {
-    background: var(--card-body-bg) !important;
+    background: var(--menu-bg) !important;
     border: 1px solid var(--card-border) !important;
     box-shadow: var(--shadow-md) !important;
   }
-  .p-dropdown-items-wrapper { background: var(--card-body-bg) !important; }
+  .p-dropdown-items-wrapper { background: var(--menu-bg) !important; }
   .p-dropdown-item {
-    color: var(--app-text) !important;
+    color: var(--menu-text) !important;
     background: transparent !important;
     &:hover { background: var(--app-tint) !important; color: var(--app-accent-text) !important; }
   }
@@ -1006,13 +1025,13 @@ body:is(.theme-dark, .theme-light) {
 
 body.theme-dark .btn-close { filter: invert(1); }
 
-body.theme-dark:not([data-estilo="jade"]), body.theme-dark.sin-diseno {
-  /* ── Selects nativos (arreglo GLOBAL, diseño Clásico) ────
-     El popup nativo de <option> no respeta background/color de autor en todos los
-     navegadores: con fondo negro el popup quedaba ilegible. Forzar color-scheme claro +
-     colores fijos fue el único patrón que garantizó legibilidad cross-browser (se parchó
-     pantalla por pantalla muchas veces). En el diseño Jade el select usa `color-scheme: dark`
-     con los tokens del campo (ver tema-jade.scss), que deja el popup oscuro y legible. */
+body.theme-dark.sin-diseno {
+  /* ── Selects de Login / Registro de noche (se quedan con el diseño de antes, a propósito) ────
+     Hasta el 2026-10-13 esto aplicaba también a toda la app en estilo Clásico de noche: forzaba el
+     select blanco con letra oscura, pero la regla de las <option> les dejaba la letra clara del
+     tema y el fondo casi transparente del campo → menú blanco con letra blanca (lo vio el dueño:
+     "aparecía en blanco y no se veían"). Ahora todo lo demás usa --menu-bg/--menu-text/--menu-scheme
+     (ver "SELECT HOMOLOGADO" abajo). */
   select, select.form-select {
     color-scheme: light !important;
     background-color: #ffffff !important;
@@ -1054,7 +1073,13 @@ body:not(.sin-diseno) select:not([multiple]):not([size]):not(#_) {
   &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
   &:disabled { opacity: .6; cursor: not-allowed; }
 }
-body:not(.sin-diseno) select option:not(#_) { background-color: var(--input-bg); color: var(--input-text); }
+/* Menú de opciones (2026-10-13). El navegador dibuja ese menú por su cuenta: unos respetan el
+   fondo y la letra de cada <option>, otros solo la letra (y pintan el fondo claro u oscuro según
+   color-scheme), otros ninguno. Los tres valores salen del mismo trío --menu-* (fondo sólido,
+   letra que contrasta, esquema del mismo lado), así se lee en cualquier navegador y diseño.
+   Nunca usar aquí --input-bg: en los diseños Clásico de noche es casi transparente. */
+body:not(.sin-diseno) :is(select, input[list]):not(#_) { color-scheme: var(--menu-scheme, light); }
+body:not(.sin-diseno) :is(option, optgroup):not(#_) { background-color: var(--menu-bg); color: var(--menu-text); }
 
 /* ════════════════════════════════════════════════════════════
    SWEETALERT2 — mismo look que las cards del sistema
@@ -1308,12 +1333,14 @@ body:is(.theme-light, .theme-dark) {
   }
 }
 
+/* Panel de opciones de p-dropdown: el mismo trío del menú de los select (ver "Menú de opciones"). */
 .p-dropdown-panel {
-  background: var(--card-bg) !important;
-  color: var(--app-text) !important;
+  background: var(--menu-bg) !important;
+  color: var(--menu-text) !important;
   border: 1px solid var(--card-border) !important;
+  .p-dropdown-items-wrapper { background: var(--menu-bg) !important; }
   .p-dropdown-item {
-    color: var(--app-text) !important;
+    color: var(--menu-text) !important;
     &.p-highlight { background: var(--app-accent-soft) !important; color: var(--app-accent) !important; }
     &:not(.p-highlight):hover { background: var(--form-section-bg) !important; }
   }

@@ -245,6 +245,23 @@ $t: all 0.22s ease;
     span { min-width: 0; }
   }
 
+  &__preparadas {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--app-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__preparadas-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+  }
+
   &__listo {
     margin-top: 6px;
     padding: 12px 14px;

@@ -5,6 +5,12 @@ import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import { AdminService, IAvanceDatosPrueba, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba } from '../admin.service';
 
+/** Una prueba preparada, con la hora en que se preparó. */
+export type PreparadoGuardado = IEscenarioPreparado & { preparadoEn: string };
+
+/** Dónde se recuerda la lista de pruebas preparadas. */
+const CLAVE_PREPARADOS = 'cache:pruebas-preparadas';
+
 @Component({
   selector: 'app-cache',
   templateUrl: './cache.component.html',
@@ -24,8 +30,11 @@ export class CacheComponent implements OnInit, OnDestroy {
   escenarios: IEscenarioPrueba[] = [];
   /** Número de la prueba que se está preparando (para el texto del botón); 'todas' con Preparar todas. */
   preparando: string | null = null;
-  /** Lo último que se preparó: una prueba, o todas con "Preparar todas". */
-  preparados: IEscenarioPreparado[] = [];
+  /**
+   * Lo que se preparó, una entrada por prueba (la más reciente). Se guarda en el navegador: sin eso, al
+   * cambiar de pantalla se perdían los números de los pedidos (K4, K6, T1…) y no había cómo encontrarlos.
+   */
+  preparados: PreparadoGuardado[] = [];
 
   constructor(private readonly adminService: AdminService,
               private readonly authService: AuthService) {}
@@ -51,6 +60,7 @@ export class CacheComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (!this.esAdmin) return;
+    this.preparados = this.leerPreparados();
     this.consultarAvance();
     this.adminService.escenariosPrueba().subscribe({
       next: lista => { this.escenarios = lista; },
@@ -123,11 +133,10 @@ export class CacheComponent implements OnInit, OnDestroy {
    */
   prepararPrueba(e: IEscenarioPrueba): void {
     this.preparando = e.prueba;
-    this.preparados = [];
     this.adminService.prepararPrueba(e.prueba).subscribe({
       next: listo => {
         this.preparando = null;
-        this.preparados = [listo];
+        this.recordar([listo]);
       },
       error: err => {
         this.preparando = null;
@@ -150,11 +159,10 @@ export class CacheComponent implements OnInit, OnDestroy {
     }).then(r => {
       if (!r.isConfirmed) return;
       this.preparando = 'todas';
-      this.preparados = [];
       this.adminService.prepararTodas().subscribe({
         next: todas => {
           this.preparando = null;
-          this.preparados = todas;
+          this.recordar(todas);
         },
         error: err => {
           this.preparando = null;
@@ -165,10 +173,40 @@ export class CacheComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Copia el código de barras para pegarlo en un buscador. */
-  copiar(texto: string | null): void {
-    if (!texto) return;
-    navigator.clipboard?.writeText(texto).catch(() => {});
+  /** Copia un código de barras o un número de pedido para pegarlo en un buscador. */
+  copiar(texto: string | number | null): void {
+    if (texto === null || texto === '') return;
+    navigator.clipboard?.writeText(String(texto)).catch(() => {});
+  }
+
+  /** Quita la lista de la pantalla. No borra nada de la base: los pedidos y artículos siguen ahí. */
+  limpiarLista(): void {
+    this.preparados = [];
+    try {
+      localStorage.removeItem(CLAVE_PREPARADOS);
+    } catch { /* sin almacenamiento: no hay nada que quitar */ }
+  }
+
+  /** Una prueba preparada de nuevo reemplaza a la anterior de esa prueba; las demás se quedan. */
+  private recordar(nuevos: IEscenarioPreparado[]): void {
+    const ahora = new Date().toISOString();
+    const porPrueba = new Map(this.preparados.map(p => [p.prueba, p] as [string, PreparadoGuardado]));
+    nuevos.forEach(n => porPrueba.set(n.prueba, { ...n, preparadoEn: ahora }));
+    const orden = this.escenarios.map(e => e.prueba);
+    this.preparados = [...porPrueba.values()]
+      .sort((a, b) => orden.indexOf(a.prueba) - orden.indexOf(b.prueba));
+    try {
+      localStorage.setItem(CLAVE_PREPARADOS, JSON.stringify(this.preparados));
+    } catch { /* sin almacenamiento: la lista dura mientras no se salga de la pantalla */ }
+  }
+
+  private leerPreparados(): PreparadoGuardado[] {
+    try {
+      const guardado = JSON.parse(localStorage.getItem(CLAVE_PREPARADOS) ?? '[]');
+      return Array.isArray(guardado) ? guardado : [];
+    } catch {
+      return [];
+    }
   }
 
   private consultarAvance(): void {

@@ -220,10 +220,14 @@
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
 
+  // Fondo y letra del mismo par (revision-colores): la letra es --app-text, no --app-text-muted. Con "muted"
+  // el texto daba 2.3 a 2.8 de contraste de día en 3 de los 5 diseños y el botón parecía desactivado
+  // (2026-10-13, 🧪 Preparar prueba N). Un botón desactivado sí se apaga, para que se note la diferencia.
   &--secondary {
     background: var(--form-section-bg);
-    color: var(--app-text-muted);
+    color: var(--app-text);
     &:hover:not(:disabled) { background: var(--card-border); }
+    &:disabled { opacity: .5; cursor: not-allowed; }
   }
 
   &--danger {
@@ -267,7 +271,7 @@ a.pk-btn {
   &.pk-btn--primary { color: var(--btn-primary-text); }
   &.pk-btn--primary:hover { color: var(--btn-primary-hover-text); }
   &.pk-btn--secondary,
-  &.pk-btn--secondary:hover { color: var(--app-text-muted); }
+  &.pk-btn--secondary:hover { color: var(--app-text); }
 }
 
 // ── Aviso dentro de la pantalla ─────────────────────────────────────────

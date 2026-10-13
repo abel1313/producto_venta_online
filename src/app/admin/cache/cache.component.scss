@@ -256,6 +256,20 @@ $t: all 0.22s ease;
     gap: 6px;
   }
 
+  &__listo--error { border-color: var(--pk-danger); }
+
+  &__codigo {
+    font: inherit;
+    font-family: monospace;
+    font-size: .8rem;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--app-border);
+    background: var(--card-body-bg);
+    color: var(--card-text, var(--app-text));
+    cursor: copy;
+  }
+
   &__pedidos {
     margin: 0;
     padding-left: 18px;

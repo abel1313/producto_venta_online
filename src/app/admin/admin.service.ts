@@ -53,12 +53,26 @@ export interface IEscenarioPrueba {
   titulo: string;
 }
 
-/** Lo que dejó lista "Preparar prueba N": los pedidos nuevos y por dónde seguir. */
+/** Un modelo o artículo que se dio de alta para una prueba (Art-A, M-OFF…) y cómo buscarlo. */
+export interface ICatalogoPreparado {
+  clave: string;
+  tipo: 'MODELO' | 'ARTICULO';
+  modeloId: number;
+  articuloId: number;
+  nombre: string;
+  codigoBarras: string | null;
+  queEs: string;
+}
+
+/** Lo que dejó lista "Preparar prueba N": pedidos, modelos y artículos nuevos y por dónde seguir. */
 export interface IEscenarioPreparado {
   prueba: string;
   titulo: string;
   pedidos: { clave: string; pedidoId: number; queEs: string }[];
-  siguientePaso: string;
+  catalogo: ICatalogoPreparado[];
+  siguientePaso: string | null;
+  /** Solo en "Preparar todas": por qué no se pudo preparar esa prueba. */
+  error: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -86,10 +100,16 @@ export class AdminService {
       .pipe(map(res => res.lista ?? []));
   }
 
-  /** Crea un artículo nuevo y los pedidos de esa prueba. Cada vez que se llama, datos nuevos. */
+  /** Da de alta lo que pide esa prueba (modelos, artículos, pedidos). Cada vez que se llama, datos nuevos. */
   prepararPrueba(prueba: string): Observable<IEscenarioPreparado> {
-    return this.http.post<{ data: IEscenarioPreparado }>(`${this.url}/datos-prueba/preparar/${prueba}`, {})
+    return this.http.post<{ data: IEscenarioPreparado }>(`${this.url}/datos-prueba/preparar/${encodeURIComponent(prueba)}`, {})
       .pipe(map(res => res.data));
+  }
+
+  /** Todas las pruebas de una vez. La que falla viene con `error`; las demás quedan listas. */
+  prepararTodas(): Observable<IEscenarioPreparado[]> {
+    return this.http.post<{ lista: IEscenarioPreparado[] }>(`${this.url}/datos-prueba/preparar-todas`, {})
+      .pipe(map(res => res.lista ?? []));
   }
 
   darDeBajaDatosPrueba(): Observable<{ data: number; mensaje: string }> {

@@ -3,7 +3,11 @@ export interface IEntregaZonaPendiente {
   nombreCliente: string;
   correo: string | null;
   total: number;
+  /** Cuándo se hizo el pedido (el rango de fechas de la pantalla filtra por esta). */
   fechaPedido: string;
+  /** Día de entrega ya programado aquí; null si todavía no se programa (back 2026-10-13). */
+  fechaEntrega?: string | null;
+  horaEntrega?: string | null;
 }
 
 export interface IEntregaZonaSemana {

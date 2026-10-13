@@ -228,7 +228,10 @@ export class EntregasZonaComponent implements OnInit {
       }).subscribe({
         next: enviados => {
           this.enviando = false;
-          Swal.fire({ icon: 'success', title: 'Listo', text: `Se avisó a ${enviados} cliente(s).` });
+          // La fecha se guarda en todos los pedidos de la lista, tengan correo o no.
+          Swal.fire({ icon: 'success', title: 'Listo',
+            text: `Se avisó por correo a ${enviados} cliente(s). La fecha de entrega quedó guardada en ` +
+                  `los ${n} pedido(s): se ve en Mis pedidos y en el detalle de cada uno.` });
           // El viaje ya se avisó: se limpia para no reenviar el mismo por accidente. Antes esto
           // pasaba de rebote porque `recargar()` reseteaba el form en cada llamada.
           this.form.reset();

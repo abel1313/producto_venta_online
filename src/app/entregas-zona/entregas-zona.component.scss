@@ -72,6 +72,11 @@ $t:  all 0.2s ease;
   overflow-x: auto;
 }
 
+.ez-sin-fecha {
+  color: var(--app-text-muted);
+  font-style: italic;
+}
+
 .ez-tabla {
   width: 100%;
   border-collapse: collapse;

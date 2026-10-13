@@ -476,20 +476,27 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Entregado, cancelado y PAGADO ya no esperan entrega. La venta de mostrador guarda hoy como
-   * fecha de recogida y no tiene lugar, así que sin este filtro diría "Recoge en el local: hoy".
-   * PAGADO entra aquí porque todavía no existe el paso de marcar entregado un crédito pagado.
+   * Espera entrega lo que no está cancelado y todavía no se lo lleva (`entregado`, back
+   * 2026-10-06), igual que el filtro "Fecha de entrega" del back. Antes se miraba el estado del
+   * pago: un pedido pagado que faltaba entregar escondía su fecha, aunque Entregas por zona ya se
+   * la hubiera puesto (2026-10-13). La venta de mostrador que se lleva en el momento queda
+   * entregada, así que no dice "Recoge en el local: hoy".
    */
   private static esperaEntrega(p: IPedidoGenerico['pedido']): boolean {
-    // Un grupo espera entrega mientras le falte cobrar, aunque el titular ya esté pagado.
-    if (p.grupo?.esTitular) return p.grupo.totalGrupo > 0 && p.grupo.saldoGrupo > 0.005;
+    if (p.grupo?.esTitular) return p.grupo.totalGrupo > 0 && p.grupo.entregadoGrupo !== true;
     const estado = (p.estado_pedido ?? '').toUpperCase();
-    return estado !== 'ENTREGADO' && estado !== 'CANCELADO' && estado !== 'PAGADO';
+    return estado !== 'CANCELADO' && p.entregado !== true;
   }
 
-  /** "sáb 4 oct, 10:00 · Zacazonapan", o null si no tiene día o ya no espera entrega. */
+  /**
+   * "sáb 4 oct, 10:00 · Zacazonapan", o null si ya no espera entrega. Un pedido de zona sin día
+   * dice "Sin fecha todavía · Zacazonapan": así se ve cuáles faltan en Entregas por zona.
+   */
   textoEntrega(p: IPedidoGenerico['pedido']): string | null {
-    if (!p.fechaEntrega || !MisPedidosComponent.esperaEntrega(p)) return null;
+    if (!MisPedidosComponent.esperaEntrega(p)) return null;
+    if (!p.fechaEntrega) {
+      return !p.recogeEnLocal && p.lugarEntregaNombre ? `Sin fecha todavía · ${p.lugarEntregaNombre}` : null;
+    }
     const d = MisPedidosComponent.dia(p.fechaEntrega);
     let texto = `${MisPedidosComponent.DIAS[d.getDay()]} ${d.getDate()} ${MisPedidosComponent.MESES[d.getMonth()]}`;
     if (p.horaEntrega) texto += `, ${p.horaEntrega}`;

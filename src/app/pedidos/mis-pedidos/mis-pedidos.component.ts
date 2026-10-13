@@ -246,9 +246,11 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     this.filtros = {
       ...base,
       formas: lista(g['formas'], OPCIONES_FORMA),
-      estados: lista(Array.isArray(g['estados'])
-        ? Array.from(new Set((g['estados'] as string[]).map(e => ESTADOS_ANTERIORES[e] ?? e))) : g['estados'],
-        OPCIONES_ESTADO),
+      // 🕓 Pendiente pasó de Forma de cobro a Pago (2026-10-13): un guardado viejo se pasa de bloque.
+      estados: lista(Array.from(new Set([
+        ...(Array.isArray(g['estados']) ? (g['estados'] as string[]).map(e => ESTADOS_ANTERIORES[e] ?? e) : []),
+        ...(Array.isArray(g['formas']) && (g['formas'] as string[]).includes('PENDIENTE') ? ['PENDIENTE'] : [])
+      ])), OPCIONES_ESTADO),
       dinero: lista(g['dinero'], OPCIONES_DINERO),
       totalDesde: numero(g['totalDesde'], 'filtro-total'),
       totalHasta: numero(g['totalHasta'], 'filtro-total'),

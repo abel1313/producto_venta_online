@@ -19,8 +19,8 @@
       </div>
       <small class="mp-aviso-busqueda" *ngIf="avisoBusqueda">{{ avisoBusqueda }}</small>
       <small class="mp-aviso-busqueda" *ngIf="isAdminUser && vistaSinTerminados && !avisoBusqueda">
-        No se muestran los pedidos que ya están pagados y entregados. Para verlos, usa ⚙️ Filtros
-        (Pago: Pagado · Entrega: Entregado) o busca el número de pedido.
+        No se muestran los pedidos ya pagados y entregados ni los cancelados. Para verlos, usa
+        ⚙️ Filtros (Pago: Pagado + Entrega: Entregado, o Pago: Cancelado) o busca el número de pedido.
       </small>
     </div>
 

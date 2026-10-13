@@ -13,6 +13,7 @@ import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import Swal from 'sweetalert2';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { CompartirService } from 'src/app/shared/compartir.service';
@@ -700,62 +701,28 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       return;
     }
 
-    const { value: formValues } = await Swal.fire({
-      title: `Inicializar variantes`,
-      html: `
-        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b><br>
-          Stock del modelo: <b>${producto.stock}</b> · En sus artículos: <b>${enArticulos}</b> · Puedes crear: <b>${disponible}</b></p>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de variantes:</label>
-        <input id="swal-cantidad" type="number" min="1" max="${disponible}" value="1"
-          class="swal2-input" style="margin:0 0 12px;" />
-        <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
-          <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
-          Misma imagen para todas las variantes
-        </label>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
-        <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
-        <p style="margin:8px 0 0;font-size:0.8rem;color:#666;text-align:left;">Un artículo sin foto no sale en la tienda.</p>
-      `,
-      confirmButtonText: 'Crear variantes',
-      cancelButtonText: 'Cancelar',
-      showCancelButton: true,
-      preConfirm: () => {
-        const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
-        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
-        if (cantidad > disponible) { Swal.showValidationMessage(`Puedes crear hasta ${disponible}`); return false; }
-        const paraTodas = (document.getElementById('swal-para-todas') as HTMLInputElement).checked;
-        const files = (document.getElementById('swal-imagenes') as HTMLInputElement).files;
-        // El back solo usa las fotos con esta casilla marcada; sin ella las descartaba sin avisar.
-        if (!paraTodas && files && files.length > 0) {
-          Swal.showValidationMessage('Para usar las fotos marca "Misma imagen para todas las variantes"');
-          return false;
-        }
-        return { cantidadVariantes: cantidad, imagenParaTodas: paraTodas, files };
-      }
-    });
+    // Misma ventana que Agregar modelo (flujo A, decidido 2026-10-08): reemplaza a "Inicializar
+    // variantes", que creaba N artículos iguales con stock 1 y sin talla.
+    this.modeloParaArticulos = {
+      id: producto.idProducto,
+      nombre: producto.nombre,
+      stock: producto.stock ?? 0,
+      enArticulos,
+      color: producto.color,
+      marca: producto.marca,
+      descripcion: producto.descripcion,
+      contenido: producto.contenido,
+      categoria: producto.palabraClave ?? null,
+      tieneImagen: !!producto.imagen
+    };
+  }
 
-    if (!formValues) return;
+  /** Modelo al que se le están agregando artículos desde 🧩 Productos. */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
 
-    const form = new FormData();
-  form.append(
-    'request',
-    new Blob([JSON.stringify({
-      productoId: producto.idProducto,
-      cantidadVariantes: formValues.cantidadVariantes,
-      imagenParaTodas: formValues.imagenParaTodas
-    })], { type: 'application/json' })
-  );
-    if (formValues.files) {
-      Array.from(formValues.files as FileList).forEach(f => form.append('files[]', f));
-    }
-
-    this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false});
-        this.getData(this.paginaPrimera);
-      },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
-    });
+  alCerrarAltaArticulos(guardo: boolean): void {
+    this.modeloParaArticulos = null;
+    if (guardo) this.getData(this.paginaPrimera);
   }
 
   primeraPagina(): void {

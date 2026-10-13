@@ -7,6 +7,8 @@ import {
   AbonoGrupoRequest,
   AbonoGrupoResponse,
   AgregarPedidosRequest,
+  CambiarFormaCobroGrupoRequest,
+  CambioFormaCobroGrupoResponse,
   CandidatosPagina,
   CobroContadoResponse,
   GrupoPedidos,
@@ -55,6 +57,11 @@ export class GrupoPedidoService {
 
   separar(grupoId: number, body: SepararRequest): Observable<ResponseGeneric<SeparacionResponse>> {
     return this.http.post<ResponseGeneric<SeparacionResponse>>(`${this.base}/${grupoId}/separar`, body);
+  }
+
+  /** Cambia la forma de cobro de todos los pedidos del grupo (Pendiente → Apartado o Ir pagando, etc.). */
+  cambiarFormaDeCobro(grupoId: number, body: CambiarFormaCobroGrupoRequest): Observable<ResponseGeneric<CambioFormaCobroGrupoResponse>> {
+    return this.http.put<ResponseGeneric<CambioFormaCobroGrupoResponse>>(`${this.base}/${grupoId}/tipo`, body);
   }
 
   cambiarTitular(grupoId: number, pedidoTitularId: number): Observable<ResponseGeneric<GrupoPedidos>> {

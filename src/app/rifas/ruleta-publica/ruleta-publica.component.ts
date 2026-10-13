@@ -158,9 +158,10 @@ export class RuletaPublicaComponent implements OnInit, OnDestroy {
   }
 
   // skipLocationChange deja el link tal como lo abrió el visitante: se ve el 404 sin
-  // que la barra de direcciones cambie a otra ruta.
+  // que la barra de direcciones cambie a otra ruta. La pantalla pone noindex, así Google
+  // no guarda una rifa que no existe.
   private irA404(): void {
-    this.router.navigateByUrl('/pagina-no-disponible', { skipLocationChange: true });
+    this.router.navigateByUrl('/no-encontrada', { skipLocationChange: true });
   }
 
   // ── Detalle del premio ─────────────────────────────────────────────

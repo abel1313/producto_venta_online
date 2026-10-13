@@ -6,6 +6,7 @@ import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operat
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
 import { environment } from 'src/environments/environment';
 import { PedidosService } from '../pedidos.service';
+import { GrupoPedidoService } from '../grupo-pedido.service';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -557,7 +558,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly negocioService: NegocioService,
     private readonly floresService:  FloresService,
     private readonly varianteService: VarianteService,
-    private readonly router:         Router
+    private readonly router:         Router,
+    private readonly grupoPedidoService: GrupoPedidoService
   ) {}
 
   ngOnInit(): void {
@@ -660,7 +662,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   abrirFormAbono(): void {
     this.abonoForm = { monto: this.esApartado ? this.saldoPendiente : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
+    this.verPorqueMontoFijo = false;
     this.mostrarFormAbono = true;
+  }
+
+  /** Apartado: el monto queda fijo en el total; este botón explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
+
+  pasarApartadoAIrPagando(): void {
+    this.mostrarFormAbono = false;
+    this.abrirFormTipo();
+    this.seleccionarTipo('FIADO');
   }
 
   cancelarFormAbono(): void {
@@ -1040,9 +1052,22 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     this.mostrarFormTipo = true;
   }
 
-  /** Un Apartado es sin dinero: si el cliente ya dio algo, el pedido es Ir pagando. */
+  /** Un Apartado es sin dinero: si el cliente ya dio algo, el pedido es Ir pagando. En un grupo cuenta lo de todos. */
   get tieneDinero(): boolean {
+    if (this.grupo) return this.dineroDelCambio > 0;
     return !this.esContadoEntregado && (this.detalle?.totalPagado ?? 0) > 0;
+  }
+
+  /** Lo que ya dio el cliente: del grupo completo si el pedido está unido, si no del pedido. */
+  get dineroDelCambio(): number {
+    return this.grupo ? (this.grupo.pagadoGrupo ?? 0) : (this.detalle?.totalPagado ?? 0);
+  }
+
+  /** Los pedidos que cambian juntos: "#1159, #1160". */
+  get pedidosDelGrupoTexto(): string {
+    return (this.grupo?.pedidos ?? [])
+      .filter(p => (p.estadoPedido ?? '').toLowerCase() !== 'cancelado')
+      .map(p => `#${p.pedidoId}`).join(', ');
   }
 
   get esApartado(): boolean {
@@ -1070,6 +1095,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
+  private queSigueTrasCambiarTipo(tipo: TipoPedido): string {
+    switch (tipo) {
+      case 'APARTADO':
+        return 'Un Apartado es sin dinero. Cuando el cliente venga a recogerlo, cobra el total con '
+          + '<b>💳 Registrar abono</b>: se paga completo, en un solo pago.';
+      case 'FIADO':
+        return 'Cada vez que el cliente dé dinero, regístralo con <b>💳 Registrar abono</b>. '
+          + 'Cuando complete el total, el pedido queda Pagado solo.';
+      default:
+        return 'El pedido queda cobrado de contado.';
+    }
+  }
+
   cancelarFormTipo(): void {
     this.mostrarFormTipo = false;
   }
@@ -1086,6 +1124,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     if (tipoNuevo === this.tipoVigente) {
       Swal.fire({ icon: 'info', title: 'Sin cambios', text: 'El pedido ya está en esa forma de cobro.' });
+      return;
+    }
+
+    // Unido: la forma de cobro es de todo el grupo (antes salía "deshaz el grupo antes…", QA 2026-10-13).
+    if (this.grupo && tipoNuevo !== 'NORMAL') {
+      this.cambiarTipoDelGrupo(this.grupo.grupoId, tipoNuevo);
       return;
     }
 
@@ -1111,19 +1155,50 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.cambiandoTipo   = false;
         this.mostrarFormTipo = false;
         this.detalle = r?.data ?? this.detalle;
+        // Se queda hasta que lo cierren y dice qué sigue: con 3 segundos no se alcanzaba a leer (QA 2026-10-08).
+        const cobro = body.montoCobrado ?? 0;
         Swal.fire({
           icon: 'success',
-          title: 'Forma de cobro actualizada',
-          text: (body.montoCobrado ?? 0) > 0
-            ? `Quedó como ${this.etiquetaTipo(body.tipoPedido)} y se registró el cobro de ${(body.montoCobrado ?? 0).toFixed(2)}.`
-            : `Quedó como ${this.etiquetaTipo(body.tipoPedido)}.`,
-          timer: 3000,
-          showConfirmButton: false
+          title: `Quedó como ${this.etiquetaTipo(body.tipoPedido)}`,
+          html: (cobro > 0 ? `<p>Se registró el cobro de <b>$${cobro.toFixed(2)}</b>.</p>` : '')
+            + `<p>${this.queSigueTrasCambiarTipo(body.tipoPedido)}</p>`,
+          confirmButtonText: 'Entendido'
         }).then(() => this.cargarDetalleCompleto());
       },
       error: err => {
         this.cambiandoTipo = false;
         this.avisarError(err, 'No se pudo cambiar la forma de cobro.');
+      }
+    });
+  }
+
+  private cambiarTipoDelGrupo(grupoId: number, tipoNuevo: 'APARTADO' | 'FIADO'): void {
+    this.cambiandoTipo = true;
+    const monto = tipoNuevo === 'FIADO' ? (this.tipoForm.montoCobrado || 0) : 0;
+    this.grupoPedidoService.cambiarFormaDeCobro(grupoId, {
+      tipoPedido: tipoNuevo,
+      monto:      monto || undefined,
+      nota:       (this.tipoForm.descripcion ?? '').trim() || undefined
+    }).subscribe({
+      next: r => {
+        this.cambiandoTipo   = false;
+        this.mostrarFormTipo = false;
+        const cambiados = (r?.data?.pedidosCambiados ?? []).map(id => `#${id}`).join(', ');
+        const sigue = tipoNuevo === 'APARTADO'
+          ? 'Un Apartado es sin dinero. Cuando el cliente venga a recogerlos, cobra el total con <b>💵 Pagar el grupo completo</b>.'
+          : 'Cada vez que el cliente dé dinero, regístralo con <b>💵 Abonar al grupo</b>. Cuando complete el total, los pedidos quedan Pagados solos.';
+        Swal.fire({
+          icon: 'success',
+          title: `El grupo quedó como ${this.etiquetaTipo(tipoNuevo)}`,
+          html: `<p>Cambiaron los pedidos <b>${cambiados}</b>.</p>`
+            + (monto > 0 ? `<p>Se registró el abono del grupo de <b>$${monto.toFixed(2)}</b>.</p>` : '')
+            + `<p>${sigue}</p>`,
+          confirmButtonText: 'Entendido'
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.cambiandoTipo = false;
+        this.avisarError(err, 'No se pudo cambiar la forma de cobro del grupo.');
       }
     });
   }

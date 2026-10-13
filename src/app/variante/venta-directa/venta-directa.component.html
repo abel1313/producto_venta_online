@@ -104,6 +104,9 @@
           💰 Cobrar
         </button>
       </div>
+      <small class="vd-modal__error" *ngIf="nombreReceptorInvalido">
+        Para cobrar, corrige el nombre de quien recibe (abajo, en Datos de entrega).
+      </small>
 
       <!-- ── TICKET — enviar por correo (solo si el cliente tiene correo registrado) -->
       <div class="vd-ticket-checks" *ngIf="lineas.length > 0 && correoDisponible">
@@ -124,6 +127,9 @@
         <input type="text" class="vd-entrega__input"
                [(ngModel)]="nombreReceptor"
                placeholder="Nombre de quien recibe">
+        <small class="vd-modal__error" *ngIf="nombreReceptorInvalido">
+          Si lo escribes, al menos {{ minLetrasNombre }} letras
+        </small>
         <textarea class="vd-entrega__input" style="margin-top:6px"
                   [(ngModel)]="direccionEntrega"
                   rows="2"
@@ -490,24 +496,36 @@
           <label class="vd-modal__label">Nombre <span class="vd-required">*</span></label>
           <input class="vd-modal__input" formControlName="nombre_persona" type="text" placeholder="Nombre...">
           <small class="vd-modal__error"
-                 *ngIf="clienteForm.get('nombre_persona')?.invalid && clienteForm.get('nombre_persona')?.touched">
+                 *ngIf="clienteForm.get('nombre_persona')?.hasError('required') && clienteForm.get('nombre_persona')?.touched">
             Obligatorio
+          </small>
+          <small class="vd-modal__error" *ngIf="clienteForm.get('nombre_persona')?.hasError('minLetras')">
+            Escribe al menos {{ minLetrasNombre }} letras
           </small>
         </div>
 
         <div class="vd-modal__field">
           <label class="vd-modal__label">Segundo nombre</label>
           <input class="vd-modal__input" formControlName="segundo_nombre" type="text" placeholder="Segundo nombre...">
+          <small class="vd-modal__error" *ngIf="clienteForm.get('segundo_nombre')?.hasError('minLetras')">
+            Si lo escribes, al menos {{ minLetrasNombre }} letras
+          </small>
         </div>
 
         <div class="vd-modal__field">
           <label class="vd-modal__label">Apellido paterno</label>
           <input class="vd-modal__input" formControlName="apeido_Paterno" type="text" placeholder="Apellido paterno...">
+          <small class="vd-modal__error" *ngIf="clienteForm.get('apeido_Paterno')?.hasError('minLetras')">
+            Si lo escribes, al menos {{ minLetrasNombre }} letras
+          </small>
         </div>
 
         <div class="vd-modal__field">
           <label class="vd-modal__label">Apellido materno</label>
           <input class="vd-modal__input" formControlName="apeido_Materno" type="text" placeholder="Apellido materno...">
+          <small class="vd-modal__error" *ngIf="clienteForm.get('apeido_Materno')?.hasError('minLetras')">
+            Si lo escribes, al menos {{ minLetrasNombre }} letras
+          </small>
         </div>
 
         <div class="vd-modal__field">
@@ -523,12 +541,18 @@
         <div class="vd-modal__field vd-modal__field--full">
           <label class="vd-modal__label">Correo electrónico</label>
           <input class="vd-modal__input" formControlName="correo_Electronico" type="email" placeholder="correo@ejemplo.com">
+          <small class="vd-modal__error" *ngIf="clienteForm.get('correo_Electronico')?.hasError('correo')">
+            El correo no es válido (ejemplo: nombre&#64;gmail.com)
+          </small>
           <small class="vd-modal__hint">Si lo da, se le va a pedir verificarlo con un código antes de cerrar este paso.</small>
         </div>
 
         <div class="vd-modal__field vd-modal__field--full">
           <label class="vd-modal__label">Número telefónico</label>
           <input class="vd-modal__input" formControlName="numero_Telefonico" type="text" placeholder="10 dígitos...">
+          <small class="vd-modal__error" *ngIf="clienteForm.get('numero_Telefonico')?.hasError('telefono')">
+            El teléfono debe tener 10 dígitos
+          </small>
         </div>
 
       </div>

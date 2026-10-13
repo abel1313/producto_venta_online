@@ -42,6 +42,10 @@
               <span class="vf-product-search__meta">
                 Stock {{ p.stock }} &nbsp;·&nbsp; {{ p.precioVenta | currency:'MXN':'symbol':'1.2-2' }}
               </span>
+              <!-- Con "Ver todos los modelos" salen también los sin stock, deshabilitados y sin foto -->
+              <span class="vf-product-search__tags" *ngIf="estadoEnLista(p).length">
+                <span class="pk-tag pk-tag--outline" *ngFor="let e of estadoEnLista(p)">{{ e }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -59,6 +63,25 @@
              Sin esto se reparte a ciegas y se pasa del total del producto: así nacieron los
              descuadres. `disponible` viene calculado del back — NO se recalcula acá, porque
              si la pantalla repitiera la resta habría dos versiones del mismo número. -->
+        <!-- Estado del modelo (2026-10-08): deshabilitado o dado de baja → Habilitar; sin foto → aviso -->
+        <div class="vf-estado vf-estado--off" *ngIf="productoSeleccionado && modeloDeshabilitado">
+          <p class="vf-estado__titulo">⛔ Este modelo está deshabilitado</p>
+          <p class="vf-estado__texto">No sale en la tienda ni en ventas, y sus artículos tampoco. Puede ser que lo
+            hayan deshabilitado o dado de baja. Para agregarle artículos, primero habilítalo.</p>
+          <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" *ngIf="puedeHabilitarModelo"
+                  [disabled]="habilitando" (click)="habilitarModelo()">
+            {{ habilitando ? 'Habilitando…' : '✅ Habilitar modelo' }}
+          </button>
+          <p class="vf-estado__texto" *ngIf="!puedeHabilitarModelo">
+            Pídele a alguien con permiso de <b>Habilitar</b> en Catálogo → 🔍 Modelos que lo habilite.
+          </p>
+        </div>
+        <div class="vf-estado" *ngIf="productoSeleccionado && modeloSinFoto">
+          <p class="vf-estado__texto">📷 Este modelo no tiene foto (si lo dieron de baja, sus fotos se borraron).
+            Sus artículos no salen en la tienda hasta que tengan una: súbela abajo para el artículo, o al modelo en
+            Catálogo → 🔍 Modelos → ✏️ Actualizar.</p>
+        </div>
+
         <div class="vf-stock" *ngIf="productoSeleccionado && stockDisponible as sd"
              [class.vf-stock--roto]="sd.descuadrado"
              [class.vf-stock--alerta]="seEstaPasandoDeStock">
@@ -73,10 +96,31 @@
             </label>
             <label class="vf-stock__campo" *ngIf="puedeAjustarStockModelo">
               <span>Agregar (+) o quitar (−) al modelo</span>
-              <input class="vf-input" type="number" step="1" [(ngModel)]="ajusteStockModelo"
-                     [ngModelOptions]="{ standalone: true }" placeholder="0">
+              <span class="vf-stock__en-linea">
+                <input class="vf-input" type="number" step="1" [(ngModel)]="ajusteStockModelo"
+                       [ngModelOptions]="{ standalone: true }" placeholder="0">
+                <!-- Al momento (2026-10-08): el stock se va al modelo y luego se ofrecen sus artículos -->
+                <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm"
+                        [disabled]="!ajusteStockModelo || ajusteInvalido || guardandoAjuste || modeloDeshabilitado"
+                        (click)="guardarAjusteEnModelo()">
+                  {{ guardandoAjuste ? 'Guardando…' : 'Guardar en el modelo' }}
+                </button>
+              </span>
             </label>
           </div>
+          <div class="vf-stock__num" *ngIf="!sd.descuadrado && !modeloDeshabilitado">
+            <ng-container *ngIf="articulosQueCaben > 0">
+              Puedes hacer hasta <b>{{ articulosQueCaben }}</b> artículo{{ articulosQueCaben === 1 ? '' : 's' }} más
+              (tiene {{ sd.variantesActivas }} activo{{ sd.variantesActivas === 1 ? '' : 's' }}).
+            </ng-container>
+            <ng-container *ngIf="articulosQueCaben === 0">
+              No le queda stock libre: agrégale stock al modelo para hacer artículos nuevos.
+            </ng-container>
+          </div>
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm vf-stock__varios"
+                  *ngIf="!modeloDeshabilitado && articulosQueCaben > 0" (click)="abrirAltaArticulos()">
+            🧩 Agregar varios artículos de una vez
+          </button>
           <div class="vf-stock__num" *ngIf="!sd.descuadrado">
             Repartido: <b>{{ sd.enVariantes }}</b> · Libre: <b>{{ disponibleConAjuste }}</b>
             <ng-container *ngIf="ajusteStockModelo"> · El modelo quedaría en <b>{{ stockModeloQuedaria }}</b></ng-container>
@@ -307,7 +351,7 @@
            y guardaba 3, el tercero vacío. -->
       <button
         class="vf-btn-save"
-        [disabled]="!productoSeleccionado || guardando || totalAGuardar === 0"
+        [disabled]="!productoSeleccionado || guardando || totalAGuardar === 0 || modeloDeshabilitado"
         (click)="guardar()"
       >
         💾 Guardar {{ totalAGuardar > 1 ? totalAGuardar + ' productos' : 'producto' }}
@@ -441,3 +485,8 @@
 
   </div>
 </div>
+
+<!-- 🧩 Agregar artículos de una vez (la misma ventana de Agregar modelo y de 🧩 Productos) -->
+<app-alta-articulos *ngIf="modeloParaArticulos"
+                    [modelo]="modeloParaArticulos"
+                    (cerrar)="alCerrarAltaArticulos($event)"></app-alta-articulos>

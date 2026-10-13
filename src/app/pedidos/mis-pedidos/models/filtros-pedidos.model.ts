@@ -16,7 +16,8 @@ export type FormaCobroFiltro = 'PENDIENTE' | 'CONTADO' | 'APARTADO' | 'IR_PAGAND
  * ("Pagado" + "Falta entregar" = ya pagó y no se lo ha llevado). PENDIENTE y POR_COBRAR son los
  * nombres de antes; el back los acepta como FALTA_PAGAR y aquí se convierten al leer los guardados.
  */
-export type EstadoFiltro     = 'FALTA_PAGAR' | 'PAGADO' | 'CANCELADO' | 'FALTA_ENTREGAR' | 'ENTREGADO';
+// SIN_TERMINAR no es un chip: lo manda la pantalla sola al abrir (todo menos lo ya pagado y entregado).
+export type EstadoFiltro     = 'FALTA_PAGAR' | 'PAGADO' | 'CANCELADO' | 'FALTA_ENTREGAR' | 'ENTREGADO' | 'SIN_TERMINAR';
 export type DineroFiltro     = 'CON_SALDO' | 'SIN_ABONOS' | 'SALDO_A_FAVOR';
 export type EntregaFiltro    = 'HOY' | 'MANANA' | 'ESTA_SEMANA' | 'ATRASADOS';
 export type ModoEntregaFiltro = 'RECOGE_EN_TIENDA' | 'ENVIO';

@@ -16,6 +16,7 @@ import { CarritoVarianteService } from '../service/carrito-variante.service';
 import { IItemPromoCarrito } from 'src/app/promociones/models/promocion.model';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { correoOpcional, cumpleMinLetras, minLetras, MIN_LETRAS_NOMBRE, telefonoOpcional } from '../../shared/validadores-persona';
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
@@ -169,14 +170,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   ) {
 
     this.clienteForm = this.fb.group({
-      nombre_persona: ['', Validators.required],
-      segundo_nombre: [''],
-      apeido_Paterno: [''],
-      apeido_Materno: [''],
+      nombre_persona: ['', [Validators.required, minLetras()]],
+      segundo_nombre: ['', minLetras()],
+      apeido_Paterno: ['', minLetras()],
+      apeido_Materno: ['', minLetras()],
       fecha_Nacimiento: [''],
       sexo: [''],
-      correo_Electronico: [''],
-      numero_Telefonico: ['']
+      correo_Electronico: ['', correoOpcional],
+      numero_Telefonico: ['', telefonoOpcional]
     });
 
   }
@@ -532,6 +533,18 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.carritoService.limpiar();
       this.cargadoDesdeCarrito = false;
     }
+    this.refrescarResultados();
+  }
+
+  /**
+   * Después de vender (o limpiar), los resultados del buscador se vuelven a pedir: antes se quedaba
+   * la lista de antes de la venta, con el stock viejo ("dice 1") y al elegirlo otra vez el back
+   * respondía que ya no había stock (QA 2026-10-08).
+   */
+  private refrescarResultados(): void {
+    const termino = this.terminoVariante.trim();
+    if (termino.length >= 3) this.buscarVariantes(termino);
+    else this.resultados = [];
   }
 
   get totalVenta(): number {
@@ -548,7 +561,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   get puedeCobrar(): boolean {
     const tieneItems     = this.lineas.length > 0 || this.tienePromos;
     const tieneFormaPago = this.esCredito || this.pagosYMesesId !== null;
-    return tieneItems && tieneFormaPago && !this.procesando;
+    return tieneItems && tieneFormaPago && !this.procesando && !this.nombreReceptorInvalido;
+  }
+
+  readonly minLetrasNombre = MIN_LETRAS_NOMBRE;
+
+  // Opcional, pero si se escribe necesita al menos 3 letras (se guardaban nombres como "a").
+  get nombreReceptorInvalido(): boolean {
+    return !cumpleMinLetras(this.nombreReceptor);
   }
 
   // ── Visor de imagen ────────────────────────────────────────────────

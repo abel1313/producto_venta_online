@@ -266,3 +266,9 @@
     <button type="button" class="cam-btn cam-btn--cancel" (click)="detenerEscanerCodigo()">✖ Cerrar escáner</button>
   </div>
 </div>
+
+<!-- Al dar de alta un modelo: "¿Quieres agregar sus artículos ahora?" (flujo A, 2026-10-08) -->
+<app-alta-articulos *ngIf="modeloParaArticulos"
+                    [modelo]="modeloParaArticulos"
+                    [preguntarPrimero]="true"
+                    (cerrar)="alCerrarAltaArticulos()"></app-alta-articulos>

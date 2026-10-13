@@ -9,6 +9,7 @@ import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteRequest } from '../models/variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { VarianteService } from '../service/variante.service';
 // Nuevo — palabra clave para categorizar todas las variantes del lote
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
@@ -116,7 +117,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
         // busqueda no encuentra nada, y si ese error sube al subscribe la suscripcion se termina
         // para siempre -- el buscador quedaba muerto y solo revivia recargando la pantalla
         // (reportado en QA: "no hubo producto, busque otra cosa y ya no hace ni la peticion").
-        : this.productoService.getDataNombreCodigoBarra(1, 10, t).pipe(
+        : this.productoService.getDataNombreCodigoBarra(1, 10, t, this.puedeVerTodosLosModelos).pipe(
             catchError(() => of(null))
           ))
     ).subscribe({ next: res => { this.productos = res?.t ?? []; } });
@@ -183,6 +184,154 @@ export class AgregarComponent implements OnInit, OnDestroy {
     this.categoriaPrecargada = null;
   }
 
+  // ── Modelos sin stock, deshabilitados o dados de baja (2026-10-08) ────────────────
+  // Pedido del dueño: buscar TODOS los modelos, ver en qué estado está el elegido y, ahí mismo,
+  // habilitarlo o subirle stock; y en cuanto tenga stock libre, ofrecer sus artículos de una vez.
+
+  /** Permiso "Ver todos los modelos" de esta pantalla (el admin siempre). */
+  get puedeVerTodosLosModelos(): boolean {
+    return this.authService.isAdminService || this.authService.tieneAccion('tienda/venta', 'ver-todos-los-modelos');
+  }
+
+  /** El mismo permiso que el botón Habilitar de Catálogo → 🔍 Modelos. */
+  get puedeHabilitarModelo(): boolean {
+    return this.authService.isAdminService || this.authService.tieneAccion('productos/buscar', 'habilitar');
+  }
+
+  /** Etiquetas del buscador: en qué estado viene cada modelo. */
+  estadoEnLista(p: IProductoDTO): string[] {
+    const etiquetas: string[] = [];
+    if (String(p.habilitado) === '0' || p.habilitado === false) etiquetas.push('⛔ Deshabilitado');
+    if ((p.stock ?? 0) <= 0) etiquetas.push('Sin stock');
+    if (!p.imagen?.urlImagen) etiquetas.push('Sin foto');
+    return etiquetas;
+  }
+
+  get modeloDeshabilitado(): boolean {
+    return this.stockDisponible?.habilitado === false;
+  }
+
+  get modeloSinFoto(): boolean {
+    return this.stockDisponible?.conFoto === false;
+  }
+
+  /** Cuántos artículos más se pueden hacer; si el back no lo manda, lo libre (nunca negativo). */
+  get articulosQueCaben(): number {
+    const sd = this.stockDisponible;
+    if (!sd) return 0;
+    return sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
+  }
+
+  habilitando = false;
+
+  habilitarModelo(): void {
+    const p = this.productoSeleccionado;
+    if (!p || this.habilitando) return;
+    Swal.fire({
+      icon: 'question',
+      title: `¿Habilitar "${p.nombre}"?`,
+      html: 'Vuelve a salir en la tienda y en ventas, junto con sus artículos que tengan stock y foto. '
+        + 'Sus artículos dados de baja siguen de baja.',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, habilitar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.habilitando = true;
+      this.productoService.habilitarProducto(p.idProducto, true).subscribe({
+        next: () => {
+          this.habilitando = false;
+          p.habilitado = '1';
+          this.productoService.invalidarProdCache();
+          // Después de habilitar se revisa su stock y se dice cuántos artículos caben.
+          this.cargarStockDisponible(sd => Swal.fire({
+            icon: 'success',
+            title: 'Modelo habilitado',
+            html: this.resumenStock(sd),
+            confirmButtonText: 'Entendido'
+          }));
+        },
+        error: err => {
+          this.habilitando = false;
+          Swal.fire({ icon: 'error', title: 'No se pudo habilitar',
+            text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
+  /** "Tiene 2 artículos con 10 piezas. Puedes hacer hasta 5 artículos más." */
+  private resumenStock(sd: IStockDisponible): string {
+    const caben = sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
+    const articulos = sd.variantesActivas === 1 ? '1 artículo' : `${sd.variantesActivas} artículos`;
+    const base = `<p>Stock del modelo: <b>${sd.stockTotal}</b>. Tiene <b>${articulos}</b> con <b>${sd.enVariantes}</b> piezas.</p>`;
+    return base + (caben > 0
+      ? `<p>Puedes hacer hasta <b>${caben}</b> artículo${caben === 1 ? '' : 's'} más.</p>`
+      : '<p>No le queda stock libre: agrégale stock para hacer artículos nuevos.</p>');
+  }
+
+  guardandoAjuste = false;
+
+  /** Guarda el ajuste en el modelo al momento; si se agregó, ofrece sus artículos de una vez. */
+  guardarAjusteEnModelo(): void {
+    const p = this.productoSeleccionado;
+    const ajuste = Math.trunc(Number(this.ajusteStockModelo) || 0);
+    if (!p || !ajuste || this.ajusteInvalido || this.guardandoAjuste) return;
+    this.guardandoAjuste = true;
+    this.varianteService.ajustarStockModelo(p.idProducto, ajuste).subscribe({
+      next: sd => {
+        this.guardandoAjuste = false;
+        this.stockDisponible = sd;
+        this.ajusteStockModelo = 0;
+        p.stock = sd.stockTotal;
+        this.productoService.invalidarProdCache();
+        if (ajuste < 0) {
+          Swal.fire({ icon: 'success', title: `Se quitaron ${-ajuste} al modelo`, html: this.resumenStock(sd), confirmButtonText: 'Entendido' });
+          return;
+        }
+        Swal.fire({
+          icon: 'success',
+          title: `Se agregaron ${ajuste} al modelo`,
+          html: this.resumenStock(sd) + '<p><b>¿Deseas agregar los artículos de una vez?</b></p>',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, agregar artículos',
+          cancelButtonText: 'Después'
+        }).then(r => { if (r.isConfirmed) this.abrirAltaArticulos(); });
+      },
+      error: err => {
+        this.guardandoAjuste = false;
+        Swal.fire({ icon: 'error', title: 'No se cambió el stock',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Productos). */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
+
+  abrirAltaArticulos(): void {
+    const p = this.productoSeleccionado;
+    const sd = this.stockDisponible;
+    if (!p || !sd) return;
+    this.modeloParaArticulos = {
+      id: p.idProducto,
+      nombre: p.nombre,
+      stock: sd.stockTotal,
+      enArticulos: sd.enVariantes,
+      color: p.color,
+      marca: p.marca,
+      descripcion: p.descripcion,
+      contenido: p.contenido,
+      categoria: p.palabraClave ?? null,
+      tieneImagen: sd.conFoto ?? !!p.imagen?.urlImagen
+    };
+  }
+
+  alCerrarAltaArticulos(guardo: boolean): void {
+    this.modeloParaArticulos = null;
+    if (guardo) this.cargarStockDisponible();
+  }
+
   limpiarProducto(): void {
     this.quitarPrecargados();
     this.productoSeleccionado = null;
@@ -201,14 +350,20 @@ export class AgregarComponent implements OnInit, OnDestroy {
   cargandoStock = false;
   errorStock = false;
 
-  private cargarStockDisponible(): void {
+  private cargarStockDisponible(despues?: (sd: IStockDisponible) => void): void {
     const id = this.productoSeleccionado?.idProducto;
     this.errorStock = false;
     if (!id) { this.stockDisponible = null; return; }
 
     this.cargandoStock = true;
     this.varianteService.stockDisponible(id).subscribe({
-      next: s => { this.stockDisponible = s; this.cargandoStock = false; },
+      next: s => {
+        // Si en lo que llegaba se eligió otro modelo, esta respuesta ya no sirve.
+        this.cargandoStock = false;
+        if (this.productoSeleccionado?.idProducto !== id) return;
+        this.stockDisponible = s;
+        if (despues) despues(s);
+      },
       // Si no se puede leer, no se bloquea el alta: el back valida igual al guardar. Se avisa
       // en pantalla para que no parezca que el indicador no existe.
       error: () => { this.stockDisponible = null; this.cargandoStock = false; this.errorStock = true; }
@@ -569,6 +724,11 @@ export class AgregarComponent implements OnInit, OnDestroy {
   guardar(): void {
     if (!this.productoSeleccionado) {
       Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
+      return;
+    }
+    if (this.modeloDeshabilitado) {
+      Swal.fire({ icon: 'warning', title: 'Primero habilita el modelo',
+        text: 'Está deshabilitado: sus artículos no saldrían en la tienda ni en ventas.' });
       return;
     }
     if (this.ajusteInvalido) {

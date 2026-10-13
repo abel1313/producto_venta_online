@@ -1,0 +1,156 @@
+<div class="aa-overlay" role="dialog" aria-modal="true" aria-labelledby="aaTitulo">
+  <div class="aa-modal" [class.aa-modal--chico]="paso === 'pregunta'">
+
+    <!-- ── Paso 1: la pregunta (solo al dar de alta un modelo) ─────────────── -->
+    <ng-container *ngIf="paso === 'pregunta'">
+      <div class="aa-cabeza">
+        <h3 id="aaTitulo" class="aa-titulo">✅ Modelo guardado</h3>
+        <p class="aa-sub"><b>{{ modelo.nombre }}</b> · stock {{ modelo.stock }}</p>
+      </div>
+      <div class="aa-cuerpo">
+        <p class="aa-texto">¿Quieres agregar sus artículos ahora?</p>
+        <p class="aa-nota">Un modelo no se vende solo: se venden sus artículos (cada talla o color con su stock).
+          Si eliges <b>Después</b>, el modelo ya quedó guardado y los agregas cuando quieras.</p>
+      </div>
+      <div class="aa-acciones">
+        <button type="button" class="pk-btn pk-btn--secondary" (click)="despues()">Después</button>
+        <button type="button" class="pk-btn pk-btn--primary" (click)="siAgregar()">Sí, agregar artículos</button>
+      </div>
+    </ng-container>
+
+    <!-- ── Paso 2: los formularios ───────────────────────────────────────── -->
+    <ng-container *ngIf="paso === 'formularios'">
+      <div class="aa-cabeza">
+        <h3 id="aaTitulo" class="aa-titulo">🧩 Agregar artículos</h3>
+        <p class="aa-sub"><b>{{ modelo.nombre }}</b></p>
+        <button type="button" class="aa-cerrar" (click)="despues()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="aa-cuerpo">
+
+        <p class="aa-stock">
+          Stock del modelo: <b>{{ modelo.stock }}</b>
+          <span *ngIf="modelo.enArticulos > 0"> · En sus artículos: <b>{{ modelo.enArticulos }}</b></span>
+          · Libre: <b>{{ libre }}</b>
+        </p>
+
+        <p class="aa-aviso aa-aviso--error" *ngIf="libre < 1">
+          Al modelo no le queda stock libre. Súbele stock (✏️ Actualizar) o quítale stock a uno de sus artículos.
+        </p>
+
+        <ng-container *ngIf="libre > 0">
+          <!-- Qué se copia del modelo (A3): solo lo que el modelo tiene lleno, todo marcado -->
+          <section class="aa-seccion" *ngIf="copiables.length > 0">
+            <h4 class="aa-seccion__titulo">Usar del modelo en todos los artículos</h4>
+            <div class="aa-copiables">
+              <label class="aa-check" *ngFor="let c of copiables">
+                <input type="checkbox" [(ngModel)]="c.marcado" (ngModelChange)="alCambiarCopiable(c)">
+                <span><b>{{ c.etiqueta }}:</b> {{ c.valor }}</span>
+              </label>
+            </div>
+            <p class="aa-nota">Lo marcado ya viene lleno en cada artículo y lo puedes cambiar en uno solo.
+              Talla, presentación y stock son de cada artículo. Si dejas un dato vacío, el artículo usa el del modelo.</p>
+          </section>
+
+          <section class="aa-seccion aa-fila">
+            <label class="aa-campo">
+              <span class="aa-etiqueta">¿Cuántos artículos?</span>
+              <input class="pk-input" type="number" min="1" [max]="libre" step="1"
+                     [(ngModel)]="cantidad" (ngModelChange)="ajustarFormularios()">
+              <small class="pk-error" *ngIf="cantidadFueraDeRango">De 1 a {{ libre }} (cada artículo necesita al menos 1 pieza).</small>
+            </label>
+            <label class="aa-campo">
+              <span class="aa-etiqueta">Mismo stock para todos <span class="aa-opcional">(opcional)</span></span>
+              <span class="aa-en-linea">
+                <input class="pk-input" type="number" min="1" step="1" [(ngModel)]="mismoStock" placeholder="Ej: 2">
+                <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="aplicarMismoStock()"
+                        [disabled]="!(mismoStock && mismoStock >= 1)">Aplicar</button>
+              </span>
+            </label>
+          </section>
+
+          <!-- Un formulario = un artículo (A11) -->
+          <div class="aa-lista">
+            <article class="aa-art" *ngFor="let f of formularios; let i = index; trackBy: trackPorIndice">
+              <h5 class="aa-art__titulo">Artículo {{ i + 1 }}</h5>
+              <div class="aa-art__grid">
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Talla</span>
+                  <input class="pk-input" [(ngModel)]="f.talla" placeholder="S, M, L, 38…">
+                </label>
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Stock <span class="aa-obligatorio">*</span></span>
+                  <input class="pk-input" type="number" min="1" step="1" [(ngModel)]="f.stock" placeholder="Mínimo 1"
+                         [class.pk-input--error]="stockInvalido(f)">
+                  <small class="pk-error" *ngIf="stockInvalido(f)">Mínimo 1 pieza, sin decimales.</small>
+                </label>
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Color</span>
+                  <input class="pk-input" [(ngModel)]="f.color" placeholder="negro, azul…">
+                </label>
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Marca</span>
+                  <input class="pk-input" [(ngModel)]="f.marca" placeholder="Nike, Levi's…">
+                </label>
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Presentación</span>
+                  <input class="pk-input" [(ngModel)]="f.presentacion" placeholder="botella, caja…">
+                </label>
+                <label class="aa-campo">
+                  <span class="aa-etiqueta">Contenido neto</span>
+                  <input class="pk-input" [(ngModel)]="f.contenidoNeto" placeholder="500ml, 1kg…">
+                </label>
+                <label class="aa-campo aa-campo--ancho">
+                  <span class="aa-etiqueta">Descripción</span>
+                  <textarea class="pk-input" rows="2" [(ngModel)]="f.descripcion" placeholder="Descripción…"></textarea>
+                </label>
+                <div class="aa-campo aa-campo--ancho" *ngIf="!marcado('categoria')">
+                  <span class="aa-etiqueta">Categoría</span>
+                  <app-palabra-clave-autocomplete [valorInicial]="f.categoria"
+                                                  (seleccionada)="f.categoria = $event"></app-palabra-clave-autocomplete>
+                </div>
+                <div class="aa-campo aa-campo--ancho">
+                  <span class="aa-etiqueta">Foto</span>
+                  <div class="aa-foto">
+                    <img *ngIf="f.fotoPreview" [src]="f.fotoPreview" alt="Foto del artículo {{ i + 1 }}" class="aa-foto__img">
+                    <span class="aa-foto__texto" *ngIf="!f.foto">
+                      {{ marcado('imagen') ? '📷 La foto del modelo' : 'Sin foto (no sale en la tienda hasta que tenga una)' }}
+                    </span>
+                    <label class="pk-btn pk-btn--secondary pk-btn--sm aa-foto__boton">
+                      {{ f.foto ? 'Cambiar foto' : (marcado('imagen') ? 'Usar otra foto' : 'Subir foto') }}
+                      <input type="file" accept="image/*" hidden (change)="elegirFoto(f, $event)">
+                    </label>
+                    <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="f.foto" (click)="quitarFoto(f)">
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </ng-container>
+
+        <div class="aa-aviso aa-aviso--error" *ngIf="error">{{ error }}</div>
+      </div>
+
+      <div class="aa-pie">
+        <p class="aa-contador" *ngIf="libre > 0"
+           [class.aa-contador--mal]="teQuedan < 0">
+          Stock del modelo: <b>{{ modelo.stock }}</b> · Repartido: <b>{{ repartido }}</b> ·
+          <ng-container *ngIf="teQuedan >= 0">Te quedan <b>{{ teQuedan }}</b></ng-container>
+          <ng-container *ngIf="teQuedan < 0">Te pasaste por <b>{{ -teQuedan }}</b></ng-container>
+        </p>
+        <p class="aa-nota" *ngIf="libre > 0 && faltaStock && teQuedan >= 0">Falta el stock de algún artículo.</p>
+        <div class="aa-acciones">
+          <button type="button" class="pk-btn pk-btn--secondary" (click)="despues()">
+            {{ preguntarPrimero ? 'Después' : 'Cancelar' }}
+          </button>
+          <button type="button" class="pk-btn pk-btn--primary" *ngIf="libre > 0"
+                  [disabled]="!puedeGuardar" (click)="guardar()">
+            {{ guardando ? 'Guardando…' : (formularios.length === 1 ? 'Guardar 1 artículo' : 'Guardar ' + formularios.length + ' artículos') }}
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

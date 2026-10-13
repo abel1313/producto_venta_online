@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
@@ -125,9 +125,14 @@ export class DetalleVarianteComponent implements OnInit, OnDestroy {
     const productoId$ = productoIdConocido
       ? of(+productoIdConocido)
       : this.varianteService.resolverProductoId(+varianteIdParam!).pipe(
-          catchError(() => this.varianteService.getOne(+varianteIdParam!).pipe(
-            switchMap(v => of(v.producto?.id!))
-          ))
+          // 404 = el artículo no existe: el respaldo de getOne (solo admin) haría que el
+          // visitante viera "no pudimos abrir este producto desde un enlace directo" en vez de
+          // "ya no está disponible".
+          catchError(err => err?.status === 404
+            ? throwError(() => err)
+            : this.varianteService.getOne(+varianteIdParam!).pipe(
+                switchMap(v => of(v.producto?.id!))
+              ))
         );
 
     productoId$.pipe(
@@ -142,14 +147,26 @@ export class DetalleVarianteComponent implements OnInit, OnDestroy {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
-        else this.errorCarga = 'Este producto ya no está disponible.';
+        else this.marcarNoDisponible('Este producto ya no está disponible.');
       },
       error: err => {
+        // 404: el artículo no existe. Se marca noindex para que Google no guarde una página
+        // vacía como si fuera un producto (soft 404). Un 500 o un corte de red es pasajero:
+        // ahí no se toca, para no sacar de Google un producto que sí existe.
+        if (err?.status === 404) {
+          this.marcarNoDisponible('Este producto ya no está disponible.');
+          return;
+        }
         this.errorCarga = (err?.status === 401 || err?.status === 403)
           ? 'No pudimos abrir este producto desde un enlace directo. Búscalo en la tienda para verlo.'
           : (err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cargar el producto.');
       }
     });
+  }
+
+  private marcarNoDisponible(mensaje: string): void {
+    this.errorCarga = mensaje;
+    this.seo.noIndexar();
   }
 
   seleccionar(v: IVarianteDto): void {

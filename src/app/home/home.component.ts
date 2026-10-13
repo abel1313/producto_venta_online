@@ -1,15 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent {
 
-  constructor() { }
+  constructor(private readonly authService: AuthService) { }
 
-  ngOnInit(): void {
+  /** Promociones pide sesión (AuthGuard): sin sesión el botón llevaría al login. */
+  get conSesion(): boolean {
+    return this.authService.rolesValue.length > 0;
   }
-
 }

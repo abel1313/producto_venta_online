@@ -943,3 +943,46 @@ $primary-d: var(--brand-1);
     color: var(--card-text-muted);
   }
 }
+
+// ── Estado del modelo y acciones al momento (2026-10-08) ────────────────────────
+.vf-stock__en-linea {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+
+  .vf-input { flex: 1 1 auto; min-width: 0; }
+  .pk-btn   { white-space: nowrap; }
+}
+
+.vf-stock__varios { align-self: flex-start; margin-top: .35rem; }
+
+// Las etiquetas van en su propia línea, debajo del nombre y el stock.
+.vf-product-search__item { flex-wrap: wrap; row-gap: 2px; }
+.vf-product-search__tags {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.vf-estado {
+  margin-top: .6rem;
+  padding: .6rem .85rem;
+  border-radius: 10px;
+  border-left: 3px solid var(--pk-warning-to, var(--pk-warning));
+  background: var(--pk-warning-soft);
+  color: var(--card-text);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .35rem;
+
+  &__titulo { margin: 0; font-size: .9rem; font-weight: 700; }
+  &__texto  { margin: 0; font-size: .8rem; line-height: 1.4; }
+
+  &--off {
+    border-left-color: var(--pk-danger-to, var(--pk-danger));
+    background: var(--pk-danger-soft);
+  }
+}

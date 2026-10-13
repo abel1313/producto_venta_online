@@ -1100,11 +1100,11 @@ export class ConfigurarRamoComponent implements OnInit, OnDestroy {
     Swal.fire({
       title: 'Completa tu registro',
       icon: 'info',
-      html: '<p>Para pedir tu ramo necesitas registrarte como cliente.</p>',
+      html: '<p>Para pedir tu ramo necesitamos tu nombre, apellidos y teléfono.</p>',
       showCancelButton: true,
-      confirmButtonText: 'Registrarme',
+      confirmButtonText: 'Completar mis datos',
       cancelButtonText: 'Cancelar'
-    }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+    }).then(result => { if (result.isConfirmed) this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: this.router.url } }); });
   }
 
   private guardarPedido(clienteId: number): void {

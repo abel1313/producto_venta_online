@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { Constants } from 'src/app/Constants/Constants.model';
 import { IPromocion, IPromocionDetalle, IPromocionRequest } from 'src/app/promociones/models/promocion.model';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
@@ -52,7 +53,7 @@ export class GestionPromocionesComponent implements OnInit, OnDestroy {
     this.cargar();
 
     this.varInput$.pipe(
-      filter(t => t.trim().length >= 2),
+      filter(t => t.trim().length >= Constants.MIN_CARACTERES_BUSQUEDA),
       debounceTime(400),
       distinctUntilChanged(),
       takeUntil(this.destroy$)

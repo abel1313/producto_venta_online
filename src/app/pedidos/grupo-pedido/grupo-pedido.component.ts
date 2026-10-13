@@ -61,6 +61,8 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
   mostrarFormAbono = false;
   abonando = false;
   abono = { monto: 0, metodoPago: 'EFECTIVO' as 'EFECTIVO' | 'TRANSFERENCIA', montoDado: 0, nota: '' };
+  /** Apartados: el monto queda fijo en el saldo del grupo; el botón 🔒 explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
   readonly metodos: ('EFECTIVO' | 'TRANSFERENCIA')[] = ['EFECTIVO', 'TRANSFERENCIA'];
 
   mostrarFormSeparar = false;
@@ -343,6 +345,7 @@ export class GrupoPedidoComponent implements OnChanges, OnDestroy {
 
   abrirFormAbono(): void {
     this.abono = { monto: this.esApartado ? (this.grupo?.saldoGrupo ?? 0) : 0, metodoPago: 'EFECTIVO', montoDado: 0, nota: '' };
+    this.verPorqueMontoFijo = false;
     this.mostrarFormAbono = true;
   }
 

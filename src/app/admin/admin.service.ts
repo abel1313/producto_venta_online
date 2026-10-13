@@ -68,10 +68,23 @@ export interface ICatalogoPreparado {
 export interface IEscenarioPreparado {
   prueba: string;
   titulo: string;
-  pedidos: { clave: string; pedidoId: number; queEs: string }[];
+  /** `cliente` es el nombre con el que se ve el pedido en pantalla ("Prueba 24 K4"): lo que se busca en Mis pedidos. */
+  pedidos: { clave: string; pedidoId: number; queEs: string; cliente?: string | null }[];
   catalogo: ICatalogoPreparado[];
   siguientePaso: string | null;
   /** Solo en "Preparar todas": por qué no se pudo preparar esa prueba. */
+  error: string | null;
+  /** Lo que se quitó de la vez anterior antes de volver a crearla ("2 pedidos cancelados y 1 modelo dado de baja"). */
+  queSeQuito?: string | null;
+}
+
+/** Lo que se quitó de una prueba: los pedidos se cancelan y los modelos se dan de baja, nada se borra. */
+export interface IPruebaQuitada {
+  prueba: string;
+  titulo: string;
+  pedidosCancelados: number;
+  pedidosSinCancelar: number;
+  modelosDadosDeBaja: number;
   error: string | null;
 }
 
@@ -100,7 +113,10 @@ export class AdminService {
       .pipe(map(res => res.lista ?? []));
   }
 
-  /** Da de alta lo que pide esa prueba (modelos, artículos, pedidos). Cada vez que se llama, datos nuevos. */
+  /**
+   * Deja lista esa prueba (modelos, artículos, pedidos). Si ya estaba preparada, primero quita lo de la vez
+   * anterior: tocarlo otra vez es reiniciar la prueba.
+   */
   prepararPrueba(prueba: string): Observable<IEscenarioPreparado> {
     return this.http.post<{ data: IEscenarioPreparado }>(`${this.url}/datos-prueba/preparar/${encodeURIComponent(prueba)}`, {})
       .pipe(map(res => res.data));
@@ -109,6 +125,18 @@ export class AdminService {
   /** Todas las pruebas de una vez. La que falla viene con `error`; las demás quedan listas. */
   prepararTodas(): Observable<IEscenarioPreparado[]> {
     return this.http.post<{ lista: IEscenarioPreparado[] }>(`${this.url}/datos-prueba/preparar-todas`, {})
+      .pipe(map(res => res.lista ?? []));
+  }
+
+  /** Quita lo de esa prueba sin volver a crearlo (pedidos cancelados, modelos dados de baja). */
+  quitarPrueba(prueba: string): Observable<IPruebaQuitada> {
+    return this.http.post<{ data: IPruebaQuitada }>(`${this.url}/datos-prueba/quitar/${encodeURIComponent(prueba)}`, {})
+      .pipe(map(res => res.data));
+  }
+
+  /** Quita lo de todas las pruebas. La que falla viene con `error`; las demás se quitan. */
+  quitarTodas(): Observable<IPruebaQuitada[]> {
+    return this.http.post<{ lista: IPruebaQuitada[] }>(`${this.url}/datos-prueba/quitar-todas`, {})
       .pipe(map(res => res.lista ?? []));
   }
 

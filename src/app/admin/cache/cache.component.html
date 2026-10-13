@@ -122,18 +122,28 @@
         <h4 class="ac-datos__seccion">Preparar una prueba</h4>
         <p class="pk-text pk-text--sm pk-text--muted">
           Da de alta lo que necesita esa prueba del documento de pruebas (modelos, artículos y pedidos),
-          listo para empezar. Cada vez que lo tocas sale todo nuevo.
+          listo para empezar. Si ya estaba preparada, primero quita lo de antes (sus pedidos se cancelan y sus
+          modelos se dan de baja) y la vuelve a crear: tocarlo otra vez <b>reinicia</b> la prueba. «Quitar» solo
+          quita, sin volver a crear. Nada se borra de la base.
         </p>
         <div class="ac-datos__acciones">
           <button class="pk-btn pk-btn--primary pk-btn--sm" type="button"
-                  [disabled]="corriendo || preparando !== null" (click)="prepararTodas()">
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="prepararTodas()">
             {{ preparando === 'todas' ? 'Preparando todas…' : '🧪 Preparar todas las pruebas' }}
+          </button>
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="quitarTodas()">
+            {{ quitando === 'todas' ? 'Quitando…' : '🗑 Quitar todas' }}
           </button>
         </div>
         <div class="ac-datos__escenario" *ngFor="let e of escenarios">
           <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
-                  [disabled]="corriendo || preparando !== null" (click)="prepararPrueba(e)">
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="prepararPrueba(e)">
             {{ preparando === e.prueba ? 'Preparando…' : '🧪 Preparar prueba ' + e.prueba }}
+          </button>
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button" title="Quita lo de esta prueba sin volver a crearlo"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="quitarPrueba(e)">
+            {{ quitando === e.prueba ? 'Quitando…' : '🗑 Quitar' }}
           </button>
           <span class="pk-text pk-text--sm">{{ e.titulo }}</span>
         </div>
@@ -146,10 +156,11 @@
             </button>
           </div>
           <p class="pk-text pk-text--sm pk-text--muted">
-            K4, P1, T1, Art-A… son <b>nombres que usa el documento de pruebas</b>: no están escritos en el pedido
-            ni se escriben en un buscador. El pedido es el <b>número</b> de cada renglón: tócalo para abrirlo o
-            cópialo para pegarlo en un buscador. Esta lista se queda guardada en este navegador aunque cambies de
-            pantalla; «Quitar la lista» solo la quita de aquí, no borra nada de la base.
+            Cada pedido se ve en pantalla con el nombre de su clave: <b>K4</b> es el cliente «Prueba 24 K4». Para
+            encontrarlo escribe ese nombre en el buscador de Mis pedidos o de Unir (mínimo 3 letras: «Prueba 24»
+            trae los de esa prueba), o pega su <b>número</b> (tócalo para abrirlo o cópialo). Los modelos y artículos
+            se buscan por su nombre («QA Prueba 17 Art-A») o por su código de barras. Esta lista se queda guardada en
+            este navegador aunque cambies de pantalla; «Quitar la lista» solo la quita de aquí, no borra nada.
           </p>
         </div>
 
@@ -160,6 +171,7 @@
             <span class="pk-text--muted"> · preparada {{ preparado.preparadoEn | date:'dd/MM HH:mm' }}</span>
           </p>
           <p class="pk-text pk-text--bold" *ngIf="preparado.error">⚠️ Prueba {{ preparado.prueba }}: no se pudo · {{ preparado.error }}</p>
+          <p class="pk-hint" *ngIf="preparado.queSeQuito">♻️ {{ preparado.queSeQuito }}</p>
           <ul class="ac-datos__pedidos" *ngIf="preparado.catalogo?.length">
             <li *ngFor="let c of preparado.catalogo">
               <strong>{{ c.clave }}</strong> = {{ c.tipo === 'MODELO' ? 'modelo' : 'artículo de' }} «{{ c.nombre }}»
@@ -172,6 +184,7 @@
             <li *ngFor="let p of preparado.pedidos">
               <strong>{{ p.clave }}</strong> =
               <a [routerLink]="['/pedidos/mis-pedidos']" [queryParams]="{ pedidoId: p.pedidoId }">pedido #{{ p.pedidoId }}</a>
+              <span *ngIf="p.cliente"> «{{ p.cliente }}»</span>
               <button type="button" class="ac-datos__codigo" title="Copiar el número del pedido"
                       (click)="copiar(p.pedidoId)">copiar número</button>
               · {{ p.queEs }}

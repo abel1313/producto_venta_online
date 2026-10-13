@@ -114,6 +114,36 @@
         <p class="pk-text pk-text--sm pk-text--muted" *ngIf="avance.ultimoError">Último error: {{ avance.ultimoError }}</p>
         <p class="pk-hint" *ngIf="avance.aviso">⚠️ {{ avance.aviso }}</p>
       </div>
+
+      <!-- Preparar prueba N: los pedidos que pide cada prueba del documento de pruebas.
+           Cada clic crea pedidos nuevos (un artículo propio con stock 30), así una prueba no
+           depende de lo que otra ya canceló, pagó o unió. -->
+      <div class="ac-datos__preparar" *ngIf="escenarios.length">
+        <h4 class="ac-datos__seccion">Preparar una prueba</h4>
+        <p class="pk-text pk-text--sm pk-text--muted">
+          Crea los pedidos que necesita esa prueba del documento de pruebas, listos para empezar.
+          Cada vez que lo tocas salen pedidos nuevos.
+        </p>
+        <div class="ac-datos__escenario" *ngFor="let e of escenarios">
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null" (click)="prepararPrueba(e)">
+            {{ preparando === e.prueba ? 'Preparando…' : '🧪 Preparar prueba ' + e.prueba }}
+          </button>
+          <span class="pk-text pk-text--sm">{{ e.titulo }}</span>
+        </div>
+
+        <div class="ac-datos__listo" *ngIf="preparado">
+          <p class="pk-text pk-text--bold">✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}</p>
+          <ul class="ac-datos__pedidos">
+            <li *ngFor="let p of preparado.pedidos">
+              <strong>{{ p.clave }}</strong> =
+              <a [routerLink]="['/pedidos/mis-pedidos']" [queryParams]="{ pedidoId: p.pedidoId }">pedido #{{ p.pedidoId }}</a>
+              · {{ p.queEs }}
+            </li>
+          </ul>
+          <p class="pk-hint">👉 {{ preparado.siguientePaso }}</p>
+        </div>
+      </div>
     </div>
   </section>
 </div>

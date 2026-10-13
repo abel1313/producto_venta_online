@@ -3,7 +3,7 @@ import { Subscription, timer } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
-import { AdminService, IAvanceDatosPrueba, IGenerarDatosPrueba } from '../admin.service';
+import { AdminService, IAvanceDatosPrueba, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba } from '../admin.service';
 
 @Component({
   selector: 'app-cache',
@@ -19,6 +19,12 @@ export class CacheComponent implements OnInit, OnDestroy {
   avance: IAvanceDatosPrueba | null = null;
   enviando = false;
   private sondeo?: Subscription;
+
+  // ── Preparar prueba N: los pedidos que pide cada prueba del documento de pruebas ──
+  escenarios: IEscenarioPrueba[] = [];
+  /** Número de la prueba que se está preparando (para el texto del botón). */
+  preparando: string | null = null;
+  preparado: IEscenarioPreparado | null = null;
 
   constructor(private readonly adminService: AdminService,
               private readonly authService: AuthService) {}
@@ -43,7 +49,12 @@ export class CacheComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    if (this.esAdmin) this.consultarAvance();
+    if (!this.esAdmin) return;
+    this.consultarAvance();
+    this.adminService.escenariosPrueba().subscribe({
+      next: lista => { this.escenarios = lista; },
+      error: () => { this.escenarios = []; }
+    });
   }
 
   ngOnDestroy(): void {
@@ -102,6 +113,26 @@ export class CacheComponent implements OnInit, OnDestroy {
             text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
         }
       });
+    });
+  }
+
+  /**
+   * Crea un artículo nuevo y los pedidos de esa prueba (solo QA). Cada vez que se toca salen
+   * pedidos nuevos: una prueba no depende de lo que otra ya canceló, pagó o unió.
+   */
+  prepararPrueba(e: IEscenarioPrueba): void {
+    this.preparando = e.prueba;
+    this.preparado = null;
+    this.adminService.prepararPrueba(e.prueba).subscribe({
+      next: listo => {
+        this.preparando = null;
+        this.preparado = listo;
+      },
+      error: err => {
+        this.preparando = null;
+        Swal.fire({ icon: 'error', title: `No se pudo preparar la prueba ${e.prueba}`,
+          text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
+      }
     });
   }
 

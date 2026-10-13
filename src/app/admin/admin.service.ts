@@ -47,6 +47,20 @@ export interface IGenerarDatosPrueba {
   pedidos: number;
 }
 
+/** Una prueba de QA que se puede preparar con un botón (back: R16 del dominio datosprueba). */
+export interface IEscenarioPrueba {
+  prueba: string;
+  titulo: string;
+}
+
+/** Lo que dejó lista "Preparar prueba N": los pedidos nuevos y por dónde seguir. */
+export interface IEscenarioPreparado {
+  prueba: string;
+  titulo: string;
+  pedidos: { clave: string; pedidoId: number; queEs: string }[];
+  siguientePaso: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly url = `${environment.api_Url}/v1/admin`;
@@ -63,6 +77,18 @@ export class AdminService {
 
   avanceDatosPrueba(): Observable<IAvanceDatosPrueba> {
     return this.http.get<{ data: IAvanceDatosPrueba }>(`${this.url}/datos-prueba/avance`)
+      .pipe(map(res => res.data));
+  }
+
+  /** Las pruebas que se pueden preparar (20, 21, 22…). Vienen en `lista`, no en `data`. */
+  escenariosPrueba(): Observable<IEscenarioPrueba[]> {
+    return this.http.get<{ lista: IEscenarioPrueba[] }>(`${this.url}/datos-prueba/escenarios`)
+      .pipe(map(res => res.lista ?? []));
+  }
+
+  /** Crea un artículo nuevo y los pedidos de esa prueba. Cada vez que se llama, datos nuevos. */
+  prepararPrueba(prueba: string): Observable<IEscenarioPreparado> {
+    return this.http.post<{ data: IEscenarioPreparado }>(`${this.url}/datos-prueba/preparar/${prueba}`, {})
       .pipe(map(res => res.data));
   }
 

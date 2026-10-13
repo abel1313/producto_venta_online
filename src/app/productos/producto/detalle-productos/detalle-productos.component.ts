@@ -225,7 +225,7 @@ export class DetalleProductosComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Completar mis datos',
       cancelButtonText: 'Ahora no'
-    }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+    }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: this.router.url } }); });
   }
 
   private armarYConfirmarPedido() {

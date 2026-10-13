@@ -90,6 +90,11 @@
       Ahora está como <b>{{ esPedidoEnLinea ? '🕓 Pendiente (lo pidió el cliente desde su cuenta, sin cobrar)' : etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
       Elige a cuál lo quieres pasar:
     </p>
+    <p class="dp-tipo-aviso" *ngIf="grupo">
+      🔗 Este pedido está unido con otros: el cambio se hace en <b>todo el grupo</b>
+      (pedidos {{ pedidosDelGrupoTexto }}). El grupo debe {{ grupo.saldoGrupo | currency:'$' }}<span
+      *ngIf="grupo.pagadoGrupo > 0"> y ya dio {{ grupo.pagadoGrupo | currency:'$' }}</span>.
+    </p>
     <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
       ⚠️ Este pedido se registró como pagado completo de contado. Al cambiarlo se anula ese cobro y
       queda debiendo el total ({{ totalGeneral | currency:'$' }}). En "¿Cobra algo ahora?" pon lo que
@@ -113,7 +118,7 @@
               [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
               [class.dp-tipo-btn--bloqueado]="t.valor === 'APARTADO' && tieneDinero"
               [attr.aria-pressed]="tipoForm.tipoPedido === t.valor"
-              [disabled]="(t.valor === tipoVigente && !esPedidoEnLinea) || (esPedidoEnLinea && t.valor === 'NORMAL') || (t.valor === 'APARTADO' && tieneDinero)"
+              [disabled]="(t.valor === tipoVigente && !esPedidoEnLinea) || (esPedidoEnLinea && t.valor === 'NORMAL') || (t.valor === 'APARTADO' && tieneDinero) || (grupo && t.valor === 'NORMAL' && !esPedidoEnLinea)"
               (click)="seleccionarTipo(t.valor)">
         <span class="dp-tipo-btn__nombre">
           {{ t.etiqueta }}
@@ -122,10 +127,13 @@
         <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
         <!-- El motivo va escrito, no solo al pasar el mouse: en el celular no hay mouse (QA 2026-10-08). -->
         <span class="dp-tipo-btn__bloqueo" *ngIf="t.valor === 'APARTADO' && tieneDinero">
-          🔒 No se puede: ya dio {{ detalle?.totalPagado | currency:'$' }}. Un Apartado es sin dinero; por eso queda como Ir pagando.
+          🔒 No se puede: ya dio {{ dineroDelCambio | currency:'$' }}{{ grupo ? ' entre los pedidos del grupo' : '' }}. Un Apartado es sin dinero; por eso queda como Ir pagando.
         </span>
         <span class="dp-tipo-btn__bloqueo" *ngIf="esPedidoEnLinea && t.valor === 'NORMAL'">
           Para cobrarlo completo usa el botón Cobrar de la card.
+        </span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="grupo && !esPedidoEnLinea && t.valor === 'NORMAL' && t.valor !== tipoVigente">
+          🔒 Un grupo no se pasa a contado: para que quede pagado, cóbralo completo con 💵 Pagar el grupo completo.
         </span>
       </button>
     </div>
@@ -143,7 +151,8 @@
           Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
         </small>
         <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
-          Puedes dejarlo en 0 si no cobra nada en este momento.
+          Puedes dejarlo en 0 si no cobra nada en este momento.<span *ngIf="grupo"> Lo que cobres entra
+          como abono del grupo (se reparte del pedido más viejo al más nuevo).</span>
         </small>
       </div>
 

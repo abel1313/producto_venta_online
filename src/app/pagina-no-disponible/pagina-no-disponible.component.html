@@ -1,9 +1,22 @@
+<!-- Página no disponible (2026-10-08): sin foto de pantalla completa (antes venta-bolsas.jpg,
+     4896×3264, con la bolsa de otra marca) y con salida: regresar o ir a la tienda. -->
 <section class="pnd">
-  <div class="pnd__overlay"></div>
-  <div class="pnd__box">
-    <p class="pnd__code">404</p>
-    <div class="pnd__divider"></div>
-    <h1 class="pnd__title">Página no disponible</h1>
-    <p class="pnd__sub">Lo sentimos, la página que buscas no existe</p>
+  <div class="pnd__panel pk-enter-rise">
+    <picture>
+      <source type="image/webp"
+              srcset="assets/imagenes/logo-tienda-240.webp 1x, assets/imagenes/logo-tienda-480.webp 2x">
+      <img class="pnd__logo" src="assets/imagenes/logo-tienda-240.jpg"
+           width="240" height="240" alt="Logo de Novedades Jade" decoding="async">
+    </picture>
+
+    <p class="pk-kicker pnd__kicker">Error 404</p>
+    <h1 class="pnd__titulo">Esta página no existe</h1>
+    <hr class="pk-rule pnd__regla">
+    <p class="pnd__sub">Puede que el enlace esté mal escrito o que lo que buscabas ya no esté disponible.</p>
+
+    <div class="pnd__acciones">
+      <a class="pk-btn pk-btn--primary pnd__btn" routerLink="/tienda/buscar">🛍️ Ir a la tienda</a>
+      <button type="button" class="pk-btn pk-btn--secondary pnd__btn" (click)="regresar()">← Regresar</button>
+    </div>
   </div>
 </section>

@@ -13,6 +13,13 @@
       </div>
     </div>
 
+    <!-- Viene del carrito: le faltan datos para hacer el pedido -->
+    <p class="pk-aviso md-aviso-pedido" *ngIf="volver">
+      <span aria-hidden="true">🛒</span>
+      <span>Para terminar tu pedido llena los campos con <strong>*</strong> y guarda. Tu correo ya está
+        verificado: no hace falta escribirlo otra vez. Al guardar regresas a tu carrito.</span>
+    </p>
+
     <!-- Formulario -->
     <form class="md-form" [formGroup]="formDatosCliente" (ngSubmit)="guardarCliente()">
 

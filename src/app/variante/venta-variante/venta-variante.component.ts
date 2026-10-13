@@ -298,18 +298,28 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Faltan datos del cliente para hacer el pedido. Se manda a **Mis datos**, que edita el cliente
+   * que ya tiene la cuenta (se crea solo al verificar el correo, con el correo ya verificado), y
+   * al guardar regresa al carrito. Antes mandaba a "Nuevo cliente" (`/clientes/agregar`): pedía el
+   * correo otra vez con el formulario vacío y no regresaba al carrito (2026-10-13).
+   */
   private pedirCompletarRegistro(): void {
     Swal.fire({
-      title: 'Generar pedido',
+      title: 'Completa tus datos',
       icon: 'info',
-      html: '<p>Para completar tu pedido necesitas registrarte como cliente.</p>',
+      html: '<p>Para hacer tu pedido necesitamos tu nombre, apellidos y teléfono. Tu correo ya está verificado.</p>',
       showCancelButton: true,
-      confirmButtonText: 'Registrarme como cliente',
+      confirmButtonText: 'Completar mis datos',
       cancelButtonText: 'Cancelar',
       cancelButtonColor: '#d33'
     }).then(result => {
-      if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
+      if (result.isConfirmed) this.irAMisDatos();
     });
+  }
+
+  private irAMisDatos(): void {
+    this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: '/tienda/carrito' } });
   }
 
   private armarYConfirmar(clienteId: number): void {
@@ -413,7 +423,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               showCancelButton: true,
               cancelButtonText: 'Cancelar'
             }).then(result => {
-              if (result.isConfirmed) this.router.navigate(['/mis-datos']);
+              // Antes iba a '/mis-datos', que no existe: caía en la página 404.
+              if (result.isConfirmed) this.irAMisDatos();
             });
           } else if (msg.toLowerCase().includes('no es valido') || msg.toLowerCase().includes('no es válido')) {
             Swal.fire({

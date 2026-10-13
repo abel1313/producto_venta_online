@@ -18,6 +18,10 @@
                [value]="buscarProd" (keyup)="buscarProductos($event)" appUppercase>
       </div>
       <small class="mp-aviso-busqueda" *ngIf="avisoBusqueda">{{ avisoBusqueda }}</small>
+      <small class="mp-aviso-busqueda" *ngIf="isAdminUser && vistaSinTerminados && !avisoBusqueda">
+        No se muestran los pedidos que ya están pagados y entregados. Para verlos, usa ⚙️ Filtros
+        (Pago: Pagado · Entrega: Entregado) o busca el número de pedido.
+      </small>
     </div>
 
     <ng-container *ngIf="isAdminUser">
@@ -396,7 +400,7 @@
     <p class="mp-empty__sub">
       Para ver tus pedidos necesitamos tu nombre, apellido y teléfono.
     </p>
-    <a routerLink="/clientes/agregar" class="btn-entrega">Completar mis datos</a>
+    <a routerLink="/clientes/mis-datos" [queryParams]="{ volver: '/pedidos/mis-pedidos' }" class="btn-entrega">Completar mis datos</a>
   </div>
 
   <!-- Estado vacío -->

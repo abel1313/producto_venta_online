@@ -1,10 +1,23 @@
-<section class="home">
-  <div class="home__overlay"></div>
-  <div class="home__content">
-    <h2 class="home__tagline">Venta de bolsas</h2>
-    <div class="home__divider"></div>
-    <div class="home__brand-box">
-      <h1 class="home__brand">Jade <span>&</span> Key</h1>
+<!-- Home (2026-10-08): sin foto de pantalla completa. Antes cargaba tulipanes.jpg (3 MB, 4752×3168)
+     y el texto blanco sobre las flores no se leía. Ahora: el logo de la tienda (7–18 KB) y textos
+     sobre los colores de Personalización, que se leen igual de día y de noche. -->
+<section class="hm">
+  <div class="hm__panel pk-enter-rise">
+    <picture>
+      <source type="image/webp"
+              srcset="assets/imagenes/logo-tienda-240.webp 1x, assets/imagenes/logo-tienda-480.webp 2x">
+      <img class="hm__logo" src="assets/imagenes/logo-tienda-240.jpg"
+           width="240" height="240" alt="Logo de Novedades Jade" fetchpriority="high" decoding="async">
+    </picture>
+
+    <p class="pk-kicker hm__kicker">Tienda en línea</p>
+    <h1 class="hm__titulo">Novedades Jade</h1>
+    <hr class="pk-rule hm__regla">
+    <p class="hm__sub">Bolsas, pantalones, blusas y perfumes</p>
+
+    <div class="hm__acciones">
+      <a class="pk-btn pk-btn--primary hm__btn" routerLink="/tienda/buscar">🛍️ Ver la tienda</a>
+      <a class="pk-btn pk-btn--secondary hm__btn" *ngIf="conSesion" routerLink="/promociones">🎁 Promociones</a>
     </div>
   </div>
 </section>

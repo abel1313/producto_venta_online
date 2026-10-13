@@ -17,6 +17,25 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-13 — Carrito → Mis datos, grupo completo y Mis pedidos sin lo terminado
+**Dónde:** `venta-variante` (`pedirCompletarRegistro`, `irAMisDatos`), `mis-datos` (`volver`, teléfono obligatorio), `detalle-productos`, `variante/buscar`, `mis-pedidos` (link y `vistaSinTerminados`), `configurar-ramo`, `favoritos`, `detalle-pedido` (`cambiarTipoDelGrupo`, `tieneDinero` del grupo), `grupo-pedido.service` (`cambiarFormaDeCobro`), `design-system.scss` (`.pk-aviso`)
+**Tipo:** unitario (componente con HttpTestingController) · e2e (Playwright contra QA)
+**Debe comprobar:**
+- [ ] Carrito con cliente incompleto → navega a `/clientes/mis-datos?volver=/tienda/carrito`; el aviso "Completar datos" ya no va a `/mis-datos`
+- [ ] `volver`: acepta `/tienda/carrito`; ignora `//sitio.com` y `https://…`; al guardar con `datosCompletos` regresa, sin `datosCompletos` se queda
+- [ ] Mis datos sin teléfono → no guarda (campo en rojo)
+- [ ] Detalle de un pedido unido → 🔁 manda `PUT /v1/grupos-pedido/{id}/tipo` (no `/v1/pedidos/{id}/tipo`); "De contado" deshabilitado; Apartado bloqueado si `pagadoGrupo > 0`
+- [ ] Mis pedidos admin sin filtros ni texto → la petición lleva `estado=SIN_TERMINAR` y sale el aviso; con un filtro o texto no lo lleva
+
+### 2026-10-08 — 404 de verdad (`/no-encontrada`), Home y página 404 nuevas
+**Dónde:** `app-routing` (`no-encontrada`), `pagina-no-disponible` (redirección en la primera carga, `noindex`), `default.conf` (`location = /no-encontrada` con 404 y `Cache-Control … always`), `home`, `detalle-variante` (404 → "ya no está disponible" + `noindex`), `ruleta-publica`, `a.pk-btn` en `design-system.scss`
+**Tipo:** e2e (Playwright) · prueba de nginx
+**Debe comprobar:**
+- [ ] Primera carga de una ruta inexistente → termina en `/no-encontrada` y el documento responde **404** (probado a mano con nginx local el 2026-10-08)
+- [ ] Navegando dentro de la app a una ruta inexistente → misma pantalla, sin recargar
+- [ ] Home y 404 de día y de noche, 1280 y 390 px: textos legibles y botón principal del color del tema (no azul)
+- [ ] Ficha de artículo inexistente → "Este producto ya no está disponible." y `<meta name="robots" content="noindex">`
+
 ### 2026-10-07 — Datos legales: de dónde sale cada campo
 **Dónde:** `admin/config-negocio` (recuadro `.cn-legal-origen` y un `.cn-hint` por campo)
 **Tipo:** e2e (captura día/noche, 1360 y 400 px)

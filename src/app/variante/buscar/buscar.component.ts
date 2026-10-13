@@ -718,7 +718,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
             showCancelButton: true,
             confirmButtonText: 'Completar mis datos',
             cancelButtonText: 'Ahora no'
-          }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: this.router.url } }); });
           return;
         }
         Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo actualizar favoritos.' });

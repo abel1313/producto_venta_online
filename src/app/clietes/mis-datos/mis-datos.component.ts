@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ClienteService } from '../cliente.service';
@@ -38,7 +39,9 @@ export class MisDatosComponent implements OnInit {
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService,
-    private readonly usuarioService: UsuarioService
+    private readonly usuarioService: UsuarioService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {
     // Valores por default vacios a proposito (2026-09-03): antes tenian datos de prueba quemados
     // ("abel"/"tibu"/"abel@gmail.com"/telefono) que se quedaban visibles en pantalla cuando la
@@ -52,12 +55,24 @@ export class MisDatosComponent implements OnInit {
       fechaNacimiento: [null, [Validators.required]],
       sexo: [''],
       correoElectronico: ['', [Validators.required, Validators.email]],
-      numeroTelefonico: ['', Validators.pattern(/^[0-9]{10}$/)],
+      // required: el back no deja comprar sin teléfono (Cliente.datosCompletos). La etiqueta ya
+      // tenía el *, pero sin el validador se podía guardar vacío y el carrito volvía a pedirlo.
+      numeroTelefonico: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
       listDirecciones: this.fb.array([])
 
     });
   }
   formDatosCliente: FormGroup;
+
+  /**
+   * A dónde regresar al guardar (el carrito manda `?volver=/tienda/carrito` cuando faltan datos
+   * para hacer el pedido). Solo rutas de la propia app: algo como `//otro-sitio.com` o
+   * `https://...` se ignora para que el enlace no sirva para mandar a la gente a otra página.
+   */
+  get volver(): string | null {
+    const v = this.route.snapshot.queryParamMap.get('volver');
+    return v && v.startsWith('/') && !v.startsWith('//') ? v : null;
+  }
 
   ngOnInit(): void {
     this.authService.userId$.subscribe(idUser => {
@@ -210,6 +225,18 @@ export class MisDatosComponent implements OnInit {
 
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
 
+      const volver = this.volver;
+      // saveData() tipa la respuesta con el modelo viejo de cliente, que no trae datosCompletos.
+      const completos = (save?.data as { datosCompletos?: boolean } | undefined)?.datosCompletos;
+      if (volver && completos) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Datos guardados',
+          text: 'Ya puedes terminar tu pedido.',
+          confirmButtonText: '🛒 Regresar al carrito'
+        }).then(() => this.router.navigateByUrl(volver));
+        return;
+      }
       MensajesGenericos.mostrarMensajeSuccess(save.mensaje, save.code);
       // Refresca correoVerificado/correoPendiente -- si el guardado acaba de dejar un correo
       // nuevo como pendiente de verificar, "Verificar mi correo" necesita saberlo para dejar de
@@ -219,7 +246,7 @@ export class MisDatosComponent implements OnInit {
       }
 
     }, error => {
-      MensajesGenericos.mostrarMensajeSuccess("Ocurrio un error, intente de nuevo", 500);
+      MensajesGenericos.mostrarMensajeSuccess(error?.error?.mensaje ?? "Ocurrio un error, intente de nuevo", 500);
     });
   }
 

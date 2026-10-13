@@ -76,6 +76,27 @@ export interface AbonoGrupoResponse {
   cambio:   number;
 }
 
+/**
+ * `PUT /v1/grupos-pedido/{id}/tipo`: cambia la forma de cobro de todos los pedidos del grupo (R19).
+ * `monto` (solo Ir pagando) entra como abono del grupo en el mismo paso.
+ */
+export interface CambiarFormaCobroGrupoRequest {
+  tipoPedido:  'APARTADO' | 'FIADO';
+  monto?:      number;
+  metodoPago?: 'EFECTIVO' | 'TRANSFERENCIA';
+  montoDado?:  number;
+  nota?:       string;
+}
+
+export interface CambioFormaCobroGrupoResponse {
+  grupo:            GrupoPedidos;
+  /** `NORMAL`, `APARTADO` o `FIADO`: como estaba antes. */
+  tipoAnterior:     string;
+  pedidosCambiados: number[];
+  /** El abono que se dio en el mismo paso, o null. */
+  abono:            AbonoGrupoResponse | null;
+}
+
 /** `data` del 400 cuando los pedidos no tienen la misma forma de cobro. */
 export interface TipoPorPedido {
   pedidoId:   number;

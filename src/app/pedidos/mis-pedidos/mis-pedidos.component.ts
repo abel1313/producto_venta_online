@@ -111,6 +111,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   // con Y; las opciones de un mismo filtro, con O. Se guardan por persona (preferenciafiltro,
   // pantalla 'pedidos-mis-pedidos'); el texto buscado y la página no se guardan.
   filtros: IFiltrosPedidos = filtrosPedidosVacios();
+  /** La lista está en la vista de inicio: sin los pedidos ya pagados y entregados. */
+  vistaSinTerminados = false;
   readonly opcionesForma   = OPCIONES_FORMA;
   readonly opcionesEstado  = OPCIONES_ESTADO;
   readonly opcionesPago    = OPCIONES_ESTADO_PAGO;
@@ -1303,7 +1305,11 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     this.cargando = true;
     // Abrir un pedido por su número (link desde Abonos o desde otro pedido del grupo) no debe
     // depender de los filtros puestos: con "Pagados" marcado, un Por cobrar no saldría nunca.
-    const filtros = this.pedidoIdDesdeUrl ? filtrosPedidosVacios() : this.filtros;
+    const base = this.pedidoIdDesdeUrl ? filtrosPedidosVacios() : this.filtros;
+    // Al abrir (sin filtros ni búsqueda) no salen los que ya están pagados y entregados: ya no hay
+    // nada que hacer con ellos. Con cualquier filtro o búsqueda sale lo que se pidió (QA 2026-10-13).
+    this.vistaSinTerminados = !texto && !this.pedidoIdDesdeUrl && this.filtrosActivos === 0;
+    const filtros: IFiltrosPedidos = this.vistaSinTerminados ? { ...base, estados: ['SIN_TERMINAR'] } : base;
     this.busquedaAdmin$.next({ buscar: texto, filtros, pagina: this.page });
   }
 

@@ -138,9 +138,27 @@
           <span class="pk-text pk-text--sm">{{ e.titulo }}</span>
         </div>
 
+        <div class="ac-datos__preparadas" *ngIf="preparados.length">
+          <div class="ac-datos__preparadas-cabecera">
+            <h4 class="ac-datos__seccion">Pruebas preparadas</h4>
+            <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button" (click)="limpiarLista()">
+              🧹 Quitar la lista
+            </button>
+          </div>
+          <p class="pk-text pk-text--sm pk-text--muted">
+            K4, P1, T1, Art-A… son <b>nombres que usa el documento de pruebas</b>: no están escritos en el pedido
+            ni se escriben en un buscador. El pedido es el <b>número</b> de cada renglón: tócalo para abrirlo o
+            cópialo para pegarlo en un buscador. Esta lista se queda guardada en este navegador aunque cambies de
+            pantalla; «Quitar la lista» solo la quita de aquí, no borra nada de la base.
+          </p>
+        </div>
+
         <div class="ac-datos__listo" *ngFor="let preparado of preparados"
              [class.ac-datos__listo--error]="preparado.error">
-          <p class="pk-text pk-text--bold" *ngIf="!preparado.error">✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}</p>
+          <p class="pk-text pk-text--bold" *ngIf="!preparado.error">
+            ✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}
+            <span class="pk-text--muted"> · preparada {{ preparado.preparadoEn | date:'dd/MM HH:mm' }}</span>
+          </p>
           <p class="pk-text pk-text--bold" *ngIf="preparado.error">⚠️ Prueba {{ preparado.prueba }}: no se pudo · {{ preparado.error }}</p>
           <ul class="ac-datos__pedidos" *ngIf="preparado.catalogo?.length">
             <li *ngFor="let c of preparado.catalogo">
@@ -154,6 +172,8 @@
             <li *ngFor="let p of preparado.pedidos">
               <strong>{{ p.clave }}</strong> =
               <a [routerLink]="['/pedidos/mis-pedidos']" [queryParams]="{ pedidoId: p.pedidoId }">pedido #{{ p.pedidoId }}</a>
+              <button type="button" class="ac-datos__codigo" title="Copiar el número del pedido"
+                      (click)="copiar(p.pedidoId)">copiar número</button>
               · {{ p.queEs }}
             </li>
           </ul>

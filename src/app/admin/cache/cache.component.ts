@@ -22,9 +22,10 @@ export class CacheComponent implements OnInit, OnDestroy {
 
   // ── Preparar prueba N: los pedidos que pide cada prueba del documento de pruebas ──
   escenarios: IEscenarioPrueba[] = [];
-  /** Número de la prueba que se está preparando (para el texto del botón). */
+  /** Número de la prueba que se está preparando (para el texto del botón); 'todas' con Preparar todas. */
   preparando: string | null = null;
-  preparado: IEscenarioPreparado | null = null;
+  /** Lo último que se preparó: una prueba, o todas con "Preparar todas". */
+  preparados: IEscenarioPreparado[] = [];
 
   constructor(private readonly adminService: AdminService,
               private readonly authService: AuthService) {}
@@ -122,11 +123,11 @@ export class CacheComponent implements OnInit, OnDestroy {
    */
   prepararPrueba(e: IEscenarioPrueba): void {
     this.preparando = e.prueba;
-    this.preparado = null;
+    this.preparados = [];
     this.adminService.prepararPrueba(e.prueba).subscribe({
       next: listo => {
         this.preparando = null;
-        this.preparado = listo;
+        this.preparados = [listo];
       },
       error: err => {
         this.preparando = null;
@@ -134,6 +135,40 @@ export class CacheComponent implements OnInit, OnDestroy {
           text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
       }
     });
+  }
+
+  /** Todas las pruebas de una vez: deja listo lo que pide cada una. Si una falla, las demás siguen. */
+  prepararTodas(): void {
+    Swal.fire({
+      title: '¿Preparar todas las pruebas?',
+      text: `Se dan de alta los modelos, artículos y pedidos de las ${this.escenarios.length} pruebas, `
+          + 'todos nuevos y con la marca "Prueba QA". Tarda unos segundos.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, preparar todas',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.preparando = 'todas';
+      this.preparados = [];
+      this.adminService.prepararTodas().subscribe({
+        next: todas => {
+          this.preparando = null;
+          this.preparados = todas;
+        },
+        error: err => {
+          this.preparando = null;
+          Swal.fire({ icon: 'error', title: 'No se pudieron preparar las pruebas',
+            text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
+  /** Copia el código de barras para pegarlo en un buscador. */
+  copiar(texto: string | null): void {
+    if (!texto) return;
+    navigator.clipboard?.writeText(texto).catch(() => {});
   }
 
   private consultarAvance(): void {

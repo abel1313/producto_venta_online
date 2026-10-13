@@ -115,15 +115,21 @@
         <p class="pk-hint" *ngIf="avance.aviso">⚠️ {{ avance.aviso }}</p>
       </div>
 
-      <!-- Preparar prueba N: los pedidos que pide cada prueba del documento de pruebas.
-           Cada clic crea pedidos nuevos (un artículo propio con stock 30), así una prueba no
-           depende de lo que otra ya canceló, pagó o unió. -->
+      <!-- Preparar prueba N: da de alta lo que pide cada prueba del documento de pruebas (modelos,
+           artículos y pedidos). Cada clic crea datos nuevos con la marca "Prueba QA", así una prueba
+           no depende de lo que otra ya canceló, pagó o unió. -->
       <div class="ac-datos__preparar" *ngIf="escenarios.length">
         <h4 class="ac-datos__seccion">Preparar una prueba</h4>
         <p class="pk-text pk-text--sm pk-text--muted">
-          Crea los pedidos que necesita esa prueba del documento de pruebas, listos para empezar.
-          Cada vez que lo tocas salen pedidos nuevos.
+          Da de alta lo que necesita esa prueba del documento de pruebas (modelos, artículos y pedidos),
+          listo para empezar. Cada vez que lo tocas sale todo nuevo.
         </p>
+        <div class="ac-datos__acciones">
+          <button class="pk-btn pk-btn--primary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null" (click)="prepararTodas()">
+            {{ preparando === 'todas' ? 'Preparando todas…' : '🧪 Preparar todas las pruebas' }}
+          </button>
+        </div>
         <div class="ac-datos__escenario" *ngFor="let e of escenarios">
           <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
                   [disabled]="corriendo || preparando !== null" (click)="prepararPrueba(e)">
@@ -132,16 +138,26 @@
           <span class="pk-text pk-text--sm">{{ e.titulo }}</span>
         </div>
 
-        <div class="ac-datos__listo" *ngIf="preparado">
-          <p class="pk-text pk-text--bold">✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}</p>
-          <ul class="ac-datos__pedidos">
+        <div class="ac-datos__listo" *ngFor="let preparado of preparados"
+             [class.ac-datos__listo--error]="preparado.error">
+          <p class="pk-text pk-text--bold" *ngIf="!preparado.error">✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}</p>
+          <p class="pk-text pk-text--bold" *ngIf="preparado.error">⚠️ Prueba {{ preparado.prueba }}: no se pudo · {{ preparado.error }}</p>
+          <ul class="ac-datos__pedidos" *ngIf="preparado.catalogo?.length">
+            <li *ngFor="let c of preparado.catalogo">
+              <strong>{{ c.clave }}</strong> = {{ c.tipo === 'MODELO' ? 'modelo' : 'artículo de' }} «{{ c.nombre }}»
+              <button *ngIf="c.codigoBarras" type="button" class="ac-datos__codigo" title="Copiar el código de barras"
+                      (click)="copiar(c.codigoBarras)">{{ c.codigoBarras }}</button>
+              · {{ c.queEs }}
+            </li>
+          </ul>
+          <ul class="ac-datos__pedidos" *ngIf="preparado.pedidos?.length">
             <li *ngFor="let p of preparado.pedidos">
               <strong>{{ p.clave }}</strong> =
               <a [routerLink]="['/pedidos/mis-pedidos']" [queryParams]="{ pedidoId: p.pedidoId }">pedido #{{ p.pedidoId }}</a>
               · {{ p.queEs }}
             </li>
           </ul>
-          <p class="pk-hint">👉 {{ preparado.siguientePaso }}</p>
+          <p class="pk-hint" *ngIf="preparado.siguientePaso">👉 {{ preparado.siguientePaso }}</p>
         </div>
       </div>
     </div>

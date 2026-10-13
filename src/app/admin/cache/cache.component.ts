@@ -3,7 +3,9 @@ import { Subscription, timer } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
-import { AdminService, IAvanceDatosPrueba, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba } from '../admin.service';
+import {
+  AdminService, IAvanceDatosPrueba, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba, IPruebaQuitada
+} from '../admin.service';
 
 /** Una prueba preparada, con la hora en que se preparó. */
 export type PreparadoGuardado = IEscenarioPreparado & { preparadoEn: string };
@@ -30,6 +32,8 @@ export class CacheComponent implements OnInit, OnDestroy {
   escenarios: IEscenarioPrueba[] = [];
   /** Número de la prueba que se está preparando (para el texto del botón); 'todas' con Preparar todas. */
   preparando: string | null = null;
+  /** Número de la prueba que se está quitando; 'todas' con Quitar todas. */
+  quitando: string | null = null;
   /**
    * Lo que se preparó, una entrada por prueba (la más reciente). Se guarda en el navegador: sin eso, al
    * cambiar de pantalla se perdían los números de los pedidos (K4, K6, T1…) y no había cómo encontrarlos.
@@ -128,8 +132,8 @@ export class CacheComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Crea un artículo nuevo y los pedidos de esa prueba (solo QA). Cada vez que se toca salen
-   * pedidos nuevos: una prueba no depende de lo que otra ya canceló, pagó o unió.
+   * Deja lista esa prueba (solo QA). Si ya estaba preparada, el back primero quita lo de la vez anterior
+   * (pedidos cancelados, modelos dados de baja) y luego la vuelve a crear: tocarlo otra vez la reinicia.
    */
   prepararPrueba(e: IEscenarioPrueba): void {
     this.preparando = e.prueba;
@@ -173,6 +177,80 @@ export class CacheComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Quita lo de esa prueba sin volver a crearlo: los pedidos se cancelan y los modelos se dan de baja. */
+  quitarPrueba(e: IEscenarioPrueba): void {
+    Swal.fire({
+      title: `¿Quitar lo de la prueba ${e.prueba}?`,
+      text: 'Sus pedidos se cancelan (el stock regresa) y sus modelos se dan de baja. No se borra nada. '
+          + 'Después puedes volver a prepararla.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.quitando = e.prueba;
+      this.adminService.quitarPrueba(e.prueba).subscribe({
+        next: quitada => {
+          this.quitando = null;
+          this.terminarDeQuitar([quitada]);
+        },
+        error: err => {
+          this.quitando = null;
+          Swal.fire({ icon: 'error', title: `No se pudo quitar la prueba ${e.prueba}`,
+            text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
+  /** Quita lo de todas las pruebas. Si una falla, las demás se quitan y esa se avisa. */
+  quitarTodas(): void {
+    Swal.fire({
+      title: '¿Quitar lo de todas las pruebas?',
+      text: 'Los pedidos de todas las pruebas se cancelan (el stock regresa) y sus modelos se dan de baja. '
+          + 'No se borra nada. Después puedes volver a prepararlas.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, quitar todas',
+      cancelButtonText: 'Cancelar'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.quitando = 'todas';
+      this.adminService.quitarTodas().subscribe({
+        next: todas => {
+          this.quitando = null;
+          this.terminarDeQuitar(todas);
+        },
+        error: err => {
+          this.quitando = null;
+          Swal.fire({ icon: 'error', title: 'No se pudieron quitar las pruebas',
+            text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Intenta de nuevo.' });
+        }
+      });
+    });
+  }
+
+  /** Saca de la lista lo que ya se quitó y dice cuánto fue (o qué prueba falló). */
+  private terminarDeQuitar(quitadas: IPruebaQuitada[]): void {
+    this.olvidar(quitadas.filter(q => !q.error).map(q => q.prueba));
+    const pedidos = quitadas.reduce((n, q) => n + q.pedidosCancelados, 0);
+    const modelos = quitadas.reduce((n, q) => n + q.modelosDadosDeBaja, 0);
+    const sinCancelar = quitadas.reduce((n, q) => n + q.pedidosSinCancelar, 0);
+    const conError = quitadas.filter(q => q.error);
+    const lineas: string[] = [];
+    lineas.push(pedidos || modelos
+      ? `${pedidos} pedido(s) cancelado(s) y ${modelos} modelo(s) dado(s) de baja.`
+      : 'No había nada que quitar.');
+    if (sinCancelar) lineas.push(`${sinCancelar} pedido(s) no se pudieron cancelar (ver el log del servidor).`);
+    conError.forEach(q => lineas.push(`Prueba ${q.prueba}: ${q.error}`));
+    Swal.fire({
+      icon: conError.length || sinCancelar ? 'warning' : 'success',
+      title: conError.length ? 'Se quitó, con avisos' : 'Listo',
+      text: lineas.join(' ')
+    });
+  }
+
   /** Copia un código de barras o un número de pedido para pegarlo en un buscador. */
   copiar(texto: string | number | null): void {
     if (texto === null || texto === '') return;
@@ -195,9 +273,19 @@ export class CacheComponent implements OnInit, OnDestroy {
     const orden = this.escenarios.map(e => e.prueba);
     this.preparados = [...porPrueba.values()]
       .sort((a, b) => orden.indexOf(a.prueba) - orden.indexOf(b.prueba));
+    this.guardarPreparados();
+  }
+
+  private guardarPreparados(): void {
     try {
       localStorage.setItem(CLAVE_PREPARADOS, JSON.stringify(this.preparados));
     } catch { /* sin almacenamiento: la lista dura mientras no se salga de la pantalla */ }
+  }
+
+  /** Lo que se quitó de la base ya no existe: sale de la lista guardada. */
+  private olvidar(pruebas: string[]): void {
+    this.preparados = this.preparados.filter(p => !pruebas.includes(p.prueba));
+    this.guardarPreparados();
   }
 
   private leerPreparados(): PreparadoGuardado[] {

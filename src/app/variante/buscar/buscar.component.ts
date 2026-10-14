@@ -111,6 +111,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {}
 
+  /** Artículos cuya imagen no cargó: no se ofrece "Compartir imagen" (no hay nada que compartir). */
+  private readonly imagenesFallidas = new Set<number>();
+  marcarImagenFallida(v: { id: number }): void { this.imagenesFallidas.add(v.id); }
+  imagenFallo(v: { id: number }): boolean { return this.imagenesFallidas.has(v.id); }
+
   compartirImagen(v: IVarianteResumen): void {
     if (!v.imagenUrl) return;
     this.compartirSvc.compartirImagen({

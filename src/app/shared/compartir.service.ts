@@ -165,7 +165,16 @@ export class CompartirService {
    * miniatura contestaba 400 ("No se pudo cargar la imagen"). Se pide como blob y se mira qué llegó.
    */
   private async fetchBlob(imagenUrl: string): Promise<{ blob: Blob; ext: string }> {
-    const respuesta = await this.http.get(imagenUrl, { responseType: 'blob' }).toPromise();
+    // La miniatura es pública: se pide con fetch SIN `Accept: application/json` ni `Authorization`
+    // (el micro de imágenes contestaba 400 a esa petición, aunque la URL abre bien en el navegador).
+    let respuesta: Blob | undefined;
+    if (/\/imagenes\/thumbnail\//.test(imagenUrl)) {
+      const r = await fetch(imagenUrl, { credentials: 'omit' });
+      if (!r.ok) throw new Error(`Imagen: ${r.status}`);
+      respuesta = await r.blob();
+    } else {
+      respuesta = await this.http.get(imagenUrl, { responseType: 'blob' }).toPromise();
+    }
     if (!respuesta) throw new Error('Respuesta vacía');
 
     if (respuesta.type.includes('json')) {

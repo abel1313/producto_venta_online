@@ -200,7 +200,7 @@
              [alt]="item.nombre"
              class="pl-card__img"
              loading="lazy"
-             (error)="$any($event.target).style.display='none'" />
+             (error)="$any($event.target).style.display='none'; marcarImagenFallida(item)" />
         <div *ngIf="!item.imagen?.urlImagen" class="pl-card__img-placeholder">📦</div>
       </div>
 
@@ -260,7 +260,7 @@
           <span class="pl-btn-card__label">Productos</span>
         </button>
 
-        <button *ngIf="puedeCompartirImagen && item.imagen?.urlImagen"
+        <button *ngIf="puedeCompartirImagen && item.imagen?.urlImagen && !imagenFallo(item)"
                 class="pl-btn-card pl-btn-card--share"
                 (click)="compartirImagen(item)"
                 title="Compartir imagen">

@@ -17,6 +17,15 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-14 — Tarjeta del chat de la tienda: "Disponible" en vez de piezas, sin código de barras
+**Dónde:** `chatbot/chatbot.component.html` (tarjeta `cb-card`)
+**Tipo:** unitario (componente)
+**Debe comprobar:**
+- [ ] Producto con `stock: 3` → la tarjeta dice "✅ Disponible" y no aparece "3"
+- [ ] `stock: 0` → "Agotado" y el botón 🛒 Agregar deshabilitado (como antes)
+- [ ] Producto sin talla ni color y con `codigoBarras` → la tarjeta **no** pinta el código
+- [ ] Agregar al carrito desde el chat sigue respetando el tope de `stock`
+
 ### 2026-10-14 — Calendario por año y mes, modo nacimiento y Mis datos (nombres, teléfono, código postal)
 **Dónde:** `shared/selector-fecha` (`verMeses`, `verAnios`, `elegirAnio`, `elegirMes`, `anterior`/`siguiente`, `alEscribir`, `confirmarEscrito`, `@Input() modo`), `clietes/validaciones-cliente.ts` (`PATRON_NOMBRE`, `limpiarNombre`, `soloDigitos`, `soloTelefono`), `ClienteService.buscarCodigoPostal()`, `mis-datos` (`alEscribirTelefono`, `alEscribirCodigoPostal`, `buscarCodigoPostal`, `camposConError`, `guardarCliente`), `clientes-mostrar.getCodigoPostal()`
 **Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA)

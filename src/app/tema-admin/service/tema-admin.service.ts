@@ -14,7 +14,9 @@ export class TemaAdminService {
   constructor(private readonly tema: TemaService) {}
 
   listar(): Observable<ITemaVariable[]> {
-    return this.tema.getAll();
+    // getAll pagina de 100 en 100 y el catálogo ya pasa de 100 filas (las últimas no salían, p. ej.
+    // "Velo detrás de una ventana abierta"); /activo trae todas, ya ordenadas, con su id.
+    return this.tema.getActivo();
   }
 
   crear(v: ITemaVariable): Observable<ITemaVariable> {

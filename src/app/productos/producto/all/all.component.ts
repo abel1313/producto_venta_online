@@ -325,6 +325,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
+
   addCarrito(producto: IProductoDTO) {
     const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
     const prod = {
@@ -348,6 +351,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     }
   }
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
   cantidadEnCarrito(producto: IProductoDTO): number {
     return this.detalle.find(p => p.codigoBarras === producto.codigoBarras)?.cantidad ?? 0;
   }
@@ -358,9 +363,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return Math.max(0, producto.stock - this.cantidadEnCarrito(producto));
   }
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
   stockAgotadoEnCarrito(producto: IProductoDTO): boolean {
     return this.cantidadEnCarrito(producto) >= producto.stock;
   }
+
+
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 
 
   removeCarrito(producto: IProductoDTO) {
@@ -370,6 +380,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
     this.serviceCarrito.eliminarProducto(this.detalle[index]);
   }
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   isProductoEnCarrito(producto: IProductoDTO): boolean {
     return this.detalle.some(item =>
       item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
@@ -871,6 +882,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   irDetalleProducto(id: number) {
     this.router.navigate(['/productos/detalle-producto', id]);
   }
+
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 
   verCarrito(): void {
     this.router.navigate(['/productos/detalle-productos']);

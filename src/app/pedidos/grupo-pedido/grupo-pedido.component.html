@@ -313,7 +313,7 @@
       <label class="gp-buscar__label" for="gpBuscar">Buscar pedido</label>
       <input id="gpBuscar" class="gp-buscar__input" type="search" autocomplete="off"
              [(ngModel)]="terminoBusqueda" (ngModelChange)="alEscribir($event)"
-             placeholder="Número de pedido o nombre del cliente" />
+             placeholder="Número de pedido o nombre del cliente" appUppercase />
       <small class="gp-buscar__ayuda" [class.gp-buscar__ayuda--aviso]="avisoBusqueda">
         {{ avisoBusqueda || 'Solo salen los que se pueden unir: misma forma de cobro, abiertos y sin otro grupo.' }}
       </small>

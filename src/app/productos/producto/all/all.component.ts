@@ -889,6 +889,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.router.navigate(['/productos/detalle-productos']);
   }
 
+  /** Modelos cuya imagen no cargó: no se ofrece "Compartir imagen" (no hay nada que compartir). */
+  private readonly imagenesFallidas = new Set<number>();
+  marcarImagenFallida(item: { idProducto: number }): void { this.imagenesFallidas.add(item.idProducto); }
+  imagenFallo(item: { idProducto: number }): boolean { return this.imagenesFallidas.has(item.idProducto); }
+
   compartirImagen(item: IProductoDTO): void {
     if (!item.imagen?.urlImagen) return;
     this.compartirSvc.compartirImagen({

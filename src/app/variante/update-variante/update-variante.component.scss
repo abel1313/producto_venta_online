@@ -644,6 +644,21 @@ $primary-d: var(--brand-1);
 
   &--alerta { border-left-color: var(--pk-warning-to, var(--pk-warning)); }
 
+  // ➕ Agregar stock al modelo (QA 2026-10-14): botón secundario, con los tokens del botón principal.
+  &__btn {
+    align-self: flex-start;
+    margin-top: .35rem;
+    padding: .4rem .8rem;
+    border-radius: 10px;
+    border: 1px solid var(--btn-primary-border);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { background: var(--btn-primary-hover-bg); color: var(--btn-primary-hover-text); }
+  }
+
   &--cargando {
     border-left-color: var(--card-border);
     background: transparent;

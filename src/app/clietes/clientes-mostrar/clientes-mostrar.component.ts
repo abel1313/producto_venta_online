@@ -312,11 +312,19 @@ export class ClientesMostrarComponent implements OnInit {
     });
   }
 
+  // Misma búsqueda que Mis datos (QA 2026-10-14): si no encuentra el código o el servicio no
+  // contesta, lo dice en vez de quedarse callado con el municipio vacío.
   getCodigoPostal(event: any, iteracion: number): void {
-    const codigo = event.target.value;
-    this.clienteService.getCodigoPostal(codigo).subscribe(res => {
+    const codigo = String(event?.target?.value ?? '').replace(/\D/g, '');
+    if (codigo.length !== 5) return;
+    this.clienteService.buscarCodigoPostal(codigo).subscribe(info => {
       const direccion = this.listDirecciones.at(iteracion) as FormGroup;
-      direccion.patchValue({ municipio: res.codigo_postal.municipio });
+      if (!direccion) return;
+      if (info.encontrado) {
+        direccion.patchValue({ municipio: info.municipio });
+      } else {
+        Swal.fire({ icon: 'info', title: 'Código postal', text: info.mensaje, confirmButtonText: 'Entendido' });
+      }
     });
   }
 }

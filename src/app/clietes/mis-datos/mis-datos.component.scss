@@ -157,6 +157,18 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--pk-text-secondary, var(--app-text-muted));
 }
 
+// Código postal no encontrado o servicio sin contestar (QA 2026-10-14): se ve, pero no es un error rojo,
+// porque el municipio se puede escribir a mano.
+.md-hint--aviso {
+  color: var(--pk-warning-to, var(--pk-warning));
+  font-weight: 600;
+}
+
+.md-opcional {
+  font-weight: 400;
+  color: var(--app-text-muted);
+}
+
 // ── Input wrap ───────────────────────────────────────────────────────────────
 .md-input-wrap {
   position: relative;

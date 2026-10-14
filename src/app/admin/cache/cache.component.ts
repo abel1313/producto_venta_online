@@ -4,7 +4,7 @@ import { switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 import {
-  AdminService, IAvanceDatosPrueba, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba, IPruebaQuitada
+  AdminService, IAvanceDatosPrueba, ICatalogoPreparado, IEscenarioPreparado, IEscenarioPrueba, IGenerarDatosPrueba, IPruebaQuitada
 } from '../admin.service';
 
 /** Una prueba preparada, con la hora en que se preparó. */
@@ -231,16 +231,37 @@ export class CacheComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Cómo se lee cada dato del recuadro 🧪: "M-OFF = modelo «…»", "CU = código de «Agregar mi compra»"… */
+  etiquetaDato(c: ICatalogoPreparado): string {
+    switch (c.tipo) {
+      case 'MODELO': return 'modelo';
+      case 'RIFA': return 'rifa';
+      case 'CODIGO': return 'código de';
+      case 'USUARIO': return 'usuario';
+      default: return 'artículo de';
+    }
+  }
+
+  tituloCopiar(c: ICatalogoPreparado): string {
+    switch (c.tipo) {
+      case 'CODIGO': return 'Copiar el código';
+      case 'USUARIO': return 'Copiar el usuario';
+      default: return 'Copiar el código de barras';
+    }
+  }
+
   /** Saca de la lista lo que ya se quitó y dice cuánto fue (o qué prueba falló). */
   private terminarDeQuitar(quitadas: IPruebaQuitada[]): void {
     this.olvidar(quitadas.filter(q => !q.error).map(q => q.prueba));
     const pedidos = quitadas.reduce((n, q) => n + q.pedidosCancelados, 0);
     const modelos = quitadas.reduce((n, q) => n + q.modelosDadosDeBaja, 0);
+    const otros = quitadas.reduce((n, q) => n + (q.otrosDesactivados ?? 0), 0);
     const sinCancelar = quitadas.reduce((n, q) => n + q.pedidosSinCancelar, 0);
     const conError = quitadas.filter(q => q.error);
     const lineas: string[] = [];
-    lineas.push(pedidos || modelos
+    lineas.push(pedidos || modelos || otros
       ? `${pedidos} pedido(s) cancelado(s) y ${modelos} modelo(s) dado(s) de baja.`
+        + (otros ? ` ${otros} rifa(s) o usuario(s) de prueba desactivado(s).` : '')
       : 'No había nada que quitar.');
     if (sinCancelar) lineas.push(`${sinCancelar} pedido(s) no se pudieron cancelar (ver el log del servidor).`);
     conError.forEach(q => lineas.push(`Prueba ${q.prueba}: ${q.error}`));

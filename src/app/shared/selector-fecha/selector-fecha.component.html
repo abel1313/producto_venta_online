@@ -26,29 +26,87 @@
              (overlayOutsideClick)="cerrarPorFuera($event)"
              (detach)="abierto = false">
 
-  <div class="sf__pop">
-    <div class="sf__pop-head">
-      <button type="button" class="sf__nav" (click)="mesAnterior()" aria-label="Mes anterior">‹</button>
-      <span class="sf__mes">{{ tituloMes }}</span>
-      <button type="button" class="sf__nav" (click)="mesSiguiente()" aria-label="Mes siguiente">›</button>
+  <div class="sf__pop" role="dialog" aria-label="Elegir fecha">
+
+    <!-- Fecha de nacimiento: escribirla también se puede (dd/mm/aaaa) -->
+    <div class="sf__escribir" *ngIf="esNacimiento">
+      <label class="sf__escribir-label" for="sf-escribir">Escríbela</label>
+      <input id="sf-escribir" class="sf__escribir-input" type="text" inputmode="numeric"
+             autocomplete="bday" placeholder="dd/mm/aaaa" maxlength="10"
+             [value]="textoEscrito" (input)="alEscribir($event)" (keydown.enter)="confirmarEscrito()">
+      <span class="sf__escribir-error" *ngIf="errorEscrito">{{ errorEscrito }}</span>
+      <span class="sf__escribir-o">o elígela:</span>
     </div>
 
-    <div class="sf__semana">
-      <span *ngFor="let d of diasSemana">{{ d }}</span>
-    </div>
+    <!-- ── Días de un mes ─────────────────────────────────────────── -->
+    <ng-container *ngIf="vista === 'dias'">
+      <div class="sf__pop-head">
+        <button type="button" class="sf__nav" (click)="anterior()" aria-label="Mes anterior">‹</button>
+        <span class="sf__titulo">
+          <button type="button" class="sf__titulo-btn" (click)="verMeses()" title="Elegir el mes">
+            {{ nombresMes[mesVista] }} <span class="sf__titulo-caret">▾</span>
+          </button>
+          <button type="button" class="sf__titulo-btn" (click)="verAnios()" title="Elegir el año">
+            {{ anioVista }} <span class="sf__titulo-caret">▾</span>
+          </button>
+        </span>
+        <button type="button" class="sf__nav" (click)="siguiente()" aria-label="Mes siguiente">›</button>
+      </div>
 
-    <div class="sf__dias">
-      <button type="button" *ngFor="let c of celdas; trackBy: porIso"
-              class="sf__dia"
-              [class.sf__dia--otro]="c.otroMes"
-              [class.sf__dia--hoy]="c.hoy"
-              [class.sf__dia--sel]="c.seleccionado"
-              [disabled]="c.deshabilitado"
-              (click)="elegir(c)">{{ c.dia }}</button>
-    </div>
+      <div class="sf__semana">
+        <span *ngFor="let d of diasSemana">{{ d }}</span>
+      </div>
+
+      <div class="sf__dias">
+        <button type="button" *ngFor="let c of celdas; trackBy: porIso"
+                class="sf__dia"
+                [class.sf__dia--otro]="c.otroMes"
+                [class.sf__dia--hoy]="c.hoy"
+                [class.sf__dia--sel]="c.seleccionado"
+                [disabled]="c.deshabilitado"
+                (click)="elegir(c)">{{ c.dia }}</button>
+      </div>
+    </ng-container>
+
+    <!-- ── Los 12 meses de un año ─────────────────────────────────── -->
+    <ng-container *ngIf="vista === 'meses'">
+      <div class="sf__pop-head">
+        <button type="button" class="sf__nav" (click)="anterior()" aria-label="Año anterior">‹</button>
+        <span class="sf__titulo">
+          <button type="button" class="sf__titulo-btn" (click)="verAnios()" title="Elegir el año">
+            {{ anioVista }} <span class="sf__titulo-caret">▾</span>
+          </button>
+        </span>
+        <button type="button" class="sf__nav" (click)="siguiente()" aria-label="Año siguiente">›</button>
+      </div>
+      <p class="sf__guia">Elige el mes</p>
+      <div class="sf__meses">
+        <button type="button" *ngFor="let m of numerosMes; trackBy: porNumero"
+                class="sf__opcion"
+                [class.sf__opcion--hoy]="esMesActual(m)"
+                [class.sf__opcion--sel]="esMesElegido(m)"
+                [disabled]="mesDeshabilitado(m)"
+                (click)="elegirMes(m)">{{ mesesCortos[m] }}</button>
+      </div>
+    </ng-container>
+
+    <!-- ── Lista de años (con scroll) ─────────────────────────────── -->
+    <ng-container *ngIf="vista === 'anios'">
+      <div class="sf__pop-head">
+        <span class="sf__titulo"><span class="sf__titulo-texto">Elige el año</span></span>
+        <button type="button" class="sf__link" (click)="vista = 'dias'" *ngIf="!esNacimiento || valor">Volver</button>
+      </div>
+      <div class="sf__anios" #listaAnios>
+        <button type="button" *ngFor="let a of anios; trackBy: porNumero"
+                class="sf__opcion"
+                [class.sf__anio--activo]="a === anioVista"
+                [class.sf__opcion--sel]="esAnioElegido(a)"
+                (click)="elegirAnio(a)">{{ a }}</button>
+      </div>
+    </ng-container>
 
     <div class="sf__pop-foot">
-      <button type="button" class="sf__link" (click)="irAHoy()">Hoy</button>
+      <button type="button" class="sf__link" (click)="irAHoy()" *ngIf="!esNacimiento">Hoy</button>
       <button type="button" class="sf__link" (click)="limpiar()" *ngIf="valor">Limpiar</button>
     </div>
   </div>

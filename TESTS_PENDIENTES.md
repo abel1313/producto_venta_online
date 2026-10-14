@@ -17,6 +17,20 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-14 — Calendario por año y mes, modo nacimiento y Mis datos (nombres, teléfono, código postal)
+**Dónde:** `shared/selector-fecha` (`verMeses`, `verAnios`, `elegirAnio`, `elegirMes`, `anterior`/`siguiente`, `alEscribir`, `confirmarEscrito`, `@Input() modo`), `clietes/validaciones-cliente.ts` (`PATRON_NOMBRE`, `limpiarNombre`, `soloDigitos`, `soloTelefono`), `ClienteService.buscarCodigoPostal()`, `mis-datos` (`alEscribirTelefono`, `alEscribirCodigoPostal`, `buscarCodigoPostal`, `camposConError`, `guardarCliente`), `clientes-mostrar.getCodigoPostal()`
+**Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA)
+**Debe comprobar:**
+- [ ] Calendario normal: tocar el mes del título → 12 meses; tocar el año → lista de años con el de la vista centrado; año → meses → día escribe `aaaa-mm-dd` igual que antes; en la vista de meses ‹ › mueven un año; respeta `min`/`max` (meses y días fuera, deshabilitados)
+- [ ] Modo `nacimiento` vacío → abre en años (centrado en hoy − 30); no hay botón **Hoy**; no deja días después de hoy ni antes de 1900
+- [ ] Escribir `15031985` → «15/03/1985» y guarda `1985-03-15`; `31021990` → «Esa fecha no existe. Revisa el día y el mes.»; mañana → «La fecha de nacimiento no puede ser después de hoy.»
+- [ ] `PATRON_NOMBRE`: acepta «María José», «De la Cruz», «O'Neil», «Ñuñez», «Müller»; rechaza «Ana1», «@na», «  » (vacío lo marca `required`)
+- [ ] `soloTelefono`: «55 1234-56789» → `5512345678`; «+52 55 1234 5678» → `5512345678`; «521 55 1234 5678» → `5512345678`; «abc» → «»
+- [ ] Mis datos: con el foco en un campo vacío, **un** clic en **Guardar cambios** abre el aviso (el botón no se mueve); el aviso lista los campos («Calle · Colonia»; uno solo → «Revisa este campo (está en rojo): Calle»); Referencias vacío no bloquea
+- [ ] `buscarCodigoPostal`: 200 con municipio → `encontrado: true` y colonias; 200 con `error: true` o 404 → «No encontramos ese código postal…»; 502 o sin red → «No pudimos buscar el código postal en este momento…»; nunca lanza error
+- [ ] Mis datos: al 5.º dígito del código postal pide una sola vez; llena Municipio; con una colonia la llena; con varias las pone en el `datalist`
+- [ ] Ver cliente (admin): código postal no encontrado → ventana informativa, no error
+
 ### 2026-10-14 — Agregar stock al modelo desde el artículo, pregunta al actualizar y checks por artículo
 **Dónde:** `update-variante` (`ofrecerStockAlModelo`, `actualizar`, `faltaEnElModelo`), `add.component` (Actualizar modelo → `stockDisponible`, `alCerrarAltaArticulos`), `alta-articulos` (`continuar`, `alMarcar`, `sinLlenar`, `igualAlModelo`, `guardar`)
 **Tipo:** unitario (componente con HttpTestingController) · e2e (Playwright contra QA)

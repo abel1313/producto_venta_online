@@ -2,7 +2,8 @@ import { Injectable, InjectionToken } from '@angular/core';
 import { CrudGenericService } from '../crud-generic.service';
 import { HttpClient } from '@angular/common/http';
 import { ICliente } from './mis-datos/models/index.model';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPageableClientes } from '../productos/producto/detalle-productos/models/pedidos.model';
 
@@ -20,6 +21,38 @@ export class ClienteService extends CrudGenericService<ICliente> {
 
    getCodigoPostal(codigoPostal: string){
       return this.http.get<any>(`${this.url}/v1/dipomex/getCodigoPostal/${codigoPostal}`);
+   }
+
+   /**
+    * Municipio, estado y colonias de un código postal, sin tronar nunca (QA 2026-10-14).
+    *
+    * Antes Mis datos leía `res.codigo_postal.municipio` sin revisar nada: si el servicio de
+    * códigos postales no contestaba, o contestaba "no existe", no pasaba nada en pantalla (solo
+    * el spinner) y el municipio se quedaba vacío sin decir por qué. Aquí siempre regresa algo
+    * que la pantalla puede mostrar.
+    */
+   buscarCodigoPostal(codigoPostal: string): Observable<ICodigoPostalInfo> {
+      const noEncontrado: ICodigoPostalInfo = {
+        encontrado: false, municipio: '', estado: '', colonias: [],
+        mensaje: 'No encontramos ese código postal. Revisa los 5 dígitos o escribe el municipio tú.'
+      };
+      return this.getCodigoPostal(codigoPostal).pipe(
+        map((res: any) => {
+          const cp = res?.codigo_postal;
+          if (res?.error || !cp?.municipio) return noEncontrado;
+          return {
+            encontrado: true,
+            municipio: cp.municipio,
+            estado: cp.estado ?? '',
+            colonias: Array.isArray(cp.colonias) ? cp.colonias : [],
+            mensaje: ''
+          };
+        }),
+        catchError(err => of(err?.status === 404 ? noEncontrado : {
+          ...noEncontrado,
+          mensaje: 'No pudimos buscar el código postal en este momento. Escribe el municipio tú.'
+        }))
+      );
    }
   getDataOneCliente(idCliente: number): Observable<ResponseGeneric<ICliente>> {
     return this.http.get<ResponseGeneric<ICliente>>(`${this.url}/v1/clientes/buscarPorIdCliente/${idCliente}`);
@@ -85,4 +118,13 @@ export class ClienteService extends CrudGenericService<ICliente> {
     );
   }
 
+}
+
+/** Lo que regresa `buscarCodigoPostal`: con `encontrado: false`, `mensaje` dice qué hacer. */
+export interface ICodigoPostalInfo {
+  encontrado: boolean;
+  municipio: string;
+  estado: string;
+  colonias: string[];
+  mensaje: string;
 }

@@ -17,6 +17,14 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-14 — Card de Tienda → Buscar: «Deshabilitado» en franja propia
+**Dónde:** `variante/buscar/buscar.component.html` / `.scss` (`.vb-badge-disabled`, `.vb-card__header--con-check`, `.vb-card__header--con-baja`)
+**Tipo:** unitario (componente) · e2e visual (Playwright)
+**Debe comprobar:**
+- [ ] Artículo deshabilitado visto por admin → hay una franja «⛔ Deshabilitado» debajo del encabezado; habilitado → no hay franja
+- [ ] Con permiso `tienda/buscar:habilitar` y `tienda/buscar:eliminar`, las cajas de la casilla, el puntito de color, el precio, «Agotado», la ✕ y la franja **no se intersectan** (a 1100 y a 400 px, día y noche)
+- [ ] Sin esos permisos el encabezado no deja el espacio extra a la izquierda ni a la derecha
+
 ### 2026-10-14 — Tarjeta del chat de la tienda: "Disponible" en vez de piezas, sin código de barras
 **Dónde:** `chatbot/chatbot.component.html` (tarjeta `cb-card`)
 **Tipo:** unitario (componente)

@@ -639,6 +639,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     :host-context(body[data-estilo="jade"]) &::after { display: none; }
   }
 
+  // Casilla de selección (arriba a la izquierda) y ✕ de dar de baja (arriba a la derecha) van
+  // flotando sobre el encabezado: se les deja su lugar para que no tapen el puntito de color,
+  // el precio ni "Agotado".
+  &__header--con-check { padding-left: 40px; }
+  &__header--con-baja  { padding-right: 44px; }
+
   &__color-dot {
     width: 14px;
     height: 14px;
@@ -787,17 +793,14 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .vb-badge-disabled {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--pk-danger);
-  color: var(--pk-ink);
-  font-size: 0.65rem;
+  background: var(--pk-danger-soft);
+  color: var(--pk-danger);
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 20px;
+  padding: 4px 12px;
+  text-align: center;
   letter-spacing: 0.03em;
-  z-index: 4;
+  border-bottom: 1px solid var(--pk-danger-soft);
 }
 
 .vb-card__heart {

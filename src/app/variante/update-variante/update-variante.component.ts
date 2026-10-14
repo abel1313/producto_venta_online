@@ -12,6 +12,7 @@ import { IStockDisponible } from '../models/stock-disponible.model';
 import { VarianteService } from '../service/variante.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../shared/imagen-comprimir.util';
+import { AuthService } from 'src/app/auth/auth.service';
 
 @Component({
   selector: 'app-update-variante',
@@ -70,7 +71,8 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly varianteService: VarianteService,
     private readonly productoService: ProductoService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -204,6 +206,93 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     return this.stockDisponible != null
         && this.stockQuePide > 0
         && this.stockQuePide > this.stockDisponible.disponible;
+  }
+
+  // ── Agregar stock al modelo sin salir del artículo (QA 2026-10-14, Prueba 20.3) ──
+  // El dueño: "si en el artículo pongo Actualizar stock y el modelo ya no tiene, que salga un modal
+  // para ponerle 10 o 100 al modelo; eso se guarda solo en el modelo, y al cerrarlo en el artículo
+  // pongo 1 o 2". El modal NO toca el artículo ni lo guarda: solo suma al modelo y recarga lo libre.
+
+  /** Mismo permiso que pide el back para PUT /v1/stock/producto/{id}/ajuste. */
+  get puedeAjustarStockModelo(): boolean {
+    return this.authService.isAdminService
+      || ['productos/buscar', 'productos/agregar', 'tienda/venta'].some(r => this.authService.tieneEscritura(r));
+  }
+
+  /** Lo mínimo que le falta al modelo para darle a este artículo lo que se le pide. */
+  get faltaEnElModelo(): number {
+    const libre = this.stockDisponible?.disponible ?? 0;
+    return Math.max(this.stockQuePide - libre, 1);
+  }
+
+  ofrecerStockAlModelo(): void {
+    const p = this.productoSeleccionado;
+    const sd = this.stockDisponible;
+    if (!p || !sd) return;
+    const libres = Math.max(sd.disponible, 0);
+    const nombre = (p.nombre ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const situacion = this.stockQuePide > 0
+      ? `<p>El modelo <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'} y a este artículo le pides <b>${this.stockQuePide}</b> más.</p>`
+      : `<p>El modelo <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'}.</p>`;
+
+    if (!this.puedeAjustarStockModelo) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Al modelo no le alcanza el stock',
+        html: situacion + '<p>Pídele a alguien con permiso de Catálogo que le sume stock al modelo, o baja lo que le pides a este artículo.</p>',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '➕ Agregar stock al modelo',
+      html: situacion
+        + '<p>¿Cuántas piezas le agregas al <b>modelo</b>? Por ejemplo, las que llegaron: 10, 100…</p>'
+        + '<p style="font-size:.85em;opacity:.8">Esto se guarda solo en el modelo. Este artículo no cambia:'
+        + ' al cerrar, pones su stock en «Actualizar stock» y das 💾 Actualizar artículo.</p>',
+      input: 'number',
+      inputValue: this.stockQuePide > 0 ? String(this.faltaEnElModelo) : '',
+      inputPlaceholder: 'Ej: 10',
+      inputAttributes: { min: '1', step: '1' },
+      showCancelButton: true,
+      confirmButtonText: 'Agregar al modelo',
+      cancelButtonText: 'Cancelar',
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      inputValidator: v => {
+        const n = Number(v);
+        return Number.isInteger(n) && n >= 1 ? null : 'Escribe cuántas piezas: un número entero de 1 en adelante.';
+      },
+      preConfirm: async v => {
+        try {
+          return await this.varianteService.ajustarStockModelo(p.idProducto, Number(v)).toPromise();
+        } catch (err: any) {
+          Swal.showValidationMessage(err?.error?.mensaje ?? err?.error?.message ?? 'No se cambió el stock. Intenta de nuevo.');
+          return false;
+        }
+      }
+    }).then(r => {
+      if (!r.isConfirmed || !r.value) return;
+      const nuevo = r.value as IStockDisponible;
+      this.stockDisponible = nuevo;
+      this.productoService.invalidarProdCache();
+      const alcanza = this.stockQuePide <= nuevo.disponible;
+      Swal.fire({
+        icon: 'success',
+        title: `Se agregaron ${nuevo.stockTotal - sd.stockTotal} al modelo`,
+        html: `<p>Ahora el modelo tiene <b>${nuevo.disponible}</b> libres de ${nuevo.stockTotal}.</p>`
+          + `<p>Este artículo sigue con <b>${this.stockActual}</b>. `
+          + (this.stockQuePide > 0
+              ? (alcanza
+                  ? `Ya alcanza para sumarle ${this.stockQuePide}: da 💾 Actualizar artículo.`
+                  : `Todavía no alcanza para sumarle ${this.stockQuePide}: baja lo que le pides o agrega más al modelo.`)
+              : 'Pon en «Actualizar stock» cuántas le sumas y da 💾 Actualizar artículo.')
+          + '</p>',
+        confirmButtonText: 'Entendido'
+      });
+    });
   }
 
   // ── Imágenes ───────────────────────────────────────────────────────
@@ -463,6 +552,11 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   actualizar(): void {
     if (!this.productoSeleccionado || !this.variante?.id) return;
     if (this.form.get('eliminarStock')?.hasError('excedeStock')) return;
+    // Si el modelo no alcanza, ni se manda: se ofrece agregarle stock al modelo primero.
+    if (this.seEstaPasandoDeStock) {
+      this.ofrecerStockAlModelo();
+      return;
+    }
     this.guardando = true;
 
     const { talla, color, presentacion, descripcion, marca, contenidoNeto } = this.form.getRawValue();
@@ -498,11 +592,20 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         this.varianteService.invalidarCache();
         this.varianteService.clearVarianteUpdate();
         this.guardando = false;
-        Swal.fire({ icon: 'success', title: '¡Variante actualizada!', timer: 1600, showConfirmButton: false })
+        Swal.fire({ icon: 'success', title: '¡Artículo actualizado!', timer: 1600, showConfirmButton: false })
           .then(() => this.router.navigate(['/tienda/buscar']));
       },
       error: (err) => {
         this.guardando = false;
+        // 422 = al modelo no le alcanzan las piezas (lo libre cambió desde que se abrió la pantalla):
+        // se recarga lo libre y se ofrece el mismo modal en vez del error suelto.
+        if (err?.status === 422 && this.stockQuePide > 0 && this.productoSeleccionado) {
+          this.varianteService.stockDisponible(this.productoSeleccionado.idProducto).pipe(takeUntil(this.destroy$)).subscribe({
+            next: sd => { this.stockDisponible = sd; this.ofrecerStockAlModelo(); },
+            error: () => Swal.fire({ icon: 'error', title: 'Error al actualizar', text: this.motivoDelError(err), confirmButtonColor: 'var(--pk-danger)' })
+          });
+          return;
+        }
         Swal.fire({ icon: 'error', title: 'Error al actualizar', text: this.motivoDelError(err), confirmButtonColor: 'var(--pk-danger)' });
       }
     });

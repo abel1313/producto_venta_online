@@ -21,23 +21,23 @@ export interface ModeloParaArticulos {
   tieneImagen: boolean;
 }
 
-type CampoCopiable = 'color' | 'marca' | 'descripcion' | 'contenidoNeto';
+/** Lo que se puede cambiar en un artículo; lo que no se marca queda igual al modelo. */
+export type CampoQueCambia = 'foto' | 'descripcion' | 'color' | 'marca' | 'contenidoNeto' | 'categoria';
 
-interface Copiable {
-  campo: CampoCopiable | 'categoria' | 'imagen';
-  etiqueta: string;
-  valor: string;
-  marcado: boolean;
-}
+type CampoDeTexto = 'descripcion' | 'color' | 'marca' | 'contenidoNeto';
 
 interface FormArticulo {
+  /** Plegado o abierto (QA 2026-10-14: con 20 o 30 artículos la lista se hacía enorme). */
+  abierto: boolean;
   talla: string;
+  presentacion: string;
+  stock: number | null;
+  /** Check por campo (QA 2026-10-14): marcado = ese dato es distinto al del modelo. */
+  cambia: Record<CampoQueCambia, boolean>;
   color: string;
   marca: string;
-  presentacion: string;
   contenidoNeto: string;
   descripcion: string;
-  stock: number | null;
   categoria: IPalabraClave | null;
   foto: IImagenBase64 | null;
   fotoPreview: string | null;
@@ -46,12 +46,13 @@ interface FormArticulo {
 /**
  * Agregar los artículos de un modelo en un solo paso (PLAN_ALTA_MODELO_Y_ARTICULOS.md, flujo A).
  *
- * Lo abren dos pantallas: Agregar modelo, al guardar uno nuevo (primero pregunta "¿Quieres agregar
- * sus artículos ahora?"), y la tarjeta del modelo en Catálogo → 🔍 Modelos (botón 🧩 Productos), que
- * va directo a los formularios.
+ * Lo abren: Agregar modelo y Actualizar modelo al guardar (primero pregunta "¿Cuántos artículos
+ * quieres hacer?"), la tarjeta del modelo en Catálogo → 🔍 Modelos (🧩 Productos) y Agregar artículo
+ * después de sumarle stock al modelo; estos dos van directo a los formularios.
  *
- * Reglas (A3–A12): casillas solo de lo que el modelo tiene lleno, todas marcadas; talla,
- * presentación y stock nunca se copian; cada artículo con stock ≥ 1 y la suma sin pasar del stock
+ * Reglas (A3–A12 + QA 2026-10-14): cada artículo nace igual al modelo y solo cambia lo que se marca
+ * en su formulario (foto, descripción, color, marca, contenido neto, categoría); talla, presentación
+ * y stock son siempre de cada artículo. Cada artículo con stock ≥ 1 y la suma sin pasar del stock
  * libre del modelo, avisando mientras se escribe; se guardan todos o ninguno.
  */
 @Component({
@@ -62,13 +63,24 @@ interface FormArticulo {
 export class AltaArticulosComponent implements OnInit {
 
   @Input() modelo!: ModeloParaArticulos;
-  /** true: primero pregunta si quiere agregarlos ahora (Agregar modelo). */
+  /** true: primero pregunta cuántos artículos quiere hacer (Agregar y Actualizar modelo). */
   @Input() preguntarPrimero = false;
+  /** Solo cambia el título de la pregunta: "Modelo guardado" o "Modelo actualizado". */
+  @Input() accion: 'alta' | 'actualizar' = 'alta';
   /** true si se guardaron artículos. */
   @Output() cerrar = new EventEmitter<boolean>();
 
+  /** Los checks de cada artículo, en el orden en que se ven. */
+  readonly camposQueCambian: { campo: CampoQueCambia; etiqueta: string }[] = [
+    { campo: 'foto',          etiqueta: 'Foto' },
+    { campo: 'descripcion',   etiqueta: 'Descripción' },
+    { campo: 'color',         etiqueta: 'Color' },
+    { campo: 'marca',         etiqueta: 'Marca' },
+    { campo: 'contenidoNeto', etiqueta: 'Contenido neto' },
+    { campo: 'categoria',     etiqueta: 'Categoría' }
+  ];
+
   paso: 'pregunta' | 'formularios' = 'formularios';
-  copiables: Copiable[] = [];
   cantidad = 1;
   mismoStock: number | null = null;
   formularios: FormArticulo[] = [];
@@ -79,16 +91,6 @@ export class AltaArticulosComponent implements OnInit {
 
   ngOnInit(): void {
     this.paso = this.preguntarPrimero ? 'pregunta' : 'formularios';
-    const m = this.modelo;
-    const lleno = (v?: string | null) => !!v && v.trim() !== '';
-    this.copiables = [
-      ...(lleno(m.color)       ? [{ campo: 'color' as const,         etiqueta: 'Color',         valor: m.color!,       marcado: true }] : []),
-      ...(lleno(m.marca)       ? [{ campo: 'marca' as const,         etiqueta: 'Marca',         valor: m.marca!,       marcado: true }] : []),
-      ...(lleno(m.descripcion) ? [{ campo: 'descripcion' as const,   etiqueta: 'Descripción',   valor: m.descripcion!, marcado: true }] : []),
-      ...(lleno(m.contenido)   ? [{ campo: 'contenidoNeto' as const, etiqueta: 'Contenido neto', valor: m.contenido!,  marcado: true }] : []),
-      ...(m.categoria          ? [{ campo: 'categoria' as const,     etiqueta: 'Categoría',     valor: m.categoria.nombre, marcado: true }] : []),
-      ...(m.tieneImagen        ? [{ campo: 'imagen' as const,        etiqueta: 'Foto del modelo', valor: 'la misma foto, sin subirla otra vez', marcado: true }] : [])
-    ];
     this.cantidad = this.libre > 0 ? 1 : 0;
     this.ajustarFormularios();
   }
@@ -117,12 +119,18 @@ export class AltaArticulosComponent implements OnInit {
 
   get puedeGuardar(): boolean {
     return !this.guardando && this.formularios.length > 0 && !this.cantidadFueraDeRango
-      && !this.faltaStock && this.teQuedan >= 0;
+      && !this.faltaStock && this.teQuedan >= 0 && !this.hayCambioSinLlenar;
   }
 
-  // ── Pregunta inicial ─────────────────────────────────────────────────
+  // ── Pregunta inicial: ¿cuántos artículos? ────────────────────────────
 
-  siAgregar(): void {
+  get tituloPregunta(): string {
+    return this.accion === 'actualizar' ? '✅ Modelo actualizado' : '✅ Modelo guardado';
+  }
+
+  continuar(): void {
+    if (this.cantidadFueraDeRango) return;
+    this.ajustarFormularios();
     this.paso = 'formularios';
   }
 
@@ -130,54 +138,153 @@ export class AltaArticulosComponent implements OnInit {
     this.cerrar.emit(false);
   }
 
-  // ── Cuántos y qué se copia ───────────────────────────────────────────
+  // ── Cuántos ──────────────────────────────────────────────────────────
 
-  marcado(campo: Copiable['campo']): boolean {
-    return this.copiables.some(c => c.campo === campo && c.marcado);
-  }
-
-  /** Mismos formularios de antes; se agregan o quitan al final para no perder lo que ya se llenó. */
+  /**
+   * Mismos formularios de antes; se agregan o quitan al final para no perder lo que ya se llenó.
+   * Hasta 3 artículos salen abiertos; si son más, los nuevos salen plegados (el primero siempre abierto).
+   */
   ajustarFormularios(): void {
     const n = Math.max(0, Math.min(Math.floor(Number(this.cantidad) || 0), this.libre));
-    while (this.formularios.length < n) this.formularios.push(this.nuevoFormulario());
+    while (this.formularios.length < n) {
+      this.formularios.push(this.nuevoFormulario(n <= AltaArticulosComponent.ABIERTOS_HASTA || this.formularios.length === 0));
+    }
     this.formularios.length = n;
   }
 
+  private static readonly ABIERTOS_HASTA = 3;
+
   get cantidadFueraDeRango(): boolean {
     const n = Number(this.cantidad) || 0;
-    return n < 1 || n > this.libre;
+    return !Number.isInteger(n) || n < 1 || n > this.libre;
   }
 
-  private nuevoFormulario(): FormArticulo {
-    const valor = (campo: CampoCopiable) => this.copiables.find(c => c.campo === campo && c.marcado)?.valor ?? '';
+  private nuevoFormulario(abierto: boolean): FormArticulo {
     return {
+      abierto,
       talla: '',
-      color: valor('color'),
-      marca: valor('marca'),
       presentacion: '',
-      contenidoNeto: valor('contenidoNeto'),
-      descripcion: valor('descripcion'),
       stock: this.mismoStock,
+      cambia: { foto: false, descripcion: false, color: false, marca: false, contenidoNeto: false, categoria: false },
+      color: '',
+      marca: '',
+      contenidoNeto: '',
+      descripcion: '',
       categoria: null,
       foto: null,
       fotoPreview: null
     };
   }
 
-  /** Marcar llena el dato en todos; desmarcar lo vacía donde seguía igual al del modelo. */
-  alCambiarCopiable(c: Copiable): void {
-    if (c.campo === 'categoria' || c.campo === 'imagen') return;
-    const campo = c.campo;
-    for (const f of this.formularios) {
-      if (c.marcado && !f[campo]) f[campo] = c.valor;
-      if (!c.marcado && f[campo] === c.valor) f[campo] = '';
-    }
-  }
-
   aplicarMismoStock(): void {
     const s = Number(this.mismoStock);
     if (!(s >= 1)) return;
     this.formularios.forEach(f => f.stock = s);
+  }
+
+  // ── Lo que cambia en cada artículo ───────────────────────────────────
+
+  /** Lo que tiene el modelo en ese campo, para mostrarlo junto al check. */
+  delModelo(campo: CampoQueCambia): string {
+    const m = this.modelo;
+    switch (campo) {
+      case 'foto':          return m.tieneImagen ? 'la del modelo' : '';
+      case 'descripcion':   return (m.descripcion ?? '').trim();
+      case 'color':         return (m.color ?? '').trim();
+      case 'marca':         return (m.marca ?? '').trim();
+      case 'contenidoNeto': return (m.contenido ?? '').trim();
+      case 'categoria':     return m.categoria?.nombre ?? '';
+    }
+  }
+
+  /** Al marcar, el campo aparece lleno con lo del modelo para cambiar solo lo necesario. */
+  alMarcar(f: FormArticulo, campo: CampoQueCambia): void {
+    if (!f.cambia[campo]) return;
+    if (campo === 'categoria') {
+      f.categoria = f.categoria ?? this.modelo.categoria ?? null;
+    } else if (campo !== 'foto' && !f[campo]) {
+      f[campo] = this.delModelo(campo);
+    }
+  }
+
+  /** Marcado pero vacío: no hay cambio que guardar (y el back pondría el del modelo). */
+  sinLlenar(f: FormArticulo, campo: CampoQueCambia): boolean {
+    if (!f.cambia[campo]) return false;
+    if (campo === 'foto') return !f.foto;
+    if (campo === 'categoria') return !f.categoria;
+    return !f[campo].trim();
+  }
+
+  get hayCambioSinLlenar(): boolean {
+    return this.formularios.some(f => this.camposQueCambian.some(c => this.sinLlenar(f, c.campo)));
+  }
+
+  /** "Igual al modelo: Color: negro · Marca: Nike" — lo que no se marcó en ese artículo. */
+  igualAlModelo(f: FormArticulo): string {
+    return this.camposQueCambian
+      .filter(c => !f.cambia[c.campo])
+      .map(c => `${c.etiqueta}: ${this.delModelo(c.campo) || '(el modelo no tiene)'}`)
+      .join(' · ');
+  }
+
+  // ── Plegar y desplegar ───────────────────────────────────────────────
+
+  /** "Talla S · Stock 1 · Cambia: Descripción" — lo que se ve con el artículo plegado. */
+  resumen(f: FormArticulo): string {
+    const partes: string[] = [];
+    if (f.talla.trim()) partes.push(`Talla ${f.talla.trim()}`);
+    if (f.stock !== null && f.stock !== undefined && String(f.stock) !== '') partes.push(`Stock ${f.stock}`);
+    const cambia = this.camposQueCambian.filter(c => f.cambia[c.campo]).map(c => c.etiqueta);
+    partes.push(cambia.length ? `Cambia: ${cambia.join(', ')}` : 'Igual al modelo');
+    return partes.join(' · ');
+  }
+
+  /** Lo que le falta para poder guardar ("stock", "Color"…). Vacío = está completo. */
+  pendientes(f: FormArticulo): string[] {
+    const falta: string[] = [];
+    if (f.stock === null || f.stock === undefined || String(f.stock) === '' || this.stockInvalido(f)) falta.push('stock');
+    for (const c of this.camposQueCambian) {
+      if (this.sinLlenar(f, c.campo)) falta.push(c.etiqueta);
+    }
+    return falta;
+  }
+
+  /** Números de los artículos a los que les falta algo (1, 2, 3…). */
+  get articulosConPendientes(): number[] {
+    return this.formularios.map((f, i) => (this.pendientes(f).length ? i + 1 : 0)).filter(n => n > 0);
+  }
+
+  /** "Al artículo 3 le falta algo." · "A los artículos 2, 5 y 7 les falta algo." · "…2, 3, 4, 5, 6, 7 y 13 más…" */
+  get textoPendientes(): string {
+    const nums = this.articulosConPendientes;
+    if (nums.length === 1) return `Al artículo ${nums[0]} le falta algo.`;
+    if (nums.length === this.formularios.length && nums.length > 3) return 'A todos los artículos les falta algo.';
+    const lista = nums.length <= 7
+      ? `${nums.slice(0, -1).join(', ')} y ${nums[nums.length - 1]}`
+      : `${nums.slice(0, 6).join(', ')} y ${nums.length - 6} más`;
+    return `A los artículos ${lista} les falta algo.`;
+  }
+
+  get todosAbiertos(): boolean {
+    return this.formularios.every(f => f.abierto);
+  }
+
+  get todosCerrados(): boolean {
+    return this.formularios.every(f => !f.abierto);
+  }
+
+  abrirTodos(abrir: boolean): void {
+    this.formularios.forEach(f => f.abierto = abrir);
+  }
+
+  /** Abre los que tienen algo pendiente y pliega los que ya están completos. */
+  abrirPendientes(): void {
+    this.formularios.forEach(f => f.abierto = this.pendientes(f).length > 0);
+  }
+
+  /** Sin foto propia y sin foto del modelo, el artículo no sale en la tienda. */
+  quedaSinFoto(f: FormArticulo): boolean {
+    return f.cambia.foto ? !f.foto : !this.modelo.tieneImagen;
   }
 
   // ── Foto propia de un artículo ───────────────────────────────────────
@@ -205,22 +312,22 @@ export class AltaArticulosComponent implements OnInit {
   guardar(): void {
     if (!this.puedeGuardar) return;
     this.error = '';
-    const categoriaModelo = this.marcado('categoria') ? (this.modelo.categoria?.id ?? null) : null;
-    const fotoModelo = this.marcado('imagen');
+    // Lo no marcado viaja vacío y el back lo llena con el del modelo (R2/R3 del dominio `articulo`).
+    const texto = (f: FormArticulo, campo: CampoDeTexto) => (f.cambia[campo] ? f[campo].trim() : '');
     const payload: IVarianteRequest[] = this.formularios.map(f => ({
       productoId: this.modelo.id,
       talla: f.talla.trim(),
-      color: f.color.trim(),
-      marca: f.marca.trim(),
+      color: texto(f, 'color'),
+      marca: texto(f, 'marca'),
       presentacion: f.presentacion.trim(),
-      contenidoNeto: f.contenidoNeto.trim(),
-      descripcion: f.descripcion.trim(),
+      contenidoNeto: texto(f, 'contenidoNeto'),
+      descripcion: texto(f, 'descripcion'),
       stock: Number(f.stock),
-      palabraClaveId: categoriaModelo ?? f.categoria?.id ?? null,
-      listImagenes: f.foto ? [f.foto] : [],
-      // Cada formulario se queda con su foto; si no subió una, usa la del modelo (A8).
+      palabraClaveId: f.cambia.categoria ? (f.categoria?.id ?? null) : null,
+      listImagenes: f.cambia.foto && f.foto ? [f.foto] : [],
+      // Cada formulario se queda con su foto; si no la cambió, usa la del modelo (A8).
       imagenesPropias: true,
-      usarImagenDelModelo: fotoModelo && !f.foto
+      usarImagenDelModelo: this.modelo.tieneImagen && !f.cambia.foto
     }));
 
     this.guardando = true;

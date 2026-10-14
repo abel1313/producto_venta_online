@@ -29,8 +29,11 @@ export async function crearModelo(page: Page, stock = 10): Promise<ModeloCreado>
   await campo('codigoBarras').fill(codigo);
 
   await page.getByRole('button', { name: /Guardar modelo/ }).click();
-  await expect(page.locator('.swal2-title')).toHaveText('¡Producto guardado!');
-  await expect(page.locator('.swal2-container')).toBeHidden();
+  // Desde el flujo A (2026-10-08) al guardar no sale un aviso: sale la ventana 🧩 con la pregunta
+  // "¿Cuántos artículos quieres hacer?". Las pruebas hacen sus artículos aparte: "Ahora no".
+  await expect(page.locator('app-alta-articulos #aaTitulo')).toHaveText('✅ Modelo guardado');
+  await page.locator('app-alta-articulos').getByRole('button', { name: 'Ahora no' }).click();
+  await expect(page.locator('app-alta-articulos')).toBeHidden();
 
   return { codigo, nombre, stock };
 }

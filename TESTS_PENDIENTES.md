@@ -17,6 +17,26 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-14 — Agregar stock al modelo desde el artículo, pregunta al actualizar y checks por artículo
+**Dónde:** `update-variante` (`ofrecerStockAlModelo`, `actualizar`, `faltaEnElModelo`), `add.component` (Actualizar modelo → `stockDisponible`, `alCerrarAltaArticulos`), `alta-articulos` (`continuar`, `alMarcar`, `sinLlenar`, `igualAlModelo`, `guardar`)
+**Tipo:** unitario (componente con HttpTestingController) · e2e (Playwright contra QA)
+**Debe comprobar:**
+- [ ] Editar artículo con modelo en 0 y "Actualizar stock" = 1 → 💾 no manda `guardarConImagenes`; abre la ventana con 1 escrito
+- [ ] En la ventana, 0 o 1.5 → mensaje de validación y no llama al back; 10 → `PUT /v1/stock/producto/{id}/ajuste` `{ ajuste: 10 }`; el stock del artículo sigue igual y "Actualizar stock" conserva lo escrito
+- [ ] Después del ajuste, 💾 manda `guardarConImagenes` con `stock = actual + 1`
+- [ ] `guardarConImagenes` responde 422 → pide `GET /v1/stock/producto/{id}` y abre la ventana (no el error)
+- [ ] Sin permiso (no admin, sin escritura en productos/buscar, productos/agregar ni tienda/venta) → aviso informativo, sin campo ni `PUT`
+- [ ] Actualizar modelo con `articulosQueAunCaben` ≥ 1 → abre `app-alta-articulos` con título "✅ Modelo actualizado"; con 0 o si el `GET` falla → "¡Modelo actualizado!" y navega a `/productos/buscar`; "Ahora no" también navega
+- [ ] Pregunta: 0, 1.5 o más que lo libre → Continuar apagado; 2 → dos formularios
+- [ ] Ningún check marcado → el request lleva `color/marca/descripcion/contenidoNeto` vacíos, `palabraClaveId: null`, `listImagenes: []` y `usarImagenDelModelo` = el modelo tiene foto
+- [ ] Marcar Descripción → el campo aparece con la del modelo; el request lleva el texto cambiado solo en ese artículo
+- [ ] Marcar Foto sin subir, o Color vacío → Guardar apagado; con foto → `listImagenes` con 1 y `usarImagenDelModelo: false`
+- [ ] 2 o 3 artículos → todos abiertos; 20 → solo el 1 abierto; pasar de 2 a 9 → el 1 y el 2 conservan lo llenado y su estado, del 3 al 9 plegados
+- [ ] Plegado: el resumen dice "Talla S · Stock 1 · Cambia: Descripción" / "Igual al modelo" y "⚠️ Falta: stock" mientras no tenga stock
+- [ ] "Cerrar todos" / "Abrir todos" / "Abrir solo esos" (abre solo los incompletos); el texto de abajo: "Al artículo 1…", "A los artículos 2, 5 y 7…", "…y 13 más", "A todos los artículos…"
+- [ ] Plegar un artículo con categoría o foto elegida y volver a abrirlo → siguen ahí y se mandan al guardar
+- [ ] e2e: `crearModelo()` (support/modelo.ts) pasa con la ventana y "Ahora no"
+
 ### 2026-10-13 — Carrito → Mis datos, grupo completo y Mis pedidos sin lo terminado
 **Dónde:** `venta-variante` (`pedirCompletarRegistro`, `irAMisDatos`), `mis-datos` (`volver`, teléfono obligatorio), `detalle-productos`, `variante/buscar`, `mis-pedidos` (link y `vistaSinTerminados`), `configurar-ramo`, `favoritos`, `detalle-pedido` (`cambiarTipoDelGrupo`, `tieneDinero` del grupo), `grupo-pedido.service` (`cambiarFormaDeCobro`), `design-system.scss` (`.pk-aviso`)
 **Tipo:** unitario (componente con HttpTestingController) · e2e (Playwright contra QA)

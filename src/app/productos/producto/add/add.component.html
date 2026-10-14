@@ -267,8 +267,10 @@
   </div>
 </div>
 
-<!-- Al dar de alta un modelo: "¿Quieres agregar sus artículos ahora?" (flujo A, 2026-10-08) -->
+<!-- Al guardar o actualizar un modelo con stock libre: "¿Cuántos artículos quieres hacer?"
+     (flujo A, 2026-10-08; al actualizar desde QA 2026-10-14) -->
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"
                     [preguntarPrimero]="true"
+                    [accion]="accionArticulos"
                     (cerrar)="alCerrarAltaArticulos()"></app-alta-articulos>

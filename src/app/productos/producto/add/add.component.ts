@@ -10,6 +10,7 @@ import { IImagenDto } from '../models';
 import { IProducto } from '../models/producto.model';
 import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoService } from '../../service/producto.service';
+import { VarianteService } from 'src/app/variante/service/variante.service';
 // Nuevo — palabra clave para categorizar el producto en búsquedas
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../../shared/imagen-comprimir.util';
@@ -82,7 +83,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly fb:      FormBuilder,
     private readonly service: ProductoService,
     public  readonly authService: AuthService,
-    private readonly router:  Router
+    private readonly router:  Router,
+    private readonly varianteService: VarianteService
   ) {}
 
   // ── Ciclo de vida ──────────────────────────────────────────────────
@@ -311,9 +313,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.guardando = false;
         this.resetForm();
         this.service.invalidarProdCache();
-        // Modelo nuevo: en vez del aviso, la pregunta "¿Quieres agregar sus artículos ahora?"
-        // (PLAN_ALTA_MODELO_Y_ARTICULOS.md, flujo A; A1: solo al dar de alta, no al actualizar).
+        // Modelo nuevo: en vez del aviso, la pregunta "¿Cuántos artículos quieres hacer?"
+        // (PLAN_ALTA_MODELO_Y_ARTICULOS.md, flujo A).
         if (!this.esActualizar && guardado?.id) {
+          this.accionArticulos = 'alta';
           this.modeloParaArticulos = {
             id: guardado.id,
             nombre: productoSave.nombre,
@@ -328,14 +331,33 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           };
           return;
         }
-        Swal.fire({
-          title: this.esActualizar ? '¡Producto actualizado!' : '¡Producto guardado!',
-          icon: 'success',
-          timer: 1600,
-          showConfirmButton: false
-        }).then(() => {
-          if (this.esActualizar) this.router.navigate(['/productos/buscar']);
-        });
+        // Actualizar modelo con stock libre: la misma pregunta (QA 2026-10-14, Prueba 20.3; antes
+        // A1 la dejaba solo para el alta). El stock libre lo dice el back, ya con el ajuste guardado.
+        const idActualizado = this.productoUpdate?.idProducto;
+        if (this.esActualizar && idActualizado) {
+          this.varianteService.stockDisponible(idActualizado).subscribe({
+            next: sd => {
+              const caben = sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
+              if (caben < 1) { this.avisoGuardado(); return; }
+              this.accionArticulos = 'actualizar';
+              this.modeloParaArticulos = {
+                id: idActualizado,
+                nombre: productoSave.nombre,
+                stock: sd.stockTotal,
+                enArticulos: sd.enVariantes,
+                color: productoSave.color,
+                marca: productoSave.marca,
+                descripcion: productoSave.descripcion,
+                contenido: productoSave.contenido,
+                categoria,
+                tieneImagen: sd.conFoto ?? tieneImagen
+              };
+            },
+            error: () => this.avisoGuardado()
+          });
+          return;
+        }
+        this.avisoGuardado();
       },
       error: (err) => {
         this.guardando = false;
@@ -344,11 +366,25 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
+  private avisoGuardado(): void {
+    Swal.fire({
+      title: this.esActualizar ? '¡Modelo actualizado!' : '¡Modelo guardado!',
+      icon: 'success',
+      timer: 1600,
+      showConfirmButton: false
+    }).then(() => {
+      if (this.esActualizar) this.router.navigate(['/productos/buscar']);
+    });
+  }
+
   /** Modelo recién guardado al que se le ofrece agregar sus artículos (flujo A). */
   modeloParaArticulos: ModeloParaArticulos | null = null;
+  accionArticulos: 'alta' | 'actualizar' = 'alta';
 
   alCerrarAltaArticulos(): void {
     this.modeloParaArticulos = null;
+    // Al actualizar, se regresa a Modelos como antes (haya hecho artículos o no).
+    if (this.esActualizar) this.router.navigate(['/productos/buscar']);
   }
 
   // alias usado en template del modo actualizar

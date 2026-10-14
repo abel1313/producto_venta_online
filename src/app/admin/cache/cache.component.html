@@ -174,8 +174,8 @@
           <p class="pk-hint" *ngIf="preparado.queSeQuito">♻️ {{ preparado.queSeQuito }}</p>
           <ul class="ac-datos__pedidos" *ngIf="preparado.catalogo?.length">
             <li *ngFor="let c of preparado.catalogo">
-              <strong>{{ c.clave }}</strong> = {{ c.tipo === 'MODELO' ? 'modelo' : 'artículo de' }} «{{ c.nombre }}»
-              <button *ngIf="c.codigoBarras" type="button" class="ac-datos__codigo" title="Copiar el código de barras"
+              <strong>{{ c.clave }}</strong> = {{ etiquetaDato(c) }} «{{ c.nombre }}»
+              <button *ngIf="c.codigoBarras" type="button" class="ac-datos__codigo" [title]="tituloCopiar(c)"
                       (click)="copiar(c.codigoBarras)">{{ c.codigoBarras }}</button>
               · {{ c.queEs }}
             </li>

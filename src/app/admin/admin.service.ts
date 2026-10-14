@@ -53,10 +53,14 @@ export interface IEscenarioPrueba {
   titulo: string;
 }
 
-/** Un modelo o artículo que se dio de alta para una prueba (Art-A, M-OFF…) y cómo buscarlo. */
+/**
+ * Algo que se dio de alta para una prueba y cómo buscarlo: un modelo o artículo (Art-A, M-OFF…), una rifa de
+ * prueba, un código de "Agregar mi compra" o un usuario de prueba (desde el 2026-10-14). `codigoBarras` es lo
+ * que se copia al tocarlo: el código de barras, el código de compra o el nombre de usuario.
+ */
 export interface ICatalogoPreparado {
   clave: string;
-  tipo: 'MODELO' | 'ARTICULO';
+  tipo: 'MODELO' | 'ARTICULO' | 'RIFA' | 'CODIGO' | 'USUARIO';
   modeloId: number;
   articuloId: number;
   nombre: string;
@@ -85,6 +89,8 @@ export interface IPruebaQuitada {
   pedidosCancelados: number;
   pedidosSinCancelar: number;
   modelosDadosDeBaja: number;
+  /** Rifas y usuarios de prueba que se desactivaron (desde el 2026-10-14). */
+  otrosDesactivados?: number;
   error: string | null;
 }
 

@@ -207,7 +207,7 @@
               <span class="br-premio__ph" *ngIf="!imageSrc(v)">📦</span>
               <span class="br-resultado__txt">
                 <span class="pk-text pk-text--bold">{{ v.nombreProducto }}</span>
-                <span class="pk-text pk-text--sm pk-text--muted">{{ v.color }} {{ v.talla }} · stock {{ v.stock }}</span>
+                <span class="pk-text pk-text--sm pk-text--muted">{{ v.color | uppercase }} {{ v.talla | uppercase }} · stock {{ v.stock }}</span>
               </span>
             </button>
 

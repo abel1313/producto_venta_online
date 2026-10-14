@@ -1,4 +1,5 @@
 
+import { renovarAccessToken } from './token/refresh-token';
 import { Component, OnInit } from '@angular/core';
 import { ViewChild, AfterViewInit } from '@angular/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -111,9 +112,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     // Testigo de build. Subirle la fecha/letra en CADA deploy que se quiera verificar: si el
     // marcador no cambia, no distingue un build de otro y deja de servir para diagnosticar.
     console.log('[SMOKE-2026-09-10-B] build activo en este navegador');
-    this.http.post<ITokenData>(this.urlRefresh, {}, { withCredentials: true })
+    renovarAccessToken(this.http)
     .subscribe({
-      next: tokenData => {
+      next: (tokenData: ITokenData) => {
         this.auth.setAccessToken(tokenData.accessToken);
         this.roles.setRolesFromToken(tokenData.accessToken);
       },

@@ -36,11 +36,11 @@
   <!-- ── Panel derecho: formulario ── -->
   <div class="split-form" [class.split-form--full]="esActualizar">
     <canvas #particlesCanvas class="particles-bg" *ngIf="!esActualizar && (isDark$ | async)"></canvas>
+    <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio
+         público, no viene de una pantalla admin a la que volver. Fuera de la tarjeta y alineado
+         con su borde izquierdo, igual que las demás pantallas (mismo ancho: 820px). -->
+    <app-boton-volver *ngIf="esActualizar" class="volver-fuera" anchoContenido="820px" margen="0px" fallback="/usuarios/buscar"></app-boton-volver>
     <div class="form-inner">
-
-      <!-- Solo en "Actualizar usuario" (admin editando a otro) -- "Registrar" es autoservicio
-           público, no viene de una pantalla admin a la que volver. -->
-      <app-boton-volver *ngIf="esActualizar" fallback="/usuarios/buscar"></app-boton-volver>
 
       <div class="brand">
         <div class="brand-icon">

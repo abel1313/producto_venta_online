@@ -133,18 +133,9 @@
   <!-- Filtros públicos del catálogo: talla / color / marca / precio -- visitantes sin sesión
        siempre los ven (isAnonymous); cuentas con sesión necesitan el permiso puntual. -->
   <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
-    <select *ngIf="isAnonymous || puedeFiltroTalla" class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Talla</option>
-      <option *ngFor="let t of filtrosDisponibles.tallas" [value]="t">{{ t }}</option>
-    </select>
-    <select *ngIf="isAnonymous || puedeFiltroColor" class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Color</option>
-      <option *ngFor="let c of filtrosDisponibles.colores" [value]="c">{{ c }}</option>
-    </select>
-    <select *ngIf="isAnonymous || puedeFiltroMarca" class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Marca</option>
-      <option *ngFor="let m of filtrosDisponibles.marcas" [value]="m">{{ m }}</option>
-    </select>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroTalla" etiqueta="Talla" [opciones]="filtrosDisponibles.tallas" [valor]="filtroTalla" (valorChange)="filtroTalla = $event; onFiltroPublicoChange()"></app-filtro-buscable>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroColor" etiqueta="Color" [opciones]="filtrosDisponibles.colores" [valor]="filtroColor" (valorChange)="filtroColor = $event; onFiltroPublicoChange()"></app-filtro-buscable>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroMarca" etiqueta="Marca" [opciones]="filtrosDisponibles.marcas" [valor]="filtroMarca" (valorChange)="filtroMarca = $event; onFiltroPublicoChange()"></app-filtro-buscable>
     <div *ngIf="isAnonymous || puedeFiltroPrecio" class="vb-pub-precio">
       <input type="number" class="vb-pub-input" placeholder="$ mín"
              [(ngModel)]="filtroPrecioMin" (ngModelChange)="onPrecioChange()"
@@ -279,15 +270,15 @@
           
           <div class="vb-card__detail-row" *ngIf="v.talla">
             <span class="vb-card__detail-label">Talla</span>
-            <span class="vb-card__detail-val">{{ v.talla }}</span>
+            <span class="vb-card__detail-val">{{ v.talla | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.color">
             <span class="vb-card__detail-label">Color</span>
-            <span class="vb-card__detail-val">{{ v.color }}</span>
+            <span class="vb-card__detail-val">{{ v.color | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.marca">
             <span class="vb-card__detail-label">Marca</span>
-            <span class="vb-card__detail-val">{{ v.marca }}</span>
+            <span class="vb-card__detail-val">{{ v.marca | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.presentacion">
             <span class="vb-card__detail-label">Presentación</span>

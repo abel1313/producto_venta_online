@@ -122,8 +122,8 @@
         <ul class="gp-card__piezas-list">
           <li *ngFor="let d of (p.detalles ?? [])">
             {{ d.nombreProducto ?? 'Producto #' + d.varianteId }}
-            <span *ngIf="d.talla"> · {{ d.talla }}</span>
-            <span *ngIf="d.color"> · {{ d.color }}</span>
+            <span *ngIf="d.talla"> · {{ d.talla | uppercase }}</span>
+            <span *ngIf="d.color"> · {{ d.color | uppercase }}</span>
             — x{{ d.cantidad }} · ${{ d.precioEnPromocion | number:'1.2-2' }}
             <span class="gp-existencias" *ngIf="d.existencias != null">
               ({{ d.existencias }} en stock)

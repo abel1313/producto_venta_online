@@ -292,7 +292,7 @@
           <div class="rm-dropdown__item"
                *ngFor="let v of variantesBusqueda"
                (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
-            <span class="rm-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
+            <span class="rm-dropdown__name">{{ v.nombreProducto }} {{ v.talla | uppercase }} {{ v.color | uppercase }}</span>
             <span class="rm-dropdown__meta">Stock {{ v.stock }}<span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span></span>
           </div>
         </div>
@@ -304,8 +304,8 @@
         <div class="rm-variante-preview__info">
           <p class="rm-variante-preview__nombre">{{ varianteSeleccionada.nombreProducto }}</p>
           <p class="rm-variante-preview__meta">
-            <span *ngIf="varianteSeleccionada.talla">Talla {{ varianteSeleccionada.talla }}</span>
-            <span *ngIf="varianteSeleccionada.color"> · {{ varianteSeleccionada.color }}</span>
+            <span *ngIf="varianteSeleccionada.talla">Talla {{ varianteSeleccionada.talla | uppercase }}</span>
+            <span *ngIf="varianteSeleccionada.color"> · {{ varianteSeleccionada.color | uppercase }}</span>
             <span> · Stock {{ varianteSeleccionada.stock }}</span>
           </p>
         </div>

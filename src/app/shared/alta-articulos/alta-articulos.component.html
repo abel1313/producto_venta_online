@@ -133,13 +133,13 @@
               <div class="aa-art__grid" *ngIf="f.cambia.descripcion || f.cambia.color || f.cambia.marca || f.cambia.contenidoNeto || f.cambia.categoria || f.cambia.foto">
                 <label class="aa-campo" *ngIf="f.cambia.color">
                   <span class="aa-etiqueta">Color</span>
-                  <input class="pk-input" [(ngModel)]="f.color" placeholder="negro, azul…"
+                  <input class="pk-input" appUppercase appSoloLetras [(ngModel)]="f.color" placeholder="NEGRO, AZUL…"
                          [class.pk-input--error]="sinLlenar(f, 'color')">
                   <small class="pk-error" *ngIf="sinLlenar(f, 'color')">Escribe el color o quita la marca de Color.</small>
                 </label>
                 <label class="aa-campo" *ngIf="f.cambia.marca">
                   <span class="aa-etiqueta">Marca</span>
-                  <input class="pk-input" [(ngModel)]="f.marca" placeholder="Nike, Levi's…"
+                  <input class="pk-input" appUppercase [(ngModel)]="f.marca" placeholder="NIKE, LEVI'S…"
                          [class.pk-input--error]="sinLlenar(f, 'marca')">
                   <small class="pk-error" *ngIf="sinLlenar(f, 'marca')">Escribe la marca o quita la marca de Marca.</small>
                 </label>

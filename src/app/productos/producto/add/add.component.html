@@ -31,7 +31,7 @@
           <div class="pf-field">
             <label class="pf-label">Marca <span class="pf-required">*</span></label>
             <input class="pf-input" [class.pf-input--error]="isInvalid('marca')"
-                   formControlName="marca" placeholder="Nike, Adidas…">
+                   appUppercase formControlName="marca" placeholder="NIKE, ADIDAS…">
             <small class="pf-error" *ngIf="isInvalid('marca')">Campo requerido</small>
           </div>
         </div>
@@ -106,7 +106,7 @@
         <div class="pf-grid">
           <div class="pf-field">
             <label class="pf-label">Color <span class="pf-optional">(opcional)</span></label>
-            <input class="pf-input" formControlName="color" placeholder="negro, azul, rojo…">
+            <input class="pf-input" appUppercase appSoloLetras formControlName="color" placeholder="NEGRO, AZUL, ROJO…">
           </div>
 
           <div class="pf-field">

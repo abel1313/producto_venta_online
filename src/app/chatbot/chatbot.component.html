@@ -51,9 +51,9 @@
                 <div *ngIf="!imagenesVariante.get(p.varianteId)" class="cb-card__placeholder">📦</div>
                 <div class="cb-card__body">
                   <p class="cb-card__nombre">{{ p.nombre }}</p>
-                  <p *ngIf="p.marca" class="cb-card__meta">🏷️ {{ p.marca }}</p>
-                  <p *ngIf="p.color" class="cb-card__meta">🎨 {{ p.color }}</p>
-                  <p *ngIf="p.talla" class="cb-card__meta">📐 {{ p.talla }}</p>
+                  <p *ngIf="p.marca" class="cb-card__meta">🏷️ {{ p.marca | uppercase }}</p>
+                  <p *ngIf="p.color" class="cb-card__meta">🎨 {{ p.color | uppercase }}</p>
+                  <p *ngIf="p.talla" class="cb-card__meta">📐 {{ p.talla | uppercase }}</p>
                   <p *ngIf="p.descripcion" class="cb-card__meta cb-card__meta--desc">{{ p.descripcion }}</p>
                   <p class="cb-card__precio">${{ p.precio | number:'1.2-2' }}</p>
                   <!-- Al cliente solo se le dice si hay (pedido del dueño 2026-10-14): ni el número de

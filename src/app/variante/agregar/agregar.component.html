@@ -163,7 +163,7 @@
 
           <div class="vf-field">
             <label class="vf-label">Color</label>
-            <input class="vf-input" formControlName="color" placeholder="negro, azul, rojo…">
+            <input class="vf-input" appUppercase appSoloLetras formControlName="color" placeholder="NEGRO, AZUL, ROJO…">
           </div>
 
           <div class="vf-field">
@@ -266,7 +266,7 @@
 
                 <div class="vf-field">
                   <label class="vf-label">Color</label>
-                  <input class="vf-input" formControlName="color" placeholder="negro, azul…">
+                  <input class="vf-input" appUppercase appSoloLetras formControlName="color" placeholder="NEGRO, AZUL…">
                 </div>
 
                 <div class="vf-field">
@@ -276,7 +276,7 @@
 
                 <div class="vf-field">
                   <label class="vf-label">Marca</label>
-                  <input class="vf-input" formControlName="marca" placeholder="Nike…">
+                  <input class="vf-input" appUppercase formControlName="marca" placeholder="NIKE…">
                 </div>
 
                 <div class="vf-field">
@@ -457,7 +457,7 @@
         [class.vf-talla-chip--on]="t.checked"
         (click)="toggleLetra(t)"
       >
-        <span class="vf-talla-chip__num">{{ t.talla }}</span>
+        <span class="vf-talla-chip__num">{{ t.talla | uppercase }}</span>
         <input
           *ngIf="t.checked"
           class="vf-talla-chip__stock"

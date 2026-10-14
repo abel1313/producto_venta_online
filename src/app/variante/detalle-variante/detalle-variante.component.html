@@ -17,9 +17,9 @@
               class="dv-variant-chip"
               [class.dv-variant-chip--active]="v.id === varianteSeleccionada.id"
               (click)="seleccionar(v)">
-        <span *ngIf="v.talla">{{ v.talla }}</span>
+        <span *ngIf="v.talla">{{ v.talla | uppercase }}</span>
         <span *ngIf="v.talla && v.color"> · </span>
-        <span *ngIf="v.color">{{ v.color }}</span>
+        <span *ngIf="v.color">{{ v.color | uppercase }}</span>
       </button>
     </div>
   </div>
@@ -28,9 +28,9 @@
   <div class="dv-header" [style.background]="colorGradient">
     <div class="dv-header__info">
       <div class="dv-badge-row">
-        <span *ngIf="varianteSeleccionada.talla"   class="dv-badge dv-badge--talla">{{ varianteSeleccionada.talla }}</span>
-        <span *ngIf="varianteSeleccionada.color"   class="dv-badge dv-badge--color">{{ varianteSeleccionada.color }}</span>
-        <span *ngIf="varianteSeleccionada.marca"   class="dv-badge dv-badge--marca">{{ varianteSeleccionada.marca }}</span>
+        <span *ngIf="varianteSeleccionada.talla"   class="dv-badge dv-badge--talla">{{ varianteSeleccionada.talla | uppercase }}</span>
+        <span *ngIf="varianteSeleccionada.color"   class="dv-badge dv-badge--color">{{ varianteSeleccionada.color | uppercase }}</span>
+        <span *ngIf="varianteSeleccionada.marca"   class="dv-badge dv-badge--marca">{{ varianteSeleccionada.marca | uppercase }}</span>
       </div>
       <h2 class="dv-header__name">Variante #{{ varianteSeleccionada.id }}</h2>
       <p *ngIf="varianteSeleccionada.descripcion" class="dv-header__desc">{{ varianteSeleccionada.descripcion }}</p>
@@ -294,14 +294,14 @@
         </div>
         <div class="dv-indep-field">
           <label class="dv-indep-label">Marca</label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.marca" placeholder="Marca" />
+          <input class="dv-indep-input" type="text" appUppercase [(ngModel)]="indepForm.marca" placeholder="MARCA" />
         </div>
       </div>
 
       <div class="dv-indep-row">
         <div class="dv-indep-field">
           <label class="dv-indep-label">Color</label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.color" placeholder="Color" />
+          <input class="dv-indep-input" type="text" appUppercase appSoloLetras [(ngModel)]="indepForm.color" placeholder="COLOR" />
         </div>
         <div class="dv-indep-field">
           <label class="dv-indep-label">Contenido neto</label>

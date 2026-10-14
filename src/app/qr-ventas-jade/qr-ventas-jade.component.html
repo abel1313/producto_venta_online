@@ -1,6 +1,56 @@
+<div class="qr-page">
+  <h1 class="qr-title">Código QR</h1>
+  <p class="qr-sub">Elige qué quieres que abra el QR. Se genera aquí mismo; puedes copiarlo, descargarlo o compartirlo.</p>
 
-<qrcode 
-  [qrdata]="'https://shop.novedades-jade.com.mx'" 
-  [width]="256" 
-  [errorCorrectionLevel]="'M'">
-</qrcode>
+  <div class="qr-tipos" role="tablist">
+    <button *ngFor="let t of tipos" type="button" role="tab" class="qr-tipo"
+            [class.qr-tipo--on]="tipo === t.id" [attr.aria-selected]="tipo === t.id" (click)="tipo = t.id">
+      {{ t.etiqueta }}
+    </button>
+  </div>
+  <p class="qr-ayuda">{{ ayudaActual }}</p>
+
+  <div class="qr-card">
+    <div class="qr-campos">
+      <ng-container [ngSwitch]="tipo">
+        <ng-container *ngSwitchCase="'articulo'">
+          <label class="qr-label" for="qrArticulo">Número del artículo</label>
+          <input id="qrArticulo" class="qr-input" inputmode="numeric" autocomplete="off" placeholder="Ej. 1523" [(ngModel)]="articuloId">
+          <small class="qr-hint">Lo ves en la tarjeta del artículo, en Tienda → Buscar.</small>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'red'">
+          <label class="qr-label" for="qrRed">Red social</label>
+          <select id="qrRed" class="qr-input" [(ngModel)]="red">
+            <option *ngFor="let r of redes" [value]="r.id">{{ r.etiqueta }}</option>
+          </select>
+          <label class="qr-label" for="qrUsuario">{{ red === 'whatsapp' ? 'Número' : 'Usuario o enlace' }}</label>
+          <input id="qrUsuario" class="qr-input" autocomplete="off" [placeholder]="'Ej. ' + redActual.ejemplo" [(ngModel)]="usuarioRed">
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'libre'">
+          <label class="qr-label" for="qrLibre">Enlace</label>
+          <input id="qrLibre" class="qr-input" type="url" autocomplete="off" placeholder="https://…" [(ngModel)]="enlaceLibre">
+        </ng-container>
+
+        <p *ngSwitchDefault class="qr-hint">No necesita datos: abre la tienda en línea.</p>
+      </ng-container>
+
+      <p class="qr-aviso" *ngIf="aviso">{{ aviso }}</p>
+    </div>
+
+    <div class="qr-resultado" *ngIf="enlace; else sinEnlace">
+      <div #qrBox class="qr-box">
+        <qrcode [qrdata]="enlace" [width]="256" [errorCorrectionLevel]="'M'" elementType="canvas"></qrcode>
+      </div>
+      <code class="qr-enlace">{{ enlace }}</code>
+      <div class="qr-acciones">
+        <button type="button" class="qr-btn" (click)="copiarEnlace()">🔗 Copiar enlace</button>
+        <button type="button" class="qr-btn" (click)="copiarImagen()">📋 Copiar imagen</button>
+        <button type="button" class="qr-btn qr-btn--main" (click)="descargar()">⬇️ Descargar</button>
+        <button type="button" class="qr-btn" *ngIf="puedeCompartir" (click)="compartir()">📤 Compartir</button>
+      </div>
+    </div>
+    <ng-template #sinEnlace><div class="qr-vacio">Completa los datos para ver el QR.</div></ng-template>
+  </div>
+</div>

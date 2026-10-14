@@ -3,6 +3,12 @@ import { BehaviorSubject } from 'rxjs';
 import { IDetalleProducto } from 'src/app/models';
 import { IProductoDTO } from 'src/app/productos/producto/models';
 
+/**
+ * @deprecated 2026-10-14 — el carrito de PRODUCTO BASE ya no se usa: solo se vende por artículos
+ * (carrito de artículos: CarritoVarianteService). Se deja marcado para decidir más adelante si se
+ * elimina; sigue enlazado en el login, la sesión, el navbar y varias rutas, así que quitarlo
+ * requiere cuidado. Ver PENDIENTES_HOMOLOGACION_2026-10-14.md, sección G.
+ */
 @Injectable({
   providedIn: 'root'
 })

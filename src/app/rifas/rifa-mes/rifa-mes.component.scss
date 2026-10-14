@@ -57,14 +57,14 @@ $accent: var(--brand-1);  // ámbar — botones primarios en rifa-mes
 // -- Card
 .rm-card {
   background: var(--card-bg);
-  border-radius: var(--card-radius, 16px);
+  border-radius: var(--form-card-radius, 14px);
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   overflow: hidden;
 
   &__head {
     // Fondo lo aplica la regla global de glassmorphism en styles.scss
-    padding: 20px 24px;
+    padding: 16px 20px;
     color: var(--card-header-text);
     h4 { margin: 0; font-size: 1.15rem; font-weight: 800; }
     p  { margin: 4px 0 0; font-size: 0.82rem; opacity: 0.85; }

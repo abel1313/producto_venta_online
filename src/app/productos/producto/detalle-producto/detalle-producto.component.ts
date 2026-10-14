@@ -123,11 +123,13 @@ export class DetalleProductoComponent implements OnInit {
   }
 
   detalle: IDetalleProducto[] = [];
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   isProductoEnCarrito(): boolean {
     return this.detalle.some(item =>
        item?.codigoBarras === this.producto?.codigoBarras && item.nombre === this.producto.nombre
     );
   }
+/** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 addCarrito() {
   const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = this.producto;
   const prod: IDetalleProducto = {
@@ -144,6 +146,8 @@ addCarrito() {
 
   this.serviceCarrito.agregarProducto(prod);
 }
+  
+/** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   
 removeCarrito() {
   this.serviceCarrito.eliminarProducto(this.producto);

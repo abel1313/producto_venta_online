@@ -193,7 +193,7 @@
           <div class="br-sub">Agregar premio</div>
           <div class="pk-field">
             <input class="pk-input" type="text" placeholder="Buscar producto por nombre o código..."
-                   [(ngModel)]="terminoBusca" (ngModelChange)="buscarVariante()" />
+                   [(ngModel)]="terminoBusca" (ngModelChange)="buscarVariante()" appUppercase />
             <span class="pk-hint" *ngIf="buscandoVariante">Buscando...</span>
           </div>
 
@@ -261,7 +261,7 @@
           <div class="br-toolbar">
             <input class="pk-input br-toolbar__buscar" type="search"
                    placeholder="Buscar participante por nombre..." aria-label="Buscar participante"
-                   [(ngModel)]="filtroNombre" (ngModelChange)="cambioFiltroNombre($event)" />
+                   [(ngModel)]="filtroNombre" (ngModelChange)="cambioFiltroNombre($event)" appUppercase />
             <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm br-toolbar__accion"
                     *ngIf="concursantes.length"
                     [attr.aria-expanded]="mostrarListaParticipantes"

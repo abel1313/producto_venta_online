@@ -19,7 +19,6 @@ import { DetalleProductoComponent } from './detalle-producto/detalle-producto.co
 import { NbCardModule, NbStepperModule } from '@nebular/theme';
 import { CarouselModule } from 'primeng/carousel';
 import { TagModule } from 'primeng/tag';
-import { DetalleProductosComponent } from './detalle-productos/detalle-productos.component';
 import { TableModule } from 'primeng/table';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
@@ -32,8 +31,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
     AllComponent,
     BuscaComponent,
     UpdateComponent,
-    DetalleProductoComponent,
-    DetalleProductosComponent
+    DetalleProductoComponent
   ],
   imports: [
     CommonModule,

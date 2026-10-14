@@ -3,7 +3,7 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .pk-wrap {
-  max-width: 980px;
+  max-width: 1400px; // pantalla de tablas: ocupa el ancho, no una columna angosta (2026-10-14)
   margin: 24px auto;
   display: flex;
   flex-direction: column;
@@ -36,8 +36,8 @@ $t:  all 0.2s ease;
   flex-direction: column;
   gap: 12px;
 
-  &--menus    { flex: 1 1 320px; min-width: 280px; }
-  &--submenus { flex: 2 1 480px; min-width: 320px; }
+  &--menus    { flex: 1 1 380px; min-width: 280px; }
+  &--submenus { flex: 2 1 640px; min-width: 320px; }
 
   &__title {
     font-size: .85rem;

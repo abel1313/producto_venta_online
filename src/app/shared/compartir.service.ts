@@ -159,21 +159,23 @@ export class CompartirService {
     URL.revokeObjectURL(url);
   }
 
-  private fetchBlob(imagenUrl: string): Promise<{ blob: Blob; ext: string }> {
-    return new Promise((resolve, reject) => {
-      this.http.get<{ imagen: string; contentType: string } | Array<{ imagen: string; contentType: string }>>(imagenUrl)
-        .subscribe({
-          next: res => {
-            const item    = Array.isArray(res) ? res[0] : res;
-            const byteStr = atob(item.imagen);
-            const buffer  = new Uint8Array(byteStr.length);
-            for (let i = 0; i < byteStr.length; i++) buffer[i] = byteStr.charCodeAt(i);
-            const blob = new Blob([buffer], { type: item.contentType });
-            const ext  = item.contentType.split('/')[1] ?? 'jpg';
-            resolve({ blob, ext });
-          },
-          error: reject
-        });
-    });
+  /**
+   * Las miniaturas (`/v1/imagenes/thumbnail/{id}`) responden BYTES de imagen, no JSON; el endpoint
+   * viejo (`/file/{id}`) respondía JSON con la imagen en base64. Antes se pedía siempre JSON y la
+   * miniatura contestaba 400 ("No se pudo cargar la imagen"). Se pide como blob y se mira qué llegó.
+   */
+  private async fetchBlob(imagenUrl: string): Promise<{ blob: Blob; ext: string }> {
+    const respuesta = await this.http.get(imagenUrl, { responseType: 'blob' }).toPromise();
+    if (!respuesta) throw new Error('Respuesta vacía');
+
+    if (respuesta.type.includes('json')) {
+      const res  = JSON.parse(await respuesta.text()) as { imagen: string; contentType: string } | Array<{ imagen: string; contentType: string }>;
+      const item = Array.isArray(res) ? res[0] : res;
+      const byteStr = atob(item.imagen);
+      const buffer  = new Uint8Array(byteStr.length);
+      for (let i = 0; i < byteStr.length; i++) buffer[i] = byteStr.charCodeAt(i);
+      return { blob: new Blob([buffer], { type: item.contentType }), ext: item.contentType.split('/')[1] ?? 'jpg' };
+    }
+    return { blob: respuesta, ext: respuesta.type.split('/')[1] ?? 'jpg' };
   }
 }

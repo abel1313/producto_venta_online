@@ -10,12 +10,6 @@
           <small>Catálogo de productos</small>
         </div>
       </div>
-      <div class="pl-header__actions">
-        <button class="pl-btn pl-btn--cart" (click)="verCarrito()">
-          🛒
-          <span *ngIf="totalEnCarrito > 0" class="pl-cart-badge">{{ totalEnCarrito }}</span>
-        </button>
-      </div>
     </div>
 
     <!-- Botón escáner solo en móvil (encima del buscador) -->
@@ -245,35 +239,10 @@
 
         </div>
 
-        <!-- En carrito -->
-        <div *ngIf="cantidadEnCarrito(item) > 0" class="pl-card__in-cart">
-          <span>🛒 {{ cantidadEnCarrito(item) }} en carrito</span>
-          <span *ngIf="item.stock > 0">(máx. {{ item.stock }})</span>
-        </div>
       </div>
 
       <!-- Footer botones -->
       <div class="pl-card__footer">
-
-        <button class="pl-btn-card pl-btn-card--add"
-          [disabled]="stockAgotadoEnCarrito(item)"
-          (click)="addCarrito(item)"
-          [title]="stockAgotadoEnCarrito(item) ? 'Sin stock' : 'Agregar al carrito'">
-          <span>{{ stockAgotadoEnCarrito(item) ? '🚫' : '➕' }}</span>
-          <span class="pl-btn-card__label">{{ stockAgotadoEnCarrito(item) ? 'Sin stock' : 'Agregar' }}</span>
-        </button>
-
-        <button class="pl-btn-card pl-btn-card--remove"
-          [disabled]="!isProductoEnCarrito(item)"
-          (click)="removeCarrito(item)">
-          <span>➖</span>
-          <span class="pl-btn-card__label">Quitar</span>
-        </button>
-
-        <button class="pl-btn-card pl-btn-card--view" (click)="verCarrito()">
-          <span>🛒</span>
-          <span class="pl-btn-card__label">Carrito</span>
-        </button>
 
         <button class="pl-btn-card pl-btn-card--detail" (click)="irDetalleProducto(item.idProducto)">
           <span>🔍</span>

@@ -369,7 +369,7 @@
             </span>
             <div class="vd-promo__detalles">
               <span *ngFor="let d of p.detalles; let j = index">
-                {{ d.cantidad }}× {{ d.nombreProducto || 'Artículo ' + d.varianteId }}<span *ngIf="d.talla"> ({{ d.talla }})</span><span *ngIf="j < p.detalles.length - 1"> · </span>
+                {{ d.cantidad }}× {{ d.nombreProducto || 'Artículo ' + d.varianteId }}<span *ngIf="d.talla"> ({{ d.talla | uppercase }})</span><span *ngIf="j < p.detalles.length - 1"> · </span>
               </span>
             </div>
           </div>

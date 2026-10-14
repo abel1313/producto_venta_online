@@ -209,7 +209,7 @@
           <div class="rf-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
             <div class="rf-dropdown__item" *ngFor="let v of variantesBusqueda"
                  (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
-              <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla }} {{ v.color }}</span>
+              <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla | uppercase }} {{ v.color | uppercase }}</span>
               <span class="rf-dropdown__meta">
                 Stock {{ v.stock }}
                 <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span>
@@ -219,7 +219,7 @@
         </div>
 
         <div class="rf-chip-seleccionado" *ngIf="varianteParaAgregar">
-          ✅ {{ varianteParaAgregar.nombreProducto }} {{ varianteParaAgregar.talla }} {{ varianteParaAgregar.color }}
+          ✅ {{ varianteParaAgregar.nombreProducto }} {{ varianteParaAgregar.talla | uppercase }} {{ varianteParaAgregar.color | uppercase }}
           — Stock: {{ varianteParaAgregar.stock }}
         </div>
 

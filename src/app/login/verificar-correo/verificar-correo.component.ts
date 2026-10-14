@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import Swal from 'sweetalert2';
+import { pedirCambioPasswordForzado } from '../cambio-password-forzado';
 import { AccederService } from '../acceder.service';
 import { AuthenticateService as AuthStorage } from 'src/app/auth.service';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -175,51 +176,17 @@ export class VerificarCorreoComponent implements OnInit, OnDestroy {
   }
 
   private forzarCambioPassword(passwordActual: string): void {
-    Swal.fire({
-      title: '🔑 Cambia tu contraseña',
-      html: `
-        <p style="font-size:0.88rem;color:#64748b;margin-bottom:12px">
-          Tu contraseña fue reseteada por un administrador.<br>
-          Debes crear una nueva contraseña para continuar.
-        </p>
-        <input id="swal-pwd-nueva" type="password" class="swal2-input" placeholder="Nueva contraseña (mín. 8 caracteres)">
-        <input id="swal-pwd-confirm" type="password" class="swal2-input" placeholder="Confirmar nueva contraseña">
-      `,
-      icon: 'warning',
-      confirmButtonText: 'Cambiar y entrar',
-      showCancelButton: false,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      preConfirm: async () => {
-        const nueva   = (document.getElementById('swal-pwd-nueva')   as HTMLInputElement)?.value ?? '';
-        const confirm = (document.getElementById('swal-pwd-confirm') as HTMLInputElement)?.value ?? '';
-        if (nueva.length < 8) {
-          Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
-          return false;
-        }
-        if (nueva !== confirm) {
-          Swal.showValidationMessage('Las contraseñas no coinciden');
-          return false;
-        }
-        try {
-          await this.acceder.cambiarPassword(passwordActual, nueva).toPromise();
-          return true;
-        } catch (err: any) {
-          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.';
-          Swal.showValidationMessage(msg);
-          return false;
-        }
-      }
-    }).then(result => {
-      if (!result.isConfirmed) return;
-      // El back invalida el refresh token al cambiar la contraseña — hay que volver a entrar.
-      this.sesion.cerrarSesionLocal();
-      Swal.fire({
-        icon: 'success',
-        title: '¡Contraseña actualizada!',
-        text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+    pedirCambioPasswordForzado(nueva => this.acceder.cambiarPassword(passwordActual, nueva).toPromise().then(() => undefined))
+      .then(confirmado => {
+        if (!confirmado) return;
+        // El back invalida el refresh token al cambiar la contraseña — hay que volver a entrar.
+        this.sesion.cerrarSesionLocal();
+        Swal.fire({
+          icon: 'success',
+          title: '¡Contraseña actualizada!',
+          text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+        });
       });
-    });
   }
 
   soloNumeros(e: KeyboardEvent): void {

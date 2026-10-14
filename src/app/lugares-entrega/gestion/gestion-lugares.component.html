@@ -64,7 +64,7 @@
   <!-- Formulario agregar / editar -->
   <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form">
     <div class="pk-form__field">
-      <input class="pk-input"
+      <input class="pk-input" appPrimeraMayuscula
              formControlName="nombre"
              type="text"
              [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nuevo lugar…'"

@@ -209,8 +209,8 @@
         <div class="dp-art-item__datos">
           <span class="dp-art-item__nombre">{{ v.nombreProducto }}</span>
           <span class="dp-art-item__variante" *ngIf="v.talla || v.color">
-            <span *ngIf="v.talla">Talla: {{ v.talla }}</span>
-            <span *ngIf="v.color"> · Color: {{ v.color }}</span>
+            <span *ngIf="v.talla">Talla: {{ v.talla | uppercase }}</span>
+            <span *ngIf="v.color"> · Color: {{ v.color | uppercase }}</span>
           </span>
           <span class="dp-art-item__stock">Stock: {{ v.stock ?? 0 }}</span>
         </div>
@@ -441,8 +441,8 @@
         </button>
         <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
         <p class="prod-card__variante" *ngIf="item.talla || item.color">
-          <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
-          <span *ngIf="item.color"> · Color: {{ item.color }}</span>
+          <span *ngIf="item.talla">Talla: {{ item.talla | uppercase }}</span>
+          <span *ngIf="item.color"> · Color: {{ item.color | uppercase }}</span>
         </p>
 
         <div class="prod-card__fila" *ngIf="item.codigoBarras">
@@ -565,8 +565,8 @@
             </span>
             <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
             <p class="prod-card__variante" *ngIf="item.talla || item.color">
-              <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
-              <span *ngIf="item.color"> · Color: {{ item.color }}</span>
+              <span *ngIf="item.talla">Talla: {{ item.talla | uppercase }}</span>
+              <span *ngIf="item.color"> · Color: {{ item.color | uppercase }}</span>
             </p>
             <div class="prod-card__fila" *ngIf="item.codigoBarras">
               <span class="prod-card__label">Código de barras</span>

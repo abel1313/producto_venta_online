@@ -1,0 +1,13 @@
+<div class="fb">
+  <input class="fb__input" type="text" autocomplete="off" appUppercase
+         [placeholder]="valor ? valor : etiqueta" [class.fb__input--con-valor]="!!valor"
+         [value]="abierto ? texto : valor"
+         (focus)="abrir()" (input)="escribir($any($event.target).value)"
+         (keydown.escape)="abierto = false"
+         (keydown.enter)="filtradas.length === 1 && elegir(filtradas[0])">
+  <button *ngIf="valor" type="button" class="fb__x" (click)="limpiar($event)" title="Quitar {{ etiqueta }}" aria-label="Quitar filtro">✕</button>
+  <ul *ngIf="abierto" class="fb__lista">
+    <li *ngFor="let o of filtradas" class="fb__op" [class.fb__op--activa]="o === valor" (mousedown)="$event.preventDefault(); elegir(o)">{{ o }}</li>
+    <li *ngIf="filtradas.length === 0" class="fb__vacio">Sin resultados</li>
+  </ul>
+</div>

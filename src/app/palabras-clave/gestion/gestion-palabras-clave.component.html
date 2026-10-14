@@ -9,7 +9,7 @@
   <div class="pk-tabla-card">
     <form *ngIf="puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="pk-form pk-tabla-card__toolbar">
       <div class="pk-form__field">
-        <input class="pk-input"
+        <input class="pk-input" appUppercase
                formControlName="nombre"
                type="text"
                [placeholder]="editandoId ? 'Nuevo nombre…' : 'Nueva categoría…'"
@@ -43,7 +43,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let p of palabras" [class.pk-item--editando]="editandoId === p.id">
-            <td>{{ p.nombre }}</td>
+            <td>{{ p.nombre | uppercase }}</td>
             <td *ngIf="puedeEditar || puedeEliminar">
               <div class="pk-tabla__acciones">
                 <button *ngIf="puedeEditar"   class="pk-tabla__icono" (click)="iniciarEdicion(p)" title="Editar">✏️</button>

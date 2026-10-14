@@ -114,6 +114,8 @@ export class GestionPersonalizacionComponent implements OnInit {
     if (this.gruposAbiertos.has(g)) {
       this.gruposAbiertos.delete(g);
     } else {
+      // Acordeón: al abrir una sección se cierran las demás, para no tener que subir una lista enorme.
+      this.gruposAbiertos.clear();
       this.gruposAbiertos.add(g);
       this.grupoActivo = g; // el preview sigue a la sección que se acaba de abrir
     }

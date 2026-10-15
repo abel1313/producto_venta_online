@@ -1412,6 +1412,39 @@ body:is(.theme-light, .theme-dark) {
 }
 
 /* ════════════════════════════════════════════════════════════
+   BUSCADORES DE TIENDA Y MODELOS — mismo header que el resto de las cards (2026-10-15)
+
+   Tienda (vb-) y Catálogo → Modelos (pl-) eran la excepción: su recuadro de búsqueda y filtros
+   no tenía franja verde arriba como las demás cards (Mis datos, Agregar modelo…). Ahora el título
+   y el carrito van en una franja con --card-header-bg / --card-header-text (los de Personalización),
+   pegada a los bordes del recuadro, y el buscador y los filtros quedan debajo, en el cuerpo.
+   ════════════════════════════════════════════════════════════ */
+:is(body.theme-light, body.theme-dark, [data-theme="light"], [data-theme="dark"]) {
+  .vb-header__content:not(#_),
+  .pl-header__content:not(#_) {
+    border-radius: var(--form-card-radius, 14px);
+    padding-top: 0 !important;
+  }
+  .vb-header__inner:not(#_),
+  .pl-header__inner:not(#_) {
+    margin: 0 -24px 20px !important;
+    padding: 18px 24px !important;
+    background: var(--card-header-bg) !important;
+    color: var(--card-header-text) !important;
+    border-bottom: 1px solid var(--card-border);
+    border-radius: var(--form-card-radius, 14px) var(--form-card-radius, 14px) 0 0;
+
+    :is(h4, .mb-0) { color: var(--card-header-text) !important; }
+    small { color: color-mix(in srgb, var(--card-header-text) 78%, transparent) !important; }
+
+    .vb-btn--cart, .pl-btn--cart {
+      background: color-mix(in srgb, var(--card-header-text) 18%, transparent) !important;
+      color: var(--card-header-text) !important;
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
    MODO OSCURO — LABELS Y PLACEHOLDERS LEGIBLES (2026-09-30)
 
    En oscuro los placeholders quedaban en #5F8375 (o #6E6E73), varios formularios les
